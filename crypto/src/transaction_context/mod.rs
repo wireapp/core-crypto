@@ -243,20 +243,6 @@ impl TransactionContext {
         Ok(())
     }
 
-    /// Generates MLS KeyPairs/CredentialBundle with a temporary, random client ID.
-    /// This method is designed to be used in conjunction with [TransactionContext::mls_init_with_client_id] and represents the first step in this process.
-    ///
-    /// This returns the TLS-serialized identity keys (i.e. the signature keypair's public key)
-    #[cfg_attr(test, crate::dispotent)]
-    pub async fn mls_generate_keypairs(&self, ciphersuites: Vec<MlsCiphersuite>) -> Result<Vec<ClientId>> {
-        self.session()
-            .await?
-            .generate_raw_keypairs(&ciphersuites, &self.mls_provider().await?)
-            .await
-            .map_err(RecursiveError::mls_client("generating raw keypairs"))
-            .map_err(Into::into)
-    }
-
     /// Returns the client's public key.
     pub async fn client_public_key(
         &self,

@@ -389,60 +389,6 @@ impl Session {
             .map_err(Into::into)
     }
 
-    // Initializes a raw MLS keypair without an associated client ID
-    // Returns a random ClientId to bind later in [Session::init_with_external_client_id]
-    //
-    // # Arguments
-    // * `ciphersuites` - all ciphersuites this client is supposed to support
-    // * `backend` - the KeyStore and crypto provider to read identities from
-    //
-    // # Errors
-    // KeyStore and OpenMls errors can happen
-    pub(crate) async fn generate_raw_keypairs(
-        &self,
-        ciphersuites: &[MlsCiphersuite],
-        backend: &MlsCryptoProvider,
-    ) -> Result<Vec<ClientId>> {
-        self.ensure_unready().await?;
-        const TEMP_KEY_SIZE: usize = 16;
-
-        let credentials = Self::find_all_basic_credentials(backend).await?;
-        if !credentials.is_empty() {
-            return Err(Error::IdentityAlreadyPresent);
-        }
-
-        use openmls_traits::random::OpenMlsRand as _;
-        // Here we generate a provisional, random, uuid-like random Client ID for no purpose other than database/store constraints
-        let mut tmp_client_ids = Vec::with_capacity(ciphersuites.len());
-        for cs in ciphersuites {
-            let tmp_client_id: ClientId = backend
-                .rand()
-                .random_vec(TEMP_KEY_SIZE)
-                .map_err(MlsError::wrap("generating random client id"))?
-                .into();
-
-            let cb = Self::new_basic_credential_bundle(&tmp_client_id, cs.signature_algorithm(), backend)?;
-
-            let sign_kp = MlsSignatureKeyPair::new(
-                cs.signature_algorithm(),
-                cb.signature_key.to_public_vec(),
-                cb.signature_key
-                    .tls_serialize_detached()
-                    .map_err(Error::tls_serialize("signature key"))?,
-                tmp_client_id.clone().into(),
-            );
-            backend
-                .key_store()
-                .save(sign_kp)
-                .await
-                .map_err(KeystoreError::wrap("save signature keypair in keystore"))?;
-
-            tmp_client_ids.push(tmp_client_id);
-        }
-
-        Ok(tmp_client_ids)
-    }
-
     /// Generates a brand new client from scratch
     pub(crate) async fn generate(
         &self,
@@ -605,25 +551,6 @@ impl Session {
         .await?;
 
         Ok(())
-    }
-
-    async fn find_all_basic_credentials(backend: &MlsCryptoProvider) -> Result<Vec<Credential>> {
-        let store_credentials = backend
-            .key_store()
-            .find_all::<MlsCredential>(EntityFindParams::default())
-            .await
-            .map_err(KeystoreError::wrap("finding all mls credentialss"))?;
-        let mut credentials = Vec::with_capacity(store_credentials.len());
-        for store_credential in store_credentials.into_iter() {
-            let credential = Credential::tls_deserialize(&mut store_credential.credential.as_slice())
-                .map_err(Error::tls_deserialize("credential"))?;
-            if !matches!(credential.credential_type(), CredentialType::Basic) {
-                continue;
-            }
-            credentials.push(credential);
-        }
-
-        Ok(credentials)
     }
 
     pub(crate) async fn save_identity(
