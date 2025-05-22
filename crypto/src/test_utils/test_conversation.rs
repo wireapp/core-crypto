@@ -55,6 +55,11 @@ impl<'a> TestConversation<'a> {
         member_count
     }
 
+    /// Let a conversation member provide the member count (according to their current state).
+    pub async fn members_counted_by(&self, member: &SessionContext) -> usize {
+        member.get_conversation_unchecked(self.id()).await.members().len()
+    }
+
     pub async fn are_members(&self, members_to_check: impl IntoIterator<Item = &'a SessionContext>) -> bool {
         let member_ids = futures_util::future::join_all(self.members().map(|member| member.get_client_id())).await;
         for member in members_to_check.into_iter() {
