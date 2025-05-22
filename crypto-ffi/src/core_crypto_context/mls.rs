@@ -53,23 +53,6 @@ impl CoreCryptoContext {
             .map(|cids| cids.into_iter().map(ClientId).collect())?)
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::mls_init_with_client_id]
-    pub async fn mls_init_with_client_id(
-        &self,
-        client_id: ClientId,
-        tmp_client_ids: Vec<ClientId>,
-        ciphersuites: Ciphersuites,
-    ) -> CoreCryptoResult<()> {
-        Ok(self
-            .inner
-            .mls_init_with_client_id(
-                client_id.0,
-                tmp_client_ids.into_iter().map(|cid| cid.0).collect(),
-                (&ciphersuites).into(),
-            )
-            .await?)
-    }
-
     /// See [core_crypto::transaction_context::TransactionContext::client_public_key]
     pub async fn client_public_key(
         &self,

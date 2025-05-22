@@ -257,26 +257,6 @@ impl TransactionContext {
             .map_err(Into::into)
     }
 
-    /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
-    ///
-    /// Important: This is designed to be called after [TransactionContext::mls_generate_keypairs]
-    #[cfg_attr(test, crate::dispotent)]
-    pub async fn mls_init_with_client_id(
-        &self,
-        client_id: ClientId,
-        tmp_client_ids: Vec<ClientId>,
-        ciphersuites: Vec<MlsCiphersuite>,
-    ) -> Result<()> {
-        self.session()
-            .await?
-            .init_with_external_client_id(client_id, tmp_client_ids, &ciphersuites, &self.mls_provider().await?)
-            .await
-            .map_err(RecursiveError::mls_client(
-                "initializing mls client with external client id",
-            ))
-            .map_err(Into::into)
-    }
-
     /// Returns the client's public key.
     pub async fn client_public_key(
         &self,
