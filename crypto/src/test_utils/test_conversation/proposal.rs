@@ -1,5 +1,7 @@
 use std::marker::PhantomData;
 
+use crate::mls::conversation::Conversation;
+
 use super::super::SessionContext;
 use super::super::TestConversation;
 use super::operation_guard::{AddGuard, OperationGuard, Proposal, TestOperation};
@@ -72,6 +74,29 @@ impl<'a> TestConversation<'a> {
             message: proposal,
             _message_type: PhantomData,
             already_notified: [proposer_index].into(),
+        }
+    }
+
+    pub async fn external_join_proposal_guarded(self, joiner: &'a SessionContext) -> OperationGuard<'a, Proposal> {
+        let external_proposal = joiner
+            .transaction
+            .new_external_add_proposal(
+                self.id().clone(),
+                self.guard().await.epoch().await.into(),
+                self.case.ciphersuite(),
+                self.case.credential_type,
+            )
+            .await
+            .unwrap();
+
+        OperationGuard {
+            conversation: self,
+            operation: TestOperation::Add(AddGuard {
+                new_members: vec![joiner],
+            }),
+            message: external_proposal,
+            _message_type: PhantomData,
+            already_notified: [].into(),
         }
     }
 }
