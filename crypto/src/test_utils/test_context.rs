@@ -322,12 +322,24 @@ impl TestContext {
         &'a self,
         members: impl IntoIterator<Item = &'a SessionContext>,
     ) -> TestConversation<'a> {
+        self.create_conversation_with_credential_type(self.credential_type, members)
+            .await
+    }
+
+    /// Create a test conversation with the specified credential type.
+    ///
+    /// The first member is required, and is the conversation's creator.
+    pub async fn create_conversation_with_credential_type<'a>(
+        &'a self,
+        credential_type: MlsCredentialType,
+        members: impl IntoIterator<Item = &'a SessionContext>,
+    ) -> TestConversation<'a> {
         let mut members = members.into_iter();
         let creator = members
             .next()
             .expect("each conversation needs at least 1 member, the creator");
 
-        let conversation = TestConversation::new(self, creator).await;
+        let conversation = TestConversation::new_with_credential_type(self, creator, credential_type).await;
 
         // if members are empty, return early here
         let mut members = members.peekable();
