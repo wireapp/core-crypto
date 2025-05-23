@@ -4,7 +4,10 @@ mod proposal;
 
 use std::sync::Arc;
 
-use crate::{mls::conversation::ConversationGuard, prelude::ConversationId};
+use crate::{
+    mls::conversation::{Conversation, ConversationGuard},
+    prelude::{ConversationId, E2eiConversationState},
+};
 
 use super::{MlsTransportTestExt, SessionContext, TestContext};
 
@@ -142,6 +145,24 @@ impl<'a> TestConversation<'a> {
     /// member.
     pub async fn guard_of(&self, member: &'a SessionContext) -> ConversationGuard {
         member.transaction.conversation(&self.id).await.unwrap()
+    }
+
+    pub async fn e2ei_state(&self) -> E2eiConversationState {
+        self.e2ei_state_of(self.actor()).await
+    }
+
+    pub async fn e2ei_state_of(&self, member: &'a SessionContext) -> E2eiConversationState {
+        self.guard_of(member).await.e2ei_conversation_state().await.unwrap()
+    }
+
+    pub async fn e2ei_state_via_group_info(&self) -> E2eiConversationState {
+        let gi = self.actor().get_group_info(self.id()).await;
+
+        self.actor()
+            .transaction
+            .get_credential_in_use(gi, MlsCredentialType::X509)
+            .await
+            .unwrap()
     }
 
     async fn member_index(&self, member: &SessionContext) -> usize {
