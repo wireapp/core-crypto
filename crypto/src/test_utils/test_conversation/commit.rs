@@ -1,6 +1,8 @@
 use openmls::prelude::group_info::VerifiableGroupInfo;
 use std::marker::PhantomData;
 
+use crate::mls::conversation::pending_conversation::PendingConversation;
+
 use super::super::SessionContext;
 use super::TestConversation;
 use super::operation_guard::AddGuard;
@@ -165,5 +167,60 @@ impl<'a> TestConversation<'a> {
             _message_type: PhantomData,
             already_notified,
         }
+    }
+
+    pub async fn unmerged_external_join(
+        self,
+        joiner: &'a SessionContext,
+    ) -> (TestConversation<'a>, PendingConversation) {
+        let group_info = self.actor().get_group_info(self.id()).await;
+        let (commit_guard, pending_conversation) = self
+            .umerged_external_join_via_group_info_guarded(joiner, group_info)
+            .await;
+        (commit_guard.notify_members().await, pending_conversation)
+    }
+
+    pub async fn unmerged_external_join_guarded(
+        self,
+        joiner: &'a SessionContext,
+    ) -> (OperationGuard<'a, Commit>, PendingConversation) {
+        let group_info = self.actor().get_group_info(self.id()).await;
+        self.umerged_external_join_via_group_info_guarded(joiner, group_info)
+            .await
+    }
+
+    /// The supplied session joins this conversation by external commit, but doesn't merge it yet.
+    ///
+    /// This does _not_ distribute the external commit to the existing members. To do that,
+    /// use the [`notify_existing_members` method][CommitGuard::notify_members] of
+    /// the returned item.
+    pub async fn umerged_external_join_via_group_info_guarded(
+        self,
+        joiner: &'a SessionContext,
+        group_info: VerifiableGroupInfo,
+    ) -> (OperationGuard<'a, Commit>, PendingConversation) {
+        let (join_commit, _, pending_conversation) = joiner
+            .transaction
+            .create_external_join_commit(group_info, self.case.custom_cfg(), self.case.credential_type)
+            .await
+            .unwrap();
+
+        // if this is a rejoin, make sure that the joiner doesn't receive their join commit again
+        let already_notified = if self.is_member(joiner).await {
+            [self.member_index(joiner).await].into()
+        } else {
+            [].into()
+        };
+
+        (
+            OperationGuard {
+                conversation: self,
+                operation: TestOperation::ExternalJoin(joiner),
+                message: join_commit.commit,
+                _message_type: PhantomData,
+                already_notified,
+            },
+            pending_conversation,
+        )
     }
 }
