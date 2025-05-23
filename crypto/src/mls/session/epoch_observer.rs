@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::{CoreCrypto, RecursiveError, mls::HasSessionAndCrypto as _, prelude::ConversationId};
+use crate::prelude::ConversationId;
 
 use super::{Error, Result, Session};
 
@@ -25,41 +25,24 @@ pub trait EpochObserver: Send + Sync {
 
 impl Session {
     /// Add an epoch observer to this session.
+    /// (see [EpochObserver]).
     ///
     /// This function should be called 0 or 1 times in a session's lifetime. If called
     /// when an epoch observer already exists, this will return an error.
-    pub(crate) async fn register_epoch_observer(&self, epoch_observer: Arc<dyn EpochObserver>) -> Result<()> {
-        let mut guard = self.inner.write().await;
-        let inner = guard.as_mut().ok_or(Error::MlsNotInitialized)?;
-        if inner.epoch_observer.is_some() {
+    pub async fn register_epoch_observer(&self, epoch_observer: Arc<dyn EpochObserver>) -> Result<()> {
+        let mut observer_guard = self.epoch_observer.write().await;
+        if observer_guard.is_some() {
             return Err(Error::EpochObserverAlreadyExists);
         }
-        inner.epoch_observer = Some(epoch_observer);
+        observer_guard.replace(epoch_observer);
         Ok(())
     }
 
     /// Notify the observer that the epoch has changed, if one is present.
     pub(crate) async fn notify_epoch_changed(&self, conversation_id: ConversationId, epoch: u64) {
-        let guard = self.inner.read().await;
-        if let Some(inner) = guard.as_ref() {
-            if let Some(observer) = inner.epoch_observer.as_ref() {
-                observer.epoch_changed(conversation_id, epoch).await;
-            }
+        if let Some(observer) = self.epoch_observer.read().await.as_ref() {
+            observer.epoch_changed(conversation_id, epoch).await;
         }
-    }
-}
-
-impl CoreCrypto {
-    /// Add an epoch observer to this session.
-    ///
-    /// This function should be called 0 or 1 times in a session's lifetime.
-    /// If called when an epoch observer already exists, this will return an error.
-    pub async fn register_epoch_observer(&self, epoch_observer: Arc<dyn EpochObserver>) -> Result<()> {
-        let session = self
-            .session()
-            .await
-            .map_err(RecursiveError::mls("getting mls session"))?;
-        session.register_epoch_observer(epoch_observer).await
     }
 }
 

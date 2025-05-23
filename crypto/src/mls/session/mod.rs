@@ -36,9 +36,9 @@ use openmls::prelude::{Credential, CredentialType};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
 use openmls_x509_credential::CertificateKeyPair;
+use std::collections::HashSet;
 use std::ops::Deref;
 use std::sync::Arc;
-use std::{collections::HashSet, fmt};
 use tls_codec::{Deserialize, Serialize};
 
 /// A MLS Session enables a user device to communicate via the MLS protocol.
@@ -51,11 +51,13 @@ use tls_codec::{Deserialize, Serialize};
 /// It is cheap to clone a `Session` because everything heavy is wrapped inside an [Arc].
 ///
 /// [RFC 9720]: https://www.rfc-editor.org/rfc/rfc9420.html
-#[derive(Clone, Debug)]
+#[derive(Clone, derive_more::Debug)]
 pub struct Session {
     pub(crate) inner: Arc<RwLock<Option<SessionInner>>>,
     pub(crate) crypto_provider: MlsCryptoProvider,
     pub(crate) transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
+    #[debug("EpochObserver")]
+    pub(crate) epoch_observer: Arc<RwLock<Option<Arc<dyn EpochObserver + 'static>>>>,
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -70,28 +72,11 @@ impl HasSessionAndCrypto for Session {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct SessionInner {
     id: ClientId,
     pub(crate) identities: Identities,
     keypackage_lifetime: std::time::Duration,
-    epoch_observer: Option<Arc<dyn EpochObserver>>,
-}
-
-impl fmt::Debug for SessionInner {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let observer_debug = if self.epoch_observer.is_some() {
-            "Some(Arc<dyn EpochObserver>)"
-        } else {
-            "None"
-        };
-        f.debug_struct("ClientInner")
-            .field("id", &self.id)
-            .field("identities", &self.identities)
-            .field("keypackage_lifetime", &self.keypackage_lifetime)
-            .field("epoch_observer", &observer_debug)
-            .finish()
-    }
 }
 
 impl Session {
@@ -150,6 +135,7 @@ impl Session {
             crypto_provider: mls_backend.clone(),
             inner: Default::default(),
             transport: Arc::new(None.into()),
+            epoch_observer: Arc::new(None.into()),
         };
 
         let cc = CoreCrypto::from(client.clone());
@@ -407,7 +393,6 @@ impl Session {
             id: id.into_owned(),
             identities: Identities::new(signature_schemes.len()),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
-            epoch_observer: None,
         })
         .await;
 
@@ -513,7 +498,6 @@ impl Session {
             id: id.clone(),
             identities,
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
-            epoch_observer: None,
         })
         .await;
         Ok(())
@@ -528,7 +512,6 @@ impl Session {
             id: history_secret.client_id.clone(),
             identities: Identities::new(1),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
-            epoch_observer: None,
         })
         .await;
 
