@@ -2,6 +2,7 @@ use openmls::prelude::group_info::VerifiableGroupInfo;
 use std::marker::PhantomData;
 
 use crate::mls::conversation::pending_conversation::PendingConversation;
+use crate::mls::credential::CredentialBundle;
 
 use super::super::SessionContext;
 use super::TestConversation;
@@ -49,6 +50,23 @@ impl<'a> TestConversation<'a> {
 
     pub async fn update_guarded(self) -> OperationGuard<'a, Commit> {
         self.guard().await.update_key_material().await.unwrap();
+        let commit = self.transport().await.latest_commit_bundle().await.commit;
+        let committer_index = self.actor_index();
+        OperationGuard {
+            conversation: self,
+            operation: TestOperation::Update,
+            message: commit,
+            _message_type: PhantomData,
+            already_notified: [committer_index].into(),
+        }
+    }
+
+    pub async fn e2ei_rotate(self, credential_bundle: Option<&CredentialBundle>) -> TestConversation<'a> {
+        self.e2ei_rotate_guarded(credential_bundle).await.notify_members().await
+    }
+
+    pub async fn e2ei_rotate_guarded(self, credential_bundle: Option<&CredentialBundle>) -> OperationGuard<'a, Commit> {
+        self.guard().await.e2ei_rotate(credential_bundle).await.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;
         let committer_index = self.actor_index();
         OperationGuard {
