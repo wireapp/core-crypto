@@ -123,7 +123,10 @@ impl<'a> OperationGuard<'a, Commit> {
                     self.conversation.members.remove(member_idx);
                 }
                 TestOperation::ExternalJoin(joiner) => {
-                    self.conversation.members.push(joiner);
+                    // If this is a rejoin, don't touch the member list
+                    if !self.conversation().is_member(joiner).await {
+                        self.conversation.members.push(joiner);
+                    }
                 }
                 TestOperation::Add(AddGuard {
                     new_members: invited_members,
