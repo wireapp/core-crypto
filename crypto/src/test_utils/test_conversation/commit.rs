@@ -61,6 +61,28 @@ impl<'a> TestConversation<'a> {
         }
     }
 
+    /// Create a commit that hasn't been merged by the actor.
+    /// On [OperationGuard::notify_members], the actor will receive this commit.
+    pub async fn unmerged_commit(self) -> OperationGuard<'a, Commit> {
+        let commit = self
+            .actor()
+            .transaction
+            .conversation(self.id())
+            .await
+            .unwrap()
+            .update_key_material_inner(None, None)
+            .await
+            .unwrap()
+            .commit;
+        OperationGuard {
+            conversation: self,
+            operation: TestOperation::Update,
+            message: commit,
+            _message_type: PhantomData,
+            already_notified: [].into(),
+        }
+    }
+
     pub async fn e2ei_rotate(self, credential_bundle: Option<&CredentialBundle>) -> TestConversation<'a> {
         self.e2ei_rotate_guarded(credential_bundle).await.notify_members().await
     }
