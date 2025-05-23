@@ -119,13 +119,12 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.repository == 'wireapp/core-crypto' &&
-      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/heads/ivan/'))
+
     needs:
       - rustdoc
       - tsdoc
       - ktdoc
-    env:
-      GIT_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
 
     steps:
     - name: checkout repository
@@ -135,7 +134,7 @@ jobs:
       uses: actions/download-artifact@v4.1.8
       with:
         pattern: "*doc"
-        path: "./target/doc/${{ env.GIT_TAG }}"
+        path: "./public/${{ github.ref_name }}"
         merge-multiple: true
 
     - name: copy index.md
@@ -146,8 +145,6 @@ jobs:
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_branch: gh-pages
-        publish_dir: target/doc
-        keep_files: true
-        force_orphan: false
+        publish_branch: ivan/gh-pages
+        force_orphan: true
         enable_jekyll: true
