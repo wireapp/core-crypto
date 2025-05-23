@@ -9,7 +9,7 @@ use crate::{
     prelude::{ConversationId, E2eiConversationState},
 };
 
-use super::{MlsTransportTestExt, SessionContext, TestContext};
+use super::{MlsCredentialType, MlsTransportTestExt, SessionContext, TestContext};
 
 use operation_guard::TestOperation;
 
@@ -25,10 +25,18 @@ pub struct TestConversation<'a> {
 
 impl<'a> TestConversation<'a> {
     pub async fn new(case: &'a TestContext, creator: &'a SessionContext) -> Self {
+        Self::new_with_credential_type(case, creator, case.credential_type).await
+    }
+
+    pub async fn new_with_credential_type(
+        case: &'a TestContext,
+        creator: &'a SessionContext,
+        credential_type: MlsCredentialType,
+    ) -> Self {
         let id = super::conversation_id();
         creator
             .transaction
-            .new_conversation(&id, case.credential_type, case.cfg.clone())
+            .new_conversation(&id, credential_type, case.cfg.clone())
             .await
             .unwrap();
 
