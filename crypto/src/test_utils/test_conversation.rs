@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use crate::{
     mls::conversation::{Conversation, ConversationGuard},
-    prelude::{ConversationId, E2eiConversationState},
+    prelude::{ConversationId, E2eiConversationState, MlsProposalRef},
 };
 
 use super::{MlsCredentialType, MlsTransportTestExt, SessionContext, TestContext};
@@ -168,6 +168,17 @@ impl<'a> TestConversation<'a> {
             .get_credential_in_use(gi, MlsCredentialType::X509)
             .await
             .unwrap()
+    }
+
+    pub async fn latest_proposal_ref(&self) -> MlsProposalRef {
+        self.actor()
+            .pending_proposals(self.id())
+            .await
+            .last()
+            .unwrap()
+            .proposal_reference()
+            .to_owned()
+            .into()
     }
 
     async fn member_index(&self, member: &SessionContext) -> usize {
