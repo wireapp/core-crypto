@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
 use async_lock::Mutex;
@@ -38,5 +39,11 @@ impl EpochObserver for TestEpochObserver {
     async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64) {
         let mut guard = self.0.lock().await;
         guard.observed_epochs.push((conversation_id, epoch));
+    }
+}
+
+impl Debug for TestEpochObserver {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("TestEpochObserver")
     }
 }

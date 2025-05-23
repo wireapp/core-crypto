@@ -1,3 +1,4 @@
+use std::fmt;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -31,7 +32,7 @@ pub trait EpochObserver: Send + Sync {
     /// The `epoch` parameter is the new epoch.
     ///
     /// <div class="warning">
-    /// This function must not block! Foreign implementors of this inteface can
+    /// This function must not block! Foreign implementors of this interface can
     /// spawn a task indirecting the notification, or (unblocking) send the notification
     /// on some kind of channel, or anything else, as long as the operation completes
     /// quickly.
@@ -56,11 +57,18 @@ pub trait EpochObserver: Send + Sync {
 struct ObserverShim(Arc<dyn EpochObserver>);
 
 #[cfg(not(target_family = "wasm"))]
+impl fmt::Debug for ObserverShim {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("ObserverShim").field(&"Arc<dyn EpochObserver>").finish()
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
 #[async_trait]
 impl core_crypto::mls::EpochObserver for ObserverShim {
     async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64) {
         if let Err(err) = self.0.epoch_changed(conversation_id.clone(), epoch).await {
-            // we don't _care_ if an error is thrown by the the notification function, per se,
+            // we don't _care_ if an error is thrown by the notification function, per se,
             // but this would probably be useful information for downstream debugging efforts
             log::warn!(
                 conversation_id = Obfuscated::new(&conversation_id),
@@ -76,9 +84,6 @@ impl core_crypto::mls::EpochObserver for ObserverShim {
 #[uniffi::export]
 impl CoreCrypto {
     /// Add an epoch observer to this client.
-    ///
-    /// This function should be called 0 or 1 times in a client's lifetime.
-    /// If called when an epoch observer already exists, this will return an error.
     pub async fn register_epoch_observer(&self, epoch_observer: Arc<dyn EpochObserver>) -> CoreCryptoResult<()> {
         let shim = Arc::new(ObserverShim(epoch_observer));
         self.inner
@@ -140,11 +145,11 @@ impl EpochObserver {
     /// This is extracted as its own function instead of being implemented inline within the
     /// `impl EpochObserver for EpochObserver` block mostly to consolidate error-handling.
     async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64) -> Result<(), JsValue> {
-        let converation_id = Uint8Array::from(conversation_id.as_slice());
+        let conversation_id = Uint8Array::from(conversation_id.as_slice());
 
         let promise = self
             .epoch_changed
-            .call2(&self.this_context, &converation_id.into(), &epoch.into())?
+            .call2(&self.this_context, &conversation_id.into(), &epoch.into())?
             .dyn_into::<Promise>()?;
         // we don't actually care what the result of executing the notification promise is; we'll ignore it if it exists
         JsFuture::from(promise).await?;
@@ -153,11 +158,18 @@ impl EpochObserver {
 }
 
 #[cfg(target_family = "wasm")]
+impl fmt::Debug for EpochObserver {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("EpochObserver")
+    }
+}
+
+#[cfg(target_family = "wasm")]
 #[async_trait(?Send)]
 impl core_crypto::mls::EpochObserver for EpochObserver {
     async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64) {
         if let Err(err) = self.epoch_changed(conversation_id.clone(), epoch).await {
-            // we don't _care_ if an error is thrown by the the notification function, per se,
+            // we don't _care_ if an error is thrown by the notification function, per se,
             // but this would probably be useful information for downstream debugging efforts
             log::warn!(
                 conversation_id = Obfuscated::new(&conversation_id),
