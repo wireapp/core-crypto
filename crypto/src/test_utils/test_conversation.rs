@@ -5,8 +5,8 @@ mod proposal;
 use std::sync::Arc;
 
 use crate::{
-    mls::conversation::{Conversation, ConversationGuard},
-    prelude::{ConversationId, E2eiConversationState},
+    mls::conversation::{Conversation, ConversationGuard, ConversationWithMls as _},
+    prelude::{ConversationId, E2eiConversationState, MlsProposalRef},
 };
 
 use super::{MlsCredentialType, MlsTransportTestExt, SessionContext, TestContext};
@@ -171,6 +171,35 @@ impl<'a> TestConversation<'a> {
             .get_credential_in_use(gi, MlsCredentialType::X509)
             .await
             .unwrap()
+    }
+
+    pub async fn latest_proposal_ref(&self) -> MlsProposalRef {
+        let guard = self.guard().await;
+        guard
+            .conversation()
+            .await
+            .group()
+            .pending_proposals()
+            .last()
+            .unwrap()
+            .proposal_reference()
+            .to_owned()
+            .into()
+    }
+
+    pub async fn pending_proposal_count(&self) -> usize {
+        let guard = self.guard().await;
+        guard.conversation().await.group().pending_proposals().count()
+    }
+
+    pub async fn has_pending_proposals(&self) -> bool {
+        let guard = self.guard().await;
+        guard.conversation().await.group().pending_proposals().next().is_some()
+    }
+
+    pub async fn has_pending_commit(&self) -> bool {
+        let guard = self.guard().await;
+        guard.conversation().await.group().pending_commit().is_some()
     }
 
     async fn member_index(&self, member: &SessionContext) -> usize {
