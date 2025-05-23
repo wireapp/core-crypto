@@ -56,6 +56,7 @@ pub struct Session {
     pub(crate) inner: Arc<RwLock<Option<SessionInner>>>,
     pub(crate) crypto_provider: MlsCryptoProvider,
     pub(crate) transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
+    pub(crate) epoch_observer: Arc<RwLock<Option<Arc<dyn EpochObserver + 'static>>>>,
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -150,6 +151,7 @@ impl Session {
             crypto_provider: mls_backend.clone(),
             inner: Default::default(),
             transport: Arc::new(None.into()),
+            epoch_observer: Arc::new(None.into()),
         };
 
         let cc = CoreCrypto::from(client.clone());
