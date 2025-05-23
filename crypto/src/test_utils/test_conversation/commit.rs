@@ -151,12 +151,19 @@ impl<'a> TestConversation<'a> {
             .unwrap();
         let join_commit = joiner.mls_transport().await.latest_commit().await;
 
+        // if this is a rejoin, make sure that the joiner doesn't receive their join commit again
+        let already_notified = if self.is_member(joiner).await {
+            [self.member_index(joiner).await].into()
+        } else {
+            [].into()
+        };
+
         OperationGuard {
             conversation: self,
             operation: TestOperation::ExternalJoin(joiner),
             message: join_commit,
             _message_type: PhantomData,
-            already_notified: [].into(),
+            already_notified,
         }
     }
 }
