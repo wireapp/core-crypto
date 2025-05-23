@@ -101,12 +101,18 @@ impl<'a, T> OperationGuard<'a, T> {
 impl<'a> OperationGuard<'a, Commit> {
     /// Notify all members except the committer and those already notified by
     /// [Self::notify_member].
+    /// Also, propagate the state to the [TestConversation].
     pub async fn notify_members(mut self) -> TestConversation<'a> {
         let members = self.conversation.members.clone();
         for member in members.iter() {
             self = self.notify_member(member).await;
         }
+        self.propagate_state().await
+    }
 
+    /// Propoagate the state from the commit to the [TestConversation].
+    /// Needed if you want to notify members manually.
+    pub async fn propagate_state(mut self) -> TestConversation<'a> {
         // Do the following for each proposal that is still pending and the latest commit:
         // In case of a remove, an external join or an add operation, update the member list
         // of the test conversation.
@@ -171,7 +177,12 @@ impl<'a> OperationGuard<'a, Proposal> {
         for member in members.iter() {
             self = self.notify_member(member).await;
         }
+        self.propagate_state().await
+    }
 
+    /// Propoagate the state from the proposal to the [TestConversation].
+    /// Needed if you want to notify members manually.
+    pub async fn propagate_state(mut self) -> TestConversation<'a> {
         // Remember the proposal for later so we can update member lists accordingly.
         self.conversation.proposals.push(self.operation);
         self.conversation.actor_index = None;
