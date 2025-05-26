@@ -148,6 +148,10 @@ impl TestContext {
         self.client_ids_inner(QualifiedE2eiClientId::generate, WireQualifiedClientId::generate)
     }
 
+    fn x509_client_ids<const N: usize>(&self) -> [ClientId; N] {
+        std::array::from_fn(|_| QualifiedE2eiClientId::generate().into())
+    }
+
     pub fn client_ids_for_user<const N: usize>(&self, user: &uuid::Uuid) -> [ClientId; N] {
         self.client_ids_inner(
             move || QualifiedE2eiClientId::generate_from_user_id(user),
@@ -251,7 +255,7 @@ impl TestContext {
     }
 
     pub async fn sessions_x509<const N: usize>(&self) -> [SessionContext; N] {
-        let client_ids = self.client_ids::<N>();
+        let client_ids = self.x509_client_ids();
         let test_chain = self.test_chain(&client_ids, &[], None).await;
         self.sessions_x509_inner(client_ids, &test_chain).await
     }
@@ -277,8 +281,8 @@ impl TestContext {
     pub async fn sessions_x509_cross_signed<const N: usize, const M: usize>(
         &self,
     ) -> ([SessionContext; N], [SessionContext; M]) {
-        let client_ids1 = self.client_ids();
-        let client_ids2 = self.client_ids();
+        let client_ids1 = self.x509_client_ids();
+        let client_ids2 = self.x509_client_ids();
         self.sessions_x509_cross_signed_with_client_ids(client_ids1, client_ids2)
             .await
     }
