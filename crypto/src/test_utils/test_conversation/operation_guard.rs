@@ -41,18 +41,23 @@ pub(crate) enum TestOperation<'a> {
 }
 
 impl<'a, T> OperationGuard<'a, T> {
-    pub fn conversation(&self) -> &'a TestConversation {
-        &self.conversation
+    pub(crate) fn new(
+        operation: TestOperation<'a>,
+        message: MlsMessageOut,
+        conversation: TestConversation<'a>,
+        already_notified: impl Into<HashSet<usize>>,
+    ) -> Self {
+        Self {
+            conversation,
+            already_notified: already_notified.into(),
+            operation,
+            message,
+            _message_type: PhantomData,
+        }
     }
 
-    // Call this once you're finished with manual processing and need mutable access
-    // to the [TestConversation] again.
-    //
-    // Note: unlike [Self::notify_members] this does not propagate any state to the
-    // [TestConversation]. If you want that behavior, call that method instead.
-    pub fn finish(mut self) -> TestConversation<'a> {
-        self.conversation.actor_index = None;
-        self.conversation
+    pub fn conversation(&self) -> &'a TestConversation {
+        &self.conversation
     }
 
     pub fn message(&self) -> MlsMessageOut {
@@ -60,41 +65,41 @@ impl<'a, T> OperationGuard<'a, T> {
     }
 
     pub async fn notify_member(mut self, member: &SessionContext) -> Self {
+        self.notify_member_inner(member).await.unwrap();
+        self
+    }
+
+    async fn notify_member_inner(
+        &mut self,
+        member: &SessionContext,
+    ) -> crate::mls::conversation::Result<Option<MlsConversationDecryptMessage>> {
         let member_index = self.conversation().member_index(member).await;
         if self.already_notified.contains(&member_index) {
-            return self;
+            return Ok(None);
         }
-        self.notify_member_inner(member).await.unwrap();
-        self.already_notified.insert(member_index);
-        self
+        let message_bytes = self.message.to_bytes().unwrap();
+        let result = member
+            .transaction
+            .conversation(&self.conversation.id)
+            .await
+            .unwrap()
+            .decrypt_message(&message_bytes)
+            .await;
+        if result.is_ok() {
+            self.already_notified.insert(member_index);
+        }
+        result.map(Some)
     }
 
     pub async fn notify_member_failible(
         mut self,
         member: &SessionContext,
     ) -> (Self, crate::mls::conversation::Result<MlsConversationDecryptMessage>) {
-        let member_index = self.conversation().member_index(member).await;
-        if self.already_notified.contains(&member_index) {
-            println!("Member was already notified!");
-            return (self, Err(crate::mls::conversation::Error::DuplicateMessage));
-        }
         let result = self.notify_member_inner(member).await;
-        self.already_notified.insert(member_index);
-        (self, result)
-    }
-
-    async fn notify_member_inner(
-        &self,
-        member: &SessionContext,
-    ) -> crate::mls::conversation::Result<MlsConversationDecryptMessage> {
-        let message_bytes = self.message.to_bytes().unwrap();
-        member
-            .transaction
-            .conversation(&self.conversation.id)
-            .await
-            .unwrap()
-            .decrypt_message(&message_bytes)
-            .await
+        (
+            self,
+            result.and_then(|option| option.ok_or(crate::mls::conversation::Error::DuplicateMessage)),
+        )
     }
 }
 
@@ -107,12 +112,12 @@ impl<'a> OperationGuard<'a, Commit> {
         for member in members.iter() {
             self = self.notify_member(member).await;
         }
-        self.propagate_state().await
+        self.process_member_changes().await.finish()
     }
 
     /// Propoagate the state from the commit to the [TestConversation].
-    /// Needed if you want to notify members manually.
-    pub async fn propagate_state(mut self) -> TestConversation<'a> {
+    /// Needed if you notify members manually and never call [Self::notify_member].
+    pub async fn process_member_changes(mut self) -> Self {
         // Do the following for each proposal that is still pending and the latest commit:
         // In case of a remove, an external join or an add operation, update the member list
         // of the test conversation.
@@ -125,6 +130,11 @@ impl<'a> OperationGuard<'a, Commit> {
             match operation {
                 TestOperation::Update => {}
                 TestOperation::Remove(member) => {
+                    if !self.conversation().is_member(member).await {
+                        // because we're eagerly pushing proposals into the list of operations to process,
+                        // it's possible that we have duplicate operations.
+                        continue;
+                    }
                     let member_idx = self.conversation().member_index(member).await;
                     self.conversation.members.remove(member_idx);
                 }
@@ -137,6 +147,9 @@ impl<'a> OperationGuard<'a, Commit> {
                 TestOperation::Add(AddGuard {
                     new_members: invited_members,
                 }) => {
+                    if self.conversation().are_members(invited_members.clone()).await {
+                        continue;
+                    }
                     let welcome_message = self
                         .conversation()
                         .actor()
@@ -163,8 +176,16 @@ impl<'a> OperationGuard<'a, Commit> {
                 }
             }
         }
+        self
+    }
+
+    // Call this once you're finished with manual processing and need mutable access
+    // to the [TestConversation] again.
+    //
+    // Note: unlike [Self::notify_members] this does not propagate any state to the
+    // [TestConversation]. If you want that behavior, call that method instead.
+    pub fn finish(mut self) -> TestConversation<'a> {
         self.conversation.actor_index = None;
-        self.conversation.proposals.clear();
         self.conversation
     }
 }
@@ -177,16 +198,20 @@ impl<'a> OperationGuard<'a, Proposal> {
         for member in members.iter() {
             self = self.notify_member(member).await;
         }
-        self.propagate_state().await
+        self.conversation.proposals.clear();
+        self.finish()
     }
 
-    /// Propoagate the state from the proposal to the [TestConversation].
-    /// Needed if you want to notify members manually.
-    pub async fn propagate_state(mut self) -> TestConversation<'a> {
-        // Remember the proposal for later so we can update member lists accordingly.
-        self.conversation.proposals.push(self.operation);
+    // Call this once you're finished with manual processing and need mutable access
+    // to the [TestConversation] again.
+    pub fn finish(mut self) -> TestConversation<'a> {
         self.conversation.actor_index = None;
-
+        // Eagerly push proposals; This is desirable to avoid an extra call if the
+        // welcome message of the commit with an add roposal should be processed.
+        // However, this leads to slightly more complicated code: There may be duplicate
+        // operations if a commit is added after this proposal which does the same operation.
+        // This case is handled in notify_members() of the commit operation guard.
+        self.conversation.proposals.push(self.operation);
         self.conversation
     }
 }
