@@ -1,5 +1,5 @@
 use openmls::prelude::group_info::VerifiableGroupInfo;
-use std::marker::PhantomData;
+use std::collections::HashSet;
 
 use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::mls::credential::CredentialBundle;
@@ -30,13 +30,12 @@ impl<'a> TestConversation<'a> {
         self.guard().await.add_members(key_packages).await.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;
         let actor_index = self.actor_index();
-        OperationGuard {
-            conversation: self,
-            operation: TestOperation::Add(AddGuard { new_members }),
-            message: commit,
-            _message_type: PhantomData,
-            already_notified: [actor_index].into(),
-        }
+        OperationGuard::new(
+            TestOperation::Add(AddGuard { new_members }),
+            commit,
+            self,
+            [actor_index],
+        )
     }
 
     /// Advance the epoch (by updating the creator's key material) and notify all members.
@@ -52,13 +51,7 @@ impl<'a> TestConversation<'a> {
         self.guard().await.update_key_material().await.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;
         let committer_index = self.actor_index();
-        OperationGuard {
-            conversation: self,
-            operation: TestOperation::Update,
-            message: commit,
-            _message_type: PhantomData,
-            already_notified: [committer_index].into(),
-        }
+        OperationGuard::new(TestOperation::Update, commit, self, [committer_index])
     }
 
     /// Create a commit that hasn't been merged by the actor.
@@ -74,13 +67,7 @@ impl<'a> TestConversation<'a> {
             .await
             .unwrap()
             .commit;
-        OperationGuard {
-            conversation: self,
-            operation: TestOperation::Update,
-            message: commit,
-            _message_type: PhantomData,
-            already_notified: [].into(),
-        }
+        OperationGuard::new(TestOperation::Update, commit, self, [])
     }
 
     pub async fn e2ei_rotate(self, credential_bundle: Option<&CredentialBundle>) -> TestConversation<'a> {
@@ -91,13 +78,7 @@ impl<'a> TestConversation<'a> {
         self.guard().await.e2ei_rotate(credential_bundle).await.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;
         let committer_index = self.actor_index();
-        OperationGuard {
-            conversation: self,
-            operation: TestOperation::Update,
-            message: commit,
-            _message_type: PhantomData,
-            already_notified: [committer_index].into(),
-        }
+        OperationGuard::new(TestOperation::Update, commit, self, [committer_index])
     }
 
     pub async fn commit_pending_proposals(self) -> TestConversation<'a> {
@@ -108,14 +89,13 @@ impl<'a> TestConversation<'a> {
         self.guard().await.commit_pending_proposals().await.unwrap();
         let commit = self.transport().await.latest_commit().await;
         let actor_index = self.actor_index();
-        OperationGuard {
-            conversation: self,
+        OperationGuard::new(
             // Comitting pending proposals is equivalent to an update
-            operation: TestOperation::Update,
-            message: commit,
-            _message_type: PhantomData,
-            already_notified: [actor_index].into(),
-        }
+            TestOperation::Update,
+            commit,
+            self,
+            [actor_index],
+        )
     }
 
     /// See [Self::remove_guarded].
@@ -142,13 +122,7 @@ impl<'a> TestConversation<'a> {
         let commit = self.transport().await.latest_commit().await;
         let actor_index = self.actor_index();
 
-        OperationGuard {
-            conversation: self,
-            operation: TestOperation::Remove(member),
-            message: commit,
-            _message_type: PhantomData,
-            already_notified: [actor_index].into(),
-        }
+        OperationGuard::new(TestOperation::Remove(member), commit, self, [actor_index])
     }
     /// See [Self::external_join_guarded]
     pub async fn external_join(self, joiner: &'a SessionContext) -> TestConversation<'a> {
@@ -194,19 +168,13 @@ impl<'a> TestConversation<'a> {
         let join_commit = joiner.mls_transport().await.latest_commit().await;
 
         // if this is a rejoin, make sure that the joiner doesn't receive their join commit again
-        let already_notified = if self.is_member(joiner).await {
+        let already_notified: HashSet<_> = if self.is_member(joiner).await {
             [self.member_index(joiner).await].into()
         } else {
             [].into()
         };
 
-        OperationGuard {
-            conversation: self,
-            operation: TestOperation::ExternalJoin(joiner),
-            message: join_commit,
-            _message_type: PhantomData,
-            already_notified,
-        }
+        OperationGuard::new(TestOperation::ExternalJoin(joiner), join_commit, self, already_notified)
     }
 
     pub async fn unmerged_external_join(
@@ -246,20 +214,19 @@ impl<'a> TestConversation<'a> {
             .unwrap();
 
         // if this is a rejoin, make sure that the joiner doesn't receive their join commit again
-        let already_notified = if self.is_member(joiner).await {
+        let already_notified: HashSet<_> = if self.is_member(joiner).await {
             [self.member_index(joiner).await].into()
         } else {
             [].into()
         };
 
         (
-            OperationGuard {
-                conversation: self,
-                operation: TestOperation::ExternalJoin(joiner),
-                message: join_commit.commit,
-                _message_type: PhantomData,
+            OperationGuard::new(
+                TestOperation::ExternalJoin(joiner),
+                join_commit.commit,
+                self,
                 already_notified,
-            },
+            ),
             pending_conversation,
         )
     }

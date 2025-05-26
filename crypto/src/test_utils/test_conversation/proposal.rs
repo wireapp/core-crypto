@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use crate::mls::conversation::Conversation;
 
 use super::super::SessionContext;
@@ -21,15 +19,14 @@ impl<'a> TestConversation<'a> {
             .unwrap()
             .proposal;
         let proposer_index = self.member_index(proposer).await;
-        OperationGuard {
-            conversation: self,
-            operation: TestOperation::Add(AddGuard {
+        OperationGuard::new(
+            TestOperation::Add(AddGuard {
                 new_members: vec![new_member],
             }),
-            message: proposal,
-            _message_type: PhantomData,
-            already_notified: [proposer_index].into(),
-        }
+            proposal,
+            self,
+            [proposer_index],
+        )
     }
 
     pub async fn update_proposal(self) -> TestConversation<'a> {
@@ -45,13 +42,7 @@ impl<'a> TestConversation<'a> {
             .unwrap()
             .proposal;
         let proposer_index = self.actor_index();
-        OperationGuard {
-            conversation: self,
-            already_notified: [proposer_index].into(),
-            operation: TestOperation::Update,
-            message: proposal,
-            _message_type: PhantomData,
-        }
+        OperationGuard::new(TestOperation::Update, proposal, self, [proposer_index])
     }
 
     pub async fn remove_proposal(self, member: &'a SessionContext) -> TestConversation<'a> {
@@ -68,13 +59,7 @@ impl<'a> TestConversation<'a> {
             .unwrap()
             .proposal;
         let proposer_index = self.actor_index();
-        OperationGuard {
-            conversation: self,
-            operation: TestOperation::Remove(member),
-            message: proposal,
-            _message_type: PhantomData,
-            already_notified: [proposer_index].into(),
-        }
+        OperationGuard::new(TestOperation::Remove(member), proposal, self, [proposer_index])
     }
 
     pub async fn external_join_proposal_guarded(self, joiner: &'a SessionContext) -> OperationGuard<'a, Proposal> {
@@ -89,14 +74,13 @@ impl<'a> TestConversation<'a> {
             .await
             .unwrap();
 
-        OperationGuard {
-            conversation: self,
-            operation: TestOperation::Add(AddGuard {
+        OperationGuard::new(
+            TestOperation::Add(AddGuard {
                 new_members: vec![joiner],
             }),
-            message: external_proposal,
-            _message_type: PhantomData,
-            already_notified: [].into(),
-        }
+            external_proposal,
+            self,
+            [],
+        )
     }
 }
