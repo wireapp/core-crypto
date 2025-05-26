@@ -1,3 +1,5 @@
+use openmls::prelude::ExternalProposal;
+
 use crate::mls::conversation::Conversation;
 
 use super::super::SessionContext;
@@ -61,6 +63,9 @@ impl<'a> TestConversation<'a> {
         let proposer_index = self.actor_index();
         OperationGuard::new(TestOperation::Remove(member), proposal, self, [proposer_index])
     }
+    pub async fn external_join_proposal(self, joiner: &'a SessionContext) -> TestConversation<'a> {
+        self.external_join_proposal_guarded(joiner).await.notify_members().await
+    }
 
     pub async fn external_join_proposal_guarded(self, joiner: &'a SessionContext) -> OperationGuard<'a, Proposal> {
         let external_proposal = joiner
@@ -82,5 +87,45 @@ impl<'a> TestConversation<'a> {
             self,
             [],
         )
+    }
+
+    pub async fn external_remove_proposal(
+        self,
+        external_actor: &'a SessionContext,
+        member: &'a SessionContext,
+    ) -> TestConversation<'a> {
+        self.external_remove_proposal_guarded(external_actor, member)
+            .await
+            .notify_members()
+            .await
+    }
+
+    pub async fn external_remove_proposal_guarded(
+        self,
+        external_actor: &'a SessionContext,
+        to_remove: &'a SessionContext,
+    ) -> OperationGuard<'a, Proposal> {
+        self.external_remove_proposal_guarded_with_sender_index(external_actor, 0, to_remove)
+            .await
+    }
+
+    pub async fn external_remove_proposal_guarded_with_sender_index(
+        self,
+        external_actor: &'a SessionContext,
+        sender_index: u32,
+        to_remove: &'a SessionContext,
+    ) -> OperationGuard<'a, Proposal> {
+        let to_remove_index = self.actor().index_of(self.id(), to_remove.get_client_id().await).await;
+        let sender_index = openmls::prelude::SenderExtensionIndex::new(sender_index);
+
+        let (sc, ct) = (self.case.signature_scheme(), self.case.credential_type);
+        let cb = external_actor.find_most_recent_credential_bundle(sc, ct).await.unwrap();
+
+        let group_id = openmls::group::GroupId::from_slice(self.id());
+        let epoch = self.guard().await.epoch().await;
+        let proposal =
+            ExternalProposal::new_remove(to_remove_index, group_id, epoch.into(), &cb.signature_key, sender_index)
+                .unwrap();
+        OperationGuard::new(TestOperation::Remove(to_remove), proposal, self, [])
     }
 }

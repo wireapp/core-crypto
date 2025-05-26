@@ -330,6 +330,26 @@ impl TestContext {
             .await
     }
 
+    /// Create a test conversation.
+    ///
+    /// The first member is required, and is the conversation's creator.
+    pub async fn create_conversation_with_external_sender<'a>(
+        &'a mut self,
+        external_sender: &SessionContext,
+        members: impl IntoIterator<Item = &'a SessionContext>,
+    ) -> TestConversation<'a> {
+        let mut members = members.into_iter().peekable();
+        let creator = members.peek().unwrap();
+        let signature_key = external_sender.client_signature_key(self).await.as_slice().to_vec();
+        creator
+            .transaction
+            .set_raw_external_senders(&mut self.cfg, vec![signature_key])
+            .await
+            .unwrap();
+        self.create_conversation_with_credential_type(self.credential_type, members)
+            .await
+    }
+
     /// Create a test conversation with the specified credential type.
     ///
     /// The first member is required, and is the conversation's creator.
