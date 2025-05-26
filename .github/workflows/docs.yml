@@ -37,7 +37,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4.5.0
       with:
-        name: rustdoc
+        name: rustdocs
         path: target/doc
         retention-days: 1
         overwrite: true
@@ -117,9 +117,7 @@ jobs:
   deploy:
     name: deploy
     runs-on: ubuntu-latest
-    if: |
-      github.repository == 'wireapp/core-crypto' &&
-      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+    if: github.repository == 'wireapp/core-crypto' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release'))
     needs:
       - rustdoc
       - tsdoc
@@ -131,7 +129,17 @@ jobs:
     - name: checkout repository
       uses: actions/checkout@v4
 
-    - name: download Rust, TypeScript and Kotlin docs
+    # Note that we have to download Rust docs first so it can be overwritten by
+    # subsequent artifacts (in particular, Typescript). Once we isolate
+    # documentation for each language, we can download all doc artifacts at once.
+    - name: download Rust docs
+      uses: actions/download-artifact@v4.1.8
+      with:
+        pattern: "rustdocs"
+        path: "./target/doc/${{ env.GIT_TAG }}"
+        merge-multiple: true
+
+    - name: download TypeScript and Kotlin docs
       uses: actions/download-artifact@v4.1.8
       with:
         pattern: "*doc"
