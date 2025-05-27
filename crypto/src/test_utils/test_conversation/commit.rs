@@ -1,6 +1,7 @@
 use openmls::prelude::group_info::VerifiableGroupInfo;
 use std::collections::HashSet;
 
+use crate::mls::conversation::ConversationWithMls as _;
 use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::mls::credential::CredentialBundle;
 use crate::prelude::MlsCredentialType;
@@ -83,12 +84,8 @@ impl<'a> TestConversation<'a> {
     /// Create a commit that hasn't been merged by the actor.
     /// On [OperationGuard::notify_members], the actor will receive this commit.
     pub async fn unmerged_commit(self) -> OperationGuard<'a, Commit> {
-        let commit = self
-            .actor()
-            .transaction
-            .conversation(self.id())
-            .await
-            .unwrap()
+        let mut conversation_guard = self.guard().await;
+        let commit = conversation_guard
             .update_key_material_inner(None, None)
             .await
             .unwrap()
@@ -98,6 +95,23 @@ impl<'a> TestConversation<'a> {
 
     pub async fn e2ei_rotate(self, credential_bundle: Option<&CredentialBundle>) -> TestConversation<'a> {
         self.e2ei_rotate_guarded(credential_bundle).await.notify_members().await
+    }
+
+    /// Create a rotate commit that hasn't been merged by the actor.
+    /// On [OperationGuard::notify_members], the actor will receive this commit.
+    pub async fn unmerged_e2ei_rotate(self, credential_bundle: &CredentialBundle) -> OperationGuard<'a, Commit> {
+        let mut conversation_guard = self.guard().await;
+        let conversation = conversation_guard.conversation().await;
+        let mut leaf_node = conversation.group.own_leaf().unwrap().clone();
+        drop(conversation);
+        leaf_node.set_credential_with_key(credential_bundle.to_mls_credential_with_key());
+        let commit = conversation_guard
+            .update_key_material_inner(Some(credential_bundle), Some(leaf_node))
+            .await
+            .unwrap()
+            .commit;
+
+        OperationGuard::new(TestOperation::Update, commit, self, [])
     }
 
     pub async fn e2ei_rotate_and_verify_sender(
