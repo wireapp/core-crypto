@@ -92,7 +92,7 @@ pub struct SessionContext {
     pub transaction: TransactionContext,
     pub session: Session,
     mls_transport: Arc<RwLock<Arc<dyn MlsTransportTestExt + 'static>>>,
-    pub x509_test_chain: std::sync::Arc<Option<X509TestChain>>,
+    x509_test_chain: std::sync::Arc<Option<X509TestChain>>,
     // We need to store the `TempDir` struct for the duration of the test session,
     // because its drop implementation takes care of the directory deletion.
     #[cfg(not(target_family = "wasm"))]
