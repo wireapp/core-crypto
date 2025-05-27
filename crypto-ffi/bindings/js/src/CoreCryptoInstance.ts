@@ -64,10 +64,6 @@ export interface CoreCryptoDeferredParams {
      * This **must** be exactly 32 bytes
      */
     entropySeed?: Uint8Array;
-    /**
-     * .wasm file path, this will be useful in case your bundling system likes to relocate files (i.e. what webpack does)
-     */
-    wasmFilePath?: string;
 }
 
 /**
@@ -217,7 +213,7 @@ export class CoreCrypto {
      * // Do the rest with `cc`
      * ```
      *
-     * ## Custom Entropy seed init & wasm file location
+     * ## Custom Entropy seed init
      * ```ts
      * // FYI, this is the IETF test vector #1
      * const entropySeed = Uint32Array.from([
@@ -227,14 +223,11 @@ export class CoreCrypto {
      *   0xf4b8436a, 0x1ca11815, 0x69b687c3, 0x8665eeb2,
      * ]);
      *
-     * const wasmFilePath = "/long/complicated/path/on/webserver/whatever.wasm";
-     *
      * const cc = await CoreCrypto.init({
      *   databaseName: "test",
      *   key: "test",
      *   clientId: "test",
      *   entropySeed,
-     *   wasmFilePath,
      * });
      * ````
      */
@@ -242,8 +235,6 @@ export class CoreCrypto {
         databaseName,
         key,
         clientId,
-        // @ts-expect-error TS6133: 'wasmFilePath' is declared but its value is never read.
-        wasmFilePath, // eslint-disable-line @typescript-eslint/no-unused-vars
         ciphersuites,
         entropySeed,
         nbKeyPackage,
@@ -275,8 +266,6 @@ export class CoreCrypto {
         databaseName,
         key,
         entropySeed,
-        // @ts-expect-error TS6133: 'wasmFilePath' is declared but its value is never read.
-        wasmFilePath, // eslint-disable-line @typescript-eslint/no-unused-vars
     }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
         const cc = await CoreCryptoError.asyncMapErr(
             CoreCryptoFfi.deferred_init(databaseName, key, entropySeed)
