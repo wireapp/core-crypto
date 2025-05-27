@@ -69,6 +69,15 @@ impl<'a, T> OperationGuard<'a, T> {
         self
     }
 
+    pub async fn notify_member_and_verify_sender(mut self, member: &SessionContext) -> Self {
+        let result = self.notify_member_inner(member).await.unwrap();
+        let sender = self.conversation().actor();
+        if let Some(ref decrypted) = result {
+            sender.verify_sender_identity(self.conversation().case, decrypted).await;
+        }
+        self
+    }
+
     async fn notify_member_inner(
         &mut self,
         member: &SessionContext,
@@ -111,6 +120,14 @@ impl<'a> OperationGuard<'a, Commit> {
         let members = self.conversation.members.clone();
         for member in members.iter() {
             self = self.notify_member(member).await;
+        }
+        self.process_member_changes().await.finish()
+    }
+
+    pub async fn notify_members_and_verify_sender(mut self) -> TestConversation<'a> {
+        let members = self.conversation.members.clone();
+        for member in members.iter() {
+            self = self.notify_member_and_verify_sender(member).await;
         }
         self.process_member_changes().await.finish()
     }
