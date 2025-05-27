@@ -9,7 +9,6 @@ use crate::{
 };
 use itertools::Itertools as _;
 use mls_crypto_provider::PkiKeypair;
-use openmls::prelude::SignatureScheme;
 #[cfg(not(target_family = "wasm"))]
 use openmls_traits::OpenMlsCryptoProvider as _;
 use serde_json::json;
@@ -92,35 +91,6 @@ pub(crate) fn init_activation_or_rotation(wrapper: E2eiInitWrapper) -> InitFnRet
         .map_err(RecursiveError::transaction("creating new enrollment"))
         .map_err(Into::into)
     })
-}
-
-pub(crate) async fn failsafe_ctx(
-    ctxs: &mut [&mut SessionContext],
-    sc: SignatureScheme,
-) -> std::sync::Arc<Option<X509TestChain>> {
-    let mut found_test_chain = None;
-    for ctx in ctxs.iter() {
-        if ctx.x509_test_chain.is_some() {
-            found_test_chain.replace(ctx.x509_test_chain.clone());
-            break;
-        }
-    }
-
-    let found_test_chain = found_test_chain.unwrap_or_else(|| Some(X509TestChain::init_empty(sc)).into());
-
-    // Propagate the chain
-    for ctx in ctxs.iter_mut() {
-        if ctx.x509_test_chain.is_none() {
-            ctx.replace_x509_chain(found_test_chain.clone());
-        }
-    }
-
-    let x509_test_chain = found_test_chain.as_ref().as_ref().unwrap();
-
-    for ctx in ctxs {
-        let _ = x509_test_chain.register_with_central(&ctx.transaction).await;
-    }
-    found_test_chain
 }
 
 pub(crate) type RestoreFnReturn<'a> = std::pin::Pin<Box<dyn std::future::Future<Output = E2eiEnrollment> + 'a>>;
