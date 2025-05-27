@@ -159,19 +159,6 @@ impl TestContext {
         )
     }
 
-    fn client_ids_inner<const N: usize>(
-        &self,
-        x509_id_factory: impl Fn() -> QualifiedE2eiClientId,
-        basic_id_factory: impl Fn() -> WireQualifiedClientId,
-    ) -> [ClientId; N] {
-        let generator: &dyn Fn() -> ClientId = if self.is_x509() {
-            &|| x509_id_factory().into()
-        } else {
-            &|| basic_id_factory().into()
-        };
-        std::array::from_fn(|_idx| generator())
-    }
-
     async fn test_chain(
         &self,
         client_ids: &[ClientId],
@@ -225,7 +212,7 @@ impl TestContext {
         client_ids: [ClientId; N],
     ) -> [SessionContext; N] {
         let test_chain = self.test_chain(&client_ids, &[], None).await;
-        self.sessions_x509_inner(client_ids, &test_chain).await
+        self.sessions_with_test_chain_inner(client_ids, &test_chain).await
     }
 
     pub async fn sessions_x509_with_client_ids_and_revocation<const N: usize>(
@@ -234,38 +221,36 @@ impl TestContext {
         revoked_display_names: &[String],
     ) -> [SessionContext; N] {
         let test_chain = self.test_chain(&client_ids, revoked_display_names, None).await;
-        self.sessions_x509_inner(client_ids, &test_chain).await
+        self.sessions_with_test_chain_inner(client_ids, &test_chain).await
     }
 
     pub async fn sessions_basic<const N: usize>(&self) -> [SessionContext; N] {
         let client_ids = self.client_ids::<N>();
-        self.sessions_basic_inner(client_ids).await
-    }
-
-    async fn sessions_basic_inner<const N: usize>(&self, client_ids: [ClientId; N]) -> [SessionContext; N] {
-        let mut sessions = Vec::with_capacity(N);
-        for client_id in client_ids {
-            sessions.push(
-                SessionContext::new_with_identifier(self, ClientIdentifier::Basic(client_id), None)
-                    .await
-                    .unwrap(),
-            );
-        }
-        sessions.try_into().expect("Vector should be of length N.")
+        let test_chain = X509TestChain::init_empty(self.signature_scheme());
+        return self.sessions_with_test_chain_inner(client_ids, &test_chain).await;
     }
 
     pub async fn sessions_x509<const N: usize>(&self) -> [SessionContext; N] {
         let client_ids = self.x509_client_ids();
         let test_chain = self.test_chain(&client_ids, &[], None).await;
-        self.sessions_x509_inner(client_ids, &test_chain).await
+        self.sessions_with_test_chain_inner(client_ids, &test_chain).await
     }
 
-    async fn sessions_x509_inner<const N: usize>(
+    async fn sessions_with_test_chain_inner<const N: usize>(
         &self,
         client_ids: [ClientId; N],
         chain: &X509TestChain,
     ) -> [SessionContext; N] {
-        let identifiers = self.x509_identifiers(client_ids, chain).await;
+        let identifiers = if self.is_x509() {
+            self.x509_identifiers(client_ids, chain).await
+        } else {
+            client_ids
+                .iter()
+                .map(|id| ClientIdentifier::Basic(id.clone()))
+                .collect::<Vec<_>>()
+                .try_into()
+                .expect("Vector should be of length N")
+        };
         let mut sessions = Vec::with_capacity(N);
         for client_id in identifiers {
             sessions.push(
@@ -313,9 +298,9 @@ impl TestContext {
             };
             let mut chain2 = self.test_chain(&client_ids2, revoked_display_names, Some(params)).await;
             chain1.cross_sign(&mut chain2);
-            self.sessions_x509_inner(client_ids2, &chain2).await
+            self.sessions_with_test_chain_inner(client_ids2, &chain2).await
         };
-        let sessions1 = self.sessions_x509_inner(client_ids1, &chain1).await;
+        let sessions1 = self.sessions_with_test_chain_inner(client_ids1, &chain1).await;
         (sessions1, sessions2)
     }
 
