@@ -100,6 +100,16 @@ impl<'a> TestConversation<'a> {
         self.e2ei_rotate_guarded(credential_bundle).await.notify_members().await
     }
 
+    pub async fn e2ei_rotate_and_verify_sender(
+        self,
+        credential_bundle: Option<&CredentialBundle>,
+    ) -> TestConversation<'a> {
+        self.e2ei_rotate_guarded(credential_bundle)
+            .await
+            .notify_members_and_verify_sender()
+            .await
+    }
+
     pub async fn e2ei_rotate_guarded(self, credential_bundle: Option<&CredentialBundle>) -> OperationGuard<'a, Commit> {
         self.guard().await.e2ei_rotate(credential_bundle).await.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;
