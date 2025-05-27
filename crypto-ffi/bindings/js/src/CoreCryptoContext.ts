@@ -1049,22 +1049,4 @@ export class CoreCryptoContext {
             this.#ctx.get_user_identities(conversationId, userIds)
         );
     }
-
-    /**
-     * Gets the e2ei conversation state from a `GroupInfo`. Useful to check if the group has e2ei
-     * turned on or not before joining it.
-     *
-     * @param groupInfo - a TLS encoded GroupInfo fetched from the Delivery Service
-     * @param credentialType - kind of Credential to check usage of. Defaults to X509 for now as no other value will give any result.
-     * @returns see {@link E2eiConversationState}
-     */
-    async getCredentialInUse(
-        groupInfo: Uint8Array,
-        credentialType: CredentialType = CredentialType.X509
-    ): Promise<E2eiConversationState> {
-        const state = await CoreCryptoError.asyncMapErr(
-            this.#ctx.get_credential_in_use(groupInfo, credentialType)
-        );
-        return normalizeEnum(E2eiConversationState, state);
-    }
 }

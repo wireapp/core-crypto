@@ -338,18 +338,6 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
     }
 
     /**
-     * Gets the e2ei conversation state from a `GroupInfo`. Useful to check if the group has e2ei
-     * turned on or not before joining it.
-     *
-     * @param groupInfo a TLS encoded GroupInfo fetched from the Delivery Service
-     * @param credentialType kind of Credential to check usage of. Defaults to X509 for now as no
-     *   other value will give any result.
-     */
-    suspend fun getCredentialInUse(groupInfo: GroupInfo, credentialType: CredentialType = CredentialType.X509): E2eiConversationState {
-        return wrapException { cc.getCredentialInUse(groupInfo.lower(), credentialType.lower()).lift() }
-    }
-
-    /**
      * Creates an enrollment instance with private key material you can use in order to fetch a new
      * x509 certificate from the acme server.
      *

@@ -1,14 +1,13 @@
 use crate::{
-    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CredentialType,
-    CrlRegistration, E2eiConversationState, E2eiDumpedPkiEnv, E2eiEnrollment, NewCrlDistributionPoints, UserIdentities,
-    WireIdentity, conversation_id_vec,
+    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CrlRegistration,
+    E2eiConversationState, E2eiDumpedPkiEnv, E2eiEnrollment, NewCrlDistributionPoints, UserIdentities, WireIdentity,
+    conversation_id_vec,
 };
+use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::transaction_context::Error as TransactionError;
-use core_crypto::{RecursiveError, mls::conversation::Conversation as _, prelude::VerifiableGroupInfo};
 use std::collections::HashMap;
 #[cfg(not(target_family = "wasm"))]
 use std::sync::Arc;
-use tls_codec::Deserialize as _;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -247,25 +246,6 @@ impl CoreCryptoContext {
         #[cfg(target_family = "wasm")]
         let user_ids = serde_wasm_bindgen::to_value(&user_ids)?;
         Ok(user_ids)
-    }
-
-    /// See [core_crypto::prelude::Session::get_credential_in_use]
-    pub async fn get_credential_in_use(
-        &self,
-        group_info: Vec<u8>,
-        credential_type: CredentialType,
-    ) -> CoreCryptoResult<E2eiConversationState> {
-        let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
-            .map_err(core_crypto::mls::conversation::Error::tls_deserialize(
-                "verifiable group info",
-            ))
-            .map_err(RecursiveError::mls_conversation("getting credential in use"))?;
-        self.inner
-            .get_credential_in_use(group_info, credential_type.into())
-            .await
-            .map(Into::into)
-            .map_err(Into::<TransactionError>::into)
-            .map_err(Into::into)
     }
 
     /// See [core_crypto::prelude::Session::e2ei_dump_pki_env]

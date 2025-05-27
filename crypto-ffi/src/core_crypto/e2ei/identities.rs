@@ -1,14 +1,10 @@
 use std::collections::HashMap;
 
-use core_crypto::{RecursiveError, mls::conversation::Conversation as _, prelude::VerifiableGroupInfo};
-use tls_codec::Deserialize as _;
+use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    ClientId, ConversationId, CoreCrypto, CoreCryptoResult, CredentialType, E2eiConversationState, WireIdentity,
-    conversation_id_vec,
-};
+use crate::{ClientId, ConversationId, CoreCrypto, CoreCryptoResult, WireIdentity, conversation_id_vec};
 
 #[cfg(not(target_family = "wasm"))]
 type DeviceIdentities = Vec<WireIdentity>;
@@ -74,24 +70,5 @@ impl CoreCrypto {
         #[cfg(target_family = "wasm")]
         let identities = serde_wasm_bindgen::to_value(&identities).expect("user identities can always be serialized");
         Ok(identities)
-    }
-
-    /// See [core_crypto::prelude::Session::get_credential_in_use]
-    pub async fn get_credential_in_use(
-        &self,
-        group_info: Vec<u8>,
-        credential_type: CredentialType,
-    ) -> CoreCryptoResult<E2eiConversationState> {
-        let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
-            .map_err(core_crypto::mls::conversation::Error::tls_deserialize(
-                "verifiable group info",
-            ))
-            .map_err(RecursiveError::mls_conversation("deserializing veriable group info"))?;
-        self.inner
-            .get_credential_in_use(group_info, credential_type.into())
-            .await
-            .map(Into::into)
-            .map_err(RecursiveError::mls_client("getting credential in use"))
-            .map_err(Into::into)
     }
 }
