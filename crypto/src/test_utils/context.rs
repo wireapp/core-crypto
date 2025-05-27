@@ -1,4 +1,5 @@
-use super::Result;
+use super::test_conversation::operation_guard::{Commit, OperationGuard};
+use super::{Result, TestConversation};
 use crate::CoreCrypto;
 use crate::group_store::GroupStore;
 use crate::mls::conversation::pending_conversation::PendingConversation;
@@ -37,8 +38,8 @@ use x509_cert::der::Encode;
 #[allow(clippy::redundant_static_lifetimes)]
 pub const TEAM: &'static str = "world";
 
-pub struct RotateAllResult {
-    pub(crate) conversation_ids_and_commits: Vec<(ConversationId, MlsCommitBundle)>,
+pub struct RotateAllResult<'a> {
+    pub(crate) commits: Vec<OperationGuard<'a, Commit>>,
     pub(crate) new_key_packages: Vec<KeyPackage>,
 }
 
@@ -545,37 +546,17 @@ impl SessionContext {
             .unwrap()
     }
 
-    pub(crate) async fn create_key_packages_and_update_credential_in_all_conversations(
+    pub(crate) async fn create_key_packages_and_update_credential_in_all_conversations<'a>(
         &self,
+        all_conversations: Vec<TestConversation<'a>>,
         cb: &CredentialBundle,
         cipher_suite: MlsCiphersuite,
         key_package_count: usize,
-    ) -> Result<RotateAllResult> {
-        let keystore = self
-            .transaction
-            .keystore()
-            .await
-            .map_err(RecursiveError::transaction("getting keystore"))?;
-        let all_conversations = self
-            .transaction
-            .mls_groups()
-            .await
-            .map_err(RecursiveError::transaction("getting mls groups"))?
-            .get_fetch_all(&keystore)
-            .await
-            .map_err(RecursiveError::root("getting all conversations"))?;
-        let mut conversation_ids_and_commits = Vec::with_capacity(all_conversations.len());
+    ) -> Result<RotateAllResult<'a>> {
+        let mut commits = Vec::with_capacity(all_conversations.len());
         for conv in all_conversations {
-            let id = conv.read().await.id().clone();
-            self.transaction
-                .conversation(&id)
-                .await
-                .map_err(RecursiveError::transaction("getting conversation by id"))?
-                .e2ei_rotate(None)
-                .await
-                .map_err(RecursiveError::mls_conversation("e2ei rotating"))?;
-            let commit = self.mls_transport().await.latest_commit_bundle().await;
-            conversation_ids_and_commits.push((id, commit));
+            let commit_guard = conv.acting_as(self).await.e2ei_rotate_guarded(None).await;
+            commits.push(commit_guard);
         }
         let new_key_packages = self
             .session()
@@ -584,7 +565,7 @@ impl SessionContext {
             .await
             .map_err(RecursiveError::mls_client("generating new key packages"))?;
         Ok(RotateAllResult {
-            conversation_ids_and_commits,
+            commits,
             new_key_packages,
         })
     }
