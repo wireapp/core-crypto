@@ -1,5 +1,5 @@
 mod commit;
-mod operation_guard;
+pub(crate) mod operation_guard;
 mod proposal;
 
 use std::sync::Arc;
