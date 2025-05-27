@@ -3,6 +3,7 @@ use std::collections::HashSet;
 
 use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::mls::credential::CredentialBundle;
+use crate::prelude::MlsCredentialType;
 
 use super::super::SessionContext;
 use super::TestConversation;
@@ -23,10 +24,35 @@ impl<'a> TestConversation<'a> {
         self,
         sessions: impl IntoIterator<Item = &'a SessionContext>,
     ) -> OperationGuard<'a, Commit> {
+        let credential_type = self.case.credential_type;
+        self.invite_with_credential_type_guarded(credential_type, sessions)
+            .await
+    }
+
+    pub async fn invite_with_credential_type(
+        self,
+        credential_type: MlsCredentialType,
+        sessions: impl IntoIterator<Item = &'a SessionContext>,
+    ) -> TestConversation<'a> {
+        self.invite_with_credential_type_guarded(credential_type, sessions)
+            .await
+            .notify_members()
+            .await
+    }
+
+    pub async fn invite_with_credential_type_guarded(
+        self,
+        credential_type: MlsCredentialType,
+        sessions: impl IntoIterator<Item = &'a SessionContext>,
+    ) -> OperationGuard<'a, Commit> {
         let new_members = sessions.into_iter().collect::<Vec<_>>();
 
-        let key_packages =
-            futures_util::future::join_all(new_members.iter().map(|cc| cc.rand_key_package(self.case))).await;
+        let key_packages = futures_util::future::join_all(
+            new_members
+                .iter()
+                .map(|cc| cc.rand_key_package_of_type(self.case, credential_type)),
+        )
+        .await;
         self.guard().await.add_members(key_packages).await.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;
         let actor_index = self.actor_index();
