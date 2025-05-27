@@ -107,7 +107,6 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiRegisterIntermediateCA/#ko
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiRotate/#com.wire.crypto.MLSGroupId/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/e2ei-rotate.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/encryptMessage/#com.wire.crypto.MLSGroupId#com.wire.crypto.PlaintextMessage/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/encrypt-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/generateKeyPackages/#kotlin.UInt#com.wire.crypto.Ciphersuite#com.wire.crypto.CredentialType/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/generate-key-packages.html
-$dokka.location:com.wire.crypto/CoreCryptoContext/getCredentialInUse/#com.wire.crypto.GroupInfo#com.wire.crypto.CredentialType/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/get-credential-in-use.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/getData/#/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/get-data.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/getDeviceIdentities/#com.wire.crypto.MLSGroupId#kotlin.collections.List[com.wire.crypto.ClientId]/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/get-device-identities.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/getExternalSender/#com.wire.crypto.MLSGroupId/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/get-external-sender.html
