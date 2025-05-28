@@ -144,19 +144,16 @@ impl TestContext {
         db_dir_string
     }
 
-    pub fn client_ids<const N: usize>(&self) -> [ClientId; N] {
-        self.client_ids_inner(QualifiedE2eiClientId::generate, WireQualifiedClientId::generate)
-    }
-
-    fn x509_client_ids<const N: usize>(&self) -> [ClientId; N] {
+    pub fn x509_client_ids<const N: usize>(&self) -> [ClientId; N] {
         std::array::from_fn(|_| QualifiedE2eiClientId::generate().into())
     }
 
-    pub fn client_ids_for_user<const N: usize>(&self, user: &uuid::Uuid) -> [ClientId; N] {
-        self.client_ids_inner(
-            move || QualifiedE2eiClientId::generate_from_user_id(user),
-            move || WireQualifiedClientId::generate_from_user_id(user),
-        )
+    pub fn basic_client_ids<const N: usize>(&self) -> [ClientId; N] {
+        std::array::from_fn(|_| WireQualifiedClientId::generate().into())
+    }
+
+    pub fn x509_client_ids_for_user<const N: usize>(&self, user: &uuid::Uuid) -> [ClientId; N] {
+        std::array::from_fn(|_| QualifiedE2eiClientId::generate_from_user_id(user).into())
     }
 
     async fn test_chain(
@@ -207,12 +204,21 @@ impl TestContext {
         self.sessions_x509().await
     }
 
+    pub async fn sessions_basic<const N: usize>(&self) -> [SessionContext; N] {
+        let client_ids = self.basic_client_ids::<N>();
+        let test_chain = X509TestChain::init_empty(self.signature_scheme());
+        return self
+            .sessions_with_test_chain_inner(client_ids, &test_chain, MlsCredentialType::Basic)
+            .await;
+    }
+
     pub async fn sessions_x509_with_client_ids<const N: usize>(
         &self,
         client_ids: [ClientId; N],
     ) -> [SessionContext; N] {
         let test_chain = self.test_chain(&client_ids, &[], None).await;
-        self.sessions_with_test_chain_inner(client_ids, &test_chain).await
+        self.sessions_with_test_chain_inner(client_ids, &test_chain, MlsCredentialType::X509)
+            .await
     }
 
     pub async fn sessions_x509_with_client_ids_and_revocation<const N: usize>(
@@ -221,27 +227,22 @@ impl TestContext {
         revoked_display_names: &[String],
     ) -> [SessionContext; N] {
         let test_chain = self.test_chain(&client_ids, revoked_display_names, None).await;
-        self.sessions_with_test_chain_inner(client_ids, &test_chain).await
-    }
-
-    pub async fn sessions_basic<const N: usize>(&self) -> [SessionContext; N] {
-        let client_ids = self.client_ids::<N>();
-        let test_chain = X509TestChain::init_empty(self.signature_scheme());
-        return self.sessions_with_test_chain_inner(client_ids, &test_chain).await;
+        self.sessions_with_test_chain_inner(client_ids, &test_chain, MlsCredentialType::X509)
+            .await
     }
 
     pub async fn sessions_x509<const N: usize>(&self) -> [SessionContext; N] {
         let client_ids = self.x509_client_ids();
-        let test_chain = self.test_chain(&client_ids, &[], None).await;
-        self.sessions_with_test_chain_inner(client_ids, &test_chain).await
+        self.sessions_x509_with_client_ids(client_ids).await
     }
 
     async fn sessions_with_test_chain_inner<const N: usize>(
         &self,
         client_ids: [ClientId; N],
         chain: &X509TestChain,
+        session_type: MlsCredentialType,
     ) -> [SessionContext; N] {
-        let identifiers = if self.is_x509() {
+        let identifiers = if session_type == MlsCredentialType::X509 {
             self.x509_identifiers(client_ids, chain).await
         } else {
             client_ids
@@ -298,9 +299,12 @@ impl TestContext {
             };
             let mut chain2 = self.test_chain(&client_ids2, revoked_display_names, Some(params)).await;
             chain1.cross_sign(&mut chain2);
-            self.sessions_with_test_chain_inner(client_ids2, &chain2).await
+            self.sessions_with_test_chain_inner(client_ids2, &chain2, MlsCredentialType::X509)
+                .await
         };
-        let sessions1 = self.sessions_with_test_chain_inner(client_ids1, &chain1).await;
+        let sessions1 = self
+            .sessions_with_test_chain_inner(client_ids1, &chain1, MlsCredentialType::X509)
+            .await;
         (sessions1, sessions2)
     }
 
