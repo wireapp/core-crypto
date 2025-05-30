@@ -49,6 +49,23 @@ impl<'a> TestConversation<'a> {
         }
     }
 
+    /// Use this if you have created a conversation before and want to create a `TestConversation` instance of that conversation.
+    pub async fn new_from_existing(
+        case: &'a TestContext,
+        id: ConversationId,
+        members: impl Into<Vec<&'a SessionContext>>,
+    ) -> Self {
+        let conversation = Self {
+            case,
+            id,
+            members: members.into(),
+            proposals: vec![],
+            actor_index: None,
+        };
+        assert!(conversation.is_functional_with(conversation.members()).await);
+        conversation
+    }
+
     pub fn id(&self) -> &ConversationId {
         &self.id
     }
