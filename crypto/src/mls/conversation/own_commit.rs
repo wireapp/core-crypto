@@ -145,11 +145,7 @@ mod tests {
         if !case.is_pure_ciphertext() && case.is_x509() {
             let [alice_central] = case.sessions().await;
             Box::pin(async move {
-                let x509_test_chain = alice_central
-                    .x509_test_chain
-                    .as_ref()
-                    .as_ref()
-                    .expect("No x509 test chain");
+                let x509_test_chain = alice_central.x509_chain_unchecked();
 
                 let id = conversation_id();
                 alice_central
@@ -382,28 +378,21 @@ mod tests {
         let [mut alice, bob] = case.sessions().await;
         let conversation = case.create_conversation([&alice, &bob]).await;
         let conversation_id = conversation.id().to_owned();
+
         drop(conversation);
-
+        // Commit the transaction here; this is the state alice will be in when reloading the app after crashing.
         alice.commit_transaction().await;
-        // Alice creates a commit but won't merge it immediately.
-        // Her app may have crashed, for example, before receiving the success response from the DS.
-        let unmerged_commit = alice
-            .create_unmerged_commit(&conversation_id)
-            .await
-            .commit
-            .to_bytes()
-            .unwrap();
-        // Crash happens here; local changes are not persisted.
-        alice.pretend_crash().await;
+        let conversation = TestConversation::new_from_existing(&case, conversation_id.clone(), [&alice, &bob]).await;
 
-        // ... irrelevant things happen to Alice. In the meantime, Bob merges that commit.
-        bob.transaction
-            .conversation(&conversation_id)
-            .await
-            .unwrap()
-            .decrypt_message(&unmerged_commit)
-            .await
-            .unwrap();
+        // Alice creates a commit but won't merge it immediately.
+        // In the meantime, Bob merges that commit.
+        let commit_guard = conversation.unmerged_commit().await.notify_member(&bob).await;
+        let unmerged_commit = commit_guard.message().to_bytes().unwrap();
+        let _conversation = commit_guard.finish();
+
+        // Alice's app may have crashed, for example, before receiving the success response from the DS.
+        // Crash happens here; changes since the transaction commit are not persisted.
+        alice.pretend_crash().await;
 
         // ok, alice is back, and look: here's that commit that she made
         alice
@@ -423,7 +412,7 @@ mod tests {
         #[expect(unreachable_code)]
         {
             // mls is still healthy and Alice and Bob can still chat
-            assert!(alice.try_talk_to(&conversation_id, &bob).await.is_ok());
+            assert!(conversation.is_functional_with([&alice, &bob]).await);
         }
     }
 }

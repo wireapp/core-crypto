@@ -258,18 +258,13 @@ mod tests {
     async fn create_conversation_should_fail_when_already_exists(case: TestContext) {
         use crate::LeafError;
 
-        let [alice_central] = case.sessions().await;
+        let [alice] = case.sessions().await;
         Box::pin(async move {
-                let id = conversation_id();
-
-                let create = alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await;
-                assert!(create.is_ok());
+            let conversation = case.create_conversation([&alice]).await;
+            let id = conversation.id().clone();
 
                 // creating a conversation should first verify that the conversation does not already exist ; only then create it
-                let repeat_create = alice_central
+                let repeat_create = alice
                     .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;

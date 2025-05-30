@@ -110,9 +110,8 @@ mod tests {
     use super::*;
     use crate::mls::conversation::Conversation as _;
     use crate::{
-        RecursiveError,
         mls::credential::x509::CertificatePrivateKey,
-        prelude::{ClientIdentifier, ConversationId, E2eiConversationState, MlsCredentialType},
+        prelude::{ClientIdentifier, E2eiConversationState, MlsCredentialType},
         test_utils::{
             x509::{CertificateParams, X509TestChain},
             *,
@@ -124,60 +123,46 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn basic_clients_can_send_messages(case: TestContext) {
-        if case.is_basic() {
-            let alice_identifier = ClientIdentifier::Basic("alice".into());
-            let bob_identifier = ClientIdentifier::Basic("bob".into());
-            assert!(try_talk(&case, None, alice_identifier, bob_identifier).await.is_ok());
+        if !case.is_basic() {
+            return;
         }
+        let [alice, bob] = case.sessions_basic().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+        assert!(conversation.is_functional_with([&alice, &bob]).await);
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn certificate_clients_can_send_messages(case: TestContext) {
-        if case.is_x509() {
-            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-
-            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
-            assert!(
-                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
-                    .await
-                    .is_ok()
-            );
+        if !case.is_x509() {
+            return;
         }
+        let [alice, bob] = case.sessions_x509().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+        assert!(conversation.is_functional_with([&alice, &bob]).await);
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn heterogeneous_clients_can_send_messages(case: TestContext) {
-        let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-
         // check that both credentials can initiate/join a group
-        {
-            let alice_identifier = ClientIdentifier::Basic("alice".into());
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
-            assert!(
-                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
-                    .await
-                    .is_ok()
-            );
-            // drop alice & bob key stores
-        }
-        {
-            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
-            let bob_identifier = ClientIdentifier::Basic("bob".into());
-            assert!(
-                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
-                    .await
-                    .is_ok()
-            );
-        }
+        let ([x509_session], [basic_session]) = case.sessions_mixed_credential_types().await;
+        // That way the conversation creator (Alice) will have a different credential type than Bob
+        let (alice, bob, alice_credential_type) = match case.credential_type {
+            MlsCredentialType::Basic => (x509_session, basic_session, MlsCredentialType::X509),
+            MlsCredentialType::X509 => (basic_session, x509_session, MlsCredentialType::Basic),
+        };
+
+        let conversation = case
+            .create_heterogeneous_conversation(alice_credential_type, case.credential_type, [&alice, &bob])
+            .await;
+        assert!(conversation.is_functional_with([&alice, &bob]).await);
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_is_empty(case: TestContext) {
-        let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+        let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
         let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
 
@@ -185,8 +170,7 @@ mod tests {
         certs.certificate_chain = vec![];
         let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
 
-        let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
-        let err = try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+        let err = SessionContext::new_with_identifier(&case, alice_identifier, Some(&x509_test_chain))
             .await
             .unwrap_err();
         assert!(innermost_source_matches!(err, Error::InvalidIdentity));
@@ -197,57 +181,66 @@ mod tests {
     async fn should_fail_when_certificate_chain_has_a_single_self_signed(case: TestContext) {
         use crate::MlsErrorKind;
 
-        if case.is_x509() {
-            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-
-            let (_alice_identifier, alice_cert) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
-
-            let new_cert = alice_cert
-                .pki_keypair
-                .re_sign(&alice_cert.certificate, &alice_cert.certificate, None)
-                .unwrap();
-            let mut alice_cert = alice_cert.clone();
-            alice_cert.certificate = new_cert;
-            let cb = CertificateBundle::from_self_signed_certificate(&alice_cert);
-            let alice_identifier = ClientIdentifier::X509([(case.signature_scheme(), cb)].into());
-
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
-            let err = try_talk(&case, Some(&x509_test_chain), bob_identifier, alice_identifier)
-                .await
-                .unwrap_err();
-            assert!(innermost_source_matches!(err, MlsErrorKind::MlsAddMembersError(_)));
+        if !case.is_x509() {
+            return;
         }
+        let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+
+        let (_alice_identifier, alice_cert) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
+
+        let new_cert = alice_cert
+            .pki_keypair
+            .re_sign(&alice_cert.certificate, &alice_cert.certificate, None)
+            .unwrap();
+        let mut alice_cert = alice_cert.clone();
+        alice_cert.certificate = new_cert;
+        let cb = CertificateBundle::from_self_signed_certificate(&alice_cert);
+        let alice_identifier = ClientIdentifier::X509([(case.signature_scheme(), cb)].into());
+
+        let alice = SessionContext::new_with_identifier(&case, alice_identifier, Some(&x509_test_chain))
+            .await
+            .unwrap();
+        let [bob] = case.sessions_x509().await;
+        let bob_key_package = bob.rand_key_package(&case).await;
+        let conversation = case.create_conversation([&alice]).await;
+        let err = conversation
+            .guard()
+            .await
+            .add_members([bob_key_package].into())
+            .await
+            .unwrap_err();
+        assert!(innermost_source_matches!(err, MlsErrorKind::MlsAddMembersError(_)));
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_signature_key_doesnt_match_certificate_public_key(case: TestContext) {
-        if case.is_x509() {
-            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-            let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
-
-            let certs = CertificateBundle::rand(&"alice".into(), x509_intermediate);
-            let new_pki_kp = PkiKeypair::rand_unchecked(case.signature_scheme());
-
-            let eve_key = CertificatePrivateKey {
-                value: new_pki_kp.signing_key_bytes(),
-                signature_scheme: case.ciphersuite().signature_algorithm(),
-            };
-            let cb = CertificateBundle {
-                certificate_chain: certs.certificate_chain,
-                private_key: eve_key,
-            };
-            let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
-
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
-            let err = try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
-                .await
-                .unwrap_err();
-            assert!(innermost_source_matches!(
-                err,
-                crate::MlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair),
-            ));
+        if !case.is_x509() {
+            return;
         }
+        let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+        let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
+
+        let certs = CertificateBundle::rand(&"alice".into(), x509_intermediate);
+        let new_pki_kp = PkiKeypair::rand_unchecked(case.signature_scheme());
+
+        let eve_key = CertificatePrivateKey {
+            value: new_pki_kp.signing_key_bytes(),
+            signature_scheme: case.ciphersuite().signature_algorithm(),
+        };
+        let cb = CertificateBundle {
+            certificate_chain: certs.certificate_chain,
+            private_key: eve_key,
+        };
+        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
+
+        let err = SessionContext::new_with_identifier(&case, alice_identifier, Some(&x509_test_chain))
+            .await
+            .unwrap_err();
+        assert!(innermost_source_matches!(
+            err,
+            crate::MlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair),
+        ));
     }
 
     #[apply(all_cred_cipher)]
@@ -264,22 +257,19 @@ mod tests {
 
             let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", Some(expiration_time));
+            let alice = SessionContext::new_with_identifier(&case, alice_identifier, Some(&x509_test_chain))
+                .await
+                .unwrap();
+            let bob = SessionContext::new_with_identifier(&case, bob_identifier, Some(&x509_test_chain))
+                .await
+                .unwrap();
 
+            let conversation = case.create_conversation([&alice, &bob]).await;
             // this should work since the certificate is not yet expired
-            let (alice_central, bob_central, id) =
-                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
-                    .await
-                    .unwrap();
+            assert!(conversation.is_functional_with([&alice, &bob]).await);
 
             assert_eq!(
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .e2ei_conversation_state()
-                    .await
-                    .unwrap(),
+                conversation.guard().await.e2ei_conversation_state().await.unwrap(),
                 E2eiConversationState::Verified
             );
 
@@ -289,16 +279,9 @@ mod tests {
                 async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(2)).await;
             }
 
-            alice_central.try_talk_to(&id, &bob_central).await.unwrap();
+            assert!(conversation.is_functional_with([&alice, &bob]).await);
             assert_eq!(
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .e2ei_conversation_state()
-                    .await
-                    .unwrap(),
+                conversation.guard().await.e2ei_conversation_state().await.unwrap(),
                 E2eiConversationState::NotVerified
             );
         })
@@ -312,60 +295,19 @@ mod tests {
             return;
         }
         Box::pin(async {
-            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-
-            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
+            let ([alice, bob], [charlie]) = case.sessions_mixed_credential_types().await;
+            let conversation = case.create_conversation([&alice, &bob]).await;
 
             // this should work since the certificate is not yet expired
-            let (alice_central, bob_central, id) =
-                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
-                    .await
-                    .unwrap();
-
+            assert!(conversation.is_functional_with([&alice, &bob]).await);
             assert_eq!(
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .e2ei_conversation_state()
-                    .await
-                    .unwrap(),
+                conversation.guard().await.e2ei_conversation_state().await.unwrap(),
                 E2eiConversationState::Verified
             );
-
             assert_eq!(
-                bob_central
-                    .transaction
-                    .conversation(&id)
+                conversation
+                    .guard_of(&bob)
                     .await
-                    .unwrap()
-                    .e2ei_conversation_state()
-                    .await
-                    .unwrap(),
-                E2eiConversationState::Verified
-            );
-
-            alice_central.try_talk_to(&id, &bob_central).await.unwrap();
-            assert_eq!(
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .e2ei_conversation_state()
-                    .await
-                    .unwrap(),
-                E2eiConversationState::Verified
-            );
-
-            assert_eq!(
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
                     .e2ei_conversation_state()
                     .await
                     .unwrap(),
@@ -373,43 +315,17 @@ mod tests {
             );
 
             // Charlie is a basic client that tries to join (i.e. emulates guest links in Wire)
-            let charlie_identifier = ClientIdentifier::Basic("charlie".into());
-            let charlie_context = SessionContext::new_with_identifier(&case, charlie_identifier, None)
-                .await
-                .unwrap();
-
-            let charlie_kp = charlie_context
-                .rand_key_package_of_type(&case, MlsCredentialType::Basic)
+            let conversation = conversation
+                .invite_with_credential_type(MlsCredentialType::Basic, [&charlie])
                 .await;
 
-            alice_central
-                .invite_all_members(&case, &id, [(&charlie_context, charlie_kp)])
-                .await
-                .unwrap();
-
             assert_eq!(
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .e2ei_conversation_state()
-                    .await
-                    .unwrap(),
+                conversation.guard().await.e2ei_conversation_state().await.unwrap(),
                 E2eiConversationState::NotVerified
             );
-
-            alice_central.try_talk_to(&id, &charlie_context).await.unwrap();
-
+            assert!(conversation.is_functional_with([&alice, &bob, &charlie]).await);
             assert_eq!(
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .e2ei_conversation_state()
-                    .await
-                    .unwrap(),
+                conversation.guard().await.e2ei_conversation_state().await.unwrap(),
                 E2eiConversationState::NotVerified
             );
         })
@@ -421,41 +337,38 @@ mod tests {
     async fn should_fail_when_certificate_not_valid_yet(case: TestContext) {
         use crate::MlsErrorKind;
 
-        if case.is_x509() {
-            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-
-            let tomorrow = now_std() + core::time::Duration::from_secs(3600 * 24);
-            let local_ca = x509_test_chain.find_local_intermediate_ca();
-            let alice_cert = {
-                let name = "alice";
-                let common_name = format!("{name} Smith");
-                let handle = format!("{}_wire", name.to_lowercase());
-                let client_id: String =
-                    crate::e2e_identity::id::QualifiedE2eiClientId::generate_with_domain("wire.com")
-                        .try_into()
-                        .unwrap();
-                local_ca.create_and_sign_end_identity(CertificateParams {
-                    common_name: Some(common_name.clone()),
-                    handle: Some(handle.clone()),
-                    client_id: Some(client_id.clone()),
-                    validity_start: Some(tomorrow),
-                    ..Default::default()
-                })
-            };
-            let cb = CertificateBundle::from_certificate_and_issuer(&alice_cert, local_ca);
-            let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
-
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
-
-            let err = try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
-                .await
-                .unwrap_err();
-
-            assert!(innermost_source_matches!(
-                err,
-                MlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::ExpiredCertificate),
-            ))
+        if !case.is_x509() {
+            return;
         }
+        let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+
+        let tomorrow = now_std() + core::time::Duration::from_secs(3600 * 24);
+        let local_ca = x509_test_chain.find_local_intermediate_ca();
+        let alice_cert = {
+            let name = "alice";
+            let common_name = format!("{name} Smith");
+            let handle = format!("{}_wire", name.to_lowercase());
+            let client_id: String = crate::e2e_identity::id::QualifiedE2eiClientId::generate_with_domain("wire.com")
+                .try_into()
+                .unwrap();
+            local_ca.create_and_sign_end_identity(CertificateParams {
+                common_name: Some(common_name.clone()),
+                handle: Some(handle.clone()),
+                client_id: Some(client_id.clone()),
+                validity_start: Some(tomorrow),
+                ..Default::default()
+            })
+        };
+        let cb = CertificateBundle::from_certificate_and_issuer(&alice_cert, local_ca);
+        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
+        let err = SessionContext::new_with_identifier(&case, alice_identifier, Some(&x509_test_chain))
+            .await
+            .unwrap_err();
+
+        assert!(innermost_source_matches!(
+            err,
+            MlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::ExpiredCertificate),
+        ))
     }
 
     /// In order to be WASM-compatible
@@ -466,46 +379,5 @@ mod tests {
     pub(crate) fn now_std() -> std::time::Duration {
         let now = web_time::SystemTime::now();
         now.duration_since(web_time::UNIX_EPOCH).unwrap()
-    }
-
-    async fn try_talk(
-        case: &TestContext,
-        x509_test_chain: Option<&X509TestChain>,
-        creator_identifier: ClientIdentifier,
-        guest_identifier: ClientIdentifier,
-    ) -> Result<(SessionContext, SessionContext, ConversationId)> {
-        let id = conversation_id();
-
-        let creator_ct = match &creator_identifier {
-            ClientIdentifier::Basic(_) => MlsCredentialType::Basic,
-            ClientIdentifier::X509(_) => MlsCredentialType::X509,
-        };
-        let guest_ct = match &guest_identifier {
-            ClientIdentifier::Basic(_) => MlsCredentialType::Basic,
-            ClientIdentifier::X509(_) => MlsCredentialType::X509,
-        };
-
-        let creator = SessionContext::new_with_identifier(case, creator_identifier, x509_test_chain)
-            .await
-            .map_err(RecursiveError::root("new session context"))?;
-
-        let guest = SessionContext::new_with_identifier(case, guest_identifier, x509_test_chain)
-            .await
-            .map_err(RecursiveError::root("new session context"))?;
-
-        creator
-            .transaction
-            .new_conversation(&id, creator_ct, case.cfg.clone())
-            .await
-            .map_err(RecursiveError::transaction("creating new transaction"))?;
-
-        let guest_kp = guest.rand_key_package_of_type(case, guest_ct).await;
-        creator
-            .invite_all_members(case, &id, [(&guest, guest_kp)])
-            .await
-            .map_err(RecursiveError::test())?;
-
-        creator.try_talk_to(&id, &guest).await.map_err(RecursiveError::test())?;
-        Ok((creator, guest, id))
     }
 }

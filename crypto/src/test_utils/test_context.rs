@@ -144,15 +144,16 @@ impl TestContext {
         db_dir_string
     }
 
-    pub fn client_ids<const N: usize>(&self) -> [ClientId; N] {
-        self.client_ids_inner(QualifiedE2eiClientId::generate, WireQualifiedClientId::generate)
+    pub fn x509_client_ids<const N: usize>(&self) -> [ClientId; N] {
+        std::array::from_fn(|_| QualifiedE2eiClientId::generate().into())
     }
 
-    pub fn client_ids_for_user<const N: usize>(&self, user: &uuid::Uuid) -> [ClientId; N] {
-        self.client_ids_inner(
-            move || QualifiedE2eiClientId::generate_from_user_id(user),
-            move || WireQualifiedClientId::generate_from_user_id(user),
-        )
+    pub fn basic_client_ids<const N: usize>(&self) -> [ClientId; N] {
+        std::array::from_fn(|_| WireQualifiedClientId::generate().into())
+    }
+
+    pub fn x509_client_ids_for_user<const N: usize>(&self, user: &uuid::Uuid) -> [ClientId; N] {
+        std::array::from_fn(|_| QualifiedE2eiClientId::generate_from_user_id(user).into())
     }
 
     fn client_ids_inner<const N: usize>(
@@ -216,12 +217,35 @@ impl TestContext {
         self.sessions_x509().await
     }
 
+    pub async fn sessions_basic<const N: usize>(&self) -> [SessionContext; N] {
+        let client_ids = self.basic_client_ids::<N>();
+        let test_chain = X509TestChain::init_empty(self.signature_scheme());
+        return self
+            .sessions_with_test_chain_inner(client_ids, &test_chain, MlsCredentialType::Basic)
+            .await;
+    }
+
+    /// Use this to create sessions with both x509 and basic credential types.
+    /// The first tuple element contains the x509 sessions, the second contains the basic sessions.
+    pub async fn sessions_mixed_credential_types<const N: usize, const M: usize>(
+        &self,
+    ) -> ([SessionContext; N], [SessionContext; M]) {
+        let x509_sessions = self.sessions_x509().await;
+        let chain = x509_sessions[0].x509_chain_unchecked();
+        let basic_ids = self.basic_client_ids();
+        let basic_sessions = self
+            .sessions_with_test_chain_inner(basic_ids, chain, MlsCredentialType::Basic)
+            .await;
+        (x509_sessions, basic_sessions)
+    }
+
     pub async fn sessions_x509_with_client_ids<const N: usize>(
         &self,
         client_ids: [ClientId; N],
     ) -> [SessionContext; N] {
         let test_chain = self.test_chain(&client_ids, &[], None).await;
-        self.sessions_x509_inner(client_ids, &test_chain).await
+        self.sessions_with_test_chain_inner(client_ids, &test_chain, MlsCredentialType::X509)
+            .await
     }
 
     pub async fn sessions_x509_with_client_ids_and_revocation<const N: usize>(
@@ -230,38 +254,31 @@ impl TestContext {
         revoked_display_names: &[String],
     ) -> [SessionContext; N] {
         let test_chain = self.test_chain(&client_ids, revoked_display_names, None).await;
-        self.sessions_x509_inner(client_ids, &test_chain).await
-    }
-
-    pub async fn sessions_basic<const N: usize>(&self) -> [SessionContext; N] {
-        let client_ids = self.client_ids::<N>();
-        self.sessions_basic_inner(client_ids).await
-    }
-
-    async fn sessions_basic_inner<const N: usize>(&self, client_ids: [ClientId; N]) -> [SessionContext; N] {
-        let mut sessions = Vec::with_capacity(N);
-        for client_id in client_ids {
-            sessions.push(
-                SessionContext::new_with_identifier(self, ClientIdentifier::Basic(client_id), None)
-                    .await
-                    .unwrap(),
-            );
-        }
-        sessions.try_into().expect("Vector should be of length N.")
+        self.sessions_with_test_chain_inner(client_ids, &test_chain, MlsCredentialType::X509)
+            .await
     }
 
     pub async fn sessions_x509<const N: usize>(&self) -> [SessionContext; N] {
-        let client_ids = self.client_ids::<N>();
-        let test_chain = self.test_chain(&client_ids, &[], None).await;
-        self.sessions_x509_inner(client_ids, &test_chain).await
+        let client_ids = self.x509_client_ids();
+        self.sessions_x509_with_client_ids(client_ids).await
     }
 
-    async fn sessions_x509_inner<const N: usize>(
+    async fn sessions_with_test_chain_inner<const N: usize>(
         &self,
         client_ids: [ClientId; N],
         chain: &X509TestChain,
+        session_type: MlsCredentialType,
     ) -> [SessionContext; N] {
-        let identifiers = self.x509_identifiers(client_ids, chain).await;
+        let identifiers = if session_type == MlsCredentialType::X509 {
+            self.x509_identifiers(client_ids, chain).await
+        } else {
+            client_ids
+                .iter()
+                .map(|id| ClientIdentifier::Basic(id.clone()))
+                .collect::<Vec<_>>()
+                .try_into()
+                .expect("Vector should be of length N")
+        };
         let mut sessions = Vec::with_capacity(N);
         for client_id in identifiers {
             sessions.push(
@@ -277,8 +294,8 @@ impl TestContext {
     pub async fn sessions_x509_cross_signed<const N: usize, const M: usize>(
         &self,
     ) -> ([SessionContext; N], [SessionContext; M]) {
-        let client_ids1 = self.client_ids();
-        let client_ids2 = self.client_ids();
+        let client_ids1 = self.x509_client_ids();
+        let client_ids2 = self.x509_client_ids();
         self.sessions_x509_cross_signed_with_client_ids(client_ids1, client_ids2)
             .await
     }
@@ -309,9 +326,12 @@ impl TestContext {
             };
             let mut chain2 = self.test_chain(&client_ids2, revoked_display_names, Some(params)).await;
             chain1.cross_sign(&mut chain2);
-            self.sessions_x509_inner(client_ids2, &chain2).await
+            self.sessions_with_test_chain_inner(client_ids2, &chain2, MlsCredentialType::X509)
+                .await
         };
-        let sessions1 = self.sessions_x509_inner(client_ids1, &chain1).await;
+        let sessions1 = self
+            .sessions_with_test_chain_inner(client_ids1, &chain1, MlsCredentialType::X509)
+            .await;
         (sessions1, sessions2)
     }
 
@@ -322,12 +342,57 @@ impl TestContext {
         &'a self,
         members: impl IntoIterator<Item = &'a SessionContext>,
     ) -> TestConversation<'a> {
+        self.create_conversation_with_credential_type(self.credential_type, members)
+            .await
+    }
+
+    /// Create a test conversation.
+    ///
+    /// The first member is required, and is the conversation's creator.
+    pub async fn create_conversation_with_external_sender<'a>(
+        &'a mut self,
+        external_sender: &SessionContext,
+        members: impl IntoIterator<Item = &'a SessionContext>,
+    ) -> TestConversation<'a> {
+        let mut members = members.into_iter().peekable();
+        let creator = members.peek().unwrap();
+        let signature_key = external_sender.client_signature_key(self).await.as_slice().to_vec();
+        creator
+            .transaction
+            .set_raw_external_senders(&mut self.cfg, vec![signature_key])
+            .await
+            .unwrap();
+        self.create_conversation_with_credential_type(self.credential_type, members)
+            .await
+    }
+
+    /// Create a test conversation with the specified credential type.
+    ///
+    /// The first member is required, and is the conversation's creator.
+    pub async fn create_conversation_with_credential_type<'a>(
+        &'a self,
+        credential_type: MlsCredentialType,
+        members: impl IntoIterator<Item = &'a SessionContext>,
+    ) -> TestConversation<'a> {
+        self.create_heterogeneous_conversation(credential_type, credential_type, members)
+            .await
+    }
+
+    /// Create a test conversation with a credential type, invite sessions with another.
+    ///
+    /// The first member is required, and is the conversation's creator.
+    pub async fn create_heterogeneous_conversation<'a>(
+        &'a self,
+        creator_credential_type: MlsCredentialType,
+        member_credential_type: MlsCredentialType,
+        members: impl IntoIterator<Item = &'a SessionContext>,
+    ) -> TestConversation<'a> {
         let mut members = members.into_iter();
         let creator = members
             .next()
             .expect("each conversation needs at least 1 member, the creator");
 
-        let conversation = TestConversation::new(self, creator).await;
+        let conversation = TestConversation::new_with_credential_type(self, creator, creator_credential_type).await;
 
         // if members are empty, return early here
         let mut members = members.peekable();
@@ -335,7 +400,9 @@ impl TestContext {
             return conversation;
         }
 
-        conversation.invite(members).await
+        conversation
+            .invite_with_credential_type(member_credential_type, members)
+            .await
     }
 }
 
