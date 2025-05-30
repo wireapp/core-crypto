@@ -87,11 +87,6 @@ impl RecursiveError {
             source: Box::new(into_source.into()),
         }
     }
-
-    #[cfg(test)]
-    pub(crate) fn test<E: Into<crate::test_utils::TestError>>() -> impl FnOnce(E) -> Self {
-        move |into_source| Self::Test(Box::new(into_source.into()))
-    }
 }
 
 impl std::fmt::Display for RecursiveError {

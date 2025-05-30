@@ -2,10 +2,9 @@ use super::test_conversation::operation_guard::{Commit, OperationGuard};
 use super::{Result, TestConversation};
 use crate::CoreCrypto;
 use crate::group_store::GroupStore;
-use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::mls::conversation::{Conversation as _, ConversationWithMls as _};
-use crate::prelude::{MlsCommitBundle, WelcomeBundle};
-use crate::test_utils::{SessionContext, TestError};
+use crate::prelude::MlsCommitBundle;
+use crate::test_utils::SessionContext;
 use crate::{
     RecursiveError,
     e2e_identity::{
@@ -15,7 +14,7 @@ use crate::{
     mls::credential::{CredentialBundle, ext::CredentialExt},
     prelude::{
         CertificateBundle, ClientId, ConversationId, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
-        MlsConversationDecryptMessage, MlsCredentialType, MlsCustomConfiguration, MlsError, Session, WireIdentity,
+        MlsConversationDecryptMessage, MlsCredentialType, Session, WireIdentity,
     },
     test_utils::{MessageExt, TestContext, x509::X509Certificate},
 };
@@ -25,8 +24,7 @@ use core_crypto_keystore::entities::{
 };
 use openmls::prelude::{
     Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey, KeyPackage, KeyPackageIn,
-    LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
-    group_info::VerifiableGroupInfo,
+    LeafNodeIndex, Lifetime, QueuedProposal, SignaturePublicKey, StagedCommit, group_info::VerifiableGroupInfo,
 };
 use openmls_traits::crypto::OpenMlsCrypto;
 use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
@@ -168,123 +166,6 @@ impl SessionContext {
             .app_msg
             .ok_or(TestError::ImplementationError)?;
         assert_eq!(&msg[..], &decrypted[..]);
-        Ok(())
-    }
-
-    /// Streamlines the ceremony of adding a client and process its welcome message
-    pub async fn invite_all(
-        &self,
-        case: &TestContext,
-        id: &ConversationId,
-        others: impl IntoIterator<Item = &Self>,
-    ) -> Result<()> {
-        let others = others.into_iter();
-        let (lower_bound, _) = others.size_hint();
-
-        let mut kps = Vec::with_capacity(lower_bound);
-        for cc in others {
-            let kp = cc.rand_key_package(case).await;
-            kps.push((cc, kp));
-        }
-        self.invite_all_members(case, id, kps).await
-    }
-
-    /// Streamlines the ceremony of adding a client and process its welcome message
-    pub async fn invite_all_members(
-        &self,
-        case: &TestContext,
-        id: &ConversationId,
-        others: impl IntoIterator<Item = (&Self, KeyPackageIn)>,
-    ) -> Result<()> {
-        let (others, key_packages) = others.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
-        let n_joiners = others.len();
-
-        let size_before = self.get_conversation_unchecked(id).await.members().len();
-
-        self.transaction
-            .conversation(id)
-            .await
-            .map_err(RecursiveError::transaction("getting conversation by id"))?
-            .add_members(key_packages)
-            .await
-            .map_err(RecursiveError::mls_conversation("adding members"))?;
-        let welcome = self.mls_transport().await.latest_commit_bundle().await.welcome.unwrap();
-
-        for other in &others {
-            other
-                .transaction
-                .process_welcome_message(welcome.clone().into(), case.custom_cfg())
-                .await
-                .map_err(RecursiveError::transaction("processing welcome message"))?;
-        }
-
-        assert_eq!(
-            self.get_conversation_unchecked(id).await.members().len(),
-            size_before + n_joiners
-        );
-
-        for other in &others {
-            assert_eq!(
-                other.get_conversation_unchecked(id).await.members().len(),
-                size_before + n_joiners
-            );
-            self.try_talk_to(id, other).await?;
-        }
-
-        Ok(())
-    }
-
-    pub async fn try_join_from_group_info(
-        &mut self,
-        case: &TestContext,
-        id: &ConversationId,
-        group_info: VerifiableGroupInfo,
-        others: Vec<&Self>,
-    ) -> Result<()> {
-        use tls_codec::Serialize as _;
-
-        let WelcomeBundle {
-            id: conversation_id, ..
-        } = self
-            .transaction
-            .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
-            .await
-            .map_err(RecursiveError::transaction("joining by external commit"))?;
-
-        let commit = self.mls_transport().await.latest_commit().await;
-
-        assert_eq!(conversation_id.as_slice(), id.as_slice());
-        for other in others {
-            let commit = commit
-                .tls_serialize_detached()
-                .map_err(MlsError::wrap("serializing detached tls"))?;
-            other
-                .transaction
-                .conversation(id)
-                .await
-                .unwrap()
-                .decrypt_message(commit)
-                .await
-                .unwrap();
-            self.try_talk_to(id, other).await?;
-        }
-        Ok(())
-    }
-
-    pub async fn try_join_from_welcome(
-        &mut self,
-        id: &ConversationId,
-        welcome: MlsMessageIn,
-        custom_cfg: MlsCustomConfiguration,
-        others: Vec<&Self>,
-    ) -> Result<()> {
-        self.transaction
-            .process_welcome_message(welcome, custom_cfg)
-            .await
-            .map_err(RecursiveError::transaction("processing welcome message"))?;
-        for other in others {
-            self.try_talk_to(id, other).await?;
-        }
         Ok(())
     }
 
@@ -592,37 +473,6 @@ impl SessionContext {
             .await
             .expect("comitting pending proposals")
             .expect("expect committing pending proposals to produce a commit")
-    }
-
-    pub(crate) async fn create_unmerged_external_commit(
-        &self,
-        group_info: VerifiableGroupInfo,
-        custom_cfg: MlsCustomConfiguration,
-        credential_type: MlsCredentialType,
-    ) -> (MlsCommitBundle, PendingConversation) {
-        let (commit_bundle, _, pending_conversation) = self
-            .transaction
-            .create_external_join_commit(group_info, custom_cfg, credential_type)
-            .await
-            .unwrap();
-        (commit_bundle, pending_conversation)
-    }
-
-    /// Creates a commit but don't merge it immediately (e.g, because the app crashes before he receives the success response from the ds via MlsTransport api)
-    pub(crate) async fn create_unmerged_e2ei_rotate_commit(
-        &self,
-        id: &ConversationId,
-        cb: &CredentialBundle,
-    ) -> MlsCommitBundle {
-        let mut conversation_guard = self.transaction.conversation(id).await.unwrap();
-        let conversation = conversation_guard.conversation().await;
-        let mut leaf_node = conversation.group.own_leaf().unwrap().clone();
-        drop(conversation);
-        leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
-        conversation_guard
-            .update_key_material_inner(Some(cb), Some(leaf_node))
-            .await
-            .unwrap()
     }
 
     pub async fn get_e2ei_client_id(&self) -> wire_e2e_identity::prelude::E2eiClientId {

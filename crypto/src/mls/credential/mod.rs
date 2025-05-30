@@ -110,9 +110,8 @@ mod tests {
     use super::*;
     use crate::mls::conversation::Conversation as _;
     use crate::{
-        RecursiveError,
         mls::credential::x509::CertificatePrivateKey,
-        prelude::{ClientIdentifier, ConversationId, E2eiConversationState, MlsCredentialType},
+        prelude::{ClientIdentifier, E2eiConversationState, MlsCredentialType},
         test_utils::{
             x509::{CertificateParams, X509TestChain},
             *,
@@ -380,46 +379,5 @@ mod tests {
     pub(crate) fn now_std() -> std::time::Duration {
         let now = web_time::SystemTime::now();
         now.duration_since(web_time::UNIX_EPOCH).unwrap()
-    }
-
-    async fn try_talk(
-        case: &TestContext,
-        x509_test_chain: Option<&X509TestChain>,
-        creator_identifier: ClientIdentifier,
-        guest_identifier: ClientIdentifier,
-    ) -> Result<(SessionContext, SessionContext, ConversationId)> {
-        let id = conversation_id();
-
-        let creator_ct = match &creator_identifier {
-            ClientIdentifier::Basic(_) => MlsCredentialType::Basic,
-            ClientIdentifier::X509(_) => MlsCredentialType::X509,
-        };
-        let guest_ct = match &guest_identifier {
-            ClientIdentifier::Basic(_) => MlsCredentialType::Basic,
-            ClientIdentifier::X509(_) => MlsCredentialType::X509,
-        };
-
-        let creator = SessionContext::new_with_identifier(case, creator_identifier, x509_test_chain)
-            .await
-            .map_err(RecursiveError::root("new session context"))?;
-
-        let guest = SessionContext::new_with_identifier(case, guest_identifier, x509_test_chain)
-            .await
-            .map_err(RecursiveError::root("new session context"))?;
-
-        creator
-            .transaction
-            .new_conversation(&id, creator_ct, case.cfg.clone())
-            .await
-            .map_err(RecursiveError::transaction("creating new transaction"))?;
-
-        let guest_kp = guest.rand_key_package_of_type(case, guest_ct).await;
-        creator
-            .invite_all_members(case, &id, [(&guest, guest_kp)])
-            .await
-            .map_err(RecursiveError::test())?;
-
-        creator.try_talk_to(&id, &guest).await.map_err(RecursiveError::test())?;
-        Ok((creator, guest, id))
     }
 }

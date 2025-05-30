@@ -713,23 +713,6 @@ mod tests {
             Ok(kps)
         }
 
-        pub(crate) async fn init_x509_credential_bundle_if_missing(
-            &self,
-            backend: &MlsCryptoProvider,
-            sc: SignatureScheme,
-            cb: CertificateBundle,
-        ) -> Result<()> {
-            let existing_cb = self
-                .find_most_recent_credential_bundle(sc, MlsCredentialType::X509)
-                .await
-                .is_err();
-            if existing_cb {
-                self.save_new_x509_credential_bundle(&backend.keystore(), sc, cb)
-                    .await?;
-            }
-            Ok(())
-        }
-
         pub(crate) async fn generate_one_keypackage(
             &self,
             backend: &MlsCryptoProvider,
