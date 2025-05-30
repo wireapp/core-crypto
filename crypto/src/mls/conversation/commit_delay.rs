@@ -166,27 +166,27 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn calculate_delay_creator_removed(case: TestContext) {
-        let [alice_central, bob_central, charlie_central] = case.sessions().await;
+        let [alice, bob_central, charlie_central] = case.sessions().await;
         Box::pin(async move {
             let id = conversation_id();
 
-            alice_central
+            alice
                 .transaction
                 .new_conversation(&id, case.credential_type, case.cfg.clone())
                 .await
                 .unwrap();
 
-            let bob = bob_central.rand_key_package(&case).await;
-            alice_central
+            let bob_kp = bob_central.rand_key_package(&case).await;
+            alice
                 .transaction
                 .conversation(&id)
                 .await
                 .unwrap()
-                .add_members(vec![bob])
+                .add_members(vec![bob_kp])
                 .await
                 .unwrap();
-            let bob_welcome = alice_central.mls_transport().await.latest_welcome_message().await;
-            assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+            let bob_welcome = alice.mls_transport().await.latest_welcome_message().await;
+            assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 2);
 
             bob_central
                 .transaction
@@ -195,7 +195,7 @@ mod tests {
                 .unwrap();
 
             let charlie = charlie_central.rand_key_package(&case).await;
-            alice_central
+            alice
                 .transaction
                 .conversation(&id)
                 .await
@@ -203,8 +203,8 @@ mod tests {
                 .add_members(vec![charlie])
                 .await
                 .unwrap();
-            let charlie_welcome_bundle = alice_central.mls_transport().await.latest_commit_bundle().await;
-            assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
+            let charlie_welcome_bundle = alice.mls_transport().await.latest_commit_bundle().await;
+            assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 3);
 
             let _ = bob_central
                 .transaction
@@ -223,16 +223,16 @@ mod tests {
 
             assert_eq!(
                 bob_central.get_conversation_unchecked(&id).await.id(),
-                alice_central.get_conversation_unchecked(&id).await.id()
+                alice.get_conversation_unchecked(&id).await.id()
             );
             assert_eq!(
                 charlie_central.get_conversation_unchecked(&id).await.id(),
-                alice_central.get_conversation_unchecked(&id).await.id()
+                alice.get_conversation_unchecked(&id).await.id()
             );
 
-            let proposal_bundle = alice_central
+            let proposal_bundle = alice
                 .transaction
-                .new_remove_proposal(&id, alice_central.get_client_id().await)
+                .new_remove_proposal(&id, alice.get_client_id().await)
                 .await
                 .unwrap();
 
