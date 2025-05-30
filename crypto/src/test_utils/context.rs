@@ -124,51 +124,6 @@ impl SessionContext {
             .cloned()
     }
 
-    pub async fn try_talk_to(&self, id: &ConversationId, other: &Self) -> Result<()> {
-        let msg = b"Hello other";
-        let encrypted = self
-            .transaction
-            .conversation(id)
-            .await
-            .map_err(RecursiveError::transaction("getting conversation by id"))?
-            .encrypt_message(msg)
-            .await
-            .map_err(RecursiveError::mls_conversation("encrypting message; self -> other"))?;
-        let decrypted = other
-            .transaction
-            .conversation(id)
-            .await
-            .map_err(RecursiveError::transaction("getting conversation by id"))?
-            .decrypt_message(encrypted)
-            .await
-            .map_err(RecursiveError::mls_conversation("decrypting message; other <- self"))?
-            .app_msg
-            .ok_or(TestError::ImplementationError)?;
-        assert_eq!(&msg[..], &decrypted[..]);
-        // other --> self
-        let msg = b"Hello self";
-        let encrypted = other
-            .transaction
-            .conversation(id)
-            .await
-            .map_err(RecursiveError::transaction("getting conversation by id"))?
-            .encrypt_message(msg)
-            .await
-            .map_err(RecursiveError::mls_conversation("encrypting message; other -> self"))?;
-        let decrypted = self
-            .transaction
-            .conversation(id)
-            .await
-            .map_err(RecursiveError::transaction("getting conversation by id"))?
-            .decrypt_message(encrypted)
-            .await
-            .map_err(RecursiveError::mls_conversation("decrypting message; self <- other"))?
-            .app_msg
-            .ok_or(TestError::ImplementationError)?;
-        assert_eq!(&msg[..], &decrypted[..]);
-        Ok(())
-    }
-
     pub async fn commit_transaction(&mut self) {
         self.transaction.finish().await.unwrap();
         // start new transaction
