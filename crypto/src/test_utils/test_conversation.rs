@@ -5,8 +5,10 @@ mod proposal;
 use std::sync::Arc;
 
 use crate::{
+    RecursiveError,
     mls::conversation::{Conversation, ConversationGuard, ConversationWithMls as _},
     prelude::{ConversationId, E2eiConversationState, MlsProposalRef},
+    test_utils::TestError,
 };
 
 use super::{MlsCredentialType, MlsTransportTestExt, SessionContext, TestContext};
@@ -123,8 +125,39 @@ impl<'a> TestConversation<'a> {
             .all(|members_can_talk| *members_can_talk)
     }
 
-    pub async fn can_talk(&self, member: &SessionContext, other_member: &SessionContext) -> bool {
-        member.try_talk_to(self.id(), other_member).await.is_ok()
+    async fn try_talk(&self, member: &SessionContext, other_member: &SessionContext) -> crate::test_utils::Result<()> {
+        let mut member_guard = self.guard_of(member).await;
+        let mut other_guard = self.guard_of(other_member).await;
+        let msg = b"Hello other";
+        let encrypted = member_guard
+            .encrypt_message(msg)
+            .await
+            .map_err(RecursiveError::mls_conversation("encrypting message; member -> other"))?;
+        let decrypted = other_guard
+            .decrypt_message(encrypted)
+            .await
+            .map_err(RecursiveError::mls_conversation("decrypting message; other <- member"))?
+            .app_msg
+            .ok_or(TestError::ImplementationError)?;
+        assert_eq!(&msg[..], &decrypted[..]);
+        // other --> member
+        let msg = b"Hello member";
+        let encrypted = other_guard
+            .encrypt_message(msg)
+            .await
+            .map_err(RecursiveError::mls_conversation("encrypting message; other -> member"))?;
+        let decrypted = member_guard
+            .decrypt_message(encrypted)
+            .await
+            .map_err(RecursiveError::mls_conversation("decrypting message; member <- other"))?
+            .app_msg
+            .ok_or(TestError::ImplementationError)?;
+        assert_eq!(&msg[..], &decrypted[..]);
+        Ok(())
+    }
+
+    pub(crate) async fn can_talk(&self, member: &SessionContext, other_member: &SessionContext) -> bool {
+        self.try_talk(member, other_member).await.is_ok()
     }
 
     pub fn actor(&self) -> &SessionContext {
