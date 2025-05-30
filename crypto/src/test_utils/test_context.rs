@@ -212,6 +212,20 @@ impl TestContext {
             .await;
     }
 
+    /// Use this to create sessions with both x509 and basic credential types.
+    /// The first tuple element contains the x509 sessions, the second contains the basic sessions.
+    pub async fn sessions_mixed_credential_types<const N: usize, const M: usize>(
+        &self,
+    ) -> ([SessionContext; N], [SessionContext; M]) {
+        let x509_sessions = self.sessions_x509().await;
+        let chain = x509_sessions[0].x509_chain_unchecked();
+        let basic_ids = self.basic_client_ids();
+        let basic_sessions = self
+            .sessions_with_test_chain_inner(basic_ids, chain, MlsCredentialType::Basic)
+            .await;
+        (x509_sessions, basic_sessions)
+    }
+
     pub async fn sessions_x509_with_client_ids<const N: usize>(
         &self,
         client_ids: [ClientId; N],
