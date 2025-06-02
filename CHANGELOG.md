@@ -1,5 +1,12 @@
 # Changelog
 
+## v7.0.1 - 2025-06-02
+
+### Bug Fixes
+
+- initWasm was being called with the wrong property field. (ca1706d)
+- allow registering epoch observer before calling mls_init (3f0605a)
+
 ## v7.0.0 - 2025-05-21
 
 ### Breaking changes
