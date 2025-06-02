@@ -2,8 +2,6 @@ use std::sync::Arc;
 
 use crate::{KeystoreError, RecursiveError, Result, prelude::MlsConversation};
 use core_crypto_keystore::connection::FetchFromDatabase;
-#[cfg(test)]
-use core_crypto_keystore::entities::EntityFindParams;
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
@@ -11,19 +9,11 @@ pub(crate) trait GroupStoreEntity: std::fmt::Debug {
     type RawStoreValue: core_crypto_keystore::entities::Entity;
     type IdentityType;
 
-    #[cfg(test)]
-    fn id(&self) -> &[u8];
-
     async fn fetch_from_id(
         id: &[u8],
         identity: Option<Self::IdentityType>,
         keystore: &impl FetchFromDatabase,
     ) -> Result<Option<Self>>
-    where
-        Self: Sized;
-
-    #[cfg(test)]
-    async fn fetch_all(keystore: &impl FetchFromDatabase) -> Result<Vec<Self>>
     where
         Self: Sized;
 }
@@ -33,11 +23,6 @@ pub(crate) trait GroupStoreEntity: std::fmt::Debug {
 impl GroupStoreEntity for MlsConversation {
     type RawStoreValue = core_crypto_keystore::entities::PersistedMlsGroup;
     type IdentityType = ();
-
-    #[cfg(test)]
-    fn id(&self) -> &[u8] {
-        self.id().as_slice()
-    }
 
     async fn fetch_from_id(
         id: &[u8],
@@ -56,21 +41,6 @@ impl GroupStoreEntity for MlsConversation {
             .map_err(RecursiveError::mls_conversation("deserializing mls conversation"))?;
         // If the conversation is not active, pretend it doesn't exist
         Ok(conversation.group.is_active().then_some(conversation))
-    }
-
-    #[cfg(test)]
-    async fn fetch_all(keystore: &impl FetchFromDatabase) -> Result<Vec<Self>> {
-        let all_conversations = keystore
-            .find_all::<Self::RawStoreValue>(EntityFindParams::default())
-            .await
-            .map_err(KeystoreError::wrap("finding all mls conversations"))?;
-        Ok(all_conversations
-            .iter()
-            .filter_map(|c| {
-                let conversation = Self::from_serialized_state(c.state.clone(), c.parent_id.clone()).unwrap();
-                conversation.group.is_active().then_some(conversation)
-            })
-            .collect::<Vec<_>>())
     }
 }
 
@@ -173,21 +143,6 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         V::fetch_from_id(k, identity, keystore).await
     }
 
-    #[cfg(test)]
-    pub(crate) async fn get_fetch_all(&mut self, keystore: &impl FetchFromDatabase) -> Result<Vec<GroupStoreValue<V>>> {
-        let all = V::fetch_all(keystore)
-            .await?
-            .into_iter()
-            .map(|g| {
-                let id = g.id().to_vec();
-                let to_insert = Arc::new(async_lock::RwLock::new(g));
-                self.insert_prepped(id, to_insert.clone());
-                to_insert
-            })
-            .collect::<Vec<_>>();
-        Ok(all)
-    }
-
     fn insert_prepped(&mut self, k: Vec<u8>, prepped_entity: GroupStoreValue<V>) {
         self.0.insert(k, prepped_entity);
     }
@@ -288,10 +243,6 @@ mod tests {
 
         type IdentityType = ();
 
-        fn id(&self) -> &[u8] {
-            unreachable!()
-        }
-
         async fn fetch_from_id(
             id: &[u8],
             _identity: Option<Self::IdentityType>,
@@ -300,11 +251,6 @@ mod tests {
             // it's not worth adding a variant to the Error type here to handle test dummy values
             let id = std::str::from_utf8(id).expect("dummy value ids are strings");
             Ok(Some(id.into()))
-        }
-
-        #[cfg(test)]
-        async fn fetch_all(_keystore: &impl FetchFromDatabase) -> Result<Vec<Self>> {
-            unreachable!()
         }
     }
 

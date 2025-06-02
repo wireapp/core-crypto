@@ -70,11 +70,6 @@ impl GroupStoreEntity for ProteusConversationSession {
     type RawStoreValue = core_crypto_keystore::entities::ProteusSession;
     type IdentityType = Arc<proteus_wasm::keys::IdentityKeyPair>;
 
-    #[cfg(test)]
-    fn id(&self) -> &[u8] {
-        unreachable!()
-    }
-
     async fn fetch_from_id(
         id: &[u8],
         identity: Option<Self::IdentityType>,
@@ -99,14 +94,6 @@ impl GroupStoreEntity for ProteusConversationSession {
             identifier: store_value.id.clone(),
             session,
         }))
-    }
-
-    #[cfg(test)]
-    async fn fetch_all(_keystore: &impl FetchFromDatabase) -> Result<Vec<Self>>
-    where
-        Self: Sized,
-    {
-        unreachable!()
     }
 }
 
