@@ -87,11 +87,10 @@ import initWasm from "./core-crypto-ffi";
 export async function initWasmModule(location: string | undefined = undefined) {
     if (typeof window !== "undefined") {
         if (typeof location === "string") {
-            const path = new URL("core-crypto-ffi_bg.wasm", location);
-            await initWasm({ path });
+            const path = `${location}core-crypto-ffi_bg.wasm`;
+            await initWasm({ module_or_path: path });
         } else {
-            const path = new URL("core-crypto-ffi_bg.wasm", import.meta.url);
-            await initWasm({ path });
+            await initWasm({});
         }
     } else {
         // non-browser context, load WASM module from file
