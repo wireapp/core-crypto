@@ -10,12 +10,19 @@ use wasm_bindgen::prelude::*;
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct X509Identity {
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub handle: String,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = displayName))]
     pub display_name: String,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub domain: String,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub certificate: String,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = serialNumber))]
     pub serial_number: String,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = notBefore))]
     pub not_before: u64,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = notAfter))]
     pub not_after: u64,
 }
 
