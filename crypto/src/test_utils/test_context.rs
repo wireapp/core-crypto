@@ -197,6 +197,15 @@ impl TestContext {
         x509_identifiers.try_into().expect("Vector should be of length N.")
     }
 
+    fn basic_identifiers<const N: usize>(client_ids: [ClientId; N]) -> [ClientIdentifier; N] {
+        client_ids
+            .iter()
+            .map(|id| ClientIdentifier::Basic(id.clone()))
+            .collect::<Vec<_>>()
+            .try_into()
+            .expect("Vector should be of length N")
+    }
+
     pub async fn sessions<const N: usize>(&self) -> [SessionContext; N] {
         if self.is_basic() {
             return self.sessions_basic().await;
@@ -204,11 +213,23 @@ impl TestContext {
         self.sessions_x509().await
     }
 
+    pub async fn sessions_with_pki_env<const N: usize>(&self) -> [SessionContext; N] {
+        if self.is_basic() {
+            return self.sessions_basic_with_pki_env().await;
+        }
+        self.sessions_x509().await
+    }
+
     pub async fn sessions_basic<const N: usize>(&self) -> [SessionContext; N] {
+        let client_ids = self.basic_client_ids::<N>();
+        return self.sessions_inner(client_ids, None, MlsCredentialType::Basic).await;
+    }
+
+    pub async fn sessions_basic_with_pki_env<const N: usize>(&self) -> [SessionContext; N] {
         let client_ids = self.basic_client_ids::<N>();
         let test_chain = X509TestChain::init_empty(self.signature_scheme());
         return self
-            .sessions_with_test_chain_inner(client_ids, &test_chain, MlsCredentialType::Basic)
+            .sessions_inner(client_ids, Some(&test_chain), MlsCredentialType::Basic)
             .await;
     }
 
@@ -221,7 +242,7 @@ impl TestContext {
         let chain = x509_sessions[0].x509_chain_unchecked();
         let basic_ids = self.basic_client_ids();
         let basic_sessions = self
-            .sessions_with_test_chain_inner(basic_ids, chain, MlsCredentialType::Basic)
+            .sessions_inner(basic_ids, Some(chain), MlsCredentialType::Basic)
             .await;
         (x509_sessions, basic_sessions)
     }
@@ -231,7 +252,7 @@ impl TestContext {
         client_ids: [ClientId; N],
     ) -> [SessionContext; N] {
         let test_chain = self.test_chain(&client_ids, &[], None).await;
-        self.sessions_with_test_chain_inner(client_ids, &test_chain, MlsCredentialType::X509)
+        self.sessions_inner(client_ids, Some(&test_chain), MlsCredentialType::X509)
             .await
     }
 
@@ -241,7 +262,7 @@ impl TestContext {
         revoked_display_names: &[String],
     ) -> [SessionContext; N] {
         let test_chain = self.test_chain(&client_ids, revoked_display_names, None).await;
-        self.sessions_with_test_chain_inner(client_ids, &test_chain, MlsCredentialType::X509)
+        self.sessions_inner(client_ids, Some(&test_chain), MlsCredentialType::X509)
             .await
     }
 
@@ -250,26 +271,22 @@ impl TestContext {
         self.sessions_x509_with_client_ids(client_ids).await
     }
 
-    async fn sessions_with_test_chain_inner<const N: usize>(
+    async fn sessions_inner<const N: usize>(
         &self,
         client_ids: [ClientId; N],
-        chain: &X509TestChain,
-        session_type: MlsCredentialType,
+        chain: Option<&X509TestChain>,
+        credential_type: MlsCredentialType,
     ) -> [SessionContext; N] {
-        let identifiers = if session_type == MlsCredentialType::X509 {
-            self.x509_identifiers(client_ids, chain).await
+        let identifiers = if credential_type == MlsCredentialType::X509 {
+            self.x509_identifiers(client_ids, chain.expect("must instantiate an x509 chain in x509 tests"))
+                .await
         } else {
-            client_ids
-                .iter()
-                .map(|id| ClientIdentifier::Basic(id.clone()))
-                .collect::<Vec<_>>()
-                .try_into()
-                .expect("Vector should be of length N")
+            Self::basic_identifiers(client_ids)
         };
         let mut sessions = Vec::with_capacity(N);
         for client_id in identifiers {
             sessions.push(
-                SessionContext::new_with_identifier(self, client_id, Some(chain))
+                SessionContext::new_with_identifier(self, client_id, chain)
                     .await
                     .unwrap(),
             );
@@ -313,11 +330,11 @@ impl TestContext {
             };
             let mut chain2 = self.test_chain(&client_ids2, revoked_display_names, Some(params)).await;
             chain1.cross_sign(&mut chain2);
-            self.sessions_with_test_chain_inner(client_ids2, &chain2, MlsCredentialType::X509)
+            self.sessions_inner(client_ids2, Some(&chain2), MlsCredentialType::X509)
                 .await
         };
         let sessions1 = self
-            .sessions_with_test_chain_inner(client_ids1, &chain1, MlsCredentialType::X509)
+            .sessions_inner(client_ids1, Some(&chain1), MlsCredentialType::X509)
             .await;
         (sessions1, sessions2)
     }
