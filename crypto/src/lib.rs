@@ -40,6 +40,7 @@ mod build_metadata;
 use crate::prelude::MlsCommitBundle;
 pub use build_metadata::{BUILD_METADATA, BuildMetadata};
 
+use crate::ephemeral::HistorySecret;
 pub use core_crypto_keystore::DatabaseKey;
 
 /// Common imports that should be useful for most uses of the crate
@@ -111,6 +112,14 @@ pub trait MlsTransport: std::fmt::Debug + Send + Sync {
     async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> Result<MlsTransportResponse>;
     /// Send a message to the corresponding endpoint.
     async fn send_message(&self, mls_message: Vec<u8>) -> Result<MlsTransportResponse>;
+
+    /// This function will be called before a history secret is sent to the mls transport to allow
+    /// the application to package it in a suitable transport container (json, protobuf, ...).
+    ///
+    /// The `secret` parameter contain the history client's secrets which will be sent over the mls transport.
+    ///
+    /// Returns the history secret packaged for transport
+    async fn prepare_for_transport(&self, secret: HistorySecret) -> Vec<u8>;
 }
 
 /// Wrapper superstruct for both [mls::session::Session] and [proteus::ProteusCentral]

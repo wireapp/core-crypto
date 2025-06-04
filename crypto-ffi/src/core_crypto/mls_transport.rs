@@ -14,7 +14,7 @@ use wasm_bindgen_futures::JsFuture;
 use std::fmt;
 use std::sync::Arc;
 
-use core_crypto::prelude::MlsCommitBundle;
+use core_crypto::prelude::{HistorySecret, MlsCommitBundle};
 
 #[cfg(target_family = "wasm")]
 use crate::CoreCryptoError;
@@ -81,6 +81,10 @@ impl core_crypto::prelude::MlsTransport for MlsTransportShim {
 
     async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
         Ok(self.0.send_message(mls_message).await.into())
+    }
+
+    async fn prepare_for_transport(&self, secret: HistorySecret) -> Vec<u8> {
+        todo!()
     }
 }
 

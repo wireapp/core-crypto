@@ -1,5 +1,5 @@
 use core_crypto::MlsTransport;
-use core_crypto::prelude::MlsCommitBundle;
+use core_crypto::prelude::{HistorySecret, MlsCommitBundle};
 use core_crypto_ffi::CommitBundle;
 use openmls::prelude::MlsMessageOut;
 use spinoff::Spinner;
@@ -89,6 +89,10 @@ impl MlsTransport for MlsTransportSuccessProvider {
     async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
         self.latest_message.write().await.replace(mls_message);
         Ok(core_crypto::MlsTransportResponse::Success)
+    }
+
+    async fn prepare_for_transport(&self, secret: HistorySecret) -> Vec<u8> {
+        todo!()
     }
 }
 
