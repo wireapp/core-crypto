@@ -39,7 +39,8 @@ const HISTORY_CLIENT_ID_PREFIX: &str = "history-client";
 /// ephemeral client.
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct HistorySecret {
-    pub(crate) client_id: ClientId,
+    /// Client id of the associated history client
+    pub client_id: ClientId,
     pub(crate) credential_bundle: CredentialBundle,
     pub(crate) key_package: KeyPackageSecretEncapsulation,
 }

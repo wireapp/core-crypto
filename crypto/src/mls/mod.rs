@@ -14,6 +14,7 @@ pub(crate) mod session;
 
 pub use error::{Error, Result};
 pub use session::EpochObserver;
+pub use session::HistoryObserver;
 
 /// Prevents direct instantiation of [MlsClientConfiguration]
 pub(crate) mod config {

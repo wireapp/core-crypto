@@ -14,11 +14,11 @@ use wasm_bindgen_futures::JsFuture;
 use std::fmt;
 use std::sync::Arc;
 
-use core_crypto::prelude::MlsCommitBundle;
+use core_crypto::prelude::{HistorySecret, MlsCommitBundle};
 
 #[cfg(target_family = "wasm")]
 use crate::CoreCryptoError;
-use crate::{CommitBundle, CoreCrypto, CoreCryptoResult};
+use crate::{CommitBundle, CoreCrypto, CoreCryptoResult, HistorySecret as HistorySecretFfi};
 
 #[cfg(not(target_family = "wasm"))]
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
@@ -30,6 +30,21 @@ pub enum MlsTransportResponse {
     /// The message was rejected by the delivery service and there's no recovery.
     Abort { reason: String },
 }
+
+// TODO: We derive Constructor here only because we need to construct an instance in interop.
+// Remove it once we drop the FFI client from interop.
+#[derive(Debug, derive_more::From, derive_more::Into)]
+#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+#[cfg_attr(not(target_family = "wasm"), derive(derive_more::Deref, derive_more::Constructor))]
+pub struct MlsTransportData(core_crypto::MlsTransportData);
+
+#[cfg(not(target_family = "wasm"))]
+uniffi::custom_type!(MlsTransportData, Vec<u8>, {
+    lower: |key| key.0.to_vec(),
+    try_lift: |vec| {
+        Ok(MlsTransportData(core_crypto::MlsTransportData::from(vec)))
+    }
+});
 
 #[cfg(not(target_family = "wasm"))]
 impl From<MlsTransportResponse> for core_crypto::MlsTransportResponse {
@@ -52,6 +67,8 @@ pub trait MlsTransport: Send + Sync {
     async fn send_commit_bundle(&self, commit_bundle: CommitBundle) -> MlsTransportResponse;
     /// Send a message to the corresponding endpoint.
     async fn send_message(&self, mls_message: Vec<u8>) -> MlsTransportResponse;
+    /// Prepare a history secret before being sent
+    async fn prepare_for_transport(&self, history_secret: HistorySecretFfi) -> MlsTransportData;
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -81,6 +98,20 @@ impl core_crypto::prelude::MlsTransport for MlsTransportShim {
 
     async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
         Ok(self.0.send_message(mls_message).await.into())
+    }
+
+    async fn prepare_for_transport(
+        &self,
+        secret: &HistorySecret,
+    ) -> core_crypto::Result<core_crypto::MlsTransportData> {
+        let client_id = secret.client_id.clone();
+        let history_secret = rmp_serde::to_vec(&secret)
+            .map(|secret| HistorySecretFfi {
+                client_id: client_id.into(),
+                data: secret,
+            })
+            .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(e.to_string()))?;
+        Ok(self.0.prepare_for_transport(history_secret).await.into())
     }
 }
 

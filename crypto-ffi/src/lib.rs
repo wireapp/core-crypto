@@ -34,7 +34,7 @@ pub use core_crypto::{
     e2ei::E2eiDumpedPkiEnv,
     epoch_observer::EpochObserver,
     logger::{CoreCryptoLogLevel, CoreCryptoLogger},
-    mls_transport::{MlsTransport, MlsTransportResponse},
+    mls_transport::{MlsTransport, MlsTransportData, MlsTransportResponse},
 };
 #[cfg(not(target_family = "wasm"))]
 pub use core_crypto::{

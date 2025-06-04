@@ -1,15 +1,21 @@
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{CoreCrypto, CoreCryptoError, CoreCryptoResult};
+use crate::{ClientId, CoreCrypto, CoreCryptoError, CoreCryptoResult};
 use core_crypto::prelude::{CoreCrypto as CoreCryptoFfi, HistorySecret as HistorySecretFfi};
 
 /// A `HistorySecret` encodes sufficient client state that it can be used to instantiate an
 /// ephemeral client.
-pub type HistorySecret = Vec<u8>;
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
+pub struct HistorySecret {
+    pub client_id: ClientId,
+    pub data: Vec<u8>,
+}
 
 async fn history_client_inner(history_secret: HistorySecret) -> CoreCryptoResult<CoreCrypto> {
-    let secret = rmp_serde::from_slice::<HistorySecretFfi>(&history_secret).map_err(CoreCryptoError::generic())?;
+    let secret = rmp_serde::from_slice::<HistorySecretFfi>(&history_secret.data).map_err(CoreCryptoError::generic())?;
     CoreCryptoFfi::history_client(secret)
         .await
         .map(|inner| CoreCrypto { inner })

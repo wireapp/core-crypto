@@ -10,6 +10,7 @@
 use async_lock::Mutex;
 #[cfg(test)]
 pub use core_crypto_macros::{dispotent, durable, idempotent};
+use std::ops::Deref;
 use std::sync::Arc;
 
 pub use self::error::*;
@@ -40,6 +41,7 @@ mod build_metadata;
 use crate::prelude::MlsCommitBundle;
 pub use build_metadata::{BUILD_METADATA, BuildMetadata};
 
+use crate::ephemeral::HistorySecret;
 pub use core_crypto_keystore::DatabaseKey;
 
 /// Common imports that should be useful for most uses of the crate
@@ -102,6 +104,19 @@ pub enum MlsTransportResponse {
     },
 }
 
+/// An entity / data which has been packaged by the application to be encrypted
+/// and transmitted in an application message.
+#[derive(Debug, derive_more::From)]
+pub struct MlsTransportData(Vec<u8>);
+
+impl Deref for MlsTransportData {
+    type Target = Vec<u8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// Client callbacks to allow communication with the delivery service.
 /// There are two different endpoints, one for messages and one for commit bundles.
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -111,6 +126,14 @@ pub trait MlsTransport: std::fmt::Debug + Send + Sync {
     async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> Result<MlsTransportResponse>;
     /// Send a message to the corresponding endpoint.
     async fn send_message(&self, mls_message: Vec<u8>) -> Result<MlsTransportResponse>;
+
+    /// This function will be called before a history secret is sent to the mls transport to allow
+    /// the application to package it in a suitable transport container (json, protobuf, ...).
+    ///
+    /// The `secret` parameter contain the history client's secrets which will be sent over the mls transport.
+    ///
+    /// Returns the history secret packaged for transport
+    async fn prepare_for_transport(&self, secret: &HistorySecret) -> Result<MlsTransportData>;
 }
 
 /// Wrapper superstruct for both [mls::session::Session] and [proteus::ProteusCentral]
