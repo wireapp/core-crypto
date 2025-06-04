@@ -3,6 +3,7 @@ pub(crate) mod command;
 pub(crate) mod conversation;
 pub(crate) mod e2ei;
 pub(crate) mod epoch_observer;
+pub(crate) mod history_observer;
 pub(crate) mod logger;
 pub(crate) mod mls_transport;
 mod proteus;

@@ -5,10 +5,11 @@ use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
 use core_crypto::prelude::{
-    CertificateBundle, ClientId, ConversationId, MlsCiphersuite, MlsClientConfiguration, MlsCommitBundle,
-    MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle, Session,
+    CertificateBundle, ClientId, ConversationId, HistorySecret, MlsCiphersuite, MlsClientConfiguration,
+    MlsCommitBundle, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle,
+    Session,
 };
-use core_crypto::{CoreCrypto, DatabaseKey, MlsTransport, MlsTransportResponse};
+use core_crypto::{CoreCrypto, DatabaseKey, MlsTransport, MlsTransportData, MlsTransportResponse};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::framing::MlsMessageOut;
 use openmls::{
@@ -347,6 +348,10 @@ impl MlsTransport for CoreCryptoTransportSuccessProvider {
     async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto::Result<MlsTransportResponse> {
         self.latest_message.write().await.replace(mls_message);
         Ok(MlsTransportResponse::Success)
+    }
+
+    async fn prepare_for_transport(&self, secret: &HistorySecret) -> core_crypto::Result<MlsTransportData> {
+        Ok(MlsTransportData(secret.client_id.clone().into()))
     }
 }
 

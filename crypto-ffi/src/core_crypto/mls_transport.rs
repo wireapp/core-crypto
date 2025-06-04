@@ -14,11 +14,11 @@ use wasm_bindgen_futures::JsFuture;
 use std::fmt;
 use std::sync::Arc;
 
-use core_crypto::prelude::MlsCommitBundle;
+use core_crypto::prelude::{HistorySecret, MlsCommitBundle};
 
 #[cfg(target_family = "wasm")]
 use crate::CoreCryptoError;
-use crate::{CommitBundle, CoreCrypto, CoreCryptoResult};
+use crate::{CommitBundle, CoreCrypto, CoreCryptoResult, HistorySecret as HistorySecretFfi};
 
 #[cfg(not(target_family = "wasm"))]
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
@@ -30,6 +30,21 @@ pub enum MlsTransportResponse {
     /// The message was rejected by the delivery service and there's no recovery.
     Abort { reason: String },
 }
+
+// TODO: We derive Constructor here only because we need to construct an instance in interop.
+// Remove it once we drop the FFI client from interop.
+#[derive(Debug, derive_more::From, derive_more::Into)]
+#[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(not(target_family = "wasm"), derive(derive_more::Deref, derive_more::Constructor))]
+pub struct MlsTransportData(core_crypto::MlsTransportData);
+
+#[cfg(not(target_family = "wasm"))]
+uniffi::custom_type!(MlsTransportData, Vec<u8>, {
+    lower: |key| key.0.to_vec(),
+    try_lift: |vec| {
+        Ok(MlsTransportData(core_crypto::MlsTransportData::from(vec)))
+    }
+});
 
 #[cfg(not(target_family = "wasm"))]
 impl From<MlsTransportResponse> for core_crypto::MlsTransportResponse {
@@ -52,6 +67,8 @@ pub trait MlsTransport: Send + Sync {
     async fn send_commit_bundle(&self, commit_bundle: CommitBundle) -> MlsTransportResponse;
     /// Send a message to the corresponding endpoint.
     async fn send_message(&self, mls_message: Vec<u8>) -> MlsTransportResponse;
+    /// Prepare a history secret before being sent
+    async fn prepare_for_transport(&self, history_secret: HistorySecretFfi) -> MlsTransportData;
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -81,6 +98,29 @@ impl core_crypto::prelude::MlsTransport for MlsTransportShim {
 
     async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
         Ok(self.0.send_message(mls_message).await.into())
+    }
+
+    async fn prepare_for_transport(
+        &self,
+        secret: &HistorySecret,
+    ) -> core_crypto::Result<core_crypto::MlsTransportData> {
+        let client_id = secret.client_id.clone();
+        let history_secret = rmp_serde::to_vec(&secret)
+            .map(|secret| HistorySecretFfi {
+                client_id: client_id.into(),
+                data: secret,
+            })
+            .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(e.to_string()))?;
+        Ok(self.0.prepare_for_transport(history_secret).await.into())
+    }
+}
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+impl MlsTransportData {
+    #[wasm_bindgen(constructor)]
+    pub fn new(buf: &[u8]) -> Result<MlsTransportData, JsError> {
+        Ok(MlsTransportData(core_crypto::MlsTransportData(buf.into())))
     }
 }
 
@@ -148,6 +188,7 @@ pub struct MlsTransport {
     this_context: JsValue,
     send_commit_bundle: js_sys::Function,
     send_message: js_sys::Function,
+    prepare_for_transport: js_sys::Function,
 }
 
 #[cfg(target_family = "wasm")]
@@ -171,11 +212,14 @@ impl MlsTransport {
     ///   Sends a commit bundle to the corresponding endpoint.
     /// - `send_message`: A function of the form `(Uint8Array) -> Promise<MlsTransportResponse>`
     ///   Sends a message to the corresponding endpoint.
+    /// - `prepare_for_transport`: A function of the form `(HistorySecret) -> Promise<MlsTransportData>`
+    ///   Prepare a history secret to be sent over the transport.
     #[wasm_bindgen(constructor)]
     pub fn new(
         this_context: JsValue,
         send_commit_bundle: js_sys::Function,
         send_message: js_sys::Function,
+        prepare_for_transport: js_sys::Function,
     ) -> CoreCryptoResult<Self> {
         // we can't do much type-checking here unfortunately, but we can at least validate that the incoming functions have the right length
         if send_commit_bundle.length() != 1 {
@@ -190,10 +234,17 @@ impl MlsTransport {
                 send_message.length()
             )));
         }
+        if prepare_for_transport.length() != 1 {
+            return Err(CoreCryptoError::ad_hoc(format!(
+                "`prepare_for_transport` must accept 1 argument but accepts {}",
+                prepare_for_transport.length()
+            )));
+        }
         Ok(Self {
             this_context,
             send_commit_bundle,
             send_message,
+            prepare_for_transport,
         })
     }
 }
@@ -268,6 +319,45 @@ impl core_crypto::MlsTransport for MlsTransport {
             .map_err(|not_transport_response| {
                 core_crypto::Error::ErrorDuringMlsTransport(format!(
                     "send_message received a value which was not an MlsTransportResponse after awaiting js promise: {not_transport_response:?}"
+                ))
+            })?;
+
+        Ok(response.into())
+    }
+
+    /// prepare a history secret to be sent via the mls transport
+    async fn prepare_for_transport(
+        &self,
+        secret: &HistorySecret,
+    ) -> core_crypto::Result<core_crypto::MlsTransportData> {
+        let history_secret = JsValue::from(HistorySecretFfi::try_from(secret).map_err(|err| {
+            core_crypto::Error::ErrorDuringMlsTransport(format!("converting history secret to wasm-compatible: {err}"))
+        })?);
+
+        let promise = self
+            .prepare_for_transport
+            .call1(&self.this_context, &history_secret)
+            .map_err(|err| {
+                core_crypto::Error::ErrorDuringMlsTransport(format!(
+                    "prepare_for_transport received error from js when constructing promise: {err:?}"
+                ))
+            })?
+            .dyn_into::<Promise>()
+            .map_err(|not_promise| {
+                core_crypto::Error::ErrorDuringMlsTransport(format!(
+                    "prepare_for_transport received a value that was not a promise: {not_promise:?}"
+                ))
+            })?;
+
+        let response = JsFuture::from(promise).await.map_err(|err| {
+            core_crypto::Error::ErrorDuringMlsTransport(format!(
+                "prepare_for_transport received error from js when executing promise: {err:?}"
+            ))
+        })?;
+        let response = serde_wasm_bindgen::from_value::<MlsTransportData>(response)
+            .map_err(|not_transport_data| {
+                core_crypto::Error::ErrorDuringMlsTransport(format!(
+                    "prepare_for_transport received a value which was not an MlsTransportData after awaiting js promise: {not_transport_data:?}"
                 ))
             })?;
 

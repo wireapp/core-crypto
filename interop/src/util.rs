@@ -1,6 +1,6 @@
 use core_crypto::MlsTransport;
-use core_crypto::prelude::MlsCommitBundle;
-use core_crypto_ffi::CommitBundle;
+use core_crypto::prelude::{HistorySecret, MlsCommitBundle};
+use core_crypto_ffi::{CommitBundle, HistorySecret as HistorySecretFfi};
 use openmls::prelude::MlsMessageOut;
 use spinoff::Spinner;
 use tokio::sync::RwLock;
@@ -90,6 +90,13 @@ impl MlsTransport for MlsTransportSuccessProvider {
         self.latest_message.write().await.replace(mls_message);
         Ok(core_crypto::MlsTransportResponse::Success)
     }
+
+    async fn prepare_for_transport(
+        &self,
+        secret: &HistorySecret,
+    ) -> core_crypto::Result<core_crypto::MlsTransportData> {
+        Ok(format!("history_secret: {:?}", secret.client_id).into_bytes().into())
+    }
 }
 
 #[async_trait::async_trait]
@@ -112,5 +119,10 @@ impl core_crypto_ffi::MlsTransport for MlsTransportSuccessProvider {
     async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto_ffi::MlsTransportResponse {
         self.latest_message.write().await.replace(mls_message);
         core_crypto_ffi::MlsTransportResponse::Success
+    }
+
+    async fn prepare_for_transport(&self, history_secret: HistorySecretFfi) -> core_crypto_ffi::MlsTransportData {
+        core_crypto::MlsTransportData::from(format!("history_secret: {:?}", history_secret.client_id).into_bytes())
+            .into()
     }
 }

@@ -33,6 +33,8 @@ pub enum Error {
     WrongCredential,
     #[error("An EpochObserver has already been registered; reregistration is not possible")]
     EpochObserverAlreadyExists,
+    #[error("An HistoryHandler has already been registered; reregistration is not possible")]
+    HistoryObserverAlreadyExists,
     #[error("Serializing {item} for TLS")]
     TlsSerialize {
         item: &'static str,

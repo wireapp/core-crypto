@@ -1,6 +1,7 @@
 pub(crate) mod e2e_identity;
 mod epoch_observer;
 mod error;
+mod history_observer;
 pub(crate) mod id;
 pub(crate) mod identifier;
 pub(crate) mod identities;
@@ -29,6 +30,7 @@ use core_crypto_keystore::{
 };
 pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
+pub use history_observer::HistoryObserver;
 use identities::Identities;
 use log::debug;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
@@ -58,6 +60,8 @@ pub struct Session {
     pub(crate) transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
     #[debug("EpochObserver")]
     pub(crate) epoch_observer: Arc<RwLock<Option<Arc<dyn EpochObserver + 'static>>>>,
+    #[debug("HistoryObserver")]
+    pub(crate) history_observer: Arc<RwLock<Option<Arc<dyn HistoryObserver + 'static>>>>,
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -136,6 +140,7 @@ impl Session {
             inner: Default::default(),
             transport: Arc::new(None.into()),
             epoch_observer: Arc::new(None.into()),
+            history_observer: Arc::new(None.into()),
         };
 
         let cc = CoreCrypto::from(client.clone());

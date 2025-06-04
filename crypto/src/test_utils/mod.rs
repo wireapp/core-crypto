@@ -5,6 +5,7 @@
 pub mod context;
 mod epoch_observer;
 mod error;
+mod history_observer;
 pub mod message;
 pub mod test_context;
 mod test_conversation;
@@ -15,10 +16,11 @@ pub mod proteus_utils;
 
 pub(crate) use self::epoch_observer::TestEpochObserver;
 use self::error::Result;
+pub(crate) use self::history_observer::TestHistoryObserver;
 pub use self::{error::Error as TestError, message::*, test_context::*, test_conversation::TestConversation};
 pub use crate::prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
 use crate::{
-    CoreCrypto, MlsTransport, MlsTransportResponse, RecursiveError,
+    CoreCrypto, Error, MlsTransport, MlsTransportData, MlsTransportResponse, RecursiveError,
     e2e_identity::id::QualifiedE2eiClientId,
     prelude::{
         CertificateBundle, ClientId, ConversationId, MlsClientConfiguration, MlsCommitBundle, MlsGroupInfoBundle,
@@ -85,6 +87,9 @@ macro_rules! innermost_source_matches {
         outcome
     }};
 }
+use crate::RecursiveError::Test;
+use crate::ephemeral::HistorySecret;
+use crate::test_utils::TestError::ImplementationError;
 pub(crate) use innermost_source_matches;
 
 #[derive(Debug, Clone)]
@@ -362,6 +367,10 @@ impl MlsTransport for CoreCryptoTransportSuccessProvider {
         self.latest_message.write().await.replace(mls_message);
         Ok(MlsTransportResponse::Success)
     }
+
+    async fn prepare_for_transport(&self, secret: &HistorySecret) -> crate::Result<MlsTransportData> {
+        Ok(format!("history secret: {}", secret.client_id).into_bytes().into())
+    }
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -396,6 +405,10 @@ impl MlsTransport for CoreCryptoTransportAbortProvider {
         Ok(MlsTransportResponse::Abort {
             reason: "abort provider always aborts!".to_string(),
         })
+    }
+
+    async fn prepare_for_transport(&self, _secret: &HistorySecret) -> crate::Result<MlsTransportData> {
+        Err(Error::Recursive(Test(ImplementationError.into())))
     }
 }
 
@@ -504,6 +517,10 @@ impl MlsTransport for CoreCryptoTransportRetrySuccessProvider {
             *self.retry_count.write().await += 1;
             Ok(MlsTransportResponse::Retry)
         }
+    }
+
+    async fn prepare_for_transport(&self, secret: &HistorySecret) -> crate::Result<MlsTransportData> {
+        Ok(format!("history_secret: {}", secret.client_id).into_bytes().into())
     }
 }
 
