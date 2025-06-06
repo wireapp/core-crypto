@@ -30,7 +30,6 @@ fn commit_add_bench(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         black_box(context.conversation(&id).await.unwrap().add_members(kps).await.unwrap());
                         context.finish().await.unwrap();
-                        black_box(());
                     },
                     BatchSize::LargeInput,
                 )
@@ -62,7 +61,6 @@ fn commit_add_n_clients_bench(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         black_box(context.conversation(&id).await.unwrap().add_members(kps).await.unwrap());
                         context.finish().await.unwrap();
-                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -89,6 +87,7 @@ fn commit_remove_bench(c: &mut Criterion) {
                     },
                     |(central, id, client_ids)| async move {
                         let context = central.new_transaction().await.unwrap();
+                        #[allow(clippy::unit_arg)]
                         black_box(
                             context
                                 .conversation(&id)
@@ -99,7 +98,6 @@ fn commit_remove_bench(c: &mut Criterion) {
                                 .unwrap(),
                         );
                         context.finish().await.unwrap();
-                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -127,6 +125,7 @@ fn commit_remove_n_clients_bench(c: &mut Criterion) {
                     },
                     |(central, id, client_ids)| async move {
                         let context = central.new_transaction().await.unwrap();
+                        #[allow(clippy::unit_arg)]
                         black_box(
                             context
                                 .conversation(&id)
@@ -137,7 +136,6 @@ fn commit_remove_n_clients_bench(c: &mut Criterion) {
                                 .unwrap(),
                         );
                         context.finish().await.unwrap();
-                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -163,6 +161,7 @@ fn commit_update_bench(c: &mut Criterion) {
                     },
                     |(central, id)| async move {
                         let context = central.new_transaction().await.unwrap();
+                        #[allow(clippy::unit_arg)]
                         black_box(
                             context
                                 .conversation(&id)
@@ -173,7 +172,6 @@ fn commit_update_bench(c: &mut Criterion) {
                                 .unwrap(),
                         );
                         context.finish().await.unwrap();
-                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -208,6 +206,7 @@ fn commit_pending_proposals_bench_var_n_proposals(c: &mut Criterion) {
                     },
                     |(central, id)| async move {
                         let context = central.new_transaction().await.unwrap();
+                        #[allow(clippy::unit_arg)]
                         black_box(
                             context
                                 .conversation(&id)
@@ -218,7 +217,6 @@ fn commit_pending_proposals_bench_var_n_proposals(c: &mut Criterion) {
                                 .unwrap(),
                         );
                         context.finish().await.unwrap();
-                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -251,6 +249,7 @@ fn commit_pending_proposals_bench_var_group_size(c: &mut Criterion) {
                     },
                     |(central, id)| async move {
                         let context = central.new_transaction().await.unwrap();
+                        #[allow(clippy::unit_arg)]
                         black_box(
                             context
                                 .conversation(&id)
@@ -261,7 +260,6 @@ fn commit_pending_proposals_bench_var_group_size(c: &mut Criterion) {
                                 .unwrap(),
                         );
                         context.finish().await.unwrap();
-                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
