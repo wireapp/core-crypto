@@ -162,14 +162,14 @@
 <a href=#162 id=162 data-nosnippet>162</a>    </span><span class="kw">async fn </span>e2e_identity_should_work(case: TestContext) {
 <a href=#163 id=163 data-nosnippet>163</a>        <span class="kw">use </span>e2ei_utils::E2EI_CLIENT_ID_URI;
 <a href=#164 id=164 data-nosnippet>164</a>
-<a href=#165 id=165 data-nosnippet>165</a>        <span class="kw">let </span><span class="kw-2">mut </span>cc = SessionContext::new_uninitialized(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
+<a href=#165 id=165 data-nosnippet>165</a>        <span class="kw">let </span>session = SessionContext::new_uninitialized(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
 <a href=#166 id=166 data-nosnippet>166</a>        Box::pin(<span class="kw">async move </span>{
 <a href=#167 id=167 data-nosnippet>167</a>            <span class="kw">let </span>x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 <a href=#168 id=168 data-nosnippet>168</a>
 <a href=#169 id=169 data-nosnippet>169</a>            <span class="kw">let </span>is_renewal = <span class="bool-val">false</span>;
 <a href=#170 id=170 data-nosnippet>170</a>
 <a href=#171 id=171 data-nosnippet>171</a>            <span class="kw">let </span>(<span class="kw-2">mut </span>enrollment, cert) = e2ei_utils::e2ei_enrollment(
-<a href=#172 id=172 data-nosnippet>172</a>                <span class="kw-2">&amp;mut </span>cc,
+<a href=#172 id=172 data-nosnippet>172</a>                <span class="kw-2">&amp;</span>session,
 <a href=#173 id=173 data-nosnippet>173</a>                <span class="kw-2">&amp;</span>case,
 <a href=#174 id=174 data-nosnippet>174</a>                <span class="kw-2">&amp;</span>x509_test_chain,
 <a href=#175 id=175 data-nosnippet>175</a>                <span class="prelude-val">Some</span>(E2EI_CLIENT_ID_URI),
@@ -180,36 +180,34 @@
 <a href=#180 id=180 data-nosnippet>180</a>            .<span class="kw">await
 <a href=#181 id=181 data-nosnippet>181</a>            </span>.unwrap();
 <a href=#182 id=182 data-nosnippet>182</a>
-<a href=#183 id=183 data-nosnippet>183</a>            cc.transaction
-<a href=#184 id=184 data-nosnippet>184</a>                .e2ei_mls_init_only(<span class="kw-2">&amp;mut </span>enrollment, cert, <span class="prelude-val">Some</span>(INITIAL_KEYING_MATERIAL_COUNT))
-<a href=#185 id=185 data-nosnippet>185</a>                .<span class="kw">await
-<a href=#186 id=186 data-nosnippet>186</a>                </span>.unwrap();
-<a href=#187 id=187 data-nosnippet>187</a>
-<a href=#188 id=188 data-nosnippet>188</a>            <span class="comment">// verify the created client can create a conversation
-<a href=#189 id=189 data-nosnippet>189</a>            </span><span class="kw">let </span>id = conversation_id();
-<a href=#190 id=190 data-nosnippet>190</a>            cc.transaction
-<a href=#191 id=191 data-nosnippet>191</a>                .new_conversation(<span class="kw-2">&amp;</span>id, MlsCredentialType::X509, case.cfg.clone())
-<a href=#192 id=192 data-nosnippet>192</a>                .<span class="kw">await
-<a href=#193 id=193 data-nosnippet>193</a>                </span>.unwrap();
-<a href=#194 id=194 data-nosnippet>194</a>            cc.transaction
-<a href=#195 id=195 data-nosnippet>195</a>                .conversation(<span class="kw-2">&amp;</span>id)
-<a href=#196 id=196 data-nosnippet>196</a>                .<span class="kw">await
-<a href=#197 id=197 data-nosnippet>197</a>                </span>.unwrap()
-<a href=#198 id=198 data-nosnippet>198</a>                .encrypt_message(<span class="string">"Hello e2e identity !"</span>)
-<a href=#199 id=199 data-nosnippet>199</a>                .<span class="kw">await
-<a href=#200 id=200 data-nosnippet>200</a>                </span>.unwrap();
-<a href=#201 id=201 data-nosnippet>201</a>            <span class="macro">assert_eq!</span>(
-<a href=#202 id=202 data-nosnippet>202</a>                cc.transaction
-<a href=#203 id=203 data-nosnippet>203</a>                    .conversation(<span class="kw-2">&amp;</span>id)
-<a href=#204 id=204 data-nosnippet>204</a>                    .<span class="kw">await
-<a href=#205 id=205 data-nosnippet>205</a>                    </span>.unwrap()
-<a href=#206 id=206 data-nosnippet>206</a>                    .e2ei_conversation_state()
+<a href=#183 id=183 data-nosnippet>183</a>            session
+<a href=#184 id=184 data-nosnippet>184</a>                .transaction
+<a href=#185 id=185 data-nosnippet>185</a>                .e2ei_mls_init_only(<span class="kw-2">&amp;mut </span>enrollment, cert, <span class="prelude-val">Some</span>(INITIAL_KEYING_MATERIAL_COUNT))
+<a href=#186 id=186 data-nosnippet>186</a>                .<span class="kw">await
+<a href=#187 id=187 data-nosnippet>187</a>                </span>.unwrap();
+<a href=#188 id=188 data-nosnippet>188</a>
+<a href=#189 id=189 data-nosnippet>189</a>            <span class="comment">// verify the created client can create a conversation
+<a href=#190 id=190 data-nosnippet>190</a>            </span><span class="kw">let </span>conversation = case
+<a href=#191 id=191 data-nosnippet>191</a>                .create_conversation_with_credential_type(MlsCredentialType::X509, [<span class="kw-2">&amp;</span>session])
+<a href=#192 id=192 data-nosnippet>192</a>                .<span class="kw">await</span>;
+<a href=#193 id=193 data-nosnippet>193</a>            conversation
+<a href=#194 id=194 data-nosnippet>194</a>                .guard()
+<a href=#195 id=195 data-nosnippet>195</a>                .<span class="kw">await
+<a href=#196 id=196 data-nosnippet>196</a>                </span>.encrypt_message(<span class="string">"Hello e2e identity !"</span>)
+<a href=#197 id=197 data-nosnippet>197</a>                .<span class="kw">await
+<a href=#198 id=198 data-nosnippet>198</a>                </span>.unwrap();
+<a href=#199 id=199 data-nosnippet>199</a>            <span class="macro">assert_eq!</span>(
+<a href=#200 id=200 data-nosnippet>200</a>                conversation.guard().<span class="kw">await</span>.e2ei_conversation_state().<span class="kw">await</span>.unwrap(),
+<a href=#201 id=201 data-nosnippet>201</a>                E2eiConversationState::Verified
+<a href=#202 id=202 data-nosnippet>202</a>            );
+<a href=#203 id=203 data-nosnippet>203</a>            <span class="macro">assert!</span>(
+<a href=#204 id=204 data-nosnippet>204</a>                session
+<a href=#205 id=205 data-nosnippet>205</a>                    .transaction
+<a href=#206 id=206 data-nosnippet>206</a>                    .e2ei_is_enabled(case.signature_scheme())
 <a href=#207 id=207 data-nosnippet>207</a>                    .<span class="kw">await
-<a href=#208 id=208 data-nosnippet>208</a>                    </span>.unwrap(),
-<a href=#209 id=209 data-nosnippet>209</a>                E2eiConversationState::Verified
-<a href=#210 id=210 data-nosnippet>210</a>            );
-<a href=#211 id=211 data-nosnippet>211</a>            <span class="macro">assert!</span>(cc.transaction.e2ei_is_enabled(case.signature_scheme()).<span class="kw">await</span>.unwrap());
-<a href=#212 id=212 data-nosnippet>212</a>        })
-<a href=#213 id=213 data-nosnippet>213</a>        .<span class="kw">await
-<a href=#214 id=214 data-nosnippet>214</a>    </span>}
-<a href=#215 id=215 data-nosnippet>215</a>}</code></pre></div></section></main></body></html>
+<a href=#208 id=208 data-nosnippet>208</a>                    </span>.unwrap()
+<a href=#209 id=209 data-nosnippet>209</a>            );
+<a href=#210 id=210 data-nosnippet>210</a>        })
+<a href=#211 id=211 data-nosnippet>211</a>        .<span class="kw">await
+<a href=#212 id=212 data-nosnippet>212</a>    </span>}
+<a href=#213 id=213 data-nosnippet>213</a>}</code></pre></div></section></main></body></html>

@@ -392,7 +392,7 @@
 <a href=#392 id=392 data-nosnippet>392</a>            <span class="kw">return</span>;
 <a href=#393 id=393 data-nosnippet>393</a>        }
 <a href=#394 id=394 data-nosnippet>394</a>
-<a href=#395 id=395 data-nosnippet>395</a>        <span class="kw">let </span>[<span class="kw-2">mut </span>session_context] = case.sessions().<span class="kw">await</span>;
+<a href=#395 id=395 data-nosnippet>395</a>        <span class="kw">let </span>[session_context] = case.sessions_basic_with_pki_env().<span class="kw">await</span>;
 <a href=#396 id=396 data-nosnippet>396</a>        Box::pin(<span class="kw">async move </span>{
 <a href=#397 id=397 data-nosnippet>397</a>            <span class="kw">let </span>signature_scheme = case.signature_scheme();
 <a href=#398 id=398 data-nosnippet>398</a>            <span class="kw">let </span>cipher_suite = case.ciphersuite();
@@ -405,12 +405,12 @@
 <a href=#405 id=405 data-nosnippet>405</a>                </span>.unwrap();
 <a href=#406 id=406 data-nosnippet>406</a>
 <a href=#407 id=407 data-nosnippet>407</a>            <span class="comment">// Set up E2E identity
-<a href=#408 id=408 data-nosnippet>408</a>            </span><span class="kw">let </span>test_chain = x509::X509TestChain::init_for_random_clients(signature_scheme, <span class="number">1</span>);
+<a href=#408 id=408 data-nosnippet>408</a>            </span><span class="kw">let </span>test_chain = session_context.x509_chain_unchecked();
 <a href=#409 id=409 data-nosnippet>409</a>
 <a href=#410 id=410 data-nosnippet>410</a>            <span class="kw">let </span>(<span class="kw-2">mut </span>enrollment, cert_chain) = e2ei_enrollment(
-<a href=#411 id=411 data-nosnippet>411</a>                <span class="kw-2">&amp;mut </span>session_context,
+<a href=#411 id=411 data-nosnippet>411</a>                <span class="kw-2">&amp;</span>session_context,
 <a href=#412 id=412 data-nosnippet>412</a>                <span class="kw-2">&amp;</span>case,
-<a href=#413 id=413 data-nosnippet>413</a>                <span class="kw-2">&amp;</span>test_chain,
+<a href=#413 id=413 data-nosnippet>413</a>                test_chain,
 <a href=#414 id=414 data-nosnippet>414</a>                <span class="prelude-val">None</span>,
 <a href=#415 id=415 data-nosnippet>415</a>                <span class="bool-val">false</span>,
 <a href=#416 id=416 data-nosnippet>416</a>                init_activation_or_rotation,

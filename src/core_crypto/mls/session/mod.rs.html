@@ -713,89 +713,72 @@
 <a href=#713 id=713 data-nosnippet>713</a>            <span class="prelude-val">Ok</span>(kps)
 <a href=#714 id=714 data-nosnippet>714</a>        }
 <a href=#715 id=715 data-nosnippet>715</a>
-<a href=#716 id=716 data-nosnippet>716</a>        <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>init_x509_credential_bundle_if_missing(
+<a href=#716 id=716 data-nosnippet>716</a>        <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>generate_one_keypackage(
 <a href=#717 id=717 data-nosnippet>717</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#718 id=718 data-nosnippet>718</a>            backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
-<a href=#719 id=719 data-nosnippet>719</a>            sc: SignatureScheme,
-<a href=#720 id=720 data-nosnippet>720</a>            cb: CertificateBundle,
-<a href=#721 id=721 data-nosnippet>721</a>        ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#722 id=722 data-nosnippet>722</a>            <span class="kw">let </span>existing_cb = <span class="self">self
-<a href=#723 id=723 data-nosnippet>723</a>                </span>.find_most_recent_credential_bundle(sc, MlsCredentialType::X509)
-<a href=#724 id=724 data-nosnippet>724</a>                .<span class="kw">await
-<a href=#725 id=725 data-nosnippet>725</a>                </span>.is_err();
-<a href=#726 id=726 data-nosnippet>726</a>            <span class="kw">if </span>existing_cb {
-<a href=#727 id=727 data-nosnippet>727</a>                <span class="self">self</span>.save_new_x509_credential_bundle(<span class="kw-2">&amp;</span>backend.keystore(), sc, cb)
-<a href=#728 id=728 data-nosnippet>728</a>                    .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#729 id=729 data-nosnippet>729</a>            }
-<a href=#730 id=730 data-nosnippet>730</a>            <span class="prelude-val">Ok</span>(())
-<a href=#731 id=731 data-nosnippet>731</a>        }
-<a href=#732 id=732 data-nosnippet>732</a>
-<a href=#733 id=733 data-nosnippet>733</a>        <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>generate_one_keypackage(
-<a href=#734 id=734 data-nosnippet>734</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#735 id=735 data-nosnippet>735</a>            backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
-<a href=#736 id=736 data-nosnippet>736</a>            cs: MlsCiphersuite,
-<a href=#737 id=737 data-nosnippet>737</a>            ct: MlsCredentialType,
-<a href=#738 id=738 data-nosnippet>738</a>        ) -&gt; <span class="prelude-ty">Result</span>&lt;openmls::prelude::KeyPackage&gt; {
-<a href=#739 id=739 data-nosnippet>739</a>            <span class="kw">let </span>cb = <span class="self">self
-<a href=#740 id=740 data-nosnippet>740</a>                </span>.find_most_recent_credential_bundle(cs.signature_algorithm(), ct)
-<a href=#741 id=741 data-nosnippet>741</a>                .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#742 id=742 data-nosnippet>742</a>            <span class="self">self</span>.generate_one_keypackage_from_credential_bundle(backend, cs, <span class="kw-2">&amp;</span>cb)
-<a href=#743 id=743 data-nosnippet>743</a>                .<span class="kw">await
-<a href=#744 id=744 data-nosnippet>744</a>        </span>}
-<a href=#745 id=745 data-nosnippet>745</a>
-<a href=#746 id=746 data-nosnippet>746</a>        <span class="doccomment">/// Count the entities
-<a href=#747 id=747 data-nosnippet>747</a>        </span><span class="kw">pub async fn </span>count_entities(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; EntitiesCount {
-<a href=#748 id=748 data-nosnippet>748</a>            <span class="kw">let </span>keystore = <span class="self">self</span>.crypto_provider.keystore();
-<a href=#749 id=749 data-nosnippet>749</a>            <span class="kw">let </span>credential = keystore.count::&lt;MlsCredential&gt;().<span class="kw">await</span>.unwrap();
-<a href=#750 id=750 data-nosnippet>750</a>            <span class="kw">let </span>encryption_keypair = keystore.count::&lt;MlsEncryptionKeyPair&gt;().<span class="kw">await</span>.unwrap();
-<a href=#751 id=751 data-nosnippet>751</a>            <span class="kw">let </span>epoch_encryption_keypair = keystore.count::&lt;MlsEpochEncryptionKeyPair&gt;().<span class="kw">await</span>.unwrap();
-<a href=#752 id=752 data-nosnippet>752</a>            <span class="kw">let </span>enrollment = keystore.count::&lt;E2eiEnrollment&gt;().<span class="kw">await</span>.unwrap();
-<a href=#753 id=753 data-nosnippet>753</a>            <span class="kw">let </span>group = keystore.count::&lt;PersistedMlsGroup&gt;().<span class="kw">await</span>.unwrap();
-<a href=#754 id=754 data-nosnippet>754</a>            <span class="kw">let </span>hpke_private_key = keystore.count::&lt;MlsHpkePrivateKey&gt;().<span class="kw">await</span>.unwrap();
-<a href=#755 id=755 data-nosnippet>755</a>            <span class="kw">let </span>key_package = keystore.count::&lt;MlsKeyPackage&gt;().<span class="kw">await</span>.unwrap();
-<a href=#756 id=756 data-nosnippet>756</a>            <span class="kw">let </span>pending_group = keystore.count::&lt;PersistedMlsPendingGroup&gt;().<span class="kw">await</span>.unwrap();
-<a href=#757 id=757 data-nosnippet>757</a>            <span class="kw">let </span>pending_messages = keystore.count::&lt;MlsPendingMessage&gt;().<span class="kw">await</span>.unwrap();
-<a href=#758 id=758 data-nosnippet>758</a>            <span class="kw">let </span>psk_bundle = keystore.count::&lt;MlsPskBundle&gt;().<span class="kw">await</span>.unwrap();
-<a href=#759 id=759 data-nosnippet>759</a>            <span class="kw">let </span>signature_keypair = keystore.count::&lt;MlsSignatureKeyPair&gt;().<span class="kw">await</span>.unwrap();
-<a href=#760 id=760 data-nosnippet>760</a>            EntitiesCount {
-<a href=#761 id=761 data-nosnippet>761</a>                credential,
-<a href=#762 id=762 data-nosnippet>762</a>                encryption_keypair,
-<a href=#763 id=763 data-nosnippet>763</a>                epoch_encryption_keypair,
-<a href=#764 id=764 data-nosnippet>764</a>                enrollment,
-<a href=#765 id=765 data-nosnippet>765</a>                group,
-<a href=#766 id=766 data-nosnippet>766</a>                hpke_private_key,
-<a href=#767 id=767 data-nosnippet>767</a>                key_package,
-<a href=#768 id=768 data-nosnippet>768</a>                pending_group,
-<a href=#769 id=769 data-nosnippet>769</a>                pending_messages,
-<a href=#770 id=770 data-nosnippet>770</a>                psk_bundle,
-<a href=#771 id=771 data-nosnippet>771</a>                signature_keypair,
-<a href=#772 id=772 data-nosnippet>772</a>            }
-<a href=#773 id=773 data-nosnippet>773</a>        }
-<a href=#774 id=774 data-nosnippet>774</a>    }
-<a href=#775 id=775 data-nosnippet>775</a>    <span class="macro">wasm_bindgen_test_configure!</span>(run_in_browser);
-<a href=#776 id=776 data-nosnippet>776</a>
-<a href=#777 id=777 data-nosnippet>777</a>    <span class="attr">#[apply(all_cred_cipher)]
-<a href=#778 id=778 data-nosnippet>778</a>    #[wasm_bindgen_test]
-<a href=#779 id=779 data-nosnippet>779</a>    </span><span class="kw">async fn </span>can_generate_session(case: TestContext) {
-<a href=#780 id=780 data-nosnippet>780</a>        <span class="kw">let </span>[alice] = case.sessions().<span class="kw">await</span>;
-<a href=#781 id=781 data-nosnippet>781</a>        <span class="kw">let </span>key = DatabaseKey::generate();
-<a href=#782 id=782 data-nosnippet>782</a>        <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="kw-2">&amp;</span>key).<span class="kw">await</span>.unwrap();
-<a href=#783 id=783 data-nosnippet>783</a>        <span class="kw">let </span>x509_test_chain = <span class="kw">if </span>case.is_x509() {
-<a href=#784 id=784 data-nosnippet>784</a>            <span class="kw">let </span>x509_test_chain = <span class="kw">crate</span>::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
-<a href=#785 id=785 data-nosnippet>785</a>            x509_test_chain.register_with_provider(<span class="kw-2">&amp;</span>backend).<span class="kw">await</span>;
-<a href=#786 id=786 data-nosnippet>786</a>            <span class="prelude-val">Some</span>(x509_test_chain)
-<a href=#787 id=787 data-nosnippet>787</a>        } <span class="kw">else </span>{
-<a href=#788 id=788 data-nosnippet>788</a>            <span class="prelude-val">None
-<a href=#789 id=789 data-nosnippet>789</a>        </span>};
-<a href=#790 id=790 data-nosnippet>790</a>        backend.new_transaction().<span class="kw">await</span>.unwrap();
-<a href=#791 id=791 data-nosnippet>791</a>        <span class="kw">let </span>session = alice.session().<span class="kw">await</span>;
-<a href=#792 id=792 data-nosnippet>792</a>        session
-<a href=#793 id=793 data-nosnippet>793</a>            .random_generate(
-<a href=#794 id=794 data-nosnippet>794</a>                <span class="kw-2">&amp;</span>case,
-<a href=#795 id=795 data-nosnippet>795</a>                x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
-<a href=#796 id=796 data-nosnippet>796</a>                <span class="bool-val">false</span>,
-<a href=#797 id=797 data-nosnippet>797</a>            )
-<a href=#798 id=798 data-nosnippet>798</a>            .<span class="kw">await
-<a href=#799 id=799 data-nosnippet>799</a>            </span>.unwrap();
-<a href=#800 id=800 data-nosnippet>800</a>    }
-<a href=#801 id=801 data-nosnippet>801</a>}</code></pre></div></section></main></body></html>
+<a href=#719 id=719 data-nosnippet>719</a>            cs: MlsCiphersuite,
+<a href=#720 id=720 data-nosnippet>720</a>            ct: MlsCredentialType,
+<a href=#721 id=721 data-nosnippet>721</a>        ) -&gt; <span class="prelude-ty">Result</span>&lt;openmls::prelude::KeyPackage&gt; {
+<a href=#722 id=722 data-nosnippet>722</a>            <span class="kw">let </span>cb = <span class="self">self
+<a href=#723 id=723 data-nosnippet>723</a>                </span>.find_most_recent_credential_bundle(cs.signature_algorithm(), ct)
+<a href=#724 id=724 data-nosnippet>724</a>                .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#725 id=725 data-nosnippet>725</a>            <span class="self">self</span>.generate_one_keypackage_from_credential_bundle(backend, cs, <span class="kw-2">&amp;</span>cb)
+<a href=#726 id=726 data-nosnippet>726</a>                .<span class="kw">await
+<a href=#727 id=727 data-nosnippet>727</a>        </span>}
+<a href=#728 id=728 data-nosnippet>728</a>
+<a href=#729 id=729 data-nosnippet>729</a>        <span class="doccomment">/// Count the entities
+<a href=#730 id=730 data-nosnippet>730</a>        </span><span class="kw">pub async fn </span>count_entities(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; EntitiesCount {
+<a href=#731 id=731 data-nosnippet>731</a>            <span class="kw">let </span>keystore = <span class="self">self</span>.crypto_provider.keystore();
+<a href=#732 id=732 data-nosnippet>732</a>            <span class="kw">let </span>credential = keystore.count::&lt;MlsCredential&gt;().<span class="kw">await</span>.unwrap();
+<a href=#733 id=733 data-nosnippet>733</a>            <span class="kw">let </span>encryption_keypair = keystore.count::&lt;MlsEncryptionKeyPair&gt;().<span class="kw">await</span>.unwrap();
+<a href=#734 id=734 data-nosnippet>734</a>            <span class="kw">let </span>epoch_encryption_keypair = keystore.count::&lt;MlsEpochEncryptionKeyPair&gt;().<span class="kw">await</span>.unwrap();
+<a href=#735 id=735 data-nosnippet>735</a>            <span class="kw">let </span>enrollment = keystore.count::&lt;E2eiEnrollment&gt;().<span class="kw">await</span>.unwrap();
+<a href=#736 id=736 data-nosnippet>736</a>            <span class="kw">let </span>group = keystore.count::&lt;PersistedMlsGroup&gt;().<span class="kw">await</span>.unwrap();
+<a href=#737 id=737 data-nosnippet>737</a>            <span class="kw">let </span>hpke_private_key = keystore.count::&lt;MlsHpkePrivateKey&gt;().<span class="kw">await</span>.unwrap();
+<a href=#738 id=738 data-nosnippet>738</a>            <span class="kw">let </span>key_package = keystore.count::&lt;MlsKeyPackage&gt;().<span class="kw">await</span>.unwrap();
+<a href=#739 id=739 data-nosnippet>739</a>            <span class="kw">let </span>pending_group = keystore.count::&lt;PersistedMlsPendingGroup&gt;().<span class="kw">await</span>.unwrap();
+<a href=#740 id=740 data-nosnippet>740</a>            <span class="kw">let </span>pending_messages = keystore.count::&lt;MlsPendingMessage&gt;().<span class="kw">await</span>.unwrap();
+<a href=#741 id=741 data-nosnippet>741</a>            <span class="kw">let </span>psk_bundle = keystore.count::&lt;MlsPskBundle&gt;().<span class="kw">await</span>.unwrap();
+<a href=#742 id=742 data-nosnippet>742</a>            <span class="kw">let </span>signature_keypair = keystore.count::&lt;MlsSignatureKeyPair&gt;().<span class="kw">await</span>.unwrap();
+<a href=#743 id=743 data-nosnippet>743</a>            EntitiesCount {
+<a href=#744 id=744 data-nosnippet>744</a>                credential,
+<a href=#745 id=745 data-nosnippet>745</a>                encryption_keypair,
+<a href=#746 id=746 data-nosnippet>746</a>                epoch_encryption_keypair,
+<a href=#747 id=747 data-nosnippet>747</a>                enrollment,
+<a href=#748 id=748 data-nosnippet>748</a>                group,
+<a href=#749 id=749 data-nosnippet>749</a>                hpke_private_key,
+<a href=#750 id=750 data-nosnippet>750</a>                key_package,
+<a href=#751 id=751 data-nosnippet>751</a>                pending_group,
+<a href=#752 id=752 data-nosnippet>752</a>                pending_messages,
+<a href=#753 id=753 data-nosnippet>753</a>                psk_bundle,
+<a href=#754 id=754 data-nosnippet>754</a>                signature_keypair,
+<a href=#755 id=755 data-nosnippet>755</a>            }
+<a href=#756 id=756 data-nosnippet>756</a>        }
+<a href=#757 id=757 data-nosnippet>757</a>    }
+<a href=#758 id=758 data-nosnippet>758</a>    <span class="macro">wasm_bindgen_test_configure!</span>(run_in_browser);
+<a href=#759 id=759 data-nosnippet>759</a>
+<a href=#760 id=760 data-nosnippet>760</a>    <span class="attr">#[apply(all_cred_cipher)]
+<a href=#761 id=761 data-nosnippet>761</a>    #[wasm_bindgen_test]
+<a href=#762 id=762 data-nosnippet>762</a>    </span><span class="kw">async fn </span>can_generate_session(case: TestContext) {
+<a href=#763 id=763 data-nosnippet>763</a>        <span class="kw">let </span>[alice] = case.sessions().<span class="kw">await</span>;
+<a href=#764 id=764 data-nosnippet>764</a>        <span class="kw">let </span>key = DatabaseKey::generate();
+<a href=#765 id=765 data-nosnippet>765</a>        <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="kw-2">&amp;</span>key).<span class="kw">await</span>.unwrap();
+<a href=#766 id=766 data-nosnippet>766</a>        <span class="kw">let </span>x509_test_chain = <span class="kw">if </span>case.is_x509() {
+<a href=#767 id=767 data-nosnippet>767</a>            <span class="kw">let </span>x509_test_chain = <span class="kw">crate</span>::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
+<a href=#768 id=768 data-nosnippet>768</a>            x509_test_chain.register_with_provider(<span class="kw-2">&amp;</span>backend).<span class="kw">await</span>;
+<a href=#769 id=769 data-nosnippet>769</a>            <span class="prelude-val">Some</span>(x509_test_chain)
+<a href=#770 id=770 data-nosnippet>770</a>        } <span class="kw">else </span>{
+<a href=#771 id=771 data-nosnippet>771</a>            <span class="prelude-val">None
+<a href=#772 id=772 data-nosnippet>772</a>        </span>};
+<a href=#773 id=773 data-nosnippet>773</a>        backend.new_transaction().<span class="kw">await</span>.unwrap();
+<a href=#774 id=774 data-nosnippet>774</a>        <span class="kw">let </span>session = alice.session().<span class="kw">await</span>;
+<a href=#775 id=775 data-nosnippet>775</a>        session
+<a href=#776 id=776 data-nosnippet>776</a>            .random_generate(
+<a href=#777 id=777 data-nosnippet>777</a>                <span class="kw-2">&amp;</span>case,
+<a href=#778 id=778 data-nosnippet>778</a>                x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
+<a href=#779 id=779 data-nosnippet>779</a>                <span class="bool-val">false</span>,
+<a href=#780 id=780 data-nosnippet>780</a>            )
+<a href=#781 id=781 data-nosnippet>781</a>            .<span class="kw">await
+<a href=#782 id=782 data-nosnippet>782</a>            </span>.unwrap();
+<a href=#783 id=783 data-nosnippet>783</a>    }
+<a href=#784 id=784 data-nosnippet>784</a>}</code></pre></div></section></main></body></html>

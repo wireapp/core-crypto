@@ -61,93 +61,88 @@
 <a href=#61 id=61 data-nosnippet>61</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#62 id=62 data-nosnippet>62</a>        #[wasm_bindgen_test]
 <a href=#63 id=63 data-nosnippet>63</a>        </span><span class="kw">async fn </span>should_apply_pending_commit(case: TestContext) {
-<a href=#64 id=64 data-nosnippet>64</a>            <span class="kw">let </span>[alice_central, bob_central] = case.sessions().<span class="kw">await</span>;
+<a href=#64 id=64 data-nosnippet>64</a>            <span class="kw">let </span>[alice, bob] = case.sessions().<span class="kw">await</span>;
 <a href=#65 id=65 data-nosnippet>65</a>            Box::pin(<span class="kw">async move </span>{
-<a href=#66 id=66 data-nosnippet>66</a>                <span class="kw">let </span>id = conversation_id();
-<a href=#67 id=67 data-nosnippet>67</a>                alice_central
-<a href=#68 id=68 data-nosnippet>68</a>                    .transaction
-<a href=#69 id=69 data-nosnippet>69</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
-<a href=#70 id=70 data-nosnippet>70</a>                    .<span class="kw">await
-<a href=#71 id=71 data-nosnippet>71</a>                    </span>.unwrap();
-<a href=#72 id=72 data-nosnippet>72</a>                alice_central.invite_all(<span class="kw-2">&amp;</span>case, <span class="kw-2">&amp;</span>id, [<span class="kw-2">&amp;</span>bob_central]).<span class="kw">await</span>.unwrap();
-<a href=#73 id=73 data-nosnippet>73</a>                <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
-<a href=#74 id=74 data-nosnippet>74</a>                alice_central
-<a href=#75 id=75 data-nosnippet>75</a>                    .transaction
-<a href=#76 id=76 data-nosnippet>76</a>                    .conversation(<span class="kw-2">&amp;</span>id)
-<a href=#77 id=77 data-nosnippet>77</a>                    .<span class="kw">await
-<a href=#78 id=78 data-nosnippet>78</a>                    </span>.unwrap()
-<a href=#79 id=79 data-nosnippet>79</a>                    .remove_members(<span class="kw-2">&amp;</span>[bob_central.get_client_id().<span class="kw">await</span>])
-<a href=#80 id=80 data-nosnippet>80</a>                    .<span class="kw">await
-<a href=#81 id=81 data-nosnippet>81</a>                    </span>.unwrap();
-<a href=#82 id=82 data-nosnippet>82</a>                <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">1</span>);
-<a href=#83 id=83 data-nosnippet>83</a>            })
-<a href=#84 id=84 data-nosnippet>84</a>            .<span class="kw">await
-<a href=#85 id=85 data-nosnippet>85</a>        </span>}
-<a href=#86 id=86 data-nosnippet>86</a>
-<a href=#87 id=87 data-nosnippet>87</a>        <span class="attr">#[apply(all_cred_cipher)]
-<a href=#88 id=88 data-nosnippet>88</a>        #[wasm_bindgen_test]
-<a href=#89 id=89 data-nosnippet>89</a>        </span><span class="kw">async fn </span>should_clear_pending_commit_and_proposals(case: TestContext) {
-<a href=#90 id=90 data-nosnippet>90</a>            <span class="kw">let </span>[<span class="kw-2">mut </span>alice_central] = case.sessions().<span class="kw">await</span>;
-<a href=#91 id=91 data-nosnippet>91</a>            Box::pin(<span class="kw">async move </span>{
-<a href=#92 id=92 data-nosnippet>92</a>                <span class="kw">let </span>id = conversation_id();
-<a href=#93 id=93 data-nosnippet>93</a>                alice_central
-<a href=#94 id=94 data-nosnippet>94</a>                    .transaction
-<a href=#95 id=95 data-nosnippet>95</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
-<a href=#96 id=96 data-nosnippet>96</a>                    .<span class="kw">await
-<a href=#97 id=97 data-nosnippet>97</a>                    </span>.unwrap();
-<a href=#98 id=98 data-nosnippet>98</a>                alice_central.transaction.new_update_proposal(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
-<a href=#99 id=99 data-nosnippet>99</a>                alice_central.create_unmerged_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>;
-<a href=#100 id=100 data-nosnippet>100</a>                <span class="macro">assert!</span>(!alice_central.pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_empty());
-<a href=#101 id=101 data-nosnippet>101</a>                <span class="macro">assert!</span>(alice_central.pending_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_some());
-<a href=#102 id=102 data-nosnippet>102</a>                alice_central
-<a href=#103 id=103 data-nosnippet>103</a>                    .get_conversation_unchecked(<span class="kw-2">&amp;</span>id)
-<a href=#104 id=104 data-nosnippet>104</a>                    .<span class="kw">await
-<a href=#105 id=105 data-nosnippet>105</a>                    </span>.commit_accepted(
-<a href=#106 id=106 data-nosnippet>106</a>                        <span class="kw-2">&amp;</span>alice_central.transaction.session().<span class="kw">await</span>.unwrap(),
-<a href=#107 id=107 data-nosnippet>107</a>                        <span class="kw-2">&amp;</span>alice_central.session.crypto_provider,
-<a href=#108 id=108 data-nosnippet>108</a>                    )
-<a href=#109 id=109 data-nosnippet>109</a>                    .<span class="kw">await
-<a href=#110 id=110 data-nosnippet>110</a>                    </span>.unwrap();
-<a href=#111 id=111 data-nosnippet>111</a>                <span class="macro">assert!</span>(alice_central.pending_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_none());
-<a href=#112 id=112 data-nosnippet>112</a>                <span class="macro">assert!</span>(alice_central.pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_empty());
-<a href=#113 id=113 data-nosnippet>113</a>            })
-<a href=#114 id=114 data-nosnippet>114</a>            .<span class="kw">await
-<a href=#115 id=115 data-nosnippet>115</a>        </span>}
-<a href=#116 id=116 data-nosnippet>116</a>
-<a href=#117 id=117 data-nosnippet>117</a>        <span class="attr">#[apply(all_cred_cipher)]
-<a href=#118 id=118 data-nosnippet>118</a>        #[wasm_bindgen_test]
-<a href=#119 id=119 data-nosnippet>119</a>        </span><span class="kw">async fn </span>should_clean_associated_key_material(case: TestContext) {
-<a href=#120 id=120 data-nosnippet>120</a>            <span class="kw">let </span>[alice_central] = case.sessions().<span class="kw">await</span>;
-<a href=#121 id=121 data-nosnippet>121</a>            Box::pin(<span class="kw">async move </span>{
-<a href=#122 id=122 data-nosnippet>122</a>                <span class="kw">let </span>id = conversation_id();
-<a href=#123 id=123 data-nosnippet>123</a>                alice_central
-<a href=#124 id=124 data-nosnippet>124</a>                    .transaction
-<a href=#125 id=125 data-nosnippet>125</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
-<a href=#126 id=126 data-nosnippet>126</a>                    .<span class="kw">await
-<a href=#127 id=127 data-nosnippet>127</a>                    </span>.unwrap();
-<a href=#128 id=128 data-nosnippet>128</a>
-<a href=#129 id=129 data-nosnippet>129</a>                <span class="kw">let </span>initial_count = alice_central.transaction.count_entities().<span class="kw">await</span>;
-<a href=#130 id=130 data-nosnippet>130</a>
-<a href=#131 id=131 data-nosnippet>131</a>                alice_central.transaction.new_update_proposal(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
-<a href=#132 id=132 data-nosnippet>132</a>                <span class="kw">let </span>post_proposal_count = alice_central.transaction.count_entities().<span class="kw">await</span>;
-<a href=#133 id=133 data-nosnippet>133</a>                <span class="macro">assert_eq!</span>(
-<a href=#134 id=134 data-nosnippet>134</a>                    post_proposal_count.encryption_keypair,
-<a href=#135 id=135 data-nosnippet>135</a>                    initial_count.encryption_keypair + <span class="number">1
-<a href=#136 id=136 data-nosnippet>136</a>                </span>);
-<a href=#137 id=137 data-nosnippet>137</a>
-<a href=#138 id=138 data-nosnippet>138</a>                alice_central
-<a href=#139 id=139 data-nosnippet>139</a>                    .transaction
-<a href=#140 id=140 data-nosnippet>140</a>                    .conversation(<span class="kw-2">&amp;</span>id)
-<a href=#141 id=141 data-nosnippet>141</a>                    .<span class="kw">await
-<a href=#142 id=142 data-nosnippet>142</a>                    </span>.unwrap()
-<a href=#143 id=143 data-nosnippet>143</a>                    .commit_pending_proposals()
-<a href=#144 id=144 data-nosnippet>144</a>                    .<span class="kw">await
-<a href=#145 id=145 data-nosnippet>145</a>                    </span>.unwrap();
-<a href=#146 id=146 data-nosnippet>146</a>
-<a href=#147 id=147 data-nosnippet>147</a>                <span class="kw">let </span>final_count = alice_central.transaction.count_entities().<span class="kw">await</span>;
-<a href=#148 id=148 data-nosnippet>148</a>                <span class="macro">assert_eq!</span>(initial_count, final_count);
-<a href=#149 id=149 data-nosnippet>149</a>            })
-<a href=#150 id=150 data-nosnippet>150</a>            .<span class="kw">await
-<a href=#151 id=151 data-nosnippet>151</a>        </span>}
-<a href=#152 id=152 data-nosnippet>152</a>    }
-<a href=#153 id=153 data-nosnippet>153</a>}</code></pre></div></section></main></body></html>
+<a href=#66 id=66 data-nosnippet>66</a>                <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>;
+<a href=#67 id=67 data-nosnippet>67</a>                <span class="kw">let </span>commit_guard = conversation.update_unmerged().<span class="kw">await</span>.notify_member(<span class="kw-2">&amp;</span>bob).<span class="kw">await</span>;
+<a href=#68 id=68 data-nosnippet>68</a>                <span class="kw">let </span>conversation = commit_guard.conversation();
+<a href=#69 id=69 data-nosnippet>69</a>
+<a href=#70 id=70 data-nosnippet>70</a>                <span class="macro">assert!</span>(conversation.has_pending_commit().<span class="kw">await</span>);
+<a href=#71 id=71 data-nosnippet>71</a>
+<a href=#72 id=72 data-nosnippet>72</a>                conversation
+<a href=#73 id=73 data-nosnippet>73</a>                    .guard()
+<a href=#74 id=74 data-nosnippet>74</a>                    .<span class="kw">await
+<a href=#75 id=75 data-nosnippet>75</a>                    </span>.conversation_mut()
+<a href=#76 id=76 data-nosnippet>76</a>                    .<span class="kw">await
+<a href=#77 id=77 data-nosnippet>77</a>                    </span>.commit_accepted(
+<a href=#78 id=78 data-nosnippet>78</a>                        <span class="kw-2">&amp;</span>alice.transaction.session().<span class="kw">await</span>.unwrap(),
+<a href=#79 id=79 data-nosnippet>79</a>                        <span class="kw-2">&amp;</span>alice.session.crypto_provider,
+<a href=#80 id=80 data-nosnippet>80</a>                    )
+<a href=#81 id=81 data-nosnippet>81</a>                    .<span class="kw">await
+<a href=#82 id=82 data-nosnippet>82</a>                    </span>.unwrap();
+<a href=#83 id=83 data-nosnippet>83</a>
+<a href=#84 id=84 data-nosnippet>84</a>                <span class="macro">assert_eq!</span>(conversation.member_count().<span class="kw">await</span>, <span class="number">2</span>);
+<a href=#85 id=85 data-nosnippet>85</a>                <span class="macro">assert!</span>(conversation.is_functional_and_contains([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>);
+<a href=#86 id=86 data-nosnippet>86</a>            })
+<a href=#87 id=87 data-nosnippet>87</a>            .<span class="kw">await
+<a href=#88 id=88 data-nosnippet>88</a>        </span>}
+<a href=#89 id=89 data-nosnippet>89</a>
+<a href=#90 id=90 data-nosnippet>90</a>        <span class="attr">#[apply(all_cred_cipher)]
+<a href=#91 id=91 data-nosnippet>91</a>        #[wasm_bindgen_test]
+<a href=#92 id=92 data-nosnippet>92</a>        </span><span class="kw">async fn </span>should_clear_pending_commit_and_proposals(case: TestContext) {
+<a href=#93 id=93 data-nosnippet>93</a>            <span class="kw">let </span>[alice] = case.sessions().<span class="kw">await</span>;
+<a href=#94 id=94 data-nosnippet>94</a>            Box::pin(<span class="kw">async move </span>{
+<a href=#95 id=95 data-nosnippet>95</a>                <span class="kw">let </span>commit = case
+<a href=#96 id=96 data-nosnippet>96</a>                    .create_conversation([<span class="kw-2">&amp;</span>alice])
+<a href=#97 id=97 data-nosnippet>97</a>                    .<span class="kw">await
+<a href=#98 id=98 data-nosnippet>98</a>                    </span>.update_proposal_notify()
+<a href=#99 id=99 data-nosnippet>99</a>                    .<span class="kw">await
+<a href=#100 id=100 data-nosnippet>100</a>                    </span>.update_unmerged()
+<a href=#101 id=101 data-nosnippet>101</a>                    .<span class="kw">await</span>;
+<a href=#102 id=102 data-nosnippet>102</a>
+<a href=#103 id=103 data-nosnippet>103</a>                <span class="kw">let </span>conversation = commit.conversation();
+<a href=#104 id=104 data-nosnippet>104</a>
+<a href=#105 id=105 data-nosnippet>105</a>                <span class="macro">assert!</span>(conversation.has_pending_proposals().<span class="kw">await</span>);
+<a href=#106 id=106 data-nosnippet>106</a>                <span class="macro">assert!</span>(conversation.has_pending_commit().<span class="kw">await</span>);
+<a href=#107 id=107 data-nosnippet>107</a>
+<a href=#108 id=108 data-nosnippet>108</a>                conversation
+<a href=#109 id=109 data-nosnippet>109</a>                    .guard()
+<a href=#110 id=110 data-nosnippet>110</a>                    .<span class="kw">await
+<a href=#111 id=111 data-nosnippet>111</a>                    </span>.conversation_mut()
+<a href=#112 id=112 data-nosnippet>112</a>                    .<span class="kw">await
+<a href=#113 id=113 data-nosnippet>113</a>                    </span>.commit_accepted(
+<a href=#114 id=114 data-nosnippet>114</a>                        <span class="kw-2">&amp;</span>alice.transaction.session().<span class="kw">await</span>.unwrap(),
+<a href=#115 id=115 data-nosnippet>115</a>                        <span class="kw-2">&amp;</span>alice.session.crypto_provider,
+<a href=#116 id=116 data-nosnippet>116</a>                    )
+<a href=#117 id=117 data-nosnippet>117</a>                    .<span class="kw">await
+<a href=#118 id=118 data-nosnippet>118</a>                    </span>.unwrap();
+<a href=#119 id=119 data-nosnippet>119</a>                <span class="macro">assert!</span>(!conversation.has_pending_proposals().<span class="kw">await</span>);
+<a href=#120 id=120 data-nosnippet>120</a>                <span class="macro">assert!</span>(!conversation.has_pending_commit().<span class="kw">await</span>);
+<a href=#121 id=121 data-nosnippet>121</a>            })
+<a href=#122 id=122 data-nosnippet>122</a>            .<span class="kw">await
+<a href=#123 id=123 data-nosnippet>123</a>        </span>}
+<a href=#124 id=124 data-nosnippet>124</a>
+<a href=#125 id=125 data-nosnippet>125</a>        <span class="attr">#[apply(all_cred_cipher)]
+<a href=#126 id=126 data-nosnippet>126</a>        #[wasm_bindgen_test]
+<a href=#127 id=127 data-nosnippet>127</a>        </span><span class="kw">async fn </span>should_clean_associated_key_material(case: TestContext) {
+<a href=#128 id=128 data-nosnippet>128</a>            <span class="kw">let </span>[alice] = case.sessions().<span class="kw">await</span>;
+<a href=#129 id=129 data-nosnippet>129</a>            Box::pin(<span class="kw">async move </span>{
+<a href=#130 id=130 data-nosnippet>130</a>                <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>;
+<a href=#131 id=131 data-nosnippet>131</a>                <span class="kw">let </span>initial_count = alice.transaction.count_entities().<span class="kw">await</span>;
+<a href=#132 id=132 data-nosnippet>132</a>
+<a href=#133 id=133 data-nosnippet>133</a>                <span class="kw">let </span>conversation = conversation.update_proposal_notify().<span class="kw">await</span>;
+<a href=#134 id=134 data-nosnippet>134</a>                <span class="kw">let </span>post_proposal_count = alice.transaction.count_entities().<span class="kw">await</span>;
+<a href=#135 id=135 data-nosnippet>135</a>                <span class="macro">assert_eq!</span>(
+<a href=#136 id=136 data-nosnippet>136</a>                    post_proposal_count.encryption_keypair,
+<a href=#137 id=137 data-nosnippet>137</a>                    initial_count.encryption_keypair + <span class="number">1
+<a href=#138 id=138 data-nosnippet>138</a>                </span>);
+<a href=#139 id=139 data-nosnippet>139</a>
+<a href=#140 id=140 data-nosnippet>140</a>                conversation.commit_pending_proposals_notify().<span class="kw">await</span>;
+<a href=#141 id=141 data-nosnippet>141</a>
+<a href=#142 id=142 data-nosnippet>142</a>                <span class="kw">let </span>final_count = alice.transaction.count_entities().<span class="kw">await</span>;
+<a href=#143 id=143 data-nosnippet>143</a>                <span class="macro">assert_eq!</span>(initial_count, final_count);
+<a href=#144 id=144 data-nosnippet>144</a>            })
+<a href=#145 id=145 data-nosnippet>145</a>            .<span class="kw">await
+<a href=#146 id=146 data-nosnippet>146</a>        </span>}
+<a href=#147 id=147 data-nosnippet>147</a>    }
+<a href=#148 id=148 data-nosnippet>148</a>}</code></pre></div></section></main></body></html>
