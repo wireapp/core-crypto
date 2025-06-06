@@ -1,9 +1,7 @@
 use super::{error::Error, error::Result};
-#[cfg(not(target_family = "wasm"))]
-use crate::e2e_identity::refresh_token::RefreshToken;
 use crate::{
     KeystoreError, MlsError, RecursiveError,
-    e2e_identity::NewCrlDistributionPoints,
+    e2e_identity::{NewCrlDistributionPoints, refresh_token::RefreshToken},
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     prelude::{CertificateBundle, E2eiEnrollment, MlsCiphersuite, MlsCredentialType},
     transaction_context::TransactionContext,
@@ -55,7 +53,6 @@ impl TransactionContext {
             &mls_provider,
             ciphersuite,
             sign_keypair,
-            #[cfg(not(target_family = "wasm"))]
             None, // no x509 credential yet at this point so no OIDC authn yet so no refresh token to restore
         )
         .map_err(RecursiveError::e2e_identity("creating new enrollment"))
@@ -112,7 +109,6 @@ impl TransactionContext {
             &mls_provider,
             ciphersuite,
             sign_keypair,
-            #[cfg(not(target_family = "wasm"))]
             Some(
                 RefreshToken::find(&mls_provider.keystore())
                     .await

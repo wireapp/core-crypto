@@ -198,7 +198,7 @@ mod tests {
     use crate::mls::conversation::ConversationWithMls as _;
     use crate::{prelude::MlsConversationConfiguration, test_utils::*};
 
-    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
+    #[async_std::test]
     pub async fn group_should_have_required_capabilities() {
         let case = TestContext::default();
 

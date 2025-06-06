@@ -10,7 +10,6 @@ pub use pki_env::{E2eiDumpedPkiEnv, NewCrlDistributionPoints};
 mod enrollment;
 #[cfg(test)]
 pub(crate) mod enrollment;
-#[cfg(not(target_family = "wasm"))]
 pub(crate) mod refresh_token;
 pub mod types;
 
