@@ -126,7 +126,6 @@ fn add_client_bench(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         black_box(context.conversation(&id).await.unwrap().add_members(kps).await.unwrap());
                         context.finish().await.unwrap();
-                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -181,17 +180,14 @@ fn remove_client_bench(c: &mut Criterion) {
                     },
                     |(central, id, client_ids)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(
-                            context
-                                .conversation(&id)
-                                .await
-                                .unwrap()
-                                .remove_members(client_ids.as_slice())
-                                .await
-                                .unwrap(),
-                        );
+                        context
+                            .conversation(&id)
+                            .await
+                            .unwrap()
+                            .remove_members(client_ids.as_slice())
+                            .await
+                            .unwrap();
                         context.finish().await.unwrap();
-                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -221,7 +217,6 @@ fn remove_client_bench(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         for (session_id, _) in session_material {
                             context.proteus_session_delete(&session_id).await.unwrap();
-                            black_box(());
                         }
                         context.finish().await.unwrap();
                     },
@@ -250,17 +245,14 @@ fn update_client_bench(c: &mut Criterion) {
                     },
                     |(central, id)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(
-                            context
-                                .conversation(&id)
-                                .await
-                                .unwrap()
-                                .update_key_material()
-                                .await
-                                .unwrap(),
-                        );
+                        context
+                            .conversation(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         context.finish().await.unwrap();
-                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -297,13 +289,10 @@ fn update_client_bench(c: &mut Criterion) {
                         for (session_id, _) in session_material {
                             // replace existing session
                             context.proteus_session_delete(&session_id).await.unwrap();
-                            black_box(());
-                            black_box(
-                                context
-                                    .proteus_session_from_prekey(&session_id, &new_pkb)
-                                    .await
-                                    .unwrap(),
-                            );
+                            context
+                                .proteus_session_from_prekey(&session_id, &new_pkb)
+                                .await
+                                .unwrap();
                         }
                         context.finish().await.unwrap();
                     },
