@@ -857,7 +857,6 @@ dependencies = [
  "vergen-gitcl",
  "wasm-bindgen",
  "wasm-bindgen-futures",
- "wasm-bindgen-test",
  "web-time",
  "wire-e2e-identity",
  "x509-cert",

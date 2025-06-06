@@ -49,17 +49,12 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
-    use wasm_bindgen_test::*;
-
     use crate::test_utils::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     mod commit_accepted {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_apply_pending_commit(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -88,7 +83,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_clear_pending_commit_and_proposals(case: TestContext) {
             let [alice] = case.sessions().await;
             Box::pin(async move {
@@ -123,7 +117,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_clean_associated_key_material(case: TestContext) {
             let [alice] = case.sessions().await;
             Box::pin(async move {

@@ -99,13 +99,9 @@ mod tests {
         prelude::{CertificateBundle, MlsCredentialType, Session},
         test_utils::*,
     };
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     // testing the case where both Bob & Alice have the same Credential type
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn uniform_conversation_should_be_not_verified_when_basic(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
@@ -137,7 +133,6 @@ mod tests {
 
     // testing the case where Bob & Alice have different Credential type
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn heterogeneous_conversation_should_be_not_verified(case: TestContext) {
         let ([x509_session], [basic_session]) = case.sessions_mixed_credential_types().await;
         Box::pin(async move {
@@ -164,7 +159,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_be_not_verified_when_one_expired(case: TestContext) {
         if !case.is_x509() {
             return;
@@ -216,7 +210,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_be_not_verified_when_all_expired(case: TestContext) {
         if !case.is_x509() {
             return;

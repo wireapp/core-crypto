@@ -256,17 +256,13 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use wasm_bindgen_test::*;
     use x509_cert::der::EncodePem;
 
     use crate::test_utils::*;
 
     use super::super::Error;
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn register_acme_ca_should_fail_when_already_set(case: TestContext) {
         use x509_cert::der::pem::LineEnding;
 
@@ -292,7 +288,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn x509_restore_should_not_happen_if_basic(case: TestContext) {
         if case.is_x509() {
             return;

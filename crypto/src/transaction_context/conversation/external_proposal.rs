@@ -84,17 +84,12 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use wasm_bindgen_test::*;
-
     use crate::test_utils::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     mod add {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn guest_should_externally_propose_adding_itself_to_owner_group(case: TestContext) {
             let [owner, guest] = case.sessions().await;
             Box::pin(async move {
@@ -132,7 +127,6 @@ mod tests {
         use openmls::prelude::{ProcessMessageError, ValidationError};
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn ds_should_remove_guest_from_conversation(mut case: TestContext) {
             let [owner, guest, ds] = case.sessions().await;
             Box::pin(async move {
@@ -156,7 +150,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_fail_when_invalid_external_sender(mut case: TestContext) {
             use crate::mls;
 
@@ -200,7 +193,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_fail_when_wrong_signature_key(mut case: TestContext) {
             use crate::mls;
 
@@ -240,7 +232,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn joiners_from_welcome_can_accept_external_remove_proposals(mut case: TestContext) {
             let [alice, bob, charlie, ds] = case.sessions().await;
             Box::pin(async move {
@@ -276,7 +267,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn joiners_from_external_commit_can_accept_external_remove_proposals(mut case: TestContext) {
             let [alice, bob, charlie, ds] = case.sessions().await;
             Box::pin(async move {

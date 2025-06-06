@@ -104,7 +104,6 @@ impl PartialOrd for CredentialBundle {
 mod tests {
     use mls_crypto_provider::PkiKeypair;
     use std::collections::HashMap;
-    use wasm_bindgen_test::*;
 
     use super::x509::CertificateBundle;
     use super::*;
@@ -118,10 +117,7 @@ mod tests {
         },
     };
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn basic_clients_can_send_messages(case: TestContext) {
         if !case.is_basic() {
             return;
@@ -132,7 +128,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn certificate_clients_can_send_messages(case: TestContext) {
         if !case.is_x509() {
             return;
@@ -143,7 +138,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn heterogeneous_clients_can_send_messages(case: TestContext) {
         // check that both credentials can initiate/join a group
         let ([x509_session], [basic_session]) = case.sessions_mixed_credential_types().await;
@@ -160,7 +154,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_is_empty(case: TestContext) {
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
@@ -177,7 +170,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_has_a_single_self_signed(case: TestContext) {
         use crate::MlsErrorKind;
 
@@ -213,7 +205,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_fail_when_signature_key_doesnt_match_certificate_public_key(case: TestContext) {
         if !case.is_x509() {
             return;
@@ -244,7 +235,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_not_fail_but_degrade_when_certificate_expired(case: TestContext) {
         if !case.is_x509() {
             return;
@@ -289,7 +279,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_not_fail_but_degrade_when_basic_joins(case: TestContext) {
         if !case.is_x509() {
             return;
@@ -333,7 +322,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_fail_when_certificate_not_valid_yet(case: TestContext) {
         use crate::MlsErrorKind;
 

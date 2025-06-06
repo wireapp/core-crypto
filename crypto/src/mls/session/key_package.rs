@@ -329,7 +329,6 @@ mod tests {
     use openmls::prelude::{KeyPackage, KeyPackageIn, KeyPackageRef, ProtocolVersion};
     use openmls_traits::OpenMlsCryptoProvider;
     use openmls_traits::types::VerifiableCiphersuite;
-    use wasm_bindgen_test::*;
 
     use mls_crypto_provider::MlsCryptoProvider;
 
@@ -341,10 +340,7 @@ mod tests {
 
     use super::Session;
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn can_assess_keypackage_expiration(case: TestContext) {
         let [session] = case.sessions().await;
         let (cs, ct) = (case.ciphersuite(), case.credential_type);
@@ -385,7 +381,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn requesting_x509_key_packages_after_basic(case: TestContext) {
         // Basic test case
         if !case.is_basic() {
@@ -451,7 +446,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn generates_correct_number_of_kpbs(case: TestContext) {
         let [cc] = case.sessions().await;
         Box::pin(async move {
@@ -532,7 +526,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn automatically_prunes_lifetime_expired_keypackages(case: TestContext) {
         let [session] = case.sessions().await;
         const UNEXPIRED_COUNT: usize = 125;
@@ -618,7 +611,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn new_keypackage_has_correct_extensions(case: TestContext) {
         let [cc] = case.sessions().await;
         Box::pin(async move {

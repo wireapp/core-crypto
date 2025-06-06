@@ -193,16 +193,12 @@ mod tests {
         crypto::OpenMlsCrypto,
         types::{SignatureScheme, VerifiableCiphersuite},
     };
-    use wasm_bindgen_test::*;
     use wire_e2e_identity::prelude::JwsAlgorithm;
 
     use crate::mls::conversation::ConversationWithMls as _;
     use crate::{prelude::MlsConversationConfiguration, test_utils::*};
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-    #[wasm_bindgen_test]
     pub async fn group_should_have_required_capabilities() {
         let case = TestContext::default();
 
@@ -226,7 +222,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     pub async fn creator_leaf_node_should_have_default_capabilities(case: TestContext) {
         let [session] = case.sessions().await;
         Box::pin(async move {
@@ -266,7 +261,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     pub async fn should_support_raw_external_sender(case: TestContext) {
         let [cc] = case.sessions().await;
         Box::pin(async move {
@@ -290,7 +284,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     pub async fn should_support_jwk_external_sender(case: TestContext) {
         let [cc] = case.sessions().await;
         Box::pin(async move {

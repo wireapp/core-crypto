@@ -167,15 +167,12 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
-    use wasm_bindgen_test::*;
-
     use crate::test_utils::*;
 
     mod update {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn renewable_when_created_by_self(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -220,7 +217,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn not_renewable_when_in_valid_commit(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -265,7 +261,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn not_renewable_by_ref(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -299,7 +294,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn not_renewable_when_valid_commit_adds_same(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -333,7 +327,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn not_renewable_in_pending_commit_when_valid_commit_adds_same(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -371,7 +364,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn not_renewable_by_ref(case: TestContext) {
             let [alice, bob, charlie, debbie] = case.sessions().await;
             Box::pin(async move {
@@ -407,7 +399,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn renewable_when_valid_commit_doesnt_adds_same(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -456,7 +447,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn renews_pending_commit_when_valid_commit_doesnt_add_same(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -489,7 +479,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn not_renewable_when_valid_commit_removes_same(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -521,7 +510,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn not_renewable_by_ref(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -556,7 +544,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn renewable_when_valid_commit_doesnt_remove_same(case: TestContext) {
             let [alice, bob, charlie, debbie] = case.sessions().await;
             Box::pin(async move {
@@ -587,7 +574,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn renews_pending_commit_when_commit_doesnt_remove_same(case: TestContext) {
             let [alice, bob, charlie, debbie] = case.sessions().await;
             Box::pin(async move {
@@ -619,7 +605,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn renews_pending_commit_from_proposal_when_commit_doesnt_remove_same(case: TestContext) {
             let [alice, bob, charlie, debbie] = case.sessions().await;
             Box::pin(async move {

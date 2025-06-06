@@ -48,12 +48,8 @@ impl TryFrom<UserId<'_>> for String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     #[async_std::test]
-    #[wasm_bindgen_test]
     async fn should_parse_client_id() {
         let user_id = "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com";
         let user_id = UserId::try_from(user_id).unwrap();
@@ -61,7 +57,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[wasm_bindgen_test]
     async fn should_fail_when_invalid() {
         let user_id = "LcksJb74Tm6N12cDjFy7lQ/8e6424430d3b28be@world.com";
         let user_id = UserId::try_from(user_id);

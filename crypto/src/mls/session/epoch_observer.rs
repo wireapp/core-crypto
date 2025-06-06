@@ -50,12 +50,10 @@ impl Session {
 mod tests {
     use rstest::rstest;
     use rstest_reuse::apply;
-    use wasm_bindgen_test::*;
 
     use crate::test_utils::{TestContext, TestEpochObserver, all_cred_cipher};
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     pub async fn observe_local_epoch_change(case: TestContext) {
         let [session_context] = case.sessions().await;
         Box::pin(async move {
@@ -88,7 +86,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     pub async fn observe_remote_epoch_change(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {

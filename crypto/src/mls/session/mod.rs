@@ -669,7 +669,6 @@ mod tests {
     use core_crypto_keystore::connection::{DatabaseKey, FetchFromDatabase};
     use core_crypto_keystore::entities::*;
     use mls_crypto_provider::MlsCryptoProvider;
-    use wasm_bindgen_test::*;
 
     impl Session {
         // test functions are not held to the same documentation standard as proper functions
@@ -755,10 +754,8 @@ mod tests {
             }
         }
     }
-    wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn can_generate_session(case: TestContext) {
         let [alice] = case.sessions().await;
         let key = DatabaseKey::generate();
