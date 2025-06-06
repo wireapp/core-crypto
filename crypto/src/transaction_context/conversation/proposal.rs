@@ -71,18 +71,14 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use wasm_bindgen_test::*;
-
     use crate::{prelude::*, test_utils::*};
 
-    wasm_bindgen_test_configure!(run_in_browser);
     use super::Error;
 
     mod add {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn should_add_member(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -105,7 +101,6 @@ mod tests {
         use itertools::Itertools;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn should_update_hpke_key(case: TestContext) {
             use crate::mls::conversation::ConversationWithMls as _;
 
@@ -137,7 +132,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn should_remove_member(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -162,7 +156,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn should_fail_when_unknown_client(case: TestContext) {
             let [alice] = case.sessions().await;
             Box::pin(async move {

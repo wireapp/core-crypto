@@ -52,14 +52,10 @@ mod tests {
         test_utils::{x509::X509TestChain, *},
     };
     use mls_crypto_provider::MlsCryptoProvider;
-    use wasm_bindgen_test::*;
 
     use core_crypto_keystore::DatabaseKey;
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn stash_and_pop_should_not_abort_enrollment(case: TestContext) {
         let cc = SessionContext::new_uninitialized(&case).await;
         Box::pin(async move {
@@ -95,7 +91,6 @@ mod tests {
 
     // this ensures the nominal test does its job
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_fail_when_restoring_invalid(case: TestContext) {
         let cc = SessionContext::new_uninitialized(&case).await;
         Box::pin(async move {

@@ -996,16 +996,12 @@ mod tests {
 
     use crate::prelude::INITIAL_KEYING_MATERIAL_COUNT;
     use proteus_traits::PreKeyStore;
-    use wasm_bindgen_test::*;
 
     use super::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     use core_crypto_keystore::DatabaseKey;
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn cc_can_init(case: TestContext) {
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
@@ -1031,7 +1027,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn cc_can_2_phase_init(case: TestContext) {
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
@@ -1084,7 +1079,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[wasm_bindgen_test]
     async fn can_init() {
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
@@ -1113,7 +1107,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[wasm_bindgen_test]
     async fn can_talk_with_proteus() {
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
@@ -1155,7 +1148,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[wasm_bindgen_test]
     async fn can_produce_proteus_consumed_prekeys() {
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
@@ -1197,7 +1189,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[wasm_bindgen_test]
     async fn auto_prekeys_are_sequential() {
         use core_crypto_keystore::entities::ProteusPrekey;
         const GAP_AMOUNT: u16 = 5;
@@ -1457,8 +1448,6 @@ mod tests {
                     Ok(JsValue::UNDEFINED)
                 })
             }
-
-            #[wasm_bindgen_test]
             async fn can_import_cryptobox() {
                 let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 

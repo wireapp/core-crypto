@@ -24,12 +24,8 @@ mod tests {
     use super::super::Error;
     use crate::{RecursiveError, mls, prelude::MlsCredentialType, test_utils::*};
     use openmls_traits::types::SignatureScheme;
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_be_false_when_basic_and_true_when_x509(case: TestContext) {
         let [cc] = case.sessions().await;
         Box::pin(async move {
@@ -43,7 +39,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_fail_when_no_client(case: TestContext) {
         let cc = SessionContext::new_uninitialized(&case).await;
         Box::pin(async move {
@@ -57,7 +52,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_fail_when_no_credential_for_given_signature_scheme(case: TestContext) {
         let [cc] = case.sessions().await;
         Box::pin(async move {

@@ -135,12 +135,9 @@ mod tests {
     use crate::prelude::MlsError;
 
     use crate::mls::conversation::Conversation as _;
-    use wasm_bindgen_test::*;
 
-    wasm_bindgen_test_configure!(run_in_browser);
     // If there’s a pending commit & it matches the incoming commit: mark pending commit as accepted
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     pub async fn should_succeed_when_incoming_commit_same_as_pending(case: TestContext) {
         if case.is_pure_ciphertext() || case.is_basic() {
             return;
@@ -188,7 +185,6 @@ mod tests {
 
     // If there’s a pending commit & it does not match the self incoming commit: fail with dedicated error
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     pub async fn should_succeed_when_incoming_commit_mismatches_pending_commit(case: TestContext) {
         if case.is_pure_ciphertext() {
             return;
@@ -225,7 +221,6 @@ mod tests {
 
     // if there’s no pending commit & and the incoming commit originates from self: succeed by ignoring the incoming commit
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     pub async fn should_ignore_self_incoming_commit_when_no_pending_commit(case: TestContext) {
         if case.is_pure_ciphertext() {
             return;
@@ -253,7 +248,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     pub async fn should_fail_when_tampering_with_incoming_own_commit_same_as_pending(case: TestContext) {
         use crate::MlsErrorKind;
 
@@ -316,7 +310,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_succeed_when_incoming_commit_is_self_commit_but_was_lost(case: TestContext) {
         if case.is_pure_ciphertext() {
             // The use case tested here requires inspecting your own commit.

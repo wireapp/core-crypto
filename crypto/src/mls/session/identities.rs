@@ -130,15 +130,11 @@ mod tests {
     use crate::{mls, test_utils::*};
     use openmls::prelude::SignaturePublicKey;
     use rand::Rng;
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     mod find {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_find_most_recent(case: TestContext) {
             let [mut central] = case.sessions().await;
             Box::pin(async move {
@@ -161,7 +157,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_find_by_public_key(case: TestContext) {
             let [mut central] = case.sessions().await;
             Box::pin(async move {
@@ -193,7 +188,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_add_credential(case: TestContext) {
             let [mut central] = case.sessions().await;
             Box::pin(async move {
@@ -209,7 +203,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn pushing_duplicates_should_fail(case: TestContext) {
             let [mut central] = case.sessions().await;
             Box::pin(async move {

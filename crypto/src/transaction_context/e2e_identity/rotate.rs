@@ -250,9 +250,6 @@ mod tests {
     use openmls::prelude::SignaturePublicKey;
     use std::collections::HashSet;
     use tls_codec::Deserialize;
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     pub(crate) mod all {
         use e2ei_utils::E2EI_EXPIRY;
@@ -261,7 +258,6 @@ mod tests {
         use crate::test_utils::context::TEAM;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn enrollment_should_rotate_all(case: TestContext) {
             let [alice, bob, charlie] = case.sessions_with_pki_env().await;
             Box::pin(async move {
@@ -443,7 +439,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_restore_credentials_in_order(case: TestContext) {
             let [alice] = case.sessions_with_pki_env().await;
             Box::pin(async move {
@@ -565,7 +560,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn rotate_should_roundtrip(case: TestContext) {
             let [alice, bob] = case.sessions_with_pki_env().await;
             Box::pin(async move {
@@ -704,7 +698,6 @@ mod tests {
         use crate::mls::conversation::Conversation as _;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn should_rotate_one_conversations_credential(case: TestContext) {
             if case.is_x509() {
                 let [alice, bob] = case.sessions().await;
@@ -764,7 +757,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn rotate_should_be_renewable_when_commit_denied(case: TestContext) {
             if !case.is_x509() {
                 return;
@@ -834,7 +826,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn rotate_should_replace_existing_basic_credentials(case: TestContext) {
             if !case.is_x509() {
                 return;

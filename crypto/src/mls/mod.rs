@@ -131,7 +131,6 @@ pub(crate) trait HasSessionAndCrypto: Send {
 #[cfg(test)]
 mod tests {
     use crate::transaction_context::Error as TransactionError;
-    use wasm_bindgen_test::*;
 
     use crate::prelude::{
         CertificateBundle, ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsClientConfiguration, MlsCredentialType,
@@ -142,8 +141,6 @@ mod tests {
         test_utils::{x509::X509TestChain, *},
     };
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     use core_crypto_keystore::DatabaseKey;
 
     mod conversation_epoch {
@@ -151,7 +148,6 @@ mod tests {
         use crate::mls::conversation::Conversation as _;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn can_get_newly_created_conversation_epoch(case: TestContext) {
             let [session] = case.sessions().await;
             let conversation = case.create_conversation([&session]).await;
@@ -160,7 +156,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn can_get_conversation_epoch(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -172,7 +167,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn conversation_not_found(case: TestContext) {
             use crate::LeafError;
             let [session] = case.sessions().await;
@@ -191,7 +185,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn can_create_from_valid_configuration(mut case: TestContext) {
             let tmp_dir = case.tmp_dir().await;
             Box::pin(async move {
@@ -212,7 +205,6 @@ mod tests {
         }
 
         #[test]
-        #[wasm_bindgen_test]
         fn store_path_should_not_be_empty_nor_blank() {
             let ciphersuites = vec![MlsCiphersuite::default()];
             let configuration = MlsClientConfiguration::try_new(
@@ -230,7 +222,6 @@ mod tests {
         }
 
         #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-        #[wasm_bindgen_test]
         async fn client_id_should_not_be_empty() {
             let mut case = TestContext::default();
             let tmp_dir = case.tmp_dir().await;
@@ -254,7 +245,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn create_conversation_should_fail_when_already_exists(case: TestContext) {
         use crate::LeafError;
 
@@ -274,7 +264,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn can_fetch_client_public_key(mut case: TestContext) {
         let tmp_dir = case.tmp_dir().await;
         Box::pin(async move {
@@ -296,7 +285,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn can_2_phase_init_central(mut case: TestContext) {
         let tmp_dir = case.tmp_dir().await;
         Box::pin(async move {

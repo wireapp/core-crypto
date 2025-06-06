@@ -543,8 +543,6 @@ impl ConversationGuard {
 
 #[cfg(test)]
 mod tests {
-    use wasm_bindgen_test::*;
-
     use crate::{
         mls::conversation::{config::MAX_PAST_EPOCHS, error::Error},
         test_utils::*,
@@ -552,13 +550,10 @@ mod tests {
 
     use super::*;
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     mod is_active {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn decrypting_a_regular_commit_should_leave_conversation_active(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -578,7 +573,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn decrypting_a_commit_removing_self_should_set_conversation_inactive(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -602,7 +596,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn decrypting_a_commit_should_succeed(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -632,7 +625,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn decrypting_a_commit_should_not_renew_proposals_in_valid_commit(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -678,7 +670,6 @@ mod tests {
 
         // orphan proposal = not backed by the pending commit
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn decrypting_a_commit_should_renew_orphan_pending_proposals(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -756,7 +747,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn decrypting_a_commit_should_discard_pending_external_proposals(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -792,7 +782,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_not_return_sender_client_id(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -811,7 +800,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn can_decrypt_external_proposal(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -848,7 +836,6 @@ mod tests {
 
         // Ensures decrypting an proposal is durable
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn can_decrypt_proposal(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -869,7 +856,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_not_return_sender_client_id(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -888,7 +874,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn can_decrypt_app_message(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -935,7 +920,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn cannot_decrypt_app_message_after_rejoining(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -957,7 +941,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn cannot_decrypt_app_message_from_future_epoch(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -985,7 +968,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn can_decrypt_app_message_in_any_order(mut case: TestContext) {
             // otherwise the test would fail because we decrypt messages in reverse order which is
             // kinda dropping them
@@ -1022,7 +1004,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn returns_sender_client_id(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -1050,7 +1031,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_throw_specialized_error_when_epoch_too_old(mut case: TestContext) {
             case.cfg.custom.out_of_order_tolerance = 0;
 
@@ -1091,7 +1071,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_throw_specialized_error_when_epoch_desynchronized(mut case: TestContext) {
             case.cfg.custom.out_of_order_tolerance = 0;
 

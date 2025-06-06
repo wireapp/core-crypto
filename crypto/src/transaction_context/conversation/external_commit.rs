@@ -150,17 +150,12 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use wasm_bindgen_test::*;
-
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
 
     use super::Error;
     use crate::{LeafError, prelude::MlsConversationConfiguration, test_utils::*, transaction_context};
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn join_by_external_commit_should_succeed(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
@@ -213,7 +208,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn join_by_external_commit_should_be_retriable(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
@@ -236,7 +230,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_fail_when_bad_epoch(case: TestContext) {
         use crate::mls;
 
@@ -263,7 +256,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn existing_clients_can_join(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
@@ -276,7 +268,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_fail_when_no_pending_external_commit(case: TestContext) {
         let [session] = case.sessions().await;
         let non_existent_id = conversation_id();
@@ -293,7 +284,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_return_valid_group_info(case: TestContext) {
         let [alice, bob, charlie] = case.sessions().await;
         Box::pin(async move {
@@ -317,7 +307,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn clear_pending_group_should_succeed(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
@@ -338,7 +327,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn new_with_inflight_join_should_fail_when_already_exists(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
@@ -364,7 +352,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn new_with_inflight_welcome_should_fail_when_already_exists(case: TestContext) {
         use crate::mls;
 
@@ -398,7 +385,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_fail_when_invalid_group_info(case: TestContext) {
         let [alice, bob, guest] = case.sessions().await;
 
@@ -441,7 +427,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn group_should_have_right_config(case: TestContext) {
         use crate::mls::conversation::ConversationWithMls as _;
 

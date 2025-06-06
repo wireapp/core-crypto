@@ -314,12 +314,8 @@ mod tests {
     use super::*;
     use crate::prelude::MlsConversationDecryptMessage;
     use crate::test_utils::*;
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {
         let [alice, bob, charlie, debbie] = case.sessions().await;
         Box::pin(async move {
@@ -429,7 +425,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_not_reapply_buffered_messages_when_rejoining(case: TestContext) {
         use crate::mls;
 

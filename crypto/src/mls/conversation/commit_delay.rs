@@ -91,12 +91,8 @@ impl MlsConversation {
 mod tests {
     use super::*;
     use crate::test_utils::*;
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     #[test]
-    #[wasm_bindgen_test]
     fn calculate_delay_single() {
         let (self_index, epoch, nb_members) = (0, 0, 1);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
@@ -104,7 +100,6 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
     fn calculate_delay_max() {
         let (self_index, epoch, nb_members) = (u64::MAX, u64::MAX, u64::MAX);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
@@ -112,7 +107,6 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
     fn calculate_delay_min() {
         let (self_index, epoch, nb_members) = (u64::MIN, u64::MIN, u64::MAX);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
@@ -120,7 +114,6 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
     fn calculate_delay_zero_members() {
         let (self_index, epoch, nb_members) = (0, 0, u64::MIN);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
@@ -128,7 +121,6 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
     fn calculate_delay_min_max() {
         let (self_index, epoch, nb_members) = (u64::MIN, u64::MAX, u64::MAX);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
@@ -136,7 +128,6 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
     fn calculate_delay_n() {
         let epoch = 1;
         let nb_members = 10;
@@ -163,7 +154,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn calculate_delay_creator_removed(case: TestContext) {
         let [alice, bob, charlie] = case.sessions().await;
         Box::pin(async move {

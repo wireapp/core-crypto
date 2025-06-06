@@ -84,21 +84,17 @@ impl MlsCommitBundle {
 mod tests {
     use itertools::Itertools;
     use openmls::prelude::SignaturePublicKey;
-    use wasm_bindgen_test::*;
 
     use crate::test_utils::*;
     use crate::transaction_context::Error as TransactionError;
 
     use super::{Error, *};
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     mod transport {
         use super::*;
         use std::sync::Arc;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn retry_should_work(case: TestContext) {
             use crate::mls::conversation::Conversation as _;
 
@@ -147,7 +143,6 @@ mod tests {
         use std::sync::Arc;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn can_add_members_to_conversation(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -193,7 +188,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_return_valid_welcome(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -204,7 +198,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_return_valid_group_info(case: TestContext) {
             let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
@@ -224,7 +217,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn alice_can_remove_bob_from_conversation(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -248,7 +240,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_return_valid_welcome(case: TestContext) {
             let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
@@ -268,7 +259,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_return_valid_group_info(case: TestContext) {
             let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
@@ -291,7 +281,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_succeed(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -353,7 +342,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_create_welcome_for_pending_add_proposals(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -425,7 +413,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_return_valid_welcome(case: TestContext) {
             let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
@@ -443,7 +430,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_return_valid_group_info(case: TestContext) {
             let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
@@ -465,7 +451,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_create_a_commit_out_of_self_pending_proposals(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -490,7 +475,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_create_a_commit_out_of_pending_proposals_by_ref(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -516,7 +500,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_return_valid_welcome(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -534,7 +517,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_return_valid_group_info(case: TestContext) {
             let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
@@ -561,7 +543,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_prevent_out_of_order_commits(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -610,7 +591,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_prevent_replayed_encrypted_handshake_messages(case: TestContext) {
             if !case.is_pure_ciphertext() {
                 return;

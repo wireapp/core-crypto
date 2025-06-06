@@ -25,13 +25,9 @@ impl MlsConversation {
 #[cfg(test)]
 mod tests {
     use crate::{mls::conversation::ConversationWithMls as _, test_utils::*};
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     // should delete anything related to this conversation
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_cascade_deletion(case: TestContext) {
         let [alice] = case.sessions().await;
         Box::pin(async move {

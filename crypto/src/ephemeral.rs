@@ -168,7 +168,6 @@ impl CoreCrypto {
 mod tests {
     use rstest::rstest;
     use rstest_reuse::apply;
-    use wasm_bindgen_test::wasm_bindgen_test;
 
     use crate::test_utils::{SessionContext, TestContext, all_cred_cipher};
 
@@ -176,7 +175,6 @@ mod tests {
 
     /// Create a history secret, and restore it into a CoreCrypto instance
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn can_create_ephemeral_client(case: TestContext) {
         if case.credential_type != MlsCredentialType::Basic {
             // history client will only ever have basic credentials, so not much point in testing
@@ -222,7 +220,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn ephemeral_client_can_receive_messages_from_x509(case: TestContext) {
         if case.credential_type != MlsCredentialType::Basic {
             // history client will only ever have basic credentials, so not much point in testing

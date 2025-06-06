@@ -160,19 +160,15 @@ impl MlsProposalBundle {
 mod tests {
     use itertools::Itertools;
     use openmls::prelude::SignaturePublicKey;
-    use wasm_bindgen_test::*;
 
     use crate::test_utils::*;
 
     use super::*;
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     mod propose_add_members {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn can_propose_adding_members_to_conversation(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -206,7 +202,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn can_propose_removing_members_from_conversation(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -234,7 +229,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn can_propose_updating(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -298,7 +292,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         async fn should_prevent_out_of_order_proposals(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {

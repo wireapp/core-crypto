@@ -138,12 +138,8 @@ mod tests {
     use super::*;
     use crate::prelude::MlsConversationDecryptMessage;
     use crate::test_utils::*;
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn can_operate_with_pending_commit_wpb_17356(case: TestContext) {
         let [alice] = case.sessions().await;
         let conversation = case.create_conversation([&alice]).await;
@@ -157,7 +153,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_buffer_and_reapply_messages_after_commit_merged_for_sender(case: TestContext) {
         if case.is_pure_ciphertext() {
             // The use case tested here requires inspecting your own commit.
@@ -274,7 +269,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn should_buffer_and_reapply_messages_after_commit_merged_for_receivers(case: TestContext) {
         if case.is_pure_ciphertext() {
             // The use case tested here requires inspecting your own commit.
