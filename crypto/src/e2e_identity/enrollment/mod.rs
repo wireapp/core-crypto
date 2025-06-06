@@ -13,7 +13,6 @@ use crate::{
     prelude::{ClientId, MlsCiphersuite},
 };
 
-#[cfg(not(target_family = "wasm"))]
 use super::refresh_token;
 use super::{EnrollmentHandle, Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
 
@@ -34,7 +33,6 @@ pub struct E2eiEnrollment {
     valid_order: Option<wire_e2e_identity::prelude::E2eiAcmeOrder>,
     finalize: Option<wire_e2e_identity::prelude::E2eiAcmeFinalize>,
     pub(super) ciphersuite: MlsCiphersuite,
-    #[cfg(not(target_family = "wasm"))]
     pub(super) refresh_token: Option<refresh_token::RefreshToken>,
 }
 
@@ -65,7 +63,7 @@ impl E2eiEnrollment {
         backend: &MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
         sign_keypair: Option<E2eiSignatureKeypair>,
-        #[cfg(not(target_family = "wasm"))] refresh_token: Option<refresh_token::RefreshToken>,
+        refresh_token: Option<refresh_token::RefreshToken>,
     ) -> Result<Self> {
         let alg = ciphersuite.try_into()?;
         let sign_sk = sign_keypair
@@ -91,7 +89,6 @@ impl E2eiEnrollment {
             valid_order: None,
             finalize: None,
             ciphersuite,
-            #[cfg(not(target_family = "wasm"))]
             refresh_token,
         })
     }
@@ -303,15 +300,13 @@ impl E2eiEnrollment {
     pub fn new_oidc_challenge_request(
         &mut self,
         id_token: String,
-        #[cfg(not(target_family = "wasm"))] refresh_token: String,
+        refresh_token: String,
         previous_nonce: String,
     ) -> Result<Json> {
-        #[cfg(not(target_family = "wasm"))]
-        {
-            if refresh_token.is_empty() {
-                return Err(Error::InvalidRefreshToken);
-            }
+        if refresh_token.is_empty() {
+            return Err(Error::InvalidRefreshToken);
         }
+
         let authz = self
             .user_authz
             .as_ref()
@@ -325,10 +320,9 @@ impl E2eiEnrollment {
         ))?;
         let challenge = self.acme_oidc_challenge_request(id_token, challenge, account, previous_nonce)?;
         let challenge = serde_json::to_vec(&challenge)?;
-        #[cfg(not(target_family = "wasm"))]
-        {
-            self.refresh_token.replace(refresh_token.into());
-        }
+
+        self.refresh_token.replace(refresh_token.into());
+
         Ok(challenge)
     }
 
@@ -338,25 +332,19 @@ impl E2eiEnrollment {
     ///
     /// # Parameters
     /// * `challenge` - http response body
-    pub async fn new_oidc_challenge_response(
-        &mut self,
-        #[cfg(not(target_family = "wasm"))] backend: &MlsCryptoProvider,
-        challenge: Json,
-    ) -> Result<()> {
+    pub async fn new_oidc_challenge_response(&mut self, backend: &MlsCryptoProvider, challenge: Json) -> Result<()> {
         let challenge = serde_json::from_slice(&challenge[..])?;
         self.acme_new_challenge_response(challenge)?;
 
-        #[cfg(not(target_family = "wasm"))]
-        {
-            // Now that the OIDC challenge is valid, we can store the refresh token for future uses. Note
-            // that we could have persisted it at the end of the enrollment but what if the next enrollment
-            // steps fail ? Is it a reason good enough not to persist the token and ask the user to
-            // authenticate again: probably not.
-            let refresh_token = self.refresh_token.take().ok_or(Error::OutOfOrderEnrollment(
-                "You must first call 'new_oidc_challenge_request()'",
-            ))?;
-            refresh_token.replace(backend).await?;
-        }
+        // Now that the OIDC challenge is valid, we can store the refresh token for future uses. Note
+        // that we could have persisted it at the end of the enrollment but what if the next enrollment
+        // steps fail ? Is it a reason good enough not to persist the token and ask the user to
+        // authenticate again: probably not.
+        let refresh_token = self.refresh_token.take().ok_or(Error::OutOfOrderEnrollment(
+            "You must first call 'new_oidc_challenge_request()'",
+        ))?;
+        refresh_token.replace(backend).await?;
+
         Ok(())
     }
 
@@ -468,7 +456,6 @@ impl E2eiEnrollment {
         self.delegate.sign_kp.zeroize();
         self.delegate.acme_kp.zeroize();
 
-        #[cfg(not(target_family = "wasm"))]
         self.refresh_token.zeroize();
 
         Ok(certificates)
@@ -503,7 +490,6 @@ impl E2eiEnrollment {
     /// Lets clients retrieve the OIDC refresh token to try to renew the user's authorization.
     /// If it's expired, the user needs to reauthenticate and they will update the refresh token
     /// in [E2eiEnrollment::new_oidc_challenge_request]
-    #[cfg(not(target_family = "wasm"))]
     pub fn get_refresh_token(&self) -> Result<&str> {
         self.refresh_token
             .as_ref()

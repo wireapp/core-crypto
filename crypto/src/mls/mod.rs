@@ -221,7 +221,7 @@ mod tests {
             ));
         }
 
-        #[cfg_attr(not(target_family = "wasm"), async_std::test)]
+        #[async_std::test]
         async fn client_id_should_not_be_empty() {
             let mut case = TestContext::default();
             let tmp_dir = case.tmp_dir().await;
