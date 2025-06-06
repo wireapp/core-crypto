@@ -4,9 +4,7 @@ use async_lock::RwLock;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-#[cfg(not(target_family = "wasm"))]
-use crate::CoreCryptoContext;
-use crate::{AcmeDirectory, CoreCryptoResult, NewAcmeAuthz, NewAcmeOrder};
+use crate::{AcmeDirectory, CoreCryptoContext, CoreCryptoResult, NewAcmeAuthz, NewAcmeOrder};
 
 /// See [core_crypto::e2e_identity::E2eiEnrollment]
 #[derive(Debug)]
@@ -146,39 +144,7 @@ impl E2eiEnrollment {
             .certificate_request(previous_nonce)
             .map_err(Into::into)
     }
-}
 
-// There are certain functions whose signatures are completely different in uniffi and wasm;
-// it's easier to define them separately.
-
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen(js_class = FfiWireE2EIdentity)]
-impl E2eiEnrollment {
-    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_request]
-    pub async fn new_oidc_challenge_request(
-        &self,
-        id_token: String,
-        previous_nonce: String,
-    ) -> CoreCryptoResult<Vec<u8>> {
-        self.write()
-            .await
-            .new_oidc_challenge_request(id_token, previous_nonce)
-            .map_err(Into::into)
-    }
-
-    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_response]
-    pub async fn new_oidc_challenge_response(&self, challenge: Vec<u8>) -> CoreCryptoResult<()> {
-        self.write()
-            .await
-            .new_oidc_challenge_response(challenge)
-            .await
-            .map_err(Into::into)
-    }
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[uniffi::export]
-impl E2eiEnrollment {
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_request]
     pub async fn new_oidc_challenge_request(
         &self,
@@ -191,11 +157,21 @@ impl E2eiEnrollment {
             .new_oidc_challenge_request(id_token, refresh_token, previous_nonce)
             .map_err(Into::into)
     }
+}
 
+#[cfg(not(target_family = "wasm"))]
+type CoreCryptoContextObject = Arc<CoreCryptoContext>;
+
+#[cfg(target_family = "wasm")]
+type CoreCryptoContextObject = CoreCryptoContext;
+
+#[cfg_attr(target_family = "wasm", wasm_bindgen(js_class = FfiWireE2EIdentity))]
+#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+impl E2eiEnrollment {
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_response]
     pub async fn new_oidc_challenge_response(
         &self,
-        cc: Arc<CoreCryptoContext>,
+        cc: CoreCryptoContextObject,
         challenge: Vec<u8>,
     ) -> CoreCryptoResult<()> {
         let provider = cc.inner.mls_provider().await?;
@@ -207,8 +183,6 @@ impl E2eiEnrollment {
     }
 
     /// See [core_crypto::prelude::E2eiEnrollment::get_refresh_token]
-    //
-    // Note: this function does not exist in WASM!
     pub async fn get_refresh_token(&self) -> CoreCryptoResult<String> {
         self.read()
             .await
