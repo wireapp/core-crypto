@@ -43,14 +43,9 @@ impl ConversationGuard {
 
 #[cfg(test)]
 mod tests {
-    use wasm_bindgen_test::*;
-
     use crate::test_utils::*;
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn can_encrypt_app_message(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
@@ -74,7 +69,6 @@ mod tests {
 
     // Ensures encrypting an application message is durable
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn can_encrypt_consecutive_messages(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {

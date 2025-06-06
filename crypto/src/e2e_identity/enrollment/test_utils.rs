@@ -1,15 +1,12 @@
-#[cfg(not(target_family = "wasm"))]
-use crate::{KeystoreError, e2e_identity::Error, e2e_identity::refresh_token::RefreshToken};
 use crate::{
-    RecursiveError,
-    e2e_identity::{E2eiEnrollment, Result, id::QualifiedE2eiClientId},
+    KeystoreError, RecursiveError,
+    e2e_identity::{E2eiEnrollment, Error, Result, id::QualifiedE2eiClientId, refresh_token::RefreshToken},
     prelude::{CertificateBundle, MlsCredentialType},
     test_utils::{SessionContext, TestContext, context::TEAM, x509::X509TestChain},
     transaction_context::TransactionContext,
 };
 use itertools::Itertools as _;
 use mls_crypto_provider::PkiKeypair;
-#[cfg(not(target_family = "wasm"))]
 use openmls_traits::OpenMlsCryptoProvider as _;
 use serde_json::json;
 
@@ -22,7 +19,6 @@ pub(crate) const NEW_HANDLE: &str = "new_alice_wire";
 pub(crate) const NEW_DISPLAY_NAME: &str = "New Alice Smith";
 
 impl E2eiEnrollment {
-    #[cfg(not(target_family = "wasm"))]
     pub(crate) fn refresh_token(&self) -> Option<&RefreshToken> {
         self.refresh_token.as_ref()
     }
@@ -112,30 +108,26 @@ pub(crate) async fn e2ei_enrollment<'a>(
     case: &TestContext,
     x509_test_chain: &X509TestChain,
     client_id: Option<&str>,
-    #[cfg(not(target_family = "wasm"))] is_renewal: bool,
-    #[cfg(target_family = "wasm")] _is_renewal: bool,
+    is_renewal: bool,
     init: impl Fn(E2eiInitWrapper) -> InitFnReturn<'_>,
     // used to verify persisting the instance actually does restore it entirely
     restore: impl Fn(E2eiEnrollment, &'a TransactionContext) -> RestoreFnReturn<'a>,
 ) -> Result<(E2eiEnrollment, String)> {
     x509_test_chain.register_with_central(&ctx.transaction).await;
-    #[cfg(not(target_family = "wasm"))]
-    {
-        let backend = ctx
-            .transaction
-            .mls_provider()
+    let backend = ctx
+        .transaction
+        .mls_provider()
+        .await
+        .map_err(RecursiveError::transaction("getting mls provider"))?;
+    let keystore = backend.key_store();
+    if is_renewal {
+        let initial_refresh_token =
+            crate::e2e_identity::refresh_token::RefreshToken::from("initial-refresh-token".to_string());
+        let initial_refresh_token = core_crypto_keystore::entities::E2eiRefreshToken::from(initial_refresh_token);
+        keystore
+            .save(initial_refresh_token)
             .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
-        let keystore = backend.key_store();
-        if is_renewal {
-            let initial_refresh_token =
-                crate::e2e_identity::refresh_token::RefreshToken::from("initial-refresh-token".to_string());
-            let initial_refresh_token = core_crypto_keystore::entities::E2eiRefreshToken::from(initial_refresh_token);
-            keystore
-                .save(initial_refresh_token)
-                .await
-                .map_err(KeystoreError::wrap("saving refresh token"))?;
-        }
+            .map_err(KeystoreError::wrap("saving refresh token"))?;
     }
 
     let wrapper = E2eiInitWrapper {
@@ -144,24 +136,21 @@ pub(crate) async fn e2ei_enrollment<'a>(
     };
     let mut enrollment = init(wrapper).await?;
 
-    #[cfg(not(target_family = "wasm"))]
-    {
-        let backend = ctx
-            .transaction
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
-        let keystore = backend.key_store();
-        if is_renewal {
-            assert!(enrollment.refresh_token().is_some());
-            assert!(RefreshToken::find(keystore).await.is_ok());
-        } else {
-            assert!(matches!(
-                enrollment.get_refresh_token().unwrap_err(),
-                Error::OutOfOrderEnrollment(_)
-            ));
-            assert!(RefreshToken::find(keystore).await.is_err());
-        }
+    let backend = ctx
+        .transaction
+        .mls_provider()
+        .await
+        .map_err(RecursiveError::transaction("getting mls provider"))?;
+    let keystore = backend.key_store();
+    if is_renewal {
+        assert!(enrollment.refresh_token().is_some());
+        assert!(RefreshToken::find(keystore).await.is_ok());
+    } else {
+        assert!(matches!(
+            enrollment.get_refresh_token().unwrap_err(),
+            Error::OutOfOrderEnrollment(_)
+        ));
+        assert!(RefreshToken::find(keystore).await.is_err());
     }
 
     let (display_name, handle) = (enrollment.display_name.clone(), enrollment.handle.clone());
@@ -296,16 +285,11 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let mut enrollment = restore(enrollment, &ctx.transaction).await;
 
     let id_token = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ".to_string();
-    #[cfg(not(target_family = "wasm"))]
-    let new_refresh_token = "new-refresh-token";
-    let _oidc_chall_req = enrollment.new_oidc_challenge_request(
-        id_token,
-        #[cfg(not(target_family = "wasm"))]
-        new_refresh_token.to_string(),
-        previous_nonce.to_string(),
-    )?;
 
-    #[cfg(not(target_family = "wasm"))]
+    let new_refresh_token = "new-refresh-token";
+    let _oidc_chall_req =
+        enrollment.new_oidc_challenge_request(id_token, new_refresh_token.to_string(), previous_nonce.to_string())?;
+
     assert!(enrollment.get_refresh_token().is_ok());
 
     let oidc_chall_resp = json!({
@@ -317,25 +301,19 @@ pub(crate) async fn e2ei_enrollment<'a>(
     });
     let oidc_chall_resp = serde_json::to_vec(&oidc_chall_resp)?;
 
-    #[cfg(not(target_family = "wasm"))]
-    {
-        let backend = ctx
-            .transaction
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
-        let keystore = backend.key_store();
-        enrollment
-            .new_oidc_challenge_response(&ctx.transaction.mls_provider().await.unwrap(), oidc_chall_resp)
-            .await?;
-        // Now Refresh token is persisted in the keystore
-        assert_eq!(RefreshToken::find(keystore).await?.as_str(), new_refresh_token);
-        // No reason at this point to have the refresh token in memory
-        assert!(enrollment.get_refresh_token().is_err());
-    }
-
-    #[cfg(target_family = "wasm")]
-    enrollment.new_oidc_challenge_response(oidc_chall_resp).await?;
+    let backend = ctx
+        .transaction
+        .mls_provider()
+        .await
+        .map_err(RecursiveError::transaction("getting mls provider"))?;
+    let keystore = backend.key_store();
+    enrollment
+        .new_oidc_challenge_response(&ctx.transaction.mls_provider().await.unwrap(), oidc_chall_resp)
+        .await?;
+    // Now Refresh token is persisted in the keystore
+    assert_eq!(RefreshToken::find(keystore).await?.as_str(), new_refresh_token);
+    // No reason at this point to have the refresh token in memory
+    assert!(enrollment.get_refresh_token().is_err());
 
     let mut enrollment = restore(enrollment, &ctx.transaction).await;
 

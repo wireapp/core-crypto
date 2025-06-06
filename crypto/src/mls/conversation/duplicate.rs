@@ -47,12 +47,8 @@ impl MlsConversation {
 mod tests {
     use super::super::error::Error;
     use crate::test_utils::*;
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn decrypting_duplicate_member_commit_should_fail(case: TestContext) {
         // cannot work in pure ciphertext since we'd have to decrypt the message first
         if case.is_pure_ciphertext() {
@@ -95,7 +91,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn decrypting_duplicate_external_commit_should_fail(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
@@ -133,7 +128,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn decrypting_duplicate_proposal_should_fail(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
@@ -172,7 +166,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn decrypting_duplicate_external_proposal_should_fail(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
@@ -208,7 +201,6 @@ mod tests {
 
     // Ensures decrypting an application message is durable (we increment the messages generation & persist the group)
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn decrypting_duplicate_application_message_should_fail(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {

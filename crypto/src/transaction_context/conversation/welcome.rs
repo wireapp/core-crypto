@@ -99,16 +99,11 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use wasm_bindgen_test::*;
-
     use crate::test_utils::*;
 
     use super::*;
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn joining_from_welcome_should_prune_local_key_material(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
@@ -131,7 +126,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     async fn process_welcome_should_fail_when_already_exists(case: TestContext) {
         use crate::LeafError;
 

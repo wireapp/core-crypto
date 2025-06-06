@@ -87,19 +87,15 @@ impl ConversationGuard {
 #[cfg(test)]
 mod tests {
     use openmls::prelude::Proposal;
-    use wasm_bindgen_test::*;
 
     use crate::test_utils::*;
 
     use super::*;
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     mod clear_pending_proposal {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn should_remove_proposal(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -153,7 +149,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn should_fail_when_proposal_ref_not_found(case: TestContext) {
             let [alice] = case.sessions().await;
             Box::pin(async move {
@@ -168,7 +163,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn should_clean_associated_key_material(case: TestContext) {
             let [session] = case.sessions().await;
             Box::pin(async move {
@@ -204,7 +198,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn should_remove_commit(case: TestContext) {
             let [alice] = case.sessions().await;
             Box::pin(async move {
@@ -221,7 +214,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn should_fail_when_pending_commit_absent(case: TestContext) {
             let [alice] = case.sessions().await;
             Box::pin(async move {
@@ -235,7 +227,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn should_clean_associated_key_material(case: TestContext) {
             let [session] = case.sessions().await;
             Box::pin(async move {

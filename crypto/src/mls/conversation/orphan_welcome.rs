@@ -7,15 +7,11 @@ mod tests {
 
     use openmls::prelude::KeyPackage;
     use openmls_traits::OpenMlsCryptoProvider;
-    use wasm_bindgen_test::*;
 
     use super::super::error::Error;
     use crate::test_utils::*;
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     pub async fn orphan_welcome_should_generate_external_commit(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {

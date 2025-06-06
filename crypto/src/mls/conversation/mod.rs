@@ -510,12 +510,8 @@ pub mod test_utils {
 mod tests {
     use super::*;
     use crate::test_utils::*;
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     pub async fn create_self_conversation_should_succeed(case: TestContext) {
         let [alice] = case.sessions().await;
         Box::pin(async move {
@@ -528,7 +524,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     pub async fn create_1_1_conversation_should_succeed(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
@@ -540,7 +535,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
     pub async fn create_many_people_conversation(case: TestContext) {
         const SIZE_PLUS_1: usize = GROUP_SAMPLE_SIZE + 1;
         let alice_and_friends = case.sessions::<SIZE_PLUS_1>().await;
@@ -558,8 +552,6 @@ mod tests {
     }
 
     mod wire_identity_getters {
-        use wasm_bindgen_test::*;
-
         use super::Error;
         use crate::mls::conversation::Conversation;
         use crate::prelude::{ClientId, MlsCredentialType};
@@ -567,8 +559,6 @@ mod tests {
             prelude::{DeviceStatus, E2eiConversationState},
             test_utils::*,
         };
-
-        wasm_bindgen_test_configure!(run_in_browser);
 
         async fn all_identities_check<'a, C, const N: usize>(
             conversation: &'a C,
@@ -622,7 +612,6 @@ mod tests {
         }
 
         #[async_std::test]
-        #[wasm_bindgen_test]
         async fn should_read_device_identities() {
             let case = TestContext::default_x509();
 
@@ -682,7 +671,6 @@ mod tests {
         }
 
         #[async_std::test]
-        #[wasm_bindgen_test]
         async fn should_read_revoked_device_cross_signed() {
             let case = TestContext::default_x509();
             let alice_user_id = uuid::Uuid::new_v4();
@@ -738,7 +726,6 @@ mod tests {
         }
 
         #[async_std::test]
-        #[wasm_bindgen_test]
         async fn should_read_revoked_device() {
             let case = TestContext::default_x509();
             let rupert_user_id = uuid::Uuid::new_v4();
@@ -785,7 +772,6 @@ mod tests {
         }
 
         #[async_std::test]
-        #[wasm_bindgen_test]
         async fn should_not_fail_when_basic() {
             let case = TestContext::default();
 
@@ -828,7 +814,6 @@ mod tests {
         // this test is a duplicate of its counterpart but taking federation into account
         // The heavy lifting of cross-signing the certificates is being done by the test utils.
         #[async_std::test]
-        #[wasm_bindgen_test]
         async fn should_read_users_cross_signed() {
             let case = TestContext::default_x509();
             let [alice_1_id, alice_2_id] = case.x509_client_ids_for_user(&uuid::Uuid::new_v4());
@@ -893,7 +878,6 @@ mod tests {
         }
 
         #[async_std::test]
-        #[wasm_bindgen_test]
         async fn should_read_users() {
             let case = TestContext::default_x509();
             let [alice_android, alice_ios] = case.x509_client_ids_for_user(&uuid::Uuid::new_v4());
@@ -947,7 +931,6 @@ mod tests {
         }
 
         #[async_std::test]
-        #[wasm_bindgen_test]
         async fn should_exchange_messages_cross_signed() {
             let case = TestContext::default_x509();
             let sessions = case.sessions_x509_cross_signed::<3, 3>().await;
@@ -969,7 +952,6 @@ mod tests {
         use openmls::prelude::ExportSecretError;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn can_export_secret_key(case: TestContext) {
             let [alice] = case.sessions().await;
             Box::pin(async move {
@@ -984,7 +966,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn cannot_export_secret_key_invalid_length(case: TestContext) {
             let [alice] = case.sessions().await;
             Box::pin(async move {
@@ -1005,7 +986,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn can_get_client_ids(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -1025,7 +1005,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn should_fetch_ext_sender(mut case: TestContext) {
             let [alice, external_sender] = case.sessions().await;
             Box::pin(async move {
