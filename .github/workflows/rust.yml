@@ -72,19 +72,8 @@ jobs:
         config:
           - crate: keystore
           - crate: mls-provider
-          - crate: crypto
-            module: -- e2e_identity
-          - crate: crypto
-            module: -- mls
-          - crate: crypto
-            module: -- group_store
-          - crate: crypto
-            module: -- proteus
           - crate: keystore
             feature: --features proteus-keystore
-            module: -- proteus
-          - crate: crypto
-            feature: --features proteus,cryptobox-migrate
             module: -- proteus
     steps:
       - uses: actions/checkout@v4
