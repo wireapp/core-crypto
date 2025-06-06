@@ -41,7 +41,6 @@ mod durability;
 mod error;
 pub(crate) mod group_info;
 mod immutable_conversation;
-mod leaf_node_validation;
 pub(crate) mod merge;
 mod orphan_welcome;
 mod own_commit;
