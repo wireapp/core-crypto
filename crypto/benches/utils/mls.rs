@@ -248,6 +248,11 @@ pub async fn setup_mls_and_add_clients(
     (core_crypto, id, client_ids, group_info, delivery_service)
 }
 
+fn create_signature_keypair(backend: &MlsCryptoProvider, ciphersuite: Ciphersuite) -> SignatureKeyPair {
+    let mut rng = backend.rand().borrow_rand().unwrap();
+    SignatureKeyPair::new(ciphersuite.signature_algorithm(), &mut *rng).unwrap()
+}
+
 pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, ClientId) {
     let client_id = Alphanumeric
         .sample_string(&mut rand::thread_rng(), 16)
@@ -256,10 +261,7 @@ pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, Clien
     let key = DatabaseKey::generate();
     let backend = MlsCryptoProvider::try_new_in_memory(&key).await.unwrap();
     let cs: Ciphersuite = ciphersuite.into();
-
-    let mut rng = backend.rand().borrow_rand().unwrap();
-    let signer = SignatureKeyPair::new(ciphersuite.signature_algorithm(), &mut *rng).unwrap();
-    drop(rng);
+    let signer = create_signature_keypair(&backend, cs);
 
     let cred = Credential::new_basic(client_id.clone());
     let signature_key = SignaturePublicKey::from(signer.public());
