@@ -54,6 +54,15 @@ export class CoreCryptoContext {
     }
 
     /**
+     * Get the raw FFI context. Should only be used by this library, not by end-users.
+     *
+     * @hidden
+     */
+    raw(): CoreCryptoFfiTypes.CoreCryptoContext {
+        return this.#ctx;
+    }
+
+    /**
      * Set arbitrary data to be retrieved by {@link getData}.
      * This is meant to be used as a check point at the end of a transaction.
      * The data should be limited to a reasonable size.
