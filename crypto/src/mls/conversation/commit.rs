@@ -41,6 +41,7 @@ impl MlsConversation {
             welcome,
             commit,
             group_info,
+            encrypted_message: None,
         }))
     }
 }
@@ -54,6 +55,8 @@ pub struct MlsCommitBundle {
     pub commit: MlsMessageOut,
     /// `GroupInfo` if the commit is merged
     pub group_info: MlsGroupInfoBundle,
+    /// An encrypted message to fan out to all other conversation members in the new epoch
+    pub encrypted_message: Option<Vec<u8>>,
 }
 
 impl MlsCommitBundle {
