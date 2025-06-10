@@ -138,6 +138,7 @@ impl ConversationGuard {
             commit,
             welcome,
             group_info,
+            encrypted_message: None,
         };
 
         self.send_and_merge_commit(commit).await?;
@@ -187,6 +188,7 @@ impl ConversationGuard {
             commit,
             welcome,
             group_info,
+            encrypted_message: None,
         })
         .await
     }
@@ -263,6 +265,7 @@ impl ConversationGuard {
             welcome,
             commit,
             group_info,
+            encrypted_message: None,
         })
     }
 
