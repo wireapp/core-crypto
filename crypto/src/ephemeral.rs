@@ -33,7 +33,7 @@ use crate::{
 
 /// We always instantiate history clients with this prefix in their client id, so
 /// we can use prefix testing to determine with some accuracy whether or not something is a history client.
-const HISTORY_CLIENT_ID_PREFIX: &str = "history-client";
+pub(crate) const HISTORY_CLIENT_ID_PREFIX: &str = "history-client";
 
 /// A `HistorySecret` encodes sufficient client state that it can be used to instantiate an
 /// ephemeral client.

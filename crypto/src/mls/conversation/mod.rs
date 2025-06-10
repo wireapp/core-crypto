@@ -248,6 +248,15 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
             .map_err(RecursiveError::root("generating history secret"))
             .map_err(Into::into)
     }
+
+    /// Check if history sharing is enabled, i.e., if any of the conversation members have a [ClientId] starting
+    /// with [crate::prelude::HISTORY_CLIENT_ID_PREFIX].
+    async fn is_history_sharing_enabled(&'a self) -> bool {
+        self.get_client_ids()
+            .await
+            .iter()
+            .any(|client_id| client_id.starts_with(crate::ephemeral::HISTORY_CLIENT_ID_PREFIX.as_bytes()))
+    }
 }
 
 impl<'a, T: ConversationWithMls<'a>> Conversation<'a> for T {}
