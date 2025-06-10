@@ -18,6 +18,7 @@ conventional_commits = true
 filter_unconventional = true
 filter_commits = true
 tag_pattern = "v[0-9]*"
+protect_breaking_commits = true
 date_order = true
 sort_commits = "newest"
 commit_parsers = [
@@ -26,4 +27,5 @@ commit_parsers = [
     { message = "^doc", group = "<!-- 2 -->Documentation"},
     { message = "^perf", group = "<!-- 3 -->Performance"},
     { message = "^test", group = "<!-- 4 -->Testing"},
+    { message = "^\\w+(\\(.*?\\))?!", group = "<-- 5 -->Other Breaking Changes"},
 ]
