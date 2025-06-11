@@ -16,6 +16,7 @@ use crate::{
 mod commit;
 pub(crate) mod decrypt;
 mod encrypt;
+mod history_sharing;
 mod merge;
 
 /// A Conversation Guard wraps a `GroupStoreValue<MlsConversation>`.
