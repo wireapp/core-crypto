@@ -6,7 +6,6 @@ import {
     NewAcmeOrder,
     CrlRegistration as CrlRegistrationFfi,
 } from "./core-crypto-ffi.js";
-import type { CoreCryptoContext } from "./CoreCryptoContext.js";
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
 
@@ -234,40 +233,27 @@ export class E2eiEnrollment {
      * Creates a new challenge request for Wire Oidc challenge.
      *
      * @param idToken you get back from Identity Provider
-     * @param refreshToken from the Identity Provider, to renew the access token
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
     async newOidcChallengeRequest(
         idToken: string,
-        refreshToken: string,
         previousNonce: string
     ): Promise<JsonRawData> {
         return await CoreCryptoError.asyncMapErr(
-            this.#enrollment.new_oidc_challenge_request(
-                idToken,
-                refreshToken,
-                previousNonce
-            )
+            this.#enrollment.new_oidc_challenge_request(idToken, previousNonce)
         );
     }
 
     /**
      * Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for the OIDC challenge.
      *
-     * @param context Transaction context from CoreCrypto, used for updating the refresh token
      * @param challenge HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    async newOidcChallengeResponse(
-        context: CoreCryptoContext,
-        challenge: JsonRawData
-    ): Promise<void> {
+    async newOidcChallengeResponse(challenge: JsonRawData): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
-            this.#enrollment.new_oidc_challenge_response(
-                context.raw(),
-                challenge
-            )
+            this.#enrollment.new_oidc_challenge_response(challenge)
         );
     }
 
