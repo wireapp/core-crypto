@@ -1,7 +1,9 @@
-mod commit;
-pub(crate) mod decrypt;
-mod encrypt;
-mod merge;
+use std::sync::Arc;
+
+use async_lock::{RwLockReadGuard, RwLockWriteGuard};
+use core_crypto_keystore::CryptoKeystoreMls as _;
+use openmls::prelude::group_info::GroupInfo;
+use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{ConversationWithMls, Error, MlsConversation, Result};
 use crate::mls::credential::CredentialBundle;
@@ -10,11 +12,10 @@ use crate::{
     KeystoreError, LeafError, RecursiveError, group_store::GroupStoreValue, prelude::MlsGroupInfoBundle,
     transaction_context::TransactionContext,
 };
-use async_lock::{RwLockReadGuard, RwLockWriteGuard};
-use core_crypto_keystore::CryptoKeystoreMls;
-use openmls::prelude::group_info::GroupInfo;
-use openmls_traits::OpenMlsCryptoProvider;
-use std::sync::Arc;
+mod commit;
+pub(crate) mod decrypt;
+mod encrypt;
+mod merge;
 
 /// A Conversation Guard wraps a `GroupStoreValue<MlsConversation>`.
 ///
