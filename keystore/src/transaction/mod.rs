@@ -341,7 +341,7 @@ impl KeystoreTransaction {
                 (identifier_09, PersistedMlsPendingGroup),
                 (identifier_10, MlsPendingMessage),
                 (identifier_11, E2eiEnrollment),
-                (identifier_12, E2eiRefreshToken),
+                // (identifier_12, E2eiRefreshToken),
                 (identifier_13, E2eiAcmeCA),
                 (identifier_14, E2eiIntermediateCert),
                 (identifier_15, E2eiCrl),
