@@ -53,7 +53,7 @@ impl TransactionContext {
                 .map_err(RecursiveError::transaction("getting mls provider"))?,
             ciphersuite,
             signature_keypair,
-            None, // fresh install so no refresh token registered yet
+            false, // fresh install so no refresh token registered yet
         )
         .map_err(RecursiveError::e2e_identity("creating new enrollment"))
         .map_err(Into::into)

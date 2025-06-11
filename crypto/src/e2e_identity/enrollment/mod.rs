@@ -13,7 +13,6 @@ use crate::{
     prelude::{ClientId, MlsCiphersuite},
 };
 
-use super::refresh_token;
 use super::{EnrollmentHandle, Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
 
 /// Wire end to end identity solution for fetching a x509 certificate which identifies a client.
@@ -33,7 +32,7 @@ pub struct E2eiEnrollment {
     valid_order: Option<wire_e2e_identity::prelude::E2eiAcmeOrder>,
     finalize: Option<wire_e2e_identity::prelude::E2eiAcmeFinalize>,
     pub(super) ciphersuite: MlsCiphersuite,
-    pub(super) refresh_token: Option<refresh_token::RefreshToken>,
+    has_called_new_oidc_challenge_request: bool,
 }
 
 impl std::ops::Deref for E2eiEnrollment {
@@ -63,7 +62,7 @@ impl E2eiEnrollment {
         backend: &MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
         sign_keypair: Option<E2eiSignatureKeypair>,
-        refresh_token: Option<refresh_token::RefreshToken>,
+        has_called_new_oidc_challenge_request: bool,
     ) -> Result<Self> {
         let alg = ciphersuite.try_into()?;
         let sign_sk = sign_keypair
@@ -89,7 +88,7 @@ impl E2eiEnrollment {
             valid_order: None,
             finalize: None,
             ciphersuite,
-            refresh_token,
+            has_called_new_oidc_challenge_request,
         })
     }
 
@@ -293,20 +292,10 @@ impl E2eiEnrollment {
     ///
     /// # Parameters
     /// * `id_token` - you get back from Identity Provider
-    /// * `refresh_token` - you get back from Identity Provider to renew the access token
     /// * `oidc_challenge` - you found after [Self::new_authz_response]
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
-    pub fn new_oidc_challenge_request(
-        &mut self,
-        id_token: String,
-        refresh_token: String,
-        previous_nonce: String,
-    ) -> Result<Json> {
-        if refresh_token.is_empty() {
-            return Err(Error::InvalidRefreshToken);
-        }
-
+    pub fn new_oidc_challenge_request(&mut self, id_token: String, previous_nonce: String) -> Result<Json> {
         let authz = self
             .user_authz
             .as_ref()
@@ -321,7 +310,7 @@ impl E2eiEnrollment {
         let challenge = self.acme_oidc_challenge_request(id_token, challenge, account, previous_nonce)?;
         let challenge = serde_json::to_vec(&challenge)?;
 
-        self.refresh_token.replace(refresh_token.into());
+        self.has_called_new_oidc_challenge_request = true;
 
         Ok(challenge)
     }
@@ -332,18 +321,15 @@ impl E2eiEnrollment {
     ///
     /// # Parameters
     /// * `challenge` - http response body
-    pub async fn new_oidc_challenge_response(&mut self, backend: &MlsCryptoProvider, challenge: Json) -> Result<()> {
+    pub async fn new_oidc_challenge_response(&mut self, challenge: Json) -> Result<()> {
         let challenge = serde_json::from_slice(&challenge[..])?;
         self.acme_new_challenge_response(challenge)?;
 
-        // Now that the OIDC challenge is valid, we can store the refresh token for future uses. Note
-        // that we could have persisted it at the end of the enrollment but what if the next enrollment
-        // steps fail ? Is it a reason good enough not to persist the token and ask the user to
-        // authenticate again: probably not.
-        let refresh_token = self.refresh_token.take().ok_or(Error::OutOfOrderEnrollment(
-            "You must first call 'new_oidc_challenge_request()'",
-        ))?;
-        refresh_token.replace(backend).await?;
+        if !self.has_called_new_oidc_challenge_request {
+            return Err(Error::OutOfOrderEnrollment(
+                "You must first call 'new_oidc_challenge_request()'",
+            ));
+        }
 
         Ok(())
     }
@@ -456,8 +442,6 @@ impl E2eiEnrollment {
         self.delegate.sign_kp.zeroize();
         self.delegate.acme_kp.zeroize();
 
-        self.refresh_token.zeroize();
-
         Ok(certificates)
     }
 
@@ -485,17 +469,5 @@ impl E2eiEnrollment {
             .await
             .map_err(KeystoreError::wrap("popping e2ei enrollment"))?;
         Ok(serde_json::from_slice(&content)?)
-    }
-
-    /// Lets clients retrieve the OIDC refresh token to try to renew the user's authorization.
-    /// If it's expired, the user needs to reauthenticate and they will update the refresh token
-    /// in [E2eiEnrollment::new_oidc_challenge_request]
-    pub fn get_refresh_token(&self) -> Result<&str> {
-        self.refresh_token
-            .as_ref()
-            .map(|rt| rt.as_str())
-            .ok_or(Error::OutOfOrderEnrollment(
-                "No OIDC refresh token registered yet or it has been persisted",
-            ))
     }
 }

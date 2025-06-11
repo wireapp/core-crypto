@@ -120,7 +120,7 @@ mod tests {
                             &backend,
                             *e.ciphersuite(),
                             None,
-                            None,
+                            false,
                         )
                         .unwrap()
                     })

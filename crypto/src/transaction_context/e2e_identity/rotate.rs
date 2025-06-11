@@ -1,7 +1,7 @@
 use super::{error::Error, error::Result};
 use crate::{
     KeystoreError, MlsError, RecursiveError,
-    e2e_identity::{NewCrlDistributionPoints, refresh_token::RefreshToken},
+    e2e_identity::NewCrlDistributionPoints,
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     prelude::{CertificateBundle, E2eiEnrollment, MlsCiphersuite, MlsCredentialType},
     transaction_context::TransactionContext,
@@ -53,7 +53,7 @@ impl TransactionContext {
             &mls_provider,
             ciphersuite,
             sign_keypair,
-            None, // no x509 credential yet at this point so no OIDC authn yet so no refresh token to restore
+            false, // no x509 credential yet at this point so no OIDC authn yet so no refresh token to restore
         )
         .map_err(RecursiveError::e2e_identity("creating new enrollment"))
         .map_err(Into::into)
@@ -109,11 +109,7 @@ impl TransactionContext {
             &mls_provider,
             ciphersuite,
             sign_keypair,
-            Some(
-                RefreshToken::find(&mls_provider.keystore())
-                    .await
-                    .map_err(RecursiveError::e2e_identity("finding refreh token"))?,
-            ), // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it we also MUST have stored in CoreCrypto
+            true, // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it
         )
         .map_err(RecursiveError::e2e_identity("creating new enrollment"))
         .map_err(Into::into)
