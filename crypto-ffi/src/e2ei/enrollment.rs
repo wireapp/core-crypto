@@ -4,7 +4,7 @@ use async_lock::RwLock;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{AcmeDirectory, CoreCryptoContext, CoreCryptoResult, NewAcmeAuthz, NewAcmeOrder};
+use crate::{AcmeDirectory, CoreCryptoResult, NewAcmeAuthz, NewAcmeOrder};
 
 /// See [core_crypto::e2e_identity::E2eiEnrollment]
 #[derive(Debug)]
@@ -149,45 +149,20 @@ impl E2eiEnrollment {
     pub async fn new_oidc_challenge_request(
         &self,
         id_token: String,
-        refresh_token: String,
         previous_nonce: String,
     ) -> CoreCryptoResult<Vec<u8>> {
         self.write()
             .await
-            .new_oidc_challenge_request(id_token, refresh_token, previous_nonce)
+            .new_oidc_challenge_request(id_token, previous_nonce)
             .map_err(Into::into)
     }
-}
 
-#[cfg(not(target_family = "wasm"))]
-type CoreCryptoContextObject = Arc<CoreCryptoContext>;
-
-#[cfg(target_family = "wasm")]
-type CoreCryptoContextObject = CoreCryptoContext;
-
-#[cfg_attr(target_family = "wasm", wasm_bindgen(js_class = FfiWireE2EIdentity))]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-impl E2eiEnrollment {
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_response]
-    pub async fn new_oidc_challenge_response(
-        &self,
-        cc: CoreCryptoContextObject,
-        challenge: Vec<u8>,
-    ) -> CoreCryptoResult<()> {
-        let provider = cc.inner.mls_provider().await?;
+    pub async fn new_oidc_challenge_response(&self, challenge: Vec<u8>) -> CoreCryptoResult<()> {
         self.write()
             .await
-            .new_oidc_challenge_response(&provider, challenge)
+            .new_oidc_challenge_response(challenge)
             .await
-            .map_err(Into::into)
-    }
-
-    /// See [core_crypto::prelude::E2eiEnrollment::get_refresh_token]
-    pub async fn get_refresh_token(&self) -> CoreCryptoResult<String> {
-        self.read()
-            .await
-            .get_refresh_token()
-            .map(Into::into)
             .map_err(Into::into)
     }
 }
