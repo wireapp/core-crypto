@@ -243,27 +243,24 @@ class E2EIEnrollment(private val delegate: com.wire.crypto.uniffi.E2eiEnrollment
      * Creates a new challenge request for Wire Oidc challenge.
      *
      * @param idToken you get back from Identity Provider
-     * @param refreshToken you get back from Identity Provider to renew the access token
      * @param previousNonce `replay-nonce` response header from `POST
      *   /acme/{provisioner-name}/authz/{authz-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
     suspend fun newOidcChallengeRequest(
         idToken: String,
-        refreshToken: String,
         previousNonce: String,
-    ) = delegate.newOidcChallengeRequest(idToken, refreshToken, previousNonce)
+    ) = delegate.newOidcChallengeRequest(idToken, previousNonce)
 
     /**
      * Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for OIDC
      * challenge within a CoreCryptoContext.
      *
-     * @param cc CoreCrypto instance
      * @param challenge HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    suspend fun contextOidcChallengeResponse(cc: CoreCryptoContext, challenge: JsonRawData) =
-        delegate.newOidcChallengeResponse(cc.lower(), challenge)
+    suspend fun contextOidcChallengeResponse(challenge: JsonRawData) =
+        delegate.newOidcChallengeResponse(challenge)
 
     /**
      * Verifies that the previous challenge has been completed.
@@ -312,11 +309,4 @@ class E2EIEnrollment(private val delegate: com.wire.crypto.uniffi.E2eiEnrollment
      */
     suspend fun certificateRequest(previousNonce: String) =
         delegate.certificateRequest(previousNonce)
-
-    /**
-     * Lets clients retrieve the OIDC refresh token to try to renew the user's authorization. If
-     * it's expired, the user needs to reauthenticate and they will update the refresh token in
-     * [newOidcChallengeRequest]
-     */
-    suspend fun getRefreshToken() = delegate.getRefreshToken()
 }
