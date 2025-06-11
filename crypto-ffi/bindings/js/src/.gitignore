@@ -1,1 +1,9 @@
-*
+# the actual wasm files
+*.wasm
+*.wasm.d.ts
+# emitted low-level bindings to the wasm files
+*ffi.js
+*ffi.d.ts
+# compiled high-level bindings
+corecrypto.js
+corecrypto.d.ts
