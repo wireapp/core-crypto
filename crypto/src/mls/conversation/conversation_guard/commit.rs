@@ -101,6 +101,17 @@ impl ConversationGuard {
 
     /// Adds new members to the group/conversation
     pub async fn add_members(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<NewCrlDistributionPoints> {
+        let (new_crl_distribution_points, commit) = self.add_members_inner(key_packages).await?;
+
+        self.send_and_merge_commit(commit).await?;
+
+        Ok(new_crl_distribution_points)
+    }
+
+    pub(super) async fn add_members_inner(
+        &mut self,
+        key_packages: Vec<KeyPackageIn>,
+    ) -> Result<(NewCrlDistributionPoints, MlsCommitBundle)> {
         self.ensure_no_pending_commit().await?;
         let backend = self.crypto_provider().await?;
         let credential = self.credential_bundle().await?;
@@ -131,9 +142,6 @@ impl ConversationGuard {
             .persist_group_when_changed(&backend.keystore(), false)
             .await?;
 
-        // we don't need the conversation anymore, but we do need to mutably borrow `self` again
-        drop(conversation);
-
         let commit = MlsCommitBundle {
             commit,
             welcome,
@@ -141,9 +149,7 @@ impl ConversationGuard {
             encrypted_message: None,
         };
 
-        self.send_and_merge_commit(commit).await?;
-
-        Ok(crl_new_distribution_points)
+        Ok((crl_new_distribution_points, commit))
     }
 
     /// Removes clients from the group/conversation.
