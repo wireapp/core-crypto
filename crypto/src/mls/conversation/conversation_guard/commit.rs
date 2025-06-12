@@ -44,15 +44,7 @@ impl ConversationGuard {
 
     /// Send the commit via [crate::MlsTransport] and handle the response.
     async fn send_commit(&mut self, mut commit: MlsCommitBundle) -> Result<TransportedCommitPolicy> {
-        let transport = self
-            .context()
-            .await?
-            .mls_transport()
-            .await
-            .map_err(RecursiveError::transaction("getting mls transport"))?;
-        let transport = transport.as_ref().ok_or::<Error>(
-            RecursiveError::root("getting mls transport")(crate::Error::MlsTransportNotProvided).into(),
-        )?;
+        let transport = self.transport().await?;
         let client = self.session().await?;
         let backend = self.crypto_provider().await?;
 
