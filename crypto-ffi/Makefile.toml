@@ -17,8 +17,8 @@ script = '''
   cd bindings
   ./gradlew android:dokkaHtml
   cd -
-  mkdir -p ../target/doc/core_crypto_ffi/bindings/kotlin
-  cp -R bindings/android/build/dokka/html/ ../target/doc/core_crypto_ffi/bindings/kotlin
+  mkdir -p ../target/kotlin/doc
+  cp -R bindings/android/build/dokka/html/ ../target/kotlin/doc
 '''
 
 [tasks.docs-rust-wasm]
@@ -38,7 +38,7 @@ args = [
     "--basePath", "./bindings/js",
     "--entryPoints", "./bindings/js/src/CoreCrypto.ts",
     "--tsconfig", "./bindings/js/tsconfig.json",
-    "--out", "../target/doc/core_crypto_ffi/bindings/typescript",
+    "--out", "../target/typescript/doc",
     "--readme", "none",
     "--treatWarningsAsErrors",
 ]
