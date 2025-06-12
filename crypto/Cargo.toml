@@ -140,10 +140,6 @@ name = "create_group"
 harness = false
 
 [[bench]]
-name = "mls_proteus"
-harness = false
-
-[[bench]]
 name = "transaction"
 harness = false
 
