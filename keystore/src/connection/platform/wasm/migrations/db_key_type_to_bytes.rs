@@ -39,7 +39,7 @@ macro_rules! rekey_entities {
     }
 }
 
-pub async fn migrate_db_key_type_to_bytes(
+pub(crate) async fn migrate_db_key_type_to_bytes(
     name: &str,
     old_key: &str,
     new_key: &DatabaseKey,
