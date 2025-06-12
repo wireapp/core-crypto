@@ -1,17 +1,17 @@
 use idb::{
     KeyPath,
-    builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder},
+    builder::{IndexBuilder, ObjectStoreBuilder},
 };
 
-use super::DB_VERSION_0;
+use super::{DB_VERSION_0, Metabuilder};
 use crate::entities::{
     E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityBase as _, MlsCredential,
     MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage, MlsPskBundle,
     MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
 };
 
-pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
-    let idb_builder = DatabaseBuilder::new(name)
+pub(super) fn get_builder(name: &str) -> Metabuilder {
+    let idb_builder = Metabuilder::new(name)
         .version(DB_VERSION_0)
         .add_object_store(
             ObjectStoreBuilder::new(MlsCredential::COLLECTION_NAME)

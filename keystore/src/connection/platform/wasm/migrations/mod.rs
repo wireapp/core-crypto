@@ -1,5 +1,6 @@
 mod db_key_type_to_bytes;
 pub mod keystore_v_1_0_0;
+mod metabuilder;
 mod pre_v4;
 mod v0;
 mod v1;
@@ -8,6 +9,7 @@ mod v3;
 mod v4;
 
 pub(super) use db_key_type_to_bytes::migrate_db_key_type_to_bytes;
+use metabuilder::Metabuilder;
 /// TODO: this is here only because it's needed for the cryptobox migration test.
 ///       Once we drop cryptobox migration and the related test, drop this too.
 pub use pre_v4::open_and_migrate as open_and_migrate_pre_v4;

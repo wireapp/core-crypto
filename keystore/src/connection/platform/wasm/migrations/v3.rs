@@ -1,9 +1,9 @@
 use idb::{
     KeyPath,
-    builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder},
+    builder::{IndexBuilder, ObjectStoreBuilder},
 };
 
-use super::DB_VERSION_3;
+use super::{DB_VERSION_3, Metabuilder};
 use crate::{
     CryptoKeystoreResult,
     entities::{EntityBase as _, MlsBufferedCommit},
@@ -18,7 +18,7 @@ pub(super) async fn migrate(name: &str) -> CryptoKeystoreResult<u32> {
 }
 
 /// Add a new object store for the MlsBufferedCommit struct.
-pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
+pub(super) fn get_builder(name: &str) -> Metabuilder {
     let previous_builder = super::v2::get_builder(name);
     previous_builder.version(DB_VERSION_3).add_object_store(
         ObjectStoreBuilder::new(MlsBufferedCommit::COLLECTION_NAME)

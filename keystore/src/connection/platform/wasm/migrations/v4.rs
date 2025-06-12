@@ -1,6 +1,4 @@
-use idb::builder::DatabaseBuilder;
-
-use super::DB_VERSION_4;
+use super::{DB_VERSION_4, Metabuilder};
 use crate::CryptoKeystoreResult;
 
 /// Open IDB once with the new builder and close it, this will add the new object store.
@@ -12,6 +10,6 @@ pub(super) async fn migrate(name: &str) -> CryptoKeystoreResult<u32> {
 }
 
 /// Just initialize object stores.
-pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
+pub(super) fn get_builder(name: &str) -> Metabuilder {
     super::v3::get_builder(name).version(DB_VERSION_4)
 }

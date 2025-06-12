@@ -918,6 +918,7 @@ dependencies = [
  "getrandom 0.2.15",
  "hex",
  "idb",
+ "indexmap",
  "itertools 0.13.0",
  "js-sys",
  "log",
