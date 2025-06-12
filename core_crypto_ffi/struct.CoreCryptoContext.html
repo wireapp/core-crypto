@@ -428,7 +428,7 @@ You <strong>need</strong> to have a Root CA registered before calling this</p>
 </ul>
 <h5 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h5>
 <p>A <a href="../core_crypto/e2e_identity/struct.CrlRegistration.html" title="struct core_crypto::e2e_identity::CrlRegistration">CrlRegistration</a> with the dirty state of the new CRL (see struct) and its expiration timestamp</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.e2ei_new_activation_enrollment-1" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/rotate.rs.html#21-28">Source</a><h4 class="code-header">pub async fn <a href="#method.e2ei_new_activation_enrollment-1" class="fn">e2ei_new_activation_enrollment</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.e2ei_new_activation_enrollment-1" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/rotate.rs.html#19-26">Source</a><h4 class="code-header">pub async fn <a href="#method.e2ei_new_activation_enrollment-1" class="fn">e2ei_new_activation_enrollment</a>(
     &amp;self,
     display_name: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
     handle: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
@@ -440,7 +440,7 @@ willing to migrate to E2EI. As a consequence, this method does not support chang
 ClientId which should remain the same as the Basic one.
 Once the enrollment is finished, use the instance in <a href="../core_crypto/transaction_context/struct.TransactionContext.html#method.save_x509_credential" title="method core_crypto::transaction_context::TransactionContext::save_x509_credential">TransactionContext::save_x509_credential</a>
 to save the new credential.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.e2ei_new_rotate_enrollment-1" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/rotate.rs.html#70-77">Source</a><h4 class="code-header">pub async fn <a href="#method.e2ei_new_rotate_enrollment-1" class="fn">e2ei_new_rotate_enrollment</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.e2ei_new_rotate_enrollment-1" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/rotate.rs.html#67-74">Source</a><h4 class="code-header">pub async fn <a href="#method.e2ei_new_rotate_enrollment-1" class="fn">e2ei_new_rotate_enrollment</a>(
     &amp;self,
     display_name: <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;,
     handle: <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;,
@@ -452,7 +452,7 @@ having to change/rotate their credential, either because the former one is expir
 has been revoked. As a consequence, this method does not support changing neither ClientId which
 should remain the same as the previous one. It lets you change the DisplayName or the handle
 if you need to. Once the enrollment is finished, use the instance in <a href="../core_crypto/transaction_context/struct.TransactionContext.html#method.save_x509_credential" title="method core_crypto::transaction_context::TransactionContext::save_x509_credential">TransactionContext::save_x509_credential</a> to do the rotation.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.save_x509_credential-1" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/rotate.rs.html#137-141">Source</a><h4 class="code-header">pub async fn <a href="#method.save_x509_credential-1" class="fn">save_x509_credential</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.save_x509_credential-1" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/rotate.rs.html#129-133">Source</a><h4 class="code-header">pub async fn <a href="#method.save_x509_credential-1" class="fn">save_x509_credential</a>(
     &amp;self,
     enrollment: &amp;mut <a class="struct" href="../core_crypto/e2e_identity/enrollment/struct.E2eiEnrollment.html" title="struct core_crypto::e2e_identity::enrollment::E2eiEnrollment">E2eiEnrollment</a>,
     certificate_chain: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
@@ -471,7 +471,7 @@ an orphan welcome message</li>
 </ul>
 </li>
 </ol>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.delete_stale_key_packages-1" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/rotate.rs.html#195">Source</a><h4 class="code-header">pub async fn <a href="#method.delete_stale_key_packages-1" class="fn">delete_stale_key_packages</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.delete_stale_key_packages-1" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/rotate.rs.html#187">Source</a><h4 class="code-header">pub async fn <a href="#method.delete_stale_key_packages-1" class="fn">delete_stale_key_packages</a>(
     &amp;self,
     cipher_suite: <a class="struct" href="../core_crypto/mls/ciphersuite/struct.MlsCiphersuite.html" title="struct core_crypto::mls::ciphersuite::MlsCiphersuite">MlsCiphersuite</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.unit.html">()</a>, <a class="enum" href="../core_crypto/transaction_context/e2e_identity/error/enum.Error.html" title="enum core_crypto::transaction_context::e2e_identity::error::Error">Error</a>&gt;</h4></section></summary><div class="docblock"><p>Deletes all key packages whose leaf node’s credential does not match the most recently
@@ -512,7 +512,7 @@ a new x509 certificate from the acme server.</p>
 <li><code>handle</code> - user handle e.g. <code>alice.smith.qa@example.com</code></li>
 <li><code>expiry_sec</code> - generated x509 certificate expiry in seconds</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.e2ei_mls_init_only-1" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/mod.rs.html#65-70">Source</a><h4 class="code-header">pub async fn <a href="#method.e2ei_mls_init_only-1" class="fn">e2ei_mls_init_only</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.e2ei_mls_init_only-1" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/mod.rs.html#64-69">Source</a><h4 class="code-header">pub async fn <a href="#method.e2ei_mls_init_only-1" class="fn">e2ei_mls_init_only</a>(
     &amp;self,
     enrollment: &amp;mut <a class="struct" href="../core_crypto/e2e_identity/enrollment/struct.E2eiEnrollment.html" title="struct core_crypto::e2e_identity::enrollment::E2eiEnrollment">E2eiEnrollment</a>,
     certificate_chain: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
