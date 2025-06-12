@@ -6,6 +6,7 @@ use openmls::prelude::group_info::GroupInfo;
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{ConversationWithMls, Error, MlsConversation, Result};
+use crate::MlsTransport;
 use crate::mls::credential::CredentialBundle;
 use crate::prelude::ConversationId;
 use crate::{
@@ -50,6 +51,21 @@ impl ConversationGuard {
 
     pub(crate) async fn conversation_mut(&mut self) -> RwLockWriteGuard<MlsConversation> {
         self.inner.write().await
+    }
+
+    async fn transport(&self) -> Result<Arc<dyn MlsTransport>> {
+        let transport = self
+            .session()
+            .await?
+            .transport
+            .read()
+            .await
+            .as_ref()
+            .ok_or::<Error>(
+                RecursiveError::root("getting mls transport")(crate::Error::MlsTransportNotProvided).into(),
+            )?
+            .clone();
+        Ok(transport)
     }
 
     /// Destroys a group locally
