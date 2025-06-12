@@ -1,12 +1,16 @@
 # CoreCrypto FFI Details
 
-## Bindings
+## Rust Docs
 
-* WASM / TypeScript bindings are self-documented in [crypto-ffi/bindings/js/CoreCrypto.ts].
-    * Please refer to your IDE of choice's inlay hints or simply check out the `TypeDoc`-generated documentation on [typescript]
-    * Naming convention wise, `snake_case` gets translated to the TS idiomatic `camelCase` for methods and `PascalCase` for classes/interfaces
-* UniFFI-generated bindings (Swift, Kotlin) share the same characteristics in terms of naming convention translation.
-    * The general convention is that the idiomatic Rust `snake_case` gets translated to the language's idiomatic convention. Fortunately, for both Swift and Kotlin, the convention is `camelCase` for methods and `PascalCase` for classes/interfaces.
+- [Rust](/core-crypto/main/rust)
+
+These docs are most useful for Core-Crypto developers working internally, but may be useful for client developers looking for additional insights on implementation.
+
+## Bindings Docs
+
+- [Typescript](/core-crypto/main/typescript)
+- [Kotlin](/core-crypto/main/kotlin)
+- [Swift](/core-crypto/main/swift)
 
 ## Naming conventions table
 
@@ -40,17 +44,3 @@
 | `HashMap<String, T>`    | `Dictionary<String, T>`            | `Map<String, T>`           | `Record<string, T>`                      |
 | `()`                    | `nil`                              | `null`                     | `null`                                   |
 | `Result<T, E>`          | `func placeholder() throws E -> T` | `T placeholder() throws E` | `function placeholder(): T // @throws E` |
-
-## Adding new APIs
-
-1. Make your changes wherever applicable.
-1. Make sure your new API is available on `MlsCentral`, while respecting encapsulation
-    - For example, adding `MlsConversation::hello()` would mean exposing a new `MlsCentral::conversation_hello(conversation_id: ConversationId)`
-1. Expose your new API on both `crypto-ffi/src/[generic|wasm].rs`.
-1. Add the new APIs respecting the appropriate calling conventions defined above to
-    - Kotlin/Android: `crypto-ffi/bindings/jvm/src/main/kotlin/com/wire/crypto/client/[CoreCryptoCentral|E2eiClient|MLSClient].kt`
-    - TypeScript/Web: `crypto-ffi/bindings/js/CoreCrypto.ts`
-    (Swift/iOS are automatically generated)
-1. Add documentation for the new API in the bindings.
-1. Add a test for the bindings. This is easily done by extending the existing test suite in `crypto-ffi/bindings/js/test/CoreCrypto.test.ts`.
-   For example, see [this commit](https://github.com/wireapp/core-crypto/commit/5e9ecf7328b33730f31dfc25aeb168e090a7b1e5).

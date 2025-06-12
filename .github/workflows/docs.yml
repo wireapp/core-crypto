@@ -37,7 +37,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4.5.0
       with:
-        name: rustdoc
+        name: rust
         path: target/doc
         retention-days: 1
         overwrite: true
@@ -78,8 +78,8 @@ jobs:
 
     - uses: actions/upload-artifact@v4.5.0
       with:
-        name: tsdoc
-        path: target/doc
+        name: typescript
+        path: target/typescript/doc
         retention-days: 1
         overwrite: true
         include-hidden-files: true
@@ -108,8 +108,8 @@ jobs:
 
     - uses: actions/upload-artifact@v4.5.0
       with:
-        name: ktdoc
-        path: target/doc
+        name: kotlin
+        path: target/kotlin/doc/html
         retention-days: 1
         overwrite: true
         include-hidden-files: true
@@ -125,22 +125,21 @@ jobs:
       - tsdoc
       - ktdoc
     env:
-      GIT_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+      GIT_TAG: ${{ github.ref_type == 'tag' && github.ref_name || 'main' }}
 
     steps:
     - name: checkout repository
       uses: actions/checkout@v4
 
-    - name: download Rust, TypeScript and Kotlin docs
+    - name: download TypeScript and Kotlin docs
       uses: actions/download-artifact@v4.1.8
       with:
-        pattern: "*doc"
         path: "./target/doc/${{ env.GIT_TAG }}"
-        merge-multiple: true
+        merge-multiple: false
 
-    - name: copy index.md
+    - name: copy static files
       run: |
-        cp docs/index.md target/doc/index.md
+        cp docs/*.md target/doc/
 
     - name: deploy docs
       uses: peaceiris/actions-gh-pages@v4
