@@ -1,6 +1,3 @@
-#[cfg(doc)]
-pub mod bindings;
-
 #[cfg(not(target_family = "wasm"))]
 uniffi::setup_scaffolding!("core_crypto_ffi");
 
