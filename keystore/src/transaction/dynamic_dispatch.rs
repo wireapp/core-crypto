@@ -1,16 +1,20 @@
 //! This module exists merely because the `Entity` trait is not object safe.
 //! See <https://doc.rust-lang.org/reference/items/traits.html#object-safety.>.
 
-use crate::connection::TransactionWrapper;
-use crate::entities::{
-    ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityBase,
-    EntityTransactionExt, MlsBufferedCommit, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair,
-    MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
-    PersistedMlsPendingGroup, StringEntityId, UniqueEntity,
-};
+#[cfg(target_family = "wasm")]
+use crate::entities::E2eiRefreshToken;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
-use crate::{CryptoKeystoreError, CryptoKeystoreResult};
+use crate::{
+    CryptoKeystoreError, CryptoKeystoreResult,
+    connection::TransactionWrapper,
+    entities::{
+        ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, EntityBase, EntityTransactionExt,
+        MlsBufferedCommit, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
+        MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
+        PersistedMlsPendingGroup, StringEntityId, UniqueEntity,
+    },
+};
 
 #[derive(Debug)]
 pub enum Entity {
@@ -27,6 +31,7 @@ pub enum Entity {
     PersistedMlsPendingGroup(PersistedMlsPendingGroup),
     MlsPendingMessage(MlsPendingMessage),
     E2eiEnrollment(E2eiEnrollment),
+    #[cfg(target_family = "wasm")]
     E2eiRefreshToken(E2eiRefreshToken),
     E2eiAcmeCA(E2eiAcmeCA),
     E2eiIntermediateCert(E2eiIntermediateCert),
@@ -53,6 +58,7 @@ pub enum EntityId {
     PersistedMlsPendingGroup(Vec<u8>),
     MlsPendingMessage(Vec<u8>),
     E2eiEnrollment(Vec<u8>),
+    #[cfg(target_family = "wasm")]
     E2eiRefreshToken(Vec<u8>),
     E2eiAcmeCA(Vec<u8>),
     E2eiIntermediateCert(Vec<u8>),
@@ -80,6 +86,7 @@ impl EntityId {
             EntityId::PersistedMlsPendingGroup(vec) => vec.as_slice().into(),
             EntityId::MlsPendingMessage(vec) => vec.as_slice().into(),
             EntityId::E2eiEnrollment(vec) => vec.as_slice().into(),
+            #[cfg(target_family = "wasm")]
             EntityId::E2eiRefreshToken(vec) => vec.as_slice().into(),
             EntityId::E2eiAcmeCA(vec) => vec.as_slice().into(),
             EntityId::E2eiIntermediateCert(vec) => vec.as_slice().into(),
@@ -109,6 +116,7 @@ impl EntityId {
             E2eiEnrollment::COLLECTION_NAME => Ok(Self::E2eiEnrollment(id.into())),
             E2eiCrl::COLLECTION_NAME => Ok(Self::E2eiCrl(id.into())),
             E2eiAcmeCA::COLLECTION_NAME => Ok(Self::E2eiAcmeCA(id.into())),
+            #[cfg(target_family = "wasm")]
             E2eiRefreshToken::COLLECTION_NAME => Ok(Self::E2eiRefreshToken(id.into())),
             E2eiIntermediateCert::COLLECTION_NAME => Ok(Self::E2eiIntermediateCert(id.into())),
             #[cfg(feature = "proteus-keystore")]
@@ -134,6 +142,7 @@ impl EntityId {
             EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::COLLECTION_NAME,
             EntityId::MlsPendingMessage(_) => MlsPendingMessage::COLLECTION_NAME,
             EntityId::E2eiEnrollment(_) => E2eiEnrollment::COLLECTION_NAME,
+            #[cfg(target_family = "wasm")]
             EntityId::E2eiRefreshToken(_) => E2eiRefreshToken::COLLECTION_NAME,
             EntityId::E2eiAcmeCA(_) => E2eiAcmeCA::COLLECTION_NAME,
             EntityId::E2eiIntermediateCert(_) => E2eiIntermediateCert::COLLECTION_NAME,
@@ -166,6 +175,7 @@ pub async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> Crypt
         Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => persisted_mls_pending_group.save(tx).await,
         Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.save(tx).await,
         Entity::E2eiEnrollment(e2ei_enrollment) => e2ei_enrollment.save(tx).await,
+        #[cfg(target_family = "wasm")]
         Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.replace(tx).await,
         Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.replace(tx).await,
         Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.save(tx).await,
@@ -193,6 +203,7 @@ pub async fn execute_delete(tx: &TransactionWrapper<'_>, entity_id: &EntityId) -
         id @ EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::delete(tx, id.as_id()).await,
         id @ EntityId::MlsPendingMessage(_) => MlsPendingMessage::delete(tx, id.as_id()).await,
         id @ EntityId::E2eiEnrollment(_) => E2eiEnrollment::delete(tx, id.as_id()).await,
+        #[cfg(target_family = "wasm")]
         id @ EntityId::E2eiRefreshToken(_) => E2eiRefreshToken::delete(tx, id.as_id()).await,
         id @ EntityId::E2eiAcmeCA(_) => E2eiAcmeCA::delete(tx, id.as_id()).await,
         id @ EntityId::E2eiIntermediateCert(_) => E2eiIntermediateCert::delete(tx, id.as_id()).await,
