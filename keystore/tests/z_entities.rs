@@ -260,7 +260,6 @@ mod tests {
             test_migration_to_db_v1_for_entity!(test_e2ei_crl_migration, E2eiCrl, E2eiCrlV1_0_0);
             test_migration_to_db_v1_for_entity!(test_e2ei_enrollment_migration, E2eiEnrollment, E2eiEnrollmentV1_0_0);
             test_migration_to_db_v1_for_entity!(test_e2ei_ca_migration, E2eiAcmeCA, E2eiAcmeCAV1_0_0, unique_entity:true);
-            test_migration_to_db_v1_for_entity!(test_e2ei_token_migration, E2eiRefreshToken, E2eiRefreshTokenV1_0_0, unique_entity:true);
         }
     }
     cfg_if::cfg_if! {
