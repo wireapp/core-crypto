@@ -96,7 +96,7 @@ public final class CoreCrypto: CoreCryptoProtocol {
     ///
     /// This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
     /// Other use is a logic error.
-    public static func historyClient(_ historySecret: Data) async throws -> CoreCrypto {
+    public static func historyClient(_ historySecret: HistorySecret) async throws -> CoreCrypto {
         let cc =
             try await WireCoreCryptoUniffi.coreCryptoHistoryClient(historySecret: historySecret)
         return self.init(cc)
@@ -126,6 +126,13 @@ public final class CoreCrypto: CoreCryptoProtocol {
             epochObserver: EpochObserverIndirector(epochObserver))
     }
 
+    public func registerHistoryObserver(_ historyObserver: HistoryObserver) async throws {
+        // we want to wrap the observer here to provide async indirection, so that no matter what
+        // the observer that makes its way to the Rust side of things doesn't end up blocking
+        try await coreCrypto.registerHistoryObserver(
+            historyObserver: HistoryObserverIndirector(historyObserver))
+    }
+
     public static func setLogger(_ logger: CoreCryptoLogger) {
         WireCoreCryptoUniffi.setLoggerOnly(logger: logger)
     }
@@ -144,7 +151,7 @@ public final class CoreCrypto: CoreCryptoProtocol {
 
 }
 
-class EpochObserverIndirector: EpochObserver {
+final class EpochObserverIndirector: EpochObserver {
 
     let epochObserver: EpochObserver
 
@@ -160,7 +167,23 @@ class EpochObserverIndirector: EpochObserver {
 
 }
 
-class TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand {
+final class HistoryObserverIndirector: HistoryObserver {
+
+    let historyObserver: HistoryObserver
+
+    init(_ historyObserver: HistoryObserver) {
+        self.historyObserver = historyObserver
+    }
+
+    func historyClientCreated(conversationId: Data, secret: HistorySecret) async throws {
+        Task {
+            try await historyObserver.historyClientCreated(
+                conversationId: conversationId, secret: secret)
+        }
+    }
+}
+
+final class TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand {
 
     let block: (_ context: CoreCryptoContextProtocol) async throws -> Result
     var result: Result?

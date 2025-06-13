@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 import WireCoreCrypto
 
-class TransportProvider: MlsTransport {
+final class TransportProvider: MlsTransport {
 
     func sendCommitBundle(
         commitBundle: CommitBundle
@@ -14,6 +14,12 @@ class TransportProvider: MlsTransport {
         mlsMessage: Data
     ) async -> MlsTransportResponse {
         .success
+    }
+
+    func prepareForTransport(historySecret: WireCoreCryptoUniffi.HistorySecret) async
+        -> WireCoreCryptoUniffi.MlsTransportData
+    {
+        historySecret.clientId
     }
 
 }
