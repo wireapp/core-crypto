@@ -50,4 +50,21 @@ impl ConversationGuard {
 
         Ok(())
     }
+
+    /// Disable history sharing by removing histroy clients from the conversation.
+    pub async fn disable_history_sharing(&mut self) -> Result<()> {
+        let mut history_client_ids = self.get_client_ids().await;
+        // We're facing a trade-off situation here: do we want to avoid unnecessary iteration and assume that there is always
+        // at most one history client in a conversation?
+        // Then we could use something like `into_iter().find_map()` to lazily evaluate client ids, but this way we're making sure to
+        // remove any history client, and not just the first one we find.
+        history_client_ids.retain(|id| id.starts_with(crate::ephemeral::HISTORY_CLIENT_ID_PREFIX.as_bytes()));
+
+        if history_client_ids.is_empty() {
+            log::warn!("History sharing is already disabled.");
+            return Ok(());
+        }
+
+        self.remove_members(&history_client_ids).await
+    }
 }
