@@ -1,6 +1,9 @@
 # Core-Crypto Documentation
 
+- [Architecture](./ARCHITECTURE.md)
+- [Keystore Implementation](./KEYSTORE_IMPLEMENTATION.md)
 - [FFI](./FFI.md)
+- [Crypto Dependencies](./CRYPTO_DEPENDENCIES.md)
 
 ## API Documentation
 <!-- If you want to try to deploy docs for an old tag, go to
