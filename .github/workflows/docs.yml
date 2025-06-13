@@ -9,6 +9,7 @@ on:
       - main
     tags:
       - 'release/*'
+      - 'v*'
   pull_request:
 
 env:
@@ -119,7 +120,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.repository == 'wireapp/core-crypto' &&
-      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+      (github.ref == 'refs/heads/main' || (github.ref_type == 'tag' && (startsWith(github.ref_name, 'release/') || startsWith(github.ref_name, 'v'))))
     needs:
       - rustdoc
       - tsdoc
