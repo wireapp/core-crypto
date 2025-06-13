@@ -129,7 +129,7 @@ jobs:
     - name: checkout repository
       uses: actions/checkout@v4
 
-    - name: download TypeScript and Kotlin docs
+    - name: download pre-rendered docs
       uses: actions/download-artifact@v4.1.8
       with:
         path: "./target/doc/${{ env.GIT_TAG }}"
