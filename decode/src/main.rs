@@ -9,6 +9,7 @@ use proteus_wasm::keys::{PreKeyBundle, Signature};
 use proteus_wasm::message::{CipherMessage, Envelope, Message, PreKeyMessage};
 use std::ops::Deref;
 use clap_stdin::MaybeStdin;
+use std::fs;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -139,31 +140,46 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = App::parse();
     match app.command {
         Command::PrekeyBundle { bundle } => {
-            let input: String = bundle.parse()?;
-            let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;
+            let content = from_file_or_arg(&bundle);
+            let bytes = base64::prelude::BASE64_STANDARD.decode(content)?;
             let bundle = PreKeyBundle::deserialise(&bytes)?;
             println!("{:#?}", ProteusPreKeyBundle::from(bundle));
             Ok(())
         }
         Command::ProteusMessage { message } => {
-            let bytes = base64::prelude::BASE64_STANDARD.decode(message)?;
+            let content = from_file_or_arg(&message);
+            let bytes = base64::prelude::BASE64_STANDARD.decode(&content)?;
             let message = Envelope::deserialise(&bytes)?;
             println!("{:#?}", ProteusEnvelope::from(message));
             Ok(())
         }
         Command::MlsMessage { message } => {
-            let input: String = message.parse()?;
-            let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;
+            let content = from_file_or_arg(&message);
+            let bytes = base64::prelude::BASE64_STANDARD.decode(content)?;
             let message = MlsMessageIn::tls_deserialize(&mut bytes.as_slice())?;
             println!("{message:#?}");
             Ok(())
         }
         Command::GroupInfo { data } => {
-            let input: String = data.parse()?;
-            let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;
+            let content = from_file_or_arg(&data);
+            let bytes = base64::prelude::BASE64_STANDARD.decode(content)?;
             let group_info = VerifiableGroupInfo::tls_deserialize(&mut bytes.as_slice())?;
             println!("{group_info:#?}");
             Ok(())
         }
+    }
+}
+
+fn from_file_or_arg(arg: &str) -> Vec<u8> {
+    if let Some(path) = arg.strip_prefix("file:") {
+        match fs::read(path) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("Failed to read input: {}", e);
+                std::process::exit(1);
+            }
+        }
+    } else {
+        arg.as_bytes().to_vec()
     }
 }
