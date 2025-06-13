@@ -2,7 +2,7 @@
 
 ## Rust Docs
 
-- [Rust](/core-crypto/main/rust)
+- [Rust](/core-crypto/main/rust/core_crypto/)
 
 These docs are most useful for Core-Crypto developers working internally, but may be useful for client developers looking for additional insights on implementation.
 
