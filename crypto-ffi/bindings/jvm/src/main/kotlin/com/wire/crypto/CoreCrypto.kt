@@ -48,6 +48,29 @@ public interface EpochObserver {
 }
 
 /**
+ * A `HistoryObserver` is notified whenever a new history client is created.
+ */
+public interface HistoryObserver {
+    /**
+     * This function will be called every time a new history client is created.
+     *
+     * The `secret` parameter is the associated secret of the new history client
+     *
+     * <div class="warning">
+     * This function must not block! Foreign implementors of this inteface can
+     * spawn a task indirecting the notification, or (unblocking) send the notification
+     * on some kind of channel, or anything else, as long as the operation completes
+     * quickly.
+     * </div>
+     *
+     * Though the signature includes an error type, that error is only present because
+     * it is required by `uniffi` in order to handle panics. This function should suppress
+     * and ignore internal errors instead of propagating them, to the maximum extent possible.
+     */
+    suspend fun historyClientCreated(conversationId: kotlin.ByteArray, secret: HistorySecret)
+}
+
+/**
  * Defines the log level for CoreCrypto
  */
 enum class CoreCryptoLogLevel {
@@ -138,8 +161,8 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
          * This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
          * Other use is a logic error.
          */
-        suspend fun historyClient(historySecret: kotlin.ByteArray): CoreCrypto {
-            val cc = com.wire.crypto.uniffi.coreCryptoHistoryClient(historySecret)
+        suspend fun historyClient(historySecret: HistorySecret): CoreCrypto {
+            val cc = com.wire.crypto.uniffi.coreCryptoHistoryClient(historySecret.lower())
             return CoreCrypto(cc)
         }
     }
@@ -203,6 +226,12 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
             override suspend fun sendMessage(mlsMessage: ByteArray): com.wire.crypto.uniffi.MlsTransportResponse {
                 return transport.sendMessage(mlsMessage).lower()
             }
+
+            override suspend fun prepareForTransport(
+                historySecret: com.wire.crypto.uniffi.HistorySecret
+            ): com.wire.crypto.uniffi.MlsTransportData {
+                return transport.prepareForTransport(historySecret.lift()).lower()
+            }
         })
     }
 
@@ -221,6 +250,27 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
         }
         return wrapException {
             cc.registerEpochObserver(observerIndirector)
+        }
+    }
+
+    /**
+     * Register a History Observer which will be notified every time a new history client is created.
+     *
+     * This function should be called 0 or 1 times in the lifetime of CoreCrypto, regardless of the number of transactions.
+     */
+    suspend fun registerHistoryObserver(scope: CoroutineScope, historyObserver: HistoryObserver) {
+        // we want to wrap the observer here to provide async indirection, so that no matter what
+        // the observer that makes its way to the Rust side of things doesn't end up blocking
+        val observerIndirector = object : com.wire.crypto.uniffi.HistoryObserver {
+            override suspend fun historyClientCreated(
+                conversationId: ByteArray,
+                secret: com.wire.crypto.uniffi.HistorySecret
+            ) {
+                scope.launch { historyObserver.historyClientCreated(conversationId, secret.lift()) }
+            }
+        }
+        return wrapException {
+            cc.registerHistoryObserver(observerIndirector)
         }
     }
 

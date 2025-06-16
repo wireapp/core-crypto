@@ -598,6 +598,12 @@ internal fun MlsTransportResponse.lower() =
     }
 
 /**
+ * An entity / data which has been packaged by the application to be encrypted and transmitted in an application message.
+ */
+@JvmInline
+value class MlsTransportData(override val value: ByteArray) : Uniffi
+
+/**
  * You must implement this interface and pass the implementing object to [CoreCrypto.provideTransport].
  * CoreCrypto uses it to communicate with the delivery service.
  */
@@ -611,4 +617,28 @@ interface MlsTransport {
      * Send a commit bundle to the delivery service.
      */
     suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse
+
+    /**
+     * Prepare a history secret before being sent
+     */
+    suspend fun prepareForTransport(historySecret: HistorySecret): MlsTransportData
 }
+
+/**
+ * A `HistorySecret` encodes sufficient client state that it can be used to instantiate an
+ */
+data class HistorySecret(
+    /**
+     * Client id of the associated history client
+     */
+    val clientId: ClientId,
+    /**
+     * Secrets for the associated history client
+     */
+    val data: ByteArray
+)
+
+internal fun HistorySecret.lower() = com.wire.crypto.uniffi.HistorySecret(clientId.lower(), data)
+
+internal fun com.wire.crypto.uniffi.HistorySecret.lift() =
+    HistorySecret(clientId.toClientId(), data)

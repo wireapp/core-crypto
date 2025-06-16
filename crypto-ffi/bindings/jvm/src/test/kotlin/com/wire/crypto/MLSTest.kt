@@ -452,6 +452,10 @@ class MockMlsTransportSuccessProvider : MockDeliveryService {
         return MlsTransportResponse.Success
     }
 
+    override suspend fun prepareForTransport(historySecret: HistorySecret): MlsTransportData {
+        return MlsTransportData("secret".encodeToByteArray())
+    }
+
     override suspend fun getLatestCommitBundle(): CommitBundle = latestCommitBundle!!
 
     override suspend fun getLatestWelcome(): Welcome = getLatestCommitBundle().welcome!!
