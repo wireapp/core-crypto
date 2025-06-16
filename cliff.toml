@@ -7,7 +7,7 @@ body = """
     {% for commit in commits %}
         - {% if commit.breaking %}[**breaking**] {% endif %}\
          {{ commit.message }} \
-         ({{ commit.id | truncate(length=7, end="") }})\
+         ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/wireapp/core-crypto/commit/{{ commit.id }}))\
     {% endfor %}
 {% endfor %}\n\n
 """
