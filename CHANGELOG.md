@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+
+- Removed `mlsInitWithClientId`, `mlsGenerateKeypairs`
+
+  Affected platforms: Web, Android, iOS
+
+  Migration: not needed, no client is using these functions.
+
+
 ## v7.0.1 - 2025-06-02
 
 ### Bug Fixes
