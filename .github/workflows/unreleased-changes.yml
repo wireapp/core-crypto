@@ -33,7 +33,7 @@ jobs:
     - name: fixup unreleased changelog
       run: |
         mkdir -p target/doc
-        sed -e 's/##  - 1970-01-01/## Unreleased/g' docs/ "$CHANGELOG" > target/doc/UNRELEASED_CHANGES.md
+        sed -e 's/##  - 1970-01-01/## Unreleased/g' "$CHANGELOG" > target/doc/UNRELEASED_CHANGES.md
 
     - name: deploy
       uses: peaceiris/actions-gh-pages@v4
