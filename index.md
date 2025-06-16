@@ -1,5 +1,6 @@
 # Core-Crypto Documentation
 
+- [Unreleased Changes](./UNRELEASED_CHANGES.md)
 - [Architecture](./ARCHITECTURE.md)
 - [Keystore Implementation](./KEYSTORE_IMPLEMENTATION.md)
 - [FFI](./FFI.md)
