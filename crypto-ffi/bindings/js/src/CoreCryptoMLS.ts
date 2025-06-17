@@ -8,6 +8,7 @@ import {
     MlsGroupInfoEncryptionType as GroupInfoEncryptionType,
     MlsRatchetTreeType as RatchetTreeType,
     MlsTransport as MlsTransportFfi,
+    MlsTransportData as MlsTransportDataFfi,
     MlsTransportResponse as MlsTransportResponseFfi,
     MlsTransportResponseVariant,
     WelcomeBundle,
@@ -40,6 +41,15 @@ export type ClientId = Uint8Array;
  * Alias for proposal reference. It is a byte array of size 16.
  */
 export type ProposalRef = Uint8Array;
+
+/**
+ * A `HistorySecret` encodes sufficient client state that it can be used to instantiate an
+ * ephemeral client.
+ */
+export interface HistorySecret {
+    clientId: ClientId;
+    data: Uint8Array;
+}
 
 /**
  * Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome)
@@ -255,6 +265,15 @@ export interface MlsTransport {
      * @returns a promise resolving to a {@link MlsTransportResponse}
      */
     sendMessage: (message: Uint8Array) => Promise<MlsTransportResponse>;
+
+    /**
+     *  This callback is called by CoreCrypto to prepare a history secret to be sent to the delivery service.
+     * @param secret
+     * @returns a promise resolving to a {@link MlsTransportData}
+     */
+    prepareForTransport: (
+        secret: HistorySecret
+    ) => Promise<MlsTransportDataFfi>;
 }
 
 /**
@@ -280,9 +299,20 @@ class MlsTransportFfiShim {
         const response = await this.inner.sendMessage(message);
         return mapTransportResponseToFfi(response);
     }
+
+    async prepareForTransport(
+        secret: HistorySecret
+    ): Promise<MlsTransportDataFfi> {
+        return await this.inner.prepareForTransport(secret);
+    }
 }
 
 export function mlsTransportToFfi(mlsTransport: MlsTransport): MlsTransportFfi {
     const shim = new MlsTransportFfiShim(mlsTransport);
-    return new MlsTransportFfi(shim, shim.sendCommitBundle, shim.sendMessage);
+    return new MlsTransportFfi(
+        shim,
+        shim.sendCommitBundle,
+        shim.sendMessage,
+        shim.prepareForTransport
+    );
 }

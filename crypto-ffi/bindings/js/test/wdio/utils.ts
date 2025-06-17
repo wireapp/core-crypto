@@ -6,7 +6,9 @@ import {
     type CommitBundle,
     CoreCrypto,
     type GroupInfoBundle,
+    type HistorySecret,
     type MlsTransport,
+    MlsTransportData,
 } from "../../src/CoreCrypto";
 
 type ccModuleType = typeof import("../../src/CoreCrypto");
@@ -93,6 +95,11 @@ export async function setup() {
             },
             async sendMessage() {
                 return "success";
+            },
+            prepareForTransport(
+                secret: HistorySecret
+            ): Promise<MlsTransportData> {
+                return Promise.resolve(new MlsTransportData(secret.clientId));
             },
             async getLatestCommitBundle() {
                 return window._latestCommitBundle;

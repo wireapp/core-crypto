@@ -6,6 +6,8 @@ import {
     CoreCryptoLogLevel,
     CredentialType,
     DatabaseKey,
+    type HistorySecret,
+    MlsTransportData,
     type GroupInfoBundle,
     type MlsTransport,
     type MlsTransportResponse,
@@ -45,6 +47,10 @@ class TestDeliveryService implements DeliveryService {
 
     async sendMessage(): Promise<MlsTransportResponse> {
         return "success";
+    }
+
+    prepareForTransport(secret: HistorySecret): Promise<MlsTransportData> {
+        return Promise.resolve(new MlsTransportData(secret.clientId));
     }
 
     async getLatestCommitBundle(): Promise<CommitBundle> {

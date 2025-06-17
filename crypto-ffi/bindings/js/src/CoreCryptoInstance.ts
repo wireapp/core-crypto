@@ -25,6 +25,8 @@ import {
     CoreCrypto as CoreCryptoFfi,
     CoreCryptoLogger as CoreCryptoLoggerFfi,
     EpochObserver as EpochObserverFfi,
+    HistoryObserver as HistoryObserverFfi,
+    HistorySecret as HistorySecretFfi,
     version as version_ffi,
     WireIdentity,
     DatabaseKey,
@@ -37,6 +39,7 @@ import {
     CredentialType,
     type MlsTransport,
     mlsTransportToFfi,
+    type HistorySecret,
 } from "./CoreCryptoMLS";
 
 import { CoreCryptoContext } from "./CoreCryptoContext";
@@ -107,6 +110,34 @@ class EpochObserverShim {
             safeBigintToNumber(epoch)
         );
     }
+}
+
+export interface HistoryObserver {
+    historyClientCreated(
+        conversationId: ConversationId,
+        secret: HistorySecret
+    ): Promise<void>;
+}
+
+class HistoryObserverShim {
+    private inner: HistoryObserver;
+
+    constructor(inner: HistoryObserver) {
+        this.inner = inner;
+    }
+
+    // what Rust sends us
+    async historyClientCreated(
+        conversationId: Uint8Array,
+        secret: HistorySecret
+    ): Promise<void> {
+        // JS-ism: we launch a new task by simply not awaiting; no explicit "spawn"
+        return this.inner.historyClientCreated(conversationId, secret);
+    }
+}
+
+function historySecretIntoFfi(secret: HistorySecret): HistorySecretFfi {
+    return new HistorySecretFfi(new ClientIdFfi(secret.clientId), secret.data);
 }
 
 /**
@@ -278,9 +309,11 @@ export class CoreCrypto {
      * This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
      * Other use is a logic error.
      */
-    static async historyClient(historySecret: Uint8Array): Promise<CoreCrypto> {
+    static async historyClient(
+        historySecret: HistorySecret
+    ): Promise<CoreCrypto> {
         const cc = await CoreCryptoError.asyncMapErr(
-            CoreCryptoFfi.history_client(historySecret)
+            CoreCryptoFfi.history_client(historySecretIntoFfi(historySecret))
         );
         return new this(cc);
     }
@@ -664,6 +697,20 @@ export class CoreCrypto {
         const ffi = new EpochObserverFfi(shim, shim.epochChanged);
         return await CoreCryptoError.asyncMapErr(
             this.#cc.register_epoch_observer(ffi)
+        );
+    }
+
+    /**
+     * Registers a history observer, which will then be notified every time a history client is created.
+     *
+     * @param observer must conform to the {@link HistoryObserver} interface
+     * @returns nothing
+     */
+    async registerHistoryObserver(observer: HistoryObserver): Promise<void> {
+        const shim = new HistoryObserverShim(observer);
+        const ffi = new HistoryObserverFfi(shim, shim.historyClientCreated);
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.register_history_observer(ffi)
         );
     }
 }

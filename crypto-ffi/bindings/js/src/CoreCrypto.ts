@@ -36,6 +36,7 @@ export type {
     CoreCryptoParams,
     CoreCryptoLogger,
     EpochObserver,
+    HistoryObserver,
 } from "./CoreCryptoInstance";
 
 export {
@@ -56,6 +57,7 @@ export type {
     BufferedDecryptedMessage,
     CommitBundle,
     DecryptedMessage,
+    HistorySecret,
 } from "./CoreCryptoMLS";
 
 export { E2eiEnrollment, E2eiConversationState } from "./CoreCryptoE2EI";
@@ -72,6 +74,7 @@ export {
     AcmeChallenge,
     CustomConfiguration,
     DatabaseKey,
+    MlsTransportData,
     migrateDatabaseKeyTypeToBytes,
     NewAcmeAuthz,
     NewAcmeOrder,
