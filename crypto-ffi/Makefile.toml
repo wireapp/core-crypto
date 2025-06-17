@@ -267,6 +267,8 @@ fn update_android_env
     platform = os_family
     if eq ${platform} "linux"
         platform_dir = set "linux-x86_64"
+     elseif eq ${platform} "mac"
+        platform_dir = set "darwin-x86_64"
     else
         trigger_error "Unsupported host platform"
     end
