@@ -990,6 +990,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
+name = "core_maths"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77745e017f5edba1a9c1d854f6f3a52dac8a12dd5af5d2f54aecf61e43d80d30"
+dependencies = [
+ "libm",
+]
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1496,9 +1505,9 @@ checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
 
 [[package]]
 name = "fantoccini"
-version = "0.21.5"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3a6a7a9a454c24453f9807c7f12b37e31ae43f3eb41888ae1f79a9a3e3be3f5"
+checksum = "2d0086bcd59795408c87a04f94b5a8bd62cba2856cfe656c7e6439061d95b760"
 dependencies = [
  "base64 0.22.1",
  "cookie 0.18.1",
@@ -2217,6 +2226,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "icu_segmenter"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a717725612346ffc2d7b42c94b820db6908048f39434504cb130e8b46256b0de"
+dependencies = [
+ "core_maths",
+ "displaydoc",
+ "icu_collections",
+ "icu_locid",
+ "icu_provider",
+ "icu_segmenter_data",
+ "utf8_iter",
+ "zerovec",
+]
+
+[[package]]
+name = "icu_segmenter_data"
+version = "1.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1e52775179941363cc594e49ce99284d13d6948928d8e72c755f55e98caa1eb"
+
+[[package]]
 name = "idb"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2489,6 +2520,12 @@ name = "libc"
 version = "0.2.172"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d750af042f7ef4f724306de029d18836c26c1765a54a6a3f094cbd23a7267ffa"
+
+[[package]]
+name = "libm"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9fbbcab51052fe104eb5e5d351cf728d30a5be1fe14d9be8a3b097481fb97de"
 
 [[package]]
 name = "libredox"
@@ -4562,12 +4599,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e91b56cd4cadaeb79bbf1a5645f6b4f8dc5bde8834ad5894a8db35fda9efa1fe"
 
 [[package]]
-name = "unicode-segmentation"
-version = "1.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4c87d22b6e3f4a18d4d40ef354e97c90fcb14dd91d7dc0aa9d8a1172ebf7202"
-
-[[package]]
 name = "unicode-xid"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5037,21 +5068,21 @@ dependencies = [
 
 [[package]]
 name = "webdriver"
-version = "0.50.0"
+version = "0.53.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "144ab979b12d36d65065635e646549925de229954de2eb3b47459b432a42db71"
+checksum = "91d53921e1bef27512fa358179c9a22428d55778d2c2ae3c5c37a52b82ce6e92"
 dependencies = [
- "base64 0.21.7",
+ "base64 0.22.1",
  "bytes",
  "cookie 0.16.2",
  "http 0.2.12",
+ "icu_segmenter",
  "log",
  "serde",
  "serde_derive",
  "serde_json",
  "thiserror 1.0.69",
  "time",
- "unicode-segmentation",
  "url",
 ]
 
