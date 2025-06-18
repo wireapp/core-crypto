@@ -12,7 +12,7 @@ java {
 
 dependencies {
     implementation(libs.coroutines.core)
-    implementation(project(":uniffi-jvm"))
+    api(project(":uniffi-jvm"))
     testImplementation(kotlin("test"))
     testImplementation(libs.coroutines.test)
     testImplementation(libs.assertj.core)
