@@ -4,6 +4,8 @@
 
 ### Features
 
+- [**breaking**] crypto: remove e2ei_dump_pki_env and related code ([7927ebb](https://github.com/wireapp/core-crypto/commit/7927ebbed5670be4db316d641bf79a1cfc0611b1))
+- [**breaking**] crypto-ffi: remove e2eiDumpPKIEnv and related functions ([b444f13](https://github.com/wireapp/core-crypto/commit/b444f1301982c9dd0aaa44c36c8c3008dd2e7c8b))
 - introduce `Metabuilder` ([f556fc7](https://github.com/wireapp/core-crypto/commit/f556fc7001b141323a54203e0695d9e3db2f2fd1))
 - support instantiating sessions with mixed credential types ([c8471b2](https://github.com/wireapp/core-crypto/commit/c8471b221eb2c4d6b402bd91569be8ec91ef4290))
 - allow session instantiation with test chain and basic credentials ([c700f04](https://github.com/wireapp/core-crypto/commit/c700f042c406d1cdffbbfb1f7824d0c464436468))
