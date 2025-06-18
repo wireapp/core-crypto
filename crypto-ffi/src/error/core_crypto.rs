@@ -11,12 +11,18 @@ use wasm_bindgen::JsValue;
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Error))]
 pub enum CoreCryptoError {
     #[error(transparent)]
-    Mls(#[from] MlsError),
+    Mls {
+        #[from]
+        mls_error: MlsError,
+    },
     #[cfg(feature = "proteus")]
     #[error(transparent)]
-    Proteus(#[from] ProteusError),
-    #[error("End to end identity error: {0}")]
-    E2ei(String),
+    Proteus {
+        #[from]
+        proteus_error: ProteusError,
+    },
+    #[error("End to end identity error: {e2ei_error}")]
+    E2ei { e2ei_error: String },
     #[cfg(target_family = "wasm")]
     #[error(transparent)]
     SerializationError(#[from] serde_wasm_bindgen::Error),
@@ -24,19 +30,21 @@ pub enum CoreCryptoError {
     #[error("Unknown ciphersuite identifier")]
     UnknownCiphersuite,
     #[cfg(target_family = "wasm")]
-    #[error("Transaction rolled back due to unexpected JS error: {0:?}")]
-    TransactionFailed(JsValue),
+    #[error("Transaction rolled back due to unexpected JS error: {error:?}")]
+    TransactionFailed { error: JsValue },
     #[cfg(not(target_family = "wasm"))]
-    #[error("Transaction rolled back due to unexpected uniffi error: {0:?}")]
-    TransactionFailed(String),
-    #[error("{0}")]
-    Other(String),
+    #[error("Transaction rolled back due to unexpected uniffi error: {error:?}")]
+    TransactionFailed { error: String },
+    #[error("{msg}")]
+    Other { msg: String },
 }
 
 #[cfg(not(target_family = "wasm"))]
 impl From<uniffi::UnexpectedUniFFICallbackError> for CoreCryptoError {
     fn from(value: uniffi::UnexpectedUniFFICallbackError) -> Self {
-        Self::TransactionFailed(value.to_string())
+        Self::TransactionFailed {
+            error: value.to_string(),
+        }
     }
 }
 
@@ -64,7 +72,9 @@ impl From<RecursiveError> for CoreCryptoError {
 
         // check if the innermost error is any kind of e2e error
         if let Some(err) = innermost.downcast_ref::<core_crypto::e2e_identity::Error>() {
-            return CoreCryptoError::E2ei(err.to_string());
+            return CoreCryptoError::E2ei {
+                e2ei_error: err.to_string(),
+            };
         }
 
         // What now? We only really care about the innermost variants, not the error stack, but that produces
@@ -136,7 +146,7 @@ impl From<RecursiveError> for CoreCryptoError {
         }
 
         match_heterogenous!(innermost => {
-            core_crypto::LeafError::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists(id.to_owned()).into(),
+            core_crypto::LeafError::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists { conversation_id: id.clone() }.into(),
             core_crypto::mls::conversation::Error::BufferedFutureMessage{..} => MlsError::BufferedFutureMessage.into(),
             core_crypto::mls::conversation::Error::DuplicateMessage => MlsError::DuplicateMessage.into(),
             core_crypto::mls::conversation::Error::MessageEpochTooOld => MlsError::MessageEpochTooOld.into(),
@@ -151,7 +161,7 @@ impl From<RecursiveError> for CoreCryptoError {
             // Since we're re-designing the `BufferedMessage` errors soon, it's not worth producing
             // an additional breaking change until then, so the names are inconsistent.
             core_crypto::mls::conversation::Error::BufferedForPendingConversation => MlsError::UnmergedPendingGroup.into(),
-            ||=> MlsError::Other(error.innermost_error_message()).into(),
+            ||=> MlsError::Other { msg: error.innermost_error_message() }.into(),
         })
     }
 }
@@ -167,31 +177,41 @@ impl From<core_crypto::Error> for CoreCryptoError {
 
         match error {
             #[cfg(feature = "proteus")]
-            core_crypto::Error::ProteusNotInitialized => Self::Other(error.to_string()),
+            core_crypto::Error::ProteusNotInitialized => Self::Other { msg: error.to_string() },
             #[cfg(not(feature = "proteus"))]
-            core_crypto::Error::ProteusNotInitialized => Self::Other("proteus not initialized".into()),
+            core_crypto::Error::ProteusNotInitialized => Self::Other {
+                msg: "proteus not initialized".into(),
+            },
             #[cfg(feature = "proteus")]
             core_crypto::Error::Proteus(proteus) => {
                 let error_code = proteus.source.error_code();
                 if let Some(proteus_error) = ProteusError::from_error_code(error_code) {
-                    Self::Proteus(proteus_error)
+                    Self::Proteus { proteus_error }
                 } else {
-                    Self::Other(format!("unknown proteus error code: {error_code:?}"))
+                    Self::Other {
+                        msg: format!("unknown proteus error code: {error_code:?}"),
+                    }
                 }
             }
             #[cfg(not(feature = "proteus"))]
             core_crypto::Error::Proteus(_proteus) => {
                 unreachable!("we don't raise proteus errors when building without proteus")
             }
-            core_crypto::Error::Mls(mls) => Self::Mls(MlsError::from(mls)),
-            core_crypto::Error::InvalidTransactionContext => Self::Other(error.to_string()),
-            core_crypto::Error::MlsTransportNotProvided => Self::Other(error.to_string()),
-            core_crypto::Error::ErrorDuringMlsTransport(error_message) => Self::Other(error_message),
-            core_crypto::Error::Keystore(keystore_error) => Self::Other(keystore_error.innermost_error_message()),
-            core_crypto::Error::CryptoboxMigration(cryptobox) => Self::Other(cryptobox.innermost_error_message()),
+            core_crypto::Error::Mls(mls) => Self::Mls {
+                mls_error: MlsError::from(mls),
+            },
+            core_crypto::Error::InvalidTransactionContext => Self::Other { msg: error.to_string() },
+            core_crypto::Error::MlsTransportNotProvided => Self::Other { msg: error.to_string() },
+            core_crypto::Error::ErrorDuringMlsTransport(error_message) => Self::Other { msg: error_message },
+            core_crypto::Error::Keystore(keystore_error) => Self::Other {
+                msg: keystore_error.innermost_error_message(),
+            },
+            core_crypto::Error::CryptoboxMigration(cryptobox) => Self::Other {
+                msg: cryptobox.innermost_error_message(),
+            },
             core_crypto::Error::Recursive(recursive_error) => recursive_error.into(),
             core_crypto::Error::FeatureDisabled(_) | core_crypto::Error::InvalidHistorySecret(_) => {
-                Self::Other(error.to_string())
+                Self::Other { msg: error.to_string() }
             }
         }
     }
@@ -231,19 +251,19 @@ impl CoreCryptoError {
     where
         E: ToString,
     {
-        |err| Self::Other(err.to_string())
+        |err| Self::Other { msg: err.to_string() }
     }
 
     pub(crate) fn ad_hoc(err: impl ToString) -> Self {
-        Self::Other(err.to_string())
+        Self::Other { msg: err.to_string() }
     }
 
     #[cfg(target_family = "wasm")]
     pub(crate) fn variant_name(&self) -> String {
         let mut out = self.as_ref().to_string() + "Error";
         match self {
-            Self::Mls(mls) => out += mls.as_ref(),
-            Self::Proteus(proteus) => out += proteus.as_ref(),
+            Self::Mls { mls_error } => out += mls_error.as_ref(),
+            Self::Proteus { proteus_error } => out += proteus_error.as_ref(),
             _ => {}
         }
         out

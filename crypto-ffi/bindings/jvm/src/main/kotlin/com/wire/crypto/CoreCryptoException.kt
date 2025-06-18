@@ -156,17 +156,17 @@ sealed class CoreCryptoException : kotlin.Exception() {
 
 private fun com.wire.crypto.uniffi.CoreCryptoException.lift() =
     when (this) {
-        is com.wire.crypto.uniffi.CoreCryptoException.Mls -> CoreCryptoException.Mls(this.v1.lift())
-        is com.wire.crypto.uniffi.CoreCryptoException.Proteus -> CoreCryptoException.Proteus(this.v1.lift())
-        is com.wire.crypto.uniffi.CoreCryptoException.E2ei -> CoreCryptoException.E2eiException(this.v1)
-        is com.wire.crypto.uniffi.CoreCryptoException.TransactionFailed -> CoreCryptoException.Other(this.v1)
-        is com.wire.crypto.uniffi.CoreCryptoException.Other -> CoreCryptoException.Other(this.v1)
+        is com.wire.crypto.uniffi.CoreCryptoException.Mls -> CoreCryptoException.Mls(this.mlsError.lift())
+        is com.wire.crypto.uniffi.CoreCryptoException.Proteus -> CoreCryptoException.Proteus(this.proteusError.lift())
+        is com.wire.crypto.uniffi.CoreCryptoException.E2ei -> CoreCryptoException.E2eiException(this.e2eiError)
+        is com.wire.crypto.uniffi.CoreCryptoException.TransactionFailed -> CoreCryptoException.Other(this.uniffiError)
+        is com.wire.crypto.uniffi.CoreCryptoException.Other -> CoreCryptoException.Other(this.msg)
     }
 
 private fun com.wire.crypto.uniffi.MlsException.lift() =
     when (this) {
         is com.wire.crypto.uniffi.MlsException.BufferedFutureMessage -> MlsException.BufferedFutureMessage()
-        is com.wire.crypto.uniffi.MlsException.ConversationAlreadyExists -> MlsException.ConversationAlreadyExists(this.v1.toGroupId())
+        is com.wire.crypto.uniffi.MlsException.ConversationAlreadyExists -> MlsException.ConversationAlreadyExists(this.conversationId)
         is com.wire.crypto.uniffi.MlsException.DuplicateMessage -> MlsException.DuplicateMessage()
         is com.wire.crypto.uniffi.MlsException.MessageEpochTooOld -> MlsException.MessageEpochTooOld()
         is com.wire.crypto.uniffi.MlsException.SelfCommitIgnored -> MlsException.SelfCommitIgnored()
@@ -177,7 +177,7 @@ private fun com.wire.crypto.uniffi.MlsException.lift() =
         is com.wire.crypto.uniffi.MlsException.BufferedCommit -> MlsException.BufferedCommit()
         is com.wire.crypto.uniffi.MlsException.OrphanWelcome -> MlsException.OrphanWelcome()
         is com.wire.crypto.uniffi.MlsException.MessageRejected -> MlsException.MessageRejected(this.reason)
-        is com.wire.crypto.uniffi.MlsException.Other -> MlsException.Other(this.v1)
+        is com.wire.crypto.uniffi.MlsException.Other -> MlsException.Other(this.msg)
     }
 
 private fun com.wire.crypto.uniffi.ProteusException.lift() =
@@ -185,7 +185,7 @@ private fun com.wire.crypto.uniffi.ProteusException.lift() =
         is com.wire.crypto.uniffi.ProteusException.DuplicateMessage -> ProteusException.DuplicateMessage()
         is com.wire.crypto.uniffi.ProteusException.RemoteIdentityChanged -> ProteusException.RemoteIdentityChanged()
         is com.wire.crypto.uniffi.ProteusException.SessionNotFound -> ProteusException.SessionNotFound()
-        is com.wire.crypto.uniffi.ProteusException.Other -> ProteusException.Other(this.v1)
+        is com.wire.crypto.uniffi.ProteusException.Other -> ProteusException.Other(this.errorCode)
     }
 
 internal suspend fun <T> wrapException(b: suspend () -> T): T {

@@ -84,7 +84,7 @@ impl CoreCrypto {
 
                 // In wasm only, we are required to manually convert the error type. Uniffi does it for us.
                 #[cfg(target_family = "wasm")]
-                let err = crate::error::core_crypto::CoreCryptoError::TransactionFailed(err).into();
+                let err = crate::error::core_crypto::CoreCryptoError::TransactionFailed { error: err }.into();
 
                 Err(err)
             }
