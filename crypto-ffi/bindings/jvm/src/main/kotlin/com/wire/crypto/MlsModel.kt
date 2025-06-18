@@ -478,29 +478,10 @@ data class CustomConfiguration(
 internal fun CustomConfiguration.lower() =
     com.wire.crypto.uniffi.CustomConfiguration(
         keyRotationSpan = keyRotationSpan?.getSeconds().takeIf { it in 0..UInt.MAX_VALUE.toLong() }?.toUInt(),
-        wirePolicy = wirePolicy?.lower()
+        wirePolicy = wirePolicy
     )
 
-/**
- * Encrypting policy in MLS group
- */
-enum class MlsWirePolicy {
-    /**
-     * Handshake messages are never encrypted
-     */
-    PLAINTEXT,
-
-    /**
-     * Handshake messages are always encrypted
-     */
-    CIPHERTEXT
-}
-
-private fun MlsWirePolicy.lower() =
-    when (this) {
-        MlsWirePolicy.PLAINTEXT -> com.wire.crypto.uniffi.WirePolicy.PLAINTEXT
-        MlsWirePolicy.CIPHERTEXT -> com.wire.crypto.uniffi.WirePolicy.CIPHERTEXT
-    }
+typealias MlsWirePolicy = com.wire.crypto.uniffi.WirePolicy
 
 /** Returned by [MlsTransport] callbacks. */
 sealed class MlsTransportResponse {
