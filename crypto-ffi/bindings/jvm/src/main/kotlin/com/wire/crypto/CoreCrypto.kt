@@ -6,6 +6,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.wire.crypto.uniffi.setLoggerOnly as uniffiSetLoggerOnly
+import com.wire.crypto.uniffi.setMaxLogLevel as uniffiSetMaxLogLevel
 
 typealias EnrollmentHandle = ByteArray
 
@@ -80,76 +82,22 @@ public interface HistoryObserver {
     suspend fun historyClientCreated(conversationId: MLSGroupId, secret: HistorySecret)
 }
 
-/**
- * Defines the log level for CoreCrypto
- */
-enum class CoreCryptoLogLevel {
-    /** OFF */
-    OFF,
-
-    /** TRACE */
-    TRACE,
-
-    /** DEBUG */
-    DEBUG,
-
-    /** INFO */
-    INFO,
-
-    /** WARN */
-    WARN,
-
-    /** ERROR */
-    ERROR
-}
-
-internal fun CoreCryptoLogLevel.lower() = when (this) {
-    CoreCryptoLogLevel.OFF -> com.wire.crypto.uniffi.CoreCryptoLogLevel.OFF
-    CoreCryptoLogLevel.TRACE -> com.wire.crypto.uniffi.CoreCryptoLogLevel.TRACE
-    CoreCryptoLogLevel.DEBUG -> com.wire.crypto.uniffi.CoreCryptoLogLevel.DEBUG
-    CoreCryptoLogLevel.INFO -> com.wire.crypto.uniffi.CoreCryptoLogLevel.INFO
-    CoreCryptoLogLevel.WARN -> com.wire.crypto.uniffi.CoreCryptoLogLevel.WARN
-    CoreCryptoLogLevel.ERROR -> com.wire.crypto.uniffi.CoreCryptoLogLevel.ERROR
-}
-
-internal fun com.wire.crypto.uniffi.CoreCryptoLogLevel.lift() = when (this) {
-    com.wire.crypto.uniffi.CoreCryptoLogLevel.OFF -> CoreCryptoLogLevel.OFF
-    com.wire.crypto.uniffi.CoreCryptoLogLevel.TRACE -> CoreCryptoLogLevel.TRACE
-    com.wire.crypto.uniffi.CoreCryptoLogLevel.DEBUG -> CoreCryptoLogLevel.DEBUG
-    com.wire.crypto.uniffi.CoreCryptoLogLevel.INFO -> CoreCryptoLogLevel.INFO
-    com.wire.crypto.uniffi.CoreCryptoLogLevel.WARN -> CoreCryptoLogLevel.WARN
-    com.wire.crypto.uniffi.CoreCryptoLogLevel.ERROR -> CoreCryptoLogLevel.ERROR
-}
-
-/** The logger interface */
-interface CoreCryptoLogger {
-    /**
-     *  Core Crypto will call this method whenever it needs to log a message.
-     */
-    fun log(level: CoreCryptoLogLevel, message: String, context: String?)
-}
+typealias CoreCryptoLogLevel = com.wire.crypto.uniffi.CoreCryptoLogLevel
+typealias CoreCryptoLogger = com.wire.crypto.uniffi.CoreCryptoLogger
 
 /**
  * Initializes the logging inside Core Crypto. Not required to be called and by default there will be no logging.
  *
  * @param logger a callback to implement the platform specific logging. It will receive the string with the log text from Core Crypto
  **/
-fun setLogger(logger: CoreCryptoLogger) {
-    com.wire.crypto.uniffi.setLoggerOnly(object : com.wire.crypto.uniffi.CoreCryptoLogger {
-        override fun log(level: com.wire.crypto.uniffi.CoreCryptoLogLevel, message: String, context: String?) {
-            logger.log(level.lift(), message, context)
-        }
-    })
-}
+val setLogger = ::uniffiSetLoggerOnly
 
 /**
  * Set maximum log level of logs which are forwarded to the [CoreCryptoLogger].
  *
  * @param level the max level that should be logged, by default it will be WARN
  */
-fun setMaxLogLevel(level: CoreCryptoLogLevel) {
-    com.wire.crypto.uniffi.setMaxLogLevel(level.lower())
-}
+val setMaxLogLevel = ::uniffiSetMaxLogLevel
 
 /** The type representing a CoreCrypto client */
 class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
