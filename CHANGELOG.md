@@ -4,7 +4,7 @@
 
 ### Breaking changes
 
-- Removed `mlsInitWithClientId`, `mlsGenerateKeypairs`
+- Removed `mlsInitWithClientId`, `mlsGenerateKeypairs`, `e2eiDumpPKIEnv`
 
   Affected platforms: Web, Android, iOS
 
