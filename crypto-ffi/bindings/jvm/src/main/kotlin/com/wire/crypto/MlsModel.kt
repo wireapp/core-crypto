@@ -461,32 +461,7 @@ private fun com.wire.crypto.uniffi.X509Identity.lift() =
     )
 
 typealias DeviceStatus = com.wire.crypto.uniffi.DeviceStatus
-
-/**
- * Indicates the state of a Conversation regarding end-to-end identity.
- * Note: this does not check pending state (pending commit, pending proposals) so it does not
- * consider members about to be added/removed
- */
-enum class E2eiConversationState {
-    /** All clients have a valid E2EI certificate */
-    Verified,
-
-    /** Some clients are either still Basic or their certificate is expired */
-    NotVerified,
-
-    /**
-     * All clients are still Basic. If all client have expired certificates,
-     * [E2eiConversationState::NotVerified] is returned.
-     */
-    NotEnabled
-}
-
-internal fun com.wire.crypto.uniffi.E2eiConversationState.lift() =
-    when (this) {
-        com.wire.crypto.uniffi.E2eiConversationState.VERIFIED -> E2eiConversationState.Verified
-        com.wire.crypto.uniffi.E2eiConversationState.NOT_VERIFIED -> E2eiConversationState.NotVerified
-        com.wire.crypto.uniffi.E2eiConversationState.NOT_ENABLED -> E2eiConversationState.NotEnabled
-    }
+typealias E2eiConversationState = com.wire.crypto.uniffi.E2eiConversationState
 
 /**
  * Configuration of MLS group
