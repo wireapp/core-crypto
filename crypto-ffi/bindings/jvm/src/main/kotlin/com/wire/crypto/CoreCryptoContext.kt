@@ -55,9 +55,9 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      */
     suspend fun getPublicKey(
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
-        credentialType: CredentialType = CredentialType.DEFAULT,
+        credentialType: CredentialType = CREDENTIAL_TYPE_DEFAULT,
     ): ByteArray {
-        return cc.clientPublicKey(ciphersuite.lower(), credentialType.lower())
+        return cc.clientPublicKey(ciphersuite.lower(), credentialType)
     }
 
     /**
@@ -73,9 +73,9 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
     suspend fun generateKeyPackages(
         amount: UInt,
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
-        credentialType: CredentialType = CredentialType.DEFAULT,
+        credentialType: CredentialType = CREDENTIAL_TYPE_DEFAULT,
     ): List<MLSKeyPackage> {
-        return cc.clientKeypackages(ciphersuite.lower(), credentialType.lower(), amount).map {
+        return cc.clientKeypackages(ciphersuite.lower(), credentialType, amount).map {
             it.toMLSKeyPackage()
         }
     }
@@ -88,9 +88,9 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      */
     suspend fun validKeyPackageCount(
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
-        credentialType: CredentialType = CredentialType.DEFAULT,
+        credentialType: CredentialType = CREDENTIAL_TYPE_DEFAULT,
     ): ULong {
-        return cc.clientValidKeypackagesCount(ciphersuite.lower(), credentialType.lower())
+        return cc.clientValidKeypackagesCount(ciphersuite.lower(), credentialType)
     }
 
     /**
@@ -119,13 +119,13 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      */
     suspend fun joinByExternalCommit(
         groupInfo: GroupInfo,
-        credentialType: CredentialType = CredentialType.DEFAULT,
+        credentialType: CredentialType = CREDENTIAL_TYPE_DEFAULT,
         configuration: CustomConfiguration = defaultGroupConfiguration,
     ): WelcomeBundle {
         // cannot be tested since the groupInfo required is not wrapped in a MlsMessage whereas the
         // one returned
         // in Commit Bundles is... because that's the API the backend imposed
-        return cc.joinByExternalCommit(groupInfo.lower(), configuration.lower(), credentialType.lower()).lift()
+        return cc.joinByExternalCommit(groupInfo.lower(), configuration.lower(), credentialType).lift()
     }
 
     /**
@@ -155,7 +155,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
     suspend fun createConversation(
         id: MLSGroupId,
         ciphersuite: Ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-        creatorCredentialType: CredentialType = CredentialType.Basic,
+        creatorCredentialType: CredentialType = CREDENTIAL_TYPE_DEFAULT,
         externalSenders: List<ExternalSenderKey> = emptyList(),
     ) {
         val cfg = com.wire.crypto.uniffi.ConversationConfiguration(
@@ -164,7 +164,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
             defaultGroupConfiguration.lower(),
         )
 
-        cc.createConversation(id.lower(), creatorCredentialType.lower(), cfg)
+        cc.createConversation(id.lower(), creatorCredentialType, cfg)
     }
 
     /**
