@@ -92,7 +92,6 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/deleteKeyPackages/#kotlin.coll
 $dokka.location:com.wire.crypto/CoreCryptoContext/deleteStaleKeyPackages/#com.wire.crypto.Ciphersuite/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/delete-stale-key-packages.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/deriveAvsSecret/#com.wire.crypto.MLSGroupId#kotlin.UInt/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/derive-avs-secret.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiConversationState/#com.wire.crypto.MLSGroupId/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/e2ei-conversation-state.html
-$dokka.location:com.wire.crypto/CoreCryptoContext/e2eiDumpPKIEnv/#/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/e2ei-dump-p-k-i-env.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiEnrollmentStash/#com.wire.crypto.E2EIEnrollment/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/e2ei-enrollment-stash.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiEnrollmentStashPop/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/e2ei-enrollment-stash-pop.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiIsEnabled/#com.wire.crypto.Ciphersuite/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/e2ei-is-enabled.html
@@ -230,11 +229,6 @@ $dokka.location:com.wire.crypto/E2eiConversationState///PointingToDeclaration/a
 $dokka.location:com.wire.crypto/E2eiConversationState/entries/#/PointingToDeclaration/android/com.wire.crypto/-e2ei-conversation-state/entries.html
 $dokka.location:com.wire.crypto/E2eiConversationState/valueOf/#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-e2ei-conversation-state/value-of.html
 $dokka.location:com.wire.crypto/E2eiConversationState/values/#/PointingToDeclaration/android/com.wire.crypto/-e2ei-conversation-state/values.html
-$dokka.location:com.wire.crypto/E2eiDumpedPkiEnv///PointingToDeclaration/android/com.wire.crypto/-e2ei-dumped-pki-env/index.html
-$dokka.location:com.wire.crypto/E2eiDumpedPkiEnv/E2eiDumpedPkiEnv/#kotlin.String#kotlin.collections.List[kotlin.String]#kotlin.collections.List[kotlin.String]/PointingToDeclaration/android/com.wire.crypto/-e2ei-dumped-pki-env/-e2ei-dumped-pki-env.html
-$dokka.location:com.wire.crypto/E2eiDumpedPkiEnv/crls/#/PointingToDeclaration/android/com.wire.crypto/-e2ei-dumped-pki-env/crls.html
-$dokka.location:com.wire.crypto/E2eiDumpedPkiEnv/intermediates/#/PointingToDeclaration/android/com.wire.crypto/-e2ei-dumped-pki-env/intermediates.html
-$dokka.location:com.wire.crypto/E2eiDumpedPkiEnv/rootCa/#/PointingToDeclaration/android/com.wire.crypto/-e2ei-dumped-pki-env/root-ca.html
 $dokka.location:com.wire.crypto/EnrollmentHandle///PointingToDeclaration/android/com.wire.crypto/-enrollment-handle/index.html
 $dokka.location:com.wire.crypto/EpochObserver///PointingToDeclaration/android/com.wire.crypto/-epoch-observer/index.html
 $dokka.location:com.wire.crypto/EpochObserver/epochChanged/#kotlin.ByteArray#kotlin.ULong/PointingToDeclaration/android/com.wire.crypto/-epoch-observer/epoch-changed.html
