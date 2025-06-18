@@ -5,6 +5,7 @@ package com.wire.crypto
 import com.wire.crypto.testutils.genDatabaseKey
 import com.wire.crypto.uniffi.CoreCryptoException
 import com.wire.crypto.uniffi.MlsException
+import com.wire.crypto.uniffi.MlsTransportResponse
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.TestScope
