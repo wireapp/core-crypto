@@ -3,6 +3,7 @@
 package com.wire.crypto
 
 import com.wire.crypto.testutils.genDatabaseKey
+import com.wire.crypto.uniffi.CoreCryptoException
 import com.wire.crypto.uniffi.buildMetadata
 import com.wire.crypto.uniffi.version
 import kotlinx.coroutines.test.runTest
@@ -35,8 +36,8 @@ class DatabaseKeyTest {
     fun invalid_length() = runTest {
         val path = Files.createTempFile("keystore-", null).toString()
         val key = DatabaseKey(ByteArray(48))
-        val exc = assertFailsWith<CoreCryptoException.Other> { wrapException { CoreCrypto(path, key) } }
-        assertEquals("Invalid database key size, expected 32, got 48", exc.message)
+        val exc = assertFailsWith<CoreCryptoException.Other> { CoreCrypto(path, key) }
+        assertEquals("Invalid database key size, expected 32, got 48", exc.msg)
     }
 
     @Test
