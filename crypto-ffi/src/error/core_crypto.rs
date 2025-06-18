@@ -260,8 +260,8 @@ impl CoreCryptoError {
     pub(crate) fn variant_name(&self) -> String {
         let mut out = self.as_ref().to_string() + "Error";
         match self {
-            Self::Mls(mls) => out += mls.as_ref(),
-            Self::Proteus(proteus) => out += proteus.as_ref(),
+            Self::Mls { mls_error } => out += mls_error.as_ref(),
+            Self::Proteus { proteus_error } => out += proteus_error.as_ref(),
             _ => {}
         }
         out
