@@ -53,31 +53,9 @@ enum class Ciphersuite {
     }
 }
 
-/** Credential type */
-enum class CredentialType {
-    /** An application-defined credential. */
-    Basic,
-
-    /** A credential based on X509 certificates. */
-    X509;
-
-    companion object {
-        /** The default credential type. */
-        val DEFAULT = Basic
-    }
-
-    internal fun lower() =
-        when (this) {
-            Basic -> com.wire.crypto.uniffi.CredentialType.BASIC
-            X509 -> com.wire.crypto.uniffi.CredentialType.X509
-        }
-}
-
-internal fun com.wire.crypto.uniffi.CredentialType.lift() =
-    when (this) {
-        com.wire.crypto.uniffi.CredentialType.BASIC -> CredentialType.Basic
-        com.wire.crypto.uniffi.CredentialType.X509 -> CredentialType.X509
-    }
+typealias CredentialType = com.wire.crypto.uniffi.CredentialType
+/** Default credential type */
+val CREDENTIAL_TYPE_DEFAULT = CredentialType.BASIC
 
 /** MLS group ID
  * @property value the FFI conversation id
@@ -482,7 +460,7 @@ data class WireIdentity(
 )
 
 internal fun com.wire.crypto.uniffi.WireIdentity.lift() =
-    WireIdentity(clientId, status.lift(), thumbprint, credentialType.lift(), x509Identity?.lift())
+    WireIdentity(clientId, status.lift(), thumbprint, credentialType, x509Identity?.lift())
 
 /**
  * Represents the parts of WireIdentity that are specific to a X509 certificate (and not a Basic
