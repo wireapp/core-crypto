@@ -28,7 +28,6 @@ pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePoli
 pub use core_crypto::{
     CoreCrypto,
     command::CoreCryptoCommand,
-    e2ei::E2eiDumpedPkiEnv,
     epoch_observer::EpochObserver,
     logger::{CoreCryptoLogLevel, CoreCryptoLogger},
     mls_transport::{MlsTransport, MlsTransportResponse},

@@ -2,25 +2,6 @@ package com.wire.crypto
 
 typealias JsonRawData = ByteArray
 
-/**
- * E2eiDumpedPkiEnv
- * @property rootCa root CA
- * @property intermediates intermediates
- * @property crls CRLs
- */
-data class E2eiDumpedPkiEnv(
-    var rootCa: String,
-    var intermediates: List<String>,
-    var crls: List<String>
-)
-
-internal fun com.wire.crypto.uniffi.E2eiDumpedPkiEnv.lift() =
-    E2eiDumpedPkiEnv(
-        rootCa = rootCa,
-        intermediates = intermediates,
-        crls = crls
-    )
-
 /** Supporting struct for CRL registration result */
 data class CRLRegistration(
     /** Whether this CRL modifies the old CRL (i.e. has a different revocated cert list) */

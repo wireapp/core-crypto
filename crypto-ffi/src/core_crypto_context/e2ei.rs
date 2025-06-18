@@ -1,7 +1,6 @@
 use crate::{
     Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CrlRegistration,
-    E2eiConversationState, E2eiDumpedPkiEnv, E2eiEnrollment, NewCrlDistributionPoints, UserIdentities, WireIdentity,
-    conversation_id_vec,
+    E2eiConversationState, E2eiEnrollment, NewCrlDistributionPoints, UserIdentities, WireIdentity, conversation_id_vec,
 };
 use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::transaction_context::Error as TransactionError;
@@ -246,16 +245,6 @@ impl CoreCryptoContext {
         #[cfg(target_family = "wasm")]
         let user_ids = serde_wasm_bindgen::to_value(&user_ids)?;
         Ok(user_ids)
-    }
-
-    /// See [core_crypto::prelude::Session::e2ei_dump_pki_env]
-    pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
-        self.inner
-            .e2ei_dump_pki_env()
-            .await
-            .map(|option| option.map(Into::into))
-            .map_err(Into::<TransactionError>::into)
-            .map_err(Into::into)
     }
 
     /// See [core_crypto::prelude::Session::e2ei_is_pki_env_setup]

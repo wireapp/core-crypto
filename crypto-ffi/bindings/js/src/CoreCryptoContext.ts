@@ -5,7 +5,6 @@ import {
     ClientId as ClientIdFfi,
     CoreCryptoContext as CoreCryptoContextFfi,
     CustomConfiguration,
-    E2eiDumpedPkiEnv,
     WireIdentity,
 } from "./core-crypto-ffi";
 import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d";
@@ -835,15 +834,6 @@ export class CoreCryptoContext {
             nbKeyPackage
         );
         return dps.as_strings();
-    }
-
-    /**
-     * Dumps the PKI environment as PEM
-     *
-     * @returns a struct with different fields representing the PKI environment as PEM strings
-     */
-    async e2eiDumpPKIEnv(): Promise<E2eiDumpedPkiEnv | undefined> {
-        return await this.#ctx.e2ei_dump_pki_env();
     }
 
     /**

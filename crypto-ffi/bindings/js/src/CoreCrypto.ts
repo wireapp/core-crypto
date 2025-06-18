@@ -72,7 +72,6 @@ export {
     AcmeChallenge,
     CustomConfiguration,
     DatabaseKey,
-    E2eiDumpedPkiEnv,
     migrateDatabaseKeyTypeToBytes,
     NewAcmeAuthz,
     NewAcmeOrder,

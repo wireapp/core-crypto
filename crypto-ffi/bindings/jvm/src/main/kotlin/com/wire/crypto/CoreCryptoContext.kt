@@ -452,15 +452,6 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         }
     }
 
-    /**
-     * Dumps the PKI environment as PEM
-     *
-     * @return a struct with different fields representing the PKI environment as PEM strings
-     */
-    suspend fun e2eiDumpPKIEnv(): E2eiDumpedPkiEnv? {
-        return wrapException { cc.e2eiDumpPkiEnv()?.lift() }
-    }
-
     /** Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs) */
     suspend fun e2eiIsPKIEnvSetup(): Boolean {
         return wrapException { cc.e2eiIsPkiEnvSetup() }

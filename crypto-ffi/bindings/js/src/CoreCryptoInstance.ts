@@ -24,7 +24,6 @@ import {
     ClientId as ClientIdFfi,
     CoreCrypto as CoreCryptoFfi,
     CoreCryptoLogger as CoreCryptoLoggerFfi,
-    E2eiDumpedPkiEnv,
     EpochObserver as EpochObserverFfi,
     version as version_ffi,
     WireIdentity,
@@ -586,15 +585,6 @@ export class CoreCrypto {
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
-    }
-
-    /**
-     * See {@link CoreCryptoContext.e2eiDumpPKIEnv}.
-     *
-     * @returns a struct with different fields representing the PKI environment as PEM strings
-     */
-    async e2eiDumpPKIEnv(): Promise<E2eiDumpedPkiEnv | undefined> {
-        return await this.#cc.e2ei_dump_pki_env();
     }
 
     /**
