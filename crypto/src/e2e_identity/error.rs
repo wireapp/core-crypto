@@ -48,15 +48,3 @@ pub enum Error {
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
 }
-
-impl Error {
-    pub(crate) fn certificate_validation<E>(context: &'static str) -> impl FnOnce(E) -> Self
-    where
-        E: std::fmt::Debug,
-    {
-        move |source| Self::CertificateValidation {
-            context,
-            upstream: format!("{source:?}"),
-        }
-    }
-}

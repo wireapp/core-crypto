@@ -4,8 +4,8 @@ mod error;
 pub(crate) mod id;
 pub(crate) mod identity;
 mod pki_env;
+pub use pki_env::NewCrlDistributionPoints;
 pub(crate) use pki_env::restore_pki_env;
-pub use pki_env::{E2eiDumpedPkiEnv, NewCrlDistributionPoints};
 #[cfg(not(test))]
 mod enrollment;
 #[cfg(test)]

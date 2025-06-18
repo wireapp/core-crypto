@@ -85,7 +85,7 @@ pub mod prelude {
             session::*,
         },
         obfuscate::Obfuscated,
-        transaction_context::e2e_identity::{E2eiDumpedPkiEnv, conversation_state::E2eiConversationState},
+        transaction_context::e2e_identity::conversation_state::E2eiConversationState,
     };
 }
 

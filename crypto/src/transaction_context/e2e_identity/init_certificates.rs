@@ -1,5 +1,4 @@
 use super::{Error, Result};
-use crate::e2e_identity::E2eiDumpedPkiEnv;
 use crate::{
     KeystoreError, MlsError, RecursiveError,
     e2e_identity::{CrlRegistration, NewCrlDistributionPoints, restore_pki_env},
@@ -26,24 +25,6 @@ impl TransactionContext {
             .authentication_service()
             .is_env_setup()
             .await)
-    }
-
-    /// See [crate::mls::session::Session::e2ei_dump_pki_env].
-    pub async fn e2ei_dump_pki_env(&self) -> Result<Option<E2eiDumpedPkiEnv>> {
-        if !self.e2ei_is_pki_env_setup().await? {
-            return Ok(None);
-        }
-        let mls_provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
-        let Some(pki_env) = &*mls_provider.authentication_service().borrow().await else {
-            return Ok(None);
-        };
-        E2eiDumpedPkiEnv::from_pki_env(pki_env)
-            .await
-            .map_err(RecursiveError::e2e_identity("dumping pki env"))
-            .map_err(Into::into)
     }
 
     /// Registers a Root Trust Anchor CA for the use in E2EI processing.

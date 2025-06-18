@@ -1,13 +1,13 @@
 use crate::KeystoreError;
 
-use super::{Error, Result};
+use super::Result;
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
 };
 use std::collections::HashSet;
 use wire_e2e_identity::prelude::x509::revocation::{PkiEnvironment, PkiEnvironmentParams};
-use x509_cert::der::{Decode, EncodePem, pem::LineEnding};
+use x509_cert::der::Decode;
 
 /// New Certificate Revocation List distribution points.
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::DerefMut)]
@@ -27,58 +27,6 @@ impl IntoIterator for NewCrlDistributionPoints {
     fn into_iter(self) -> Self::IntoIter {
         let items = self.0.unwrap_or_default();
         items.into_iter()
-    }
-}
-
-#[derive(Debug, Clone)]
-/// Dump of the PKI environemnt as PEM
-pub struct E2eiDumpedPkiEnv {
-    /// Root CA in use (i.e. Trust Anchor)
-    pub root_ca: String,
-    /// Intermediate CAs that are loaded
-    pub intermediates: Vec<String>,
-    /// CRLs registered in the PKI env
-    pub crls: Vec<String>,
-}
-
-impl E2eiDumpedPkiEnv {
-    pub(crate) async fn from_pki_env(pki_env: &PkiEnvironment) -> Result<Option<E2eiDumpedPkiEnv>> {
-        let Some(root) = pki_env
-            .get_trust_anchors()
-            .map_err(Error::certificate_validation("getting pki trust anchors"))?
-            .pop()
-        else {
-            return Ok(None);
-        };
-
-        let x509_cert::anchor::TrustAnchorChoice::Certificate(root) = &root.decoded_ta else {
-            return Ok(None);
-        };
-
-        let root_ca = root.to_pem(LineEnding::LF)?;
-
-        let intermediates = pki_env
-            .get_intermediates()
-            .map_err(Error::certificate_validation("getting pki intermediates"))?
-            .into_iter()
-            .map(|inter| inter.decoded_cert.to_pem(LineEnding::LF))
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let crls = pki_env
-            .get_all_crls()
-            .map_err(Error::certificate_validation("getting all crls"))?
-            .iter()
-            .map(|crl_bytes| {
-                x509_cert::der::pem::encode_string("X509 CRL", LineEnding::LF, crl_bytes)
-                    .map_err(Error::certificate_validation("encoding crl title to pem"))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        Ok(Some(E2eiDumpedPkiEnv {
-            root_ca,
-            intermediates,
-            crls,
-        }))
     }
 }
 

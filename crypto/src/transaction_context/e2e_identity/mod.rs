@@ -18,7 +18,6 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
 use super::TransactionContext;
-pub use crate::e2e_identity::E2eiDumpedPkiEnv;
 use crate::e2e_identity::NewCrlDistributionPoints;
 pub use error::{Error, Result};
 

@@ -5,8 +5,7 @@ use openmls::{
 use wire_e2e_identity::prelude::WireIdentityReader as _;
 
 use crate::{
-    MlsError, RecursiveError,
-    e2e_identity::E2eiDumpedPkiEnv,
+    MlsError,
     mls::session::CredentialExt as _,
     prelude::{E2eiConversationState, MlsCiphersuite, MlsCredentialType},
 };
@@ -18,21 +17,6 @@ impl Session {
     /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
         self.crypto_provider.is_pki_env_setup().await
-    }
-
-    /// Dumps the PKI environment as PEM
-    pub async fn e2ei_dump_pki_env(&self) -> Result<Option<E2eiDumpedPkiEnv>> {
-        if !self.e2ei_is_pki_env_setup().await {
-            return Ok(None);
-        }
-        let pki_env_lock = self.crypto_provider.authentication_service().borrow().await;
-        let Some(pki_env) = &*pki_env_lock else {
-            return Ok(None);
-        };
-        E2eiDumpedPkiEnv::from_pki_env(pki_env)
-            .await
-            .map_err(RecursiveError::e2e_identity("dumping pki env"))
-            .map_err(Into::into)
     }
 
     /// Returns true when end-to-end-identity is enabled for the given SignatureScheme
