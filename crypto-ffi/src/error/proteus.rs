@@ -8,8 +8,8 @@ pub enum ProteusError {
     DuplicateMessage,
     #[error("The remote identity has changed")]
     RemoteIdentityChanged,
-    #[error("Another Proteus error occurred but the details are probably irrelevant to clients ({0})")]
-    Other(u16),
+    #[error("Another Proteus error occurred but the details are probably irrelevant to clients ({error_code})")]
+    Other { error_code: u16 },
 }
 
 impl ProteusError {
@@ -23,7 +23,7 @@ impl ProteusError {
             102 => Self::SessionNotFound,
             204 => Self::RemoteIdentityChanged,
             209 => Self::DuplicateMessage,
-            _ => Self::Other(code),
+            _ => Self::Other { error_code: code },
         }
         .into()
     }
@@ -33,7 +33,7 @@ impl ProteusError {
             Self::SessionNotFound => 102,
             Self::RemoteIdentityChanged => 204,
             Self::DuplicateMessage => 209,
-            Self::Other(code) => *code,
+            Self::Other { error_code: code } => *code,
         }
     }
 }
@@ -57,7 +57,9 @@ impl From<&core_crypto::ProteusErrorKind> for ProteusError {
             core_crypto::ProteusErrorKind::ProteusSessionError(SessionError::RemoteIdentityChanged) => {
                 Self::RemoteIdentityChanged
             }
-            _ => Self::Other(value.error_code().unwrap_or_default()),
+            _ => Self::Other {
+                error_code: value.error_code().unwrap_or_default(),
+            },
         }
     }
 }
