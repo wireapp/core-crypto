@@ -44,6 +44,7 @@ enum class Ciphersuite {
 }
 
 typealias CredentialType = com.wire.crypto.uniffi.CredentialType
+
 /** Default credential type */
 val CREDENTIAL_TYPE_DEFAULT = CredentialType.BASIC
 
@@ -450,32 +451,7 @@ internal fun CustomConfiguration.lower() =
     )
 
 typealias MlsWirePolicy = com.wire.crypto.uniffi.WirePolicy
-
-/** Returned by [MlsTransport] callbacks. */
-sealed class MlsTransportResponse {
-    /**
-     * The message was accepted by the distribution service
-     */
-    object Success : MlsTransportResponse()
-
-    /**
-     * A client should have consumed all incoming messages before re-trying.
-     */
-    object Retry : MlsTransportResponse()
-
-    /**
-     * The message was rejected by the delivery service and there's no recovery.
-     * @property reason
-     */
-    data class Abort(val reason: kotlin.String) : MlsTransportResponse()
-}
-
-internal fun MlsTransportResponse.lower() =
-    when (this) {
-        MlsTransportResponse.Success -> com.wire.crypto.uniffi.MlsTransportResponse.Success
-        MlsTransportResponse.Retry -> com.wire.crypto.uniffi.MlsTransportResponse.Retry
-        is MlsTransportResponse.Abort -> com.wire.crypto.uniffi.MlsTransportResponse.Abort(reason)
-    }
+typealias MlsTransportResponse = com.wire.crypto.uniffi.MlsTransportResponse
 
 /**
  * You must implement this interface and pass the implementing object to [CoreCrypto.provideTransport].
