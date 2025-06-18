@@ -209,28 +209,7 @@ fun ByteArray.toGroupInfo() = GroupInfo(com.wire.crypto.uniffi.GroupInfo(this))
 private fun com.wire.crypto.uniffi.GroupInfo.toGroupInfo() = GroupInfo(this)
 
 typealias MlsGroupInfoEncryptionType = com.wire.crypto.uniffi.MlsGroupInfoEncryptionType
-
-/** The ratchet tree type. */
-enum class MlsRatchetTreeType {
-    /** Plain old and complete `GroupInfo` */
-    FULL,
-
-    /**
-     * Contains `GroupInfo` changes since previous epoch (not yet implemented)
-     * (see [draft](https://github.com/rohan-wire/ietf-drafts/blob/main/mahy-mls-ratchet-tree-delta/draft-mahy-mls-ratchet-tree-delta.md))
-     */
-    DELTA,
-
-    /** TODO: document this properly */
-    BY_REF
-}
-
-private fun com.wire.crypto.uniffi.MlsRatchetTreeType.lift() =
-    when (this) {
-        com.wire.crypto.uniffi.MlsRatchetTreeType.FULL -> com.wire.crypto.MlsRatchetTreeType.FULL
-        com.wire.crypto.uniffi.MlsRatchetTreeType.DELTA -> com.wire.crypto.MlsRatchetTreeType.DELTA
-        com.wire.crypto.uniffi.MlsRatchetTreeType.BY_REF -> com.wire.crypto.MlsRatchetTreeType.BY_REF
-    }
+typealias MlsRatchetTreeType = com.wire.crypto.uniffi.MlsRatchetTreeType
 
 /**
  * @property encryptionType see [GroupInfoEncryptionType]
@@ -244,7 +223,7 @@ data class GroupInfoBundle(
 )
 
 private fun com.wire.crypto.uniffi.GroupInfoBundle.lift() =
-    GroupInfoBundle(encryptionType, ratchetTreeType.lift(), payload.toGroupInfo())
+    GroupInfoBundle(encryptionType, ratchetTreeType, payload.toGroupInfo())
 
 /** Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome) */
 data class CommitBundle(
