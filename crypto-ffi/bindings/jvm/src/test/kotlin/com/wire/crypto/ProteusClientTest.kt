@@ -82,10 +82,10 @@ internal class ProteusClientTest {
         }
         aliceClient.transaction { it.proteusDecrypt(encryptedMessage1, BOB_SESSION_ID) }
 
-        val exception: CoreCryptoException.Proteus = assertFailsWith {
+        val exception = assertFailsWith<CoreCryptoException.Proteus> {
             aliceClient.transaction { it.proteusDecrypt(encryptedMessage1, BOB_SESSION_ID) }
         }
-        assertEquals(ProteusException.DuplicateMessage(), exception.exception)
+        assertIs<ProteusException.DuplicateMessage>(exception.exception)
     }
 
     @Test
