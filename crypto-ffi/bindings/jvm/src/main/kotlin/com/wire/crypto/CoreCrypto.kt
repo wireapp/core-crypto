@@ -178,11 +178,11 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
             override suspend fun sendCommitBundle(
                 commitBundle: com.wire.crypto.uniffi.CommitBundle
             ): com.wire.crypto.uniffi.MlsTransportResponse {
-                return transport.sendCommitBundle(commitBundle.lift()).lower()
+                return transport.sendCommitBundle(commitBundle.lift())
             }
 
             override suspend fun sendMessage(mlsMessage: ByteArray): com.wire.crypto.uniffi.MlsTransportResponse {
-                return transport.sendMessage(mlsMessage).lower()
+                return transport.sendMessage(mlsMessage)
             }
 
             override suspend fun prepareForTransport(
