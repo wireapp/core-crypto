@@ -294,7 +294,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return the conversation state given current members
      */
     suspend fun e2eiConversationState(id: MLSGroupId): E2eiConversationState {
-        return cc.e2eiConversationState(id.lower()).lift()
+        return cc.e2eiConversationState(id.lower())
     }
 
     /**

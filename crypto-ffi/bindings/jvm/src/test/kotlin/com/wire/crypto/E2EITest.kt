@@ -218,8 +218,8 @@ internal class E2EITest {
             val welcome = MLSTest.mockDeliveryService.getLatestWelcome()
             val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
 
-            assertThat(alice.transaction { it.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NotEnabled)
-            assertThat(bob.transaction { it.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NotEnabled)
+            assertThat(alice.transaction { it.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NOT_ENABLED)
+            assertThat(bob.transaction { it.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NOT_ENABLED)
         }
 
     @Test
