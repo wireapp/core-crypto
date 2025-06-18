@@ -22,6 +22,7 @@
 
 ### Bug Fixes
 
+- building android bindings on a mac ([67125cd](https://github.com/wireapp/core-crypto/commit/67125cd257e5f4ca960f8be81e3e15f467011a9a))
 - unreleased changes generation had an extra token ([bc56760](https://github.com/wireapp/core-crypto/commit/bc567602ae772302562073e2fb93969ba29ab433))
 - crypto-ffi: fix field names in X509Identity on wasm ([6481d8c](https://github.com/wireapp/core-crypto/commit/6481d8c9e4b32611096cbed4f3281b0127ca3070))
 - initWasm was being called with the wrong property field. ([ca52dbf](https://github.com/wireapp/core-crypto/commit/ca52dbf659c88ec02c078fdf3e36420bff5d5c3d))
