@@ -258,9 +258,7 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
                 scope.launch { epochObserver.epochChanged(conversationId.toGroupId(), epoch) }
             }
         }
-        return wrapException {
-            cc.registerEpochObserver(observerIndirector)
-        }
+        return cc.registerEpochObserver(observerIndirector)
     }
 
     /**

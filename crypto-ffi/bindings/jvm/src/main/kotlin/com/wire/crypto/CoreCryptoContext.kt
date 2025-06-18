@@ -23,7 +23,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * the end of a transaction. The data should be limited to a reasonable size.
      */
     suspend fun setData(data: ByteArray) {
-        wrapException { cc.setData(data) }
+        cc.setData(data)
     }
 
     /**
@@ -31,7 +31,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * is meant to be used as a check point at the end of a transaction.
      */
     suspend fun getData(): ByteArray? {
-        return wrapException { cc.getData() }
+        return cc.getData()
     }
 
     /**
@@ -42,7 +42,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         ciphersuites: Ciphersuites = Ciphersuites.DEFAULT,
         nbKeyPackage: UInt? = DEFAULT_NB_KEY_PACKAGE,
     ) {
-        wrapException { cc.mlsInit(id.lower(), ciphersuites.lower(), nbKeyPackage) }
+        cc.mlsInit(id.lower(), ciphersuites.lower(), nbKeyPackage)
     }
 
     /**
@@ -57,9 +57,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
         credentialType: CredentialType = CredentialType.DEFAULT,
     ): ByteArray {
-        return wrapException {
-            cc.clientPublicKey(ciphersuite.lower(), credentialType.lower())
-        }
+        return cc.clientPublicKey(ciphersuite.lower(), credentialType.lower())
     }
 
     /**
@@ -77,10 +75,8 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
         credentialType: CredentialType = CredentialType.DEFAULT,
     ): List<MLSKeyPackage> {
-        return wrapException {
-            cc.clientKeypackages(ciphersuite.lower(), credentialType.lower(), amount).map {
-                it.toMLSKeyPackage()
-            }
+        return cc.clientKeypackages(ciphersuite.lower(), credentialType.lower(), amount).map {
+            it.toMLSKeyPackage()
         }
     }
 
@@ -94,7 +90,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
         credentialType: CredentialType = CredentialType.DEFAULT,
     ): ULong {
-        return wrapException { cc.clientValidKeypackagesCount(ciphersuite.lower(), credentialType.lower()) }
+        return cc.clientValidKeypackagesCount(ciphersuite.lower(), credentialType.lower())
     }
 
     /**
@@ -102,14 +98,14 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param id conversation identifier
      */
-    suspend fun conversationExists(id: MLSGroupId): Boolean = wrapException { cc.conversationExists(id.lower()) }
+    suspend fun conversationExists(id: MLSGroupId): Boolean = cc.conversationExists(id.lower())
 
     /**
      * Returns the current epoch of a conversation
      *
      * @param id conversation identifier
      */
-    suspend fun conversationEpoch(id: MLSGroupId): ULong = wrapException { cc.conversationEpoch(id.lower()) }
+    suspend fun conversationEpoch(id: MLSGroupId): ULong = cc.conversationEpoch(id.lower())
 
     /**
      * "Apply" to join a group through its GroupInfo.
@@ -129,7 +125,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         // cannot be tested since the groupInfo required is not wrapped in a MlsMessage whereas the
         // one returned
         // in Commit Bundles is... because that's the API the backend imposed
-        return wrapException { cc.joinByExternalCommit(groupInfo.lower(), configuration.lower(), credentialType.lower()).lift() }
+        return cc.joinByExternalCommit(groupInfo.lower(), configuration.lower(), credentialType.lower()).lift()
     }
 
     /**
@@ -168,7 +164,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
             defaultGroupConfiguration.lower(),
         )
 
-        wrapException { cc.createConversation(id.lower(), creatorCredentialType.lower(), cfg) }
+        cc.createConversation(id.lower(), creatorCredentialType.lower(), cfg)
     }
 
     /**
@@ -176,7 +172,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param id conversation identifier
      */
-    suspend fun wipeConversation(id: MLSGroupId) = wrapException { cc.wipeConversation(id.lower()) }
+    suspend fun wipeConversation(id: MLSGroupId) = cc.wipeConversation(id.lower())
 
     /**
      * Ingest a TLS-serialized MLS welcome message to join an existing MLS group.
@@ -193,7 +189,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         welcome: Welcome,
         configuration: CustomConfiguration = defaultGroupConfiguration,
     ): WelcomeBundle {
-        return wrapException { cc.processWelcomeMessage(welcome.lower(), configuration.lower()).lift() }
+        return cc.processWelcomeMessage(welcome.lower(), configuration.lower()).lift()
     }
 
     /**
@@ -204,8 +200,8 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return the encrypted payload for the given group. This needs to be fanned out to the other
      *   members of the group.
      */
-    suspend fun encryptMessage(id: MLSGroupId, message: ByteArray): ByteArray {
-        return wrapException { cc.encryptMessage(id.lower(), message) }
+    suspend fun encryptMessage(id: MLSGroupId, message: PlaintextMessage): ByteArray {
+        return cc.encryptMessage(id.lower(), message.lower())
     }
 
     /**
@@ -215,7 +211,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param message (either Application or Handshake message) from the DS
      */
     suspend fun decryptMessage(id: MLSGroupId, message: ByteArray): DecryptedMessage {
-        return wrapException { cc.decryptMessage(id.lower(), message) }.lift()
+        return cc.decryptMessage(id.lower(), message.lower()).lift()
     }
 
     /**
@@ -227,7 +223,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return the potentially newly discovered certificate revocation list distribution points
      */
     suspend fun addMember(id: MLSGroupId, keyPackages: List<MLSKeyPackage>): List<String>? {
-        return wrapException { cc.addClientsToConversation(id.lower(), keyPackages.map { it.lower() }) }
+        return cc.addClientsToConversation(id.lower(), keyPackages.map { it.lower() })
     }
 
     /**
@@ -238,10 +234,8 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param members client identifier to delete
      */
     suspend fun removeMember(id: MLSGroupId, members: List<ClientId>) {
-        return wrapException {
-            val clientIds = members.map { it.lower() }
-            cc.removeClientsFromConversation(id.lower(), clientIds)
-        }
+        val clientIds = members.map { it.lower() }
+        return cc.removeClientsFromConversation(id.lower(), clientIds)
     }
 
     /**
@@ -250,7 +244,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param id conversation identifier
      */
-    suspend fun updateKeyingMaterial(id: MLSGroupId) = wrapException { cc.updateKeyingMaterial(id.lower()) }
+    suspend fun updateKeyingMaterial(id: MLSGroupId) = cc.updateKeyingMaterial(id.lower())
 
     /**
      * Commits the local pending proposals.
@@ -258,7 +252,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param id conversation identifier
      */
     suspend fun commitPendingProposals(id: MLSGroupId) {
-        return wrapException { cc.commitPendingProposals(id.lower()) }
+        return cc.commitPendingProposals(id.lower())
     }
 
     /**
@@ -268,7 +262,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return All the clients from the members of the group
      */
     suspend fun members(id: MLSGroupId): List<ClientId> {
-        return wrapException { cc.getClientIds(id.lower()).map { it.toClientId() } }
+        return cc.getClientIds(id.lower()).map { it.toClientId() }
     }
 
     /**
@@ -279,7 +273,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *   of `u16` or the context hash * 255, an error will be returned
      */
     suspend fun deriveAvsSecret(id: MLSGroupId, keyLength: UInt): AvsSecret {
-        return wrapException { cc.exportSecretKey(id.lower(), keyLength).toAvsSecret() }
+        return cc.exportSecretKey(id.lower(), keyLength).toAvsSecret()
     }
 
     /**
@@ -289,7 +283,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param id conversation identifier
      */
     suspend fun getExternalSender(id: MLSGroupId): ExternalSenderKey {
-        return wrapException { cc.getExternalSender(id.lower()).toExternalSenderKey() }
+        return cc.getExternalSender(id.lower()).toExternalSenderKey()
     }
 
     /**
@@ -300,7 +294,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return the conversation state given current members
      */
     suspend fun e2eiConversationState(id: MLSGroupId): E2eiConversationState {
-        return wrapException { cc.e2eiConversationState(id.lower()).lift() }
+        return cc.e2eiConversationState(id.lower()).lift()
     }
 
     /**
@@ -310,7 +304,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @returns true if end-to-end identity is enabled for the given ciphersuite
      */
     suspend fun e2eiIsEnabled(ciphersuite: Ciphersuite = Ciphersuite.DEFAULT): Boolean {
-        return wrapException { cc.e2eiIsEnabled(ciphersuite.lower()) }
+        return cc.e2eiIsEnabled(ciphersuite.lower())
     }
 
     /**
@@ -322,7 +316,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @returns identities or if no member has a x509 certificate, it will return an empty List
      */
     suspend fun getDeviceIdentities(id: MLSGroupId, deviceIds: List<ClientId>): List<WireIdentity> {
-        return wrapException { cc.getDeviceIdentities(id.lower(), deviceIds.map { it.lower() }).map { it.lift() } }
+        return cc.getDeviceIdentities(id.lower(), deviceIds.map { it.lower() }).map { it.lift() }
     }
 
     /**
@@ -339,7 +333,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         id: MLSGroupId,
         userIds: List<String>,
     ): Map<String, List<WireIdentity>> {
-        return wrapException { cc.getUserIdentities(id.lower(), userIds).mapValues { (_, v) -> v.map { it.lift() } } }
+        return cc.getUserIdentities(id.lower(), userIds).mapValues { (_, v) -> v.map { it.lift() } }
     }
 
     /**
@@ -364,18 +358,16 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         ciphersuite: Ciphersuite,
         team: String? = null,
     ): E2EIEnrollment {
-        return wrapException {
-            E2EIEnrollment(
-                cc.e2eiNewEnrollment(
-                    clientId,
-                    displayName,
-                    handle,
-                    team,
-                    expirySec,
-                    ciphersuite.lower(),
-                )
+        return E2EIEnrollment(
+            cc.e2eiNewEnrollment(
+                clientId,
+                displayName,
+                handle,
+                team,
+                expirySec,
+                ciphersuite.lower(),
             )
-        }
+        )
     }
 
     /**
@@ -398,17 +390,15 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         ciphersuite: Ciphersuite,
         team: String? = null,
     ): E2EIEnrollment {
-        return wrapException {
-            E2EIEnrollment(
-                cc.e2eiNewActivationEnrollment(
-                    displayName,
-                    handle,
-                    team,
-                    expirySec,
-                    ciphersuite.lower(),
-                )
+        return E2EIEnrollment(
+            cc.e2eiNewActivationEnrollment(
+                displayName,
+                handle,
+                team,
+                expirySec,
+                ciphersuite.lower(),
             )
-        }
+        )
     }
 
     /**
@@ -432,9 +422,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         handle: String? = null,
         team: String? = null,
     ): E2EIEnrollment {
-        return wrapException {
-            E2EIEnrollment(cc.e2eiNewRotateEnrollment(displayName, handle, team, expirySec, ciphersuite.lower()))
-        }
+        return E2EIEnrollment(cc.e2eiNewRotateEnrollment(displayName, handle, team, expirySec, ciphersuite.lower()))
     }
 
     /**
@@ -451,15 +439,13 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         certificateChain: String,
         nbKeyPackage: UInt? = DEFAULT_NB_KEY_PACKAGE,
     ): CrlDistributionPoints? {
-        return wrapException {
-            val crlsDps = cc.e2eiMlsInitOnly(enrollment.lower(), certificateChain, nbKeyPackage)
-            crlsDps?.toCrlDistributionPoint()
-        }
+        val crlsDps = cc.e2eiMlsInitOnly(enrollment.lower(), certificateChain, nbKeyPackage)
+        return crlsDps?.toCrlDistributionPoint()
     }
 
     /** Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs) */
     suspend fun e2eiIsPKIEnvSetup(): Boolean {
-        return wrapException { cc.e2eiIsPkiEnvSetup() }
+        return cc.e2eiIsPkiEnvSetup()
     }
 
     /**
@@ -471,7 +457,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param trustAnchorPEM - PEM certificate to anchor as a Trust Root
      */
     suspend fun e2eiRegisterAcmeCA(trustAnchorPEM: String) {
-        return wrapException { cc.e2eiRegisterAcmeCa(trustAnchorPEM) }
+        return cc.e2eiRegisterAcmeCa(trustAnchorPEM)
     }
 
     /**
@@ -483,7 +469,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param certPEM PEM certificate to register as an Intermediate CA
      */
     suspend fun e2eiRegisterIntermediateCA(certPEM: String): CrlDistributionPoints? {
-        return wrapException { cc.e2eiRegisterIntermediateCa(certPEM)?.toCrlDistributionPoint() }
+        return cc.e2eiRegisterIntermediateCa(certPEM)?.toCrlDistributionPoint()
     }
 
     /**
@@ -498,7 +484,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *   expiration timestamp
      */
     suspend fun e2eiRegisterCRL(crlDP: String, crlDER: ByteArray): CRLRegistration {
-        return wrapException { cc.e2eiRegisterCrl(crlDP, crlDER).lift() }
+        return cc.e2eiRegisterCrl(crlDP, crlDER).lift()
     }
 
     /**
@@ -511,7 +497,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param id conversation identifier
      */
-    suspend fun e2eiRotate(id: MLSGroupId) = wrapException { cc.e2eiRotate(id.lower()) }
+    suspend fun e2eiRotate(id: MLSGroupId) = cc.e2eiRotate(id.lower())
 
     /**
      * Saves a new X509 credential. Requires first
@@ -535,9 +521,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         enrollment: E2EIEnrollment,
         certificateChain: String,
     ): List<String>? {
-        return wrapException {
-            cc.saveX509Credential(enrollment.lower(), certificateChain)
-        }
+        return cc.saveX509Credential(enrollment.lower(), certificateChain)
     }
 
     /**
@@ -546,9 +530,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param cipherSuite the cipher suite with the signature scheme used for the credential
      */
     suspend fun deleteStaleKeyPackages(cipherSuite: Ciphersuite) {
-        return wrapException {
-            cc.deleteStaleKeyPackages(cipherSuite.lower())
-        }
+        return cc.deleteStaleKeyPackages(cipherSuite.lower())
     }
 
     /**
@@ -560,7 +542,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      */
     @kotlin.ExperimentalUnsignedTypes
     suspend fun e2eiEnrollmentStash(enrollment: E2EIEnrollment): EnrollmentHandle {
-        return wrapException { cc.e2eiEnrollmentStash(enrollment.lower()).toUByteArray().asByteArray() }
+        return cc.e2eiEnrollmentStash(enrollment.lower()).toUByteArray().asByteArray()
     }
 
     /**
@@ -570,7 +552,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @returns the persisted enrollment instance
      */
     suspend fun e2eiEnrollmentStashPop(handle: EnrollmentHandle): E2EIEnrollment {
-        return wrapException { E2EIEnrollment(cc.e2eiEnrollmentStashPop(handle)) }
+        return E2EIEnrollment(cc.e2eiEnrollmentStashPop(handle))
     }
 
     // Proteus below
@@ -592,7 +574,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return Hex-encoded public key string
      */
     suspend fun proteusGetLocalFingerprint(): ByteArray {
-        return wrapException { cc.proteusFingerprint().toByteArray() }
+        return cc.proteusFingerprint().toByteArray()
     }
 
     /**
@@ -602,7 +584,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return Hex-encoded public key string
      */
     suspend fun proteusGetRemoteFingerprint(sessionId: SessionId): ByteArray {
-        return wrapException { cc.proteusFingerprintRemote(sessionId).toByteArray() }
+        return cc.proteusFingerprintRemote(sessionId).toByteArray()
     }
 
     /**
@@ -612,7 +594,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return Hex-encoded public key string
      */
     suspend fun proteusGetPrekeyFingerprint(prekey: ByteArray): ByteArray {
-        return wrapException { cc.proteusFingerprintPrekeybundle(prekey).toByteArray() }
+        return cc.proteusFingerprintPrekeybundle(prekey).toByteArray()
     }
 
     /**
@@ -623,11 +605,9 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
      */
     suspend fun proteusNewPreKeys(from: Int, count: Int): ArrayList<PreKey> {
-        return wrapException {
-            from.until(from + count).map {
-                toPreKey(it.toUShort(), cc.proteusNewPrekey(it.toUShort()))
-            } as ArrayList<PreKey>
-        }
+        return from.until(from + count).map {
+            toPreKey(it.toUShort(), cc.proteusNewPrekey(it.toUShort()))
+        } as ArrayList<PreKey>
     }
 
     /**
@@ -636,9 +616,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return A CBOR-serialize version of the PreKeyBundle associated with the last resort PreKey (holding the last resort prekey id)
      */
     suspend fun proteusNewLastPreKey(): PreKey {
-        return wrapException {
-            toPreKey(cc.proteusLastResortPrekeyId(), cc.proteusLastResortPrekey())
-        }
+        return toPreKey(cc.proteusLastResortPrekeyId(), cc.proteusLastResortPrekey())
     }
 
     /**
@@ -648,7 +626,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return whether the session exists or not
      */
     suspend fun proteusDoesSessionExist(sessionId: SessionId): Boolean {
-        return wrapException { cc.proteusSessionExists(sessionId) }
+        return cc.proteusSessionExists(sessionId)
     }
 
     /**
@@ -658,7 +636,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param sessionId - ID of the Proteus session
      */
     suspend fun proteusCreateSession(preKeyCrypto: PreKey, sessionId: SessionId) {
-        wrapException { cc.proteusSessionFromPrekey(sessionId, preKeyCrypto.data) }
+        cc.proteusSessionFromPrekey(sessionId, preKeyCrypto.data)
     }
 
     /**
@@ -668,7 +646,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param sessionId - ID of the Proteus session
      */
     suspend fun proteusDeleteSession(sessionId: SessionId) {
-        wrapException { cc.proteusSessionDelete(sessionId) }
+        cc.proteusSessionDelete(sessionId)
     }
 
     /**
@@ -681,16 +659,14 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
     suspend fun proteusDecrypt(message: ByteArray, sessionId: SessionId): ByteArray {
         val sessionExists = proteusDoesSessionExist(sessionId)
 
-        return wrapException {
-            if (sessionExists) {
-                val decryptedMessage = cc.proteusDecrypt(sessionId, message)
-                cc.proteusSessionSave(sessionId)
-                decryptedMessage
-            } else {
-                val decryptedMessage = cc.proteusSessionFromMessage(sessionId, message)
-                cc.proteusSessionSave(sessionId)
-                decryptedMessage
-            }
+        if (sessionExists) {
+            val decryptedMessage = cc.proteusDecrypt(sessionId, message)
+            cc.proteusSessionSave(sessionId)
+            return decryptedMessage
+        } else {
+            val decryptedMessage = cc.proteusSessionFromMessage(sessionId, message)
+            cc.proteusSessionSave(sessionId)
+            return decryptedMessage
         }
     }
 
@@ -702,7 +678,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @returns The CBOR-serialized encrypted message
      */
     suspend fun proteusEncrypt(message: ByteArray, sessionId: SessionId): ByteArray {
-        return wrapException { cc.proteusEncrypt(sessionId, message) }
+        return cc.proteusEncrypt(sessionId, message)
     }
 
     /**
@@ -717,12 +693,9 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         sessionIds: List<SessionId>,
         message: ByteArray,
     ): Map<SessionId, ByteArray> {
-        return wrapException {
-            cc.proteusEncryptBatched(sessionIds.map { it }, message).mapNotNull { entry ->
-                entry.key to entry.value
-            }
-        }
-            .toMap()
+        return cc.proteusEncryptBatched(sessionIds.map { it }, message).mapNotNull { entry ->
+            entry.key to entry.value
+        }.toMap()
     }
 
     /** Create a session and encrypt a message.
@@ -737,20 +710,16 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         preKey: PreKey,
         sessionId: SessionId,
     ): ByteArray {
-        return wrapException {
-            cc.proteusSessionFromPrekey(sessionId, preKey.data)
-            val encryptedMessage = cc.proteusEncrypt(sessionId, message)
-            cc.proteusSessionSave(sessionId)
-            encryptedMessage
-        }
+        cc.proteusSessionFromPrekey(sessionId, preKey.data)
+        val encryptedMessage = cc.proteusEncrypt(sessionId, message)
+        cc.proteusSessionSave(sessionId)
+        return encryptedMessage
     }
 
     /**
      * Import all the data stored by Cryptobox, located at [path], into the CoreCrypto keystore
      */
     suspend fun proteusCryptoboxMigrate(path: String) {
-        return wrapException {
-            cc.proteusCryptoboxMigrate(path)
-        }
+        return cc.proteusCryptoboxMigrate(path)
     }
 }
