@@ -176,20 +176,7 @@ value class GroupInfo(override val value: ByteArray) : Uniffi {
 
 private fun ByteArray.toGroupInfo() = GroupInfo(this)
 
-/** The type of group info encryption. */
-enum class MlsGroupInfoEncryptionType {
-    /** Unencrypted [GroupInfo] */
-    PLAINTEXT,
-
-    /** GroupInfo encrypted in a JWE */
-    JWE_ENCRYPTED
-}
-
-private fun com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.lift() =
-    when (this) {
-        com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.PLAINTEXT -> MlsGroupInfoEncryptionType.PLAINTEXT
-        com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.JWE_ENCRYPTED -> MlsGroupInfoEncryptionType.JWE_ENCRYPTED
-    }
+typealias MlsGroupInfoEncryptionType = com.wire.crypto.uniffi.MlsGroupInfoEncryptionType
 
 /** The ratchet tree type. */
 enum class MlsRatchetTreeType {
@@ -225,7 +212,7 @@ data class GroupInfoBundle(
 )
 
 private fun com.wire.crypto.uniffi.GroupInfoBundle.lift() =
-    GroupInfoBundle(encryptionType.lift(), ratchetTreeType.lift(), payload.toGroupInfo())
+    GroupInfoBundle(encryptionType, ratchetTreeType.lift(), payload.toGroupInfo())
 
 /** Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome) */
 data class CommitBundle(
