@@ -213,7 +213,7 @@ internal class E2EITest {
 
             bob.transaction { it.createConversation(id) }
 
-            val aliceKp = alice.transaction { it.generateKeyPackages(1U, Ciphersuite.DEFAULT, CredentialType.DEFAULT).first() }
+            val aliceKp = alice.transaction { it.generateKeyPackages(1U, Ciphersuite.DEFAULT, CREDENTIAL_TYPE_DEFAULT).first() }
             bob.transaction { it.addMember(id, listOf(aliceKp)) }
             val welcome = MLSTest.mockDeliveryService.getLatestWelcome()
             val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
