@@ -426,7 +426,7 @@ data class WireIdentity(
 )
 
 internal fun com.wire.crypto.uniffi.WireIdentity.lift() =
-    WireIdentity(clientId, status.lift(), thumbprint, credentialType, x509Identity?.lift())
+    WireIdentity(clientId, status, thumbprint, credentialType, x509Identity?.lift())
 
 /**
  * Represents the parts of WireIdentity that are specific to a X509 certificate (and not a Basic
@@ -460,27 +460,7 @@ private fun com.wire.crypto.uniffi.X509Identity.lift() =
         java.time.Instant.ofEpochSecond(notAfter.toLong()),
     )
 
-/**
- * Indicates the standalone status of a device Credential in a MLS group at a moment T. This does
- * not represent the states where a device is not using MLS or is not using end-to-end identity
- */
-enum class DeviceStatus {
-    /** All is fine */
-    Valid,
-
-    /** The Credential's certificate is expired */
-    Expired,
-
-    /** The Credential's certificate is revoked (not implemented yet) */
-    Revoked,
-}
-
-private fun com.wire.crypto.uniffi.DeviceStatus.lift(): DeviceStatus =
-    when (this) {
-        com.wire.crypto.uniffi.DeviceStatus.VALID -> DeviceStatus.Valid
-        com.wire.crypto.uniffi.DeviceStatus.EXPIRED -> DeviceStatus.Expired
-        com.wire.crypto.uniffi.DeviceStatus.REVOKED -> DeviceStatus.Revoked
-    }
+typealias DeviceStatus = com.wire.crypto.uniffi.DeviceStatus
 
 /**
  * Indicates the state of a Conversation regarding end-to-end identity.
