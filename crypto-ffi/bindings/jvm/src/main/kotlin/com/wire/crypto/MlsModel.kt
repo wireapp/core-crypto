@@ -43,31 +43,10 @@ enum class Ciphersuite {
     internal fun lower() = (ordinal + 1).toUShort()
 }
 
-/** Credential type */
-enum class CredentialType {
-    /** An application-defined credential. */
-    Basic,
+typealias CredentialType = com.wire.crypto.uniffi.CredentialType
 
-    /** A credential based on X509 certificates. */
-    X509;
-
-    companion object {
-        /** The default credential type. */
-        val DEFAULT = Basic
-    }
-
-    internal fun lower() =
-        when (this) {
-            Basic -> com.wire.crypto.uniffi.CredentialType.BASIC
-            X509 -> com.wire.crypto.uniffi.CredentialType.X509
-        }
-}
-
-internal fun com.wire.crypto.uniffi.CredentialType.lift() =
-    when (this) {
-        com.wire.crypto.uniffi.CredentialType.BASIC -> CredentialType.Basic
-        com.wire.crypto.uniffi.CredentialType.X509 -> CredentialType.X509
-    }
+/** Default credential type */
+val CREDENTIAL_TYPE_DEFAULT = CredentialType.BASIC
 
 /** MLS group ID */
 @JvmInline
@@ -198,42 +177,8 @@ value class GroupInfo(override val value: ByteArray) : Uniffi {
 
 private fun ByteArray.toGroupInfo() = GroupInfo(this)
 
-/** The type of group info encryption. */
-enum class MlsGroupInfoEncryptionType {
-    /** Unencrypted [GroupInfo] */
-    PLAINTEXT,
-
-    /** GroupInfo encrypted in a JWE */
-    JWE_ENCRYPTED
-}
-
-private fun com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.lift() =
-    when (this) {
-        com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.PLAINTEXT -> MlsGroupInfoEncryptionType.PLAINTEXT
-        com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.JWE_ENCRYPTED -> MlsGroupInfoEncryptionType.JWE_ENCRYPTED
-    }
-
-/** The ratchet tree type. */
-enum class MlsRatchetTreeType {
-    /** Plain old and complete `GroupInfo` */
-    FULL,
-
-    /**
-     * Contains `GroupInfo` changes since previous epoch (not yet implemented)
-     * (see [draft](https://github.com/rohan-wire/ietf-drafts/blob/main/mahy-mls-ratchet-tree-delta/draft-mahy-mls-ratchet-tree-delta.md))
-     */
-    DELTA,
-
-    /** TODO: document this properly */
-    BY_REF
-}
-
-private fun com.wire.crypto.uniffi.MlsRatchetTreeType.lift() =
-    when (this) {
-        com.wire.crypto.uniffi.MlsRatchetTreeType.FULL -> com.wire.crypto.MlsRatchetTreeType.FULL
-        com.wire.crypto.uniffi.MlsRatchetTreeType.DELTA -> com.wire.crypto.MlsRatchetTreeType.DELTA
-        com.wire.crypto.uniffi.MlsRatchetTreeType.BY_REF -> com.wire.crypto.MlsRatchetTreeType.BY_REF
-    }
+typealias MlsGroupInfoEncryptionType = com.wire.crypto.uniffi.MlsGroupInfoEncryptionType
+typealias MlsRatchetTreeType = com.wire.crypto.uniffi.MlsRatchetTreeType
 
 /**
  * @property encryptionType see [GroupInfoEncryptionType]
@@ -247,7 +192,7 @@ data class GroupInfoBundle(
 )
 
 private fun com.wire.crypto.uniffi.GroupInfoBundle.lift() =
-    GroupInfoBundle(encryptionType.lift(), ratchetTreeType.lift(), payload.toGroupInfo())
+    GroupInfoBundle(encryptionType, ratchetTreeType, payload.toGroupInfo())
 
 /** Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome) */
 data class CommitBundle(
@@ -450,7 +395,7 @@ data class WireIdentity(
 )
 
 internal fun com.wire.crypto.uniffi.WireIdentity.lift() =
-    WireIdentity(clientId, status.lift(), thumbprint, credentialType.lift(), x509Identity?.lift())
+    WireIdentity(clientId, status, thumbprint, credentialType, x509Identity?.lift())
 
 /**
  * Represents the parts of WireIdentity that are specific to a X509 certificate (and not a Basic
@@ -484,53 +429,8 @@ private fun com.wire.crypto.uniffi.X509Identity.lift() =
         java.time.Instant.ofEpochSecond(notAfter.toLong()),
     )
 
-/**
- * Indicates the standalone status of a device Credential in a MLS group at a moment T. This does
- * not represent the states where a device is not using MLS or is not using end-to-end identity
- */
-enum class DeviceStatus {
-    /** All is fine */
-    Valid,
-
-    /** The Credential's certificate is expired */
-    Expired,
-
-    /** The Credential's certificate is revoked (not implemented yet) */
-    Revoked,
-}
-
-private fun com.wire.crypto.uniffi.DeviceStatus.lift(): DeviceStatus =
-    when (this) {
-        com.wire.crypto.uniffi.DeviceStatus.VALID -> DeviceStatus.Valid
-        com.wire.crypto.uniffi.DeviceStatus.EXPIRED -> DeviceStatus.Expired
-        com.wire.crypto.uniffi.DeviceStatus.REVOKED -> DeviceStatus.Revoked
-    }
-
-/**
- * Indicates the state of a Conversation regarding end-to-end identity.
- * Note: this does not check pending state (pending commit, pending proposals) so it does not
- * consider members about to be added/removed
- */
-enum class E2eiConversationState {
-    /** All clients have a valid E2EI certificate */
-    Verified,
-
-    /** Some clients are either still Basic or their certificate is expired */
-    NotVerified,
-
-    /**
-     * All clients are still Basic. If all client have expired certificates,
-     * [E2eiConversationState::NotVerified] is returned.
-     */
-    NotEnabled
-}
-
-internal fun com.wire.crypto.uniffi.E2eiConversationState.lift() =
-    when (this) {
-        com.wire.crypto.uniffi.E2eiConversationState.VERIFIED -> E2eiConversationState.Verified
-        com.wire.crypto.uniffi.E2eiConversationState.NOT_VERIFIED -> E2eiConversationState.NotVerified
-        com.wire.crypto.uniffi.E2eiConversationState.NOT_ENABLED -> E2eiConversationState.NotEnabled
-    }
+typealias DeviceStatus = com.wire.crypto.uniffi.DeviceStatus
+typealias E2eiConversationState = com.wire.crypto.uniffi.E2eiConversationState
 
 /**
  * Configuration of MLS group
@@ -547,55 +447,11 @@ data class CustomConfiguration(
 internal fun CustomConfiguration.lower() =
     com.wire.crypto.uniffi.CustomConfiguration(
         keyRotationSpan = keyRotationSpan?.getSeconds().takeIf { it in 0..UInt.MAX_VALUE.toLong() }?.toUInt(),
-        wirePolicy = wirePolicy?.lower()
+        wirePolicy = wirePolicy
     )
 
-/**
- * Encrypting policy in MLS group
- */
-enum class MlsWirePolicy {
-    /**
-     * Handshake messages are never encrypted
-     */
-    PLAINTEXT,
-
-    /**
-     * Handshake messages are always encrypted
-     */
-    CIPHERTEXT
-}
-
-private fun MlsWirePolicy.lower() =
-    when (this) {
-        MlsWirePolicy.PLAINTEXT -> com.wire.crypto.uniffi.WirePolicy.PLAINTEXT
-        MlsWirePolicy.CIPHERTEXT -> com.wire.crypto.uniffi.WirePolicy.CIPHERTEXT
-    }
-
-/** Returned by [MlsTransport] callbacks. */
-sealed class MlsTransportResponse {
-    /**
-     * The message was accepted by the distribution service
-     */
-    object Success : MlsTransportResponse()
-
-    /**
-     * A client should have consumed all incoming messages before re-trying.
-     */
-    object Retry : MlsTransportResponse()
-
-    /**
-     * The message was rejected by the delivery service and there's no recovery.
-     * @property reason
-     */
-    data class Abort(val reason: kotlin.String) : MlsTransportResponse()
-}
-
-internal fun MlsTransportResponse.lower() =
-    when (this) {
-        MlsTransportResponse.Success -> com.wire.crypto.uniffi.MlsTransportResponse.Success
-        MlsTransportResponse.Retry -> com.wire.crypto.uniffi.MlsTransportResponse.Retry
-        is MlsTransportResponse.Abort -> com.wire.crypto.uniffi.MlsTransportResponse.Abort(reason)
-    }
+typealias MlsWirePolicy = com.wire.crypto.uniffi.WirePolicy
+typealias MlsTransportResponse = com.wire.crypto.uniffi.MlsTransportResponse
 
 /**
  * You must implement this interface and pass the implementing object to [CoreCrypto.provideTransport].

@@ -3,6 +3,9 @@
 package com.wire.crypto
 
 import com.wire.crypto.testutils.genDatabaseKey
+import com.wire.crypto.uniffi.CoreCryptoException
+import com.wire.crypto.uniffi.MlsException
+import com.wire.crypto.uniffi.MlsTransportResponse
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.TestScope
@@ -53,7 +56,7 @@ class MLSTest {
                 context!!.mlsInit(ALICE_ID.toClientId())
             }
 
-        assertIs<MlsException.Other>(expectedException.exception)
+        assertIs<MlsException.Other>(expectedException.mlsError)
     }
 
     @Test
@@ -133,7 +136,7 @@ class MLSTest {
         val (alice) = newClients(ALICE_ID)
         alice.transaction { it.createConversation(id) }
         val expectedException = assertFailsWith<CoreCryptoException.Mls> { alice.transaction { it.createConversation(id) } }
-        assertIs<MlsException.ConversationAlreadyExists>(expectedException.exception)
+        assertIs<MlsException.ConversationAlreadyExists>(expectedException.mlsError)
     }
 
     @Test
@@ -221,7 +224,7 @@ class MLSTest {
         assertThat(String(plaintextMsg)).isNotEmpty().isEqualTo(msg)
 
         val expectedException = assertFailsWith<CoreCryptoException.Mls> { bob.transaction { it.decryptMessage(groupId, ciphertextMsg) } }
-        assertIs<MlsException.DuplicateMessage>(expectedException.exception)
+        assertIs<MlsException.DuplicateMessage>(expectedException.mlsError)
     }
 
     @Test

@@ -53,7 +53,12 @@ mod tests {
             core_crypto::mls::conversation::Error::DuplicateMessage,
         );
         let mapped_error = CoreCryptoError::from(duplicate_message_error);
-        assert!(matches!(mapped_error, CoreCryptoError::Mls(MlsError::DuplicateMessage)));
+        assert!(matches!(
+            mapped_error,
+            CoreCryptoError::Mls {
+                mls_error: MlsError::DuplicateMessage
+            }
+        ));
 
         let conversation_exists_error = RecursiveError::mls_conversation("test conversation exists error")(
             core_crypto::mls::conversation::Error::Leaf(LeafError::ConversationAlreadyExists(
@@ -63,7 +68,9 @@ mod tests {
         let mapped_error = CoreCryptoError::from(conversation_exists_error);
         assert!(matches!(
             mapped_error,
-            CoreCryptoError::Mls(MlsError::ConversationAlreadyExists(_))
+            CoreCryptoError::Mls {
+                mls_error: MlsError::ConversationAlreadyExists { conversation_id: _ }
+            }
         ));
     }
 
