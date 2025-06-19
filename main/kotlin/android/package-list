@@ -71,13 +71,14 @@ $dokka.location:com.wire.crypto/CommitBundle/crlNewDistributionPoints/#/Pointing
 $dokka.location:com.wire.crypto/CommitBundle/groupInfoBundle/#/PointingToDeclaration/android/com.wire.crypto/-commit-bundle/group-info-bundle.html
 $dokka.location:com.wire.crypto/CommitBundle/welcome/#/PointingToDeclaration/android/com.wire.crypto/-commit-bundle/welcome.html
 $dokka.location:com.wire.crypto/CoreCrypto.Companion///PointingToDeclaration/android/com.wire.crypto/-core-crypto/-companion/index.html
-$dokka.location:com.wire.crypto/CoreCrypto.Companion/historyClient/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-core-crypto/-companion/history-client.html
+$dokka.location:com.wire.crypto/CoreCrypto.Companion/historyClient/#com.wire.crypto.HistorySecret/PointingToDeclaration/android/com.wire.crypto/-core-crypto/-companion/history-client.html
 $dokka.location:com.wire.crypto/CoreCrypto.Companion/invoke/#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/android/com.wire.crypto/-core-crypto/-companion/invoke.html
 $dokka.location:com.wire.crypto/CoreCrypto///PointingToDeclaration/android/com.wire.crypto/-core-crypto/index.html
 $dokka.location:com.wire.crypto/CoreCrypto/CoreCrypto/#[Error type: Unresolved type for com.wire.crypto.uniffi.CoreCrypto]/PointingToDeclaration/android/com.wire.crypto/-core-crypto/-core-crypto.html
 $dokka.location:com.wire.crypto/CoreCrypto/close/#/PointingToDeclaration/android/com.wire.crypto/-core-crypto/close.html
 $dokka.location:com.wire.crypto/CoreCrypto/provideTransport/#com.wire.crypto.MlsTransport/PointingToDeclaration/android/com.wire.crypto/-core-crypto/provide-transport.html
 $dokka.location:com.wire.crypto/CoreCrypto/registerEpochObserver/#kotlinx.coroutines.CoroutineScope#com.wire.crypto.EpochObserver/PointingToDeclaration/android/com.wire.crypto/-core-crypto/register-epoch-observer.html
+$dokka.location:com.wire.crypto/CoreCrypto/registerHistoryObserver/#kotlinx.coroutines.CoroutineScope#com.wire.crypto.HistoryObserver/PointingToDeclaration/android/com.wire.crypto/-core-crypto/register-history-observer.html
 $dokka.location:com.wire.crypto/CoreCrypto/transaction/#kotlin.coroutines.SuspendFunction1[com.wire.crypto.CoreCryptoContext,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/android/com.wire.crypto/-core-crypto/transaction.html
 $dokka.location:com.wire.crypto/CoreCryptoContext.Companion///PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/-companion/index.html
 $dokka.location:com.wire.crypto/CoreCryptoContext///PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/index.html
@@ -250,6 +251,12 @@ $dokka.location:com.wire.crypto/GroupInfoBundle/GroupInfoBundle/#com.wire.crypto
 $dokka.location:com.wire.crypto/GroupInfoBundle/encryptionType/#/PointingToDeclaration/android/com.wire.crypto/-group-info-bundle/encryption-type.html
 $dokka.location:com.wire.crypto/GroupInfoBundle/payload/#/PointingToDeclaration/android/com.wire.crypto/-group-info-bundle/payload.html
 $dokka.location:com.wire.crypto/GroupInfoBundle/ratchetTreeType/#/PointingToDeclaration/android/com.wire.crypto/-group-info-bundle/ratchet-tree-type.html
+$dokka.location:com.wire.crypto/HistoryObserver///PointingToDeclaration/android/com.wire.crypto/-history-observer/index.html
+$dokka.location:com.wire.crypto/HistoryObserver/historyClientCreated/#kotlin.ByteArray#com.wire.crypto.HistorySecret/PointingToDeclaration/android/com.wire.crypto/-history-observer/history-client-created.html
+$dokka.location:com.wire.crypto/HistorySecret///PointingToDeclaration/android/com.wire.crypto/-history-secret/index.html
+$dokka.location:com.wire.crypto/HistorySecret/HistorySecret/#com.wire.crypto.ClientId#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-history-secret/-history-secret.html
+$dokka.location:com.wire.crypto/HistorySecret/clientId/#/PointingToDeclaration/android/com.wire.crypto/-history-secret/client-id.html
+$dokka.location:com.wire.crypto/HistorySecret/data/#/PointingToDeclaration/android/com.wire.crypto/-history-secret/data.html
 $dokka.location:com.wire.crypto/JsonRawData///PointingToDeclaration/android/com.wire.crypto/-json-raw-data/index.html
 $dokka.location:com.wire.crypto/MLSGroupId///PointingToDeclaration/android/com.wire.crypto/-m-l-s-group-id/index.html
 $dokka.location:com.wire.crypto/MLSGroupId/MLSGroupId/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-m-l-s-group-id/-m-l-s-group-id.html
@@ -322,8 +329,12 @@ $dokka.location:com.wire.crypto/MlsRatchetTreeType/entries/#/PointingToDeclarati
 $dokka.location:com.wire.crypto/MlsRatchetTreeType/valueOf/#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-mls-ratchet-tree-type/value-of.html
 $dokka.location:com.wire.crypto/MlsRatchetTreeType/values/#/PointingToDeclaration/android/com.wire.crypto/-mls-ratchet-tree-type/values.html
 $dokka.location:com.wire.crypto/MlsTransport///PointingToDeclaration/android/com.wire.crypto/-mls-transport/index.html
+$dokka.location:com.wire.crypto/MlsTransport/prepareForTransport/#com.wire.crypto.HistorySecret/PointingToDeclaration/android/com.wire.crypto/-mls-transport/prepare-for-transport.html
 $dokka.location:com.wire.crypto/MlsTransport/sendCommitBundle/#com.wire.crypto.CommitBundle/PointingToDeclaration/android/com.wire.crypto/-mls-transport/send-commit-bundle.html
 $dokka.location:com.wire.crypto/MlsTransport/sendMessage/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-mls-transport/send-message.html
+$dokka.location:com.wire.crypto/MlsTransportData///PointingToDeclaration/android/com.wire.crypto/-mls-transport-data/index.html
+$dokka.location:com.wire.crypto/MlsTransportData/MlsTransportData/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-mls-transport-data/-mls-transport-data.html
+$dokka.location:com.wire.crypto/MlsTransportData/value/#/PointingToDeclaration/android/com.wire.crypto/-mls-transport-data/value.html
 $dokka.location:com.wire.crypto/MlsTransportResponse.Abort///PointingToDeclaration/android/com.wire.crypto/-mls-transport-response/-abort/index.html
 $dokka.location:com.wire.crypto/MlsTransportResponse.Abort/Abort/#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-mls-transport-response/-abort/-abort.html
 $dokka.location:com.wire.crypto/MlsTransportResponse.Abort/reason/#/PointingToDeclaration/android/com.wire.crypto/-mls-transport-response/-abort/reason.html
