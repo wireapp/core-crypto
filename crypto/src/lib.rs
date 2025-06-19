@@ -63,6 +63,7 @@ pub mod prelude {
             identity::{WireIdentity, X509Identity},
             types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
         },
+        ephemeral::HISTORY_CLIENT_ID_PREFIX,
         ephemeral::HistorySecret,
         error::{CryptoboxMigrationError, Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
         mls::{
