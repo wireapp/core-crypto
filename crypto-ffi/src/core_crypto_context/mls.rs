@@ -303,4 +303,18 @@ impl CoreCryptoContext {
             .await?;
         Ok(welcome_bundle.into())
     }
+
+    /// See [core_crypto::mls::conversation::ConversationGuard::enable_history_sharing]
+    pub async fn enable_history_sharing(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
+        let conversation_id = conversation_id_vec!(conversation_id);
+        let mut conversation = self.inner.conversation(&conversation_id).await?;
+        conversation.enable_history_sharing().await.map_err(Into::into)
+    }
+
+    /// See [core_crypto::mls::conversation::ConversationGuard::disable_history_sharing]
+    pub async fn disable_history_sharing(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
+        let conversation_id = conversation_id_vec!(conversation_id);
+        let mut conversation = self.inner.conversation(&conversation_id).await?;
+        conversation.disable_history_sharing().await.map_err(Into::into)
+    }
 }
