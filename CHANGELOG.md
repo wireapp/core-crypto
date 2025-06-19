@@ -128,6 +128,41 @@ for the core crypto database.
 
   These types appear to provide no type safety benefits, instead only adding a bit of friction.
 
+- Stopped duplicating generated code in kotlin bindings
+
+- Exposed `wire.com.crypto.uniffi`
+
+  Affected platforms: Android
+
+  Migration: instead of always using the `com.wire.crypto` package, for some types, import from
+  `com.wire.crypto.uniffi`
+
+  - `com.wire.crypto.*Exception` -> `com.wire.crypto.uniffi.*Exception`
+  - some exception fields were renamed (`.exception` -> `.mlsError`, etc)
+  - `CoreCryptoLogLevel `-> `com.wire.crypto.uniffi.CoreCryptoLogLevel`
+  - `CoreCryptoLogger` -> `com.wire.crypto.uniffi.CoreCryptoLogger`
+  - `setLogger` -> `com.wire.crypto.uniffi.setLoggerOnly`
+  - setMaxLogLevel -> `com.wire.crypto.uniffi.setMaxLogLevel`
+  - should import `com.wire.crypto.uniffi.CredentialType` instead of `com.wire.crypto.CredentialType`
+  - Basic credential type is spelled `BASIC` instead of `Basic`
+  - Default credential type is `CREDENTIAL_TYPE_DEFAULT` instead of `CredentialType.Default`
+  - import `com.wire.crypto.uniffi.MlsGroupInfoEncryptionType` instead of `com.wire.crypto.MlsGroupInfoEncryptionType`
+  - import `com.wire.crypto.uniffi.MlsRatchetTreeType` instead of `com.wire.crypto.MlsRatchetTreeType`
+  - import `com.wire.crypto.uniffi.DeviceStatus` instead of `com.wire.crypto.DeviceStatus`
+  - Device Status variant names are now all uppercase
+  - import `com.wire.crypto.uniffi.E2eiConversationState` instead of `com.wire.crypto.E2eiConversationState`
+  - `E2eiConversationState` case names are now uppercase
+  - import `com.wire.crypto.uniffi.WirePolicy` instead of `com.wire.crypto.MlsWirePolicy`
+  - import `com.wire.crypto.uniffi.MlsTransportResponse` instead of `com.wire.crypto.MlsTransportResponse`
+
+- Changed exposed error type structures
+
+  Affected platforms: iOS
+
+  Migration
+  - When pattern-matching the affected error types, add argument labels
+  - When accessing inner error values, add field names
+
 ### Features
 
 - Support Android environments with 16k page size
@@ -243,7 +278,7 @@ Upgrade OpenMLS to fix a bug where the ratchet tree would sometimes become corru
 ### Breaking changes
 
 The typescript bindings no longer implicitly load the wasm module when importing the core crypto module. To replace
-this behaviour the `async initWasmModule()` function has been added, which must be called before any other core crypto
+this behaviour the uasync initWasmModule()` function has been added, which must be called before any other core crypto
 function.
 
 ### Features
