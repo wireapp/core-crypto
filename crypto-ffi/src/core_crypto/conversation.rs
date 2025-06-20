@@ -105,4 +105,15 @@ impl CoreCrypto {
             .await
             .map_err(Into::into)
     }
+
+    /// See [core_crypto::mls::conversation::Conversation::is_history_sharing_enabled]
+    pub async fn is_history_sharing_enabled(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
+        let conversation_id = conversation_id_vec!(conversation_id);
+        let conversation = self
+            .inner
+            .get_raw_conversation(&conversation_id)
+            .await
+            .map_err(RecursiveError::mls_client("getting raw conversation"))?;
+        Ok(conversation.is_history_sharing_enabled().await)
+    }
 }

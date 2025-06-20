@@ -16,7 +16,7 @@ use crate::{
 };
 
 /// What to do with a commit after it has been sent via [crate::MlsTransport].
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum TransportedCommitPolicy {
     /// Accept and merge the commit.
     Merge,
@@ -25,15 +25,10 @@ pub(crate) enum TransportedCommitPolicy {
 }
 
 impl ConversationGuard {
-    async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
+    pub(super) async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
         match self.send_commit(commit).await {
             Ok(TransportedCommitPolicy::None) => Ok(()),
-            Ok(TransportedCommitPolicy::Merge) => {
-                let client = self.session().await?;
-                let backend = self.crypto_provider().await?;
-                let mut conversation = self.inner.write().await;
-                conversation.commit_accepted(&client, &backend).await
-            }
+            Ok(TransportedCommitPolicy::Merge) => self.merge_commit().await,
             Err(e @ Error::MessageRejected { .. }) => {
                 self.clear_pending_commit().await?;
                 Err(e)
@@ -42,17 +37,16 @@ impl ConversationGuard {
         }
     }
 
+    pub(super) async fn merge_commit(&mut self) -> Result<()> {
+        let client = self.session().await?;
+        let backend = self.crypto_provider().await?;
+        let mut conversation = self.inner.write().await;
+        conversation.commit_accepted(&client, &backend).await
+    }
+
     /// Send the commit via [crate::MlsTransport] and handle the response.
-    async fn send_commit(&mut self, mut commit: MlsCommitBundle) -> Result<TransportedCommitPolicy> {
-        let transport = self
-            .context()
-            .await?
-            .mls_transport()
-            .await
-            .map_err(RecursiveError::transaction("getting mls transport"))?;
-        let transport = transport.as_ref().ok_or::<Error>(
-            RecursiveError::root("getting mls transport")(crate::Error::MlsTransportNotProvided).into(),
-        )?;
+    pub(super) async fn send_commit(&mut self, mut commit: MlsCommitBundle) -> Result<TransportedCommitPolicy> {
+        let transport = self.transport().await?;
         let client = self.session().await?;
         let backend = self.crypto_provider().await?;
 
@@ -101,6 +95,17 @@ impl ConversationGuard {
 
     /// Adds new members to the group/conversation
     pub async fn add_members(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<NewCrlDistributionPoints> {
+        let (new_crl_distribution_points, commit) = self.add_members_inner(key_packages).await?;
+
+        self.send_and_merge_commit(commit).await?;
+
+        Ok(new_crl_distribution_points)
+    }
+
+    pub(super) async fn add_members_inner(
+        &mut self,
+        key_packages: Vec<KeyPackageIn>,
+    ) -> Result<(NewCrlDistributionPoints, MlsCommitBundle)> {
         self.ensure_no_pending_commit().await?;
         let backend = self.crypto_provider().await?;
         let credential = self.credential_bundle().await?;
@@ -131,18 +136,14 @@ impl ConversationGuard {
             .persist_group_when_changed(&backend.keystore(), false)
             .await?;
 
-        // we don't need the conversation anymore, but we do need to mutably borrow `self` again
-        drop(conversation);
-
         let commit = MlsCommitBundle {
             commit,
             welcome,
             group_info,
+            encrypted_message: None,
         };
 
-        self.send_and_merge_commit(commit).await?;
-
-        Ok(crl_new_distribution_points)
+        Ok((crl_new_distribution_points, commit))
     }
 
     /// Removes clients from the group/conversation.
@@ -187,6 +188,7 @@ impl ConversationGuard {
             commit,
             welcome,
             group_info,
+            encrypted_message: None,
         })
         .await
     }
@@ -263,6 +265,7 @@ impl ConversationGuard {
             welcome,
             commit,
             group_info,
+            encrypted_message: None,
         })
     }
 
