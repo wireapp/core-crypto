@@ -47,6 +47,7 @@
 
 ### Other Breaking Changes
 
+- [**breaking**] crypto-ffi: tell wasm-bindgen to output files into a separate dir ([e34b944](https://github.com/wireapp/core-crypto/commit/e34b944694813234dd72cd4a6ed5bcbfa2bf4a70))
 - [**breaking**] eliminate certain wasm-specific discrepancies from core-crypto-ffi ([1143d11](https://github.com/wireapp/core-crypto/commit/1143d1105e93fb440c7d89f90598cabd3ee3f4be))
 
 
