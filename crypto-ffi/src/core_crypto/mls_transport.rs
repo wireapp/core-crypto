@@ -330,9 +330,14 @@ impl core_crypto::MlsTransport for MlsTransport {
         &self,
         secret: &HistorySecret,
     ) -> core_crypto::Result<core_crypto::MlsTransportData> {
-        let history_secret = JsValue::from(HistorySecretFfi::try_from(secret).map_err(|err| {
+        let history_secret_ffi = HistorySecretFfi::try_from(secret).map_err(|err| {
             core_crypto::Error::ErrorDuringMlsTransport(format!("converting history secret to wasm-compatible: {err}"))
-        })?);
+        })?;
+        let client_id = &history_secret_ffi.client_id.clone();
+        let history_secret = JsValue::from(history_secret_ffi);
+
+        web_sys::console::log_1(&"crypto ffi history secret client id".into());
+        web_sys::console::log_1(&client_id.as_bytes().into());
 
         let promise = self
             .prepare_for_transport

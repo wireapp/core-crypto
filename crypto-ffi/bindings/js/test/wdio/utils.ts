@@ -96,10 +96,15 @@ export async function setup() {
             async sendMessage() {
                 return "success";
             },
-            prepareForTransport(
+            async prepareForTransport(
                 secret: HistorySecret
             ): Promise<MlsTransportData> {
-                return Promise.resolve(new MlsTransportData(secret.clientId));
+                console.log(" utils client id")
+                console.log(secret.clientId)
+                console.log("utils secret data")
+                console.log(typeof secret.data)
+                console.log(secret.data.toString())
+                return new window.ccModule.MlsTransportData(secret.data);
             },
             async getLatestCommitBundle() {
                 return window._latestCommitBundle;

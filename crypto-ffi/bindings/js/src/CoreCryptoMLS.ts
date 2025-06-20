@@ -303,6 +303,9 @@ class MlsTransportFfiShim {
     async prepareForTransport(
         secret: HistorySecret
     ): Promise<MlsTransportDataFfi> {
+      console.log("secret core crypto mls: cliend id/data")
+      console.log(secret.clientId)
+      console.log(secret.data)
         return await this.inner.prepareForTransport(secret);
     }
 }
