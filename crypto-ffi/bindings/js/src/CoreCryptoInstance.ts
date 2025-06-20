@@ -141,7 +141,7 @@ class HistoryObserverShim {
 }
 
 function historySecretIntoFfi(secret: HistorySecret): HistorySecretFfi {
-    return new HistorySecretFfi(new ClientIdFfi(secret.clientId), secret.data);
+    return new HistorySecretFfi(secret.clientId, secret.data);
 }
 
 /**
