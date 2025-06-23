@@ -27,7 +27,9 @@ impl CoreCryptoFfiClient {
     pub(crate) async fn new() -> Result<CoreCryptoFfiClient> {
         let client_id = uuid::Uuid::new_v4();
         let client_id_bytes: Vec<u8> = client_id.as_hyphenated().to_string().as_bytes().into();
-        let client_id = ClientId::from(core_crypto::prelude::ClientId::from(&client_id_bytes[..]));
+        let client_id = Arc::new(ClientId::from(core_crypto::prelude::ClientId::from(
+            &client_id_bytes[..],
+        )));
         let ciphersuite = CIPHERSUITE_IN_USE;
         let temp_file = NamedTempFile::with_prefix("interop-ffi-keystore-")?;
 
@@ -125,7 +127,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
     }
 
     async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
-        let client_id = ClientId::from(core_crypto::prelude::ClientId::from(client_id));
+        let client_id = Arc::new(ClientId::from(core_crypto::prelude::ClientId::from(client_id)));
         let conversation_id = conversation_id.to_vec();
         let extractor = TransactionHelper::new(move |context| async move {
             context
