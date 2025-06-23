@@ -5,9 +5,7 @@ use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    ConversationId, CoreCrypto, CoreCryptoResult, WireIdentity,
-    client_id::{AsCoreCryptoClientId, ClientIdMaybeArc},
-    conversation_id_vec,
+    ConversationId, CoreCrypto, CoreCryptoResult, WireIdentity, client_id::ClientIdMaybeArc, conversation_id_vec,
 };
 
 #[cfg(not(target_family = "wasm"))]
@@ -40,7 +38,7 @@ impl CoreCrypto {
             .map_err(RecursiveError::mls_client("getting raw conversation"))?;
         let device_ids = device_ids
             .into_iter()
-            .map(|id| id.as_cc_client_id())
+            .map(|id| id.as_cc())
             .collect::<Vec<_>>();
         let wire_identities = conversation
             .get_device_identities(&device_ids)

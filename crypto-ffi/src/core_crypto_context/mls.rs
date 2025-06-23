@@ -9,10 +9,9 @@ use tls_codec::{Deserialize as _, Serialize as _};
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    Ciphersuite, Ciphersuites, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
+    Ciphersuite, Ciphersuites, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
     CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, NewCrlDistributionPoints, WelcomeBundle,
-    client_id::{AsCoreCryptoClientId as _, ClientIdMaybeArc, client_id_from_cc},
-    conversation_id_vec,
+    client_id::ClientIdMaybeArc, conversation_id_vec,
 };
 
 #[cfg(not(target_family = "wasm"))]
@@ -37,7 +36,7 @@ impl CoreCryptoContext {
             .map_err(CoreCryptoError::generic())?;
         self.inner
             .mls_init(
-                ClientIdentifier::Basic(client_id.as_cc_client_id()),
+                ClientIdentifier::Basic(client_id.as_cc()),
                 (&ciphersuites).into(),
                 nb_key_package,
             )
@@ -88,7 +87,7 @@ impl CoreCryptoContext {
             .get_client_ids()
             .await
             .into_iter()
-            .map(client_id_from_cc)
+            .map(ClientId::from_cc)
             .collect();
         Ok(client_ids)
     }
@@ -222,7 +221,7 @@ impl CoreCryptoContext {
         conversation_id: &ConversationId,
         clients: Vec<ClientIdMaybeArc>,
     ) -> CoreCryptoResult<()> {
-        let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.as_cc_client_id()).collect();
+        let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.as_cc()).collect();
         let conversation_id = conversation_id_vec!(conversation_id);
         let mut conversation = self.inner.conversation(&conversation_id).await?;
         conversation.remove_members(&clients).await.map_err(Into::into)
