@@ -83,15 +83,15 @@ fun String.toGroupId() = MLSGroupId(toByteArray())
 
 /** Client ID */
 @JvmInline
-value class ClientId(override val value: String) : FfiType<String, com.wire.crypto.uniffi.ClientId> {
-    override fun lower() = value.toByteArray()
+value class ClientId(override val value: ByteArray) : FfiType<ByteArray, com.wire.crypto.uniffi.ClientId> {
+    override fun lower() = com.wire.crypto.uniffi.ClientId(value);
 }
 
 @OptIn(ExperimentalUnsignedTypes::class)
-internal fun com.wire.crypto.uniffi.ClientId.toClientId() = ClientId(String(toUByteArray().asByteArray()))
+internal fun com.wire.crypto.uniffi.ClientId.toClientId() = ClientId(asBytes())
 
 /** Construct a client ID */
-fun String.toClientId() = ClientId(this)
+fun String.toClientId() = ClientId(this.toByteArray())
 
 /** External sender key */
 @JvmInline

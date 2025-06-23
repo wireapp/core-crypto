@@ -37,6 +37,11 @@
   Affected platforms: Web
 
   Migration: call `new ClientId(id)` to construct a `ClientId`, and `id.as_bytes()` to get a byte array out.
+- `ClientId` wrapper accepts a byte array, not a string.
+
+  Affected platforms: Kotlin
+
+  Migration: call `.toByteArray()` on the input.
 
 ### Features
 
