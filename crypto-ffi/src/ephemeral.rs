@@ -12,11 +12,14 @@ use core_crypto::prelude::{CoreCrypto as CoreCryptoFfi, HistorySecret as CoreCry
 #[cfg_attr(
     target_family = "wasm",
     wasm_bindgen(getter_with_clone),
-    derive(serde::Serialize, serde::Deserialize)
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct HistorySecret {
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = clientId))]
     pub client_id: Vec<u8>,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub data: Vec<u8>,
 }
 
