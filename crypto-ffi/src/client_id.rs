@@ -29,6 +29,7 @@ impl ClientId {
     }
 }
 
+#[cfg(target_family = "wasm")]
 pub type FfiClientId = Box<[u8]>;
 
 #[cfg(target_family = "wasm")]
@@ -59,6 +60,7 @@ impl AsCoreCryptoClientId for ClientId {
     }
 }
 
+#[cfg(target_family = "wasm")]
 impl AsCoreCryptoClientId for FfiClientId {
     fn as_cc_client_id(&self) -> core_crypto::prelude::ClientId {
         self.clone().into()
