@@ -6,8 +6,7 @@ use core_crypto::prelude::{MlsBufferedConversationDecryptMessage, MlsConversatio
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    CoreCryptoError, CoreCryptoResult, NewCrlDistributionPoints, WireIdentity,
-    client_id::{ClientIdMaybeArc, client_id_from_cc},
+    ClientId, CoreCryptoError, CoreCryptoResult, NewCrlDistributionPoints, WireIdentity, client_id::ClientIdMaybeArc,
 };
 
 /// See [core_crypto::prelude::MlsConversationDecryptMessage]
@@ -62,7 +61,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             message: from.app_msg,
             is_active: from.is_active,
             commit_delay: from.delay,
-            sender_client_id: from.sender_client_id.map(client_id_from_cc),
+            sender_client_id: from.sender_client_id.map(ClientId::from_cc),
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.into(),
             buffered_messages,
@@ -112,7 +111,7 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
             message: from.app_msg,
             is_active: from.is_active,
             commit_delay: from.delay,
-            sender_client_id: from.sender_client_id.map(client_id_from_cc),
+            sender_client_id: from.sender_client_id.map(ClientId::from_cc),
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.into(),
             crl_new_distribution_points: from.crl_new_distribution_points.into(),

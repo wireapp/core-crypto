@@ -24,8 +24,6 @@ pub use bundles::{
 };
 pub use ciphersuite::{Ciphersuite, Ciphersuites};
 pub use client_id::ClientId;
-#[cfg(target_family = "wasm")]
-pub use client_id::FfiClientId;
 pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePolicy};
 pub use core_crypto::{
     CoreCrypto,

@@ -2,10 +2,7 @@ use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    Ciphersuite, CoreCrypto, CoreCryptoResult,
-    client_id::{ClientIdMaybeArc, client_id_from_cc},
-};
+use crate::{Ciphersuite, ClientId, CoreCrypto, CoreCryptoResult, client_id::ClientIdMaybeArc};
 
 // Note that we can't do the same `Box<[u8]>` thing here; it doesn't work for async functions.
 #[cfg(target_family = "wasm")]
@@ -83,7 +80,7 @@ impl CoreCrypto {
             .get_client_ids()
             .await
             .into_iter()
-            .map(client_id_from_cc)
+            .map(ClientId::from_cc)
             .collect())
     }
 
