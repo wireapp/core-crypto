@@ -51,7 +51,6 @@ export type {
     ProposalRef,
     MlsTransportResponse,
     ConversationId,
-    ClientId,
     MlsTransport,
     GroupInfoBundle,
     BufferedDecryptedMessage,
@@ -72,6 +71,7 @@ export type { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus";
 
 export {
     AcmeChallenge,
+    ClientId,
     CustomConfiguration,
     DatabaseKey,
     MlsTransportData,
