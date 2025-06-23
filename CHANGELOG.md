@@ -32,6 +32,11 @@
   Migration: update any pattern-matching or other code that depends on the structure of
   `MlsCommitBundle` to include the new field. Also, make sure to update your implementation of the
   `MlsTransport` protocol/interface to include this field in the payload sent to the Delivery Service.
+- `ClientId` is a newtype, not a bare byte array.
+
+  Affected platforms: Web
+
+  Migration: call `new ClientId(id)` to construct a `ClientId`, and `id.as_bytes()` to get a byte array out.
 
 ### Features
 

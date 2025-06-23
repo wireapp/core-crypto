@@ -3,6 +3,7 @@ import type { local } from "webdriver";
 
 import {
     Ciphersuite,
+    ClientId,
     type CommitBundle,
     CoreCrypto,
     type GroupInfoBundle,
@@ -99,7 +100,7 @@ export async function setup() {
             async prepareForTransport(
                 secret: HistorySecret
             ): Promise<MlsTransportData> {
-                return new window.ccModule.MlsTransportData(secret.data);
+                return Promise.resolve(new window.ccModule.MlsTransportData(secret.clientId.as_bytes()));
             },
             async getLatestCommitBundle() {
                 return window._latestCommitBundle;
@@ -150,7 +151,7 @@ export async function ccInit(clientName: string): Promise<void> {
     return await browser.execute(async (clientName) => {
         const cipherSuite = window.defaultCipherSuite;
         const encoder = new TextEncoder();
-        const clientId = encoder.encode(clientName);
+        const clientId = new window.ccModule.ClientId(encoder.encode(clientName));
 
         const key = new Uint8Array(32);
         window.crypto.getRandomValues(key);

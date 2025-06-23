@@ -25,7 +25,7 @@ import {
     build_metadata,
     Ciphersuite as CiphersuiteFfi,
     Ciphersuites as CiphersuitesFfi,
-    ClientId as ClientIdFfi,
+    ClientId,
     CoreCrypto as CoreCryptoFfi,
     CoreCryptoLogger as CoreCryptoLoggerFfi,
     EpochObserver as EpochObserverFfi,
@@ -38,7 +38,6 @@ import {
 
 import { CoreCryptoError } from "./CoreCryptoError";
 import {
-    type ClientId,
     type ConversationId,
     CredentialType,
     type MlsTransport,
@@ -541,7 +540,7 @@ export class CoreCrypto {
         const cids = await CoreCryptoError.asyncMapErr(
             this.#cc.get_client_ids(conversationId)
         );
-        return cids.map((cid) => cid.as_bytes());
+        return cids;
     }
 
     /**
@@ -670,9 +669,8 @@ export class CoreCrypto {
         conversationId: ConversationId,
         deviceIds: ClientId[]
     ): Promise<WireIdentity[]> {
-        const dids = deviceIds.map((did) => new ClientIdFfi(did));
         return await CoreCryptoError.asyncMapErr(
-            this.#cc.get_device_identities(conversationId, dids)
+            this.#cc.get_device_identities(conversationId, deviceIds)
         );
     }
 
