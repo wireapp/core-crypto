@@ -4,7 +4,11 @@ use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{ClientId, ConversationId, CoreCrypto, CoreCryptoResult, WireIdentity, conversation_id_vec};
+use crate::{
+    ConversationId, CoreCrypto, CoreCryptoResult, WireIdentity,
+    client_id::{AsCoreCryptoClientId, ClientIdMaybeArc},
+    conversation_id_vec,
+};
 
 #[cfg(not(target_family = "wasm"))]
 type DeviceIdentities = Vec<WireIdentity>;
@@ -26,7 +30,7 @@ impl CoreCrypto {
     pub async fn get_device_identities(
         &self,
         conversation_id: &ConversationId,
-        device_ids: Vec<ClientId>,
+        device_ids: Vec<ClientIdMaybeArc>,
     ) -> CoreCryptoResult<DeviceIdentities> {
         let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self
@@ -34,16 +38,20 @@ impl CoreCrypto {
             .get_raw_conversation(&conversation_id)
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation"))?;
-        let device_ids = device_ids.into_iter().map(|ClientId(id)| id).collect::<Vec<_>>();
-        let device_identities = conversation.get_device_identities(&device_ids).await?;
-        let device_identities = device_identities
+        let device_ids = device_ids
+            .into_iter()
+            .map(|id| id.as_cc_client_id())
+            .collect::<Vec<_>>();
+        let wire_identities = conversation
+            .get_device_identities(&device_ids)
+            .await?
             .into_iter()
             .map(WireIdentity::from)
             .collect::<Vec<_>>();
         #[cfg(target_family = "wasm")]
-        let device_identities =
-            serde_wasm_bindgen::to_value(&device_identities).expect("device identities can always be serialized");
-        Ok(device_identities)
+        let wire_identities =
+            serde_wasm_bindgen::to_value(&wire_identities).expect("device identities can always be serialized");
+        Ok(wire_identities)
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_user_identities]

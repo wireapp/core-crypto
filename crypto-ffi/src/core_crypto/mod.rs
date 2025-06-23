@@ -34,7 +34,7 @@ pub(crate) fn entropy_seed_map(e: EntropySeed) -> Vec<u8> {
 }
 
 #[cfg(not(target_family = "wasm"))]
-type ClientId = crate::ClientId;
+type ClientId = crate::client_id::ClientIdMaybeArc;
 
 #[cfg(target_family = "wasm")]
 type ClientId = crate::FfiClientId;

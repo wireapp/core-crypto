@@ -8,18 +8,30 @@ use wasm_bindgen::prelude::*;
     derive(serde::Serialize, serde::Deserialize),
     serde(from = "ClientIdSerializationShim", into = "ClientIdSerializationShim")
 )]
+#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
 pub struct ClientId(pub(crate) core_crypto::prelude::ClientId);
 
-#[cfg(not(target_family = "wasm"))]
-uniffi::custom_type!(ClientId, Vec<u8>, {
-    lower: |id| id.0.to_vec(),
-    try_lift: |vec| Ok(Self(vec.into()))
-});
+#[cfg(target_family = "wasm")]
+pub(crate) type ClientIdMaybeArc = ClientId;
 
 #[cfg(target_family = "wasm")]
-#[wasm_bindgen]
+pub(crate) fn client_id_from_cc(id: core_crypto::prelude::ClientId) -> ClientIdMaybeArc {
+    ClientId(id)
+}
+
+#[cfg(not(target_family = "wasm"))]
+pub(crate) type ClientIdMaybeArc = std::sync::Arc<ClientId>;
+
+#[cfg(not(target_family = "wasm"))]
+pub(crate) fn client_id_from_cc(id: core_crypto::prelude::ClientId) -> ClientIdMaybeArc {
+    std::sync::Arc::new(crate::ClientId(id))
+}
+
+#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl ClientId {
-    #[wasm_bindgen(constructor)]
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(constructor))]
+    #[cfg_attr(not(target_family = "wasm"), uniffi::constructor)]
     pub fn new(bytes: Vec<u8>) -> Self {
         Self(bytes.into())
     }

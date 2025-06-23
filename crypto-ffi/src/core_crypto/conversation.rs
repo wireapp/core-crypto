@@ -2,7 +2,10 @@ use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{Ciphersuite, ClientId, CoreCrypto, CoreCryptoResult};
+use crate::{
+    Ciphersuite, CoreCrypto, CoreCryptoResult,
+    client_id::{ClientIdMaybeArc, client_id_from_cc},
+};
 
 // Note that we can't do the same `Box<[u8]>` thing here; it doesn't work for async functions.
 #[cfg(target_family = "wasm")]
@@ -69,14 +72,19 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_client_ids]
-    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<ClientId>> {
+    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<ClientIdMaybeArc>> {
         let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self
             .inner
             .get_raw_conversation(&conversation_id)
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation"))?;
-        Ok(conversation.get_client_ids().await.into_iter().map(ClientId).collect())
+        Ok(conversation
+            .get_client_ids()
+            .await
+            .into_iter()
+            .map(client_id_from_cc)
+            .collect())
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_external_sender]

@@ -1,7 +1,10 @@
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{ClientId, CoreCrypto, CoreCryptoError, CoreCryptoResult};
+use crate::{
+    CoreCrypto, CoreCryptoError, CoreCryptoResult,
+    client_id::{ClientIdMaybeArc, client_id_from_cc},
+};
 use core_crypto::prelude::{CoreCrypto as CoreCryptoFfi, HistorySecret as HistorySecretFfi};
 
 /// A `HistorySecret` encodes sufficient client state that it can be used to instantiate an
@@ -14,7 +17,7 @@ use core_crypto::prelude::{CoreCrypto as CoreCryptoFfi, HistorySecret as History
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct HistorySecret {
-    pub client_id: ClientId,
+    pub client_id: ClientIdMaybeArc,
     pub data: Vec<u8>,
 }
 
@@ -22,7 +25,7 @@ pub struct HistorySecret {
 #[wasm_bindgen]
 impl HistorySecret {
     #[wasm_bindgen(constructor)]
-    pub fn new(client_id: ClientId, data: &[u8]) -> Result<HistorySecret, wasm_bindgen::JsError> {
+    pub fn new(client_id: ClientIdMaybeArc, data: &[u8]) -> Result<HistorySecret, wasm_bindgen::JsError> {
         Ok(HistorySecret {
             client_id,
             data: data.into(),
@@ -38,7 +41,7 @@ impl TryFrom<&HistorySecretFfi> for HistorySecret {
         rmp_serde::to_vec(&value)
             .map_err(CoreCryptoError::generic())
             .map(|secret| HistorySecret {
-                client_id: client_id.into(),
+                client_id: client_id_from_cc(client_id),
                 data: secret,
             })
     }
