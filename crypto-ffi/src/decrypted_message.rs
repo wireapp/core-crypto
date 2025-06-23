@@ -5,7 +5,10 @@ use core_crypto::prelude::{MlsBufferedConversationDecryptMessage, MlsConversatio
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{ClientId, CoreCryptoError, CoreCryptoResult, NewCrlDistributionPoints, WireIdentity};
+use crate::{
+    CoreCryptoError, CoreCryptoResult, NewCrlDistributionPoints, WireIdentity,
+    client_id::{ClientIdMaybeArc, client_id_from_cc},
+};
 
 /// See [core_crypto::prelude::MlsConversationDecryptMessage]
 #[derive(Debug)]
@@ -25,7 +28,7 @@ pub struct DecryptedMessage {
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = commitDelay))]
     pub commit_delay: Option<u64>,
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = senderClientId))]
-    pub sender_client_id: Option<ClientId>,
+    pub sender_client_id: Option<ClientIdMaybeArc>,
     /// true when the decrypted message resulted in an epoch change i.e. it was a commit
     ///
     /// Deprecated: this member will be removed in the future. Prefer using the `EpochObserver` interface.
@@ -59,7 +62,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             message: from.app_msg,
             is_active: from.is_active,
             commit_delay: from.delay,
-            sender_client_id: from.sender_client_id.map(ClientId),
+            sender_client_id: from.sender_client_id.map(client_id_from_cc),
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.into(),
             buffered_messages,
@@ -86,7 +89,7 @@ pub struct BufferedDecryptedMessage {
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = commitDelay))]
     pub commit_delay: Option<u64>,
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = senderClientId))]
-    pub sender_client_id: Option<ClientId>,
+    pub sender_client_id: Option<ClientIdMaybeArc>,
     /// true when the decrypted message resulted in an epoch change i.e. it was a commit
     ///
     /// Deprecated: this member will be removed in the future. Prefer using the `EpochObserver` interface.
@@ -109,7 +112,7 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
             message: from.app_msg,
             is_active: from.is_active,
             commit_delay: from.delay,
-            sender_client_id: from.sender_client_id.map(ClientId),
+            sender_client_id: from.sender_client_id.map(client_id_from_cc),
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.into(),
             crl_new_distribution_points: from.crl_new_distribution_points.into(),

@@ -9,8 +9,9 @@ use tls_codec::{Deserialize as _, Serialize as _};
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    Ciphersuite, Ciphersuites, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
+    Ciphersuite, Ciphersuites, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
     CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, NewCrlDistributionPoints, WelcomeBundle,
+    client_id::{AsCoreCryptoClientId as _, ClientIdMaybeArc, client_id_from_cc},
     conversation_id_vec,
 };
 
@@ -26,7 +27,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::mls_init]
     pub async fn mls_init(
         &self,
-        client_id: ClientId,
+        client_id: ClientIdMaybeArc,
         ciphersuites: Ciphersuites,
         nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<()> {
@@ -36,7 +37,7 @@ impl CoreCryptoContext {
             .map_err(CoreCryptoError::generic())?;
         self.inner
             .mls_init(
-                ClientIdentifier::Basic(client_id.0),
+                ClientIdentifier::Basic(client_id.as_cc_client_id()),
                 (&ciphersuites).into(),
                 nb_key_package,
             )
@@ -80,10 +81,15 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_client_ids]
-    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<ClientId>> {
+    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<ClientIdMaybeArc>> {
         let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self.inner.conversation(&conversation_id).await?;
-        let client_ids = conversation.get_client_ids().await.into_iter().map(ClientId).collect();
+        let client_ids = conversation
+            .get_client_ids()
+            .await
+            .into_iter()
+            .map(client_id_from_cc)
+            .collect();
         Ok(client_ids)
     }
 
@@ -214,9 +220,9 @@ impl CoreCryptoContext {
     pub async fn remove_clients_from_conversation(
         &self,
         conversation_id: &ConversationId,
-        clients: Vec<ClientId>,
+        clients: Vec<ClientIdMaybeArc>,
     ) -> CoreCryptoResult<()> {
-        let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.0).collect();
+        let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.as_cc_client_id()).collect();
         let conversation_id = conversation_id_vec!(conversation_id);
         let mut conversation = self.inner.conversation(&conversation_id).await?;
         conversation.remove_members(&clients).await.map_err(Into::into)

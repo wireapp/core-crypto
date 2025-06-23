@@ -18,6 +18,8 @@ use core_crypto::prelude::{HistorySecret, MlsCommitBundle};
 
 #[cfg(target_family = "wasm")]
 use crate::CoreCryptoError;
+#[cfg(not(target_family = "wasm"))]
+use crate::client_id::client_id_from_cc;
 use crate::{CommitBundle, CoreCrypto, CoreCryptoResult, HistorySecret as HistorySecretFfi};
 
 #[cfg(not(target_family = "wasm"))]
@@ -111,10 +113,10 @@ impl core_crypto::prelude::MlsTransport for MlsTransportShim {
         &self,
         secret: &HistorySecret,
     ) -> core_crypto::Result<core_crypto::MlsTransportData> {
-        let client_id = secret.client_id.clone();
+        let client_id = client_id_from_cc(secret.client_id.clone());
         let history_secret = rmp_serde::to_vec(&secret)
             .map(|secret| HistorySecretFfi {
-                client_id: client_id.into(),
+                client_id,
                 data: secret,
             })
             .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(e.to_string()))?;

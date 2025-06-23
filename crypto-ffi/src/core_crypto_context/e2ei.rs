@@ -1,6 +1,8 @@
 use crate::{
-    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CrlRegistration,
-    E2eiConversationState, E2eiEnrollment, NewCrlDistributionPoints, UserIdentities, WireIdentity, conversation_id_vec,
+    Ciphersuite, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CrlRegistration,
+    E2eiConversationState, E2eiEnrollment, NewCrlDistributionPoints, UserIdentities, WireIdentity,
+    client_id::{AsCoreCryptoClientId as _, ClientIdMaybeArc},
+    conversation_id_vec,
 };
 use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::transaction_context::Error as TransactionError;
@@ -216,9 +218,12 @@ impl CoreCryptoContext {
     pub async fn get_device_identities(
         &self,
         conversation_id: &ConversationId,
-        device_ids: Vec<ClientId>,
+        device_ids: Vec<ClientIdMaybeArc>,
     ) -> CoreCryptoResult<Vec<WireIdentity>> {
-        let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
+        let device_ids = device_ids
+            .into_iter()
+            .map(|cid| cid.as_cc_client_id())
+            .collect::<Vec<_>>();
         let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self.inner.conversation(&conversation_id).await?;
         let wire_ids = conversation.get_device_identities(device_ids.as_slice()).await?;
