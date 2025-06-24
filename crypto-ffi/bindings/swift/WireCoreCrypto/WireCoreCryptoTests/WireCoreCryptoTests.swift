@@ -439,6 +439,56 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertEqual(epochRecorder.epochs, [Epoch(conversationId: conversationId, epoch: 1)])
     }
 
+    func testRegisterHistoryObserverShouldNotifyObserverOnNewSecret() async throws {
+        struct Secret {
+            let conversationId: Data
+            let clientId: ClientId
+        }
+
+        class HistoryRecoder: HistoryObserver {
+            var secrets: [Secret] = []
+            func historyClientCreated(conversationId: Data, secret: HistorySecret) async throws {
+                secrets.append(Secret(conversationId: conversationId, clientId: secret.clientId))
+            }
+        }
+
+        let clientId = "client1".data(using: .utf8)!
+        let conversationId = "conversation1".data(using: .utf8)!
+        let ciphersuite: Ciphersuite = 2
+        let configuration = ConversationConfiguration(
+            ciphersuite: ciphersuite,
+            externalSenders: [],
+            custom: CustomConfiguration(
+                keyRotationSpan: nil,
+                wirePolicy: nil
+            )
+        )
+
+        // set up the conversation in one transaction
+        let coreCrypto = try await createCoreCrypto()
+        try await coreCrypto.transaction {
+            try await $0.mlsInit(
+                clientId: clientId, ciphersuites: [ciphersuite], nbKeyPackage: nil)
+            try await $0.createConversation(
+                conversationId: conversationId,
+                creatorCredentialType: .basic,
+                config: configuration
+            )
+        }
+
+        // register the observer
+        let historyRecorder = HistoryRecoder()
+        try await coreCrypto.registerHistoryObserver(historyRecorder)
+
+        // in another transaction, enable history sharing
+        try await coreCrypto.transaction {
+            try await $0.enableHistorySharing(conversationId: conversationId)
+        }
+
+        XCTAssertEqual(historyRecorder.secrets.count, 1)
+        XCTAssertEqual(historyRecorder.secrets.first!.conversationId, conversationId)
+    }
+
     // MARK - helpers
 
     class MockMlsTransport: MlsTransport {
