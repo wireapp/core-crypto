@@ -282,7 +282,11 @@ describe("end to end identity", () => {
                 const identities = await cc.transaction(async (ctx) => {
                     return await ctx.getDeviceIdentities(
                         encoder.encode(conversationId),
-                        [new window.ccModule.ClientId(encoder.encode(clientName))]
+                        [
+                            new window.ccModule.ClientId(
+                                encoder.encode(clientName)
+                            ),
+                        ]
                     );
                 });
 

@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-export { Ciphersuite } from "./Ciphersuite";
 export type { ConversationConfiguration } from "./ConversationConfiguration";
 export { CoreCryptoError, type CoreCryptoRichError } from "./CoreCryptoError";
 
@@ -71,6 +70,7 @@ export type { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus";
 
 export {
     AcmeChallenge,
+    Ciphersuite,
     ClientId,
     CustomConfiguration,
     DatabaseKey,

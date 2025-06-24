@@ -212,11 +212,11 @@ export type MlsTransportResponse =
     | "success"
     | "retry"
     | {
-        /**
-         * The message was rejected by the delivery service and there's no recovery.
-         */
-        abort: { reason: string };
-    };
+          /**
+           * The message was rejected by the delivery service and there's no recovery.
+           */
+          abort: { reason: string };
+      };
 
 function mapTransportResponseToFfi(
     response: MlsTransportResponse
