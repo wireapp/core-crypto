@@ -130,15 +130,6 @@ value class MlsMessage(override val value: ByteArray) : Uniffi {
 /** Construct an MLS message */
 fun ByteArray.toMlsMessage() = MlsMessage(this)
 
-/** AVS secret */
-@JvmInline
-value class AvsSecret(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
-}
-
-/** Construct an AVS secret */
-fun ByteArray.toAvsSecret() = AvsSecret(this)
-
 /** Plaintext message */
 @JvmInline
 value class PlaintextMessage(override val value: ByteArray) : Uniffi {

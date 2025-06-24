@@ -278,8 +278,8 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param keyLength the length of the key to be derived. If the value is higher than the bounds
      *   of `u16` or the context hash * 255, an error will be returned
      */
-    suspend fun deriveAvsSecret(id: MLSGroupId, keyLength: UInt): AvsSecret {
-        return wrapException { cc.exportSecretKey(id.lower(), keyLength).toAvsSecret() }
+    suspend fun deriveAvsSecret(id: MLSGroupId, keyLength: UInt): com.wire.crypto.uniffi.SecretKey {
+        return wrapException { cc.exportSecretKey(id.lower(), keyLength) }
     }
 
     /**
