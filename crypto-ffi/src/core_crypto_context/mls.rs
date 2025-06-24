@@ -10,8 +10,8 @@ use wasm_bindgen::prelude::*;
 
 use crate::{
     Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
-    CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, NewCrlDistributionPoints, WelcomeBundle,
-    ciphersuite::CiphersuitesMaybeArc, client_id::ClientIdMaybeArc, conversation_id_vec,
+    CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle,
+    ciphersuite::CiphersuitesMaybeArc, client_id::ClientIdMaybeArc, conversation_id_vec, crl::NewCrlDistributionPoints,
 };
 
 #[cfg(not(target_family = "wasm"))]

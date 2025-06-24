@@ -41,7 +41,7 @@ pub use core_crypto::{
 pub(crate) use core_crypto::{conversation::ConversationId, e2ei::identities::UserIdentities};
 pub use core_crypto_context::CoreCryptoContext;
 pub use credential_type::CredentialType;
-pub use crl::{CrlRegistration, NewCrlDistributionPoints};
+pub use crl::CrlRegistration;
 pub use database_key::{DatabaseKey, migrate_db_key_type_to_bytes};
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 pub use e2ei::{
