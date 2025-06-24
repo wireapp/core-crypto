@@ -63,9 +63,10 @@ impl core_crypto::mls::HistoryObserver for ObserverShim {
         conversation_id: ConversationId,
         secret: &core_crypto::prelude::HistorySecret,
     ) {
-        if let Err(err) = HistorySecret::try_from(secret)
-            .map(async |secret| self.0.history_client_created(conversation_id.clone(), secret).await)
-        {
+        let secret = HistorySecret::try_from(secret)
+            .expect("conversion from the HistorySecret rust type to the FFI type should work");
+
+        if let Err(err) = self.0.history_client_created(conversation_id.clone(), secret).await {
             // we don't _care_ if an error is thrown by the notification function, per se,
             // but this would probably be useful information for downstream debugging efforts
             log::warn!(
@@ -168,19 +169,21 @@ impl core_crypto::mls::HistoryObserver for HistoryObserver {
         conversation_id: ConversationId,
         secret: &core_crypto::prelude::HistorySecret,
     ) {
-        if let Err(err) = HistorySecret::try_from(secret).map(async |secret| {
-            self.history_client_created(conversation_id.clone(), secret.into())
-                .await
-        }) {
+        let secret = HistorySecret::try_from(secret)
+            .expect("conversion from the HistorySecret rust type to the FFI type should work");
+
+        if let Err(err) = self
+            .history_client_created(conversation_id.clone(), secret.into())
+            .await
+        {
             // we don't _care_ if an error is thrown by the notification function, per se,
             // but this would probably be useful information for downstream debugging efforts
             log::warn!(
                 conversation_id = Obfuscated::new(&conversation_id),
-                err = LoggableJsValue(err.into());
+                err = LoggableJsValue(err);
                 "caught an error when attempting to notify the history observer of a new history client"
             );
         }
-        todo!()
     }
 }
 
