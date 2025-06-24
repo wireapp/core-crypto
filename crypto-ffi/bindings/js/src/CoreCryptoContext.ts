@@ -1,7 +1,7 @@
 import {
     ArrayOfByteArray,
-    Ciphersuite as CiphersuiteFfi,
-    Ciphersuites as CiphersuitesFfi,
+    Ciphersuite,
+    Ciphersuites,
     ClientId,
     CoreCryptoContext as CoreCryptoContextFfi,
     CustomConfiguration,
@@ -29,7 +29,6 @@ import {
 
 import { type ProteusAutoPrekeyBundle } from "./CoreCryptoProteus";
 import { safeBigintToNumber } from "./Conversions";
-import { Ciphersuite } from "./Ciphersuite";
 import {
     type ConversationConfiguration,
     conversationConfigurationToFfi,
@@ -80,9 +79,7 @@ export class CoreCryptoContext {
         ciphersuites: Ciphersuite[],
         nbKeyPackage?: number
     ): Promise<void> {
-        const cs = new CiphersuitesFfi(
-            Uint16Array.from(ciphersuites.map((cs) => cs.valueOf()))
-        );
+        const cs = new Ciphersuites(ciphersuites);
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.mls_init(clientId, cs, nbKeyPackage)
         );
@@ -156,7 +153,7 @@ export class CoreCryptoContext {
         const cs = await CoreCryptoError.asyncMapErr(
             this.#ctx.conversation_ciphersuite(conversationId)
         );
-        return cs.as_u16();
+        return cs;
     }
 
     /**
@@ -273,9 +270,8 @@ export class CoreCryptoContext {
         ciphersuite: Ciphersuite,
         credentialType: CredentialType
     ): Promise<Uint8Array> {
-        const cs = new CiphersuiteFfi(ciphersuite);
         return await CoreCryptoError.asyncMapErr(
-            this.#ctx.client_public_key(cs, credentialType)
+            this.#ctx.client_public_key(ciphersuite, credentialType)
         );
     }
 
@@ -289,9 +285,11 @@ export class CoreCryptoContext {
         ciphersuite: Ciphersuite,
         credentialType: CredentialType
     ): Promise<number> {
-        const cs = new CiphersuiteFfi(ciphersuite);
         const kpCount = await CoreCryptoError.asyncMapErr(
-            this.#ctx.client_valid_keypackages_count(cs, credentialType)
+            this.#ctx.client_valid_keypackages_count(
+                ciphersuite,
+                credentialType
+            )
         );
         return safeBigintToNumber(kpCount);
     }
@@ -309,9 +307,12 @@ export class CoreCryptoContext {
         credentialType: CredentialType,
         amountRequested: number
     ): Promise<Array<Uint8Array>> {
-        const cs = new CiphersuiteFfi(ciphersuite);
         const kps = await CoreCryptoError.asyncMapErr(
-            this.#ctx.client_keypackages(cs, credentialType, amountRequested)
+            this.#ctx.client_keypackages(
+                ciphersuite,
+                credentialType,
+                amountRequested
+            )
         );
         return kps.as_arrays();
     }
@@ -349,7 +350,10 @@ export class CoreCryptoContext {
         clientIds: ClientId[]
     ): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
-            this.#ctx.remove_clients_from_conversation(conversationId, clientIds)
+            this.#ctx.remove_clients_from_conversation(
+                conversationId,
+                clientIds
+            )
         );
     }
 
@@ -737,7 +741,6 @@ export class CoreCryptoContext {
         ciphersuite: Ciphersuite,
         team?: string
     ): Promise<E2eiEnrollment> {
-        const cs = new CiphersuiteFfi(ciphersuite);
         const e2ei = await CoreCryptoError.asyncMapErr(
             this.#ctx.e2ei_new_enrollment(
                 clientId,
@@ -745,7 +748,7 @@ export class CoreCryptoContext {
                 handle,
                 team,
                 expirySec,
-                cs
+                ciphersuite
             )
         );
         return new E2eiEnrollment(e2ei);
@@ -769,14 +772,13 @@ export class CoreCryptoContext {
         ciphersuite: Ciphersuite,
         team?: string
     ): Promise<E2eiEnrollment> {
-        const cs = new CiphersuiteFfi(ciphersuite);
         const e2ei = await CoreCryptoError.asyncMapErr(
             this.#ctx.e2ei_new_activation_enrollment(
                 displayName,
                 handle,
                 team,
                 expirySec,
-                cs
+                ciphersuite
             )
         );
         return new E2eiEnrollment(e2ei);
@@ -803,14 +805,13 @@ export class CoreCryptoContext {
         handle?: string,
         team?: string
     ): Promise<E2eiEnrollment> {
-        const cs = new CiphersuiteFfi(ciphersuite);
         const e2ei = await CoreCryptoError.asyncMapErr(
             this.#ctx.e2ei_new_rotate_enrollment(
                 displayName,
                 handle,
                 team,
                 expirySec,
-                cs
+                ciphersuite
             )
         );
         return new E2eiEnrollment(e2ei);
@@ -943,10 +944,9 @@ export class CoreCryptoContext {
      * saved x509 credential and the provided signature scheme.
      * @param cipherSuite
      */
-    async deleteStaleKeyPackages(cipherSuite: Ciphersuite): Promise<void> {
-        const cs = new CiphersuiteFfi(cipherSuite);
+    async deleteStaleKeyPackages(ciphersuite: Ciphersuite): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
-            this.#ctx.delete_stale_key_packages(cs)
+            this.#ctx.delete_stale_key_packages(ciphersuite)
         );
     }
 
@@ -1002,8 +1002,9 @@ export class CoreCryptoContext {
      * @returns true if end-to-end identity is enabled for the given ciphersuite
      */
     async e2eiIsEnabled(ciphersuite: Ciphersuite): Promise<boolean> {
-        const cs = new CiphersuiteFfi(ciphersuite);
-        return await CoreCryptoError.asyncMapErr(this.#ctx.e2ei_is_enabled(cs));
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.e2ei_is_enabled(ciphersuite)
+        );
     }
 
     /**

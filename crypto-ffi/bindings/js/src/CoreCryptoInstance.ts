@@ -23,8 +23,8 @@ export {
 
 import {
     build_metadata,
-    Ciphersuite as CiphersuiteFfi,
-    Ciphersuites as CiphersuitesFfi,
+    Ciphersuite,
+    Ciphersuites,
     ClientId,
     CoreCrypto as CoreCryptoFfi,
     CoreCryptoLogger as CoreCryptoLoggerFfi,
@@ -48,7 +48,6 @@ import {
 import { CoreCryptoContext } from "./CoreCryptoContext";
 
 import { safeBigintToNumber } from "./Conversions";
-import { Ciphersuite } from "./Ciphersuite";
 
 /**
  * Params for CoreCrypto deferred initialization
@@ -272,9 +271,7 @@ export class CoreCrypto {
         entropySeed,
         nbKeyPackage,
     }: CoreCryptoParams): Promise<CoreCrypto> {
-        const cs = new CiphersuitesFfi(
-            Uint16Array.from(ciphersuites.map((cs) => cs.valueOf()))
-        );
+        const cs = new Ciphersuites(ciphersuites);
         const cc = await CoreCryptoError.asyncMapErr(
             CoreCryptoFfi.async_new(
                 databaseName,
@@ -460,7 +457,7 @@ export class CoreCrypto {
         const cs = await CoreCryptoError.asyncMapErr(
             this.#cc.conversation_ciphersuite(conversationId)
         );
-        return cs.as_u16();
+        return cs;
     }
 
     /**
@@ -474,9 +471,8 @@ export class CoreCrypto {
         ciphersuite: Ciphersuite,
         credentialType: CredentialType
     ): Promise<Uint8Array> {
-        const cs = new CiphersuiteFfi(ciphersuite);
         return await CoreCryptoError.asyncMapErr(
-            this.#cc.client_public_key(cs, credentialType)
+            this.#cc.client_public_key(ciphersuite, credentialType)
         );
     }
 
@@ -654,8 +650,9 @@ export class CoreCrypto {
      * @returns true if end-to-end identity is enabled for the given ciphersuite
      */
     async e2eiIsEnabled(ciphersuite: Ciphersuite): Promise<boolean> {
-        const cs = new CiphersuiteFfi(ciphersuite);
-        return await CoreCryptoError.asyncMapErr(this.#cc.e2ei_is_enabled(cs));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.e2ei_is_enabled(ciphersuite)
+        );
     }
 
     /**
