@@ -42,6 +42,18 @@
   Affected platforms: Kotlin
 
   Migration: call `.toByteArray()` on the input.
+- `CoreCryptoContext.exportSecretKey` (aka `CoreCryptoContext.deriveAvsSecret`) now returns a newtype
+
+  Affected platforms: Web, Android, iOS
+
+  Migration: call `.copyBytes()` on the newtype to get access to the raw byte vector.
+
+  In the past, Android (but only Android) had a newtype; other clients needed to work with a raw byte vector.
+  We've decided to expand the use of newtypes around byte vectors in the FFI interface. This has several benefits:
+
+  - Increased consistency between client FFI libraries
+  - Reduced thickness of the high-level FFI wrappers
+  - In some cases (though not this one), we can avoid bidirectional data transfers across the FFI boundary, and just move pointers around instead.
 
 ### Features
 
