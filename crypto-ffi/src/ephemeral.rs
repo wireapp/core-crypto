@@ -1,8 +1,10 @@
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{ClientId, CoreCrypto, CoreCryptoError, CoreCryptoResult};
-use core_crypto::prelude::{CoreCrypto as CoreCryptoFfi, HistorySecret as HistorySecretFfi};
+#[cfg(target_family = "wasm")]
+use crate::client_id::FfiClientId;
+use crate::{CoreCrypto, CoreCryptoError, CoreCryptoResult};
+use core_crypto::prelude::{CoreCrypto as CoreCryptoFfi, HistorySecret as CoreCryptoHistorySecret};
 
 /// A `HistorySecret` encodes sufficient client state that it can be used to instantiate an
 /// ephemeral client.
@@ -14,7 +16,7 @@ use core_crypto::prelude::{CoreCrypto as CoreCryptoFfi, HistorySecret as History
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct HistorySecret {
-    pub client_id: ClientId,
+    pub client_id: Vec<u8>,
     pub data: Vec<u8>,
 }
 
@@ -22,18 +24,18 @@ pub struct HistorySecret {
 #[wasm_bindgen]
 impl HistorySecret {
     #[wasm_bindgen(constructor)]
-    pub fn new(client_id: ClientId, data: &[u8]) -> Result<HistorySecret, wasm_bindgen::JsError> {
+    pub fn new(client_id: FfiClientId, data: &[u8]) -> Result<HistorySecret, wasm_bindgen::JsError> {
         Ok(HistorySecret {
-            client_id,
+            client_id: client_id.into(),
             data: data.into(),
         })
     }
 }
 
-impl TryFrom<&HistorySecretFfi> for HistorySecret {
+impl TryFrom<&CoreCryptoHistorySecret> for HistorySecret {
     type Error = CoreCryptoError;
 
-    fn try_from(value: &HistorySecretFfi) -> Result<Self, Self::Error> {
+    fn try_from(value: &CoreCryptoHistorySecret) -> Result<Self, Self::Error> {
         let client_id = value.client_id.clone();
         rmp_serde::to_vec(&value)
             .map_err(CoreCryptoError::generic())
@@ -45,7 +47,8 @@ impl TryFrom<&HistorySecretFfi> for HistorySecret {
 }
 
 async fn history_client_inner(history_secret: HistorySecret) -> CoreCryptoResult<CoreCrypto> {
-    let secret = rmp_serde::from_slice::<HistorySecretFfi>(&history_secret.data).map_err(CoreCryptoError::generic())?;
+    let secret =
+        rmp_serde::from_slice::<CoreCryptoHistorySecret>(&history_secret.data).map_err(CoreCryptoError::generic())?;
     CoreCryptoFfi::history_client(secret)
         .await
         .map(|inner| CoreCrypto { inner })
