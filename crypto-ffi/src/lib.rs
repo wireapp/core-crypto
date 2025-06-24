@@ -2,6 +2,7 @@
 uniffi::setup_scaffolding!("core_crypto_ffi");
 
 mod bundles;
+mod bytes_wrapper;
 mod ciphersuite;
 mod client_id;
 mod configuration;
