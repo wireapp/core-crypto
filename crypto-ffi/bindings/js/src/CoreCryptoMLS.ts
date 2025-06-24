@@ -201,7 +201,7 @@ export function bufferedDecryptedMessageFromFfi(
         senderClientId: m.senderClientId,
         hasEpochChanged: m.hasEpochChanged,
         identity: m.identity,
-        crlNewDistributionPoints: m.crlNewDistributionPoints.as_strings(),
+        crlNewDistributionPoints: m.crlNewDistributionPoints,
     };
 }
 
