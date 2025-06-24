@@ -4,7 +4,7 @@
     "": {
       "name": "@wireapp/core-crypto",
       "devDependencies": {
-        "@types/bun": "^1.2.15",
+        "@types/bun": "^1.2.16",
         "@types/mocha": "^10.0.10",
         "@wdio/browser-runner": "^9.15.0",
         "@wdio/cli": "^9.15.0",
@@ -13,14 +13,14 @@
         "@wdio/spec-reporter": "^9.15.0",
         "@wdio/static-server-service": "^9.15.0",
         "dts-bundle-generator": "^9.5.1",
-        "eslint": "^9.28.0",
+        "eslint": "^9.29.0",
         "eslint-config-prettier": "^10.1.5",
-        "eslint-plugin-prettier": "^5.4.1",
+        "eslint-plugin-prettier": "^5.5.0",
         "eslint-plugin-wdio": "^9.9.1",
         "prettier": "^3.5.3",
         "ts-loader": "^9.5.2",
         "typescript": "^5.8.3",
-        "typescript-eslint": "^8.33.1",
+        "typescript-eslint": "^8.34.1",
       },
     },
   },
@@ -715,7 +715,7 @@
 
     "eslint-plugin-prettier": ["eslint-plugin-prettier@5.5.0", "", { "dependencies": { "prettier-linter-helpers": "^1.0.0", "synckit": "^0.11.7" }, "peerDependencies": { "@types/eslint": ">=8.0.0", "eslint": ">=8.0.0", "eslint-config-prettier": ">= 7.0.0 <10.0.0 || >=10.1.0", "prettier": ">=3.0.0" }, "optionalPeers": ["@types/eslint", "eslint-config-prettier"] }, "sha512-8qsOYwkkGrahrgoUv76NZi23koqXOGiiEzXMrT8Q7VcYaUISR+5MorIUxfWqYXN0fN/31WbSrxCxFkVQ43wwrA=="],
 
-    "eslint-plugin-wdio": ["eslint-plugin-wdio@9.9.1", "", {}, "sha512-RCg2VKmO95z5ZU1C7iPkJPaTI6VR8zPQvlC0XDFZTq4o0CIyXuDNwiCYysj+D1IFQ/cCMrdbpYkKkQm379nuYQ=="],
+    "eslint-plugin-wdio": ["eslint-plugin-wdio@9.16.2", "", {}, "sha512-qkqsPgxN70OnUPWMjmzJbSbvm2+Q087JIGss53/OFI4Y46xKlV5VLhLiYealaAibAiXmnfWKd0tERjZAzVL87A=="],
 
     "eslint-scope": ["eslint-scope@8.4.0", "", { "dependencies": { "esrecurse": "^4.3.0", "estraverse": "^5.2.0" } }, "sha512-sNXOfKCn74rt8RICKMvJS7XKV/Xk9kA7DyJr8mJik3S7Cwgy3qlkkmyS2uQB3jiJg6VNdZd/pDBJu0nvG2NlTg=="],
 
