@@ -133,6 +133,20 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
     }
 
     /**
+     * Enable history sharing by generating a history client and adding it to the conversation.
+     *
+     * @param id conversation identifier
+     */
+    suspend fun enableHistorySharing(id: MLSGroupId) = wrapException { cc.enableHistorySharing(id.lower()) }
+
+    /**
+     * Disable history sharing by removing history clients from the conversation.
+     *
+     * @param id conversation identifier
+     */
+    suspend fun disableHistorySharing(id: MLSGroupId) = wrapException { cc.disableHistorySharing(id.lower()) }
+
+    /**
      * Creates a new conversation with the current client being the sole member. You will want to
      * use [addMember] afterward to add clients to this conversation.
      *

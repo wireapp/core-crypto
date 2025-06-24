@@ -407,6 +407,71 @@ class MLSTest {
             )
         }
     }
+
+    @Test
+    fun registerHistoryObserver_should_notify_observer_on_new_secret(): TestResult {
+        val scope = TestScope()
+        return scope.runTest {
+            // Set up the observer. this just keeps a list of all observations.
+            data class HistorySecretEvent(val conversationId: ByteArray, val id: ClientId)
+
+            class Observer : HistoryObserver {
+                val observedEvents = emptyList<HistorySecretEvent>().toMutableList()
+
+                override suspend fun historyClientCreated(
+                    conversationId: ByteArray,
+                    secret: HistorySecret
+                ) {
+                    observedEvents.add(HistorySecretEvent(conversationId, secret.clientId))
+                }
+            }
+            val bobObserver = Observer()
+            val aliceObserver = Observer()
+
+            // Set up the conversation in one transaction
+            val (alice, bob) = newClients(ALICE_ID, BOB_ID)
+            val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
+            bob.transaction {
+                it.createConversation(id)
+                it.addMember(id, listOf(aliceKp))
+            }
+
+            // Alice joins the group
+            val welcome = mockDeliveryService.getLatestWelcome()
+            val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
+
+            // Register observers
+            bob.registerHistoryObserver(scope, bobObserver)
+            alice.registerHistoryObserver(scope, aliceObserver)
+
+            // History sharing is disabled by default
+            assertFalse(bob.isHistorySharingEnabled(id))
+
+            // In another transaction, enable history sharing
+            bob.transaction { it.enableHistorySharing(id) }
+
+            // Before Alice received the commit, history sharing is only enabled for Bob
+            assertTrue(bob.isHistorySharingEnabled(id))
+            assertFalse(alice.isHistorySharingEnabled(id))
+
+            val commit = mockDeliveryService.getLatestCommit()
+            alice.transaction { it.decryptMessage(groupId, commit) }
+            assertTrue(alice.isHistorySharingEnabled(id))
+
+            // Bob's observer must have observed the history secret changes, Alice's should not have observed anything
+            assertEquals(1, bobObserver.observedEvents.size, "bob triggered exactly 1 history secret changes and must have observed that")
+            assertEquals(
+                0,
+                aliceObserver.observedEvents.size,
+                "alice did not trigger any history secret changes and must not have observed that"
+            )
+            val expected = id.toString()
+            assertTrue(
+                bobObserver.observedEvents.all { it.conversationId.toGroupId().toString() == expected },
+                "the events observed by bob must be for this conversation"
+            )
+        }
+    }
 }
 
 fun newClients(vararg clientIds: String) = runBlocking {

@@ -275,6 +275,14 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
     }
 
     /**
+     * See [CoreCryptoContext.isHistorySharingEnabled]
+     *
+     * @param id conversation identifier
+     * @return true if history sharing is enabled
+     */
+    suspend fun isHistorySharingEnabled(id: MLSGroupId): Boolean = wrapException { cc.isHistorySharingEnabled(id.lower()) }
+
+    /**
      * Closes this [CoreCrypto] instance and deallocates all loaded resources.
      *
      * **CAUTION**: This {@link CoreCrypto} instance won't be usable after a call to this method, but there's no way to express this requirement in Kotlin, so you'll get errors instead!
