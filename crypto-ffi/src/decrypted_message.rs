@@ -6,7 +6,8 @@ use core_crypto::prelude::{MlsBufferedConversationDecryptMessage, MlsConversatio
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    ClientId, CoreCryptoError, CoreCryptoResult, NewCrlDistributionPoints, WireIdentity, client_id::ClientIdMaybeArc,
+    ClientId, CoreCryptoError, CoreCryptoResult, WireIdentity, client_id::ClientIdMaybeArc,
+    crl::NewCrlDistributionPoints,
 };
 
 /// See [core_crypto::prelude::MlsConversationDecryptMessage]
