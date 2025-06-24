@@ -2,6 +2,8 @@ use core_crypto::prelude::ConversationId;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
+use crate::crl::NewCrlDistributionPoints;
+
 /// see [core_crypto::prelude::WelcomeBundle]
 #[derive(Debug)]
 #[cfg_attr(
@@ -16,7 +18,7 @@ pub struct WelcomeBundle {
     pub id: ConversationId,
     /// New CRL Distribution of members of this group
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = crlNewDistributionPoints))]
-    pub crl_new_distribution_points: Option<Vec<String>>,
+    pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
 impl From<core_crypto::prelude::WelcomeBundle> for WelcomeBundle {
