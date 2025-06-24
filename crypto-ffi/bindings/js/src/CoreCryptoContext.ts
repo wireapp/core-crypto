@@ -332,10 +332,9 @@ export class CoreCryptoContext {
         keyPackages: Uint8Array[]
     ): Promise<NewCrlDistributionPoints> {
         const kps = new ArrayOfByteArray(keyPackages);
-        const dps = await CoreCryptoError.asyncMapErr(
+        return await CoreCryptoError.asyncMapErr(
             this.#ctx.add_clients_to_conversation(conversationId, kps)
         );
-        return dps.as_strings();
     }
 
     /**
@@ -831,12 +830,11 @@ export class CoreCryptoContext {
         certificateChain: string,
         nbKeyPackage?: number
     ): Promise<NewCrlDistributionPoints> {
-        const dps = await this.#ctx.e2ei_mls_init_only(
+        return await this.#ctx.e2ei_mls_init_only(
             enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity,
             certificateChain,
             nbKeyPackage
         );
-        return dps.as_strings();
     }
 
     /**
@@ -869,8 +867,7 @@ export class CoreCryptoContext {
     async e2eiRegisterIntermediateCA(
         certPEM: string
     ): Promise<NewCrlDistributionPoints> {
-        const dps = await this.#ctx.e2ei_register_intermediate_ca(certPEM);
-        return dps.as_strings();
+        return await this.#ctx.e2ei_register_intermediate_ca(certPEM);
     }
 
     /**
@@ -930,13 +927,12 @@ export class CoreCryptoContext {
         enrollment: E2eiEnrollment,
         certificateChain: string
     ): Promise<NewCrlDistributionPoints> {
-        const dps = await CoreCryptoError.asyncMapErr(
+        return await CoreCryptoError.asyncMapErr(
             this.#ctx.save_x509_credential(
                 enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity,
                 certificateChain
             )
         );
-        return dps.as_strings();
     }
 
     /**
