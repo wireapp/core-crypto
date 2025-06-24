@@ -1,5 +1,8 @@
 package com.wire.crypto
 
+import com.wire.crypto.uniffi.Ciphersuite as CiphersuiteFfi
+import com.wire.crypto.uniffi.Ciphersuites as CiphersuitesFfi
+
 /** Ciphersuites */
 @JvmInline
 value class Ciphersuites(private val value: Set<Ciphersuite>) {
@@ -8,7 +11,7 @@ value class Ciphersuites(private val value: Set<Ciphersuite>) {
         val DEFAULT = Ciphersuites(setOf(Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519))
     }
 
-    internal fun lower() = value.map { it.lower() }
+    internal fun lower() = CiphersuitesFfi(value.map { it.lower() })
 }
 
 /** Ciphersuite */
@@ -40,7 +43,15 @@ enum class Ciphersuite {
         val DEFAULT = MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     }
 
-    internal fun lower() = (ordinal + 1).toUShort()
+    internal fun lower() = when (this) {
+        MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 -> CiphersuiteFfi.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
+        MLS_128_DHKEMP256_AES128GCM_SHA256_P256 -> CiphersuiteFfi.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+        MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 -> CiphersuiteFfi.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519
+        MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 -> CiphersuiteFfi.MLS_256_DHKEMX448_AES256GCM_SHA512_ED448
+        MLS_256_DHKEMP521_AES256GCM_SHA512_P521 -> CiphersuiteFfi.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
+        MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 -> CiphersuiteFfi.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_ED448
+        MLS_256_DHKEMP384_AES256GCM_SHA384_P384 -> CiphersuiteFfi.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+    }
 }
 
 /** Credential type */
