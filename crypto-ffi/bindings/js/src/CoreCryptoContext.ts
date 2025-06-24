@@ -410,6 +410,24 @@ export class CoreCryptoContext {
     }
 
     /**
+     * Enable history sharing by generating a history client and adding it to the conversation.
+     */
+    async enableHistorySharing(conversationId: ConversationId): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.enable_history_sharing(conversationId)
+        );
+    }
+
+    /**
+     * Disable history sharing by removing histroy clients from the conversation.
+     */
+    async disableHistorySharing(conversationId: ConversationId): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.disable_history_sharing(conversationId)
+        );
+    }
+
+    /**
      * Derives a new key from the group
      *
      * @param conversationId - The group's ID

@@ -141,7 +141,7 @@ class HistoryObserverShim {
 }
 
 function historySecretIntoFfi(secret: HistorySecret): HistorySecretFfi {
-    return new HistorySecretFfi(new ClientIdFfi(secret.clientId), secret.data);
+    return new HistorySecretFfi(secret.clientId, secret.data);
 }
 
 /**
@@ -496,6 +496,22 @@ export class CoreCrypto {
     ): Promise<Uint8Array> {
         return await CoreCryptoError.asyncMapErr(
             this.#cc.export_secret_key(conversationId, keyLength)
+        );
+    }
+
+    /**
+     * Check if history sharing is enabled, i.e., if any of the conversation members have a {@link ClientId} starting
+     * with the history client id prefix.
+     *
+     * @param conversationId - The group's ID
+     *
+     * @returns Whether history sharing is enabled
+     */
+    async isHistorySharingEnabled(
+        conversationId: ConversationId
+    ): Promise<boolean> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.is_history_sharing_enabled(conversationId)
         );
     }
 
