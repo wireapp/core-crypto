@@ -31,11 +31,18 @@ pub enum MlsTransportResponse {
     Abort { reason: String },
 }
 
+#[cfg(target_family = "wasm")]
+#[derive(Debug, derive_more::From, derive_more::Into, serde::Serialize, serde::Deserialize)]
+#[wasm_bindgen(getter_with_clone)]
+pub struct MlsTransportData {
+    #[wasm_bindgen(readonly)]
+    pub data: Vec<u8>,
+}
+
 // TODO: We derive Constructor here only because we need to construct an instance in interop.
 // Remove it once we drop the FFI client from interop.
-#[derive(Debug, derive_more::From, derive_more::Into)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(not(target_family = "wasm"), derive(derive_more::Deref, derive_more::Constructor))]
+#[cfg(not(target_family = "wasm"))]
+#[derive(Debug, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::Constructor)]
 pub struct MlsTransportData(core_crypto::MlsTransportData);
 
 #[cfg(not(target_family = "wasm"))]
@@ -119,8 +126,8 @@ impl core_crypto::prelude::MlsTransport for MlsTransportShim {
 #[wasm_bindgen]
 impl MlsTransportData {
     #[wasm_bindgen(constructor)]
-    pub fn new(buf: &[u8]) -> Result<MlsTransportData, JsError> {
-        Ok(MlsTransportData(core_crypto::MlsTransportData(buf.into())))
+    pub fn new(buf: &[u8]) -> MlsTransportData {
+        MlsTransportData { data: buf.into() }
     }
 }
 
@@ -361,7 +368,7 @@ impl core_crypto::MlsTransport for MlsTransport {
                 ))
             })?;
 
-        Ok(response.into())
+        Ok(core_crypto::MlsTransportData::from(response.data))
     }
 }
 
