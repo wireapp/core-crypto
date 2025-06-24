@@ -1,81 +1,165 @@
+//! Ciphersuites in bindings
+//!
+//! Both wasm-bindgen and uniffi support emitting enums, as long as they directly implement the enum;
+//! it doesn't work on newtypes around external enums. We therefore redefine the ciphersuites enum
+//! here with appropriate annotations such that it gets exported to all relevant bindings.
+
+use std::collections::HashSet;
+
 use core_crypto::prelude::{CiphersuiteName, MlsCiphersuite};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
 use crate::{CoreCryptoError, CoreCryptoResult};
 
-#[derive(Debug, Clone, Copy, derive_more::From, derive_more::Into)]
+/// MLS ciphersuites.
+#[allow(non_camel_case_types)]
+#[allow(clippy::upper_case_acronyms)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::TryFrom)]
+#[try_from(repr)]
+#[repr(u16)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
-pub struct Ciphersuite(CiphersuiteName);
+#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
+pub enum Ciphersuite {
+    /// DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
+    #[default]
+    MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 = 0x0001,
 
-#[cfg(not(target_family = "wasm"))]
-uniffi::custom_type!(Ciphersuite, u16, {
-    lower: |ciphersuite| (&ciphersuite.0).into(),
-    try_lift: |val| Ciphersuite::new(val).map_err(Into::into),
-});
+    /// DH KEM P256 | AES-GCM 128 | SHA2-256 | EcDSA P256
+    MLS_128_DHKEMP256_AES128GCM_SHA256_P256 = 0x0002,
 
-impl From<MlsCiphersuite> for Ciphersuite {
-    fn from(value: MlsCiphersuite) -> Self {
-        Self(value.into())
+    /// DH KEM x25519 | Chacha20Poly1305 | SHA2-256 | Ed25519
+    MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 = 0x0003,
+
+    /// DH KEM x448 | AES-GCM 256 | SHA2-512 | Ed448
+    MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 = 0x0004,
+
+    /// DH KEM P521 | AES-GCM 256 | SHA2-512 | EcDSA P521
+    MLS_256_DHKEMP521_AES256GCM_SHA512_P521 = 0x0005,
+
+    /// DH KEM x448 | Chacha20Poly1305 | SHA2-512 | Ed448
+    MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 = 0x0006,
+
+    /// DH KEM P384 | AES-GCM 256 | SHA2-384 | EcDSA P384
+    MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
+}
+
+impl From<Ciphersuite> for CiphersuiteName {
+    #[inline]
+    fn from(value: Ciphersuite) -> Self {
+        (value as u16)
+            .try_into()
+            .expect("ffi Ciphersuite is a subset of mls Ciphersuite")
+    }
+}
+
+impl From<CiphersuiteName> for Ciphersuite {
+    #[inline]
+    fn from(value: CiphersuiteName) -> Self {
+        (value as u16)
+            .try_into()
+            .expect("mls Ciphersuite is a subset of ffi Ciphersuite")
     }
 }
 
 impl From<Ciphersuite> for MlsCiphersuite {
-    fn from(cs: Ciphersuite) -> Self {
-        cs.0.into()
+    #[inline]
+    fn from(value: Ciphersuite) -> Self {
+        CiphersuiteName::from(value).into()
     }
 }
+
+impl From<MlsCiphersuite> for Ciphersuite {
+    #[inline]
+    fn from(value: MlsCiphersuite) -> Self {
+        CiphersuiteName::from(value).into()
+    }
+}
+
+#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+pub fn ciphersuite_from_u16(discriminant: u16) -> CoreCryptoResult<Ciphersuite> {
+    Ciphersuite::try_from(discriminant).map_err(CoreCryptoError::generic())
+}
+
+#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+pub fn ciphersuite_default() -> Ciphersuite {
+    Ciphersuite::default()
+}
+
+#[derive(Debug, Clone, derive_more::From, derive_more::Into)]
+#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object), uniffi::export(Debug))]
+pub struct Ciphersuites(HashSet<Ciphersuite>);
 
 #[cfg(target_family = "wasm")]
-#[wasm_bindgen]
-impl Ciphersuite {
-    pub fn as_u16(&self) -> u16 {
-        self.0.into()
+pub(crate) type CiphersuitesMaybeArc = Ciphersuites;
+
+#[cfg(not(target_family = "wasm"))]
+pub(crate) type CiphersuitesMaybeArc = std::sync::Arc<Ciphersuites>;
+
+impl Ciphersuites {
+    pub(crate) fn as_cc(&self) -> Vec<MlsCiphersuite> {
+        self.0.iter().copied().map(Into::into).collect()
     }
 }
 
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
-impl Ciphersuite {
+#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+impl Ciphersuites {
     #[cfg_attr(target_family = "wasm", wasm_bindgen(constructor))]
-    pub fn new(discriminant: u16) -> CoreCryptoResult<Self> {
-        CiphersuiteName::try_from(discriminant)
-            .map(Into::into)
-            .map_err(CoreCryptoError::generic())
+    #[cfg_attr(not(target_family = "wasm"), uniffi::constructor)]
+    pub fn new(ciphersuites: Vec<Ciphersuite>) -> Self {
+        Self(ciphersuites.into_iter().collect())
     }
 }
 
-#[derive(Debug, Default, Clone, derive_more::From, derive_more::Into)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
-pub struct Ciphersuites(Vec<CiphersuiteName>);
+impl Ciphersuites {
+    pub fn from_u16s(ids: Vec<u16>) -> CoreCryptoResult<Self> {
+        let ciphersuites = ids
+            .into_iter()
+            .map(Ciphersuite::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(CoreCryptoError::generic())?;
+        Ok(Self(ciphersuites))
+    }
 
-impl<'a> From<&'a Ciphersuites> for Vec<MlsCiphersuite> {
-    fn from(cs: &'a Ciphersuites) -> Self {
-        cs.0.iter().copied().map(Into::into).collect()
+    /// The default `Ciphersuites` set contains only the single default ciphersuite.
+    //
+    // We implement this here instead of in the `impl Default` section to expose it to wasm_bindgen
+    #[expect(clippy::should_implement_trait)]
+    pub fn default() -> Self {
+        let mut cs = HashSet::new();
+        cs.insert(Ciphersuite::default());
+        Self(cs)
+    }
+}
+
+impl Default for Ciphersuites {
+    fn default() -> Self {
+        // this syntax chooses the implementation on `Self` instead of recursing
+        <Self>::default()
     }
 }
 
 #[cfg(not(target_family = "wasm"))]
-uniffi::custom_type!(Ciphersuites, Vec<u16>, {
-    lower: |cs| cs.0.into_iter().map(|c| (&c).into()).collect(),
-    try_lift: |val| {
-        val.iter().try_fold(Ciphersuites(vec![]), |mut acc, c| -> uniffi::Result<Self> {
-            let cs = CiphersuiteName::try_from(*c)?;
-            acc.0.push(cs);
-            Ok(acc)
-        })
-    }
-});
+#[uniffi::export]
+pub fn ciphersuites_from_u16s(ids: Vec<u16>) -> CoreCryptoResult<Ciphersuites> {
+    Ciphersuites::from_u16s(ids)
+}
 
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen]
+#[cfg(not(target_family = "wasm"))]
+#[uniffi::export]
+pub fn ciphersuites_default() -> Ciphersuites {
+    Ciphersuites::default()
+}
+
+#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl Ciphersuites {
-    #[wasm_bindgen(constructor)]
-    pub fn from_u16s(ids: Vec<u16>) -> CoreCryptoResult<Self> {
-        let names = ids
-            .into_iter()
-            .map(CiphersuiteName::try_from)
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(CoreCryptoError::generic())?;
-        Ok(Self(names))
+    pub fn as_list(&self) -> Vec<Ciphersuite> {
+        self.0.iter().copied().collect()
     }
 }
