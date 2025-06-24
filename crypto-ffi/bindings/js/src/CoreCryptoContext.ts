@@ -434,7 +434,7 @@ export class CoreCryptoContext {
     async exportSecretKey(
         conversationId: ConversationId,
         keyLength: number
-    ): Promise<Uint8Array> {
+    ): Promise<CoreCryptoFfiTypes.SecretKey> {
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.export_secret_key(conversationId, keyLength)
         );
