@@ -9,9 +9,9 @@ use tls_codec::{Deserialize as _, Serialize as _};
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    Ciphersuite, Ciphersuites, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
+    Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
     CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, NewCrlDistributionPoints, WelcomeBundle,
-    client_id::ClientIdMaybeArc, conversation_id_vec,
+    ciphersuite::CiphersuitesMaybeArc, client_id::ClientIdMaybeArc, conversation_id_vec,
 };
 
 #[cfg(not(target_family = "wasm"))]
@@ -27,7 +27,7 @@ impl CoreCryptoContext {
     pub async fn mls_init(
         &self,
         client_id: ClientIdMaybeArc,
-        ciphersuites: Ciphersuites,
+        ciphersuites: CiphersuitesMaybeArc,
         nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<()> {
         let nb_key_package = nb_key_package
@@ -37,7 +37,7 @@ impl CoreCryptoContext {
         self.inner
             .mls_init(
                 ClientIdentifier::Basic(client_id.as_cc()),
-                (&ciphersuites).into(),
+                ciphersuites.as_cc(),
                 nb_key_package,
             )
             .await?;

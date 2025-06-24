@@ -37,6 +37,7 @@ core-crypto-macros = { path = "crypto-macros" }
 derive_more = { version = "2.0", features = [
     "from",
     "into",
+    "try_from",
     "constructor",
     "display",
     "debug",

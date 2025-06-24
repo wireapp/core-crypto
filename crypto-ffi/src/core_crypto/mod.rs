@@ -13,7 +13,9 @@ use core_crypto::prelude::{MlsClientConfiguration, Session};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{Ciphersuites, CoreCryptoError, CoreCryptoResult, DatabaseKey, client_id::ClientIdMaybeArc};
+use crate::{
+    CoreCryptoError, CoreCryptoResult, DatabaseKey, ciphersuite::CiphersuitesMaybeArc, client_id::ClientIdMaybeArc,
+};
 
 /// In Wasm, boxed slices are the natural way to communicate an immutable byte slice
 #[cfg(target_family = "wasm")]
@@ -51,7 +53,7 @@ pub async fn core_crypto_new(
     path: String,
     key: DatabaseKey,
     client_id: ClientIdMaybeArc,
-    ciphersuites: Ciphersuites,
+    ciphersuites: CiphersuitesMaybeArc,
     entropy_seed: Option<EntropySeed>,
     nb_key_package: Option<u32>,
 ) -> CoreCryptoResult<CoreCrypto> {
@@ -87,7 +89,7 @@ impl CoreCrypto {
         path: String,
         key: DatabaseKey,
         client_id: Option<ClientIdMaybeArc>,
-        ciphersuites: Option<Ciphersuites>,
+        ciphersuites: Option<CiphersuitesMaybeArc>,
         entropy_seed: Option<EntropySeed>,
         nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<Self> {
@@ -100,7 +102,7 @@ impl CoreCrypto {
             path,
             key.into(),
             client_id.map(|cid| cid.as_cc()),
-            (&ciphersuites.unwrap_or_default()).into(),
+            ciphersuites.unwrap_or_default().as_cc(),
             entropy_seed,
             nb_key_package,
         )?;
@@ -125,7 +127,7 @@ impl CoreCrypto {
         path: String,
         key: DatabaseKey,
         client_id: Option<ClientIdMaybeArc>,
-        ciphersuites: Option<Ciphersuites>,
+        ciphersuites: Option<CiphersuitesMaybeArc>,
         entropy_seed: Option<EntropySeed>,
         nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<Self> {
