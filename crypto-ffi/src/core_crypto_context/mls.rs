@@ -11,7 +11,8 @@ use wasm_bindgen::prelude::*;
 use crate::{
     Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
     CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle,
-    ciphersuite::CiphersuitesMaybeArc, client_id::ClientIdMaybeArc, conversation_id_vec, crl::NewCrlDistributionPoints,
+    bytes_wrapper::bytes_wrapper, ciphersuite::CiphersuitesMaybeArc, client_id::ClientIdMaybeArc, conversation_id_vec,
+    crl::NewCrlDistributionPoints,
 };
 
 #[cfg(not(target_family = "wasm"))]
@@ -19,6 +20,8 @@ type KeyPackages = Vec<Vec<u8>>;
 
 #[cfg(target_family = "wasm")]
 type KeyPackages = super::array_of_byte_array::ArrayOfByteArray;
+
+bytes_wrapper!(SecretKey);
 
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
@@ -97,12 +100,13 @@ impl CoreCryptoContext {
         &self,
         conversation_id: &ConversationId,
         key_length: u32,
-    ) -> CoreCryptoResult<Vec<u8>> {
+    ) -> CoreCryptoResult<SecretKey> {
         let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self.inner.conversation(&conversation_id).await?;
         conversation
             .export_secret_key(key_length as usize)
             .await
+            .map(Into::into)
             .map_err(Into::into)
     }
 
