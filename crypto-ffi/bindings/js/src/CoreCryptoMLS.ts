@@ -28,12 +28,6 @@ export {
 };
 
 /**
- * Alias for conversation IDs.
- * This is a freeform, uninspected buffer.
- */
-export type ConversationId = Uint8Array;
-
-/**
  * Alias for proposal reference. It is a byte array of size 16.
  */
 export type ProposalRef = Uint8Array;
@@ -220,11 +214,11 @@ export type MlsTransportResponse =
     | "success"
     | "retry"
     | {
-          /**
-           * The message was rejected by the delivery service and there's no recovery.
-           */
-          abort: { reason: string };
-      };
+        /**
+         * The message was rejected by the delivery service and there's no recovery.
+         */
+        abort: { reason: string };
+    };
 
 function mapTransportResponseToFfi(
     response: MlsTransportResponse

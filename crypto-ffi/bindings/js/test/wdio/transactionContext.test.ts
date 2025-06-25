@@ -70,8 +70,7 @@ describe("transaction context", () => {
         const error = await browser.execute(async (clientName) => {
             const cc = window.ensureCcDefined(clientName);
             const basicCredentialType = window.ccModule.CredentialType.Basic;
-            const encoder = new TextEncoder();
-            const conversationId = encoder.encode("testConversation");
+            const conversationId = new window.ccModule.ConversationId(new TextEncoder().encode("testConversation"));
 
             const expectedError = new Error("Message of expected error", {
                 cause: "This is expected!",
