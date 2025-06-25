@@ -224,7 +224,7 @@ impl TransactionContext {
                 kp_refs.push(kpr);
             };
         }
-        self.delete_keypackages(&kp_refs)
+        self.delete_keypackages(kp_refs)
             .await
             .map_err(RecursiveError::transaction("deleting keypackages"))?;
         Ok(())

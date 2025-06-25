@@ -7,7 +7,7 @@ use crate::{
     prelude::{MlsCiphersuite, MlsCredentialType},
 };
 
-use super::{Error, Result, TransactionContext};
+use super::{Result, TransactionContext};
 
 impl TransactionContext {
     /// Returns `amount_requested` OpenMLS [openmls::key_packages::KeyPackage]s.
@@ -58,10 +58,7 @@ impl TransactionContext {
 
     /// Prunes local KeyPackages after making sure they also have been deleted on the backend side
     /// You should only use this after [TransactionContext::save_x509_credential]
-    pub async fn delete_keypackages(&self, refs: &[KeyPackageRef]) -> Result<()> {
-        if refs.is_empty() {
-            return Err(Error::CallerError("The provided keypackage list was empty"));
-        }
+    pub async fn delete_keypackages(&self, refs: impl IntoIterator<Item = KeyPackageRef>) -> Result<()> {
         let mut session = self.session().await?;
         session
             .prune_keypackages_and_credential(&self.mls_provider().await?, refs)

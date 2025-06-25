@@ -1,7 +1,6 @@
 use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
 use openmls_traits::OpenMlsCryptoProvider;
-use std::collections::HashMap;
-use std::ops::DerefMut;
+use std::collections::{HashMap, HashSet};
 use tls_codec::{Deserialize, Serialize};
 
 use core_crypto_keystore::{
@@ -85,8 +84,8 @@ impl Session {
         credential_type: MlsCredentialType,
         backend: &MlsCryptoProvider,
     ) -> Result<Vec<KeyPackage>> {
-        // Auto-prune expired keypackages on request
-        self.prune_keypackages(backend, &[]).await?;
+        // Auto-prune expired keypackages on req uest
+        self.prune_keypackages(backend, std::iter::empty()).await?;
         use core_crypto_keystore::CryptoKeystoreMls as _;
 
         let mut existing_kps = backend
@@ -184,7 +183,11 @@ impl Session {
     /// Warning: Despite this API being public, the caller should know what they're doing.
     /// Provided KeypackageRefs **will** be purged regardless of their expiration state, so please be wary of what you are doing if you directly call this API.
     /// This could result in still valid, uploaded keypackages being pruned from the system and thus being impossible to find when referenced in a future Welcome message.
-    pub async fn prune_keypackages(&self, backend: &MlsCryptoProvider, refs: &[KeyPackageRef]) -> Result<()> {
+    pub async fn prune_keypackages(
+        &self,
+        backend: &MlsCryptoProvider,
+        refs: impl IntoIterator<Item = KeyPackageRef>,
+    ) -> Result<()> {
         let keystore = backend.keystore();
         let kps = self.find_all_keypackages(&keystore).await?;
         let _ = self._prune_keypackages(&kps, &keystore, refs).await?;
@@ -194,50 +197,49 @@ impl Session {
     pub(crate) async fn prune_keypackages_and_credential(
         &mut self,
         backend: &MlsCryptoProvider,
-        refs: &[KeyPackageRef],
+        refs: impl IntoIterator<Item = KeyPackageRef>,
     ) -> Result<()> {
-        match self.inner.write().await.deref_mut() {
-            None => Err(Error::MlsNotInitialized),
-            Some(SessionInner { identities, .. }) => {
-                let keystore = backend.key_store();
-                let kps = self.find_all_keypackages(keystore).await?;
-                let kp_to_delete = self._prune_keypackages(&kps, keystore, refs).await?;
+        let mut guard = self.inner.write().await;
+        let SessionInner { identities, .. } = guard.as_mut().ok_or(Error::MlsNotInitialized)?;
 
-                // Let's group KeyPackages by Credential
-                let mut grouped_kps = HashMap::<Vec<u8>, Vec<KeyPackageRef>>::new();
-                for (_, kp) in &kps {
-                    let cred = kp
-                        .leaf_node()
-                        .credential()
-                        .tls_serialize_detached()
-                        .map_err(Error::tls_serialize("keypackage"))?;
-                    let kp_ref = kp
-                        .hash_ref(backend.crypto())
-                        .map_err(MlsError::wrap("computing keypackage hashref"))?;
-                    grouped_kps
-                        .entry(cred)
-                        .and_modify(|kprfs| kprfs.push(kp_ref.clone()))
-                        .or_insert(vec![kp_ref]);
-                }
+        let keystore = backend.key_store();
+        let kps = self.find_all_keypackages(keystore).await?;
+        let kp_to_delete = self._prune_keypackages(&kps, keystore, refs).await?;
 
-                for (credential, kps) in &grouped_kps {
-                    // If all KeyPackages are to be deleted for this given Credential
-                    let all_to_delete = kps.iter().all(|kpr| kp_to_delete.contains(&kpr.as_slice()));
-                    if all_to_delete {
-                        // then delete this Credential
-                        backend
-                            .keystore()
-                            .cred_delete_by_credential(credential.clone())
-                            .await
-                            .map_err(KeystoreError::wrap("deleting credential"))?;
-                        let credential = Credential::tls_deserialize(&mut credential.as_slice())
-                            .map_err(Error::tls_deserialize("credential"))?;
-                        identities.remove(&credential).await?;
-                    }
-                }
-                Ok(())
+        // Let's group KeyPackages by Credential
+        let mut grouped_kps = HashMap::<Vec<u8>, Vec<KeyPackageRef>>::new();
+        for (_, kp) in &kps {
+            let cred = kp
+                .leaf_node()
+                .credential()
+                .tls_serialize_detached()
+                .map_err(Error::tls_serialize("keypackage"))?;
+            let kp_ref = kp
+                .hash_ref(backend.crypto())
+                .map_err(MlsError::wrap("computing keypackage hashref"))?;
+            grouped_kps
+                .entry(cred)
+                .and_modify(|kprfs| kprfs.push(kp_ref.clone()))
+                .or_insert(vec![kp_ref]);
+        }
+
+        for (credential, kps) in &grouped_kps {
+            // If all KeyPackages are to be deleted for this given Credential
+            let all_to_delete = kps.iter().all(|kpr| kp_to_delete.contains(&kpr.as_slice()));
+            if all_to_delete {
+                // then delete this Credential
+                backend
+                    .keystore()
+                    .cred_delete_by_credential(credential.clone())
+                    .await
+                    .map_err(KeystoreError::wrap("deleting credential"))?;
+                let credential = Credential::tls_deserialize(&mut credential.as_slice())
+                    .map_err(Error::tls_deserialize("credential"))?;
+                identities.remove(&credential).await?;
             }
         }
+
+        Ok(())
     }
 
     /// Deletes all expired KeyPackages plus the ones in `refs`. It also deletes all associated:
@@ -248,25 +250,32 @@ impl Session {
         &self,
         kps: &'a [(MlsKeyPackage, KeyPackage)],
         keystore: &CryptoKeystore,
-        refs: &[KeyPackageRef],
-    ) -> Result<Vec<&'a [u8]>, Error> {
-        let kp_to_delete: Vec<_> = kps
-            .iter()
-            .filter_map(|(store_kp, kp)| {
-                let is_expired = Self::is_mls_keypackage_expired(kp);
-                let mut to_delete = is_expired;
-                if !(is_expired || refs.is_empty()) {
-                    // not expired and there are some refs to check
-                    // then delete it when it's found in the refs
-                    to_delete = refs.iter().any(|r| r.as_slice() == store_kp.keypackage_ref);
-                }
-
-                to_delete.then_some((kp, &store_kp.keypackage_ref))
+        refs: impl IntoIterator<Item = KeyPackageRef>,
+    ) -> Result<HashSet<&'a [u8]>, Error> {
+        let refs = refs
+            .into_iter()
+            .map(|kp| {
+                // If `KeyPackageRef` implemented `Hash + PartialEq<Rhs=[u8]> + Eq`, then we could just check whether
+                // an arbitrary reference existed in the hashset without moving data here at all; the type could just
+                // be `HashSet<KeyPackageRef>`.
+                //
+                // If `KeyPackageRef` implemented `fn into_inner(self) -> Vec<u8>` then we could at least extract the
+                // data without copying.
+                //
+                // As things stand, we're stuck with some pointless copying of (usually short) data around.
+                // Hopefully LLVM is smart enough to optimize some of it away!
+                kp.as_slice().to_owned()
             })
-            .collect();
+            .collect::<HashSet<_>>();
 
-        for (kp, kp_ref) in &kp_to_delete {
-            // TODO: maybe rewrite this to optimize it. But honestly it's called so rarely and on a so tiny amount of data. Tacking issue: WPB-9600
+        let kp_to_delete = kps.iter().filter_map(|(store_kp, kp)| {
+            let is_expired = Self::is_mls_keypackage_expired(kp);
+            let to_delete = is_expired || refs.contains(store_kp.keypackage_ref.as_slice());
+            to_delete.then_some((kp, &store_kp.keypackage_ref))
+        });
+
+        // note: we're cloning the iterator here, not the data
+        for (kp, kp_ref) in kp_to_delete.clone() {
             keystore
                 .remove::<MlsKeyPackage, &[u8]>(kp_ref.as_slice())
                 .await
@@ -281,12 +290,7 @@ impl Session {
                 .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
         }
 
-        let kp_to_delete = kp_to_delete
-            .into_iter()
-            .map(|(_, kpref)| &kpref[..])
-            .collect::<Vec<_>>();
-
-        Ok(kp_to_delete)
+        Ok(kp_to_delete.map(|(_, kpref)| kpref.as_slice()).collect())
     }
 
     async fn find_all_keypackages(&self, keystore: &CryptoKeystore) -> Result<Vec<(MlsKeyPackage, KeyPackage)>> {
@@ -498,7 +502,7 @@ mod tests {
                     // Make sure we have no previous keypackages found (that were pruned) in our new batch of KPs
                     assert!(!has_duplicates);
                 }
-                cc.transaction.delete_keypackages(&kpbs_refs).await.unwrap();
+                cc.transaction.delete_keypackages(kpbs_refs).await.unwrap();
             }
 
             let count = cc
@@ -509,7 +513,7 @@ mod tests {
             assert_eq!(count, 1);
 
             let pinned_kpr = pinned_kp.unwrap().hash_ref(crypto_provider).unwrap();
-            cc.transaction.delete_keypackages(&[pinned_kpr]).await.unwrap();
+            cc.transaction.delete_keypackages([pinned_kpr]).await.unwrap();
             let count = cc
                 .transaction
                 .client_valid_key_packages_count(case.ciphersuite(), case.credential_type)
