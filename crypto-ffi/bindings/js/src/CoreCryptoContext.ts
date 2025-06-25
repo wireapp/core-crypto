@@ -455,7 +455,7 @@ export class CoreCryptoContext {
      */
     async getExternalSender(
         conversationId: ConversationId
-    ): Promise<Uint8Array> {
+    ): Promise<CoreCryptoFfiTypes.ExternalSenderKey> {
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.get_external_sender(conversationId)
         );
