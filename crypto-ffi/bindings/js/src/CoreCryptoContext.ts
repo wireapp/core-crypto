@@ -398,7 +398,7 @@ export class CoreCryptoContext {
      * @return see {@link WelcomeBundle}
      */
     async joinByExternalCommit(
-        groupInfo: Uint8Array,
+        groupInfo: CoreCryptoFfiTypes.GroupInfo,
         credentialType: CredentialType,
         configuration: Partial<CustomConfiguration> = {}
     ): Promise<WelcomeBundle> {
