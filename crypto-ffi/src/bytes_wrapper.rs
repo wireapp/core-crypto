@@ -21,6 +21,7 @@ macro_rules! bytes_wrapper {
             /// Get the raw bytes from this type, transferring data from Rust to the client layer.
             ///
             /// This does not consume the newtype, instead copying the internal data across the FFI boundary.
+            #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = copyBytes))]
             pub fn copy_bytes(&self) -> Vec<u8> {
                 self.0.clone()
             }
