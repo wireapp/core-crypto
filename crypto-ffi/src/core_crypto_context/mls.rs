@@ -9,9 +9,10 @@ use tls_codec::{Deserialize as _, Serialize as _};
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    Ciphersuite, Ciphersuites, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
-    CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, NewCrlDistributionPoints, WelcomeBundle,
-    conversation_id_vec,
+    Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
+    CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle,
+    bytes_wrapper::bytes_wrapper, ciphersuite::CiphersuitesMaybeArc, client_id::ClientIdMaybeArc, conversation_id_vec,
+    crl::NewCrlDistributionPoints,
 };
 
 #[cfg(not(target_family = "wasm"))]
@@ -20,14 +21,38 @@ type KeyPackages = Vec<Vec<u8>>;
 #[cfg(target_family = "wasm")]
 type KeyPackages = super::array_of_byte_array::ArrayOfByteArray;
 
+bytes_wrapper!(
+    /// A secret key derived from the group secret.
+    ///
+    /// This is intended to be used for AVS.
+    SecretKey
+);
+bytes_wrapper!(
+    /// The raw public key of an external sender.
+    ///
+    /// This can be used to initialize a subconversation.
+    #[derive(Debug, Clone)]
+    #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+    ExternalSenderKey
+);
+bytes_wrapper!(
+    /// MLS Group Information
+    ///
+    /// This is used when joining by external commit.
+    /// It can be found within the `GroupInfoBundle` within a `CommitBundle`.
+    #[derive(Debug, Clone)]
+    #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+    GroupInfo
+);
+
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::mls_init]
     pub async fn mls_init(
         &self,
-        client_id: ClientId,
-        ciphersuites: Ciphersuites,
+        client_id: ClientIdMaybeArc,
+        ciphersuites: CiphersuitesMaybeArc,
         nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<()> {
         let nb_key_package = nb_key_package
@@ -36,8 +61,8 @@ impl CoreCryptoContext {
             .map_err(CoreCryptoError::generic())?;
         self.inner
             .mls_init(
-                ClientIdentifier::Basic(client_id.0),
-                (&ciphersuites).into(),
+                ClientIdentifier::Basic(client_id.as_cc()),
+                ciphersuites.as_cc(),
                 nb_key_package,
             )
             .await?;
@@ -80,10 +105,15 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_client_ids]
-    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<ClientId>> {
+    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<ClientIdMaybeArc>> {
         let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self.inner.conversation(&conversation_id).await?;
-        let client_ids = conversation.get_client_ids().await.into_iter().map(ClientId).collect();
+        let client_ids = conversation
+            .get_client_ids()
+            .await
+            .into_iter()
+            .map(ClientId::from_cc)
+            .collect();
         Ok(client_ids)
     }
 
@@ -92,20 +122,25 @@ impl CoreCryptoContext {
         &self,
         conversation_id: &ConversationId,
         key_length: u32,
-    ) -> CoreCryptoResult<Vec<u8>> {
+    ) -> CoreCryptoResult<SecretKey> {
         let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self.inner.conversation(&conversation_id).await?;
         conversation
             .export_secret_key(key_length as usize)
             .await
+            .map(Into::into)
             .map_err(Into::into)
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_external_sender]
-    pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<u8>> {
+    pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<ExternalSenderKey> {
         let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self.inner.conversation(&conversation_id).await?;
-        conversation.get_external_sender().await.map_err(Into::into)
+        conversation
+            .get_external_sender()
+            .await
+            .map(Into::into)
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::get_or_create_client_keypackages]
@@ -162,7 +197,13 @@ impl CoreCryptoContext {
         };
 
         self.inner
-            .set_raw_external_senders(&mut lower_cfg, config.external_senders)
+            .set_raw_external_senders(
+                &mut lower_cfg,
+                config
+                    .external_senders
+                    .into_iter()
+                    .map(|external_sender| external_sender.copy_bytes()),
+            )
             .await?;
 
         self.inner
@@ -214,9 +255,9 @@ impl CoreCryptoContext {
     pub async fn remove_clients_from_conversation(
         &self,
         conversation_id: &ConversationId,
-        clients: Vec<ClientId>,
+        clients: Vec<ClientIdMaybeArc>,
     ) -> CoreCryptoResult<()> {
-        let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.0).collect();
+        let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.as_cc()).collect();
         let conversation_id = conversation_id_vec!(conversation_id);
         let mut conversation = self.inner.conversation(&conversation_id).await?;
         conversation.remove_members(&clients).await.map_err(Into::into)
@@ -288,7 +329,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::join_by_external_commit]
     pub async fn join_by_external_commit(
         &self,
-        group_info: Vec<u8>,
+        group_info: GroupInfoMaybeArc,
         custom_configuration: CustomConfiguration,
         credential_type: CredentialType,
     ) -> CoreCryptoResult<WelcomeBundle> {

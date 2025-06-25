@@ -13,7 +13,9 @@ use core_crypto::prelude::{MlsClientConfiguration, Session};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{Ciphersuites, CoreCryptoError, CoreCryptoResult, DatabaseKey, client_id::AsCoreCryptoClientId as _};
+use crate::{
+    CoreCryptoError, CoreCryptoResult, DatabaseKey, ciphersuite::CiphersuitesMaybeArc, client_id::ClientIdMaybeArc,
+};
 
 /// In Wasm, boxed slices are the natural way to communicate an immutable byte slice
 #[cfg(target_family = "wasm")]
@@ -33,12 +35,6 @@ pub(crate) fn entropy_seed_map(e: EntropySeed) -> Vec<u8> {
     e
 }
 
-#[cfg(not(target_family = "wasm"))]
-type ClientId = crate::ClientId;
-
-#[cfg(target_family = "wasm")]
-type ClientId = crate::FfiClientId;
-
 #[derive(Debug)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
@@ -56,8 +52,8 @@ pub struct CoreCrypto {
 pub async fn core_crypto_new(
     path: String,
     key: DatabaseKey,
-    client_id: ClientId,
-    ciphersuites: Ciphersuites,
+    client_id: ClientIdMaybeArc,
+    ciphersuites: CiphersuitesMaybeArc,
     entropy_seed: Option<EntropySeed>,
     nb_key_package: Option<u32>,
 ) -> CoreCryptoResult<CoreCrypto> {
@@ -92,8 +88,8 @@ impl CoreCrypto {
     pub async fn new(
         path: String,
         key: DatabaseKey,
-        client_id: Option<ClientId>,
-        ciphersuites: Option<Ciphersuites>,
+        client_id: Option<ClientIdMaybeArc>,
+        ciphersuites: Option<CiphersuitesMaybeArc>,
         entropy_seed: Option<EntropySeed>,
         nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<Self> {
@@ -105,8 +101,8 @@ impl CoreCrypto {
         let configuration = MlsClientConfiguration::try_new(
             path,
             key.into(),
-            client_id.map(|cid| cid.as_cc_client_id()),
-            (&ciphersuites.unwrap_or_default()).into(),
+            client_id.map(|cid| cid.as_cc()),
+            ciphersuites.unwrap_or_default().as_cc(),
             entropy_seed,
             nb_key_package,
         )?;
@@ -130,8 +126,8 @@ impl CoreCrypto {
     pub async fn async_new(
         path: String,
         key: DatabaseKey,
-        client_id: Option<ClientId>,
-        ciphersuites: Option<Ciphersuites>,
+        client_id: Option<ClientIdMaybeArc>,
+        ciphersuites: Option<CiphersuitesMaybeArc>,
         entropy_seed: Option<EntropySeed>,
         nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<Self> {

@@ -99,7 +99,9 @@ export async function setup() {
             prepareForTransport(
                 secret: HistorySecret
             ): Promise<MlsTransportData> {
-                return Promise.resolve(new MlsTransportData(secret.clientId));
+                return Promise.resolve(
+                    new MlsTransportData(secret.clientId.as_bytes())
+                );
             },
             async getLatestCommitBundle() {
                 return window._latestCommitBundle;
@@ -150,7 +152,9 @@ export async function ccInit(clientName: string): Promise<void> {
     return await browser.execute(async (clientName) => {
         const cipherSuite = window.defaultCipherSuite;
         const encoder = new TextEncoder();
-        const clientId = encoder.encode(clientName);
+        const clientId = new window.ccModule.ClientId(
+            encoder.encode(clientName)
+        );
 
         const key = new Uint8Array(32);
         window.crypto.getRandomValues(key);
@@ -191,10 +195,10 @@ export async function createConversation(
     return await browser.execute(
         async (clientName, conversationId) => {
             const cc = window.ensureCcDefined(clientName);
-            const encoder = new TextEncoder();
+            const cid = new window.ccModule.ConversationId(new TextEncoder().encode(conversationId));
             await cc.transaction((ctx) =>
                 ctx.createConversation(
-                    encoder.encode(conversationId),
+                    cid,
                     window.ccModule.CredentialType.Basic
                 )
             );
@@ -236,10 +240,9 @@ export async function invite(
                 )
             );
 
-            const encoder = new TextEncoder();
-            const conversationIdBytes = encoder.encode(conversationId);
+            const cid = new window.ccModule.ConversationId(new TextEncoder().encode(conversationId));
             await cc1.transaction((ctx) =>
-                ctx.addClientsToConversation(conversationIdBytes, [kp!])
+                ctx.addClientsToConversation(cid, [kp!])
             );
             const { groupInfo, welcome } =
                 await window.deliveryService.getLatestCommitBundle();
@@ -280,31 +283,31 @@ export async function roundTripMessage(
             const cc2 = window.ensureCcDefined(client2);
 
             const encoder = new TextEncoder();
-            const conversationIdBytes = encoder.encode(conversationId);
+            const cid = new window.ccModule.ConversationId(encoder.encode(conversationId));
             const messageBytes = encoder.encode(message);
 
             const encryptedByClient1 = await cc1.transaction(async (ctx) => {
                 return await ctx.encryptMessage(
-                    conversationIdBytes,
+                    cid,
                     messageBytes
                 );
             });
             const decryptedByClient2 = await cc2.transaction(async (ctx) => {
                 return await ctx.decryptMessage(
-                    conversationIdBytes,
+                    cid,
                     encryptedByClient1
                 );
             });
 
             const encryptedByClient2 = await cc2.transaction(async (ctx) => {
                 return await ctx.encryptMessage(
-                    conversationIdBytes,
+                    cid,
                     messageBytes
                 );
             });
             const decryptedByClient1 = await cc1.transaction(async (ctx) => {
                 return await ctx.decryptMessage(
-                    conversationIdBytes,
+                    cid,
                     encryptedByClient2
                 );
             });

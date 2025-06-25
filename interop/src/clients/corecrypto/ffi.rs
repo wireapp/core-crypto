@@ -3,7 +3,7 @@ use crate::{
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
 use color_eyre::eyre::Result;
-use core_crypto_ffi::{ClientId, CoreCrypto, CredentialType, CustomConfiguration, TransactionHelper};
+use core_crypto_ffi::{Ciphersuites, ClientId, CoreCrypto, CredentialType, CustomConfiguration, TransactionHelper};
 use std::cell::Cell;
 use std::sync::Arc;
 use tempfile::NamedTempFile;
@@ -27,15 +27,17 @@ impl CoreCryptoFfiClient {
     pub(crate) async fn new() -> Result<CoreCryptoFfiClient> {
         let client_id = uuid::Uuid::new_v4();
         let client_id_bytes: Vec<u8> = client_id.as_hyphenated().to_string().as_bytes().into();
-        let client_id = ClientId::from(core_crypto::prelude::ClientId::from(&client_id_bytes[..]));
-        let ciphersuite = CIPHERSUITE_IN_USE;
+        let client_id = Arc::new(ClientId::from(core_crypto::prelude::ClientId::from(
+            &client_id_bytes[..],
+        )));
+        let ciphersuite = CIPHERSUITE_IN_USE.into();
         let temp_file = NamedTempFile::with_prefix("interop-ffi-keystore-")?;
 
         let cc = CoreCrypto::new(
             temp_file.path().to_string_lossy().into_owned(),
             core_crypto_ffi::DatabaseKey::new(core_crypto::DatabaseKey::generate()),
             Some(client_id),
-            Some(vec![ciphersuite].into()),
+            Some(Arc::new(Ciphersuites::new(vec![ciphersuite]))),
             None,
             None,
         )
@@ -125,7 +127,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
     }
 
     async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
-        let client_id = ClientId::from(core_crypto::prelude::ClientId::from(client_id));
+        let client_id = Arc::new(ClientId::from(core_crypto::prelude::ClientId::from(client_id)));
         let conversation_id = conversation_id.to_vec();
         let extractor = TransactionHelper::new(move |context| async move {
             context

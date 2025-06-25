@@ -16,6 +16,8 @@ use std::sync::Arc;
 
 use core_crypto::prelude::{HistorySecret, MlsCommitBundle};
 
+#[cfg(not(target_family = "wasm"))]
+use crate::ClientId;
 #[cfg(target_family = "wasm")]
 use crate::CoreCryptoError;
 use crate::{CommitBundle, CoreCrypto, CoreCryptoResult, HistorySecret as HistorySecretFfi};
@@ -104,10 +106,10 @@ impl core_crypto::prelude::MlsTransport for MlsTransportShim {
         &self,
         secret: &HistorySecret,
     ) -> core_crypto::Result<core_crypto::MlsTransportData> {
-        let client_id = secret.client_id.clone();
+        let client_id = ClientId::from_cc(secret.client_id.clone());
         let history_secret = rmp_serde::to_vec(&secret)
             .map(|secret| HistorySecretFfi {
-                client_id: client_id.into(),
+                client_id,
                 data: secret,
             })
             .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(e.to_string()))?;

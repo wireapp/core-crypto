@@ -1,5 +1,8 @@
 package com.wire.crypto
 
+import com.wire.crypto.uniffi.Ciphersuite as CiphersuiteFfi
+import com.wire.crypto.uniffi.Ciphersuites as CiphersuitesFfi
+
 /** Ciphersuites */
 @JvmInline
 value class Ciphersuites(private val value: Set<Ciphersuite>) {
@@ -8,7 +11,7 @@ value class Ciphersuites(private val value: Set<Ciphersuite>) {
         val DEFAULT = Ciphersuites(setOf(Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519))
     }
 
-    internal fun lower() = value.map { it.lower() }
+    internal fun lower() = CiphersuitesFfi(value.map { it.lower() })
 }
 
 /** Ciphersuite */
@@ -40,7 +43,15 @@ enum class Ciphersuite {
         val DEFAULT = MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     }
 
-    internal fun lower() = (ordinal + 1).toUShort()
+    internal fun lower() = when (this) {
+        MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 -> CiphersuiteFfi.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
+        MLS_128_DHKEMP256_AES128GCM_SHA256_P256 -> CiphersuiteFfi.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+        MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 -> CiphersuiteFfi.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519
+        MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 -> CiphersuiteFfi.MLS_256_DHKEMX448_AES256GCM_SHA512_ED448
+        MLS_256_DHKEMP521_AES256GCM_SHA512_P521 -> CiphersuiteFfi.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
+        MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 -> CiphersuiteFfi.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_ED448
+        MLS_256_DHKEMP384_AES256GCM_SHA384_P384 -> CiphersuiteFfi.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+    }
 }
 
 /** Credential type */
@@ -69,38 +80,49 @@ internal fun com.wire.crypto.uniffi.CredentialType.lift() =
         com.wire.crypto.uniffi.CredentialType.X509 -> CredentialType.X509
     }
 
-/** MLS group ID */
+/** MLS group ID
+ * @property value the FFI conversation id
+ */
 @JvmInline
-value class MLSGroupId(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
+value class MLSGroupId(val value: com.wire.crypto.uniffi.ConversationId) {
+    /** Convert this type wrapper into the FFI version it wraps */
+    fun lower() = value
+    override fun toString() = value.copyBytes().toHex()
 }
 
 /** Construct a group ID */
-fun ByteArray.toGroupId() = MLSGroupId(this)
+fun ByteArray.toGroupId() = MLSGroupId(com.wire.crypto.uniffi.ConversationId(this))
 
 /** Construct a group ID */
-fun String.toGroupId() = MLSGroupId(toByteArray())
+fun String.toGroupId() = MLSGroupId(com.wire.crypto.uniffi.ConversationId(toByteArray()))
+
+/** Construct a group ID */
+fun com.wire.crypto.uniffi.ConversationId.toGroupId() = MLSGroupId(this)
 
 /** Client ID */
 @JvmInline
-value class ClientId(override val value: String) : FfiType<String, com.wire.crypto.uniffi.ClientId> {
-    override fun lower() = value.toByteArray()
+value class ClientId(override val value: ByteArray) : FfiType<ByteArray, com.wire.crypto.uniffi.ClientId> {
+    override fun lower() = com.wire.crypto.uniffi.ClientId(value);
 }
 
 @OptIn(ExperimentalUnsignedTypes::class)
-internal fun com.wire.crypto.uniffi.ClientId.toClientId() = ClientId(String(toUByteArray().asByteArray()))
+internal fun com.wire.crypto.uniffi.ClientId.toClientId() = ClientId(asBytes())
 
 /** Construct a client ID */
-fun String.toClientId() = ClientId(this)
+fun String.toClientId() = ClientId(this.toByteArray())
 
-/** External sender key */
+/** External sender key
+ * @property value The FFI external sender key
+ */
 @JvmInline
-value class ExternalSenderKey(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
+value class ExternalSenderKey(val value: com.wire.crypto.uniffi.ExternalSenderKey) {
+    /** Convert this type wrapper into the FFI version it wraps */
+    fun lower() = value
+    override fun toString() = value.copyBytes().toHex()
 }
 
 /** Construct an external sender ID */
-fun ByteArray.toExternalSenderKey() = ExternalSenderKey(this)
+fun com.wire.crypto.uniffi.ExternalSenderKey.toExternalSenderKey() = ExternalSenderKey(this)
 
 /** Welcome message */
 @JvmInline
@@ -118,15 +140,6 @@ value class MlsMessage(override val value: ByteArray) : Uniffi {
 
 /** Construct an MLS message */
 fun ByteArray.toMlsMessage() = MlsMessage(this)
-
-/** AVS secret */
-@JvmInline
-value class AvsSecret(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
-}
-
-/** Construct an AVS secret */
-fun ByteArray.toAvsSecret() = AvsSecret(this)
 
 /** Plaintext message */
 @JvmInline
@@ -190,13 +203,17 @@ value class CrlDistributionPoints(override val value: Set<java.net.URI>) :
 internal fun List<String>.toCrlDistributionPoint() =
     CrlDistributionPoints(asSequence().map { java.net.URI(it) }.toSet())
 
-/** Group info */
+/** Group info
+ * @property value The FFI external group info
+ */
 @JvmInline
-value class GroupInfo(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
+value class GroupInfo(val value: com.wire.crypto.uniffi.GroupInfo) {
+    /** Convert this type wrapper into the FFI version which it wraps */
+    fun lower(): com.wire.crypto.uniffi.GroupInfo = value
+    override fun toString() = value.copyBytes().toHex()
 }
 
-private fun ByteArray.toGroupInfo() = GroupInfo(this)
+private fun com.wire.crypto.uniffi.GroupInfo.toGroupInfo() = GroupInfo(this)
 
 /** The type of group info encryption. */
 enum class MlsGroupInfoEncryptionType {

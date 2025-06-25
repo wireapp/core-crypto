@@ -2,6 +2,7 @@
 uniffi::setup_scaffolding!("core_crypto_ffi");
 
 mod bundles;
+mod bytes_wrapper;
 mod ciphersuite;
 mod client_id;
 mod configuration;
@@ -23,8 +24,11 @@ pub use bundles::{
     welcome::WelcomeBundle,
 };
 pub use ciphersuite::{Ciphersuite, Ciphersuites};
-pub use client_id::{ClientId, FfiClientId};
+pub use client_id::ClientId;
 pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePolicy};
+pub use core_crypto::conversation::ConversationId;
+pub(crate) use core_crypto::conversation::{ConversationIdMaybeArc, conversation_id_coerce_maybe_arc};
+pub(crate) use core_crypto::e2ei::identities::UserIdentities;
 pub use core_crypto::{
     CoreCrypto,
     command::CoreCryptoCommand,
@@ -38,10 +42,9 @@ pub use core_crypto::{
     core_crypto_deferred_init, core_crypto_new,
     logger::{set_logger, set_logger_only, set_max_log_level},
 };
-pub(crate) use core_crypto::{conversation::ConversationId, e2ei::identities::UserIdentities};
 pub use core_crypto_context::CoreCryptoContext;
 pub use credential_type::CredentialType;
-pub use crl::{CrlRegistration, NewCrlDistributionPoints};
+pub use crl::CrlRegistration;
 pub use database_key::{DatabaseKey, migrate_db_key_type_to_bytes};
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 pub use e2ei::{

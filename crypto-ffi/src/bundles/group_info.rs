@@ -2,6 +2,8 @@ use core_crypto::prelude::MlsGroupInfoBundle;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
+use crate::core_crypto_context::mls::{GroupInfoMaybeArc, group_info_coerce_maybe_arc};
+
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
@@ -74,7 +76,7 @@ impl From<MlsRatchetTreeType> for core_crypto::prelude::MlsRatchetTreeType {
 pub struct GroupInfoBundle {
     pub encryption_type: MlsGroupInfoEncryptionType,
     pub ratchet_tree_type: MlsRatchetTreeType,
-    pub payload: Vec<u8>,
+    pub payload: GroupInfoMaybeArc,
 }
 
 impl From<MlsGroupInfoBundle> for GroupInfoBundle {
@@ -82,7 +84,7 @@ impl From<MlsGroupInfoBundle> for GroupInfoBundle {
         Self {
             encryption_type: gi.encryption_type.into(),
             ratchet_tree_type: gi.ratchet_tree_type.into(),
-            payload: gi.payload.bytes(),
+            payload: group_info_coerce_maybe_arc(gi.payload.bytes()),
         }
     }
 }
