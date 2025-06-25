@@ -1,4 +1,3 @@
-mod cryptobox_migration;
 mod keystore;
 mod leaf;
 mod mls;
@@ -6,13 +5,11 @@ mod proteus;
 mod recursive;
 mod wrapper;
 
-pub use cryptobox_migration::{CryptoboxMigrationError, CryptoboxMigrationErrorKind};
 pub use keystore::KeystoreError;
 pub use leaf::LeafError;
 pub use mls::{MlsError, MlsErrorKind};
 pub use proteus::{ProteusError, ProteusErrorKind};
 pub use recursive::{RecursiveError, ToRecursiveError};
-pub(crate) use wrapper::WrappedContextualError;
 
 /// A module-specific [Result][core::result::Result] type with a default error variant.
 pub type Result<T, E = Error> = core::result::Result<T, E>;
@@ -47,9 +44,6 @@ pub enum Error {
     /// A Proteus operation failed
     #[error(transparent)]
     Proteus(#[from] ProteusError),
-    /// A cryptobox migration operation failed
-    #[error(transparent)]
-    CryptoboxMigration(#[from] CryptoboxMigrationError),
     /// A crate-internal operation failed
     #[error(transparent)]
     Recursive(#[from] RecursiveError),
