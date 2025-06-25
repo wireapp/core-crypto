@@ -319,19 +319,6 @@ export class CoreCryptoContext {
     }
 
     /**
-     * Prunes local KeyPackages after making sure they also have been deleted on the backend side
-     * You should only use this after calling {@link CoreCryptoContext.e2eiRotate} on all conversations.
-     *
-     * @param refs - KeyPackage references to delete obtained from a {RotateBundle}
-     */
-    async deleteKeypackages(refs: Uint8Array[]): Promise<void> {
-        const aobaRefs = new ArrayOfByteArray(refs);
-        return await CoreCryptoError.asyncMapErr(
-            this.#ctx.delete_keypackages(aobaRefs)
-        );
-    }
-
-    /**
      * Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation.
      *
      * Sends the corresponding commit via {@link MlsTransport.sendCommitBundle} and merges it if the call is successful.

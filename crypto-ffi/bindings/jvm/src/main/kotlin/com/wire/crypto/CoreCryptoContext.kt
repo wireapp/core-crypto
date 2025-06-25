@@ -98,15 +98,6 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
     }
 
     /**
-     * Prunes local KeyPackages after making sure they also have been deleted on the backend side.
-     * You should only use this after calling [e2eiRotate] on all conversations.
-     */
-    suspend fun deleteKeyPackages(refs: List<MLSKeyPackageRef>) {
-        // cannot be tested with the current API & helpers
-        return wrapException { cc.deleteKeypackages(refs.map { it.lower() }) }
-    }
-
-    /**
      * Checks if the Client is member of a given conversation and if the MLS Group is loaded up.
      *
      * @param id conversation identifier

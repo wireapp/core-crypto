@@ -1,7 +1,7 @@
 use core_crypto::{
     RecursiveError,
     mls::conversation::Conversation as _,
-    prelude::{ClientIdentifier, KeyPackageIn, KeyPackageRef, MlsConversationConfiguration, VerifiableGroupInfo},
+    prelude::{ClientIdentifier, KeyPackageIn, MlsConversationConfiguration, VerifiableGroupInfo},
     transaction_context::Error as TransactionError,
 };
 use tls_codec::{Deserialize as _, Serialize as _};
@@ -144,22 +144,6 @@ impl CoreCryptoContext {
             .map_err(RecursiveError::transaction("counting client valid keypackages"))?;
 
         Ok(count.try_into().unwrap_or(0))
-    }
-
-    /// See [core_crypto::transaction_context::TransactionContext::delete_keypackages]
-    pub async fn delete_keypackages(&self, refs: KeyPackages) -> CoreCryptoResult<()> {
-        #[cfg(target_family = "wasm")]
-        let refs = refs.into_inner();
-        let refs = refs
-            .into_iter()
-            .map(|r| KeyPackageRef::from_slice(&r))
-            .collect::<Vec<_>>();
-
-        self.inner
-            .delete_keypackages(&refs[..])
-            .await
-            .map_err(RecursiveError::transaction("deleting keypackages"))?;
-        Ok(())
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::new_conversation]
