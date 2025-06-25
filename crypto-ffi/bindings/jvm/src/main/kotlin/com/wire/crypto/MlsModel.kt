@@ -196,13 +196,17 @@ value class CrlDistributionPoints(override val value: Set<java.net.URI>) :
 internal fun List<String>.toCrlDistributionPoint() =
     CrlDistributionPoints(asSequence().map { java.net.URI(it) }.toSet())
 
-/** Group info */
+/** Group info
+ * @property value The FFI external group info
+ */
 @JvmInline
-value class GroupInfo(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
+value class GroupInfo(val value: com.wire.crypto.uniffi.GroupInfo) {
+    /** Convert this type wrapper into the FFI version which it wraps */
+    fun lower(): com.wire.crypto.uniffi.GroupInfo = value
+    override fun toString() = value.copyBytes().toHex()
 }
 
-private fun ByteArray.toGroupInfo() = GroupInfo(this)
+private fun com.wire.crypto.uniffi.GroupInfo.toGroupInfo() = GroupInfo(this)
 
 /** The type of group info encryption. */
 enum class MlsGroupInfoEncryptionType {
