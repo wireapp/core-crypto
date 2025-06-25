@@ -104,14 +104,18 @@ internal fun com.wire.crypto.uniffi.ClientId.toClientId() = ClientId(asBytes())
 /** Construct a client ID */
 fun String.toClientId() = ClientId(this.toByteArray())
 
-/** External sender key */
+/** External sender key
+ * @property value The FFI external sender key
+ */
 @JvmInline
-value class ExternalSenderKey(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
+value class ExternalSenderKey(val value: com.wire.crypto.uniffi.ExternalSenderKey) {
+    /** Convert this type wrapper into the FFI version it wraps */
+    fun lower() = value
+    override fun toString() = value.copyBytes().toHex()
 }
 
 /** Construct an external sender ID */
-fun ByteArray.toExternalSenderKey() = ExternalSenderKey(this)
+fun com.wire.crypto.uniffi.ExternalSenderKey.toExternalSenderKey() = ExternalSenderKey(this)
 
 /** Welcome message */
 @JvmInline
