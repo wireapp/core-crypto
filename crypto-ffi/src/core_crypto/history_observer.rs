@@ -10,8 +10,11 @@ use wasm_bindgen::prelude::*;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen_futures::JsFuture;
 
-use crate::{CoreCrypto, CoreCryptoError, CoreCryptoResult, HistorySecret};
-use core_crypto::prelude::{ConversationId, Obfuscated};
+use crate::{
+    ConversationIdMaybeArc, CoreCrypto, CoreCryptoError, CoreCryptoResult, HistorySecret,
+    conversation_id_coerce_maybe_arc,
+};
+use ::core_crypto::prelude::{ConversationId, Obfuscated};
 
 #[cfg(not(target_family = "wasm"))]
 #[derive(Debug, thiserror::Error, uniffi::Error)]
@@ -42,7 +45,7 @@ pub trait HistoryObserver: Send + Sync {
     /// and ignore internal errors instead of propagating them, to the maximum extent possible.
     async fn history_client_created(
         &self,
-        conversation_id: ConversationId,
+        conversation_id: ConversationIdMaybeArc,
         secret: HistorySecret,
     ) -> Result<(), NewHistoryClientReportingError>;
 }
@@ -63,10 +66,18 @@ impl core_crypto::mls::HistoryObserver for ObserverShim {
         conversation_id: ConversationId,
         secret: &core_crypto::prelude::HistorySecret,
     ) {
-        let secret = HistorySecret::try_from(secret)
-            .expect("conversion from the HistorySecret rust type to the FFI type should work");
-
-        if let Err(err) = self.0.history_client_created(conversation_id.clone(), secret).await {
+        let Ok(secret) = HistorySecret::try_from(secret) else {
+            // weird that we couldn't convert this but ¯\_(ツ)_/¯
+            log::warn!(
+                conversation_id = Obfuscated::new(&conversation_id);
+                "failed to convert to ffi history secret during creation notification");
+            return;
+        };
+        if let Err(err) = self
+            .0
+            .history_client_created(conversation_id_coerce_maybe_arc(&conversation_id), secret)
+            .await
+        {
             // we don't _care_ if an error is thrown by the notification function, per se,
             // but this would probably be useful information for downstream debugging efforts
             log::warn!(
@@ -121,7 +132,7 @@ impl HistoryObserver {
     /// interface appropriately to construct this.
     ///
     /// - `this_context` is the instance itself, which will be bound to `this` within the function bodies
-    /// - `history_client_created`: A function of the form `(conversation_id: Uint8Array, secret: HistorySecret) -> Promise<void>`.
+    /// - `history_client_created`: A function of the form `(conversation_id: ConversationId, secret: HistorySecret) -> Promise<void>`.
     ///
     ///   Called every time a history client is created.
     #[wasm_bindgen(constructor)]
@@ -148,7 +159,11 @@ impl HistoryObserver {
     ///
     /// This is extracted as its own function instead of being implemented inline within the
     /// `impl HistoryObserver for HistoryObserver` block mostly to consolidate error-handling.
-    async fn history_client_created(&self, conversation_id: ConversationId, secret: JsValue) -> Result<(), JsValue> {
+    async fn history_client_created(
+        &self,
+        conversation_id: ConversationIdMaybeArc,
+        secret: JsValue,
+    ) -> Result<(), JsValue> {
         let conversation_id = Uint8Array::from(conversation_id.as_slice());
 
         let promise = self
@@ -169,11 +184,15 @@ impl core_crypto::mls::HistoryObserver for HistoryObserver {
         conversation_id: ConversationId,
         secret: &core_crypto::prelude::HistorySecret,
     ) {
-        let secret = HistorySecret::try_from(secret)
-            .expect("conversion from the HistorySecret rust type to the FFI type should work");
-
+        let Ok(secret) = HistorySecret::try_from(secret) else {
+            // weird that we couldn't convert this but ¯\_(ツ)_/¯
+            log::warn!(
+                conversation_id = Obfuscated::new(&conversation_id);
+                "failed to convert to ffi history secret during creation notification");
+            return;
+        };
         if let Err(err) = self
-            .history_client_created(conversation_id.clone(), secret.into())
+            .history_client_created(conversation_id_coerce_maybe_arc(&conversation_id), secret.into())
             .await
         {
             // we don't _care_ if an error is thrown by the notification function, per se,

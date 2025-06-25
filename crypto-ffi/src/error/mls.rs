@@ -5,7 +5,7 @@ use core_crypto::InnermostErrorMessage as _;
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Error))]
 pub enum MlsError {
     #[error("Conversation already exists")]
-    ConversationAlreadyExists(core_crypto::prelude::ConversationId),
+    ConversationAlreadyExists(crate::ConversationIdMaybeArc),
     #[error("We already decrypted this message once")]
     DuplicateMessage,
     #[error("Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives")]
