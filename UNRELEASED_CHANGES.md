@@ -4,6 +4,7 @@
 
 ### Features
 
+- [**breaking**] crypto-ffi: remove deleteKeypackages ([4c5def3](https://github.com/wireapp/core-crypto/commit/4c5def3f23f3c2e8d9961108ab0827aa7634e2f2))
 - introduce HistoryObserver ([43ceb73](https://github.com/wireapp/core-crypto/commit/43ceb7371dfc5f2d46f48c9413dd9f00d2d78e60))
 - [**breaking**] crypto: remove e2ei_dump_pki_env and related code ([7927ebb](https://github.com/wireapp/core-crypto/commit/7927ebbed5670be4db316d641bf79a1cfc0611b1))
 - [**breaking**] crypto-ffi: remove e2eiDumpPKIEnv and related functions ([b444f13](https://github.com/wireapp/core-crypto/commit/b444f1301982c9dd0aaa44c36c8c3008dd2e7c8b))
