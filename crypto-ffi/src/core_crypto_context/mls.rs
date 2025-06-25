@@ -35,6 +35,15 @@ bytes_wrapper!(
     #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
     ExternalSenderKey
 );
+bytes_wrapper!(
+    /// MLS Group Information
+    ///
+    /// This is used when joining by external commit.
+    /// It can be found within the `GroupInfoBundle` within a `CommitBundle`.
+    #[derive(Debug, Clone)]
+    #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+    GroupInfo
+);
 
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
@@ -320,7 +329,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::join_by_external_commit]
     pub async fn join_by_external_commit(
         &self,
-        group_info: Vec<u8>,
+        group_info: GroupInfoMaybeArc,
         custom_configuration: CustomConfiguration,
         credential_type: CredentialType,
     ) -> CoreCryptoResult<WelcomeBundle> {
