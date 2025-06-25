@@ -11,7 +11,7 @@ use wasm_bindgen::prelude::*;
 use crate::{
     Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
     CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle,
-    bytes_wrapper::bytes_wrapper, ciphersuite::CiphersuitesMaybeArc, client_id::ClientIdMaybeArc, conversation_id_vec,
+    bytes_wrapper::bytes_wrapper, ciphersuite::CiphersuitesMaybeArc, client_id::ClientIdMaybeArc,
     crl::NewCrlDistributionPoints,
 };
 
@@ -83,31 +83,27 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::mls::conversation::Conversation::epoch]
     pub async fn conversation_epoch(&self, conversation_id: &ConversationId) -> CoreCryptoResult<u64> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-        let conversation = self.inner.conversation(&conversation_id).await?;
+        let conversation = self.inner.conversation(conversation_id).await?;
         Ok(conversation.epoch().await)
     }
 
     /// See [core_crypto::mls::conversation::Conversation::ciphersuite]
     pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-        let cs = self.inner.conversation(&conversation_id).await?.ciphersuite().await;
+        let cs = self.inner.conversation(conversation_id).await?.ciphersuite().await;
         Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 
     /// See [core_crypto::prelude::Session::conversation_exists]
     pub async fn conversation_exists(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
-        let conversation_id = conversation_id_vec!(conversation_id);
         self.inner
-            .conversation_exists(&conversation_id)
+            .conversation_exists(conversation_id)
             .await
             .map_err(Into::into)
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_client_ids]
     pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<ClientIdMaybeArc>> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-        let conversation = self.inner.conversation(&conversation_id).await?;
+        let conversation = self.inner.conversation(conversation_id).await?;
         let client_ids = conversation
             .get_client_ids()
             .await
@@ -123,8 +119,7 @@ impl CoreCryptoContext {
         conversation_id: &ConversationId,
         key_length: u32,
     ) -> CoreCryptoResult<SecretKey> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-        let conversation = self.inner.conversation(&conversation_id).await?;
+        let conversation = self.inner.conversation(conversation_id).await?;
         conversation
             .export_secret_key(key_length as usize)
             .await
@@ -134,8 +129,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::mls::conversation::Conversation::get_external_sender]
     pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<ExternalSenderKey> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-        let conversation = self.inner.conversation(&conversation_id).await?;
+        let conversation = self.inner.conversation(conversation_id).await?;
         conversation
             .get_external_sender()
             .await
@@ -188,8 +182,6 @@ impl CoreCryptoContext {
         creator_credential_type: CredentialType,
         config: ConversationConfiguration,
     ) -> CoreCryptoResult<()> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-
         let mut lower_cfg = MlsConversationConfiguration {
             custom: config.custom.into(),
             ciphersuite: config.ciphersuite.map(Into::into).unwrap_or_default(),
@@ -207,7 +199,7 @@ impl CoreCryptoContext {
             .await?;
 
         self.inner
-            .new_conversation(&conversation_id, creator_credential_type.into(), lower_cfg)
+            .new_conversation(conversation_id, creator_credential_type.into(), lower_cfg)
             .await?;
         Ok(())
     }
@@ -232,8 +224,6 @@ impl CoreCryptoContext {
         conversation_id: &ConversationId,
         key_packages: KeyPackages,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-
         #[cfg(target_family = "wasm")]
         let key_packages = key_packages.into_inner();
         let key_packages = key_packages
@@ -246,9 +236,9 @@ impl CoreCryptoContext {
             })
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
-        let mut conversation = self.inner.conversation(&conversation_id).await?;
+        let mut conversation = self.inner.conversation(conversation_id).await?;
         let distribution_points: Option<Vec<_>> = conversation.add_members(key_packages).await?.into();
-        Ok(distribution_points.into())
+        Ok(distribution_points)
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::remove_members]
@@ -258,8 +248,7 @@ impl CoreCryptoContext {
         clients: Vec<ClientIdMaybeArc>,
     ) -> CoreCryptoResult<()> {
         let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.as_cc()).collect();
-        let conversation_id = conversation_id_vec!(conversation_id);
-        let mut conversation = self.inner.conversation(&conversation_id).await?;
+        let mut conversation = self.inner.conversation(conversation_id).await?;
         conversation.remove_members(&clients).await.map_err(Into::into)
     }
 
@@ -269,30 +258,25 @@ impl CoreCryptoContext {
         child_id: &ConversationId,
         parent_id: &ConversationId,
     ) -> CoreCryptoResult<()> {
-        let parent_id = conversation_id_vec!(parent_id);
-        let child_id = conversation_id_vec!(child_id);
-        let mut conversation = self.inner.conversation(&child_id).await?;
-        conversation.mark_as_child_of(&parent_id).await.map_err(Into::into)
+        let mut conversation = self.inner.conversation(child_id).await?;
+        conversation.mark_as_child_of(parent_id).await.map_err(Into::into)
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::update_key_material]
     pub async fn update_keying_material(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-        let mut conversation = self.inner.conversation(&conversation_id).await?;
+        let mut conversation = self.inner.conversation(conversation_id).await?;
         conversation.update_key_material().await.map_err(Into::into)
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::commit_pending_proposals]
     pub async fn commit_pending_proposals(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-        let mut conversation = self.inner.conversation(&conversation_id).await?;
+        let mut conversation = self.inner.conversation(conversation_id).await?;
         conversation.commit_pending_proposals().await.map_err(Into::into)
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::wipe]
     pub async fn wipe_conversation(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-        let mut conversation = self.inner.conversation(&conversation_id).await?;
+        let mut conversation = self.inner.conversation(conversation_id).await?;
         conversation.wipe().await.map_err(Into::into)
     }
 
@@ -302,8 +286,7 @@ impl CoreCryptoContext {
         conversation_id: &ConversationId,
         payload: Vec<u8>,
     ) -> CoreCryptoResult<DecryptedMessage> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-        let conversation_result = self.inner.conversation(&conversation_id).await;
+        let conversation_result = self.inner.conversation(conversation_id).await;
         let decrypted_message = match conversation_result {
             Err(TransactionError::PendingConversation(mut pending)) => {
                 pending.try_process_own_join_commit(&payload).await?
@@ -321,8 +304,7 @@ impl CoreCryptoContext {
         conversation_id: &ConversationId,
         message: Vec<u8>,
     ) -> CoreCryptoResult<Vec<u8>> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-        let mut conversation = self.inner.conversation(&conversation_id).await?;
+        let mut conversation = self.inner.conversation(conversation_id).await?;
         conversation.encrypt_message(message).await.map_err(Into::into)
     }
 
@@ -347,15 +329,13 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::mls::conversation::ConversationGuard::enable_history_sharing]
     pub async fn enable_history_sharing(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-        let mut conversation = self.inner.conversation(&conversation_id).await?;
+        let mut conversation = self.inner.conversation(conversation_id).await?;
         conversation.enable_history_sharing().await.map_err(Into::into)
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::disable_history_sharing]
     pub async fn disable_history_sharing(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
-        let conversation_id = conversation_id_vec!(conversation_id);
-        let mut conversation = self.inner.conversation(&conversation_id).await?;
+        let mut conversation = self.inner.conversation(conversation_id).await?;
         conversation.disable_history_sharing().await.map_err(Into::into)
     }
 }
