@@ -53,6 +53,20 @@ macro_rules! bytes_wrapper {
             #[cfg(not(target_family = "wasm"))]
             #[allow(dead_code)]
             pub(crate) type [<$id MaybeArc>] = std::sync::Arc<$id>;
+
+            #[cfg(target_family = "wasm")]
+            #[allow(dead_code, non_snake_case)]
+            #[inline]
+            pub(crate) fn [<$id _coerce_maybe_arc>](value: impl Into<Vec<u8>>) -> [<$id MaybeArc>] {
+                $id(value.into())
+            }
+
+            #[cfg(not(target_family = "wasm"))]
+            #[allow(dead_code, non_snake_case)]
+            #[inline]
+            pub(crate) fn [<$id _coerce_maybe_arc>](value: impl Into<Vec<u8>>) -> [<$id MaybeArc>] {
+                std::sync::Arc::new($id(value.into()))
+            }
         }
     };
 }
