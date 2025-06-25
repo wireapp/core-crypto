@@ -1,4 +1,4 @@
-use core_crypto::prelude::ConversationId;
+use crate::{ConversationIdMaybeArc, conversation_id_coerce_maybe_arc};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -15,7 +15,7 @@ use crate::crl::NewCrlDistributionPoints;
 pub struct WelcomeBundle {
     /// Identifier of the joined conversation
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
-    pub id: ConversationId,
+    pub id: ConversationIdMaybeArc,
     /// New CRL Distribution of members of this group
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = crlNewDistributionPoints))]
     pub crl_new_distribution_points: NewCrlDistributionPoints,
@@ -28,6 +28,7 @@ impl From<core_crypto::prelude::WelcomeBundle> for WelcomeBundle {
             crl_new_distribution_points,
         }: core_crypto::prelude::WelcomeBundle,
     ) -> Self {
+        let id = conversation_id_coerce_maybe_arc(id);
         let crl_new_distribution_points = crl_new_distribution_points.into();
         Self {
             id,

@@ -55,17 +55,17 @@ macro_rules! bytes_wrapper {
             pub(crate) type [<$id MaybeArc>] = std::sync::Arc<$id>;
 
             #[cfg(target_family = "wasm")]
-            #[allow(dead_code, non_snake_case)]
+            #[allow(dead_code)]
             #[inline]
-            pub(crate) fn [<$id _coerce_maybe_arc>](value: impl Into<Vec<u8>>) -> [<$id MaybeArc>] {
-                $id(value.into())
+            pub(crate) fn [<$id:snake _coerce_maybe_arc>]<'a>(value: impl Into<std::borrow::Cow<'a, [u8]>>) -> [<$id MaybeArc>] {
+                $id(value.into().into_owned())
             }
 
             #[cfg(not(target_family = "wasm"))]
-            #[allow(dead_code, non_snake_case)]
+            #[allow(dead_code)]
             #[inline]
-            pub(crate) fn [<$id _coerce_maybe_arc>](value: impl Into<Vec<u8>>) -> [<$id MaybeArc>] {
-                std::sync::Arc::new($id(value.into()))
+            pub(crate) fn [<$id:snake _coerce_maybe_arc>]<'a>(value: impl Into<std::borrow::Cow<'a, [u8]>>) -> [<$id MaybeArc>] {
+                std::sync::Arc::new($id(value.into().into_owned()))
             }
         }
     };

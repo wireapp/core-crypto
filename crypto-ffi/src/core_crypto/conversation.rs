@@ -2,14 +2,20 @@ use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{Ciphersuite, ClientId, CoreCrypto, CoreCryptoResult, client_id::ClientIdMaybeArc};
+use crate::{
+    Ciphersuite, ClientId, CoreCrypto, CoreCryptoResult, bytes_wrapper::bytes_wrapper, client_id::ClientIdMaybeArc,
+};
 
-// Note that we can't do the same `Box<[u8]>` thing here; it doesn't work for async functions.
-#[cfg(target_family = "wasm")]
-pub(crate) type ConversationId = js_sys::Uint8Array;
-
-#[cfg(not(target_family = "wasm"))]
-pub(crate) type ConversationId = Vec<u8>;
+bytes_wrapper!(
+    /// A unique identifier for a single conversation.
+    ///
+    /// The backend providers an opaque string identifying a new conversation.
+    /// Construct an instance of this newtype to pass that identifier to Rust.
+    #[derive(Debug, PartialEq, Eq, Hash, Clone)]
+    #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(not(target_family = "wasm"), uniffi::export(Debug, Eq, Hash))]
+    ConversationId
+);
 
 #[macro_export]
 macro_rules! conversation_id_vec {

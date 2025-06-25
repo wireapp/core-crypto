@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use core_crypto::prelude::{ConversationId, Obfuscated};
+use core_crypto::prelude::Obfuscated;
 #[cfg(target_family = "wasm")]
 use js_sys::{Promise, Uint8Array};
 #[cfg(target_family = "wasm")]
@@ -10,7 +10,12 @@ use wasm_bindgen::prelude::*;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen_futures::JsFuture;
 
-use crate::{CoreCrypto, CoreCryptoError, CoreCryptoResult};
+#[cfg(target_family = "wasm")]
+use crate::ConversationId;
+#[cfg(not(target_family = "wasm"))]
+use crate::ConversationIdMaybeArc;
+use crate::{CoreCrypto, CoreCryptoError, CoreCryptoResult, conversation_id_coerce_maybe_arc};
+use ::core_crypto::prelude::ConversationId as InternalConversationId;
 
 #[cfg(not(target_family = "wasm"))]
 #[derive(Debug, thiserror::Error, uniffi::Error)]
@@ -41,7 +46,7 @@ pub trait EpochObserver: Send + Sync {
     /// and ignore internal errors instead of propagating them, to the maximum extent possible.
     async fn epoch_changed(
         &self,
-        conversation_id: ConversationId,
+        conversation_id: ConversationIdMaybeArc,
         epoch: u64,
     ) -> Result<(), EpochChangedReportingError>;
 }
@@ -57,8 +62,12 @@ struct ObserverShim(Arc<dyn EpochObserver>);
 #[cfg(not(target_family = "wasm"))]
 #[async_trait]
 impl core_crypto::mls::EpochObserver for ObserverShim {
-    async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64) {
-        if let Err(err) = self.0.epoch_changed(conversation_id.clone(), epoch).await {
+    async fn epoch_changed(&self, conversation_id: InternalConversationId, epoch: u64) {
+        if let Err(err) = self
+            .0
+            .epoch_changed(conversation_id_coerce_maybe_arc(&conversation_id), epoch)
+            .await
+        {
             // we don't _care_ if an error is thrown by the notification function, per se,
             // but this would probably be useful information for downstream debugging efforts
             log::warn!(
@@ -156,8 +165,11 @@ impl EpochObserver {
 #[cfg(target_family = "wasm")]
 #[async_trait(?Send)]
 impl core_crypto::mls::EpochObserver for EpochObserver {
-    async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64) {
-        if let Err(err) = self.epoch_changed(conversation_id.clone(), epoch).await {
+    async fn epoch_changed(&self, conversation_id: InternalConversationId, epoch: u64) {
+        if let Err(err) = self
+            .epoch_changed(conversation_id_coerce_maybe_arc(&conversation_id), epoch)
+            .await
+        {
             // we don't _care_ if an error is thrown by the notification function, per se,
             // but this would probably be useful information for downstream debugging efforts
             log::warn!(
