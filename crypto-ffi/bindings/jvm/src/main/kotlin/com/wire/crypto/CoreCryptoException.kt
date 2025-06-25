@@ -46,7 +46,7 @@ sealed class MlsException : Exception() {
      * @property conversationId
      */
     class ConversationAlreadyExists(
-        val conversationId: kotlin.ByteArray
+        val conversationId: MLSGroupId
     ) : MlsException() {
         override val message
             get() = "conversationId=$conversationId"
@@ -166,7 +166,7 @@ private fun com.wire.crypto.uniffi.CoreCryptoException.lift() =
 private fun com.wire.crypto.uniffi.MlsException.lift() =
     when (this) {
         is com.wire.crypto.uniffi.MlsException.BufferedFutureMessage -> MlsException.BufferedFutureMessage()
-        is com.wire.crypto.uniffi.MlsException.ConversationAlreadyExists -> MlsException.ConversationAlreadyExists(this.v1)
+        is com.wire.crypto.uniffi.MlsException.ConversationAlreadyExists -> MlsException.ConversationAlreadyExists(this.v1.toGroupId())
         is com.wire.crypto.uniffi.MlsException.DuplicateMessage -> MlsException.DuplicateMessage()
         is com.wire.crypto.uniffi.MlsException.MessageEpochTooOld -> MlsException.MessageEpochTooOld()
         is com.wire.crypto.uniffi.MlsException.SelfCommitIgnored -> MlsException.SelfCommitIgnored()

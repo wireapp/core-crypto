@@ -80,17 +80,24 @@ internal fun com.wire.crypto.uniffi.CredentialType.lift() =
         com.wire.crypto.uniffi.CredentialType.X509 -> CredentialType.X509
     }
 
-/** MLS group ID */
+/** MLS group ID
+ * @property value the FFI conversation id
+ */
 @JvmInline
-value class MLSGroupId(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
+value class MLSGroupId(val value: com.wire.crypto.uniffi.ConversationId) {
+    /** Convert this type wrapper into the FFI version it wraps */
+    fun lower() = value
+    override fun toString() = value.copyBytes().toHex()
 }
 
 /** Construct a group ID */
-fun ByteArray.toGroupId() = MLSGroupId(this)
+fun ByteArray.toGroupId() = MLSGroupId(com.wire.crypto.uniffi.ConversationId(this))
 
 /** Construct a group ID */
-fun String.toGroupId() = MLSGroupId(toByteArray())
+fun String.toGroupId() = MLSGroupId(com.wire.crypto.uniffi.ConversationId(toByteArray()))
+
+/** Construct a group ID */
+fun com.wire.crypto.uniffi.ConversationId.toGroupId() = MLSGroupId(this)
 
 /** Client ID */
 @JvmInline
