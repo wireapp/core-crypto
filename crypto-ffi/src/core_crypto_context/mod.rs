@@ -1,7 +1,7 @@
 #[cfg(target_family = "wasm")]
 pub(crate) mod array_of_byte_array;
 mod e2ei;
-mod mls;
+pub(crate) mod mls;
 mod proteus;
 
 use std::{ops::Deref, sync::Arc};

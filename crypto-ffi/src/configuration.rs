@@ -1,11 +1,9 @@
 #[cfg(target_family = "wasm")]
-use js_sys::Uint8Array;
-#[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
 use core_crypto::prelude::MlsCustomConfiguration;
 
-use crate::Ciphersuite;
+use crate::{Ciphersuite, core_crypto_context::mls::ExternalSenderKeyMaybeArc};
 
 /// See [core_crypto::prelude::MlsWirePolicy]
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -90,8 +88,8 @@ impl CustomConfiguration {
 pub struct ConversationConfiguration {
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub ciphersuite: Option<Ciphersuite>,
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(skip))]
-    pub external_senders: Vec<Vec<u8>>,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name=externalSenders))]
+    pub external_senders: Vec<ExternalSenderKeyMaybeArc>,
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub custom: CustomConfiguration,
 }
@@ -102,15 +100,11 @@ impl ConversationConfiguration {
     #[wasm_bindgen(constructor)]
     pub fn new(
         ciphersuite: Option<Ciphersuite>,
-        external_senders: Option<Vec<Uint8Array>>,
+        external_senders: Option<Vec<ExternalSenderKeyMaybeArc>>,
         key_rotation_span: Option<u32>,
         wire_policy: Option<WirePolicy>,
     ) -> crate::CoreCryptoResult<ConversationConfiguration> {
-        let external_senders = external_senders
-            .unwrap_or_default()
-            .iter()
-            .map(|arr| arr.to_vec())
-            .collect();
+        let external_senders = external_senders.unwrap_or_default();
         Ok(Self {
             ciphersuite,
             external_senders,
@@ -119,14 +113,5 @@ impl ConversationConfiguration {
                 wire_policy,
             },
         })
-    }
-
-    /// List of client IDs that are allowed to be external senders
-    #[wasm_bindgen(getter, js_name = externalSenders)]
-    pub fn external_senders(&self) -> Vec<Uint8Array> {
-        self.external_senders
-            .iter()
-            .map(|sender| sender.as_slice().into())
-            .collect()
     }
 }

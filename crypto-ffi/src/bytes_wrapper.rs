@@ -2,11 +2,8 @@
 ///
 /// This macro just handles the boilerplate of constructing the wrapper.
 macro_rules! bytes_wrapper {
-    ($id:ident) => {
-        bytes_wrapper!(_ $id; casey::snake!($id));
-    };
-    (_ $id:ident; $($snake_id:tt)*) => {
-        /// A newtype wrapping a byte array.
+    ($( #[ $attrs:meta ] )* $id:ident) => {
+        $( #[ $attrs ] )*
         #[cfg_attr(target_family = "wasm", wasm_bindgen)]
         #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
         pub struct $id(pub(crate) Vec<u8>);
@@ -40,11 +37,22 @@ macro_rules! bytes_wrapper {
         }
 
         impl std::ops::Deref for $id {
-            type Target = [u8];
+            type Target = Vec<u8>;
 
+            #[inline]
             fn deref(&self) -> &Self::Target {
                 &self.0
             }
+        }
+
+        paste::paste! {
+            #[cfg(target_family = "wasm")]
+            #[allow(dead_code)]
+            pub(crate) type [<$id MaybeArc>] = $id;
+
+            #[cfg(not(target_family = "wasm"))]
+            #[allow(dead_code)]
+            pub(crate) type [<$id MaybeArc>] = std::sync::Arc<$id>;
         }
     };
 }

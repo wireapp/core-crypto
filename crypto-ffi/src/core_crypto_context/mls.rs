@@ -21,7 +21,20 @@ type KeyPackages = Vec<Vec<u8>>;
 #[cfg(target_family = "wasm")]
 type KeyPackages = super::array_of_byte_array::ArrayOfByteArray;
 
-bytes_wrapper!(SecretKey);
+bytes_wrapper!(
+    /// A secret key derived from the group secret.
+    ///
+    /// This is intended to be used for AVS.
+    SecretKey
+);
+bytes_wrapper!(
+    /// The raw public key of an external sender.
+    ///
+    /// This can be used to initialize a subconversation.
+    #[derive(Debug, Clone)]
+    #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+    ExternalSenderKey
+);
 
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
@@ -111,10 +124,14 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_external_sender]
-    pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<u8>> {
+    pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<ExternalSenderKey> {
         let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self.inner.conversation(&conversation_id).await?;
-        conversation.get_external_sender().await.map_err(Into::into)
+        conversation
+            .get_external_sender()
+            .await
+            .map(Into::into)
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::get_or_create_client_keypackages]
@@ -171,7 +188,13 @@ impl CoreCryptoContext {
         };
 
         self.inner
-            .set_raw_external_senders(&mut lower_cfg, config.external_senders)
+            .set_raw_external_senders(
+                &mut lower_cfg,
+                config
+                    .external_senders
+                    .into_iter()
+                    .map(|external_sender| external_sender.copy_bytes()),
+            )
             .await?;
 
         self.inner

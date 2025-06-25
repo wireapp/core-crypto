@@ -882,6 +882,7 @@ dependencies = [
  "js-sys",
  "log",
  "log-reload",
+ "paste",
  "proteus-wasm",
  "rmp-serde",
  "serde",
