@@ -195,10 +195,10 @@ export async function createConversation(
     return await browser.execute(
         async (clientName, conversationId) => {
             const cc = window.ensureCcDefined(clientName);
-            const encoder = new TextEncoder();
+            const cid = new window.ccModule.ConversationId(new TextEncoder().encode(conversationId));
             await cc.transaction((ctx) =>
                 ctx.createConversation(
-                    encoder.encode(conversationId),
+                    cid,
                     window.ccModule.CredentialType.Basic
                 )
             );
@@ -240,10 +240,9 @@ export async function invite(
                 )
             );
 
-            const encoder = new TextEncoder();
-            const conversationIdBytes = encoder.encode(conversationId);
+            const cid = new window.ccModule.ConversationId(new TextEncoder().encode(conversationId));
             await cc1.transaction((ctx) =>
-                ctx.addClientsToConversation(conversationIdBytes, [kp!])
+                ctx.addClientsToConversation(cid, [kp!])
             );
             const { groupInfo, welcome } =
                 await window.deliveryService.getLatestCommitBundle();
@@ -284,31 +283,31 @@ export async function roundTripMessage(
             const cc2 = window.ensureCcDefined(client2);
 
             const encoder = new TextEncoder();
-            const conversationIdBytes = encoder.encode(conversationId);
+            const cid = new window.ccModule.ConversationId(encoder.encode(conversationId));
             const messageBytes = encoder.encode(message);
 
             const encryptedByClient1 = await cc1.transaction(async (ctx) => {
                 return await ctx.encryptMessage(
-                    conversationIdBytes,
+                    cid,
                     messageBytes
                 );
             });
             const decryptedByClient2 = await cc2.transaction(async (ctx) => {
                 return await ctx.decryptMessage(
-                    conversationIdBytes,
+                    cid,
                     encryptedByClient1
                 );
             });
 
             const encryptedByClient2 = await cc2.transaction(async (ctx) => {
                 return await ctx.encryptMessage(
-                    conversationIdBytes,
+                    cid,
                     messageBytes
                 );
             });
             const decryptedByClient1 = await cc1.transaction(async (ctx) => {
                 return await ctx.decryptMessage(
-                    conversationIdBytes,
+                    cid,
                     encryptedByClient2
                 );
             });

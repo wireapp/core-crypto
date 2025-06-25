@@ -15,11 +15,11 @@ describe("epoch observer", () => {
         await ccInit(ALICE_ID);
         const { length, first_id_hex } = await browser.execute(
             async (clientName, conv_id_str) => {
-                const conv_id = new TextEncoder().encode(conv_id_str);
+                const conv_id = new window.ccModule.ConversationId(new TextEncoder().encode(conv_id_str));
 
                 // set up the observer. this just keeps a list of all observations.
                 type ObservedEpoch = {
-                    conversationId: Uint8Array;
+                    conversationId: window.ccModule.ConversationId;
                     epoch: number;
                 };
                 class Observer {
@@ -28,7 +28,7 @@ describe("epoch observer", () => {
                         this.observations = [];
                     }
                     async epochChanged(
-                        conversationId: Uint8Array,
+                        conversationId: window.ccModule.ConversationId,
                         epoch: number
                     ): Promise<void> {
                         this.observations.push({ conversationId, epoch });
@@ -61,7 +61,7 @@ describe("epoch observer", () => {
                 // we have to explicitly return non-primitives, as anything passed by reference won't make it out of the browser context
                 const first_id_hex = Array.from(
                     observer.observations[0]?.conversationId ??
-                        new Uint8Array(),
+                    new Uint8Array(),
                     (byte) => {
                         return ("0" + (byte & 0xff).toString(16)).slice(-2);
                     }
