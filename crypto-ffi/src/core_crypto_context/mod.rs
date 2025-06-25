@@ -1,5 +1,3 @@
-#[cfg(target_family = "wasm")]
-pub(crate) mod array_of_byte_array;
 mod e2ei;
 pub(crate) mod mls;
 mod proteus;

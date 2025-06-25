@@ -15,12 +15,6 @@ use crate::{
     crl::NewCrlDistributionPoints,
 };
 
-#[cfg(not(target_family = "wasm"))]
-type KeyPackages = Vec<Vec<u8>>;
-
-#[cfg(target_family = "wasm")]
-type KeyPackages = super::array_of_byte_array::ArrayOfByteArray;
-
 bytes_wrapper!(
     /// A secret key derived from the group secret.
     ///
@@ -43,6 +37,13 @@ bytes_wrapper!(
     #[derive(Debug, Clone)]
     #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
     GroupInfo
+);
+bytes_wrapper!(
+    /// A signed object describing a client's identity and capabilities.
+    ///
+    /// Includes a public key that can be used to encrypt to that client.
+    /// Other clients can use a client's KeyPackage to introduce that client to a new group.
+    KeyPackage
 );
 
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
@@ -143,7 +144,7 @@ impl CoreCryptoContext {
         ciphersuite: Ciphersuite,
         credential_type: CredentialType,
         amount_requested: u32,
-    ) -> CoreCryptoResult<KeyPackages> {
+    ) -> CoreCryptoResult<Vec<KeyPackageMaybeArc>> {
         let kps = self
             .inner
             .get_or_create_client_keypackages(ciphersuite.into(), credential_type.into(), amount_requested as usize)
@@ -153,11 +154,12 @@ impl CoreCryptoContext {
         kps.into_iter()
             .map(|kp| {
                 kp.tls_serialize_detached()
+                    .map(key_package_coerce_maybe_arc)
                     .map_err(core_crypto::mls::conversation::Error::tls_serialize("keypackage"))
                     .map_err(RecursiveError::mls_conversation("serializing keypackage"))
                     .map_err(Into::into)
             })
-            .collect::<CoreCryptoResult<KeyPackages>>()
+            .collect::<CoreCryptoResult<_>>()
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::client_valid_key_packages_count]
@@ -222,10 +224,8 @@ impl CoreCryptoContext {
     pub async fn add_clients_to_conversation(
         &self,
         conversation_id: &ConversationId,
-        key_packages: KeyPackages,
+        key_packages: Vec<KeyPackageMaybeArc>,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        #[cfg(target_family = "wasm")]
-        let key_packages = key_packages.into_inner();
         let key_packages = key_packages
             .into_iter()
             .map(|kp| {
@@ -237,7 +237,7 @@ impl CoreCryptoContext {
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
         let mut conversation = self.inner.conversation(conversation_id).await?;
-        let distribution_points: Option<Vec<_>> = conversation.add_members(key_packages).await?.into();
+        let distribution_points = conversation.add_members(key_packages).await?.into();
         Ok(distribution_points)
     }
 
