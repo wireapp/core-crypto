@@ -9,7 +9,7 @@ impl TransactionContext {
     pub async fn set_raw_external_senders(
         &self,
         cfg: &mut MlsConversationConfiguration,
-        external_senders: Vec<Vec<u8>>,
+        external_senders: impl IntoIterator<Item = Vec<u8>>,
     ) -> Result<()> {
         let mls_provider = self.mls_provider().await?;
         cfg.external_senders = external_senders
