@@ -44,7 +44,7 @@ public interface EpochObserver {
      * it is required by `uniffi` in order to handle panics. This function should suppress
      * and ignore internal errors instead of propagating them, to the maximum extent possible.
      */
-    suspend fun epochChanged(conversationId: kotlin.ByteArray, epoch: kotlin.ULong)
+    suspend fun epochChanged(conversationId: MLSGroupId, epoch: kotlin.ULong)
 }
 
 /**
@@ -67,7 +67,7 @@ public interface HistoryObserver {
      * it is required by `uniffi` in order to handle panics. This function should suppress
      * and ignore internal errors instead of propagating them, to the maximum extent possible.
      */
-    suspend fun historyClientCreated(conversationId: kotlin.ByteArray, secret: HistorySecret)
+    suspend fun historyClientCreated(conversationId: MLSGroupId, secret: HistorySecret)
 }
 
 /**
@@ -244,8 +244,8 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
         // we want to wrap the observer here to provide async indirection, so that no matter what
         // the observer that makes its way to the Rust side of things doesn't end up blocking
         val observerIndirector = object : com.wire.crypto.uniffi.EpochObserver {
-            override suspend fun epochChanged(conversationId: kotlin.ByteArray, epoch: kotlin.ULong) {
-                scope.launch { epochObserver.epochChanged(conversationId, epoch) }
+            override suspend fun epochChanged(conversationId: com.wire.crypto.uniffi.ConversationId, epoch: kotlin.ULong) {
+                scope.launch { epochObserver.epochChanged(conversationId.toGroupId(), epoch) }
             }
         }
         return wrapException {
@@ -263,10 +263,10 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
         // the observer that makes its way to the Rust side of things doesn't end up blocking
         val observerIndirector = object : com.wire.crypto.uniffi.HistoryObserver {
             override suspend fun historyClientCreated(
-                conversationId: ByteArray,
+                conversationId: com.wire.crypto.uniffi.ConversationId,
                 secret: com.wire.crypto.uniffi.HistorySecret
             ) {
-                scope.launch { historyObserver.historyClientCreated(conversationId, secret.lift()) }
+                scope.launch { historyObserver.historyClientCreated(conversationId.toGroupId(), secret.lift()) }
             }
         }
         return wrapException {

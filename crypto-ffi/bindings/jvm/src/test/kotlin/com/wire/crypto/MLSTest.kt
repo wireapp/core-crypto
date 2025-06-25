@@ -199,7 +199,7 @@ class MLSTest {
         val groupId = alice.transaction { it.processWelcomeMessage(welcome) }
 
         // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
-        assertThat(groupId.id.toString()).isEqualTo(id.value.toHex())
+        assertThat(groupId.id).isEqualTo(id)
     }
 
     @Test
@@ -260,7 +260,7 @@ class MLSTest {
 
         val groupId = alice.transaction { it.processWelcomeMessage(welcome) }
         // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
-        assertThat(groupId.id.toString()).isEqualTo(id.value.toHex())
+        assertThat(groupId.id).isEqualTo(id)
     }
 
     @Test
@@ -352,12 +352,12 @@ class MLSTest {
         val scope = TestScope()
         return scope.runTest {
             // Set up the observer. this just keeps a list of all observations.
-            data class EpochChanged(val conversationId: ByteArray, val epoch: ULong)
+            data class EpochChanged(val conversationId: MLSGroupId, val epoch: ULong)
 
             class Observer : EpochObserver {
                 val observedEvents = emptyList<EpochChanged>().toMutableList()
 
-                override suspend fun epochChanged(conversationId: ByteArray, epoch: ULong) {
+                override suspend fun epochChanged(conversationId: MLSGroupId, epoch: ULong) {
                     observedEvents.add(EpochChanged(conversationId, epoch))
                 }
             }
@@ -390,19 +390,13 @@ class MLSTest {
             // last one
             assertEquals(3, bobObserver.observedEvents.size, "we triggered exactly 3 epoch changes and must have observed that")
             assertEquals(1, aliceObserver.observedEvents.size, "we triggered exactly 1 epoch change and must have observed that")
-            // println("observed group id: $observed_group_id")
-            // println("expected group id: $id")
-            //
-            // This doesn't work without the string cast for what I can only assume to be Kotlin Reasons, which
-            // are sensible if you are an experienced kotlin developer, which I am not.
-            // If you want to observe a nonsense failure, un-comment the printlns above, and the `.toString()` calls below
-            val expected = id.toString()
+
             assertTrue(
-                bobObserver.observedEvents.all { it.conversationId.toGroupId().toString() == expected },
+                bobObserver.observedEvents.all { it.conversationId.value == id.value },
                 "the events observed by bob must be for this conversation"
             )
             assertTrue(
-                aliceObserver.observedEvents.all { it.conversationId.toGroupId().toString() == expected },
+                aliceObserver.observedEvents.all { it.conversationId.value == id.value },
                 "the event observed by alice must be for this conversation"
             )
         }
