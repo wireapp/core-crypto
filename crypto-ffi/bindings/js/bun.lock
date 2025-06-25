@@ -713,7 +713,7 @@
 
     "eslint-config-prettier": ["eslint-config-prettier@10.1.5", "", { "peerDependencies": { "eslint": ">=7.0.0" }, "bin": { "eslint-config-prettier": "bin/cli.js" } }, "sha512-zc1UmCpNltmVY34vuLRV61r1K27sWuX39E+uyUnY8xS2Bex88VV9cugG+UZbRSRGtGyFboj+D8JODyme1plMpw=="],
 
-    "eslint-plugin-prettier": ["eslint-plugin-prettier@5.5.0", "", { "dependencies": { "prettier-linter-helpers": "^1.0.0", "synckit": "^0.11.7" }, "peerDependencies": { "@types/eslint": ">=8.0.0", "eslint": ">=8.0.0", "eslint-config-prettier": ">= 7.0.0 <10.0.0 || >=10.1.0", "prettier": ">=3.0.0" }, "optionalPeers": ["@types/eslint", "eslint-config-prettier"] }, "sha512-8qsOYwkkGrahrgoUv76NZi23koqXOGiiEzXMrT8Q7VcYaUISR+5MorIUxfWqYXN0fN/31WbSrxCxFkVQ43wwrA=="],
+    "eslint-plugin-prettier": ["eslint-plugin-prettier@5.5.1", "", { "dependencies": { "prettier-linter-helpers": "^1.0.0", "synckit": "^0.11.7" }, "peerDependencies": { "@types/eslint": ">=8.0.0", "eslint": ">=8.0.0", "eslint-config-prettier": ">= 7.0.0 <10.0.0 || >=10.1.0", "prettier": ">=3.0.0" }, "optionalPeers": ["@types/eslint", "eslint-config-prettier"] }, "sha512-dobTkHT6XaEVOo8IO90Q4DOSxnm3Y151QxPJlM/vKC0bVy+d6cVWQZLlFiuZPP0wS6vZwSKeJgKkcS+KfMBlRw=="],
 
     "eslint-plugin-wdio": ["eslint-plugin-wdio@9.16.2", "", {}, "sha512-qkqsPgxN70OnUPWMjmzJbSbvm2+Q087JIGss53/OFI4Y46xKlV5VLhLiYealaAibAiXmnfWKd0tERjZAzVL87A=="],
 
