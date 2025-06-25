@@ -4,9 +4,7 @@ use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    ConversationId, CoreCrypto, CoreCryptoResult, WireIdentity, client_id::ClientIdMaybeArc, conversation_id_vec,
-};
+use crate::{ConversationId, CoreCrypto, CoreCryptoResult, WireIdentity, client_id::ClientIdMaybeArc};
 
 #[cfg(not(target_family = "wasm"))]
 type DeviceIdentities = Vec<WireIdentity>;
@@ -30,7 +28,6 @@ impl CoreCrypto {
         conversation_id: &ConversationId,
         device_ids: Vec<ClientIdMaybeArc>,
     ) -> CoreCryptoResult<DeviceIdentities> {
-        let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self
             .inner
             .get_raw_conversation(&conversation_id)
@@ -59,7 +56,6 @@ impl CoreCrypto {
         conversation_id: &ConversationId,
         user_ids: Vec<String>,
     ) -> CoreCryptoResult<UserIdentities> {
-        let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self
             .inner
             .get_raw_conversation(&conversation_id)
