@@ -129,6 +129,7 @@ impl TransactionContext {
             welcome: None,
             commit,
             group_info,
+            encrypted_message: None,
         };
 
         let welcome_bundle = WelcomeBundle {

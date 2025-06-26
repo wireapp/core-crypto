@@ -73,6 +73,12 @@ export interface CommitBundle {
      * @readonly
      */
     groupInfo: GroupInfoBundle;
+
+    /**
+     * An encrypted message to fan out to all other conversation members in the new epoch
+     * @readonly
+     */
+    encryptedMessage?: Uint8Array;
 }
 
 function commitBundleFromFfi(commitBundle: CommitBundleFfi): CommitBundle {
@@ -84,6 +90,7 @@ function commitBundleFromFfi(commitBundle: CommitBundleFfi): CommitBundle {
             ratchetTreeType: commitBundle.group_info.ratchet_tree_type,
             payload: commitBundle.group_info.payload,
         },
+        encryptedMessage: commitBundle.encryptedMessage,
     };
 }
 
