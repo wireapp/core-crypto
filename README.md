@@ -19,7 +19,7 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ## Usage
 
-### [API Docs](https://wireapp.github.io/core-crypto/core_crypto/)
+### [API Docs](https://wireapp.github.io/core-crypto/)
 
 ## Building
 
