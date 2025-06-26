@@ -26,6 +26,7 @@
 
 ### Bug Fixes
 
+- invalid API Docs link in README.md ([500c36f](https://github.com/wireapp/core-crypto/commit/500c36f11d20d673802a8f32556653209fab9a91))
 - building android bindings on a mac ([67125cd](https://github.com/wireapp/core-crypto/commit/67125cd257e5f4ca960f8be81e3e15f467011a9a))
 - unreleased changes generation had an extra token ([bc56760](https://github.com/wireapp/core-crypto/commit/bc567602ae772302562073e2fb93969ba29ab433))
 - crypto-ffi: fix field names in X509Identity on wasm ([6481d8c](https://github.com/wireapp/core-crypto/commit/6481d8c9e4b32611096cbed4f3281b0127ca3070))
