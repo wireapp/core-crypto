@@ -16,18 +16,16 @@
 //! For each history-sharing era, they can instantiate an ephemeral client from the history secret,
 //! and use that client to decrypt all messages in this era.
 //!
-//! Though ephemeral clients are full instances of `CoreCrypto` and contain the same API, they should
-//! not be used to generate messages for sending. They should also not be instantiated to follow along with
-//! new messages as they are received, as that's pointless; the individual credentials suffice.
-
-use std::collections::HashSet;
+//! Though ephemeral clients are full instances of `CoreCrypto` and contain the same API, they cannot
+//! be used to generate messages for sending, as they don't posess a credential with a signature key:
+//! Any attempt to encrypt a message will fail because the client cannot retrieve the signature key from
+//! its keystore.
 
 use mls_crypto_provider::DatabaseKey;
-use openmls::prelude::{KeyPackageSecretEncapsulation, SignatureScheme};
+use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
     CoreCrypto, Error, MlsError, RecursiveError, Result,
-    mls::credential::CredentialBundle,
     prelude::{ClientId, ClientIdentifier, MlsCiphersuite, MlsClientConfiguration, MlsCredentialType, Session},
 };
 
@@ -41,7 +39,6 @@ pub const HISTORY_CLIENT_ID_PREFIX: &str = "history-client";
 pub struct HistorySecret {
     /// Client id of the associated history client
     pub client_id: ClientId,
-    pub(crate) credential_bundle: CredentialBundle,
     pub(crate) key_package: KeyPackageSecretEncapsulation,
 }
 
@@ -90,26 +87,16 @@ pub(crate) async fn generate_history_secret(ciphersuite: MlsCiphersuite) -> Resu
     let client_id = uuid::Uuid::new_v4();
     let client_id = format!("{HISTORY_CLIENT_ID_PREFIX}-{client_id}");
     let client_id = ClientId::from(client_id.into_bytes());
-    let identifier = ClientIdentifier::Basic(client_id);
+    let identifier = ClientIdentifier::Basic(client_id.clone());
 
     let cc = in_memory_cc_with_ciphersuite(ciphersuite).await?;
     let tx = cc
         .new_transaction()
         .await
         .map_err(RecursiveError::transaction("creating new transaction"))?;
-    cc.init(identifier.clone(), &[ciphersuite], &cc.crypto_provider, 0)
+    cc.init(identifier, &[ciphersuite], &cc.crypto_provider, 0)
         .await
         .map_err(RecursiveError::mls_client("initializing ephemeral cc"))?;
-
-    // we can get a credential bundle from a provider and ciphersuite
-    let mut signature_schemes = HashSet::with_capacity(1);
-    signature_schemes.insert(SignatureScheme::from(ciphersuite.0));
-    let bundles = identifier
-        .generate_credential_bundles(&cc.crypto_provider, signature_schemes)
-        .map_err(RecursiveError::mls_client("generating credential bundles"))?;
-    let [(_signature_scheme, client_id, credential_bundle)] = bundles
-        .try_into()
-        .expect("given exactly 1 signature scheme we must get exactly 1 credential bundle");
 
     // we can generate a key package from the ephemeral cc and ciphersutite
     let [key_package] = tx
@@ -124,11 +111,7 @@ pub(crate) async fn generate_history_secret(ciphersuite: MlsCiphersuite) -> Resu
 
     // we don't need to finish the transaction here--the point of the ephemeral CC was that no mutations would be saved there
 
-    Ok(HistorySecret {
-        client_id,
-        credential_bundle,
-        key_package,
-    })
+    Ok(HistorySecret { client_id, key_package })
 }
 
 impl CoreCrypto {

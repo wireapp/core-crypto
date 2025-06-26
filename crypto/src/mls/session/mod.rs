@@ -515,28 +515,17 @@ impl Session {
         // store the client id (with some other stuff)
         self.replace_inner(SessionInner {
             id: history_secret.client_id.clone(),
-            identities: Identities::new(1),
+            identities: Identities::new(0),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
         })
         .await;
 
         // store the key package
-        let key_package = history_secret
+        history_secret
             .key_package
             .store(&self.crypto_provider)
             .await
             .map_err(MlsError::wrap("storing key package encapsulation"))?;
-
-        let keystore = self.crypto_provider.key_store();
-
-        // store the credential bundle (with some other stuff)
-        self.save_identity(
-            keystore,
-            Some(&history_secret.client_id),
-            key_package.ciphersuite().signature_algorithm(),
-            history_secret.credential_bundle,
-        )
-        .await?;
 
         Ok(())
     }
