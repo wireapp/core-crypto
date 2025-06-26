@@ -317,44 +317,48 @@ mod tests {
             return;
         }
 
-        let [mut alice, bob] = case.sessions().await;
-        let conversation = case.create_conversation([&alice, &bob]).await;
-        let conversation_id = conversation.id().to_owned();
+        Box::pin(async move {
+            let [mut alice, bob] = case.sessions().await;
+            let conversation = case.create_conversation([&alice, &bob]).await;
+            let conversation_id = conversation.id().to_owned();
 
-        drop(conversation);
-        // Commit the transaction here; this is the state alice will be in when reloading the app after crashing.
-        alice.commit_transaction().await;
-        let conversation = TestConversation::new_from_existing(&case, conversation_id.clone(), [&alice, &bob]).await;
+            drop(conversation);
+            // Commit the transaction here; this is the state alice will be in when reloading the app after crashing.
+            alice.commit_transaction().await;
+            let conversation =
+                TestConversation::new_from_existing(&case, conversation_id.clone(), [&alice, &bob]).await;
 
-        // Alice creates a commit but won't merge it immediately.
-        // In the meantime, Bob merges that commit.
-        let commit_guard = conversation.update_unmerged().await.notify_member(&bob).await;
-        let unmerged_commit = commit_guard.message().to_bytes().unwrap();
-        let _conversation = commit_guard.finish();
+            // Alice creates a commit but won't merge it immediately.
+            // In the meantime, Bob merges that commit.
+            let commit_guard = conversation.update_unmerged().await.notify_member(&bob).await;
+            let unmerged_commit = commit_guard.message().to_bytes().unwrap();
+            let _conversation = commit_guard.finish();
 
-        // Alice's app may have crashed, for example, before receiving the success response from the DS.
-        // Crash happens here; changes since the transaction commit are not persisted.
-        alice.pretend_crash().await;
+            // Alice's app may have crashed, for example, before receiving the success response from the DS.
+            // Crash happens here; changes since the transaction commit are not persisted.
+            alice.pretend_crash().await;
 
-        // ok, alice is back, and look: here's that commit that she made
-        alice
-            .transaction
-            .conversation(&conversation_id)
-            .await
-            .unwrap()
-            .decrypt_message(&unmerged_commit)
-            .await
-            .unwrap_err();
-        //  .unwrap();
-        //
-        // We _want_ this case to work, and spent some effort attempting to make it work, but ultimately
-        // couldn't figure out how to make it work given the OpenMLS primitives available. Ref: [WPB-17464].
-        return;
+            // ok, alice is back, and look: here's that commit that she made
+            alice
+                .transaction
+                .conversation(&conversation_id)
+                .await
+                .unwrap()
+                .decrypt_message(&unmerged_commit)
+                .await
+                .unwrap_err();
+            //  .unwrap();
+            //
+            // We _want_ this case to work, and spent some effort attempting to make it work, but ultimately
+            // couldn't figure out how to make it work given the OpenMLS primitives available. Ref: [WPB-17464].
+            return;
 
-        #[expect(unreachable_code)]
-        {
-            // mls is still healthy and Alice and Bob can still chat
-            assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
-        }
+            #[expect(unreachable_code)]
+            {
+                // mls is still healthy and Alice and Bob can still chat
+                assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
+            }
+        })
+        .await
     }
 }
