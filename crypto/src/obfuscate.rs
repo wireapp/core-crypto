@@ -1,4 +1,4 @@
-use crate::prelude::{ClientId, ConversationId};
+use crate::prelude::{ClientId, ConversationId, HistorySecret};
 use derive_more::{Constructor, From};
 use hex;
 use log::kv::{ToValue, Value};
@@ -53,6 +53,15 @@ impl Obfuscate for &Sender {
             Sender::NewMemberProposal => write!(f, "NewMemberProposal"),
             Sender::NewMemberCommit => write!(f, "NewMemberCommit"),
         }
+    }
+}
+
+impl Obfuscate for &HistorySecret {
+    fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("HistorySecret")
+            .field("client_id", &Obfuscated::from(&self.client_id))
+            .field("key_package", &"<secret>")
+            .finish()
     }
 }
 

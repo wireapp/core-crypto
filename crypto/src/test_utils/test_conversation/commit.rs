@@ -289,4 +289,47 @@ impl<'a> TestConversation<'a> {
             pending_conversation,
         )
     }
+
+    /// Enable history sharing and instantiate a history client.
+    pub async fn enable_history_sharing_notify(mut self) -> Self {
+        self.actor().setup_history_observer().await;
+        self.guard().await.enable_history_sharing().await.unwrap();
+        let ephemeral_client = self.instantiate_history_client().await;
+        self.history_client.replace(ephemeral_client);
+        self.notify_about_enabled_history_sharing().await
+    }
+
+    async fn instantiate_history_client(&self) -> SessionContext {
+        let history_secret = self
+            .actor()
+            .history_observer()
+            .await
+            .observed_history_clients()
+            .await
+            .pop()
+            .expect("observed history client")
+            .1;
+
+        let ephemeral_client = crate::CoreCrypto::history_client(history_secret).await.unwrap();
+
+        SessionContext::new_from_cc(self.case, ephemeral_client, None).await
+    }
+
+    async fn notify_about_enabled_history_sharing(self) -> Self {
+        let message = self.transport().await.latest_commit().await;
+        let actor_index = self.actor_index();
+
+        let commit = OperationGuard::<Commit>::new(TestOperation::HistorySharingEnabled, message, self, [actor_index]);
+        commit.notify_members().await
+    }
+
+    /// Disable history sharing and remove the history client.
+    pub async fn disable_history_sharing_notify(self) -> Self {
+        self.guard().await.disable_history_sharing().await.unwrap();
+        let message = self.transport().await.latest_commit().await;
+        let actor_index = self.actor_index();
+
+        let commit = OperationGuard::<Commit>::new(TestOperation::HistorySharingDisabled, message, self, [actor_index]);
+        commit.notify_members().await
+    }
 }

@@ -22,6 +22,7 @@ pub use crate::prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCre
 use crate::{
     CoreCrypto, Error, MlsTransport, MlsTransportData, MlsTransportResponse, RecursiveError,
     e2e_identity::id::QualifiedE2eiClientId,
+    mls::HistoryObserver,
     prelude::{
         CertificateBundle, ClientId, ConversationId, MlsClientConfiguration, MlsCommitBundle, MlsGroupInfoBundle,
         Session,
@@ -97,13 +98,14 @@ pub struct SessionContext {
     pub transaction: TransactionContext,
     pub session: Session,
     mls_transport: Arc<RwLock<Arc<dyn MlsTransportTestExt + 'static>>>,
-    x509_test_chain: std::sync::Arc<Option<X509TestChain>>,
+    x509_test_chain: Arc<Option<X509TestChain>>,
+    history_observer: Arc<RwLock<Option<Arc<TestHistoryObserver>>>>,
     // We need to store the `TempDir` struct for the duration of the test session,
     // because its drop implementation takes care of the directory deletion.
     #[cfg(not(target_family = "wasm"))]
-    _db_file: (String, Arc<tempfile::TempDir>),
+    _db_file: Option<(String, Arc<tempfile::TempDir>)>,
     #[cfg(target_family = "wasm")]
-    _db_file: (String, ()),
+    _db_file: Option<(String, ())>,
 }
 
 #[derive(Default, Clone, Copy)]
@@ -160,12 +162,35 @@ impl SessionContext {
             session,
             mls_transport: Arc::new(RwLock::new(transport)),
             x509_test_chain: Arc::new(chain.cloned()),
+            history_observer: Default::default(),
             #[cfg(not(target_family = "wasm"))]
-            _db_file: (db_dir_string, Arc::new(db_dir)),
+            _db_file: Some((db_dir_string, Arc::new(db_dir))),
             #[cfg(target_family = "wasm")]
-            _db_file: (db_dir_string, db_dir),
+            _db_file: Some((db_dir_string, db_dir)),
         };
         Ok(result)
+    }
+
+    pub(crate) async fn new_from_cc(context: &TestContext, cc: CoreCrypto, chain: Option<&X509TestChain>) -> Self {
+        let transport = context.transport.clone();
+        let transaction = cc.new_transaction().await.unwrap();
+
+        let session = cc.mls;
+        // Setup the X509 PKI environment
+        if let Some(chain) = chain.as_ref() {
+            chain.register_with_central(&transaction).await;
+        }
+
+        session.provide_transport(transport.clone()).await;
+
+        Self {
+            transaction,
+            session,
+            mls_transport: Arc::new(RwLock::new(transport)),
+            x509_test_chain: Arc::new(chain.cloned()),
+            history_observer: Default::default(),
+            _db_file: None,
+        }
     }
 
     pub(crate) async fn new_uninitialized(context: &TestContext) -> Self {
@@ -190,10 +215,11 @@ impl SessionContext {
             session: cc.mls,
             mls_transport: Arc::new(RwLock::new(transport.clone())),
             x509_test_chain: None.into(),
+            history_observer: Default::default(),
             #[cfg(not(target_family = "wasm"))]
-            _db_file: (db_dir_string, Arc::new(db_dir)),
+            _db_file: Some((db_dir_string, Arc::new(db_dir))),
             #[cfg(target_family = "wasm")]
-            _db_file: (db_dir_string, db_dir),
+            _db_file: Some((db_dir_string, db_dir)),
         }
     }
 
@@ -259,6 +285,20 @@ impl SessionContext {
 
     pub async fn mls_transport(&self) -> Arc<dyn MlsTransportTestExt> {
         self.mls_transport.read().await.clone()
+    }
+
+    async fn setup_history_observer(&self) {
+        let new_observer = TestHistoryObserver::new();
+        let new_observer_dyn = new_observer.clone() as Arc<dyn HistoryObserver>;
+
+        let mut history_observer = self.history_observer.write().await;
+
+        *history_observer = Some(new_observer);
+        self.session.register_history_observer(new_observer_dyn).await.unwrap();
+    }
+
+    pub(crate) async fn history_observer(&self) -> Arc<TestHistoryObserver> {
+        self.history_observer.read().await.clone().unwrap()
     }
 }
 

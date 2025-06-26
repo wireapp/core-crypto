@@ -39,6 +39,8 @@ pub(crate) enum TestOperation<'a> {
     Update,
     /// The provided [SessionContext] will be removed from the members list.
     Remove(&'a SessionContext),
+    HistorySharingEnabled,
+    HistorySharingDisabled,
 }
 
 impl<'a, T> OperationGuard<'a, T> {
@@ -125,6 +127,13 @@ impl<'a> OperationGuard<'a, Commit> {
     /// Also, propagate the state to the [TestConversation].
     pub async fn notify_members(mut self) -> TestConversation<'a> {
         let members = self.conversation.members.clone();
+        let history_client = self
+            .conversation
+            .history_client
+            .clone()
+            .filter(|_| !matches!(self.operation, TestOperation::HistorySharingEnabled));
+        let members = members.into_iter().chain(history_client.as_ref().into_iter());
+
         for member in members {
             self = self.notify_member(member).await;
         }
@@ -174,33 +183,46 @@ impl<'a> OperationGuard<'a, Commit> {
                     if self.conversation().are_members(invited_members.clone()).await {
                         continue;
                     }
-                    let welcome_message = self
-                        .conversation()
-                        .actor()
-                        .mls_transport()
-                        .await
-                        .latest_commit_bundle()
-                        .await
-                        .welcome
-                        .expect("we're processing an add operation, so there must be a welcome message");
-                    // Process welcome message on receiver side
-                    for new_member in invited_members.iter() {
-                        new_member
-                            .transaction
-                            .process_welcome_message(
-                                welcome_message.clone().into(),
-                                self.conversation.case.custom_cfg(),
-                            )
-                            .await
-                            .unwrap();
-                    }
+                    self.process_added_members(invited_members).await;
                     // Then update the member list
                     self.conversation.members.reserve(invited_members.len());
                     self.conversation.members.extend(invited_members);
                 }
+                TestOperation::HistorySharingEnabled => {
+                    // create an add operation with the history client on the conversation
+                    let history_client = self
+                        .conversation
+                        .history_client
+                        .as_ref()
+                        .expect("history client must have been added at this point");
+                    self.process_added_members(&[history_client]).await;
+                }
+                TestOperation::HistorySharingDisabled => {
+                    self.conversation.history_client.take();
+                }
             }
         }
         self
+    }
+
+    async fn process_added_members(&self, invited_members: &[&SessionContext]) {
+        let welcome_message = self
+            .conversation()
+            .actor()
+            .mls_transport()
+            .await
+            .latest_commit_bundle()
+            .await
+            .welcome
+            .expect("we're processing an add operation, so there must be a welcome message");
+
+        for new_member in invited_members {
+            new_member
+                .transaction
+                .process_welcome_message(welcome_message.clone().into(), self.conversation.case.custom_cfg())
+                .await
+                .unwrap();
+        }
     }
 
     // Call this once you're finished with manual processing and need mutable access

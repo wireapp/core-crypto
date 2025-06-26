@@ -74,3 +74,62 @@ impl ConversationGuard {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+    use rstest_reuse::apply;
+
+    use crate::ephemeral::HISTORY_CLIENT_ID_PREFIX;
+    use crate::mls::conversation::Conversation;
+    use crate::test_utils::{TestContext, all_cred_cipher};
+
+    #[apply(all_cred_cipher)]
+    /// Together with the tests in [crate::ephemeral] this proves that we can create ephemeral clients from the
+    /// events emitted by enabling history sharing.
+    async fn enable_disable_history_sharing(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        Box::pin(async move {
+            let test_conv = case.create_conversation([&alice, &bob]).await;
+            let guard = test_conv.guard().await;
+
+            assert!(!guard.is_history_sharing_enabled().await);
+
+            let test_conv = test_conv.enable_history_sharing_notify().await;
+            assert_eq!(test_conv.member_count().await, 3);
+            let add_history_client_commit = alice.mls_transport().await.latest_commit_bundle().await;
+            let encrypyed_history_secret = add_history_client_commit
+                .encrypted_message
+                .expect("history secret should be bundled with the commmit");
+            test_conv
+                .guard_of(&bob)
+                .await
+                .decrypt_message(&encrypyed_history_secret)
+                .await
+                .expect("bob should be able to decrypt the history secret");
+
+            let test_conv = test_conv.disable_history_sharing_notify().await;
+            assert!(!guard.is_history_sharing_enabled().await);
+            assert_eq!(test_conv.member_count().await, 2);
+
+            let observed_history_clients = alice.history_observer().await.observed_history_clients().await;
+            assert_eq!(
+                observed_history_clients.len(),
+                1,
+                "we triggered exactly one history client change and so should observe that"
+            );
+            assert_eq!(
+                observed_history_clients[0].0,
+                test_conv.id().clone(),
+                "conversation id of observed history client change must match"
+            );
+            assert!(
+                observed_history_clients[0]
+                    .1
+                    .client_id
+                    .starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes()),
+                "client id of observed history client change must be a history client id"
+            );
+        })
+        .await
+    }
+}

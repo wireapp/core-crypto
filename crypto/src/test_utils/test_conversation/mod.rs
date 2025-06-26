@@ -20,6 +20,7 @@ pub struct TestConversation<'a> {
     #[as_ref]
     pub(crate) id: ConversationId,
     pub(crate) members: Vec<&'a SessionContext>,
+    history_client: Option<SessionContext>,
     proposals: Vec<TestOperation<'a>>,
     actor_index: Option<usize>,
 }
@@ -47,6 +48,7 @@ impl<'a> TestConversation<'a> {
             case,
             id,
             members: vec![creator],
+            history_client: None,
             proposals: vec![],
             actor_index: None,
         }
@@ -62,6 +64,7 @@ impl<'a> TestConversation<'a> {
             case,
             id,
             members: members.into(),
+            history_client: None,
             proposals: vec![],
             actor_index: None,
         };
@@ -76,7 +79,7 @@ impl<'a> TestConversation<'a> {
 
     /// Count the members. Also, assert that the count is the same from the point of view of every member.
     pub async fn member_count(&self) -> usize {
-        let member_count = self.members.len();
+        let member_count = self.members().count();
 
         let member_counts_match = futures_util::future::join_all(
             self.members()
@@ -135,39 +138,34 @@ impl<'a> TestConversation<'a> {
             .all(|members_can_talk| *members_can_talk)
     }
 
-    async fn try_talk(&self, member: &SessionContext, other_member: &SessionContext) -> crate::test_utils::Result<()> {
-        let mut member_guard = member
+    async fn try_one_way_communicate(
+        &self,
+        sender: &SessionContext,
+        receiver: &SessionContext,
+    ) -> crate::test_utils::Result<()> {
+        let mut sender_guard = sender
             .transaction
             .conversation(&self.id)
             .await
             .map_err(RecursiveError::transaction("getting conversation by id"))?;
-        let mut other_guard = other_member
+        let mut receiver_guard = receiver
             .transaction
             .conversation(&self.id)
             .await
             .map_err(RecursiveError::transaction("getting conversation by id"))?;
         let msg = b"Hello other";
-        let encrypted = member_guard
+        let encrypted = sender_guard
             .encrypt_message(msg)
             .await
-            .map_err(RecursiveError::mls_conversation("encrypting message; member -> other"))?;
-        let decrypted = other_guard
+            .map_err(RecursiveError::mls_conversation(
+                "encrypting message; sender -> receiver",
+            ))?;
+        let decrypted = receiver_guard
             .decrypt_message(encrypted)
             .await
-            .map_err(RecursiveError::mls_conversation("decrypting message; other <- member"))?
-            .app_msg
-            .ok_or(TestError::ImplementationError)?;
-        assert_eq!(&msg[..], &decrypted[..]);
-        // other --> member
-        let msg = b"Hello member";
-        let encrypted = other_guard
-            .encrypt_message(msg)
-            .await
-            .map_err(RecursiveError::mls_conversation("encrypting message; other -> member"))?;
-        let decrypted = member_guard
-            .decrypt_message(encrypted)
-            .await
-            .map_err(RecursiveError::mls_conversation("decrypting message; member <- other"))?
+            .map_err(RecursiveError::mls_conversation(
+                "decrypting message; receiver <- sender",
+            ))?
             .app_msg
             .ok_or(TestError::ImplementationError)?;
         assert_eq!(&msg[..], &decrypted[..]);
@@ -176,7 +174,12 @@ impl<'a> TestConversation<'a> {
 
     /// Check if one member can exchange application messages with another
     pub(crate) async fn can_talk(&self, member: &SessionContext, other_member: &SessionContext) -> bool {
-        self.try_talk(member, other_member).await.is_ok()
+        self.can_one_way_communicate(member, other_member).await
+            && self.can_one_way_communicate(other_member, member).await
+    }
+
+    pub(crate) async fn can_one_way_communicate(&self, sender: &SessionContext, receiver: &SessionContext) -> bool {
+        self.try_one_way_communicate(sender, receiver).await.is_ok()
     }
 
     /// Get the current acting member, i.e., the member on whose behalf the following operation will be performed.
@@ -202,7 +205,7 @@ impl<'a> TestConversation<'a> {
     ///
     /// The creator is always the first member returned (if they're still a member).
     pub fn members(&self) -> impl Iterator<Item = &SessionContext> {
-        self.members.iter().copied()
+        self.members.iter().copied().chain(self.history_client.as_ref())
     }
 
     /// Convenience function to get the mls transport of the actor.
@@ -283,7 +286,7 @@ impl<'a> TestConversation<'a> {
 
         // can't use `Iterator::position` because getting the id is async
         let mut member_idx = None;
-        for (idx, member) in self.members.iter().enumerate() {
+        for (idx, member) in self.members().enumerate() {
             let joiner_id = member.session.id().await.unwrap();
             if joiner_id == member_id {
                 member_idx = Some(idx);

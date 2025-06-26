@@ -157,87 +157,32 @@ mod tests {
     use rstest::rstest;
     use rstest_reuse::apply;
 
-    use crate::test_utils::{SessionContext, TestContext, all_cred_cipher};
-
-    use super::*;
+    use crate::test_utils::{TestContext, all_cred_cipher};
 
     /// Create a history secret, and restore it into a CoreCrypto instance
     #[apply(all_cred_cipher)]
     async fn can_create_ephemeral_client(case: TestContext) {
-        if case.credential_type != MlsCredentialType::Basic {
-            // history client will only ever have basic credentials, so not much point in testing
-            // how it interacts with an x509-only conversation
-            return;
-        }
-
-        use crate::mls::conversation::Conversation as _;
-
         let [alice] = case.sessions().await;
-        let conversation = case.create_conversation([&alice]).await;
-
-        let conversation_guard = conversation.guard().await;
-        let history_secret = conversation_guard.generate_history_secret().await.unwrap();
-
-        // the history secret has to survive encoding and decoding into some arbitrary serde format,
-        // so round-trip it
-        // note: we're not testing the serialization format
-        let encoded = rmp_serde::to_vec(&history_secret).unwrap();
-        let history_secret = rmp_serde::from_slice::<HistorySecret>(&encoded).unwrap();
-
-        let ephemeral_client = CoreCrypto::history_client(history_secret).await.unwrap();
-
-        // so how can we test that this has actually worked, given that we have not yet implemented the
-        // bit where we can actually enable history for a conversation, adding a history client? Well,
-        // with the caveat that
-        // WE SHOULD NOT DO THIS OUTSIDE A TESTING CONTEXT
-        // , we may as well try to
-        // roundtrip a conversation with Alice; that should at least prove that the ephemeral client
-        // has the basic minimal set of data in its keystore set properly.
-        let ephemeral_identifier = ClientIdentifier::Basic(ephemeral_client.mls.id().await.unwrap());
-        let ephemeral_session_context = SessionContext::new_with_identifier(&case, ephemeral_identifier, None)
+        let conversation = case
+            .create_conversation([&alice])
             .await
-            .unwrap();
+            .enable_history_sharing_notify()
+            .await;
 
-        let conversation = conversation.invite_notify([&ephemeral_session_context]).await;
-
-        assert!(
-            conversation
-                .is_functional_and_contains([&alice, &ephemeral_session_context])
-                .await
+        assert_eq!(
+            conversation.member_count().await,
+            2,
+            "the convesation should now magically have a second member"
         );
-    }
 
-    #[apply(all_cred_cipher)]
-    async fn ephemeral_client_can_receive_messages_from_x509(case: TestContext) {
-        if case.credential_type != MlsCredentialType::Basic {
-            // history client will only ever have basic credentials, so not much point in testing
-            // how it interacts with an x509-only conversation
-            return;
-        }
-
-        use crate::mls::conversation::Conversation as _;
-
-        // set up alice with x509
-        let [alice] = case.sessions_x509().await;
-        let conversation = case.create_conversation([&alice]).await;
-
-        // set up a history client for this conversation
-        let conversation_guard = conversation.guard().await;
-        let history_secret = conversation_guard.generate_history_secret().await.unwrap();
-        let ephemeral_client = CoreCrypto::history_client(history_secret).await.unwrap();
-
-        let ephemeral_identifier = ClientIdentifier::Basic(ephemeral_client.mls.id().await.unwrap());
-        let ephemeral_session_context = SessionContext::new_with_identifier(&case, ephemeral_identifier, None)
-            .await
-            .unwrap();
-
-        // can the history client decrypt messages from alice? let's find out
-        let conversation = conversation.invite_notify([&ephemeral_session_context]).await;
-
+        let ephemeral_client = conversation.members().nth(1).unwrap();
         assert!(
-            conversation
-                .is_functional_and_contains([&alice, &ephemeral_session_context])
-                .await
+            conversation.can_one_way_communicate(&alice, ephemeral_client).await,
+            "alice can send messages to the history client"
+        );
+        assert!(
+            !conversation.can_one_way_communicate(ephemeral_client, &alice).await,
+            "the history client cannot send messages"
         );
     }
 }
