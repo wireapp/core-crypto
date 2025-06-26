@@ -16,7 +16,7 @@ use crate::{
 };
 
 /// What to do with a commit after it has been sent via [crate::MlsTransport].
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum TransportedCommitPolicy {
     /// Accept and merge the commit.
     Merge,
@@ -25,15 +25,10 @@ pub(crate) enum TransportedCommitPolicy {
 }
 
 impl ConversationGuard {
-    async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
+    pub(super) async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
         match self.send_commit(commit).await {
             Ok(TransportedCommitPolicy::None) => Ok(()),
-            Ok(TransportedCommitPolicy::Merge) => {
-                let client = self.session().await?;
-                let backend = self.crypto_provider().await?;
-                let mut conversation = self.inner.write().await;
-                conversation.commit_accepted(&client, &backend).await
-            }
+            Ok(TransportedCommitPolicy::Merge) => self.merge_commit().await,
             Err(e @ Error::MessageRejected { .. }) => {
                 self.clear_pending_commit().await?;
                 Err(e)
@@ -42,8 +37,15 @@ impl ConversationGuard {
         }
     }
 
+    pub(super) async fn merge_commit(&mut self) -> Result<()> {
+        let client = self.session().await?;
+        let provider = self.crypto_provider().await?;
+        let mut conversation = self.inner.write().await;
+        conversation.commit_accepted(&client, &provider).await
+    }
+
     /// Send the commit via [crate::MlsTransport] and handle the response.
-    async fn send_commit(&mut self, mut commit: MlsCommitBundle) -> Result<TransportedCommitPolicy> {
+    pub(super) async fn send_commit(&mut self, mut commit: MlsCommitBundle) -> Result<TransportedCommitPolicy> {
         let transport = self.transport().await?;
         let client = self.session().await?;
         let backend = self.crypto_provider().await?;

@@ -114,6 +114,10 @@ pub(crate) async fn generate_history_secret(ciphersuite: MlsCiphersuite) -> Resu
     Ok(HistorySecret { client_id, key_package })
 }
 
+pub(crate) fn is_history_client(client_id: &ClientId) -> bool {
+    client_id.starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes())
+}
+
 impl CoreCrypto {
     /// Instantiate a history client.
     ///

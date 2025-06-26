@@ -34,7 +34,6 @@ impl Session {
     }
 
     /// Notify the history handler that the history client has been replaced, if one is present.
-    #[allow(dead_code)]
     pub(crate) async fn notify_new_history_client(
         &self,
         conversation_id: ConversationId,
