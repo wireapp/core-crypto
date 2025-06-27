@@ -72,7 +72,7 @@ async fn run_server(listener: TcpListener) {
         tokio::spawn(async move {
             let service = hyper::service::service_fn(server_api::wire_api);
             if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
-                eprintln!("server error: {}", err);
+                eprintln!("server error: {err}");
             }
         });
     }

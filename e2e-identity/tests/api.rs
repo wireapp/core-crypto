@@ -218,7 +218,8 @@ fn e2e_api() {
             let htm = Htm::Post;
             let htu: Htu = dpop_chall.target.clone().into();
             let alice = ClientId::try_from_qualified(&qualified_client_id).unwrap();
-            let access_token = RustyJwtTools::generate_access_token(
+            
+            RustyJwtTools::generate_access_token(
                 client_dpop_token.as_str(),
                 &alice,
                 qualified_handle.clone(),
@@ -234,8 +235,7 @@ fn e2e_api() {
                 5,
                 core::time::Duration::from_secs(360),
             )
-            .unwrap();
-            access_token
+            .unwrap()
         };
 
         // Dpop challenge POST http://acme-server/challenge

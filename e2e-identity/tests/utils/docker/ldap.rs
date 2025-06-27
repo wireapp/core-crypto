@@ -52,7 +52,7 @@ impl LdapImage {
         Self {
             volumes: vec![Mount::bind_mount(host_vol_str, container_vol)],
             env_vars: HashMap::from_iter(
-                vec![("LDAP_TLS_VERIFY_CLIENT", "try"), ("LDAP_DOMAIN", &cfg.domain)]
+                [("LDAP_TLS_VERIFY_CLIENT", "try"), ("LDAP_DOMAIN", &cfg.domain)]
                     .iter()
                     .map(|(k, v)| (k.to_string(), v.to_string())),
             ),

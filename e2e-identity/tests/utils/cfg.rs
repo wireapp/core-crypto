@@ -169,7 +169,7 @@ impl E2eTest {
         };
 
         let hash_alg = HashAlgorithm::SHA256;
-        let display = TestDisplay::new(format!("{:?} - {:?}", alg, hash_alg), false);
+        let display = TestDisplay::new(format!("{alg:?} - {hash_alg:?}"), false);
 
         Self {
             domain: domain.to_string(),

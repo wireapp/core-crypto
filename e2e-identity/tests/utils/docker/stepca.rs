@@ -40,7 +40,7 @@ fn generate_authority_config(cfg: &CaCfg) -> serde_json::Value {
         ..
     } = cfg;
 
-    let x509_template = serde_json::json!({ "template": leaf_cert_template(&domain) });
+    let x509_template = serde_json::json!({ "template": leaf_cert_template(domain) });
     let oidc_template = serde_json::json!({
         "name": "{{ .name }}",
         "preferred_username": "wireapp://%40{{ .preferred_username }}"
@@ -117,7 +117,7 @@ const INTERMEDIATE_CERT_TEMPLATE: &str = r#"
     }
 "#;
 
-pub const ACME_PROVISIONER: &'static str = "wire";
+pub const ACME_PROVISIONER: &str = "wire";
 const PORT: ContainerPort = ContainerPort::Tcp(9000);
 
 /// This returns the Smallstep certificate template for leaf certificates, i.e. the ones
@@ -226,7 +226,7 @@ pub async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
     run_command(&node, "mv intermediate-ca.key secrets/intermediate_ca_key").await;
 
     // Alter the CA configuration by substituting our provisioner.
-    alter_configuration(&host_volume, &ca_cfg).await;
+    alter_configuration(&host_volume, ca_cfg).await;
 
     // We're now ready to start.
     run_command(&node, "bash -c 'step-ca --password-file password &'").await;

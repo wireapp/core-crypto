@@ -100,7 +100,7 @@ fn generate_access_token(dpop: &str, client_id: ClientId, nonce: BackendNonce) -
 }
 
 fn not_found() -> http::Result<Response<Full<Bytes>>> {
-    Ok(Response::builder()
+    Response::builder()
         .status(StatusCode::NOT_FOUND)
-        .body(Default::default())?)
+        .body(Default::default())
 }

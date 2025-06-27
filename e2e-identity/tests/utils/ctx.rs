@@ -229,7 +229,7 @@ const DNS_MAPPING_PREFIX: &str = "dns-mapping-";
 
 pub fn ctx_store_http_client(mappings: &HashMap<String, SocketAddr>) {
     for (host, socket) in mappings {
-        ctx_store(format!("{DNS_MAPPING_PREFIX}{}", host), socket.to_string())
+        ctx_store(format!("{DNS_MAPPING_PREFIX}{host}"), socket.to_string())
     }
 }
 

@@ -154,8 +154,8 @@ mod acme_server {
                     let trust_roots = vec![trust_anchor];
                     let params = PkiEnvironmentParams {
                         trust_roots: &trust_roots,
-                        intermediates: &vec![],
-                        crls: &vec![],
+                        intermediates: &[],
+                        crls: &[],
                         time_of_interest: None,
                     };
                     let env = PkiEnvironment::init(params).unwrap();
