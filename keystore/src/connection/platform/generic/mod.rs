@@ -107,7 +107,7 @@ impl SqlCipherConnection {
     #[cfg(feature = "log-queries")]
     fn log_query(event: TraceEvent) {
         if let TraceEvent::Stmt(_, sql) = event {
-            log::info!("{}", sql)
+            log::info!("{sql}")
         }
     }
 

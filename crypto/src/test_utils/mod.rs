@@ -271,14 +271,14 @@ fn init_x509_test_chain(
     let root_params = {
         let mut params = cert_params.clone();
         if let Some(root_cn) = &cert_params.common_name {
-            params.common_name.replace(format!("{} Root CA", root_cn));
+            params.common_name.replace(format!("{root_cn} Root CA"));
         }
         params
     };
     let local_ca_params = {
         let mut params = cert_params.clone();
         if let Some(root_cn) = &cert_params.common_name {
-            params.common_name.replace(format!("{} Intermediate CA", root_cn));
+            params.common_name.replace(format!("{root_cn} Intermediate CA"));
         }
         params
     };

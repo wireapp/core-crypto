@@ -128,14 +128,14 @@ impl X509TestChain {
         let root_params = {
             let mut params = default_params.clone();
             if let Some(root_cn) = &default_params.common_name {
-                params.common_name.replace(format!("{} Root CA", root_cn));
+                params.common_name.replace(format!("{root_cn} Root CA"));
             }
             params
         };
         let local_ca_params = {
             let mut params = default_params.clone();
             if let Some(root_cn) = &default_params.common_name {
-                params.common_name.replace(format!("{} Intermediate CA", root_cn));
+                params.common_name.replace(format!("{root_cn} Intermediate CA"));
             }
             params
         };
@@ -154,14 +154,14 @@ impl X509TestChain {
         let root_params = {
             let mut params = default_params.clone();
             if let Some(root_cn) = &default_params.common_name {
-                params.common_name.replace(format!("{} Root CA", root_cn));
+                params.common_name.replace(format!("{root_cn} Root CA"));
             }
             params
         };
         let local_ca_params = {
             let mut params = default_params.clone();
             if let Some(root_cn) = &default_params.common_name {
-                params.common_name.replace(format!("{} Intermediate CA", root_cn));
+                params.common_name.replace(format!("{root_cn} Intermediate CA"));
             }
             params
         };
@@ -336,7 +336,7 @@ impl X509TestChain {
             .await
         {
             Ok(_) | Err(crate::transaction_context::e2e_identity::Error::TrustAnchorAlreadyRegistered) => {}
-            Err(e) => panic!("{:?}", e),
+            Err(e) => panic!("{e:?}"),
         }
 
         for intermediate in &self.intermediates {

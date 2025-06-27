@@ -279,7 +279,7 @@ mod tests {
             .unwrap();
 
             let result = Session::try_new(configuration.clone()).await;
-            println!("{:?}", result);
+            println!("{result:?}");
             assert!(result.is_ok());
         })
         .await
