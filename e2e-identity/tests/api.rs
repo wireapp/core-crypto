@@ -218,7 +218,7 @@ fn e2e_api() {
             let htm = Htm::Post;
             let htu: Htu = dpop_chall.target.clone().into();
             let alice = ClientId::try_from_qualified(&qualified_client_id).unwrap();
-            
+
             RustyJwtTools::generate_access_token(
                 client_dpop_token.as_str(),
                 &alice,
