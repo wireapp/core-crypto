@@ -148,7 +148,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     use core_crypto::prelude::*;
     use rand::distributions::DistString;
 
-    log::info!("Using ciphersuite {}", CIPHERSUITE_IN_USE);
+    log::info!("Using ciphersuite {CIPHERSUITE_IN_USE}");
 
     let spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
 
