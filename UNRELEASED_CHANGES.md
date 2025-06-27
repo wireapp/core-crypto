@@ -4,6 +4,9 @@
 
 ### Features
 
+- implement enabling and disabling history sharing [WPB-17106] ([b036967](https://github.com/wireapp/core-crypto/commit/b036967208be65444c5dfd6ba93017d63106912f))
+- add `is_history_sharing_enabled()` [WPB-17106] ([0b9eedf](https://github.com/wireapp/core-crypto/commit/0b9eedff3228fb2bbc703f3db025a94df6535742))
+- [**breaking**] add field to `MlsCommitBundle` [WPB-17106] ([eb30ab6](https://github.com/wireapp/core-crypto/commit/eb30ab651b63b606b1fdb9b962c9180b42703f48))
 - [**breaking**] crypto-ffi: remove deleteKeypackages ([4c5def3](https://github.com/wireapp/core-crypto/commit/4c5def3f23f3c2e8d9961108ab0827aa7634e2f2))
 - introduce HistoryObserver ([43ceb73](https://github.com/wireapp/core-crypto/commit/43ceb7371dfc5f2d46f48c9413dd9f00d2d78e60))
 - [**breaking**] crypto: remove e2ei_dump_pki_env and related code ([7927ebb](https://github.com/wireapp/core-crypto/commit/7927ebbed5670be4db316d641bf79a1cfc0611b1))
@@ -26,6 +29,7 @@
 
 ### Bug Fixes
 
+- do not store the signature key when instantiating a history client ([b3f7720](https://github.com/wireapp/core-crypto/commit/b3f772049a7e902291f529d4a8bdc2815e999b55))
 - invalid API Docs link in README.md ([500c36f](https://github.com/wireapp/core-crypto/commit/500c36f11d20d673802a8f32556653209fab9a91))
 - building android bindings on a mac ([67125cd](https://github.com/wireapp/core-crypto/commit/67125cd257e5f4ca960f8be81e3e15f467011a9a))
 - unreleased changes generation had an extra token ([bc56760](https://github.com/wireapp/core-crypto/commit/bc567602ae772302562073e2fb93969ba29ab433))
@@ -35,6 +39,7 @@
 
 ### Documentation
 
+- update changelog: info about new field in `MLsCommitBundle` ([d1431a3](https://github.com/wireapp/core-crypto/commit/d1431a3262e6d56a2f336b23f12acc6a38142065))
 - include hyperlink to commit in git cliff output ([6e209f5](https://github.com/wireapp/core-crypto/commit/6e209f512679acb68fad8f3b932b02b5b93ee7e7))
 - publish unreleased changes to github pages ([6c33a70](https://github.com/wireapp/core-crypto/commit/6c33a709b2ed5f1b45c7291f5bbb6cc13ed9abf2))
 - add internal links to high-level documents ([0ca52eb](https://github.com/wireapp/core-crypto/commit/0ca52ebe5f2fb0c459bb7594cc6c7b8eb741f6df))
@@ -43,6 +48,7 @@
 
 ### Testing
 
+- test history sharing [WPB-17106] ([79025cd](https://github.com/wireapp/core-crypto/commit/79025cd56c9fdde0950db742cdbb14db3eaa69ed))
 - remove leaf node validation tests [WPB-18083] ([c2ae76d](https://github.com/wireapp/core-crypto/commit/c2ae76d67ef4878d099fb11b27a4987bf3ace687))
 - fix: `TestContext::sessions_x509()` should always create x509 sessions ([49ee4e6](https://github.com/wireapp/core-crypto/commit/49ee4e64210ede5054e5cd9ebd86d6ca6c6ac406))
 - add test handling self-commit after failed transaction [WPB-17464] ([01a6d46](https://github.com/wireapp/core-crypto/commit/01a6d4638c2b88d5b09e80171075cc37688437b4))
