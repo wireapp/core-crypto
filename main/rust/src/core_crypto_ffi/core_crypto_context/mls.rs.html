@@ -303,4 +303,18 @@
 <a href=#303 id=303 data-nosnippet>303</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#304 id=304 data-nosnippet>304</a>        <span class="prelude-val">Ok</span>(welcome_bundle.into())
 <a href=#305 id=305 data-nosnippet>305</a>    }
-<a href=#306 id=306 data-nosnippet>306</a>}</code></pre></div></section></main></body></html>
+<a href=#306 id=306 data-nosnippet>306</a>
+<a href=#307 id=307 data-nosnippet>307</a>    <span class="doccomment">/// See [core_crypto::mls::conversation::ConversationGuard::enable_history_sharing]
+<a href=#308 id=308 data-nosnippet>308</a>    </span><span class="kw">pub async fn </span>enable_history_sharing(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>ConversationId) -&gt; CoreCryptoResult&lt;()&gt; {
+<a href=#309 id=309 data-nosnippet>309</a>        <span class="kw">let </span>conversation_id = <span class="macro">conversation_id_vec!</span>(conversation_id);
+<a href=#310 id=310 data-nosnippet>310</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.inner.conversation(<span class="kw-2">&amp;</span>conversation_id).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#311 id=311 data-nosnippet>311</a>        conversation.enable_history_sharing().<span class="kw">await</span>.map_err(Into::into)
+<a href=#312 id=312 data-nosnippet>312</a>    }
+<a href=#313 id=313 data-nosnippet>313</a>
+<a href=#314 id=314 data-nosnippet>314</a>    <span class="doccomment">/// See [core_crypto::mls::conversation::ConversationGuard::disable_history_sharing]
+<a href=#315 id=315 data-nosnippet>315</a>    </span><span class="kw">pub async fn </span>disable_history_sharing(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>ConversationId) -&gt; CoreCryptoResult&lt;()&gt; {
+<a href=#316 id=316 data-nosnippet>316</a>        <span class="kw">let </span>conversation_id = <span class="macro">conversation_id_vec!</span>(conversation_id);
+<a href=#317 id=317 data-nosnippet>317</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.inner.conversation(<span class="kw-2">&amp;</span>conversation_id).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#318 id=318 data-nosnippet>318</a>        conversation.disable_history_sharing().<span class="kw">await</span>.map_err(Into::into)
+<a href=#319 id=319 data-nosnippet>319</a>    }
+<a href=#320 id=320 data-nosnippet>320</a>}</code></pre></div></section></main></body></html>

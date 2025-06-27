@@ -76,6 +76,7 @@ $dokka.location:com.wire.crypto/CoreCrypto.Companion/invoke/#kotlin.String#com.w
 $dokka.location:com.wire.crypto/CoreCrypto///PointingToDeclaration/android/com.wire.crypto/-core-crypto/index.html
 $dokka.location:com.wire.crypto/CoreCrypto/CoreCrypto/#[Error type: Unresolved type for com.wire.crypto.uniffi.CoreCrypto]/PointingToDeclaration/android/com.wire.crypto/-core-crypto/-core-crypto.html
 $dokka.location:com.wire.crypto/CoreCrypto/close/#/PointingToDeclaration/android/com.wire.crypto/-core-crypto/close.html
+$dokka.location:com.wire.crypto/CoreCrypto/isHistorySharingEnabled/#com.wire.crypto.MLSGroupId/PointingToDeclaration/android/com.wire.crypto/-core-crypto/is-history-sharing-enabled.html
 $dokka.location:com.wire.crypto/CoreCrypto/provideTransport/#com.wire.crypto.MlsTransport/PointingToDeclaration/android/com.wire.crypto/-core-crypto/provide-transport.html
 $dokka.location:com.wire.crypto/CoreCrypto/registerEpochObserver/#kotlinx.coroutines.CoroutineScope#com.wire.crypto.EpochObserver/PointingToDeclaration/android/com.wire.crypto/-core-crypto/register-epoch-observer.html
 $dokka.location:com.wire.crypto/CoreCrypto/registerHistoryObserver/#kotlinx.coroutines.CoroutineScope#com.wire.crypto.HistoryObserver/PointingToDeclaration/android/com.wire.crypto/-core-crypto/register-history-observer.html
@@ -91,6 +92,7 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/createConversation/#com.wire.c
 $dokka.location:com.wire.crypto/CoreCryptoContext/decryptMessage/#com.wire.crypto.MLSGroupId#com.wire.crypto.MlsMessage/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/decrypt-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/deleteStaleKeyPackages/#com.wire.crypto.Ciphersuite/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/delete-stale-key-packages.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/deriveAvsSecret/#com.wire.crypto.MLSGroupId#kotlin.UInt/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/derive-avs-secret.html
+$dokka.location:com.wire.crypto/CoreCryptoContext/disableHistorySharing/#com.wire.crypto.MLSGroupId/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/disable-history-sharing.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiConversationState/#com.wire.crypto.MLSGroupId/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/e2ei-conversation-state.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiEnrollmentStash/#com.wire.crypto.E2EIEnrollment/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/e2ei-enrollment-stash.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiEnrollmentStashPop/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/e2ei-enrollment-stash-pop.html
@@ -104,6 +106,7 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiRegisterAcmeCA/#kotlin.Str
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiRegisterCRL/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/e2ei-register-c-r-l.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiRegisterIntermediateCA/#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/e2ei-register-intermediate-c-a.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiRotate/#com.wire.crypto.MLSGroupId/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/e2ei-rotate.html
+$dokka.location:com.wire.crypto/CoreCryptoContext/enableHistorySharing/#com.wire.crypto.MLSGroupId/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/enable-history-sharing.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/encryptMessage/#com.wire.crypto.MLSGroupId#com.wire.crypto.PlaintextMessage/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/encrypt-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/generateKeyPackages/#kotlin.UInt#com.wire.crypto.Ciphersuite#com.wire.crypto.CredentialType/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/generate-key-packages.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/getData/#/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/get-data.html
