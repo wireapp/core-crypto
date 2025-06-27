@@ -623,7 +623,7 @@ impl PkiKeypair {
         use x509_cert::builder::Builder as _;
         let mut subject_fmt = format!("O={}", args.org);
         if let Some(cn) = args.common_name {
-            subject_fmt.push_str(&format!(",CN={}", cn));
+            subject_fmt.push_str(&format!(",CN={cn}"));
         }
 
         let subject =

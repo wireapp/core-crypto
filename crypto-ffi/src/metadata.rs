@@ -5,7 +5,6 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[inline]
 pub fn version() -> String {
     VERSION.to_string()
 }
@@ -75,7 +74,6 @@ pub struct BuildMetadata {
 /// Returns build data for CoreCrypto
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[inline]
 pub fn build_metadata() -> BuildMetadata {
     BuildMetadata {
         #[cfg_attr(target_family = "wasm", expect(clippy::useless_conversion))]

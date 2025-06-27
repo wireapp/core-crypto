@@ -105,7 +105,7 @@ impl std::fmt::Display for RecursiveError {
             #[cfg(test)]
             RecursiveError::Test(e) => return e.deref().fmt(f),
         };
-        write!(f, "{}", context)
+        write!(f, "{context}")
     }
 }
 

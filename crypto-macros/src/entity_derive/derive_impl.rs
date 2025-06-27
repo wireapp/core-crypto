@@ -294,10 +294,12 @@ impl KeyStoreEntityFlattened {
             .iter()
             .map(|col| format! { "{col} = excluded.{col}"})
             .collect();
-        let upsert_postfix = (!no_upsert)
+        let upsert_postfix = if !no_upsert {
             // UPSERT (ON CONFLICT DO UPDATE) with RETURNING to get the rowid
-            .then(|| format!(" ON CONFLICT({id_name}) DO UPDATE SET {}", upsert_pairs.join(", ")))
-            .unwrap_or_default();
+            format!(" ON CONFLICT({id_name}) DO UPDATE SET {}", upsert_pairs.join(", "))
+        } else {
+            String::new()
+        };
 
         let column_list = all_columns
             .iter()

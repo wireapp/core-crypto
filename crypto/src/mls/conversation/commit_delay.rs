@@ -39,7 +39,7 @@ impl MlsConversation {
         let self_index = self.group.own_leaf_index();
         debug!(removed_index:? = removed_index, self_index:? = self_index; "Indexes");
         // Find a remove proposal that concerns us
-        let is_self_removed = removed_index.iter().any(|&i| i == self_index);
+        let is_self_removed = removed_index.contains(&self_index);
 
         // If our own client has been removed, don't commit
         if is_self_removed {
