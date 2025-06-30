@@ -407,13 +407,13 @@ class MLSTest {
         val scope = TestScope()
         return scope.runTest {
             // Set up the observer. this just keeps a list of all observations.
-            data class HistorySecretEvent(val conversationId: ByteArray, val id: ClientId)
+            data class HistorySecretEvent(val conversationId: MLSGroupId, val id: ClientId)
 
             class Observer : HistoryObserver {
                 val observedEvents = emptyList<HistorySecretEvent>().toMutableList()
 
                 override suspend fun historyClientCreated(
-                    conversationId: ByteArray,
+                    conversationId: MLSGroupId,
                     secret: HistorySecret
                 ) {
                     observedEvents.add(HistorySecretEvent(conversationId, secret.clientId))
@@ -459,9 +459,9 @@ class MLSTest {
                 aliceObserver.observedEvents.size,
                 "alice did not trigger any history secret changes and must not have observed that"
             )
-            val expected = id.toString()
+            val expected = id
             assertTrue(
-                bobObserver.observedEvents.all { it.conversationId.toGroupId().toString() == expected },
+                bobObserver.observedEvents.all { it.conversationId == expected },
                 "the events observed by bob must be for this conversation"
             )
         }

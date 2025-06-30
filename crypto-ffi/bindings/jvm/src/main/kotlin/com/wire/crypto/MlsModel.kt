@@ -158,13 +158,17 @@ value class SignaturePublicKey(override val value: ByteArray) : Uniffi {
 
 internal fun ByteArray.toSignaturePublicKey() = SignaturePublicKey(this)
 
-/** Key package */
+/** Key package
+ * @property value the internal wrapped FFI type
+ */
 @JvmInline
-value class MLSKeyPackage(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
+value class MLSKeyPackage(val value: com.wire.crypto.uniffi.KeyPackage) {
+    /** Lower this wrapper to the internal FFI type */
+    fun lower(): com.wire.crypto.uniffi.KeyPackage = value
+    override fun toString() = value.copyBytes().toHex()
 }
 
-internal fun ByteArray.toMLSKeyPackage() = MLSKeyPackage(this)
+internal fun com.wire.crypto.uniffi.KeyPackage.toMLSKeyPackage() = MLSKeyPackage(this)
 
 /** Key package reference */
 @JvmInline
