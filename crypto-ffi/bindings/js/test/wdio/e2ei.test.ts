@@ -259,11 +259,11 @@ describe("end to end identity", () => {
         const conversationState = await browser.execute(
             async (clientName, conversationId) => {
                 const cc = window.ensureCcDefined(clientName);
-                const cid = new window.ccModule.ConversationId(new TextEncoder().encode(conversationId));
+                const cid = new window.ccModule.ConversationId(
+                    new TextEncoder().encode(conversationId)
+                );
                 return await cc.transaction(async (ctx) => {
-                    return await ctx.e2eiConversationState(
-                        cid
-                    );
+                    return await ctx.e2eiConversationState(cid);
                 });
             },
             ALICE_ID,
@@ -279,16 +279,15 @@ describe("end to end identity", () => {
             async (clientName, conversationId) => {
                 const cc = window.ensureCcDefined(clientName);
                 const encoder = new TextEncoder();
-                const cid = new window.ccModule.ConversationId(encoder.encode(conversationId));
+                const cid = new window.ccModule.ConversationId(
+                    encoder.encode(conversationId)
+                );
                 const identities = await cc.transaction(async (ctx) => {
-                    return await ctx.getDeviceIdentities(
-                        cid,
-                        [
-                            new window.ccModule.ClientId(
-                                encoder.encode(clientName)
-                            ),
-                        ]
-                    );
+                    return await ctx.getDeviceIdentities(cid, [
+                        new window.ccModule.ClientId(
+                            encoder.encode(clientName)
+                        ),
+                    ]);
                 });
 
                 return identities.pop()?.clientId;
@@ -306,12 +305,13 @@ describe("end to end identity", () => {
         const identities = await browser.execute(
             async (clientName, conversationId) => {
                 const cc = window.ensureCcDefined(clientName);
-                const cid = new window.ccModule.ConversationId(new TextEncoder().encode(conversationId));
+                const cid = new window.ccModule.ConversationId(
+                    new TextEncoder().encode(conversationId)
+                );
                 const identities = await cc.transaction(async (ctx) => {
-                    return await ctx.getUserIdentities(
-                        cid,
-                        ["LcksJb74Tm6N12cDjFy7lQ"]
-                    );
+                    return await ctx.getUserIdentities(cid, [
+                        "LcksJb74Tm6N12cDjFy7lQ",
+                    ]);
                 });
 
                 return identities.values().next().value?.pop()?.clientId;
