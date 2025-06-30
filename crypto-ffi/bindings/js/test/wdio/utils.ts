@@ -100,7 +100,9 @@ export async function setup() {
                 secret: HistorySecret
             ): Promise<MlsTransportData> {
                 return Promise.resolve(
-                    new window.ccModule.MlsTransportData(secret.clientId.as_bytes())
+                    new window.ccModule.MlsTransportData(
+                        secret.clientId.as_bytes()
+                    )
                 );
             },
             async getLatestCommitBundle() {
