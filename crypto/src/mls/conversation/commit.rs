@@ -7,44 +7,8 @@
 
 use openmls::prelude::MlsMessageOut;
 
-use mls_crypto_provider::MlsCryptoProvider;
-
 use super::{Error, Result};
-use crate::{
-    mls::MlsConversation,
-    prelude::{MlsError, MlsGroupInfoBundle, Session},
-};
-
-impl MlsConversation {
-    /// see [Client::commit_pending_proposals]
-    #[cfg_attr(test, crate::durable)]
-    pub(crate) async fn commit_pending_proposals(
-        &mut self,
-        client: &Session,
-        backend: &MlsCryptoProvider,
-    ) -> Result<Option<MlsCommitBundle>> {
-        if self.group.pending_proposals().count() == 0 {
-            return Ok(None);
-        }
-        let signer = &self.find_most_recent_credential_bundle(client).await?.signature_key;
-
-        let (commit, welcome, gi) = self
-            .group
-            .commit_to_pending_proposals(backend, signer)
-            .await
-            .map_err(MlsError::wrap("group commit to pending proposals"))?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
-
-        self.persist_group_when_changed(&backend.keystore(), false).await?;
-
-        Ok(Some(MlsCommitBundle {
-            welcome,
-            commit,
-            group_info,
-            encrypted_message: None,
-        }))
-    }
-}
+use crate::prelude::MlsGroupInfoBundle;
 
 /// Returned when a commit is created
 #[derive(Debug, Clone)]
