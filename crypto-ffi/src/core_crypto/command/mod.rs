@@ -6,6 +6,7 @@ use std::sync::Arc;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
+/// :nodoc:
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export(with_foreign)]
 #[async_trait::async_trait]
@@ -14,6 +15,7 @@ pub trait CoreCryptoCommand: Send + Sync {
     async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()>;
 }
 
+/// :nodoc:
 #[cfg(not(target_family = "wasm"))]
 #[async_trait::async_trait]
 impl<F, Fut> CoreCryptoCommand for F

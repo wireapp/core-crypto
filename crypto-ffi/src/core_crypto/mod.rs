@@ -39,6 +39,7 @@ type ClientId = crate::ClientId;
 #[cfg(target_family = "wasm")]
 type ClientId = crate::FfiClientId;
 
+/// :nodoc:
 #[derive(Debug)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
