@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 #[cfg(target_family = "wasm")]
-use js_sys::{Promise, Uint8Array};
+use js_sys::Promise;
 #[cfg(target_family = "wasm")]
 use log::kv;
 #[cfg(target_family = "wasm")]
@@ -164,8 +164,6 @@ impl HistoryObserver {
         conversation_id: ConversationIdMaybeArc,
         secret: JsValue,
     ) -> Result<(), JsValue> {
-        let conversation_id = Uint8Array::from(conversation_id.as_slice());
-
         let promise = self
             .history_client_created
             .call2(&self.this_context, &conversation_id.into(), &secret)?

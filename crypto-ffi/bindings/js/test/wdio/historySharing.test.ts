@@ -1,7 +1,7 @@
 import { browser, expect } from "@wdio/globals";
 import { ALICE_ID, ccInit, CONV_ID, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import type { ConversationId, HistorySecret } from "../../src/CoreCrypto";
+import { ConversationId, type HistorySecret } from "../../src/CoreCrypto";
 
 beforeEach(async () => {
     await setup();
@@ -16,7 +16,7 @@ describe("history sharing", () => {
         await ccInit(ALICE_ID);
         const result = await browser.execute(
             async (clientName, convIdStr) => {
-                const convId = new TextEncoder().encode(convIdStr);
+                const convId = new window.ccModule.ConversationId(new TextEncoder().encode(convIdStr));
 
                 // set up the observer. this just keeps a list of all observations.
                 type ObservedHistoryClient = {
@@ -75,7 +75,7 @@ describe("history sharing", () => {
 
                 // we have to explicitly return non-primitives, as anything passed by reference won't make it out of the browser context
                 const firstIdString = decoder.decode(
-                    observer.observations[0]?.conversationId ?? new Uint8Array()
+                    observer.observations[0]?.conversationId.copyBytes() ?? new Uint8Array()
                 );
                 return {
                     length: observer.observations.length,
