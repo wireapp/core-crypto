@@ -136,14 +136,6 @@ value class Welcome(val value: com.wire.crypto.uniffi.Welcome) {
 
 private fun com.wire.crypto.uniffi.Welcome.toWelcome() = Welcome(this)
 
-/** Signature public key */
-@JvmInline
-value class SignaturePublicKey(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
-}
-
-internal fun ByteArray.toSignaturePublicKey() = SignaturePublicKey(this)
-
 /** Key package
  * @property value the internal wrapped FFI type
  */

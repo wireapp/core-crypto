@@ -56,9 +56,9 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
     suspend fun getPublicKey(
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
         credentialType: CredentialType = CredentialType.DEFAULT,
-    ): SignaturePublicKey {
+    ): ByteArray {
         return wrapException {
-            cc.clientPublicKey(ciphersuite.lower(), credentialType.lower()).toSignaturePublicKey()
+            cc.clientPublicKey(ciphersuite.lower(), credentialType.lower())
         }
     }
 

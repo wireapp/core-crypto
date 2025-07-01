@@ -139,7 +139,7 @@ class MLSTest {
     @Test
     fun getPublicKey_should_return_non_empty_result() = runTest {
         val (alice) = newClients(ALICE_ID)
-        assertThat(alice.transaction { it.getPublicKey(Ciphersuite.DEFAULT).value }).isNotEmpty()
+        assertThat(alice.transaction { it.getPublicKey(Ciphersuite.DEFAULT) }).isNotEmpty()
     }
 
     @Test
