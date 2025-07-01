@@ -32,28 +32,57 @@
   Migration: update any pattern-matching or other code that depends on the structure of
   `MlsCommitBundle` to include the new field. Also, make sure to update your implementation of the
   `MlsTransport` protocol/interface to include this field in the payload sent to the Delivery Service.
+
 - `ClientId` is a newtype, not a bare byte array.
 
-  Affected platforms: Web
+  Affected platforms: Web, Swift
 
   Migration: call `new ClientId(id)` to construct a `ClientId`, and `id.as_bytes()` to get a byte array out.
+
 - `ClientId` wrapper accepts a byte array, not a string.
 
-  Affected platforms: Kotlin
+  Affected platforms: Android
 
   Migration: call `.toByteArray()` on the input.
-- `CoreCryptoContext.exportSecretKey` (aka `CoreCryptoContext.deriveAvsSecret`) now returns a newtype
 
-  Affected platforms: Web, Android, iOS
+- `Ciphersuite`, `Ciphersuites` are exported public types
 
-  Migration: call `.copyBytes()` on the newtype to get access to the raw byte vector.
+- `SecretKey`, `ExternalSenderKey`, `GroupInfo`, `ConversationId`, `KeyPackage`, `Welcome` are now newtypes
 
-  In the past, Android (but only Android) had a newtype; other clients needed to work with a raw byte vector.
+  Affected items:
+
+  - `CoreCryptoContext.exportSecretKey` (aka `CoreCryptoContext.deriveAvsSecret`) now returns a `SecretKey`
+  - (kotlin) `AvsSecret` newtype removed in favor of `SecretKey`
+  - `CoreCryptoContext.getExternalSender` now returns an `ExternalSenderKey`
+  - `ConversationConfiguration::external_senders` now accepts `ExternalSenderKey`s
+  - `CoreCryptoContext.joinByExternalCommit` now accepts a `GroupInfo`
+  - `GroupInfoBundle` now contains a `GroupInfo`
+  - Many `CoreCryptoContext` methods now accept a `ConversationId` newtype instead of a byte array
+  - `HistoryObserver` and `EpochObserver` now produce `ConversationId` instances instead of byte arrays
+  - `CoreCryptoContext.clientKeypackages` now produces `KeyPackage`s
+  - `CoreCryptoContext.addClientsToConversation` now accepts `KeyPackage`s
+  - `CommitBundle` now might contain a `Welcome`
+  - `CoreCryptoContext.processWelcomeMessage` now accepts a `Welcome`
+
+  Affected platforms: all
+
+  Migration: call `.copyBytes()` on the newtype to get access to the raw byte vector. To construct the newtype from a byte array, just use the appropriate constructor.
+
+  In the past, Android (but only Android) had newtypes in these instances; other clients needed to work with a raw byte vector.
   We've decided to expand the use of newtypes around byte vectors in the FFI interface. This has several benefits:
 
   - Increased consistency between client FFI libraries
   - Reduced thickness of the high-level FFI wrappers
-  - In some cases (though not this one), we can avoid bidirectional data transfers across the FFI boundary, and just move pointers around instead.
+  - In some cases, we can avoid bidirectional data transfers across the FFI boundary, and just move pointers around instead.
+
+- Removed `PlaintextMessage`, `MlsMessage` and `SignaturePublicKey` newtypes in favor of `ByteArray`
+
+  Affected platforms: Android
+
+  The Message newtypes were only used in `CoreCryptoContext.encryptMessage` and `CoreCryptoContext.decryptMessage`.
+  `SignaturePublicKey` was used only for the return value of `fun getPublicKey`. The only usage we found was an immediate access of the byte vector.
+
+  These types appear to provide no type safety benefits, instead only adding a bit of friction. So we got rid of them.
 
 ### Features
 
