@@ -33,6 +33,10 @@
   `MlsCommitBundle` to include the new field. Also, make sure to update your implementation of the
   `MlsTransport` protocol/interface to include this field in the payload sent to the Delivery Service.
 
+### Features
+
+- Support Android environments with 16k page size
+
 ## v7.0.1 - 2025-06-02
 
 ### Bug Fixes
