@@ -54,7 +54,7 @@ jobs:
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.2.0'
+          xcode-version: '16.4.0'
       - name: Install swiftlint
         run: |
           brew install swiftlint
@@ -198,7 +198,7 @@ jobs:
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.2.0'
+          xcode-version: '16.4.0'
       - name: create xcframework
         run: |
           cd crypto-ffi/bindings/swift
@@ -264,7 +264,7 @@ jobs:
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.2.0'
+          xcode-version: '16.4.0'
       - name: setup wasm-pack
         uses: taiki-e/install-action@v2
         with:
