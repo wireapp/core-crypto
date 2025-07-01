@@ -29,14 +29,14 @@ async function measureDecryption(
 ) {
     const cc1 = window.ensureCcDefined(client1);
     const encoder = new TextEncoder();
-    const conversationIdBytes = encoder.encode(conversationId);
+    const cid = new window.ccModule.ConversationId(encoder.encode(conversationId))
     const messageBytes = encoder.encode(message);
 
     const encryptedMessages = await cc1.transaction(async (ctx) => {
         const encryptedMessages = [];
         for (let i = 0; i < messageCount; i++) {
             const encryptedMessage = await ctx.encryptMessage(
-                conversationIdBytes,
+                cid,
                 messageBytes
             );
 
@@ -53,7 +53,7 @@ async function measureDecryption(
         const decryptedMessages: (Uint8Array | undefined)[] = [];
         for (const encryptedMessage of encryptedMessages) {
             const decrypted = await ctx.decryptMessage(
-                conversationIdBytes,
+                cid,
                 encryptedMessage
             );
             decryptedMessages.push(decrypted.message);
