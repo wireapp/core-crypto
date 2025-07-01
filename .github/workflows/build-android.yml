@@ -6,6 +6,7 @@ on:
   workflow_call:
 
 env:
+  ANDROID_NDK_VERSION: 25.2.9519653
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: true
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
@@ -32,11 +33,11 @@ jobs:
         uses: davidB/rust-cargo-make@v1
       - name: setup android sdk
         uses: android-actions/setup-android@v3
-      - name: install ndk 25
-        run: echo "y" | sdkmanager --install "ndk;25.2.9519653"
+      - name: install ndk
+        run: echo "y" | sdkmanager --install "ndk;$ANDROID_NDK_VERSION"
       - name: build android package
         env:
-          ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/25.2.9519653
+          ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/${{ env.ANDROID_NDK_VERSION}}
         run: |
           cd crypto-ffi
           cargo make ${{ matrix.task }}
@@ -66,8 +67,8 @@ jobs:
         uses: davidB/rust-cargo-make@v1
       - name: setup android sdk
         uses: android-actions/setup-android@v3
-      - name: install ndk 25
-        run: echo "y" | sdkmanager --install "ndk;25.2.9519653"
+      - name: install ndk
+        run: echo "y" | sdkmanager --install "ndk;$ANDROID_NDK_VERSION"
 
       - name: download armv7-linux-androideabi binaries
         uses: actions/download-artifact@v4
