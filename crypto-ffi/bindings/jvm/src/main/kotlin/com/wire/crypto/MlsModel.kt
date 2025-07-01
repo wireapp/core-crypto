@@ -87,6 +87,7 @@ internal fun com.wire.crypto.uniffi.CredentialType.lift() =
 value class MLSGroupId(val value: com.wire.crypto.uniffi.ConversationId) {
     /** Convert this type wrapper into the FFI version it wraps */
     fun lower() = value
+
     override fun toString() = value.copyBytes().toHex()
 }
 
@@ -102,7 +103,7 @@ fun com.wire.crypto.uniffi.ConversationId.toGroupId() = MLSGroupId(this)
 /** Client ID */
 @JvmInline
 value class ClientId(override val value: ByteArray) : FfiType<ByteArray, com.wire.crypto.uniffi.ClientId> {
-    override fun lower() = com.wire.crypto.uniffi.ClientId(value);
+    override fun lower() = com.wire.crypto.uniffi.ClientId(value)
 }
 
 @OptIn(ExperimentalUnsignedTypes::class)
@@ -118,6 +119,7 @@ fun String.toClientId() = ClientId(this.toByteArray())
 value class ExternalSenderKey(val value: com.wire.crypto.uniffi.ExternalSenderKey) {
     /** Convert this type wrapper into the FFI version it wraps */
     fun lower() = value
+
     override fun toString() = value.copyBytes().toHex()
 }
 
@@ -131,6 +133,7 @@ fun com.wire.crypto.uniffi.ExternalSenderKey.toExternalSenderKey() = ExternalSen
 value class Welcome(val value: com.wire.crypto.uniffi.Welcome) {
     /** Convert this type wrapper into the FFI version it wraps */
     fun lower() = value
+
     override fun toString() = value.copyBytes().toHex()
 }
 
@@ -143,6 +146,7 @@ private fun com.wire.crypto.uniffi.Welcome.toWelcome() = Welcome(this)
 value class MLSKeyPackage(val value: com.wire.crypto.uniffi.KeyPackage) {
     /** Lower this wrapper to the internal FFI type */
     fun lower(): com.wire.crypto.uniffi.KeyPackage = value
+
     override fun toString() = value.copyBytes().toHex()
 }
 
@@ -178,6 +182,7 @@ internal fun List<String>.toCrlDistributionPoint() =
 value class GroupInfo(val value: com.wire.crypto.uniffi.GroupInfo) {
     /** Convert this type wrapper into the FFI version which it wraps */
     fun lower(): com.wire.crypto.uniffi.GroupInfo = value
+
     override fun toString() = value.copyBytes().toHex()
 }
 
