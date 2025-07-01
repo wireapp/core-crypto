@@ -939,7 +939,7 @@ export class CoreCryptoContext {
     /**
      * Deletes all key packages whose credential does not match the most recently
      * saved x509 credential and the provided signature scheme.
-     * @param cipherSuite
+     * @param ciphersuite
      */
     async deleteStaleKeyPackages(ciphersuite: Ciphersuite): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
