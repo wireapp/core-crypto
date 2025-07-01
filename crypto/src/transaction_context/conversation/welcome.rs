@@ -26,7 +26,7 @@ impl TransactionContext {
     #[cfg_attr(test, crate::dispotent)]
     pub async fn process_raw_welcome_message(
         &self,
-        welcome: Vec<u8>,
+        welcome: &[u8],
         custom_cfg: MlsCustomConfiguration,
     ) -> Result<WelcomeBundle> {
         let mut cursor = std::io::Cursor::new(welcome);

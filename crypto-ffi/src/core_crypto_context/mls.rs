@@ -45,6 +45,15 @@ bytes_wrapper!(
     /// Other clients can use a client's KeyPackage to introduce that client to a new group.
     KeyPackage
 );
+bytes_wrapper!(
+    /// A TLS-serialized Welcome message.
+    ///
+    /// This structure is defined in RFC 9420:
+    /// <https://www.rfc-editor.org/rfc/rfc9420.html#joining-via-welcome-message>.
+    #[derive(Debug, Clone)]
+    #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+    Welcome
+);
 
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
@@ -209,12 +218,12 @@ impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::process_raw_welcome_message]
     pub async fn process_welcome_message(
         &self,
-        welcome_message: Vec<u8>,
+        welcome_message: WelcomeMaybeArc,
         custom_configuration: CustomConfiguration,
     ) -> CoreCryptoResult<WelcomeBundle> {
         let result = self
             .inner
-            .process_raw_welcome_message(welcome_message, custom_configuration.into())
+            .process_raw_welcome_message(welcome_message.as_slice(), custom_configuration.into())
             .await?
             .into();
         Ok(result)
