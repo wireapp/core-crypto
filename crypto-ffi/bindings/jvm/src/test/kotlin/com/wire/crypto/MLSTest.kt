@@ -213,12 +213,12 @@ class MLSTest {
         val welcome = mockDeliveryService.getLatestWelcome()
         val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
 
-        val msg = "Hello World !"
-        val ciphertextMsg = alice.transaction { it.encryptMessage(groupId, msg.toPlaintextMessage()) }
+        val msg = "Hello World !".toByteArray()
+        val ciphertextMsg = alice.transaction { it.encryptMessage(groupId, msg) }
         assertThat(ciphertextMsg).isNotEqualTo(msg)
 
         val plaintextMsg = bob.transaction { it.decryptMessage(groupId, ciphertextMsg).message!! }
-        assertThat(String(plaintextMsg)).isNotEmpty().isEqualTo(msg)
+        assertThat(plaintextMsg).isNotEmpty().isEqualTo(msg)
 
         val expectedException = assertFailsWith<CoreCryptoException.Mls> { bob.transaction { it.decryptMessage(groupId, ciphertextMsg) } }
         assertIs<MlsException.DuplicateMessage>(expectedException.exception)
@@ -497,7 +497,7 @@ interface MockDeliveryService : MlsTransport {
 
     suspend fun getLatestWelcome(): Welcome
 
-    suspend fun getLatestCommit(): MlsMessage
+    suspend fun getLatestCommit(): ByteArray
 }
 
 class MockMlsTransportSuccessProvider : MockDeliveryService {
@@ -519,5 +519,5 @@ class MockMlsTransportSuccessProvider : MockDeliveryService {
 
     override suspend fun getLatestWelcome(): Welcome = getLatestCommitBundle().welcome!!
 
-    override suspend fun getLatestCommit(): MlsMessage = getLatestCommitBundle().commit
+    override suspend fun getLatestCommit(): ByteArray = getLatestCommitBundle().commit
 }

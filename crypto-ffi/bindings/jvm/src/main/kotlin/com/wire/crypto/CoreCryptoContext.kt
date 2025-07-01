@@ -204,18 +204,18 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return the encrypted payload for the given group. This needs to be fanned out to the other
      *   members of the group.
      */
-    suspend fun encryptMessage(id: MLSGroupId, message: PlaintextMessage): MlsMessage {
-        return wrapException { cc.encryptMessage(id.lower(), message.lower()).toMlsMessage() }
+    suspend fun encryptMessage(id: MLSGroupId, message: ByteArray): ByteArray {
+        return wrapException { cc.encryptMessage(id.lower(), message) }
     }
 
     /**
      * Decrypts a message for a given conversation
      *
      * @param id conversation identifier
-     * @param message [MlsMessage] (either Application or Handshake message) from the DS
+     * @param message (either Application or Handshake message) from the DS
      */
-    suspend fun decryptMessage(id: MLSGroupId, message: MlsMessage): DecryptedMessage {
-        return wrapException { cc.decryptMessage(id.lower(), message.lower()).lift() }
+    suspend fun decryptMessage(id: MLSGroupId, message: ByteArray): DecryptedMessage {
+        return wrapException { cc.decryptMessage(id.lower(), message) }.lift()
     }
 
     /**

@@ -132,24 +132,6 @@ value class Welcome(override val value: ByteArray) : Uniffi {
 
 private fun ByteArray.toWelcome() = Welcome(this)
 
-/** MLS message */
-@JvmInline
-value class MlsMessage(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
-}
-
-/** Construct an MLS message */
-fun ByteArray.toMlsMessage() = MlsMessage(this)
-
-/** Plaintext message */
-@JvmInline
-value class PlaintextMessage(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
-}
-
-/** Construct a plaintext message */
-fun String.toPlaintextMessage() = PlaintextMessage(toByteArray())
-
 /** Signature public key */
 @JvmInline
 value class SignaturePublicKey(override val value: ByteArray) : Uniffi {
@@ -267,7 +249,7 @@ private fun com.wire.crypto.uniffi.GroupInfoBundle.lift() =
 /** Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome) */
 data class CommitBundle(
     /** TLS serialized commit wrapped in a MLS message */
-    val commit: MlsMessage,
+    val commit: ByteArray,
     /** TLS serialized welcome NOT wrapped in a MLS message */
     val welcome: Welcome?,
     /** TLS serialized GroupInfo NOT wrapped in a MLS message */
@@ -277,7 +259,7 @@ data class CommitBundle(
 )
 
 internal fun com.wire.crypto.uniffi.CommitBundle.lift() =
-    CommitBundle(commit.toMlsMessage(), welcome?.toWelcome(), groupInfo.lift(), null)
+    CommitBundle(commit, welcome?.toWelcome(), groupInfo.lift(), null)
 
 /** Contains everything client needs to know after decrypting an (encrypted) Welcome message */
 data class WelcomeBundle(
