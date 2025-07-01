@@ -21,6 +21,7 @@ describe("epoch observer", () => {
 
                 // set up the observer. this just keeps a list of all observations.
                 type ObservedEpoch = {
+                    // @ts-expect-error
                     conversationId: window.ccModule.ConversationId;
                     epoch: number;
                 };
@@ -30,6 +31,7 @@ describe("epoch observer", () => {
                         this.observations = [];
                     }
                     async epochChanged(
+                        // @ts-expect-error
                         conversationId: window.ccModule.ConversationId,
                         epoch: number
                     ): Promise<void> {
@@ -63,8 +65,9 @@ describe("epoch observer", () => {
                 // we have to explicitly return non-primitives, as anything passed by reference won't make it out of the browser context
                 const first_id_hex = Array.from(
                     observer.observations[0]?.conversationId ??
-                        new Uint8Array(),
+                    new Uint8Array(),
                     (byte) => {
+                        // @ts-expect-error
                         return ("0" + (byte & 0xff).toString(16)).slice(-2);
                     }
                 ).join("");
