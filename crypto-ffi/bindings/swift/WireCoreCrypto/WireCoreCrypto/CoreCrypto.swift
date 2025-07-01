@@ -159,7 +159,7 @@ final class EpochObserverIndirector: EpochObserver {
         self.epochObserver = epochObserver
     }
 
-    func epochChanged(conversationId: Data, epoch: UInt64) async throws {
+    func epochChanged(conversationId: ConversationId, epoch: UInt64) async throws {
         Task {
             try await epochObserver.epochChanged(conversationId: conversationId, epoch: epoch)
         }
@@ -175,7 +175,7 @@ final class HistoryObserverIndirector: HistoryObserver {
         self.historyObserver = historyObserver
     }
 
-    func historyClientCreated(conversationId: Data, secret: HistorySecret) async throws {
+    func historyClientCreated(conversationId: ConversationId, secret: HistorySecret) async throws {
         Task {
             try await historyObserver.historyClientCreated(
                 conversationId: conversationId, secret: secret)
