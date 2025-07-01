@@ -4,6 +4,7 @@
 
 ### Features
 
+- update Android NDK to 28.1 [WPB-18293] ([6101eb8](https://github.com/wireapp/core-crypto/commit/6101eb80187a5384eb48e9e94342fc8607abeebf))
 - implement enabling and disabling history sharing [WPB-17106] ([b036967](https://github.com/wireapp/core-crypto/commit/b036967208be65444c5dfd6ba93017d63106912f))
 - add `is_history_sharing_enabled()` [WPB-17106] ([0b9eedf](https://github.com/wireapp/core-crypto/commit/0b9eedff3228fb2bbc703f3db025a94df6535742))
 - [**breaking**] add field to `MlsCommitBundle` [WPB-17106] ([eb30ab6](https://github.com/wireapp/core-crypto/commit/eb30ab651b63b606b1fdb9b962c9180b42703f48))
