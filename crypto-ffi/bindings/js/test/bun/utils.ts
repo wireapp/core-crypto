@@ -14,6 +14,7 @@ import {
     setLogger,
     setMaxLogLevel,
     initWasmModule,
+    ClientId,
 } from "../../src/CoreCrypto";
 import { CONV_ID as WEB_CONV_ID } from "../wdio/utils";
 
@@ -50,7 +51,7 @@ class TestDeliveryService implements DeliveryService {
     }
 
     prepareForTransport(secret: HistorySecret): Promise<MlsTransportData> {
-        return Promise.resolve(new MlsTransportData(secret.clientId));
+        return Promise.resolve(new MlsTransportData(secret.clientId.as_bytes()));
     }
 
     async getLatestCommitBundle(): Promise<CommitBundle> {
@@ -94,7 +95,7 @@ export async function teardown() {
  */
 export async function ccInit(clientName: string): Promise<CoreCrypto> {
     const encoder = new TextEncoder();
-    const clientId = encoder.encode(clientName);
+    const clientId = new ClientId(encoder.encode(clientName));
 
     const key = new Uint8Array(32);
     crypto.getRandomValues(key);
