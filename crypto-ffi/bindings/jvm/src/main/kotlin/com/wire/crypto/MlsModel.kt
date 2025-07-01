@@ -156,14 +156,6 @@ value class MLSKeyPackage(val value: com.wire.crypto.uniffi.KeyPackage) {
 
 internal fun com.wire.crypto.uniffi.KeyPackage.toMLSKeyPackage() = MLSKeyPackage(this)
 
-/** Proposal reference */
-@JvmInline
-value class ProposalRef(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
-}
-
-private fun ByteArray.toProposalRef() = ProposalRef(this)
-
 /** ExternallyGeneratedHandle */
 @JvmInline
 value class ExternallyGeneratedHandle(override val value: List<ByteArray>) :
