@@ -24,7 +24,7 @@ jobs:
   build-darwin-artifacts:
     if: github.repository == 'wireapp/core-crypto'
     name: build darwin artifacts
-    runs-on: macos-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v5
       - name: force-fetch the tag to work around actions/checkout#290
