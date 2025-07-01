@@ -23,7 +23,9 @@ pub use bundles::{
     commit::CommitBundle, group_info::GroupInfoBundle, proteus_auto_prekey::ProteusAutoPrekeyBundle,
     welcome::WelcomeBundle,
 };
-pub use ciphersuite::{Ciphersuite, Ciphersuites};
+pub use ciphersuite::{Ciphersuite, Ciphersuites, ciphersuite_default, ciphersuite_from_u16};
+#[cfg(not(target_family = "wasm"))]
+pub use ciphersuite::{ciphersuites_default, ciphersuites_from_u16s};
 pub use client_id::ClientId;
 pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePolicy};
 pub use core_crypto::conversation::ConversationId;
