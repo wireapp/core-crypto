@@ -93,11 +93,11 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         });
         self.cc.transaction(extractor.clone()).await?;
         let kp = extractor.into_return_value();
-        Ok(kp)
+        Ok(kp.copy_bytes())
     }
 
     async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
-        let conversation_id = conversation_id.to_vec();
+        let conversation_id = conversation_id.into();
         if !self.cc.conversation_exists(&conversation_id).await? {
             let cfg = core_crypto_ffi::ConversationConfiguration {
                 ciphersuite: Some(CIPHERSUITE_IN_USE.into()),
@@ -116,7 +116,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
                 .await?;
         }
 
-        let key_packages = vec![kp.to_vec()];
+        let key_packages = vec![Arc::new(kp.into())];
         let extractor = TransactionHelper::new(async move |context| {
             context
                 .add_clients_to_conversation(&conversation_id, key_packages)
@@ -128,7 +128,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
 
     async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
         let client_id = Arc::new(ClientId::from(core_crypto::prelude::ClientId::from(client_id)));
-        let conversation_id = conversation_id.to_vec();
+        let conversation_id = conversation_id.into();
         let extractor = TransactionHelper::new(move |context| async move {
             context
                 .remove_clients_from_conversation(&conversation_id, vec![client_id])
@@ -143,15 +143,15 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
             key_rotation_span: None,
             wire_policy: None,
         };
-        let welcome = welcome.to_vec();
+        let welcome = Arc::new(welcome.into());
         let extractor =
             TransactionHelper::new(move |context| async move { context.process_welcome_message(welcome, cfg).await });
         self.cc.transaction(extractor.clone()).await?;
-        Ok(extractor.into_return_value().id)
+        Ok(extractor.into_return_value().id.copy_bytes())
     }
 
     async fn encrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
-        let conversation_id = conversation_id.to_vec();
+        let conversation_id = conversation_id.into();
         let message = message.to_vec();
         let extractor =
             TransactionHelper::new(
@@ -162,7 +162,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
     }
 
     async fn decrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>> {
-        let conversation_id = conversation_id.to_vec();
+        let conversation_id = conversation_id.into();
         let message = message.to_vec();
         let extractor =
             TransactionHelper::new(

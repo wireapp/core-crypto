@@ -140,7 +140,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         let transaction = self.cc.new_transaction().await?;
 
         let result = transaction
-            .process_raw_welcome_message(welcome.into(), MlsCustomConfiguration::default())
+            .process_raw_welcome_message(welcome, MlsCustomConfiguration::default())
             .await?
             .id;
         transaction.finish().await?;
