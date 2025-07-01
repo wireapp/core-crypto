@@ -124,13 +124,17 @@ value class ExternalSenderKey(val value: com.wire.crypto.uniffi.ExternalSenderKe
 /** Construct an external sender ID */
 fun com.wire.crypto.uniffi.ExternalSenderKey.toExternalSenderKey() = ExternalSenderKey(this)
 
-/** Welcome message */
+/** Welcome message
+ * @property value the FFI welcome message
+ */
 @JvmInline
-value class Welcome(override val value: ByteArray) : Uniffi {
-    override fun toString() = value.toHex()
+value class Welcome(val value: com.wire.crypto.uniffi.Welcome) {
+    /** Convert this type wrapper into the FFI version it wraps */
+    fun lower() = value
+    override fun toString() = value.copyBytes().toHex()
 }
 
-private fun ByteArray.toWelcome() = Welcome(this)
+private fun com.wire.crypto.uniffi.Welcome.toWelcome() = Welcome(this)
 
 /** Signature public key */
 @JvmInline
