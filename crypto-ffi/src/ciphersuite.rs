@@ -129,7 +129,9 @@ impl Ciphersuites {
     /// The default `Ciphersuites` set contains only the single default ciphersuite.
     //
     // We implement this here instead of in the `impl Default` section to expose it to wasm_bindgen
-    #[expect(clippy::should_implement_trait)]
+    // But we use `allow` here instead of `expect` because for some reason when building for WASM
+    // the expectation fails whether the allow line is present or not.
+    #[allow(clippy::should_implement_trait)]
     pub fn default() -> Self {
         let mut cs = HashSet::new();
         cs.insert(Ciphersuite::default());

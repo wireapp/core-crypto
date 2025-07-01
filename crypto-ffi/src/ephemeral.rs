@@ -22,7 +22,7 @@ impl HistorySecret {
     #[wasm_bindgen(constructor)]
     pub fn new(client_id: ClientIdMaybeArc, data: &[u8]) -> Result<HistorySecret, wasm_bindgen::JsError> {
         Ok(HistorySecret {
-            client_id: client_id.into(),
+            client_id,
             data: data.into(),
         })
     }
