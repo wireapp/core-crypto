@@ -29,7 +29,9 @@ async function measureDecryption(
 ) {
     const cc1 = window.ensureCcDefined(client1);
     const encoder = new TextEncoder();
-    const cid = new window.ccModule.ConversationId(encoder.encode(conversationId))
+    const cid = new window.ccModule.ConversationId(
+        encoder.encode(conversationId)
+    );
     const messageBytes = encoder.encode(message);
 
     const encryptedMessages = await cc1.transaction(async (ctx) => {
@@ -52,10 +54,7 @@ async function measureDecryption(
 
         const decryptedMessages: (Uint8Array | undefined)[] = [];
         for (const encryptedMessage of encryptedMessages) {
-            const decrypted = await ctx.decryptMessage(
-                cid,
-                encryptedMessage
-            );
+            const decrypted = await ctx.decryptMessage(cid, encryptedMessage);
             decryptedMessages.push(decrypted.message);
         }
         const end = performance.now();

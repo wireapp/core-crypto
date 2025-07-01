@@ -51,7 +51,9 @@ class TestDeliveryService implements DeliveryService {
     }
 
     prepareForTransport(secret: HistorySecret): Promise<MlsTransportData> {
-        return Promise.resolve(new MlsTransportData(secret.clientId.as_bytes()));
+        return Promise.resolve(
+            new MlsTransportData(secret.clientId.as_bytes())
+        );
     }
 
     async getLatestCommitBundle(): Promise<CommitBundle> {

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use core_crypto::prelude::Obfuscated;
 #[cfg(target_family = "wasm")]
-use js_sys::{Promise, Uint8Array};
+use js_sys::Promise;
 #[cfg(target_family = "wasm")]
 use log::kv;
 use std::sync::Arc;
@@ -150,8 +150,6 @@ impl EpochObserver {
     /// This is extracted as its own function instead of being implemented inline within the
     /// `impl EpochObserver for EpochObserver` block mostly to consolidate error-handling.
     async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64) -> Result<(), JsValue> {
-        let conversation_id = Uint8Array::from(conversation_id.as_slice());
-
         let promise = self
             .epoch_changed
             .call2(&self.this_context, &conversation_id.into(), &epoch.into())?

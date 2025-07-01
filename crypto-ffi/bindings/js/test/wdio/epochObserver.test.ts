@@ -21,7 +21,7 @@ describe("epoch observer", () => {
 
                 // set up the observer. this just keeps a list of all observations.
                 type ObservedEpoch = {
-                    // @ts-expect-error
+                    // @ts-expect-error `window` is not present when ts is checking, but is present in the browser
                     conversationId: window.ccModule.ConversationId;
                     epoch: number;
                 };
@@ -31,7 +31,7 @@ describe("epoch observer", () => {
                         this.observations = [];
                     }
                     async epochChanged(
-                        // @ts-expect-error
+                        // @ts-expect-error `window` is not present when ts is checking, but is present in the browser
                         conversationId: window.ccModule.ConversationId,
                         epoch: number
                     ): Promise<void> {
@@ -64,10 +64,10 @@ describe("epoch observer", () => {
 
                 // we have to explicitly return non-primitives, as anything passed by reference won't make it out of the browser context
                 const first_id_hex = Array.from(
-                    observer.observations[0]?.conversationId ??
-                    new Uint8Array(),
+                    observer.observations[0]?.conversationId.copyBytes() ??
+                        new Uint8Array(),
                     (byte) => {
-                        // @ts-expect-error
+                        // @ts-expect-error ts can't figure out here that `byte` is a byte, but we know it is
                         return ("0" + (byte & 0xff).toString(16)).slice(-2);
                     }
                 ).join("");
