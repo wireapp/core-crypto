@@ -1,5 +1,5 @@
 [env]
-ANDROID_NDK_PREFER_VERSION = "25.2"
+ANDROID_NDK_PREFER_VERSION = "28.1"
 LIBRARY_EXTENSION = { source = "${CARGO_MAKE_RUST_TARGET_OS}", mapping = { "linux" = "so", "macos" = "dylib" } }
 
 ##################################### DOCS ####################################
