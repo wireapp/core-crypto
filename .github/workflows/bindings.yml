@@ -27,7 +27,7 @@ jobs:
 
   test-ios:
     needs: build-ios
-    runs-on: macos-latest
+    runs-on: self-hosted
     steps:
       - name: Cleanup on post
         uses: gacts/run-and-post-run@v1
