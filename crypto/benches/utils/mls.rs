@@ -261,7 +261,7 @@ pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, Clien
         .as_bytes()
         .to_vec();
     let key = DatabaseKey::generate();
-    let key_store = CryptoKeystore::open_in_memory_with_key("", &key).await.unwrap();
+    let key_store = CryptoKeystore::open_in_memory_with_key(&key).await.unwrap();
     let backend = MlsCryptoProvider::builder().key_store(key_store).build();
     let cs: Ciphersuite = ciphersuite.into();
     let signer = create_signature_keypair(&backend, cs);

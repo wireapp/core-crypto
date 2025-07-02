@@ -31,7 +31,7 @@ pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> KeystoreTestContex
     let store = if !in_memory {
         core_crypto_keystore::Connection::open_with_key(name, &TEST_ENCRYPTION_KEY).await
     } else {
-        core_crypto_keystore::Connection::open_in_memory_with_key(name, &TEST_ENCRYPTION_KEY).await
+        core_crypto_keystore::Connection::open_in_memory_with_key(&TEST_ENCRYPTION_KEY).await
     }
     .expect("Could not open keystore");
     store.new_transaction().await.expect("Could not create transaction");

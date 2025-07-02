@@ -29,7 +29,7 @@ impl KeystoreTransaction {
         // We don't really care about the key and we're not going to store it anywhere.
         let key = DatabaseKey::from([0u8; 32]);
         Ok(Self {
-            cache: Connection::open_in_memory_with_key("core_crypto_transaction_cache", &key).await?,
+            cache: Connection::open_in_memory_with_key(&key).await?,
             deleted: Arc::new(Default::default()),
             deleted_credentials: Arc::new(Default::default()),
             _semaphore_guard: Arc::new(semaphore_guard),

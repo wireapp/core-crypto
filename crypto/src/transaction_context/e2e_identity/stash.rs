@@ -108,7 +108,7 @@ mod tests {
                     Box::pin(async move {
                         // this restore recreates a partial enrollment
                         let key = DatabaseKey::generate();
-                        let key_store = CryptoKeystore::open_in_memory_with_key("", &key).await.unwrap();
+                        let key_store = CryptoKeystore::open_in_memory_with_key(&key).await.unwrap();
                         let backend = MlsCryptoProvider::builder().key_store(key_store).build();
                         backend.new_transaction().await.unwrap();
                         let client_id = e.client_id().parse::<WireQualifiedClientId>().unwrap();
