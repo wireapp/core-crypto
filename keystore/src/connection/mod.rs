@@ -108,7 +108,7 @@ pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
 
     async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self>;
 
-    async fn open_in_memory(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self>;
+    async fn open_in_memory(key: &DatabaseKey) -> CryptoKeystoreResult<Self>;
 
     async fn close(self) -> CryptoKeystoreResult<()>;
 
@@ -183,10 +183,8 @@ impl Connection {
         })
     }
 
-    pub async fn open_in_memory_with_key(name: impl AsRef<str>, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
-        let conn = KeystoreDatabaseConnection::open_in_memory(name.as_ref(), key)
-            .await?
-            .into();
+    pub async fn open_in_memory_with_key(key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
+        let conn = KeystoreDatabaseConnection::open_in_memory(key).await?.into();
         #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
         let conn = Arc::new(conn);
         Ok(Self {

@@ -17,7 +17,7 @@ use self::storage::{WasmEncryptedStorage, WasmStorageTransaction, WasmStorageWra
 
 #[derive(Debug)]
 pub struct WasmConnection {
-    name: String,
+    name: Option<String>,
     conn: WasmEncryptedStorage,
 }
 
@@ -61,14 +61,13 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
 
         let conn = WasmEncryptedStorage::new(key, storage);
 
-        Ok(Self { name, conn })
+        Ok(Self { name: Some(name), conn })
     }
 
-    async fn open_in_memory(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
-        let name = name.to_string();
+    async fn open_in_memory(key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let storage = WasmStorageWrapper::InMemory(Default::default());
         let conn = WasmEncryptedStorage::new(key, storage);
-        Ok(Self { name, conn })
+        Ok(Self { name: None, conn })
     }
 
     async fn close(self) -> CryptoKeystoreResult<()> {
@@ -83,7 +82,9 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
 
         if is_persistent {
             let factory = Factory::new()?;
-            factory.delete(&self.name)?.await?;
+            factory
+                .delete(&self.name.expect("name is always set for a persistent connection"))?
+                .await?;
         }
 
         Ok(())

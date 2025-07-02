@@ -120,7 +120,7 @@ impl SqlCipherConnection {
         result.map_err(Into::into)
     }
 
-    fn init_with_key_in_memory(_path: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
+    fn init_with_key_in_memory(key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let mut conn = rusqlite::Connection::open("")?;
 
         #[cfg(feature = "log-queries")]
@@ -218,10 +218,9 @@ impl<'a> DatabaseConnection<'a> for SqlCipherConnection {
         Ok(unblock(move || Self::init_with_key(&name, &key)).await?)
     }
 
-    async fn open_in_memory(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
-        let name = name.to_string();
+    async fn open_in_memory(key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let key = key.clone();
-        Ok(unblock(move || Self::init_with_key_in_memory(&name, &key)).await?)
+        Ok(unblock(move || Self::init_with_key_in_memory(&key)).await?)
     }
 
     async fn close(self) -> CryptoKeystoreResult<()> {
