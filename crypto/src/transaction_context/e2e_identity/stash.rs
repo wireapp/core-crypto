@@ -51,7 +51,7 @@ mod tests {
         prelude::{E2eiEnrollment, INITIAL_KEYING_MATERIAL_COUNT},
         test_utils::{x509::X509TestChain, *},
     };
-    use mls_crypto_provider::MlsCryptoProvider;
+    use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
     use core_crypto_keystore::DatabaseKey;
 
@@ -108,7 +108,8 @@ mod tests {
                     Box::pin(async move {
                         // this restore recreates a partial enrollment
                         let key = DatabaseKey::generate();
-                        let backend = MlsCryptoProvider::try_new_in_memory(&key).await.unwrap();
+                        let key_store = CryptoKeystore::open_in_memory_with_key("", &key).await.unwrap();
+                        let backend = MlsCryptoProvider::builder().key_store(key_store).build();
                         backend.new_transaction().await.unwrap();
                         let client_id = e.client_id().parse::<WireQualifiedClientId>().unwrap();
                         E2eiEnrollment::try_new(

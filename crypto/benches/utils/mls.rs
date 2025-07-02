@@ -1,4 +1,5 @@
 use async_lock::RwLock;
+use core_crypto_keystore::Connection as CryptoKeystore;
 use criterion::BenchmarkId;
 use rand::distributions::{Alphanumeric, DistString};
 use std::fmt::{Display, Formatter};
@@ -260,7 +261,8 @@ pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, Clien
         .as_bytes()
         .to_vec();
     let key = DatabaseKey::generate();
-    let backend = MlsCryptoProvider::try_new_in_memory(&key).await.unwrap();
+    let key_store = CryptoKeystore::open_in_memory_with_key("", &key).await.unwrap();
+    let backend = MlsCryptoProvider::builder().key_store(key_store).build();
     let cs: Ciphersuite = ciphersuite.into();
     let signer = create_signature_keypair(&backend, cs);
 

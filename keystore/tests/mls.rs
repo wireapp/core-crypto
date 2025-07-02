@@ -70,7 +70,7 @@ mod tests {
         let store = context.store();
         let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 
-        let backend = MlsCryptoProvider::new_with_store(store.clone(), None);
+        let backend = MlsCryptoProvider::builder().key_store(store.clone()).build();
         let identity_id: [u8; 16] = rand::random();
         let identity_id = uuid::Uuid::from_bytes(identity_id);
 

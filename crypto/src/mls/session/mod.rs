@@ -33,7 +33,7 @@ pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
 use identities::Identities;
 use log::debug;
-use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
+use mls_crypto_provider::{CryptoKeystore, EntropySeed, MlsCryptoProvider};
 use openmls::prelude::{Credential, CredentialType};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
@@ -99,32 +99,30 @@ impl Session {
     /// * for x509 Credentials if the certificate chain length is lower than 2
     /// * for Basic Credentials if the signature key cannot be generated either by not supported
     ///   scheme or the key generation fails
-    pub async fn try_new(configuration: MlsClientConfiguration) -> crate::mls::Result<Self> {
+    pub async fn try_new(mut configuration: MlsClientConfiguration) -> crate::mls::Result<Self> {
         // Init backend (crypto + rand + keystore)
-        let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
-            db_path: &configuration.store_path,
-            db_key: configuration.database_key.clone(),
-            in_memory: false,
-            entropy_seed: configuration.external_entropy.clone(),
-        })
-        .await
-        .map_err(MlsError::wrap("trying to initialize mls crypto provider object"))?;
+        let key_store = CryptoKeystore::open_with_key(&configuration.store_path, &configuration.database_key)
+            .await
+            .map_err(MlsError::wrap("initializing keystore"))?;
+        let mls_backend = MlsCryptoProvider::builder()
+            .key_store(key_store)
+            .entropy_seed_opt(configuration.external_entropy.take())
+            .build();
+
         Self::new_with_backend(mls_backend, configuration).await
     }
 
     /// Same as the [Self::try_new] but instead, it uses an in memory KeyStore.
     /// Although required, the `store_path` parameter from the `MlsClientConfiguration` won't be used here.
-    pub async fn try_new_in_memory(configuration: MlsClientConfiguration) -> crate::mls::Result<Self> {
-        let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
-            db_path: &configuration.store_path,
-            db_key: configuration.database_key.clone(),
-            in_memory: true,
-            entropy_seed: configuration.external_entropy.clone(),
-        })
-        .await
-        .map_err(MlsError::wrap(
-            "trying to initialize mls crypto provider object (in memory)",
-        ))?;
+    pub async fn try_new_in_memory(mut configuration: MlsClientConfiguration) -> crate::mls::Result<Self> {
+        let key_store = CryptoKeystore::open_in_memory_with_key(&configuration.store_path, &configuration.database_key)
+            .await
+            .map_err(MlsError::wrap("initializing keystore"))?;
+        let mls_backend = MlsCryptoProvider::builder()
+            .key_store(key_store)
+            .entropy_seed_opt(configuration.external_entropy.take())
+            .build();
+
         Self::new_with_backend(mls_backend, configuration).await
     }
 
@@ -753,7 +751,8 @@ mod tests {
     async fn can_generate_session(case: TestContext) {
         let [alice] = case.sessions().await;
         let key = DatabaseKey::generate();
-        let backend = MlsCryptoProvider::try_new_in_memory(&key).await.unwrap();
+        let key_store = CryptoKeystore::open_in_memory_with_key("", &key).await.unwrap();
+        let backend = MlsCryptoProvider::builder().key_store(key_store).build();
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
             x509_test_chain.register_with_provider(&backend).await;

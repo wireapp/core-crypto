@@ -115,4 +115,7 @@ pub enum MlsErrorKind {
     /// Provider Error
     #[error(transparent)]
     ProviderError(#[from] mls_crypto_provider::MlsProviderError),
+    /// Keystore Error
+    #[error(transparent)]
+    KeystoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
 }

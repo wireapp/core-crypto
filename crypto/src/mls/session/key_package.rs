@@ -334,7 +334,7 @@ mod tests {
     use openmls_traits::OpenMlsCryptoProvider;
     use openmls_traits::types::VerifiableCiphersuite;
 
-    use mls_crypto_provider::MlsCryptoProvider;
+    use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
     use crate::e2e_identity::enrollment::test_utils::{e2ei_enrollment, init_activation_or_rotation, noop_restore};
     use crate::prelude::MlsConversationConfiguration;
@@ -349,7 +349,8 @@ mod tests {
         let [session] = case.sessions().await;
         let (cs, ct) = (case.ciphersuite(), case.credential_type);
         let key = DatabaseKey::generate();
-        let backend = MlsCryptoProvider::try_new_in_memory(&key).await.unwrap();
+        let key_store = CryptoKeystore::open_in_memory_with_key("", &key).await.unwrap();
+        let backend = MlsCryptoProvider::builder().key_store(key_store).build();
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
             x509_test_chain.register_with_provider(&backend).await;
@@ -535,7 +536,8 @@ mod tests {
         const UNEXPIRED_COUNT: usize = 125;
         const EXPIRED_COUNT: usize = 200;
         let key = DatabaseKey::generate();
-        let backend = MlsCryptoProvider::try_new_in_memory(&key).await.unwrap();
+        let key_store = CryptoKeystore::open_in_memory_with_key("", &key).await.unwrap();
+        let backend = MlsCryptoProvider::builder().key_store(key_store).build();
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
             x509_test_chain.register_with_provider(&backend).await;
