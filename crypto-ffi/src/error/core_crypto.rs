@@ -2,7 +2,7 @@ use core_crypto::{InnermostErrorMessage as _, RecursiveError};
 
 #[cfg(feature = "proteus")]
 use crate::ProteusError;
-use crate::{MlsError, conversation_id_coerce_maybe_arc, error::log_error};
+use crate::{MlsError, error::log_error};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::JsValue;
 
@@ -126,7 +126,7 @@ impl From<RecursiveError> for CoreCryptoError {
         }
 
         match_heterogenous!(innermost => {
-            core_crypto::LeafError::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists(conversation_id_coerce_maybe_arc(id.to_owned())).into(),
+            core_crypto::LeafError::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists(id.to_owned()).into(),
             core_crypto::mls::conversation::Error::BufferedFutureMessage{..} => MlsError::BufferedFutureMessage.into(),
             core_crypto::mls::conversation::Error::DuplicateMessage => MlsError::DuplicateMessage.into(),
             core_crypto::mls::conversation::Error::MessageEpochTooOld => MlsError::MessageEpochTooOld.into(),

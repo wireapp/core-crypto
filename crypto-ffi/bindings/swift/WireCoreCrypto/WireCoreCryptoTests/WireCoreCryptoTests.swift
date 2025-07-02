@@ -228,7 +228,11 @@ final class WireCoreCryptoTests: XCTestCase {
             )
         }
 
-        let expectedError = CoreCryptoError.Mls(MlsError.ConversationAlreadyExists(conversationId))
+        let expectedError = CoreCryptoError.Mls(
+            MlsError.ConversationAlreadyExists(
+                conversationId.copyBytes()
+            )
+        )
 
         try await alice.transaction { ctx in
             await self.XCTAssertThrowsErrorAsync(expectedError) {

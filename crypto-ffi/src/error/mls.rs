@@ -4,8 +4,12 @@ use core_crypto::InnermostErrorMessage as _;
 #[cfg_attr(target_family = "wasm", derive(strum::AsRefStr))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Error))]
 pub enum MlsError {
+    /// The byte vector included in this error variant is the raw conversation id.
+    ///
+    /// We cannot provide a proper `ConversationId` instance because of a uniffi bug:
+    /// <https://github.com/mozilla/uniffi-rs/issues/2409>.
     #[error("Conversation already exists")]
-    ConversationAlreadyExists(crate::ConversationIdMaybeArc),
+    ConversationAlreadyExists(Vec<u8>),
     #[error("We already decrypted this message once")]
     DuplicateMessage,
     #[error("Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives")]
