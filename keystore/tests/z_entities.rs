@@ -98,7 +98,7 @@ macro_rules! test_migration_to_db_v1_for_entity {
             let new_key = &TEST_ENCRYPTION_KEY;
             core_crypto_keystore::Connection::migrate_db_key_type_to_bytes(&name, old_key, new_key).await.unwrap();
 
-            let new_storage = core_crypto_keystore::Connection::open_with_key(&name, new_key)
+            let new_storage = core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::Persistent(&name), new_key)
                 .await
                 .unwrap();
 

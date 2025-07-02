@@ -340,7 +340,7 @@ mod tests {
     use crate::prelude::MlsConversationConfiguration;
     use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
     use crate::test_utils::*;
-    use core_crypto_keystore::DatabaseKey;
+    use core_crypto_keystore::{ConnectionType, DatabaseKey};
 
     use super::Session;
 
@@ -349,7 +349,7 @@ mod tests {
         let [session] = case.sessions().await;
         let (cs, ct) = (case.ciphersuite(), case.credential_type);
         let key = DatabaseKey::generate();
-        let key_store = CryptoKeystore::open_in_memory_with_key(&key).await.unwrap();
+        let key_store = CryptoKeystore::open(ConnectionType::InMemory, &key).await.unwrap();
         let backend = MlsCryptoProvider::builder().key_store(key_store).build();
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
@@ -536,7 +536,7 @@ mod tests {
         const UNEXPIRED_COUNT: usize = 125;
         const EXPIRED_COUNT: usize = 200;
         let key = DatabaseKey::generate();
-        let key_store = CryptoKeystore::open_in_memory_with_key(&key).await.unwrap();
+        let key_store = CryptoKeystore::open(ConnectionType::InMemory, &key).await.unwrap();
         let backend = MlsCryptoProvider::builder().key_store(key_store).build();
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());

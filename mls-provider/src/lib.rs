@@ -105,8 +105,7 @@ impl MlsCryptoProvider {
     ///
     /// See also:
     ///
-    /// - [CryptoKeystore::open_with_key]
-    /// - [CryptoKeystore::open_in_memory_with_key]
+    /// - [CryptoKeystore::open]
     pub fn builder() -> MlsCryptoProviderConfigurationBuilder {
         MlsCryptoProviderConfiguration::builder()
     }

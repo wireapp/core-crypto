@@ -47,9 +47,12 @@ mod tests {
             .await
             .unwrap();
 
-        let store = core_crypto_keystore::Connection::open_with_key(&store_name, &TEST_ENCRYPTION_KEY)
-            .await
-            .unwrap();
+        let store = core_crypto_keystore::Connection::open(
+            core_crypto_keystore::ConnectionType::Persistent(&store_name),
+            &TEST_ENCRYPTION_KEY,
+        )
+        .await
+        .unwrap();
 
         let mut conn = store.borrow_conn().await.unwrap();
         use core_crypto_keystore::connection::storage::WasmStorageWrapper;

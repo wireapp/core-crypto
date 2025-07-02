@@ -1085,17 +1085,19 @@ mod tests {
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
         let key = DatabaseKey::generate();
-        let keystore = core_crypto_keystore::Connection::open_with_key(&path, &key)
-            .await
-            .unwrap();
+        let keystore =
+            core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::Persistent(&path), &key)
+                .await
+                .unwrap();
         keystore.new_transaction().await.unwrap();
         let central = ProteusCentral::try_new(&keystore).await.unwrap();
         let identity = (*central.proteus_identity).clone();
         keystore.commit_transaction().await.unwrap();
 
-        let keystore = core_crypto_keystore::Connection::open_with_key(path, &key)
-            .await
-            .unwrap();
+        let keystore =
+            core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::Persistent(&path), &key)
+                .await
+                .unwrap();
         keystore.new_transaction().await.unwrap();
         let central = ProteusCentral::try_new(&keystore).await.unwrap();
         keystore.commit_transaction().await.unwrap();
@@ -1116,9 +1118,10 @@ mod tests {
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let key = DatabaseKey::generate();
-        let mut keystore = core_crypto_keystore::Connection::open_with_key(path, &key)
-            .await
-            .unwrap();
+        let mut keystore =
+            core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::Persistent(&path), &key)
+                .await
+                .unwrap();
         keystore.new_transaction().await.unwrap();
 
         let mut alice = ProteusCentral::try_new(&keystore).await.unwrap();
@@ -1157,9 +1160,10 @@ mod tests {
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let key = DatabaseKey::generate();
-        let mut keystore = core_crypto_keystore::Connection::open_with_key(path, &key)
-            .await
-            .unwrap();
+        let mut keystore =
+            core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::Persistent(&path), &key)
+                .await
+                .unwrap();
         keystore.new_transaction().await.unwrap();
         let mut alice = ProteusCentral::try_new(&keystore).await.unwrap();
 
@@ -1200,9 +1204,10 @@ mod tests {
         let (path, _) = tmp_db_file();
 
         let key = DatabaseKey::generate();
-        let keystore = core_crypto_keystore::Connection::open_with_key(path, &key)
-            .await
-            .unwrap();
+        let keystore =
+            core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::Persistent(&path), &key)
+                .await
+                .unwrap();
         keystore.new_transaction().await.unwrap();
         let alice = ProteusCentral::try_new(&keystore).await.unwrap();
 
@@ -1303,10 +1308,12 @@ mod tests {
         let keystore_file = keystore_dir.path().join("keystore");
 
         let key = DatabaseKey::generate();
-        let mut keystore =
-            core_crypto_keystore::Connection::open_with_key(keystore_file.as_os_str().to_string_lossy(), &key)
-                .await
-                .unwrap();
+        let mut keystore = core_crypto_keystore::Connection::open(
+            core_crypto_keystore::ConnectionType::Persistent(&keystore_file.as_os_str().to_string_lossy()),
+            &key,
+        )
+        .await
+        .unwrap();
         keystore.new_transaction().await.unwrap();
 
         let Err(crate::Error::CryptoboxMigration(crate::CryptoboxMigrationError {

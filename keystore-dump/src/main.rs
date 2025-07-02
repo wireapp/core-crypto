@@ -21,7 +21,9 @@ async fn main() -> Result<()> {
     use chrono::TimeZone;
     use clap::Parser as _;
     use color_eyre::eyre::eyre;
-    use core_crypto_keystore::{Connection as Keystore, DatabaseKey, connection::FetchFromDatabase, entities::*};
+    use core_crypto_keystore::{
+        Connection as Keystore, ConnectionType, DatabaseKey, connection::FetchFromDatabase, entities::*,
+    };
     use openmls::prelude::TlsDeserializeTrait;
     use serde::ser::{SerializeMap, Serializer};
 
@@ -34,7 +36,7 @@ async fn main() -> Result<()> {
     }
 
     let key = DatabaseKey::try_from(hex::decode(&args.key)?.as_slice())?;
-    let keystore = Keystore::open_with_key(&args.path, &key)
+    let keystore = Keystore::open(ConnectionType::Persistent(&args.path), &key)
         .await
         .map_err(|e| eyre!("The passkey is probably wrong; [err: {e}]"))?;
 

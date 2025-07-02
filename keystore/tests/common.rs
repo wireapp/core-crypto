@@ -4,7 +4,7 @@ pub(crate) use core_crypto_keystore::{Connection as CryptoKeystore, DatabaseKey}
 use std::array;
 use std::sync::{Arc, LazyLock};
 
-use core_crypto_keystore::connection::{DatabaseConnection, KeystoreDatabaseConnection};
+use core_crypto_keystore::connection::{ConnectionType, DatabaseConnection, KeystoreDatabaseConnection};
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
 
@@ -28,12 +28,14 @@ pub fn store_name() -> String {
 
 #[fixture(name = store_name(), in_memory = false)]
 pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> KeystoreTestContext {
-    let store = if !in_memory {
-        core_crypto_keystore::Connection::open_with_key(name, &TEST_ENCRYPTION_KEY).await
+    let location = if in_memory {
+        ConnectionType::InMemory
     } else {
-        core_crypto_keystore::Connection::open_in_memory_with_key(&TEST_ENCRYPTION_KEY).await
-    }
-    .expect("Could not open keystore");
+        ConnectionType::Persistent(name.as_ref())
+    };
+    let store = core_crypto_keystore::Connection::open(location, &TEST_ENCRYPTION_KEY)
+        .await
+        .expect("Could not open keystore");
     store.new_transaction().await.expect("Could not create transaction");
     KeystoreTestContext { store: Some(store) }
 }

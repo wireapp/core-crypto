@@ -27,9 +27,10 @@ pub(crate) async fn setup(#[default(false)] in_memory: bool) -> MlsCryptoProvide
     let store_name = store_name();
     let key = core_crypto_keystore::DatabaseKey::generate();
     let store = if !in_memory {
-        core_crypto_keystore::Connection::open_with_key(store_name, &key).await
+        core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::Persistent(&store_name), &key)
+            .await
     } else {
-        core_crypto_keystore::Connection::open_in_memory_with_key(&key).await
+        core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::InMemory, &key).await
     }
     .unwrap();
 

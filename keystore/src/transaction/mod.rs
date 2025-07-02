@@ -1,5 +1,6 @@
 pub mod dynamic_dispatch;
 
+use crate::connection::ConnectionType;
 use crate::entities::mls::*;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::proteus::*;
@@ -29,7 +30,7 @@ impl KeystoreTransaction {
         // We don't really care about the key and we're not going to store it anywhere.
         let key = DatabaseKey::from([0u8; 32]);
         Ok(Self {
-            cache: Connection::open_in_memory_with_key(&key).await?,
+            cache: Connection::open(ConnectionType::InMemory, &key).await?,
             deleted: Arc::new(Default::default()),
             deleted_credentials: Arc::new(Default::default()),
             _semaphore_guard: Arc::new(semaphore_guard),

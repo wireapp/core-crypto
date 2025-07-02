@@ -53,7 +53,7 @@ mod tests {
     };
     use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
-    use core_crypto_keystore::DatabaseKey;
+    use core_crypto_keystore::{ConnectionType, DatabaseKey};
 
     #[apply(all_cred_cipher)]
     async fn stash_and_pop_should_not_abort_enrollment(case: TestContext) {
@@ -108,7 +108,7 @@ mod tests {
                     Box::pin(async move {
                         // this restore recreates a partial enrollment
                         let key = DatabaseKey::generate();
-                        let key_store = CryptoKeystore::open_in_memory_with_key(&key).await.unwrap();
+                        let key_store = CryptoKeystore::open(ConnectionType::InMemory, &key).await.unwrap();
                         let backend = MlsCryptoProvider::builder().key_store(key_store).build();
                         backend.new_transaction().await.unwrap();
                         let client_id = e.client_id().parse::<WireQualifiedClientId>().unwrap();
