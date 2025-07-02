@@ -171,20 +171,20 @@ unsafe impl Send for Connection {}
 // SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
 unsafe impl Sync for Connection {}
 
-impl Connection {
-    pub async fn open_with_key(name: impl AsRef<str>, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
-        let conn = KeystoreDatabaseConnection::open(name.as_ref(), key).await?.into();
-        #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
-        let conn = Arc::new(conn);
-        Ok(Self {
-            conn,
-            transaction: Default::default(),
-            transaction_semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
-        })
-    }
+/// Where to open a connection
+pub enum ConnectionType<'a> {
+    /// This connection is persistent at the provided path
+    Persistent(&'a str),
+    /// This connection is transient and lives in memory
+    InMemory,
+}
 
-    pub async fn open_in_memory_with_key(key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
-        let conn = KeystoreDatabaseConnection::open_in_memory(key).await?.into();
+impl Connection {
+    pub async fn open(location: ConnectionType<'_>, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
+        let conn = match location {
+            ConnectionType::Persistent(name) => KeystoreDatabaseConnection::open(name, key).await?.into(),
+            ConnectionType::InMemory => KeystoreDatabaseConnection::open_in_memory(key).await?.into(),
+        };
         #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
         let conn = Arc::new(conn);
         Ok(Self {
