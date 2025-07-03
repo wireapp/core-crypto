@@ -100,8 +100,8 @@ pub(crate) type CiphersuitesMaybeArc = Ciphersuites;
 pub(crate) type CiphersuitesMaybeArc = std::sync::Arc<Ciphersuites>;
 
 impl Ciphersuites {
-    pub(crate) fn as_cc(&self) -> Vec<MlsCiphersuite> {
-        self.0.iter().copied().map(Into::into).collect()
+    pub fn iter(&self) -> impl Iterator<Item = Ciphersuite> {
+        self.0.iter().copied()
     }
 }
 

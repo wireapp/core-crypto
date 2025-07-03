@@ -72,7 +72,7 @@ impl CoreCryptoContext {
         self.inner
             .mls_init(
                 ClientIdentifier::Basic(client_id.as_cc()),
-                ciphersuites.as_cc(),
+                ciphersuites.iter().map(Into::into).collect(),
                 nb_key_package,
             )
             .await?;

@@ -100,7 +100,7 @@ impl CoreCrypto {
             .persistent(&path)
             .database_key(key.into())
             .client_id_opt(client_id.map(|cid| cid.as_cc()))
-            .ciphersuites(ciphersuites.unwrap_or_default().as_cc())
+            .ciphersuites(ciphersuites.unwrap_or_default().iter().map(Into::into))
             .external_entropy_opt(entropy_seed.as_deref())
             .nb_key_packages(nb_key_packages)
             .build()
