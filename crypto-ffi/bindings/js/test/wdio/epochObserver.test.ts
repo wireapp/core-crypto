@@ -65,7 +65,7 @@ describe("epoch observer", () => {
                 // we have to explicitly return non-primitives, as anything passed by reference won't make it out of the browser context
                 const first_id_hex = Array.from(
                     observer.observations[0]?.conversationId.copyBytes() ??
-                    new Uint8Array(),
+                        new Uint8Array(),
                     (byte: number) => {
                         return ("0" + (byte & 0xff).toString(16)).slice(-2);
                     }
