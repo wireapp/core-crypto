@@ -24,8 +24,8 @@ pub async fn handle_login(_req: Request<Incoming>) -> http::Result<Response<Full
     } = OauthCfg::cxt_get();
 
     let issuer_url = IssuerUrl::new(issuer_uri.clone()).unwrap();
-    let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), move |r| {
-        custom_oauth_client("discovery", ctx_get_http_client(), r)
+    let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), &async |r| {
+        custom_oauth_client("discovery", ctx_get_http_client(), r).await
     })
     .await
     .unwrap();

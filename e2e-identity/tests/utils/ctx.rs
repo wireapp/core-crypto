@@ -25,18 +25,18 @@ pub async fn custom_oauth_client(
     key: &'static str,
     client: reqwest::Client,
     request: oauth2::HttpRequest,
-) -> Result<oauth2::HttpResponse, oauth2::reqwest::Error<reqwest::Error>> {
+) -> Result<oauth2::HttpResponse, oauth2::reqwest::Error> {
     ctx_store_request(key, &request);
     let resp = proxy_http_client(client, request).await;
     if let Ok(resp) = resp.as_ref() {
-        ctx_store(format!("{key}-response-status"), resp.status_code.as_str());
+        ctx_store(format!("{key}-response-status"), resp.status().as_str());
         let headers = resp
-            .headers
+            .headers()
             .iter()
             .map(|(k, v)| format!("{}|{}", k.as_str(), v.to_str().unwrap()))
             .join(";");
         ctx_store(format!("{key}-response-headers"), headers);
-        let b64_body = base64::prelude::BASE64_STANDARD.encode(resp.body.clone());
+        let b64_body = base64::prelude::BASE64_STANDARD.encode(resp.body().clone());
         ctx_store(format!("{key}-response-body"), b64_body);
     }
     resp
@@ -45,42 +45,21 @@ pub async fn custom_oauth_client(
 pub async fn proxy_http_client(
     client: reqwest::Client,
     req: oauth2::HttpRequest,
-) -> Result<oauth2::HttpResponse, oauth2::reqwest::Error<reqwest::Error>> {
-    // Map oauth http headers to reqwest headers
-    let request_headers = req
-        .headers
-        .iter()
-        .map(|(k, v)| {
-            (
-                HeaderName::from_str(k.as_str()).unwrap(),
-                HeaderValue::from_str(v.to_str().unwrap()).unwrap(),
-            )
-        })
-        .collect();
-
+) -> Result<oauth2::HttpResponse, oauth2::reqwest::Error> {
     // Now use the reqwest client
     let request = client
-        .request(Method::from_str(req.method.as_str()).unwrap(), req.url.as_str())
-        .headers(request_headers)
-        .body(req.body);
+        .request(Method::from_str(req.method().as_str()).unwrap(), req.uri().to_string())
+        .headers(req.headers().clone())
+        .body(req.body().clone());
     let response = request.send().await.unwrap();
 
-    // Map the reqwest headers back to oauth headers
-    let response_headers = response
-        .headers()
-        .iter()
-        .map(|(k, v)| {
-            (
-                oauth2::http::header::HeaderName::from_str(k.as_str()).unwrap(),
-                oauth2::http::header::HeaderValue::from_str(v.to_str().unwrap()).unwrap(),
-            )
-        })
-        .collect();
-    Ok(oauth2::HttpResponse {
-        status_code: oauth2::http::StatusCode::from_u16(response.status().as_u16()).unwrap(),
-        headers: response_headers,
-        body: response.bytes().await.unwrap().to_vec(),
-    })
+    let mut builder = http::Response::builder().status(response.status());
+
+    for (k, v) in response.headers() {
+        builder = builder.header(k, v);
+    }
+
+    Ok(builder.body(response.bytes().await?.to_vec()).unwrap())
 }
 
 // store args for callback endpoint because openidconnect::Client is a mess to handle
@@ -92,15 +71,15 @@ pub fn ctx_store(key: impl AsRef<str>, value: impl AsRef<str>) {
 }
 
 pub fn ctx_store_request(key: &'static str, req: &oauth2::HttpRequest) {
-    ctx_store(format!("{key}-request-method"), req.method.as_str());
-    ctx_store(format!("{key}-request-uri"), req.url.as_str());
+    ctx_store(format!("{key}-request-method"), req.method().as_str());
+    ctx_store(format!("{key}-request-uri"), req.uri().to_string());
     let headers = req
-        .headers
+        .headers()
         .iter()
         .map(|(k, v)| format!("{}|{}", k.as_str(), v.to_str().unwrap()))
         .join(";");
     ctx_store(format!("{key}-request-headers"), headers);
-    let body = base64::prelude::BASE64_STANDARD.encode(&req.body);
+    let body = base64::prelude::BASE64_STANDARD.encode(&req.body());
     ctx_store(format!("{key}-request-body"), body);
 }
 

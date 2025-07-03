@@ -541,8 +541,9 @@ impl E2eTest {
         oidc_target.set_port(Some(local_port)).unwrap();
 
         let issuer_url = IssuerUrl::new(oidc_target.as_str().to_string()).unwrap();
-        let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), move |r| {
-            custom_oauth_client("discovery", ctx_get_http_client(), r)
+
+        let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), &async |r| {
+            custom_oauth_client("discovery", ctx_get_http_client(), r).await
         })
         .await
         .unwrap();
@@ -615,10 +616,11 @@ impl E2eTest {
         self.display_step("OAUTH authorization code + verifier (token endpoint)");
         let token_request = client
             .exchange_code(openidconnect::AuthorizationCode::new(authz_code))
+            .unwrap()
             .set_pkce_verifier(pkce_verifier);
 
         let oauth_token_response = token_request
-            .request_async(move |r| custom_oauth_client("exchange-code", ctx_get_http_client(), r))
+            .request_async(&async |r| custom_oauth_client("exchange-code", ctx_get_http_client(), r).await)
             .await;
 
         let oauth_token_response = oauth_token_response.unwrap();
@@ -684,8 +686,8 @@ impl E2eTest {
         self.display_chapter("Use refreshToken to retrieve idToken");
         let oidc_target = oidc_chall.target.to_string();
         let issuer_url = IssuerUrl::new(oidc_target).unwrap();
-        let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), move |r| {
-            custom_oauth_client("discovery", ctx_get_http_client(), r)
+        let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), &async |r| {
+            custom_oauth_client("discovery", ctx_get_http_client(), r).await
         })
         .await
         .unwrap();
@@ -706,10 +708,11 @@ impl E2eTest {
 
         let refresh_token_request = client
             .exchange_refresh_token(&refresh_token)
+            .unwrap()
             .add_extra_param("claims", extra);
 
         let refresh_token_response = refresh_token_request
-            .request_async(move |r| custom_oauth_client("refresh-token", ctx_get_http_client(), r))
+            .request_async(&async |r| custom_oauth_client("refresh-token", ctx_get_http_client(), r).await)
             .await
             .unwrap();
         use openidconnect::TokenResponse as _;
