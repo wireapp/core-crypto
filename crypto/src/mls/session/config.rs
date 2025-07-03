@@ -18,7 +18,7 @@ use crate::{
 pub struct SessionConfig<'a> {
     /// Connection type for the database
     pub db_connection_type: ConnectionType<'a>,
-    /// Database key to be used to instantiate the [MlsCryptoProvider]
+    /// Database key to be used to instantiate the [MlsCryptoProvider][mls_crypto_provider::MlsCryptoProvider]
     pub database_key: DatabaseKey,
     /// Identifier for the client to be used by [Session][crate::mls::session::Session]
     ///
@@ -72,7 +72,7 @@ pub struct ValidatedSessionConfig<'a> {
 impl<'a> SessionConfig<'a> {
     /// Validate this configuration to produce a validated configuration.
     ///
-    /// This can then be passed to [Session::new][crate::mls::session::Session::new].
+    /// This can then be passed to [Session::try_new][crate::mls::session::Session::try_new].
     pub fn validate(self) -> Result<ValidatedSessionConfig<'a>> {
         let Self {
             db_connection_type,
