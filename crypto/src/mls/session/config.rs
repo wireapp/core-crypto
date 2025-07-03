@@ -29,8 +29,8 @@ pub struct SessionConfig<'a> {
     #[builder(default, setter(strip_option(fallback = external_entropy_opt)))]
     pub external_entropy: Option<&'a [u8]>,
     /// All supported ciphersuites in this session
-    #[builder(default, setter(transform = |iter: impl IntoIterator<Item = MlsCiphersuite>| Some(iter.into_iter().collect())))]
-    pub ciphersuites: Option<Vec<MlsCiphersuite>>,
+    #[builder(default, setter(transform = |iter: impl IntoIterator<Item = MlsCiphersuite>| iter.into_iter().collect()))]
+    pub ciphersuites: Vec<MlsCiphersuite>,
     /// Number of [openmls::prelude::KeyPackage] to create when creating a MLS client.
     ///
     /// Defaults to [crate::prelude::INITIAL_KEYING_MATERIAL_COUNT].
@@ -93,23 +93,12 @@ impl<'a> SessionConfig<'a> {
         {
             return Err(Error::MalformedIdentifier("client_id"));
         }
-        if client_id.is_some() {
-            match &ciphersuites {
-                None => {
-                    return Err(Error::MalformedIdentifier(
-                        "ciphersuites must be present if initializing (i.e. client_id is set)",
-                    ));
-                }
-                Some(cs) if cs.is_empty() => {
-                    return Err(Error::MalformedIdentifier(
-                        "ciphersuites must be non-empty if initializing (i.e. client_id is set)",
-                    ));
-                }
-                _ => {}
-            }
-        }
 
-        let ciphersuites = ciphersuites.unwrap_or_default();
+        if client_id.is_some() && ciphersuites.is_empty() {
+            return Err(Error::MalformedIdentifier(
+                "ciphersuites must be non-empty if initializing (i.e. client_id is set)",
+            ));
+        }
 
         let external_entropy = external_entropy
             .map(EntropySeed::try_from_slice)
