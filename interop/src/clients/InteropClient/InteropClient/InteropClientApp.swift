@@ -19,7 +19,7 @@ final class TransportProvider: MlsTransport {
     func prepareForTransport(historySecret: WireCoreCryptoUniffi.HistorySecret) async
         -> WireCoreCryptoUniffi.MlsTransportData
     {
-        historySecret.clientId
+        historySecret.clientId.asBytes()
     }
 
 }
@@ -102,8 +102,8 @@ struct InteropClientApp: App {
 
             try await self.coreCrypto?.transaction({ context in
                 try await context.mlsInit(
-                    clientId: clientId,
-                    ciphersuites: [ciphersuite],
+                    clientId: ClientId(bytes: clientId),
+                    ciphersuites: ciphersuitesFromU16s(ids: [ciphersuite]),
                     nbKeyPackage: nil)
             })
 
@@ -114,13 +114,13 @@ struct InteropClientApp: App {
 
             let keyPackage = try await coreCrypto.transaction {
                 try await $0.clientKeypackages(
-                    ciphersuite: ciphersuite,
+                    ciphersuite: ciphersuiteFromU16(discriminant: ciphersuite),
                     credentialType: .basic,
                     amountRequested: 1)
             }
 
             if let encodedKeyPackage = keyPackage.first.map({
-                $0.base64EncodedString()
+                $0.copyBytes().base64EncodedString()
             }) {
                 return encodedKeyPackage
             } else {
@@ -129,6 +129,9 @@ struct InteropClientApp: App {
 
         case .addClient(let conversationId, let ciphersuite, let keyPackage):
             guard let coreCrypto else { throw InteropError.notInitialised }
+            let conversationId = ConversationId(bytes: conversationId)
+            let ciphersuite = try ciphersuiteFromU16(discriminant: ciphersuite)
+            let keyPackage = KeyPackage(bytes: keyPackage)
 
             try await coreCrypto.transaction { context in
                 if try await context.conversationExists(
@@ -160,6 +163,8 @@ struct InteropClientApp: App {
 
         case .removeClient(let conversationId, let clientId):
             guard let coreCrypto else { throw InteropError.notInitialised }
+            let conversationId = ConversationId(bytes: conversationId)
+            let clientId = ClientId(bytes: clientId)
 
             _ = try await coreCrypto.transaction {
                 try await $0.removeClientsFromConversation(
@@ -173,7 +178,7 @@ struct InteropClientApp: App {
         case .processWelcome(let welcomePath):
             guard let coreCrypto else { throw InteropError.notInitialised }
 
-            let welcomeMessage = try Data(contentsOf: welcomePath)
+            let welcomeMessage = try Welcome(bytes: Data(contentsOf: welcomePath))
             let configuration = CustomConfiguration(
                 keyRotationSpan: nil, wirePolicy: nil)
             let bundle = try await coreCrypto.transaction {
@@ -183,10 +188,11 @@ struct InteropClientApp: App {
                 )
             }
 
-            return bundle.id.base64EncodedString()
+            return bundle.id.copyBytes().base64EncodedString()
 
         case .encryptMessage(let conversationId, let message):
             guard let coreCrypto else { throw InteropError.notInitialised }
+            let conversationId = ConversationId(bytes: conversationId)
 
             let encryptedMessage = try await coreCrypto.transaction {
                 try await $0.encryptMessage(
@@ -199,6 +205,7 @@ struct InteropClientApp: App {
 
         case .decryptMessage(let conversationId, let message):
             guard let coreCrypto else { throw InteropError.notInitialised }
+            let conversationId = ConversationId(bytes: conversationId)
 
             let decryptedMessage = try await coreCrypto.transaction {
                 try await $0.decryptMessage(
