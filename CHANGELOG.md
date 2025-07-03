@@ -37,7 +37,7 @@
 
   Affected platforms: Web, Swift
 
-  Migration: call `new ClientId(id)` to construct a `ClientId`, and `id.as_bytes()` to get a byte array out.
+  Migration: call `new ClientId(id)` to construct a `ClientId`, and `id.asBytes()` to get a byte array out.
 
 - `ClientId` wrapper accepts a byte array, not a string.
 
@@ -82,7 +82,7 @@
   The Message newtypes were only used in `CoreCryptoContext.encryptMessage` and `CoreCryptoContext.decryptMessage`.
   `SignaturePublicKey` was used only for the return value of `fun getPublicKey`. The only usage we found was an immediate access of the byte vector.
 
-  These types appear to provide no type safety benefits, instead only adding a bit of friction. So we got rid of them.
+  These types appear to provide no type safety benefits, instead only adding a bit of friction.
 
 ### Features
 
