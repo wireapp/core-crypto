@@ -484,8 +484,8 @@ impl E2eTest {
         self.display_step("validate oidc challenge (userId + displayName)");
 
         let oidc_chall_url = oidc_chall.url.clone();
-        let dex_pk = self.fetch_idp_public_key().await;
-        self.display_token("OIDC Id token", &id_token, None, &dex_pk);
+        let idp_pubkey = self.fetch_idp_public_key().await;
+        self.display_token("OIDC Id token", &id_token, None, &idp_pubkey);
 
         self.display_note("The ACME provisioner is configured with rules for transforming values received in the token into a Wire handle and display name.");
 
@@ -642,16 +642,16 @@ impl E2eTest {
         self.display_str(&exchange_code_resp, false);
 
         use oauth2::TokenResponse as _;
-        let dex_pk = self.fetch_idp_public_key().await;
+        let idp_pubkey = self.fetch_idp_public_key().await;
         let access_token = oauth_token_response.access_token().secret();
-        self.display_token("OAuth Access token", access_token, None, &dex_pk);
+        self.display_token("OAuth Access token", access_token, None, &idp_pubkey);
 
         if let Some(refresh_token) = oauth_token_response.refresh_token() {
             // Note that this refresh token will always be shown as having an invalid signature
             // because Keycloak generates a HS512 refresh token, which we can't verify due to the
             // fact that verification requires possession of a secret key that only Keycloak has
             // access to.
-            self.display_token("OAuth Refresh token", refresh_token.secret(), None, &dex_pk);
+            self.display_token("OAuth Refresh token", refresh_token.secret(), None, &idp_pubkey);
             self.refresh_token = Some(refresh_token.clone());
         }
 

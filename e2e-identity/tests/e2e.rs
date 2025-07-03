@@ -804,8 +804,8 @@ mod oidc_challenge {
         let flow = EnrollmentFlow {
             fetch_id_token: Box::new(|mut test, (oidc_chall, keyauth)| {
                 Box::pin(async move {
-                    let idp_pk = test.fetch_idp_public_key().await;
-                    let dex_pk = RS256PublicKey::from_pem(&idp_pk).unwrap();
+                    let idp_pubkey = test.fetch_idp_public_key().await;
+                    let idp_pubkey = RS256PublicKey::from_pem(&idp_pubkey).unwrap();
                     let id_token = test.fetch_id_token(&oidc_chall, keyauth).await?;
 
                     let change_handle = |mut claims: JWTClaims<Value>| {
@@ -813,7 +813,7 @@ mod oidc_challenge {
                         *claims.custom.get_mut("name").unwrap() = json!(wrong_handle);
                         claims
                     };
-                    let modified_id_token = resign_id_token(&id_token, dex_pk, kid, new_kp, change_handle);
+                    let modified_id_token = resign_id_token(&id_token, idp_pubkey, kid, new_kp, change_handle);
                     Ok((test, modified_id_token))
                 })
             }),
@@ -846,8 +846,8 @@ mod oidc_challenge {
         let flow = EnrollmentFlow {
             fetch_id_token: Box::new(|mut test, (oidc_chall, keyauth)| {
                 Box::pin(async move {
-                    let dex_pk = test.fetch_idp_public_key().await;
-                    let dex_pk = RS256PublicKey::from_pem(&dex_pk).unwrap();
+                    let idp_pubkey = test.fetch_idp_public_key().await;
+                    let idp_pubkey = RS256PublicKey::from_pem(&idp_pubkey).unwrap();
                     let id_token = test.fetch_id_token(&oidc_chall, keyauth).await?;
 
                     let change_handle = |mut claims: JWTClaims<Value>| {
@@ -855,7 +855,7 @@ mod oidc_challenge {
                         *claims.custom.get_mut("preferred_username").unwrap() = json!(wrong_handle);
                         claims
                     };
-                    let modified_id_token = resign_id_token(&id_token, dex_pk, kid, new_kp, change_handle);
+                    let modified_id_token = resign_id_token(&id_token, idp_pubkey, kid, new_kp, change_handle);
                     Ok((test, modified_id_token))
                 })
             }),
