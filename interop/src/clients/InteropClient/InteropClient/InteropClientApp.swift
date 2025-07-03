@@ -19,7 +19,7 @@ final class TransportProvider: MlsTransport {
     func prepareForTransport(historySecret: WireCoreCryptoUniffi.HistorySecret) async
         -> WireCoreCryptoUniffi.MlsTransportData
     {
-        historySecret.clientId.asBytes()
+        historySecret.clientId.copyBytes()
     }
 
 }

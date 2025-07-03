@@ -37,7 +37,7 @@
 
   Affected platforms: Web, Swift
 
-  Migration: call `new ClientId(id)` to construct a `ClientId`, and `id.asBytes()` to get a byte array out.
+  Migration: call `new ClientId(id)` to construct a `ClientId`, and `id.copyBytes()` to get a byte array out.
 
 - `ClientId` wrapper accepts a byte array, not a string.
 

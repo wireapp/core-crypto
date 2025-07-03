@@ -101,7 +101,7 @@ export async function setup() {
             ): Promise<MlsTransportData> {
                 return Promise.resolve(
                     new window.ccModule.MlsTransportData(
-                        secret.clientId.as_bytes()
+                        secret.clientId.copyBytes()
                     )
                 );
             },

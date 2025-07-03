@@ -107,7 +107,7 @@ value class ClientId(override val value: ByteArray) : FfiType<ByteArray, com.wir
 }
 
 @OptIn(ExperimentalUnsignedTypes::class)
-internal fun com.wire.crypto.uniffi.ClientId.toClientId() = ClientId(asBytes())
+internal fun com.wire.crypto.uniffi.ClientId.toClientId() = ClientId(copyBytes())
 
 /** Construct a client ID */
 fun String.toClientId() = ClientId(this.toByteArray())

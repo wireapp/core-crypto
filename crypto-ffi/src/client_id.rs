@@ -26,7 +26,8 @@ impl ClientId {
         Self(bytes.into())
     }
 
-    pub fn as_bytes(&self) -> Vec<u8> {
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = copyBytes))]
+    pub fn copy_bytes(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }

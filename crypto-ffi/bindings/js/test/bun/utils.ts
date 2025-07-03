@@ -52,7 +52,7 @@ class TestDeliveryService implements DeliveryService {
 
     prepareForTransport(secret: HistorySecret): Promise<MlsTransportData> {
         return Promise.resolve(
-            new MlsTransportData(secret.clientId.as_bytes())
+            new MlsTransportData(secret.clientId.copyBytes())
         );
     }
 
