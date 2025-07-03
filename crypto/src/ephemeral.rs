@@ -26,7 +26,7 @@ use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
     CoreCrypto, Error, MlsError, RecursiveError, Result,
-    prelude::{ClientId, ClientIdentifier, MlsCiphersuite, MlsClientConfiguration, MlsCredentialType, Session},
+    prelude::{ClientId, ClientIdentifier, MlsCiphersuite, MlsCredentialType, Session, SessionConfig},
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -46,27 +46,18 @@ pub struct HistorySecret {
 ///
 /// You must initialize the session yourself before using this!
 async fn in_memory_cc_with_ciphersuite(ciphersuite: impl Into<MlsCiphersuite>) -> Result<CoreCrypto> {
-    let ciphersuites = vec![ciphersuite.into()];
-
-    let configuration = MlsClientConfiguration {
-        // we know what ciphersuite we want, at least
-        ciphersuites: ciphersuites.clone(),
-        // we have the client id from the history secret, but we don't want to use it here because
-        // that kicks off the `init`, and we want to inject our secret keys into the keystore before then
-        client_id: None,
-        // not used in in-memory client
-        store_path: String::new(),
-        // important so our keys aren't memory-snooped, but its actual value is irrelevant
-        database_key: DatabaseKey::generate(),
-        // irrelevant for this case
-        external_entropy: None,
-        // don't generate any keypackages; we do not want to ever add this client to a different group
-        nb_init_key_packages: Some(0),
-    };
+    let config = SessionConfig::builder()
+        .in_memory()
+        .ciphersuites([ciphersuite.into()])
+        .database_key(DatabaseKey::generate())
+        .nb_key_packages(Some(0)) // don't generate any keypackages; we will never add this client to another group
+        .build()
+        .validate()
+        .map_err(RecursiveError::mls("validating ephemeral session configuration"))?;
 
     // Construct the MLS session, but don't initialize it. The implementation when `client_id` is `None` just
     // does construction, which is what we need.
-    let session = Session::try_new_in_memory(configuration)
+    let session = Session::try_new(config)
         .await
         .map_err(RecursiveError::mls("creating ephemeral session"))?;
 

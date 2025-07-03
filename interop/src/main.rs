@@ -153,16 +153,14 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     let spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
 
     let mut clients = create_mls_clients(chrome_driver_addr, web_server).await;
-    let ciphersuites = vec![CIPHERSUITE_IN_USE.into()];
-    let configuration = MlsClientConfiguration::try_new(
-        "whatever".into(),
-        DatabaseKey::generate(),
-        Some(MLS_MAIN_CLIENTID.into()),
-        ciphersuites,
-        None,
-        Some(100),
-    )?;
-    let master_client = Session::try_new_in_memory(configuration).await?;
+    let configuration = SessionConfig::builder()
+        .in_memory()
+        .database_key(DatabaseKey::generate())
+        .client_id(MLS_MAIN_CLIENTID.into())
+        .ciphersuites([CIPHERSUITE_IN_USE.into()])
+        .build()
+        .validate()?;
+    let master_client = Session::try_new(configuration).await?;
 
     let conversation_id = MLS_CONVERSATION_ID.to_vec();
     let config = MlsConversationConfiguration {
@@ -308,15 +306,14 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
         client.init().await?;
     }
 
-    let configuration = MlsClientConfiguration::try_new(
-        "whatever".into(),
-        DatabaseKey::generate(),
-        Some(MLS_MAIN_CLIENTID.into()),
-        vec![MlsCiphersuite::default()],
-        None,
-        Some(100),
-    )?;
-    let master_client = CoreCrypto::from(Session::try_new_in_memory(configuration).await?);
+    let configuration = SessionConfig::builder()
+        .in_memory()
+        .database_key(DatabaseKey::generate())
+        .client_id(MLS_MAIN_CLIENTID.into())
+        .ciphersuites([CIPHERSUITE_IN_USE.into()])
+        .build()
+        .validate()?;
+    let master_client = CoreCrypto::from(Session::try_new(configuration).await?);
     let transaction = master_client.new_transaction().await?;
     transaction.proteus_init().await?;
 

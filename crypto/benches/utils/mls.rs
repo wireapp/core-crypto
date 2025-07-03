@@ -6,9 +6,9 @@ use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
 use core_crypto::prelude::{
-    CertificateBundle, ClientId, ConversationId, HistorySecret, MlsCiphersuite, MlsClientConfiguration,
-    MlsCommitBundle, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle,
-    Session,
+    CertificateBundle, ClientId, ConversationId, HistorySecret, MlsCiphersuite, MlsCommitBundle,
+    MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle, Session,
+    SessionConfig,
 };
 use core_crypto::{CoreCrypto, DatabaseKey, MlsTransport, MlsTransportData, MlsTransportResponse};
 use mls_crypto_provider::MlsCryptoProvider;
@@ -153,23 +153,24 @@ pub async fn new_central(
     in_memory: bool,
 ) -> (CoreCrypto, tempfile::TempDir, Arc<dyn MlsTransportTestExt>) {
     let (path, tmp_file) = tmp_db_file();
+    let connection_type = if in_memory {
+        ConnectionType::InMemory
+    } else {
+        ConnectionType::Persistent(&path)
+    };
     let client_id = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let key = DatabaseKey::generate();
-    let ciphersuites = vec![ciphersuite];
-    let cfg = MlsClientConfiguration::try_new(
-        path,
-        key,
-        Some(client_id.as_bytes().into()),
-        ciphersuites,
-        None,
-        Some(100),
-    )
-    .unwrap();
-    let central = if in_memory {
-        Session::try_new_in_memory(cfg).await.unwrap()
-    } else {
-        Session::try_new(cfg).await.unwrap()
-    };
+    let cfg = SessionConfig::builder()
+        .db_connection_type(connection_type)
+        .database_key(key)
+        .client_id(client_id.as_bytes().into())
+        .ciphersuites([ciphersuite])
+        .nb_key_packages(Some(100))
+        .build()
+        .validate()
+        .unwrap();
+
+    let central = Session::try_new(cfg).await.unwrap();
     let cc = CoreCrypto::from(central);
     let delivery_service = Arc::<CoreCryptoTransportSuccessProvider>::default();
     cc.provide_transport(delivery_service.clone()).await;

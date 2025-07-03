@@ -990,16 +990,17 @@ impl ProteusCentral {
 #[cfg(test)]
 mod tests {
     use crate::{
-        prelude::{CertificateBundle, ClientIdentifier, MlsClientConfiguration, MlsCredentialType, Session},
+        prelude::{CertificateBundle, ClientIdentifier, MlsCredentialType, Session, SessionConfig},
         test_utils::{proteus_utils::*, x509::X509TestChain, *},
     };
 
     use crate::prelude::INITIAL_KEYING_MATERIAL_COUNT;
+    #[cfg(not(target_family = "wasm"))]
     use proteus_traits::PreKeyStore;
 
     use super::*;
 
-    use core_crypto_keystore::DatabaseKey;
+    use core_crypto_keystore::{ConnectionType, DatabaseKey};
 
     #[apply(all_cred_cipher)]
     async fn cc_can_init(case: TestContext) {
@@ -1008,15 +1009,15 @@ mod tests {
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
         let client_id = "alice".into();
-        let cfg = MlsClientConfiguration::try_new(
-            path,
-            DatabaseKey::generate(),
-            Some(client_id),
-            vec![case.ciphersuite()],
-            None,
-            Some(INITIAL_KEYING_MATERIAL_COUNT),
-        )
-        .unwrap();
+        let cfg = SessionConfig::builder()
+            .persistent(&path)
+            .database_key(DatabaseKey::generate())
+            .client_id(client_id)
+            .ciphersuites([case.ciphersuite()])
+            .build()
+            .validate()
+            .unwrap();
+
         let cc: CoreCrypto = Session::try_new(cfg).await.unwrap().into();
         let context = cc.new_transaction().await.unwrap();
         assert!(context.proteus_init().await.is_ok());
@@ -1033,15 +1034,14 @@ mod tests {
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
         // we are deferring MLS initialization here, not passing a MLS 'client_id' yet
-        let cfg = MlsClientConfiguration::try_new(
-            path,
-            DatabaseKey::generate(),
-            None,
-            vec![case.ciphersuite()],
-            None,
-            Some(INITIAL_KEYING_MATERIAL_COUNT),
-        )
-        .unwrap();
+        let cfg = SessionConfig::builder()
+            .persistent(&path)
+            .database_key(DatabaseKey::generate())
+            .ciphersuites([case.ciphersuite()])
+            .build()
+            .validate()
+            .unwrap();
+
         let cc: CoreCrypto = Session::try_new(cfg).await.unwrap().into();
         let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
@@ -1085,19 +1085,17 @@ mod tests {
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
         let key = DatabaseKey::generate();
-        let keystore =
-            core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::Persistent(&path), &key)
-                .await
-                .unwrap();
+        let keystore = core_crypto_keystore::Connection::open(ConnectionType::Persistent(&path), &key)
+            .await
+            .unwrap();
         keystore.new_transaction().await.unwrap();
         let central = ProteusCentral::try_new(&keystore).await.unwrap();
         let identity = (*central.proteus_identity).clone();
         keystore.commit_transaction().await.unwrap();
 
-        let keystore =
-            core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::Persistent(&path), &key)
-                .await
-                .unwrap();
+        let keystore = core_crypto_keystore::Connection::open(ConnectionType::Persistent(&path), &key)
+            .await
+            .unwrap();
         keystore.new_transaction().await.unwrap();
         let central = ProteusCentral::try_new(&keystore).await.unwrap();
         keystore.commit_transaction().await.unwrap();
@@ -1118,10 +1116,9 @@ mod tests {
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let key = DatabaseKey::generate();
-        let mut keystore =
-            core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::Persistent(&path), &key)
-                .await
-                .unwrap();
+        let mut keystore = core_crypto_keystore::Connection::open(ConnectionType::Persistent(&path), &key)
+            .await
+            .unwrap();
         keystore.new_transaction().await.unwrap();
 
         let mut alice = ProteusCentral::try_new(&keystore).await.unwrap();
@@ -1160,10 +1157,9 @@ mod tests {
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let key = DatabaseKey::generate();
-        let mut keystore =
-            core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::Persistent(&path), &key)
-                .await
-                .unwrap();
+        let mut keystore = core_crypto_keystore::Connection::open(ConnectionType::Persistent(&path), &key)
+            .await
+            .unwrap();
         keystore.new_transaction().await.unwrap();
         let mut alice = ProteusCentral::try_new(&keystore).await.unwrap();
 
@@ -1204,10 +1200,9 @@ mod tests {
         let (path, _) = tmp_db_file();
 
         let key = DatabaseKey::generate();
-        let keystore =
-            core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::Persistent(&path), &key)
-                .await
-                .unwrap();
+        let keystore = core_crypto_keystore::Connection::open(ConnectionType::Persistent(&path), &key)
+            .await
+            .unwrap();
         keystore.new_transaction().await.unwrap();
         let alice = ProteusCentral::try_new(&keystore).await.unwrap();
 
@@ -1309,7 +1304,7 @@ mod tests {
 
         let key = DatabaseKey::generate();
         let mut keystore = core_crypto_keystore::Connection::open(
-            core_crypto_keystore::ConnectionType::Persistent(&keystore_file.as_os_str().to_string_lossy()),
+            ConnectionType::Persistent(&keystore_file.as_os_str().to_string_lossy()),
             &key,
         )
         .await

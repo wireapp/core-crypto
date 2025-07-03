@@ -24,7 +24,7 @@ mod tests {
     use crate::transaction_context::Error as TransactionError;
 
     use crate::prelude::{
-        CertificateBundle, ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsClientConfiguration, MlsCredentialType,
+        CertificateBundle, ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType, SessionConfig,
     };
     use crate::{
         CoreCrypto,
@@ -79,15 +79,14 @@ mod tests {
         async fn can_create_from_valid_configuration(mut case: TestContext) {
             let tmp_dir = case.tmp_dir().await;
             Box::pin(async move {
-                let configuration = MlsClientConfiguration::try_new(
-                    tmp_dir,
-                    DatabaseKey::generate(),
-                    Some("alice".into()),
-                    vec![case.ciphersuite()],
-                    None,
-                    Some(INITIAL_KEYING_MATERIAL_COUNT),
-                )
-                .unwrap();
+                let configuration = SessionConfig::builder()
+                    .persistent(&tmp_dir)
+                    .database_key(DatabaseKey::generate())
+                    .client_id("alice".into())
+                    .ciphersuites([case.ciphersuite()])
+                    .build()
+                    .validate()
+                    .unwrap();
 
                 let new_client_result = Session::try_new(configuration).await;
                 assert!(new_client_result.is_ok())
@@ -97,19 +96,15 @@ mod tests {
 
         #[test]
         fn store_path_should_not_be_empty_nor_blank() {
-            let ciphersuites = vec![MlsCiphersuite::default()];
-            let configuration = MlsClientConfiguration::try_new(
-                " ".to_string(),
-                DatabaseKey::generate(),
-                Some("alice".into()),
-                ciphersuites,
-                None,
-                Some(INITIAL_KEYING_MATERIAL_COUNT),
-            );
-            assert!(matches!(
-                configuration.unwrap_err(),
-                mls::Error::MalformedIdentifier("store_path")
-            ));
+            let config_err = SessionConfig::builder()
+                .persistent(" ")
+                .database_key(DatabaseKey::generate())
+                .ciphersuites([MlsCiphersuite::default()])
+                .build()
+                .validate()
+                .unwrap_err();
+
+            assert!(matches!(config_err, mls::Error::MalformedIdentifier(msg) if msg.contains("path")));
         }
 
         #[async_std::test]
@@ -117,19 +112,16 @@ mod tests {
             let mut case = TestContext::default();
             let tmp_dir = case.tmp_dir().await;
             Box::pin(async move {
-                let ciphersuites = vec![MlsCiphersuite::default()];
-                let configuration = MlsClientConfiguration::try_new(
-                    tmp_dir,
-                    DatabaseKey::generate(),
-                    Some("".into()),
-                    ciphersuites,
-                    None,
-                    Some(INITIAL_KEYING_MATERIAL_COUNT),
-                );
-                assert!(matches!(
-                    configuration.unwrap_err(),
-                    mls::Error::MalformedIdentifier("client_id")
-                ));
+                let config_err = SessionConfig::builder()
+                    .persistent(&tmp_dir)
+                    .database_key(DatabaseKey::generate())
+                    .client_id("".into())
+                    .ciphersuites([MlsCiphersuite::default()])
+                    .build()
+                    .validate()
+                    .unwrap_err();
+
+                assert!(matches!(config_err, mls::Error::MalformedIdentifier("client_id")));
             })
             .await
         }
@@ -158,17 +150,16 @@ mod tests {
     async fn can_fetch_client_public_key(mut case: TestContext) {
         let tmp_dir = case.tmp_dir().await;
         Box::pin(async move {
-            let configuration = MlsClientConfiguration::try_new(
-                tmp_dir,
-                DatabaseKey::generate(),
-                Some("potato".into()),
-                vec![case.ciphersuite()],
-                None,
-                Some(INITIAL_KEYING_MATERIAL_COUNT),
-            )
-            .unwrap();
+            let configuration = SessionConfig::builder()
+                .persistent(&tmp_dir)
+                .database_key(DatabaseKey::generate())
+                .client_id("potato".into())
+                .ciphersuites([case.ciphersuite()])
+                .build()
+                .validate()
+                .unwrap();
 
-            let result = Session::try_new(configuration.clone()).await;
+            let result = Session::try_new(configuration).await;
             println!("{result:?}");
             assert!(result.is_ok());
         })
@@ -180,15 +171,14 @@ mod tests {
         let tmp_dir = case.tmp_dir().await;
         Box::pin(async move {
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-            let configuration = MlsClientConfiguration::try_new(
-                tmp_dir,
-                DatabaseKey::generate(),
-                None,
-                vec![case.ciphersuite()],
-                None,
-                Some(INITIAL_KEYING_MATERIAL_COUNT),
-            )
-            .unwrap();
+            let configuration = SessionConfig::builder()
+                .persistent(&tmp_dir)
+                .database_key(DatabaseKey::generate())
+                .ciphersuites([case.ciphersuite()])
+                .build()
+                .validate()
+                .unwrap();
+
             // phase 1: init without initialized mls_client
             let client = Session::try_new(configuration).await.unwrap();
             let cc = CoreCrypto::from(client);

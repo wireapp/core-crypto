@@ -9,7 +9,7 @@ pub(crate) mod mls_transport;
 mod proteus;
 mod randomness;
 
-use core_crypto::prelude::{MlsClientConfiguration, Session};
+use core_crypto::prelude::{Session, SessionConfig, ValidatedSessionConfig};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -79,9 +79,7 @@ pub async fn core_crypto_deferred_init(
     key: DatabaseKey,
     entropy_seed: Option<EntropySeed>,
 ) -> CoreCryptoResult<CoreCrypto> {
-    let entropy_seed = entropy_seed.map(entropy_seed_map);
-    let configuration = MlsClientConfiguration::try_new(path, key.into(), None, Vec::new(), entropy_seed, None)?;
-    CoreCrypto::from_config(configuration).await
+    CoreCrypto::deferred_init_impl(path, key, entropy_seed).await
 }
 
 impl CoreCrypto {
@@ -91,25 +89,41 @@ impl CoreCrypto {
         client_id: Option<ClientIdMaybeArc>,
         ciphersuites: Option<CiphersuitesMaybeArc>,
         entropy_seed: Option<EntropySeed>,
-        nb_key_package: Option<u32>,
+        nb_key_packages: Option<u32>,
     ) -> CoreCryptoResult<Self> {
-        let nb_key_package = nb_key_package
+        let nb_key_packages = nb_key_packages
             .map(usize::try_from)
             .transpose()
             .map_err(CoreCryptoError::generic())?;
         let entropy_seed = entropy_seed.map(entropy_seed_map);
-        let configuration = MlsClientConfiguration::try_new(
-            path,
-            key.into(),
-            client_id.map(|cid| cid.as_cc()),
-            ciphersuites.unwrap_or_default().as_cc(),
-            entropy_seed,
-            nb_key_package,
-        )?;
+        let configuration = SessionConfig::builder()
+            .persistent(&path)
+            .database_key(key.into())
+            .client_id_opt(client_id.map(|cid| cid.as_cc()))
+            .ciphersuites(ciphersuites.unwrap_or_default().as_cc())
+            .external_entropy_opt(entropy_seed.as_deref())
+            .nb_key_packages(nb_key_packages)
+            .build()
+            .validate()?;
         Self::from_config(configuration).await
     }
 
-    async fn from_config(configuration: MlsClientConfiguration) -> CoreCryptoResult<Self> {
+    async fn deferred_init_impl(
+        path: String,
+        key: DatabaseKey,
+        entropy_seed: Option<EntropySeed>,
+    ) -> CoreCryptoResult<Self> {
+        let entropy_seed = entropy_seed.map(entropy_seed_map);
+        let configuration = SessionConfig::builder()
+            .persistent(&path)
+            .database_key(key.into())
+            .external_entropy_opt(entropy_seed.as_deref())
+            .build()
+            .validate()?;
+        CoreCrypto::from_config(configuration).await
+    }
+
+    async fn from_config(configuration: ValidatedSessionConfig<'_>) -> CoreCryptoResult<Self> {
         #[cfg(target_family = "wasm")]
         console_error_panic_hook::set_once();
 
@@ -139,11 +153,7 @@ impl CoreCrypto {
         key: DatabaseKey,
         entropy_seed: Option<Box<[u8]>>,
     ) -> CoreCryptoResult<CoreCrypto> {
-        let entropy_seed = entropy_seed.map(|s| s.to_vec());
-        let configuration = MlsClientConfiguration::try_new(path, key.into(), None, vec![], entropy_seed, None)
-            .map_err(CoreCryptoError::from)?;
-
-        Self::from_config(configuration).await
+        CoreCrypto::deferred_init_impl(path, key, entropy_seed).await
     }
 
     /// See [Session::close]

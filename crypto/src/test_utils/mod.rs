@@ -24,8 +24,7 @@ use crate::{
     e2e_identity::id::QualifiedE2eiClientId,
     mls::HistoryObserver,
     prelude::{
-        CertificateBundle, ClientId, ConversationId, MlsClientConfiguration, MlsCommitBundle, MlsGroupInfoBundle,
-        Session,
+        CertificateBundle, ClientId, ConversationId, MlsCommitBundle, MlsGroupInfoBundle, Session, SessionConfig,
     },
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     transaction_context::TransactionContext,
@@ -127,17 +126,16 @@ impl SessionContext {
     ) -> crate::Result<Self> {
         // We need to store the `TempDir` struct for the duration of the test session,
         // because its drop implementation takes care of the directory deletion.
-        let (db_dir_string, db_dir) = tmp_db_file();
+        let (db_path, db_dir) = tmp_db_file();
         let transport = context.transport.clone();
-        let configuration = MlsClientConfiguration::try_new(
-            db_dir_string.clone(),
-            DatabaseKey::generate(),
-            None,
-            vec![context.cfg.ciphersuite],
-            None,
-            Some(INITIAL_KEYING_MATERIAL_COUNT),
-        )
-        .unwrap();
+        let configuration = SessionConfig::builder()
+            .db_connection_type(core_crypto_keystore::ConnectionType::Persistent(&db_path))
+            .database_key(DatabaseKey::generate())
+            .ciphersuites([context.cfg.ciphersuite])
+            .build()
+            .validate()
+            .unwrap();
+
         let session = Session::try_new(configuration).await.unwrap();
         let cc = CoreCrypto::from(session);
         let transaction = cc.new_transaction().await.unwrap();
@@ -164,9 +162,9 @@ impl SessionContext {
             x509_test_chain: Arc::new(chain.cloned()),
             history_observer: Default::default(),
             #[cfg(not(target_family = "wasm"))]
-            _db_file: Some((db_dir_string, Arc::new(db_dir))),
+            _db_file: Some((db_path, Arc::new(db_dir))),
             #[cfg(target_family = "wasm")]
-            _db_file: Some((db_dir_string, db_dir)),
+            _db_file: Some((db_path, db_dir)),
         };
         Ok(result)
     }
@@ -194,17 +192,15 @@ impl SessionContext {
     }
 
     pub(crate) async fn new_uninitialized(context: &TestContext) -> Self {
-        let (db_dir_string, db_dir) = tmp_db_file();
-        let ciphersuites = vec![context.cfg.ciphersuite];
-        let configuration = MlsClientConfiguration::try_new(
-            db_dir_string.clone(),
-            DatabaseKey::generate(),
-            None,
-            ciphersuites,
-            None,
-            Some(INITIAL_KEYING_MATERIAL_COUNT),
-        )
-        .unwrap();
+        let (db_path, db_dir) = tmp_db_file();
+        let configuration = SessionConfig::builder()
+            .db_connection_type(core_crypto_keystore::ConnectionType::Persistent(&db_path))
+            .database_key(DatabaseKey::generate())
+            .ciphersuites([context.cfg.ciphersuite])
+            .build()
+            .validate()
+            .unwrap();
+
         let client = Session::try_new(configuration).await.unwrap();
         let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
         client.provide_transport(transport.clone()).await;
@@ -217,9 +213,9 @@ impl SessionContext {
             x509_test_chain: None.into(),
             history_observer: Default::default(),
             #[cfg(not(target_family = "wasm"))]
-            _db_file: Some((db_dir_string, Arc::new(db_dir))),
+            _db_file: Some((db_path, Arc::new(db_dir))),
             #[cfg(target_family = "wasm")]
-            _db_file: Some((db_dir_string, db_dir)),
+            _db_file: Some((db_path, db_dir)),
         }
     }
 
@@ -354,8 +350,11 @@ fn init_x509_test_chain(
 
 #[cfg(not(target_family = "wasm"))]
 pub fn tmp_db_file() -> (String, tempfile::TempDir) {
-    let file = tempfile::tempdir().unwrap();
-    (MlsClientConfiguration::tmp_store_path(&file), file)
+    let tmp_dir = tempfile::tempdir().unwrap();
+    let path = tmp_dir.path().join("store.edb");
+    std::fs::File::create(&path).unwrap();
+
+    (path.to_str().unwrap().to_string(), tmp_dir)
 }
 
 #[cfg(target_family = "wasm")]

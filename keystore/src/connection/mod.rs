@@ -172,6 +172,7 @@ unsafe impl Send for Connection {}
 unsafe impl Sync for Connection {}
 
 /// Where to open a connection
+#[derive(Debug, Clone)]
 pub enum ConnectionType<'a> {
     /// This connection is persistent at the provided path
     Persistent(&'a str),

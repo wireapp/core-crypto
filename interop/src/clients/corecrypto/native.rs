@@ -3,7 +3,7 @@ use std::cell::Cell;
 use std::sync::Arc;
 use tls_codec::Serialize;
 
-use core_crypto::prelude::*;
+use core_crypto::{DatabaseKey, prelude::*};
 
 use crate::util::MlsTransportSuccessProvider;
 use crate::{
@@ -27,18 +27,18 @@ impl CoreCryptoNativeClient {
 
     async fn internal_new(deferred: bool) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
+        let cid = (!deferred).then(|| client_id.as_hyphenated().to_string().as_bytes().into());
 
-        let ciphersuites = vec![CIPHERSUITE_IN_USE.into()];
-        let cid = if !deferred {
-            Some(client_id.as_hyphenated().to_string().as_bytes().into())
-        } else {
-            None
-        };
-        let key = core_crypto::DatabaseKey::generate();
-        let configuration =
-            MlsClientConfiguration::try_new("whatever".into(), key, cid, ciphersuites, None, Some(100))?;
+        let configuration = SessionConfig::builder()
+            .in_memory()
+            .database_key(DatabaseKey::generate())
+            .client_id_opt(cid)
+            .ciphersuites([CIPHERSUITE_IN_USE.into()])
+            .nb_key_packages(Some(100))
+            .build()
+            .validate()?;
 
-        let cc = CoreCrypto::from(Session::try_new_in_memory(configuration).await?);
+        let cc = CoreCrypto::from(Session::try_new(configuration).await?);
 
         cc.provide_transport(Arc::new(MlsTransportSuccessProvider::default()))
             .await;
