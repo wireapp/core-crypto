@@ -64,18 +64,6 @@ pub fn scrap_login(html: String) -> String {
     form.value().attr("action").unwrap().to_string()
 }
 
-pub fn scrap_grant(html: String) -> String {
-    let html = Html::parse_document(&html);
-    let selector = scraper::Selector::parse("form").unwrap();
-    let form = html.select(&selector).find(|_| true).unwrap();
-    form.children()
-        .filter_map(|c| c.value().as_element())
-        .filter(|c| c.attr("name") == Some("req"))
-        .find_map(|e| e.attr("value"))
-        .unwrap()
-        .to_string()
-}
-
 pub async fn handle_callback(req: Request<Incoming>) -> http::Result<Response<Full<Bytes>>> {
     let req_uri = req.uri().clone();
     let req_uri: url::Url = format!("http://localhost{req_uri}").parse().unwrap();

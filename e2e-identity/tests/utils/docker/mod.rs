@@ -1,8 +1,6 @@
 #![cfg(not(target_family = "wasm"))]
 
-pub mod dex;
 pub mod keycloak;
-pub mod ldap;
 pub mod stepca;
 pub mod wiremock;
 

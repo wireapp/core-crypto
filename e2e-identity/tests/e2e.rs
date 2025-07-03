@@ -28,15 +28,6 @@ async fn demo_should_succeed() {
     test.nominal_enrollment().await.unwrap();
 }
 
-#[cfg(not(ci))]
-#[tokio::test]
-#[ignore] // since we cannot customize the id token. TODO Tracking issue: WPB-10477
-async fn demo_with_dex_should_succeed() {
-    let demo = E2eTest::new_internal(true, JwsAlgorithm::Ed25519, OidcProvider::Dex);
-    let test = demo.start().await;
-    test.nominal_enrollment().await.unwrap();
-}
-
 /// Tests using the custom SPI Provider to be able to use the refreshToken to get a new idToken with the current ACME challenges
 #[tokio::test]
 async fn refresh_token_can_be_used_to_renew() {
@@ -776,7 +767,7 @@ mod oidc_challenge {
     use super::*;
 
     #[tokio::test]
-    /// Authorization Server (Dex in our case) exposes an endpoint for clients to fetch its public
+    /// Authorization Server exposes an endpoint for clients to fetch its public
     /// keys (it gets from the OAuth discovery endpoint of hte IdP).
     /// It is used to validate the signature of the id token we supply to this challenge.
     // @SF.PROVISIONING @TSFI.ACME @S8

@@ -15,9 +15,7 @@ use crate::utils::{
     ctx::ctx_store_http_client,
     display::TestDisplay,
     docker::{
-        dex::{DexCfg, DexImage, DexServer},
         keycloak::{KeycloakCfg, KeycloakImage, KeycloakServer},
-        ldap::{LdapCfg, LdapImage, LdapServer},
         stepca,
         stepca::{AcmeServer, CaCfg},
     },
@@ -32,8 +30,6 @@ pub struct E2eTest {
     pub device_id: u64,
     pub sub: ClientId,
     pub handle: String,
-    pub ldap_cfg: LdapCfg,
-    pub dex_cfg: DexCfg,
     pub keycloak_cfg: KeycloakCfg,
     pub ca_cfg: CaCfg,
     pub oauth_cfg: OauthCfg,
@@ -46,9 +42,7 @@ pub struct E2eTest {
     pub is_demo: bool,
     pub display: TestDisplay,
     pub wire_server: Option<WireServer>,
-    pub ldap_server: Option<LdapServer>,
     pub keycloak_server: Option<KeycloakServer>,
-    pub dex_server: Option<DexServer>,
     pub acme_server: Option<AcmeServer>,
     pub oidc_cfg: Option<OidcCfg>,
     pub client: reqwest::Client,
@@ -64,13 +58,11 @@ impl std::fmt::Debug for E2eTest {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum OidcProvider {
-    Dex,
     Keycloak,
 }
 
 impl E2eTest {
     const STEPCA_HOST: &'static str = "stepca";
-    const LDAP_HOST: &'static str = "ldap";
     const WIRE_HOST: &'static str = "wire.com";
 
     pub fn new() -> Self {
@@ -83,11 +75,10 @@ impl E2eTest {
 
     pub fn new_internal(is_demo: bool, alg: JwsAlgorithm, oidc_provider: OidcProvider) -> Self {
         let idp_host = match oidc_provider {
-            OidcProvider::Dex => "dex",
             OidcProvider::Keycloak => "keycloak",
         };
-        let hosts = [idp_host, Self::STEPCA_HOST, Self::LDAP_HOST, Self::WIRE_HOST];
-        let [idp_host, ca_host, ldap_host, domain] = if is_demo {
+        let hosts = [idp_host, Self::STEPCA_HOST, Self::WIRE_HOST];
+        let [idp_host, ca_host, domain] = if is_demo {
             hosts.map(|h| h.to_string())
         } else {
             hosts.map(|h| format!("{}.{h}", rand_str(6).to_lowercase()))
@@ -107,7 +98,6 @@ impl E2eTest {
         let idp_host_port = portpicker::pick_unused_port().unwrap();
         let idp_base = format!("http://{idp_host}");
         let (issuer, discovery_base_url) = match oidc_provider {
-            OidcProvider::Dex => (format!("{idp_base}:{idp_host_port}/dex"), "TODO".to_string()),
             OidcProvider::Keycloak => {
                 let realm = KeycloakImage::REALM;
                 (
@@ -178,24 +168,6 @@ impl E2eTest {
             sub: sub.clone(),
             handle: handle.to_string(),
             team: Some(team.to_string()),
-            ldap_cfg: LdapCfg {
-                host: ldap_host.to_string(),
-                display_name: display_name.to_string(),
-                handle: qualified_handle.to_string(),
-                email: email.clone(),
-                password: password.to_string(),
-                domain: domain.to_string(),
-                sub: sub.to_uri(),
-            },
-            dex_cfg: DexCfg {
-                host: idp_host.clone(),
-                ldap_host,
-                host_port: idp_host_port,
-                issuer: issuer.to_string(),
-                client_id: audience.to_string(),
-                client_secret: client_secret.to_string(),
-                domain: domain.to_string(),
-            },
             keycloak_cfg: KeycloakCfg {
                 oauth_client_id: audience.to_string(),
                 http_host_port: idp_host_port,
@@ -230,8 +202,6 @@ impl E2eTest {
             backend_kp,
             display,
             wire_server: None,
-            ldap_server: None,
-            dex_server: None,
             keycloak_server: None,
             acme_server: None,
             oidc_cfg: None,
@@ -260,16 +230,6 @@ impl E2eTest {
 
         // start OIDC server
         match self.oidc_provider {
-            OidcProvider::Dex => {
-                // LDAP (required by Dex)
-                let ldap_server = LdapImage::run(self.ldap_cfg.clone()).await;
-                self.ldap_server = Some(ldap_server);
-
-                // Dex (OIDC provider)
-                let dex_server = DexImage::run(self.dex_cfg.clone(), redirect_uri.clone()).await;
-                dns_mappings.insert(self.dex_cfg.host.clone(), dex_server.socket);
-                self.dex_server = Some(dex_server);
-            }
             OidcProvider::Keycloak => {
                 let keycloak_server = KeycloakImage::run(self.keycloak_cfg.clone(), redirect_uri.clone()).await;
                 dns_mappings.insert(self.keycloak_cfg.host.clone(), keycloak_server.socket);
@@ -303,7 +263,6 @@ impl E2eTest {
         self.client = client_builder.build().unwrap();
 
         let oidc_cfg = self.fetch_oidc_cfg().await;
-        self.dex_cfg.issuer = oidc_cfg.issuer.clone();
         self.ca_cfg.issuer = oidc_cfg.issuer.clone();
         let issuer_uri = oidc_cfg.issuer_uri.as_ref().unwrap().trim_end_matches('/').to_string();
         self.oauth_cfg.issuer_uri = issuer_uri;
@@ -318,11 +277,9 @@ impl E2eTest {
 
     pub async fn fetch_oidc_cfg(&self) -> OidcCfg {
         let authz_server_uri = match self.oidc_provider {
-            OidcProvider::Dex => self.dex_authorization_server_uri(),
             OidcProvider::Keycloak => self.keycloak_server.as_ref().unwrap().http_uri.clone(),
         };
         let uri = match self.oidc_provider {
-            OidcProvider::Dex => format!("{authz_server_uri}/dex/.well-known/openid-configuration"),
             OidcProvider::Keycloak => {
                 format!(
                     "{authz_server_uri}/realms/{}/.well-known/openid-configuration",
@@ -362,10 +319,6 @@ impl E2eTest {
 
     pub fn redirect_uri(&self) -> String {
         format!("{}/callback", self.wire_server_uri())
-    }
-
-    pub fn dex_authorization_server_uri(&self) -> String {
-        self.dex_server.as_ref().unwrap().uri.clone()
     }
 
     pub async fn fetch_acme_root_ca(&self) -> String {
