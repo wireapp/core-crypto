@@ -84,7 +84,7 @@ impl Session {
         credential_type: MlsCredentialType,
         backend: &MlsCryptoProvider,
     ) -> Result<Vec<KeyPackage>> {
-        // Auto-prune expired keypackages on req uest
+        // Auto-prune expired keypackages on request
         self.prune_keypackages(backend, std::iter::empty()).await?;
         use core_crypto_keystore::CryptoKeystoreMls as _;
 
