@@ -70,6 +70,7 @@ proteus-wasm = { workspace = true, features = ["hazmat"], optional = true }
 proteus-traits = { workspace = true, optional = true }
 sha2 = "0.10.9"
 core-crypto-keystore.workspace = true
+typed-builder.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = { version = "2.1", optional = true }

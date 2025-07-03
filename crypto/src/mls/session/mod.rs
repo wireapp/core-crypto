@@ -1,3 +1,4 @@
+pub(crate) mod config;
 pub(crate) mod e2e_identity;
 mod epoch_observer;
 mod error;
@@ -17,14 +18,13 @@ use crate::{
         credential::{CredentialBundle, ext::CredentialExt},
     },
     prelude::{
-        CertificateBundle, ClientId, ConversationId, HistorySecret, INITIAL_KEYING_MATERIAL_COUNT, MlsCiphersuite,
-        MlsClientConfiguration, MlsCredentialType, identifier::ClientIdentifier,
-        key_package::KEYPACKAGE_DEFAULT_LIFETIME,
+        CertificateBundle, ClientId, ConversationId, HistorySecret, MlsCiphersuite, MlsCredentialType,
+        config::ValidatedSessionConfig, identifier::ClientIdentifier, key_package::KEYPACKAGE_DEFAULT_LIFETIME,
     },
 };
 use async_lock::RwLock;
 use core_crypto_keystore::{
-    Connection, ConnectionType, CryptoKeystoreError,
+    Connection, CryptoKeystoreError,
     connection::FetchFromDatabase,
     entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair},
 };
@@ -85,58 +85,41 @@ pub(crate) struct SessionInner {
 
 impl Session {
     /// Creates a new [Session].
-    /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
-    /// And a root identity key (i.e. enclaved encryption key for this device)
     ///
-    /// # Arguments
-    /// * `configuration` - the configuration for the `MlsCentral`
+    /// ## Errors
     ///
-    /// # Errors
     /// Failures in the initialization of the KeyStore can cause errors, such as IO, the same kind
     /// of errors can happen when the groups are being restored from the KeyStore or even during
-    /// the client initialization (to fetch the identity signature). Other than that, `MlsError`
-    /// can be caused by group deserialization or during the initialization of the credentials:
+    /// the client initialization (to fetch the identity signature).
+    ///
+    /// Other than that, `MlsError` can be caused by group deserialization or during the initialization of the credentials:
+    ///
     /// * for x509 Credentials if the certificate chain length is lower than 2
-    /// * for Basic Credentials if the signature key cannot be generated either by not supported
-    ///   scheme or the key generation fails
-    pub async fn try_new(mut configuration: MlsClientConfiguration) -> crate::mls::Result<Self> {
+    /// * for Basic Credentials if the signature key cannot be generated, if the scheme is unsupported
+    ///   or the key generation fails
+    pub async fn try_new(
+        ValidatedSessionConfig {
+            db_connection_type,
+            database_key,
+            client_id,
+            external_entropy,
+            ciphersuites,
+            nb_key_packages,
+        }: ValidatedSessionConfig<'_>,
+    ) -> crate::mls::Result<Self> {
         // Init backend (crypto + rand + keystore)
-        let key_store = CryptoKeystore::open(
-            ConnectionType::Persistent(&configuration.store_path),
-            &configuration.database_key,
-        )
-        .await
-        .map_err(MlsError::wrap("initializing keystore"))?;
-        let mls_backend = MlsCryptoProvider::builder()
-            .key_store(key_store)
-            .entropy_seed_opt(configuration.external_entropy.take())
-            .build();
-
-        Self::new_with_backend(mls_backend, configuration).await
-    }
-
-    /// Same as the [Self::try_new] but instead, it uses an in memory KeyStore.
-    /// Although required, the `store_path` parameter from the `MlsClientConfiguration` won't be used here.
-    pub async fn try_new_in_memory(mut configuration: MlsClientConfiguration) -> crate::mls::Result<Self> {
-        let key_store = CryptoKeystore::open(ConnectionType::InMemory, &configuration.database_key)
+        let key_store = CryptoKeystore::open(db_connection_type, &database_key)
             .await
             .map_err(MlsError::wrap("initializing keystore"))?;
         let mls_backend = MlsCryptoProvider::builder()
             .key_store(key_store)
-            .entropy_seed_opt(configuration.external_entropy.take())
+            .entropy_seed_opt(external_entropy)
             .build();
 
-        Self::new_with_backend(mls_backend, configuration).await
-    }
-
-    async fn new_with_backend(
-        mls_backend: MlsCryptoProvider,
-        configuration: MlsClientConfiguration,
-    ) -> crate::mls::Result<Self> {
         // We create the core crypto instance first to enable creating a transaction from it and
         // doing all subsequent actions inside a single transaction, though it forces us to clone
         // a few Arcs and locks.
-        let client = Self {
+        let session = Self {
             crypto_provider: mls_backend.clone(),
             inner: Default::default(),
             transport: Arc::new(None.into()),
@@ -144,27 +127,24 @@ impl Session {
             history_observer: Arc::new(None.into()),
         };
 
-        let cc = CoreCrypto::from(client.clone());
+        let cc = CoreCrypto::from(session);
         let context = cc
             .new_transaction()
             .await
             .map_err(RecursiveError::transaction("starting new transaction"))?;
 
-        if let Some(id) = configuration.client_id {
-            client
+        if let Some(id) = client_id {
+            cc.mls
                 .init(
                     ClientIdentifier::Basic(id),
-                    configuration.ciphersuites.as_slice(),
+                    ciphersuites.as_slice(),
                     &mls_backend,
-                    configuration
-                        .nb_init_key_packages
-                        .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
+                    nb_key_packages,
                 )
                 .await
                 .map_err(RecursiveError::mls_client("initializing mls client"))?
         }
 
-        let central = cc.mls;
         context
             .init_pki_env()
             .await
@@ -173,7 +153,8 @@ impl Session {
             .finish()
             .await
             .map_err(RecursiveError::transaction("finishing transaction"))?;
-        Ok(central)
+
+        Ok(cc.mls)
     }
 
     /// Provide the implementation of functions to communicate with the delivery service
@@ -198,7 +179,7 @@ impl Session {
         identifier: ClientIdentifier,
         ciphersuites: &[MlsCiphersuite],
         backend: &MlsCryptoProvider,
-        nb_key_package: usize,
+        nb_key_packages: usize,
     ) -> Result<()> {
         self.ensure_unready().await?;
         let id = identifier.get_id()?;
@@ -220,8 +201,9 @@ impl Session {
             .collect::<Result<Vec<_>>>()?;
 
         if credentials.is_empty() {
-            debug!(count = nb_key_package, ciphersuites:? = ciphersuites; "Generating client");
-            self.generate(identifier, backend, ciphersuites, nb_key_package).await?;
+            debug!(count = nb_key_packages, ciphersuites:? = ciphersuites; "Generating client");
+            self.generate(identifier, backend, ciphersuites, nb_key_packages)
+                .await?;
         } else {
             let signature_schemes = ciphersuites
                 .iter()
@@ -229,8 +211,9 @@ impl Session {
                 .collect::<HashSet<_>>();
             let load_result = self.load(backend, id.as_ref(), credentials, signature_schemes).await;
             if let Err(Error::ClientSignatureNotFound) = load_result {
-                debug!(count = nb_key_package, ciphersuites:? = ciphersuites; "Client signature not found. Generating client");
-                self.generate(identifier, backend, ciphersuites, nb_key_package).await?;
+                debug!(count = nb_key_packages, ciphersuites:? = ciphersuites; "Client signature not found. Generating client");
+                self.generate(identifier, backend, ciphersuites, nb_key_packages)
+                    .await?;
             } else {
                 load_result?;
             }

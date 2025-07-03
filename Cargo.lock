@@ -855,6 +855,7 @@ dependencies = [
  "thiserror 2.0.12",
  "time",
  "tls_codec",
+ "typed-builder",
  "url",
  "uuid",
  "vergen-gitcl",
