@@ -90,7 +90,6 @@ impl E2eTest {
         let wire_client_id = random::<u64>();
         let sub = ClientId::try_new(wire_user_id.to_string(), wire_client_id, &domain).unwrap();
         let (handle, team, password) = ("alice_wire", "wire", "foo");
-        let qualified_handle = Handle::from(handle).try_to_qualified(&domain).unwrap();
         let keycloak_handle = format!("{handle}@{domain}");
         let email = format!("alicesmith@{domain}");
         let audience = "wireapp";
@@ -175,7 +174,6 @@ impl E2eTest {
                 firstname: firstname.to_string(),
                 lastname: lastname.to_string(),
                 username: keycloak_handle.to_string(),
-                // username: qualified_handle.to_string(),
                 email,
                 password: password.to_string(),
             },
