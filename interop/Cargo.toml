@@ -50,7 +50,7 @@ thiserror = { workspace = true }
 async-fs = "2.1"
 cryptobox = { git = "https://github.com/wireapp/cryptobox", optional = true }
 proteus = { git = "https://github.com/wireapp/proteus", branch = "otak/fix-1.0.3", optional = true }
-tokio = { version = "1.45", features = ["full"] }
+tokio = { version = "1.46", features = ["full"] }
 # Http Server
 warp = { version = "0.3", default-features = false }
 fantoccini = "0.22"
