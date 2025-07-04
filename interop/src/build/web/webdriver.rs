@@ -1,8 +1,14 @@
+use std::path::PathBuf;
+
 use crate::util::RunningProcess;
 use color_eyre::eyre::Result;
+use which::which;
 
 pub(crate) async fn start_webdriver_chrome(addr: &std::net::SocketAddr) -> Result<tokio::process::Child> {
-    let chromedriver_path = std::env::var_os("CHROMEDRIVER_PATH").expect("CHROMEDRIVER_PATH must be set");
+    let chromedriver_path = std::env::var_os("CHROMEDRIVER_PATH")
+        .map(PathBuf::from)
+        .or_else(|| which("chromedriver").ok())
+        .expect("chromedriver must be in PATH or CHROMEDRIVER_PATH must be set");
     Ok(tokio::process::Command::new(chromedriver_path)
         .arg(format!("--port={}", addr.port()))
         .stdout(std::process::Stdio::null())
