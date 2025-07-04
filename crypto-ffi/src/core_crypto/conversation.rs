@@ -9,7 +9,7 @@ use crate::{
 bytes_wrapper!(
     /// A unique identifier for a single conversation.
     ///
-    /// The backend providers an opaque string identifying a new conversation.
+    /// The backend provides an opaque string identifying a new conversation.
     /// Construct an instance of this newtype to pass that identifier to Rust.
     #[derive(Debug, PartialEq, Eq, Hash, Clone)]
     #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
