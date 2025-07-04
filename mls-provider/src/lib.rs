@@ -11,6 +11,7 @@ pub use error::{MlsProviderError, MlsProviderResult};
 pub use crypto_provider::RustCrypto;
 
 pub use pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
+use typed_builder::TypedBuilder;
 
 use crate::pki::PkiEnvironmentProvider;
 
@@ -61,15 +62,17 @@ impl std::ops::DerefMut for EntropySeed {
     }
 }
 
-pub struct MlsCryptoProviderConfiguration<'a> {
-    /// File path or database name of the persistent storage
-    pub db_path: &'a str,
-    /// Encryption master key of the encrypted-at-rest persistent storage
-    pub db_key: DatabaseKey,
-    /// Dictates whether or not the backend storage is in memory or not
-    pub in_memory: bool,
+// we don't want to document this type; it's purely an implementation detail
+// people get the builder from `MlsCryptoProvider::builder`, and the builder produces
+// a `MlsCryptoProvider`
+#[doc(hidden)]
+#[derive(TypedBuilder)]
+#[builder(build_method(into = MlsCryptoProvider))]
+pub struct MlsCryptoProviderConfiguration {
+    key_store: CryptoKeystore,
     /// External seed for the ChaCha20 PRNG entropy pool
-    pub entropy_seed: Option<EntropySeed>,
+    #[builder(default, setter(strip_option(fallback=entropy_seed_opt)))]
+    entropy_seed: Option<EntropySeed>,
 }
 
 #[derive(Debug, Clone)]
@@ -79,50 +82,33 @@ pub struct MlsCryptoProvider {
     pki_env: PkiEnvironmentProvider,
 }
 
-impl MlsCryptoProvider {
-    /// Initialize a CryptoProvider with a backend following the provided `config` (see: [MlsCryptoProviderConfiguration])
-    pub async fn try_new_with_configuration(config: MlsCryptoProviderConfiguration<'_>) -> MlsProviderResult<Self> {
-        let crypto = config.entropy_seed.map(RustCrypto::new_with_seed).unwrap_or_default();
-        let key_store = if config.in_memory {
-            CryptoKeystore::open_in_memory_with_key("", &config.db_key).await?
-        } else {
-            CryptoKeystore::open_with_key(config.db_path, &config.db_key).await?
-        };
-        Ok(Self {
-            crypto,
+impl From<MlsCryptoProviderConfiguration> for MlsCryptoProvider {
+    fn from(
+        MlsCryptoProviderConfiguration {
             key_store,
-            pki_env: PkiEnvironmentProvider::default(),
-        })
-    }
-
-    pub async fn try_new(db_path: impl AsRef<str>, db_key: &DatabaseKey) -> MlsProviderResult<Self> {
-        let crypto = RustCrypto::default();
-        let key_store = CryptoKeystore::open_with_key(db_path, db_key).await?;
-        Ok(Self {
-            crypto,
-            key_store,
-            pki_env: PkiEnvironmentProvider::default(),
-        })
-    }
-
-    pub async fn try_new_in_memory(db_key: &DatabaseKey) -> MlsProviderResult<Self> {
-        let crypto = RustCrypto::default();
-        let key_store = CryptoKeystore::open_in_memory_with_key("", db_key).await?;
-        Ok(Self {
-            crypto,
-            key_store,
-            pki_env: PkiEnvironmentProvider::default(),
-        })
-    }
-
-    /// Initialize a CryptoProvided with an already-configured backing store
-    pub fn new_with_store(key_store: CryptoKeystore, entropy_seed: Option<EntropySeed>) -> Self {
+            entropy_seed,
+        }: MlsCryptoProviderConfiguration,
+    ) -> Self {
         let crypto = entropy_seed.map(RustCrypto::new_with_seed).unwrap_or_default();
+        let pki_env = PkiEnvironmentProvider::default();
+
         Self {
             crypto,
             key_store,
-            pki_env: PkiEnvironmentProvider::default(),
+            pki_env,
         }
+    }
+}
+
+impl MlsCryptoProvider {
+    /// Construct a builder which can build a crypto provider.
+    ///
+    /// See also:
+    ///
+    /// - [CryptoKeystore::open_with_key]
+    /// - [CryptoKeystore::open_in_memory_with_key]
+    pub fn builder() -> MlsCryptoProviderConfigurationBuilder {
+        MlsCryptoProviderConfiguration::builder()
     }
 
     /// Clones the references of the PkiEnvironment and the CryptoProvider into a transaction
