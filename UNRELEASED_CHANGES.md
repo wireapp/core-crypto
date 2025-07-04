@@ -30,6 +30,15 @@
 
 ### Bug Fixes
 
+- `Error::ConversationAlreadyExists` has a byte vector not handle ([1660757](https://github.com/wireapp/core-crypto/commit/1660757ea2fc66945b6e0d776bbc2b9f15c0537f))
+- use new types where appropriate ([19b1ffa](https://github.com/wireapp/core-crypto/commit/19b1ffa4b6b509a59f20ee07ae845f94b2a5b3ec))
+- use appropriate types in observer indirectors ([a04259f](https://github.com/wireapp/core-crypto/commit/a04259fd03865856ad96d2771f4ec44562eafc88))
+- document `SecretKey` ([366a1e9](https://github.com/wireapp/core-crypto/commit/366a1e93d875101db6e034cbde0d0ab7056c04f3))
+- `ciphersuite` not `cipherSuite` ([6594972](https://github.com/wireapp/core-crypto/commit/6594972b0ecb3133e5155b3bd50ade2c53292387))
+- epoch observer observes a proper `ConversationId` type ([77036e1](https://github.com/wireapp/core-crypto/commit/77036e1906d133318d1ad8b67c6d0e2702e3ed06))
+- use proper `ClientId` in bun test utils ([59db6f8](https://github.com/wireapp/core-crypto/commit/59db6f8a8913c95a1ce9668aacced2a17566e88e))
+- use proper `ConversationId` type in web bench ([ba264f5](https://github.com/wireapp/core-crypto/commit/ba264f5c8e06db1ba9d7f68443105e90055ad32e))
+- history observers observe `ConversationId` ([102359e](https://github.com/wireapp/core-crypto/commit/102359e9268eefd7664dd43f33cc59741d770b47))
 - do not store the signature key when instantiating a history client ([b3f7720](https://github.com/wireapp/core-crypto/commit/b3f772049a7e902291f529d4a8bdc2815e999b55))
 - invalid API Docs link in README.md ([500c36f](https://github.com/wireapp/core-crypto/commit/500c36f11d20d673802a8f32556653209fab9a91))
 - building android bindings on a mac ([67125cd](https://github.com/wireapp/core-crypto/commit/67125cd257e5f4ca960f8be81e3e15f467011a9a))
