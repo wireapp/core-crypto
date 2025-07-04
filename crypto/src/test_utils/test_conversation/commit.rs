@@ -146,12 +146,26 @@ impl<'a> TestConversation<'a> {
         let commit = self.transport().await.latest_commit().await;
         let actor_index = self.actor_index();
         OperationGuard::new(
-            // Comitting pending proposals is equivalent to an update
+            // Committing pending proposals is equivalent to an update
             TestOperation::Update,
             commit,
             self,
             [actor_index],
         )
+    }
+
+    /// Create a commit for pending proposals that hasn't been merged by the actor.
+    /// On [OperationGuard::notify_members], the actor will receive this commit.
+    pub async fn commit_pending_proposals_unmerged(self) -> OperationGuard<'a, Commit> {
+        let mut conversation_guard = self.guard().await;
+        let commit = conversation_guard
+            .commit_pending_proposals_inner()
+            .await
+            .unwrap()
+            .expect("should have pending proposals")
+            .commit;
+        // Committing pending proposals is equivalent to an update
+        OperationGuard::new(TestOperation::Update, commit, self, [])
     }
 
     /// Remove this member from this conversation.

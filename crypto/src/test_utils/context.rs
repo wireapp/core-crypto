@@ -417,19 +417,6 @@ impl SessionContext {
             .unwrap()
     }
 
-    pub(crate) async fn commit_pending_proposals_unmerged(&self, id: &ConversationId) -> MlsCommitBundle {
-        self.transaction
-            .conversation(id)
-            .await
-            .unwrap()
-            .conversation_mut()
-            .await
-            .commit_pending_proposals(&self.session().await, &self.session.crypto_provider)
-            .await
-            .expect("comitting pending proposals")
-            .expect("expect committing pending proposals to produce a commit")
-    }
-
     pub async fn get_e2ei_client_id(&self) -> wire_e2e_identity::prelude::E2eiClientId {
         let cid = self.get_client_id().await;
         let cid = std::str::from_utf8(&cid.0).unwrap();
