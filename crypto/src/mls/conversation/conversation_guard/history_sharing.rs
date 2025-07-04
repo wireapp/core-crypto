@@ -256,4 +256,99 @@ mod tests {
         })
         .await
     }
+
+    #[apply(all_cred_cipher)]
+    async fn should_update_history_client_on_member_remove(case: TestContext) {
+        let [alice, bob, carol] = case.sessions().await;
+        Box::pin(async move {
+            let test_conv = case.create_conversation([&alice, &bob, &carol]).await;
+            let guard = test_conv.guard().await;
+
+            assert!(!guard.is_history_sharing_enabled().await);
+            assert_eq!(test_conv.member_count().await, 3, "we have 3 members in the beginning");
+
+            let test_conv = test_conv.enable_history_sharing_notify().await;
+            assert_eq!(
+                test_conv.member_count().await,
+                4,
+                "after history sharing was enabled, we have one more member"
+            );
+
+            let test_conv = test_conv.remove_notify(&carol).await;
+
+            let observed_history_clients = alice.history_observer().await.observed_history_clients().await;
+            assert_eq!(
+                observed_history_clients.len(),
+                2,
+                "we triggered exactly two history client changes and so should observe that"
+            );
+            assert!(
+                observed_history_clients
+                    .iter()
+                    .all(|observation| observation.1.client_id.starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes())),
+                "client ids of observed history client changes must be a history client id"
+            );
+            assert_eq!(
+                test_conv.member_count().await,
+                3,
+                "after removing one member, we have 3 members, including the new history client"
+            );
+
+            let remove_carol_commit = alice.mls_transport().await.latest_commit_bundle().await;
+            let encrypyed_history_secret = remove_carol_commit
+                .encrypted_message
+                .expect("history secret should be bundled with the commmit");
+            test_conv
+                .guard_of(&bob)
+                .await
+                .decrypt_message(&encrypyed_history_secret)
+                .await
+                .expect("bob should be able to decrypt the history secret");
+        })
+        .await
+    }
+
+    #[apply(all_cred_cipher)]
+    /// In this test, we're testing our mls library. However, our current mls fork doesn't have this test, and we require this behavior
+    /// for history sharing, that's why this test lives here, for now.
+    async fn can_remove_two_and_add_one_member_in_commit(case: TestContext) {
+        // This many members are initially in the conversation.
+        const INITIAL_MEMBERS_COUNT: usize = 6;
+        // This many members are removed from the conversation.
+        const REMOVED_MEMBERS_COUNT: usize = 2;
+        // This many members are invited to the conversation.
+        const INVITED_MEMBERS_COUNT: usize = 1;
+
+        const ALL_MEMBERS_COUNT: usize = REMAINING_MEMBERS_COUNT + REMOVED_MEMBERS_COUNT + INVITED_MEMBERS_COUNT;
+        const REMAINING_MEMBERS_COUNT: usize = INITIAL_MEMBERS_COUNT - REMOVED_MEMBERS_COUNT;
+
+        Box::pin(async move {
+            let all_members = case.sessions::<ALL_MEMBERS_COUNT>().await;
+            let initial_members = &all_members[..INITIAL_MEMBERS_COUNT];
+            let removed_members = &all_members[REMAINING_MEMBERS_COUNT..INITIAL_MEMBERS_COUNT];
+            let invited_members = &all_members[INITIAL_MEMBERS_COUNT..];
+            let mut conv = case.create_conversation(initial_members).await;
+            assert_eq!(conv.member_count().await, INITIAL_MEMBERS_COUNT);
+
+            for member in removed_members {
+                conv = conv
+                    .acting_as(&all_members[1])
+                    .await
+                    .remove_proposal_notify(member)
+                    .await;
+            }
+
+            for member in invited_members {
+                conv = conv.invite_proposal_notify(member).await;
+            }
+
+            let conv = conv.commit_pending_proposals_notify().await;
+
+            assert_eq!(
+                conv.member_count().await,
+                REMAINING_MEMBERS_COUNT + INVITED_MEMBERS_COUNT
+            );
+        })
+        .await
+    }
 }
