@@ -313,7 +313,7 @@ impl<'a> TestConversation<'a> {
         self.notify_about_enabled_history_sharing().await
     }
 
-    async fn instantiate_history_client(&self) -> SessionContext {
+    pub(super) async fn instantiate_history_client(&self) -> SessionContext {
         let history_secret = self
             .actor()
             .history_observer()

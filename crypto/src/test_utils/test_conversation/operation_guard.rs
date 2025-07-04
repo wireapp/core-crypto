@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 
 use openmls::prelude::MlsMessageOut;
 
-use crate::prelude::MlsConversationDecryptMessage;
+use crate::{mls::conversation::Conversation as _, prelude::MlsConversationDecryptMessage};
 
 use super::{SessionContext, TestConversation};
 
@@ -202,6 +202,12 @@ impl<'a> OperationGuard<'a, Commit> {
             match operation {
                 TestOperation::Update => {}
                 TestOperation::Remove(member) => {
+                    if self.conversation.guard().await.is_history_sharing_enabled().await {
+                        let ephemeral_client = self.conversation.instantiate_history_client().await;
+                        self.conversation.history_client.replace(ephemeral_client);
+                        self.process_added_members(&[self.conversation.history_client.as_ref().unwrap()])
+                            .await;
+                    }
                     if !self.conversation().is_member(member).await {
                         // because we're eagerly pushing proposals into the list of operations to process,
                         // it's possible that we have duplicate operations.
