@@ -45,6 +45,8 @@ spinoff = { version = "0.8", features = [
 ], default-features = false }
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
+which = "8.0.0"
+glob = "0.3.2"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = "2.1"

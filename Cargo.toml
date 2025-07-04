@@ -91,7 +91,3 @@ opt-level = "s"
 # ! This will cause the FFI to stop working because UniFFI stores the Rust <-> cdylib mapping
 # ! in the `.strtab` section of the executable. Stripping this causes everything to stop functioning.
 strip = false
-# panic = "abort"
-
-[profile.dev.package.backtrace]
-opt-level = 3
