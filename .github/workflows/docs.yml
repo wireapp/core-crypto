@@ -131,7 +131,7 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: '3.3'
-        
+
     - name: install jazzy
       run: gem install jazzy
 
@@ -157,7 +157,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4.5.0
       with:
-        name: swiftdoc
+        name: swift
         path: target/swift/doc
         retention-days: 1
         overwrite: true
