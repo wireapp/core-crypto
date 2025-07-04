@@ -43,6 +43,45 @@ pub(crate) enum TestOperation<'a> {
     HistorySharingDisabled,
 }
 
+impl std::fmt::Debug for TestOperation<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TestOperation::Add(_) => f.write_str("Add"),
+            TestOperation::ExternalJoin(_) => f.write_str("ExternalJoin"),
+            TestOperation::Update => f.write_str("Update"),
+            TestOperation::Remove(_) => f.write_str("Remove"),
+            TestOperation::HistorySharingEnabled => f.write_str("HistorySharingEnabled"),
+            TestOperation::HistorySharingDisabled => f.write_str("HistorySharingDisabled"),
+        }
+    }
+}
+
+// Needed for `.sort()`, which is is used to determine the processing order of proposals.
+impl std::cmp::Ord for TestOperation<'_> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (Self::Remove(_), Self::Remove(_)) => std::cmp::Ordering::Equal,
+            (Self::Remove(_), _) => std::cmp::Ordering::Less,
+            (_, Self::Remove(_)) => std::cmp::Ordering::Greater,
+            _ => std::cmp::Ordering::Equal,
+        }
+    }
+}
+
+impl std::cmp::PartialOrd for TestOperation<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl std::cmp::PartialEq for TestOperation<'_> {
+    fn eq(&self, _other: &Self) -> bool {
+        false
+    }
+}
+
+impl std::cmp::Eq for TestOperation<'_> {}
+
 impl<'a, T> OperationGuard<'a, T> {
     pub(super) fn new(
         operation: TestOperation<'a>,
@@ -244,7 +283,8 @@ impl<'a> OperationGuard<'a, Proposal> {
         for member in members {
             self = self.notify_member(member).await;
         }
-        self.conversation.proposals.clear();
+        // During commit processing, process remove proposals first (see ordering implementation)
+        self.conversation.proposals.sort();
         self.finish()
     }
 
