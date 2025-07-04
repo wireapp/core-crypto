@@ -45,6 +45,7 @@ spinoff = { version = "0.8", features = [
 ], default-features = false }
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
+glob = "0.3.2"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = "2.1"
@@ -55,3 +56,4 @@ tokio = { version = "1.46", features = ["full"] }
 warp = { version = "0.3", default-features = false }
 fantoccini = "0.22"
 proteus-wasm = { workspace = true, optional = true }
+which = "8.0.0"
