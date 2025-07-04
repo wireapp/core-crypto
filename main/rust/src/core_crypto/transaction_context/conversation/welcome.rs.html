@@ -26,7 +26,7 @@
 <a href=#26 id=26 data-nosnippet>26</a>    </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::dispotent)]
 <a href=#27 id=27 data-nosnippet>27</a>    </span><span class="kw">pub async fn </span>process_raw_welcome_message(
 <a href=#28 id=28 data-nosnippet>28</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#29 id=29 data-nosnippet>29</a>        welcome: Vec&lt;u8&gt;,
+<a href=#29 id=29 data-nosnippet>29</a>        welcome: <span class="kw-2">&amp;</span>[u8],
 <a href=#30 id=30 data-nosnippet>30</a>        custom_cfg: MlsCustomConfiguration,
 <a href=#31 id=31 data-nosnippet>31</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;WelcomeBundle&gt; {
 <a href=#32 id=32 data-nosnippet>32</a>        <span class="kw">let </span><span class="kw-2">mut </span>cursor = std::io::Cursor::new(welcome);

@@ -7,7 +7,7 @@
 <a href=#7 id=7 data-nosnippet>7</a>    prelude::{MlsCiphersuite, MlsCredentialType},
 <a href=#8 id=8 data-nosnippet>8</a>};
 <a href=#9 id=9 data-nosnippet>9</a>
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>, TransactionContext};
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use super</span>::{<span class="prelude-ty">Result</span>, TransactionContext};
 <a href=#11 id=11 data-nosnippet>11</a>
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">impl </span>TransactionContext {
 <a href=#13 id=13 data-nosnippet>13</a>    <span class="doccomment">/// Returns `amount_requested` OpenMLS [openmls::key_packages::KeyPackage]s.
@@ -58,15 +58,12 @@
 <a href=#58 id=58 data-nosnippet>58</a>
 <a href=#59 id=59 data-nosnippet>59</a>    <span class="doccomment">/// Prunes local KeyPackages after making sure they also have been deleted on the backend side
 <a href=#60 id=60 data-nosnippet>60</a>    /// You should only use this after [TransactionContext::save_x509_credential]
-<a href=#61 id=61 data-nosnippet>61</a>    </span><span class="kw">pub async fn </span>delete_keypackages(<span class="kw-2">&amp;</span><span class="self">self</span>, refs: <span class="kw-2">&amp;</span>[KeyPackageRef]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#62 id=62 data-nosnippet>62</a>        <span class="kw">if </span>refs.is_empty() {
-<a href=#63 id=63 data-nosnippet>63</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CallerError(<span class="string">"The provided keypackage list was empty"</span>));
-<a href=#64 id=64 data-nosnippet>64</a>        }
-<a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">let </span><span class="kw-2">mut </span>session = <span class="self">self</span>.session().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#66 id=66 data-nosnippet>66</a>        session
-<a href=#67 id=67 data-nosnippet>67</a>            .prune_keypackages_and_credential(<span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>, refs)
-<a href=#68 id=68 data-nosnippet>68</a>            .<span class="kw">await
-<a href=#69 id=69 data-nosnippet>69</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"pruning key packages and credential"</span>))
-<a href=#70 id=70 data-nosnippet>70</a>            .map_err(Into::into)
-<a href=#71 id=71 data-nosnippet>71</a>    }
-<a href=#72 id=72 data-nosnippet>72</a>}</code></pre></div></section></main></body></html>
+<a href=#61 id=61 data-nosnippet>61</a>    </span><span class="kw">pub async fn </span>delete_keypackages(<span class="kw-2">&amp;</span><span class="self">self</span>, refs: <span class="kw">impl </span>IntoIterator&lt;Item = KeyPackageRef&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#62 id=62 data-nosnippet>62</a>        <span class="kw">let </span><span class="kw-2">mut </span>session = <span class="self">self</span>.session().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#63 id=63 data-nosnippet>63</a>        session
+<a href=#64 id=64 data-nosnippet>64</a>            .prune_keypackages_and_credential(<span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>, refs)
+<a href=#65 id=65 data-nosnippet>65</a>            .<span class="kw">await
+<a href=#66 id=66 data-nosnippet>66</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"pruning key packages and credential"</span>))
+<a href=#67 id=67 data-nosnippet>67</a>            .map_err(Into::into)
+<a href=#68 id=68 data-nosnippet>68</a>    }
+<a href=#69 id=69 data-nosnippet>69</a>}</code></pre></div></section></main></body></html>

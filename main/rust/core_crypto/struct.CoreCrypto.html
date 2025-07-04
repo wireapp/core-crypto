@@ -67,7 +67,7 @@ when an epoch observer already exists, this will return an error.</p>
 (see <a href="mls/trait.HistoryObserver.html" title="trait core_crypto::mls::HistoryObserver">HistoryObserver</a>).</p>
 <p>This function should be called 0 or 1 times in a session’s lifetime. If called
 when an epoch observer already exists, this will return an error.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.generate_one_keypackage_from_credential_bundle" class="method"><a class="src rightside" href="../src/core_crypto/mls/session/key_package.rs.html#39-69">Source</a><h4 class="code-header">pub async fn <a href="#method.generate_one_keypackage_from_credential_bundle" class="fn">generate_one_keypackage_from_credential_bundle</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.generate_one_keypackage_from_credential_bundle" class="method"><a class="src rightside" href="../src/core_crypto/mls/session/key_package.rs.html#38-68">Source</a><h4 class="code-header">pub async fn <a href="#method.generate_one_keypackage_from_credential_bundle" class="fn">generate_one_keypackage_from_credential_bundle</a>(
     &amp;self,
     backend: &amp;<a class="struct" href="prelude/struct.MlsCryptoProvider.html" title="struct core_crypto::prelude::MlsCryptoProvider">MlsCryptoProvider</a>,
     cs: <a class="struct" href="prelude/struct.MlsCiphersuite.html" title="struct core_crypto::prelude::MlsCiphersuite">MlsCiphersuite</a>,
@@ -79,7 +79,7 @@ when an epoch observer already exists, this will return an error.</p>
 </ul>
 <h5 id="errors"><a class="doc-anchor" href="#errors">§</a>Errors</h5>
 <p>KeyStore and OpenMls errors</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.request_key_packages" class="method"><a class="src rightside" href="../src/core_crypto/mls/session/key_package.rs.html#81-118">Source</a><h4 class="code-header">pub async fn <a href="#method.request_key_packages" class="fn">request_key_packages</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.request_key_packages" class="method"><a class="src rightside" href="../src/core_crypto/mls/session/key_package.rs.html#80-117">Source</a><h4 class="code-header">pub async fn <a href="#method.request_key_packages" class="fn">request_key_packages</a>(
     &amp;self,
     count: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.usize.html">usize</a>,
     ciphersuite: <a class="struct" href="prelude/struct.MlsCiphersuite.html" title="struct core_crypto::prelude::MlsCiphersuite">MlsCiphersuite</a>,
@@ -95,16 +95,16 @@ a reference to it for the consumer to copy/clone.</p>
 </ul>
 <h5 id="errors-1"><a class="doc-anchor" href="#errors-1">§</a>Errors</h5>
 <p>KeyStore and OpenMls errors</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.valid_keypackages_count" class="method"><a class="src rightside" href="../src/core_crypto/mls/session/key_package.rs.html#140-170">Source</a><h4 class="code-header">pub async fn <a href="#method.valid_keypackages_count" class="fn">valid_keypackages_count</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.valid_keypackages_count" class="method"><a class="src rightside" href="../src/core_crypto/mls/session/key_package.rs.html#139-169">Source</a><h4 class="code-header">pub async fn <a href="#method.valid_keypackages_count" class="fn">valid_keypackages_count</a>(
     &amp;self,
     backend: &amp;<a class="struct" href="prelude/struct.MlsCryptoProvider.html" title="struct core_crypto::prelude::MlsCryptoProvider">MlsCryptoProvider</a>,
     ciphersuite: <a class="struct" href="prelude/struct.MlsCiphersuite.html" title="struct core_crypto::prelude::MlsCiphersuite">MlsCiphersuite</a>,
     credential_type: <a class="enum" href="prelude/enum.MlsCredentialType.html" title="enum core_crypto::prelude::MlsCredentialType">MlsCredentialType</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.usize.html">usize</a>, Error&gt;</h4></section></summary><div class="docblock"><p>Returns the count of valid, non-expired, unclaimed keypackages in store</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.prune_keypackages" class="method"><a class="src rightside" href="../src/core_crypto/mls/session/key_package.rs.html#187-192">Source</a><h4 class="code-header">pub async fn <a href="#method.prune_keypackages" class="fn">prune_keypackages</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.prune_keypackages" class="method"><a class="src rightside" href="../src/core_crypto/mls/session/key_package.rs.html#186-195">Source</a><h4 class="code-header">pub async fn <a href="#method.prune_keypackages" class="fn">prune_keypackages</a>(
     &amp;self,
     backend: &amp;<a class="struct" href="prelude/struct.MlsCryptoProvider.html" title="struct core_crypto::prelude::MlsCryptoProvider">MlsCryptoProvider</a>,
-    refs: &amp;[<a class="type" href="prelude/type.KeyPackageRef.html" title="type core_crypto::prelude::KeyPackageRef">KeyPackageRef</a>],
+    refs: impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/iter/traits/collect/trait.IntoIterator.html" title="trait core::iter::traits::collect::IntoIterator">IntoIterator</a>&lt;Item = <a class="type" href="prelude/type.KeyPackageRef.html" title="type core_crypto::prelude::KeyPackageRef">KeyPackageRef</a>&gt;,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, Error&gt;</h4></section></summary><div class="docblock"><p>Prune the provided KeyPackageRefs from the keystore</p>
 <p>Warning: Despite this API being public, the caller should know what they’re doing.
 Provided KeypackageRefs <strong>will</strong> be purged regardless of their expiration state, so please be wary of what you are doing if you directly call this API.
