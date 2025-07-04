@@ -51,9 +51,9 @@
 <a href=#51 id=51 data-nosnippet>51</a>        prelude::{E2eiEnrollment, INITIAL_KEYING_MATERIAL_COUNT},
 <a href=#52 id=52 data-nosnippet>52</a>        test_utils::{x509::X509TestChain, <span class="kw-2">*</span>},
 <a href=#53 id=53 data-nosnippet>53</a>    };
-<a href=#54 id=54 data-nosnippet>54</a>    <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
+<a href=#54 id=54 data-nosnippet>54</a>    <span class="kw">use </span>mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 <a href=#55 id=55 data-nosnippet>55</a>
-<a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">use </span>core_crypto_keystore::DatabaseKey;
+<a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">use </span>core_crypto_keystore::{ConnectionType, DatabaseKey};
 <a href=#57 id=57 data-nosnippet>57</a>
 <a href=#58 id=58 data-nosnippet>58</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#59 id=59 data-nosnippet>59</a>    </span><span class="kw">async fn </span>stash_and_pop_should_not_abort_enrollment(case: TestContext) {
@@ -108,27 +108,28 @@
 <a href=#108 id=108 data-nosnippet>108</a>                    Box::pin(<span class="kw">async move </span>{
 <a href=#109 id=109 data-nosnippet>109</a>                        <span class="comment">// this restore recreates a partial enrollment
 <a href=#110 id=110 data-nosnippet>110</a>                        </span><span class="kw">let </span>key = DatabaseKey::generate();
-<a href=#111 id=111 data-nosnippet>111</a>                        <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="kw-2">&amp;</span>key).<span class="kw">await</span>.unwrap();
-<a href=#112 id=112 data-nosnippet>112</a>                        backend.new_transaction().<span class="kw">await</span>.unwrap();
-<a href=#113 id=113 data-nosnippet>113</a>                        <span class="kw">let </span>client_id = e.client_id().parse::&lt;WireQualifiedClientId&gt;().unwrap();
-<a href=#114 id=114 data-nosnippet>114</a>                        E2eiEnrollment::try_new(
-<a href=#115 id=115 data-nosnippet>115</a>                            client_id.into(),
-<a href=#116 id=116 data-nosnippet>116</a>                            e.display_name().to_string(),
-<a href=#117 id=117 data-nosnippet>117</a>                            e.handle().to_string(),
-<a href=#118 id=118 data-nosnippet>118</a>                            e.team().map(ToString::to_string),
-<a href=#119 id=119 data-nosnippet>119</a>                            <span class="number">1</span>,
-<a href=#120 id=120 data-nosnippet>120</a>                            <span class="kw-2">&amp;</span>backend,
-<a href=#121 id=121 data-nosnippet>121</a>                            <span class="kw-2">*</span>e.ciphersuite(),
-<a href=#122 id=122 data-nosnippet>122</a>                            <span class="prelude-val">None</span>,
-<a href=#123 id=123 data-nosnippet>123</a>                            <span class="bool-val">false</span>,
-<a href=#124 id=124 data-nosnippet>124</a>                        )
-<a href=#125 id=125 data-nosnippet>125</a>                        .unwrap()
-<a href=#126 id=126 data-nosnippet>126</a>                    })
-<a href=#127 id=127 data-nosnippet>127</a>                },
-<a href=#128 id=128 data-nosnippet>128</a>            )
-<a href=#129 id=129 data-nosnippet>129</a>            .<span class="kw">await</span>;
-<a href=#130 id=130 data-nosnippet>130</a>            <span class="macro">assert!</span>(result.is_err());
-<a href=#131 id=131 data-nosnippet>131</a>        })
-<a href=#132 id=132 data-nosnippet>132</a>        .<span class="kw">await
-<a href=#133 id=133 data-nosnippet>133</a>    </span>}
-<a href=#134 id=134 data-nosnippet>134</a>}</code></pre></div></section></main></body></html>
+<a href=#111 id=111 data-nosnippet>111</a>                        <span class="kw">let </span>key_store = CryptoKeystore::open(ConnectionType::InMemory, <span class="kw-2">&amp;</span>key).<span class="kw">await</span>.unwrap();
+<a href=#112 id=112 data-nosnippet>112</a>                        <span class="kw">let </span>backend = MlsCryptoProvider::builder().key_store(key_store).build();
+<a href=#113 id=113 data-nosnippet>113</a>                        backend.new_transaction().<span class="kw">await</span>.unwrap();
+<a href=#114 id=114 data-nosnippet>114</a>                        <span class="kw">let </span>client_id = e.client_id().parse::&lt;WireQualifiedClientId&gt;().unwrap();
+<a href=#115 id=115 data-nosnippet>115</a>                        E2eiEnrollment::try_new(
+<a href=#116 id=116 data-nosnippet>116</a>                            client_id.into(),
+<a href=#117 id=117 data-nosnippet>117</a>                            e.display_name().to_string(),
+<a href=#118 id=118 data-nosnippet>118</a>                            e.handle().to_string(),
+<a href=#119 id=119 data-nosnippet>119</a>                            e.team().map(ToString::to_string),
+<a href=#120 id=120 data-nosnippet>120</a>                            <span class="number">1</span>,
+<a href=#121 id=121 data-nosnippet>121</a>                            <span class="kw-2">&amp;</span>backend,
+<a href=#122 id=122 data-nosnippet>122</a>                            <span class="kw-2">*</span>e.ciphersuite(),
+<a href=#123 id=123 data-nosnippet>123</a>                            <span class="prelude-val">None</span>,
+<a href=#124 id=124 data-nosnippet>124</a>                            <span class="bool-val">false</span>,
+<a href=#125 id=125 data-nosnippet>125</a>                        )
+<a href=#126 id=126 data-nosnippet>126</a>                        .unwrap()
+<a href=#127 id=127 data-nosnippet>127</a>                    })
+<a href=#128 id=128 data-nosnippet>128</a>                },
+<a href=#129 id=129 data-nosnippet>129</a>            )
+<a href=#130 id=130 data-nosnippet>130</a>            .<span class="kw">await</span>;
+<a href=#131 id=131 data-nosnippet>131</a>            <span class="macro">assert!</span>(result.is_err());
+<a href=#132 id=132 data-nosnippet>132</a>        })
+<a href=#133 id=133 data-nosnippet>133</a>        .<span class="kw">await
+<a href=#134 id=134 data-nosnippet>134</a>    </span>}
+<a href=#135 id=135 data-nosnippet>135</a>}</code></pre></div></section></main></body></html>

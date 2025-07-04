@@ -120,7 +120,7 @@
 <a href=#120 id=120 data-nosnippet>120</a>        result.map_err(Into::into)
 <a href=#121 id=121 data-nosnippet>121</a>    }
 <a href=#122 id=122 data-nosnippet>122</a>
-<a href=#123 id=123 data-nosnippet>123</a>    <span class="kw">fn </span>init_with_key_in_memory(_path: <span class="kw-2">&amp;</span>str, key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
+<a href=#123 id=123 data-nosnippet>123</a>    <span class="kw">fn </span>init_with_key_in_memory(key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
 <a href=#124 id=124 data-nosnippet>124</a>        <span class="kw">let </span><span class="kw-2">mut </span>conn = rusqlite::Connection::open(<span class="string">""</span>)<span class="question-mark">?</span>;
 <a href=#125 id=125 data-nosnippet>125</a>
 <a href=#126 id=126 data-nosnippet>126</a>        <span class="attr">#[cfg(feature = <span class="string">"log-queries"</span>)]
@@ -218,18 +218,17 @@
 <a href=#218 id=218 data-nosnippet>218</a>        <span class="prelude-val">Ok</span>(unblock(<span class="kw">move </span>|| <span class="self">Self</span>::init_with_key(<span class="kw-2">&amp;</span>name, <span class="kw-2">&amp;</span>key)).<span class="kw">await</span><span class="question-mark">?</span>)
 <a href=#219 id=219 data-nosnippet>219</a>    }
 <a href=#220 id=220 data-nosnippet>220</a>
-<a href=#221 id=221 data-nosnippet>221</a>    <span class="kw">async fn </span>open_in_memory(name: <span class="kw-2">&amp;</span>str, key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
-<a href=#222 id=222 data-nosnippet>222</a>        <span class="kw">let </span>name = name.to_string();
-<a href=#223 id=223 data-nosnippet>223</a>        <span class="kw">let </span>key = key.clone();
-<a href=#224 id=224 data-nosnippet>224</a>        <span class="prelude-val">Ok</span>(unblock(<span class="kw">move </span>|| <span class="self">Self</span>::init_with_key_in_memory(<span class="kw-2">&amp;</span>name, <span class="kw-2">&amp;</span>key)).<span class="kw">await</span><span class="question-mark">?</span>)
-<a href=#225 id=225 data-nosnippet>225</a>    }
-<a href=#226 id=226 data-nosnippet>226</a>
-<a href=#227 id=227 data-nosnippet>227</a>    <span class="kw">async fn </span>close(<span class="self">self</span>) -&gt; CryptoKeystoreResult&lt;()&gt; {
-<a href=#228 id=228 data-nosnippet>228</a>        unblock(|| <span class="self">self</span>.close()).<span class="kw">await
-<a href=#229 id=229 data-nosnippet>229</a>    </span>}
-<a href=#230 id=230 data-nosnippet>230</a>
-<a href=#231 id=231 data-nosnippet>231</a>    <span class="kw">async fn </span>wipe(<span class="self">self</span>) -&gt; CryptoKeystoreResult&lt;()&gt; {
-<a href=#232 id=232 data-nosnippet>232</a>        <span class="self">self</span>.wipe().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#233 id=233 data-nosnippet>233</a>        <span class="prelude-val">Ok</span>(())
-<a href=#234 id=234 data-nosnippet>234</a>    }
-<a href=#235 id=235 data-nosnippet>235</a>}</code></pre></div></section></main></body></html>
+<a href=#221 id=221 data-nosnippet>221</a>    <span class="kw">async fn </span>open_in_memory(key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
+<a href=#222 id=222 data-nosnippet>222</a>        <span class="kw">let </span>key = key.clone();
+<a href=#223 id=223 data-nosnippet>223</a>        <span class="prelude-val">Ok</span>(unblock(<span class="kw">move </span>|| <span class="self">Self</span>::init_with_key_in_memory(<span class="kw-2">&amp;</span>key)).<span class="kw">await</span><span class="question-mark">?</span>)
+<a href=#224 id=224 data-nosnippet>224</a>    }
+<a href=#225 id=225 data-nosnippet>225</a>
+<a href=#226 id=226 data-nosnippet>226</a>    <span class="kw">async fn </span>close(<span class="self">self</span>) -&gt; CryptoKeystoreResult&lt;()&gt; {
+<a href=#227 id=227 data-nosnippet>227</a>        unblock(|| <span class="self">self</span>.close()).<span class="kw">await
+<a href=#228 id=228 data-nosnippet>228</a>    </span>}
+<a href=#229 id=229 data-nosnippet>229</a>
+<a href=#230 id=230 data-nosnippet>230</a>    <span class="kw">async fn </span>wipe(<span class="self">self</span>) -&gt; CryptoKeystoreResult&lt;()&gt; {
+<a href=#231 id=231 data-nosnippet>231</a>        <span class="self">self</span>.wipe().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#232 id=232 data-nosnippet>232</a>        <span class="prelude-val">Ok</span>(())
+<a href=#233 id=233 data-nosnippet>233</a>    }
+<a href=#234 id=234 data-nosnippet>234</a>}</code></pre></div></section></main></body></html>
