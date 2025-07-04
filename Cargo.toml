@@ -73,10 +73,10 @@ x509-cert = "0.2"
 zeroize = "1.8"
 
 # our OpenMLS fork
-openmls = { git = "https://github.com/wireapp/openmls", rev = "c47c884649b2403a180407632470a42b768ce2a4", version = "1" }
-openmls_basic_credential = { git = "https://github.com/wireapp/openmls", rev = "c47c884649b2403a180407632470a42b768ce2a4", version = "0.2" }
-openmls_traits = { git = "https://github.com/wireapp/openmls", rev = "c47c884649b2403a180407632470a42b768ce2a4", version = "0.2" }
-openmls_x509_credential = { git = "https://github.com/wireapp/openmls", rev = "c47c884649b2403a180407632470a42b768ce2a4", version = "0.2" }
+openmls = { git = "https://github.com/wireapp/openmls", rev = "c9cde17076508968c9cbead5728454f0a1f60c4f", version = "1" }
+openmls_basic_credential = { git = "https://github.com/wireapp/openmls", rev = "c9cde17076508968c9cbead5728454f0a1f60c4f", version = "0.2" }
+openmls_traits = { git = "https://github.com/wireapp/openmls", rev = "c9cde17076508968c9cbead5728454f0a1f60c4f", version = "0.2" }
+openmls_x509_credential = { git = "https://github.com/wireapp/openmls", rev = "c9cde17076508968c9cbead5728454f0a1f60c4f", version = "0.2" }
 
 # proteus
 proteus-traits = { git = "https://github.com/wireapp/proteus", tag = "v2.1.1" }
