@@ -154,6 +154,20 @@ impl<'a> TestConversation<'a> {
         )
     }
 
+    /// Create a commit for pending proposals that hasn't been merged by the actor.
+    /// On [OperationGuard::notify_members], the actor will receive this commit.
+    pub async fn commit_pending_proposals_unmerged(self) -> OperationGuard<'a, Commit> {
+        let mut conversation_guard = self.guard().await;
+        let commit = conversation_guard
+            .commit_pending_proposals_inner()
+            .await
+            .unwrap()
+            .expect("should have pending proposals")
+            .commit;
+        // Comitting pending proposals is equivalent to an update
+        OperationGuard::new(TestOperation::Update, commit, self, [])
+    }
+
     /// Remove this member from this conversation.
     /// Notify all members of the conversation.
     ///
@@ -299,7 +313,7 @@ impl<'a> TestConversation<'a> {
         self.notify_about_enabled_history_sharing().await
     }
 
-    async fn instantiate_history_client(&self) -> SessionContext {
+    pub(super) async fn instantiate_history_client(&self) -> SessionContext {
         let history_secret = self
             .actor()
             .history_observer()

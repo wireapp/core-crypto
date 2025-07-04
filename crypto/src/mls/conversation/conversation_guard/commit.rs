@@ -2,7 +2,7 @@
 
 use openmls::prelude::{KeyPackageIn, LeafNode};
 
-use crate::mls::conversation::{ConversationWithMls as _, Error};
+use crate::mls::conversation::{Conversation as _, ConversationWithMls as _, Error};
 use crate::mls::credential::CredentialBundle;
 use crate::prelude::{MlsCredentialType, MlsGroupInfoBundle};
 use crate::{
@@ -15,6 +15,8 @@ use crate::{
     prelude::ClientId,
 };
 
+use super::history_sharing::HistoryClientUpdateResult;
+
 /// What to do with a commit after it has been sent via [crate::MlsTransport].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum TransportedCommitPolicy {
@@ -26,6 +28,11 @@ pub(crate) enum TransportedCommitPolicy {
 
 impl ConversationGuard {
     pub(super) async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
+        let history_client_update_result = self.update_history_client().await?;
+        if history_client_update_result == HistoryClientUpdateResult::CommitSentAndMerged {
+            return Ok(());
+        }
+
         match self.send_commit(commit).await {
             Ok(TransportedCommitPolicy::None) => Ok(()),
             Ok(TransportedCommitPolicy::Merge) => self.merge_commit().await,
@@ -47,13 +54,8 @@ impl ConversationGuard {
     /// Send the commit via [crate::MlsTransport] and handle the response.
     pub(super) async fn send_commit(&mut self, mut commit: MlsCommitBundle) -> Result<TransportedCommitPolicy> {
         let transport = self.transport().await?;
-        let client = self.session().await?;
-        let backend = self.crypto_provider().await?;
 
-        let inner = self.conversation().await;
-        let epoch_before_sending = inner.group().epoch().as_u64();
-        // Drop the lock to allow mutably borrowing self again.
-        drop(inner);
+        let epoch_before_sending = self.epoch().await;
 
         loop {
             match transport
@@ -68,8 +70,7 @@ impl ConversationGuard {
                     return Err(Error::MessageRejected { reason });
                 }
                 MlsTransportResponse::Retry => {
-                    let mut inner = self.conversation_mut().await;
-                    let epoch_after_sending = inner.group().epoch().as_u64();
+                    let epoch_after_sending = self.epoch().await;
                     if epoch_before_sending == epoch_after_sending {
                         // No intermediate commits have been processed before returning retry.
                         // This will be the case, e.g., on network failure.
@@ -83,7 +84,7 @@ impl ConversationGuard {
                     // so the group state is up-to-date.
                     // The original commit has been `renewed` to a pending proposal, unless the
                     // intended operation was already done in one of the merged commits.
-                    let Some(commit_to_retry) = inner.commit_pending_proposals(&client, &backend).await? else {
+                    let Some(commit_to_retry) = self.commit_pending_proposals_inner().await? else {
                         // The intended operation was already done in one of the merged commits.
                         return Ok(TransportedCommitPolicy::None);
                     };
@@ -272,14 +273,66 @@ impl ConversationGuard {
     /// Commits all pending proposals of the group
     pub async fn commit_pending_proposals(&mut self) -> Result<()> {
         self.ensure_no_pending_commit().await?;
-        let client = self.session().await?;
-        let backend = self.crypto_provider().await?;
-        let mut conversation = self.inner.write().await;
-        let commit = conversation.commit_pending_proposals(&client, &backend).await?;
-        drop(conversation);
+        let commit = self.commit_pending_proposals_inner().await?;
         let Some(commit) = commit else {
             return Ok(());
         };
         self.send_and_merge_commit(commit).await
+    }
+
+    pub(crate) async fn commit_pending_proposals_inner(&mut self) -> Result<Option<MlsCommitBundle>> {
+        let session = &self.session().await?;
+        let provider = &self.crypto_provider().await?;
+        let mut inner = self.inner.write().await;
+        if inner.group.pending_proposals().next().is_none() {
+            return Ok(None);
+        }
+
+        let signer = &inner.find_most_recent_credential_bundle(session).await?.signature_key;
+
+        let (commit, welcome, gi) = inner
+            .group
+            .commit_to_pending_proposals(provider, signer)
+            .await
+            .map_err(MlsError::wrap("group commit to pending proposals"))?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
+
+        inner.persist_group_when_changed(&provider.keystore(), false).await?;
+
+        Ok(Some(MlsCommitBundle {
+            welcome,
+            commit,
+            group_info,
+            encrypted_message: None,
+        }))
+    }
+
+    pub(crate) async fn commit_inline_proposals(
+        &mut self,
+        proposals: Vec<openmls::prelude::Proposal>,
+    ) -> Result<Option<MlsCommitBundle>> {
+        let session = &self.session().await?;
+        let provider = &self.crypto_provider().await?;
+        let mut inner = self.inner.write().await;
+        if proposals.is_empty() {
+            return Ok(None);
+        }
+        let signer = &inner.find_most_recent_credential_bundle(session).await?.signature_key;
+
+        let (commit, welcome, gi) = inner
+            .group
+            .commit_to_inline_proposals(provider, signer, proposals)
+            .await
+            .map_err(MlsError::wrap("group commit to pending proposals"))?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
+
+        inner.persist_group_when_changed(&provider.keystore(), false).await?;
+
+        Ok(Some(MlsCommitBundle {
+            welcome,
+            commit,
+            group_info,
+            encrypted_message: None,
+        }))
     }
 }

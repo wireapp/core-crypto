@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 
 use openmls::prelude::MlsMessageOut;
 
-use crate::prelude::MlsConversationDecryptMessage;
+use crate::{mls::conversation::Conversation as _, prelude::MlsConversationDecryptMessage};
 
 use super::{SessionContext, TestConversation};
 
@@ -42,6 +42,43 @@ pub(crate) enum TestOperation<'a> {
     HistorySharingEnabled,
     HistorySharingDisabled,
 }
+
+impl std::fmt::Debug for TestOperation<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TestOperation::Add(_) => write!(f, "Add"),
+            TestOperation::ExternalJoin(_) => write!(f, "ExternalJoin"),
+            TestOperation::Update => write!(f, "Update"),
+            TestOperation::Remove(_) => write!(f, "Remove"),
+            TestOperation::HistorySharingEnabled => write!(f, "HistorySharingEnabled"),
+            TestOperation::HistorySharingDisabled => write!(f, "HistorySharingDisabled"),
+        }
+    }
+}
+
+impl std::cmp::Ord for TestOperation<'_> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (Self::Remove(_), _) => std::cmp::Ordering::Less,
+            (_, Self::Remove(_)) => std::cmp::Ordering::Greater,
+            _ => std::cmp::Ordering::Equal,
+        }
+    }
+}
+
+impl std::cmp::PartialOrd for TestOperation<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl std::cmp::PartialEq for TestOperation<'_> {
+    fn eq(&self, _other: &Self) -> bool {
+        false
+    }
+}
+
+impl std::cmp::Eq for TestOperation<'_> {}
 
 impl<'a, T> OperationGuard<'a, T> {
     pub(super) fn new(
@@ -163,6 +200,12 @@ impl<'a> OperationGuard<'a, Commit> {
             match operation {
                 TestOperation::Update => {}
                 TestOperation::Remove(member) => {
+                    if self.conversation.guard().await.is_history_sharing_enabled().await {
+                        let ephemeral_client = self.conversation.instantiate_history_client().await;
+                        self.conversation.history_client.replace(ephemeral_client);
+                        self.process_added_members(&[self.conversation.history_client.as_ref().unwrap()])
+                            .await;
+                    }
                     if !self.conversation().is_member(member).await {
                         // because we're eagerly pushing proposals into the list of operations to process,
                         // it's possible that we have duplicate operations.
@@ -244,7 +287,7 @@ impl<'a> OperationGuard<'a, Proposal> {
         for member in members {
             self = self.notify_member(member).await;
         }
-        self.conversation.proposals.clear();
+        self.conversation.proposals.sort();
         self.finish()
     }
 
