@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Functions  Reference</title>
+    <link rel="stylesheet" type="text/css" href="css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="js/jquery.min.js" defer></script>
+    <script src="js/jazzy.js" defer></script>
+    
+    <script src="js/lunr.min.js" defer></script>
+    <script src="js/typeahead.jquery.js" defer></script>
+    <script src="js/jazzy.search.js" defer></script>
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Section/Functions" class="dashAnchor"></a>
+    <a title="Functions  Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="index.html">WireCoreCrypto Docs</a> (73% documented)</p>
+        <div class="header-right">
+          <form role="search" action="search.json">
+            <input type="text" placeholder="Search documentation" data-typeahead>
+          </form>
+        </div>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="index.html">WireCoreCrypto</a>
+        <img id="carat" src="img/carat.png" alt=""/>
+        Functions  Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="WireCoreCrypto/Classes/CoreCrypto.html">CoreCrypto</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Classes/CoreCryptoContext.html">CoreCryptoContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Classes/CoreCryptoLoggerImpl.html">CoreCryptoLoggerImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Classes/E2eiEnrollment.html">E2eiEnrollment</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Classes/EpochObserverImpl.html">EpochObserverImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Classes/HistoryObserverImpl.html">HistoryObserverImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Classes/MlsTransportImpl.html">MlsTransportImpl</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Enums.html">Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/CoreCryptoError.html">CoreCryptoError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/CoreCryptoLogLevel.html">CoreCryptoLogLevel</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/CredentialType.html">CredentialType</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/DeviceStatus.html">DeviceStatus</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/E2eiConversationState.html">E2eiConversationState</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/EpochChangedReportingError.html">EpochChangedReportingError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/LoggingError.html">LoggingError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/MlsError.html">MlsError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/MlsGroupInfoEncryptionType.html">MlsGroupInfoEncryptionType</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/MlsRatchetTreeType.html">MlsRatchetTreeType</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/MlsTransportResponse.html">MlsTransportResponse</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/NewHistoryClientReportingError.html">NewHistoryClientReportingError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/ProteusError.html">ProteusError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/WirePolicy.html">WirePolicy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Functions.html">Functions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi13buildMetadataAA05BuildF0VyF">buildMetadata()</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi04coreC12DeferredInit4path3key11entropySeedAA0bC0CSS_10Foundation4DataVAJSgtYaKF">coreCryptoDeferredInit(path:key:entropySeed:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi04coreC13HistoryClient13historySecretAA0bC0CAA0fI0V_tYaKF">coreCryptoHistoryClient(historySecret:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi04coreC3New4path3key8clientId12ciphersuites11entropySeed12nbKeyPackageAA0bC0CSS_10Foundation4DataVAMSays6UInt16VGAMSgs6UInt32VSgtYaKF">coreCryptoNew(path:key:clientId:ciphersuites:entropySeed:nbKeyPackage:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Functions.html#/s:14WireCoreCrypto29migrateDatabaseKeyTypeToBytes4path03oldF003newF0ySS_SS10Foundation4DataVtYaKF">migrateDatabaseKeyTypeToBytes(path:oldKey:newKey:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi23migrateDbKeyTypeToBytes4name03oldG003newG0ySS_SS10Foundation4DataVtYaKF">migrateDbKeyTypeToBytes(name:oldKey:newKey:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi9setLogger6logger5levelyAA0bcF0_p_AA0bC8LogLevelOtF">setLogger(logger:level:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi13setLoggerOnly6loggeryAA0bcF0_p_tF">setLoggerOnly(logger:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi14setMaxLogLevel5levelyAA0bcgH0O_tF">setMaxLogLevel(level:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi012uniffiEnsurebC14FfiInitializedyyF">uniffiEnsureCoreCryptoFfiInitialized()</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi030uniffiForeignFutureHandleCountbC3FfiSiyF">uniffiForeignFutureHandleCountCoreCryptoFfi()</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi7versionSSyF">version()</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Protocols/CoreCryptoContextProtocol.html">CoreCryptoContextProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Protocols/CoreCryptoLogger.html">CoreCryptoLogger</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCrypto/Protocols/CoreCryptoProtocol.html">CoreCryptoProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Protocols/E2eiEnrollmentProtocol.html">E2eiEnrollmentProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Protocols/EpochObserver.html">EpochObserver</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Protocols/HistoryObserver.html">HistoryObserver</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Protocols/MlsTransport.html">MlsTransport</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Structs.html">Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/AcmeChallenge.html">AcmeChallenge</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/AcmeDirectory.html">AcmeDirectory</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/BufferedDecryptedMessage.html">BufferedDecryptedMessage</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/BuildMetadata.html">BuildMetadata</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/CommitBundle.html">CommitBundle</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/ConversationConfiguration.html">ConversationConfiguration</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/CrlRegistration.html">CrlRegistration</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/CustomConfiguration.html">CustomConfiguration</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/DecryptedMessage.html">DecryptedMessage</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/GroupInfoBundle.html">GroupInfoBundle</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/HistorySecret.html">HistorySecret</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/NewAcmeAuthz.html">NewAcmeAuthz</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/NewAcmeOrder.html">NewAcmeOrder</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/ProteusAutoPrekeyBundle.html">ProteusAutoPrekeyBundle</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/WelcomeBundle.html">WelcomeBundle</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Structs/X509Identity.html">X509Identity</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Typealiases.html">Type Aliases</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Typealiases.html#/s:20WireCoreCryptoUniffi11Ciphersuitea">Ciphersuite</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Typealiases.html#/s:20WireCoreCryptoUniffi12Ciphersuitesa">Ciphersuites</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Typealiases.html#/s:20WireCoreCryptoUniffi8ClientIda">ClientId</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Typealiases.html#/s:20WireCoreCryptoUniffi11DatabaseKeya">DatabaseKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Typealiases.html#/s:20WireCoreCryptoUniffi16MlsTransportDataa">MlsTransportData</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Typealiases.html#/s:20WireCoreCryptoUniffi24NewCrlDistributionPointsa">NewCrlDistributionPoints</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>Functions</h1>
+            <p>The following functions are available globally.</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:14WireCoreCrypto29migrateDatabaseKeyTypeToBytes4path03oldF003newF0ySS_SS10Foundation4DataVtYaKF"></a>
+                    <a name="//apple_ref/swift/Function/migrateDatabaseKeyTypeToBytes(path:oldKey:newKey:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:14WireCoreCrypto29migrateDatabaseKeyTypeToBytes4path03oldF003newF0ySS_SS10Foundation4DataVtYaKF">migrateDatabaseKeyTypeToBytes(path:<wbr>oldKey:<wbr>newKey:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous, from WireCoreCrypto
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">migrateDatabaseKeyTypeToBytes</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">oldKey</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">newKey</span><span class="p">:</span> <span class="kt"><a href="Typealiases.html#/s:20WireCoreCryptoUniffi11DatabaseKeya">DatabaseKey</a></span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi030uniffiForeignFutureHandleCountbC3FfiSiyF"></a>
+                    <a name="//apple_ref/swift/Function/uniffiForeignFutureHandleCountCoreCryptoFfi()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi030uniffiForeignFutureHandleCountbC3FfiSiyF">uniffiForeignFutureHandleCountCoreCryptoFfi()</a>
+                    </code>
+                      <span class="declaration-note">
+                        From WireCoreCryptoUniffi
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">uniffiForeignFutureHandleCountCoreCryptoFfi</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Int</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi13buildMetadataAA05BuildF0VyF"></a>
+                    <a name="//apple_ref/swift/Function/buildMetadata()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi13buildMetadataAA05BuildF0VyF">buildMetadata()</a>
+                    </code>
+                      <span class="declaration-note">
+                        From WireCoreCryptoUniffi
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns build data for CoreCrypto</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">buildMetadata</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt"><a href="WireCoreCryptoUniffi/Structs/BuildMetadata.html">BuildMetadata</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi04coreC12DeferredInit4path3key11entropySeedAA0bC0CSS_10Foundation4DataVAJSgtYaKF"></a>
+                    <a name="//apple_ref/swift/Function/coreCryptoDeferredInit(path:key:entropySeed:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi04coreC12DeferredInit4path3key11entropySeedAA0bC0CSS_10Foundation4DataVAJSgtYaKF">coreCryptoDeferredInit(path:<wbr>key:<wbr>entropySeed:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous, from WireCoreCryptoUniffi
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Free function to construct a new <code><a href="WireCoreCrypto/Classes/CoreCrypto.html">CoreCrypto</a></code> instance.</p>
+
+<p>Similar to [<code>core_crypto_new</code>] but defers MLS initialization. It can be initialized later
+ with [core_crypto::transaction_context::TransactionContext::mls_init].</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">coreCryptoDeferredInit</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">key</span><span class="p">:</span> <span class="kt"><a href="Typealiases.html#/s:20WireCoreCryptoUniffi11DatabaseKeya">DatabaseKey</a></span><span class="p">,</span> <span class="nv">entropySeed</span><span class="p">:</span> <span class="kt">Data</span><span class="p">?)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="WireCoreCrypto/Classes/CoreCrypto.html">CoreCrypto</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi04coreC13HistoryClient13historySecretAA0bC0CAA0fI0V_tYaKF"></a>
+                    <a name="//apple_ref/swift/Function/coreCryptoHistoryClient(historySecret:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi04coreC13HistoryClient13historySecretAA0bC0CAA0fI0V_tYaKF">coreCryptoHistoryClient(historySecret:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous, from WireCoreCryptoUniffi
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Instantiate a history client.</p>
+
+<p>This client exposes the full interface of <code><a href="WireCoreCrypto/Classes/CoreCrypto.html">CoreCrypto</a></code>, but it should only be used to decrypt messages.
+ Other use is a logic error.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">coreCryptoHistoryClient</span><span class="p">(</span><span class="nv">historySecret</span><span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Structs/HistorySecret.html">HistorySecret</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="WireCoreCrypto/Classes/CoreCrypto.html">CoreCrypto</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi04coreC3New4path3key8clientId12ciphersuites11entropySeed12nbKeyPackageAA0bC0CSS_10Foundation4DataVAMSays6UInt16VGAMSgs6UInt32VSgtYaKF"></a>
+                    <a name="//apple_ref/swift/Function/coreCryptoNew(path:key:clientId:ciphersuites:entropySeed:nbKeyPackage:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi04coreC3New4path3key8clientId12ciphersuites11entropySeed12nbKeyPackageAA0bC0CSS_10Foundation4DataVAMSays6UInt16VGAMSgs6UInt32VSgtYaKF">coreCryptoNew(path:<wbr>key:<wbr>clientId:<wbr>ciphersuites:<wbr>entropySeed:<wbr>nbKeyPackage:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous, from WireCoreCryptoUniffi
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Free function to construct a new <code><a href="WireCoreCrypto/Classes/CoreCrypto.html">CoreCrypto</a></code> instance.</p>
+
+<p>This is necessary because in uniffi async constructors are not supported.</p>
+
+<p>See [Session::try_new]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">coreCryptoNew</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">key</span><span class="p">:</span> <span class="kt"><a href="Typealiases.html#/s:20WireCoreCryptoUniffi11DatabaseKeya">DatabaseKey</a></span><span class="p">,</span> <span class="nv">clientId</span><span class="p">:</span> <span class="kt"><a href="Typealiases.html#/s:20WireCoreCryptoUniffi8ClientIda">ClientId</a></span><span class="p">,</span> <span class="nv">ciphersuites</span><span class="p">:</span> <span class="kt"><a href="Typealiases.html#/s:20WireCoreCryptoUniffi12Ciphersuitesa">Ciphersuites</a></span><span class="p">,</span> <span class="nv">entropySeed</span><span class="p">:</span> <span class="kt">Data</span><span class="p">?,</span> <span class="nv">nbKeyPackage</span><span class="p">:</span> <span class="kt">UInt32</span><span class="p">?)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="WireCoreCrypto/Classes/CoreCrypto.html">CoreCrypto</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi23migrateDbKeyTypeToBytes4name03oldG003newG0ySS_SS10Foundation4DataVtYaKF"></a>
+                    <a name="//apple_ref/swift/Function/migrateDbKeyTypeToBytes(name:oldKey:newKey:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi23migrateDbKeyTypeToBytes4name03oldG003newG0ySS_SS10Foundation4DataVtYaKF">migrateDbKeyTypeToBytes(name:<wbr>oldKey:<wbr>newKey:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous, from WireCoreCryptoUniffi
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Updates the key of the CoreCrypto database.
+To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">migrateDbKeyTypeToBytes</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">oldKey</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">newKey</span><span class="p">:</span> <span class="kt"><a href="Typealiases.html#/s:20WireCoreCryptoUniffi11DatabaseKeya">DatabaseKey</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi9setLogger6logger5levelyAA0bcF0_p_AA0bC8LogLevelOtF"></a>
+                    <a name="//apple_ref/swift/Function/setLogger(logger:level:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi9setLogger6logger5levelyAA0bcF0_p_AA0bC8LogLevelOtF">setLogger(logger:<wbr>level:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        From WireCoreCryptoUniffi
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Initializes the logger</p>
+
+<p>NOTE: in a future  release we will remove <code>level</code> argument.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">setLogger</span><span class="p">(</span><span class="nv">logger</span><span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Protocols/CoreCryptoLogger.html">CoreCryptoLogger</a></span><span class="p">,</span> <span class="nv">level</span><span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Enums/CoreCryptoLogLevel.html">CoreCryptoLogLevel</a></span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi13setLoggerOnly6loggeryAA0bcF0_p_tF"></a>
+                    <a name="//apple_ref/swift/Function/setLoggerOnly(logger:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi13setLoggerOnly6loggeryAA0bcF0_p_tF">setLoggerOnly(logger:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        From WireCoreCryptoUniffi
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Initializes the logger</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">setLoggerOnly</span><span class="p">(</span><span class="nv">logger</span><span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Protocols/CoreCryptoLogger.html">CoreCryptoLogger</a></span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi14setMaxLogLevel5levelyAA0bcgH0O_tF"></a>
+                    <a name="//apple_ref/swift/Function/setMaxLogLevel(level:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi14setMaxLogLevel5levelyAA0bcgH0O_tF">setMaxLogLevel(level:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        From WireCoreCryptoUniffi
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Set maximum log level forwarded to the logger</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">setMaxLogLevel</span><span class="p">(</span><span class="nv">level</span><span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Enums/CoreCryptoLogLevel.html">CoreCryptoLogLevel</a></span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi7versionSSyF"></a>
+                    <a name="//apple_ref/swift/Function/version()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi7versionSSyF">version()</a>
+                    </code>
+                      <span class="declaration-note">
+                        From WireCoreCryptoUniffi
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">version</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi012uniffiEnsurebC14FfiInitializedyyF"></a>
+                    <a name="//apple_ref/swift/Function/uniffiEnsureCoreCryptoFfiInitialized()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi012uniffiEnsurebC14FfiInitializedyyF">uniffiEnsureCoreCryptoFfiInitialized()</a>
+                    </code>
+                      <span class="declaration-note">
+                        From WireCoreCryptoUniffi
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">uniffiEnsureCoreCryptoFfiInitialized</span><span class="p">()</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>&copy; 2025 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2025-07-04)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</html>
