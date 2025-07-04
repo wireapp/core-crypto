@@ -40,6 +40,7 @@
 
 ### Documentation
 
+- build swift documentation in CI ([a2f910f](https://github.com/wireapp/core-crypto/commit/a2f910fe413ec76873622498f37d8745b3c15069))
 - update changelog: info about new field in `MLsCommitBundle` ([d1431a3](https://github.com/wireapp/core-crypto/commit/d1431a3262e6d56a2f336b23f12acc6a38142065))
 - include hyperlink to commit in git cliff output ([6e209f5](https://github.com/wireapp/core-crypto/commit/6e209f512679acb68fad8f3b932b02b5b93ee7e7))
 - publish unreleased changes to github pages ([6c33a70](https://github.com/wireapp/core-crypto/commit/6c33a709b2ed5f1b45c7291f5bbb6cc13ed9abf2))
