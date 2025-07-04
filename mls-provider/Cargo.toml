@@ -43,6 +43,7 @@ thiserror.workspace = true
 hex.workspace = true
 async-lock.workspace = true
 core-crypto-keystore.workspace = true
+typed-builder.workspace = true
 
 [dependencies.hpke]
 version = "0.12"
