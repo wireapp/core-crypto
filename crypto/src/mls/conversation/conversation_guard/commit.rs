@@ -15,6 +15,8 @@ use crate::{
     prelude::ClientId,
 };
 
+use super::history_sharing::HistoryClientUpdateOutcome;
+
 /// What to do with a commit after it has been sent via [crate::MlsTransport].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum TransportedCommitPolicy {
@@ -26,6 +28,11 @@ pub(crate) enum TransportedCommitPolicy {
 
 impl ConversationGuard {
     pub(super) async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
+        let history_client_update_result = self.update_history_client().await?;
+        if history_client_update_result == HistoryClientUpdateOutcome::CommitSentAndMerged {
+            return Ok(());
+        }
+
         match self.send_commit(commit).await {
             Ok(TransportedCommitPolicy::None) => Ok(()),
             Ok(TransportedCommitPolicy::Merge) => self.merge_commit().await,
@@ -286,6 +293,35 @@ impl ConversationGuard {
         let (commit, welcome, gi) = inner
             .group
             .commit_to_pending_proposals(provider, signer)
+            .await
+            .map_err(MlsError::wrap("group commit to pending proposals"))?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
+
+        inner.persist_group_when_changed(&provider.keystore(), false).await?;
+
+        Ok(Some(MlsCommitBundle {
+            welcome,
+            commit,
+            group_info,
+            encrypted_message: None,
+        }))
+    }
+
+    pub(crate) async fn commit_inline_proposals(
+        &mut self,
+        proposals: Vec<openmls::prelude::Proposal>,
+    ) -> Result<Option<MlsCommitBundle>> {
+        let session = &self.session().await?;
+        let provider = &self.crypto_provider().await?;
+        let mut inner = self.inner.write().await;
+        if proposals.is_empty() {
+            return Ok(None);
+        }
+        let signer = &inner.find_most_recent_credential_bundle(session).await?.signature_key;
+
+        let (commit, welcome, gi) = inner
+            .group
+            .commit_to_inline_proposals(provider, signer, proposals)
             .await
             .map_err(MlsError::wrap("group commit to pending proposals"))?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
