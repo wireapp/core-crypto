@@ -88,6 +88,16 @@
 
 - Support Android environments with 16k page size
 
+## v7.0.2 - 2025-07-07
+
+### Highlights
+
+Upgrade OpenMLS to fix a bug where the ratchet tree would sometimes become corrupt leading to broken MLS groups.
+
+### Bug Fixes
+
+- update openmls [WPB-18569] (7ca7ba7)
+
 ## v7.0.1 - 2025-06-02
 
 ### Bug Fixes
