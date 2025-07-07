@@ -19,6 +19,11 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: no brew auto update
+      shell: bash
+      run: |
+        echo HOMEBREW_NO_AUTO_UPDATE=1 >> $GITHUB_ENV
+        echo HOMEBREW_NO_INSTALL_UPGRADE=1 >> $GITHUB_ENV
     - name:
       uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
