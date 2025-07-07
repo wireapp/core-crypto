@@ -70,6 +70,9 @@ export type { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus";
 export {
     AcmeChallenge,
     Ciphersuite,
+    ciphersuiteFromU16,
+    ciphersuiteDefault,
+    Ciphersuites,
     ClientId,
     CustomConfiguration,
     DatabaseKey,
