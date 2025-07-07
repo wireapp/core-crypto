@@ -117,6 +117,7 @@ impl Ciphersuites {
 
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 impl Ciphersuites {
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = fromU16s))]
     pub fn from_u16s(ids: Vec<u16>) -> CoreCryptoResult<Self> {
         let ciphersuites = ids
             .into_iter()
@@ -161,6 +162,7 @@ pub fn ciphersuites_default() -> Ciphersuites {
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl Ciphersuites {
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = asList))]
     pub fn as_list(&self) -> Vec<Ciphersuite> {
         self.0.iter().copied().collect()
     }
