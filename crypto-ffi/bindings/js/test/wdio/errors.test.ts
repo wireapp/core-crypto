@@ -65,7 +65,7 @@ describe("Error type mapping", () => {
             createConversation(ALICE_ID, CONV_ID)
             // wdio wraps the error and prepends the original message with
             // the error type as prefix
-        ).rejects.toThrowError(
+        ).rejects.toThrow(
             new Error(
                 `MlsErrorConversationAlreadyExists: ${expectedErrorMessage}`
             )

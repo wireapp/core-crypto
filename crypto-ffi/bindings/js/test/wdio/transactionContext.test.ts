@@ -31,7 +31,7 @@ describe("transaction context", () => {
             )
             // wdio wraps the error and prepends the original message with
             // the error type as prefix
-        ).rejects.toThrowError(new Error(`Error: ${expectedErrorMessage}`));
+        ).rejects.toThrow(new Error(`Error: ${expectedErrorMessage}`));
     });
 
     it("should throw error when using invalid context", async () => {

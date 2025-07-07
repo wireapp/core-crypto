@@ -86,7 +86,7 @@ describe("proteus", () => {
 
         await expect(
             newProteusSessionFromMessage(ALICE_ID, BOB_ID, SESSION_ID, message)
-        ).rejects.toThrowError(
+        ).rejects.toThrow(
             // wdio wraps the error and prepends the original message with
             // the error type as prefix
             new Error(
