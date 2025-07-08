@@ -3,7 +3,7 @@ use crate::{
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
 use color_eyre::eyre::Result;
-use core_crypto_ffi::{Ciphersuites, ClientId, CoreCrypto, CredentialType, CustomConfiguration, TransactionHelper};
+use core_crypto_ffi::{ClientId, CoreCrypto, CredentialType, CustomConfiguration, TransactionHelper};
 use std::cell::Cell;
 use std::sync::Arc;
 use tempfile::NamedTempFile;
@@ -37,7 +37,7 @@ impl CoreCryptoFfiClient {
             temp_file.path().to_string_lossy().into_owned(),
             core_crypto_ffi::DatabaseKey::new(core_crypto::DatabaseKey::generate()),
             Some(client_id),
-            Some(Arc::new(Ciphersuites::new(vec![ciphersuite]))),
+            Some(vec![ciphersuite]),
             None,
             None,
         )
