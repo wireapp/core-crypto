@@ -11,7 +11,7 @@ use wasm_bindgen::prelude::*;
 use crate::{
     Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
     CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle,
-    bytes_wrapper::bytes_wrapper, ciphersuite::CiphersuitesMaybeArc, client_id::ClientIdMaybeArc,
+    bytes_wrapper::bytes_wrapper, ciphersuite::Ciphersuites, client_id::ClientIdMaybeArc,
     crl::NewCrlDistributionPoints,
 };
 
@@ -62,7 +62,7 @@ impl CoreCryptoContext {
     pub async fn mls_init(
         &self,
         client_id: ClientIdMaybeArc,
-        ciphersuites: CiphersuitesMaybeArc,
+        ciphersuites: Ciphersuites,
         nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<()> {
         let nb_key_package = nb_key_package
@@ -72,7 +72,7 @@ impl CoreCryptoContext {
         self.inner
             .mls_init(
                 ClientIdentifier::Basic(client_id.as_cc()),
-                ciphersuites.iter().map(Into::into).collect(),
+                ciphersuites.into_iter().map(Into::into).collect(),
                 nb_key_package,
             )
             .await?;
