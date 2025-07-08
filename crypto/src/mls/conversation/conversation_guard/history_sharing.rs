@@ -221,13 +221,13 @@ mod tests {
             let test_conv = test_conv.enable_history_sharing_notify().await;
             assert_eq!(test_conv.member_count().await, 3);
             let add_history_client_commit = alice.mls_transport().await.latest_commit_bundle().await;
-            let encrypyed_history_secret = add_history_client_commit
+            let encrypted_history_secret = add_history_client_commit
                 .encrypted_message
                 .expect("history secret should be bundled with the commmit");
             test_conv
                 .guard_of(&bob)
                 .await
-                .decrypt_message(&encrypyed_history_secret)
+                .decrypt_message(&encrypted_history_secret)
                 .await
                 .expect("bob should be able to decrypt the history secret");
 
