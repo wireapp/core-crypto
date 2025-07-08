@@ -87,21 +87,3 @@ pub fn ciphersuite_default() -> Ciphersuite {
 }
 
 pub(crate) type Ciphersuites = Vec<Ciphersuite>;
-
-/// Helper function to convert a list of integers into a list of ciphersuites
-#[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = ciphersuitesFromU16s))]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-pub fn ciphersuites_from_u16s(ids: Vec<u16>) -> CoreCryptoResult<Ciphersuites> {
-    ids.iter()
-        .copied()
-        .map(Ciphersuite::try_from)
-        .collect::<Result<_, _>>()
-        .map_err(CoreCryptoError::generic())
-}
-
-/// The default set of ciphersuites contains one entry, the default ciphersuite.
-#[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = ciphersuitesDefault))]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-pub fn ciphersuites_default() -> Ciphersuites {
-    vec![Ciphersuite::default()]
-}
