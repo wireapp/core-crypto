@@ -100,10 +100,11 @@ struct InteropClientApp: App {
             try await self.coreCrypto?.provideTransport(
                 transport: TransportProvider())
 
+            let ciphersuite = try ciphersuiteFromU16(discriminant: ciphersuite)
             try await self.coreCrypto?.transaction({ context in
                 try await context.mlsInit(
                     clientId: ClientId(bytes: clientId),
-                    ciphersuites: ciphersuitesFromU16s(ids: [ciphersuite]),
+                    ciphersuites: [ciphersuite],
                     nbKeyPackage: nil)
             })
 
