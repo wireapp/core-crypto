@@ -99,7 +99,7 @@ final class WireCoreCryptoTests: XCTestCase {
         await XCTAssertThrowsErrorAsync {
             try await context?.mlsInit(
                 clientId: aliceId,
-                ciphersuites: Ciphersuites(ciphersuites: [ciphersuite]),
+                ciphersuites: [ciphersuite],
                 nbKeyPackage: nil
             )
         }
@@ -140,7 +140,7 @@ final class WireCoreCryptoTests: XCTestCase {
         try await coreCrypto.transaction {
             try await $0.mlsInit(
                 clientId: aliceId,
-                ciphersuites: Ciphersuites(ciphersuites: [ciphersuite]),
+                ciphersuites: [ciphersuite],
                 nbKeyPackage: nil
             )
         }
@@ -428,7 +428,7 @@ final class WireCoreCryptoTests: XCTestCase {
         try await coreCrypto.transaction { context in
             try await context.mlsInit(
                 clientId: aliceId,
-                ciphersuites: Ciphersuites(ciphersuites: [ciphersuite]),
+                ciphersuites: [ciphersuite],
                 nbKeyPackage: nil
             )
             try await context.createConversation(
@@ -482,7 +482,7 @@ final class WireCoreCryptoTests: XCTestCase {
         try await coreCrypto.transaction {
             try await $0.mlsInit(
                 clientId: aliceId,
-                ciphersuites: Ciphersuites(ciphersuites: [ciphersuite]),
+                ciphersuites: [ciphersuite],
                 nbKeyPackage: nil
             )
             try await $0.createConversation(
@@ -546,14 +546,13 @@ final class WireCoreCryptoTests: XCTestCase {
 
     private func createClients(_ clientIds: String...) async throws -> [CoreCrypto] {
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
-        let ciphersuites = Ciphersuites(ciphersuites: [ciphersuite])
         var clients: [CoreCrypto] = []
         for clientId in clientIds {
             let coreCrypto = try await createCoreCrypto()
             try await coreCrypto.transaction({
                 try await $0.mlsInit(
                     clientId: ClientId(bytes: clientId.data(using: .utf8)!),
-                    ciphersuites: ciphersuites,
+                    ciphersuites: [ciphersuite],
                     nbKeyPackage: nil)
             }
             )
