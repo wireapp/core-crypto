@@ -1,17 +1,16 @@
 package com.wire.crypto
 
 import com.wire.crypto.uniffi.Ciphersuite as CiphersuiteFfi
-import com.wire.crypto.uniffi.Ciphersuites as CiphersuitesFfi
 
 /** Ciphersuites */
 @JvmInline
 value class Ciphersuites(private val value: Set<Ciphersuite>) {
     companion object {
         /** The default set of ciphersuites. */
-        val DEFAULT = Ciphersuites(setOf(Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519))
+        val DEFAULT = Ciphersuites(setOf(Ciphersuite.DEFAULT))
     }
 
-    internal fun lower() = CiphersuitesFfi(value.map { it.lower() })
+    internal fun lower() = value.map { it.lower() }
 }
 
 /** Ciphersuite */
