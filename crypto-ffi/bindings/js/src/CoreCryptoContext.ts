@@ -1,6 +1,5 @@
 import {
     Ciphersuite,
-    Ciphersuites,
     ClientId,
     CoreCryptoContext as CoreCryptoContextFfi,
     CustomConfiguration,
@@ -81,9 +80,8 @@ export class CoreCryptoContext {
         ciphersuites: Ciphersuite[],
         nbKeyPackage?: number
     ): Promise<void> {
-        const cs = new Ciphersuites(ciphersuites);
         return await CoreCryptoError.asyncMapErr(
-            this.#ctx.mls_init(clientId, cs, nbKeyPackage)
+            this.#ctx.mls_init(clientId, ciphersuites, nbKeyPackage)
         );
     }
 

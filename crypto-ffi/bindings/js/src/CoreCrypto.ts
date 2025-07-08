@@ -72,7 +72,6 @@ export {
     Ciphersuite,
     ciphersuiteFromU16,
     ciphersuiteDefault,
-    Ciphersuites,
     ClientId,
     CustomConfiguration,
     DatabaseKey,

@@ -24,7 +24,6 @@ export {
 import {
     build_metadata,
     Ciphersuite,
-    Ciphersuites,
     ClientId,
     CoreCrypto as CoreCryptoFfi,
     CoreCryptoLogger as CoreCryptoLoggerFfi,
@@ -271,18 +270,16 @@ export class CoreCrypto {
         entropySeed,
         nbKeyPackage,
     }: CoreCryptoParams): Promise<CoreCrypto> {
-        const cs = new Ciphersuites(ciphersuites);
-        const cc = await CoreCryptoError.asyncMapErr(
+        return new this(await CoreCryptoError.asyncMapErr(
             CoreCryptoFfi.async_new(
                 databaseName,
                 key,
                 clientId,
-                cs,
+                ciphersuites,
                 entropySeed,
                 nbKeyPackage
             )
-        );
-        return new this(cc);
+        ));
     }
 
     /**
