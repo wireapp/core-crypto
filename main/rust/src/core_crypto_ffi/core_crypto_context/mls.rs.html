@@ -11,7 +11,7 @@
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use crate</span>::{
 <a href=#12 id=12 data-nosnippet>12</a>    Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
 <a href=#13 id=13 data-nosnippet>13</a>    CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle,
-<a href=#14 id=14 data-nosnippet>14</a>    bytes_wrapper::bytes_wrapper, ciphersuite::CiphersuitesMaybeArc, client_id::ClientIdMaybeArc,
+<a href=#14 id=14 data-nosnippet>14</a>    bytes_wrapper::bytes_wrapper, ciphersuite::Ciphersuites, client_id::ClientIdMaybeArc,
 <a href=#15 id=15 data-nosnippet>15</a>    crl::NewCrlDistributionPoints,
 <a href=#16 id=16 data-nosnippet>16</a>};
 <a href=#17 id=17 data-nosnippet>17</a>
@@ -62,7 +62,7 @@
 <a href=#62 id=62 data-nosnippet>62</a>    </span><span class="kw">pub async fn </span>mls_init(
 <a href=#63 id=63 data-nosnippet>63</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#64 id=64 data-nosnippet>64</a>        client_id: ClientIdMaybeArc,
-<a href=#65 id=65 data-nosnippet>65</a>        ciphersuites: CiphersuitesMaybeArc,
+<a href=#65 id=65 data-nosnippet>65</a>        ciphersuites: Ciphersuites,
 <a href=#66 id=66 data-nosnippet>66</a>        nb_key_package: <span class="prelude-ty">Option</span>&lt;u32&gt;,
 <a href=#67 id=67 data-nosnippet>67</a>    ) -&gt; CoreCryptoResult&lt;()&gt; {
 <a href=#68 id=68 data-nosnippet>68</a>        <span class="kw">let </span>nb_key_package = nb_key_package
@@ -72,7 +72,7 @@
 <a href=#72 id=72 data-nosnippet>72</a>        <span class="self">self</span>.inner
 <a href=#73 id=73 data-nosnippet>73</a>            .mls_init(
 <a href=#74 id=74 data-nosnippet>74</a>                ClientIdentifier::Basic(client_id.as_cc()),
-<a href=#75 id=75 data-nosnippet>75</a>                ciphersuites.iter().map(Into::into).collect(),
+<a href=#75 id=75 data-nosnippet>75</a>                ciphersuites.into_iter().map(Into::into).collect(),
 <a href=#76 id=76 data-nosnippet>76</a>                nb_key_package,
 <a href=#77 id=77 data-nosnippet>77</a>            )
 <a href=#78 id=78 data-nosnippet>78</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
