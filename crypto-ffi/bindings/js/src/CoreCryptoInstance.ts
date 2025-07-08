@@ -270,16 +270,18 @@ export class CoreCrypto {
         entropySeed,
         nbKeyPackage,
     }: CoreCryptoParams): Promise<CoreCrypto> {
-        return new this(await CoreCryptoError.asyncMapErr(
-            CoreCryptoFfi.async_new(
-                databaseName,
-                key,
-                clientId,
-                ciphersuites,
-                entropySeed,
-                nbKeyPackage
+        return new this(
+            await CoreCryptoError.asyncMapErr(
+                CoreCryptoFfi.async_new(
+                    databaseName,
+                    key,
+                    clientId,
+                    ciphersuites,
+                    entropySeed,
+                    nbKeyPackage
+                )
             )
-        ));
+        );
     }
 
     /**

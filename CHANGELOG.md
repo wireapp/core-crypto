@@ -49,7 +49,7 @@
 
   Affected platforms: all
 
-  Migration: use the relevant enm variant instead of an integer.
+  Migration: use the relevant enum variant instead of an integer.
 
 - `SecretKey`, `ExternalSenderKey`, `GroupInfo`, `ConversationId`, `KeyPackage`, `Welcome` are now newtypes
 
