@@ -45,7 +45,11 @@
 
   Migration: call `.toByteArray()` on the input.
 
-- `Ciphersuite`, `Ciphersuites` are exported public types
+- `Ciphersuite` is an exported public enum, not an integer
+
+  Affected platforms: all
+
+  Migration: use the relevant enm variant instead of an integer.
 
 - `SecretKey`, `ExternalSenderKey`, `GroupInfo`, `ConversationId`, `KeyPackage`, `Welcome` are now newtypes
 

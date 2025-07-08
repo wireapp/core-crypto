@@ -4,8 +4,6 @@
 //! it doesn't work on newtypes around external enums. We therefore redefine the ciphersuites enum
 //! here with appropriate annotations such that it gets exported to all relevant bindings.
 
-use std::collections::HashSet;
-
 use core_crypto::prelude::{CiphersuiteName, MlsCiphersuite};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
@@ -88,82 +86,22 @@ pub fn ciphersuite_default() -> Ciphersuite {
     Ciphersuite::default()
 }
 
-#[derive(Debug, Clone, derive_more::From, derive_more::Into)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object), uniffi::export(Debug))]
-pub struct Ciphersuites(HashSet<Ciphersuite>);
+pub(crate) type Ciphersuites = Vec<Ciphersuite>;
 
-#[cfg(target_family = "wasm")]
-pub(crate) type CiphersuitesMaybeArc = Ciphersuites;
-
-#[cfg(not(target_family = "wasm"))]
-pub(crate) type CiphersuitesMaybeArc = std::sync::Arc<Ciphersuites>;
-
-impl Ciphersuites {
-    pub fn iter(&self) -> impl Iterator<Item = Ciphersuite> {
-        self.0.iter().copied()
-    }
-}
-
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+/// Helper function to convert a list of integers into a list of ciphersuites
+#[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = ciphersuitesFromU16s))]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-impl Ciphersuites {
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(constructor))]
-    #[cfg_attr(not(target_family = "wasm"), uniffi::constructor)]
-    pub fn new(ciphersuites: Vec<Ciphersuite>) -> Self {
-        Self(ciphersuites.into_iter().collect())
-    }
-}
-
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-impl Ciphersuites {
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = fromU16s))]
-    pub fn from_u16s(ids: Vec<u16>) -> CoreCryptoResult<Self> {
-        let ciphersuites = ids
-            .into_iter()
-            .map(Ciphersuite::try_from)
-            .collect::<Result<_, _>>()
-            .map_err(CoreCryptoError::generic())?;
-        Ok(Self(ciphersuites))
-    }
-
-    /// The default `Ciphersuites` set contains only the single default ciphersuite.
-    //
-    // We implement this here instead of in the `impl Default` section to expose it to wasm_bindgen
-    // But we use `allow` here instead of `expect` because for some reason when building for WASM
-    // the expectation fails whether the allow line is present or not.
-    #[allow(clippy::should_implement_trait)]
-    pub fn default() -> Self {
-        let mut cs = HashSet::new();
-        cs.insert(Ciphersuite::default());
-        Self(cs)
-    }
-}
-
-impl Default for Ciphersuites {
-    fn default() -> Self {
-        // this syntax chooses the implementation on `Self` instead of recursing
-        <Self>::default()
-    }
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[uniffi::export]
 pub fn ciphersuites_from_u16s(ids: Vec<u16>) -> CoreCryptoResult<Ciphersuites> {
-    Ciphersuites::from_u16s(ids)
+    ids.iter()
+        .copied()
+        .map(Ciphersuite::try_from)
+        .collect::<Result<_, _>>()
+        .map_err(CoreCryptoError::generic())
 }
 
-#[cfg(not(target_family = "wasm"))]
-#[uniffi::export]
-pub fn ciphersuites_default() -> Ciphersuites {
-    Ciphersuites::default()
-}
-
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+/// The default set of ciphersuites contains one entry, the default ciphersuite.
+#[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = ciphersuitesDefault))]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-impl Ciphersuites {
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = asList))]
-    pub fn as_list(&self) -> Vec<Ciphersuite> {
-        self.0.iter().copied().collect()
-    }
+pub fn ciphersuites_default() -> Ciphersuites {
+    vec![Ciphersuite::default()]
 }
