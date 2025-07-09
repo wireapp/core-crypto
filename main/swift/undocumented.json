@@ -9,14 +9,7 @@
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/CoreCrypto.swift",
-      "line": 129,
-      "symbol": "CoreCrypto.registerHistoryObserver(_:)",
-      "symbol_kind": "source.lang.swift.decl.function.method.instance",
-      "warning": "undocumented"
-    },
-    {
-      "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/CoreCrypto.swift",
-      "line": 209,
+      "line": 232,
       "symbol": "migrateDatabaseKeyTypeToBytes(path:oldKey:newKey:)",
       "symbol_kind": "source.lang.swift.decl.function.free",
       "warning": "undocumented"
