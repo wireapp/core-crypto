@@ -164,6 +164,10 @@ impl SqlCipherConnection {
         Self::run_migrations(&mut conn)?;
 
         // Rekey the database.
+        Self::rekey(&mut conn, new_key)
+    }
+
+    fn rekey(conn: &mut rusqlite::Connection, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
         let mut key = format!("x'{}'", hex::encode(new_key));
         let result = conn.pragma_update(None, "rekey", &key);
         key.zeroize();
