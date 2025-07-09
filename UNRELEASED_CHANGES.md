@@ -4,6 +4,7 @@
 
 ### Features
 
+- update history client on member remove [WPB-17096] ([714ff73](https://github.com/wireapp/core-crypto/commit/714ff739ebe8ae3acbb643fd6a0ddde1be58d3e1))
 - update Android NDK to 28.1 [WPB-18293] ([6101eb8](https://github.com/wireapp/core-crypto/commit/6101eb80187a5384eb48e9e94342fc8607abeebf))
 - implement enabling and disabling history sharing [WPB-17106] ([b036967](https://github.com/wireapp/core-crypto/commit/b036967208be65444c5dfd6ba93017d63106912f))
 - add `is_history_sharing_enabled()` [WPB-17106] ([0b9eedf](https://github.com/wireapp/core-crypto/commit/0b9eedff3228fb2bbc703f3db025a94df6535742))
@@ -60,6 +61,7 @@
 
 ### Testing
 
+- test history client update on remove ([f2aa941](https://github.com/wireapp/core-crypto/commit/f2aa94193171a3638b764b22642ee02bc5c4459e))
 - test history sharing [WPB-17106] ([79025cd](https://github.com/wireapp/core-crypto/commit/79025cd56c9fdde0950db742cdbb14db3eaa69ed))
 - remove leaf node validation tests [WPB-18083] ([c2ae76d](https://github.com/wireapp/core-crypto/commit/c2ae76d67ef4878d099fb11b27a4987bf3ace687))
 - fix: `TestContext::sessions_x509()` should always create x509 sessions ([49ee4e6](https://github.com/wireapp/core-crypto/commit/49ee4e64210ede5054e5cd9ebd86d6ca6c6ac406))
