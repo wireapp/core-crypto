@@ -1,7 +1,16 @@
+use aes_gcm::KeyInit as _;
+use serde::Serialize as _;
+
 use crate::connection::platform::wasm::migrations::open_and_migrate;
 use crate::{
-    CryptoKeystoreResult,
+    CryptoKeystoreError, CryptoKeystoreResult,
     connection::{DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey},
+    entities::{
+        E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, Entity as _, EntityBase as _, MlsCredential,
+        MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage,
+        MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey,
+        ProteusSession,
+    },
 };
 use idb::{Factory, TransactionMode};
 
@@ -69,6 +78,43 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
         let storage = WasmStorageWrapper::InMemory(Default::default());
         let conn = WasmEncryptedStorage::new(key, storage);
         Ok(Self { name: None, conn })
+    }
+
+    async fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
+        match self.conn.storage {
+            WasmStorageWrapper::Persistent(ref mut db) => {
+                let old_cipher = self.conn.cipher.clone();
+                let new_cipher = aes_gcm::Aes256Gcm::new(new_key.as_ref().into());
+
+                rekey::rekey_entities!(
+                    db,
+                    old_cipher,
+                    new_cipher,
+                    [
+                        MlsCredential,
+                        MlsSignatureKeyPair,
+                        MlsHpkePrivateKey,
+                        MlsEncryptionKeyPair,
+                        MlsEpochEncryptionKeyPair,
+                        MlsPskBundle,
+                        MlsKeyPackage,
+                        PersistedMlsGroup,
+                        PersistedMlsPendingGroup,
+                        MlsPendingMessage,
+                        E2eiEnrollment,
+                        E2eiAcmeCA,
+                        E2eiIntermediateCert,
+                        E2eiCrl,
+                        ProteusPrekey,
+                        ProteusIdentity,
+                        ProteusSession
+                    ]
+                );
+            }
+            WasmStorageWrapper::InMemory(_) => return Err(CryptoKeystoreError::NotImplemented),
+        }
+
+        Ok(())
     }
 
     async fn close(self) -> CryptoKeystoreResult<()> {
