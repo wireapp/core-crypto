@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["bind_http_server","build_wasm"]};
+window.SIDEBAR_ITEMS = {"fn":["bind_http_server","build_wasm","rust_source_files","should_rebuild"]};
