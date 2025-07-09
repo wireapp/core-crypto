@@ -227,6 +227,11 @@ impl<'a> DatabaseConnection<'a> for SqlCipherConnection {
         Ok(unblock(move || Self::init_with_key_in_memory(&key)).await?)
     }
 
+    async fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
+        let mut conn = self.conn().await;
+        Self::rekey(&mut conn, new_key)
+    }
+
     async fn close(self) -> CryptoKeystoreResult<()> {
         unblock(|| self.close()).await
     }
