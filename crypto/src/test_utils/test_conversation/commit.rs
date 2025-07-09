@@ -218,7 +218,7 @@ impl<'a> TestConversation<'a> {
     /// The supplied session joins this conversation by external commit.
     /// The group info needed for this is exported from the state of the actor.
     pub async fn external_join(self, joiner: &'a SessionContext) -> OperationGuard<'a, Commit> {
-        let group_info = self.actor().get_group_info(&self.id).await;
+        let group_info = self.export_group_info().await;
         self.external_join_via_group_info(joiner, group_info).await
     }
 
@@ -256,7 +256,7 @@ impl<'a> TestConversation<'a> {
         self,
         joiner: &'a SessionContext,
     ) -> (TestConversation<'a>, PendingConversation) {
-        let group_info = self.actor().get_group_info(self.id()).await;
+        let group_info = self.export_group_info().await;
         let (commit_guard, pending_conversation) = self.external_join_via_group_info_unmerged(joiner, group_info).await;
         (commit_guard.notify_members().await, pending_conversation)
     }
@@ -266,7 +266,7 @@ impl<'a> TestConversation<'a> {
         self,
         joiner: &'a SessionContext,
     ) -> (OperationGuard<'a, Commit>, PendingConversation) {
-        let group_info = self.actor().get_group_info(self.id()).await;
+        let group_info = self.export_group_info().await;
         self.external_join_via_group_info_unmerged(joiner, group_info).await
     }
 

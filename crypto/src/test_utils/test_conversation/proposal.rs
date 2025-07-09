@@ -1,6 +1,7 @@
 use openmls::prelude::ExternalProposal;
 
 use crate::mls::conversation::Conversation;
+use crate::mls::conversation::ConversationWithMls as _;
 
 use super::super::SessionContext;
 use super::super::TestConversation;
@@ -128,7 +129,17 @@ impl<'a> TestConversation<'a> {
         sender_index: u32,
         to_remove: &'a SessionContext,
     ) -> OperationGuard<'a, Proposal> {
-        let to_remove_index = self.actor().index_of(self.id(), to_remove.get_client_id().await).await;
+        let client_id = to_remove.get_client_id().await;
+        let to_remove_index = self
+            .guard()
+            .await
+            .conversation()
+            .await
+            .group()
+            .members()
+            .find(|k| k.credential.identity() == client_id.as_slice())
+            .unwrap()
+            .index;
         let sender_index = openmls::prelude::SenderExtensionIndex::new(sender_index);
 
         let (sc, ct) = (self.case.signature_scheme(), self.case.credential_type);

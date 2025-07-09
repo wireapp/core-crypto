@@ -1,9 +1,6 @@
 use super::test_conversation::operation_guard::{Commit, OperationGuard};
 use super::{Result, TestConversation};
 use crate::CoreCrypto;
-use crate::group_store::GroupStore;
-use crate::mls::conversation::{Conversation as _, ConversationWithMls as _};
-use crate::prelude::MlsCommitBundle;
 use crate::test_utils::SessionContext;
 use crate::{
     RecursiveError,
@@ -13,23 +10,23 @@ use crate::{
     },
     mls::credential::{CredentialBundle, ext::CredentialExt},
     prelude::{
-        CertificateBundle, ClientId, ConversationId, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
-        MlsConversationDecryptMessage, MlsCredentialType, Session, WireIdentity,
+        CertificateBundle, MlsCiphersuite, MlsConversationConfiguration, MlsConversationDecryptMessage,
+        MlsCredentialType, Session, WireIdentity,
     },
-    test_utils::{MessageExt, TestContext, x509::X509Certificate},
+    test_utils::{TestContext, x509::X509Certificate},
 };
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::{
     EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
 };
 use openmls::prelude::{
-    Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey, KeyPackage, KeyPackageIn,
-    LeafNodeIndex, Lifetime, QueuedProposal, SignaturePublicKey, StagedCommit, group_info::VerifiableGroupInfo,
+    Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey, KeyPackage, KeyPackageIn, Lifetime,
+    SignaturePublicKey,
 };
 use openmls_traits::crypto::OpenMlsCrypto;
 use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 use std::sync::Arc;
-use tls_codec::{Deserialize, Serialize};
+use tls_codec::Serialize;
 use wire_e2e_identity::prelude::WireIdentityReader;
 use x509_cert::der::Encode;
 
@@ -107,23 +104,6 @@ impl SessionContext {
             .into()
     }
 
-    pub async fn pending_proposals(&self, id: &ConversationId) -> Vec<QueuedProposal> {
-        self.get_conversation_unchecked(id)
-            .await
-            .group
-            .pending_proposals()
-            .cloned()
-            .collect::<Vec<_>>()
-    }
-
-    pub async fn pending_commit(&self, id: &ConversationId) -> Option<StagedCommit> {
-        self.get_conversation_unchecked(id)
-            .await
-            .group
-            .pending_commit()
-            .cloned()
-    }
-
     pub async fn commit_transaction(&mut self) {
         self.transaction.finish().await.unwrap();
         // start new transaction
@@ -139,96 +119,11 @@ impl SessionContext {
         self.transaction = cc.new_transaction().await.unwrap();
     }
 
-    pub async fn get_group_info(&self, id: &ConversationId) -> VerifiableGroupInfo {
-        let mut conversation = self.transaction.conversation(id).await.unwrap();
-        let mut conversation = conversation.conversation_mut().await;
-        let group = &mut conversation.group;
-        let ct = group.credential().unwrap().credential_type();
-        let cs = group.ciphersuite();
-        let client = self.session().await;
-        let cb = client
-            .find_most_recent_credential_bundle(cs.into(), ct.into())
-            .await
-            .unwrap();
-
-        let gi = group
-            .export_group_info(&self.transaction.mls_provider().await.unwrap(), &cb.signature_key, true)
-            .unwrap();
-        gi.group_info().unwrap()
-    }
-
-    /// Finds the [SignaturePublicKey] of a [Client] within a [MlsGroup]
-    pub async fn signature_key_of(&self, conv_id: &ConversationId, client_id: ClientId) -> SignaturePublicKey {
-        let sign_key = self
-            .transaction
-            .mls_groups()
-            .await
-            .unwrap()
-            .get_fetch(conv_id, &self.transaction.keystore().await.unwrap(), None)
-            .await
-            .unwrap()
-            .unwrap()
-            .read()
-            .await
-            .group
-            .members()
-            .find(|k| k.credential.identity() == client_id.0.as_slice())
-            .unwrap()
-            .signature_key;
-
-        SignaturePublicKey::from(sign_key)
-    }
-
-    /// Finds the HPKE Public key of a [Client] within a [MlsGroup]
-    pub async fn encryption_key_of(&self, conv_id: &ConversationId, client_id: ClientId) -> Vec<u8> {
-        self.transaction
-            .mls_groups()
-            .await
-            .unwrap()
-            .get_fetch(conv_id, &self.transaction.keystore().await.unwrap(), None)
-            .await
-            .unwrap()
-            .unwrap()
-            .read()
-            .await
-            .group
-            .members()
-            .find(|k| k.credential.identity() == client_id.0.as_slice())
-            .unwrap()
-            .encryption_key
-    }
-
-    /// Finds the [LeafNodeIndex] of a [Client] within a [MlsGroup]
-    pub async fn index_of(&self, conv_id: &ConversationId, client_id: ClientId) -> LeafNodeIndex {
-        self.transaction
-            .mls_groups()
-            .await
-            .unwrap()
-            .get_fetch(conv_id, &self.transaction.keystore().await.unwrap(), None)
-            .await
-            .unwrap()
-            .unwrap()
-            .read()
-            .await
-            .group
-            .members()
-            .find(|k| k.credential.identity() == client_id.as_slice())
-            .unwrap()
-            .index
-    }
-
     pub async fn client_signature_key(&self, case: &TestContext) -> SignaturePublicKey {
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
         let client = self.session().await;
         let cb = client.find_most_recent_credential_bundle(sc, ct).await.unwrap();
         SignaturePublicKey::from(cb.signature_key.public())
-    }
-
-    pub async fn get_conversation_unchecked(&self, conv_id: &ConversationId) -> MlsConversation {
-        GroupStore::fetch_from_keystore(conv_id, &self.transaction.keystore().await.unwrap(), None)
-            .await
-            .unwrap()
-            .unwrap()
     }
 
     pub async fn get_user_id(&self) -> String {
@@ -261,21 +156,6 @@ impl SessionContext {
                     .unwrap()
             }
         }
-    }
-
-    pub async fn find_most_recent_credential_bundle_for_conversation(
-        &self,
-        id: &ConversationId,
-    ) -> Option<Arc<CredentialBundle>> {
-        self.transaction
-            .conversation(id)
-            .await
-            .unwrap()
-            .conversation()
-            .await
-            .find_most_recent_credential_bundle(&self.session().await)
-            .await
-            .ok()
     }
 
     pub async fn find_most_recent_credential_bundle(
@@ -406,17 +286,6 @@ impl SessionContext {
         })
     }
 
-    /// Creates a commit but don't merge it immediately (e.g, because the app crashes before he receives the success response from the ds via MlsTransport api)
-    pub(crate) async fn create_unmerged_commit(&self, id: &ConversationId) -> MlsCommitBundle {
-        self.transaction
-            .conversation(id)
-            .await
-            .unwrap()
-            .update_key_material_inner(None, None)
-            .await
-            .unwrap()
-    }
-
     pub async fn get_e2ei_client_id(&self) -> wire_e2e_identity::prelude::E2eiClientId {
         let cid = self.get_client_id().await;
         let cid = std::str::from_utf8(&cid.0).unwrap();
@@ -429,70 +298,6 @@ impl SessionContext {
             .as_ref()
             .as_ref()
             .map(|chain| chain.find_local_intermediate_ca())
-    }
-
-    pub async fn verify_local_credential_rotated(&self, id: &ConversationId, new_handle: &str, new_display_name: &str) {
-        let new_handle = format!("wireapp://%40{new_handle}@world.com");
-        // verify the identity in..
-        // the MLS group
-        let cid = self.get_client_id().await;
-        let group_identities = self
-            .transaction
-            .conversation(id)
-            .await
-            .unwrap()
-            .get_device_identities(&[cid.clone()])
-            .await
-            .unwrap();
-        let group_identity = group_identities.first().unwrap();
-        assert_eq!(group_identity.client_id.as_bytes(), cid.0.as_slice());
-        assert_eq!(
-            group_identity.x509_identity.as_ref().unwrap().display_name,
-            new_display_name
-        );
-        assert_eq!(group_identity.x509_identity.as_ref().unwrap().handle, new_handle);
-        assert_eq!(group_identity.status, DeviceStatus::Valid);
-        assert!(!group_identity.thumbprint.is_empty());
-
-        // the in-memory mapping
-        let cb = self
-            .find_most_recent_credential_bundle_for_conversation(id)
-            .await
-            .unwrap()
-            .clone();
-        let cs = self.get_conversation_unchecked(id).await.ciphersuite();
-        let local_identity = cb.to_mls_credential_with_key().extract_identity(cs, None).unwrap();
-        assert_eq!(&local_identity.client_id.as_bytes(), &cid.0);
-        assert_eq!(
-            local_identity.x509_identity.as_ref().unwrap().display_name,
-            new_display_name
-        );
-        assert_eq!(local_identity.x509_identity.as_ref().unwrap().handle, new_handle);
-        assert_eq!(local_identity.status, DeviceStatus::Valid);
-        assert!(!local_identity.thumbprint.is_empty());
-
-        // the keystore
-        let signature_key = self
-            .find_signature_keypair_from_keystore(cb.signature_key.public())
-            .await
-            .unwrap();
-        let signature_key = SignaturePublicKey::from(signature_key.pk.as_slice());
-        let credential = self.find_credential_from_keystore(&cb).await.unwrap();
-        let credential = Credential::tls_deserialize(&mut credential.credential.as_slice()).unwrap();
-        let credential = CredentialWithKey {
-            credential,
-            signature_key,
-        };
-
-        assert_eq!(credential.credential.identity(), &cid.0);
-        let keystore_identity = credential.extract_identity(cs, None).unwrap();
-        assert_eq!(
-            keystore_identity.x509_identity.as_ref().unwrap().display_name,
-            new_display_name
-        );
-        assert_eq!(keystore_identity.x509_identity.as_ref().unwrap().handle, new_handle);
-        assert_eq!(keystore_identity.status, DeviceStatus::Valid);
-        assert!(!keystore_identity.thumbprint.is_empty());
     }
 
     pub async fn verify_sender_identity(&self, case: &TestContext, decrypted: &MlsConversationDecryptMessage) {
@@ -555,10 +360,6 @@ impl SessionContext {
             assert_eq!(identity.status, DeviceStatus::Valid);
             assert!(!identity.thumbprint.is_empty());
         }
-    }
-
-    pub async fn members_count(&mut self, id: &ConversationId) -> u32 {
-        self.get_conversation_unchecked(id).await.members().len() as u32
     }
 
     pub async fn rand_external_sender(&self, case: &TestContext) -> ExternalSender {

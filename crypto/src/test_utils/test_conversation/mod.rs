@@ -1,12 +1,17 @@
 use std::sync::Arc;
 
+use openmls::{group::QueuedProposal, prelude::group_info::VerifiableGroupInfo};
+
 use crate::{
     RecursiveError,
-    mls::conversation::{Conversation, ConversationGuard, ConversationWithMls as _},
+    mls::{
+        conversation::{Conversation, ConversationGuard, ConversationWithMls as _},
+        credential::{CredentialBundle, ext::CredentialExt as _},
+    },
     prelude::{ConversationId, E2eiConversationState, MlsProposalRef},
 };
 
-use super::{MlsCredentialType, MlsTransportTestExt, SessionContext, TestContext, TestError};
+use super::{MessageExt as _, MlsCredentialType, MlsTransportTestExt, SessionContext, TestContext, TestError};
 
 mod commit;
 pub(crate) mod operation_guard;
@@ -77,25 +82,47 @@ impl<'a> TestConversation<'a> {
         &self.id
     }
 
+    pub(crate) async fn export_group_info(&self) -> VerifiableGroupInfo {
+        let credential = self.credential_bundle().await;
+        let conversation = self.guard().await;
+        let conversation = conversation.conversation().await;
+        let group = conversation.group();
+
+        let gi = group
+            .export_group_info(&self.actor().session.crypto_provider, &credential.signature_key, true)
+            .unwrap();
+        gi.group_info().unwrap()
+    }
+
+    /// Find the actor's credential bundle used in this conversation.
+    pub(crate) async fn credential_bundle(&self) -> Arc<CredentialBundle> {
+        let conversation = self.guard().await;
+        let conversation = conversation.conversation().await;
+        conversation
+            .find_current_credential_bundle(&self.actor().session)
+            .await
+            .expect("expecting credential bundle")
+    }
+
     /// Count the members. Also, assert that the count is the same from the point of view of every member.
     pub async fn member_count(&self) -> usize {
         let member_count = self.members().count();
 
-        let member_counts_match = futures_util::future::join_all(
-            self.members()
-                .map(|member| member.get_conversation_unchecked(self.id())),
-        )
+        let member_counts_match = futures_util::future::join_all(self.members().map(async |member| {
+            let member_guard = self.guard_of(member).await;
+            member_guard.conversation().await.members().len()
+        }))
         .await
         .iter()
-        .map(|conv| conv.members().len())
-        .all(|count| count == member_count);
+        .all(|count| *count == member_count);
         assert!(member_counts_match);
         member_count
     }
 
     /// Let a conversation member provide the member count (according to their current state).
     pub async fn members_counted_by(&self, member: &SessionContext) -> usize {
-        member.get_conversation_unchecked(self.id()).await.members().len()
+        let member_guard = self.guard_of(member).await;
+        member_guard.conversation().await.members().len()
     }
 
     /// Check if all provided members are members, according to the state maintained in [Self].
@@ -238,13 +265,24 @@ impl<'a> TestConversation<'a> {
 
     /// Like [Self::e2ei_state], but via the`GroupInfo exported by [Self::actor].
     pub async fn e2ei_state_via_group_info(&self) -> E2eiConversationState {
-        let gi = self.actor().get_group_info(self.id()).await;
+        let gi = self.export_group_info().await;
 
         self.actor()
             .transaction
             .get_credential_in_use(gi, MlsCredentialType::X509)
             .await
             .unwrap()
+    }
+
+    pub(crate) async fn pending_proposals(&self) -> impl IntoIterator<Item = QueuedProposal> {
+        let guard = self.guard().await;
+        guard
+            .conversation()
+            .await
+            .group()
+            .pending_proposals()
+            .cloned()
+            .collect::<Vec<_>>()
     }
 
     /// The reference of the latest pending proposal.
@@ -263,9 +301,14 @@ impl<'a> TestConversation<'a> {
             .into()
     }
 
-    /// The pending proposal count
+    /// The pending proposal count of the actor
     pub async fn pending_proposal_count(&self) -> usize {
-        let guard = self.guard().await;
+        self.pending_proposal_count_of(self.actor()).await
+    }
+
+    /// The pending proposal count of a specific member
+    pub async fn pending_proposal_count_of(&self, member: &SessionContext) -> usize {
+        let guard = self.guard_of(member).await;
         guard.conversation().await.group().pending_proposals().count()
     }
 
@@ -295,5 +338,82 @@ impl<'a> TestConversation<'a> {
         }
 
         member_idx.expect("could find the member in this conversation")
+    }
+
+    /// Get the actor's HPKE public key used in this conversation
+    pub(crate) async fn encryption_public_key(&self) -> Vec<u8> {
+        let client_id = self.actor().get_client_id().await;
+        let guard = self.guard().await;
+        guard
+            .conversation()
+            .await
+            .group()
+            .members()
+            .find(|k| k.credential.identity() == client_id.0.as_slice())
+            .unwrap()
+            .encryption_key
+    }
+
+    pub(crate) async fn verify_credential_handle_and_name(&self, new_handle: &str, new_display_name: &str) {
+        let new_handle = format!("wireapp://%40{new_handle}@world.com");
+        // verify the identity in..
+        // the MLS group
+        let cid = self.actor().get_client_id().await;
+        let guard = self.guard().await;
+        let group_identities = guard.get_device_identities(&[cid.clone()]).await.unwrap();
+        let group_identity = group_identities.first().unwrap();
+        assert_eq!(group_identity.client_id.as_bytes(), cid.0.as_slice());
+        assert_eq!(
+            group_identity.x509_identity.as_ref().unwrap().display_name,
+            new_display_name
+        );
+        assert_eq!(group_identity.x509_identity.as_ref().unwrap().handle, new_handle);
+        assert_eq!(group_identity.status, crate::prelude::DeviceStatus::Valid);
+        assert!(!group_identity.thumbprint.is_empty());
+
+        // the in-memory mapping
+        let cb = self
+            .actor()
+            .session
+            .find_most_recent_credential_bundle(self.case.signature_scheme(), MlsCredentialType::X509)
+            .await
+            .expect("x509 credential bundle");
+        let cs = guard.ciphersuite().await;
+        let local_identity = cb.to_mls_credential_with_key().extract_identity(cs, None).unwrap();
+        assert_eq!(&local_identity.client_id.as_bytes(), &cid.0);
+        assert_eq!(
+            local_identity.x509_identity.as_ref().unwrap().display_name,
+            new_display_name
+        );
+        assert_eq!(local_identity.x509_identity.as_ref().unwrap().handle, new_handle);
+        assert_eq!(local_identity.status, crate::prelude::DeviceStatus::Valid);
+        assert!(!local_identity.thumbprint.is_empty());
+
+        // the keystore
+        let signature_key = self
+            .actor()
+            .find_signature_keypair_from_keystore(cb.signature_key.public())
+            .await
+            .unwrap();
+        let signature_key = openmls::prelude::SignaturePublicKey::from(signature_key.pk.as_slice());
+        let credential = self.actor().find_credential_from_keystore(&cb).await.unwrap();
+        let credential = <openmls::prelude::Credential as tls_codec::Deserialize>::tls_deserialize(
+            &mut credential.credential.as_slice(),
+        )
+        .unwrap();
+        let credential = openmls::prelude::CredentialWithKey {
+            credential,
+            signature_key,
+        };
+
+        assert_eq!(credential.credential.identity(), &cid.0);
+        let keystore_identity = credential.extract_identity(cs, None).unwrap();
+        assert_eq!(
+            keystore_identity.x509_identity.as_ref().unwrap().display_name,
+            new_display_name
+        );
+        assert_eq!(keystore_identity.x509_identity.as_ref().unwrap().handle, new_handle);
+        assert_eq!(keystore_identity.status, crate::prelude::DeviceStatus::Valid);
+        assert!(!keystore_identity.thumbprint.is_empty());
     }
 }
