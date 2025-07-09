@@ -20,6 +20,12 @@
 
 public protocol CoreCryptoProtocol {
 
+    /// Instantiate a history client.
+    ///
+    /// This client exposes the full interface of ``Self``, but it should only be used to decrypt messages.
+    /// Other use is a logic error.
+    static func historyClient(_ historySecret: HistorySecret) async throws -> Self
+
     /// Starts a transaction in Core Crypto. If the closure succeeds without throwing an error, it will be committed, otherwise, every operation
     /// performed with the context will be discarded.
     ///
@@ -45,6 +51,20 @@ public protocol CoreCryptoProtocol {
     /// regardless of the number of transactions.
     ///
     func registerEpochObserver(_ epochObserver: EpochObserver) async throws
+
+    ///
+    /// Register a History Observer which will be notified every time a new history secret is created locally.
+    ///
+    /// - Parameter historyObserver: history observer to register
+    ///
+    /// This function should be called 0 or 1 times in the lifetime of CoreCrypto,
+    /// regardless of the number of transactions.
+    ///
+    func registerHistoryObserver(_ historyObserver: HistoryObserver) async throws
+
+    /// Check if history sharing is enabled, i.e., if any of the conversation members have a ``ClientId`` starting
+    /// with the specific history client prefix.
+    func isHistorySharingEnabled(conversationId: ConversationId) async throws -> Bool
 
     /// Register CoreCrypto a logger
     ///
@@ -133,6 +153,10 @@ public final class CoreCrypto: CoreCryptoProtocol {
             historyObserver: HistoryObserverIndirector(historyObserver))
     }
 
+    public func isHistorySharingEnabled(conversationId: ConversationId) async throws -> Bool {
+        try await coreCrypto.isHistorySharingEnabled(conversationId: conversationId)
+    }
+
     public static func setLogger(_ logger: CoreCryptoLogger) {
         WireCoreCryptoUniffi.setLoggerOnly(logger: logger)
     }
@@ -148,7 +172,6 @@ public final class CoreCrypto: CoreCryptoProtocol {
     public static func buildMetadata() -> BuildMetadata {
         WireCoreCryptoUniffi.buildMetadata()
     }
-
 }
 
 final class EpochObserverIndirector: EpochObserver {
