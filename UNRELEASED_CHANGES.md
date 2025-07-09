@@ -31,6 +31,7 @@
 
 ### Bug Fixes
 
+- add missing API to `CoreCryptoProtocol` [WPB-18634] ([a816979](https://github.com/wireapp/core-crypto/commit/a81697941e29b79e60f721511a23957de64fc1c4))
 - `Error::ConversationAlreadyExists` has a byte vector not handle ([1660757](https://github.com/wireapp/core-crypto/commit/1660757ea2fc66945b6e0d776bbc2b9f15c0537f))
 - use new types where appropriate ([19b1ffa](https://github.com/wireapp/core-crypto/commit/19b1ffa4b6b509a59f20ee07ae845f94b2a5b3ec))
 - use appropriate types in observer indirectors ([a04259f](https://github.com/wireapp/core-crypto/commit/a04259fd03865856ad96d2771f4ec44562eafc88))
