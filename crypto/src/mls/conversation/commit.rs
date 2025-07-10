@@ -52,6 +52,8 @@ mod tests {
     use itertools::Itertools;
     use openmls::prelude::SignaturePublicKey;
 
+    use crate::mls::conversation::Conversation as _;
+    use crate::mls::conversation::ConversationWithMls as _;
     use crate::test_utils::*;
     use crate::transaction_context::Error as TransactionError;
 
@@ -63,8 +65,6 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         async fn retry_should_work(case: TestContext) {
-            use crate::mls::conversation::Conversation as _;
-
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
                 // Create conversation
@@ -130,7 +130,7 @@ mod tests {
                     .unwrap_err();
 
                 // commit is not applied
-                assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 1);
+                assert_eq!(conversation.member_count().await, 1);
 
                 alice
                     .replace_transport(Arc::<CoreCryptoTransportSuccessProvider>::default())
@@ -138,17 +138,19 @@ mod tests {
 
                 let conversation = conversation.invite_notify([&bob]).await;
 
-                assert_eq!(alice.get_conversation_unchecked(&id).await.id, id);
+                assert_eq!(*conversation.id(), id);
                 assert_eq!(
-                    alice.get_conversation_unchecked(&id).await.group.group_id().as_slice(),
+                    conversation
+                        .guard()
+                        .await
+                        .conversation()
+                        .await
+                        .group
+                        .group_id()
+                        .as_slice(),
                     id
                 );
-                assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 2);
-                assert_eq!(
-                    alice.get_conversation_unchecked(&id).await.id(),
-                    bob.get_conversation_unchecked(&id).await.id()
-                );
-                assert_eq!(bob.get_conversation_unchecked(&id).await.members().len(), 2);
+                assert_eq!(conversation.member_count().await, 2);
                 assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
             })
             .await
@@ -252,49 +254,47 @@ mod tests {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
-                let id = conversation.id().clone();
-
                 let init_count = alice.transaction.count_entities().await;
 
-                let bob_keys = bob
-                    .get_conversation_unchecked(&id)
+                let bob_keys = conversation
+                    .guard_of(&bob)
+                    .await
+                    .conversation()
                     .await
                     .encryption_keys()
                     .collect::<Vec<Vec<u8>>>();
-                let alice_keys = alice
-                    .get_conversation_unchecked(&id)
+                let alice_keys = conversation
+                    .guard()
+                    .await
+                    .conversation()
                     .await
                     .encryption_keys()
                     .collect::<Vec<Vec<u8>>>();
                 assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
-                let alice_key = alice.encryption_key_of(&id, alice.get_client_id().await).await;
+                let alice_key = conversation.encryption_public_key().await;
 
                 // proposing the key update for alice
                 let conversation = conversation.update_notify().await;
                 let MlsCommitBundle { welcome, .. } = alice.mls_transport().await.latest_commit_bundle().await;
                 assert!(welcome.is_none());
 
-                assert!(
-                    !alice
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .encryption_keys()
-                        .contains(&alice_key)
-                );
-
-                let alice_new_keys = alice
-                    .get_conversation_unchecked(&id)
+                let alice_new_keys = conversation
+                    .guard()
+                    .await
+                    .conversation()
                     .await
                     .encryption_keys()
-                    .collect::<Vec<_>>();
+                    .collect::<Vec<Vec<u8>>>();
                 assert!(!alice_new_keys.contains(&alice_key));
 
-                let bob_new_keys = bob
-                    .get_conversation_unchecked(&id)
+                let bob_new_keys = conversation
+                    .guard_of(&bob)
+                    .await
+                    .conversation()
                     .await
                     .encryption_keys()
-                    .collect::<Vec<_>>();
+                    .collect::<Vec<Vec<u8>>>();
                 assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
 
                 // ensuring both can encrypt messages
@@ -313,15 +313,18 @@ mod tests {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
-                let id = conversation.id().clone();
 
-                let bob_keys = bob
-                    .get_conversation_unchecked(&id)
+                let bob_keys = conversation
+                    .guard_of(&bob)
+                    .await
+                    .conversation()
                     .await
                     .signature_keys()
                     .collect::<Vec<SignaturePublicKey>>();
-                let alice_keys = alice
-                    .get_conversation_unchecked(&id)
+                let alice_keys = conversation
+                    .guard()
+                    .await
+                    .conversation()
                     .await
                     .signature_keys()
                     .collect::<Vec<SignaturePublicKey>>();
@@ -329,14 +332,16 @@ mod tests {
                 // checking that the members on both sides are the same
                 assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
-                let alice_key = alice.encryption_key_of(&id, alice.get_client_id().await).await;
+                let alice_key = conversation.encryption_public_key().await;
 
                 // proposing adding charlie
                 let conversation = conversation.invite_proposal_notify(&charlie).await;
 
                 assert!(
-                    alice
-                        .get_conversation_unchecked(&id)
+                    conversation
+                        .guard()
+                        .await
+                        .conversation()
                         .await
                         .encryption_keys()
                         .contains(&alice_key)
@@ -350,8 +355,10 @@ mod tests {
                 let MlsCommitBundle { welcome, .. } = alice.mls_transport().await.latest_commit_bundle().await;
                 assert!(welcome.is_some());
                 assert!(
-                    !alice
-                        .get_conversation_unchecked(&id)
+                    !conversation
+                        .guard()
+                        .await
+                        .conversation()
                         .await
                         .encryption_keys()
                         .contains(&alice_key)
@@ -359,15 +366,19 @@ mod tests {
 
                 assert_eq!(conversation.member_count().await, 3);
 
-                let alice_new_keys = alice
-                    .get_conversation_unchecked(&id)
+                let alice_new_keys = conversation
+                    .guard()
+                    .await
+                    .conversation()
                     .await
                     .encryption_keys()
                     .collect::<Vec<Vec<u8>>>();
                 assert!(!alice_new_keys.contains(&alice_key));
 
-                let bob_new_keys = bob
-                    .get_conversation_unchecked(&id)
+                let bob_new_keys = conversation
+                    .guard_of(&bob)
+                    .await
+                    .conversation()
                     .await
                     .encryption_keys()
                     .collect::<Vec<Vec<u8>>>();
@@ -428,9 +439,8 @@ mod tests {
                     .await
                     .invite_proposal_notify(&bob)
                     .await;
-                let id = conversation.id.clone();
 
-                assert!(!alice.pending_proposals(&id).await.is_empty());
+                assert!(conversation.has_pending_proposals().await);
                 assert_eq!(conversation.member_count().await, 1);
 
                 let conversation = conversation.commit_pending_proposals_notify().await;
@@ -452,9 +462,11 @@ mod tests {
                     .acting_as(&bob)
                     .await
                     .invite_proposal_notify(&charlie)
+                    .await
+                    .acting_as(&bob)
                     .await;
 
-                assert!(!bob.pending_proposals(conversation.id()).await.is_empty());
+                assert!(conversation.has_pending_proposals().await);
                 assert_eq!(conversation.member_count().await, 2);
 
                 // Alice commits the proposal

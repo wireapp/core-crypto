@@ -324,13 +324,10 @@ mod tests {
                 assert_eq!(after_rotate.credential - before_rotate.credential, 1);
 
                 for commit in result.commits {
-                    let (commit, decrypted) = commit.notify_member_fallible(&bob).await;
-                    let id = commit.conversation().id();
+                    let conversation = commit.notify_members_and_verify_sender().await;
 
-                    alice.verify_sender_identity(&case, &decrypted.unwrap()).await;
-
-                    alice
-                        .verify_local_credential_rotated(id, e2ei_utils::NEW_HANDLE, e2ei_utils::NEW_DISPLAY_NAME)
+                    conversation
+                        .verify_credential_handle_and_name(e2ei_utils::NEW_HANDLE, e2ei_utils::NEW_DISPLAY_NAME)
                         .await;
                 }
 
@@ -558,7 +555,6 @@ mod tests {
                 let x509_test_chain = alice.x509_chain_unchecked();
 
                 let conversation = case.create_conversation([&alice, &bob]).await;
-                let id = conversation.id().clone();
                 // Alice's turn
                 const ALICE_NEW_HANDLE: &str = "new_alice_wire";
                 const ALICE_NEW_DISPLAY_NAME: &str = "New Alice Smith";
@@ -615,8 +611,8 @@ mod tests {
                     .unwrap();
                 let conversation = conversation.e2ei_rotate_notify_and_verify_sender(None).await;
 
-                alice
-                    .verify_local_credential_rotated(&id, ALICE_NEW_HANDLE, ALICE_NEW_DISPLAY_NAME)
+                conversation
+                    .verify_credential_handle_and_name(ALICE_NEW_HANDLE, ALICE_NEW_DISPLAY_NAME)
                     .await;
 
                 // Bob's turn
@@ -672,13 +668,16 @@ mod tests {
                     .await
                     .unwrap();
 
-                conversation
+                let conversation = conversation
                     .acting_as(&bob)
                     .await
                     .e2ei_rotate_notify_and_verify_sender(None)
                     .await;
 
-                bob.verify_local_credential_rotated(&id, BOB_NEW_HANDLE, BOB_NEW_DISPLAY_NAME)
+                conversation
+                    .acting_as(&bob)
+                    .await
+                    .verify_credential_handle_and_name(BOB_NEW_HANDLE, BOB_NEW_DISPLAY_NAME)
                     .await;
             })
             .await
@@ -729,11 +728,11 @@ mod tests {
                     );
 
                     // Alice issues an Update commit to replace her current identity
-                    let _conversation = conversation.e2ei_rotate_notify_and_verify_sender(Some(&cb)).await;
+                    let conversation = conversation.e2ei_rotate_notify_and_verify_sender(Some(&cb)).await;
 
                     // Finally, Alice merges her commit and verifies her new identity gets applied
-                    alice
-                        .verify_local_credential_rotated(&id, new_handle, new_display_name)
+                    conversation
+                        .verify_credential_handle_and_name(new_handle, new_display_name)
                         .await;
 
                     let final_count = alice.transaction.count_entities().await;
@@ -757,7 +756,6 @@ mod tests {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
-                let id = conversation.id().clone();
 
                 let init_count = alice.transaction.count_entities().await;
 
@@ -794,7 +792,7 @@ mod tests {
                 assert_eq!(decrypted.proposals.len(), 1);
 
                 // Bob verifies that now Alice is represented with her new identity
-                commit
+                let conversation = commit
                     .finish()
                     .commit_pending_proposals()
                     .await
@@ -802,8 +800,8 @@ mod tests {
                     .await;
 
                 // Finally, Alice merges her commit and verifies her new identity gets applied
-                alice
-                    .verify_local_credential_rotated(&id, new_handle, new_display_name)
+                conversation
+                    .verify_credential_handle_and_name(new_handle, new_display_name)
                     .await;
 
                 let final_count = alice.transaction.count_entities().await;
@@ -856,11 +854,11 @@ mod tests {
                 // Alice issues an Update commit to replace her current identity
                 // Bob decrypts the commit...
                 // ...and verifies that now Alice is represented with her new identity
-                let _conversation = conversation.e2ei_rotate_notify_and_verify_sender(None).await;
+                let conversation = conversation.e2ei_rotate_notify_and_verify_sender(None).await;
 
                 // Finally, Alice merges her commit and verifies her new identity gets applied
-                alice
-                    .verify_local_credential_rotated(&id, new_handle, new_display_name)
+                conversation
+                    .verify_credential_handle_and_name(new_handle, new_display_name)
                     .await;
             })
             .await

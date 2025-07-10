@@ -177,14 +177,13 @@ mod tests {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
-                let id = conversation.id().clone();
 
-                assert!(alice.pending_proposals(&id).await.is_empty());
-                let propposal_guard = conversation.update_proposal().await;
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
+                assert!(!conversation.has_pending_proposals().await);
+                let proposal_guard = conversation.update_proposal().await;
+                assert_eq!(proposal_guard.conversation().pending_proposal_count().await, 1);
 
                 // Bob hasn't Alice's proposal but creates a commit
-                let (commit_guard, result) = propposal_guard
+                let (commit_guard, result) = proposal_guard
                     .finish()
                     .acting_as(&bob)
                     .await
@@ -195,11 +194,11 @@ mod tests {
 
                 let proposals = result.unwrap().proposals;
                 // Alice should renew the proposal because its hers
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
-                assert_eq!(proposals.len(), alice.pending_proposals(&id).await.len());
+                assert_eq!(commit_guard.conversation().pending_proposal_count_of(&alice).await, 1);
+                assert_eq!(proposals.len(), 1);
 
                 // It should also renew the proposal when in pending_commit
-                let (_, result) = commit_guard
+                let (commit, result) = commit_guard
                     .finish()
                     .acting_as(&bob)
                     .await
@@ -210,8 +209,8 @@ mod tests {
                 let proposals = result.unwrap().proposals;
                 // Alice should renew the proposal because its hers
                 // It should also replace existing one
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
-                assert_eq!(proposals.len(), alice.pending_proposals(&id).await.len());
+                assert_eq!(commit.conversation().pending_proposal_count_of(&alice).await, 1);
+                assert_eq!(proposals.len(), 1);
             })
             .await
         }
@@ -221,12 +220,11 @@ mod tests {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
-                let id = conversation.id().clone();
 
-                assert!(alice.pending_proposals(&id).await.is_empty());
+                assert!(!conversation.has_pending_proposals().await);
                 // Bob has Alice's update proposal
                 let conversation = conversation.update_proposal_notify().await;
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
+                assert_eq!(conversation.pending_proposal_count().await, 1);
 
                 // Bob's commit has Alice's proposal
                 let (commit_guard, result) = conversation
@@ -238,11 +236,12 @@ mod tests {
                     .await;
 
                 let proposals = result.unwrap().proposals;
+                let conversation = commit_guard.conversation();
                 // Alice proposal should not be renew as it was in valid commit
-                assert!(alice.pending_proposals(&id).await.is_empty());
-                assert_eq!(proposals.len(), alice.pending_proposals(&id).await.len());
+                assert!(!conversation.has_pending_proposals().await);
+                assert!(proposals.is_empty());
 
-                let (_, result) = commit_guard
+                let (commit_guard, result) = commit_guard
                     .finish()
                     .update_proposal_notify()
                     .await
@@ -253,9 +252,10 @@ mod tests {
                     .notify_member_fallible(&alice)
                     .await;
                 let proposals = result.unwrap().proposals;
+                let conversation = commit_guard.conversation();
                 // Alice should not be renew as it was in valid commit
-                assert!(alice.pending_proposals(&id).await.is_empty());
-                assert_eq!(proposals.len(), alice.pending_proposals(&id).await.len());
+                assert!(!conversation.has_pending_proposals().await);
+                assert!(proposals.is_empty());
             })
             .await
         }
@@ -265,15 +265,14 @@ mod tests {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
-                let id = conversation.id().clone();
 
-                let propposal_guard = conversation.acting_as(&bob).await.update_proposal().await;
-                assert!(alice.pending_proposals(&id).await.is_empty());
-                let propposal_guard = propposal_guard.notify_member(&alice).await;
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
+                let proposal_guard = conversation.acting_as(&bob).await.update_proposal().await;
+                assert_eq!(proposal_guard.conversation().pending_proposal_count_of(&alice).await, 0);
+                let proposal_guard = proposal_guard.notify_member(&alice).await;
+                assert_eq!(proposal_guard.conversation().pending_proposal_count_of(&alice).await, 1);
 
                 // Charlie hasn't been notified about Bob's proposal but creates a commit
-                let (_, result) = propposal_guard
+                let (commit_guard, result) = proposal_guard
                     .finish()
                     .acting_as(&charlie)
                     .await
@@ -283,8 +282,8 @@ mod tests {
                     .await;
                 let proposals = result.unwrap().proposals;
                 // Alice should not renew Bob's update proposal
-                assert!(alice.pending_proposals(&id).await.is_empty());
-                assert_eq!(proposals.len(), alice.pending_proposals(&id).await.len());
+                assert_eq!(commit_guard.conversation().pending_proposal_count_of(&alice).await, 0);
+                assert_eq!(proposals.len(), 0);
             })
             .await
         }
@@ -298,12 +297,11 @@ mod tests {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
-                let id = conversation.id().clone();
 
                 // Alice creates a proposal locally that nobody will be notified about
-                assert!(alice.pending_proposals(&id).await.is_empty());
+                assert!(!conversation.has_pending_proposals().await);
                 let proposal_guard = conversation.invite_proposal(&charlie).await;
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
+                assert_eq!(proposal_guard.conversation().pending_proposal_count().await, 1);
 
                 // Bob commits the same invite that alice proposed
                 let (commit_guard, result) = proposal_guard
@@ -317,8 +315,8 @@ mod tests {
 
                 let proposals = result.unwrap().proposals;
                 // Alice proposal is not renewed since she also wanted to add Charlie
-                assert!(alice.pending_proposals(&id).await.is_empty());
-                assert_eq!(proposals.len(), alice.pending_proposals(&id).await.len());
+                assert!(!commit_guard.conversation().has_pending_proposals().await);
+                assert!(proposals.is_empty());
 
                 let conversation = commit_guard.notify_members().await;
                 assert!(conversation.is_functional_and_contains([&alice, &bob, &charlie]).await);
@@ -331,10 +329,9 @@ mod tests {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
-                let id = conversation.id().clone();
 
                 // Alice creates a proposal locally that nobody will be notified about
-                assert!(alice.pending_proposals(&id).await.is_empty());
+                assert!(!conversation.has_pending_proposals().await);
                 let conversation = conversation.invite_proposal(&charlie).await.finish();
                 assert!(conversation.has_pending_proposals().await);
 
@@ -353,8 +350,8 @@ mod tests {
 
                 let proposals = result.unwrap().proposals;
                 // Alice proposal is not renewed since she also wanted to add Charlie
-                assert!(alice.pending_proposals(&id).await.is_empty());
-                assert_eq!(proposals.len(), alice.pending_proposals(&id).await.len());
+                assert!(!commit_guard.conversation().has_pending_proposals().await);
+                assert!(proposals.is_empty());
 
                 let conversation = commit_guard.notify_members().await;
                 assert!(conversation.is_functional_and_contains([&alice, &bob, &charlie]).await);
@@ -367,7 +364,6 @@ mod tests {
             let [alice, bob, charlie, debbie] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
-                let id = conversation.id().clone();
 
                 // Bob will propose adding Debbie
                 let proposal_guard = conversation
@@ -377,10 +373,10 @@ mod tests {
                     .await
                     .notify_member(&alice)
                     .await;
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
+                assert_eq!(proposal_guard.conversation().pending_proposal_count().await, 1);
 
                 // But Charlie will commit meanwhile
-                let (_, result) = proposal_guard
+                let (commit, result) = proposal_guard
                     .finish()
                     .acting_as(&charlie)
                     .await
@@ -391,8 +387,8 @@ mod tests {
 
                 let proposals = result.unwrap().proposals;
                 // which Alice should not renew since it's not hers
-                assert!(alice.pending_proposals(&id).await.is_empty());
-                assert_eq!(proposals.len(), alice.pending_proposals(&id).await.len());
+                assert!(!commit.conversation().has_pending_proposals().await);
+                assert!(proposals.is_empty());
             })
             .await
         }
@@ -452,14 +448,13 @@ mod tests {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
-                let id = conversation.id().clone();
 
                 // Alice has a pending commit
-                alice.create_unmerged_commit(&id).await;
-                assert!(alice.pending_commit(&id).await.is_some());
+                let conversation = conversation.update_unmerged().await.finish();
+                assert!(conversation.has_pending_commit().await);
 
                 // But meanwhile Bob will create a commit
-                let (_, result) = conversation
+                let (commit, result) = conversation
                     .acting_as(&bob)
                     .await
                     .update()
@@ -469,8 +464,8 @@ mod tests {
 
                 let proposals = result.unwrap().proposals;
                 // So Alice proposal should be renewed
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
-                assert_eq!(proposals.len(), alice.pending_proposals(&id).await.len());
+                assert_eq!(commit.conversation().pending_proposal_count_of(&alice).await, 1);
+                assert_eq!(proposals.len(), 1);
             })
             .await
         }
@@ -484,11 +479,10 @@ mod tests {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
-                let id = conversation.id().clone();
 
-                assert!(alice.pending_proposals(&id).await.is_empty());
+                assert!(!conversation.has_pending_proposals().await);
                 let proposal_guard = conversation.remove_proposal(&charlie).await;
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
+                assert_eq!(proposal_guard.conversation().pending_proposal_count().await, 1);
 
                 let (commit_guard, result) = proposal_guard
                     .finish()
@@ -501,8 +495,8 @@ mod tests {
 
                 let proposals = result.unwrap().proposals;
                 // Remove proposal is not renewed since commit does same
-                assert!(alice.pending_proposals(&id).await.is_empty());
-                assert_eq!(proposals.len(), alice.pending_proposals(&id).await.len());
+                assert!(!commit_guard.conversation().has_pending_proposals().await);
+                assert!(proposals.is_empty());
 
                 let conversation = commit_guard.notify_members().await;
                 assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
@@ -515,9 +509,8 @@ mod tests {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
-                let id = conversation.id().clone();
 
-                assert!(alice.pending_proposals(&id).await.is_empty());
+                assert!(!conversation.has_pending_proposals().await);
                 let proposal_guard = conversation
                     .acting_as(&bob)
                     .await
@@ -525,9 +518,9 @@ mod tests {
                     .await
                     .notify_member(&alice)
                     .await;
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
+                assert_eq!(proposal_guard.conversation().pending_proposal_count().await, 1);
 
-                let (_, result) = proposal_guard
+                let (commit, result) = proposal_guard
                     .finish()
                     .acting_as(&charlie)
                     .await
@@ -538,8 +531,8 @@ mod tests {
 
                 let proposals = result.unwrap().proposals;
                 // Remove proposal is not renewed since by ref
-                assert!(alice.pending_proposals(&id).await.is_empty());
-                assert_eq!(proposals.len(), alice.pending_proposals(&id).await.len());
+                assert!(!commit.conversation().has_pending_proposals().await);
+                assert!(proposals.is_empty());
             })
             .await
         }
@@ -549,7 +542,6 @@ mod tests {
             let [alice, bob, charlie, debbie] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob, &charlie, &debbie]).await;
-                let id = conversation.id().clone();
 
                 // Alice wants to remove Charlie
                 assert!(!conversation.has_pending_proposals().await);
@@ -558,7 +550,7 @@ mod tests {
                 assert_eq!(conversation.pending_proposal_count().await, 1);
 
                 // Whereas Bob wants to remove Debbie
-                let (_, result) = conversation
+                let (commit, result) = conversation
                     .acting_as(&bob)
                     .await
                     .remove(&debbie)
@@ -568,8 +560,8 @@ mod tests {
 
                 let proposals = result.unwrap().proposals;
                 // Remove is renewed since valid commit removes another
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
-                assert_eq!(proposals.len(), alice.pending_proposals(&id).await.len());
+                assert_eq!(commit.conversation().pending_proposal_count_of(&alice).await, 1);
+                assert_eq!(proposals.len(), 1);
             })
             .await
         }

@@ -662,7 +662,7 @@ mod tests {
 
                 assert!(decrypted.proposals.is_empty());
                 assert!(decrypted.delay.is_none());
-                assert!(alice.pending_proposals(conversation.id()).await.is_empty());
+                assert!(!conversation.has_pending_proposals().await);
                 assert!(alice_observer.has_changed().await);
             })
             .await

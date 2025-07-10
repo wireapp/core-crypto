@@ -176,8 +176,8 @@ mod tests {
             assert!(!conversation.has_pending_proposals().await);
 
             // verify that we return the new identity
-            alice
-                .verify_local_credential_rotated(conversation.id(), new_handle, new_display_name)
+            conversation
+                .verify_credential_handle_and_name(new_handle, new_display_name)
                 .await;
         })
         .await

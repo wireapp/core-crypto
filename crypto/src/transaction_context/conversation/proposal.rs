@@ -71,6 +71,7 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
+    use crate::mls::conversation::ConversationWithMls as _;
     use crate::{prelude::*, test_utils::*};
 
     use super::Error;
@@ -102,8 +103,6 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         pub async fn should_update_hpke_key(case: TestContext) {
-            use crate::mls::conversation::ConversationWithMls as _;
-
             let [session] = case.sessions().await;
             let conversation = case.create_conversation([&session]).await;
             let conversation_guard = conversation.guard().await;

@@ -159,8 +159,8 @@ impl MlsProposalBundle {
 #[cfg(test)]
 mod tests {
     use itertools::Itertools;
-    use openmls::prelude::SignaturePublicKey;
 
+    use crate::mls::conversation::ConversationWithMls as _;
     use crate::test_utils::*;
 
     use super::*;
@@ -173,11 +173,10 @@ mod tests {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
-                let id = conversation.id().clone();
-                assert!(alice.pending_proposals(&id).await.is_empty());
+                assert!(!conversation.has_pending_proposals().await);
 
                 let proposal_guard = conversation.invite_proposal(&charlie).await;
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
+                assert_eq!(proposal_guard.conversation().pending_proposal_count().await, 1);
                 let commit_guard = proposal_guard
                     .notify_members()
                     .await
@@ -206,11 +205,10 @@ mod tests {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
-                let id = conversation.id().clone();
 
-                assert!(alice.pending_proposals(&id).await.is_empty());
+                assert!(!conversation.has_pending_proposals().await);
                 let proposal_guard = conversation.remove_proposal(&charlie).await;
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
+                assert_eq!(proposal_guard.conversation().pending_proposal_count().await, 1);
                 let conversation = proposal_guard
                     .notify_members()
                     .await
@@ -233,20 +231,23 @@ mod tests {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
-                let id = conversation.id().clone();
 
-                let bob_keys = bob
-                    .get_conversation_unchecked(&id)
+                let bob_keys = conversation
+                    .guard_of(&bob)
+                    .await
+                    .conversation()
                     .await
                     .signature_keys()
-                    .collect::<Vec<SignaturePublicKey>>();
-                let alice_keys = alice
-                    .get_conversation_unchecked(&id)
+                    .collect::<Vec<_>>();
+                let alice_keys = conversation
+                    .guard()
+                    .await
+                    .conversation()
                     .await
                     .signature_keys()
-                    .collect::<Vec<SignaturePublicKey>>();
+                    .collect::<Vec<_>>();
                 assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
-                let alice_key = alice.encryption_key_of(&id, alice.get_client_id().await).await;
+                let alice_key = conversation.encryption_public_key().await;
 
                 let commit_guard = conversation
                     .update_proposal_notify()
@@ -256,16 +257,23 @@ mod tests {
                     .commit_pending_proposals()
                     .await;
 
+                let conversation = commit_guard.conversation();
+
                 assert!(
-                    !bob.get_conversation_unchecked(&id)
+                    !conversation
+                        .guard_of(&bob)
+                        .await
+                        .conversation()
                         .await
                         .encryption_keys()
                         .contains(&alice_key)
                 );
 
                 assert!(
-                    alice
-                        .get_conversation_unchecked(&id)
+                    conversation
+                        .guard_of(&alice)
+                        .await
+                        .conversation()
                         .await
                         .encryption_keys()
                         .contains(&alice_key)
@@ -274,8 +282,10 @@ mod tests {
                 // not be referenced in commit
                 let conversation = commit_guard.notify_members().await;
                 assert!(
-                    !alice
-                        .get_conversation_unchecked(&id)
+                    !conversation
+                        .guard_of(&alice)
+                        .await
+                        .conversation()
                         .await
                         .encryption_keys()
                         .contains(&alice_key)

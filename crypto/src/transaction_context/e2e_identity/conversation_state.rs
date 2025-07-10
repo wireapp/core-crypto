@@ -167,7 +167,6 @@ mod tests {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice, &bob]).await;
-            let id = conversation.id().clone();
 
             let expiration_time = core::time::Duration::from_secs(14);
             let start = web_time::Instant::now();
@@ -186,7 +185,7 @@ mod tests {
                 .unwrap();
 
             // Need to fetch it before it becomes invalid & expires
-            let gi = alice.get_group_info(&id).await;
+            let gi = conversation.export_group_info().await;
 
             let elapsed = start.elapsed();
             // Give time to the certificate to expire

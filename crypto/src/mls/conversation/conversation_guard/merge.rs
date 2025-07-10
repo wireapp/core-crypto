@@ -100,8 +100,7 @@ mod tests {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
-                let id = conversation.id().clone();
-                assert!(alice.pending_proposals(&id).await.is_empty());
+                assert!(!conversation.has_pending_proposals().await);
 
                 let conversation = conversation.invite_proposal_notify(&charlie).await;
                 let add_ref = conversation.latest_proposal_ref().await;
@@ -112,34 +111,34 @@ mod tests {
                 let conversation = conversation.update_proposal_notify().await;
                 let update_ref = conversation.latest_proposal_ref().await;
 
-                let mut conversation = conversation.guard().await;
+                let mut guard = conversation.guard().await;
 
-                assert_eq!(alice.pending_proposals(&id).await.len(), 3);
-                conversation.clear_pending_proposal(add_ref).await.unwrap();
-                assert_eq!(alice.pending_proposals(&id).await.len(), 2);
+                assert_eq!(conversation.pending_proposal_count().await, 3);
+                guard.clear_pending_proposal(add_ref).await.unwrap();
+                assert_eq!(conversation.pending_proposal_count().await, 2);
                 assert!(
-                    !alice
-                        .pending_proposals(&id)
+                    !conversation
+                        .pending_proposals()
                         .await
                         .into_iter()
                         .any(|p| matches!(p.proposal(), Proposal::Add(_)))
                 );
 
-                conversation.clear_pending_proposal(remove_ref).await.unwrap();
-                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
+                guard.clear_pending_proposal(remove_ref).await.unwrap();
+                assert_eq!(conversation.pending_proposal_count().await, 1);
                 assert!(
-                    !alice
-                        .pending_proposals(&id)
+                    !conversation
+                        .pending_proposals()
                         .await
                         .into_iter()
                         .any(|p| matches!(p.proposal(), Proposal::Remove(_)))
                 );
 
-                conversation.clear_pending_proposal(update_ref).await.unwrap();
-                assert!(alice.pending_proposals(&id).await.is_empty());
+                guard.clear_pending_proposal(update_ref).await.unwrap();
+                assert!(!conversation.has_pending_proposals().await);
                 assert!(
-                    !alice
-                        .pending_proposals(&id)
+                    !conversation
+                        .pending_proposals()
                         .await
                         .into_iter()
                         .any(|p| matches!(p.proposal(), Proposal::Update(_)))
@@ -153,8 +152,7 @@ mod tests {
             let [alice] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice]).await;
-                let id = conversation.id().clone();
-                assert!(alice.pending_proposals(&id).await.is_empty());
+                assert!(!conversation.has_pending_proposals().await);
                 let any_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
                 let clear = conversation.guard().await.clear_pending_proposal(any_ref.clone()).await;
                 assert!(matches!(clear.unwrap_err(), Error::PendingProposalNotFound(prop_ref) if prop_ref == any_ref))
@@ -167,14 +165,13 @@ mod tests {
             let [session] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&session]).await;
-                let id = conversation.id().clone();
-                assert!(session.pending_proposals(&id).await.is_empty());
+                assert!(!conversation.has_pending_proposals().await);
 
                 let init = session.transaction.count_entities().await;
 
                 let conversation = conversation.update_proposal_notify().await;
                 let proposal_ref = conversation.latest_proposal_ref().await;
-                assert_eq!(session.pending_proposals(&id).await.len(), 1);
+                assert_eq!(conversation.pending_proposal_count().await, 1);
 
                 conversation
                     .guard()
@@ -182,7 +179,7 @@ mod tests {
                     .clear_pending_proposal(proposal_ref)
                     .await
                     .unwrap();
-                assert!(session.pending_proposals(&id).await.is_empty());
+                assert!(!conversation.has_pending_proposals().await);
 
                 // This whole flow should be idempotent.
                 // Here we verify that we are indeed deleting the `EncryptionKeyPair` created
@@ -202,13 +199,12 @@ mod tests {
             let [alice] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice]).await;
-                let id = conversation.id().clone();
-                assert!(alice.pending_commit(&id).await.is_none());
+                assert!(!conversation.has_pending_commit().await);
 
-                alice.create_unmerged_commit(&id).await;
-                assert!(alice.pending_commit(&id).await.is_some());
+                let conversation = conversation.update_unmerged().await.finish();
+                assert!(conversation.has_pending_commit().await);
                 conversation.guard().await.clear_pending_commit().await.unwrap();
-                assert!(alice.pending_commit(&id).await.is_none());
+                assert!(!conversation.has_pending_commit().await);
             })
             .await
         }
@@ -218,8 +214,7 @@ mod tests {
             let [alice] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice]).await;
-                let id = conversation.id().clone();
-                assert!(alice.pending_commit(&id).await.is_none());
+                assert!(!conversation.has_pending_commit().await);
                 let clear = conversation.guard().await.clear_pending_commit().await;
                 assert!(matches!(clear.unwrap_err(), Error::PendingCommitNotFound))
             })
@@ -231,16 +226,15 @@ mod tests {
             let [session] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&session]).await;
-                let id = conversation.id().clone();
-                assert!(session.pending_commit(&id).await.is_none());
+                assert!(!conversation.has_pending_commit().await);
 
                 let init = session.transaction.count_entities().await;
 
-                session.create_unmerged_commit(&id).await;
-                assert!(session.pending_commit(&id).await.is_some());
+                let conversation = conversation.update_unmerged().await.finish();
+                assert!(conversation.has_pending_commit().await);
 
                 conversation.guard().await.clear_pending_commit().await.unwrap();
-                assert!(session.pending_commit(&id).await.is_none());
+                assert!(!conversation.has_pending_commit().await);
 
                 // This whole flow should be idempotent.
                 // Here we verify that we are indeed deleting the `EncryptionKeyPair` created

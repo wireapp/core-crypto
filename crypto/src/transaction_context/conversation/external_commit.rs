@@ -154,6 +154,7 @@ mod tests {
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
 
     use super::Error;
+    use crate::mls::conversation::ConversationWithMls as _;
     use crate::{LeafError, prelude::MlsConversationConfiguration, test_utils::*, transaction_context};
 
     #[apply(all_cred_cipher)]
@@ -429,8 +430,6 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn group_should_have_right_config(case: TestContext) {
-        use crate::mls::conversation::ConversationWithMls as _;
-
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
             let conversation = case
