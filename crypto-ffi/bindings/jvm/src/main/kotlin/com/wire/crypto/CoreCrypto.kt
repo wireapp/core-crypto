@@ -25,6 +25,16 @@ suspend fun migrateDatabaseKeyTypeToBytes(name: String, oldKey: String, newKey: 
 }
 
 /**
+ * Updates the key of the CoreCrypto database.
+ * @param name path to the database file
+ * @param oldKey the old key
+ * @param newKey the new key
+ */
+suspend fun updateDatabaseKey(name: String, oldKey: DatabaseKey, newKey: DatabaseKey) {
+    return com.wire.crypto.uniffi.updateDatabaseKey(name, oldKey.bytes, newKey.bytes)
+}
+
+/**
  * An `EpochObserver` is notified whenever a conversation's epoch changes.
  */
 public interface EpochObserver {
