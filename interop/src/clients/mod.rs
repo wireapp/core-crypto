@@ -4,8 +4,6 @@ use color_eyre::eyre::Result;
 use core_crypto::prelude::MlsCiphersuite;
 
 pub(crate) mod corecrypto;
-#[cfg(feature = "proteus")]
-pub(crate) mod cryptobox;
 
 bitflags::bitflags! {
     pub(crate) struct EmulatedClientProtocol: u8 {

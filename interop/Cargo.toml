@@ -7,8 +7,6 @@ license = "GPL-3.0-only"
 [features]
 default = ["proteus"]
 proteus = [
-    "dep:cryptobox",
-    "dep:proteus",
     "dep:proteus-wasm",
     "core-crypto/cryptobox-migrate",
     "core-crypto/proteus",
@@ -45,8 +43,6 @@ thiserror = { workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = "2.1"
-cryptobox = { git = "https://github.com/wireapp/cryptobox", optional = true }
-proteus = { git = "https://github.com/wireapp/proteus", branch = "otak/fix-1.0.3", optional = true }
 tokio = { version = "1.46", features = ["full"] }
 # Http Server
 warp = { version = "0.3", default-features = false }

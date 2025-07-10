@@ -69,12 +69,6 @@ async fn create_proteus_clients<'a>(
                 .await
                 .unwrap(),
         ),
-        Box::new(clients::cryptobox::native::CryptoboxNativeClient::new()),
-        Box::new(
-            clients::cryptobox::web::CryptoboxWebClient::new(chrome_driver_addr, web_server)
-                .await
-                .unwrap(),
-        ),
     ]
 }
 
