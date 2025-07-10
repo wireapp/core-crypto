@@ -58,4 +58,32 @@ class DatabaseKeyTest {
 
         tmpdir.toFile().deleteRecursively()
     }
+
+    @Test
+    fun update_database_key_works() = runTest {
+        val tmpdir = createTempDirectory("cc-test-")
+        val keyStore = tmpdir / "keystore"
+        val oldKey = genDatabaseKey()
+        val clientId = "alice".toClientId()
+        var cc = CoreCrypto(keyStore.toString(), oldKey)
+        val pubkey1 = cc.transaction {
+            it.mlsInit(id = clientId, nbKeyPackage = 1u)
+            it.getPublicKey()
+        }
+        cc.close()
+
+        val newKey = genDatabaseKey()
+        assertNotEquals(oldKey, newKey)
+
+        updateDatabaseKey(keyStore.toString(), oldKey, newKey)
+        cc = CoreCrypto(keyStore.toString(), newKey)
+        val pubkey2 = cc.transaction {
+            it.mlsInit(id = clientId, nbKeyPackage = 0u)
+            it.getPublicKey()
+        }
+        cc.close()
+        assertContentEquals(pubkey1, pubkey2)
+
+        tmpdir.toFile().deleteRecursively()
+    }
 }
