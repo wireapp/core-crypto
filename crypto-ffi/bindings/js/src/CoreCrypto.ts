@@ -77,6 +77,7 @@ export {
     DatabaseKey,
     MlsTransportData,
     migrateDatabaseKeyTypeToBytes,
+    updateDatabaseKey,
     NewAcmeAuthz,
     NewAcmeOrder,
     ExternalSenderKey,
