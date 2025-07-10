@@ -62,6 +62,7 @@
 
 ### Testing
 
+- re-add database tests which were accidentally omitted ([185e90f](https://github.com/wireapp/core-crypto/commit/185e90f0bf749266478854c85ac620e432569fb8))
 - test history client update on remove ([f2aa941](https://github.com/wireapp/core-crypto/commit/f2aa94193171a3638b764b22642ee02bc5c4459e))
 - test history sharing [WPB-17106] ([79025cd](https://github.com/wireapp/core-crypto/commit/79025cd56c9fdde0950db742cdbb14db3eaa69ed))
 - remove leaf node validation tests [WPB-18083] ([c2ae76d](https://github.com/wireapp/core-crypto/commit/c2ae76d67ef4878d099fb11b27a4987bf3ace687))
