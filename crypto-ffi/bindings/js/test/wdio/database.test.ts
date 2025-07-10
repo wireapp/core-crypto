@@ -20,6 +20,63 @@ describe("database key", () => {
     });
 });
 
+describe("database", () => {
+    it("key update works", async () => {
+        const [pubkey1, pubkey2] = await browser.execute(async () => {
+            const cipherSuite = window.defaultCipherSuite;
+            const databaseName = crypto.randomUUID();
+
+            const makeClientId = () => {
+                const array = new Uint8Array([1, 2]);
+                return new window.ccModule.ClientId(array);
+            };
+
+            const key = new Uint8Array(32);
+            window.crypto.getRandomValues(key);
+
+            const clientConfig = {
+                databaseName: databaseName,
+                key: new window.ccModule.DatabaseKey(key),
+                ciphersuites: [cipherSuite],
+                clientId: makeClientId(),
+            };
+
+            let cc = await window.ccModule.CoreCrypto.init(clientConfig);
+            const pubkey1 = await cc.transaction((ctx) =>
+                ctx.clientPublicKey(
+                    cipherSuite,
+                    window.ccModule.CredentialType.Basic
+                )
+            );
+            cc.close();
+
+            const newKey = new Uint8Array(32);
+            window.crypto.getRandomValues(newKey);
+
+            await window.ccModule.updateDatabaseKey(
+                databaseName,
+                new window.ccModule.DatabaseKey(key),
+                new window.ccModule.DatabaseKey(newKey)
+            );
+
+            clientConfig.key = new window.ccModule.DatabaseKey(newKey);
+            clientConfig.clientId = makeClientId();
+
+            cc = await window.ccModule.CoreCrypto.init(clientConfig);
+            const pubkey2 = await cc.transaction((ctx) =>
+                ctx.clientPublicKey(
+                    cipherSuite,
+                    window.ccModule.CredentialType.Basic
+                )
+            );
+            cc.close();
+
+            return [JSON.stringify(pubkey1), JSON.stringify(pubkey2)];
+        });
+        expect(JSON.parse(pubkey1)).toEqual(JSON.parse(pubkey2));
+    });
+});
+
 describe("database migration", () => {
     it("migrating key type to bytes works", async () => {
         const stores = await import("./db-v10002003-dump.json");
