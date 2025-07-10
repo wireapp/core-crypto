@@ -87,7 +87,7 @@
 <a href=#87 id=87 data-nosnippet>87</a>        });
 <a href=#88 id=88 data-nosnippet>88</a>
 <a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">let </span>js = MLS_FUNCTIONS.get(<span class="string">"ccNew"</span>).context(<span class="string">"getting `ccNew` from `mls.ts`"</span>)<span class="question-mark">?</span>;
-<a href=#90 id=90 data-nosnippet>90</a>        <span class="kw">let </span>browser = <span class="kw">crate</span>::build::web::webdriver::setup_browser(driver_addr, server, <span class="string">"core-crypto"</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#90 id=90 data-nosnippet>90</a>        <span class="kw">let </span>browser = <span class="kw">crate</span>::util::setup_browser(driver_addr, server, <span class="string">"core-crypto"</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#91 id=91 data-nosnippet>91</a>        browser.execute(js, <span class="macro">vec!</span>[client_config]).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#92 id=92 data-nosnippet>92</a>
 <a href=#93 id=93 data-nosnippet>93</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
