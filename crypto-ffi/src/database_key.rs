@@ -1,4 +1,4 @@
-use core_crypto_keystore::Connection as Database;
+use core_crypto_keystore::{Connection as Database, ConnectionType};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -40,4 +40,16 @@ impl DatabaseKey {
         let key = core_crypto_keystore::DatabaseKey::try_from(buf).map_err(CoreCryptoError::generic())?;
         Ok(DatabaseKey(key))
     }
+}
+
+/// Updates the key of the CoreCrypto database.
+#[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = "updateDatabaseKey"))]
+#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+pub async fn update_database_key(name: &str, old_key: &DatabaseKey, new_key: &DatabaseKey) -> CoreCryptoResult<()> {
+    let mut db = Database::open(ConnectionType::Persistent(name), &old_key.0)
+        .await
+        .map_err(CoreCryptoError::generic())?;
+    db.update_key(&new_key.0).await.map_err(CoreCryptoError::generic())?;
+    db.close().await.map_err(CoreCryptoError::generic())?;
+    Ok(())
 }
