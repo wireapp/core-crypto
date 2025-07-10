@@ -225,9 +225,7 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
                 scope.launch { historyObserver.historyClientCreated(conversationId.toGroupId(), secret.lift()) }
             }
         }
-        return wrapException {
-            cc.registerHistoryObserver(observerIndirector)
-        }
+        return cc.registerHistoryObserver(observerIndirector)
     }
 
     /**
@@ -236,7 +234,7 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
      * @param id conversation identifier
      * @return true if history sharing is enabled
      */
-    suspend fun isHistorySharingEnabled(id: MLSGroupId): Boolean = wrapException { cc.isHistorySharingEnabled(id.lower()) }
+    suspend fun isHistorySharingEnabled(id: MLSGroupId): Boolean = cc.isHistorySharingEnabled(id.lower())
 
     /**
      * Closes this [CoreCrypto] instance and deallocates all loaded resources.
