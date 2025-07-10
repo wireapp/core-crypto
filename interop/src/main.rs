@@ -10,8 +10,6 @@ use std::sync::Arc;
 use tls_codec::Serialize;
 
 #[cfg(not(target_family = "wasm"))]
-mod build;
-#[cfg(not(target_family = "wasm"))]
 mod clients;
 #[cfg(not(target_family = "wasm"))]
 mod util;
@@ -99,16 +97,16 @@ fn run_test() -> Result<()> {
         .unwrap();
 
     runtime.block_on(async {
-        build::web::wasm::build_wasm(tempdir.path().to_path_buf()).await?;
+        util::cp_wasm_files(tempdir.path().to_path_buf()).await?;
 
         let spinner = util::RunningProcess::new("Starting HTTP server...", false);
-        let (server, server_task) = build::web::wasm::bind_http_server(tempdir.path().to_path_buf());
+        let (server, server_task) = util::bind_http_server(tempdir.path().to_path_buf());
         let http_server_hwnd = tokio::task::spawn(server_task);
         spinner.success(format!("HTTP server started {server} [OK]"));
 
         let mut spinner = util::RunningProcess::new("Starting WebDriver [ChromeDriver & GeckoDriver]...", false);
         let chrome_driver_addr = TcpListener::bind("127.0.0.1:0").await?.local_addr()?;
-        let mut chrome_webdriver = build::web::webdriver::start_webdriver_chrome(&chrome_driver_addr).await?;
+        let mut chrome_webdriver = util::start_webdriver_chrome(&chrome_driver_addr).await?;
         spinner.update("Sleeping to wait for Webdrivers to get ready...");
         let timeout = Duration::from_secs(5);
         let start = Instant::now();

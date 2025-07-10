@@ -87,7 +87,7 @@ impl CoreCryptoWebClient {
         });
 
         let js = MLS_FUNCTIONS.get("ccNew").context("getting `ccNew` from `mls.ts`")?;
-        let browser = crate::build::web::webdriver::setup_browser(driver_addr, server, "core-crypto").await?;
+        let browser = crate::util::setup_browser(driver_addr, server, "core-crypto").await?;
         browser.execute(js, vec![client_config]).await?;
 
         Ok(Self {
