@@ -133,14 +133,14 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param id conversation identifier
      */
-    suspend fun enableHistorySharing(id: MLSGroupId) = wrapException { cc.enableHistorySharing(id.lower()) }
+    suspend fun enableHistorySharing(id: MLSGroupId) = cc.enableHistorySharing(id.lower())
 
     /**
      * Disable history sharing by removing history clients from the conversation.
      *
      * @param id conversation identifier
      */
-    suspend fun disableHistorySharing(id: MLSGroupId) = wrapException { cc.disableHistorySharing(id.lower()) }
+    suspend fun disableHistorySharing(id: MLSGroupId) = cc.disableHistorySharing(id.lower())
 
     /**
      * Creates a new conversation with the current client being the sole member. You will want to
@@ -200,8 +200,8 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return the encrypted payload for the given group. This needs to be fanned out to the other
      *   members of the group.
      */
-    suspend fun encryptMessage(id: MLSGroupId, message: PlaintextMessage): ByteArray {
-        return cc.encryptMessage(id.lower(), message.lower())
+    suspend fun encryptMessage(id: MLSGroupId, message: ByteArray): ByteArray {
+        return cc.encryptMessage(id.lower(), message)
     }
 
     /**
@@ -211,7 +211,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param message (either Application or Handshake message) from the DS
      */
     suspend fun decryptMessage(id: MLSGroupId, message: ByteArray): DecryptedMessage {
-        return cc.decryptMessage(id.lower(), message.lower()).lift()
+        return cc.decryptMessage(id.lower(), message).lift()
     }
 
     /**
