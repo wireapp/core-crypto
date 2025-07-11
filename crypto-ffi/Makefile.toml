@@ -100,11 +100,12 @@ args = [
     "--config", "uniffi-android.toml",
     "--language", "kotlin",
     "--no-format",
-    "--out-dir", "./bindings/uniffi-android/src/main/kotlin/",
-    "--library", "../target/release/deps/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
+    "--out-dir", "./bindings/android/src/main/kotlin/",
+    "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
 [tasks.bindings-kotlin-jvm]
+dependencies = ["release-build"]
 command = "cargo"
 args = [
     "run",
@@ -115,12 +116,9 @@ args = [
     "generate",
     "--language", "kotlin",
     "--no-format",
-    "--out-dir", "./bindings/uniffi-jvm/src/main/kotlin/",
-    "--library", "../target/release/deps/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
+    "--out-dir", "./bindings/jvm/src/main/kotlin/",
+    "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
-
-[tasks.bindings-kotlin]
-dependencies = ["bindings-kotlin-android", "bindings-kotlin-jvm"]
 
 [tasks.bindings]
 dependencies = ["bindings-swift", "bindings-kotlin"]
