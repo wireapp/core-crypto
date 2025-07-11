@@ -160,12 +160,3 @@ impl CoreCrypto {
         self.inner.take().close().await.map_err(Into::into)
     }
 }
-
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-impl CoreCrypto {
-    /// See [Session::can_close]
-    pub async fn can_close(&self) -> bool {
-        self.inner.can_close().await
-    }
-}
