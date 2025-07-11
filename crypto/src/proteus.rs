@@ -567,8 +567,9 @@ impl ProteusCentral {
         let session = self
             .session(session_id, keystore)
             .await?
-            .ok_or(LeafError::ConversationNotFound(session_id.as_bytes().into()))
-            .map_err(ProteusError::wrap("getting session"))?;
+            .ok_or(Error::Proteus(ProteusError::wrap("getting session")(
+                LeafError::ConversationNotFound(session_id.as_bytes().to_vec()),
+            )))?;
         let fingerprint = session.read().await.fingerprint_remote();
         Ok(fingerprint)
     }

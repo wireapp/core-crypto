@@ -35,6 +35,9 @@ impl ProteusErrorKind {
             ProteusErrorKind::ProteusEncodeError(encode_error) => Some(encode_error.code()),
             ProteusErrorKind::ProteusInternalError(proteus_error) => Some(proteus_error.code()),
             ProteusErrorKind::ProteusSessionError(session_error) => Some(session_error.code()),
+            ProteusErrorKind::Leaf(crate::LeafError::ConversationNotFound(_)) => {
+                Some(proteus_traits::ProteusErrorKind::SessionStateNotFoundForTag)
+            }
             ProteusErrorKind::Leaf(_) => None,
         };
         if out == Some(proteus_traits::ProteusErrorKind::None) {
