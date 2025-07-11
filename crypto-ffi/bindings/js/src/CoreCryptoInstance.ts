@@ -367,34 +367,11 @@ export class CoreCrypto {
     }
 
     /**
-     * If this returns `false` you **cannot** call {@link CoreCrypto.close} as it will produce an error because of the
-     * outstanding references that were detected.
+     * Waits for any transaction that is currently in progress, then closes this {@link CoreCrypto}
+     * instance and deallocates all loaded resources
      *
-     * As always with this kind of thing, beware TOCTOU.
-     *
-     * @returns whether the CoreCrypto instance can currently close.
-     */
-    async canClose(): Promise<boolean> {
-        return await this.#cc.can_close();
-    }
-
-    /**
-     * If this returns `true` you **cannot** call {@link CoreCrypto.close} as it will produce an error because of the
-     * outstanding references that were detected.
-     *
-     * This will never return `true` as we need an async method to accurately determine whether or not this can close.
-     *
-     * @returns false
-     * @deprecated prefer {@link CoreCrypto.canClose}
-     */
-    isLocked(): boolean {
-        return false;
-    }
-
-    /**
-     * Closes this {@link CoreCrypto} instance and deallocates all loaded resources
-     *
-     * **CAUTION**: This {@link CoreCrypto} instance won't be usable after a call to this method, but there's no way to express this requirement in TypeScript, so you'll get errors instead!
+     * **CAUTION**: This {@link CoreCrypto} instance won't be usable after a call to this method,
+     * but there's no way to express this requirement in TypeScript, so you'll get errors instead!
      */
     async close() {
         await CoreCryptoError.asyncMapErr(this.#cc.close());

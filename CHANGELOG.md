@@ -4,6 +4,18 @@
 
 ### Breaking changes
 
+- Removed `canClose()`, and `isLocked()`.
+
+  Affected platforms: Web
+
+  Migration: Only needed if you were relying on the output of `canClose()` before calling `close()`:
+
+  Call `close()` directly. Instead of handling the `false` case of `canClose()`, catch the error that
+  `close()` may throw: `Cannot close as multiple strong refs exist`, then try again.
+
+  The behavior of `close()` was adjusted, so that it waits for any running transaction to finish,
+  instead of throwing an error.
+
 - Removed `mlsInitWithClientId`, `mlsGenerateKeypairs`, `e2eiDumpPKIEnv`, `deleteKeypackages`
 
   Affected platforms: Web, Android, iOS
