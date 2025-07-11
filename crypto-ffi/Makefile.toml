@@ -2,6 +2,10 @@
 ANDROID_NDK_PREFER_VERSION = "28.1"
 LIBRARY_EXTENSION = { source = "${CARGO_MAKE_RUST_TARGET_OS}", mapping = { "linux" = "so", "macos" = "dylib" } }
 
+[tasks.release-build]
+command = "cargo"
+args = ["build", "--release", "--locked"]
+
 ##################################### DOCS ####################################
 
 [tasks.docs-rust-generic]
@@ -75,25 +79,31 @@ args = ["run", "--cwd", "bindings/js", "build"]
 ##################################### FFI #####################################
 
 [tasks.bindings-swift]
+dependencies = ["release-build"]
 command = "cargo"
 args = [
     "run",
     "--locked",
-    "--release",
     "--features", "uniffi/cli",
     "--bin", "uniffi-bindgen",
     "generate",
     "--language", "swift",
-    "--out-dir", "./bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi",
-    "--library", "../target/release/deps/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
+    "--out-dir", "./bindings/swift/WireCoreCrypto/WireCoreCrypto",
+    "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
+[tasks.ffi-swift]
+dependencies = ["compile-ffi-swift"]
+script = '''
+    mv ./bindings/swift/WireCoreCrypto/WireCoreCrypto/core_crypto_ffi.swift ./bindings/swift/WireCoreCrypto/WireCoreCrypto/CoreCrypto.swift
+'''
+
 [tasks.bindings-kotlin-android]
+dependencies = ["release-build"]
 command = "cargo"
 args = [
     "run",
     "--locked",
-    "--release",
     "--features", "uniffi/cli",
     "--bin", "uniffi-bindgen",
     "generate",
@@ -110,7 +120,6 @@ command = "cargo"
 args = [
     "run",
     "--locked",
-    "--release",
     "--features", "uniffi/cli",
     "--bin", "uniffi-bindgen",
     "generate",
