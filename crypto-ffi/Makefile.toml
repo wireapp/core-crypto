@@ -4,7 +4,7 @@ LIBRARY_EXTENSION = { source = "${CARGO_MAKE_RUST_TARGET_OS}", mapping = { "linu
 
 [tasks.release-build]
 command = "cargo"
-args = ["build", "--release", "--locked"]
+args = ["build", "--release", "--locked", "-p", "core-crypto-ffi"]
 
 ##################################### DOCS ####################################
 
@@ -78,14 +78,20 @@ args = ["run", "--cwd", "bindings/js", "build"]
 
 ##################################### FFI #####################################
 
-[tasks.bindings-swift]
-dependencies = ["release-build"]
+[tasks.uniffi-bindgen]
 command = "cargo"
 args = [
-    "run",
+    "build",
     "--locked",
+    "--release",
     "--features", "uniffi/cli",
     "--bin", "uniffi-bindgen",
+]
+
+[tasks.bindings-swift]
+dependencies = ["release-build", "uniffi-bindgen"]
+command = "../target/release/uniffi-bindgen"
+args = [
     "generate",
     "--language", "swift",
     "--out-dir", "./bindings/swift/WireCoreCrypto/WireCoreCrypto",
@@ -99,13 +105,9 @@ script = '''
 '''
 
 [tasks.bindings-kotlin-android]
-dependencies = ["release-build"]
-command = "cargo"
+dependencies = ["release-build", "uniffi-bindgen"]
+command = "../target/release/uniffi-bindgen"
 args = [
-    "run",
-    "--locked",
-    "--features", "uniffi/cli",
-    "--bin", "uniffi-bindgen",
     "generate",
     "--config", "uniffi-android.toml",
     "--language", "kotlin",
@@ -115,13 +117,9 @@ args = [
 ]
 
 [tasks.bindings-kotlin-jvm]
-dependencies = ["release-build"]
-command = "cargo"
+dependencies = ["release-build", "uniffi-bindgen"]
+command = "../target/release/uniffi-bindgen"
 args = [
-    "run",
-    "--locked",
-    "--features", "uniffi/cli",
-    "--bin", "uniffi-bindgen",
     "generate",
     "--language", "kotlin",
     "--no-format",
