@@ -115,4 +115,17 @@ internal class ProteusClientTest {
         bobClient.transaction { it.proteusCreateSession(aliceKey, ALICE_SESSION_ID) }
         assertNotNull(bobClient.transaction { it.proteusEncrypt("Hello World".encodeToByteArray(), ALICE_SESSION_ID) })
     }
+
+    @Test
+    fun givenNoSessionExists_whenGettingRemoteFingerprint_thenReturnSessionNotFound() = runTest {
+        val aliceClient = newProteusClient(alice)
+
+        assertFailsWith<CoreCryptoException.Proteus> {
+            aliceClient.transaction {
+                it.proteusGetRemoteFingerprint(
+                    ALICE_SESSION_ID
+                )
+            }
+        }.also { it.exception is ProteusException.SessionNotFound }
+    }
 }
