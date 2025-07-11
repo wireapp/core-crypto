@@ -218,20 +218,11 @@ impl Connection {
         Ok(())
     }
 
-    pub async fn can_close(&self) -> bool {
-        // transaction in progress
-        if self.transaction.lock().await.is_some() {
-            return false;
-        }
-        Arc::strong_count(&self.conn) <= 1
-    }
-
+    /// Wait for any running transaction to finish, then close the database connection.
     pub async fn close(self) -> CryptoKeystoreResult<()> {
-        if self.transaction.lock().await.is_some() {
-            return Err(CryptoKeystoreError::TransactionInProgress {
-                attempted_operation: "close()".to_string(),
-            });
-        }
+        // Wait for any running transaction to finish
+        let _semaphore = self.transaction_semaphore.acquire_arc().await;
+        // Ensure that there's only one reference to the connection
         let Some(conn) = Arc::into_inner(self.conn) else {
             return Err(CryptoKeystoreError::CannotClose);
         };

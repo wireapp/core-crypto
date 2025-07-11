@@ -337,17 +337,11 @@ impl Session {
             .map_err(Into::into)
     }
 
-    /// Reports whether the local KeyStore believes that it can currently close.
-    ///
-    /// Beware TOCTOU!
-    pub async fn can_close(&self) -> bool {
-        self.crypto_provider.can_close().await
-    }
-
-    /// Closes the connection with the local KeyStore
+    /// Waits for running transactions to finish, then closes the connection with the local KeyStore.
     ///
     /// # Errors
-    /// KeyStore errors, such as IO
+    /// KeyStore errors, such as IO, and if there is more than one strong reference
+    /// to the connection.
     pub async fn close(self) -> crate::mls::Result<()> {
         self.crypto_provider
             .close()
