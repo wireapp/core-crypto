@@ -25,6 +25,7 @@ repos:
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
+        args: [chore, build, refactor, fix, feat, test, ci, docs, wip, release] # git log  --oneline | cut -d' ' -f2- | rg '^[^:(!]+' -o | sort | uniq -c | sort -rn | rg -v '^\s*1 '
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.10.0.1
     hooks:
