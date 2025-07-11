@@ -167,99 +167,98 @@
 <a href=#167 id=167 data-nosnippet>167</a>        <span class="kw">let </span>[alice, bob] = case.sessions().<span class="kw">await</span>;
 <a href=#168 id=168 data-nosnippet>168</a>        Box::pin(<span class="kw">async move </span>{
 <a href=#169 id=169 data-nosnippet>169</a>            <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>;
-<a href=#170 id=170 data-nosnippet>170</a>            <span class="kw">let </span>id = conversation.id().clone();
-<a href=#171 id=171 data-nosnippet>171</a>
-<a href=#172 id=172 data-nosnippet>172</a>            <span class="kw">let </span>expiration_time = core::time::Duration::from_secs(<span class="number">14</span>);
-<a href=#173 id=173 data-nosnippet>173</a>            <span class="kw">let </span>start = web_time::Instant::now();
-<a href=#174 id=174 data-nosnippet>174</a>
-<a href=#175 id=175 data-nosnippet>175</a>            <span class="kw">let </span>intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
-<a href=#176 id=176 data-nosnippet>176</a>            <span class="kw">let </span>cert = CertificateBundle::new_with_default_values(intermediate_ca, <span class="prelude-val">Some</span>(expiration_time));
-<a href=#177 id=177 data-nosnippet>177</a>            <span class="kw">let </span>cb = Session::new_x509_credential_bundle(cert.clone()).unwrap();
-<a href=#178 id=178 data-nosnippet>178</a>            <span class="kw">let </span>conversation = conversation.e2ei_rotate_notify(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>cb)).<span class="kw">await</span>;
-<a href=#179 id=179 data-nosnippet>179</a>
-<a href=#180 id=180 data-nosnippet>180</a>            <span class="kw">let </span>alice_client = alice.transaction.session().<span class="kw">await</span>.unwrap();
-<a href=#181 id=181 data-nosnippet>181</a>            <span class="kw">let </span>alice_provider = alice.transaction.mls_provider().<span class="kw">await</span>.unwrap();
-<a href=#182 id=182 data-nosnippet>182</a>            <span class="comment">// Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
-<a href=#183 id=183 data-nosnippet>183</a>            </span>alice_client
-<a href=#184 id=184 data-nosnippet>184</a>                .save_new_x509_credential_bundle(<span class="kw-2">&amp;</span>alice_provider.keystore(), case.signature_scheme(), cert)
-<a href=#185 id=185 data-nosnippet>185</a>                .<span class="kw">await
-<a href=#186 id=186 data-nosnippet>186</a>                </span>.unwrap();
-<a href=#187 id=187 data-nosnippet>187</a>
-<a href=#188 id=188 data-nosnippet>188</a>            <span class="comment">// Need to fetch it before it becomes invalid &amp; expires
-<a href=#189 id=189 data-nosnippet>189</a>            </span><span class="kw">let </span>gi = alice.get_group_info(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>;
-<a href=#190 id=190 data-nosnippet>190</a>
-<a href=#191 id=191 data-nosnippet>191</a>            <span class="kw">let </span>elapsed = start.elapsed();
-<a href=#192 id=192 data-nosnippet>192</a>            <span class="comment">// Give time to the certificate to expire
-<a href=#193 id=193 data-nosnippet>193</a>            </span><span class="kw">if </span>expiration_time &gt; elapsed {
-<a href=#194 id=194 data-nosnippet>194</a>                async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
-<a href=#195 id=195 data-nosnippet>195</a>            }
-<a href=#196 id=196 data-nosnippet>196</a>
-<a href=#197 id=197 data-nosnippet>197</a>            <span class="kw">let </span>alice_state = conversation.e2ei_state().<span class="kw">await</span>;
-<a href=#198 id=198 data-nosnippet>198</a>            <span class="kw">let </span>bob_state = conversation.e2ei_state_of(<span class="kw-2">&amp;</span>bob).<span class="kw">await</span>;
-<a href=#199 id=199 data-nosnippet>199</a>            <span class="macro">assert_eq!</span>(alice_state, E2eiConversationState::NotVerified);
-<a href=#200 id=200 data-nosnippet>200</a>            <span class="macro">assert_eq!</span>(bob_state, E2eiConversationState::NotVerified);
-<a href=#201 id=201 data-nosnippet>201</a>
-<a href=#202 id=202 data-nosnippet>202</a>            <span class="kw">let </span>state = alice
-<a href=#203 id=203 data-nosnippet>203</a>                .transaction
-<a href=#204 id=204 data-nosnippet>204</a>                .get_credential_in_use(gi, MlsCredentialType::X509)
-<a href=#205 id=205 data-nosnippet>205</a>                .<span class="kw">await
-<a href=#206 id=206 data-nosnippet>206</a>                </span>.unwrap();
-<a href=#207 id=207 data-nosnippet>207</a>            <span class="macro">assert_eq!</span>(state, E2eiConversationState::NotVerified);
-<a href=#208 id=208 data-nosnippet>208</a>        })
-<a href=#209 id=209 data-nosnippet>209</a>        .<span class="kw">await
-<a href=#210 id=210 data-nosnippet>210</a>    </span>}
-<a href=#211 id=211 data-nosnippet>211</a>
-<a href=#212 id=212 data-nosnippet>212</a>    <span class="attr">#[apply(all_cred_cipher)]
-<a href=#213 id=213 data-nosnippet>213</a>    </span><span class="kw">async fn </span>should_be_not_verified_when_all_expired(case: TestContext) {
-<a href=#214 id=214 data-nosnippet>214</a>        <span class="kw">if </span>!case.is_x509() {
-<a href=#215 id=215 data-nosnippet>215</a>            <span class="kw">return</span>;
-<a href=#216 id=216 data-nosnippet>216</a>        }
-<a href=#217 id=217 data-nosnippet>217</a>        <span class="kw">let </span>alice_user_id = uuid::Uuid::new_v4();
-<a href=#218 id=218 data-nosnippet>218</a>        <span class="kw">let </span>[client_id] = case.x509_client_ids_for_user(<span class="kw-2">&amp;</span>alice_user_id);
-<a href=#219 id=219 data-nosnippet>219</a>        <span class="kw">let </span>[alice] = case.sessions_x509_with_client_ids([client_id]).<span class="kw">await</span>;
-<a href=#220 id=220 data-nosnippet>220</a>        Box::pin(<span class="kw">async move </span>{
-<a href=#221 id=221 data-nosnippet>221</a>            <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>;
-<a href=#222 id=222 data-nosnippet>222</a>
-<a href=#223 id=223 data-nosnippet>223</a>            <span class="kw">let </span>expiration_time = core::time::Duration::from_secs(<span class="number">14</span>);
-<a href=#224 id=224 data-nosnippet>224</a>            <span class="kw">let </span>start = web_time::Instant::now();
-<a href=#225 id=225 data-nosnippet>225</a>            <span class="kw">let </span>alice_test_chain = alice.x509_chain_unchecked();
-<a href=#226 id=226 data-nosnippet>226</a>
-<a href=#227 id=227 data-nosnippet>227</a>            <span class="kw">let </span>alice_intermediate_ca = alice_test_chain.find_local_intermediate_ca();
-<a href=#228 id=228 data-nosnippet>228</a>            <span class="kw">let </span><span class="kw-2">mut </span>alice_cert = alice_test_chain
-<a href=#229 id=229 data-nosnippet>229</a>                .actors
-<a href=#230 id=230 data-nosnippet>230</a>                .iter()
-<a href=#231 id=231 data-nosnippet>231</a>                .find(|actor| actor.name == alice_user_id.to_string())
-<a href=#232 id=232 data-nosnippet>232</a>                .unwrap()
-<a href=#233 id=233 data-nosnippet>233</a>                .clone();
-<a href=#234 id=234 data-nosnippet>234</a>            alice_intermediate_ca.update_end_identity(<span class="kw-2">&amp;mut </span>alice_cert.certificate, <span class="prelude-val">Some</span>(expiration_time));
-<a href=#235 id=235 data-nosnippet>235</a>
-<a href=#236 id=236 data-nosnippet>236</a>            <span class="kw">let </span>cert_bundle =
-<a href=#237 id=237 data-nosnippet>237</a>                CertificateBundle::from_certificate_and_issuer(<span class="kw-2">&amp;</span>alice_cert.certificate, alice_intermediate_ca);
-<a href=#238 id=238 data-nosnippet>238</a>            <span class="kw">let </span>cb = Session::new_x509_credential_bundle(cert_bundle.clone()).unwrap();
-<a href=#239 id=239 data-nosnippet>239</a>            <span class="kw">let </span>conversation = conversation.e2ei_rotate_notify(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>cb)).<span class="kw">await</span>;
-<a href=#240 id=240 data-nosnippet>240</a>
-<a href=#241 id=241 data-nosnippet>241</a>            <span class="kw">let </span>alice_client = alice.session().<span class="kw">await</span>;
-<a href=#242 id=242 data-nosnippet>242</a>            <span class="kw">let </span>alice_provider = alice.transaction.mls_provider().<span class="kw">await</span>.unwrap();
-<a href=#243 id=243 data-nosnippet>243</a>
-<a href=#244 id=244 data-nosnippet>244</a>            <span class="comment">// Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
-<a href=#245 id=245 data-nosnippet>245</a>            </span>alice_client
-<a href=#246 id=246 data-nosnippet>246</a>                .save_new_x509_credential_bundle(<span class="kw-2">&amp;</span>alice_provider.keystore(), case.signature_scheme(), cert_bundle)
-<a href=#247 id=247 data-nosnippet>247</a>                .<span class="kw">await
-<a href=#248 id=248 data-nosnippet>248</a>                </span>.unwrap();
-<a href=#249 id=249 data-nosnippet>249</a>
-<a href=#250 id=250 data-nosnippet>250</a>            <span class="kw">let </span>elapsed = start.elapsed();
-<a href=#251 id=251 data-nosnippet>251</a>            <span class="comment">// Give time to the certificate to expire
-<a href=#252 id=252 data-nosnippet>252</a>            </span><span class="kw">if </span>expiration_time &gt; elapsed {
-<a href=#253 id=253 data-nosnippet>253</a>                async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
-<a href=#254 id=254 data-nosnippet>254</a>            }
-<a href=#255 id=255 data-nosnippet>255</a>
-<a href=#256 id=256 data-nosnippet>256</a>            <span class="kw">let </span>alice_state = conversation.e2ei_state().<span class="kw">await</span>;
-<a href=#257 id=257 data-nosnippet>257</a>            <span class="macro">assert_eq!</span>(alice_state, E2eiConversationState::NotVerified);
-<a href=#258 id=258 data-nosnippet>258</a>
-<a href=#259 id=259 data-nosnippet>259</a>            <span class="comment">// Need to fetch it before it becomes invalid &amp; expires
-<a href=#260 id=260 data-nosnippet>260</a>            </span><span class="kw">let </span>state = conversation.e2ei_state_via_group_info().<span class="kw">await</span>;
-<a href=#261 id=261 data-nosnippet>261</a>            <span class="macro">assert_eq!</span>(state, E2eiConversationState::NotVerified);
-<a href=#262 id=262 data-nosnippet>262</a>        })
-<a href=#263 id=263 data-nosnippet>263</a>        .<span class="kw">await
-<a href=#264 id=264 data-nosnippet>264</a>    </span>}
-<a href=#265 id=265 data-nosnippet>265</a>}</code></pre></div></section></main></body></html>
+<a href=#170 id=170 data-nosnippet>170</a>
+<a href=#171 id=171 data-nosnippet>171</a>            <span class="kw">let </span>expiration_time = core::time::Duration::from_secs(<span class="number">14</span>);
+<a href=#172 id=172 data-nosnippet>172</a>            <span class="kw">let </span>start = web_time::Instant::now();
+<a href=#173 id=173 data-nosnippet>173</a>
+<a href=#174 id=174 data-nosnippet>174</a>            <span class="kw">let </span>intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
+<a href=#175 id=175 data-nosnippet>175</a>            <span class="kw">let </span>cert = CertificateBundle::new_with_default_values(intermediate_ca, <span class="prelude-val">Some</span>(expiration_time));
+<a href=#176 id=176 data-nosnippet>176</a>            <span class="kw">let </span>cb = Session::new_x509_credential_bundle(cert.clone()).unwrap();
+<a href=#177 id=177 data-nosnippet>177</a>            <span class="kw">let </span>conversation = conversation.e2ei_rotate_notify(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>cb)).<span class="kw">await</span>;
+<a href=#178 id=178 data-nosnippet>178</a>
+<a href=#179 id=179 data-nosnippet>179</a>            <span class="kw">let </span>alice_client = alice.transaction.session().<span class="kw">await</span>.unwrap();
+<a href=#180 id=180 data-nosnippet>180</a>            <span class="kw">let </span>alice_provider = alice.transaction.mls_provider().<span class="kw">await</span>.unwrap();
+<a href=#181 id=181 data-nosnippet>181</a>            <span class="comment">// Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
+<a href=#182 id=182 data-nosnippet>182</a>            </span>alice_client
+<a href=#183 id=183 data-nosnippet>183</a>                .save_new_x509_credential_bundle(<span class="kw-2">&amp;</span>alice_provider.keystore(), case.signature_scheme(), cert)
+<a href=#184 id=184 data-nosnippet>184</a>                .<span class="kw">await
+<a href=#185 id=185 data-nosnippet>185</a>                </span>.unwrap();
+<a href=#186 id=186 data-nosnippet>186</a>
+<a href=#187 id=187 data-nosnippet>187</a>            <span class="comment">// Need to fetch it before it becomes invalid &amp; expires
+<a href=#188 id=188 data-nosnippet>188</a>            </span><span class="kw">let </span>gi = conversation.export_group_info().<span class="kw">await</span>;
+<a href=#189 id=189 data-nosnippet>189</a>
+<a href=#190 id=190 data-nosnippet>190</a>            <span class="kw">let </span>elapsed = start.elapsed();
+<a href=#191 id=191 data-nosnippet>191</a>            <span class="comment">// Give time to the certificate to expire
+<a href=#192 id=192 data-nosnippet>192</a>            </span><span class="kw">if </span>expiration_time &gt; elapsed {
+<a href=#193 id=193 data-nosnippet>193</a>                async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
+<a href=#194 id=194 data-nosnippet>194</a>            }
+<a href=#195 id=195 data-nosnippet>195</a>
+<a href=#196 id=196 data-nosnippet>196</a>            <span class="kw">let </span>alice_state = conversation.e2ei_state().<span class="kw">await</span>;
+<a href=#197 id=197 data-nosnippet>197</a>            <span class="kw">let </span>bob_state = conversation.e2ei_state_of(<span class="kw-2">&amp;</span>bob).<span class="kw">await</span>;
+<a href=#198 id=198 data-nosnippet>198</a>            <span class="macro">assert_eq!</span>(alice_state, E2eiConversationState::NotVerified);
+<a href=#199 id=199 data-nosnippet>199</a>            <span class="macro">assert_eq!</span>(bob_state, E2eiConversationState::NotVerified);
+<a href=#200 id=200 data-nosnippet>200</a>
+<a href=#201 id=201 data-nosnippet>201</a>            <span class="kw">let </span>state = alice
+<a href=#202 id=202 data-nosnippet>202</a>                .transaction
+<a href=#203 id=203 data-nosnippet>203</a>                .get_credential_in_use(gi, MlsCredentialType::X509)
+<a href=#204 id=204 data-nosnippet>204</a>                .<span class="kw">await
+<a href=#205 id=205 data-nosnippet>205</a>                </span>.unwrap();
+<a href=#206 id=206 data-nosnippet>206</a>            <span class="macro">assert_eq!</span>(state, E2eiConversationState::NotVerified);
+<a href=#207 id=207 data-nosnippet>207</a>        })
+<a href=#208 id=208 data-nosnippet>208</a>        .<span class="kw">await
+<a href=#209 id=209 data-nosnippet>209</a>    </span>}
+<a href=#210 id=210 data-nosnippet>210</a>
+<a href=#211 id=211 data-nosnippet>211</a>    <span class="attr">#[apply(all_cred_cipher)]
+<a href=#212 id=212 data-nosnippet>212</a>    </span><span class="kw">async fn </span>should_be_not_verified_when_all_expired(case: TestContext) {
+<a href=#213 id=213 data-nosnippet>213</a>        <span class="kw">if </span>!case.is_x509() {
+<a href=#214 id=214 data-nosnippet>214</a>            <span class="kw">return</span>;
+<a href=#215 id=215 data-nosnippet>215</a>        }
+<a href=#216 id=216 data-nosnippet>216</a>        <span class="kw">let </span>alice_user_id = uuid::Uuid::new_v4();
+<a href=#217 id=217 data-nosnippet>217</a>        <span class="kw">let </span>[client_id] = case.x509_client_ids_for_user(<span class="kw-2">&amp;</span>alice_user_id);
+<a href=#218 id=218 data-nosnippet>218</a>        <span class="kw">let </span>[alice] = case.sessions_x509_with_client_ids([client_id]).<span class="kw">await</span>;
+<a href=#219 id=219 data-nosnippet>219</a>        Box::pin(<span class="kw">async move </span>{
+<a href=#220 id=220 data-nosnippet>220</a>            <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>;
+<a href=#221 id=221 data-nosnippet>221</a>
+<a href=#222 id=222 data-nosnippet>222</a>            <span class="kw">let </span>expiration_time = core::time::Duration::from_secs(<span class="number">14</span>);
+<a href=#223 id=223 data-nosnippet>223</a>            <span class="kw">let </span>start = web_time::Instant::now();
+<a href=#224 id=224 data-nosnippet>224</a>            <span class="kw">let </span>alice_test_chain = alice.x509_chain_unchecked();
+<a href=#225 id=225 data-nosnippet>225</a>
+<a href=#226 id=226 data-nosnippet>226</a>            <span class="kw">let </span>alice_intermediate_ca = alice_test_chain.find_local_intermediate_ca();
+<a href=#227 id=227 data-nosnippet>227</a>            <span class="kw">let </span><span class="kw-2">mut </span>alice_cert = alice_test_chain
+<a href=#228 id=228 data-nosnippet>228</a>                .actors
+<a href=#229 id=229 data-nosnippet>229</a>                .iter()
+<a href=#230 id=230 data-nosnippet>230</a>                .find(|actor| actor.name == alice_user_id.to_string())
+<a href=#231 id=231 data-nosnippet>231</a>                .unwrap()
+<a href=#232 id=232 data-nosnippet>232</a>                .clone();
+<a href=#233 id=233 data-nosnippet>233</a>            alice_intermediate_ca.update_end_identity(<span class="kw-2">&amp;mut </span>alice_cert.certificate, <span class="prelude-val">Some</span>(expiration_time));
+<a href=#234 id=234 data-nosnippet>234</a>
+<a href=#235 id=235 data-nosnippet>235</a>            <span class="kw">let </span>cert_bundle =
+<a href=#236 id=236 data-nosnippet>236</a>                CertificateBundle::from_certificate_and_issuer(<span class="kw-2">&amp;</span>alice_cert.certificate, alice_intermediate_ca);
+<a href=#237 id=237 data-nosnippet>237</a>            <span class="kw">let </span>cb = Session::new_x509_credential_bundle(cert_bundle.clone()).unwrap();
+<a href=#238 id=238 data-nosnippet>238</a>            <span class="kw">let </span>conversation = conversation.e2ei_rotate_notify(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>cb)).<span class="kw">await</span>;
+<a href=#239 id=239 data-nosnippet>239</a>
+<a href=#240 id=240 data-nosnippet>240</a>            <span class="kw">let </span>alice_client = alice.session().<span class="kw">await</span>;
+<a href=#241 id=241 data-nosnippet>241</a>            <span class="kw">let </span>alice_provider = alice.transaction.mls_provider().<span class="kw">await</span>.unwrap();
+<a href=#242 id=242 data-nosnippet>242</a>
+<a href=#243 id=243 data-nosnippet>243</a>            <span class="comment">// Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
+<a href=#244 id=244 data-nosnippet>244</a>            </span>alice_client
+<a href=#245 id=245 data-nosnippet>245</a>                .save_new_x509_credential_bundle(<span class="kw-2">&amp;</span>alice_provider.keystore(), case.signature_scheme(), cert_bundle)
+<a href=#246 id=246 data-nosnippet>246</a>                .<span class="kw">await
+<a href=#247 id=247 data-nosnippet>247</a>                </span>.unwrap();
+<a href=#248 id=248 data-nosnippet>248</a>
+<a href=#249 id=249 data-nosnippet>249</a>            <span class="kw">let </span>elapsed = start.elapsed();
+<a href=#250 id=250 data-nosnippet>250</a>            <span class="comment">// Give time to the certificate to expire
+<a href=#251 id=251 data-nosnippet>251</a>            </span><span class="kw">if </span>expiration_time &gt; elapsed {
+<a href=#252 id=252 data-nosnippet>252</a>                async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
+<a href=#253 id=253 data-nosnippet>253</a>            }
+<a href=#254 id=254 data-nosnippet>254</a>
+<a href=#255 id=255 data-nosnippet>255</a>            <span class="kw">let </span>alice_state = conversation.e2ei_state().<span class="kw">await</span>;
+<a href=#256 id=256 data-nosnippet>256</a>            <span class="macro">assert_eq!</span>(alice_state, E2eiConversationState::NotVerified);
+<a href=#257 id=257 data-nosnippet>257</a>
+<a href=#258 id=258 data-nosnippet>258</a>            <span class="comment">// Need to fetch it before it becomes invalid &amp; expires
+<a href=#259 id=259 data-nosnippet>259</a>            </span><span class="kw">let </span>state = conversation.e2ei_state_via_group_info().<span class="kw">await</span>;
+<a href=#260 id=260 data-nosnippet>260</a>            <span class="macro">assert_eq!</span>(state, E2eiConversationState::NotVerified);
+<a href=#261 id=261 data-nosnippet>261</a>        })
+<a href=#262 id=262 data-nosnippet>262</a>        .<span class="kw">await
+<a href=#263 id=263 data-nosnippet>263</a>    </span>}
+<a href=#264 id=264 data-nosnippet>264</a>}</code></pre></div></section></main></body></html>

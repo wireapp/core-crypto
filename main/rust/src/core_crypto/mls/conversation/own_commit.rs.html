@@ -176,8 +176,8 @@
 <a href=#176 id=176 data-nosnippet>176</a>            </span><span class="macro">assert!</span>(!conversation.has_pending_proposals().<span class="kw">await</span>);
 <a href=#177 id=177 data-nosnippet>177</a>
 <a href=#178 id=178 data-nosnippet>178</a>            <span class="comment">// verify that we return the new identity
-<a href=#179 id=179 data-nosnippet>179</a>            </span>alice
-<a href=#180 id=180 data-nosnippet>180</a>                .verify_local_credential_rotated(conversation.id(), new_handle, new_display_name)
+<a href=#179 id=179 data-nosnippet>179</a>            </span>conversation
+<a href=#180 id=180 data-nosnippet>180</a>                .verify_credential_handle_and_name(new_handle, new_display_name)
 <a href=#181 id=181 data-nosnippet>181</a>                .<span class="kw">await</span>;
 <a href=#182 id=182 data-nosnippet>182</a>        })
 <a href=#183 id=183 data-nosnippet>183</a>        .<span class="kw">await
