@@ -110,6 +110,8 @@ pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
 
     async fn open_in_memory(key: &DatabaseKey) -> CryptoKeystoreResult<Self>;
 
+    async fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()>;
+
     async fn close(self) -> CryptoKeystoreResult<()>;
 
     /// Default implementation of wipe
@@ -205,6 +207,10 @@ impl Connection {
         new_key: &DatabaseKey,
     ) -> CryptoKeystoreResult<()> {
         KeystoreDatabaseConnection::migrate_db_key_type_to_bytes(name, old_key, new_key).await
+    }
+
+    pub async fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
+        self.conn.lock().await.update_key(new_key).await
     }
 
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
