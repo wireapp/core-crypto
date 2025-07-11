@@ -3,6 +3,8 @@
 package com.wire.crypto
 
 import com.wire.crypto.testutils.genDatabaseKey
+import com.wire.crypto.uniffi.CoreCryptoException
+import com.wire.crypto.uniffi.ProteusException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
@@ -82,10 +84,10 @@ internal class ProteusClientTest {
         }
         aliceClient.transaction { it.proteusDecrypt(encryptedMessage1, BOB_SESSION_ID) }
 
-        val exception: CoreCryptoException.Proteus = assertFailsWith {
+        val exception = assertFailsWith<CoreCryptoException.Proteus> {
             aliceClient.transaction { it.proteusDecrypt(encryptedMessage1, BOB_SESSION_ID) }
         }
-        assertEquals(ProteusException.DuplicateMessage(), exception.exception)
+        assertIs<ProteusException.DuplicateMessage>(exception.proteusError)
     }
 
     @Test

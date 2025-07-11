@@ -229,10 +229,9 @@ final class WireCoreCryptoTests: XCTestCase {
         }
 
         let expectedError = CoreCryptoError.Mls(
-            MlsError.ConversationAlreadyExists(
-                conversationId.copyBytes()
-            )
-        )
+            mlsError: MlsError.ConversationAlreadyExists(
+                conversationId: conversationId.copyBytes()
+            ))
 
         try await alice.transaction { ctx in
             await self.XCTAssertThrowsErrorAsync(expectedError) {
@@ -391,7 +390,7 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertEqual(plaintext, message)
 
         try await bob.transaction { context in
-            await self.XCTAssertThrowsErrorAsync(CoreCryptoError.Mls(.DuplicateMessage)) {
+            await self.XCTAssertThrowsErrorAsync(CoreCryptoError.Mls(mlsError: .DuplicateMessage)) {
                 _ = try await context.decryptMessage(
                     conversationId: conversationId, payload: ciphertext)
             }
