@@ -4,6 +4,7 @@
 
 ### Features
 
+- [**breaking**] remove `can_close()` and `isLocked()` [WPB-17633] ([58b4aa2](https://github.com/wireapp/core-crypto/commit/58b4aa2ff94cc2c3e9289121100df476ad733314))
 - update history client on member remove [WPB-17096] ([714ff73](https://github.com/wireapp/core-crypto/commit/714ff739ebe8ae3acbb643fd6a0ddde1be58d3e1))
 - update Android NDK to 28.1 [WPB-18293] ([6101eb8](https://github.com/wireapp/core-crypto/commit/6101eb80187a5384eb48e9e94342fc8607abeebf))
 - implement enabling and disabling history sharing [WPB-17106] ([b036967](https://github.com/wireapp/core-crypto/commit/b036967208be65444c5dfd6ba93017d63106912f))
