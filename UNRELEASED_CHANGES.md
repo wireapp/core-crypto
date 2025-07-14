@@ -31,6 +31,7 @@
 
 ### Bug Fixes
 
+- proteus error type mapping ([2ec2fa9](https://github.com/wireapp/core-crypto/commit/2ec2fa9fe2051801660a10332a8a8c5d60aab383))
 - add missing API to `CoreCryptoProtocol` [WPB-18634] ([a816979](https://github.com/wireapp/core-crypto/commit/a81697941e29b79e60f721511a23957de64fc1c4))
 - `Error::ConversationAlreadyExists` has a byte vector not handle ([1660757](https://github.com/wireapp/core-crypto/commit/1660757ea2fc66945b6e0d776bbc2b9f15c0537f))
 - use new types where appropriate ([19b1ffa](https://github.com/wireapp/core-crypto/commit/19b1ffa4b6b509a59f20ee07ae845f94b2a5b3ec))
@@ -62,6 +63,7 @@
 
 ### Testing
 
+- proteus session not found maps to correct error type ([0a481ef](https://github.com/wireapp/core-crypto/commit/0a481ef33b9f5606f31ae7b776118dacbcbe4798))
 - re-add database tests which were accidentally omitted ([185e90f](https://github.com/wireapp/core-crypto/commit/185e90f0bf749266478854c85ac620e432569fb8))
 - test history client update on remove ([f2aa941](https://github.com/wireapp/core-crypto/commit/f2aa94193171a3638b764b22642ee02bc5c4459e))
 - test history sharing [WPB-17106] ([79025cd](https://github.com/wireapp/core-crypto/commit/79025cd56c9fdde0950db742cdbb14db3eaa69ed))
