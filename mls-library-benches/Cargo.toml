@@ -8,7 +8,10 @@ license = "GPL-3.0-only"
 clap = { version = "4.5.41", features = ["derive"] }
 crc32fast = "1.5.0"
 mls-rs = "0.49.0"
-openmls.workspace = true
+openmls = "0.6.0"
+openmls_basic_credential = "0.3.0"
+openmls_rust_crypto = "0.3.0"
+openmls_traits = "0.3.0"
 rand = "0.9.1"
 rand_distr = "0.5.1"
 

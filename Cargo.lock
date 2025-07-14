@@ -832,9 +832,9 @@ dependencies = [
  "js-sys",
  "log",
  "mls-crypto-provider",
- "openmls",
- "openmls_basic_credential",
- "openmls_traits",
+ "openmls 1.0.0",
+ "openmls_basic_credential 0.2.0",
+ "openmls_traits 0.2.0",
  "openmls_x509_credential",
  "pem",
  "proteus",
@@ -928,9 +928,9 @@ dependencies = [
  "js-sys",
  "log",
  "mls-crypto-provider",
- "openmls",
- "openmls_basic_credential",
- "openmls_traits",
+ "openmls 1.0.0",
+ "openmls_basic_credential 0.2.0",
+ "openmls_traits 0.2.0",
  "openmls_x509_credential",
  "postcard",
  "proteus-traits",
@@ -1218,7 +1218,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "clap",
- "openmls",
+ "openmls 1.0.0",
  "proteus-wasm",
 ]
 
@@ -2016,6 +2016,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "hpke-rs"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e11bd4ee27b79fa1820e72ef8489cc729c87299ec3f7f52b8fc8dcb87cb2d485"
+dependencies = [
+ "hpke-rs-crypto",
+ "log",
+ "serde",
+ "tls_codec",
+ "zeroize",
+]
+
+[[package]]
+name = "hpke-rs-crypto"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c3f1ae0a26c18d6469a70db1217136056261c4a244b09a755bc60bd4e055b67"
+dependencies = [
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "hpke-rs-rust-crypto"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a08d4500baf0aced746723d3515d08212bdb9d941df6d1aca3d46d1619b2a1cf"
+dependencies = [
+ "aes-gcm",
+ "chacha20poly1305",
+ "hkdf 0.12.4",
+ "hpke-rs-crypto",
+ "p256",
+ "p384",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+ "sha2",
+ "x25519-dalek",
+]
+
+[[package]]
 name = "http"
 version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2385,7 +2425,7 @@ dependencies = [
  "fantoccini",
  "hex",
  "log",
- "openmls",
+ "openmls 1.0.0",
  "proteus-wasm",
  "rand 0.8.5",
  "serde",
@@ -2559,9 +2599,9 @@ dependencies = [
  "core-crypto",
  "core-crypto-keystore",
  "hex",
- "openmls",
- "openmls_basic_credential",
- "openmls_traits",
+ "openmls 1.0.0",
+ "openmls_basic_credential 0.2.0",
+ "openmls_traits 0.2.0",
  "openmls_x509_credential",
  "postcard",
  "proteus-wasm",
@@ -2788,8 +2828,8 @@ dependencies = [
  "hkdf 0.12.4",
  "hmac",
  "hpke",
- "openmls",
- "openmls_traits",
+ "openmls 1.0.0",
+ "openmls_traits 0.2.0",
  "p256",
  "p384",
  "p521",
@@ -2821,7 +2861,10 @@ dependencies = [
  "crc32fast",
  "criterion",
  "mls-rs",
- "openmls",
+ "openmls 0.6.0",
+ "openmls_basic_credential 0.3.0",
+ "openmls_rust_crypto",
+ "openmls_traits 0.3.0",
  "rand 0.9.1",
  "rand_distr",
 ]
@@ -3024,6 +3067,20 @@ checksum = "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381"
 
 [[package]]
 name = "openmls"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f1295188c6665fb9e96466180ac0a919ef52b5861cf7e86523823661348a597"
+dependencies = [
+ "log",
+ "openmls_traits 0.3.0",
+ "rayon",
+ "serde",
+ "thiserror 1.0.69",
+ "tls_codec",
+]
+
+[[package]]
+name = "openmls"
 version = "1.0.0"
 source = "git+https://github.com/wireapp/openmls?rev=c9cde17076508968c9cbead5728454f0a1f60c4f#c9cde17076508968c9cbead5728454f0a1f60c4f"
 dependencies = [
@@ -3033,8 +3090,8 @@ dependencies = [
  "indexmap",
  "itertools 0.12.1",
  "log",
- "openmls_basic_credential",
- "openmls_traits",
+ "openmls_basic_credential 0.2.0",
+ "openmls_traits 0.2.0",
  "openmls_x509_credential",
  "serde",
  "subtle",
@@ -3052,13 +3109,65 @@ dependencies = [
  "async-trait",
  "ed25519-dalek",
  "getrandom 0.2.15",
- "openmls_traits",
+ "openmls_traits 0.2.0",
  "p256",
  "p384",
  "p521",
  "rand_core 0.6.4",
  "secrecy",
  "serde",
+ "tls_codec",
+]
+
+[[package]]
+name = "openmls_basic_credential"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "465874276a4e2a3e391b25a464059a224c70c5c77ca1e3f595032bb310ab8984"
+dependencies = [
+ "ed25519-dalek",
+ "openmls_traits 0.3.0",
+ "p256",
+ "rand 0.8.5",
+ "serde",
+ "tls_codec",
+]
+
+[[package]]
+name = "openmls_memory_storage"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea9cc9eb04ed97262fa96382d7dbf0adfebd5ecde7dbafc7070f9231dd9cf08b"
+dependencies = [
+ "log",
+ "openmls_traits 0.3.0",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "openmls_rust_crypto"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1038331eabb5e63f276c9f866c081167c3ec1448ece0bf2bd535d1ecb5083d39"
+dependencies = [
+ "aes-gcm",
+ "chacha20poly1305",
+ "ed25519-dalek",
+ "hkdf 0.12.4",
+ "hmac",
+ "hpke-rs",
+ "hpke-rs-crypto",
+ "hpke-rs-rust-crypto",
+ "openmls_memory_storage",
+ "openmls_traits 0.3.0",
+ "p256",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "serde",
+ "sha2",
+ "thiserror 1.0.69",
  "tls_codec",
 ]
 
@@ -3080,6 +3189,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "openmls_traits"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "443afa05406adc75fbfa0c3e04db93c5647b763861a474ae1aa8a99c362b80f8"
+dependencies = [
+ "serde",
+ "tls_codec",
+]
+
+[[package]]
 name = "openmls_x509_credential"
 version = "0.2.0"
 source = "git+https://github.com/wireapp/openmls?rev=c9cde17076508968c9cbead5728454f0a1f60c4f#c9cde17076508968c9cbead5728454f0a1f60c4f"
@@ -3087,8 +3206,8 @@ dependencies = [
  "async-trait",
  "base64 0.21.7",
  "const-oid",
- "openmls_basic_credential",
- "openmls_traits",
+ "openmls_basic_credential 0.2.0",
+ "openmls_traits 0.2.0",
  "percent-encoding",
  "secrecy",
  "serde",
