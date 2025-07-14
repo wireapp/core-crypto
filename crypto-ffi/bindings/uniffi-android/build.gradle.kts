@@ -43,14 +43,14 @@ android {
     }
 }
 
-val processedResourcesDir = buildDir.resolve("processedResources")
+val processedResourcesDir = layout.buildDirectory.dir("processedResources")
 
 fun registerCopyJvmBinaryTask(target: String, jniTarget: String, include: String = "*.so"): TaskProvider<Copy> =
     tasks.register<Copy>("copy-$target") {
         group = "uniffi"
         from(projectDir.resolve("../../../target/$target/release"))
         include(include)
-        into(processedResourcesDir.resolve(jniTarget))
+        into(processedResourcesDir.get().dir(jniTarget))
     }
 
 val copyBinariesTasks = listOf(
