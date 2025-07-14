@@ -5,6 +5,7 @@ edition = "2024"
 license = "GPL-3.0-only"
 
 [dependencies]
+clap = { version = "4.5.41", features = ["derive"] }
 crc32fast = "1.5.0"
 mls-rs = "0.49.0"
 openmls.workspace = true
