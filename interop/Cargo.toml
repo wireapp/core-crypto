@@ -49,7 +49,7 @@ warp = { version = "0.3", default-features = false }
 fantoccini = "0.22"
 proteus-wasm = { workspace = true, optional = true }
 which = "8.0.0"
-tree-sitter = "0.25.6"
+tree-sitter = "0.25.8"
 tree-sitter-typescript = "0.23.2"
 
 [target.'cfg(not(target_family = "wasm"))'.build-dependencies]
