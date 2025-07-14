@@ -8,6 +8,7 @@ members = [
   "mls-provider",
   "interop",
   "decode",
+  "mls-library-benches",
 ]
 resolver = "2"
 
