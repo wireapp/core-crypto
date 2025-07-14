@@ -15,7 +15,7 @@ dependencies = [
 ]
 script = '''
   cd bindings
-  ./gradlew android:dokkaHtml
+  ./gradlew android:dokkaGeneratePublicationHtml
   cd -
   mkdir -p ../target/kotlin/doc
   cp -R bindings/android/build/dokka/html/ ../target/kotlin/doc

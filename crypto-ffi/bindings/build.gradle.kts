@@ -43,6 +43,18 @@ allprojects {
             showStackTraces = true
         }
     }
+
+    dokka {
+        moduleName.set("CoreCrypto")
+        pluginsConfiguration.html {
+            footerMessage.set("Copyright Wire GmbH")
+        }
+        dokkaSourceSets.configureEach {
+            sourceLink {
+                remoteUrl("https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm")
+            }
+        }
+    }
 }
 
 tasks.withType<Wrapper>().configureEach {

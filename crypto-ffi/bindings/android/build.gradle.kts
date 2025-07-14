@@ -9,8 +9,8 @@ plugins {
 
 val kotlinSources = projectDir.resolve("../jvm/src")
 val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
-    dependsOn(tasks.dokkaHtml)
-    from(tasks.dokkaHtml)
+    dependsOn(tasks.dokkaGeneratePublicationHtml)
+    from(tasks.dokkaGeneratePublicationHtml.flatMap { it.outputDirectory })
     archiveClassifier.set("html-docs")
 }
 
