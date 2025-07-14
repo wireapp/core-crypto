@@ -1,0 +1,98 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Wire Core-Crypto Keystore"><title>core_crypto_keystore - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-1a91846b.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="core_crypto_keystore" data-themes="" data-resource-suffix="" data-rustdoc-version="1.88.0 (6b00bc388 2025-06-23)" data-channel="1.88.0" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-4e99c027.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../core_crypto_keystore/index.html">core_<wbr>crypto_<wbr>keystore</a><span class="version">7.0.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#wire-core-crypto-keystore" title="Wire Core-Crypto Keystore">Wire Core-Crypto Keystore</a></li><li><a href="#corecrypto-keystore-implementation" title="CoreCrypto Keystore Implementation">CoreCrypto Keystore Implementation</a><ul><li><a href="#goals" title="Goals">Goals</a></li><li><a href="#targets" title="Targets">Targets</a></li><li><a href="#implementation-details" title="Implementation details">Implementation details</a></li></ul></li></ul><h3><a href="#reexports">Crate Items</a></h3><ul class="block"><li><a href="#reexports" title="Re-exports">Re-exports</a></li><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#enums" title="Enums">Enums</a></li><li><a href="#traits" title="Traits">Traits</a></li><li><a href="#functions" title="Functions">Functions</a></li><li><a href="#types" title="Type Aliases">Type Aliases</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>core_crypto_keystore</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/core_crypto_keystore/lib.rs.html#1-115">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="wire-core-crypto-keystore"><a class="doc-anchor" href="#wire-core-crypto-keystore">§</a>Wire Core-Crypto Keystore</h2>
+<p>Encrypted keystore for MLS &amp; Proteus using SQLCipher on most platforms, and an AES-GCM-256 encrypted IndexedDB store for WASM.</p>
+<h2 id="corecrypto-keystore-implementation"><a class="doc-anchor" href="#corecrypto-keystore-implementation">§</a>CoreCrypto Keystore Implementation</h2><h3 id="goals"><a class="doc-anchor" href="#goals">§</a>Goals</h3>
+<ul>
+<li>Some sort of persistent data storage layer</li>
+<li>Encryption at-rest of the persisted keying material</li>
+<li>Compatibility with target libraries storage traits (i.e. OpenMLS &amp; Proteus)</li>
+<li>Compatibility with our preferred targets (native, iOS, Android, Web browsers via WebAssembly)</li>
+</ul>
+<h3 id="targets"><a class="doc-anchor" href="#targets">§</a>Targets</h3><h4 id="native---ios---android-aka-generic"><a class="doc-anchor" href="#native---ios---android-aka-generic">§</a>Native - iOS - Android (aka Generic)</h4>
+<p>Nothing very fancy, pretty much everything is handed off to SQLCipher</p>
+<ul>
+<li>Backing store: Encrypted SQLite database (with <a href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>)</li>
+<li>Encryption: AES256-CBC with per-page IV (provided by <a href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>).
+<ul>
+<li>Value-Level Encryption is also possible on the <a href="https://www.zetetic.net/sqlcipher/value-level-encryption/">Commercial or Enterprise editions</a> if we want additional security guarantees</li>
+</ul>
+</li>
+<li>Crypto primitives provider: <a href="https://www.openssl.org/">OpenSSL</a></li>
+<li>PRNG provider: <a href="https://www.openssl.org/">OpenSSL</a></li>
+</ul>
+<h4 id="wasm"><a class="doc-anchor" href="#wasm">§</a>WASM</h4>
+<ul>
+<li>Backing store: <code>IndexedDB</code> (with the <a href="https://crates.io/crates/rexie"><code>rexie</code></a> crate)</li>
+<li>Encryption: AES256-GCM Value-Level-Encryption with random, non-reused 96-bits nonces and embedded authentication tag (AAD) of the AEAD
+<ul>
+<li>Caveat: Primary IDs are not encrypted, as this would compromise lookup and cause whole table <br/>
+scans. It is thus not recommended to store sensitive or identifying data in the primary ID.</li>
+<li>Caveat: Indexed searches do work, in two steps, an optimistic step fetching an unencrypted record, <br />
+and a fallback step iterating on all records, decrypting the targeted field and checking it. Worst case it will run a whole table scan.</li>
+</ul>
+</li>
+<li>Crypto primitives provider: RustCrypto - <a href="https://crates.io/crates/aes-gcm"><code>aes-gcm</code></a> crate</li>
+<li>PRNG provider: <a href="https://crates.io/crates/rand"><code>rand</code></a> crate with <a href="https://crates.io/crates/getrandom"><code>getrandom</code></a> (uses <a href="https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues">Crypto.getRandomValues</a> under the hood)</li>
+</ul>
+<h3 id="implementation-details"><a class="doc-anchor" href="#implementation-details">§</a>Implementation details</h3><h4 id="overview"><a class="doc-anchor" href="#overview">§</a>Overview</h4><div class="example-wrap"><pre class="language-mermaid"><code>graph TD
+    subgraph KS [Keystore]
+        subgraph w [WASM]
+            B(Keystore Entities)
+            C{AES-256-GCM} --&gt;|Stores| R[Rexie]
+            B -.-&gt;|Encrypts| C
+            C -.-&gt;|Decrypts| B
+            R -.-&gt; I[IndexedDB]
+        end
+
+        subgraph g [Generic]
+            RS[Rusqlite] --&gt; S[SQLCipher]
+            SC{AES-256-CBC}
+            S -.-&gt;|Encrypts| SC
+            SC -.-&gt;|Decrypts| S
+            SC --&gt;|Stores| SF[File]
+        end
+    end</code></pre></div><h4 id="native"><a class="doc-anchor" href="#native">§</a>Native</h4>
+<p>See <a href="https://www.zetetic.net/sqlcipher/design/">SQLCipher design</a></p>
+<p>Summary:</p>
+<ul>
+<li>SQLCipher’s file page size by default is 4096 bytes</li>
+<li>When using a passphrase (our case), the provided passphrase is derived using PBKDF2-HMAC-SHA512. <br />
+The salt of this KDF is stored in the 16 first bytes of the file.
+<ul>
+<li>Note: This cannot be kept as-is on iOS as iOS needs to be able to read the first 16-32 bytes of SQLite databases to “magically” guess they are SQLite databases<br />
+and to allow reading them from the background. This is very useful in the case of background work on iOS such as encrypted data in notifications needing access to the keystore.<br />
+It’s also used for working with a Watch App.</li>
+</ul>
+</li>
+<li>Each page is encrypted or decrypted on-the-fly using AES256-CBC
+<ul>
+<li>Provided by OpenSSL -<code>v1.1.1p</code> as of 29/06/22- in our case, but the crypto provider can be changed to NSS, LibTomCrypt or Security.framework</li>
+</ul>
+</li>
+<li>Each page is written with a unique, random IV (<em>initialization vector</em>). This IV is regenerated on each page write. This IV is appended at the end of each page.</li>
+<li>Page ciphertexts are authenticated using an authentication tag using HMAC-SHA512. This tag is also appended at the each of the page.</li>
+</ul>
+<h4 id="wasm-1"><a class="doc-anchor" href="#wasm-1">§</a>WASM</h4><h5 id="how-the-value-level-encryption-works"><a class="doc-anchor" href="#how-the-value-level-encryption-works">§</a>How the value-level encryption works</h5>
+<ul>
+<li>The store key is hashed using SHA256 to always produce 32 bytes. AES256 requires keys to be exactly 32 bytes <br />
+so that’s a way to transform a passphrase into a concrete key.</li>
+<li>Entities (i.e. Models in an ORM environment) dictate which fields are encrypted and with which AAD <br />
+through their implementation of the <code>Entity</code> trait.</li>
+<li>By default, the AAD is the primary ID of the IndexedDB collection (i.e Table in a SQL database environment)</li>
+<li>AES256-GCM is used to encrypt the aforementioned fields
+<ul>
+<li>A random 96-bit (12 bytes) Nonce is generated</li>
+<li>The AAD is fetched through <code>Entity::aad()</code></li>
+<li>Together they are fed to <a href="https://crates.io/crates/aes-gcm"><code>aes-gcm</code></a> to create a ciphertext with embedded authentication tag</li>
+</ul>
+</li>
+<li>The ciphertext is then stored along with its nonce with the following data layout:
+<ul>
+<li>Cleartext: A buffer of N bytes (<code>[u8; N]</code>)</li>
+<li>Ciphertext: <code>[12 bytes of nonce..., ...ciphertext]</code></li>
+</ul>
+</li>
+<li>When decrypting, the stored nonce is picked apart from the ciphertext, the AAD is also fetched, then the cleartext is <br />
+decrypted and returned</li>
+<li>Note: All the fields from all entities are zeroed on drop for security reasons</li>
+</ul>
+</div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><dl class="item-table reexports"><dt id="reexport.Connection"><code>pub use connection::<a class="struct" href="connection/struct.Connection.html" title="struct core_crypto_keystore::connection::Connection">Connection</a>;</code></dt><dt id="reexport.ConnectionType"><code>pub use connection::<a class="enum" href="connection/enum.ConnectionType.html" title="enum core_crypto_keystore::connection::ConnectionType">ConnectionType</a>;</code></dt><dt id="reexport.DatabaseKey"><code>pub use connection::<a class="struct" href="connection/struct.DatabaseKey.html" title="struct core_crypto_keystore::connection::DatabaseKey">DatabaseKey</a>;</code></dt></dl><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="connection/index.html" title="mod core_crypto_keystore::connection">connection</a></dt><dt><a class="mod" href="entities/index.html" title="mod core_crypto_keystore::entities">entities</a></dt><dt><a class="mod" href="transaction/index.html" title="mod core_crypto_keystore::transaction">transaction</a></dt></dl><h2 id="enums" class="section-header">Enums<a href="#enums" class="anchor">§</a></h2><dl class="item-table"><dt><a class="enum" href="enum.CryptoKeystoreError.html" title="enum core_crypto_keystore::CryptoKeystoreError">Crypto<wbr>Keystore<wbr>Error</a></dt><dd>Error type to represent various errors that can happen in the KeyStore</dd><dt><a class="enum" href="enum.MissingKeyErrorKind.html" title="enum core_crypto_keystore::MissingKeyErrorKind">Missing<wbr>KeyError<wbr>Kind</a></dt><dd>Error to represent when a key is not present in the KeyStore</dd></dl><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><dl class="item-table"><dt><a class="trait" href="trait.CryptoKeystoreMls.html" title="trait core_crypto_keystore::CryptoKeystoreMls">Crypto<wbr>Keystore<wbr>Mls</a></dt><dd>An interface for the specialized queries in the KeyStore</dd><dt><a class="trait" href="trait.CryptoKeystoreProteus.html" title="trait core_crypto_keystore::CryptoKeystoreProteus">Crypto<wbr>Keystore<wbr>Proteus</a></dt></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.deser.html" title="fn core_crypto_keystore::deser">deser</a></dt><dt><a class="fn" href="fn.ser.html" title="fn core_crypto_keystore::ser">ser</a></dt></dl><h2 id="types" class="section-header">Type Aliases<a href="#types" class="anchor">§</a></h2><dl class="item-table"><dt><a class="type" href="type.CryptoKeystoreResult.html" title="type core_crypto_keystore::CryptoKeystoreResult">Crypto<wbr>Keystore<wbr>Result</a></dt><dd>A specialized Result for the KeyStore functions</dd></dl></section></div></main></body></html>

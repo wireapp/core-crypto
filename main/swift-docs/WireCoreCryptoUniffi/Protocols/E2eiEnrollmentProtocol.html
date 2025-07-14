@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>E2eiEnrollmentProtocol Protocol Reference</title>
+    <link rel="stylesheet" type="text/css" href="../../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../../css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="../../js/jquery.min.js" defer></script>
+    <script src="../../js/jazzy.js" defer></script>
+    
+    <script src="../../js/lunr.min.js" defer></script>
+    <script src="../../js/typeahead.jquery.js" defer></script>
+    <script src="../../js/jazzy.search.js" defer></script>
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Protocol/E2eiEnrollmentProtocol" class="dashAnchor"></a>
+    <a title="E2eiEnrollmentProtocol Protocol Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (76% documented)</p>
+        <div class="header-right">
+          <form role="search" action="../../search.json">
+            <input type="text" placeholder="Search documentation" data-typeahead>
+          </form>
+        </div>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="../../index.html">WireCoreCrypto</a>
+        <img id="carat" src="../../img/carat.png" alt=""/>
+        <a href="../../Protocols.html">Protocols</a>
+        <img id="carat" src="../../img/carat.png" alt=""/>
+        WireCoreCryptoUniffi.E2eiEnrollmentProtocol Protocol Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="../../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCrypto/Classes/CoreCrypto.html">CoreCrypto</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/CoreCrypto.html">CoreCrypto</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/CoreCryptoContext.html">CoreCryptoContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/CoreCryptoLoggerImpl.html">CoreCryptoLoggerImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/E2eiEnrollment.html">E2eiEnrollment</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/EpochObserverImpl.html">EpochObserverImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/ExternalSenderKey.html">ExternalSenderKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/GroupInfo.html">GroupInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/HistoryObserverImpl.html">HistoryObserverImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/KeyPackage.html">KeyPackage</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/MlsTransportImpl.html">MlsTransportImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/SecretKey.html">SecretKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/Welcome.html">Welcome</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../../Enums.html">Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/Ciphersuite.html">Ciphersuite</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/CoreCryptoError.html">CoreCryptoError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/CoreCryptoLogLevel.html">CoreCryptoLogLevel</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/CredentialType.html">CredentialType</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/DeviceStatus.html">DeviceStatus</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/E2eiConversationState.html">E2eiConversationState</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/EpochChangedReportingError.html">EpochChangedReportingError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/LoggingError.html">LoggingError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/MlsError.html">MlsError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/MlsGroupInfoEncryptionType.html">MlsGroupInfoEncryptionType</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/MlsRatchetTreeType.html">MlsRatchetTreeType</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/MlsTransportResponse.html">MlsTransportResponse</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/NewHistoryClientReportingError.html">NewHistoryClientReportingError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/ProteusError.html">ProteusError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/WirePolicy.html">WirePolicy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../../Functions.html">Functions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi13buildMetadataAA05BuildF0VyF">buildMetadata()</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi18ciphersuiteDefaultAA11CiphersuiteOyF">ciphersuiteDefault()</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi18ciphersuiteFromU1612discriminantAA11CiphersuiteOs6UInt16V_tKF">ciphersuiteFromU16(discriminant:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi04coreC12DeferredInit4path3key11entropySeedAA0bC0CSS_10Foundation4DataVAJSgtYaKF">coreCryptoDeferredInit(path:key:entropySeed:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi04coreC13HistoryClient13historySecretAA0bC0CAA0fI0V_tYaKF">coreCryptoHistoryClient(historySecret:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi04coreC3New4path3key8clientId12ciphersuites11entropySeed12nbKeyPackageAA0bC0CSS_10Foundation4DataVAA06ClientJ0CSayAA11CiphersuiteOGAMSgs6UInt32VSgtYaKF">coreCryptoNew(path:key:clientId:ciphersuites:entropySeed:nbKeyPackage:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:14WireCoreCrypto29migrateDatabaseKeyTypeToBytes4path03oldF003newF0ySS_SS10Foundation4DataVtYaKF">migrateDatabaseKeyTypeToBytes(path:oldKey:newKey:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi23migrateDbKeyTypeToBytes4name03oldG003newG0ySS_SS10Foundation4DataVtYaKF">migrateDbKeyTypeToBytes(name:oldKey:newKey:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi9setLogger6logger5levelyAA0bcF0_p_AA0bC8LogLevelOtF">setLogger(logger:level:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi13setLoggerOnly6loggeryAA0bcF0_p_tF">setLoggerOnly(logger:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi14setMaxLogLevel5levelyAA0bcgH0O_tF">setMaxLogLevel(level:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi012uniffiEnsurebC14FfiInitializedyyF">uniffiEnsureCoreCryptoFfiInitialized()</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi030uniffiForeignFutureHandleCountbC3FfiSiyF">uniffiForeignFutureHandleCountCoreCryptoFfi()</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi7versionSSyF">version()</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../../Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/ClientIdProtocol.html">ClientIdProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/ConversationIdProtocol.html">ConversationIdProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/CoreCryptoContextProtocol.html">CoreCryptoContextProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/CoreCryptoLogger.html">CoreCryptoLogger</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCrypto/Protocols/CoreCryptoProtocol.html">CoreCryptoProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/CoreCryptoProtocol.html">CoreCryptoProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/E2eiEnrollmentProtocol.html">E2eiEnrollmentProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/EpochObserver.html">EpochObserver</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/ExternalSenderKeyProtocol.html">ExternalSenderKeyProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/GroupInfoProtocol.html">GroupInfoProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/HistoryObserver.html">HistoryObserver</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/KeyPackageProtocol.html">KeyPackageProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/MlsTransport.html">MlsTransport</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/SecretKeyProtocol.html">SecretKeyProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/WelcomeProtocol.html">WelcomeProtocol</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../../Structs.html">Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/AcmeChallenge.html">AcmeChallenge</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/AcmeDirectory.html">AcmeDirectory</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/BufferedDecryptedMessage.html">BufferedDecryptedMessage</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/BuildMetadata.html">BuildMetadata</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/CommitBundle.html">CommitBundle</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/ConversationConfiguration.html">ConversationConfiguration</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/CrlRegistration.html">CrlRegistration</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/CustomConfiguration.html">CustomConfiguration</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/DecryptedMessage.html">DecryptedMessage</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/GroupInfoBundle.html">GroupInfoBundle</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/HistorySecret.html">HistorySecret</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/NewAcmeAuthz.html">NewAcmeAuthz</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/NewAcmeOrder.html">NewAcmeOrder</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/ProteusAutoPrekeyBundle.html">ProteusAutoPrekeyBundle</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/WelcomeBundle.html">WelcomeBundle</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Structs/X509Identity.html">X509Identity</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../../Typealiases.html">Type Aliases</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../../Typealiases.html#/s:20WireCoreCryptoUniffi11DatabaseKeya">DatabaseKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Typealiases.html#/s:20WireCoreCryptoUniffi16MlsTransportDataa">MlsTransportData</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>E2eiEnrollmentProtocol</h1>
+              <div class="declaration">
+                <div class="language">
+                  
+                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">E2eiEnrollmentProtocol</span> <span class="p">:</span> <span class="kt">AnyObject</span><span class="p">,</span> <span class="kt">Sendable</span></code></pre>
+
+                </div>
+              </div>
+            <p>See [core_crypto::e2e_identity::E2eiEnrollment]</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP18certificateRequest13previousNonce10Foundation4DataVSS_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/certificateRequest(previousNonce:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP18certificateRequest13previousNonce10Foundation4DataVSS_tYaKF">certificateRequest(previousNonce:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::prelude::E2eiEnrollment::certificate_request]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">certificateRequest</span><span class="p">(</span><span class="nv">previousNonce</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP17checkOrderRequest8orderUrl13previousNonce10Foundation4DataVSS_SStYaKF"></a>
+                    <a name="//apple_ref/swift/Method/checkOrderRequest(orderUrl:previousNonce:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP17checkOrderRequest8orderUrl13previousNonce10Foundation4DataVSS_SStYaKF">checkOrderRequest(orderUrl:<wbr>previousNonce:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::check_order_request]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">checkOrderRequest</span><span class="p">(</span><span class="nv">orderUrl</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">previousNonce</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP18checkOrderResponse5orderSS10Foundation4DataV_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/checkOrderResponse(order:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP18checkOrderResponse5orderSS10Foundation4DataV_tYaKF">checkOrderResponse(order:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::check_order_response]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">checkOrderResponse</span><span class="p">(</span><span class="nv">order</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP15createDpopToken10expirySecs12backendNonceSSs6UInt32V_SStYaKF"></a>
+                    <a name="//apple_ref/swift/Method/createDpopToken(expirySecs:backendNonce:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP15createDpopToken10expirySecs12backendNonceSSs6UInt32V_SStYaKF">createDpopToken(expirySecs:<wbr>backendNonce:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::create_dpop_token]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">createDpopToken</span><span class="p">(</span><span class="nv">expirySecs</span><span class="p">:</span> <span class="kt">UInt32</span><span class="p">,</span> <span class="nv">backendNonce</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP17directoryResponse0H0AA13AcmeDirectoryV10Foundation4DataV_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/directoryResponse(directory:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP17directoryResponse0H0AA13AcmeDirectoryV10Foundation4DataV_tYaKF">directoryResponse(directory:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::directory_response]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">directoryResponse</span><span class="p">(</span><span class="nv">directory</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/AcmeDirectory.html">AcmeDirectory</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP15finalizeRequest13previousNonce10Foundation4DataVSS_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/finalizeRequest(previousNonce:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP15finalizeRequest13previousNonce10Foundation4DataVSS_tYaKF">finalizeRequest(previousNonce:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::prelude::E2eiEnrollment::finalize_request]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">finalizeRequest</span><span class="p">(</span><span class="nv">previousNonce</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP16finalizeResponse0H0SS10Foundation4DataV_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/finalizeResponse(finalize:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP16finalizeResponse0H0SS10Foundation4DataV_tYaKF">finalizeResponse(finalize:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::prelude::E2eiEnrollment::finalize_response]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">finalizeResponse</span><span class="p">(</span><span class="nv">finalize</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP17newAccountRequest13previousNonce10Foundation4DataVSS_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/newAccountRequest(previousNonce:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP17newAccountRequest13previousNonce10Foundation4DataVSS_tYaKF">newAccountRequest(previousNonce:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::new_account_request]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">newAccountRequest</span><span class="p">(</span><span class="nv">previousNonce</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP18newAccountResponse7accounty10Foundation4DataV_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/newAccountResponse(account:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP18newAccountResponse7accounty10Foundation4DataV_tYaKF">newAccountResponse(account:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::new_account_response]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">newAccountResponse</span><span class="p">(</span><span class="nv">account</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP15newAuthzRequest3url13previousNonce10Foundation4DataVSS_SStYaKF"></a>
+                    <a name="//apple_ref/swift/Method/newAuthzRequest(url:previousNonce:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP15newAuthzRequest3url13previousNonce10Foundation4DataVSS_SStYaKF">newAuthzRequest(url:<wbr>previousNonce:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::new_authz_request]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">newAuthzRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">previousNonce</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP16newAuthzResponse5authzAA07NewAcmeI0V10Foundation4DataV_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/newAuthzResponse(authz:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP16newAuthzResponse5authzAA07NewAcmeI0V10Foundation4DataV_tYaKF">newAuthzResponse(authz:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::new_authz_response]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">newAuthzResponse</span><span class="p">(</span><span class="nv">authz</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/NewAcmeAuthz.html">NewAcmeAuthz</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP23newDpopChallengeRequest11accessToken13previousNonce10Foundation4DataVSS_SStYaKF"></a>
+                    <a name="//apple_ref/swift/Method/newDpopChallengeRequest(accessToken:previousNonce:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP23newDpopChallengeRequest11accessToken13previousNonce10Foundation4DataVSS_SStYaKF">newDpopChallengeRequest(accessToken:<wbr>previousNonce:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::new_dpop_challenge_request]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">newDpopChallengeRequest</span><span class="p">(</span><span class="nv">accessToken</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">previousNonce</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP24newDpopChallengeResponse9challengey10Foundation4DataV_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/newDpopChallengeResponse(challenge:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP24newDpopChallengeResponse9challengey10Foundation4DataV_tYaKF">newDpopChallengeResponse(challenge:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::new_dpop_challenge_response]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">newDpopChallengeResponse</span><span class="p">(</span><span class="nv">challenge</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP23newOidcChallengeRequest7idToken13previousNonce10Foundation4DataVSS_SStYaKF"></a>
+                    <a name="//apple_ref/swift/Method/newOidcChallengeRequest(idToken:previousNonce:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP23newOidcChallengeRequest7idToken13previousNonce10Foundation4DataVSS_SStYaKF">newOidcChallengeRequest(idToken:<wbr>previousNonce:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_request]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">newOidcChallengeRequest</span><span class="p">(</span><span class="nv">idToken</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">previousNonce</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP24newOidcChallengeResponse9challengey10Foundation4DataV_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/newOidcChallengeResponse(challenge:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP24newOidcChallengeResponse9challengey10Foundation4DataV_tYaKF">newOidcChallengeResponse(challenge:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_response]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">newOidcChallengeResponse</span><span class="p">(</span><span class="nv">challenge</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP15newOrderRequest13previousNonce10Foundation4DataVSS_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/newOrderRequest(previousNonce:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP15newOrderRequest13previousNonce10Foundation4DataVSS_tYaKF">newOrderRequest(previousNonce:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::new_order_request]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">newOrderRequest</span><span class="p">(</span><span class="nv">previousNonce</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP16newOrderResponse5orderAA07NewAcmeI0V10Foundation4DataV_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/newOrderResponse(order:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi22E2eiEnrollmentProtocolP16newOrderResponse5orderAA07NewAcmeI0V10Foundation4DataV_tYaKF">newOrderResponse(order:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>See [core_crypto::e2e_identity::E2eiEnrollment::new_order_response]</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">newOrderResponse</span><span class="p">(</span><span class="nv">order</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/NewAcmeOrder.html">NewAcmeOrder</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>&copy; 2025 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2025-07-14)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</html>
