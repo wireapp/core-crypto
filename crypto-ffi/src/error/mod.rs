@@ -43,12 +43,13 @@ fn log_error(error: &dyn std::error::Error) {
 
 #[cfg(all(test, not(target_family = "wasm")))]
 mod tests {
-    use crate::{CoreCrypto, CoreCryptoError, MlsError};
-
     use ::core_crypto::{LeafError, RecursiveError};
+    use core_crypto::ProteusError;
+
+    use crate::{CoreCrypto, CoreCryptoError, MlsError, ProteusError as ProteusErrorFfi};
 
     #[test]
-    fn test_error_mapping() {
+    fn test_mls_error_mapping() {
         let duplicate_message_error = RecursiveError::mls_conversation("test duplicate message error")(
             core_crypto::mls::conversation::Error::DuplicateMessage,
         );
@@ -64,6 +65,22 @@ mod tests {
         assert!(matches!(
             mapped_error,
             CoreCryptoError::Mls(MlsError::ConversationAlreadyExists(_))
+        ));
+    }
+
+    #[test]
+    fn test_proteus_error_mapping() {
+        let session_not_found_eror = RecursiveError::root("recursive error wrapping core crypto error")(
+            core_crypto::Error::Proteus(ProteusError::wrap("recursive error wrapping leaf error")(
+                LeafError::ConversationNotFound("test_session_id".as_bytes().to_vec()),
+            )),
+        );
+
+        let mapped_error = CoreCryptoError::from(session_not_found_eror);
+
+        assert!(matches!(
+            mapped_error,
+            CoreCryptoError::Proteus(ProteusErrorFfi::SessionNotFound)
         ));
     }
 

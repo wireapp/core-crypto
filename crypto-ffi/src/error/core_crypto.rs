@@ -47,6 +47,16 @@ impl From<RecursiveError> for CoreCryptoError {
         let innermost = {
             let mut err: &dyn std::error::Error = &error;
             while let Some(inner) = err.source() {
+                #[cfg(feature = "proteus")]
+                // We cannot determine in all cases whether a recursive error is a proteus
+                // error by just looking at the innermost type. That's because if a session
+                // is not found, we're using `ConversationNotFoundError`, wrapped in a
+                // `LeafError`, which is not proteus-specific. To avoid having to do
+                // this check inside the loop, we'd have to introduce a proteus-specific
+                // variant of `ConversationNotFound`.
+                if let Some(inner) = inner.downcast_ref::<core_crypto::ProteusErrorKind>() {
+                    return ProteusError::from(inner).into();
+                }
                 err = inner;
             }
             err
@@ -137,14 +147,6 @@ impl From<RecursiveError> for CoreCryptoError {
             core_crypto::mls::conversation::Error::BufferedCommit => MlsError::BufferedCommit.into(),
             core_crypto::mls::conversation::Error::MessageRejected { reason } => MlsError::MessageRejected { reason: reason.clone() }.into(),
             core_crypto::mls::conversation::Error::OrphanWelcome => MlsError::OrphanWelcome.into(),
-            #[cfg(feature="proteus")]
-            e @ (
-                core_crypto::ProteusErrorKind::ProteusDecodeError(_)
-                | core_crypto::ProteusErrorKind::ProteusEncodeError(_)
-                | core_crypto::ProteusErrorKind::ProteusInternalError(_)
-                | core_crypto::ProteusErrorKind::ProteusSessionError(_)
-                | core_crypto::ProteusErrorKind::Leaf(_)
-            ) => ProteusError::from(e).into(),
             // The internal name is what we want, but renaming the external variant is a breaking change.
             // Since we're re-designing the `BufferedMessage` errors soon, it's not worth producing
             // an additional breaking change until then, so the names are inconsistent.

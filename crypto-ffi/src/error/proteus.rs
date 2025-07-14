@@ -1,3 +1,5 @@
+use core_crypto::LeafError;
+
 #[derive(Debug, thiserror::Error)]
 #[cfg_attr(target_family = "wasm", derive(strum::AsRefStr))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Error))]
@@ -51,6 +53,7 @@ impl From<&core_crypto::ProteusErrorKind> for ProteusError {
             core_crypto::ProteusErrorKind::ProteusSessionError(SessionError::InternalError(
                 proteus_wasm::internal::types::InternalError::NoSessionForTag,
             )) => Self::SessionNotFound,
+            core_crypto::ProteusErrorKind::Leaf(LeafError::ConversationNotFound(_)) => Self::SessionNotFound,
             core_crypto::ProteusErrorKind::ProteusSessionError(SessionError::DuplicateMessage) => {
                 Self::DuplicateMessage
             }
