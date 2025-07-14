@@ -136,57 +136,43 @@
 <a href=#136 id=136 data-nosnippet>136</a>        <span class="self">self</span>.crypto.reseed(entropy_seed)
 <a href=#137 id=137 data-nosnippet>137</a>    }
 <a href=#138 id=138 data-nosnippet>138</a>
-<a href=#139 id=139 data-nosnippet>139</a>    <span class="doccomment">/// Returns whether or not it is currently possible to close this provider.
+<a href=#139 id=139 data-nosnippet>139</a>    <span class="doccomment">/// Wait for any keystore transaction to finish, then close the database connection.
 <a href=#140 id=140 data-nosnippet>140</a>    ///
-<a href=#141 id=141 data-nosnippet>141</a>    /// Reasons why it may not currently be possible:
-<a href=#142 id=142 data-nosnippet>142</a>    ///
-<a href=#143 id=143 data-nosnippet>143</a>    /// - A transaction is currently in progress
-<a href=#144 id=144 data-nosnippet>144</a>    /// - Multiple strong references currently exist to the keystore
-<a href=#145 id=145 data-nosnippet>145</a>    ///
-<a href=#146 id=146 data-nosnippet>146</a>    /// As with all such checks, this is vulnerable to TOCTOU issues, but as the current implementation
-<a href=#147 id=147 data-nosnippet>147</a>    /// of the [`MlsCryptoProvider::close`] function consumes `self`, this is the only way to check in advance whether
-<a href=#148 id=148 data-nosnippet>148</a>    /// this will in principle work.
-<a href=#149 id=149 data-nosnippet>149</a>    </span><span class="kw">pub async fn </span>can_close(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#150 id=150 data-nosnippet>150</a>        <span class="self">self</span>.key_store.can_close().<span class="kw">await
-<a href=#151 id=151 data-nosnippet>151</a>    </span>}
-<a href=#152 id=152 data-nosnippet>152</a>
-<a href=#153 id=153 data-nosnippet>153</a>    <span class="doccomment">/// Closes this provider, which in turns tears down the backing store
-<a href=#154 id=154 data-nosnippet>154</a>    ///
-<a href=#155 id=155 data-nosnippet>155</a>    /// Note: This does **not** destroy the data on-disk in case of persistent backing store
-<a href=#156 id=156 data-nosnippet>156</a>    </span><span class="kw">pub async fn </span>close(<span class="self">self</span>) -&gt; MlsProviderResult&lt;()&gt; {
-<a href=#157 id=157 data-nosnippet>157</a>        <span class="self">self</span>.key_store.close().<span class="kw">await</span>.map_err(Into::into)
-<a href=#158 id=158 data-nosnippet>158</a>    }
-<a href=#159 id=159 data-nosnippet>159</a>
-<a href=#160 id=160 data-nosnippet>160</a>    <span class="doccomment">/// Clone keystore (its an `Arc` internnaly)
-<a href=#161 id=161 data-nosnippet>161</a>    </span><span class="kw">pub fn </span>keystore(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CryptoKeystore {
-<a href=#162 id=162 data-nosnippet>162</a>        <span class="self">self</span>.key_store.clone()
-<a href=#163 id=163 data-nosnippet>163</a>    }
-<a href=#164 id=164 data-nosnippet>164</a>
-<a href=#165 id=165 data-nosnippet>165</a>    <span class="doccomment">/// Allows to retrieve the underlying key store directly
-<a href=#166 id=166 data-nosnippet>166</a>    </span><span class="kw">pub fn </span>unwrap_keystore(<span class="self">self</span>) -&gt; CryptoKeystore {
-<a href=#167 id=167 data-nosnippet>167</a>        <span class="self">self</span>.key_store
-<a href=#168 id=168 data-nosnippet>168</a>    }
-<a href=#169 id=169 data-nosnippet>169</a>}
+<a href=#141 id=141 data-nosnippet>141</a>    /// Note: This does **not** destroy the data on-disk in case of persistent backing store
+<a href=#142 id=142 data-nosnippet>142</a>    </span><span class="kw">pub async fn </span>close(<span class="self">self</span>) -&gt; MlsProviderResult&lt;()&gt; {
+<a href=#143 id=143 data-nosnippet>143</a>        <span class="self">self</span>.key_store.close().<span class="kw">await</span>.map_err(Into::into)
+<a href=#144 id=144 data-nosnippet>144</a>    }
+<a href=#145 id=145 data-nosnippet>145</a>
+<a href=#146 id=146 data-nosnippet>146</a>    <span class="doccomment">/// Clone keystore (its an `Arc` internnaly)
+<a href=#147 id=147 data-nosnippet>147</a>    </span><span class="kw">pub fn </span>keystore(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CryptoKeystore {
+<a href=#148 id=148 data-nosnippet>148</a>        <span class="self">self</span>.key_store.clone()
+<a href=#149 id=149 data-nosnippet>149</a>    }
+<a href=#150 id=150 data-nosnippet>150</a>
+<a href=#151 id=151 data-nosnippet>151</a>    <span class="doccomment">/// Allows to retrieve the underlying key store directly
+<a href=#152 id=152 data-nosnippet>152</a>    </span><span class="kw">pub fn </span>unwrap_keystore(<span class="self">self</span>) -&gt; CryptoKeystore {
+<a href=#153 id=153 data-nosnippet>153</a>        <span class="self">self</span>.key_store
+<a href=#154 id=154 data-nosnippet>154</a>    }
+<a href=#155 id=155 data-nosnippet>155</a>}
+<a href=#156 id=156 data-nosnippet>156</a>
+<a href=#157 id=157 data-nosnippet>157</a><span class="kw">impl </span>openmls_traits::OpenMlsCryptoProvider <span class="kw">for </span>MlsCryptoProvider {
+<a href=#158 id=158 data-nosnippet>158</a>    <span class="kw">type </span>CryptoProvider = RustCrypto;
+<a href=#159 id=159 data-nosnippet>159</a>    <span class="kw">type </span>RandProvider = RustCrypto;
+<a href=#160 id=160 data-nosnippet>160</a>    <span class="kw">type </span>KeyStoreProvider = CryptoKeystore;
+<a href=#161 id=161 data-nosnippet>161</a>    <span class="kw">type </span>AuthenticationServiceProvider = PkiEnvironmentProvider;
+<a href=#162 id=162 data-nosnippet>162</a>
+<a href=#163 id=163 data-nosnippet>163</a>    <span class="kw">fn </span>crypto(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::CryptoProvider {
+<a href=#164 id=164 data-nosnippet>164</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.crypto
+<a href=#165 id=165 data-nosnippet>165</a>    }
+<a href=#166 id=166 data-nosnippet>166</a>
+<a href=#167 id=167 data-nosnippet>167</a>    <span class="kw">fn </span>rand(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::RandProvider {
+<a href=#168 id=168 data-nosnippet>168</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.crypto
+<a href=#169 id=169 data-nosnippet>169</a>    }
 <a href=#170 id=170 data-nosnippet>170</a>
-<a href=#171 id=171 data-nosnippet>171</a><span class="kw">impl </span>openmls_traits::OpenMlsCryptoProvider <span class="kw">for </span>MlsCryptoProvider {
-<a href=#172 id=172 data-nosnippet>172</a>    <span class="kw">type </span>CryptoProvider = RustCrypto;
-<a href=#173 id=173 data-nosnippet>173</a>    <span class="kw">type </span>RandProvider = RustCrypto;
-<a href=#174 id=174 data-nosnippet>174</a>    <span class="kw">type </span>KeyStoreProvider = CryptoKeystore;
-<a href=#175 id=175 data-nosnippet>175</a>    <span class="kw">type </span>AuthenticationServiceProvider = PkiEnvironmentProvider;
-<a href=#176 id=176 data-nosnippet>176</a>
-<a href=#177 id=177 data-nosnippet>177</a>    <span class="kw">fn </span>crypto(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::CryptoProvider {
-<a href=#178 id=178 data-nosnippet>178</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.crypto
-<a href=#179 id=179 data-nosnippet>179</a>    }
-<a href=#180 id=180 data-nosnippet>180</a>
-<a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">fn </span>rand(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::RandProvider {
-<a href=#182 id=182 data-nosnippet>182</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.crypto
-<a href=#183 id=183 data-nosnippet>183</a>    }
-<a href=#184 id=184 data-nosnippet>184</a>
-<a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">fn </span>key_store(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::KeyStoreProvider {
-<a href=#186 id=186 data-nosnippet>186</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.key_store
-<a href=#187 id=187 data-nosnippet>187</a>    }
-<a href=#188 id=188 data-nosnippet>188</a>
-<a href=#189 id=189 data-nosnippet>189</a>    <span class="kw">fn </span>authentication_service(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::AuthenticationServiceProvider {
-<a href=#190 id=190 data-nosnippet>190</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.pki_env
-<a href=#191 id=191 data-nosnippet>191</a>    }
-<a href=#192 id=192 data-nosnippet>192</a>}</code></pre></div></section></main></body></html>
+<a href=#171 id=171 data-nosnippet>171</a>    <span class="kw">fn </span>key_store(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::KeyStoreProvider {
+<a href=#172 id=172 data-nosnippet>172</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.key_store
+<a href=#173 id=173 data-nosnippet>173</a>    }
+<a href=#174 id=174 data-nosnippet>174</a>
+<a href=#175 id=175 data-nosnippet>175</a>    <span class="kw">fn </span>authentication_service(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::AuthenticationServiceProvider {
+<a href=#176 id=176 data-nosnippet>176</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.pki_env
+<a href=#177 id=177 data-nosnippet>177</a>    }
+<a href=#178 id=178 data-nosnippet>178</a>}</code></pre></div></section></main></body></html>
