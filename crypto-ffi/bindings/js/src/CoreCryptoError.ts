@@ -38,14 +38,14 @@ export class CoreCryptoError extends Error {
         }
     }
 
-    private static fallback(msg: string, ...params: any[]): Error {
-        console.warn(
-            `Cannot build CoreCryptoError, falling back to standard Error! ctx: ${msg}`
-        );
-        return new Error(msg, ...params);
+    private static fallback(
+        message: string,
+        ...params: any[]
+    ): CoreCryptoError {
+        return new CoreCryptoError({ message }, ...params);
     }
 
-    static build(msg: string, ...params: unknown[]): CoreCryptoError | Error {
+    static build(msg: string, ...params: unknown[]): CoreCryptoError {
         try {
             const richError: CoreCryptoRichError = JSON.parse(msg);
             return new this(richError, ...params);
@@ -54,7 +54,7 @@ export class CoreCryptoError extends Error {
         }
     }
 
-    static fromStdError(e: Error): CoreCryptoError | Error {
+    static fromStdError(e: Error): CoreCryptoError {
         if (e instanceof CoreCryptoError) {
             return e;
         }
