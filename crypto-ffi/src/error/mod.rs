@@ -87,7 +87,9 @@ mod tests {
 
         assert!(matches!(
             mapped_error,
-            CoreCryptoError::Proteus(ProteusErrorFfi::SessionNotFound)
+            CoreCryptoError::Proteus {
+                proteus_error: ProteusErrorFfi::SessionNotFound
+            }
         ));
     }
 
