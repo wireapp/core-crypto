@@ -12,16 +12,17 @@ comments:
   active: true
   KDocReferencesNonPublicProperty:
     active: true
-    excludes: ['**/test/**']
+    excludes: ['**/core_crypto_ffi.kt', '**/test/**']
   OutdatedDocumentation:
     active: true
+    excludes: ['**/core_crypto_ffi.kt']
   UndocumentedPublicClass:
     active: true
-    excludes: ['**/test/**']
+    excludes: ['**/core_crypto_ffi.kt', '**/test/**']
     ignoreDefaultCompanionObject: true
   UndocumentedPublicFunction:
     active: true
-    excludes: ['**/test/**']
+    excludes: ['**/core_crypto_ffi.kt', '**/test/**']
   UndocumentedPublicProperty:
     active: true
-    excludes: ['**/test/**']
+    excludes: ['**/core_crypto_ffi.kt', '**/test/**']
