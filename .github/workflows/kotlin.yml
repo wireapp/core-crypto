@@ -17,6 +17,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: ktlint
         run: |
-          curl -sSLO https://github.com/pinterest/ktlint/releases/download/1.5.0/ktlint
+          curl -sSLO https://github.com/pinterest/ktlint/releases/download/1.7.0/ktlint
           chmod a+x ktlint
           ./ktlint
