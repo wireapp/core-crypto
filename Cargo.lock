@@ -50,6 +50,7 @@ dependencies = [
  "ctr",
  "ghash",
  "subtle",
+ "zeroize",
 ]
 
 [[package]]
@@ -2861,6 +2862,7 @@ dependencies = [
  "crc32fast",
  "criterion",
  "mls-rs",
+ "mls-rs-crypto-rustcrypto",
  "openmls 0.6.0",
  "openmls_basic_credential 0.3.0",
  "openmls_rust_crypto",
@@ -2936,6 +2938,60 @@ dependencies = [
  "thiserror 2.0.12",
  "wasm-bindgen",
  "zeroize",
+]
+
+[[package]]
+name = "mls-rs-crypto-hpke"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59b6208976b78f5d12196a8308618a24a974014a04de554e47dc3e65cd26795d"
+dependencies = [
+ "async-trait",
+ "cfg-if",
+ "maybe-async",
+ "mls-rs-core",
+ "mls-rs-crypto-traits",
+ "thiserror 2.0.12",
+ "zeroize",
+]
+
+[[package]]
+name = "mls-rs-crypto-rustcrypto"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a90d0c67f1709c2010ccab5d8d9b71adc9846f7e5dbc62f29af2bda75e9b1911"
+dependencies = [
+ "aead",
+ "aes-gcm",
+ "async-trait",
+ "chacha20poly1305",
+ "ed25519-dalek",
+ "getrandom 0.2.15",
+ "hkdf 0.12.4",
+ "hmac",
+ "maybe-async",
+ "mls-rs-core",
+ "mls-rs-crypto-hpke",
+ "mls-rs-crypto-traits",
+ "p256",
+ "p384",
+ "rand_core 0.6.4",
+ "sec1",
+ "sha2",
+ "thiserror 2.0.12",
+ "x25519-dalek",
+ "zeroize",
+]
+
+[[package]]
+name = "mls-rs-crypto-traits"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20d41b82ac304c249cfc2e62ceb411e7c0cb34fac7b0d32b5ea1f01bc090d667"
+dependencies = [
+ "async-trait",
+ "maybe-async",
+ "mls-rs-core",
 ]
 
 [[package]]
