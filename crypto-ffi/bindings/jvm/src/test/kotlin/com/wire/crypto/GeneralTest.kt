@@ -2,12 +2,12 @@
 
 package com.wire.crypto
 
-import com.wire.crypto.testutils.genDatabaseKey
-import com.wire.crypto.uniffi.CoreCryptoException
-import com.wire.crypto.uniffi.buildMetadata
-import com.wire.crypto.uniffi.version
+import CoreCryptoException
+import buildMetadata
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
+import testutils.genDatabaseKey
+import version
 import java.nio.file.Files
 import kotlin.io.path.*
 import kotlin.test.*

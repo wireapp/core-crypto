@@ -1,11 +1,11 @@
 package com.wire.crypto
 
-import com.wire.crypto.MLSTest.Companion.ALICE_ID
-import com.wire.crypto.MLSTest.Companion.BOB_ID
-import com.wire.crypto.MLSTest.Companion.id
-import com.wire.crypto.testutils.genDatabaseKey
+import MLSTest.Companion.ALICE_ID
+import MLSTest.Companion.BOB_ID
+import MLSTest.Companion.id
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
+import testutils.genDatabaseKey
 import java.nio.file.Files
 import kotlin.test.BeforeTest
 import kotlin.test.Test

@@ -1,13 +1,13 @@
 package com.wire.crypto
 
-import com.wire.crypto.CoreCrypto.Companion.DEFAULT_NB_KEY_PACKAGE
+import CoreCrypto.Companion.DEFAULT_NB_KEY_PACKAGE
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 /** The CoreCrypto context used within a transaction */
 @Suppress("TooManyFunctions")
-class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext) {
+class CoreCryptoContext(private val cc: CoreCryptoContext) {
     internal fun lower() = cc
 
     companion object {
@@ -158,7 +158,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         creatorCredentialType: CredentialType = CREDENTIAL_TYPE_DEFAULT,
         externalSenders: List<ExternalSenderKey> = emptyList(),
     ) {
-        val cfg = com.wire.crypto.uniffi.ConversationConfiguration(
+        val cfg = ConversationConfiguration(
             ciphersuite.lower(),
             externalSenders.map { it.lower() },
             defaultGroupConfiguration.lower(),
@@ -272,7 +272,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param keyLength the length of the key to be derived. If the value is higher than the bounds
      *   of `u16` or the context hash * 255, an error will be returned
      */
-    suspend fun deriveAvsSecret(id: ConversationId, keyLength: UInt): com.wire.crypto.uniffi.SecretKey {
+    suspend fun deriveAvsSecret(id: ConversationId, keyLength: UInt): SecretKey {
         return cc.exportSecretKey(id.lower(), keyLength)
     }
 

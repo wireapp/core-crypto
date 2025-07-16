@@ -66,7 +66,7 @@ public interface HistoryObserver {
 }
 
 /** The type representing a CoreCrypto client */
-class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
+class CoreCrypto(private val cc: CoreCrypto) {
     companion object {
         internal const val DEFAULT_NB_KEY_PACKAGE: UInt = 100U
 
@@ -75,7 +75,7 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
             keystore: String,
             databaseKey: DatabaseKey
         ): CoreCrypto {
-            val cc = com.wire.crypto.uniffi.coreCryptoDeferredInit(keystore, databaseKey.bytes, null)
+            val cc = coreCryptoDeferredInit(keystore, databaseKey.bytes, null)
             return CoreCrypto(cc)
         }
 
@@ -86,7 +86,7 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
          * Other use is a logic error.
          */
         suspend fun historyClient(historySecret: HistorySecret): CoreCrypto {
-            val cc = com.wire.crypto.uniffi.coreCryptoHistoryClient(historySecret.lower())
+            val cc = coreCryptoHistoryClient(historySecret.lower())
             return CoreCrypto(cc)
         }
     }
@@ -111,8 +111,8 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
         var result: R? = null
         var error: Throwable? = null
         try {
-            this@CoreCrypto.cc.transaction(object : com.wire.crypto.uniffi.CoreCryptoCommand {
-                override suspend fun execute(context: com.wire.crypto.uniffi.CoreCryptoContext) {
+            this@CoreCrypto.cc.transaction(object : CoreCryptoCommand {
+                override suspend fun execute(context: CoreCryptoContext) {
                     try {
                         result = block(CoreCryptoContext(context))
                     } catch (e: Throwable) {
@@ -140,20 +140,20 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
      * @param transport the transport to be used
      */
     suspend fun provideTransport(transport: MlsTransport) {
-        cc.provideTransport(object : com.wire.crypto.uniffi.MlsTransport {
+        cc.provideTransport(object : MlsTransport {
             override suspend fun sendCommitBundle(
-                commitBundle: com.wire.crypto.uniffi.CommitBundle
-            ): com.wire.crypto.uniffi.MlsTransportResponse {
+                commitBundle: CommitBundle
+            ): MlsTransportResponse {
                 return transport.sendCommitBundle(commitBundle.lift())
             }
 
-            override suspend fun sendMessage(mlsMessage: ByteArray): com.wire.crypto.uniffi.MlsTransportResponse {
+            override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse {
                 return transport.sendMessage(mlsMessage)
             }
 
             override suspend fun prepareForTransport(
-                historySecret: com.wire.crypto.uniffi.HistorySecret
-            ): com.wire.crypto.uniffi.MlsTransportData {
+                historySecret: HistorySecret
+            ): MlsTransportData {
                 return transport.prepareForTransport(historySecret.lift()).lower()
             }
         })
@@ -167,8 +167,8 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
     suspend fun registerEpochObserver(scope: CoroutineScope, epochObserver: EpochObserver) {
         // we want to wrap the observer here to provide async indirection, so that no matter what
         // the observer that makes its way to the Rust side of things doesn't end up blocking
-        val observerIndirector = object : com.wire.crypto.uniffi.EpochObserver {
-            override suspend fun epochChanged(conversationId: com.wire.crypto.ConversationId, epoch: kotlin.ULong) {
+        val observerIndirector = object : EpochObserver {
+            override suspend fun epochChanged(conversationId: ConversationId, epoch: kotlin.ULong) {
                 scope.launch { epochObserver.epochChanged(conversationId.toGroupId(), epoch) }
             }
         }
@@ -183,10 +183,10 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
     suspend fun registerHistoryObserver(scope: CoroutineScope, historyObserver: HistoryObserver) {
         // we want to wrap the observer here to provide async indirection, so that no matter what
         // the observer that makes its way to the Rust side of things doesn't end up blocking
-        val observerIndirector = object : com.wire.crypto.uniffi.HistoryObserver {
+        val observerIndirector = object : HistoryObserver {
             override suspend fun historyClientCreated(
-                conversationId: com.wire.crypto.ConversationId,
-                secret: com.wire.crypto.uniffi.HistorySecret
+                conversationId: ConversationId,
+                secret: HistorySecret
             ) {
                 scope.launch { historyObserver.historyClientCreated(conversationId.toGroupId(), secret.lift()) }
             }

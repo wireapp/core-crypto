@@ -2,16 +2,16 @@
 
 package com.wire.crypto
 
-import com.wire.crypto.testutils.genDatabaseKey
-import com.wire.crypto.uniffi.CoreCryptoException
-import com.wire.crypto.uniffi.MlsException
-import com.wire.crypto.uniffi.MlsTransportResponse
+import CoreCryptoException
+import MlsException
+import MlsTransportResponse
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
+import testutils.genDatabaseKey
 import java.nio.file.Files
 import kotlin.test.*
 import kotlin.time.Duration.Companion.milliseconds
