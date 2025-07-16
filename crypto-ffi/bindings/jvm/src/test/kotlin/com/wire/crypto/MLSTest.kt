@@ -2,16 +2,16 @@
 
 package com.wire.crypto
 
-import com.wire.crypto.testutils.genDatabaseKey
-import com.wire.crypto.uniffi.CoreCryptoException
-import com.wire.crypto.uniffi.MlsException
-import com.wire.crypto.uniffi.MlsTransportResponse
+import CoreCryptoException
+import MlsException
+import MlsTransportResponse
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
+import testutils.genDatabaseKey
 import java.nio.file.Files
 import kotlin.test.*
 import kotlin.time.Duration.Companion.milliseconds
@@ -355,12 +355,12 @@ class MLSTest {
         val scope = TestScope()
         return scope.runTest {
             // Set up the observer. this just keeps a list of all observations.
-            data class EpochChanged(val conversationId: MLSGroupId, val epoch: ULong)
+            data class EpochChanged(val conversationId: ConversationId, val epoch: ULong)
 
             class Observer : EpochObserver {
                 val observedEvents = emptyList<EpochChanged>().toMutableList()
 
-                override suspend fun epochChanged(conversationId: MLSGroupId, epoch: ULong) {
+                override suspend fun epochChanged(conversationId: ConversationId, epoch: ULong) {
                     observedEvents.add(EpochChanged(conversationId, epoch))
                 }
             }
@@ -410,13 +410,13 @@ class MLSTest {
         val scope = TestScope()
         return scope.runTest {
             // Set up the observer. this just keeps a list of all observations.
-            data class HistorySecretEvent(val conversationId: MLSGroupId, val id: ClientId)
+            data class HistorySecretEvent(val conversationId: ConversationId, val id: ClientId)
 
             class Observer : HistoryObserver {
                 val observedEvents = emptyList<HistorySecretEvent>().toMutableList()
 
                 override suspend fun historyClientCreated(
-                    conversationId: MLSGroupId,
+                    conversationId: ConversationId,
                     secret: HistorySecret
                 ) {
                     observedEvents.add(HistorySecretEvent(conversationId, secret.clientId))

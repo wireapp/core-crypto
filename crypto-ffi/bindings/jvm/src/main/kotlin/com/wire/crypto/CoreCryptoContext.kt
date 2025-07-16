@@ -1,13 +1,13 @@
 package com.wire.crypto
 
-import com.wire.crypto.CoreCrypto.Companion.DEFAULT_NB_KEY_PACKAGE
+import CoreCrypto.Companion.DEFAULT_NB_KEY_PACKAGE
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 /** The CoreCrypto context used within a transaction */
 @Suppress("TooManyFunctions")
-class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext) {
+class CoreCryptoContext(private val cc: CoreCryptoContext) {
     internal fun lower() = cc
 
     companion object {
@@ -98,14 +98,14 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param id conversation identifier
      */
-    suspend fun conversationExists(id: MLSGroupId): Boolean = cc.conversationExists(id.lower())
+    suspend fun conversationExists(id: ConversationId): Boolean = cc.conversationExists(id.lower())
 
     /**
      * Returns the current epoch of a conversation
      *
      * @param id conversation identifier
      */
-    suspend fun conversationEpoch(id: MLSGroupId): ULong = cc.conversationEpoch(id.lower())
+    suspend fun conversationEpoch(id: ConversationId): ULong = cc.conversationEpoch(id.lower())
 
     /**
      * "Apply" to join a group through its GroupInfo.
@@ -133,14 +133,14 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param id conversation identifier
      */
-    suspend fun enableHistorySharing(id: MLSGroupId) = cc.enableHistorySharing(id.lower())
+    suspend fun enableHistorySharing(id: ConversationId) = cc.enableHistorySharing(id.lower())
 
     /**
      * Disable history sharing by removing history clients from the conversation.
      *
      * @param id conversation identifier
      */
-    suspend fun disableHistorySharing(id: MLSGroupId) = cc.disableHistorySharing(id.lower())
+    suspend fun disableHistorySharing(id: ConversationId) = cc.disableHistorySharing(id.lower())
 
     /**
      * Creates a new conversation with the current client being the sole member. You will want to
@@ -153,12 +153,12 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param externalSenders keys fetched from backend for validating external remove proposals
      */
     suspend fun createConversation(
-        id: MLSGroupId,
+        id: ConversationId,
         ciphersuite: Ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
         creatorCredentialType: CredentialType = CREDENTIAL_TYPE_DEFAULT,
         externalSenders: List<ExternalSenderKey> = emptyList(),
     ) {
-        val cfg = com.wire.crypto.uniffi.ConversationConfiguration(
+        val cfg = ConversationConfiguration(
             ciphersuite.lower(),
             externalSenders.map { it.lower() },
             defaultGroupConfiguration.lower(),
@@ -172,7 +172,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param id conversation identifier
      */
-    suspend fun wipeConversation(id: MLSGroupId) = cc.wipeConversation(id.lower())
+    suspend fun wipeConversation(id: ConversationId) = cc.wipeConversation(id.lower())
 
     /**
      * Ingest a TLS-serialized MLS welcome message to join an existing MLS group.
@@ -200,7 +200,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @return the encrypted payload for the given group. This needs to be fanned out to the other
      *   members of the group.
      */
-    suspend fun encryptMessage(id: MLSGroupId, message: ByteArray): ByteArray {
+    suspend fun encryptMessage(id: ConversationId, message: ByteArray): ByteArray {
         return cc.encryptMessage(id.lower(), message)
     }
 
@@ -210,7 +210,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param id conversation identifier
      * @param message (either Application or Handshake message) from the DS
      */
-    suspend fun decryptMessage(id: MLSGroupId, message: ByteArray): DecryptedMessage {
+    suspend fun decryptMessage(id: ConversationId, message: ByteArray): DecryptedMessage {
         return cc.decryptMessage(id.lower(), message).lift()
     }
 
@@ -222,7 +222,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param keyPackages of the new clients to add
      * @return the potentially newly discovered certificate revocation list distribution points
      */
-    suspend fun addMember(id: MLSGroupId, keyPackages: List<MLSKeyPackage>): List<String>? {
+    suspend fun addMember(id: ConversationId, keyPackages: List<MLSKeyPackage>): List<String>? {
         return cc.addClientsToConversation(id.lower(), keyPackages.map { it.lower() })
     }
 
@@ -233,7 +233,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param id conversation identifier
      * @param members client identifier to delete
      */
-    suspend fun removeMember(id: MLSGroupId, members: List<ClientId>) {
+    suspend fun removeMember(id: ConversationId, members: List<ClientId>) {
         val clientIds = members.map { it.lower() }
         return cc.removeClientsFromConversation(id.lower(), clientIds)
     }
@@ -244,14 +244,14 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param id conversation identifier
      */
-    suspend fun updateKeyingMaterial(id: MLSGroupId) = cc.updateKeyingMaterial(id.lower())
+    suspend fun updateKeyingMaterial(id: ConversationId) = cc.updateKeyingMaterial(id.lower())
 
     /**
      * Commits the local pending proposals.
      *
      * @param id conversation identifier
      */
-    suspend fun commitPendingProposals(id: MLSGroupId) {
+    suspend fun commitPendingProposals(id: ConversationId) {
         return cc.commitPendingProposals(id.lower())
     }
 
@@ -261,7 +261,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param id conversation identifier
      * @return All the clients from the members of the group
      */
-    suspend fun members(id: MLSGroupId): List<ClientId> {
+    suspend fun members(id: ConversationId): List<ClientId> {
         return cc.getClientIds(id.lower()).map { it.toClientId() }
     }
 
@@ -272,8 +272,8 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param keyLength the length of the key to be derived. If the value is higher than the bounds
      *   of `u16` or the context hash * 255, an error will be returned
      */
-    suspend fun deriveAvsSecret(id: MLSGroupId, keyLength: UInt): AvsSecret {
-        return cc.exportSecretKey(id.lower(), keyLength).toAvsSecret()
+    suspend fun deriveAvsSecret(id: ConversationId, keyLength: UInt): SecretKey {
+        return cc.exportSecretKey(id.lower(), keyLength)
     }
 
     /**
@@ -282,7 +282,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param id conversation identifier
      */
-    suspend fun getExternalSender(id: MLSGroupId): ExternalSenderKey {
+    suspend fun getExternalSender(id: ConversationId): ExternalSenderKey {
         return cc.getExternalSender(id.lower()).toExternalSenderKey()
     }
 
@@ -293,7 +293,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param id conversation identifier
      * @return the conversation state given current members
      */
-    suspend fun e2eiConversationState(id: MLSGroupId): E2eiConversationState {
+    suspend fun e2eiConversationState(id: ConversationId): E2eiConversationState {
         return cc.e2eiConversationState(id.lower())
     }
 
@@ -315,7 +315,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param deviceIds identifiers of the devices
      * @returns identities or if no member has a x509 certificate, it will return an empty List
      */
-    suspend fun getDeviceIdentities(id: MLSGroupId, deviceIds: List<ClientId>): List<WireIdentity> {
+    suspend fun getDeviceIdentities(id: ConversationId, deviceIds: List<ClientId>): List<WireIdentity> {
         return cc.getDeviceIdentities(id.lower(), deviceIds.map { it.lower() }).map { it.lift() }
     }
 
@@ -330,7 +330,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *   reduce those identities to determine the actual status of a user.
      */
     suspend fun getUserIdentities(
-        id: MLSGroupId,
+        id: ConversationId,
         userIds: List<String>,
     ): Map<String, List<WireIdentity>> {
         return cc.getUserIdentities(id.lower(), userIds).mapValues { (_, v) -> v.map { it.lift() } }
@@ -497,7 +497,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param id conversation identifier
      */
-    suspend fun e2eiRotate(id: MLSGroupId) = cc.e2eiRotate(id.lower())
+    suspend fun e2eiRotate(id: ConversationId) = cc.e2eiRotate(id.lower())
 
     /**
      * Saves a new X509 credential. Requires first

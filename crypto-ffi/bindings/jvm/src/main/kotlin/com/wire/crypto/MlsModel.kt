@@ -1,6 +1,6 @@
 package com.wire.crypto
 
-import com.wire.crypto.uniffi.Ciphersuite as CiphersuiteFfi
+import Ciphersuite as CiphersuiteFfi
 
 /** Ciphersuites */
 @JvmInline
@@ -53,42 +53,31 @@ enum class Ciphersuite {
     }
 }
 
-typealias CredentialType = com.wire.crypto.uniffi.CredentialType
+typealias CredentialType = CredentialType
 
 /** Default credential type */
 val CREDENTIAL_TYPE_DEFAULT = CredentialType.BASIC
 
-/** MLS group ID
- * @property value the FFI conversation id
- */
-@JvmInline
-value class MLSGroupId(val value: com.wire.crypto.uniffi.ConversationId) {
-    /** Convert this type wrapper into the FFI version it wraps */
-    fun lower() = value
-
-    /** Copy the bytes from the group ID */
-    fun copyBytes() = value.copyBytes()
-
-    override fun toString() = value.copyBytes().toHex()
-}
+/** Construct a group ID */
+fun ByteArray.toGroupId() = ConversationId(this)
 
 /** Construct a group ID */
-fun ByteArray.toGroupId() = MLSGroupId(com.wire.crypto.uniffi.ConversationId(this))
+fun String.toGroupId() = ConversationId(toByteArray())
 
 /** Construct a group ID */
-fun String.toGroupId() = MLSGroupId(com.wire.crypto.uniffi.ConversationId(toByteArray()))
+fun ConversationId.toGroupId() = this
 
-/** Construct a group ID */
-fun com.wire.crypto.uniffi.ConversationId.toGroupId() = MLSGroupId(this)
+/** Convert a group id to a string */
+fun ConversationId.toString() = copyBytes().toHex()
 
 /** Client ID */
 @JvmInline
-value class ClientId(override val value: ByteArray) : FfiType<ByteArray, com.wire.crypto.uniffi.ClientId> {
-    override fun lower() = com.wire.crypto.uniffi.ClientId(value)
+value class ClientId(override val value: ByteArray) : FfiType<ByteArray, ClientId> {
+    override fun lower() = ClientId(value)
 }
 
 @OptIn(ExperimentalUnsignedTypes::class)
-internal fun com.wire.crypto.uniffi.ClientId.toClientId() = ClientId(copyBytes())
+internal fun ClientId.toClientId() = ClientId(copyBytes())
 
 /** Construct a client ID */
 fun String.toClientId() = ClientId(this.toByteArray())
@@ -97,7 +86,7 @@ fun String.toClientId() = ClientId(this.toByteArray())
  * @property value The FFI external sender key
  */
 @JvmInline
-value class ExternalSenderKey(val value: com.wire.crypto.uniffi.ExternalSenderKey) {
+value class ExternalSenderKey(val value: ExternalSenderKey) {
     /** Convert this type wrapper into the FFI version it wraps */
     fun lower() = value
 
@@ -110,14 +99,11 @@ value class ExternalSenderKey(val value: com.wire.crypto.uniffi.ExternalSenderKe
 /** Construct an external sender ID */
 fun ByteArray.toExternalSenderKey() = ExternalSenderKey(com.wire.crypto.uniffi.ExternalSenderKey(this))
 
-/** Construct an external sender ID */
-fun com.wire.crypto.uniffi.ExternalSenderKey.toExternalSenderKey() = ExternalSenderKey(this)
-
 /** Welcome message
  * @property value the FFI welcome message
  */
 @JvmInline
-value class Welcome(val value: com.wire.crypto.uniffi.Welcome) {
+value class Welcome(val value: Welcome) {
     /** Convert this type wrapper into the FFI version it wraps */
     fun lower() = value
 
@@ -128,25 +114,25 @@ value class Welcome(val value: com.wire.crypto.uniffi.Welcome) {
 }
 
 /** Construct a Welcome */
-fun ByteArray.toWelcome() = Welcome(com.wire.crypto.uniffi.Welcome(this))
+fun ByteArray.toWelcome() = Welcome(this)
 
-private fun com.wire.crypto.uniffi.Welcome.toWelcome() = Welcome(this)
+private fun Welcome.toWelcome() = Welcome(this)
 
 /** Key package
  * @property value the internal wrapped FFI type
  */
 @JvmInline
-value class MLSKeyPackage(val value: com.wire.crypto.uniffi.KeyPackage) {
+value class MLSKeyPackage(val value: KeyPackage) {
     /** Lower this wrapper to the internal FFI type */
-    fun lower(): com.wire.crypto.uniffi.KeyPackage = value
+    fun lower(): KeyPackage = value
 
     override fun toString() = value.copyBytes().toHex()
 }
 
 /** Construct a KeyPackage from bytes */
-fun ByteArray.toMLSKeyPackage() = MLSKeyPackage(com.wire.crypto.uniffi.KeyPackage(this))
+fun ByteArray.toMLSKeyPackage() = MLSKeyPackage(this)
 
-internal fun com.wire.crypto.uniffi.KeyPackage.toMLSKeyPackage() = MLSKeyPackage(this)
+internal fun KeyPackage.toMLSKeyPackage() = MLSKeyPackage(this)
 
 /** AVS secret
  * @property value the FFI secret key
@@ -194,9 +180,9 @@ internal fun List<String>.toCrlDistributionPoint() =
  * @property value The FFI external group info
  */
 @JvmInline
-value class GroupInfo(val value: com.wire.crypto.uniffi.GroupInfo) {
+value class GroupInfo(val value: GroupInfo) {
     /** Convert this type wrapper into the FFI version which it wraps */
-    fun lower(): com.wire.crypto.uniffi.GroupInfo = value
+    fun lower(): GroupInfo = value
 
     /** Copy the bytes from the group info */
     fun copyBytes() = value.copyBytes()
@@ -205,12 +191,12 @@ value class GroupInfo(val value: com.wire.crypto.uniffi.GroupInfo) {
 }
 
 /** Construct a GroupInfo from bytes */
-fun ByteArray.toGroupInfo() = GroupInfo(com.wire.crypto.uniffi.GroupInfo(this))
+fun ByteArray.toGroupInfo() = GroupInfo(this)
 
-private fun com.wire.crypto.uniffi.GroupInfo.toGroupInfo() = GroupInfo(this)
+private fun GroupInfo.toGroupInfo() = GroupInfo(this)
 
-typealias MlsGroupInfoEncryptionType = com.wire.crypto.uniffi.MlsGroupInfoEncryptionType
-typealias MlsRatchetTreeType = com.wire.crypto.uniffi.MlsRatchetTreeType
+typealias MlsGroupInfoEncryptionType = MlsGroupInfoEncryptionType
+typealias MlsRatchetTreeType = MlsRatchetTreeType
 
 /**
  * @property encryptionType see [GroupInfoEncryptionType]
@@ -223,7 +209,7 @@ data class GroupInfoBundle(
     val payload: GroupInfo,
 )
 
-private fun com.wire.crypto.uniffi.GroupInfoBundle.lift() =
+private fun GroupInfoBundle.lift() =
     GroupInfoBundle(encryptionType, ratchetTreeType, payload.toGroupInfo())
 
 /** Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome) */
@@ -238,13 +224,13 @@ data class CommitBundle(
     val crlNewDistributionPoints: CrlDistributionPoints?,
 )
 
-internal fun com.wire.crypto.uniffi.CommitBundle.lift() =
+internal fun CommitBundle.lift() =
     CommitBundle(commit, welcome?.toWelcome(), groupInfo.lift(), null)
 
 /** Contains everything client needs to know after decrypting an (encrypted) Welcome message */
 data class WelcomeBundle(
     /** MLS Group Id */
-    val id: MLSGroupId,
+    val id: ConversationId,
     /** New CRL distribution points that appeared by the introduction of a new credential */
     val crlNewDistributionPoints: CrlDistributionPoints?,
 ) {
@@ -267,7 +253,7 @@ data class WelcomeBundle(
     }
 }
 
-internal fun com.wire.crypto.uniffi.WelcomeBundle.lift() =
+internal fun WelcomeBundle.lift() =
     WelcomeBundle(id.toGroupId(), crlNewDistributionPoints?.toCrlDistributionPoint())
 
 /**
@@ -338,7 +324,7 @@ data class DecryptedMessage(
     }
 }
 
-internal fun com.wire.crypto.uniffi.DecryptedMessage.lift() =
+internal fun DecryptedMessage.lift() =
     DecryptedMessage(
         message,
         isActive,
@@ -401,7 +387,7 @@ data class BufferedDecryptedMessage(
     }
 }
 
-private fun com.wire.crypto.uniffi.BufferedDecryptedMessage.lift() =
+private fun BufferedDecryptedMessage.lift() =
     BufferedDecryptedMessage(
         message,
         isActive,
@@ -426,7 +412,7 @@ data class WireIdentity(
     val x509Identity: X509Identity?,
 )
 
-internal fun com.wire.crypto.uniffi.WireIdentity.lift() =
+internal fun WireIdentity.lift() =
     WireIdentity(clientId, status, thumbprint, credentialType, x509Identity?.lift())
 
 /**
@@ -450,7 +436,7 @@ data class X509Identity(
     val notAfter: java.time.Instant,
 )
 
-private fun com.wire.crypto.uniffi.X509Identity.lift() =
+private fun X509Identity.lift() =
     X509Identity(
         handle,
         displayName,
@@ -461,8 +447,8 @@ private fun com.wire.crypto.uniffi.X509Identity.lift() =
         java.time.Instant.ofEpochSecond(notAfter.toLong()),
     )
 
-typealias DeviceStatus = com.wire.crypto.uniffi.DeviceStatus
-typealias E2eiConversationState = com.wire.crypto.uniffi.E2eiConversationState
+typealias DeviceStatus = DeviceStatus
+typealias E2eiConversationState = E2eiConversationState
 
 /**
  * Configuration of MLS group
@@ -477,13 +463,13 @@ data class CustomConfiguration(
 )
 
 internal fun CustomConfiguration.lower() =
-    com.wire.crypto.uniffi.CustomConfiguration(
+    CustomConfiguration(
         keyRotationSpan = keyRotationSpan?.getSeconds().takeIf { it in 0..UInt.MAX_VALUE.toLong() }?.toUInt(),
         wirePolicy = wirePolicy
     )
 
-typealias MlsWirePolicy = com.wire.crypto.uniffi.WirePolicy
-typealias MlsTransportResponse = com.wire.crypto.uniffi.MlsTransportResponse
+typealias MlsWirePolicy = WirePolicy
+typealias MlsTransportResponse = MlsTransportResponse
 
 /**
  * An entity / data which has been packaged by the application to be encrypted and transmitted in an application message.
@@ -526,7 +512,7 @@ data class HistorySecret(
     val data: ByteArray
 )
 
-internal fun HistorySecret.lower() = com.wire.crypto.uniffi.HistorySecret(clientId.lower(), data)
+internal fun HistorySecret.lower() = HistorySecret(clientId.lower(), data)
 
-internal fun com.wire.crypto.uniffi.HistorySecret.lift() =
+internal fun HistorySecret.lift() =
     HistorySecret(clientId.toClientId(), data)

@@ -1,6 +1,6 @@
-package com.wire.crypto.testutils
+package testutils
 
-import com.wire.crypto.DatabaseKey
+import DatabaseKey
 
 fun genDatabaseKey(): DatabaseKey {
     val bytes = ByteArray(32)

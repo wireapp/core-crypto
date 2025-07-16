@@ -2,11 +2,11 @@
 
 package com.wire.crypto
 
-import com.wire.crypto.testutils.genDatabaseKey
-import com.wire.crypto.uniffi.CoreCryptoException
-import com.wire.crypto.uniffi.ProteusException
+import CoreCryptoException
+import ProteusException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import testutils.genDatabaseKey
 import java.nio.file.Files
 import kotlin.test.*
 
