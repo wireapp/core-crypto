@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ALICE_ID, ccInit, setup, teardown } from "./utils";
+import { ccInit, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import { CoreCryptoError, CoreCryptoContext } from "../../src/CoreCrypto";
 
@@ -13,9 +13,10 @@ afterEach(async () => {
 
 describe("transaction context", () => {
     it("should propagate JS error", async () => {
+        const alice = crypto.randomUUID();
         const expectedErrorMessage = "Message of expected error";
 
-        await ccInit(ALICE_ID);
+        await ccInit(alice);
 
         await expect(
             browser.execute(
@@ -26,7 +27,7 @@ describe("transaction context", () => {
                         throw new Error(expectedMessage);
                     });
                 },
-                ALICE_ID,
+                alice,
                 expectedErrorMessage
             )
             // wdio wraps the error and prepends the original message with
@@ -35,7 +36,8 @@ describe("transaction context", () => {
     });
 
     it("should throw error when using invalid context", async () => {
-        await ccInit(ALICE_ID);
+        const alice = crypto.randomUUID();
+        await ccInit(alice);
 
         const error = await browser.execute(async (clientName) => {
             const cc = window.ensureCcDefined(clientName);
@@ -56,7 +58,7 @@ describe("transaction context", () => {
                 return { name: error.name, message: error.message };
             }
             return null;
-        }, ALICE_ID);
+        }, alice);
         expect(error).not.toBeNull();
         expect(error?.name).toEqual("MlsErrorOther");
         expect(error?.message).toEqual(
@@ -65,7 +67,8 @@ describe("transaction context", () => {
     });
 
     it("should roll back transaction after error", async () => {
-        await ccInit(ALICE_ID);
+        const alice = crypto.randomUUID();
+        await ccInit(alice);
 
         const error = await browser.execute(async (clientName) => {
             const cc = window.ensureCcDefined(clientName);
@@ -112,7 +115,7 @@ describe("transaction context", () => {
                 return { name: error.name, message: error.message };
             }
             throw new Error("Expected 'Conversation already exists' error");
-        }, ALICE_ID);
+        }, alice);
         expect(error.message).toBe("Conversation already exists");
     });
 });

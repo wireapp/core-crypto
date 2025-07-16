@@ -1,8 +1,5 @@
 import {
-    ALICE_ID,
-    BOB_ID,
     ccInit,
-    CONV_ID,
     createConversation,
     invite,
     setup,
@@ -72,18 +69,21 @@ async function measureDecryption(
 describe("messages", () => {
     const MESSAGE_COUNT = 1000;
     it(`decrypt ${MESSAGE_COUNT} messages`, async () => {
-        await ccInit(ALICE_ID);
-        await ccInit(BOB_ID);
-        await createConversation(ALICE_ID, CONV_ID);
-        await invite(ALICE_ID, BOB_ID, CONV_ID);
+        const alice = crypto.randomUUID();
+        const bob = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
+        await ccInit(bob);
+        await createConversation(alice, convId);
+        await invite(alice, bob, convId);
 
         const MESSAGE = "Hello world!";
         const { decryptedMessages, durationMilliSeconds: duration } =
             await browser.execute(
                 measureDecryption,
-                ALICE_ID,
-                BOB_ID,
-                CONV_ID,
+                alice,
+                bob,
+                convId,
                 MESSAGE,
                 MESSAGE_COUNT
             );

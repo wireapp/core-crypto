@@ -1,12 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import {
-    ALICE_ID,
-    ccInit,
-    CONV_ID,
-    createConversation,
-    setup,
-    teardown,
-} from "./utils";
+import { ccInit, createConversation, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import { E2eiConversationState } from "../../src/CoreCrypto";
 
@@ -20,7 +13,8 @@ afterEach(async () => {
 
 describe("end to end identity", () => {
     it("enrollment flow should succeed", async () => {
-        await ccInit(ALICE_ID);
+        const alice = crypto.randomUUID();
+        await ccInit(alice);
         await browser.execute(async (clientName) => {
             const cc = window.ensureCcDefined(clientName);
             const ciphersuite = window.defaultCipherSuite;
@@ -250,12 +244,14 @@ describe("end to end identity", () => {
 
                 await enrollment.certificateRequest(previousNonce);
             });
-        }, ALICE_ID);
+        }, alice);
     });
 
     it("should not be enabled on conversation with basic credential", async () => {
-        await ccInit(ALICE_ID);
-        await createConversation(ALICE_ID, CONV_ID);
+        const alice = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
+        await createConversation(alice, convId);
         const conversationState = await browser.execute(
             async (clientName, conversationId) => {
                 const cc = window.ensureCcDefined(clientName);
@@ -266,15 +262,17 @@ describe("end to end identity", () => {
                     return await ctx.e2eiConversationState(cid);
                 });
             },
-            ALICE_ID,
-            CONV_ID
+            alice,
+            convId
         );
         expect(conversationState).toBe(E2eiConversationState.NotEnabled);
     });
 
     it("identities can be queried by client id", async () => {
-        await ccInit(ALICE_ID);
-        await createConversation(ALICE_ID, CONV_ID);
+        const alice = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
+        await createConversation(alice, convId);
         const identities = await browser.execute(
             async (clientName, conversationId) => {
                 const cc = window.ensureCcDefined(clientName);
@@ -292,16 +290,17 @@ describe("end to end identity", () => {
 
                 return identities.pop()?.clientId;
             },
-            ALICE_ID,
-            CONV_ID
+            alice,
+            convId
         );
-        expect(identities).toBe(ALICE_ID);
+        expect(identities).toBe(alice);
     });
 
     it("identities can be queried by user id", async () => {
-        const ALICE_ID = "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com";
-        await ccInit(ALICE_ID);
-        await createConversation(ALICE_ID, CONV_ID);
+        const alice = "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com";
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
+        await createConversation(alice, convId);
         const identities = await browser.execute(
             async (clientName, conversationId) => {
                 const cc = window.ensureCcDefined(clientName);
@@ -316,9 +315,9 @@ describe("end to end identity", () => {
 
                 return identities.values().next().value?.pop()?.clientId;
             },
-            ALICE_ID,
-            CONV_ID
+            alice,
+            convId
         );
-        expect(identities).toBe(ALICE_ID);
+        expect(identities).toBe(alice);
     });
 });

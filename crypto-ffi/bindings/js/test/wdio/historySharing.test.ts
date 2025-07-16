@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ALICE_ID, ccInit, CONV_ID, setup, teardown } from "./utils";
+import { ccInit, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import { ConversationId, type HistorySecret } from "../../src/CoreCrypto";
 
@@ -13,7 +13,9 @@ afterEach(async () => {
 
 describe("history sharing", () => {
     it("enable and disable should work", async () => {
-        await ccInit(ALICE_ID);
+        const alice = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
         const result = await browser.execute(
             async (clientName, convIdStr) => {
                 const convId = new window.ccModule.ConversationId(
@@ -88,14 +90,14 @@ describe("history sharing", () => {
                     commitHasEncryptedMessage,
                 };
             },
-            ALICE_ID,
-            CONV_ID
+            alice,
+            convId
         );
 
         expect(result.length).toBe(1);
         expect(result.enabledBeforeEnabling).toBe(false);
         expect(result.enabledAfterEnabling).toBe(true);
-        expect(result.firstIdString).toBe(CONV_ID);
+        expect(result.firstIdString).toBe(convId);
         expect(result.commitHasEncryptedMessage).toBe(true);
     });
 });

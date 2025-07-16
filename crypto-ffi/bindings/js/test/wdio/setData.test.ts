@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ALICE_ID, ccInit, setup, teardown } from "./utils";
+import { ccInit, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -13,8 +13,9 @@ afterEach(async () => {
 describe("set_data()", () => {
     it("should persist data to DB", async () => {
         const text = "my message processing checkpoint";
+        const alice = crypto.randomUUID();
 
-        await ccInit(ALICE_ID);
+        await ccInit(alice);
 
         const result = await browser.execute(
             async (clientName, text) => {
@@ -35,7 +36,7 @@ describe("set_data()", () => {
                     afterSet: decoder.decode(dbResultAfterSet),
                 };
             },
-            ALICE_ID,
+            alice,
             text
         );
 

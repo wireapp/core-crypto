@@ -1,12 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import {
-    ALICE_ID,
-    ccInit,
-    CONV_ID,
-    createConversation,
-    setup,
-    teardown,
-} from "./utils";
+import { ccInit, createConversation, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import {
     ConversationId,
@@ -24,7 +17,8 @@ afterEach(async () => {
 
 describe("core crypto errors", () => {
     it("should build correctly when constructed manually", async () => {
-        await ccInit(ALICE_ID);
+        const alice = crypto.randomUUID();
+        await ccInit(alice);
         const result = await browser.execute(async () => {
             const CoreCryptoError = window.ccModule.CoreCryptoError;
             const richErrorJSON: CoreCryptoRichError = {
@@ -55,8 +49,10 @@ describe("core crypto errors", () => {
     });
 
     it("should build correctly when constructed by cc", async () => {
-        await ccInit(ALICE_ID);
-        await createConversation(ALICE_ID, CONV_ID);
+        const alice = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
+        await createConversation(alice, convId);
 
         const result = await browser.execute(
             async (clientName, convId) => {
@@ -91,8 +87,8 @@ describe("core crypto errors", () => {
                     };
                 }
             },
-            ALICE_ID,
-            CONV_ID
+            alice,
+            convId
         );
 
         expect(result.errorWasThrown).toBe(true);
@@ -102,7 +98,9 @@ describe("core crypto errors", () => {
 });
 
 it("should build correctly when constructed by wasm bindgen", async () => {
-    await ccInit(ALICE_ID);
+    const alice = crypto.randomUUID();
+    const convId = crypto.randomUUID();
+    await ccInit(alice);
     const result = await browser.execute(
         async (clientName, convId) => {
             const cc = window.ensureCcDefined(clientName);
@@ -134,8 +132,8 @@ it("should build correctly when constructed by wasm bindgen", async () => {
                 };
             }
         },
-        ALICE_ID,
-        CONV_ID
+        alice,
+        convId
     );
 
     expect(result.errorWasThrown).toBe(true);
@@ -145,13 +143,15 @@ it("should build correctly when constructed by wasm bindgen", async () => {
 
 describe("Error type mapping", () => {
     it("should work for conversation already exists", async () => {
-        await ccInit(ALICE_ID);
-        await createConversation(ALICE_ID, CONV_ID);
+        const alice = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
+        await createConversation(alice, convId);
 
         const expectedErrorMessage = "Conversation already exists";
 
         await expect(
-            createConversation(ALICE_ID, CONV_ID)
+            createConversation(alice, convId)
             // wdio wraps the error and prepends the original message with
             // the error type as prefix
         ).rejects.toThrow(

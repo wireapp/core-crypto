@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ALICE_ID, ccInit, setup, teardown } from "./utils";
+import { ccInit, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -12,7 +12,8 @@ afterEach(async () => {
 
 describe("client identity", () => {
     it("get client public key should work", async () => {
-        await ccInit(ALICE_ID);
+        const alice = crypto.randomUUID();
+        await ccInit(alice);
         const result = await browser.execute(async (clientName) => {
             const cc = window.ensureCcDefined(clientName);
             return (
@@ -21,12 +22,13 @@ describe("client identity", () => {
                     window.ccModule.CredentialType.Basic
                 )
             ).length;
-        }, ALICE_ID);
+        }, alice);
         expect(result).toBe(32);
     });
 
     it("requesting client key packages should work", async () => {
-        await ccInit(ALICE_ID);
+        const alice = crypto.randomUUID();
+        await ccInit(alice);
         const result = await browser.execute(async (clientName) => {
             const cc = window.ensureCcDefined(clientName);
             return (
@@ -38,7 +40,7 @@ describe("client identity", () => {
                     );
                 })
             ).length;
-        }, ALICE_ID);
+        }, alice);
         expect(result).toBe(20);
     });
 });

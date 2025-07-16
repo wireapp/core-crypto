@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ALICE_ID, ccInit, setup, teardown } from "./utils";
+import { ccInit, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -27,7 +27,8 @@ describe("external entropy", () => {
             0x6f4d794b,
         ]);
 
-        await ccInit(ALICE_ID);
+        const alice = crypto.randomUUID();
+        await ccInit(alice);
 
         const [result1, result2] = await browser.execute(
             async (clientName, length1, length2) => {
@@ -40,7 +41,7 @@ describe("external entropy", () => {
                 const produced2 = await cc.randomBytes(length2);
                 return [Array.from(produced1), Array.from(produced2)];
             },
-            ALICE_ID,
+            alice,
             vector1.length * vector1.BYTES_PER_ELEMENT,
             vector2.length * vector2.BYTES_PER_ELEMENT
         );

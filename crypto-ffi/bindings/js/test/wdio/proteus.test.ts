@@ -1,11 +1,8 @@
 import { browser, expect } from "@wdio/globals";
 import {
-    ALICE_ID,
-    BOB_ID,
     newProteusSessionFromMessage,
     newProteusSessionFromPrekey,
     proteusInit,
-    SESSION_ID,
     setup,
     teardown,
 } from "./utils";
@@ -21,7 +18,8 @@ afterEach(async () => {
 
 describe("proteus", () => {
     it("should initialize correctly", async () => {
-        await proteusInit(ALICE_ID);
+        const alice = crypto.randomUUID();
+        await proteusInit(alice);
         const result = await browser.execute(async (clientName) => {
             const lastResortPrekeyId =
                 window.ccModule.CoreCrypto.proteusLastResortPrekeyId();
@@ -37,7 +35,7 @@ describe("proteus", () => {
                 lastResortPrekey1: Array.from(prekey1),
                 lastResortPrekey2: Array.from(prekey2),
             };
-        }, ALICE_ID);
+        }, alice);
 
         const u16MAX = Math.pow(2, 16) - 1;
 
@@ -48,44 +46,53 @@ describe("proteus", () => {
     });
 
     it("new session from prekey should succeed", async () => {
-        await proteusInit(ALICE_ID);
-        await proteusInit(BOB_ID);
-        await newProteusSessionFromPrekey(ALICE_ID, BOB_ID, SESSION_ID);
+        const alice = crypto.randomUUID();
+        const bob = crypto.randomUUID();
+        const sessionId = crypto.randomUUID();
+        await proteusInit(alice);
+        await proteusInit(bob);
+        await newProteusSessionFromPrekey(alice, bob, sessionId);
     });
 
     it("new session from message should succeed", async () => {
-        await proteusInit(ALICE_ID);
-        await proteusInit(BOB_ID);
+        const alice = crypto.randomUUID();
+        const bob = crypto.randomUUID();
+        const sessionId = crypto.randomUUID();
+        await proteusInit(alice);
+        await proteusInit(bob);
         // Session for alice
-        await newProteusSessionFromPrekey(ALICE_ID, BOB_ID, SESSION_ID);
+        await newProteusSessionFromPrekey(alice, bob, sessionId);
         const message = "Hello, world!";
         // Session for bob
         const decryptedMessage = await newProteusSessionFromMessage(
-            ALICE_ID,
-            BOB_ID,
-            SESSION_ID,
+            alice,
+            bob,
+            sessionId,
             message
         );
         expect(decryptedMessage).toBe(message);
     });
 
     it("initializing same session twice should fail", async () => {
-        await proteusInit(ALICE_ID);
-        await proteusInit(BOB_ID);
+        const alice = crypto.randomUUID();
+        const bob = crypto.randomUUID();
+        const sessionId = crypto.randomUUID();
+        await proteusInit(alice);
+        await proteusInit(bob);
         // Session for alice
-        await newProteusSessionFromPrekey(ALICE_ID, BOB_ID, SESSION_ID);
+        await newProteusSessionFromPrekey(alice, bob, sessionId);
         const message = "Hello, world!";
         // Session for bob
         const decryptedMessage = await newProteusSessionFromMessage(
-            ALICE_ID,
-            BOB_ID,
-            SESSION_ID,
+            alice,
+            bob,
+            sessionId,
             message
         );
         expect(decryptedMessage).toBe(message);
 
         await expect(
-            newProteusSessionFromMessage(ALICE_ID, BOB_ID, SESSION_ID, message)
+            newProteusSessionFromMessage(alice, bob, sessionId, message)
         ).rejects.toThrow(
             // wdio wraps the error and prepends the original message with
             // the error type as prefix

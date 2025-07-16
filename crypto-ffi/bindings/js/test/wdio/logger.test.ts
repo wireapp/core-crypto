@@ -1,14 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import {
-    ALICE_ID,
-    BOB_ID,
-    ccInit,
-    CONV_ID,
-    createConversation,
-    invite,
-    setup,
-    teardown,
-} from "./utils";
+import { ccInit, createConversation, invite, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -28,7 +19,9 @@ describe("logger", () => {
     };
 
     it("forwards logs when registered", async () => {
-        await ccInit(ALICE_ID);
+        const alice = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
         const result = await browser.execute(
             async (clientName, conversationId) => {
                 const cc = window.ensureCcDefined(clientName);
@@ -53,15 +46,17 @@ describe("logger", () => {
                 });
                 return logs;
             },
-            ALICE_ID,
-            CONV_ID
+            alice,
+            convId
         );
 
         expect(result.length).toBeGreaterThan(0);
     });
 
     it("can be replaced", async () => {
-        await ccInit(ALICE_ID);
+        const alice = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
         const result = await browser.execute(
             async (clientName, conversationId) => {
                 const cc = window.ensureCcDefined(clientName);
@@ -91,15 +86,17 @@ describe("logger", () => {
                 });
                 return logs;
             },
-            ALICE_ID,
-            CONV_ID
+            alice,
+            convId
         );
 
         expect(result.length).toBeGreaterThan(0);
     });
 
     it("doesn't forward logs below log level when registered", async () => {
-        await ccInit(ALICE_ID);
+        const alice = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
         const result = await browser.execute(
             async (clientName, conversationId) => {
                 const cc = window.ensureCcDefined(clientName);
@@ -124,16 +121,18 @@ describe("logger", () => {
                 });
                 return logs;
             },
-            ALICE_ID,
-            CONV_ID
+            alice,
+            convId
         );
 
         expect(result.length).toBe(0);
     });
 
     it("when throwing errors they're reported as errors", async () => {
+        const alice = crypto.randomUUID();
+        const convId = crypto.randomUUID();
         const expectedErrorMessage = "expected test error in logger test";
-        await ccInit(ALICE_ID);
+        await ccInit(alice);
         await browser.execute(
             async (clientName, conversationId, expectedErrorMessage) => {
                 const cc = window.ensureCcDefined(clientName);
@@ -156,8 +155,8 @@ describe("logger", () => {
                     );
                 });
             },
-            ALICE_ID,
-            CONV_ID,
+            alice,
+            convId,
             expectedErrorMessage
         );
 
@@ -173,10 +172,13 @@ describe("logger", () => {
     });
 
     it("forwards logs with context key/value pairs", async () => {
-        await ccInit(ALICE_ID);
-        await createConversation(ALICE_ID, CONV_ID);
-        await ccInit(BOB_ID);
-        await invite(ALICE_ID, BOB_ID, CONV_ID);
+        const alice = crypto.randomUUID();
+        const bob = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
+        await createConversation(alice, convId);
+        await ccInit(bob);
+        await invite(alice, bob, convId);
         const result = await browser.execute(
             async (aliceName, bobName, conversationId) => {
                 const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
@@ -218,9 +220,9 @@ describe("logger", () => {
 
                 return logs;
             },
-            ALICE_ID,
-            BOB_ID,
-            CONV_ID
+            alice,
+            bob,
+            convId
         );
 
         const proteusErrorLog = result.find(

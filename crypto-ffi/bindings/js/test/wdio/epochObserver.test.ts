@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ALICE_ID, ccInit, CONV_ID, setup, teardown } from "./utils";
+import { ccInit, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -12,7 +12,9 @@ afterEach(async () => {
 
 describe("epoch observer", () => {
     it("should observe new epochs", async () => {
-        await ccInit(ALICE_ID);
+        const alice = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
         const { length, first_id_hex } = await browser.execute(
             async (clientName, conv_id_str) => {
                 const conv_id = new window.ccModule.ConversationId(
@@ -72,11 +74,11 @@ describe("epoch observer", () => {
                 ).join("");
                 return { length: observer.observations.length, first_id_hex };
             },
-            ALICE_ID,
-            CONV_ID
+            alice,
+            convId
         );
 
-        const expect_conversation_id = new TextEncoder().encode(CONV_ID);
+        const expect_conversation_id = new TextEncoder().encode(convId);
         const expect_conversation_id_hex = Array.from(
             expect_conversation_id,
             (byte) => {

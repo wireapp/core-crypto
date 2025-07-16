@@ -1,9 +1,6 @@
 import { expect } from "@wdio/globals";
 import {
-    ALICE_ID,
-    BOB_ID,
     ccInit,
-    CONV_ID,
     createConversation,
     invite,
     roundTripMessage,
@@ -23,10 +20,13 @@ afterEach(async () => {
 
 describe("conversation", () => {
     it("should allow inviting members", async () => {
-        await ccInit(ALICE_ID);
-        await ccInit(BOB_ID);
-        await createConversation(ALICE_ID, CONV_ID);
-        const groupInfo = await invite(ALICE_ID, BOB_ID, CONV_ID);
+        const alice = crypto.randomUUID();
+        const bob = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
+        await ccInit(bob);
+        await createConversation(alice, convId);
+        const groupInfo = await invite(alice, bob, convId);
         expect(groupInfo.encryptionType).toBe(
             GroupInfoEncryptionType.Plaintext
         );
@@ -34,15 +34,18 @@ describe("conversation", () => {
     });
 
     it("should allow sending messages", async () => {
-        await ccInit(ALICE_ID);
-        await ccInit(BOB_ID);
-        await createConversation(ALICE_ID, CONV_ID);
-        await invite(ALICE_ID, BOB_ID, CONV_ID);
+        const alice = crypto.randomUUID();
+        const bob = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
+        await ccInit(bob);
+        await createConversation(alice, convId);
+        await invite(alice, bob, convId);
         const messageText = "Hello world!";
         const [decryptedByAlice, decryptedByBob] = await roundTripMessage(
-            ALICE_ID,
-            BOB_ID,
-            CONV_ID,
+            alice,
+            bob,
+            convId,
             messageText
         );
         expect(decryptedByAlice).toBe(messageText);
