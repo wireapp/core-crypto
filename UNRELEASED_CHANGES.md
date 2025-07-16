@@ -4,6 +4,11 @@
 
 ### Features
 
+- crypto-ffi: add updateDatabaseKey to JS bindings [WPB-18538] ([e35f1a5](https://github.com/wireapp/core-crypto/commit/e35f1a5ec5d3de80bd1523b694ec28f8b3365d20))
+- crypto-ffi: add updateDatabaseKey to Kotlin bindings [WPB-18538] ([373fc4e](https://github.com/wireapp/core-crypto/commit/373fc4e82df85542df5625f1944dc0eb4f899b8a))
+- crypto-ffi: add updateDatabaseKey to bindings [WPB-18538] ([f682a15](https://github.com/wireapp/core-crypto/commit/f682a15ff79380b38dc71757c83cf3959548eef0))
+- keystore: add a way to rekey the db on Wasm [WPB-18538] ([a62cfb5](https://github.com/wireapp/core-crypto/commit/a62cfb549dc6fdfe1242cf478b7c290c6b40a4c5))
+- keystore: add a way to rekey the db on non-Wasm platforms [WPB-18538] ([54d5fd1](https://github.com/wireapp/core-crypto/commit/54d5fd19951eb4cb4e41b2d7ac445d643cf8eb58))
 - [**breaking**] remove `can_close()` and `isLocked()` [WPB-17633] ([58b4aa2](https://github.com/wireapp/core-crypto/commit/58b4aa2ff94cc2c3e9289121100df476ad733314))
 - update history client on member remove [WPB-17096] ([714ff73](https://github.com/wireapp/core-crypto/commit/714ff739ebe8ae3acbb643fd6a0ddde1be58d3e1))
 - update Android NDK to 28.1 [WPB-18293] ([6101eb8](https://github.com/wireapp/core-crypto/commit/6101eb80187a5384eb48e9e94342fc8607abeebf))
@@ -65,6 +70,9 @@
 
 ### Testing
 
+- crypto-ffi: add a test for updateDatabaseKey in Swift bindings [WPB-18538] ([a2160d8](https://github.com/wireapp/core-crypto/commit/a2160d8ab029f370e0adaca1e4667e530065d049))
+- crypto-ffi: add a test for updateDatabaseKey in JS bindings [WPB-18538] ([7528b2a](https://github.com/wireapp/core-crypto/commit/7528b2a46de04d0f9a80c2a4650ff2fc27d2eaaf))
+- crypto-ffi: add a test for updateDatabaseKey in Kotlin bindings [WPB-18538] ([9111a32](https://github.com/wireapp/core-crypto/commit/9111a32bd470590d177c1c770cc5e1537400768f))
 - error builds correctly when coming from cc or `wasm_bindgen` ([aab8d60](https://github.com/wireapp/core-crypto/commit/aab8d6005f98d2684203423bd5a9034590dcb7e8))
 - proteus session not found maps to correct error type ([0a481ef](https://github.com/wireapp/core-crypto/commit/0a481ef33b9f5606f31ae7b776118dacbcbe4798))
 - re-add database tests which were accidentally omitted ([185e90f](https://github.com/wireapp/core-crypto/commit/185e90f0bf749266478854c85ac620e432569fb8))
