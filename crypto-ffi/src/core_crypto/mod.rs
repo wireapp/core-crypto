@@ -13,7 +13,12 @@ use core_crypto::prelude::{Session, SessionConfig, ValidatedSessionConfig};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{CoreCryptoError, CoreCryptoResult, DatabaseKey, ciphersuite::Ciphersuites, client_id::ClientIdMaybeArc};
+use crate::{
+    CoreCryptoError, CoreCryptoResult,
+    ciphersuite::Ciphersuites,
+    client_id::ClientIdMaybeArc,
+    database_key::{DatabaseKeyMaybeArc, ToCc as _},
+};
 
 /// In Wasm, boxed slices are the natural way to communicate an immutable byte slice
 #[cfg(target_family = "wasm")]
@@ -49,7 +54,7 @@ pub struct CoreCrypto {
 #[uniffi::export]
 pub async fn core_crypto_new(
     path: String,
-    key: DatabaseKey,
+    key: DatabaseKeyMaybeArc,
     client_id: ClientIdMaybeArc,
     ciphersuites: Ciphersuites,
     entropy_seed: Option<EntropySeed>,
@@ -74,7 +79,7 @@ pub async fn core_crypto_new(
 #[uniffi::export]
 pub async fn core_crypto_deferred_init(
     path: String,
-    key: DatabaseKey,
+    key: DatabaseKeyMaybeArc,
     entropy_seed: Option<EntropySeed>,
 ) -> CoreCryptoResult<CoreCrypto> {
     CoreCrypto::deferred_init_impl(path, key, entropy_seed).await
@@ -83,7 +88,7 @@ pub async fn core_crypto_deferred_init(
 impl CoreCrypto {
     pub async fn new(
         path: String,
-        key: DatabaseKey,
+        key: DatabaseKeyMaybeArc,
         client_id: Option<ClientIdMaybeArc>,
         ciphersuites: Option<Ciphersuites>,
         entropy_seed: Option<EntropySeed>,
@@ -96,7 +101,7 @@ impl CoreCrypto {
         let entropy_seed = entropy_seed.map(entropy_seed_map);
         let configuration = SessionConfig::builder()
             .persistent(&path)
-            .database_key(key.into())
+            .database_key(key.to_cc())
             .client_id_opt(client_id.map(|cid| cid.as_cc()))
             .ciphersuites(ciphersuites.unwrap_or_default().into_iter().map(Into::into))
             .external_entropy_opt(entropy_seed.as_deref())
@@ -108,13 +113,13 @@ impl CoreCrypto {
 
     async fn deferred_init_impl(
         path: String,
-        key: DatabaseKey,
+        key: DatabaseKeyMaybeArc,
         entropy_seed: Option<EntropySeed>,
     ) -> CoreCryptoResult<Self> {
         let entropy_seed = entropy_seed.map(entropy_seed_map);
         let configuration = SessionConfig::builder()
             .persistent(&path)
-            .database_key(key.into())
+            .database_key(key.to_cc())
             .external_entropy_opt(entropy_seed.as_deref())
             .build()
             .validate()?;
@@ -137,7 +142,7 @@ impl CoreCrypto {
 impl CoreCrypto {
     pub async fn async_new(
         path: String,
-        key: DatabaseKey,
+        key: DatabaseKeyMaybeArc,
         client_id: Option<ClientIdMaybeArc>,
         ciphersuites: Option<Ciphersuites>,
         entropy_seed: Option<EntropySeed>,
@@ -148,7 +153,7 @@ impl CoreCrypto {
 
     pub async fn deferred_init(
         path: String,
-        key: DatabaseKey,
+        key: DatabaseKeyMaybeArc,
         entropy_seed: Option<Box<[u8]>>,
     ) -> CoreCryptoResult<CoreCrypto> {
         CoreCrypto::deferred_init_impl(path, key, entropy_seed).await
