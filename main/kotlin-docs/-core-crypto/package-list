@@ -9,6 +9,7 @@ $dokka.location:com.wire.crypto//toExternalSenderKey/[Error type: Unresolved typ
 $dokka.location:com.wire.crypto//toGroupId/[Error type: Unresolved type for com.wire.crypto.uniffi.ConversationId]#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-group-id.html
 $dokka.location:com.wire.crypto//toGroupId/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-group-id.html
 $dokka.location:com.wire.crypto//toGroupId/kotlin.String#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-group-id.html
+$dokka.location:com.wire.crypto//updateDatabaseKey/#kotlin.String#com.wire.crypto.DatabaseKey#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/update-database-key.html
 $dokka.location:com.wire.crypto/AcmeChallenge///PointingToDeclaration/-core-crypto/com.wire.crypto/-acme-challenge/index.html
 $dokka.location:com.wire.crypto/AcmeChallenge/AcmeChallenge/#[Error type: Unresolved type for com.wire.crypto.uniffi.AcmeChallenge]/PointingToDeclaration/-core-crypto/com.wire.crypto/-acme-challenge/-acme-challenge.html
 $dokka.location:com.wire.crypto/AcmeChallenge/raw/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-acme-challenge/raw.html
