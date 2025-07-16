@@ -104,6 +104,9 @@
 
 - Support Android environments with 16k page size
 
+- Added a module-level function `updateDatabaseKey`, to update the key of an existing CoreCrypto database
+
+
 ## v7.0.2 - 2025-07-07
 
 ### Highlights
