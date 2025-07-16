@@ -32,6 +32,37 @@ final class WireCoreCryptoTests: XCTestCase {
         }
     }
 
+    func testUpdatingDatabaseKeyWorks() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "mls")
+        let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+
+        let key1 = genDatabaseKey()
+        var cc = try await CoreCrypto(keystorePath: keystore.absoluteString, key: key1)
+
+        let clientId = ClientId(bytes: UUID().uuidString.data(using: .utf8)!)
+        let ciphersuite = Ciphersuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
+
+        let pubkey1 = try await cc.transaction {
+            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite], nbKeyPackage: 1)
+            return try await $0.clientPublicKey(
+                ciphersuite: ciphersuite, credentialType: CredentialType.basic)
+        }
+
+        let key2 = genDatabaseKey()
+        XCTAssertNotEqual(key1, key2)
+
+        try await updateDatabaseKey(name: keystore.absoluteString, oldKey: key1, newKey: key2)
+
+        cc = try await CoreCrypto(keystorePath: keystore.absoluteString, key: key2)
+        let pubkey2 = try await cc.transaction {
+            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite], nbKeyPackage: 1)
+            return try await $0.clientPublicKey(
+                ciphersuite: ciphersuite, credentialType: CredentialType.basic)
+        }
+        XCTAssertEqual(pubkey1, pubkey2)
+    }
+
     func testMigratingKeyTypeToBytesWorks() async throws {
         let databaseName = "migrating-key-types-to-bytes-test-E4D08634-D1AE-40C8-ADF4-34CCC472AC38"
         let databaseFile = "\(databaseName).sqlite"
