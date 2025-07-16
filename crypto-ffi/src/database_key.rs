@@ -4,32 +4,16 @@ use wasm_bindgen::prelude::*;
 
 use crate::{CoreCryptoError, CoreCryptoResult};
 
-// TODO: We derive Constructor here only because we need to construct an instance in interop.
-// Remove it once we drop the FFI client from interop.
 #[derive(Debug, derive_more::From, derive_more::Into)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), derive(derive_more::Deref, derive_more::Constructor))]
+#[cfg_attr(not(target_family = "wasm"), derive(Clone, derive_more::Deref, uniffi::Object))]
 pub struct DatabaseKey(core_crypto_keystore::DatabaseKey);
 
-#[cfg(not(target_family = "wasm"))]
-uniffi::custom_type!(DatabaseKey, Vec<u8>, {
-    lower: |key| key.0.to_vec(),
-    try_lift: |vec| {
-        core_crypto_keystore::DatabaseKey::try_from(vec.as_slice())
-            .map(DatabaseKey)
-            .map_err(CoreCryptoError::generic())
-            .map_err(Into::into)
+impl DatabaseKey {
+    pub fn from_cc(cc: core_crypto_keystore::DatabaseKey) -> DatabaseKeyMaybeArc {
+        #[cfg_attr(target_family = "wasm", expect(clippy::useless_conversion))]
+        Self(cc).into()
     }
-});
-
-/// Updates the key of the CoreCrypto database.
-/// To be used only once, when moving from CoreCrypto <= 5.x to CoreCrypto 6.x.
-#[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = "migrateDatabaseKeyTypeToBytes"))]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-pub async fn migrate_db_key_type_to_bytes(name: &str, old_key: &str, new_key: &DatabaseKey) -> CoreCryptoResult<()> {
-    Database::migrate_db_key_type_to_bytes(name, old_key, &new_key.0)
-        .await
-        .map_err(CoreCryptoError::generic())
 }
 
 #[cfg(target_family = "wasm")]
@@ -40,6 +24,53 @@ impl DatabaseKey {
         let key = core_crypto_keystore::DatabaseKey::try_from(buf).map_err(CoreCryptoError::generic())?;
         Ok(DatabaseKey(key))
     }
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[uniffi::export]
+impl DatabaseKey {
+    #[uniffi::constructor]
+    pub fn new(key: Vec<u8>) -> CoreCryptoResult<Self> {
+        core_crypto_keystore::DatabaseKey::try_from(key.as_slice())
+            .map(Self)
+            .map_err(CoreCryptoError::generic())
+    }
+}
+
+pub(crate) trait ToCc {
+    fn to_cc(self) -> core_crypto_keystore::DatabaseKey;
+}
+
+#[cfg(target_family = "wasm")]
+pub(crate) type DatabaseKeyMaybeArc = DatabaseKey;
+
+#[cfg(target_family = "wasm")]
+impl ToCc for DatabaseKeyMaybeArc {
+    #[inline]
+    fn to_cc(self) -> core_crypto_keystore::DatabaseKey {
+        self.0
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
+pub(crate) type DatabaseKeyMaybeArc = std::sync::Arc<DatabaseKey>;
+
+#[cfg(not(target_family = "wasm"))]
+impl ToCc for DatabaseKeyMaybeArc {
+    #[inline]
+    fn to_cc(self) -> core_crypto_keystore::DatabaseKey {
+        std::sync::Arc::unwrap_or_clone(self).0
+    }
+}
+
+/// Updates the key of the CoreCrypto database.
+/// To be used only once, when moving from CoreCrypto <= 5.x to CoreCrypto 6.x.
+#[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = "migrateDatabaseKeyTypeToBytes"))]
+#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+pub async fn migrate_db_key_type_to_bytes(name: &str, old_key: &str, new_key: &DatabaseKey) -> CoreCryptoResult<()> {
+    Database::migrate_db_key_type_to_bytes(name, old_key, &new_key.0)
+        .await
+        .map_err(CoreCryptoError::generic())
 }
 
 /// Updates the key of the CoreCrypto database.

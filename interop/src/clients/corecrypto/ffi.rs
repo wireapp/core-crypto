@@ -35,7 +35,7 @@ impl CoreCryptoFfiClient {
 
         let cc = CoreCrypto::new(
             temp_file.path().to_string_lossy().into_owned(),
-            core_crypto_ffi::DatabaseKey::new(core_crypto::DatabaseKey::generate()),
+            core_crypto_ffi::DatabaseKey::from_cc(core_crypto::DatabaseKey::generate()),
             Some(client_id),
             Some(vec![ciphersuite]),
             None,
