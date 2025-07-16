@@ -58,25 +58,17 @@ typealias CredentialType = com.wire.crypto.uniffi.CredentialType
 /** Default credential type */
 val CREDENTIAL_TYPE_DEFAULT = CredentialType.BASIC
 
-/** MLS group ID
- * @property value the FFI conversation id
- */
-@JvmInline
-value class MLSGroupId(val value: com.wire.crypto.uniffi.ConversationId) {
-    /** Convert this type wrapper into the FFI version it wraps */
-    fun lower() = value
-
-    override fun toString() = value.copyBytes().toHex()
-}
+/** Construct a group ID */
+fun ByteArray.toGroupId() = ConversationId(this)
 
 /** Construct a group ID */
-fun ByteArray.toGroupId() = MLSGroupId(com.wire.crypto.uniffi.ConversationId(this))
+fun String.toGroupId() = ConversationId(toByteArray())
 
 /** Construct a group ID */
-fun String.toGroupId() = MLSGroupId(com.wire.crypto.uniffi.ConversationId(toByteArray()))
+fun ConversationId.toGroupId() = this
 
-/** Construct a group ID */
-fun com.wire.crypto.uniffi.ConversationId.toGroupId() = MLSGroupId(this)
+/** Convert a group id to a string */
+fun ConversationId.toString() = copyBytes().toHex()
 
 /** Client ID */
 @JvmInline
@@ -201,7 +193,7 @@ internal fun com.wire.crypto.uniffi.CommitBundle.lift() =
 /** Contains everything client needs to know after decrypting an (encrypted) Welcome message */
 data class WelcomeBundle(
     /** MLS Group Id */
-    val id: MLSGroupId,
+    val id: ConversationId,
     /** New CRL distribution points that appeared by the introduction of a new credential */
     val crlNewDistributionPoints: CrlDistributionPoints?,
 ) {

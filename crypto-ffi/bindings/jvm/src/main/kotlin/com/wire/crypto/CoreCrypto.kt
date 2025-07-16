@@ -39,7 +39,7 @@ public interface EpochObserver {
      * it is required by `uniffi` in order to handle panics. This function should suppress
      * and ignore internal errors instead of propagating them, to the maximum extent possible.
      */
-    suspend fun epochChanged(conversationId: MLSGroupId, epoch: kotlin.ULong)
+    suspend fun epochChanged(conversationId: ConversationId, epoch: kotlin.ULong)
 }
 
 /**
@@ -62,7 +62,7 @@ public interface HistoryObserver {
      * it is required by `uniffi` in order to handle panics. This function should suppress
      * and ignore internal errors instead of propagating them, to the maximum extent possible.
      */
-    suspend fun historyClientCreated(conversationId: MLSGroupId, secret: HistorySecret)
+    suspend fun historyClientCreated(conversationId: ConversationId, secret: HistorySecret)
 }
 
 /** The type representing a CoreCrypto client */
@@ -168,7 +168,7 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
         // we want to wrap the observer here to provide async indirection, so that no matter what
         // the observer that makes its way to the Rust side of things doesn't end up blocking
         val observerIndirector = object : com.wire.crypto.uniffi.EpochObserver {
-            override suspend fun epochChanged(conversationId: com.wire.crypto.uniffi.ConversationId, epoch: kotlin.ULong) {
+            override suspend fun epochChanged(conversationId: com.wire.crypto.ConversationId, epoch: kotlin.ULong) {
                 scope.launch { epochObserver.epochChanged(conversationId.toGroupId(), epoch) }
             }
         }
@@ -185,7 +185,7 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
         // the observer that makes its way to the Rust side of things doesn't end up blocking
         val observerIndirector = object : com.wire.crypto.uniffi.HistoryObserver {
             override suspend fun historyClientCreated(
-                conversationId: com.wire.crypto.uniffi.ConversationId,
+                conversationId: com.wire.crypto.ConversationId,
                 secret: com.wire.crypto.uniffi.HistorySecret
             ) {
                 scope.launch { historyObserver.historyClientCreated(conversationId.toGroupId(), secret.lift()) }
@@ -200,7 +200,7 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
      * @param id conversation identifier
      * @return true if history sharing is enabled
      */
-    suspend fun isHistorySharingEnabled(id: MLSGroupId): Boolean = cc.isHistorySharingEnabled(id.lower())
+    suspend fun isHistorySharingEnabled(id: ConversationId): Boolean = cc.isHistorySharingEnabled(id.lower())
 
     /**
      * Closes this [CoreCrypto] instance and deallocates all loaded resources.
