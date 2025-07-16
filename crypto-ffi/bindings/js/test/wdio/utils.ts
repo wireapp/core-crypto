@@ -13,11 +13,6 @@ import {
 
 type ccModuleType = typeof import("../../src/CoreCrypto");
 
-export const ALICE_ID = "alice";
-export const BOB_ID = "bob";
-export const CONV_ID = "convId";
-export const SESSION_ID = "proteusSessionId";
-
 // Logging can be adjusted via the CC_TEST_LOG_LEVEL variable:
 // 0 = no logs
 // 1 = browser logs
