@@ -11,21 +11,6 @@ import com.wire.crypto.uniffi.setMaxLogLevel as uniffiSetMaxLogLevel
 
 typealias EnrollmentHandle = ByteArray
 
-/** Represents a CoreCrypto database key */
-@JvmInline
-value class DatabaseKey(internal val bytes: ByteArray)
-
-/**
- * Updates the key of the CoreCrypto database.
- * To be used only once, when moving from CoreCrypto <= 5.x to CoreCrypto 6.x.
- * @param name path to the database file
- * @param oldKey the old key
- * @param newKey the new key
- */
-suspend fun migrateDatabaseKeyTypeToBytes(name: String, oldKey: String, newKey: DatabaseKey) {
-    return com.wire.crypto.uniffi.migrateDbKeyTypeToBytes(name, oldKey, newKey.bytes)
-}
-
 /**
  * Updates the key of the CoreCrypto database.
  * @param name path to the database file
