@@ -6,8 +6,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.wire.crypto.uniffi.setLoggerOnly as uniffiSetLoggerOnly
-import com.wire.crypto.uniffi.setMaxLogLevel as uniffiSetMaxLogLevel
 
 typealias EnrollmentHandle = ByteArray
 
@@ -66,23 +64,6 @@ public interface HistoryObserver {
      */
     suspend fun historyClientCreated(conversationId: MLSGroupId, secret: HistorySecret)
 }
-
-typealias CoreCryptoLogLevel = com.wire.crypto.uniffi.CoreCryptoLogLevel
-typealias CoreCryptoLogger = com.wire.crypto.uniffi.CoreCryptoLogger
-
-/**
- * Initializes the logging inside Core Crypto. Not required to be called and by default there will be no logging.
- *
- * @param logger a callback to implement the platform specific logging. It will receive the string with the log text from Core Crypto
- **/
-val setLogger = ::uniffiSetLoggerOnly
-
-/**
- * Set maximum log level of logs which are forwarded to the [CoreCryptoLogger].
- *
- * @param level the max level that should be logged, by default it will be WARN
- */
-val setMaxLogLevel = ::uniffiSetMaxLogLevel
 
 /** The type representing a CoreCrypto client */
 class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
