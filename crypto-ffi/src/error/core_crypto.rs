@@ -19,7 +19,7 @@ pub enum CoreCryptoError {
     #[error(transparent)]
     Proteus {
         #[from]
-        proteus_error: ProteusError,
+        exception: ProteusError,
     },
     #[error("End to end identity error: {e2ei_error}")]
     E2ei { e2ei_error: String },
@@ -186,7 +186,9 @@ impl From<core_crypto::Error> for CoreCryptoError {
             core_crypto::Error::Proteus(proteus) => {
                 let error_code = proteus.source.error_code();
                 if let Some(proteus_error) = ProteusError::from_error_code(error_code) {
-                    Self::Proteus { proteus_error }
+                    Self::Proteus {
+                        exception: proteus_error,
+                    }
                 } else {
                     Self::Other {
                         msg: format!("unknown proteus error code: {error_code:?}"),
@@ -263,7 +265,7 @@ impl CoreCryptoError {
         let mut out = self.as_ref().to_string() + "Error";
         match self {
             Self::Mls { mls_error } => out += mls_error.as_ref(),
-            Self::Proteus { proteus_error } => out += proteus_error.as_ref(),
+            Self::Proteus { exception } => out += exception.as_ref(),
             _ => {}
         }
         out

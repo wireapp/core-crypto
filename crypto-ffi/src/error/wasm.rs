@@ -10,7 +10,7 @@ impl std::fmt::Display for CoreCryptoError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let proteus_error_code = match &self.0 {
             InternalError::Proteus {
-                proteus_error: crate::ProteusError::Other { error_code },
+                exception: crate::ProteusError::Other { error_code },
             } => Some(*error_code),
             _ => None,
         };
