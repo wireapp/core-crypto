@@ -10,17 +10,15 @@ afterEach(async () => {
     await teardown();
 });
 
-describe("database key", () => {
-    it("must have correct length", async () => {
+describe("database", () => {
+    it("key must have correct length", async () => {
         expect(() =>
             browser.execute(async () => {
                 new window.ccModule.DatabaseKey(new Uint8Array(11));
             })
         ).rejects.toThrow();
     });
-});
 
-describe("database", () => {
     it("key update works", async () => {
         const [pubkey1, pubkey2] = await browser.execute(async () => {
             const cipherSuite = window.defaultCipherSuite;
@@ -75,9 +73,7 @@ describe("database", () => {
         });
         expect(JSON.parse(pubkey1)).toEqual(JSON.parse(pubkey2));
     });
-});
 
-describe("database migration", () => {
     it("migrating key type to bytes works", async () => {
         const stores = await import("./db-v10002003-dump.json");
 
