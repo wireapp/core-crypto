@@ -8,11 +8,9 @@ use crate::KeystoreError;
 use crate::mls::conversation::{ConversationGuard, ConversationWithMls, Error};
 use crate::obfuscate::Obfuscated;
 use crate::prelude::MlsBufferedConversationDecryptMessage;
-use core_crypto_keystore::connection::FetchFromDatabase;
-use core_crypto_keystore::entities::{EntityFindParams, MlsPendingMessage};
+use core_crypto_keystore::entities::MlsPendingMessage;
 use log::{error, info};
 use openmls::framing::{MlsMessageIn, MlsMessageInBody};
-use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -39,6 +37,16 @@ impl ConversationGuard {
         Ok(())
     }
 
+    async fn clear_pending_messages(&self) -> Result<()> {
+        let provider = self.crypto_provider().await?;
+        let keystore = provider.keystore();
+        keystore
+            .remove_pending_messages_by_conversation_id(self.conversation().await.id())
+            .await
+            .map_err(KeystoreError::wrap("removing pending mls messages"))
+            .map_err(Into::into)
+    }
+
     pub(super) async fn restore_and_clear_pending_messages(
         &mut self,
     ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
@@ -46,18 +54,13 @@ impl ConversationGuard {
             .restore_pending_messages(MessageRestorePolicy::DecryptAndClear)
             .await?;
 
-        if pending_messages.is_some() {
-            let conversation = self.conversation().await;
-            let backend = self.crypto_provider().await?;
-            info!(group_id = Obfuscated::from(conversation.id()); "Clearing all buffered messages for conversation");
-            backend
-                .key_store()
-                .remove::<MlsPendingMessage, _>(conversation.id())
-                .await
-                .map_err(KeystoreError::wrap("removing MlsPendingMessage from keystore"))?;
-        }
+        let Some(pending_messages) = pending_messages else {
+            return Ok(None);
+        };
 
-        Ok(pending_messages)
+        self.clear_pending_messages().await?;
+
+        Ok(Some(pending_messages))
     }
 
     #[cfg_attr(target_family = "wasm", async_recursion::async_recursion(?Send))]
@@ -72,26 +75,15 @@ impl ConversationGuard {
             let backend = self.crypto_provider().await?;
             let keystore = backend.keystore();
             if policy == MessageRestorePolicy::ClearOnly {
-                if keystore
-                    .find::<MlsPendingMessage>(conversation_id)
-                    .await
-                    .map_err(KeystoreError::wrap("finding mls pending message by group id"))?
-                    .is_some()
-                {
-                    keystore
-                        .remove::<MlsPendingMessage, _>(conversation_id)
-                        .await
-                        .map_err(KeystoreError::wrap("removing mls pending message"))?;
-                }
+                self.clear_pending_messages().await?;
                 return Ok(None);
             }
 
             let mut pending_messages = keystore
-                .find_all::<MlsPendingMessage>(EntityFindParams::default())
+                .find_pending_messages_by_conversation_id(conversation_id)
                 .await
                 .map_err(KeystoreError::wrap("finding all mls pending messages"))?
                 .into_iter()
-                .filter(|pm| pm.foreign_id == *conversation_id)
                 .map(|m| -> Result<_> {
                     let msg = MlsMessageIn::tls_deserialize(&mut m.message.as_slice())
                         .map_err(Error::tls_deserialize("mls message in"))?;

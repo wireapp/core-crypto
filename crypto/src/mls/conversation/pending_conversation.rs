@@ -281,10 +281,10 @@ impl PendingConversation {
 
         if pending_messages.is_some() {
             mls_provider
-                .key_store()
-                .remove::<MlsPendingMessage, _>(id)
+                .keystore()
+                .remove_pending_messages_by_conversation_id(id)
                 .await
-                .map_err(KeystoreError::wrap("deleting mls pending message by id"))?;
+                .map_err(KeystoreError::wrap("deleting mls pending messages by conversation id"))?;
         }
 
         // cleanup the pending group we no longer need
