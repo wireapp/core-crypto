@@ -880,6 +880,7 @@ dependencies = [
  "core-crypto-keystore",
  "derive_more",
  "futures-util",
+ "hex",
  "js-sys",
  "log",
  "log-reload",
