@@ -1,3 +1,6 @@
+#[cfg(not(target_family = "wasm"))]
+use std::time::Duration;
+
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -43,8 +46,15 @@ impl From<WirePolicy> for core_crypto::prelude::MlsWirePolicy {
 pub struct CustomConfiguration {
     ///  Duration in seconds after which we will automatically force a self-update commit
     ///  Note: This isn't currently implemented
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = "keyRotationSpan"))]
-    pub key_rotation_span: Option<u32>,
+    #[cfg(target_family = "wasm")]
+    #[wasm_bindgen(js_name = "keyRotationSpan")]
+    pub key_rotation_span: Option<u64>,
+
+    ///  Duration after which we will automatically force a self-update commit
+    ///  Note: This isn't currently implemented
+    #[cfg(not(target_family = "wasm"))]
+    pub key_rotation_span: Option<Duration>,
+
     /// Defines if handshake messages are encrypted or not
     /// Note: encrypted handshake messages are not supported by wire-server
     #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = "wirePolicy"))]
@@ -53,10 +63,14 @@ pub struct CustomConfiguration {
 
 impl From<CustomConfiguration> for MlsCustomConfiguration {
     fn from(cfg: CustomConfiguration) -> Self {
-        let key_rotation_span = cfg
-            .key_rotation_span
-            .map(|span| std::time::Duration::from_secs(span as u64));
+        #[cfg(target_family = "wasm")]
+        let key_rotation_span = cfg.key_rotation_span.map(|span| std::time::Duration::from_secs(span));
+
+        #[cfg(not(target_family = "wasm"))]
+        let key_rotation_span = cfg.key_rotation_span;
+
         let wire_policy = cfg.wire_policy.map(WirePolicy::into).unwrap_or_default();
+
         Self {
             key_rotation_span,
             wire_policy,
@@ -69,7 +83,7 @@ impl From<CustomConfiguration> for MlsCustomConfiguration {
 #[wasm_bindgen]
 impl CustomConfiguration {
     #[wasm_bindgen(constructor)]
-    pub fn new(key_rotation_span: Option<u32>, wire_policy: Option<WirePolicy>) -> Self {
+    pub fn new(key_rotation_span: Option<u64>, wire_policy: Option<WirePolicy>) -> Self {
         Self {
             key_rotation_span,
             wire_policy,
@@ -101,7 +115,7 @@ impl ConversationConfiguration {
     pub fn new(
         ciphersuite: Option<Ciphersuite>,
         external_senders: Option<Vec<ExternalSenderKeyMaybeArc>>,
-        key_rotation_span: Option<u32>,
+        key_rotation_span: Option<u64>,
         wire_policy: Option<WirePolicy>,
     ) -> crate::CoreCryptoResult<ConversationConfiguration> {
         let external_senders = external_senders.unwrap_or_default();
