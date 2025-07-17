@@ -34,7 +34,7 @@ impl TransactionContext {
     pub async fn proteus_reload_sessions(&self) -> Result<()> {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let Some(proteus) = mutex.as_mut() else { return Ok(()) };
         let keystore = self.keystore().await?;
         proteus
             .reload_sessions(&keystore)
