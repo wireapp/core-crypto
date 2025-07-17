@@ -4,6 +4,51 @@ use crate::{
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StringEntityId},
 };
 
+impl MlsPendingMessage {
+    pub async fn find_all_by_conversation_id(
+        conn: &mut <Self as EntityBase>::ConnectionType,
+        conversation_id: &[u8],
+        params: EntityFindParams,
+    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let mut conn = conn.conn().await;
+        let transaction = conn.transaction()?;
+        let query: String = format!(
+            "SELECT rowid FROM mls_pending_messages WHERE id = ? {}",
+            params.to_sql()
+        );
+
+        let mut stmt = transaction.prepare_cached(&query)?;
+        let rows = stmt.query_map([conversation_id], |r| r.get(0))?;
+        rows.map(|rowid_result| {
+            let rowid = rowid_result?;
+            use std::io::Read as _;
+
+            let mut blob =
+                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_messages", "id", rowid, true)?;
+            let mut conversation_id = vec![];
+            blob.read_to_end(&mut conversation_id)?;
+            blob.close()?;
+
+            let mut blob = transaction.blob_open(
+                rusqlite::DatabaseName::Main,
+                "mls_pending_messages",
+                "message",
+                rowid,
+                true,
+            )?;
+            let mut message = vec![];
+            blob.read_to_end(&mut message)?;
+            blob.close()?;
+
+            Ok(Self {
+                foreign_id: conversation_id,
+                message,
+            })
+        })
+        .collect()
+    }
+}
+
 #[async_trait::async_trait]
 impl Entity for MlsPendingMessage {
     fn id_raw(&self) -> &[u8] {
@@ -16,48 +61,8 @@ impl Entity for MlsPendingMessage {
         self.message.clone()
     }
 
-    async fn find_one(
-        conn: &mut Self::ConnectionType,
-        id: &StringEntityId,
-    ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        use rusqlite::OptionalExtension as _;
-        use std::io::Read as _;
-
-        let mut conn = conn.conn().await;
-        let transaction = conn.transaction()?;
-        let rowid: Option<i64> = transaction
-            .query_row(
-                "SELECT rowid FROM mls_pending_messages WHERE id = ?",
-                [&id.as_slice()],
-                |r| r.get(0),
-            )
-            .optional()?;
-        match rowid {
-            Some(rowid) => {
-                let mut blob =
-                    transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_messages", "id", rowid, true)?;
-                let mut id = vec![];
-                blob.read_to_end(&mut id)?;
-                blob.close()?;
-
-                let mut blob = transaction.blob_open(
-                    rusqlite::DatabaseName::Main,
-                    "mls_pending_messages",
-                    "message",
-                    rowid,
-                    true,
-                )?;
-                let mut message = vec![];
-                blob.read_to_end(&mut message)?;
-                blob.close()?;
-
-                Ok(Some(Self {
-                    foreign_id: id,
-                    message,
-                }))
-            }
-            None => Ok(None),
-        }
+    async fn find_one(_: &mut Self::ConnectionType, _: &StringEntityId) -> crate::CryptoKeystoreResult<Option<Self>> {
+        panic!("Must not be called. The intended usage is to call MlsPendingMessage::find_all_by_conversation_id().")
     }
 
     async fn find_all(

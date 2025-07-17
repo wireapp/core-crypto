@@ -198,14 +198,22 @@ impl WasmEncryptedStorage {
         collection: &str,
         params: Option<EntityFindParams>,
     ) -> CryptoKeystoreResult<Vec<R>> {
+        self.get_all_with_query(collection, None::<JsValue>, params).await
+    }
+
+    pub(crate) async fn get_all_with_query<R: Entity<ConnectionType = WasmConnection> + 'static>(
+        &self,
+        collection: &str,
+        query: Option<impl Into<idb::Query>>,
+        params: Option<EntityFindParams>,
+    ) -> CryptoKeystoreResult<Vec<R>> {
         match &self.storage {
             WasmStorageWrapper::Persistent(idb) => {
                 let transaction = idb.transaction(&[collection], TransactionMode::ReadOnly)?;
                 let store = transaction.object_store(collection)?;
                 let params = params.unwrap_or_default();
-
                 let mut data = store
-                    .get_all(None, params.limit)?
+                    .get_all(query.map(Into::into), params.limit)?
                     .await?
                     .into_iter()
                     .filter_map(|v| serde_wasm_bindgen::from_value::<R>(v).ok())

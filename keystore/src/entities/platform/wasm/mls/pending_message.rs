@@ -1,3 +1,6 @@
+use js_sys::Uint8Array;
+use wasm_bindgen::JsValue;
+
 use crate::{
     CryptoKeystoreResult, MissingKeyErrorKind,
     connection::KeystoreDatabaseConnection,
@@ -22,6 +25,20 @@ impl EntityBase for MlsPendingMessage {
 #[async_trait::async_trait(?Send)]
 impl EntityTransactionExt for MlsPendingMessage {}
 
+impl MlsPendingMessage {
+    pub async fn find_all_by_conversation_id(
+        conn: &mut <Self as EntityBase>::ConnectionType,
+        conversation_id: &[u8],
+        params: EntityFindParams,
+    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let storage = conn.storage();
+        let id = JsValue::from(Uint8Array::from(conversation_id));
+        storage
+            .get_all_with_query(Self::COLLECTION_NAME, Some(id), Some(params))
+            .await
+    }
+}
+
 #[async_trait::async_trait(?Send)]
 impl Entity for MlsPendingMessage {
     fn id_raw(&self) -> &[u8] {
@@ -33,11 +50,8 @@ impl Entity for MlsPendingMessage {
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
     }
 
-    async fn find_one(
-        conn: &mut Self::ConnectionType,
-        id: &StringEntityId,
-    ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        conn.storage().get(Self::COLLECTION_NAME, id.as_slice()).await
+    async fn find_one(_: &mut Self::ConnectionType, _: &StringEntityId) -> crate::CryptoKeystoreResult<Option<Self>> {
+        panic!("Must not be called. The intended usage is to call MlsPendingMessage::find_all_by_conversation_id().")
     }
 
     async fn find_many(
