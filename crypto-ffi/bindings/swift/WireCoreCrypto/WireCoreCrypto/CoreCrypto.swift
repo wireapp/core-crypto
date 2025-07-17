@@ -16,6 +16,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
 
+import System
 @_exported public import WireCoreCryptoUniffi
 
 public protocol CoreCryptoProtocol {
@@ -90,10 +91,12 @@ public protocol CoreCryptoProtocol {
 public final class CoreCrypto: CoreCryptoProtocol {
 
     let coreCrypto: WireCoreCryptoUniffi.CoreCrypto
+    let keystorePath: FilePath?
 
     /// Initialize CoreCrypto with a Ffi instance
-    private init(_ coreCrypto: WireCoreCryptoUniffi.CoreCrypto) {
+    private init(_ coreCrypto: WireCoreCryptoUniffi.CoreCrypto, keystorePath: FilePath? = nil) {
         self.coreCrypto = coreCrypto
+        self.keystorePath = keystorePath
     }
 
     ///
@@ -109,7 +112,7 @@ public final class CoreCrypto: CoreCryptoProtocol {
                 key: key,
                 entropySeed: nil
             )
-        self.init(cc)
+        self.init(cc, keystorePath: FilePath(stringLiteral: keystorePath))
     }
 
     /// Instantiate a history client.
@@ -125,7 +128,7 @@ public final class CoreCrypto: CoreCryptoProtocol {
     public func transaction<Result>(
         _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
     ) async throws -> Result {
-        let transactionExecutor = TransactionExecutor<Result>(block)
+        let transactionExecutor = try TransactionExecutor<Result>(keystorePath: keystorePath, block)
         do {
             try await coreCrypto.transaction(command: transactionExecutor)
         } catch {
@@ -211,19 +214,58 @@ final class TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand 
     let block: (_ context: CoreCryptoContextProtocol) async throws -> Result
     var result: Result?
     var innerError: Error?
+    var fileDescriptor: FileDescriptor?
 
     init(
+        keystorePath: FilePath?,
         _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
-    ) {
+    ) throws {
         self.block = block
+
+        if let keystorePath {
+            let path = keystorePath.absolutePath().removingLastComponent()
+            self.fileDescriptor = try FileDescriptor.open(path, .readOnly, options: .directory)
+        }
+    }
+
+    deinit {
+        try? fileDescriptor?.close()
     }
 
     func execute(context: WireCoreCryptoUniffi.CoreCryptoContext) async throws {
+        // Only aquire lock if we are using an instance which persists to disk
+        if fileDescriptor != nil {
+            acquireFileLock()
+
+            // Reload any cached proteus sessions from disk since they may be invalid
+            try await context.proteusReloadSessions()
+        }
+
+        defer {
+            releaseFileLock()
+        }
+
         do {
             result = try await block(context)
         } catch {
             innerError = error
             throw error
+        }
+    }
+
+    func acquireFileLock() {
+        guard let fileDescriptor else { return }
+        let result = flock(fileDescriptor.rawValue, LOCK_EX)
+        if result != 0 {
+            fatalError("Failed aquire lock: \(errno))")
+        }
+    }
+
+    func releaseFileLock() {
+        guard let fileDescriptor else { return }
+        let result = flock(fileDescriptor.rawValue, LOCK_UN)
+        if result != 0 {
+            fatalError("Failed release lock: \(errno))")
         }
     }
 
