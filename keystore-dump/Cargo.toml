@@ -13,7 +13,7 @@ workspace = true
 color-eyre = "0.6"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-core-crypto-keystore = { workspace = true, features = ["serde"] }
+core-crypto-keystore = { workspace = true }
 core-crypto = { path = "../crypto" }
 
 clap = { version = "4", features = ["derive"] }

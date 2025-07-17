@@ -1,10 +1,6 @@
 /// Consumers of this library can use this to specify data to be persisted at the end of
 /// a transaction.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ConsumerData {
     pub content: Vec<u8>,
 }

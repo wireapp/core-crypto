@@ -4,13 +4,9 @@ use openmls_traits::types::SignatureScheme;
 use zeroize::Zeroize;
 
 /// Entity representing a persisted `MlsGroup`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 #[entity(collection_name = "mls_groups")]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct PersistedMlsGroup {
     #[id(hex, column = "id_hex")]
     pub id: Vec<u8>,
@@ -50,12 +46,8 @@ pub trait PersistedMlsGroupExt: Entity {
 }
 
 /// Entity representing a temporarily persisted `MlsGroup`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct PersistedMlsPendingGroup {
     pub id: Vec<u8>,
     pub state: Vec<u8>,
@@ -64,12 +56,8 @@ pub struct PersistedMlsPendingGroup {
 }
 
 /// Entity representing a buffered message
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct MlsPendingMessage {
     pub foreign_id: Vec<u8>,
     pub message: Vec<u8>,
@@ -82,11 +70,7 @@ pub struct MlsPendingMessage {
 ///
 /// We don't automatically zeroize on drop because the commit data is still encrypted at this point;
 /// it is not risky to leave it in memory.
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
 pub struct MlsBufferedCommit {
     // we'd ideally just call this field `conversation_id`, but as of right now the
     // Entity macro does not yet support id columns not named `id`
@@ -118,12 +102,8 @@ impl MlsBufferedCommit {
 }
 
 /// Entity representing a persisted `Credential`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct MlsCredential {
     pub id: Vec<u8>,
     pub credential: Vec<u8>,
@@ -137,12 +117,8 @@ pub trait MlsCredentialExt: Entity {
 }
 
 /// Entity representing a persisted `SignatureKeyPair`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct MlsSignatureKeyPair {
     pub signature_scheme: u16,
     pub pk: Vec<u8>,
@@ -162,34 +138,25 @@ impl MlsSignatureKeyPair {
 }
 
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct MlsHpkePrivateKey {
     pub sk: Vec<u8>,
     pub pk: Vec<u8>,
 }
 
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct MlsEncryptionKeyPair {
     pub sk: Vec<u8>,
     pub pk: Vec<u8>,
 }
 
 /// Entity representing a list of [MlsEncryptionKeyPair]
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 #[entity(collection_name = "mls_epoch_encryption_keypairs")]
-#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub struct MlsEpochEncryptionKeyPair {
     #[id(hex, column = "id_hex")]
     pub id: Vec<u8>,
@@ -197,25 +164,17 @@ pub struct MlsEpochEncryptionKeyPair {
 }
 
 /// Entity representing a persisted `SignatureKeyPair`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct MlsPskBundle {
     pub psk_id: Vec<u8>,
     pub psk: Vec<u8>,
 }
 
 /// Entity representing a persisted `KeyPackage`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 #[entity(collection_name = "mls_keypackages")]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct MlsKeyPackage {
     #[id(hex, column = "keypackage_ref_hex")]
     pub keypackage_ref: Vec<u8>,
@@ -224,13 +183,9 @@ pub struct MlsKeyPackage {
 
 /// Entity representing an enrollment instance used to fetch a x509 certificate and persisted when
 /// context switches and the memory it lives in is about to be erased
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 #[entity(collection_name = "e2ei_enrollment", no_upsert)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct E2eiEnrollment {
     pub id: Vec<u8>,
     pub content: Vec<u8>,
@@ -401,32 +356,20 @@ impl<T: UniqueEntity + Send + Sync> EntityTransactionExt for T {
 }
 
 /// OIDC refresh token used in E2EI
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct E2eiRefreshToken {
     pub content: Vec<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct E2eiAcmeCA {
     pub content: Vec<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct E2eiIntermediateCert {
     // key to identify the CA cert; Using a combination of SKI & AKI extensions concatenated like so is suitable: `SKI[+AKI]`
     #[id]
@@ -434,12 +377,8 @@ pub struct E2eiIntermediateCert {
     pub content: Vec<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct E2eiCrl {
     #[id]
     pub distribution_point: String,

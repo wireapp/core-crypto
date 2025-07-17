@@ -2,12 +2,8 @@ use zeroize::Zeroize;
 
 use crate::connection::FetchFromDatabase;
 
-#[derive(Debug, Clone, Zeroize, PartialEq, Eq)]
+#[derive(Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct ProteusIdentity {
     pub sk: Vec<u8>,
     pub pk: Vec<u8>,
@@ -32,12 +28,8 @@ impl ProteusIdentity {
     }
 }
 
-#[derive(Debug, Clone, Zeroize, PartialEq, Eq)]
+#[derive(Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct ProteusPrekey {
     pub id: u16,
     id_bytes: Vec<u8>,
@@ -90,12 +82,8 @@ impl ProteusPrekey {
     }
 }
 
-#[derive(Debug, Clone, Zeroize, PartialEq, Eq, core_crypto_macros::Entity)]
+#[derive(Debug, Clone, Zeroize, PartialEq, Eq, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-#[cfg_attr(
-    any(target_family = "wasm", feature = "serde"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct ProteusSession {
     pub id: String,
     pub session: Vec<u8>,
