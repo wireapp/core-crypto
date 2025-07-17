@@ -403,7 +403,7 @@ impl KeyStoreEntityFlattened {
                             Ok(())
                         }
                         Err(rusqlite::Error::SqliteFailure(e, _)) if e.extended_code == rusqlite::ffi::SQLITE_CONSTRAINT_UNIQUE => {
-                            Err(crate::CryptoKeystoreError::AlreadyExists)
+                            Err(crate::CryptoKeystoreError::AlreadyExists(#collection_name))
                         }
                         Err(e) => Err(e.into()),
                     }

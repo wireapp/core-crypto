@@ -549,7 +549,7 @@ impl Session {
             id.clone().into(),
         );
         keystore.save(sign_kp).await.map_err(|e| match e {
-            CryptoKeystoreError::AlreadyExists => Error::CredentialBundleConflict,
+            CryptoKeystoreError::AlreadyExists(_) => Error::CredentialBundleConflict,
             _ => KeystoreError::wrap("saving mls signature key pair")(e).into(),
         })?;
 
