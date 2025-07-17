@@ -12,6 +12,7 @@ pub struct ProteusIdentity {
 impl ProteusIdentity {
     pub const SK_KEY_SIZE: usize = 64;
     pub const PK_KEY_SIZE: usize = 32;
+    pub const ID: &[u8; 1] = b"1";
 
     pub fn sk_raw(&self) -> zeroize::Zeroizing<[u8; Self::SK_KEY_SIZE]> {
         let mut slice = zeroize::Zeroizing::new([0u8; Self::SK_KEY_SIZE]);

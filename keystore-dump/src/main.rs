@@ -134,7 +134,7 @@ async fn main() -> Result<()> {
         .collect::<core_crypto_keystore::CryptoKeystoreResult<_>>()?;
     json_map.serialize_entry("mls_pending_groups", &pegroups)?;
 
-    if let Some(proteus_identity) = keystore.find::<ProteusIdentity>(&[]).await? {
+    if let Some(proteus_identity) = keystore.find::<ProteusIdentity>(ProteusIdentity::ID).await? {
         let identity = {
             let sk = proteus_identity.sk_raw();
             let pk = proteus_identity.pk_raw();

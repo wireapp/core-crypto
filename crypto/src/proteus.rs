@@ -198,7 +198,7 @@ impl ProteusCentral {
     /// This means this function doesn't fail except in cases of deeper errors (such as in the Keystore and other crypto errors)
     async fn load_or_create_identity(keystore: &CryptoKeystore) -> Result<IdentityKeyPair> {
         let Some(identity) = keystore
-            .find::<ProteusIdentity>(&[])
+            .find::<ProteusIdentity>(ProteusIdentity::ID)
             .await
             .map_err(KeystoreError::wrap("finding proteus identity"))?
         else {
@@ -620,7 +620,7 @@ impl ProteusCentral {
         .into());
 
         let identity = if let Some(store_kp) = keystore
-            .find::<ProteusIdentity>(&[])
+            .find::<ProteusIdentity>(ProteusIdentity::ID)
             .await
             .map_err(KeystoreError::wrap("finding proteus identity"))?
         {
@@ -826,10 +826,11 @@ impl ProteusCentral {
             .into());
         }
 
-        let mut proteus_identity = if let Some(store_kp) = keystore
-            .find::<ProteusIdentity>(&[])
-            .await
-            .map_err(KeystoreError::wrap("finding proteus identity for empty id"))?
+        let mut proteus_identity = if let Some(store_kp) =
+            keystore
+                .find::<ProteusIdentity>(ProteusIdentity::ID)
+                .await
+                .map_err(KeystoreError::wrap("finding proteus identity for empty id"))?
         {
             Some(
                 proteus_wasm::keys::IdentityKeyPair::from_raw_key_pair(*store_kp.sk_raw(), *store_kp.pk_raw())

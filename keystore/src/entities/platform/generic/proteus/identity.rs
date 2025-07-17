@@ -11,7 +11,7 @@ use rusqlite::OptionalExtension;
 #[async_trait::async_trait]
 impl Entity for ProteusIdentity {
     fn id_raw(&self) -> &[u8] {
-        b"1"
+        Self::ID
     }
 
     async fn find_all(
