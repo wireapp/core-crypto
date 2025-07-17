@@ -1,5 +1,5 @@
 use aes_gcm::KeyInit as _;
-use idb::{CursorDirection, KeyRange, ObjectStore, TransactionMode};
+use idb::TransactionMode;
 use js_sys::Uint8Array;
 use sha2::Digest as _;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -193,67 +193,6 @@ impl WasmEncryptedStorage {
         }
     }
 
-    /// Copied from Rexie.
-    async fn scan(
-        object_store: &ObjectStore,
-        key_range: Option<KeyRange>,
-        limit: Option<u32>,
-        offset: Option<u32>,
-        direction: Option<CursorDirection>,
-    ) -> CryptoKeystoreResult<Vec<(JsValue, JsValue)>> {
-        let cursor = object_store.open_cursor(key_range.map(Into::into), direction)?.await?;
-
-        match cursor {
-            None => Ok(Vec::new()),
-            Some(cursor) => {
-                let mut cursor = cursor.into_managed();
-
-                let mut result = Vec::new();
-
-                match limit {
-                    Some(limit) => {
-                        if let Some(offset) = offset {
-                            cursor.advance(offset).await?;
-                        }
-
-                        for _ in 0..limit {
-                            let key = cursor.key()?;
-                            let value = cursor.value()?;
-
-                            match (key, value) {
-                                (Some(key), Some(value)) => {
-                                    result.push((key, value));
-                                    cursor.next(None).await?;
-                                }
-                                _ => break,
-                            }
-                        }
-                    }
-                    None => {
-                        if let Some(offset) = offset {
-                            cursor.advance(offset).await?;
-                        }
-
-                        loop {
-                            let key = cursor.key()?;
-                            let value = cursor.value()?;
-
-                            match (key, value) {
-                                (Some(key), Some(value)) => {
-                                    result.push((key, value));
-                                    cursor.next(None).await?;
-                                }
-                                _ => break,
-                            }
-                        }
-                    }
-                }
-
-                Ok(result)
-            }
-        }
-    }
-
     pub async fn get_all<R: Entity<ConnectionType = WasmConnection> + 'static>(
         &self,
         collection: &str,
@@ -263,36 +202,18 @@ impl WasmEncryptedStorage {
             WasmStorageWrapper::Persistent(idb) => {
                 let transaction = idb.transaction(&[collection], TransactionMode::ReadOnly)?;
                 let store = transaction.object_store(collection)?;
-
                 let params = params.unwrap_or_default();
-                let raw_data = Self::scan(
-                    &store,
-                    None,
-                    params.limit,
-                    params.offset,
-                    if params.reverse {
-                        Some(CursorDirection::Prev)
-                    } else {
-                        None
-                    },
-                )
-                .await?;
 
-                let data: Vec<R> = raw_data
+                let mut data = store
+                    .get_all(None, params.limit)?
+                    .await?
                     .into_iter()
-                    .filter_map(|(_, v)| {
-                        if v.is_null() || v.is_undefined() {
-                            None
-                        } else if let Ok(mut entity) = serde_wasm_bindgen::from_value::<R>(v) {
-                            entity.decrypt(&self.cipher).ok()?;
-                            Some(entity)
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
+                    .filter_map(|v| serde_wasm_bindgen::from_value::<R>(v).ok())
+                    .filter_map(|mut entity| entity.decrypt(&self.cipher).ok().map(|_| entity));
 
-                Ok(data)
+                let data: &mut dyn Iterator<Item = R> = if params.reverse { &mut data.rev() } else { &mut data };
+
+                Ok(data.collect())
             }
             WasmStorageWrapper::InMemory(map) => Ok(map
                 .borrow()
