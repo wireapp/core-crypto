@@ -2,37 +2,31 @@
 
 package com.wire.crypto
 
-import CoreCryptoException
-import MlsException
-import MlsTransportResponse
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
-import testutils.genDatabaseKey
+import testutils.*
 import java.nio.file.Files
 import kotlin.test.*
 import kotlin.time.Duration.Companion.milliseconds
 
-class MLSTest {
+class MLSTest: HasMockDeliveryService() {
     companion object {
-        internal val id = "JfflcPtUivbg+1U3Iyrzsh5D2ui/OGS5Rvf52ipH5KY=".toGroupId()
-        internal const val ALICE_ID = "alice1"
-        internal const val BOB_ID = "bob"
-        internal const val CAROL_ID = "carol"
+        private val id: ConversationId = genConversationId()
         internal lateinit var mockDeliveryService: MockDeliveryService
     }
 
     @BeforeTest
     fun setup() {
-        mockDeliveryService = MockMlsTransportSuccessProvider()
+        setupMocks()
     }
 
     @Test
     fun set_client_data_persists() = runTest {
-        val cc = initCc()
+        val cc = initCc(this@MLSTest)
 
         val data = "my message processing checkpoint".toByteArray()
 
@@ -46,14 +40,14 @@ class MLSTest {
 
     @Test
     fun interaction_with_invalid_context_throws_error() = runTest {
-        val cc = initCc()
+        val cc = initCc(this@MLSTest)
         var context: CoreCryptoContext? = null
 
         cc.transaction { ctx -> context = ctx }
 
         val expectedException =
             assertFailsWith<CoreCryptoException.Mls> {
-                context!!.mlsInit(ALICE_ID.toClientId())
+                context!!.mlsInitShort(genClientId())
             }
 
         assertIs<MlsException.Other>(expectedException.mlsError)
@@ -61,7 +55,7 @@ class MLSTest {
 
     @Test
     fun error_is_propagated_by_transaction() = runTest {
-        val cc = initCc()
+        val cc = initCc(this@MLSTest)
         val expectedException = RuntimeException("Expected Exception")
 
         val actualException =
@@ -75,15 +69,15 @@ class MLSTest {
 
     @Test
     fun transaction_rolls_back_on_error() = runTest {
-        val cc = initCc()
-        cc.transaction { ctx -> ctx.mlsInit(ALICE_ID.toClientId()) }
+        val cc = initCc(this@MLSTest)
+        cc.transaction { ctx -> ctx.mlsInitShort(genClientId()) }
 
         val expectedException = IllegalStateException("Expected Exception")
 
         val actualException =
             assertFailsWith<RuntimeException> {
                 cc.transaction<Unit> { ctx ->
-                    ctx.createConversation(id)
+                    ctx.createConversationShort(id)
                     throw expectedException
                 }
             }
@@ -95,13 +89,13 @@ class MLSTest {
 
         // This would fail with a "Conversation already exists" exception, if the above
         // transaction hadn't been rolled back.
-        cc.transaction { ctx -> ctx.createConversation(id) }
+        cc.transaction { ctx -> ctx.createConversationShort(id) }
     }
 
     @Test
     fun parallel_transactions_are_performed_serially() = runTest {
         withContext(Dispatchers.Default) {
-            val (alice) = newClients(ALICE_ID)
+            val (alice) = newClients(this@MLSTest, genClientId())
             val jobs: MutableList<Job> = mutableListOf()
             val token = "t"
             val transactionCount = 3
@@ -133,57 +127,57 @@ class MLSTest {
 
     @Test
     fun errorTypeMapping_should_work() = runTest {
-        val (alice) = newClients(ALICE_ID)
-        alice.transaction { it.createConversation(id) }
-        val expectedException = assertFailsWith<CoreCryptoException.Mls> { alice.transaction { it.createConversation(id) } }
+        val (alice) = newClients(this@MLSTest, genClientId())
+        alice.transaction { ctx -> ctx.createConversationShort(id) }
+        val expectedException = assertFailsWith<CoreCryptoException.Mls> { alice.transaction { ctx -> ctx.createConversationShort(id) } }
         assertIs<MlsException.ConversationAlreadyExists>(expectedException.mlsError)
     }
 
     @Test
     fun getPublicKey_should_return_non_empty_result() = runTest {
-        val (alice) = newClients(ALICE_ID)
-        assertThat(alice.transaction { it.getPublicKey(Ciphersuite.DEFAULT) }).isNotEmpty()
+        val (alice) = newClients(this@MLSTest, genClientId())
+        assertThat(alice.transaction { ctx -> ctx.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT) }).isNotEmpty()
     }
 
     @Test
     fun conversationExists_should_return_true() = runTest {
-        val (alice) = newClients(ALICE_ID)
-        assertThat(alice.transaction { it.conversationExists(id) }).isFalse()
-        alice.transaction { it.createConversation(id) }
-        assertThat(alice.transaction { it.conversationExists(id) }).isTrue()
+        val (alice) = newClients(this@MLSTest, genClientId())
+        assertThat(alice.transaction { ctx -> ctx.conversationExists(id) }).isFalse()
+        alice.transaction { ctx -> ctx.createConversationShort(id) }
+        assertThat(alice.transaction { ctx -> ctx.conversationExists(id) }).isTrue()
     }
 
     @Test
     fun calling_generateKeyPackages_should_return_expected_number() = runTest {
-        val (alice) = newClients(ALICE_ID)
+        val (alice) = newClients(this@MLSTest, genClientId())
 
         // by default
-        assertThat(alice.transaction { it.validKeyPackageCount() }).isEqualTo(100.toULong())
-        assertThat(alice.transaction { it.generateKeyPackages(200U) }).isNotEmpty().hasSize(200)
-        assertThat(alice.transaction { it.validKeyPackageCount() }).isEqualTo(200.toULong())
+        assertThat(alice.transaction { ctx -> ctx.clientValidKeypackagesCount(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT) }).isEqualTo(100.toULong())
+        assertThat(alice.transaction { ctx -> ctx.clientKeypackagesShort(200U) }).isNotEmpty().hasSize(200)
+        assertThat(alice.transaction { ctx -> ctx.clientValidKeypackagesCount(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT) }).isEqualTo(200.toULong())
     }
 
     @Test
     fun given_new_conversation_when_calling_conversationEpoch_should_return_epoch_0() = runTest {
-        val (alice) = newClients(ALICE_ID)
-        alice.transaction { it.createConversation(id) }
-        assertThat(alice.transaction { it.conversationEpoch(id) }).isEqualTo(0UL)
+        val (alice) = newClients(this@MLSTest, genClientId())
+        alice.transaction { ctx -> ctx.createConversationShort(id) }
+        assertThat(alice.transaction { ctx -> ctx.conversationEpoch(id) }).isEqualTo(0UL)
     }
 
     @Test
     fun updateKeyingMaterial_should_process_the_commit_message() = runTest {
-        val (alice, bob) = newClients(ALICE_ID, BOB_ID)
+        val (alice, bob) = newClients(this@MLSTest, genClientId(), genClientId())
 
-        bob.transaction { it.createConversation(id) }
+        bob.transaction { ctx -> ctx.createConversationShort(id) }
 
-        val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
-        bob.transaction { it.addMember(id, listOf(aliceKp)) }
+        val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
+        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
         val welcome = mockDeliveryService.getLatestWelcome()
-        val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
-        bob.transaction { it.updateKeyingMaterial(id) }
+        val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome, CUSTOM_CONFIGURATION_DEFAULT).id }
+        bob.transaction { ctx -> ctx.updateKeyingMaterial(id) }
         val commit = mockDeliveryService.getLatestCommit()
 
-        val decrypted = alice.transaction { it.decryptMessage(groupId, commit) }
+        val decrypted = alice.transaction { ctx -> ctx.decryptMessage(groupId, commit) }
         assertThat(decrypted.message).isNull()
         assertThat(decrypted.commitDelay).isNull()
         assertThat(decrypted.senderClientId).isNull()
@@ -191,15 +185,15 @@ class MLSTest {
     }
 
     @Test
-    fun addMember_should_allow_joining_a_conversation_with_a_Welcome() = runTest {
-        val (alice, bob) = newClients(ALICE_ID, BOB_ID)
+    fun addClientsToConversation_should_allow_joining_a_conversation_with_a_Welcome() = runTest {
+        val (alice, bob) = newClients(this@MLSTest, genClientId(), genClientId())
 
-        bob.transaction { it.createConversation(id) }
+        bob.transaction { ctx -> ctx.createConversationShort(id) }
 
-        val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
-        bob.transaction { it.addMember(id, listOf(aliceKp)) }
+        val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
+        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
         val welcome = mockDeliveryService.getLatestWelcome()
-        val groupId = alice.transaction { it.processWelcomeMessage(welcome) }
+        val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome, CUSTOM_CONFIGURATION_DEFAULT) }
 
         // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
         assertThat(groupId.id).isEqualTo(id)
@@ -207,97 +201,101 @@ class MLSTest {
 
     @Test
     fun encryptMessage_should_encrypt_then_receiver_should_decrypt() = runTest {
-        val (alice, bob) = newClients(ALICE_ID, BOB_ID)
+        val (alice, bob) = newClients(this@MLSTest, genClientId(), genClientId())
 
-        bob.transaction { it.createConversation(id) }
+        bob.transaction { ctx -> ctx.createConversationShort(id) }
 
-        val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
-        bob.transaction { it.addMember(id, listOf(aliceKp)) }
+        val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
+        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
         val welcome = mockDeliveryService.getLatestWelcome()
-        val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
+        val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome, CUSTOM_CONFIGURATION_DEFAULT).id }
 
         val msg = "Hello World !".toByteArray()
-        val ciphertextMsg = alice.transaction { it.encryptMessage(groupId, msg) }
+        val ciphertextMsg = alice.transaction { ctx -> ctx.encryptMessage(groupId, msg) }
         assertThat(ciphertextMsg).isNotEqualTo(msg)
 
-        val plaintextMsg = bob.transaction { it.decryptMessage(groupId, ciphertextMsg).message!! }
+        val plaintextMsg = bob.transaction { ctx -> ctx.decryptMessage(groupId, ciphertextMsg).message!! }
         assertThat(plaintextMsg).isNotEmpty().isEqualTo(msg)
 
-        val expectedException = assertFailsWith<CoreCryptoException.Mls> { bob.transaction { it.decryptMessage(groupId, ciphertextMsg) } }
+        val expectedException = assertFailsWith<CoreCryptoException.Mls> { bob.transaction { ctx -> ctx.decryptMessage(groupId, ciphertextMsg) } }
         assertIs<MlsException.DuplicateMessage>(expectedException.mlsError)
     }
 
     @Test
-    fun addMember_should_add_members_to_the_MLS_group() = runTest {
-        val (alice, bob, carol) = newClients(ALICE_ID, BOB_ID, CAROL_ID)
+    fun addClientsToConversation_should_add_members_to_the_MLS_group() = runTest {
+        val alice_id = genClientId()
+        val bob_id = genClientId()
+        val carol_id = genClientId()
+        val (alice, bob, carol) = newClients(this@MLSTest, alice_id, bob_id, carol_id)
 
-        bob.transaction { it.createConversation(id) }
-        val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
-        bob.transaction { it.addMember(id, listOf(aliceKp)) }
+        bob.transaction { ctx -> ctx.createConversationShort(id) }
+        val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
+        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
         val welcome = mockDeliveryService.getLatestWelcome()
 
-        alice.transaction { it.processWelcomeMessage(welcome) }
+        alice.transaction { ctx -> ctx.processWelcomeMessage(welcome, CUSTOM_CONFIGURATION_DEFAULT) }
 
-        val carolKp = carol.transaction { it.generateKeyPackages(1U).first() }
-        bob.transaction { it.addMember(id, listOf(carolKp)) }
+        val carolKp = carol.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
+        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(carolKp)) }
         val commit = mockDeliveryService.getLatestCommit()
 
-        val decrypted = alice.transaction { it.decryptMessage(id, commit) }
+        val decrypted = alice.transaction { ctx -> ctx.decryptMessage(id, commit) }
         assertThat(decrypted.message).isNull()
 
-        val members = alice.transaction { it.members(id) }
+        val members = alice.transaction { ctx -> ctx.getClientIds(id) }
         assertThat(
-            members.containsAll(listOf(ALICE_ID, BOB_ID, CAROL_ID).map { it.toClientId() })
+            members.containsAll(listOf(alice_id, bob_id, carol_id))
         )
     }
 
     @Test
-    fun addMember_should_return_a_valid_Welcome_message() = runTest {
-        val (alice, bob) = newClients(ALICE_ID, BOB_ID)
+    fun addClientsToConversation_should_return_a_valid_Welcome_message() = runTest {
+        val (alice, bob) = newClients(this@MLSTest, genClientId(), genClientId())
 
-        bob.transaction { it.createConversation(id) }
+        bob.transaction { ctx -> ctx.createConversationShort(id) }
 
-        val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
-        bob.transaction { it.addMember(id, listOf(aliceKp)) }
+        val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
+        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
         val welcome = mockDeliveryService.getLatestWelcome()
 
-        val groupId = alice.transaction { it.processWelcomeMessage(welcome) }
+        val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome, CUSTOM_CONFIGURATION_DEFAULT) }
         // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
         assertThat(groupId.id).isEqualTo(id)
     }
 
     @Test
     fun removeMember_should_remove_members_from_the_MLS_group() = runTest {
-        val (alice, bob, carol) = newClients(ALICE_ID, BOB_ID, CAROL_ID)
+        val carol_id = genClientId()
+        val (alice, bob, carol) = newClients(this@MLSTest, genClientId(), genClientId(), carol_id)
 
-        bob.transaction { it.createConversation(id) }
+        bob.transaction { ctx -> ctx.createConversationShort(id) }
 
-        val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
-        val carolKp = carol.transaction { it.generateKeyPackages(1U).first() }
-        bob.transaction { it.addMember(id, listOf(aliceKp, carolKp)) }
+        val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
+        val carolKp = carol.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
+        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp, carolKp)) }
         val welcome = mockDeliveryService.getLatestWelcome()
-        val conversationId = alice.transaction { it.processWelcomeMessage(welcome).id }
+        val conversationId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome, CUSTOM_CONFIGURATION_DEFAULT).id }
 
-        val carolMember = listOf(CAROL_ID.toClientId())
-        bob.transaction { it.removeMember(conversationId, carolMember) }
+        val carolMember = listOf(carol_id)
+        bob.transaction { ctx -> ctx.removeClientsFromConversation(conversationId, carolMember) }
         val commit = mockDeliveryService.getLatestCommit()
 
-        val decrypted = alice.transaction { it.decryptMessage(conversationId, commit) }
+        val decrypted = alice.transaction { ctx -> ctx.decryptMessage(conversationId, commit) }
         assertThat(decrypted.message).isNull()
     }
 
     @Test
     fun wipeConversation_should_delete_the_conversation_from_the_keystore() = runTest {
-        val (alice) = newClients(ALICE_ID)
-        alice.transaction { it.createConversation(id) }
+        val (alice) = newClients(this@MLSTest, genClientId())
+        alice.transaction { ctx -> ctx.createConversationShort(id) }
         assertThatNoException().isThrownBy {
-            runBlocking { alice.transaction { it.wipeConversation(id) } }
+            runBlocking { alice.transaction { ctx -> ctx.wipeConversation(id) } }
         }
     }
 
     @Test
     fun givenTransactionRunsSuccessfully_thenShouldBeAbleToFinishOtherTransactions() = runTest {
-        val coreCrypto = initCc()
+        val coreCrypto = initCc(this@MLSTest)
         val someWork = Job()
         val firstTransactionJob = launch {
             coreCrypto.transaction {
@@ -318,7 +316,7 @@ class MLSTest {
 
     @Test
     fun givenTransactionIsCancelled_thenShouldBeAbleToFinishOtherTransactions() = runTest {
-        val coreCrypto = initCc()
+        val coreCrypto = initCc(this@MLSTest)
 
         val firstTransactionJob = launch {
             coreCrypto.transaction {
@@ -338,13 +336,13 @@ class MLSTest {
     }
 
     @Test
-    fun deriveAvsSecret_should_generate_a_secret_with_the_right_length() = runTest {
-        val (alice) = newClients(ALICE_ID)
-        alice.transaction { it.createConversation(id) }
+    fun exportSecretKey_should_generate_a_secret_with_the_right_length() = runTest {
+        val (alice) = newClients(this@MLSTest, genClientId())
+        alice.transaction { ctx -> ctx.createConversationShort(id) }
         val n = 50
         val secrets = (0 until n).map {
-            val secret = alice.transaction { it.deriveAvsSecret(id, 32U) }
-            assertThat(secret.copyBytes()).hasSize(32)
+            val secret = alice.transaction { ctx -> ctx.exportSecretKey(id, 32U) }.copyBytes()
+            assertThat(secret).hasSize(32)
             secret
         }.toSet()
         assertThat(secrets).hasSize(n)
@@ -368,26 +366,26 @@ class MLSTest {
             val aliceObserver = Observer()
 
             // Set up the conversation in one transaction
-            val (alice, bob) = newClients(ALICE_ID, BOB_ID)
-            bob.transaction { it.createConversation(id) }
+            val (alice, bob) = newClients(this@MLSTest, genClientId(), genClientId())
+            bob.transaction { ctx -> ctx.createConversationShort(id) }
 
             // Register observers
             bob.registerEpochObserver(scope, bobObserver)
             alice.registerEpochObserver(scope, aliceObserver)
 
             // In another transaction, change the epoch
-            bob.transaction { it.updateKeyingMaterial(id) }
+            bob.transaction { ctx -> ctx.updateKeyingMaterial(id) }
 
             // Alice joins the group
-            val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
-            bob.transaction { it.addMember(id, listOf(aliceKp)) }
+            val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
+            bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
             val welcome = mockDeliveryService.getLatestWelcome()
-            val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
+            val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome, CUSTOM_CONFIGURATION_DEFAULT).id }
 
             // Change the epoch again, this should be seen by both observers
-            bob.transaction { it.updateKeyingMaterial(id) }
+            bob.transaction { ctx -> ctx.updateKeyingMaterial(id) }
             val commit = mockDeliveryService.getLatestCommit()
-            alice.transaction { it.decryptMessage(groupId, commit) }
+            alice.transaction { ctx -> ctx.decryptMessage(groupId, commit) }
 
             // Bob's observer must have observed all epoch change events, Alice's observer saw only the
             // last one
@@ -395,11 +393,11 @@ class MLSTest {
             assertEquals(1, aliceObserver.observedEvents.size, "we triggered exactly 1 epoch change and must have observed that")
 
             assertTrue(
-                bobObserver.observedEvents.all { it.conversationId.value == id.value },
+                bobObserver.observedEvents.all { ctx -> ctx.conversationId == id },
                 "the events observed by bob must be for this conversation"
             )
             assertTrue(
-                aliceObserver.observedEvents.all { it.conversationId.value == id.value },
+                aliceObserver.observedEvents.all { ctx -> ctx.conversationId == id },
                 "the event observed by alice must be for this conversation"
             )
         }
@@ -426,16 +424,16 @@ class MLSTest {
             val aliceObserver = Observer()
 
             // Set up the conversation in one transaction
-            val (alice, bob) = newClients(ALICE_ID, BOB_ID)
-            val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
+            val (alice, bob) = newClients(this@MLSTest, genClientId(), genClientId())
+            val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
             bob.transaction {
-                it.createConversation(id)
-                it.addMember(id, listOf(aliceKp))
+                it.createConversationShort(id)
+                it.addClientsToConversation(id, listOf(aliceKp))
             }
 
             // Alice joins the group
             val welcome = mockDeliveryService.getLatestWelcome()
-            val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
+            val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome, CUSTOM_CONFIGURATION_DEFAULT).id }
 
             // Register observers
             bob.registerHistoryObserver(scope, bobObserver)
@@ -445,14 +443,14 @@ class MLSTest {
             assertFalse(bob.isHistorySharingEnabled(id))
 
             // In another transaction, enable history sharing
-            bob.transaction { it.enableHistorySharing(id) }
+            bob.transaction { ctx -> ctx.enableHistorySharing(id) }
 
             // Before Alice received the commit, history sharing is only enabled for Bob
             assertTrue(bob.isHistorySharingEnabled(id))
             assertFalse(alice.isHistorySharingEnabled(id))
 
             val commit = mockDeliveryService.getLatestCommit()
-            alice.transaction { it.decryptMessage(groupId, commit) }
+            alice.transaction { ctx: CoreCryptoContext -> ctx.decryptMessage(groupId, commit) }
             assertTrue(alice.isHistorySharingEnabled(id))
 
             // Bob's observer must have observed the history secret changes, Alice's should not have observed anything
@@ -464,63 +462,9 @@ class MLSTest {
             )
             val expected = id
             assertTrue(
-                bobObserver.observedEvents.all { it.conversationId == expected },
+                bobObserver.observedEvents.all { ctx -> ctx.conversationId == expected },
                 "the events observed by bob must be for this conversation"
             )
         }
     }
-}
-
-fun newClients(vararg clientIds: String) = runBlocking {
-    clientIds.map { clientID ->
-        val cc = initCc()
-        cc.transaction { it.mlsInit(clientID.toClientId()) }
-        cc
-    }
-}
-
-fun initCc(): CoreCrypto = runBlocking {
-    val root = Files.createTempDirectory("mls").toFile()
-    val keyStore = root.resolve("keystore-${randomIdentifier()}")
-    val key = genDatabaseKey()
-    val cc = CoreCrypto(keyStore.absolutePath, key)
-    cc.provideTransport(MLSTest.mockDeliveryService)
-    cc
-}
-
-fun randomIdentifier(n: Int = 12): String {
-    val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
-    return (1..n)
-        .map { kotlin.random.Random.nextInt(0, charPool.size).let { charPool[it] } }
-        .joinToString("")
-}
-
-interface MockDeliveryService : MlsTransport {
-    suspend fun getLatestCommitBundle(): CommitBundle
-
-    suspend fun getLatestWelcome(): Welcome
-
-    suspend fun getLatestCommit(): ByteArray
-}
-
-class MockMlsTransportSuccessProvider : MockDeliveryService {
-    private var latestCommitBundle: CommitBundle? = null
-
-    override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse =
-        MlsTransportResponse.Success
-
-    override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
-        latestCommitBundle = commitBundle
-        return MlsTransportResponse.Success
-    }
-
-    override suspend fun prepareForTransport(historySecret: HistorySecret): MlsTransportData {
-        return MlsTransportData("secret".encodeToByteArray())
-    }
-
-    override suspend fun getLatestCommitBundle(): CommitBundle = latestCommitBundle!!
-
-    override suspend fun getLatestWelcome(): Welcome = getLatestCommitBundle().welcome!!
-
-    override suspend fun getLatestCommit(): ByteArray = getLatestCommitBundle().commit
 }

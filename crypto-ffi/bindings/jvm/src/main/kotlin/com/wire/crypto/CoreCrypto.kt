@@ -7,91 +7,31 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-typealias EnrollmentHandle = ByteArray
+/** Wrap a `CoreCrypto` instance in a `CoreCryptoHigh` instance. Should largely be invisible to end-users. */
+fun CoreCrypto.lift() = CoreCryptoHigh(this)
+
+/** Opens an existing core crypto client or creates a new one if one doesn't exist at the `keystore` path */
+suspend operator fun CoreCrypto.Companion.invoke(
+    keystore: String,
+    databaseKey: DatabaseKey
+) = coreCryptoDeferredInit(keystore, databaseKey, null).lift()
 
 /**
- * Updates the key of the CoreCrypto database.
- * @param name path to the database file
- * @param oldKey the old key
- * @param newKey the new key
+ * Instantiate a history client.
+ *
+ * This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
+ * Other use is a logic error.
  */
-suspend fun updateDatabaseKey(name: String, oldKey: DatabaseKey, newKey: DatabaseKey) {
-    return com.wire.crypto.uniffi.updateDatabaseKey(name, oldKey.bytes, newKey.bytes)
-}
+suspend fun historyClient(historySecret: HistorySecret) = coreCryptoHistoryClient(historySecret).lift()
 
 /**
- * An `EpochObserver` is notified whenever a conversation's epoch changes.
+ * A high-level wrapper around a CoreCrypto client as emitted by Uniffi.
+ *
+ * This wrapper should be largely transparent to end users. It exists to improve the
+ * callback interfaces: `.transaction(...)`, `.registerFooObserver(...)`, etc.
  */
-public interface EpochObserver {
-    /**
-     * This function will be called every time a conversation's epoch changes.
-     *
-     * The `epoch` parameter is the new epoch.
-     *
-     * <div class="warning">
-     * This function must not block! Foreign implementors of this inteface can
-     * spawn a task indirecting the notification, or (unblocking) send the notification
-     * on some kind of channel, or anything else, as long as the operation completes
-     * quickly.
-     * </div>
-     *
-     * Though the signature includes an error type, that error is only present because
-     * it is required by `uniffi` in order to handle panics. This function should suppress
-     * and ignore internal errors instead of propagating them, to the maximum extent possible.
-     */
-    suspend fun epochChanged(conversationId: ConversationId, epoch: kotlin.ULong)
-}
-
-/**
- * A `HistoryObserver` is notified whenever a new history client is created.
- */
-public interface HistoryObserver {
-    /**
-     * This function will be called every time a new history client is created.
-     *
-     * The `secret` parameter is the associated secret of the new history client
-     *
-     * <div class="warning">
-     * This function must not block! Foreign implementors of this inteface can
-     * spawn a task indirecting the notification, or (unblocking) send the notification
-     * on some kind of channel, or anything else, as long as the operation completes
-     * quickly.
-     * </div>
-     *
-     * Though the signature includes an error type, that error is only present because
-     * it is required by `uniffi` in order to handle panics. This function should suppress
-     * and ignore internal errors instead of propagating them, to the maximum extent possible.
-     */
-    suspend fun historyClientCreated(conversationId: ConversationId, secret: HistorySecret)
-}
-
-/** The type representing a CoreCrypto client */
-class CoreCrypto(private val cc: CoreCrypto) {
-    companion object {
-        internal const val DEFAULT_NB_KEY_PACKAGE: UInt = 100U
-
-        /** Opens an existing core crypto client or creates a new one if one doesn't exist at the `keystore` path */
-        suspend operator fun invoke(
-            keystore: String,
-            databaseKey: DatabaseKey
-        ): CoreCrypto {
-            val cc = coreCryptoDeferredInit(keystore, databaseKey.bytes, null)
-            return CoreCrypto(cc)
-        }
-
-        /**
-         * Instantiate a history client.
-         *
-         * This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
-         * Other use is a logic error.
-         */
-        suspend fun historyClient(historySecret: HistorySecret): CoreCrypto {
-            val cc = coreCryptoHistoryClient(historySecret.lower())
-            return CoreCrypto(cc)
-        }
-    }
-
-    internal fun lower() = cc
+class CoreCryptoHigh(private val cc: CoreCrypto) {
+    companion object
 
     /**
      * Starts a [NonCancellable] transaction in Core Crypto. If the callback succeeds, it will be committed,
@@ -111,10 +51,10 @@ class CoreCrypto(private val cc: CoreCrypto) {
         var result: R? = null
         var error: Throwable? = null
         try {
-            this@CoreCrypto.cc.transaction(object : CoreCryptoCommand {
+            this@CoreCryptoHigh.cc.transaction(object : CoreCryptoCommand {
                 override suspend fun execute(context: CoreCryptoContext) {
                     try {
-                        result = block(CoreCryptoContext(context))
+                        result = block(context)
                     } catch (e: Throwable) {
                         // We want to catch the error before it gets wrapped by core crypto.
                         error = e
@@ -140,23 +80,7 @@ class CoreCrypto(private val cc: CoreCrypto) {
      * @param transport the transport to be used
      */
     suspend fun provideTransport(transport: MlsTransport) {
-        cc.provideTransport(object : MlsTransport {
-            override suspend fun sendCommitBundle(
-                commitBundle: CommitBundle
-            ): MlsTransportResponse {
-                return transport.sendCommitBundle(commitBundle.lift())
-            }
-
-            override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse {
-                return transport.sendMessage(mlsMessage)
-            }
-
-            override suspend fun prepareForTransport(
-                historySecret: HistorySecret
-            ): MlsTransportData {
-                return transport.prepareForTransport(historySecret.lift()).lower()
-            }
-        })
+        cc.provideTransport(transport)
     }
 
     /**
@@ -169,7 +93,7 @@ class CoreCrypto(private val cc: CoreCrypto) {
         // the observer that makes its way to the Rust side of things doesn't end up blocking
         val observerIndirector = object : EpochObserver {
             override suspend fun epochChanged(conversationId: ConversationId, epoch: kotlin.ULong) {
-                scope.launch { epochObserver.epochChanged(conversationId.toGroupId(), epoch) }
+                scope.launch { epochObserver.epochChanged(conversationId, epoch) }
             }
         }
         return cc.registerEpochObserver(observerIndirector)
@@ -188,7 +112,7 @@ class CoreCrypto(private val cc: CoreCrypto) {
                 conversationId: ConversationId,
                 secret: HistorySecret
             ) {
-                scope.launch { historyObserver.historyClientCreated(conversationId.toGroupId(), secret.lift()) }
+                scope.launch { historyObserver.historyClientCreated(conversationId, secret) }
             }
         }
         return cc.registerHistoryObserver(observerIndirector)
@@ -200,7 +124,7 @@ class CoreCrypto(private val cc: CoreCrypto) {
      * @param id conversation identifier
      * @return true if history sharing is enabled
      */
-    suspend fun isHistorySharingEnabled(id: ConversationId): Boolean = cc.isHistorySharingEnabled(id.lower())
+    suspend fun isHistorySharingEnabled(id: ConversationId): Boolean = cc.isHistorySharingEnabled(id)
 
     /**
      * Closes this [CoreCrypto] instance and deallocates all loaded resources.

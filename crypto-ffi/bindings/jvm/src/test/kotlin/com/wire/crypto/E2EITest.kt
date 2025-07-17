@@ -1,25 +1,28 @@
 package com.wire.crypto
 
-import MLSTest.Companion.ALICE_ID
-import MLSTest.Companion.BOB_ID
-import MLSTest.Companion.id
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
-import testutils.genDatabaseKey
+import testutils.*
 import java.nio.file.Files
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-internal class E2EITest {
+internal class E2EITest: HasMockDeliveryService() {
+    companion object {
+        private val id: ConversationId = genConversationId()
+    }
+
     @BeforeTest
     fun setup() {
-        MLSTest.mockDeliveryService = MockMlsTransportSuccessProvider()
+        setupMocks()
     }
 
     @Test
     fun sample_e2ei_enrollment_should_succeed() = runTest {
+        val aliceId = genClientId()
+
         val root = Files.createTempDirectory("mls").toFile()
-        val keyStore = root.resolve("keystore-$ALICE_ID")
+        val keyStore = root.resolve("keystore-$aliceId")
         val key = genDatabaseKey()
         val cc = CoreCrypto(keyStore.absolutePath, key)
         val enrollment = cc.transaction {
@@ -28,7 +31,8 @@ internal class E2EITest {
                 displayName = "Alice Smith",
                 handle = "alice_wire",
                 expirySec = (90 * 24 * 3600).toUInt(),
-                ciphersuite = Ciphersuite.DEFAULT
+                ciphersuite = CIPHERSUITE_DEFAULT,
+                team = null,
             )
         }
         val directoryResponse = """{
@@ -51,7 +55,7 @@ internal class E2EITest {
         }"""
                 .trimIndent()
                 .toByteArray()
-        enrollment.accountResponse(accountResponse)
+        enrollment.newAccountResponse(accountResponse)
 
         enrollment.newOrderRequest(previousNonce)
         val orderResponse =
@@ -103,7 +107,7 @@ internal class E2EITest {
             ]
         }"""
                 .toByteArray()
-        enrollment.authzResponse(userAuthzResponse)
+        enrollment.newAuthzResponse(userAuthzResponse)
 
         val deviceAuthzUrl = newOrder.authorizations[0]
         enrollment.newAuthzRequest(deviceAuthzUrl, previousNonce)
@@ -126,7 +130,7 @@ internal class E2EITest {
             ]
         }"""
                 .toByteArray()
-        enrollment.authzResponse(deviceAuthzResponse)
+        enrollment.newAuthzResponse(deviceAuthzResponse)
 
         val backendNonce = "U09ZR0tnWE5QS1ozS2d3bkF2eWJyR3ZVUHppSTJsMnU"
         enrollment.createDpopToken(30U, backendNonce)
@@ -142,7 +146,7 @@ internal class E2EITest {
             "target": "http://example.com/target"
         }"""
                 .toByteArray()
-        enrollment.dpopChallengeResponse(dpopChallengeResponse)
+        enrollment.newDpopChallengeResponse(dpopChallengeResponse)
 
         enrollment.checkOrderRequest(orderUrl, previousNonce)
         val checkOrderResponse =
@@ -209,22 +213,22 @@ internal class E2EITest {
     @Test
     fun conversation_should_be_not_verified_when_at_least_1_of_the_members_uses_a_Basic_credential() =
         runTest {
-            val (alice, bob) = newClients(ALICE_ID, BOB_ID)
+            val (alice, bob) = newClients(this@E2EITest, genClientId(), genClientId())
 
-            bob.transaction { it.createConversation(id) }
+            bob.transaction { ctx -> ctx.createConversation(id, CREDENTIAL_TYPE_DEFAULT, CONVERSATION_CONFIGURATION_DEFAULT) }
 
-            val aliceKp = alice.transaction { it.generateKeyPackages(1U, Ciphersuite.DEFAULT, CREDENTIAL_TYPE_DEFAULT).first() }
-            bob.transaction { it.addMember(id, listOf(aliceKp)) }
+            val aliceKp = alice.transaction { ctx -> ctx.clientKeypackages(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT, 1U).first() }
+            bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
             val welcome = MLSTest.mockDeliveryService.getLatestWelcome()
-            val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
+            val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome, CUSTOM_CONFIGURATION_DEFAULT).id }
 
-            assertThat(alice.transaction { it.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NOT_ENABLED)
-            assertThat(bob.transaction { it.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NOT_ENABLED)
+            assertThat(alice.transaction { ctx -> ctx.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NOT_ENABLED)
+            assertThat(bob.transaction { ctx -> ctx.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NOT_ENABLED)
         }
 
     @Test
     fun e2ei_should_not_be_enabled_for_a_Basic_Credential() = runTest {
-        val (alice) = newClients(ALICE_ID)
-        assertThat(alice.transaction { it.e2eiIsEnabled() }).isFalse()
+        val (alice) = newClients(this@E2EITest, genClientId())
+        assertThat(alice.transaction { ctx -> ctx.e2eiIsEnabled(CIPHERSUITE_DEFAULT) }).isFalse()
     }
 }
