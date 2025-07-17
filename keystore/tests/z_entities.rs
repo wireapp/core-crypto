@@ -68,7 +68,37 @@ macro_rules! work_for_unique_or_regular_entities {
 
 #[cfg(target_family = "wasm")]
 macro_rules! test_migration_to_db_v1_for_entity {
-    ($test_name:ident, $entity:ty, $old_entity:ty $(, unique_entity: $unique_entity:tt)?) => {
+    // ────────────────────────────────────────────────────────────────────────────
+    // Entry‐point (uses default `<E>::find_one(&mut conn).await`)
+    // ────────────────────────────────────────────────────────────────────────────
+    (
+        $test_name:ident,
+        $entity:ty,
+        $old_entity:ty
+        $(, unique_entity: $unique_entity:tt)?
+    ) => {
+        test_migration_to_db_v1_for_entity!(
+            $test_name,
+            $entity,
+            $old_entity
+            $(, unique_entity: $unique_entity)?
+            , find_one = async |storage: core_crypto_keystore::Connection, id: _| {
+            let mut conn = storage.borrow_conn().await.unwrap();
+                <$entity>::find_one(&mut conn, &id).await
+
+            }
+        );
+    };
+
+    // ────────────────────────────────────────────────────────────────────────────
+    // Core arm (takes custom `find_one = $find_fn`)
+    // ────────────────────────────────────────────────────────────────────────────
+    (
+        $test_name:ident,
+        $entity:ty,
+        $old_entity:ty
+        $(, unique_entity: $unique_entity:tt)?
+        , find_one = $find_fn:expr) => {
         #[wasm_bindgen_test]
         async fn $test_name() {
             let _ = env_logger::try_init();
@@ -102,17 +132,18 @@ macro_rules! test_migration_to_db_v1_for_entity {
                 .await
                 .unwrap();
 
-            let mut new_connection = new_storage.borrow_conn().await.unwrap();
             let result;
 
             work_for_unique_or_regular_entities!(
                 unique: {
+                    let mut new_connection = new_storage.borrow_conn().await.unwrap();
                     result = <$entity>::find_unique(&mut new_connection).await;
                     assert!(result.is_ok());
+                    drop(new_connection);
                 },
                 regular: {
                     let string_id = StringEntityId::from(old_record.id_raw());
-                    result = <$entity>::find_one(&mut new_connection, &string_id).await;
+                    result = $find_fn(new_storage.clone(), string_id.clone()).await;
                     assert!(result.unwrap().is_some());
                 },
                 $(
@@ -120,7 +151,6 @@ macro_rules! test_migration_to_db_v1_for_entity {
                 )?
             );
 
-            drop(new_connection);
             new_storage.wipe().await.unwrap();
         }
     };
@@ -130,7 +160,7 @@ macro_rules! test_migration_to_db_v1_for_entity {
 mod tests_impl {
     use super::common::*;
     use crate::{ENTITY_COUNT, utils::EntityRandomUpdateExt};
-    use core_crypto_keystore::entities::EntityTransactionExt;
+    use core_crypto_keystore::entities::{EntityTransactionExt, MlsCredential, MlsPendingMessage};
     use core_crypto_keystore::{
         connection::{FetchFromDatabase, KeystoreDatabaseConnection},
         entities::{Entity, EntityFindParams},
@@ -152,9 +182,23 @@ mod tests_impl {
         store: &CryptoKeystore,
         entity: &R,
     ) {
-        let mut entity2: R = store.find(entity.id_raw()).await.unwrap().unwrap();
-        entity2.equalize();
-        assert_eq!(*entity, entity2);
+        if let Some(pending_message) = entity.downcast::<MlsPendingMessage>() {
+            let pending_message_from_store = store
+                .find_pending_messages_by_conversation_id(&pending_message.foreign_id)
+                .await
+                .unwrap()
+                .pop()
+                .unwrap();
+            assert_eq!(*pending_message, pending_message_from_store);
+        } else if let Some(credential) = entity.downcast::<MlsCredential>() {
+            let mut credential_from_store = store.find::<MlsCredential>(&entity.merge_key()).await.unwrap().unwrap();
+            credential_from_store.equalize();
+            assert_eq!(*credential, credential_from_store);
+        } else {
+            let mut entity_from_store = store.find::<R>(entity.id_raw()).await.unwrap().unwrap();
+            entity_from_store.equalize();
+            assert_eq!(*entity, entity_from_store);
+        };
     }
 
     pub(crate) async fn can_update_entity<
@@ -248,7 +292,10 @@ mod tests {
         if #[cfg(target_family = "wasm")] {
             test_migration_to_db_v1_for_entity!(test_mls_group_migration, PersistedMlsGroup, PersistedMlsGroupV1_0_0);
             test_migration_to_db_v1_for_entity!(test_mls_pending_group_migration, PersistedMlsPendingGroup, PersistedMlsPendingGroupV1_0_0);
-            test_migration_to_db_v1_for_entity!(test_mls_pending_message_migration, MlsPendingMessage, MlsPendingMessageV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_mls_pending_message_migration, MlsPendingMessage, MlsPendingMessageV1_0_0, find_one = async |storage: core_crypto_keystore::Connection, id: StringEntityId| {
+            let mut conn = storage.borrow_conn().await.unwrap();
+                MlsPendingMessage::find_all_by_conversation_id(&mut conn, id.as_slice(), Default::default()).await.map(|mut ok_value| ok_value.pop())
+            });
             test_migration_to_db_v1_for_entity!(test_mls_credential_migration, MlsCredential, MlsCredentialV1_0_0);
             test_migration_to_db_v1_for_entity!(test_mls_keypackage_migration, MlsKeyPackage, MlsKeyPackageV1_0_0);
             test_migration_to_db_v1_for_entity!(test_mls_signature_keypair_migration, MlsSignatureKeyPair, MlsSignatureKeyPairV1_0_0);
@@ -283,9 +330,23 @@ mod tests {
 
         let mut entity = E2eiEnrollment::random();
         store.save(entity.clone()).await.unwrap();
+        store.commit_transaction().await.unwrap();
+
+        // Start a new transaction so that the database constraints will trigger on committing the
+        // transaction
+        store.new_transaction().await.unwrap();
         entity.random_update();
-        let error = store.save(entity).await.unwrap_err();
-        assert!(matches!(error, CryptoKeystoreError::AlreadyExists));
+        store.save(entity).await.unwrap();
+        let error = store.commit_transaction().await.unwrap_err();
+
+        assert!(matches!(
+            error,
+            CryptoKeystoreError::AlreadyExists(E2eiEnrollment::COLLECTION_NAME)
+        ));
+
+        // It's required by cleanup to have a running transaction before finishing the test
+        store.rollback_transaction().await.unwrap();
+        store.new_transaction().await.unwrap();
     }
 }
 

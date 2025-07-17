@@ -65,6 +65,7 @@ mod tests {
     #[wasm_bindgen_test]
     pub async fn can_add_read_delete_credential_bundle_openmls_traits(context: KeystoreTestContext) {
         use core_crypto_keystore::connection::FetchFromDatabase;
+        use itertools::Itertools as _;
         use openmls_basic_credential::SignatureKeyPair;
 
         let store = context.store();
@@ -101,10 +102,18 @@ mod tests {
 
         backend.key_store().save(store_keypair).await.unwrap();
 
-        let credential2: MlsCredential = backend.key_store().find(&credential_id).await.unwrap().unwrap();
+        let (credential_from_store,) = backend
+            .key_store()
+            .find_all::<MlsCredential>(Default::default())
+            .await
+            .unwrap()
+            .into_iter()
+            .filter(|cred| cred.id == credential_id)
+            .collect_tuple()
+            .expect("credentials should be exactly one");
         let keypair2: MlsSignatureKeyPair = backend.key_store().find(keypair.public()).await.unwrap().unwrap();
 
-        assert_eq!(keypair2.credential_id, credential2.id);
+        assert_eq!(keypair2.credential_id, credential_from_store.id);
 
         let keypair2 = SignatureKeyPair::tls_deserialize(&mut keypair2.keypair.as_slice()).unwrap();
 
@@ -115,7 +124,7 @@ mod tests {
 
         backend
             .key_store()
-            .remove::<MlsCredential, _>(&credential_id)
+            .cred_delete_by_credential(credential_from_store.credential.clone())
             .await
             .unwrap();
         backend
