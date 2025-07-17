@@ -5,7 +5,8 @@ macro_rules! bytes_wrapper {
     ($( #[ $attrs:meta ] )* $id:ident) => {
         $( #[ $attrs ] )*
         #[cfg_attr(target_family = "wasm", wasm_bindgen)]
-        #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
+        #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object), uniffi::export(Eq, Hash, Display))]
+        #[derive(PartialEq, Eq, Hash)]
         pub struct $id(pub(crate) Vec<u8>);
 
         #[cfg_attr(target_family = "wasm", wasm_bindgen)]
@@ -27,6 +28,12 @@ macro_rules! bytes_wrapper {
             }
         }
 
+        impl std::fmt::Display for $id {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str(&hex::encode(&self))
+            }
+        }
+
         impl<T> From<T> for $id
         where
             T: Into<Vec<u8>>,
@@ -42,6 +49,12 @@ macro_rules! bytes_wrapper {
 
             #[inline]
             fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+
+        impl AsRef<[u8]> for $id {
+            fn as_ref(&self) -> &[u8] {
                 &self.0
             }
         }
