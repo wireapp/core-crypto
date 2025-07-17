@@ -25,7 +25,7 @@ pub mod platform {
 }
 
 pub use self::platform::*;
-use crate::entities::{Entity, EntityFindParams, StringEntityId};
+use crate::entities::{Entity, EntityFindParams, MlsPendingMessage, StringEntityId};
 use std::ops::DerefMut;
 
 use crate::entities::{EntityTransactionExt, UniqueEntity};
@@ -305,6 +305,33 @@ impl Connection {
         transaction.remove::<E, S>(id).await
     }
 
+    pub async fn find_pending_messages_by_conversation_id(
+        &self,
+        conversation_id: &[u8],
+    ) -> CryptoKeystoreResult<Vec<MlsPendingMessage>> {
+        let mut conn = self.conn.lock().await;
+        let persisted_records =
+            MlsPendingMessage::find_all_by_conversation_id(&mut conn, conversation_id, Default::default()).await?;
+
+        let transaction_guard = self.transaction.lock().await;
+        let Some(transaction) = transaction_guard.as_ref() else {
+            return Ok(persisted_records);
+        };
+        transaction
+            .find_pending_messages_by_conversation_id(conversation_id, persisted_records)
+            .await
+    }
+
+    pub async fn remove_pending_messages_by_conversation_id(&self, conversation_id: &[u8]) -> CryptoKeystoreResult<()> {
+        let transaction_guard = self.transaction.lock().await;
+        let Some(transaction) = transaction_guard.as_ref() else {
+            return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
+        };
+        transaction
+            .remove_pending_messages_by_conversation_id(conversation_id)
+            .await
+    }
+
     pub async fn cred_delete_by_credential(&self, cred: Vec<u8>) -> CryptoKeystoreResult<()> {
         let transaction_guard = self.transaction.lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
@@ -322,12 +349,12 @@ impl FetchFromDatabase for Connection {
         id: &[u8],
     ) -> CryptoKeystoreResult<Option<E>> {
         // If a transaction is in progress...
-        if let Some(transaction) = self.transaction.lock().await.as_ref() {
+        if let Some(transaction) = self.transaction.lock().await.as_ref()
             //... and it has information about this entity, ...
-            if let Some(result) = transaction.find::<E>(id).await? {
-                // ... return that result
-                return Ok(result);
-            }
+            && let Some(cached_record) = transaction.find::<E>(id).await?
+        {
+            // ... return that result
+            return Ok(cached_record);
         }
 
         // Otherwise get it from the database
@@ -337,12 +364,12 @@ impl FetchFromDatabase for Connection {
 
     async fn find_unique<U: UniqueEntity>(&self) -> CryptoKeystoreResult<U> {
         // If a transaction is in progress...
-        if let Some(transaction) = self.transaction.lock().await.as_ref() {
+        if let Some(transaction) = self.transaction.lock().await.as_ref()
             //... and it has information about this entity, ...
-            if let Some(result) = transaction.find_unique::<U>().await? {
-                // ... return that result
-                return Ok(result);
-            }
+            && let Some(cached_record) = transaction.find_unique::<U>().await?
+        {
+            // ... return that result
+            return Ok(cached_record);
         }
         // Otherwise get it from the database
         let mut conn = self.conn.lock().await;
