@@ -9,6 +9,10 @@ updates:
     directory: "crypto-ffi/bindings/js"
     schedule:
       interval: "daily"
+    groups:
+      js-dependencies:
+        patterns:
+          - "*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
