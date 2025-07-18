@@ -64,7 +64,7 @@ pub struct CustomConfiguration {
 impl From<CustomConfiguration> for MlsCustomConfiguration {
     fn from(cfg: CustomConfiguration) -> Self {
         #[cfg(target_family = "wasm")]
-        let key_rotation_span = cfg.key_rotation_span.map(|span| std::time::Duration::from_secs(span));
+        let key_rotation_span = cfg.key_rotation_span.map(std::time::Duration::from_secs);
 
         #[cfg(not(target_family = "wasm"))]
         let key_rotation_span = cfg.key_rotation_span;
