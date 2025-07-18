@@ -260,41 +260,18 @@ impl KeystoreTransaction {
         records_b: Vec<E>,
         params: EntityFindParams,
     ) -> Vec<E> {
-        let merged = records_a.into_iter().chain(records_b).unique_by(|e| e.merge_key());
-
-        // We are consuming the iterator here to keep types of the `if` and `else` block consistent.
-        // The alternative to giving up laziness here would be to use a dynamically
-        // typed iterator Box<dyn Iterator<Item = E>> assigned to `merged`. The below approach
-        // trades stack allocation instead of heap allocation for laziness.
-        //
-        // Also, we have to do this before filtering by deleted records since filter map does not
-        // return an iterator that is double ended.
-        let merged: Vec<E> = if params.reverse {
-            merged.rev().collect()
-        } else {
-            merged.collect()
-        };
-
-        if merged.is_empty() {
-            return merged;
-        }
+        let mut merged = records_a.into_iter().chain(records_b).unique_by(|e| e.merge_key());
 
         let deleted_records = self.deleted.read().await;
         let deleted_credentials = self.deleted_credentials.read().await;
-        let merged = if deleted_records.is_empty() && deleted_credentials.is_empty() {
-            merged
-        } else {
-            merged
-                .into_iter()
-                .filter(|record| {
-                    !Self::record_is_in_deleted_list(record, &deleted_records)
-                        && !Self::credential_is_in_deleted_list(record, &deleted_credentials)
-                })
-                .collect()
-        };
+
+        let merged: &mut dyn Iterator<Item = E> = if params.reverse { &mut merged.rev() } else { &mut merged };
 
         merged
-            .into_iter()
+            .filter(|record| {
+                !Self::record_is_in_deleted_list(record, &deleted_records)
+                    && !Self::credential_is_in_deleted_list(record, &deleted_credentials)
+            })
             .skip(params.offset.unwrap_or(0) as usize)
             .take(params.limit.unwrap_or(u32::MAX) as usize)
             .collect()
