@@ -38,7 +38,7 @@ final class WireCoreCryptoTests: XCTestCase {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 
         let key1 = genDatabaseKey()
-        var cc = try await CoreCrypto(keystorePath: keystore.absoluteString, key: key1)
+        var cc = try await CoreCrypto(keystorePath: keystore.path, key: key1)
 
         let clientId = ClientId(bytes: UUID().uuidString.data(using: .utf8)!)
         let ciphersuite = Ciphersuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
@@ -52,9 +52,9 @@ final class WireCoreCryptoTests: XCTestCase {
         let key2 = genDatabaseKey()
         XCTAssertNotEqual(key1, key2)
 
-        try await updateDatabaseKey(name: keystore.absoluteString, oldKey: key1, newKey: key2)
+        try await updateDatabaseKey(name: keystore.path, oldKey: key1, newKey: key2)
 
-        cc = try await CoreCrypto(keystorePath: keystore.absoluteString, key: key2)
+        cc = try await CoreCrypto(keystorePath: keystore.path, key: key2)
         let pubkey2 = try await cc.transaction {
             try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite], nbKeyPackage: 1)
             return try await $0.clientPublicKey(
@@ -228,6 +228,60 @@ final class WireCoreCryptoTests: XCTestCase {
             try await group.waitForAll()
 
             let result = try await coreCrypto.transaction { ctx in
+                try await ctx.getData().map { String(data: $0, encoding: .utf8)! }
+            }
+
+            return result
+        }
+
+        XCTAssertEqual(
+            String(repeating: token, count: transactionCount), result,
+            "Expected all transactions to complete")
+    }
+
+    func testParallelTransactionsArePerformedSeriallyAcrossMultipleCoreCryptoInstances()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory.appending(path: "mls")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
+        let keystoreKey = genDatabaseKey()
+        let token = "t"
+        let transactionCount = 3
+        var coreCryptoInstances: [CoreCrypto] = []
+
+        for _ in (0..<transactionCount) {
+            coreCryptoInstances.append(
+                try await CoreCrypto(
+                    keystorePath: keystore.path,
+                    key: keystoreKey
+                )
+            )
+        }
+
+        // How this test ensures that transactions are performed serially:
+        // Each transaction gets the previous token string, adds one token at the end and stores it.
+        // If, for instance, the second and third transaction run in parallel they will both get same current
+        // token string "tt" and store "ttt".
+        // If they execute serially, one will store "ttt" and the other "tttt" (this is what we assert).
+
+        let result = try await withThrowingTaskGroup(of: Void.self) { group in
+            for i in 0..<transactionCount {
+                group.addTask {
+                    try await coreCryptoInstances[i].transaction { ctx in
+                        try await Task.sleep(for: .milliseconds(100))
+                        let data =
+                            try await ctx.getData().map { String(data: $0, encoding: .utf8)! }?
+                            .appending(token)
+                            ?? token
+                        try await ctx.setData(data: data.data(using: .utf8)!)
+                    }
+                }
+            }
+
+            try await group.waitForAll()
+
+            let result = try await coreCryptoInstances[0].transaction { ctx in
                 try await ctx.getData().map { String(data: $0, encoding: .utf8)! }
             }
 
@@ -568,7 +622,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let coreCrypto = try await CoreCrypto(
-            keystorePath: keystore.absoluteString,
+            keystorePath: keystore.path,
             key: genDatabaseKey()
         )
         try await coreCrypto.provideTransport(transport: mockMlsTransport)
