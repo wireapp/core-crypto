@@ -9,6 +9,7 @@
 
 ### Documentation
 
+- remove unintended code comment showing up in  `index.md` ([7dd028b](https://github.com/wireapp/core-crypto/commit/7dd028b55c575c63c8d917073842c7f5c31dba17))
 - update links in `index.md` ([a085ae6](https://github.com/wireapp/core-crypto/commit/a085ae67d1af84c3d00be1e6478c6e5b496f67d3))
 
 ### Testing
