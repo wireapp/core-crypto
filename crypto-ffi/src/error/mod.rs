@@ -98,7 +98,7 @@ mod tests {
         testing_logger::setup();
         // we shouldn't be able to create a SQLite DB in `/root` unless we are running this test as root
         // Don't do that!
-        let key = core_crypto_keystore::DatabaseKey::generate().into();
+        let key = crate::DatabaseKey::from_cc(core_crypto_keystore::DatabaseKey::generate());
         let result = CoreCrypto::new("/root/asdf".into(), key, None, None, None, None).await;
         assert!(
             result.is_err(),
