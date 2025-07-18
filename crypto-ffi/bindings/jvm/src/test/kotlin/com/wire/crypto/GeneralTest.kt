@@ -2,12 +2,9 @@
 
 package com.wire.crypto
 
-import CoreCryptoException
-import buildMetadata
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import testutils.genDatabaseKey
-import version
 import java.nio.file.Files
 import kotlin.io.path.*
 import kotlin.test.*
@@ -37,7 +34,7 @@ class DatabaseKeyTest {
         val path = Files.createTempFile("keystore-", null).toString()
         val key = DatabaseKey(ByteArray(48))
         val exc = assertFailsWith<CoreCryptoException.Other> { CoreCrypto(path, key) }
-        assertEquals("Invalid database key size, expected 32, got 48", exc.msg)
+        assertThat(exc.msg.contains("Invalid database key size, expected 32, got 48")).isTrue
     }
 
     @Test
@@ -53,7 +50,7 @@ class DatabaseKeyTest {
         path = path.copyTo(tmpdir / path.name)
 
         val newKey = genDatabaseKey()
-        migrateDatabaseKeyTypeToBytes(path.absolutePathString(), oldKey, newKey)
+        migrateDbKeyTypeToBytes(path.absolutePathString(), oldKey, newKey)
 
         CoreCrypto(path.absolutePathString(), newKey)
 
