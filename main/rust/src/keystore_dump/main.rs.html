@@ -134,7 +134,7 @@
 <a href=#134 id=134 data-nosnippet>134</a>        .collect::&lt;core_crypto_keystore::CryptoKeystoreResult&lt;<span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
 <a href=#135 id=135 data-nosnippet>135</a>    json_map.serialize_entry(<span class="string">"mls_pending_groups"</span>, <span class="kw-2">&amp;</span>pegroups)<span class="question-mark">?</span>;
 <a href=#136 id=136 data-nosnippet>136</a>
-<a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(proteus_identity) = keystore.find::&lt;ProteusIdentity&gt;(<span class="kw-2">&amp;</span>[]).<span class="kw">await</span><span class="question-mark">? </span>{
+<a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(proteus_identity) = keystore.find::&lt;ProteusIdentity&gt;(ProteusIdentity::ID).<span class="kw">await</span><span class="question-mark">? </span>{
 <a href=#138 id=138 data-nosnippet>138</a>        <span class="kw">let </span>identity = {
 <a href=#139 id=139 data-nosnippet>139</a>            <span class="kw">let </span>sk = proteus_identity.sk_raw();
 <a href=#140 id=140 data-nosnippet>140</a>            <span class="kw">let </span>pk = proteus_identity.pk_raw();

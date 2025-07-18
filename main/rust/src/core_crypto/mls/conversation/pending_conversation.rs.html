@@ -281,10 +281,10 @@
 <a href=#281 id=281 data-nosnippet>281</a>
 <a href=#282 id=282 data-nosnippet>282</a>        <span class="kw">if </span>pending_messages.is_some() {
 <a href=#283 id=283 data-nosnippet>283</a>            mls_provider
-<a href=#284 id=284 data-nosnippet>284</a>                .key_store()
-<a href=#285 id=285 data-nosnippet>285</a>                .remove::&lt;MlsPendingMessage, <span class="kw">_</span>&gt;(id)
+<a href=#284 id=284 data-nosnippet>284</a>                .keystore()
+<a href=#285 id=285 data-nosnippet>285</a>                .remove_pending_messages_by_conversation_id(id)
 <a href=#286 id=286 data-nosnippet>286</a>                .<span class="kw">await
-<a href=#287 id=287 data-nosnippet>287</a>                </span>.map_err(KeystoreError::wrap(<span class="string">"deleting mls pending message by id"</span>))<span class="question-mark">?</span>;
+<a href=#287 id=287 data-nosnippet>287</a>                </span>.map_err(KeystoreError::wrap(<span class="string">"deleting mls pending messages by conversation id"</span>))<span class="question-mark">?</span>;
 <a href=#288 id=288 data-nosnippet>288</a>        }
 <a href=#289 id=289 data-nosnippet>289</a>
 <a href=#290 id=290 data-nosnippet>290</a>        <span class="comment">// cleanup the pending group we no longer need

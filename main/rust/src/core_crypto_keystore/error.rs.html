@@ -70,8 +70,8 @@
 <a href=#70 id=70 data-nosnippet>70</a>    </span>IncorrectApiUsage(<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str),
 <a href=#71 id=71 data-nosnippet>71</a>    <span class="attr">#[error(<span class="string">"The credential tied to this signature keypair is different from the provided one"</span>)]
 <a href=#72 id=72 data-nosnippet>72</a>    </span>SignatureKeyPairDoesNotBelongToCredential,
-<a href=#73 id=73 data-nosnippet>73</a>    <span class="attr">#[error(<span class="string">"A uniqueness constraint has been violated"</span>)]
-<a href=#74 id=74 data-nosnippet>74</a>    </span>AlreadyExists,
+<a href=#73 id=73 data-nosnippet>73</a>    <span class="attr">#[error(<span class="string">"The uniqueness constraint has been violated for {0}"</span>)]
+<a href=#74 id=74 data-nosnippet>74</a>    </span>AlreadyExists(<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str),
 <a href=#75 id=75 data-nosnippet>75</a>    <span class="attr">#[error(<span class="string">"The provided buffer is too big to be persisted in the store"</span>)]
 <a href=#76 id=76 data-nosnippet>76</a>    </span>BlobTooBig,
 <a href=#77 id=77 data-nosnippet>77</a>    <span class="attr">#[error(<span class="string">"Cannot close as multiple strong refs exist"</span>)]
