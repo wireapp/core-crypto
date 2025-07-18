@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- In our Swift bindings we are now protecting against concurrent access from multiple core crypto instances.
+
 ## v8.0.0 - 2025-07-17
 
 ### Highlights
