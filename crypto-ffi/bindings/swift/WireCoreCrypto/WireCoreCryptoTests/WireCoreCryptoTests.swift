@@ -489,7 +489,7 @@ final class WireCoreCryptoTests: XCTestCase {
             let epoch: UInt64
         }
 
-        class EpochRecoder: EpochObserver {
+        final class EpochRecorder: EpochObserver {
             var epochs: [Epoch] = []
             func epochChanged(conversationId: ConversationId, epoch: UInt64) async throws {
                 epochs.append(Epoch(conversationId: conversationId, epoch: epoch))
@@ -524,7 +524,7 @@ final class WireCoreCryptoTests: XCTestCase {
         }
 
         // register the observer
-        let epochRecorder = EpochRecoder()
+        let epochRecorder = EpochRecorder()
         try await coreCrypto.registerEpochObserver(epochRecorder)
 
         // in another transaction, change the epoch
@@ -541,7 +541,7 @@ final class WireCoreCryptoTests: XCTestCase {
             let clientId: ClientId
         }
 
-        class HistoryRecoder: HistoryObserver {
+        final class HistoryRecorder: HistoryObserver {
             var secrets: [Secret] = []
             func historyClientCreated(conversationId: ConversationId, secret: HistorySecret)
                 async throws
@@ -578,7 +578,7 @@ final class WireCoreCryptoTests: XCTestCase {
         }
 
         // register the observer
-        let historyRecorder = HistoryRecoder()
+        let historyRecorder = HistoryRecorder()
         try await coreCrypto.registerHistoryObserver(historyRecorder)
 
         // in another transaction, enable history sharing
@@ -592,7 +592,7 @@ final class WireCoreCryptoTests: XCTestCase {
 
     // MARK - helpers
 
-    class MockMlsTransport: MlsTransport {
+    final class MockMlsTransport: MlsTransport {
 
         var lastCommitBundle: CommitBundle?
         var lastMlsMessage: Data?
