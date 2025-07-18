@@ -11,9 +11,9 @@ bytes_wrapper!(
     ///
     /// The backend provides an opaque string identifying a new conversation.
     /// Construct an instance of this newtype to pass that identifier to Rust.
-    #[derive(Debug, PartialEq, Eq, Hash, Clone)]
+    #[derive(Debug, Clone)]
     #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
-    #[cfg_attr(not(target_family = "wasm"), uniffi::export(Debug, Eq, Hash))]
+    #[cfg_attr(not(target_family = "wasm"), uniffi::export(Debug))]
     ConversationId
 );
 

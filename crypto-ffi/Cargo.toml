@@ -43,6 +43,7 @@ core-crypto-keystore.workspace = true
 core-crypto.workspace = true
 rmp-serde.workspace = true
 paste = "1.0.15"
+hex.workspace = true
 
 # see https://github.com/RustCrypto/hashes/issues/404
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")))'.dependencies]

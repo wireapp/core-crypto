@@ -54,7 +54,12 @@ mod tests {
             core_crypto::mls::conversation::Error::DuplicateMessage,
         );
         let mapped_error = CoreCryptoError::from(duplicate_message_error);
-        assert!(matches!(mapped_error, CoreCryptoError::Mls(MlsError::DuplicateMessage)));
+        assert!(matches!(
+            mapped_error,
+            CoreCryptoError::Mls {
+                mls_error: MlsError::DuplicateMessage
+            }
+        ));
 
         let conversation_exists_error = RecursiveError::mls_conversation("test conversation exists error")(
             core_crypto::mls::conversation::Error::Leaf(LeafError::ConversationAlreadyExists(
@@ -64,7 +69,9 @@ mod tests {
         let mapped_error = CoreCryptoError::from(conversation_exists_error);
         assert!(matches!(
             mapped_error,
-            CoreCryptoError::Mls(MlsError::ConversationAlreadyExists(_))
+            CoreCryptoError::Mls {
+                mls_error: MlsError::ConversationAlreadyExists { conversation_id: _ }
+            }
         ));
     }
 
@@ -80,7 +87,9 @@ mod tests {
 
         assert!(matches!(
             mapped_error,
-            CoreCryptoError::Proteus(ProteusErrorFfi::SessionNotFound)
+            CoreCryptoError::Proteus {
+                exception: ProteusErrorFfi::SessionNotFound
+            }
         ));
     }
 
@@ -89,7 +98,7 @@ mod tests {
         testing_logger::setup();
         // we shouldn't be able to create a SQLite DB in `/root` unless we are running this test as root
         // Don't do that!
-        let key = core_crypto_keystore::DatabaseKey::generate().into();
+        let key = crate::DatabaseKey::from_cc(core_crypto_keystore::DatabaseKey::generate());
         let result = CoreCrypto::new("/root/asdf".into(), key, None, None, None, None).await;
         assert!(
             result.is_err(),

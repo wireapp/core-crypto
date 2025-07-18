@@ -9,7 +9,9 @@ pub enum MlsError {
     /// We cannot provide a proper `ConversationId` instance because of a uniffi bug:
     /// <https://github.com/mozilla/uniffi-rs/issues/2409>.
     #[error("Conversation already exists")]
-    ConversationAlreadyExists(Vec<u8>),
+    ConversationAlreadyExists {
+        conversation_id: core_crypto::prelude::ConversationId,
+    },
     #[error("We already decrypted this message once")]
     DuplicateMessage,
     #[error("Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives")]
@@ -46,13 +48,15 @@ pub enum MlsError {
         /// Why was the message rejected by the delivery service?
         reason: String,
     },
-    #[error("{0}")]
-    Other(String),
+    #[error("{msg}")]
+    Other { msg: String },
 }
 
 impl From<core_crypto::MlsError> for MlsError {
     #[inline]
     fn from(e: core_crypto::MlsError) -> Self {
-        Self::Other(e.innermost_error_message())
+        Self::Other {
+            msg: e.innermost_error_message(),
+        }
     }
 }
