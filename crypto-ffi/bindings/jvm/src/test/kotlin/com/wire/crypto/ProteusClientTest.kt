@@ -83,7 +83,7 @@ internal class ProteusClientTest {
         val encryptedMessage = bobClient.transaction {
             it.proteusEncryptWithPreKey(message.encodeToByteArray(), aliceKey, ALICE_SESSION_ID)
         }
-        val decryptedMessage = aliceClient.transaction { ctx -> ctx.proteusSessionFromMessage(BOB_SESSION_ID, encryptedMessage) }
+        val decryptedMessage = aliceClient.transaction { ctx -> ctx.proteusDecryptSafe(BOB_SESSION_ID, encryptedMessage) }
         assertEquals(message, decryptedMessage.decodeToString())
     }
 
@@ -96,12 +96,12 @@ internal class ProteusClientTest {
         val encryptedMessage1 = bobClient.transaction {
             it.proteusEncryptWithPreKey(message1.encodeToByteArray(), aliceKey, ALICE_SESSION_ID)
         }
-        aliceClient.transaction { ctx -> ctx.proteusSessionFromMessage(BOB_SESSION_ID, encryptedMessage1) }
+        aliceClient.transaction { ctx -> ctx.proteusDecryptSafe(BOB_SESSION_ID, encryptedMessage1) }
 
         val message2 = "Hi again Alice!"
         val encryptedMessage2 = bobClient.transaction { ctx -> ctx.proteusEncrypt(ALICE_SESSION_ID, message2.encodeToByteArray()) }
         val decryptedMessage2 = aliceClient.transaction { ctx ->
-            val msg = ctx.proteusDecrypt(BOB_SESSION_ID, encryptedMessage2)
+            val msg = ctx.proteusDecryptSafe(BOB_SESSION_ID, encryptedMessage2)
             ctx.proteusSessionSave(BOB_SESSION_ID)
             msg
         }
@@ -118,10 +118,10 @@ internal class ProteusClientTest {
         val encryptedMessage1 = bobClient.transaction {
             it.proteusEncryptWithPreKey(message1.encodeToByteArray(), aliceKey, ALICE_SESSION_ID)
         }
-        aliceClient.transaction { ctx -> ctx.proteusSessionFromMessage(BOB_SESSION_ID, encryptedMessage1) }
+        aliceClient.transaction { ctx -> ctx.proteusDecryptSafe(BOB_SESSION_ID, encryptedMessage1) }
 
         val exception = assertFailsWith<CoreCryptoException.Proteus> {
-            aliceClient.transaction { ctx -> ctx.proteusSessionFromMessage(BOB_SESSION_ID, encryptedMessage1) }
+            aliceClient.transaction { ctx -> ctx.proteusDecryptSafe(BOB_SESSION_ID, encryptedMessage1) }
         }
         assertIs<ProteusException.DuplicateMessage>(exception.exception)
     }
