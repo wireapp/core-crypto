@@ -14,15 +14,12 @@ input, and confirm by "run workflow" below the input. Note that deployment depen
 <!-- Apparently, markdown doesn't support comments inside a table, so this needs to remain here. -->
 <!-- For convencience to copy and replace x.x.x when adding a new row. -->
 
-<!-- | **vx.x.x** | [TypeScript](./vx.x.x/typescript)                          | [Kotlin](./vx.x.x/kotlin/)                              | [Swift](./vx.x.x/swift)                          | [Rust](./vx.x.x/rust/core-crypto)      | -->
+<!-- | **vx.x.x** | [TypeScript](./vx.x.x/typescript)                          | [Kotlin](./vx.x.x/kotlin/)                              | [Swift](./vx.x.x/swift)                          | [Rust](./vx.x.x/rust/core_crypto)      | -->
 
 |            | TypeScript                                                 | Kotlin                                                  | Swift                                            | Rust                                   |
 |------------|------------------------------------------------------------|---------------------------------------------------------|--------------------------------------------------|----------------------------------------|
 | **main**   | [TypeScript](./main/typescript/)                           | [Kotlin](./main/kotlin/)                                | [Swift](./main/swift/)                           | [Rust](./main/rust/core_crypto/)       |
-| **v8.0.0** | [TypeScript](./v8.0.0/typescript-docs)                     | [Kotlin](./v8.0.0/kotlin-docs/)                         | [Swift](./v8.0.0/swift-docs)                     | [Rust](./v8.0.0/rust-docs/core-crypto) |
-| **v7.0.2** | [TypeScript](./v7.0.2/core_crypto_ffi/bindings/typescript) | [Kotlin](./v7.0.2/core_crypto_ffi/bindings/kotlin/html) | [Swift](./v7.0.2/core_crypto_ffi/bindings/swift) | [Rust](./v7.0.2/core_crypto)           |
-| **v7.0.1** | [TypeScript](./v7.0.1/core_crypto_ffi/bindings/typescript) | [Kotlin](./v7.0.1/core_crypto_ffi/bindings/kotlin/html) | [Swift](./v7.0.1/core_crypto_ffi/bindings/swift) | [Rust](./v7.0.1/core_crypto)           |
-| **v7.0.0** | [TypeScript](./v7.0.0/core_crypto_ffi/bindings/typescript) | [Kotlin](./v7.0.0/core_crypto_ffi/bindings/kotlin/html) | [Swift](./v7.0.0/core_crypto_ffi/bindings/swift) | [Rust](./v7.0.0/core_crypto)           |
+| **v8.0.0** | [TypeScript](./v8.0.0/typescript-docs)                     | [Kotlin](./v8.0.0/kotlin-docs/)                         | [Swift](./v8.0.0/swift-docs)                     | [Rust](./v8.0.0/rust-docs/core_crypto) |
 | **v6.0.1** | [TypeScript](./v6.0.1/core_crypto_ffi/bindings/typescript) | [Kotlin](./v6.0.1/core_crypto_ffi/bindings/kotlin/html) | [Swift](./v6.0.1/core_crypto_ffi/bindings/swift) | [Rust](./v6.0.1/core_crypto)           |
 | **v6.0.0** | [TypeScript](./v6.0.0/core_crypto_ffi/bindings/typescript) | [Kotlin](./v6.0.0/core_crypto_ffi/bindings/kotlin/html) | [Swift](./v6.0.0/core_crypto_ffi/bindings/swift) | [Rust](./v6.0.0/core_crypto)           |
 | **v5.4.0** | [TypeScript](./v5.4.0/core_crypto_ffi/bindings/typescript) | [Kotlin](./v5.4.0/core_crypto_ffi/bindings/kotlin/html) | [Swift](./v5.4.0/core_crypto_ffi/bindings/swift) | [Rust](./v5.4.0/core_crypto)           |
