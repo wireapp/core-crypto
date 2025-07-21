@@ -195,7 +195,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
     }
 
     async fn session_from_prekey(&self, session_id: &str, prekey: &[u8]) -> Result<()> {
-        let session_id = session_id.to_string();
+        let session_id = session_id.to_owned();
         let prekey = prekey.to_vec();
         self.cc
             .transaction(TransactionHelper::new(move |context| async move {
@@ -206,17 +206,19 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
     }
 
     async fn session_from_message(&self, session_id: &str, message: &[u8]) -> Result<Vec<u8>> {
-        let session_id = session_id.to_string();
+        // unfortunately we still have to take copy the session id here, because the transaction helper
+        // can only deal with things with the `'static` lifetime.
+        let session_id = session_id.to_owned();
         let message = message.to_vec();
         let extractor = TransactionHelper::new(move |context| async move {
-            context.proteus_session_from_message(session_id, message).await
+            context.proteus_session_from_message(&session_id, message).await
         });
         self.cc.transaction(extractor.clone()).await?;
         Ok(extractor.into_return_value())
     }
 
     async fn encrypt(&self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
-        let session_id = session_id.to_string();
+        let session_id = session_id.to_owned();
         let plaintext = plaintext.to_vec();
         let extractor =
             TransactionHelper::new(move |context| async move { context.proteus_encrypt(session_id, plaintext).await });
@@ -225,10 +227,14 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
     }
 
     async fn decrypt(&self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
-        let session_id = session_id.to_string();
+        // unfortunately we still have to take copy the session id here, because the transaction helper
+        // can only deal with things with the `'static` lifetime.
+        let session_id = session_id.to_owned();
         let ciphertext = ciphertext.to_vec();
         let extractor =
-            TransactionHelper::new(move |context| async move { context.proteus_decrypt(session_id, ciphertext).await });
+            TransactionHelper::new(
+                move |context| async move { context.proteus_decrypt(&session_id, ciphertext).await },
+            );
         self.cc.transaction(extractor.clone()).await?;
         Ok(extractor.into_return_value())
     }
