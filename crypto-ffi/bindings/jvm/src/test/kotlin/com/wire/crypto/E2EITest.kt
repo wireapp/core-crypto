@@ -221,7 +221,7 @@ internal class E2EITest : HasMockDeliveryService() {
 
             val aliceKp = alice.transaction { ctx -> ctx.clientKeypackages(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT, 1U).first() }
             bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
-            val welcome = MLSTest.mockDeliveryService.getLatestWelcome()
+            val welcome = HasMockDeliveryService.mockDeliveryService.getLatestWelcome()
             val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome, CUSTOM_CONFIGURATION_DEFAULT).id }
 
             assertThat(alice.transaction { ctx -> ctx.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NOT_ENABLED)
