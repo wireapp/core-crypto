@@ -40,6 +40,9 @@ getrandom = { version = "0.2", features = ["js"] }
 openmls_traits = { workspace = true }
 openmls_basic_credential = { workspace = true }
 openmls_x509_credential = { workspace = true }
+mls-rs-core = { workspace = true }
+mls-rs-codec = { workspace = true }
+maybe-async = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 log = { workspace = true }
 proteus-traits = { workspace = true, optional = true }

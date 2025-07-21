@@ -25,23 +25,24 @@ CFLAGS = "-Wno-error=inline"
 ar = "llvm-ar"
 linker = "armv7a-linux-androideabi24-clang"
 rustflags = [
-    "-C", "target_feature=+neon",
-    "-C", "link-args=-latomic"
+    "--cfg",
+    "mls_build_async",
+    "-C",
+    "target_feature=+neon",
+    "-C",
+    "link-args=-latomic",
 ]
 
 [target.aarch64-linux-android]
 ar = "llvm-ar"
 linker = "aarch64-linux-android24-clang"
-rustflags = [
-    "-C", "link-args=-latomic"
-]
+rustflags = ["--cfg", "mls_build_async", "-C", "link-args=-latomic"]
 
 [target.x86_64-linux-android]
 ar = "llvm-ar"
 linker = "x86_64-linux-android24-clang"
-rustflags = [
-    "-C", "link-args=-latomic"
-]
+rustflags = ["--cfg", "mls_build_async", "-C", "link-args=-latomic"]
 
 [build]
 rustdoc = ".cargo/rustdoc-wrapper.sh"
+rustflags = ["--cfg", "mls_build_async"]
