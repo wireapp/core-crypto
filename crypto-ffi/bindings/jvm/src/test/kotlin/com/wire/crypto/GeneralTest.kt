@@ -65,8 +65,8 @@ class DatabaseKeyTest {
         val clientId = "alice".toClientId()
         var cc = CoreCrypto(keyStore.toString(), oldKey)
         val pubkey1 = cc.transaction {
-            it.mlsInit(id = clientId, nbKeyPackage = 1u)
-            it.getPublicKey()
+            it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT, nbKeyPackage = 1u)
+            it.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
         }
         cc.close()
 
@@ -76,8 +76,8 @@ class DatabaseKeyTest {
         updateDatabaseKey(keyStore.toString(), oldKey, newKey)
         cc = CoreCrypto(keyStore.toString(), newKey)
         val pubkey2 = cc.transaction {
-            it.mlsInit(id = clientId, nbKeyPackage = 0u)
-            it.getPublicKey()
+            it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT, nbKeyPackage = 0u)
+            it.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
         }
         cc.close()
         assertContentEquals(pubkey1, pubkey2)

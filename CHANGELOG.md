@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Breaking Changes
+
+- Renamed `CoreCryptoContext.proteusDecrypt` to `CoreCryptoContext.proteusDecryptSafe(...)`.
+
+  Affected platforms: Kotlin
+
+  It used to be the case that the Kotlin bindings hid the actual behavior of `proteusDecrypt` by adding
+  a higher-level behavior, trading away some efficiency for ease-of-use. With this change, we have
+  exposed the low-level behavior of `proteusDecrypt`, enabling for more efficient uses when decrypting
+  many proteus messages at once. The old higher-level behavior of `proteusDecrypt` is now exposed as
+  `proteusDecryptSafe`.
+
+  Migration: replace all calls to `proteusDecrypt` with calls to `proteusDecryptSafe`.
+
 ### Features
 
 - In our Swift bindings we are now protecting against concurrent access from multiple core crypto instances.
@@ -11,7 +25,7 @@
 ### Highlights
 
 This release contains the complete API necessary for history sharing in conversations. We've improved
-the generated types in bindings to be more typesafe, and we've added the feature to rotate the key used 
+the generated types in bindings to be more typesafe, and we've added the feature to rotate the key used
 for the core crypto database.
 
 ### Breaking changes
@@ -167,7 +181,7 @@ for the core crypto database.
 
 - Support Android environments with 16k page size
 - Added a module-level function `updateDatabaseKey`, to update the key of an existing CoreCrypto database
-- Support for history sharing which can be enabled by calling `enableHistorySharing()` and disabled again by calling `disableHistorySharing()`. 
+- Support for history sharing which can be enabled by calling `enableHistorySharing()` and disabled again by calling `disableHistorySharing()`.
 
 ---
 

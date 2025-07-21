@@ -29,13 +29,9 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::proteus_session_from_message]
-    pub async fn proteus_session_from_message(
-        &self,
-        session_id: String,
-        envelope: Vec<u8>,
-    ) -> CoreCryptoResult<Vec<u8>> {
+    pub async fn proteus_session_from_message(&self, session_id: &str, envelope: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({
-            let (_, payload) = self.inner.proteus_session_from_message(&session_id, &envelope).await?;
+            let (_, payload) = self.inner.proteus_session_from_message(session_id, &envelope).await?;
             Ok(payload)
         })
     }
@@ -44,8 +40,8 @@ impl CoreCryptoContext {
     ///
     /// **Note**: This isn't usually needed as persisting sessions happens automatically when
     /// decrypting/encrypting messages and initializing Sessions
-    pub async fn proteus_session_save(&self, session_id: String) -> CoreCryptoResult<()> {
-        proteus_impl!({ self.inner.proteus_session_save(&session_id).await.map_err(Into::into) })
+    pub async fn proteus_session_save(&self, session_id: &str) -> CoreCryptoResult<()> {
+        proteus_impl!({ self.inner.proteus_session_save(session_id).await.map_err(Into::into) })
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::proteus_session_delete]
@@ -54,16 +50,35 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::proteus_session_exists]
-    pub async fn proteus_session_exists(&self, session_id: String) -> CoreCryptoResult<bool> {
-        proteus_impl!({ self.inner.proteus_session_exists(&session_id).await.map_err(Into::into) })
+    pub async fn proteus_session_exists(&self, session_id: &str) -> CoreCryptoResult<bool> {
+        proteus_impl!({ self.inner.proteus_session_exists(session_id).await.map_err(Into::into) })
     }
+
     /// See [core_crypto::transaction_context::TransactionContext::proteus_decrypt]
-    pub async fn proteus_decrypt(&self, session_id: String, ciphertext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
+    pub async fn proteus_decrypt(&self, session_id: &str, ciphertext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({
             self.inner
-                .proteus_decrypt(&session_id, &ciphertext)
+                .proteus_decrypt(session_id, &ciphertext)
                 .await
                 .map_err(Into::into)
+        })
+    }
+
+    /// Decrypt a message whether or not the proteus session already exists, and saves the session.
+    ///
+    /// This is intended to replace simple usages of `proteusDecrypt`.
+    ///
+    /// However, when decrypting large numbers of messages in a single session, the existing methods
+    /// may be more efficient.
+    pub async fn proteus_decrypt_safe(&self, session_id: &str, ciphertext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
+        proteus_impl!({
+            let decrypted_message = if self.proteus_session_exists(session_id).await? {
+                self.proteus_decrypt(session_id, ciphertext).await?
+            } else {
+                self.proteus_session_from_message(session_id, ciphertext).await?
+            };
+            self.proteus_session_save(session_id).await?;
+            Ok(decrypted_message)
         })
     }
 
