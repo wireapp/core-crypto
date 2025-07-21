@@ -16,7 +16,6 @@ import kotlin.time.Duration.Companion.milliseconds
 class MLSTest : HasMockDeliveryService() {
     companion object {
         private val id: ConversationId = genConversationId()
-        internal lateinit var mockDeliveryService: MockDeliveryService
     }
 
     @BeforeTest
