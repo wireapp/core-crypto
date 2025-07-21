@@ -32,8 +32,7 @@ class DatabaseKeyTest {
     @Test
     fun invalid_length() = runTest {
         val path = Files.createTempFile("keystore-", null).toString()
-        val key = DatabaseKey(ByteArray(48))
-        val exc = assertFailsWith<CoreCryptoException.Other> { CoreCrypto(path, key) }
+        val exc = assertFailsWith<CoreCryptoException.Other> { DatabaseKey(ByteArray(48)) }
         assertThat(exc.msg.contains("Invalid database key size, expected 32, got 48")).isTrue
     }
 
