@@ -13,7 +13,7 @@ import java.nio.file.Files
 import kotlin.test.*
 import kotlin.time.Duration.Companion.milliseconds
 
-class MLSTest: HasMockDeliveryService() {
+class MLSTest : HasMockDeliveryService() {
     companion object {
         private val id: ConversationId = genConversationId()
         internal lateinit var mockDeliveryService: MockDeliveryService
@@ -152,9 +152,17 @@ class MLSTest: HasMockDeliveryService() {
         val (alice) = newClients(this@MLSTest, genClientId())
 
         // by default
-        assertThat(alice.transaction { ctx -> ctx.clientValidKeypackagesCount(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT) }).isEqualTo(100.toULong())
+        assertThat(
+            alice.transaction { ctx ->
+                ctx.clientValidKeypackagesCount(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
+            }
+        ).isEqualTo(100.toULong())
         assertThat(alice.transaction { ctx -> ctx.clientKeypackagesShort(200U) }).isNotEmpty().hasSize(200)
-        assertThat(alice.transaction { ctx -> ctx.clientValidKeypackagesCount(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT) }).isEqualTo(200.toULong())
+        assertThat(
+            alice.transaction { ctx ->
+                ctx.clientValidKeypackagesCount(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
+            }
+        ).isEqualTo(200.toULong())
     }
 
     @Test
@@ -217,16 +225,17 @@ class MLSTest: HasMockDeliveryService() {
         val plaintextMsg = bob.transaction { ctx -> ctx.decryptMessage(groupId, ciphertextMsg).message!! }
         assertThat(plaintextMsg).isNotEmpty().isEqualTo(msg)
 
-        val expectedException = assertFailsWith<CoreCryptoException.Mls> { bob.transaction { ctx -> ctx.decryptMessage(groupId, ciphertextMsg) } }
+        val expectedException =
+            assertFailsWith<CoreCryptoException.Mls> { bob.transaction { ctx -> ctx.decryptMessage(groupId, ciphertextMsg) } }
         assertIs<MlsException.DuplicateMessage>(expectedException.mlsError)
     }
 
     @Test
     fun addClientsToConversation_should_add_members_to_the_MLS_group() = runTest {
-        val alice_id = genClientId()
-        val bob_id = genClientId()
-        val carol_id = genClientId()
-        val (alice, bob, carol) = newClients(this@MLSTest, alice_id, bob_id, carol_id)
+        val aliceId = genClientId()
+        val bobId = genClientId()
+        val carolId = genClientId()
+        val (alice, bob, carol) = newClients(this@MLSTest, aliceId, bobId, carolId)
 
         bob.transaction { ctx -> ctx.createConversationShort(id) }
         val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
@@ -244,7 +253,7 @@ class MLSTest: HasMockDeliveryService() {
 
         val members = alice.transaction { ctx -> ctx.getClientIds(id) }
         assertThat(
-            members.containsAll(listOf(alice_id, bob_id, carol_id))
+            members.containsAll(listOf(aliceId, bobId, carolId))
         )
     }
 
@@ -265,8 +274,8 @@ class MLSTest: HasMockDeliveryService() {
 
     @Test
     fun removeMember_should_remove_members_from_the_MLS_group() = runTest {
-        val carol_id = genClientId()
-        val (alice, bob, carol) = newClients(this@MLSTest, genClientId(), genClientId(), carol_id)
+        val carolId = genClientId()
+        val (alice, bob, carol) = newClients(this@MLSTest, genClientId(), genClientId(), carolId)
 
         bob.transaction { ctx -> ctx.createConversationShort(id) }
 
@@ -276,7 +285,7 @@ class MLSTest: HasMockDeliveryService() {
         val welcome = mockDeliveryService.getLatestWelcome()
         val conversationId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome, CUSTOM_CONFIGURATION_DEFAULT).id }
 
-        val carolMember = listOf(carol_id)
+        val carolMember = listOf(carolId)
         bob.transaction { ctx -> ctx.removeClientsFromConversation(conversationId, carolMember) }
         val commit = mockDeliveryService.getLatestCommit()
 

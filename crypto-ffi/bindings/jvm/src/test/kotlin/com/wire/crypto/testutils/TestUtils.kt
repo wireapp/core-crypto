@@ -1,12 +1,13 @@
+@file:Suppress("ktlint:standard:no-wildcard-imports")
+
 package testutils
 
 import com.wire.crypto.*
-import java.util.UUID
+import kotlinx.coroutines.runBlocking
 import java.nio.ByteBuffer
 import java.nio.file.Files
+import java.util.UUID
 import kotlin.test.*
-import kotlinx.coroutines.runBlocking
-
 
 fun genDatabaseKey(): DatabaseKey {
     val bytes = ByteArray(32)
@@ -96,7 +97,9 @@ fun randomIdentifier(n: Int = 12): String {
 suspend fun CoreCryptoContext.mlsInitShort(clientId: ClientId) = mlsInit(clientId, CIPHERSUITES_DEFAULT, 1U)
 
 /** Shorthand for creating a conversation with defaults */
-suspend fun CoreCryptoContext.createConversationShort(id: ConversationId) = createConversation(id, CREDENTIAL_TYPE_DEFAULT, CONVERSATION_CONFIGURATION_DEFAULT)
+suspend fun CoreCryptoContext.createConversationShort(
+    id: ConversationId
+) = createConversation(id, CREDENTIAL_TYPE_DEFAULT, CONVERSATION_CONFIGURATION_DEFAULT)
 
 /** Shorthand for getting keypackages with defaults */
 suspend fun CoreCryptoContext.clientKeypackagesShort(amount: UInt) = clientKeypackages(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT, amount)
