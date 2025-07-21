@@ -16,6 +16,81 @@
 
   Migration: replace all calls to `proteusDecrypt` with calls to `proteusDecryptSafe`.
 
+- Eliminated wrapper `class E2EIEnrollment` in favor of generated `class E2eiEnrollment`.
+
+  Affected platforms: Kotlin
+
+  We've brought the uniffi-generated code to very near parity with the older high-level bindings.
+  The following breaking changes were necessary to eliminate the old binding class:
+
+  **Name changes:**
+
+  These methods have had their names changed. To migrate, simply rename all calls to these functions.
+
+  - `accoutResponse` -> `newAccountResponse`
+  - `authzResponse` -> `newAuthzResponse`
+  - `dpopChallengeResponse` -> `newDpopChallengeResponse`
+  - `contextOidcChallengeResponse` -> `newOidcChallengeResponse`
+
+- Eliminated (hand-written) wrapper `class CoreCryptoContext` in favor of (uniffi-generated) `class CoreCryptoContext`.
+
+  Affected platforms: Kotlin
+
+  We've brought the uniffi-generated code to very near parity with the older high-level bindings.
+  The following breaking changes were necessar to eliminate the old binding class:
+
+  **Name changes:**
+
+  These methods have had their names changed. To migrate, simply rename all calls to these functions.
+
+  - `getPublicKey` -> `clientPublicKey`
+  - `generateKeyPackages` -> `clientKeypackages`
+  - `validKeyPackageCount` -> `clientValidKeypackagesCount`
+  - `addMember` -> `addClientsToConversation`
+  - `removeMember` -> `removeClientsFromConversation`
+  - `members` -> `getClientIds`
+  - `deriveAvsSecret` -> `exportSecretKey`
+  - `proteusGetLocalFingerprint` -> `proteusFingerprint`
+  - `proteusGetRemoteFingerprint` -> `proteusFingerprintRemote`
+  - `proteusGetPrekeyFingerprint` -> `proteusFingerprintPrekeyBundle`
+  - `proteusDoesSessionExist` -> `proteusSessionExists`
+  - `proteusCreateSession` -> `proteusSessionFromPrekey`
+  - `proteusDeleteSession` -> `proteusSessionDelete`
+
+  **Parameter order changes:**
+
+  These methods have had the order of their parameters changed. To migrate, either name the arguments in the caller
+  or reorder the parameters appropriately.
+
+  - `generateKeyPackages` / `clientKeypackages`: `amount` is now the final parameter, not the first
+  - `joinByExternalCommit`: `credentialType` and `configuration` have swapped positions
+  - `e2eiNewEnrollment`: `team` now appears after `handle` and before `expirySec`
+  - `e2eiNewActivationEnrollment`: `team` now appears after `handle` and before `expirySec`
+  - `e2eiNewRotateEnrollment`: new param order: `(displayName, handle, team, expirySec, ciphersuite)`
+  - `proteusCreateSession` / `proteusSessionFromPrekey`: params swapped
+  - `proteusDecrypt`: params swapped
+  - `proteusEncrypt`: params swapped
+
+  **Other Parameter changes:**
+
+  These methods have had the set of their parameters changed. To migrate, see instructions for each changed method.
+
+  - `createConversation`: accepts `(ConversationId, CredentialType, ConversationConfiguration)`. Conversation configuration must be constructed externally.
+
+  **Removed Methods:**
+
+  These methods no longer exist.
+
+  - `proteusNewPrekeys`: similar to `from.until(from + count).map { cc.proteusNewPrekey(it.toUShort()) }`
+  - `proteusNewLastPrekey`: similar to `cc.proteusLastResortPrekey()`
+  - `proteusEncryptWithPreKey`: similar to:
+    ```kotlin
+    cc.proteusSessionFromPrekey(sessionId, preKey)
+    val encryptedMessage = cc.proteusEncrypt(sessionId, message)
+    cc.proteusSessionSave(sessionId)
+    return encryptedMessage
+    ```
+
 ### Features
 
 - In our Swift bindings we are now protecting against concurrent access from multiple core crypto instances.
