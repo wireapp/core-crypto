@@ -48,7 +48,7 @@ pub struct CustomConfiguration {
     ///  Note: This isn't currently implemented
     #[cfg(target_family = "wasm")]
     #[wasm_bindgen(js_name = "keyRotationSpan")]
-    pub key_rotation_span: Option<u64>,
+    pub key_rotation_span: Option<u32>,
 
     ///  Duration after which we will automatically force a self-update commit
     ///  Note: This isn't currently implemented
@@ -64,7 +64,10 @@ pub struct CustomConfiguration {
 impl From<CustomConfiguration> for MlsCustomConfiguration {
     fn from(cfg: CustomConfiguration) -> Self {
         #[cfg(target_family = "wasm")]
-        let key_rotation_span = cfg.key_rotation_span.map(std::time::Duration::from_secs);
+        let key_rotation_span = cfg
+            .key_rotation_span
+            .map(Into::into)
+            .map(std::time::Duration::from_secs);
 
         #[cfg(not(target_family = "wasm"))]
         let key_rotation_span = cfg.key_rotation_span;
@@ -83,7 +86,7 @@ impl From<CustomConfiguration> for MlsCustomConfiguration {
 #[wasm_bindgen]
 impl CustomConfiguration {
     #[wasm_bindgen(constructor)]
-    pub fn new(key_rotation_span: Option<u64>, wire_policy: Option<WirePolicy>) -> Self {
+    pub fn new(key_rotation_span: Option<u32>, wire_policy: Option<WirePolicy>) -> Self {
         Self {
             key_rotation_span,
             wire_policy,
@@ -115,7 +118,7 @@ impl ConversationConfiguration {
     pub fn new(
         ciphersuite: Option<Ciphersuite>,
         external_senders: Option<Vec<ExternalSenderKeyMaybeArc>>,
-        key_rotation_span: Option<u64>,
+        key_rotation_span: Option<u32>,
         wire_policy: Option<WirePolicy>,
     ) -> crate::CoreCryptoResult<ConversationConfiguration> {
         let external_senders = external_senders.unwrap_or_default();
