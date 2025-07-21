@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:no-wildcard-imports")
+
 package com.wire.crypto
 
 import kotlinx.coroutines.test.runTest
@@ -7,7 +9,7 @@ import java.nio.file.Files
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-internal class E2EITest: HasMockDeliveryService() {
+internal class E2EITest : HasMockDeliveryService() {
     companion object {
         private val id: ConversationId = genConversationId()
     }

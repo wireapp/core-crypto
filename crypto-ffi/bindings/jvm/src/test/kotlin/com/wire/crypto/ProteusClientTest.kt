@@ -4,8 +4,8 @@ package com.wire.crypto
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import testutils.genDatabaseKey
 import testutils.genClientId
+import testutils.genDatabaseKey
 import java.nio.file.Files
 import kotlin.test.*
 
