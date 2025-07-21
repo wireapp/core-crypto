@@ -156,7 +156,7 @@ class MLSTest : HasMockDeliveryService() {
             alice.transaction { ctx ->
                 ctx.clientValidKeypackagesCount(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
             }
-        ).isEqualTo(100.toULong())
+        ).isEqualTo(1.toULong()) // based on the default in newClients, a test helper
         assertThat(alice.transaction { ctx -> ctx.clientKeypackagesShort(200U) }).isNotEmpty().hasSize(200)
         assertThat(
             alice.transaction { ctx ->
