@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Breaking Changes
+
+- Renamed `CoreCryptoContext.proteusDecrypt` to `CoreCryptoContext.proteusDecryptSafe(...)`.
+
+  Affected platforms: Kotlin
+
+  It used to be the case that the Kotlin bindings hid the actual behavior of `proteusDecrypt` by adding
+  a higher-level behavior, trading away some efficiency for ease-of-use. With this change, we have
+  exposed the low-level behavior of `proteusDecrypt`, enabling for more efficient uses when decrypting
+  many proteus messages at once. The old higher-level behavior of `proteusDecrypt` is now exposed as
+  `proteusDecryptSafe`.
+
+  Migration: replace all calls to `proteusDecrypt` with calls to `proteusDecryptSafe`.
+
 ### Features
 
 - In our Swift bindings we are now protecting against concurrent access from multiple core crypto instances.
