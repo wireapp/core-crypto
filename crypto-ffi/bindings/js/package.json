@@ -19,7 +19,7 @@
     "@wdio/static-server-service": "^9.18.0",
     "dts-bundle-generator": "^9.5.1",
     "eslint": "^9.31.0",
-    "eslint-config-prettier": "^10.1.5",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.1",
     "eslint-plugin-wdio": "^9.16.2",
     "prettier": "^3.6.2",
