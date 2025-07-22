@@ -6,6 +6,7 @@ $dokka.location:com.wire.crypto//setLogger/#com.wire.crypto.CoreCryptoLogger/Poi
 $dokka.location:com.wire.crypto//setMaxLogLevel/#com.wire.crypto.CoreCryptoLogLevel/PointingToDeclaration/-core-crypto/com.wire.crypto/set-max-log-level.html
 $dokka.location:com.wire.crypto//toClientId/kotlin.String#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-client-id.html
 $dokka.location:com.wire.crypto//toExternalSenderKey/[Error type: Unresolved type for com.wire.crypto.uniffi.ExternalSenderKey]#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-external-sender-key.html
+$dokka.location:com.wire.crypto//toExternalSenderKey/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-external-sender-key.html
 $dokka.location:com.wire.crypto//toGroupId/[Error type: Unresolved type for com.wire.crypto.uniffi.ConversationId]#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-group-id.html
 $dokka.location:com.wire.crypto//toGroupId/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-group-id.html
 $dokka.location:com.wire.crypto//toGroupId/kotlin.String#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-group-id.html
@@ -232,6 +233,7 @@ $dokka.location:com.wire.crypto/EpochObserver///PointingToDeclaration/-core-cry
 $dokka.location:com.wire.crypto/EpochObserver/epochChanged/#com.wire.crypto.MLSGroupId#kotlin.ULong/PointingToDeclaration/-core-crypto/com.wire.crypto/-epoch-observer/epoch-changed.html
 $dokka.location:com.wire.crypto/ExternalSenderKey///PointingToDeclaration/-core-crypto/com.wire.crypto/-external-sender-key/index.html
 $dokka.location:com.wire.crypto/ExternalSenderKey/ExternalSenderKey/#[Error type: Unresolved type for com.wire.crypto.uniffi.ExternalSenderKey]/PointingToDeclaration/-core-crypto/com.wire.crypto/-external-sender-key/-external-sender-key.html
+$dokka.location:com.wire.crypto/ExternalSenderKey/copyBytes/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-external-sender-key/copy-bytes.html
 $dokka.location:com.wire.crypto/ExternalSenderKey/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-external-sender-key/lower.html
 $dokka.location:com.wire.crypto/ExternalSenderKey/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-external-sender-key/to-string.html
 $dokka.location:com.wire.crypto/ExternalSenderKey/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-external-sender-key/value.html
@@ -242,6 +244,7 @@ $dokka.location:com.wire.crypto/ExternallyGeneratedHandle/toString/#/PointingToD
 $dokka.location:com.wire.crypto/ExternallyGeneratedHandle/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-externally-generated-handle/value.html
 $dokka.location:com.wire.crypto/GroupInfo///PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/index.html
 $dokka.location:com.wire.crypto/GroupInfo/GroupInfo/#[Error type: Unresolved type for com.wire.crypto.uniffi.GroupInfo]/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/-group-info.html
+$dokka.location:com.wire.crypto/GroupInfo/copyBytes/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/copy-bytes.html
 $dokka.location:com.wire.crypto/GroupInfo/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/lower.html
 $dokka.location:com.wire.crypto/GroupInfo/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/to-string.html
 $dokka.location:com.wire.crypto/GroupInfo/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/value.html
@@ -259,6 +262,7 @@ $dokka.location:com.wire.crypto/HistorySecret/data/#/PointingToDeclaration/-cor
 $dokka.location:com.wire.crypto/JsonRawData///PointingToDeclaration/-core-crypto/com.wire.crypto/-json-raw-data/index.html
 $dokka.location:com.wire.crypto/MLSGroupId///PointingToDeclaration/-core-crypto/com.wire.crypto/-m-l-s-group-id/index.html
 $dokka.location:com.wire.crypto/MLSGroupId/MLSGroupId/#[Error type: Unresolved type for com.wire.crypto.uniffi.ConversationId]/PointingToDeclaration/-core-crypto/com.wire.crypto/-m-l-s-group-id/-m-l-s-group-id.html
+$dokka.location:com.wire.crypto/MLSGroupId/copyBytes/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-m-l-s-group-id/copy-bytes.html
 $dokka.location:com.wire.crypto/MLSGroupId/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-m-l-s-group-id/lower.html
 $dokka.location:com.wire.crypto/MLSGroupId/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-m-l-s-group-id/to-string.html
 $dokka.location:com.wire.crypto/MLSGroupId/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-m-l-s-group-id/value.html
@@ -374,6 +378,7 @@ $dokka.location:com.wire.crypto/ProteusException/hashCode/#/PointingToDeclaratio
 $dokka.location:com.wire.crypto/SessionId///PointingToDeclaration/-core-crypto/com.wire.crypto/-session-id/index.html
 $dokka.location:com.wire.crypto/Welcome///PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/index.html
 $dokka.location:com.wire.crypto/Welcome/Welcome/#[Error type: Unresolved type for com.wire.crypto.uniffi.Welcome]/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/-welcome.html
+$dokka.location:com.wire.crypto/Welcome/copyBytes/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/copy-bytes.html
 $dokka.location:com.wire.crypto/Welcome/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/lower.html
 $dokka.location:com.wire.crypto/Welcome/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/to-string.html
 $dokka.location:com.wire.crypto/Welcome/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/value.html
