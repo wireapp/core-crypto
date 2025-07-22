@@ -19,7 +19,7 @@ val CONVERSATION_CONFIGURATION_DEFAULT = ConversationConfiguration(null, listOf(
 fun String.toClientId() = ClientId(this.toByteArray())
 
 /** Construct an external sender ID */
-fun ByteArray.toExternalSenderKey() = ExternalSenderKey(com.wire.crypto.uniffi.ExternalSenderKey(this))
+fun ByteArray.toExternalSenderKey() = ExternalSenderKey(this)
 
 /** Construct a Welcome */
 fun ByteArray.toWelcome() = Welcome(this)
