@@ -87,6 +87,9 @@ value class MLSGroupId(val value: com.wire.crypto.uniffi.ConversationId) {
     /** Convert this type wrapper into the FFI version it wraps */
     fun lower() = value
 
+    /** Copy the bytes from the group ID */
+    fun copyBytes() = value.copyBytes()
+
     override fun toString() = value.copyBytes().toHex()
 }
 
