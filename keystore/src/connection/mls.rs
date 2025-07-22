@@ -1,16 +1,42 @@
+use mls_rs_core::key_package::KeyPackageData as MlsRsKeyPackageData;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
 use crate::{
-    CryptoKeystoreError, deser,
+    CryptoKeystoreError, CryptoKeystoreResult, deser,
     entities::{
-        MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsPskBundle,
-        MlsSignatureKeyPair, PersistedMlsGroup,
+        KeyPackageData, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage,
+        MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
     },
     ser,
 };
 
-use super::FetchFromDatabase as _;
+use super::{Connection, FetchFromDatabase as _};
+
+#[maybe_async::must_be_async]
+impl mls_rs_core::key_package::KeyPackageStorage for Connection {
+    type Error = CryptoKeystoreError;
+
+    async fn insert(&mut self, id: Vec<u8>, pkg: MlsRsKeyPackageData) -> CryptoKeystoreResult<()> {
+        let keystore_instance = (id, pkg).try_into()?;
+        self.save::<KeyPackageData>(keystore_instance).await?;
+        Ok(())
+    }
+
+    async fn get(&self, id: &[u8]) -> CryptoKeystoreResult<Option<MlsRsKeyPackageData>> {
+        let maybe_record = self.find::<KeyPackageData>(id).await?;
+        maybe_record
+            .map(|keystore_instance| {
+                let (_, mls_rs_instance) = keystore_instance.try_into()?;
+                Ok(mls_rs_instance)
+            })
+            .transpose()
+    }
+
+    async fn delete(&mut self, id: &[u8]) -> CryptoKeystoreResult<()> {
+        self.remove::<KeyPackageData, _>(id).await
+    }
+}
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]

@@ -1,3 +1,5 @@
+use mls_rs_core::error::IntoAnyError;
+
 #[cfg(target_family = "wasm")]
 use crate::keystore_v_1_0_0;
 
@@ -234,6 +236,8 @@ impl proteus_traits::ProteusErrorCode for CryptoKeystoreError {
         }
     }
 }
+
+impl IntoAnyError for CryptoKeystoreError {}
 
 /// A specialized Result for the KeyStore functions
 pub type CryptoKeystoreResult<T> = Result<T, CryptoKeystoreError>;
