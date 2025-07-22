@@ -279,6 +279,7 @@ mod tests {
     test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_update:true ignore_find_many:true);
     test_for_entity!(test_mls_credential, MlsCredential ignore_update:true);
     test_for_entity!(test_mls_keypackage, MlsKeyPackage);
+    test_for_entity!(test_keypackage_data, KeyPackageData);
     test_for_entity!(test_mls_signature_keypair, MlsSignatureKeyPair ignore_update:true);
     test_for_entity!(test_mls_psk_bundle, MlsPskBundle);
     test_for_entity!(test_mls_encryption_keypair, MlsEncryptionKeyPair);
@@ -356,8 +357,8 @@ pub mod utils {
     // Use V1_0_0 entities
     use super::*;
     use core_crypto_keystore::entities::{
-        E2eiEnrollment, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
-        MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
+        E2eiEnrollment, KeyPackageData, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair,
+        MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
         PersistedMlsPendingGroup, ProteusSession,
     };
     use rand::Rng as _;
@@ -467,6 +468,7 @@ pub mod utils {
             }
 
     impl_entity_random_update_ext!(MlsKeyPackage, blob_fields=[keypackage,], additional_fields=[(keypackage_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
+    impl_entity_random_update_ext!(KeyPackageData, id_field = id, blob_fields = [data,]);
     impl_entity_random_update_ext!(MlsCredential, blob_fields=[credential,], additional_fields=[(id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),]);
     impl_entity_random_update_ext!(MlsSignatureKeyPair, blob_fields=[pk,keypair,credential_id,], additional_fields=[(signature_scheme: rand::random()),]);
     impl_entity_random_update_ext!(MlsHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);

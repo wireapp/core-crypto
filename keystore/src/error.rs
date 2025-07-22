@@ -8,6 +8,8 @@ pub enum MissingKeyErrorKind {
     ConsumerData,
     #[error("MLS KeyPackage")]
     MlsKeyPackage,
+    #[error("MLS KeyPackage")]
+    KeyPackageData,
     #[error("MLS SignatureKeyPair")]
     MlsSignatureKeyPair,
     #[error("MLS HpkePrivateKey")]
@@ -128,6 +130,8 @@ pub enum CryptoKeystoreError {
     HexDecodeError(#[from] hex::FromHexError),
     #[error(transparent)]
     FromUtf8Error(#[from] std::string::FromUtf8Error),
+    #[error(transparent)]
+    MlsCodecError(#[from] mls_rs_codec::Error),
     #[cfg(target_os = "ios")]
     #[error(transparent)]
     HexSaltDecodeError(hex::FromHexError),

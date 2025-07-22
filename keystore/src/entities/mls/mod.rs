@@ -3,6 +3,9 @@ use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::TransactionWr
 use openmls_traits::types::SignatureScheme;
 use zeroize::Zeroize;
 
+mod keypackage_data;
+pub use keypackage_data::KeyPackageData;
+
 /// Entity representing a persisted `MlsGroup`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
