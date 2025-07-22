@@ -222,6 +222,7 @@ value class GroupInfo(val value: com.wire.crypto.uniffi.GroupInfo) {
     override fun toString() = value.copyBytes().toHex()
 }
 
+/** Construct a GroupInfo from bytes */
 fun ByteArray.toGroupInfo() = GroupInfo(com.wire.crypto.uniffi.GroupInfo(this))
 
 private fun com.wire.crypto.uniffi.GroupInfo.toGroupInfo() = GroupInfo(this)
