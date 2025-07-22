@@ -148,6 +148,9 @@ value class Welcome(val value: com.wire.crypto.uniffi.Welcome) {
     override fun toString() = value.copyBytes().toHex()
 }
 
+/** Construct a Welcome */
+fun ByteArray.toWelcome() = Welcome(com.wire.crypto.uniffi.Welcome(this))
+
 private fun com.wire.crypto.uniffi.Welcome.toWelcome() = Welcome(this)
 
 /** Key package
@@ -162,6 +165,23 @@ value class MLSKeyPackage(val value: com.wire.crypto.uniffi.KeyPackage) {
 }
 
 internal fun com.wire.crypto.uniffi.KeyPackage.toMLSKeyPackage() = MLSKeyPackage(this)
+
+/** AVS secret
+ * @property value the FFI secret key
+ */
+@JvmInline
+value class AvsSecret(val value: com.wire.crypto.uniffi.SecretKey) {
+    /** Lower this wrapper to the internal wrapped FFI type */
+    fun lower() = value
+
+    /** Copy the bytes from the Secret */
+    fun copyBytes() = value.copyBytes()
+
+    override fun toString() = value.copyBytes().toHex()
+}
+
+/** Construct an AVS secret */
+fun ByteArray.toAvsSecret() = AvsSecret(com.wire.crypto.uniffi.SecretKey(this))
 
 /** ExternallyGeneratedHandle */
 @JvmInline
