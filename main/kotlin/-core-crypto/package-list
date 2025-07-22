@@ -4,12 +4,16 @@ $dokka.location:com.wire.crypto////PointingToDeclaration/-core-crypto/com.wire.
 $dokka.location:com.wire.crypto//migrateDatabaseKeyTypeToBytes/#kotlin.String#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/migrate-database-key-type-to-bytes.html
 $dokka.location:com.wire.crypto//setLogger/#com.wire.crypto.CoreCryptoLogger/PointingToDeclaration/-core-crypto/com.wire.crypto/set-logger.html
 $dokka.location:com.wire.crypto//setMaxLogLevel/#com.wire.crypto.CoreCryptoLogLevel/PointingToDeclaration/-core-crypto/com.wire.crypto/set-max-log-level.html
+$dokka.location:com.wire.crypto//toAvsSecret/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-avs-secret.html
 $dokka.location:com.wire.crypto//toClientId/kotlin.String#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-client-id.html
 $dokka.location:com.wire.crypto//toExternalSenderKey/[Error type: Unresolved type for com.wire.crypto.uniffi.ExternalSenderKey]#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-external-sender-key.html
 $dokka.location:com.wire.crypto//toExternalSenderKey/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-external-sender-key.html
 $dokka.location:com.wire.crypto//toGroupId/[Error type: Unresolved type for com.wire.crypto.uniffi.ConversationId]#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-group-id.html
 $dokka.location:com.wire.crypto//toGroupId/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-group-id.html
 $dokka.location:com.wire.crypto//toGroupId/kotlin.String#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-group-id.html
+$dokka.location:com.wire.crypto//toGroupInfo/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-group-info.html
+$dokka.location:com.wire.crypto//toMLSKeyPackage/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-m-l-s-key-package.html
+$dokka.location:com.wire.crypto//toWelcome/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-welcome.html
 $dokka.location:com.wire.crypto//updateDatabaseKey/#kotlin.String#com.wire.crypto.DatabaseKey#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/update-database-key.html
 $dokka.location:com.wire.crypto/AcmeChallenge///PointingToDeclaration/-core-crypto/com.wire.crypto/-acme-challenge/index.html
 $dokka.location:com.wire.crypto/AcmeChallenge/AcmeChallenge/#[Error type: Unresolved type for com.wire.crypto.uniffi.AcmeChallenge]/PointingToDeclaration/-core-crypto/com.wire.crypto/-acme-challenge/-acme-challenge.html
@@ -22,6 +26,12 @@ $dokka.location:com.wire.crypto/AcmeDirectory/newAccount/#/PointingToDeclaration
 $dokka.location:com.wire.crypto/AcmeDirectory/newNonce/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-acme-directory/new-nonce.html
 $dokka.location:com.wire.crypto/AcmeDirectory/newOrder/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-acme-directory/new-order.html
 $dokka.location:com.wire.crypto/AcmeDirectory/revokeCert/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-acme-directory/revoke-cert.html
+$dokka.location:com.wire.crypto/AvsSecret///PointingToDeclaration/-core-crypto/com.wire.crypto/-avs-secret/index.html
+$dokka.location:com.wire.crypto/AvsSecret/AvsSecret/#[Error type: Unresolved type for com.wire.crypto.uniffi.SecretKey]/PointingToDeclaration/-core-crypto/com.wire.crypto/-avs-secret/-avs-secret.html
+$dokka.location:com.wire.crypto/AvsSecret/copyBytes/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-avs-secret/copy-bytes.html
+$dokka.location:com.wire.crypto/AvsSecret/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-avs-secret/lower.html
+$dokka.location:com.wire.crypto/AvsSecret/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-avs-secret/to-string.html
+$dokka.location:com.wire.crypto/AvsSecret/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-avs-secret/value.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage///PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/index.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/BufferedDecryptedMessage/#kotlin.ByteArray?#kotlin.Boolean#kotlin.Long?#com.wire.crypto.ClientId?#kotlin.Boolean#com.wire.crypto.WireIdentity#com.wire.crypto.CrlDistributionPoints?/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-buffered-decrypted-message.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/commitDelay/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/commit-delay.html
