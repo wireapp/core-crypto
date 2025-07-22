@@ -14,6 +14,7 @@
 
 ### Documentation
 
+- remove `7.x` series from `index.md` ([6102d9f](https://github.com/wireapp/core-crypto/commit/6102d9fa5c364c18d2a8439cb60d381e11f4b298))
 - add docs for `ByteArray.toGroupInfo()` ([748082b](https://github.com/wireapp/core-crypto/commit/748082b8d127f4571982d64cb48ebdf7bd4f6364))
 - remove unintended code comment showing up in  `index.md` ([7dd028b](https://github.com/wireapp/core-crypto/commit/7dd028b55c575c63c8d917073842c7f5c31dba17))
 - update links in `index.md` ([a085ae6](https://github.com/wireapp/core-crypto/commit/a085ae67d1af84c3d00be1e6478c6e5b496f67d3))
