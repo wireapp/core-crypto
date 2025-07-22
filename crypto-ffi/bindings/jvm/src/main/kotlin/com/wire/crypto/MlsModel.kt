@@ -188,6 +188,9 @@ value class GroupInfo(val value: com.wire.crypto.uniffi.GroupInfo) {
     /** Convert this type wrapper into the FFI version which it wraps */
     fun lower(): com.wire.crypto.uniffi.GroupInfo = value
 
+    /** Copy the bytes from the group info */
+    fun copyBytes() = value.copyBytes()
+
     override fun toString() = value.copyBytes().toHex()
 }
 
