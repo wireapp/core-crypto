@@ -114,9 +114,9 @@ public final class CoreCrypto: CoreCryptoProtocol {
         do {
             try await coreCrypto.transaction(command: transactionExecutor)
         } catch {
-            throw transactionExecutor.innerError ?? error
+            throw await transactionExecutor.innerError ?? error
         }
-        return transactionExecutor.result!
+        return await transactionExecutor.result!
     }
 
     public func provideTransport(transport: any MlsTransport) async throws {
@@ -191,7 +191,7 @@ final class HistoryObserverIndirector: HistoryObserver {
     }
 }
 
-final class TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand {
+final actor TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand {
 
     let block: (_ context: CoreCryptoContextProtocol) async throws -> Result
     var result: Result?

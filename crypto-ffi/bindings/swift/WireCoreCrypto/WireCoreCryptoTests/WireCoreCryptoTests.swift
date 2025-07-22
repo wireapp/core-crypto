@@ -400,8 +400,8 @@ final class WireCoreCryptoTests: XCTestCase {
             _ = try await $0.addClientsToConversation(
                 conversationId: conversationId, keyPackages: [aliceKp])
         }
-        let welcome = mockMlsTransport.lastCommitBundle?.welcome
-        let groupId = try await alice.transaction {
+        let welcome = await mockMlsTransport.lastCommitBundle?.welcome
+        _ = try await alice.transaction {
             try await $0.processWelcomeMessage(
                 welcomeMessage: welcome!,
                 customConfiguration: configuration.custom
@@ -410,7 +410,7 @@ final class WireCoreCryptoTests: XCTestCase {
         try await bob.transaction {
             try await $0.updateKeyingMaterial(conversationId: conversationId)
         }
-        let commit = mockMlsTransport.lastCommitBundle?.commit
+        let commit = await mockMlsTransport.lastCommitBundle?.commit
         let decrypted = try await alice.transaction {
             try await $0.decryptMessage(conversationId: conversationId, payload: commit!)
         }
@@ -454,8 +454,8 @@ final class WireCoreCryptoTests: XCTestCase {
             _ = try await $0.addClientsToConversation(
                 conversationId: conversationId, keyPackages: [aliceKp])
         }
-        let welcome = mockMlsTransport.lastCommitBundle?.welcome
-        let groupId = try await alice.transaction {
+        let welcome = await mockMlsTransport.lastCommitBundle?.welcome
+        _ = try await alice.transaction {
             try await $0.processWelcomeMessage(
                 welcomeMessage: welcome!,
                 customConfiguration: configuration.custom
@@ -489,7 +489,7 @@ final class WireCoreCryptoTests: XCTestCase {
             let epoch: UInt64
         }
 
-        final class EpochRecorder: EpochObserver {
+        final actor EpochRecorder: EpochObserver {
             var epochs: [Epoch] = []
             func epochChanged(conversationId: ConversationId, epoch: UInt64) async throws {
                 epochs.append(Epoch(conversationId: conversationId, epoch: epoch))
@@ -532,7 +532,9 @@ final class WireCoreCryptoTests: XCTestCase {
             try await context.updateKeyingMaterial(conversationId: conversationId)
         }
 
-        XCTAssertEqual(epochRecorder.epochs, [Epoch(conversationId: conversationId, epoch: 1)])
+        let recordedEpochs = await epochRecorder.epochs
+
+        XCTAssertEqual(recordedEpochs, [Epoch(conversationId: conversationId, epoch: 1)])
     }
 
     func testRegisterHistoryObserverShouldNotifyObserverOnNewSecret() async throws {
@@ -541,7 +543,7 @@ final class WireCoreCryptoTests: XCTestCase {
             let clientId: ClientId
         }
 
-        final class HistoryRecorder: HistoryObserver {
+        final actor HistoryRecorder: HistoryObserver {
             var secrets: [Secret] = []
             func historyClientCreated(conversationId: ConversationId, secret: HistorySecret)
                 async throws
@@ -586,13 +588,15 @@ final class WireCoreCryptoTests: XCTestCase {
             try await $0.enableHistorySharing(conversationId: conversationId)
         }
 
-        XCTAssertEqual(historyRecorder.secrets.count, 1)
-        XCTAssertEqual(historyRecorder.secrets.first!.conversationId, conversationId)
+        let recordedSecrets = await historyRecorder.secrets
+
+        XCTAssertEqual(recordedSecrets.count, 1)
+        XCTAssertEqual(recordedSecrets.first!.conversationId, conversationId)
     }
 
     // MARK - helpers
 
-    final class MockMlsTransport: MlsTransport {
+    final actor MockMlsTransport: MlsTransport {
 
         var lastCommitBundle: CommitBundle?
         var lastMlsMessage: Data?
