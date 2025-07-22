@@ -2,14 +2,14 @@
   "warnings": [
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/CoreCrypto.swift",
-      "line": 21,
+      "line": 4,
       "symbol": "CoreCryptoProtocol",
       "symbol_kind": "source.lang.swift.decl.protocol",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/CoreCrypto.swift",
-      "line": 232,
+      "line": 256,
       "symbol": "migrateDatabaseKeyTypeToBytes(path:oldKey:newKey:)",
       "symbol_kind": "source.lang.swift.decl.function.free",
       "warning": "undocumented"

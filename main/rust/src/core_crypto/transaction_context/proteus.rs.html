@@ -34,7 +34,7 @@
 <a href=#34 id=34 data-nosnippet>34</a>    </span><span class="kw">pub async fn </span>proteus_reload_sessions(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#35 id=35 data-nosnippet>35</a>        <span class="kw">let </span>arc = <span class="self">self</span>.proteus_central().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#36 id=36 data-nosnippet>36</a>        <span class="kw">let </span><span class="kw-2">mut </span>mutex = arc.lock().<span class="kw">await</span>;
-<a href=#37 id=37 data-nosnippet>37</a>        <span class="kw">let </span>proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)<span class="question-mark">?</span>;
+<a href=#37 id=37 data-nosnippet>37</a>        <span class="kw">let </span><span class="prelude-val">Some</span>(proteus) = mutex.as_mut() <span class="kw">else </span>{ <span class="kw">return </span><span class="prelude-val">Ok</span>(()) };
 <a href=#38 id=38 data-nosnippet>38</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.keystore().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#39 id=39 data-nosnippet>39</a>        proteus
 <a href=#40 id=40 data-nosnippet>40</a>            .reload_sessions(<span class="kw-2">&amp;</span>keystore)
