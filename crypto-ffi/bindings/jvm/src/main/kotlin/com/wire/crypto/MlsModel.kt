@@ -136,6 +136,9 @@ value class Welcome(val value: com.wire.crypto.uniffi.Welcome) {
     /** Convert this type wrapper into the FFI version it wraps */
     fun lower() = value
 
+    /** Copy the bytes from the Welcome */
+    fun copyBytes() = value.copyBytes()
+
     override fun toString() = value.copyBytes().toHex()
 }
 
