@@ -6,12 +6,18 @@
 
 - In our Swift bindings we are now protecting against concurrent access from multiple core crypto instances.
 
+## v8.0.1 - 2025-07-22
+
+### Highlights
+
+This release is relevant only for Kotlin. It adds several constructors and accessors for the underlying byte values of uniffi types.
+
 ## v8.0.0 - 2025-07-17
 
 ### Highlights
 
 This release contains the complete API necessary for history sharing in conversations. We've improved
-the generated types in bindings to be more typesafe, and we've added the feature to rotate the key used 
+the generated types in bindings to be more typesafe, and we've added the feature to rotate the key used
 for the core crypto database.
 
 ### Breaking changes
@@ -132,7 +138,7 @@ for the core crypto database.
 
 - Support Android environments with 16k page size
 - Added a module-level function `updateDatabaseKey`, to update the key of an existing CoreCrypto database
-- Support for history sharing which can be enabled by calling `enableHistorySharing()` and disabled again by calling `disableHistorySharing()`. 
+- Support for history sharing which can be enabled by calling `enableHistorySharing()` and disabled again by calling `disableHistorySharing()`.
 
 ---
 
