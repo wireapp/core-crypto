@@ -34,6 +34,8 @@ use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use async_lock::{Mutex, MutexGuard, Semaphore};
 use std::sync::Arc;
 
+mod mls;
+
 /// Limit on the length of a blob to be stored in the database.
 ///
 /// This limit applies to both SQLCipher-backed stores and WASM.
