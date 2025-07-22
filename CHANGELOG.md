@@ -91,6 +91,32 @@
     return encryptedMessage
     ```
 
+- Stopped duplicating generated code in kotlin bindings.
+
+  Affected platforms: Kotlin
+
+  Hand-written wrappers have largely been removed. The following items have been renamed:
+
+  - `Ciphersuites.DEFAULT` -> `CIPHERSUITES_DEFAULT`
+  - `Ciphersuite.DEFAULT` -> `CIPHERSUITE_DEFAULT`
+  - `CredentialType.Basic` -> `CredentialType.BASIC`
+  - `MLSGroupId` -> `ConversationId`
+  - `MLSKeyPackage` -> `KeyPackage`
+  - `DeviceStatus.Valid` -> `DeviceStatus.VALID`
+  - `DeviceStatus.Expired` -> `DeviceStatus.EXPIRED`
+  - `DeviceStatus.Revoked` -> `DeviceStatus.REVOKED`
+  - `E2eiConversationState.Verified` -> `E2eiConversationState.VERIFIED`
+  - `E2eiConversationState.NotVerified` -> `E2eiConversationState.NOT_VERIFIED`
+  - `E2eiConversationState.NotEnabled` -> `E2eiConversationState.NOT_ENABLED`
+
+- Changed exposed error type structures
+
+  Affected platforms: iOS
+
+  Migration
+  - When pattern-matching the affected error types, add argument labels
+  - When accessing inner error values, add field names
+
 ### Features
 
 - In our Swift bindings we are now protecting against concurrent access from multiple core crypto instances.
@@ -216,41 +242,6 @@ for the core crypto database.
   `SignaturePublicKey` was used only for the return value of `fun getPublicKey`. The only usage we found was an immediate access of the byte vector.
 
   These types appear to provide no type safety benefits, instead only adding a bit of friction.
-
-- Stopped duplicating generated code in kotlin bindings
-
-- Exposed `wire.com.crypto.uniffi`
-
-  Affected platforms: Android
-
-  Migration: instead of always using the `com.wire.crypto` package, for some types, import from
-  `com.wire.crypto.uniffi`
-
-  - `com.wire.crypto.*Exception` -> `com.wire.crypto.uniffi.*Exception`
-  - some exception fields were renamed (`.exception` -> `.mlsError`, etc)
-  - `CoreCryptoLogLevel `-> `com.wire.crypto.uniffi.CoreCryptoLogLevel`
-  - `CoreCryptoLogger` -> `com.wire.crypto.uniffi.CoreCryptoLogger`
-  - `setLogger` -> `com.wire.crypto.uniffi.setLoggerOnly`
-  - setMaxLogLevel -> `com.wire.crypto.uniffi.setMaxLogLevel`
-  - should import `com.wire.crypto.uniffi.CredentialType` instead of `com.wire.crypto.CredentialType`
-  - Basic credential type is spelled `BASIC` instead of `Basic`
-  - Default credential type is `CREDENTIAL_TYPE_DEFAULT` instead of `CredentialType.Default`
-  - import `com.wire.crypto.uniffi.MlsGroupInfoEncryptionType` instead of `com.wire.crypto.MlsGroupInfoEncryptionType`
-  - import `com.wire.crypto.uniffi.MlsRatchetTreeType` instead of `com.wire.crypto.MlsRatchetTreeType`
-  - import `com.wire.crypto.uniffi.DeviceStatus` instead of `com.wire.crypto.DeviceStatus`
-  - Device Status variant names are now all uppercase
-  - import `com.wire.crypto.uniffi.E2eiConversationState` instead of `com.wire.crypto.E2eiConversationState`
-  - `E2eiConversationState` case names are now uppercase
-  - import `com.wire.crypto.uniffi.WirePolicy` instead of `com.wire.crypto.MlsWirePolicy`
-  - import `com.wire.crypto.uniffi.MlsTransportResponse` instead of `com.wire.crypto.MlsTransportResponse`
-
-- Changed exposed error type structures
-
-  Affected platforms: iOS
-
-  Migration
-  - When pattern-matching the affected error types, add argument labels
-  - When accessing inner error values, add field names
 
 ### Features
 
