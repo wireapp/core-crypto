@@ -200,6 +200,8 @@ value class GroupInfo(val value: com.wire.crypto.uniffi.GroupInfo) {
     override fun toString() = value.copyBytes().toHex()
 }
 
+fun ByteArray.toGroupInfo() = GroupInfo(com.wire.crypto.uniffi.GroupInfo(this))
+
 private fun com.wire.crypto.uniffi.GroupInfo.toGroupInfo() = GroupInfo(this)
 
 /** The type of group info encryption. */
