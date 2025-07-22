@@ -183,6 +183,8 @@ value class AvsSecret(val value: com.wire.crypto.uniffi.SecretKey) {
 /** Construct an AVS secret */
 fun ByteArray.toAvsSecret() = AvsSecret(com.wire.crypto.uniffi.SecretKey(this))
 
+internal fun com.wire.crypto.uniffi.SecretKey.toAvsSecret() = AvsSecret(this)
+
 /** ExternallyGeneratedHandle */
 @JvmInline
 value class ExternallyGeneratedHandle(override val value: List<ByteArray>) :

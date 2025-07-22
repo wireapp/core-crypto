@@ -341,7 +341,7 @@ class MLSTest {
         val n = 50
         val secrets = (0 until n).map {
             val secret = alice.transaction { it.deriveAvsSecret(id, 32U) }
-            assertThat(secret.value).hasSize(32)
+            assertThat(secret.copyBytes()).hasSize(32)
             secret
         }.toSet()
         assertThat(secrets).hasSize(n)
