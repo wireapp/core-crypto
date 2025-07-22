@@ -7,20 +7,25 @@ plugins {
 }
 
 val kotlinSources = projectDir.resolve("../jvm/src")
+val kotlinMain = projectDir.resolve("main/kotlin")
+
 val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
     dependsOn(tasks.dokkaGeneratePublicationHtml)
     from(tasks.dokkaGeneratePublicationHtml.flatMap { it.outputDirectory })
     archiveClassifier.set("html-docs")
 }
 
-val generatedDir = buildDir.resolve("generated").resolve("uniffi")
+val generatedDir = layout.buildDirectory.dir("generated/uniffi").get().asFile
+val generatedMain = generatedDir.resolve("main/kotlin")
+val generatedTest = generatedDir.resolve("test/kotlin")
 
 val copyBindings by tasks.register<Copy>("copyBindings") {
     group = "uniffi"
-    from(kotlinSources)
-    include("**/*")
-    exclude("**/CoreCrypto.kt", "**/core_crypto.kt")
-    into(generatedDir)
+    from(kotlinMain) {
+        include("com/wire/crypto/*_ffi.kt")
+    }
+
+    into(generatedMain)
 }
 
 dependencies {
@@ -64,11 +69,11 @@ android {
 
     kotlin {
         jvmToolchain(17)
-        sourceSets["main"].apply {
-            kotlin.srcDir(kotlinSources.resolve("main"))
+        sourceSets["main"].kotlin {
+            srcDir(generatedMain)
         }
-        sourceSets["androidTest"].apply {
-            kotlin.srcDir(kotlinSources.resolve("test"))
+        sourceSets["androidTest"].kotlin {
+            srcDir(generatedTest)
         }
     }
 
@@ -86,7 +91,7 @@ android {
     }
 }
 
-val processedResourcesDir = buildDir.resolve("processedResources")
+val processedResourcesDir = layout.buildDirectory.dir("processedResources").get().asFile
 
 fun registerCopyJvmBinaryTask(target: String, jniTarget: String, include: String = "*.so"): TaskProvider<Copy> =
     tasks.register<Copy>("copy-$target") {
@@ -122,14 +127,6 @@ tasks.withType<Jar> {
 tasks.withType<Test> {
     enabled = false // FIXME: find a way to do this at some point
     dependsOn(copyBinariesTasks)
-}
-
-kotlin.sourceSets.getByName("main").apply {
-    kotlin.srcDir(generatedDir.resolve("main"))
-}
-
-kotlin.sourceSets.getByName("androidTest").apply {
-    kotlin.srcDir(generatedDir.resolve("test"))
 }
 
 android.sourceSets.getByName("main").apply {
