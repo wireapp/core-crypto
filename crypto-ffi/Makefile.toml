@@ -94,7 +94,7 @@ command = "../target/release/uniffi-bindgen"
 args = [
     "generate",
     "--language", "swift",
-    "--out-dir", "./bindings/swift/WireCoreCrypto/WireCoreCrypto",
+    "--out-dir", "./bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi",
     "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
