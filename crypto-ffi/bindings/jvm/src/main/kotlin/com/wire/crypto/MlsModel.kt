@@ -164,6 +164,9 @@ value class MLSKeyPackage(val value: com.wire.crypto.uniffi.KeyPackage) {
     override fun toString() = value.copyBytes().toHex()
 }
 
+/** Construct a KeyPackage from bytes */
+fun ByteArray.toMLSKeyPackage() = MLSKeyPackage(com.wire.crypto.uniffi.KeyPackage(this))
+
 internal fun com.wire.crypto.uniffi.KeyPackage.toMLSKeyPackage() = MLSKeyPackage(this)
 
 /** AVS secret
