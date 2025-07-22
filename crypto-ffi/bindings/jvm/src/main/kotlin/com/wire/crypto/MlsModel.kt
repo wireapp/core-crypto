@@ -122,8 +122,14 @@ value class ExternalSenderKey(val value: com.wire.crypto.uniffi.ExternalSenderKe
     /** Convert this type wrapper into the FFI version it wraps */
     fun lower() = value
 
+    /** Copy the bytes from the external sender key */
+    fun copyBytes() = value.copyBytes()
+
     override fun toString() = value.copyBytes().toHex()
 }
+
+/** Construct an external sender ID */
+fun ByteArray.toExternalSenderKey() = ExternalSenderKey(com.wire.crypto.uniffi.ExternalSenderKey(this))
 
 /** Construct an external sender ID */
 fun com.wire.crypto.uniffi.ExternalSenderKey.toExternalSenderKey() = ExternalSenderKey(this)
