@@ -8,6 +8,7 @@
 
 ### Bug Fixes
 
+- fix android build ([fdf2451](https://github.com/wireapp/core-crypto/commit/fdf245164c466db577d40e7f8be2d7bec52aad17))
 - don't throw an error when calling proteus_reload_sessions without having called proteus_init ([2ca0907](https://github.com/wireapp/core-crypto/commit/2ca0907334a063853be9e91998c249f2ac1b1476))
 - use `HashMap` for in-memory cache [WPB-18762] ([4bc12dc](https://github.com/wireapp/core-crypto/commit/4bc12dc382328cc937854d7b95eabb5f2461bf8a))
 - use consistent ids for `ProteusIdentity` ([6b9f1e2](https://github.com/wireapp/core-crypto/commit/6b9f1e20f632802aafc5bec086d3ed93d5c734fe))
@@ -28,6 +29,7 @@
 
 ### Other Breaking Changes
 
+- [**breaking**] eliminate log level setter wrapping ([8efc319](https://github.com/wireapp/core-crypto/commit/8efc319b766335b173b20e1746329b6eb8f61cf2))
 - [**breaking**] Revert "refactor!(kotlin): `CoreCryptoContext.exportSecretKey` now returns a newtype" ([2e61956](https://github.com/wireapp/core-crypto/commit/2e6195669a9840c7c4448d61acd6be4906d5dfcb))
 
 
