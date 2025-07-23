@@ -6,7 +6,7 @@
 
 - Renamed `CoreCryptoContext.proteusDecrypt` to `CoreCryptoContext.proteusDecryptSafe(...)`.
 
-  Affected platforms: Kotlin
+  Affected platforms: Android
 
   It used to be the case that the Kotlin bindings hid the actual behavior of `proteusDecrypt` by adding
   a higher-level behavior, trading away some efficiency for ease-of-use. With this change, we have
@@ -18,7 +18,7 @@
 
 - Eliminated wrapper `class E2EIEnrollment` in favor of generated `class E2eiEnrollment`.
 
-  Affected platforms: Kotlin
+  Affected platforms: Android
 
   We've brought the uniffi-generated code to very near parity with the older high-level bindings.
   The following breaking changes were necessary to eliminate the old binding class:
@@ -34,7 +34,7 @@
 
 - Eliminated (hand-written) wrapper `class CoreCryptoContext` in favor of (uniffi-generated) `class CoreCryptoContext`.
 
-  Affected platforms: Kotlin
+  Affected platforms: Android
 
   We've brought the uniffi-generated code to very near parity with the older high-level bindings.
   The following breaking changes were necessar to eliminate the old binding class:
@@ -93,7 +93,7 @@
 
 - Stopped duplicating generated code in kotlin bindings.
 
-  Affected platforms: Kotlin
+  Affected platforms: Android
 
   Hand-written wrappers have largely been removed. The following items have been renamed:
 
@@ -358,7 +358,7 @@ Upgrade OpenMLS to fix a bug where the ratchet tree would sometimes become corru
 ### Breaking changes
 
 The typescript bindings no longer implicitly load the wasm module when importing the core crypto module. To replace
-this behaviour the uasync initWasmModule()` function has been added, which must be called before any other core crypto
+this behaviour the `async initWasmModule()` function has been added, which must be called before any other core crypto
 function.
 
 ### Features
