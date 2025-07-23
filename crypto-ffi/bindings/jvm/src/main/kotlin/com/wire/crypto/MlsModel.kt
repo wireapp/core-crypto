@@ -161,6 +161,9 @@ value class MLSKeyPackage(val value: com.wire.crypto.uniffi.KeyPackage) {
     /** Lower this wrapper to the internal FFI type */
     fun lower(): com.wire.crypto.uniffi.KeyPackage = value
 
+    /** Copy the bytes from the KeyPackage */
+    fun copyBytes() = value.copyBytes()
+
     override fun toString() = value.copyBytes().toHex()
 }
 
