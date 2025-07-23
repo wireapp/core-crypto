@@ -41,7 +41,17 @@ tasks.withType<ProcessResources> { dependsOn(copyBinariesTasks) }
 tasks.withType<Test> { dependsOn(copyBinariesTasks) }
 tasks.withType<Jar> { dependsOn(copyBinariesTasks) }
 
-sourceSets { main { resources { srcDir(processedResourcesDir) } } }
+sourceSets {
+    main {
+        kotlin {
+            srcDir(projectDir.resolve("src/main/kotlin"))
+            srcDir(projectDir.resolve("src/main/uniffi"))
+        }
+        resources {
+            srcDir(processedResourcesDir)
+        }
+    }
+}
 
 // Allows skipping signing jars published to 'MavenLocal' repository
 project.afterEvaluate {

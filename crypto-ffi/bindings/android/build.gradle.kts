@@ -6,26 +6,12 @@ plugins {
     id("com.vanniktech.maven.publish.base")
 }
 
-val kotlinSources = projectDir.resolve("../jvm/src")
-val kotlinMain = projectDir.resolve("main/kotlin")
+val jvmSources = projectDir.resolve("../jvm/src")
 
 val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
     dependsOn(tasks.dokkaGeneratePublicationHtml)
     from(tasks.dokkaGeneratePublicationHtml.flatMap { it.outputDirectory })
     archiveClassifier.set("html-docs")
-}
-
-val generatedDir = layout.buildDirectory.dir("generated/uniffi").get().asFile
-val generatedMain = generatedDir.resolve("main/kotlin")
-val generatedTest = generatedDir.resolve("test/kotlin")
-
-val copyBindings by tasks.register<Copy>("copyBindings") {
-    group = "uniffi"
-    from(kotlinMain) {
-        include("com/wire/crypto/*_ffi.kt")
-    }
-
-    into(generatedMain)
 }
 
 dependencies {
@@ -69,11 +55,18 @@ android {
 
     kotlin {
         jvmToolchain(17)
-        sourceSets["main"].kotlin {
-            srcDir(generatedMain)
-        }
-        sourceSets["androidTest"].kotlin {
-            srcDir(generatedTest)
+        sourceSets {
+            main {
+                kotlin {
+                    srcDir(projectDir.resolve("src/main/uniffi"))
+                    srcDir(jvmSources.resolve("main/kotlin"))
+                }
+            }
+            androidTest {
+                kotlin {
+                    srcDir(jvmSources.resolve("test"))
+                }
+            }
         }
     }
 
@@ -113,19 +106,6 @@ project.afterEvaluate {
 }
 
 tasks.withType<ProcessResources> {
-    dependsOn(copyBinariesTasks)
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    dependsOn(copyBindings)
-}
-
-tasks.withType<Jar> {
-    dependsOn(copyBindings)
-}
-
-tasks.withType<Test> {
-    enabled = false // FIXME: find a way to do this at some point
     dependsOn(copyBinariesTasks)
 }
 
