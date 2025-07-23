@@ -84,7 +84,7 @@
 <a href=#84 id=84 data-nosnippet>84</a>
 <a href=#85 id=85 data-nosnippet>85</a>                <span class="comment">// In wasm only, we are required to manually convert the error type. Uniffi does it for us.
 <a href=#86 id=86 data-nosnippet>86</a>                </span><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
-<a href=#87 id=87 data-nosnippet>87</a>                </span><span class="kw">let </span>err = <span class="kw">crate</span>::error::core_crypto::CoreCryptoError::TransactionFailed(err).into();
+<a href=#87 id=87 data-nosnippet>87</a>                </span><span class="kw">let </span>err = <span class="kw">crate</span>::error::core_crypto::CoreCryptoError::TransactionFailed { error: err }.into();
 <a href=#88 id=88 data-nosnippet>88</a>
 <a href=#89 id=89 data-nosnippet>89</a>                <span class="prelude-val">Err</span>(err)
 <a href=#90 id=90 data-nosnippet>90</a>            }

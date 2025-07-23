@@ -11,9 +11,9 @@
 <a href=#11 id=11 data-nosnippet>11</a>    ///
 <a href=#12 id=12 data-nosnippet>12</a>    /// The backend provides an opaque string identifying a new conversation.
 <a href=#13 id=13 data-nosnippet>13</a>    /// Construct an instance of this newtype to pass that identifier to Rust.
-<a href=#14 id=14 data-nosnippet>14</a>    </span><span class="attr">#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+<a href=#14 id=14 data-nosnippet>14</a>    </span><span class="attr">#[derive(Debug, Clone)]
 <a href=#15 id=15 data-nosnippet>15</a>    #[cfg_attr(target_family = <span class="string">"wasm"</span>, derive(serde::Serialize, serde::Deserialize))]
-<a href=#16 id=16 data-nosnippet>16</a>    #[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export(Debug, Eq, Hash))]
+<a href=#16 id=16 data-nosnippet>16</a>    #[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export(Debug))]
 <a href=#17 id=17 data-nosnippet>17</a>    </span>ConversationId
 <a href=#18 id=18 data-nosnippet>18</a>);
 <a href=#19 id=19 data-nosnippet>19</a>
