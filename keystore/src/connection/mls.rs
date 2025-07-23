@@ -1,7 +1,9 @@
-use mls_rs_core::key_package::KeyPackageData as MlsRsKeyPackageData;
+use mls_rs_core::psk::PreSharedKey as MlsRsPsk;
+use mls_rs_core::{key_package::KeyPackageData as MlsRsKeyPackageData, psk::ExternalPskId};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
+use crate::entities::Psk;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, deser,
     entities::{
@@ -35,6 +37,21 @@ impl mls_rs_core::key_package::KeyPackageStorage for Connection {
 
     async fn delete(&mut self, id: &[u8]) -> CryptoKeystoreResult<()> {
         self.remove::<KeyPackageData, _>(id).await
+    }
+}
+
+#[maybe_async::must_be_async]
+impl mls_rs_core::psk::PreSharedKeyStorage for Connection {
+    type Error = CryptoKeystoreError;
+
+    async fn get(&self, id: &ExternalPskId) -> CryptoKeystoreResult<Option<MlsRsPsk>> {
+        let maybe_record = self.find::<Psk>(id).await?;
+        maybe_record
+            .map(|keystore_instance| {
+                let (_, mls_rs_instance) = keystore_instance.try_into()?;
+                Ok(mls_rs_instance)
+            })
+            .transpose()
     }
 }
 
