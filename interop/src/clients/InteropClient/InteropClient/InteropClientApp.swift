@@ -82,10 +82,11 @@ struct InteropClientApp: App {
         var bytes = [UInt8](repeating: 0, count: 32)
         let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
 
-        if status == errSecSuccess {
-            return WireCoreCrypto.DatabaseKey(bytes)
+        if status != errSecSuccess {
+            throw InteropError.randomBytesError
         }
-        throw InteropError.randomBytesError
+
+        return try! WireCoreCrypto.DatabaseKey(key: Data(bytes))
     }
 
     private func executeAction(_ action: InteropAction) async throws -> String {
