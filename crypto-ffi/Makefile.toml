@@ -106,7 +106,7 @@ args = [
     "--config", "uniffi-android.toml",
     "--language", "kotlin",
     "--no-format",
-    "--out-dir", "./bindings/android/src/main/kotlin/",
+    "--out-dir", "./bindings/android/src/main/uniffi/",
     "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
@@ -117,7 +117,7 @@ args = [
     "generate",
     "--language", "kotlin",
     "--no-format",
-    "--out-dir", "./bindings/jvm/src/main/kotlin/",
+    "--out-dir", "./bindings/jvm/src/main/uniffi/",
     "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
