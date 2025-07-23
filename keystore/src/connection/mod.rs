@@ -51,7 +51,7 @@ pub trait DatabaseConnectionRequirements: Sized + Send {}
 pub trait DatabaseConnectionRequirements: Sized {}
 
 /// The key used to encrypt the database.
-#[derive(Clone, Zeroize, ZeroizeOnDrop, derive_more::From)]
+#[derive(Clone, Zeroize, ZeroizeOnDrop, derive_more::From, PartialEq, Eq)]
 pub struct DatabaseKey([u8; Self::LEN]);
 
 impl DatabaseKey {

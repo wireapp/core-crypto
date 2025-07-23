@@ -4,9 +4,13 @@ use wasm_bindgen::prelude::*;
 
 use crate::{CoreCryptoError, CoreCryptoResult};
 
-#[derive(Debug, derive_more::From, derive_more::Into)]
+#[derive(Debug, derive_more::From, derive_more::Into, PartialEq, Eq)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), derive(Clone, derive_more::Deref, uniffi::Object))]
+#[cfg_attr(
+    not(target_family = "wasm"),
+    derive(Clone, derive_more::Deref, uniffi::Object),
+    uniffi::export(Eq)
+)]
 pub struct DatabaseKey(core_crypto_keystore::DatabaseKey);
 
 impl DatabaseKey {
