@@ -648,7 +648,8 @@ final class WireCoreCryptoTests: XCTestCase {
     private func genDatabaseKey() -> DatabaseKey {
         var bytes = [UInt8](repeating: 0, count: 32)
         _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
-        return DatabaseKey(bytes)
+        // constructor only fails if we have other than 32 bytes
+        return try! DatabaseKey(key: Data(bytes))
     }
 
     /// Assert that an error is thrown when a block is performed.
