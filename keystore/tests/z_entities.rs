@@ -282,6 +282,7 @@ mod tests {
     test_for_entity!(test_keypackage_data, KeyPackageData);
     test_for_entity!(test_mls_signature_keypair, MlsSignatureKeyPair ignore_update:true);
     test_for_entity!(test_mls_psk_bundle, MlsPskBundle);
+    test_for_entity!(test_psk, Psk);
     test_for_entity!(test_mls_encryption_keypair, MlsEncryptionKeyPair);
     test_for_entity!(test_mls_epoch_encryption_keypair, MlsEpochEncryptionKeyPair);
     test_for_entity!(test_mls_hpke_private_key, MlsHpkePrivateKey);
@@ -359,7 +360,7 @@ pub mod utils {
     use core_crypto_keystore::entities::{
         E2eiEnrollment, KeyPackageData, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair,
         MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
-        PersistedMlsPendingGroup, ProteusSession,
+        PersistedMlsPendingGroup, ProteusSession, Psk,
     };
     use rand::Rng as _;
 
@@ -474,6 +475,7 @@ pub mod utils {
     impl_entity_random_update_ext!(MlsHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(MlsEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(MlsPskBundle, blob_fields=[psk,psk_id id_like:true,]);
+    impl_entity_random_update_ext!(Psk, blob_fields=[data,id id_like:true,]);
     impl_entity_random_update_ext!(PersistedMlsGroup, id_field=id, blob_fields=[state,], additional_fields=[(parent_id: None),]);
     impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
     impl_entity_random_update_ext!(MlsPendingMessage, id_field = foreign_id, blob_fields = [message,]);

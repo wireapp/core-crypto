@@ -22,6 +22,8 @@ pub enum MissingKeyErrorKind {
     MlsEpochEncryptionKeyPair,
     #[error("MLS PreSharedKeyBundle")]
     MlsPskBundle,
+    #[error("MLS PreSharedKeyBundle")]
+    Psk,
     #[error("MLS CredentialBundle")]
     MlsCredential,
     #[error("MLS Buffered Commit")]
