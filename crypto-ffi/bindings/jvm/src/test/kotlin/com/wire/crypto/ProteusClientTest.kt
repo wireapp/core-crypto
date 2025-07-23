@@ -50,7 +50,7 @@ internal class ProteusClientTest {
         private const val BOB_SESSION_ID = "bob1_session1"
     }
 
-    private fun newProteusClient(clientId: ClientId): CoreCryptoHigh = runBlocking {
+    private fun newProteusClient(clientId: ClientId): CoreCryptoClient = runBlocking {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
         val key = genDatabaseKey()

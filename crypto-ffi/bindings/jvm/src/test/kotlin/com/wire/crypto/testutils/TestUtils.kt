@@ -77,7 +77,7 @@ fun newClients(instance: HasMockDeliveryService, vararg clientIds: ClientId) = r
     }
 }
 
-fun initCc(_instance: HasMockDeliveryService): CoreCryptoHigh = runBlocking {
+fun initCc(_instance: HasMockDeliveryService): CoreCryptoClient = runBlocking {
     val root = Files.createTempDirectory("mls").toFile()
     val keyStore = root.resolve("keystore-${randomIdentifier()}")
     val key = genDatabaseKey()

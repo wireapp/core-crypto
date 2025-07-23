@@ -7,8 +7,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Wrap a `CoreCrypto` instance in a `CoreCryptoHigh` instance. Should largely be invisible to end-users. */
-fun CoreCrypto.lift() = CoreCryptoHigh(this)
+/** Wrap a `CoreCrypto` instance in a `CoreCryptoClient` instance. Should largely be invisible to end-users. */
+fun CoreCrypto.lift() = CoreCryptoClient(this)
 
 /** Opens an existing core crypto client or creates a new one if one doesn't exist at the `keystore` path */
 suspend operator fun CoreCrypto.Companion.invoke(
@@ -30,7 +30,7 @@ suspend fun historyClient(historySecret: HistorySecret) = coreCryptoHistoryClien
  * This wrapper should be largely transparent to end users. It exists to improve the
  * callback interfaces: `.transaction(...)`, `.registerFooObserver(...)`, etc.
  */
-class CoreCryptoHigh(private val cc: CoreCrypto) {
+class CoreCryptoClient(private val cc: CoreCrypto) {
     companion object
 
     /**
@@ -51,7 +51,7 @@ class CoreCryptoHigh(private val cc: CoreCrypto) {
         var result: R? = null
         var error: Throwable? = null
         try {
-            this@CoreCryptoHigh.cc.transaction(object : CoreCryptoCommand {
+            this@CoreCryptoClient.cc.transaction(object : CoreCryptoCommand {
                 override suspend fun execute(context: CoreCryptoContext) {
                     try {
                         result = block(context)
