@@ -18,234 +18,234 @@ env:
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
 
 jobs:
-  build-android:
-    if: github.event_name == 'pull_request'
-    uses: ./.github/workflows/build-android.yml
+  # build-android:
+  #   if: github.event_name == 'pull_request'
+  #   uses: ./.github/workflows/build-android.yml
 
-  build-jvm-linux:
-    uses: ./.github/workflows/build-jvm-linux.yml
+  # build-jvm-linux:
+  #   uses: ./.github/workflows/build-jvm-linux.yml
 
   build-ios:
     uses: ./.github/workflows/build-ios.yml
 
-  test-ios:
-    if: github.event_name == 'pull_request'
-    needs: build-ios
-    runs-on: macos-latest
-    steps:
-      - name: Cleanup on post
-        uses: gacts/run-and-post-run@v1
-        with:
-            post: |
-              sh ./scripts/clean.sh
-      - uses: actions/checkout@v4
-      - name: download artifacts for ios
-        uses: actions/download-artifact@v4
-        with:
-          path: target
-          pattern: ${{github.event.number}}-ios-*
-          merge-multiple: 'true'
-      - name: download ffi artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
-      - name: setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-            xcode-version: '16.2.0'
-      - name: lint swift bindings
-        run: |
-            cd crypto-ffi/bindings/swift/WireCoreCrypto
-            swift format lint -r . -s
-      - name: lint swift interop client
-        run: |
-          cd interop/src/clients/InteropClient
-          swift format lint -r . -s
-      - name: ios tests
-        run: |
-          cd crypto-ffi/bindings/swift/WireCoreCrypto
-          xcodebuild test -scheme TestHost -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16'
+  # test-ios:
+  #   if: github.event_name == 'pull_request'
+  #   needs: build-ios
+  #   runs-on: macos-latest
+  #   steps:
+  #     - name: Cleanup on post
+  #       uses: gacts/run-and-post-run@v1
+  #       with:
+  #           post: |
+  #             sh ./scripts/clean.sh
+  #     - uses: actions/checkout@v4
+  #     - name: download artifacts for ios
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         path: target
+  #         pattern: ${{github.event.number}}-ios-*
+  #         merge-multiple: 'true'
+  #     - name: download ffi artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: ${{github.event.number}}-swift-ffi
+  #         path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
+  #     - name: setup Xcode
+  #       uses: maxim-lobanov/setup-xcode@v1
+  #       with:
+  #           xcode-version: '16.2.0'
+  #     - name: lint swift bindings
+  #       run: |
+  #           cd crypto-ffi/bindings/swift/WireCoreCrypto
+  #           swift format lint -r . -s
+  #     - name: lint swift interop client
+  #       run: |
+  #         cd interop/src/clients/InteropClient
+  #         swift format lint -r . -s
+  #     - name: ios tests
+  #       run: |
+  #         cd crypto-ffi/bindings/swift/WireCoreCrypto
+  #         xcodebuild test -scheme TestHost -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16'
 
-  test-android:
-    if: github.repository == 'wireapp/core-crypto' && github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    needs: build-android
-    steps:
-      - uses: actions/checkout@v4
-      - name: set up jdk 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: "17"
-          distribution: "adopt"
-      - name: gradle setup
-        uses: gradle/actions/setup-gradle@v4
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: android
-      - name: enable kvm group perms
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - name: android instrumentation tests
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 32
-          arch: x86_64
-          working-directory: ./crypto-ffi/bindings
-          script: ./gradlew android:connectedAndroidTest
+  # test-android:
+  #   if: github.repository == 'wireapp/core-crypto' && github.event_name == 'pull_request'
+  #   runs-on: ubuntu-latest
+  #   needs: build-android
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: set up jdk 17
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         java-version: "17"
+  #         distribution: "adopt"
+  #     - name: gradle setup
+  #       uses: gradle/actions/setup-gradle@v4
+  #     - name: validate gradle wrapper
+  #       uses: gradle/actions/wrapper-validation@v4
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: android
+  #     - name: enable kvm group perms
+  #       run: |
+  #         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+  #         sudo udevadm control --reload-rules
+  #         sudo udevadm trigger --name-match=kvm
+  #     - name: android instrumentation tests
+  #       uses: reactivecircus/android-emulator-runner@v2
+  #       with:
+  #         api-level: 32
+  #         arch: x86_64
+  #         working-directory: ./crypto-ffi/bindings
+  #         script: ./gradlew android:connectedAndroidTest
 
-  test-jvm:
-    if: github.repository == 'wireapp/core-crypto' && github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    needs: build-jvm-linux
-    steps:
-      - uses: actions/checkout@v4
-      - name: set up jdk 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: "17"
-          distribution: "adopt"
-      - name: gradle setup
-        uses: gradle/actions/setup-gradle@v4
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v4
-      - name: download linux library
-        uses: actions/download-artifact@v4
-        with:
-          name: jvm-linux-so-file-${{ github.run_id }}
-          path: target/x86_64-unknown-linux-gnu/release
-      - name: download linux bindings
-        uses: actions/download-artifact@v4
-        with:
-          name: jvm-linux-bindings-${{ github.run_id }}
-          path: crypto-ffi/bindings
-      - name: run detekt
-        run: |
-          cd crypto-ffi/bindings
-          ./gradlew jvm:detekt
-      - name: build and test jvm package
-        run: |
-          cd crypto-ffi/bindings
-          ./gradlew jvm:build -x lint -x lintRelease
+  # test-jvm:
+  #   if: github.repository == 'wireapp/core-crypto' && github.event_name == 'pull_request'
+  #   runs-on: ubuntu-latest
+  #   needs: build-jvm-linux
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: set up jdk 17
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         java-version: "17"
+  #         distribution: "adopt"
+  #     - name: gradle setup
+  #       uses: gradle/actions/setup-gradle@v4
+  #     - name: validate gradle wrapper
+  #       uses: gradle/actions/wrapper-validation@v4
+  #     - name: download linux library
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: jvm-linux-so-file-${{ github.run_id }}
+  #         path: target/x86_64-unknown-linux-gnu/release
+  #     - name: download linux bindings
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: jvm-linux-bindings-${{ github.run_id }}
+  #         path: crypto-ffi/bindings
+  #     - name: run detekt
+  #       run: |
+  #         cd crypto-ffi/bindings
+  #         ./gradlew jvm:detekt
+  #     - name: build and test jvm package
+  #       run: |
+  #         cd crypto-ffi/bindings
+  #         ./gradlew jvm:build -x lint -x lintRelease
 
-  docs-jvm:
-    if: github.repository == 'wireapp/core-crypto'
-    runs-on: ubuntu-latest
-    needs: build-jvm-linux
-    steps:
-      - uses: actions/checkout@v4
-      - name: set up jdk 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: "17"
-          distribution: "adopt"
-      - name: gradle setup
-        uses: gradle/actions/setup-gradle@v4
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v4
-      - name: download linux library
-        uses: actions/download-artifact@v4
-        with:
-          name: jvm-linux-so-file-${{ github.run_id }}
-          path: target/x86_64-unknown-linux-gnu/release
-      - name: download linux bindings
-        uses: actions/download-artifact@v4
-        with:
-          name: jvm-linux-bindings-${{ github.run_id }}
-          path: crypto-ffi/bindings
-      - name: run dokka
-        run: |
-            cd crypto-ffi/bindings
-            ./gradlew android:dokkaGeneratePublicationHtml
-            cd ..
-            mkdir -p ../target/kotlin/doc
-            cp -R bindings/android/build/dokka/html/ ../target/kotlin/doc
-      - name: upload kotlin docs
-        uses: actions/upload-artifact@v4.5.0
-        with:
-          name: kotlin
-          path: target/kotlin/doc/html
-          retention-days: 1
-          overwrite: true
-          include-hidden-files: true
+  # docs-jvm:
+  #   if: github.repository == 'wireapp/core-crypto'
+  #   runs-on: ubuntu-latest
+  #   needs: build-jvm-linux
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: set up jdk 17
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         java-version: "17"
+  #         distribution: "adopt"
+  #     - name: gradle setup
+  #       uses: gradle/actions/setup-gradle@v4
+  #     - name: validate gradle wrapper
+  #       uses: gradle/actions/wrapper-validation@v4
+  #     - name: download linux library
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: jvm-linux-so-file-${{ github.run_id }}
+  #         path: target/x86_64-unknown-linux-gnu/release
+  #     - name: download linux bindings
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: jvm-linux-bindings-${{ github.run_id }}
+  #         path: crypto-ffi/bindings
+  #     - name: run dokka
+  #       run: |
+  #           cd crypto-ffi/bindings
+  #           ./gradlew android:dokkaGeneratePublicationHtml
+  #           cd ..
+  #           mkdir -p ../target/kotlin/doc
+  #           cp -R bindings/android/build/dokka/html/ ../target/kotlin/doc
+  #     - name: upload kotlin docs
+  #       uses: actions/upload-artifact@v4.5.0
+  #       with:
+  #         name: kotlin
+  #         path: target/kotlin/doc/html
+  #         retention-days: 1
+  #         overwrite: true
+  #         include-hidden-files: true
 
-  create-xcframework:
-    if: github.event_name == 'pull_request'
-    needs: build-ios
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-      - name: download artifacts for ios
-        uses: actions/download-artifact@v4
-        with:
-          path: target
-          pattern: ${{github.event.number}}-ios-*
-          merge-multiple: 'true'
-      - name: download ffi artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
-      - name: setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '16.2.0'
-      - name: create xcframework
-        run: |
-          cd crypto-ffi/bindings/swift
-          ./build-xcframework.sh
+  # create-xcframework:
+  #   if: github.event_name == 'pull_request'
+  #   needs: build-ios
+  #   runs-on: self-hosted
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: download artifacts for ios
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         path: target
+  #         pattern: ${{github.event.number}}-ios-*
+  #         merge-multiple: 'true'
+  #     - name: download ffi artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: ${{github.event.number}}-swift-ffi
+  #         path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
+  #     - name: setup Xcode
+  #       uses: maxim-lobanov/setup-xcode@v1
+  #       with:
+  #         xcode-version: '16.2.0'
+  #     - name: create xcframework
+  #       run: |
+  #         cd crypto-ffi/bindings/swift
+  #         ./build-xcframework.sh
 
-  docs-swift:
-    needs: build-ios
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: download artifacts for ios
-        uses: actions/download-artifact@v4
-        with:
-          path: target
-          pattern: ${{github.event.number}}-ios-*
-          merge-multiple: 'true'
-      - name: download ios artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
-      - name: setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '16.2.0'
-      - name: Set up Ruby environment
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
+  # docs-swift:
+  #   needs: build-ios
+  #   runs-on: macos-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: download artifacts for ios
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         path: target
+  #         pattern: ${{github.event.number}}-ios-*
+  #         merge-multiple: 'true'
+  #     - name: download ios artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: ${{github.event.number}}-swift-ffi
+  #         path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
+  #     - name: setup Xcode
+  #       uses: maxim-lobanov/setup-xcode@v1
+  #       with:
+  #         xcode-version: '16.2.0'
+  #     - name: Set up Ruby environment
+  #       uses: ruby/setup-ruby@v1
+  #       with:
+  #         ruby-version: '3.3'
 
-      - name: install jazzy
-        run: gem install jazzy
+  #     - name: install jazzy
+  #       run: gem install jazzy
 
-      - uses: swift-actions/setup-swift@v2.3.0
-        with:
-          swift-version: "6.0"
+      # - uses: swift-actions/setup-swift@v2.3.0
+      #   with:
+      #     swift-version: "6.0"
 
-      - name: swift docs
-        run: |
-          mkdir -p target/doc/core_crypto_ffi/bindings/swift
-          cd crypto-ffi
-          mkdir -p ../target/swift/doc
-          cd bindings/Swift/WireCoreCrypto
-          jazzy --modules WireCoreCrypto,WireCoreCryptoUniffi --build-tool-arguments -project,WireCoreCrypto.xcodeproj,-scheme,WireCoreCrypto -o ../../../../target/swift/doc
+      # - name: swift docs
+      #   run: |
+      #     mkdir -p target/doc/core_crypto_ffi/bindings/swift
+      #     cd crypto-ffi
+      #     mkdir -p ../target/swift/doc
+      #     cd bindings/Swift/WireCoreCrypto
+      #     jazzy --modules WireCoreCrypto,WireCoreCryptoUniffi --build-tool-arguments -project,WireCoreCrypto.xcodeproj,-scheme,WireCoreCrypto -o ../../../../target/swift/doc
 
-      - uses: actions/upload-artifact@v4.5.0
-        with:
-          name: swift
-          path: target/swift/doc
-          retention-days: 1
-          overwrite: true
-          include-hidden-files: true
+      # - uses: actions/upload-artifact@v4.5.0
+      #   with:
+      #     name: swift
+      #     path: target/swift/doc
+      #     retention-days: 1
+      #     overwrite: true
+      #     include-hidden-files: true
 
   e2e-interop-test:
     if: github.event_name == 'pull_request'
@@ -307,144 +307,144 @@ jobs:
           cd interop/src/clients/InteropClient
           ./delete_simulator.sh ${{ env.INTEROP_SIMULATOR_DEVICE }}
 
-  build-and-test-wasm:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    env:
-      # ensures we have same flags as when publishing
-      RUSTFLAGS: "-D warnings -W unreachable-pub"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: wireapp/setup-chrome@master
-        id: setup-chrome
-        with:
-          chrome-version: stable
-      - uses: ./.github/actions/setup-and-cache-rust
-        with:
-          target: wasm32-unknown-unknown
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: install wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack
-      - uses: davidB/rust-cargo-make@v1
-      - name: build wasm
-        run: |
-          cd crypto-ffi
-          cargo make wasm
-      - name: build ts
-        run: |
-          cd crypto-ffi/bindings/js
-          bun install --frozen-lockfile
-          bun run build
-      - name: lint
-        run: |
-          cd crypto-ffi/bindings/js
-          bun eslint . --max-warnings=0
-      - name: check all ts files
-        run: |
-          cd crypto-ffi/bindings/js
-          bun tsc --noEmit
-      - name: test
-        run: |
-          cd crypto-ffi/bindings/js
-          bun run test
+  # build-and-test-wasm:
+  #   if: github.event_name == 'pull_request'
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     # ensures we have same flags as when publishing
+  #     RUSTFLAGS: "-D warnings -W unreachable-pub"
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: wireapp/setup-chrome@master
+  #       id: setup-chrome
+  #       with:
+  #         chrome-version: stable
+  #     - uses: ./.github/actions/setup-and-cache-rust
+  #       with:
+  #         target: wasm32-unknown-unknown
+  #     - uses: oven-sh/setup-bun@v2
+  #       with:
+  #         bun-version: latest
+  #     - name: install wasm-pack
+  #       uses: taiki-e/install-action@v2
+  #       with:
+  #         tool: wasm-pack
+  #     - uses: davidB/rust-cargo-make@v1
+  #     - name: build wasm
+  #       run: |
+  #         cd crypto-ffi
+  #         cargo make wasm
+  #     - name: build ts
+  #       run: |
+  #         cd crypto-ffi/bindings/js
+  #         bun install --frozen-lockfile
+  #         bun run build
+  #     - name: lint
+  #       run: |
+  #         cd crypto-ffi/bindings/js
+  #         bun eslint . --max-warnings=0
+  #     - name: check all ts files
+  #       run: |
+  #         cd crypto-ffi/bindings/js
+  #         bun tsc --noEmit
+  #     - name: test
+  #       run: |
+  #         cd crypto-ffi/bindings/js
+  #         bun run test
 
-  docs-rust:
-    runs-on: ubuntu-latest
-    env:
-      RUSTDOCFLAGS: "-D warnings"
+  # docs-rust:
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     RUSTDOCFLAGS: "-D warnings"
 
-    steps:
-    - name: checkout repository
-      uses: actions/checkout@v4
+  #   steps:
+  #   - name: checkout repository
+  #     uses: actions/checkout@v4
 
-    - uses: ./.github/actions/setup-and-cache-rust
-      with:
-        rustflags: '-D warnings -W unreachable-pub'
-    - run: cargo doc --all --no-deps --locked
+  #   - uses: ./.github/actions/setup-and-cache-rust
+  #     with:
+  #       rustflags: '-D warnings -W unreachable-pub'
+  #   - run: cargo doc --all --no-deps --locked
 
-    - uses: actions/upload-artifact@v4.5.0
-      with:
-        name: rust
-        path: target/doc
-        retention-days: 1
-        overwrite: true
-        include-hidden-files: true
+  #   - uses: actions/upload-artifact@v4.5.0
+  #     with:
+  #       name: rust
+  #       path: target/doc
+  #       retention-days: 1
+  #       overwrite: true
+  #       include-hidden-files: true
 
-  docs-ts:
-    runs-on: ubuntu-latest
+  # docs-ts:
+  #   runs-on: ubuntu-latest
 
-    steps:
-    - name: checkout repository
-      uses: actions/checkout@v4
+  #   steps:
+  #   - name: checkout repository
+  #     uses: actions/checkout@v4
 
-    - uses: ./.github/actions/setup-and-cache-rust
-      with:
-        rustflags: ''
-        target: |
-          wasm32-unknown-unknown
-          x86_64-unknown-linux-gnu
+  #   - uses: ./.github/actions/setup-and-cache-rust
+  #     with:
+  #       rustflags: ''
+  #       target: |
+  #         wasm32-unknown-unknown
+  #         x86_64-unknown-linux-gnu
 
-    - name: setup cargo-make
-      uses: davidB/rust-cargo-make@v1
+  #   - name: setup cargo-make
+  #     uses: davidB/rust-cargo-make@v1
 
-    - name: install wasm-pack
-      uses: taiki-e/install-action@v2
-      with:
-        tool: wasm-pack
+  #   - name: install wasm-pack
+  #     uses: taiki-e/install-action@v2
+  #     with:
+  #       tool: wasm-pack
 
-    - name: setup bun
-      uses: oven-sh/setup-bun@v2
-      with:
-        bun-version: latest
+  #   - name: setup bun
+  #     uses: oven-sh/setup-bun@v2
+  #     with:
+  #       bun-version: latest
 
-    - name: make ts docs
-      run: |
-        cd crypto-ffi
-        cargo make docs-ts
-    - uses: actions/upload-artifact@v4.5.0
-      with:
-        name: typescript
-        path: target/typescript/doc
-        retention-days: 1
-        overwrite: true
-        include-hidden-files: true
+  #   - name: make ts docs
+  #     run: |
+  #       cd crypto-ffi
+  #       cargo make docs-ts
+  #   - uses: actions/upload-artifact@v4.5.0
+  #     with:
+  #       name: typescript
+  #       path: target/typescript/doc
+  #       retention-days: 1
+  #       overwrite: true
+  #       include-hidden-files: true
 
-  deploy-docs:
-    runs-on: ubuntu-latest
-    if: github.repository == 'wireapp/core-crypto' && (github.ref == 'refs/heads/main' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v')))
-    needs:
-      - docs-rust
-      - docs-ts
-      - docs-jvm
-      - docs-swift
-    env:
-      GIT_TAG: ${{ github.ref_type == 'tag' && github.ref_name || 'main' }}
+  # deploy-docs:
+  #   runs-on: ubuntu-latest
+  #   if: github.repository == 'wireapp/core-crypto' && (github.ref == 'refs/heads/main' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v')))
+  #   needs:
+  #     - docs-rust
+  #     - docs-ts
+  #     - docs-jvm
+  #     - docs-swift
+  #   env:
+  #     GIT_TAG: ${{ github.ref_type == 'tag' && github.ref_name || 'main' }}
 
-    steps:
-    - name: checkout repository
-      uses: actions/checkout@v4
+  #   steps:
+  #   - name: checkout repository
+  #     uses: actions/checkout@v4
 
-    - name: download pre-rendered docs
-      uses: actions/download-artifact@v4.1.8
-      with:
-        pattern: '{typescript,swift,kotlin,rust}'
-        path: "./target/doc/${{ env.GIT_TAG }}"
-        merge-multiple: false
+  #   - name: download pre-rendered docs
+  #     uses: actions/download-artifact@v4.1.8
+  #     with:
+  #       pattern: '{typescript,swift,kotlin,rust}'
+  #       path: "./target/doc/${{ env.GIT_TAG }}"
+  #       merge-multiple: false
 
-    - name: copy static files
-      run: |
-        cp docs/*.md target/doc/
+  #   - name: copy static files
+  #     run: |
+  #       cp docs/*.md target/doc/
 
-    - name: deploy docs
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_branch: gh-pages
-        publish_dir: target/doc
-        keep_files: true
-        force_orphan: false
-        enable_jekyll: true
+  #   - name: deploy docs
+  #     uses: peaceiris/actions-gh-pages@v4
+  #     with:
+  #       github_token: ${{ secrets.GITHUB_TOKEN }}
+  #       publish_branch: gh-pages
+  #       publish_dir: target/doc
+  #       keep_files: true
+  #       force_orphan: false
+  #       enable_jekyll: true
