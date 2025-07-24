@@ -26,3 +26,6 @@ ktlint_standard_multiline-expression-wrapping = disabled
 ktlint_standard_trailing-comma-on-call-site = disabled
 ktlint_standard_function-expression-body = disabled
 ktlint_standard_trailing-comma-on-declaration-site = disabled
+
+[Makefile]
+indent_style = tab

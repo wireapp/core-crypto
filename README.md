@@ -25,16 +25,16 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ### General Requirements
 
-- rust: [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
-- cargo-make: [https://sagiegurari.github.io/cargo-make/](https://sagiegurari.github.io/cargo-make/)
+- rust: <https://rustup.rs/>
+- gnu make: <https://www.gnu.org/software/make/>
 
 If you're using macOS, you'll also need to install GNU sed:
-```ignore
+
+```sh,ignore
 brew install gnu-sed
 ```
-and add an alias to your shell configuration file: `alias sed=gsed` (e.g. to `~/.zshenv` if you're using zsh).
 
-### Development Requirements
+and add an alias to your shell configuration file: `alias sed=gsed` (e.g. to `~/.zshenv` if you're using zsh).
 
 #### Pre-commit
 
@@ -54,15 +54,15 @@ and add an alias to your shell configuration file: `alias sed=gsed` (e.g. to `~/
 [Install the Android NDK](https://developer.android.com/studio/projects/install-ndk)
 
 Install android rust targets:
+
 ```ignore
 rustup target add x86_64-linux-android aarch64-linux-android armv7-linux-androideabi
 ```
+
 Build:
+
 ```ignore
-cd crypto-ffi
-cargo make android
-cd bindings
-./gradlew android:build
+make android
 ```
 
 ### iOS
@@ -76,10 +76,9 @@ rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 
 Build:
 ```ignore
-cd crypto-ffi
-cargo make ios
+make ios
 # Additionally, if you want to export a .XCFramework:
-cargo make ios-create-xcframework
+make ios-create-xcframework
 ```
 
 ### MacOS
@@ -110,10 +109,7 @@ Make sure you have all prerequisites:
 
 Build:
 ```ignore
-cd crypto-ffi
-cargo make wasm
-cd bindings/js
-bun run build
+make ts
 ```
 
 ### Bindings
@@ -121,19 +117,17 @@ bun run build
 Build bindings for Android, JVM, iOS and WASM
 
 ```ignore
-cd crypto-ffi
-
 # builds bindings and targets for the JVM (macOS / Linux)
-cargo make jvm
+make jvm
 
 # builds bindings and targets for Android
-cargo make android
+make android
 
 # builds iOS framework
-cargo make ios-create-xcframework
+make ios-create-xcframework
 
 # builds wasm binary & TS bindings
-cargo make wasm
+make ts
 ```
 
 ## Testing
@@ -175,31 +169,14 @@ cargo nextest run --features test-all-cipher
 
 ### Platform-specific tests for Kotlin/JVM
 
-Build the JVM target every timee the Rust code changes:
-
 ```sh
-# substitute with `jvm-darwin` on OSX
-core-crypto/crypto-ffi$ cargo make jvm-linux
-```
-
-Then run the tests each time the wrapper or wrapper tests change
-
-```sh
-core-crypto/crypto-ffi/bindings$ ./gradlew jvm:build -x lint -x lintRelease
+make jvm-test
 ```
 
 ### Platform-specific tests for Android
 
-Build the Android target every timee the Rust code changes:
-
 ```sh
-core-crypto/crypto-ffi$ cargo make android
-```
-
-Then run the tests each time the wrapper or wrapper tests change
-
-```sh
-core-crypto/crypto-ffi/bindings$ ./gradlew android:build -x lint -x lintRelease
+make android-test
 ```
 
 ### Swift/iOS
@@ -208,35 +185,8 @@ core-crypto/crypto-ffi/bindings$ ./gradlew android:build -x lint -x lintRelease
 
 ### Platform-specific tests for WASM/Web
 
-Install TS dependencies on first go, and each time they change:
-
 ```sh
-core-crypto/crypto-ffi/bindings/js$ bun install
-```
-
-Build the WASM target every time the Rust code changes:
-
-```sh
-core-crypto/crypto-ffi$ cargo make wasm
-```
-
-Compile Typescript code into Javascript and integrate with the auto-generated wasm bindings:
-```sh
-core-crypto/crypto-ffi/bindings/js$ bun run build
-```
-
-Run tests:
-
-```sh
-core-crypto/crypto-ffi/bindings/js$ CC_TEST_LOG_LEVEL=1 bun run test
-```
-
-Note the `CC_TEST_LOG_LEVEL` environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto logs.
-
-Note that CI will fail if it doesn't like your formatting. This can typically be automtically adjusted with
-
-```sh
-core-crypto/crypto-ffi/bindings/js$ bun eslint --max-warnings=0 --fix
+make ts-test
 ```
 
 ## Benchmarks
