@@ -30,6 +30,8 @@ pub enum MissingKeyErrorKind {
     MlsBufferedCommit,
     #[error("MLS Persisted Group")]
     PersistedMlsGroup,
+    #[error("MLS Persisted Group")]
+    Group,
     #[error("MLS Persisted Pending Group")]
     MlsPendingGroup,
     #[error("MLS Pending Messages")]
