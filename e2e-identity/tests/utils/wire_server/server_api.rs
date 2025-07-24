@@ -4,11 +4,7 @@ use hyper::body::{Bytes, Incoming};
 use hyper::{Method, Request, Response, StatusCode};
 use rusty_jwt_tools::prelude::*;
 
-use crate::utils::{
-    ctx::ctx_get,
-    rand_base64_str,
-    wire_server::oidc::{handle_callback, handle_login},
-};
+use crate::utils::{ctx::ctx_get, rand_base64_str, wire_server::oidc::handle_callback};
 
 // simulates wire-server database
 static mut PREVIOUS_NONCE: &str = "";
@@ -58,7 +54,6 @@ pub async fn wire_api(req: Request<Incoming>) -> http::Result<Response<Full<Byte
             let body = serde_json::to_vec(&body).unwrap().into();
             Response::builder().status(StatusCode::OK).body(body).unwrap()
         }
-        (&Method::GET, ["login"]) => handle_login(req).await?,
         (&Method::GET, ["callback"]) => handle_callback(req).await?,
         _ => not_found()?,
     })

@@ -1,7 +1,6 @@
 pub mod oidc;
 pub mod server_api;
 
-use crate::utils::ctx::{ctx_get, ctx_store};
 use hyper::server::conn::http1;
 use hyper_util::rt::TokioIo;
 use std::net::SocketAddr;
@@ -14,28 +13,6 @@ pub struct OauthCfg {
     pub client_id: String,
     pub client_secret: String,
     pub redirect_uri: String,
-}
-
-impl OauthCfg {
-    pub fn cxt_store(&self) {
-        ctx_store("issuer-uri", self.issuer_uri.clone());
-        ctx_store("client-id", self.client_id.clone());
-        ctx_store("client-secret", self.client_secret.clone());
-        ctx_store("redirect-uri", self.redirect_uri.clone());
-    }
-
-    pub fn cxt_get() -> Self {
-        let issuer_uri = ctx_get("issuer-uri").unwrap();
-        let client_id = ctx_get("client-id").unwrap();
-        let client_secret = ctx_get("client-secret").unwrap();
-        let redirect_uri = ctx_get("redirect-uri").unwrap();
-        Self {
-            issuer_uri,
-            client_id,
-            client_secret,
-            redirect_uri,
-        }
-    }
 }
 
 #[derive(Debug, Clone)]

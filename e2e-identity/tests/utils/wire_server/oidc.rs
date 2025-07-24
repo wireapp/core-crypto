@@ -1,11 +1,6 @@
-use crate::utils::{ctx::*, wire_server::OauthCfg};
 use http_body_util::Full;
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response, StatusCode};
-use openidconnect::{
-    ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge, RedirectUrl, Scope,
-    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
-};
 use scraper::Html;
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
@@ -13,48 +8,6 @@ pub struct Oidc {
     name: String,
     handle: String,
     keyauth: String,
-}
-
-pub async fn handle_login(_req: Request<Incoming>) -> http::Result<Response<Full<Bytes>>> {
-    let OauthCfg {
-        issuer_uri,
-        client_id,
-        client_secret,
-        redirect_uri,
-    } = OauthCfg::cxt_get();
-
-    let issuer_url = IssuerUrl::new(issuer_uri.clone()).unwrap();
-    let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), &async |r| {
-        custom_oauth_client("discovery", ctx_get_http_client(), r).await
-    })
-    .await
-    .unwrap();
-
-    let client = CoreClient::from_provider_metadata(
-        provider_metadata,
-        openidconnect::ClientId::new(client_id.clone()),
-        Some(ClientSecret::new(client_secret.clone())),
-    )
-    .set_redirect_uri(RedirectUrl::new(redirect_uri.clone()).unwrap());
-
-    let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
-    ctx_store("pkce-verifier", pkce_verifier.secret());
-    ctx_store("pkce-challenge", pkce_challenge.as_str());
-
-    let (auth_url, ..) = client
-        .authorize_url(
-            CoreAuthenticationFlow::AuthorizationCode,
-            CsrfToken::new_random,
-            Nonce::new_random,
-        )
-        .add_scope(Scope::new("profile".to_string()))
-        .set_pkce_challenge(pkce_challenge)
-        .url();
-
-    Response::builder()
-        .status(StatusCode::PERMANENT_REDIRECT)
-        .header("location", auth_url.as_str())
-        .body(Default::default())
 }
 
 pub fn scrap_login(html: String) -> String {
