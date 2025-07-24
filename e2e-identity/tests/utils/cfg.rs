@@ -6,6 +6,7 @@ use std::{
 use jwt_simple::prelude::*;
 use oauth2::RefreshToken;
 use rand::random;
+use scraper::Html;
 
 use rusty_acme::prelude::{AcmeAccount, AcmeAuthz, AcmeChallenge, AcmeDirectory, AcmeFinalize, AcmeOrder};
 use rusty_jwt_tools::{jwk::TryIntoJwk, prelude::*};
@@ -20,8 +21,33 @@ use crate::utils::{
         stepca::{AcmeServer, CaCfg},
     },
     rand_base64_str, rand_str,
-    wire_server::{OauthCfg, WireServer, oidc::OidcCfg},
+    wire_server::{OauthCfg, WireServer},
 };
+
+pub fn scrap_login(html: String) -> String {
+    let html = Html::parse_document(&html);
+    let selector = scraper::Selector::parse("form").unwrap();
+    let form = html.select(&selector).find(|_| true).unwrap();
+    form.value().attr("action").unwrap().to_string()
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct OidcCfg {
+    pub issuer: String,
+    pub authorization_endpoint: String,
+    pub token_endpoint: String,
+    pub jwks_uri: String,
+    pub userinfo_endpoint: String,
+    pub issuer_uri: Option<String>,
+}
+
+impl OidcCfg {
+    pub fn set_issuer_uri(&mut self, base: &str) {
+        let issuer_uri = url::Url::parse(&self.issuer).unwrap();
+        let issuer_uri = format!("{base}{}", issuer_uri.path());
+        self.issuer_uri = Some(issuer_uri)
+    }
+}
 
 pub struct E2eTest {
     pub display_name: String,

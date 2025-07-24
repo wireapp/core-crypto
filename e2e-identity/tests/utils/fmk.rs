@@ -32,13 +32,12 @@ use rusty_jwt_tools::{
 
 use crate::utils::{
     TestError, TestResult,
-    cfg::{E2eTest, EnrollmentFlow, OidcProvider},
+    cfg::{E2eTest, EnrollmentFlow, OidcProvider, scrap_login},
     ctx::*,
     display::Actor,
     docker::stepca,
     helpers::{AcmeAsserter, ClientHelper, RespHelper},
     rand_base64_str,
-    wire_server::oidc::scrap_login,
 };
 
 fn keypair_to_pubkey(alg: JwsAlgorithm, keypair: &Pem) -> Pem {
