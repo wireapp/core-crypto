@@ -79,7 +79,7 @@ pub fn ctx_store_request(key: &'static str, req: &oauth2::HttpRequest) {
         .map(|(k, v)| format!("{}|{}", k.as_str(), v.to_str().unwrap()))
         .join(";");
     ctx_store(format!("{key}-request-headers"), headers);
-    let body = base64::prelude::BASE64_STANDARD.encode(&req.body());
+    let body = base64::prelude::BASE64_STANDARD.encode(req.body());
     ctx_store(format!("{key}-request-body"), body);
 }
 
