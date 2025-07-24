@@ -7,14 +7,6 @@ use tokio::net::TcpListener;
 use tokio::task::LocalSet;
 
 #[derive(Debug, Clone)]
-pub struct OauthCfg {
-    pub issuer_uri: String,
-    pub client_id: String,
-    pub client_secret: String,
-    pub redirect_uri: String,
-}
-
-#[derive(Debug, Clone)]
 pub struct WireServer {
     pub port: u16,
     pub socket: SocketAddr,

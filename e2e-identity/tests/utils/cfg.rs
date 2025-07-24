@@ -21,7 +21,7 @@ use crate::utils::{
         stepca::{AcmeServer, CaCfg},
     },
     rand_base64_str, rand_str,
-    wire_server::{OauthCfg, WireServer},
+    wire_server::WireServer,
 };
 
 pub fn scrap_login(html: String) -> String {
@@ -29,6 +29,14 @@ pub fn scrap_login(html: String) -> String {
     let selector = scraper::Selector::parse("form").unwrap();
     let form = html.select(&selector).find(|_| true).unwrap();
     form.value().attr("action").unwrap().to_string()
+}
+
+#[derive(Debug, Clone)]
+pub struct OauthCfg {
+    pub issuer_uri: String,
+    pub client_id: String,
+    pub client_secret: String,
+    pub redirect_uri: String,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
