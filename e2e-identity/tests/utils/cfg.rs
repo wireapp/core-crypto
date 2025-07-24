@@ -33,9 +33,7 @@ pub fn scrap_login(html: String) -> String {
 
 #[derive(Debug, Clone)]
 pub struct OauthCfg {
-    pub issuer_uri: String,
     pub client_id: String,
-    pub client_secret: String,
     pub redirect_uri: String,
 }
 
@@ -127,7 +125,6 @@ impl E2eTest {
         let keycloak_handle = format!("{handle}@{domain}");
         let email = format!("alicesmith@{domain}");
         let audience = "wireapp";
-        let client_secret = rand_base64_str(24);
         let idp_host_port = portpicker::pick_unused_port().unwrap();
         let idp_base = format!("http://{idp_host}");
         let (issuer, discovery_base_url) = match oidc_provider {
@@ -221,9 +218,7 @@ impl E2eTest {
                 host: ca_host,
             },
             oauth_cfg: OauthCfg {
-                issuer_uri: "".to_string(),
                 client_id: audience.to_string(),
-                client_secret,
                 redirect_uri: "".to_string(),
             },
             alg,
@@ -296,8 +291,6 @@ impl E2eTest {
 
         let oidc_cfg = self.fetch_oidc_cfg().await;
         self.ca_cfg.issuer = oidc_cfg.issuer.clone();
-        let issuer_uri = oidc_cfg.issuer_uri.as_ref().unwrap().trim_end_matches('/').to_string();
-        self.oauth_cfg.issuer_uri = issuer_uri;
         self.oauth_cfg.redirect_uri = redirect_uri;
         self.oidc_cfg = Some(oidc_cfg);
 
