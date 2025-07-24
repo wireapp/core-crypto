@@ -3,13 +3,6 @@ use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response, StatusCode};
 use scraper::Html;
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
-pub struct Oidc {
-    name: String,
-    handle: String,
-    keyauth: String,
-}
-
 pub fn scrap_login(html: String) -> String {
     let html = Html::parse_document(&html);
     let selector = scraper::Selector::parse("form").unwrap();
