@@ -20,7 +20,7 @@ use crate::utils::{
         stepca,
         stepca::{AcmeServer, CaCfg},
     },
-    rand_base64_str, rand_str,
+    rand_str,
     wire_server::WireServer,
 };
 
