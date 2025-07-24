@@ -420,9 +420,12 @@ DTS_OUT := $(JS_DIR)/src/corecrypto.d.ts
 ts-clean:
 	@rm -f $(JS_OUT) $(DTS_OUT)
 
-.PHONY: ts-fmt
-ts-fmt:
+ts-fmt.stamp: $(TS_SRCS)
 	cd $(JS_DIR) && bun eslint --max-warnings=0 --fix
+	touch $@
+
+.PHONY: ts-fmt
+ts-fmt: ts-fmt.stamp
 
 # build corecrypto.js
 $(JS_OUT): bun-deps.stamp ts-fmt $(JS_GEN) $(WASM_GEN) $(TS_SRCS) $(PACKAGE_JSON)
