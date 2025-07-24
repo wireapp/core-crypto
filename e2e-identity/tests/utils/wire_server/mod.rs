@@ -1,4 +1,3 @@
-pub mod oidc;
 pub mod server_api;
 
 use hyper::server::conn::http1;
