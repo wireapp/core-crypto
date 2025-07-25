@@ -155,7 +155,7 @@ impl KeystoreTransaction {
 
     async fn find_in_cache<E>(&self, id: &[u8]) -> CryptoKeystoreResult<Option<E>>
     where
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>,
+        E: crate::entities::EntityBase<ConnectionType = KeystoreDatabaseConnection>,
     {
         let cache_guard = self.cache.read().await;
         cache_guard
@@ -207,7 +207,7 @@ impl KeystoreTransaction {
         }
     }
 
-    async fn find_all_in_cache<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+    async fn find_all_in_cache<E: crate::entities::EntityBase<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
     ) -> CryptoKeystoreResult<Vec<E>> {
         let cache_guard = self.cache.read().await;
