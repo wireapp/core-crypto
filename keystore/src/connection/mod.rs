@@ -25,7 +25,7 @@ pub mod platform {
 }
 
 pub use self::platform::*;
-use crate::entities::{Entity, EntityFindParams, MlsPendingMessage, StringEntityId};
+use crate::entities::{Entity, EntityFindParams, Epoch, MlsPendingMessage, StringEntityId};
 use std::ops::DerefMut;
 
 use crate::entities::{EntityTransactionExt, UniqueEntity};
@@ -140,9 +140,11 @@ pub struct Connection {
     pub(crate) conn: Arc<Mutex<KeystoreDatabaseConnection>>,
     pub(crate) transaction: Arc<Mutex<Option<KeystoreTransaction>>>,
     transaction_semaphore: Arc<Semaphore>,
+    max_epoch_retention: u64,
 }
 
 const ALLOWED_CONCURRENT_TRANSACTIONS_COUNT: usize = 1;
+const MAX_EPOCH_RETENTION: u64 = 1;
 
 /// Interface to fetch from the database either from the connection directly or through a
 /// transaaction
@@ -196,6 +198,7 @@ impl Connection {
             conn,
             transaction: Default::default(),
             transaction_semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
+            max_epoch_retention: MAX_EPOCH_RETENTION,
         })
     }
 
@@ -332,6 +335,39 @@ impl Connection {
         transaction
             .remove_pending_messages_by_conversation_id(conversation_id)
             .await
+    }
+
+    pub(crate) async fn find_epoch(&self, group_id: &[u8], epoch_id: u64) -> CryptoKeystoreResult<Option<Epoch>> {
+        // If a transaction is in progress...
+        if let Some(transaction) = self.transaction.lock().await.as_ref()
+            //... and it has information about this entity, ...
+            && let Some(cached_record) = transaction.find_epoch(group_id, epoch_id).await?
+        {
+            // ... return that result
+            return Ok(cached_record);
+        }
+
+        // Otherwise get it from the database
+        let mut conn = self.conn.lock().await;
+        Epoch::find_one(&mut conn, group_id, epoch_id).await
+    }
+
+    pub(crate) async fn max_epoch_id(&self, group_id: &[u8]) -> CryptoKeystoreResult<Option<u64>> {
+        let max_from_cache = if let Some(transaction) = self.transaction.lock().await.as_ref() {
+            transaction.max_epoch_id(group_id).await?
+        } else {
+            None
+        };
+
+        let mut conn = self.conn.lock().await;
+        let max_persisted = Epoch::max_id(&mut conn, group_id).await?;
+
+        max_from_cache
+            .into_iter()
+            .chain(max_persisted)
+            .max()
+            .map(Ok)
+            .transpose()
     }
 
     pub async fn cred_delete_by_credential(&self, cred: Vec<u8>) -> CryptoKeystoreResult<()> {

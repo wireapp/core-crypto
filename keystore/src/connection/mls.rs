@@ -1,9 +1,10 @@
+use mls_rs_core::group::{EpochRecord, GroupState};
 use mls_rs_core::psk::PreSharedKey as MlsRsPsk;
 use mls_rs_core::{key_package::KeyPackageData as MlsRsKeyPackageData, psk::ExternalPskId};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
-use crate::entities::Psk;
+use crate::entities::{Group, Psk};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, deser,
     entities::{
@@ -14,6 +15,70 @@ use crate::{
 };
 
 use super::{Connection, FetchFromDatabase as _};
+
+#[maybe_async::must_be_async]
+impl mls_rs_core::group::GroupStateStorage for Connection {
+    type Error = CryptoKeystoreError;
+
+    async fn state(&self, group_id: &[u8]) -> Result<Option<Vec<u8>>, Self::Error> {
+        self.find::<Group>(group_id)
+            .await?
+            .map(|keystore_instance| keystore_instance.snapshot.clone())
+            .map(Ok)
+            .transpose()
+    }
+
+    async fn epoch(&self, group_id: &[u8], epoch_id: u64) -> Result<Option<Vec<u8>>, Self::Error> {
+        self.find_epoch(group_id, epoch_id)
+            .await?
+            .map(|keystore_instance| keystore_instance.epoch_data.clone())
+            .map(Ok)
+            .transpose()
+    }
+
+    async fn write(
+        &mut self,
+        state: GroupState,
+        epoch_inserts: Vec<EpochRecord>,
+        epoch_updates: Vec<EpochRecord>,
+    ) -> Result<(), Self::Error> {
+        let transaction_guard = self.transaction.lock().await;
+        let Some(transaction) = transaction_guard.as_ref() else {
+            return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
+        };
+
+        // Upsert into the group table to set the most recent snapshot
+        transaction.save_mut::<Group>(state.clone().into()).await?;
+
+        // Upsert new epochs as needed
+        let mut max_epoch_id = None;
+        for epoch in epoch_inserts {
+            max_epoch_id = Some(epoch.id);
+            transaction.save_epoch((state.id.clone(), epoch).into()).await?;
+        }
+
+        // Upsert existing epochs as needed
+        for epoch in epoch_updates {
+            transaction.save_epoch((state.id.clone(), epoch).into()).await?;
+        }
+
+        // Delete old epochs as needed
+        if let Some(max_epoch_id) = max_epoch_id
+            && max_epoch_id >= self.max_epoch_retention
+        {
+            let delete_less_equal = max_epoch_id - self.max_epoch_retention;
+            transaction
+                .delete_epoch_by_id_less_equal(state.id.as_slice(), delete_less_equal)
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    async fn max_epoch_id(&self, group_id: &[u8]) -> Result<Option<u64>, Self::Error> {
+        self.max_epoch_id(group_id).await
+    }
+}
 
 #[maybe_async::must_be_async]
 impl mls_rs_core::key_package::KeyPackageStorage for Connection {
