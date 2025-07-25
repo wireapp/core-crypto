@@ -58,6 +58,14 @@ impl KeystoreTransaction {
         Ok(entity)
     }
 
+    pub(crate) async fn save_epoch(&self, epoch: Epoch) -> CryptoKeystoreResult<()> {
+        let mut cache_guard = self.cache.write().await;
+        let table = cache_guard.entry(Epoch::COLLECTION_NAME.to_string()).or_default();
+        let serialized = postcard::to_stdvec(&epoch)?;
+        table.insert(epoch.merge_key(), Zeroizing::new(serialized));
+        Ok(())
+    }
+
     pub(crate) async fn remove<
         E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt,
         S: AsRef<[u8]>,
@@ -109,6 +117,31 @@ impl KeystoreTransaction {
         let mut deleted_list = self.deleted_credentials.write().await;
         deleted_list.push(cred);
         Ok(())
+    }
+
+    /// Delete all epochs of the group with the provided ID whose id is lower (i.e., older) than or equal
+    /// to the provided epoch id.
+    pub(crate) async fn delete_epoch_by_id_less_equal(
+        &self,
+        group_id: &[u8],
+        epoch_id: u64,
+    ) -> CryptoKeystoreResult<()> {
+        // We cannot return an error from `retain()`, so we've got to do this dance with a mutable result.
+        let mut result = Ok(());
+
+        let mut cache_guard = self.cache.write().await;
+        if let Entry::Occupied(mut table) = cache_guard.entry(Epoch::COLLECTION_NAME.to_string()) {
+            table.get_mut().retain(|_key, record_bytes| {
+                postcard::from_bytes::<Epoch>(record_bytes)
+                    .map(|epoch| epoch.group_id != group_id || epoch.epoch_id > epoch_id)
+                    .inspect_err(|err| result = Err(err.clone()))
+                    .unwrap_or(false)
+            });
+        }
+
+        let mut deleted_list = self.deleted.write().await;
+        deleted_list.push(EntityId::Epoch((group_id.to_vec(), epoch_id)));
+        result.map_err(Into::into)
     }
 
     pub(crate) async fn remove_pending_messages_by_conversation_id(
@@ -187,6 +220,46 @@ impl KeystoreTransaction {
         }
 
         Ok(None)
+    }
+
+    /// The result of this function will have different contents for different scenarios:
+    /// * `Some(Some(E))` - the transaction cache contains the record
+    /// * `Some(None)` - the deletion of the record has been cached
+    /// * `None` - there is no information about the record in the cache
+    pub(crate) async fn find_epoch(
+        &self,
+        group_id: &[u8],
+        epoch_id: u64,
+    ) -> CryptoKeystoreResult<Option<Option<Epoch>>> {
+        let id = Epoch::to_merge_key(group_id, epoch_id);
+
+        let maybe_cached_record = self.find_in_cache(&id).await?;
+        if let Some(cached_record) = maybe_cached_record {
+            return Ok(Some(Some(cached_record)));
+        }
+
+        let deleted_list = self.deleted.read().await;
+        if deleted_list.contains(&EntityId::Epoch((group_id.to_vec(), epoch_id))) {
+            return Ok(Some(None));
+        }
+
+        Ok(None)
+    }
+
+    pub(crate) async fn max_epoch_id(&self, group_id: &[u8]) -> CryptoKeystoreResult<Option<u64>> {
+        self.cache
+            .read()
+            .await
+            .get(Epoch::COLLECTION_NAME)
+            .map(|table| {
+                table.values().try_fold(None, |current_max, value| {
+                    postcard::from_bytes::<Epoch>(value)
+                        .map(|epoch| current_max.max((epoch.group_id == group_id).then_some(epoch.epoch_id)))
+                })
+            })
+            .transpose()
+            .map(|maybe_max| maybe_max.flatten())
+            .map_err(Into::into)
     }
 
     pub(crate) async fn find_unique<U: UniqueEntity<ConnectionType = KeystoreDatabaseConnection>>(

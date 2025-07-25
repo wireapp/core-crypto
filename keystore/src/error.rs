@@ -32,6 +32,8 @@ pub enum MissingKeyErrorKind {
     PersistedMlsGroup,
     #[error("MLS Persisted Group")]
     Group,
+    #[error("Epoch")]
+    Epoch,
     #[error("MLS Persisted Pending Group")]
     MlsPendingGroup,
     #[error("MLS Pending Messages")]

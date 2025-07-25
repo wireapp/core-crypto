@@ -12,6 +12,9 @@ pub use psk::Psk;
 mod group;
 pub use group::Group;
 
+mod epoch;
+pub use epoch::Epoch;
+
 /// Entity representing a persisted `MlsGroup`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]

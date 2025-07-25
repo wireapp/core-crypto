@@ -10,9 +10,9 @@ use crate::{
     connection::TransactionWrapper,
     entities::{
         ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, EntityBase, EntityTransactionExt,
-        Group, KeyPackageData, MlsBufferedCommit, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair,
-        MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
-        PersistedMlsPendingGroup, Psk, StringEntityId, UniqueEntity,
+        Epoch, Group, KeyPackageData, MlsBufferedCommit, MlsCredential, MlsEncryptionKeyPair,
+        MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage, MlsPskBundle,
+        MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup, Psk, StringEntityId, UniqueEntity,
     },
 };
 
@@ -31,6 +31,7 @@ pub enum Entity {
     MlsBufferedCommit(MlsBufferedCommit),
     PersistedMlsGroup(PersistedMlsGroup),
     Group(Group),
+    Epoch(Epoch),
     PersistedMlsPendingGroup(PersistedMlsPendingGroup),
     MlsPendingMessage(MlsPendingMessage),
     E2eiEnrollment(E2eiEnrollment),
@@ -61,6 +62,7 @@ pub enum EntityId {
     MlsBufferedCommit(Vec<u8>),
     PersistedMlsGroup(Vec<u8>),
     Group(Vec<u8>),
+    Epoch((Vec<u8>, u64)),
     PersistedMlsPendingGroup(Vec<u8>),
     MlsPendingMessage(Vec<u8>),
     E2eiEnrollment(Vec<u8>),
@@ -92,6 +94,9 @@ impl EntityId {
             EntityId::MlsBufferedCommit(vec) => vec.as_slice().into(),
             EntityId::PersistedMlsGroup(vec) => vec.as_slice().into(),
             EntityId::Group(vec) => vec.as_slice().into(),
+            EntityId::Epoch(_) => {
+                panic!("Must not be used, and is not needed. Use the type's custom delete implementation instead.")
+            }
             EntityId::PersistedMlsPendingGroup(vec) => vec.as_slice().into(),
             EntityId::MlsPendingMessage(vec) => vec.as_slice().into(),
             EntityId::E2eiEnrollment(vec) => vec.as_slice().into(),
@@ -154,6 +159,7 @@ impl EntityId {
             EntityId::MlsBufferedCommit(_) => MlsBufferedCommit::COLLECTION_NAME,
             EntityId::PersistedMlsGroup(_) => PersistedMlsGroup::COLLECTION_NAME,
             EntityId::Group(_) => Group::COLLECTION_NAME,
+            EntityId::Epoch(_) => Epoch::COLLECTION_NAME,
             EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::COLLECTION_NAME,
             EntityId::MlsPendingMessage(_) => MlsPendingMessage::COLLECTION_NAME,
             EntityId::E2eiEnrollment(_) => E2eiEnrollment::COLLECTION_NAME,
@@ -190,6 +196,7 @@ pub async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> Crypt
         Entity::MlsBufferedCommit(mls_pending_commit) => mls_pending_commit.save(tx).await,
         Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.save(tx).await,
         Entity::Group(group) => group.save(tx).await,
+        Entity::Epoch(epoch) => epoch.save(tx).await,
         Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => persisted_mls_pending_group.save(tx).await,
         Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.save(tx).await,
         Entity::E2eiEnrollment(e2ei_enrollment) => e2ei_enrollment.save(tx).await,
@@ -221,6 +228,7 @@ pub async fn execute_delete(tx: &TransactionWrapper<'_>, entity_id: &EntityId) -
         id @ EntityId::MlsBufferedCommit(_) => MlsBufferedCommit::delete(tx, id.as_id()).await,
         id @ EntityId::PersistedMlsGroup(_) => PersistedMlsGroup::delete(tx, id.as_id()).await,
         id @ EntityId::Group(_) => Group::delete(tx, id.as_id()).await,
+        EntityId::Epoch((group_id, epoch_id)) => Epoch::delete_by_id_less_equal(tx, group_id, *epoch_id).await,
         id @ EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::delete(tx, id.as_id()).await,
         id @ EntityId::MlsPendingMessage(_) => MlsPendingMessage::delete(tx, id.as_id()).await,
         id @ EntityId::E2eiEnrollment(_) => E2eiEnrollment::delete(tx, id.as_id()).await,
