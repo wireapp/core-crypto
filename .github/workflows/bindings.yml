@@ -302,7 +302,7 @@ jobs:
           xcodebuild -scheme InteropClient -sdk iphonesimulator -destination \
           'platform=iOS Simulator,name=iPhone 16' clean build install DSTROOT=./Products || \
           xcodebuild -scheme InteropClient -sdk iphonesimulator -destination \
-          'platform=iOS Simulator,id=$(./select-ios-simID.sh)' clean build install DSTROOT=./Products
+          "platform=iOS Simulator,id=$(./select-ios-simID.sh)" clean build install DSTROOT=./Products
           echo "INTEROP_SIMULATOR_DEVICE=$(./create_simulator.sh)" >> $GITHUB_ENV
 
       # - name: run e2e interop test
