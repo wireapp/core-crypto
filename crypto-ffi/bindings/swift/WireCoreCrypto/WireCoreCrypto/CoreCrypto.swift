@@ -1,6 +1,8 @@
 import System
 @_exported public import WireCoreCryptoUniffi
 
+/// Defines the protocol for a client.
+///
 public protocol CoreCryptoProtocol {
 
     /// Instantiate a history client.
@@ -254,6 +256,9 @@ final actor TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand 
 
 }
 
+/// Updates the key of the CoreCrypto database.
+/// To be used only once, when moving from CoreCrypto <= 5.x to CoreCrypto 6.x.
+///
 public func migrateDatabaseKeyTypeToBytes(path: String, oldKey: String, newKey: DatabaseKey)
     async throws
 {
