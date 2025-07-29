@@ -23,6 +23,7 @@ enum InteropAction {
 }
 
 extension InteropAction {
+    // swiftlint:disable:next cyclomatic_complexity function_body_length
     init?(url: URL) {
         switch url.host() {
         case "init-mls":

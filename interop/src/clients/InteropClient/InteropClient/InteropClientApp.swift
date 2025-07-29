@@ -80,7 +80,7 @@ struct InteropClientApp: App {
 
         do {
             return .success(value: try await executeAction(action))
-        } catch (let error) {
+        } catch let error {
             return .failure(message: error.localizedDescription)
         }
     }
@@ -92,10 +92,11 @@ struct InteropClientApp: App {
         if status != errSecSuccess {
             throw InteropError.randomBytesError
         }
-
+        // swiftlint:disable:next force_try
         return try! WireCoreCrypto.DatabaseKey(key: Data(bytes))
     }
 
+    // swiftlint:disable:next function_body_length cyclomatic_complexity
     private func executeAction(_ action: InteropAction) async throws -> String {
         switch action {
         case .initMLS(let clientId, let ciphersuite):
