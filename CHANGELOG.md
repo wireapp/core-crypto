@@ -27,7 +27,7 @@
 
   These methods have had their names changed. To migrate, simply rename all calls to these functions.
 
-  - `accoutResponse` -> `newAccountResponse`
+  - `accountResponse` -> `newAccountResponse`
   - `authzResponse` -> `newAuthzResponse`
   - `dpopChallengeResponse` -> `newDpopChallengeResponse`
   - `contextOidcChallengeResponse` -> `newOidcChallengeResponse`
