@@ -5,15 +5,17 @@
 #![cfg(not(target_family = "wasm"))]
 
 use jwt_simple::prelude::*;
+use rstest::rstest;
 use serde_json::{Value, json};
 
 use rusty_acme::prelude::*;
 use rusty_jwt_tools::prelude::*;
 use utils::{
     TestError,
-    cfg::{E2eTest, EnrollmentFlow, OidcProvider},
+    cfg::{E2eTest, EnrollmentFlow, TestEnvironment, WireServer},
     docker::{stepca::CaCfg, wiremock::WiremockImage},
     id_token::resign_id_token,
+    idp::{IdpServer, start_idp_server},
     rand_base64_str, rand_client_id,
 };
 
@@ -26,6 +28,70 @@ mod utils;
 async fn demo_should_succeed() {
     let test = E2eTest::new_demo().start().await;
     test.nominal_enrollment().await.unwrap();
+}
+
+fn get_wire_server() -> WireServer {
+    // We require that test-wire-server is listening on an endpoint
+    // specified by TEST_WIRE_SERVER_ADDR, e.g. "127.0.0.1:1234".
+    let addr = std::env::var("TEST_WIRE_SERVER_ADDR")
+        .expect("TEST_WIRE_SERVER_ADDR must be set and point to a running test-wire-server")
+        .parse()
+        .unwrap();
+    WireServer {
+        hostname: "wire.com".to_string(),
+        addr,
+    }
+}
+
+fn setup_test_environment() -> TestEnvironment {
+    let run_id = std::env::var("NEXTEST_RUN_ID").unwrap();
+    let mut path = std::env::temp_dir();
+    path.push(run_id);
+
+    let wire_server = get_wire_server();
+    match std::fs::File::create_new(&path) {
+        Ok(file) => {
+            // We're the first, so it's up to us to start all servers.
+            let env = std::thread::spawn(|| {
+                let runtime = tokio::runtime::Runtime::new().unwrap();
+                runtime.block_on(async {
+                    let idp_server = start_idp_server(&wire_server.hostname, &wire_server.oauth_redirect_uri()).await;
+                    TestEnvironment {
+                        wire_server,
+                        idp_server,
+                    }
+                })
+            })
+            .join()
+            .unwrap();
+
+            serde_json::to_writer_pretty(file, &env.idp_server).unwrap();
+            env
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+            // Some other test came first so now we just need to read the test environment
+            // data. Note that it may take a while (~30s) between the moment file is created
+            // and the moment data is available, so we need to wait until we can successfully
+            // get the data.
+            loop {
+                let file = std::fs::File::open(&path).unwrap();
+                let idp_server: IdpServer = match serde_json::from_reader(file) {
+                    Ok(env) => env,
+                    Err(_) => continue,
+                };
+                return TestEnvironment {
+                    wire_server,
+                    idp_server,
+                };
+            }
+        }
+        Err(e) => panic!("unexpected error: {:?}", e),
+    }
+}
+
+#[rstest::fixture]
+fn test_env() -> TestEnvironment {
+    setup_test_environment()
 }
 
 /// Tests using the custom SPI Provider to be able to use the refreshToken to get a new idToken with the current ACME challenges
