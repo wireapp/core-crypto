@@ -94,7 +94,8 @@ final class WireCoreCryptoTests: XCTestCase {
         let targetPath = tmpdir.appendingPathComponent(resourceURL.lastPathComponent)
         try FileManager.default.copyItem(at: resourceURL, to: targetPath)
 
-        // The keystore path has to be the same over different instances of the test, because of handle_ios_wal_compat().
+        // The keystore path has to be the same over different instances of the test,
+        // because of handle_ios_wal_compat().
         // Change the working directory so that we can use a relative path for the keystore path.
         let oldWorkingDirectory = FileManager.default.currentDirectoryPath
         FileManager.default.changeCurrentDirectoryPath(tmpdir.path())

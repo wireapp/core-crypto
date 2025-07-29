@@ -9,11 +9,11 @@ public protocol CoreCryptoProtocol {
     /// Other use is a logic error.
     static func historyClient(_ historySecret: HistorySecret) async throws -> Self
 
-    /// Starts a transaction in Core Crypto. If the closure succeeds without throwing an error, it will be committed, otherwise, every operation
-    /// performed with the context will be discarded.
+    /// Starts a transaction in Core Crypto. If the closure succeeds without throwing an error,
+    /// it will be committed, otherwise, every operation performed with the context will be discarded.
     ///
-    /// - Parameter block: the closure to be executed within the transaction context. A ``CoreCryptoContext-swift.protocol``
-    ///  is provided on which any operations should be performed.
+    /// - Parameter block: the closure to be executed within the transaction context.
+    /// A ``CoreCryptoContext-swift.protocol`` is provided on which any operations should be performed.
     ///
     /// - Returns: Result value returned from the closure if any.
     ///
@@ -21,7 +21,8 @@ public protocol CoreCryptoProtocol {
         _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
     ) async throws -> Result
 
-    /// Register a callback which will be called when performing MLS operations which require communication with the delivery service.
+    /// Register a callback which will be called when performing MLS operations which require communication
+    /// with the delivery service.
     ///
     func provideTransport(transport: any MlsTransport) async throws
 
