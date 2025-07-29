@@ -16,8 +16,6 @@ pub mod fmk;
 pub mod helpers;
 pub mod id_token;
 pub mod keys;
-#[cfg(not(target_family = "wasm"))]
-pub mod wire_server;
 
 pub(crate) fn rand_str(size: usize) -> String {
     use rand::distributions::{Alphanumeric, DistString};
