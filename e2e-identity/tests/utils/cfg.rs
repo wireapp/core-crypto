@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, hash_map::RandomState},
-    net::SocketAddr,
-};
+use std::{collections::HashMap, net::SocketAddr};
 
 use jwt_simple::prelude::*;
 use oauth2::RefreshToken;
@@ -16,12 +13,11 @@ use crate::utils::{
     ctx::ctx_store_http_client,
     display::TestDisplay,
     docker::{
-        keycloak::{KeycloakCfg, KeycloakImage, KeycloakServer},
         stepca,
         stepca::{AcmeServer, CaCfg},
     },
+    idp::IdpServer,
     rand_str,
-    wire_server::WireServer,
 };
 
 pub fn scrap_login(html: String) -> String {
@@ -62,7 +58,6 @@ pub struct E2eTest {
     pub device_id: u64,
     pub sub: ClientId,
     pub handle: String,
-    pub keycloak_cfg: KeycloakCfg,
     pub ca_cfg: CaCfg,
     pub oauth_cfg: OauthCfg,
     pub backend_kp: Pem,
@@ -73,13 +68,36 @@ pub struct E2eTest {
     pub acme_jwk: Jwk,
     pub is_demo: bool,
     pub display: TestDisplay,
-    pub wire_server: Option<WireServer>,
-    pub keycloak_server: Option<KeycloakServer>,
+    pub env: TestEnvironment,
     pub acme_server: Option<AcmeServer>,
     pub oidc_cfg: Option<OidcCfg>,
     pub client: reqwest::Client,
     pub oidc_provider: OidcProvider,
     pub refresh_token: Option<RefreshToken>,
+}
+
+#[derive(Debug, Clone)]
+pub struct WireServer {
+    pub hostname: String,
+    pub addr: SocketAddr,
+}
+
+impl WireServer {
+    pub fn uri(&self) -> String {
+        format!("http://{}:{}", self.hostname, self.addr.port())
+    }
+
+    /// Returns the Wire server-owned URI which the IdP server is supposed to redirect
+    /// the user to after successful authentication.
+    pub fn oauth_redirect_uri(&self) -> String {
+        format!("http://{}:{}/callback", self.hostname, self.addr.port())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TestEnvironment {
+    pub wire_server: WireServer,
+    pub idp_server: IdpServer,
 }
 
 impl std::fmt::Debug for E2eTest {
@@ -95,47 +113,30 @@ pub enum OidcProvider {
 
 impl E2eTest {
     const STEPCA_HOST: &'static str = "stepca";
-    const WIRE_HOST: &'static str = "wire.com";
 
-    pub fn new() -> Self {
-        Self::new_internal(false, JwsAlgorithm::Ed25519, OidcProvider::Keycloak)
+    pub fn new(env: TestEnvironment) -> Self {
+        Self::new_internal(false, JwsAlgorithm::Ed25519, env)
     }
 
-    pub fn new_demo() -> Self {
-        Self::new_internal(true, JwsAlgorithm::Ed25519, OidcProvider::Keycloak)
+    pub fn new_demo(env: TestEnvironment) -> Self {
+        Self::new_internal(true, JwsAlgorithm::Ed25519, env)
     }
 
-    pub fn new_internal(is_demo: bool, alg: JwsAlgorithm, oidc_provider: OidcProvider) -> Self {
-        let idp_host = match oidc_provider {
-            OidcProvider::Keycloak => "keycloak",
-        };
-        let hosts = [idp_host, Self::STEPCA_HOST, Self::WIRE_HOST];
-        let [idp_host, ca_host, domain] = if is_demo {
-            hosts.map(|h| h.to_string())
+    pub fn new_internal(is_demo: bool, alg: JwsAlgorithm, env: TestEnvironment) -> Self {
+        let oidc_provider = OidcProvider::Keycloak;
+        let ca_host = if is_demo {
+            Self::STEPCA_HOST.to_string()
         } else {
-            hosts.map(|h| format!("{}.{h}", rand_str(6).to_lowercase()))
+            format!("{}.{}", rand_str(6).to_lowercase(), Self::STEPCA_HOST)
         };
-
+        let domain = env.wire_server.hostname.clone();
         let (firstname, lastname) = ("Alice", "Smith");
         let display_name = format!("{firstname} {lastname}");
         let wire_user_id = uuid::Uuid::new_v4();
         let wire_client_id = random::<u64>();
         let sub = ClientId::try_new(wire_user_id.to_string(), wire_client_id, &domain).unwrap();
-        let (handle, team, password) = ("alice_wire", "wire", "foo");
-        let keycloak_handle = format!("{handle}@{domain}");
-        let email = format!("alicesmith@{domain}");
+        let (handle, team) = ("alice_wire", "wire");
         let audience = "wireapp";
-        let idp_host_port = portpicker::pick_unused_port().unwrap();
-        let idp_base = format!("http://{idp_host}");
-        let (issuer, discovery_base_url) = match oidc_provider {
-            OidcProvider::Keycloak => {
-                let realm = KeycloakImage::REALM;
-                (
-                    format!("{idp_base}:{idp_host_port}/realms/{realm}"),
-                    format!("{idp_base}:{idp_host_port}/realms/{realm}",),
-                )
-            }
-        };
 
         let (client_kp, sign_key, backend_kp, acme_kp, acme_jwk) = match alg {
             JwsAlgorithm::Ed25519 => {
@@ -190,24 +191,18 @@ impl E2eTest {
 
         let hash_alg = HashAlgorithm::SHA256;
         let display = TestDisplay::new(format!("{alg:?} - {hash_alg:?}"), false);
+        let issuer = env.idp_server.issuer.clone();
+        let discovery_base_url = env.idp_server.discovery_base_url.clone();
+        let oauth_redirect_uri = env.wire_server.oauth_redirect_uri();
 
         Self {
+            env,
             domain: domain.to_string(),
             display_name: display_name.to_string(),
             device_id: wire_client_id,
             sub: sub.clone(),
             handle: handle.to_string(),
             team: Some(team.to_string()),
-            keycloak_cfg: KeycloakCfg {
-                oauth_client_id: audience.to_string(),
-                http_host_port: idp_host_port,
-                host: idp_host,
-                firstname: firstname.to_string(),
-                lastname: lastname.to_string(),
-                username: keycloak_handle.to_string(),
-                email,
-                password: password.to_string(),
-            },
             ca_cfg: CaCfg {
                 sign_key,
                 issuer,
@@ -219,7 +214,7 @@ impl E2eTest {
             },
             oauth_cfg: OauthCfg {
                 client_id: audience.to_string(),
-                redirect_uri: "".to_string(),
+                redirect_uri: oauth_redirect_uri,
             },
             alg,
             hash_alg,
@@ -228,8 +223,6 @@ impl E2eTest {
             acme_jwk,
             backend_kp,
             display,
-            wire_server: None,
-            keycloak_server: None,
             acme_server: None,
             oidc_cfg: None,
             is_demo,
@@ -245,24 +238,7 @@ impl E2eTest {
             self.display.set_active();
         }
 
-        // wire-server
-        let (wire_server_host, wire_server_port, redirect) =
-            (self.domain.clone(), portpicker::pick_unused_port().unwrap(), "callback");
-        let wire_server = WireServer::run_on_port(wire_server_port).await;
-
-        let wire_server_uri = format!("http://{wire_server_host}:{wire_server_port}");
-        let redirect_uri = format!("{wire_server_uri}/{redirect}");
-
-        let mut dns_mappings = HashMap::<String, SocketAddr, RandomState>::new();
-
-        // start OIDC server
-        match self.oidc_provider {
-            OidcProvider::Keycloak => {
-                let keycloak_server = KeycloakImage::run(self.keycloak_cfg.clone(), redirect_uri.clone()).await;
-                dns_mappings.insert(self.keycloak_cfg.host.clone(), keycloak_server.socket);
-                self.keycloak_server = Some(keycloak_server);
-            }
-        }
+        let wire_server_uri = self.env.wire_server.uri();
 
         // start ACME server
         let template = r#"{{.DeviceID}}"#;
@@ -272,8 +248,10 @@ impl E2eTest {
 
         // configure http client custom dns resolution for this test
         // this helps having domain names in request URIs instead of 'localhost:{port}'
+        let mut dns_mappings = HashMap::<String, SocketAddr>::new();
         dns_mappings.insert(self.ca_cfg.host.clone(), acme_server.socket);
-        dns_mappings.insert(self.domain.clone(), wire_server.socket);
+        dns_mappings.insert(self.env.wire_server.hostname.clone(), self.env.wire_server.addr);
+        dns_mappings.insert(self.env.idp_server.hostname.clone(), self.env.idp_server.addr);
 
         ctx_store_http_client(&dns_mappings);
 
@@ -291,34 +269,23 @@ impl E2eTest {
 
         let oidc_cfg = self.fetch_oidc_cfg().await;
         self.ca_cfg.issuer = oidc_cfg.issuer.clone();
-        self.oauth_cfg.redirect_uri = redirect_uri;
         self.oidc_cfg = Some(oidc_cfg);
-
         self.acme_server = Some(acme_server);
-        self.wire_server = Some(wire_server);
-
         self
     }
 
     pub async fn fetch_oidc_cfg(&self) -> OidcCfg {
-        let authz_server_uri = match self.oidc_provider {
-            OidcProvider::Keycloak => self.keycloak_server.as_ref().unwrap().http_uri.clone(),
-        };
-        let uri = match self.oidc_provider {
-            OidcProvider::Keycloak => {
-                format!(
-                    "{authz_server_uri}/realms/{}/.well-known/openid-configuration",
-                    KeycloakImage::REALM
-                )
-            }
-        };
+        let hostname = &self.env.idp_server.hostname;
+        let realm = &self.env.idp_server.realm;
+        let port = self.env.idp_server.addr.port();
+        let uri = format!("http://{hostname}:{port}/realms/{realm}/.well-known/openid-configuration");
         let response = self.client.get(&uri).send().await.unwrap();
         let status = response.status();
         let response_text = response.text().await.unwrap();
         let cfg_deserialized = serde_json::from_str::<OidcCfg>(&response_text);
         match cfg_deserialized {
             Ok(mut cfg) => {
-                cfg.set_issuer_uri(&authz_server_uri);
+                cfg.set_issuer_uri(hostname);
                 cfg
             }
             Err(e) => {
@@ -329,21 +296,12 @@ impl E2eTest {
         }
     }
 
-    pub fn wire_server_uri(&self) -> String {
-        let port = self.wire_server.as_ref().unwrap().port;
-        format!("http://{}:{port}", self.domain)
-    }
-
     pub fn issuer_uri(&self) -> String {
         self.oidc_cfg
             .as_ref()
             .and_then(|c| c.issuer_uri.as_ref())
             .unwrap()
             .to_string()
-    }
-
-    pub fn redirect_uri(&self) -> String {
-        format!("{}/callback", self.wire_server_uri())
     }
 
     pub async fn fetch_acme_root_ca(&self) -> String {
@@ -383,9 +341,8 @@ pub fn default_http_client() -> reqwest::ClientBuilder {
         .danger_accept_invalid_certs(true)
 }
 
-pub type E2eT = E2eTest;
-pub type FlowResp<T> = std::pin::Pin<Box<dyn std::future::Future<Output = TestResult<(E2eT, T)>>>>;
-pub type Flow<P, R> = Box<dyn FnOnce(E2eT, P) -> FlowResp<R>>;
+pub type FlowResp<T> = std::pin::Pin<Box<dyn std::future::Future<Output = TestResult<(E2eTest, T)>>>>;
+pub type Flow<P, R> = Box<dyn FnOnce(E2eTest, P) -> FlowResp<R>>;
 
 pub struct EnrollmentFlow {
     pub acme_directory: Flow<(), AcmeDirectory>,

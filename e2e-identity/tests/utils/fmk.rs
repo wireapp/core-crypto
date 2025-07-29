@@ -118,9 +118,7 @@ impl E2eTest {
         t.display();
         Ok(t)
     }
-}
 
-impl E2eTest {
     /// GET http://acme-server/directory
     pub async fn get_acme_directory(&mut self) -> TestResult<AcmeDirectory> {
         let ca_url = self.acme_server.as_ref().ok_or(TestError::Internal)?.uri.clone();
@@ -317,7 +315,7 @@ impl E2eTest {
     pub async fn get_wire_server_nonce(&mut self) -> TestResult<BackendNonce> {
         self.display_chapter("Client fetches JWT DPoP access token (with wire-server)");
         self.display_step("fetch a nonce from wire-server");
-        let nonce_url = format!("{}/clients/token/nonce", self.wire_server_uri());
+        let nonce_url = format!("{}/clients/{:x}/nonce", self.env.wire_server.uri(), self.sub.device_id);
         let req = self.client.get(nonce_url).build()?;
         self.display_req(Actor::WireClient, Actor::WireServer, Some(&req), None);
 
@@ -381,19 +379,23 @@ impl E2eTest {
         let dpop_url = dpop_chall.target.to_string();
         let b64 = |v: &str| base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(v);
 
-        // cheat to share test context
-        ctx_store("client-id", self.sub.to_uri());
-        ctx_store("backend-kp", self.backend_kp.to_string());
-        ctx_store("hash-alg", self.hash_alg.to_string());
-        ctx_store("wire-server-uri", dpop_url.clone());
-        ctx_store("handle", self.handle.as_str());
-        ctx_store("display_name", self.display_name.as_str());
-        ctx_store("team", self.team.as_ref().unwrap());
+        // We're going to transmit the test context via the request body for convenience,
+        // but in practice the Wire server endpoint does not need that.
+        let context = json!({
+            "client-id": self.sub.to_uri(),
+            "backend-kp": self.backend_kp.to_string(),
+            "hash-alg": self.hash_alg.to_string(),
+            "wire-server-uri": dpop_url.clone(),
+            "handle": Handle::from(self.handle.clone()).try_to_qualified(&self.domain).unwrap(),
+            "display_name": self.display_name.as_str(),
+            "team": self.team.as_ref().unwrap(),
+        });
 
         let req = self
             .client
             .post(&dpop_url)
             .header("dpop", b64(&client_dpop_token))
+            .body(context.to_string())
             .build()?;
         self.display_req(
             Actor::WireClient,
@@ -505,8 +507,6 @@ impl E2eTest {
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
 
-        // tokio::time::sleep(core::time::Duration::from_secs(10)).await;
-
         if resp.status() != StatusCode::OK {
             return Err(TestError::OidcChallengeError);
         }
@@ -536,8 +536,7 @@ impl E2eTest {
         let oidc_target = oidc_chall.target.to_string();
 
         let mut oidc_target = url::Url::parse(&oidc_target).unwrap();
-        let local_port = self.keycloak_cfg.http_host_port;
-        oidc_target.set_port(Some(local_port)).unwrap();
+        oidc_target.set_port(Some(self.env.idp_server.addr.port())).unwrap();
 
         let issuer_url = IssuerUrl::new(oidc_target.as_str().to_string()).unwrap();
 
@@ -597,8 +596,8 @@ impl E2eTest {
         let mut form_uri = Url::parse(&action).unwrap();
         form_uri.set_host(Some("127.0.0.1")).unwrap();
         let form_body = HashMap::<&str, String, RandomState>::from_iter(vec![
-            ("username", self.keycloak_cfg.username.clone()),
-            ("password", self.keycloak_cfg.password.clone()),
+            ("username", self.env.idp_server.username.clone()),
+            ("password", self.env.idp_server.password.clone()),
             ("credentialId", "".to_string()),
         ]);
 
@@ -912,9 +911,7 @@ impl E2eTest {
             }
         );
     }
-}
 
-impl E2eTest {
     pub async fn fetch_idp_public_key(&self) -> String {
         let jwks_uri = self.oidc_cfg.as_ref().unwrap().jwks_uri.clone();
         let jwks_req = self.client.get(jwks_uri);
