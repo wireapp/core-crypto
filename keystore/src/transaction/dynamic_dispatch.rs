@@ -227,7 +227,12 @@ pub async fn execute_delete(tx: &TransactionWrapper<'_>, entity_id: &EntityId) -
         id @ EntityId::MlsCredential(_) => MlsCredential::delete(tx, id.as_id()).await,
         id @ EntityId::MlsBufferedCommit(_) => MlsBufferedCommit::delete(tx, id.as_id()).await,
         id @ EntityId::PersistedMlsGroup(_) => PersistedMlsGroup::delete(tx, id.as_id()).await,
-        id @ EntityId::Group(_) => Group::delete(tx, id.as_id()).await,
+        id @ EntityId::Group(_) => {
+            // We don't have ON DELETE CASCADE on indexed DB, so we have to do this manually.
+            #[cfg(target_family = "wasm")]
+            Epoch::delete_by_group_id(tx, id.as_id().as_slice()).await?;
+            Group::delete(tx, id.as_id()).await
+        }
         EntityId::Epoch((group_id, epoch_id)) => Epoch::delete_by_id_less_equal(tx, group_id, *epoch_id).await,
         id @ EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::delete(tx, id.as_id()).await,
         id @ EntityId::MlsPendingMessage(_) => MlsPendingMessage::delete(tx, id.as_id()).await,

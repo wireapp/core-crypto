@@ -1,11 +1,15 @@
 use mls_rs_core::group::EpochRecord as MlsRsEpoch;
+#[cfg(not(target_family = "wasm"))]
+use rusqlite::{OptionalExtension as _, params};
 use zeroize::ZeroizeOnDrop;
 
 use crate::CryptoKeystoreResult;
 use crate::MissingKeyErrorKind;
 use crate::connection::KeystoreDatabaseConnection;
 use crate::connection::TransactionWrapper;
+use crate::entities::Entity;
 use crate::entities::EntityBase;
+use crate::entities::EntityFindParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, ZeroizeOnDrop)]
 pub struct Epoch {
@@ -53,6 +57,34 @@ impl EntityBase for Epoch {
     }
 }
 
+#[async_trait::async_trait]
+// #[async_trait::async_trait(?Send)]
+impl Entity for Epoch {
+    fn id_raw(&self) -> impl AsRef<[u8]> {
+        self.merge_key()
+    }
+
+    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+        todo!()
+    }
+
+    async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
+        todo!()
+    }
+
+    fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
+        todo!()
+    }
+
+    fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
+        todo!()
+    }
+
+    async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
+        todo!()
+    }
+}
+
 impl Epoch {
     pub(crate) fn merge_key(&self) -> Vec<u8> {
         Self::to_merge_key(&self.group_id, self.epoch_id)
@@ -62,6 +94,7 @@ impl Epoch {
         group_id.iter().copied().chain(epoch_id.to_le_bytes()).collect()
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub(crate) async fn find_one(
         connection: &mut <Self as EntityBase>::ConnectionType,
         group_id: &[u8],
@@ -88,6 +121,7 @@ impl Epoch {
             .map_err(Into::into)
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub(crate) async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         transaction
             .execute(
@@ -101,8 +135,14 @@ impl Epoch {
             .map_err(Into::into)
     }
 
+    #[cfg(target_family = "wasm")]
+    pub(crate) async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        todo!()
+    }
+
     /// Delete all epochs of the group with the provided ID whose id is lower (i.e., older) than or equal
     /// to the provided epoch id.
+    #[cfg(not(target_family = "wasm"))]
     pub(crate) async fn delete_by_id_less_equal(
         transaction: &TransactionWrapper<'_>,
         group_id: &[u8],
@@ -120,6 +160,28 @@ impl Epoch {
             .map_err(Into::into)
     }
 
+    /// Delete all epochs of the group with the provided ID whose id is lower (i.e., older) than or equal
+    /// to the provided epoch id.
+    #[cfg(target_family = "wasm")]
+    pub(crate) async fn delete_by_id_less_equal(
+        transaction: &TransactionWrapper<'_>,
+        group_id: &[u8],
+        epoch_id: u64,
+    ) -> CryptoKeystoreResult<()> {
+        todo!()
+    }
+
+    /// Delete all epochs of the group.
+    /// Only needed for wasm, used for the manual ON DELETE CASCADE equivalent.
+    #[cfg(target_family = "wasm")]
+    pub(crate) async fn delete_by_group_id(
+        transaction: &TransactionWrapper<'_>,
+        group_id: &[u8],
+    ) -> CryptoKeystoreResult<()> {
+        todo!()
+    }
+
+    #[cfg(not(target_family = "wasm"))]
     pub(crate) async fn max_id(
         connection: &mut <Self as EntityBase>::ConnectionType,
         group_id: &[u8],
@@ -133,5 +195,13 @@ impl Epoch {
                 |row| row.get::<_, Option<u64>>(0),
             )
             .map_err(Into::into)
+    }
+
+    #[cfg(target_family = "wasm")]
+    pub(crate) async fn max_id(
+        connection: &mut <Self as EntityBase>::ConnectionType,
+        group_id: &[u8],
+    ) -> CryptoKeystoreResult<Option<u64>> {
+        todo!()
     }
 }
