@@ -275,6 +275,7 @@ mod tests {
     use core_crypto_keystore::entities::*;
 
     test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
+    test_for_entity!(test_group, Group);
     test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
     test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_update:true ignore_find_many:true);
     test_for_entity!(test_mls_credential, MlsCredential ignore_update:true);
@@ -358,7 +359,7 @@ pub mod utils {
     // Use V1_0_0 entities
     use super::*;
     use core_crypto_keystore::entities::{
-        E2eiEnrollment, KeyPackageData, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair,
+        E2eiEnrollment, Group, KeyPackageData, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair,
         MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
         PersistedMlsPendingGroup, ProteusSession, Psk,
     };
@@ -477,6 +478,7 @@ pub mod utils {
     impl_entity_random_update_ext!(MlsPskBundle, blob_fields=[psk,psk_id id_like:true,]);
     impl_entity_random_update_ext!(Psk, blob_fields=[data,id id_like:true,]);
     impl_entity_random_update_ext!(PersistedMlsGroup, id_field=id, blob_fields=[state,], additional_fields=[(parent_id: None),]);
+    impl_entity_random_update_ext!(Group, id_field = id, blob_fields = [snapshot,]);
     impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
     impl_entity_random_update_ext!(MlsPendingMessage, id_field = foreign_id, blob_fields = [message,]);
     impl_entity_random_update_ext!(E2eiEnrollment, id_field = id, blob_fields = [content,]);
