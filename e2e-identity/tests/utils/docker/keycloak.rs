@@ -11,7 +11,7 @@ use keycloak::{
 
 use testcontainers::core::{ContainerPort, IntoContainerPort, Mount};
 use testcontainers::runners::AsyncRunner;
-use testcontainers::{ContainerAsync, Image, ImageExt, core::WaitFor};
+use testcontainers::{ContainerAsync, Image, ImageExt, ReuseDirective, core::WaitFor};
 
 use crate::utils::docker::SHM;
 
@@ -50,6 +50,7 @@ impl KeycloakImage {
             .with_network(super::NETWORK)
             .with_mapped_port(cfg.http_host_port, cfg.http_host_port.tcp())
             .with_privileged(true)
+            .with_reuse(ReuseDirective::Always)
             .with_shm_size(SHM);
         let node = image.start().await.unwrap();
 
