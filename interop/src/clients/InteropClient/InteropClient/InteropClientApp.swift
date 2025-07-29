@@ -62,8 +62,15 @@ struct InteropClientApp: App {
 
     private func handleURL(url: URL) async throws {
         let response = await executeURL(url: url)
-        print(
-            String(decoding: try JSONEncoder().encode(response), as: UTF8.self))
+        let data = try JSONEncoder().encode(response)
+        guard let jsonString = String(data: data, encoding: .utf8) else {
+            throw EncodingError.invalidValue(
+                data,
+                EncodingError.Context(codingPath: [], debugDescription: "UTF-8 conversion failed")
+            )
+        }
+
+        print(jsonString)
     }
 
     private func executeURL(url: URL) async -> InteropResponse {
