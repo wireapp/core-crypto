@@ -61,12 +61,12 @@ reqwest = { workspace = true, features = ["json", "cookies"] }
 tokio = { workspace = true, features = ["macros"] }
 hyper = { workspace = true, features = ["server"] }
 native-tls = { workspace = true, features = ["vendored"] }
-testcontainers = { workspace = true }
 oauth2 = { workspace = true, features = ["reqwest"] }
 http = { workspace = true }
 keycloak = { workspace = true }
 http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["full"] }
+testcontainers = { workspace = true, features = ["reusable-containers"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies.uuid]
 workspace = true
