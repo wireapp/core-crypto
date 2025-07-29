@@ -72,23 +72,19 @@ impl WasmStorageTransaction<'_> {
     ) -> CryptoKeystoreResult<()> {
         let serializer = serde_wasm_bindgen::Serializer::json_compatible();
         let collection_name = R::COLLECTION_NAME;
-        let key = entity.id()?;
         match self {
             WasmStorageTransaction::Persistent { tx, cipher } => {
                 entity.encrypt(cipher)?;
                 let js_value = entity.serialize(&serializer)?;
                 let store = tx.object_store(collection_name)?;
-                store.put(&js_value, Some(&key))?.await?;
+                store.put(&js_value, None)?.await?;
             }
             WasmStorageTransaction::InMemory { db, cipher } => {
                 entity.encrypt(cipher)?;
                 let js_value = entity.serialize(&serializer)?;
                 let mut map = db.borrow_mut();
                 let entry = map.entry(collection_name.into()).or_default();
-                let id = key
-                    .as_string()
-                    .map(|s| CryptoKeystoreResult::Ok(s.as_bytes().into()))
-                    .unwrap_or_else(|| Ok(serde_wasm_bindgen::from_value(key)?))?;
+                let id = entity.id_raw().to_vec();
                 entry.insert(id, js_value);
             }
         }
