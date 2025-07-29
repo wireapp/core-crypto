@@ -1,0 +1,21 @@
+opt_in_rules:
+  - missing_docs
+
+missing_docs:
+  warning: true
+  included:
+    - class
+    - struct
+    - enum
+    - extension
+    - protocol
+    - function
+
+disabled_rules:
+  - opening_brace # enforced differently by swift-format
+  - trailing_comma # set by swift-format
+
+line_length:
+  error: 100 # match the line length of swift-format
+  ignores_comments: true
+  ignores_urls: true
