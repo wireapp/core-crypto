@@ -656,6 +656,7 @@ final class WireCoreCryptoTests: XCTestCase {
         return try! DatabaseKey(key: Data(bytes))
     }
 
+    // swift-format-ignore: AlwaysUseLowerCamelCase
     /// Assert that an error is thrown when a block is performed.
     ///
     /// - Parameters:
@@ -664,8 +665,6 @@ final class WireCoreCryptoTests: XCTestCase {
     ///   - message: The error message to show when no error is thrown.
     ///   - file: The file name of the invoking test.
     ///   - line: The line number when this assertion is made.
-
-    // swift-format-ignore: AlwaysUseLowerCamelCase
     func XCTAssertThrowsErrorAsync<E: Error & Equatable>(
         _ expectedError: E,
         when expression: @escaping () async throws -> some Any,
@@ -696,6 +695,7 @@ final class WireCoreCryptoTests: XCTestCase {
         }
     }
 
+    // swift-format-ignore: AlwaysUseLowerCamelCase
     /// Assert that an error is thrown when a block is performed.
     ///
     /// - Parameters:
@@ -704,8 +704,6 @@ final class WireCoreCryptoTests: XCTestCase {
     ///   - file: The file name of the invoking test.
     ///   - line: The line number when this assertion is made.
     ///   - errorHandler: A handler for the thrown error.
-
-    // swift-format-ignore: AlwaysUseLowerCamelCase
     func XCTAssertThrowsErrorAsync(
         _ expression: () async throws -> some Any,
         _ message: String? = nil,
