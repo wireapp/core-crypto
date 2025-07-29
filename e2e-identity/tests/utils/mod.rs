@@ -15,6 +15,8 @@ pub mod fmk;
 #[cfg(not(target_family = "wasm"))]
 pub mod helpers;
 pub mod id_token;
+#[cfg(not(target_family = "wasm"))]
+pub mod idp;
 pub mod keys;
 
 pub(crate) fn rand_str(size: usize) -> String {
