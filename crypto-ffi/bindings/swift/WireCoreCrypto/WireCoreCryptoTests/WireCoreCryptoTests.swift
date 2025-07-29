@@ -18,7 +18,7 @@ final class WireCoreCryptoTests: XCTestCase {
 
     func testSetClientDataPersists() async throws {
         let coreCrypto = try await createCoreCrypto()
-        let data = "my message processing checkpoint".data(using: .utf8)!
+        let data = Data("my message processing checkpoint".utf8)
 
         try await coreCrypto.transaction { context in
             let previousData = try await context.getData()
@@ -108,7 +108,7 @@ final class WireCoreCryptoTests: XCTestCase {
         // Check if we can read the conversation from the migrated database
         let alice = try await CoreCrypto(
             keystorePath: targetPath.lastPathComponent, key: newKey)
-        let conversationId = ConversationId(bytes: "conversation1".data(using: .utf8)!)
+        let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let epoch = try await alice.transaction {
             try await $0.conversationEpoch(conversationId: conversationId)
         }
@@ -121,7 +121,7 @@ final class WireCoreCryptoTests: XCTestCase {
 
     func testInteractionWithInvalidContextThrowsError() async throws {
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
-        let aliceId = ClientId(bytes: "alice1".data(using: .utf8)!)
+        let aliceId = ClientId(bytes: Data("alice1".utf8))
         let coreCrypto = try await createCoreCrypto()
         var context: CoreCryptoContextProtocol? = nil
 
@@ -154,8 +154,8 @@ final class WireCoreCryptoTests: XCTestCase {
     func testTransactionRollsBackOnError() async throws {
         struct MyError: Error, Equatable {}
 
-        let aliceId = ClientId(bytes: "alice1".data(using: .utf8)!)
-        let conversationId = ConversationId(bytes: "conversation1".data(using: .utf8)!)
+        let aliceId = ClientId(bytes: Data("alice1".utf8))
+        let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
         let configuration = ConversationConfiguration(
             ciphersuite: ciphersuite,
@@ -294,7 +294,7 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     func testErrorTypeMappingShouldWork() async throws {
-        let conversationId = ConversationId(bytes: "conversation1".data(using: .utf8)!)
+        let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let alice = try await createClients("alice1")[0]
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
         let configuration = ConversationConfiguration(
@@ -342,7 +342,7 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     func testConversationExistsShouldReturnTrue() async throws {
-        let conversationId = ConversationId(bytes: "conversation1".data(using: .utf8)!)
+        let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
         let configuration = ConversationConfiguration(
             ciphersuite: ciphersuite,
@@ -367,7 +367,7 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     func testUpdateKeyingMaterialShouldProcessTheCommitMessage() async throws {
-        let conversationId = ConversationId(bytes: "conversation1".data(using: .utf8)!)
+        let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
         let configuration = ConversationConfiguration(
             ciphersuite: ciphersuite,
@@ -420,7 +420,7 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     func testEncryptMessageCanBeDecryptedByReceiver() async throws {
-        let conversationId = ConversationId(bytes: "conversation1".data(using: .utf8)!)
+        let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
         let configuration = ConversationConfiguration(
             ciphersuite: ciphersuite,
@@ -460,7 +460,7 @@ final class WireCoreCryptoTests: XCTestCase {
                 customConfiguration: configuration.custom
             ).id
         }
-        let message = "Hello World !".data(using: .utf8)!
+        let message = Data("Hello World !".utf8)
         let ciphertext = try await alice.transaction {
             try await $0.encryptMessage(
                 conversationId: conversationId,
@@ -495,8 +495,8 @@ final class WireCoreCryptoTests: XCTestCase {
             }
         }
 
-        let aliceId = ClientId(bytes: "alice1".data(using: .utf8)!)
-        let conversationId = ConversationId(bytes: "conversation1".data(using: .utf8)!)
+        let aliceId = ClientId(bytes: Data("alice1".utf8))
+        let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
         let configuration = ConversationConfiguration(
             ciphersuite: ciphersuite,
@@ -551,8 +551,8 @@ final class WireCoreCryptoTests: XCTestCase {
             }
         }
 
-        let aliceId = ClientId(bytes: "alice1".data(using: .utf8)!)
-        let conversationId = ConversationId(bytes: "conversation1".data(using: .utf8)!)
+        let aliceId = ClientId(bytes: Data("alice1".utf8))
+        let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
         let configuration = ConversationConfiguration(
             ciphersuite: ciphersuite,
@@ -615,7 +615,7 @@ final class WireCoreCryptoTests: XCTestCase {
             -> WireCoreCryptoUniffi.MlsTransportData
         {
             lastHistorySecret = historySecret
-            return "secret".data(using: .utf8)!
+            return Data("secret".utf8)
         }
 
     }
