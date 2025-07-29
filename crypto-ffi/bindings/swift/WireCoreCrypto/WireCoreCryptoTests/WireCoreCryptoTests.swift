@@ -4,6 +4,8 @@ import XCTest
 
 @testable import WireCoreCrypto
 
+// swiftlint:disable file_length
+// swiftlint:disable:next type_body_length
 final class WireCoreCryptoTests: XCTestCase {
 
     var mockMlsTransport: MockMlsTransport = MockMlsTransport()
@@ -124,7 +126,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
         let aliceId = ClientId(bytes: Data("alice1".utf8))
         let coreCrypto = try await createCoreCrypto()
-        var context: CoreCryptoContextProtocol? = nil
+        var context: CoreCryptoContextProtocol?
 
         try await coreCrypto.transaction { context = $0 }
 
@@ -420,6 +422,7 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertTrue(decrypted.hasEpochChanged)
     }
 
+    // swiftlint:disable:next function_body_length
     func testEncryptMessageCanBeDecryptedByReceiver() async throws {
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
@@ -594,7 +597,7 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertEqual(recordedSecrets.first!.conversationId, conversationId)
     }
 
-    // MARK - helpers
+    // MARK: - helpers
 
     final actor MockMlsTransport: MlsTransport {
 
@@ -654,6 +657,7 @@ final class WireCoreCryptoTests: XCTestCase {
         var bytes = [UInt8](repeating: 0, count: 32)
         _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
         // constructor only fails if we have other than 32 bytes
+        // swiftlint:disable:next force_try
         return try! DatabaseKey(key: Data(bytes))
     }
 
