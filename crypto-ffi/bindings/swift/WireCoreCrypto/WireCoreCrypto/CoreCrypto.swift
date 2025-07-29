@@ -89,13 +89,13 @@ public final class CoreCrypto: CoreCryptoProtocol {
     /// - Parameter key: secret key to unlock the encrypted key store
     ///
     public convenience init(keystorePath: String, key: DatabaseKey) async throws {
-        let cc =
+        let coreCrypto =
             try await WireCoreCryptoUniffi.coreCryptoDeferredInit(
                 path: keystorePath,
                 key: key,
                 entropySeed: nil
             )
-        self.init(cc, keystorePath: FilePath(stringLiteral: keystorePath))
+        self.init(coreCrypto, keystorePath: FilePath(stringLiteral: keystorePath))
     }
 
     /// Instantiate a history client.
@@ -103,9 +103,9 @@ public final class CoreCrypto: CoreCryptoProtocol {
     /// This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
     /// Other use is a logic error.
     public static func historyClient(_ historySecret: HistorySecret) async throws -> CoreCrypto {
-        let cc =
+        let coreCrypto =
             try await WireCoreCryptoUniffi.coreCryptoHistoryClient(historySecret: historySecret)
-        return self.init(cc)
+        return self.init(coreCrypto)
     }
 
     public func transaction<Result>(

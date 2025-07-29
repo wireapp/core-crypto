@@ -38,12 +38,12 @@ final class WireCoreCryptoTests: XCTestCase {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 
         let key1 = genDatabaseKey()
-        var cc = try await CoreCrypto(keystorePath: keystore.path, key: key1)
+        var coreCrypto = try await CoreCrypto(keystorePath: keystore.path, key: key1)
 
         let clientId = ClientId(bytes: UUID().uuidString.data(using: .utf8)!)
         let ciphersuite = Ciphersuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
 
-        let pubkey1 = try await cc.transaction {
+        let pubkey1 = try await coreCrypto.transaction {
             try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite], nbKeyPackage: 1)
             return try await $0.clientPublicKey(
                 ciphersuite: ciphersuite, credentialType: CredentialType.basic)
@@ -54,8 +54,8 @@ final class WireCoreCryptoTests: XCTestCase {
 
         try await updateDatabaseKey(name: keystore.path, oldKey: key1, newKey: key2)
 
-        cc = try await CoreCrypto(keystorePath: keystore.path, key: key2)
-        let pubkey2 = try await cc.transaction {
+        coreCrypto = try await CoreCrypto(keystorePath: keystore.path, key: key2)
+        let pubkey2 = try await coreCrypto.transaction {
             try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite], nbKeyPackage: 1)
             return try await $0.clientPublicKey(
                 ciphersuite: ciphersuite, credentialType: CredentialType.basic)
@@ -267,9 +267,9 @@ final class WireCoreCryptoTests: XCTestCase {
         // If they execute serially, one will store "ttt" and the other "tttt" (this is what we assert).
 
         let result = try await withThrowingTaskGroup(of: Void.self) { group in
-            for i in 0..<transactionCount {
+            for idx in 0..<transactionCount {
                 group.addTask {
-                    try await coreCryptoInstances[i].transaction { ctx in
+                    try await coreCryptoInstances[idx].transaction { ctx in
                         try await Task.sleep(for: .milliseconds(100))
                         let data =
                             try await ctx.getData().map { String(data: $0, encoding: .utf8)! }?
