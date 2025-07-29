@@ -99,7 +99,7 @@ fn test_env() -> TestEnvironment {
 #[rstest]
 #[tokio::test]
 async fn refresh_token_can_be_used_to_renew(test_env: TestEnvironment) {
-    let test = E2eTest::new_demo(test_env).start().await;
+    let test = E2eTest::new(test_env).start().await;
 
     // first enrollment
     let test = test.nominal_enrollment().await.unwrap();
