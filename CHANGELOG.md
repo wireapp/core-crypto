@@ -4,6 +4,14 @@
 
 ### Breaking Changes
 
+- Removed `proteusCryptoboxMigrate`.
+
+  Affected platforms: all
+
+  Support for Cryptobox migration has been removed.
+
+  Migration: remove all calls to `proteusCryptoboxMigrate`.
+
 - Renamed `CoreCryptoContext.proteusDecrypt` to `CoreCryptoContext.proteusDecryptSafe(...)`.
 
   Affected platforms: Android
