@@ -98,7 +98,7 @@ impl KeystoreTransaction {
             .filter(|maybe_child: &E| {
                 maybe_child
                     .parent_id()
-                    .map(|parent_id| parent_id == entity.id_raw())
+                    .map(|parent_id| parent_id == entity.id_raw().as_ref())
                     .unwrap_or_default()
             })
             .collect();
@@ -205,17 +205,17 @@ impl KeystoreTransaction {
     /// * `Some(Some(E))` - the transaction cache contains the record
     /// * `Some(None)` - the deletion of the record has been cached
     /// * `None` - there is no information about the record in the cache
-    pub(crate) async fn find<E>(&self, id: &[u8]) -> CryptoKeystoreResult<Option<Option<E>>>
+    pub(crate) async fn find<E>(&self, id: &EntityId) -> CryptoKeystoreResult<Option<Option<E>>>
     where
         E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>,
     {
-        let maybe_cached_record = self.find_in_cache(id).await?;
+        let maybe_cached_record = self.find_in_cache(id.as_id().as_slice()).await?;
         if let Some(cached_record) = maybe_cached_record {
             return Ok(Some(Some(cached_record)));
         }
 
         let deleted_list = self.deleted.read().await;
-        if deleted_list.contains(&EntityId::from_collection_name(E::COLLECTION_NAME, id)?) {
+        if deleted_list.contains(id) {
             return Ok(Some(None));
         }
 
@@ -316,7 +316,7 @@ impl KeystoreTransaction {
             .find_all(persisted_records, EntityFindParams::default())
             .await?
             .into_iter()
-            .filter(|record| ids.contains(&record.id_raw().to_vec()))
+            .filter(|record| ids.contains(&record.id_raw().as_ref().to_vec()))
             .collect();
         Ok(records)
     }
@@ -354,7 +354,7 @@ impl KeystoreTransaction {
         record: &E,
         deleted_records: &[EntityId],
     ) -> bool {
-        let id = EntityId::from_collection_name(E::COLLECTION_NAME, record.id_raw());
+        let id = EntityId::from_collection_name(E::COLLECTION_NAME, record.id_raw().as_ref());
         let Ok(id) = id else { return false };
         deleted_records.contains(&id)
     }

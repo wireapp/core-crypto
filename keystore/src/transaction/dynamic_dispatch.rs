@@ -80,7 +80,7 @@ pub enum EntityId {
 }
 
 impl EntityId {
-    fn as_id(&self) -> StringEntityId<'_> {
+    pub(crate) fn as_id(&self) -> StringEntityId<'_> {
         match self {
             EntityId::SignatureKeyPair(vec) => vec.as_slice().into(),
             EntityId::HpkePrivateKey(vec) => vec.as_slice().into(),

@@ -28,6 +28,7 @@ pub use self::platform::*;
 use crate::connection::DatabaseConnection;
 #[cfg(not(target_family = "wasm"))]
 use crate::sha256;
+use crate::transaction::dynamic_dispatch::EntityId;
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind};
 #[cfg(target_family = "wasm")]
 use aes_gcm::Aes256Gcm;
@@ -168,28 +169,28 @@ cfg_if::cfg_if! {
         #[async_trait::async_trait(?Send)]
         pub trait Entity: EntityBase + serde::Serialize + serde::de::DeserializeOwned {
             fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
-                Ok(js_sys::Uint8Array::from(self.id_raw()).into())
+                Ok(js_sys::Uint8Array::from(self.id_raw().as_ref()).into())
             }
 
-            fn id_raw(&self) -> &[u8];
+            fn id_raw(&self) -> impl AsRef<[u8]>;
 
             /// The query results that are obtained during a transaction
             /// from the transaction cache and the database are merged by this key.
             fn merge_key(&self) -> Vec<u8> {
-                self.id_raw().into()
+                self.id_raw().as_ref().into()
             }
 
             fn aad(&self) -> CryptoKeystoreResult<Vec<u8>> {
                 let aad = Aad {
                     type_name: Self::COLLECTION_NAME.as_bytes().to_vec(),
-                    id: self.id_raw().into(),
+                    id: self.id_raw().as_ref().into(),
                 };
                 serde_json::to_vec(&aad).map_err(Into::into)
             }
 
             async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>>;
-            async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>>;
-            async fn find_many(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<Vec<Self>> {
+            async fn find_one(conn: &mut Self::ConnectionType, id: &EntityId) -> CryptoKeystoreResult<Option<Self>>;
+            async fn find_many(conn: &mut Self::ConnectionType, ids: &[EntityId]) -> CryptoKeystoreResult<Vec<Self>> {
                 // Default, inefficient & naive method
                 let mut ret = Vec::with_capacity(ids.len());
                 for id in ids {
@@ -264,7 +265,7 @@ cfg_if::cfg_if! {
                     <Self as UniqueEntity>::find_all(conn, params).await
                 }
 
-            async fn find_one(conn: &mut Self::ConnectionType, _id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
+            async fn find_one(conn: &mut Self::ConnectionType, _id: &EntityId) -> CryptoKeystoreResult<Option<Self>> {
                     <Self as UniqueEntity>::find_one(conn).await
                 }
 
@@ -310,12 +311,12 @@ cfg_if::cfg_if! {
 
         #[async_trait::async_trait]
         pub trait Entity: EntityBase {
-            fn id_raw(&self) -> &[u8];
+            fn id_raw(&self) -> impl AsRef<[u8]>;
 
             /// The query results that are obtained during a transaction
             /// from the transaction cache and the database are merged by this key.
             fn merge_key(&self) -> Vec<u8> {
-                self.id_raw().into()
+                self.id_raw().as_ref().into()
             }
 
             async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>>;
@@ -358,7 +359,7 @@ cfg_if::cfg_if! {
             }
 
             fn id_sha256(&self) -> String {
-                sha256(self.id_raw())
+                sha256(self.id_raw().as_ref())
             }
 
             fn id_from_hex(id_hex: &str) -> CryptoKeystoreResult<Vec<u8>> {

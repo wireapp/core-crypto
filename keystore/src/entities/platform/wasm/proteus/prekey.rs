@@ -1,4 +1,5 @@
 use crate::entities::EntityTransactionExt;
+use crate::transaction::dynamic_dispatch::EntityId;
 use crate::{
     CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
@@ -34,12 +35,9 @@ impl Entity for ProteusPrekey {
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
     }
 
-    async fn find_one(
-        conn: &mut Self::ConnectionType,
-        id: &StringEntityId,
-    ) -> crate::CryptoKeystoreResult<Option<Self>> {
+    async fn find_one(conn: &mut Self::ConnectionType, id: &EntityId) -> crate::CryptoKeystoreResult<Option<Self>> {
         let storage = conn.storage();
-        storage.get(Self::COLLECTION_NAME, id.as_slice()).await
+        storage.get(Self::COLLECTION_NAME, id.as_id().as_slice()).await
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
