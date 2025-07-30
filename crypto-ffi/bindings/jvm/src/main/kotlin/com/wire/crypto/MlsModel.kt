@@ -104,15 +104,22 @@ fun com.wire.crypto.uniffi.ConversationId.toGroupId() = MLSGroupId(this)
 
 /** Client ID */
 @JvmInline
-value class ClientId(override val value: ByteArray) : FfiType<ByteArray, com.wire.crypto.uniffi.ClientId> {
-    override fun lower() = com.wire.crypto.uniffi.ClientId(value)
+value class ClientId(val value: com.wire.crypto.uniffi.ClientId) {
+    /** Lower this wrapper to the internal FFI type */
+    fun lower() = value
+
+    /** Copy the bytes from client ID */
+    fun copyBytes(): ByteArray = value.copyBytes()
+
+    override fun toString(): String = value.copyBytes().toHex()
 }
 
+/** Construct a client ID */
 @OptIn(ExperimentalUnsignedTypes::class)
-internal fun com.wire.crypto.uniffi.ClientId.toClientId() = ClientId(copyBytes())
+internal fun com.wire.crypto.uniffi.ClientId.toClientId(): ClientId = ClientId(this)
 
 /** Construct a client ID */
-fun String.toClientId() = ClientId(this.toByteArray())
+fun String.toClientId(): ClientId = ClientId(com.wire.crypto.uniffi.ClientId(this.toByteArray()))
 
 /** External sender key
  * @property value The FFI external sender key
@@ -429,7 +436,7 @@ data class BufferedDecryptedMessage(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as DecryptedMessage
+        other as BufferedDecryptedMessage
 
         if (message != null) {
             if (other.message == null) return false

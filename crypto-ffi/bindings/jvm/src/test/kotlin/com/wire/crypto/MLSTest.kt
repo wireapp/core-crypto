@@ -466,6 +466,23 @@ class MLSTest {
             )
         }
     }
+
+    @Test
+    fun decryptMessage_should_always_have_senderClientId_when_message_is_present() = runTest {
+        val (alice, bob) = newClients("alice", "bob")
+        bob.transaction { it.createConversation(id) }
+        val kp = alice.transaction { it.generateKeyPackages(1U).first() }
+        bob.transaction { it.addMember(id, listOf(kp)) }
+
+        val welcome = mockDeliveryService.getLatestWelcome()
+        alice.transaction { it.processWelcomeMessage(welcome) }
+
+        val encrypted = alice.transaction { it.encryptMessage(id, "Hello".encodeToByteArray()) }
+        val decrypted = bob.transaction { it.decryptMessage(id, encrypted) }
+
+        assertNotNull(decrypted.message)
+        assertNotNull(decrypted.senderClientId)
+    }
 }
 
 fun newClients(vararg clientIds: String) = runBlocking {
