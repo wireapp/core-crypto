@@ -30,6 +30,7 @@ pub mod dummy_entity {
     use crate::{
         CryptoKeystoreResult, MissingKeyErrorKind,
         entities::{Entity, EntityBase, EntityFindParams, StringEntityId},
+        transaction::dynamic_dispatch::EntityId,
     };
 
     #[derive(Debug, Eq, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -53,7 +54,7 @@ pub mod dummy_entity {
     #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
     #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
     impl Entity for DummyStoreValue {
-        fn id_raw(&self) -> &[u8] {
+        fn id_raw(&self) -> impl std::convert::AsRef<[u8]> {
             b""
         }
 
@@ -63,13 +64,10 @@ pub mod dummy_entity {
         ) -> CryptoKeystoreResult<Vec<Self>> {
             Ok(vec![])
         }
-        async fn find_one(
-            _conn: &mut Self::ConnectionType,
-            _id: &StringEntityId,
-        ) -> CryptoKeystoreResult<Option<Self>> {
+        async fn find_one(_conn: &mut Self::ConnectionType, _id: &EntityId) -> CryptoKeystoreResult<Option<Self>> {
             Ok(Some(DummyStoreValue))
         }
-        async fn find_many(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<Vec<Self>> {
+        async fn find_many(conn: &mut Self::ConnectionType, ids: &[EntityId]) -> CryptoKeystoreResult<Vec<Self>> {
             // Default, inefficient & naive method
             let mut ret = Vec::with_capacity(ids.len());
             for id in ids {

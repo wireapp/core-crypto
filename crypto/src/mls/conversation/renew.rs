@@ -1,4 +1,4 @@
-use core_crypto_keystore::entities::MlsEncryptionKeyPair;
+use core_crypto_keystore::entities::{Entity, MlsEncryptionKeyPair};
 use openmls::prelude::{LeafNode, LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -133,9 +133,12 @@ impl MlsConversation {
         if let Some(leaf_node) = leaf_node {
             // Creating an update rekeys the LeafNode everytime. Hence we need to clear the previous
             // encryption key from the keystore otherwise we would have a leak
+            let id = leaf_node.encryption_key().as_slice();
             backend
                 .key_store()
-                .remove::<MlsEncryptionKeyPair, _>(leaf_node.encryption_key().as_slice())
+                .remove::<MlsEncryptionKeyPair>(
+                    &MlsEncryptionKeyPair::to_entity_id(id).map_err(KeystoreError::wrap("constructing entity id"))?,
+                )
                 .await
                 .map_err(KeystoreError::wrap("removing mls encryption keypair"))?;
         }

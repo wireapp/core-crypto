@@ -10,6 +10,7 @@ use crate::connection::TransactionWrapper;
 use crate::entities::Entity;
 use crate::entities::EntityBase;
 use crate::entities::EntityFindParams;
+use crate::transaction::dynamic_dispatch::EntityId;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, ZeroizeOnDrop)]
 pub struct Epoch {
@@ -68,7 +69,7 @@ impl Entity for Epoch {
         todo!()
     }
 
-    async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
+    async fn find_one(conn: &mut Self::ConnectionType, id: &EntityId) -> CryptoKeystoreResult<Option<Self>> {
         todo!()
     }
 

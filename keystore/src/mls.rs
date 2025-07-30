@@ -1,8 +1,11 @@
 use crate::connection::FetchFromDatabase;
+use crate::entities::{Entity, EntityBase as _};
+use crate::transaction::dynamic_dispatch::EntityId;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
     entities::{E2eiEnrollment, EntityFindParams, MlsKeyPackage, PersistedMlsGroup, PersistedMlsPendingGroup},
 };
+use itertools::Group;
 use openmls_traits::key_store::MlsEntity;
 
 /// An interface for the specialized queries in the KeyStore
@@ -136,8 +139,12 @@ impl CryptoKeystoreMls for crate::Connection {
             .collect())
     }
 
-    async fn mls_group_exists(&self, group_id: &[u8]) -> bool {
-        matches!(self.find::<PersistedMlsGroup>(group_id).await, Ok(Some(_)))
+    async fn mls_group_exists(&self, group_id: &[u8]) -> CryptoKeystoreResult<bool> {
+        let group_exists = self
+            .find::<PersistedMlsGroup>(&PersistedMlsGroup::to_entity_id(group_id)?)
+            .await?
+            .is_some();
+        Ok(group_exists)
     }
 
     async fn mls_group_persist(
@@ -167,7 +174,8 @@ impl CryptoKeystoreMls for crate::Connection {
     }
 
     async fn mls_group_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {
-        self.remove::<PersistedMlsGroup, _>(group_id).await?;
+        self.remove::<PersistedMlsGroup>(&PersistedMlsGroup::to_entity_id(group_id)?)
+            .await?;
 
         Ok(())
     }
@@ -190,16 +198,20 @@ impl CryptoKeystoreMls for crate::Connection {
     }
 
     async fn mls_pending_groups_load(&self, group_id: &[u8]) -> CryptoKeystoreResult<(Vec<u8>, Vec<u8>)> {
-        self.find(group_id)
-            .await?
-            .map(|r: PersistedMlsPendingGroup| (r.state.clone(), r.custom_configuration.clone()))
-            .ok_or(CryptoKeystoreError::MissingKeyInStore(
-                MissingKeyErrorKind::MlsPendingGroup,
-            ))
+        self.find(&EntityId::from_collection_name(
+            PersistedMlsPendingGroup::COLLECTION_NAME,
+            group_id,
+        )?)
+        .await?
+        .map(|r: PersistedMlsPendingGroup| (r.state.clone(), r.custom_configuration.clone()))
+        .ok_or(CryptoKeystoreError::MissingKeyInStore(
+            MissingKeyErrorKind::MlsPendingGroup,
+        ))
     }
 
     async fn mls_pending_groups_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {
-        self.remove::<PersistedMlsPendingGroup, _>(group_id).await
+        self.remove::<PersistedMlsPendingGroup>(&PersistedMlsPendingGroup::to_entity_id(group_id)?)
+            .await
     }
 
     async fn save_e2ei_enrollment(&self, id: &[u8], content: &[u8]) -> CryptoKeystoreResult<()> {
@@ -214,12 +226,13 @@ impl CryptoKeystoreMls for crate::Connection {
     async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
         // someone who has time could try to optimize this but honestly it's really on the cold path
         let enrollment = self
-            .find::<E2eiEnrollment>(id)
+            .find::<E2eiEnrollment>(&E2eiEnrollment::to_entity_id(id)?)
             .await?
             .ok_or(CryptoKeystoreError::MissingKeyInStore(
                 MissingKeyErrorKind::E2eiEnrollment,
             ))?;
-        self.remove::<E2eiEnrollment, _>(id).await?;
+        self.remove::<E2eiEnrollment>(&E2eiEnrollment::to_entity_id(id)?)
+            .await?;
         Ok(enrollment.content.clone())
     }
 }

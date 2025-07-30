@@ -26,6 +26,7 @@ pub mod platform {
 
 pub use self::platform::*;
 use crate::entities::{Entity, EntityFindParams, Epoch, MlsPendingMessage, StringEntityId};
+use crate::transaction::dynamic_dispatch::EntityId;
 use std::ops::DerefMut;
 
 use crate::entities::{EntityTransactionExt, UniqueEntity};
@@ -153,7 +154,7 @@ const MAX_EPOCH_RETENTION: u64 = 1;
 pub trait FetchFromDatabase: Send + Sync {
     async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
-        id: &[u8],
+        id: &EntityId,
     ) -> CryptoKeystoreResult<Option<E>>;
 
     async fn find_unique<U: UniqueEntity<ConnectionType = KeystoreDatabaseConnection>>(
@@ -167,7 +168,7 @@ pub trait FetchFromDatabase: Send + Sync {
 
     async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
-        ids: &[Vec<u8>],
+        ids: &[EntityId],
     ) -> CryptoKeystoreResult<Vec<E>>;
     async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize>;
 }
@@ -296,18 +297,15 @@ impl Connection {
         transaction.save_mut(entity).await
     }
 
-    pub async fn remove<
-        E: Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt,
-        S: AsRef<[u8]>,
-    >(
+    pub async fn remove<E: Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt>(
         &self,
-        id: S,
+        id: &EntityId,
     ) -> CryptoKeystoreResult<()> {
         let transaction_guard = self.transaction.lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
             return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
         };
-        transaction.remove::<E, S>(id).await
+        transaction.remove::<E>(id).await
     }
 
     pub async fn find_pending_messages_by_conversation_id(
@@ -349,7 +347,7 @@ impl Connection {
 
         // Otherwise get it from the database
         let mut conn = self.conn.lock().await;
-        Epoch::find_one(&mut conn, group_id, epoch_id).await
+        Epoch::find_one(&mut conn, &EntityId::Epoch((group_id.to_vec(), epoch_id))).await
     }
 
     pub(crate) async fn max_epoch_id(&self, group_id: &[u8]) -> CryptoKeystoreResult<Option<u64>> {
@@ -384,7 +382,7 @@ impl Connection {
 impl FetchFromDatabase for Connection {
     async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
-        id: &[u8],
+        id: &EntityId,
     ) -> CryptoKeystoreResult<Option<E>> {
         // If a transaction is in progress...
         if let Some(transaction) = self.transaction.lock().await.as_ref()
@@ -397,7 +395,7 @@ impl FetchFromDatabase for Connection {
 
         // Otherwise get it from the database
         let mut conn = self.conn.lock().await;
-        E::find_one(&mut conn, &id.into()).await
+        E::find_one(&mut conn, id).await
     }
 
     async fn find_unique<U: UniqueEntity>(&self) -> CryptoKeystoreResult<U> {
@@ -430,17 +428,17 @@ impl FetchFromDatabase for Connection {
 
     async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
-        ids: &[Vec<u8>],
+        ids: &[EntityId],
     ) -> CryptoKeystoreResult<Vec<E>> {
-        let entity_ids: Vec<StringEntityId> = ids.iter().map(|id| id.as_slice().into()).collect();
         let mut conn = self.conn.lock().await;
-        let persisted_records = E::find_many(&mut conn, &entity_ids).await?;
+        let persisted_records = E::find_many(&mut conn, &ids).await?;
 
         let transaction_guard = self.transaction.lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
             return Ok(persisted_records);
         };
-        transaction.find_many(persisted_records, ids).await
+        let raw_ids = ids.iter().map(|id| id.as_id().as_slice().into()).collect::<Vec<_>>();
+        transaction.find_many(persisted_records, &raw_ids).await
     }
 
     async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize> {

@@ -84,7 +84,7 @@ impl WasmStorageTransaction<'_> {
                 let js_value = entity.serialize(&serializer)?;
                 let mut map = db.borrow_mut();
                 let entry = map.entry(collection_name.into()).or_default();
-                let id = entity.id_raw().to_vec();
+                let id = entity.id_raw().as_ref().to_vec();
                 entry.insert(id, js_value);
             }
         }

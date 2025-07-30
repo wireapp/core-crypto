@@ -68,20 +68,19 @@ impl KeystoreTransaction {
 
     pub(crate) async fn remove<
         E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt,
-        S: AsRef<[u8]>,
     >(
         &self,
-        id: S,
+        id: &EntityId,
     ) -> CryptoKeystoreResult<()> {
         let mut cache_guard = self.cache.write().await;
         if let Entry::Occupied(mut table) = cache_guard.entry(E::COLLECTION_NAME.to_string())
-            && let Entry::Occupied(cached_record) = table.get_mut().entry(id.as_ref().to_vec())
+            && let Entry::Occupied(cached_record) = table.get_mut().entry(id.as_id().to_bytes())
         {
             cached_record.remove_entry();
         };
 
         let mut deleted_list = self.deleted.write().await;
-        deleted_list.push(EntityId::from_collection_name(E::COLLECTION_NAME, id.as_ref())?);
+        deleted_list.push(id.clone());
         Ok(())
     }
 

@@ -4,7 +4,7 @@ use mls_rs_core::{key_package::KeyPackageData as MlsRsKeyPackageData, psk::Exter
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
-use crate::entities::{Group, Psk};
+use crate::entities::{Entity, Group, Psk};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, deser,
     entities::{
@@ -91,7 +91,7 @@ impl mls_rs_core::key_package::KeyPackageStorage for Connection {
     }
 
     async fn get(&self, id: &[u8]) -> CryptoKeystoreResult<Option<MlsRsKeyPackageData>> {
-        let maybe_record = self.find::<KeyPackageData>(id).await?;
+        let maybe_record = self.find::<KeyPackageData>(&KeyPackageData::to_entity_id(id)?).await?;
         maybe_record
             .map(|keystore_instance| {
                 let (_, mls_rs_instance) = keystore_instance.try_into()?;
@@ -101,7 +101,7 @@ impl mls_rs_core::key_package::KeyPackageStorage for Connection {
     }
 
     async fn delete(&mut self, id: &[u8]) -> CryptoKeystoreResult<()> {
-        self.remove::<KeyPackageData, _>(id).await
+        self.remove::<KeyPackageData>(&KeyPackageData::to_entity_id(id)?).await
     }
 }
 
@@ -110,7 +110,7 @@ impl mls_rs_core::psk::PreSharedKeyStorage for Connection {
     type Error = CryptoKeystoreError;
 
     async fn get(&self, id: &ExternalPskId) -> CryptoKeystoreResult<Option<MlsRsPsk>> {
-        let maybe_record = self.find::<Psk>(id).await?;
+        let maybe_record = self.find::<Psk>(&Psk::to_entity_id(id)?).await?;
         maybe_record
             .map(|keystore_instance| {
                 let (_, mls_rs_instance) = keystore_instance.try_into()?;
@@ -202,31 +202,51 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
 
         match V::ID {
             MlsEntityId::GroupState => {
-                let group: PersistedMlsGroup = self.find(k).await.ok().flatten()?;
+                let group: PersistedMlsGroup = self
+                    .find(&PersistedMlsGroup::to_entity_id(k).ok()?)
+                    .await
+                    .ok()
+                    .flatten()?;
                 deser(&group.state).ok()
             }
             MlsEntityId::SignatureKeyPair => {
-                let sig: MlsSignatureKeyPair = self.find(k).await.ok().flatten()?;
+                let sig: MlsSignatureKeyPair = self
+                    .find(&MlsSignatureKeyPair::to_entity_id(k).ok()?)
+                    .await
+                    .ok()
+                    .flatten()?;
                 deser(&sig.keypair).ok()
             }
             MlsEntityId::KeyPackage => {
-                let kp: MlsKeyPackage = self.find(k).await.ok().flatten()?;
+                let kp: MlsKeyPackage = self.find(&MlsKeyPackage::to_entity_id(k).ok()?).await.ok().flatten()?;
                 deser(&kp.keypackage).ok()
             }
             MlsEntityId::HpkePrivateKey => {
-                let hpke_pk: MlsHpkePrivateKey = self.find(k).await.ok().flatten()?;
+                let hpke_pk: MlsHpkePrivateKey = self
+                    .find(&MlsHpkePrivateKey::to_entity_id(k).ok()?)
+                    .await
+                    .ok()
+                    .flatten()?;
                 deser(&hpke_pk.sk).ok()
             }
             MlsEntityId::PskBundle => {
-                let psk_bundle: MlsPskBundle = self.find(k).await.ok().flatten()?;
+                let psk_bundle: MlsPskBundle = self.find(&MlsPskBundle::to_entity_id(k).ok()?).await.ok().flatten()?;
                 deser(&psk_bundle.psk).ok()
             }
             MlsEntityId::EncryptionKeyPair => {
-                let kp: MlsEncryptionKeyPair = self.find(k).await.ok().flatten()?;
+                let kp: MlsEncryptionKeyPair = self
+                    .find(&MlsEncryptionKeyPair::to_entity_id(k).ok()?)
+                    .await
+                    .ok()
+                    .flatten()?;
                 deser(&kp.sk).ok()
             }
             MlsEntityId::EpochEncryptionKeyPair => {
-                let kp: MlsEpochEncryptionKeyPair = self.find(k).await.ok().flatten()?;
+                let kp: MlsEpochEncryptionKeyPair = self
+                    .find(&MlsEpochEncryptionKeyPair::to_entity_id(k).ok()?)
+                    .await
+                    .ok()
+                    .flatten()?;
                 deser(&kp.keypairs).ok()
             }
         }
@@ -234,13 +254,28 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
 
     async fn delete<V: MlsEntity>(&self, k: &[u8]) -> Result<(), Self::Error> {
         match V::ID {
-            MlsEntityId::GroupState => self.remove::<PersistedMlsGroup, _>(k).await?,
-            MlsEntityId::SignatureKeyPair => self.remove::<MlsSignatureKeyPair, _>(k).await?,
-            MlsEntityId::HpkePrivateKey => self.remove::<MlsHpkePrivateKey, _>(k).await?,
-            MlsEntityId::KeyPackage => self.remove::<MlsKeyPackage, _>(k).await?,
-            MlsEntityId::PskBundle => self.remove::<MlsPskBundle, _>(k).await?,
-            MlsEntityId::EncryptionKeyPair => self.remove::<MlsEncryptionKeyPair, _>(k).await?,
-            MlsEntityId::EpochEncryptionKeyPair => self.remove::<MlsEpochEncryptionKeyPair, _>(k).await?,
+            MlsEntityId::GroupState => {
+                self.remove::<PersistedMlsGroup>(&PersistedMlsGroup::to_entity_id(k)?)
+                    .await?
+            }
+            MlsEntityId::SignatureKeyPair => {
+                self.remove::<MlsSignatureKeyPair>(&MlsSignatureKeyPair::to_entity_id(k)?)
+                    .await?
+            }
+            MlsEntityId::HpkePrivateKey => {
+                self.remove::<MlsHpkePrivateKey>(&MlsHpkePrivateKey::to_entity_id(k)?)
+                    .await?
+            }
+            MlsEntityId::KeyPackage => self.remove::<MlsKeyPackage>(&KeyPackageData::to_entity_id(k)?).await?,
+            MlsEntityId::PskBundle => self.remove::<MlsPskBundle>(&KeyPackageData::to_entity_id(k)?).await?,
+            MlsEntityId::EncryptionKeyPair => {
+                self.remove::<MlsEncryptionKeyPair>(&MlsEncryptionKeyPair::to_entity_id(k)?)
+                    .await?
+            }
+            MlsEntityId::EpochEncryptionKeyPair => {
+                self.remove::<MlsEpochEncryptionKeyPair>(&MlsEpochEncryptionKeyPair::to_entity_id(k)?)
+                    .await?
+            }
         }
 
         Ok(())

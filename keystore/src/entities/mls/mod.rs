@@ -1,5 +1,7 @@
 use super::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId};
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::TransactionWrapper};
+use crate::{
+    CryptoKeystoreError, CryptoKeystoreResult, connection::TransactionWrapper, transaction::dynamic_dispatch::EntityId,
+};
 use openmls_traits::types::SignatureScheme;
 use zeroize::Zeroize;
 
@@ -39,7 +41,8 @@ pub trait PersistedMlsGroupExt: Entity {
             return Ok(None);
         };
 
-        <Self as super::Entity>::find_one(conn, &parent_id.into()).await
+        <Self as super::Entity>::find_one(conn, &EntityId::from_collection_name(Self::COLLECTION_NAME, parent_id)?)
+            .await
     }
 
     async fn child_groups(
@@ -52,7 +55,12 @@ pub trait PersistedMlsGroupExt: Entity {
 
         Ok(entities
             .into_iter()
-            .filter(|entity| entity.parent_id().map(|parent_id| parent_id == id).unwrap_or_default())
+            .filter(|entity| {
+                entity
+                    .parent_id()
+                    .map(|parent_id| parent_id == id.as_ref())
+                    .unwrap_or_default()
+            })
             .collect())
     }
 }

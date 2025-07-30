@@ -174,6 +174,15 @@ cfg_if::cfg_if! {
 
             fn id_raw(&self) -> impl AsRef<[u8]>;
 
+            fn entity_id(&self) -> CryptoKeystoreResult<EntityId> {
+                Self::to_entity_id(self.id_raw())
+            }
+
+            fn to_entity_id(id: impl AsRef<[u8]>) -> CryptoKeystoreResult<EntityId> {
+                let id = EntityId::from_collection_name(Self::COLLECTION_NAME, id.as_ref())?;
+                Ok(id)
+            }
+
             /// The query results that are obtained during a transaction
             /// from the transaction cache and the database are merged by this key.
             fn merge_key(&self) -> Vec<u8> {
