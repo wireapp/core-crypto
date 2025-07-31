@@ -6,10 +6,7 @@ use super::*;
 
 /// Open an existing idb database with the given name and key, and migrate it if needed.
 /// The key is only being used for the 0 -> 1 migration, which needs the key as a string.
-///
-/// TODO: this is pub only because it's needed for the cryptobox migration test.
-///       Once we drop cryptobox migration and the related test, make this pub(super) again.
-pub async fn open_and_migrate(name: &str, key: &str) -> CryptoKeystoreResult<Database> {
+pub(super) async fn open_and_migrate(name: &str, key: &str) -> CryptoKeystoreResult<Database> {
     /// Do not update this target version. The last version that this function
     /// should upgrade to is DB_VERSION_3, because to update to DB_VERSION_4,
     /// clients need to call migrate_db_key_type_to_bytes.
