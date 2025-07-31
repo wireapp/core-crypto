@@ -286,15 +286,4 @@
 <a href=#286 id=286 data-nosnippet>286</a>            </span>.map_err(RecursiveError::root(<span class="string">"geeting proteus fingerprint remote"</span>))
 <a href=#287 id=287 data-nosnippet>287</a>            .map_err(Into::into)
 <a href=#288 id=288 data-nosnippet>288</a>    }
-<a href=#289 id=289 data-nosnippet>289</a>
-<a href=#290 id=290 data-nosnippet>290</a>    <span class="doccomment">/// Migrates an existing Cryptobox data store (whether a folder or an IndexedDB database) located at `path` to the keystore.
-<a href=#291 id=291 data-nosnippet>291</a>    ///
-<a href=#292 id=292 data-nosnippet>292</a>    ///The client can then be initialized with [TransactionContext::proteus_init]
-<a href=#293 id=293 data-nosnippet>293</a>    </span><span class="kw">pub async fn </span>proteus_cryptobox_migrate(<span class="kw-2">&amp;</span><span class="self">self</span>, path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#294 id=294 data-nosnippet>294</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.keystore().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#295 id=295 data-nosnippet>295</a>        ProteusCentral::cryptobox_migrate(<span class="kw-2">&amp;</span>keystore, path)
-<a href=#296 id=296 data-nosnippet>296</a>            .<span class="kw">await
-<a href=#297 id=297 data-nosnippet>297</a>            </span>.map_err(RecursiveError::root(<span class="string">"migrating from cryptobox"</span>))
-<a href=#298 id=298 data-nosnippet>298</a>            .map_err(Into::into)
-<a href=#299 id=299 data-nosnippet>299</a>    }
-<a href=#300 id=300 data-nosnippet>300</a>}</code></pre></div></section></main></body></html>
+<a href=#289 id=289 data-nosnippet>289</a>}</code></pre></div></section></main></body></html>
