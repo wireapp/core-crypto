@@ -387,7 +387,7 @@ impl FetchFromDatabase for Connection {
         // If a transaction is in progress...
         if let Some(transaction) = self.transaction.lock().await.as_ref()
             //... and it has information about this entity, ...
-            && let Some(cached_record) = transaction.find::<E>(id).await?
+            && let Some(cached_record) = transaction.find(id).await?
         {
             // ... return that result
             return Ok(cached_record);

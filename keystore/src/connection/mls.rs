@@ -21,7 +21,7 @@ impl mls_rs_core::group::GroupStateStorage for Connection {
     type Error = CryptoKeystoreError;
 
     async fn state(&self, group_id: &[u8]) -> Result<Option<Vec<u8>>, Self::Error> {
-        self.find::<Group>(group_id)
+        self.find::<Group>(&Group::to_entity_id(group_id)?)
             .await?
             .map(|keystore_instance| keystore_instance.snapshot.clone())
             .map(Ok)

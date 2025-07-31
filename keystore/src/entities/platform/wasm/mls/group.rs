@@ -5,6 +5,7 @@ use crate::{
         Entity, EntityBase, EntityFindParams, EntityTransactionExt, PersistedMlsGroup, PersistedMlsGroupExt,
         PersistedMlsPendingGroup, StringEntityId,
     },
+    transaction::dynamic_dispatch::EntityId,
 };
 
 #[async_trait::async_trait(?Send)]
@@ -34,7 +35,7 @@ impl EntityTransactionExt for PersistedMlsPendingGroup {}
 
 #[async_trait::async_trait(?Send)]
 impl Entity for PersistedMlsPendingGroup {
-    fn id_raw(&self) -> &[u8] {
+    fn id_raw(&self) -> impl std::convert::AsRef<[u8]> {
         self.id.as_slice()
     }
 
@@ -43,17 +44,11 @@ impl Entity for PersistedMlsPendingGroup {
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
     }
 
-    async fn find_one(
-        conn: &mut Self::ConnectionType,
-        id: &StringEntityId,
-    ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        conn.storage().get(Self::COLLECTION_NAME, id.as_slice()).await
+    async fn find_one(conn: &mut Self::ConnectionType, id: &EntityId) -> crate::CryptoKeystoreResult<Option<Self>> {
+        conn.storage().get(id.collection_name(), id.as_id().to_bytes()).await
     }
 
-    async fn find_many(
-        conn: &mut Self::ConnectionType,
-        _ids: &[StringEntityId],
-    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+    async fn find_many(conn: &mut Self::ConnectionType, _ids: &[EntityId]) -> crate::CryptoKeystoreResult<Vec<Self>> {
         // Plot twist: we always select ALL the persisted groups. Unsure if we want to make it a real API with selection
         conn.storage().get_all(Self::COLLECTION_NAME, None).await
     }
