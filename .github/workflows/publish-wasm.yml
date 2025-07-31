@@ -36,13 +36,9 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack
-      - uses: davidB/rust-cargo-make@v1
-      - name: build wasm
+      - name: build ts
         run: |
-          cd crypto-ffi
-          cargo make wasm
-          cd bindings/js
-          bun run build
+          make ts WASM_RELEASE=1
       - name: publishes package to npm
         uses: JS-DevTools/npm-publish@v3
         with:

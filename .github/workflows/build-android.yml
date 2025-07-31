@@ -29,8 +29,6 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: ${{ matrix.target }}
-      - name: setup cargo-make
-        uses: davidB/rust-cargo-make@v1
       - name: setup android sdk
         uses: android-actions/setup-android@v3
       - name: install ndk
@@ -39,8 +37,7 @@ jobs:
         env:
           ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/${{ env.ANDROID_NDK_VERSION}}
         run: |
-          cd crypto-ffi
-          cargo make ${{ matrix.task }}
+          make ${{ matrix.task }}
       - uses: actions/upload-artifact@v4
         with:
           name: android-target-${{ matrix.target }}
@@ -63,8 +60,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
-      - name: setup cargo-make
-        uses: davidB/rust-cargo-make@v1
       - name: setup android sdk
         uses: android-actions/setup-android@v3
       - name: install ndk
@@ -90,8 +85,7 @@ jobs:
 
       - name: generate bindings
         run: |
-          cd crypto-ffi
-          cargo make bindings-kotlin-android
+          make bindings-kotlin-android
       - name: build package
         run: |
           cd crypto-ffi/bindings
