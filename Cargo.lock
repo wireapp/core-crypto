@@ -820,7 +820,6 @@ dependencies = [
  "core-crypto-keystore",
  "core-crypto-macros",
  "criterion",
- "cryptobox",
  "derive_more",
  "env_logger",
  "futures-lite",
@@ -1100,16 +1099,6 @@ dependencies = [
  "generic-array",
  "rand_core",
  "typenum",
-]
-
-[[package]]
-name = "cryptobox"
-version = "1.0.3"
-source = "git+https://github.com/wireapp/cryptobox#7fcf478b1f04fd89e183e308c53dd1b357ed56a0"
-dependencies = [
- "byteorder",
- "cbor-codec 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "proteus",
 ]
 
 [[package]]

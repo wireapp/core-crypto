@@ -96,7 +96,6 @@ core-crypto-macros = { workspace = true }
 rmp-serde = { workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
-cryptobox = { git = "https://github.com/wireapp/cryptobox" }
 proteus = { git = "https://github.com/wireapp/proteus", branch = "otak/fix-1.0.3" }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
