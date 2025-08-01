@@ -37,7 +37,6 @@ async fn do_migration_step(from: u32, name: &str, key: &str) -> CryptoKeystoreRe
     match from {
         // The version that results from the latest migration must match TARGET_VERSION
         //      to ensure convergence of the while loop this is called from.
-        0..=DB_VERSION_0 => super::v1::migrate(name, key).await,
         DB_VERSION_1 => super::v2::migrate(name).await,
         DB_VERSION_2 => super::v3::migrate(name).await,
         _ => Err(CryptoKeystoreError::MigrationNotSupported(from)),

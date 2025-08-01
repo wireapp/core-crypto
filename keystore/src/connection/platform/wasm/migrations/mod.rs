@@ -2,7 +2,6 @@ mod db_key_type_to_bytes;
 mod metabuilder;
 mod pre_v4;
 mod v0;
-mod v1;
 mod v2;
 mod v3;
 mod v4;
@@ -22,6 +21,7 @@ const fn db_version_number(counter: u32) -> u32 {
     VERSION_1_0_2 + counter
 }
 
+// Note that we no longer support migration to DB_VERSION_1.
 const DB_VERSION_0: u32 = db_version_number(0);
 const DB_VERSION_1: u32 = db_version_number(1);
 const DB_VERSION_2: u32 = db_version_number(2);
