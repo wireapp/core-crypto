@@ -4,9 +4,8 @@
 
 use super::*;
 
-/// Open an existing idb database with the given name and key, and migrate it if needed.
-/// The key is only being used for the 0 -> 1 migration, which needs the key as a string.
-pub(super) async fn open_and_migrate(name: &str, key: &str) -> CryptoKeystoreResult<Database> {
+/// Open an existing idb database with the given name and migrate it if needed.
+pub(super) async fn open_and_migrate(name: &str) -> CryptoKeystoreResult<Database> {
     /// Do not update this target version. The last version that this function
     /// should upgrade to is DB_VERSION_3, because to update to DB_VERSION_4,
     /// clients need to call migrate_db_key_type_to_bytes.
@@ -24,7 +23,7 @@ pub(super) async fn open_and_migrate(name: &str, key: &str) -> CryptoKeystoreRes
         existing_db.close();
 
         while version < TARGET_VERSION {
-            version = do_migration_step(version, name, key).await?;
+            version = do_migration_step(version, name).await?;
         }
 
         let open_request = factory.open(name, Some(TARGET_VERSION))?;
@@ -33,7 +32,7 @@ pub(super) async fn open_and_migrate(name: &str, key: &str) -> CryptoKeystoreRes
 }
 
 // See comments on super::do_migration_step.
-async fn do_migration_step(from: u32, name: &str, key: &str) -> CryptoKeystoreResult<u32> {
+async fn do_migration_step(from: u32, name: &str) -> CryptoKeystoreResult<u32> {
     match from {
         // The version that results from the latest migration must match TARGET_VERSION
         //      to ensure convergence of the while loop this is called from.
