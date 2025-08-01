@@ -483,7 +483,6 @@ class MLSTest {
         assertNotNull(decrypted.message)
         assertNotNull(decrypted.senderClientId)
     }
-
 }
 
 fun newClients(vararg clientIds: String) = runBlocking {
