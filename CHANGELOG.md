@@ -4,6 +4,13 @@
 
 ### Breaking Changes
 
+- Removed support for migrating CoreCrypto database to version 1.
+
+  Affected platforms: Web
+
+  Databases saved by CoreCrypto versions older than 2.0 cannot be migrated
+  anymore.
+
 - Removed `proteusCryptoboxMigrate`.
 
   Affected platforms: all
