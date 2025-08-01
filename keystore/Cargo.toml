@@ -84,9 +84,6 @@ wasm-bindgen-futures = "0.4"
 # Crypto stuff
 aes-gcm = "0.10"
 web-time = "1.1.0"
-# Old keystore versions for idb migrations
-rexie.workspace = true
-
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"

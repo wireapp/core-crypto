@@ -840,7 +840,6 @@ dependencies = [
  "proteus-traits",
  "proteus-wasm",
  "rand",
- "rexie",
  "rmp-serde",
  "rstest",
  "rstest_reuse",
@@ -937,7 +936,6 @@ dependencies = [
  "proteus-wasm",
  "rand",
  "refinery",
- "rexie",
  "rstest",
  "rstest_reuse",
  "rusqlite",
@@ -3458,17 +3456,6 @@ name = "relative-path"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba39f3699c378cd8970968dcbff9c43159ea4cfbd88d43c00b22f2ef10a435d2"
-
-[[package]]
-name = "rexie"
-version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "887466cfa8a12c08ee4b174998135cea8ff0fd84858627cd793e56535a045bc9"
-dependencies = [
- "idb",
- "thiserror 1.0.69",
- "wasm-bindgen",
-]
 
 [[package]]
 name = "rfc6979"
