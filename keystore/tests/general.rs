@@ -33,7 +33,7 @@ mod tests {
     pub async fn can_migrate_new_idb_db_versions() {
         let store_name = store_name();
         let idb = DatabaseBuilder::new(&store_name)
-            .version(1)
+            .version(10_002_001) // DB_VERSION_1
             .add_object_store(ObjectStoreBuilder::new("regression_check").auto_increment(false))
             .build()
             .await
