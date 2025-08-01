@@ -150,9 +150,6 @@ pub enum CryptoKeystoreError {
     #[error(transparent)]
     IdbErrorCryptoKeystoreV1_0_0(idb::Error),
     #[cfg(target_family = "wasm")]
-    #[error(transparent)]
-    RexieErrorCryptoKeystoreV1_0_0(rexie::Error),
-    #[cfg(target_family = "wasm")]
     #[error("Migration from version {0} is not supported")]
     MigrationNotSupported(u32),
     #[cfg(target_family = "wasm")]
