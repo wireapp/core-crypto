@@ -69,8 +69,6 @@ futures-lite = { version = "2.6", optional = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 serde-wasm-bindgen = "0.6"
-idb = { workspace = true, optional = true }
-base64 = { workspace = true, optional = true }
 
 [dev-dependencies]
 itertools.workspace = true
