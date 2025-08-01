@@ -441,7 +441,7 @@ $(JS_GEN): wasm-build
 $(WASM_GEN): wasm-build
 
 # build corecrypto.js
-$(JS_OUT): bun-deps.stamp ts-fmt $(JS_GEN) $(WASM_GEN) $(TS_SRCS) $(PACKAGE_JSON)
+$(JS_OUT): bun-deps.stamp $(JS_GEN) $(WASM_GEN) $(TS_SRCS) $(PACKAGE_JSON)
 	cd $(JS_DIR) && \
 	bun build \
 	  --target browser \
