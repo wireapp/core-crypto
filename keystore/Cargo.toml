@@ -76,7 +76,6 @@ idb.workspace = true
 js-sys = "0.3"
 web-sys = { version = "0.3", features = ["console"] }
 wasm-bindgen = "0.2"
-serde-big-array = "0.5"
 serde-wasm-bindgen = "0.6"
 indexmap.workspace = true
 # Async WASM stuff
