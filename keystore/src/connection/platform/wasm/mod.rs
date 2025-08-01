@@ -16,7 +16,6 @@ use idb::{Factory, TransactionMode};
 
 mod migrations;
 mod rekey;
-pub use migrations::keystore_v_1_0_0;
 pub mod storage;
 
 use self::storage::{WasmEncryptedStorage, WasmStorageTransaction, WasmStorageWrapper};

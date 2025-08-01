@@ -19,8 +19,6 @@ cfg_if::cfg_if! {
         pub use self::proteus::CryptoKeystoreProteus;
     }
 }
-#[cfg(target_family = "wasm")]
-pub use connection::keystore_v_1_0_0;
 
 #[cfg(not(target_family = "wasm"))]
 use sha2::{Digest, Sha256};

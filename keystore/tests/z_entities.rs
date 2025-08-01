@@ -1,15 +1,3 @@
-#[cfg(target_family = "wasm")]
-use core_crypto_keystore::keystore_v_1_0_0::entities::{
-    E2eiAcmeCA as E2eiAcmeCAV1_0_0, E2eiCrl as E2eiCrlV1_0_0, E2eiEnrollment as E2eiEnrollmentV1_0_0,
-    E2eiIntermediateCert as E2eiIntermediateCertV1_0_0, E2eiRefreshToken as E2eiRefreshTokenV1_0_0,
-    Entity as EntityV1_0_0, MlsCredential as MlsCredentialV1_0_0, MlsEncryptionKeyPair as MlsEncryptionKeyPairV1_0_0,
-    MlsEpochEncryptionKeyPair as MlsEpochEncryptionKeyPairV1_0_0, MlsHpkePrivateKey as MlsHpkePrivateKeyV1_0_0,
-    MlsKeyPackage as MlsKeyPackageV1_0_0, MlsPendingMessage as MlsPendingMessageV1_0_0,
-    MlsPskBundle as MlsPskBundleV1_0_0, MlsSignatureKeyPair as MlsSignatureKeyPairV1_0_0,
-    PersistedMlsGroup as PersistedMlsGroupV1_0_0, PersistedMlsPendingGroup as PersistedMlsPendingGroupV1_0_0,
-    ProteusIdentity as ProteusIdentityV1_0_0, ProteusPrekey as ProteusPrekeyV1_0_0,
-    ProteusSession as ProteusSessionV1_0_0, UniqueEntity as UniqueEntityV1_0_0,
-};
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
@@ -51,107 +39,6 @@ macro_rules! test_for_entity {
             let ignore_find_many = pat_to_bool!($($ignore_find_many)?);
             crate::tests_impl::can_list_entities_with_find_many::<$entity>(&store, ignore_count, ignore_find_many).await;
             crate::tests_impl::can_list_entities_with_find_all::<$entity>(&store, ignore_count).await;
-        }
-    };
-}
-
-#[cfg(target_family = "wasm")]
-macro_rules! work_for_unique_or_regular_entities {
-    (unique: $unique_entity_work:block, regular: $regular_entity_work:block, true) => {
-        $unique_entity_work
-    };
-
-    (unique: $unique_entity_work:block, regular: $regular_entity_work:block, ) => {
-        $regular_entity_work
-    };
-}
-
-#[cfg(target_family = "wasm")]
-macro_rules! test_migration_to_db_v1_for_entity {
-    // ────────────────────────────────────────────────────────────────────────────
-    // Entry‐point (uses default `<E>::find_one(&mut conn).await`)
-    // ────────────────────────────────────────────────────────────────────────────
-    (
-        $test_name:ident,
-        $entity:ty,
-        $old_entity:ty
-        $(, unique_entity: $unique_entity:tt)?
-    ) => {
-        test_migration_to_db_v1_for_entity!(
-            $test_name,
-            $entity,
-            $old_entity
-            $(, unique_entity: $unique_entity)?
-            , find_one = async |storage: core_crypto_keystore::Connection, id: _| {
-            let mut conn = storage.borrow_conn().await.unwrap();
-                <$entity>::find_one(&mut conn, &id).await
-
-            }
-        );
-    };
-
-    // ────────────────────────────────────────────────────────────────────────────
-    // Core arm (takes custom `find_one = $find_fn`)
-    // ────────────────────────────────────────────────────────────────────────────
-    (
-        $test_name:ident,
-        $entity:ty,
-        $old_entity:ty
-        $(, unique_entity: $unique_entity:tt)?
-        , find_one = $find_fn:expr) => {
-        #[wasm_bindgen_test]
-        async fn $test_name() {
-            let _ = env_logger::try_init();
-            let name = store_name();
-
-            let old_key = "test1234";
-            let old_storage = core_crypto_keystore::keystore_v_1_0_0::Connection::open_with_key(&name, old_key)
-                .await
-                .unwrap();
-            let old_record = <$old_entity>::random();
-
-            work_for_unique_or_regular_entities!(
-                unique: {
-                    let mut connection = old_storage.borrow_conn().await.unwrap();
-                    old_record.replace(&mut connection).await.unwrap();
-                },
-                regular: {
-                    old_storage.save(old_record.clone()).await.unwrap();
-                },
-                $(
-                    $unique_entity
-                )?
-            );
-
-            old_storage.close().await.unwrap();
-
-            let new_key = &TEST_ENCRYPTION_KEY;
-            core_crypto_keystore::Connection::migrate_db_key_type_to_bytes(&name, old_key, new_key).await.unwrap();
-
-            let new_storage = core_crypto_keystore::Connection::open(core_crypto_keystore::ConnectionType::Persistent(&name), new_key)
-                .await
-                .unwrap();
-
-            let result;
-
-            work_for_unique_or_regular_entities!(
-                unique: {
-                    let mut new_connection = new_storage.borrow_conn().await.unwrap();
-                    result = <$entity>::find_unique(&mut new_connection).await;
-                    assert!(result.is_ok());
-                    drop(new_connection);
-                },
-                regular: {
-                    let string_id = StringEntityId::from(old_record.id_raw());
-                    result = $find_fn(new_storage.clone(), string_id.clone()).await;
-                    assert!(result.unwrap().is_some());
-                },
-                $(
-                    $unique_entity
-                )?
-            );
-
-            new_storage.wipe().await.unwrap();
         }
     };
 }
@@ -261,9 +148,6 @@ mod tests_impl {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(target_family = "wasm")]
-    // Use V1_0_0 entities
-    use super::*;
     use crate::common::*;
     use crate::utils::EntityRandomExt;
     use crate::utils::EntityRandomUpdateExt;
@@ -289,40 +173,13 @@ mod tests {
     test_for_entity!(test_e2ei_enrollment, E2eiEnrollment ignore_update:true);
 
     cfg_if::cfg_if! {
-        if #[cfg(target_family = "wasm")] {
-            test_migration_to_db_v1_for_entity!(test_mls_group_migration, PersistedMlsGroup, PersistedMlsGroupV1_0_0);
-            test_migration_to_db_v1_for_entity!(test_mls_pending_group_migration, PersistedMlsPendingGroup, PersistedMlsPendingGroupV1_0_0);
-            test_migration_to_db_v1_for_entity!(test_mls_pending_message_migration, MlsPendingMessage, MlsPendingMessageV1_0_0, find_one = async |storage: core_crypto_keystore::Connection, id: StringEntityId| {
-            let mut conn = storage.borrow_conn().await.unwrap();
-                MlsPendingMessage::find_all_by_conversation_id(&mut conn, id.as_slice(), Default::default()).await.map(|mut ok_value| ok_value.pop())
-            });
-            test_migration_to_db_v1_for_entity!(test_mls_credential_migration, MlsCredential, MlsCredentialV1_0_0);
-            test_migration_to_db_v1_for_entity!(test_mls_keypackage_migration, MlsKeyPackage, MlsKeyPackageV1_0_0);
-            test_migration_to_db_v1_for_entity!(test_mls_signature_keypair_migration, MlsSignatureKeyPair, MlsSignatureKeyPairV1_0_0);
-            test_migration_to_db_v1_for_entity!(test_mls_psk_bundle_migration, MlsPskBundle, MlsPskBundleV1_0_0);
-            test_migration_to_db_v1_for_entity!(test_mls_encryption_keypair_migration, MlsEncryptionKeyPair, MlsEncryptionKeyPairV1_0_0);
-            test_migration_to_db_v1_for_entity!(test_mls_epoch_encryption_keypair_migration, MlsEpochEncryptionKeyPair, MlsEpochEncryptionKeyPairV1_0_0);
-            test_migration_to_db_v1_for_entity!(test_mls_hpke_private_key_migration, MlsHpkePrivateKey, MlsHpkePrivateKeyV1_0_0);
-            test_migration_to_db_v1_for_entity!(test_e2ei_intermediate_cert_migration, E2eiIntermediateCert, E2eiIntermediateCertV1_0_0);
-            test_migration_to_db_v1_for_entity!(test_e2ei_crl_migration, E2eiCrl, E2eiCrlV1_0_0);
-            test_migration_to_db_v1_for_entity!(test_e2ei_enrollment_migration, E2eiEnrollment, E2eiEnrollmentV1_0_0);
-            test_migration_to_db_v1_for_entity!(test_e2ei_ca_migration, E2eiAcmeCA, E2eiAcmeCAV1_0_0, unique_entity:true);
-        }
-    }
-    cfg_if::cfg_if! {
         if #[cfg(feature = "proteus-keystore")] {
             test_for_entity!(test_proteus_identity, ProteusIdentity ignore_entity_count:true ignore_update:true);
             test_for_entity!(test_proteus_prekey, ProteusPrekey);
             test_for_entity!(test_proteus_session, ProteusSession);
-            cfg_if::cfg_if! {
-                if #[cfg(target_family = "wasm")] {
-                    test_migration_to_db_v1_for_entity!(test_proteus_session_migration, ProteusSession, ProteusSessionV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_proteus_prekey_migration, ProteusPrekey, ProteusPrekeyV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_proteus_identity_migration, ProteusIdentity, ProteusIdentityV1_0_0);
-                }
-            }
         }
     }
+
     #[apply(all_storage_types)]
     #[wasm_bindgen_test]
     pub async fn update_e2ei_enrollment_emits_error(context: KeystoreTestContext) {
@@ -352,9 +209,6 @@ mod tests {
 
 #[cfg(test)]
 pub mod utils {
-    #[cfg(target_family = "wasm")]
-    // Use V1_0_0 entities
-    use super::*;
     use core_crypto_keystore::entities::{
         E2eiEnrollment, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
         MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
@@ -477,25 +331,6 @@ pub mod utils {
     impl_entity_random_update_ext!(MlsPendingMessage, id_field = foreign_id, blob_fields = [message,]);
     impl_entity_random_update_ext!(E2eiEnrollment, id_field = id, blob_fields = [content,]);
     impl_entity_random_update_ext!(MlsEpochEncryptionKeyPair, id_field = id, blob_fields = [keypairs,]);
-    cfg_if::cfg_if! {
-        if #[cfg(target_family = "wasm")] {
-            impl_entity_random_ext!(MlsKeyPackageV1_0_0, blob_fields=[keypackage,], additional_fields=[(keypackage_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
-            impl_entity_random_ext!(MlsCredentialV1_0_0, id_field=id, blob_fields=[credential,], additional_fields=[(created_at: 0),]);
-            impl_entity_random_ext!(MlsSignatureKeyPairV1_0_0, blob_fields=[pk,keypair,credential_id,], additional_fields=[(signature_scheme: rand::random()),]);
-            impl_entity_random_ext!(MlsHpkePrivateKeyV1_0_0, blob_fields=[pk,sk,]);
-            impl_entity_random_ext!(MlsEncryptionKeyPairV1_0_0, blob_fields=[pk,sk,]);
-            impl_entity_random_ext!(MlsPskBundleV1_0_0, blob_fields=[psk,psk_id,]);
-            impl_entity_random_ext!(PersistedMlsGroupV1_0_0, id_field=id, blob_fields=[state,], additional_fields=[(parent_id: None),]);
-            impl_entity_random_ext!(PersistedMlsPendingGroupV1_0_0, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
-            impl_entity_random_ext!(MlsPendingMessageV1_0_0, id_field=id, blob_fields=[message,]);
-            impl_entity_random_ext!(E2eiCrlV1_0_0, blob_fields=[content,], additional_fields=[(distribution_point: "some-distribution-point".into()),]);
-            impl_entity_random_ext!(E2eiIntermediateCertV1_0_0, blob_fields=[content,], additional_fields=[(ski_aki_pair: "some-key-pair".into()),]);
-            impl_entity_random_ext!(E2eiAcmeCAV1_0_0, blob_fields=[content,]);
-            impl_entity_random_ext!(E2eiRefreshTokenV1_0_0, blob_fields=[content,]);
-            impl_entity_random_ext!(E2eiEnrollmentV1_0_0, id_field=id, blob_fields=[content,]);
-            impl_entity_random_ext!(MlsEpochEncryptionKeyPairV1_0_0, id_field=id, blob_fields=[keypairs,]);
-        }
-    }
 
     impl EntityRandomExt for core_crypto_keystore::entities::E2eiIntermediateCert {
         fn random() -> Self {
@@ -557,28 +392,8 @@ pub mod utils {
         if #[cfg(feature = "proteus-keystore")] {
 
             impl_entity_random_update_ext!(ProteusSession, blob_fields=[session,], additional_fields=[(id: uuid::Uuid::new_v4().hyphenated().to_string()),]);
-            cfg_if::cfg_if! {
-                if #[cfg(target_family = "wasm")] {
-                    impl_entity_random_ext!(ProteusSessionV1_0_0, blob_fields=[session,], additional_fields=[(id: uuid::Uuid::new_v4().hyphenated().to_string()),]);
-                    impl_entity_random_ext!(ProteusIdentityV1_0_0, blob_fields=[pk,sk,]);
-                }
-            }
 
             impl EntityRandomExt for core_crypto_keystore::entities::ProteusPrekey {
-                fn random() -> Self {
-                    use rand::Rng as _;
-                    let mut rng = rand::thread_rng();
-
-                    let id: u16 = rng.r#gen();
-                    let mut prekey = vec![0u8; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut prekey[..]);
-
-                    Self::from_raw(id, prekey)
-                }
-            }
-
-            #[cfg(target_family = "wasm")]
-            impl EntityRandomExt for ProteusPrekeyV1_0_0 {
                 fn random() -> Self {
                     use rand::Rng as _;
                     let mut rng = rand::thread_rng();

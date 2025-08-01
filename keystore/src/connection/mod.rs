@@ -8,7 +8,6 @@ pub mod platform {
     cfg_if::cfg_if! {
         if #[cfg(target_family = "wasm")] {
             mod wasm;
-            pub use wasm::keystore_v_1_0_0;
             pub use self::wasm::WasmConnection as KeystoreDatabaseConnection;
             pub use wasm::storage;
             pub use self::wasm::storage::WasmStorageTransaction as TransactionWrapper;
