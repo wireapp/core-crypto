@@ -30,3 +30,15 @@ project.afterEvaluate {
 detekt {
     config.setFrom(files("detekt.yml"))
 }
+
+kotlin {
+    sourceSets {
+        named("main") {
+            kotlin.srcDir("${layout.buildDirectory}/generated/sources/uniffi/main/kotlin")
+        }
+
+        named("test") {
+            kotlin.srcDir("src/test/kotlin")
+        }
+    }
+}
