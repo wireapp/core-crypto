@@ -35,12 +35,9 @@ jobs:
         with:
           rustflags: ''
           target: "aarch64-apple-darwin"
-      - name: setup cargo-make
-        uses: davidB/rust-cargo-make@v1
       - name: build artifacts
         run: |
-          cd crypto-ffi
-          cargo make jvm-darwin
+          make jvm-darwin
       - name: upload aarch64-apple-darwin artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -62,12 +59,9 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           rustflags: ''
-      - name: setup cargo-make
-        uses: davidB/rust-cargo-make@v1
       - name: build artifacts
         run: |
-          cd crypto-ffi
-          cargo make bindings-kotlin-jvm
+          make bindings-kotlin-jvm
       - name: gradle setup
         uses: gradle/actions/setup-gradle@v4
       - name: validate gradle wrapper
