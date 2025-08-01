@@ -2,7 +2,7 @@
 kotlin = "1.9.25"
 app-compat = "1.7.1"
 coroutines = "1.7.3"
-jna = "5.14.0"
+jna = "5.17.0"
 ktx-core = "1.16.0"
 slf4j = "2.0.7"
 assertj = "3.24.2"
