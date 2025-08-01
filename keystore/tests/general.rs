@@ -56,11 +56,11 @@ mod tests {
 
         let mut conn = store.borrow_conn().await.unwrap();
         use core_crypto_keystore::connection::storage::WasmStorageWrapper;
-        let WasmStorageWrapper::Persistent(rexie) = conn.storage_mut().wrapper() else {
+        let WasmStorageWrapper::Persistent(db) = conn.storage_mut().wrapper() else {
             panic!("Storage isn't persistent");
         };
 
-        let store_names = rexie.store_names();
+        let store_names = db.store_names();
 
         assert!(store_names.contains(&"regression_check".into()));
 
