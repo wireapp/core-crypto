@@ -1,5 +1,4 @@
 mod db_key_type_to_bytes;
-pub mod keystore_v_1_0_0;
 mod metabuilder;
 mod pre_v4;
 mod v0;
