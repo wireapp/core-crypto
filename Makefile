@@ -1,5 +1,13 @@
 # Makefile: Always run Cargo steps, but only re-run downstream generators when inputs change
 
+.PHONY: help
+# Parse the comment starting with a double ## next to a target as the target description
+# in the help message
+help: ## Show this help message
+	@grep -E '^[a-zA-Z0-9_.-]+:.*?## ' $(MAKEFILE_LIST) | \
+		sort | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-25s\033[0m %s\n", $$1, $$2}'
+
 SHELL := /usr/bin/env bash
 
 # Detect host platform for NDK and library extensions
@@ -73,7 +81,7 @@ FORCE:
 # 2) Build artifacts via Cargo (always run Cargo; Cargo itself detects up-to-date)
 #-------------------------------------------------------------------------------
 
-# one rule to build both the FFI library and the bindgen binary
+# Build bindgen binary
 target/release/uniffi-bindgen: FORCE
 	cargo build --release \
 		--locked \
@@ -81,6 +89,7 @@ target/release/uniffi-bindgen: FORCE
 		--package core-crypto-ffi \
 		--bin uniffi-bindgen
 
+# Build the FFI library
 target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION): FORCE
 	cargo build --release \
 		--locked \
@@ -90,7 +99,7 @@ target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION): FORCE
 # Make aliases
 .PHONY: uniffi-bindgen release-build
 uniffi-bindgen:  target/release/uniffi-bindgen
-release-build:   target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+release-build:   target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION) ## Build core-crypto-ffi for the native arch (needed for uniffi)
 
 #-------------------------------------------------------------------------------
 # 3) Use stamp files for generators: only re-run when inputs change
@@ -110,13 +119,14 @@ $(STAMPS)/bindings-swift: \
 	  --out-dir crypto-ffi/bindings/Swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi \
 	  --library target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 	$(TOUCH_STAMP)
+endif
 
 .PHONY: bindings-swift swift
-bindings-swift: $(STAMPS)/bindings-swift
+bindings-swift: $(STAMPS)/bindings-swift ## Generate Swift bindings
 swift: $(STAMPS)/bindings-swift $(STAMPS)/docs-swift
 
 # Kotlin-Android bindings
-$(STAMPS)/bindings-kotlin-android: target/release/uniffi-bindgen target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+$(STAMPS)/bindings-kotlin-android: target/release/uniffi-bindgen release-build
 	mkdir -p crypto-ffi/bindings/android/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --config uniffi-android.toml \
@@ -127,10 +137,10 @@ $(STAMPS)/bindings-kotlin-android: target/release/uniffi-bindgen target/release/
 	$(TOUCH_STAMP)
 
 .PHONY: bindings-kotlin-android
-bindings-kotlin-android: $(STAMPS)/bindings-kotlin-android
+bindings-kotlin-android: $(STAMPS)/bindings-kotlin-android ## Generate Kotlin bindings for Android
 
 # Kotlin-JVM bindings
-$(STAMPS)/bindings-kotlin-jvm: target/release/uniffi-bindgen target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+$(STAMPS)/bindings-kotlin-jvm: target/release/uniffi-bindgen release-build
 	mkdir -p crypto-ffi/bindings/jvm/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --language kotlin \
@@ -140,11 +150,11 @@ $(STAMPS)/bindings-kotlin-jvm: target/release/uniffi-bindgen target/release/libc
 	$(TOUCH_STAMP)
 
 .PHONY: bindings-kotlin-jvm
-bindings-kotlin-jvm: $(STAMPS)/bindings-kotlin-jvm
+bindings-kotlin-jvm: $(STAMPS)/bindings-kotlin-jvm ## Generate Kotlin bindings for JVM
 
 # Grouped Kotlin bindings
 .PHONY: bindings-kotlin
-bindings-kotlin: bindings-kotlin-android bindings-kotlin-jvm
+bindings-kotlin: bindings-kotlin-android bindings-kotlin-jvm ## Generate all Kotlin bindings
 
 #-------------------------------------------------------------------------------
 # 4) WASM build + JS deps via stamps
@@ -180,14 +190,14 @@ $(STAMPS)/bun-deps: $(PACKAGE_JSON)
 	$(TOUCH_STAMP)
 
 .PHONY: bun-deps
-bun-deps: $(STAMPS)/bun-deps
+bun-deps: $(STAMPS)/bun-deps ## Install JS dependencies using bun
 
 # Full JS binding step
-bindings-js: wasm-build $(JS_OUT)
+bindings-js: wasm-build $(JS_OUT) ## Generate JavaScript bindings (append `WASM_RELEASE=1` to this command or any dependents for the release build)
 
 # All bindings
 .PHONY: bindings
-bindings: bindings-swift bindings-kotlin bindings-js
+bindings: bindings-swift bindings-kotlin bindings-js ## Generate all bindings
 
 #-------------------------------------------------------------------------------
 # 5) Documentation targets (stamp-based if desired)
@@ -199,7 +209,7 @@ $(STAMPS)/docs-rust-generic: FORCE
 	$(TOUCH_STAMP)
 
 .PHONY: docs-rust-generic
-docs-rust-generic: $(STAMPS)/docs-rust-generic
+docs-rust-generic: $(STAMPS)/docs-rust-generic ## Generate Rust docs for the host platform's default target ("generic")
 
 # Rust WASM docs
 $(STAMPS)/docs-rust-wasm: FORCE
@@ -207,7 +217,7 @@ $(STAMPS)/docs-rust-wasm: FORCE
 	$(TOUCH_STAMP)
 
 .PHONY: docs-rust-wasm
-docs-rust-wasm: $(STAMPS)/docs-rust-wasm
+docs-rust-wasm: $(STAMPS)/docs-rust-wasm ## Generate Rust docs for wasm32-unknown-unknown
 
 # Kotlin Dokka (Android) docs
 $(STAMPS)/docs-kotlin: jvm
@@ -217,7 +227,7 @@ $(STAMPS)/docs-kotlin: jvm
 	$(TOUCH_STAMP)
 
 .PHONY: docs-kotlin
-docs-kotlin: $(STAMPS)/docs-kotlin
+docs-kotlin: $(STAMPS)/docs-kotlin ## Generate Kotlin docs
 
 # TypeScript docs via Typedoc
 $(STAMPS)/docs-ts: $(STAMPS)/wasm-build $(STAMPS)/bun-deps
@@ -232,7 +242,7 @@ $(STAMPS)/docs-ts: $(STAMPS)/wasm-build $(STAMPS)/bun-deps
 	$(TOUCH_STAMP)
 
 .PHONY: docs-ts
-docs-ts: $(STAMPS)/docs-ts
+docs-ts: $(STAMPS)/docs-ts ## Generate TypeScript docs
 
 # Swift docs via Jazzy (macOS only)
 $(STAMPS)/docs-swift: ios
@@ -245,11 +255,11 @@ $(STAMPS)/docs-swift: ios
 	$(TOUCH_STAMP)
 
 .PHONY: docs-swift
-docs-swift: $(STAMPS)/docs-swift
+docs-swift: $(STAMPS)/docs-swift ## Generate Swift iOS docs (macOS only)
 
 # Group all docs
 .PHONY: docs
-docs: docs-rust-generic docs-rust-wasm docs-kotlin docs-ts $(if $(filter Darwin,$(UNAME_S)),docs-swift)
+docs: docs-rust-generic docs-rust-wasm docs-kotlin docs-ts $(if $(filter Darwin,$(UNAME_S)),docs-swift) ## Generate all docs (excluding Swift on non-Darwin platforms)
 
 #-------------------------------------------------------------------------------
 # 6) iOS builds (create stamp per sub‐target)
@@ -266,7 +276,7 @@ $(STAMPS)/ios-device: $(STAMPS)/bindings-swift
 	$(TOUCH_STAMP)
 
 .PHONY: ios-device
-ios-device: $(STAMPS)/ios-device
+ios-device: $(STAMPS)/ios-device ## Build core-crypto-ffi for aarch64-apple-ios for iOS 16.0 (macOS only)
 
 $(STAMPS)/ios-simulator-arm: $(STAMPS)/bindings-swift
 	CRATE_CC_NO_DEFAULTS=1 \
@@ -282,8 +292,7 @@ $(STAMPS)/ios-simulator-arm: $(STAMPS)/bindings-swift
 	$(TOUCH_STAMP)
 
 .PHONY: ios-simulator-arm
-ios-simulator-arm: $(STAMPS)/ios-simulator-arm
-
+ios-simulator-arm: $(STAMPS)/ios-simulator-arm ## Build core-crypto-ffi for aarch64-apple-ios-sim, iOS 14.0.0 (macOS only)
 $(STAMPS)/ios: $(STAMPS)/ios-device $(STAMPS)/ios-simulator-arm
 	$(TOUCH_STAMP)
 
@@ -291,12 +300,12 @@ $(STAMPS)/ios: $(STAMPS)/ios-device $(STAMPS)/ios-simulator-arm
 ios: $(STAMPS)/ios
 
 # Build XCFramework (macOS only)
-$(STAMPS)/ios-create-xcframework: $(STAMPS)/ios
+$(STAMPS)/ios-create-xcframework: ios
 	cd crypto-ffi/bindings/swift && ./build-xcframework.sh
 	$(TOUCH_STAMP)
 
 .PHONY: ios-create-xcframework
-ios-create-xcframework: $(STAMPS)/ios-create-xcframework
+ios-create-xcframework: $(STAMPS)/ios-create-xcframework ## Build the XCode framework (macOS only)
 
 #-------------------------------------------------------------------------------
 # 7) Android builds (stamp per architecture)
@@ -322,7 +331,7 @@ $(STAMPS)/android-armv7: android-env
 	$(TOUCH_STAMP)
 
 .PHONY: android-armv7
-android-armv7: $(STAMPS)/android-armv7
+android-armv7: $(STAMPS)/android-armv7 ## Build core-crypto-ffi for armv7-linux-androideabi
 
 $(STAMPS)/android-armv8: android-env
 	$(CARGO) rustc --locked \
@@ -333,7 +342,7 @@ $(STAMPS)/android-armv8: android-env
 	$(TOUCH_STAMP)
 
 .PHONY: android-armv8
-android-armv8: $(STAMPS)/android-armv8
+android-armv8: $(STAMPS)/android-armv8 ## Build core-crypto-ffi for aarch64-linux-android
 
 $(STAMPS)/android-x86: android-env
 	# Link clang_rt.builtins statically for x86_64 Android
@@ -348,16 +357,16 @@ $(STAMPS)/android-x86: android-env
 	$(TOUCH_STAMP)
 
 .PHONY: android-x86
-android-x86: $(STAMPS)/android-x86
+android-x86: $(STAMPS)/android-x86 ## Build core-crypto-ffi for x86_64-linux-android
 
 $(STAMPS)/android: $(STAMPS)/android-armv7 $(STAMPS)/android-armv8 $(STAMPS)/android-x86
 	$(TOUCH_STAMP)
 
 .PHONY: android
-android: $(STAMPS)/android
+android: $(STAMPS)/android ## Build core-crypto-ffi for all Android targets
 
 .PHONY: android-test
-android-test: android
+android-test: android ## Run Kotlin tests on Android
 	cd crypto-ffi/bindings && \
 	./gradlew android:build -x lint -x lintRelease
 
@@ -376,7 +385,7 @@ $(STAMPS)/jvm-darwin: $(STAMPS)/bindings-kotlin-jvm
 	$(TOUCH_STAMP)
 
 .PHONY: jvm-darwin
-jvm-darwin: $(STAMPS)/jvm-darwin
+jvm-darwin: $(STAMPS)/jvm-darwin ## Build core-crypto-ffi for JVM on aarch64-apple-darwin
 
 # linux build
 $(STAMPS)/jvm-linux: $(STAMPS)/bindings-kotlin-jvm
@@ -389,11 +398,11 @@ $(STAMPS)/jvm-linux: $(STAMPS)/bindings-kotlin-jvm
 	$(TOUCH_STAMP)
 
 .PHONY: jvm-linux
-jvm-linux: $(STAMPS)/jvm-linux
+jvm-linux: $(STAMPS)/jvm-linux ## Build core-crypto-ffi for JVM on x86_64-unknown-linux-gnu
 
 .PHONY: jvm
 ifeq ($(UNAME_S),Linux)
-jvm: jvm-linux
+jvm: jvm-linux ## Build core-crypto-ffi for JVM (automatically select the target based on the host machine)
 else ifeq ($(UNAME_S),Darwin)
 jvm: jvm-darwin
 else
@@ -401,7 +410,7 @@ $(error Unsupported host platform for jvm: $(UNAME_S))
 endif
 
 .PHONY: jvm-test
-jvm-test: jvm
+jvm-test: jvm ## Run Kotlin tests on JVM
 	cd crypto-ffi/bindings && \
 	./gradlew jvm:build -x lint -x lintRelease
 
@@ -411,9 +420,9 @@ jvm-test: jvm
 #-------------------------------------------------------------------------------
 
 .PHONY: mobile wasm all
-mobile: android ios
-wasm: bindings-js
-all: mobile wasm docs
+mobile: android $(if $(filter Darwin,$(UNAME_S)),ios) ## Generate bindings for android, and, if on macOS, also for iOS
+wasm: bindings-js  ## Alias for bindings-js
+all: mobile wasm docs ## Generate bindings for all platforms (mobile, wasm) and generate docs
 
 #-------------------------------------------------------------------------------
 # TypeScript / JS tasks (from crypto-ffi/bindings/js/package.json)
@@ -436,7 +445,7 @@ DTS_OUT := $(JS_DIR)/src/corecrypto.d.ts
 
 # always remove old outputs
 .PHONY: ts-clean
-ts-clean:
+ts-clean: ## Cleanup old TypeScript build outputs
 	@rm -f $(JS_OUT) $(DTS_OUT) \
 	&& rm -rf $(GEN_DIR)
 
@@ -445,7 +454,7 @@ $(STAMPS)/ts-fmt: $(TS_SRCS)
 	$(TOUCH_STAMP)
 
 .PHONY: ts-fmt
-ts-fmt: $(STAMPS)/ts-fmt
+ts-fmt: $(STAMPS)/ts-fmt ## Format TypeScript files via eslint
 
 $(JS_GEN): wasm-build
 $(WASM_GEN): wasm-build
@@ -475,17 +484,17 @@ $(DTS_OUT): $(JS_OUT) $(TS_SRCS)
 	@touch $@
 
 .PHONY: ts
-ts: $(DTS_OUT)
+ts: $(DTS_OUT) ## Build the TypeScript wrapper
 
 # run WebDriver tests + bun’s built-in tests
 .PHONY: ts-test
-ts-test: ts
+ts-test: ts ## Run TypeScript wrapper tests via wdio and bun
 	cd $(JS_DIR) && \
 	bun x wdio run wdio.conf.ts --spec test/wdio/*.test.ts && \
 	bun test
 
 # run WebDriver benches
 .PHONY: ts-bench
-ts-bench: ts
+ts-bench: ts ## Run TypeScript wrapper benches in Chrome via wdio
 	cd $(JS_DIR) && \
 	bun x wdio run wdio.conf.ts --spec benches/**/*.bench.ts --log-level warn
