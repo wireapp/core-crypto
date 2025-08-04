@@ -110,7 +110,7 @@ export async function initWasmModule(location: string | undefined = undefined) {
         );
         const file = await fs.open(path);
         const buffer = await file.readFile();
-        const module = new WebAssembly.Module(buffer);
+        const module = new WebAssembly.Module(new Uint8Array(buffer));
         await initWasm({ module_or_path: module });
     }
 }
