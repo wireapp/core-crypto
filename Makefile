@@ -249,7 +249,7 @@ docs-swift: $(STAMPS)/docs-swift
 
 # Group all docs
 .PHONY: docs
-docs: docs-rust-generic docs-rust-wasm docs-kotlin docs-ts docs-swift
+docs: docs-rust-generic docs-rust-wasm docs-kotlin docs-ts $(if $(filter Darwin,$(UNAME_S)),docs-swift)
 
 #-------------------------------------------------------------------------------
 # 6) iOS builds (create stamp per sub‐target)
