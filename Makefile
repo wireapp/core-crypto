@@ -59,6 +59,10 @@ UNIFFI_BINDGEN := target/release/uniffi-bindgen
 # Default goal
 .DEFAULT_GOAL := all
 
+# Directory we store timestamps in
+STAMPS := .stamps
+TOUCH_STAMP = @mkdir -p $(STAMPS) && touch $@
+
 #-------------------------------------------------------------------------------
 # 1) Dummy force target: always out-of-date, so Cargo build commands run every time
 #-------------------------------------------------------------------------------
@@ -93,20 +97,26 @@ release-build:   target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 #-------------------------------------------------------------------------------
 
 # Swift bindings
-bindings-swift.stamp: target/release/uniffi-bindgen target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+ifneq ($(UNAME_S),Darwin)
+$(STAMPS)/bindings-swift:
+	$(warning Skipping build for "bindings-swift", as swift bindings generation is only supported on Darwin because OpenSSL can't be cross-compiled on non-Darwin systems; this is "$(UNAME_S)".)
+else
+$(STAMPS)/bindings-swift: \
+	target/release/uniffi-bindgen \
+	release-build
 	mkdir -p crypto-ffi/bindings/Swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --language swift \
 	  --out-dir crypto-ffi/bindings/Swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi \
 	  --library target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: bindings-swift swift
-bindings-swift: bindings-swift.stamp
-swift: bindings-swift.stamp docs-swift.stamp
+bindings-swift: $(STAMPS)/bindings-swift
+swift: $(STAMPS)/bindings-swift $(STAMPS)/docs-swift
 
 # Kotlin-Android bindings
-bindings-kotlin-android.stamp: target/release/uniffi-bindgen target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+$(STAMPS)/bindings-kotlin-android: target/release/uniffi-bindgen target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 	mkdir -p crypto-ffi/bindings/android/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --config uniffi-android.toml \
@@ -114,23 +124,23 @@ bindings-kotlin-android.stamp: target/release/uniffi-bindgen target/release/libc
 	  --no-format \
 	  --out-dir crypto-ffi/bindings/android/src/main/uniffi \
 	  --library target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: bindings-kotlin-android
-bindings-kotlin-android: bindings-kotlin-android.stamp
+bindings-kotlin-android: $(STAMPS)/bindings-kotlin-android
 
 # Kotlin-JVM bindings
-bindings-kotlin-jvm.stamp: target/release/uniffi-bindgen target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+$(STAMPS)/bindings-kotlin-jvm: target/release/uniffi-bindgen target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 	mkdir -p crypto-ffi/bindings/jvm/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --language kotlin \
 	  --no-format \
 	  --out-dir crypto-ffi/bindings/jvm/src/main/uniffi \
 	  --library target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: bindings-kotlin-jvm
-bindings-kotlin-jvm: bindings-kotlin-jvm.stamp
+bindings-kotlin-jvm: $(STAMPS)/bindings-kotlin-jvm
 
 # Grouped Kotlin bindings
 .PHONY: bindings-kotlin
@@ -149,7 +159,7 @@ bindings-kotlin: bindings-kotlin-android bindings-kotlin-jvm
 WASM_BUILD_ARGS := $(if $(WASM_RELEASE),,--dev)
 
 # Generate WASM package
-wasm-build.stamp: FORCE
+$(STAMPS)/wasm-build: FORCE
 	cd crypto-ffi && \
 	$(WASM_PACK) build \
 	  --locked \
@@ -159,18 +169,18 @@ wasm-build.stamp: FORCE
 	  --mode normal \
 	  --target web \
 	  $(WASM_BUILD_ARGS)
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: wasm-build
-wasm-build: wasm-build.stamp
+wasm-build: $(STAMPS)/wasm-build
 
 # Install JS deps with Bun
-bun-deps.stamp: $(PACKAGE_JSON)
+$(STAMPS)/bun-deps: $(PACKAGE_JSON)
 	$(BUN) install --frozen-lockfile --cwd crypto-ffi/bindings/js
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: bun-deps
-bun-deps: bun-deps.stamp
+bun-deps: $(STAMPS)/bun-deps
 
 # Full JS binding step
 bindings-js: wasm-build $(JS_OUT)
@@ -184,33 +194,33 @@ bindings: bindings-swift bindings-kotlin bindings-js
 #-------------------------------------------------------------------------------
 
 # Rust generic docs
-docs-rust-generic.stamp: FORCE
+$(STAMPS)/docs-rust-generic: FORCE
 	$(CARGO) doc --no-deps
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: docs-rust-generic
-docs-rust-generic: docs-rust-generic.stamp
+docs-rust-generic: $(STAMPS)/docs-rust-generic
 
 # Rust WASM docs
-docs-rust-wasm.stamp: FORCE
+$(STAMPS)/docs-rust-wasm: FORCE
 	$(CARGO) doc --no-deps --target=wasm32-unknown-unknown
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: docs-rust-wasm
-docs-rust-wasm: docs-rust-wasm.stamp
+docs-rust-wasm: $(STAMPS)/docs-rust-wasm
 
 # Kotlin Dokka (Android) docs
-docs-kotlin.stamp: jvm
+$(STAMPS)/docs-kotlin: jvm
 	cd crypto-ffi/bindings && ./gradlew android:dokkaGeneratePublicationHtml
 	mkdir -p target/kotlin/doc
 	cp -R crypto-ffi/bindings/android/build/dokka/html/ target/kotlin/doc
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: docs-kotlin
-docs-kotlin: docs-kotlin.stamp
+docs-kotlin: $(STAMPS)/docs-kotlin
 
 # TypeScript docs via Typedoc
-docs-ts.stamp: wasm-build.stamp bun-deps.stamp
+$(STAMPS)/docs-ts: $(STAMPS)/wasm-build $(STAMPS)/bun-deps
 	cd crypto-ffi/bindings/js && \
 	$(BUN) x typedoc \
 	  --basePath ./ \
@@ -219,23 +229,23 @@ docs-ts.stamp: wasm-build.stamp bun-deps.stamp
 	  --out ../../target/typescript/doc \
 	  --readme none \
 	  --treatWarningsAsErrors
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: docs-ts
-docs-ts: docs-ts.stamp
+docs-ts: $(STAMPS)/docs-ts
 
 # Swift docs via Jazzy (macOS only)
-docs-swift.stamp:
+$(STAMPS)/docs-swift:
 	mkdir -p target/swift/doc
 	cd crypto-ffi/bindings/Swift/WireCoreCrypto && \
 	jazzy \
 	  --modules WireCoreCrypto,WireCoreCryptoUniffi \
 	  --build-tool-arguments "-project WireCoreCrypto.xcodeproj -scheme WireCoreCrypto" \
 	  -o ../../../target/swift/doc
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: docs-swift
-docs-swift: docs-swift.stamp
+docs-swift: $(STAMPS)/docs-swift
 
 # Group all docs
 .PHONY: docs
@@ -245,7 +255,7 @@ docs: docs-rust-generic docs-rust-wasm docs-kotlin docs-ts docs-swift
 # 6) iOS builds (create stamp per sub‐target)
 #-------------------------------------------------------------------------------
 
-ios-device.stamp: bindings-swift.stamp
+$(STAMPS)/ios-device: $(STAMPS)/bindings-swift
 	IPHONEOS_DEPLOYMENT_TARGET=16.0 \
 	$(CARGO) rustc --locked \
 	  --target aarch64-apple-ios \
@@ -253,12 +263,12 @@ ios-device.stamp: bindings-swift.stamp
 	  --crate-type=staticlib \
 	  --package core-crypto-ffi \
 	  --release -- -C strip=symbols
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: ios-device
-ios-device: ios-device.stamp
+ios-device: $(STAMPS)/ios-device
 
-ios-simulator-arm.stamp: bindings-swift.stamp
+$(STAMPS)/ios-simulator-arm: $(STAMPS)/bindings-swift
 	CRATE_CC_NO_DEFAULTS=1 \
 	TARGET_CFLAGS="--target=arm64-apple-ios14.0.0-simulator \
 	-mios-simulator-version-min=14.0 \
@@ -269,24 +279,24 @@ ios-simulator-arm.stamp: bindings-swift.stamp
 	  --crate-type=staticlib \
 	  --package core-crypto-ffi \
 	  --release -- -C strip=symbols
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: ios-simulator-arm
-ios-simulator-arm: ios-simulator-arm.stamp
+ios-simulator-arm: $(STAMPS)/ios-simulator-arm
 
-ios.stamp: ios-device.stamp ios-simulator-arm.stamp
-	touch $@
+$(STAMPS)/ios: $(STAMPS)/ios-device $(STAMPS)/ios-simulator-arm
+	$(TOUCH_STAMP)
 
 .PHONY: ios
-ios: ios.stamp
+ios: $(STAMPS)/ios
 
 # Build XCFramework (macOS only)
-ios-create-xcframework.stamp: ios.stamp
+$(STAMPS)/ios-create-xcframework: $(STAMPS)/ios
 	cd crypto-ffi/bindings/swift && ./build-xcframework.sh
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: ios-create-xcframework
-ios-create-xcframework: ios-create-xcframework.stamp
+ios-create-xcframework: $(STAMPS)/ios-create-xcframework
 
 #-------------------------------------------------------------------------------
 # 7) Android builds (stamp per architecture)
@@ -303,29 +313,29 @@ android-env:
 	@echo "  clang-rt:  $(CLANG_RT_DIR)"
 
 
-android-armv7.stamp: android-env
+$(STAMPS)/android-armv7: android-env
 	$(CARGO) rustc --locked \
 	  --target armv7-linux-androideabi \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
 	  --release -- -C strip=symbols
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: android-armv7
-android-armv7: android-armv7.stamp
+android-armv7: $(STAMPS)/android-armv7
 
-android-armv8.stamp: android-env
+$(STAMPS)/android-armv8: android-env
 	$(CARGO) rustc --locked \
 	  --target aarch64-linux-android \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
 	  --release -- -C strip=symbols
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: android-armv8
-android-armv8: android-armv8.stamp
+android-armv8: $(STAMPS)/android-armv8
 
-android-x86.stamp: android-env
+$(STAMPS)/android-x86: android-env
 	# Link clang_rt.builtins statically for x86_64 Android
 	$(CARGO) rustc --locked \
 	  --target x86_64-linux-android \
@@ -335,16 +345,16 @@ android-x86.stamp: android-env
 	  -C strip=symbols \
 	  -l static=clang_rt.builtins-x86_64-android \
 	  -L $$(dirname $$($(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(PLATFORM_DIR)/bin/clang --print-runtime-dir))/linux
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: android-x86
-android-x86: android-x86.stamp
+android-x86: $(STAMPS)/android-x86
 
-android.stamp: android-armv7.stamp android-armv8.stamp android-x86.stamp
-	touch $@
+$(STAMPS)/android: $(STAMPS)/android-armv7 $(STAMPS)/android-armv8 $(STAMPS)/android-x86
+	$(TOUCH_STAMP)
 
 .PHONY: android
-android: android.stamp
+android: $(STAMPS)/android
 
 .PHONY: android-test
 android-test: android
@@ -356,30 +366,30 @@ android-test: android
 #-------------------------------------------------------------------------------
 
 # darwin build
-jvm-darwin.stamp: bindings-kotlin-jvm.stamp
+$(STAMPS)/jvm-darwin: $(STAMPS)/bindings-kotlin-jvm
 	cd crypto-ffi && \
 	$(CARGO) rustc --locked \
 	  --target aarch64-apple-darwin \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
 	  --release -- -C strip=symbols
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: jvm-darwin
-jvm-darwin: jvm-darwin.stamp
+jvm-darwin: $(STAMPS)/jvm-darwin
 
 # linux build
-jvm-linux.stamp: bindings-kotlin-jvm.stamp
+$(STAMPS)/jvm-linux: $(STAMPS)/bindings-kotlin-jvm
 	cd crypto-ffi && \
 	$(CARGO) rustc --locked \
 	  --target x86_64-unknown-linux-gnu \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
 	  --release -- -C strip=symbols
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: jvm-linux
-jvm-linux: jvm-linux.stamp
+jvm-linux: $(STAMPS)/jvm-linux
 
 .PHONY: jvm
 ifeq ($(UNAME_S),Linux)
@@ -430,25 +440,25 @@ ts-clean:
 	@rm -f $(JS_OUT) $(DTS_OUT) \
 	&& rm -rf $(GEN_DIR)
 
-ts-fmt.stamp: $(TS_SRCS)
+$(STAMPS)/ts-fmt: $(TS_SRCS)
 	cd $(JS_DIR) && bun eslint --max-warnings=0 --fix
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: ts-fmt
-ts-fmt: ts-fmt.stamp
+ts-fmt: $(STAMPS)/ts-fmt
 
 $(JS_GEN): wasm-build
 $(WASM_GEN): wasm-build
 
 # build corecrypto.js
-$(JS_OUT): bun-deps.stamp $(JS_GEN) $(WASM_GEN) $(TS_SRCS) $(PACKAGE_JSON)
+$(JS_OUT): $(STAMPS)/bun-deps $(JS_GEN) $(WASM_GEN) $(TS_SRCS) $(PACKAGE_JSON)
 	cd $(JS_DIR) && \
 	bun build \
 	  --target browser \
 	  --format esm \
 	  --outfile src/corecrypto.js \
 	  src/CoreCrypto.ts
-	touch $@
+	$(TOUCH_STAMP)
 
 .PHONY: ts-build
 ts-build: $(JS_OUT)
