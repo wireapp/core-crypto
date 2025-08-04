@@ -1,4 +1,4 @@
-name: continuous benchmarks with bencher
+name: benchmarks
 on:
   push:
     branches:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   benchmarks_with_bencher:
-    name: rust benchmarks with bencher
+    name: rust
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
@@ -27,7 +27,7 @@ jobs:
           bench-command: cargo bench --locked --bench ${{ matrix.rust_bench }} -- --quick
 
   web_benchmarks_with_bencher:
-    name: web benchmarks with bencher
+    name: web
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
