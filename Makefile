@@ -235,7 +235,7 @@ $(STAMPS)/docs-ts: $(STAMPS)/wasm-build $(STAMPS)/bun-deps
 docs-ts: $(STAMPS)/docs-ts
 
 # Swift docs via Jazzy (macOS only)
-$(STAMPS)/docs-swift:
+$(STAMPS)/docs-swift: ios
 	mkdir -p target/swift/doc
 	cd crypto-ffi/bindings/Swift/WireCoreCrypto && \
 	jazzy \
