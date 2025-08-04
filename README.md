@@ -26,7 +26,7 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 ### General Requirements
 
 - rust: <https://rustup.rs/>
-- gnu make: <https://www.gnu.org/software/make/>
+- GNU make: <https://www.gnu.org/software/make/>
 
 If you're using macOS, you'll also need to install GNU sed:
 
@@ -188,6 +188,8 @@ make android-test
 ```sh
 make ts-test
 ```
+
+Note the `CC_TEST_LOG_LEVEL` environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto logs.
 
 ## Benchmarks
 There are benches implemented in [`crypto/benches`](crypto/benches/) for several operations on mls groups with varying sizes or proteus.
