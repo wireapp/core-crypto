@@ -472,7 +472,7 @@ $(DTS_OUT): $(JS_OUT) $(TS_SRCS)
 	  --no-check \
 	  --export-referenced-types false \
 	  src/CoreCrypto.ts
-	touch $@
+	@touch $@
 
 .PHONY: ts
 ts: $(DTS_OUT)
