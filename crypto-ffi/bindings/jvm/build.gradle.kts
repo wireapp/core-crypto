@@ -10,6 +10,10 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+
 dependencies {
     implementation(platform(kotlin("bom")))
     implementation(platform(libs.coroutines.bom))
