@@ -498,3 +498,8 @@ ts-test: ts ## Run TypeScript wrapper tests via wdio and bun
 ts-bench: ts ## Run TypeScript wrapper benches in Chrome via wdio
 	cd $(JS_DIR) && \
 	bun x wdio run wdio.conf.ts --spec benches/**/*.bench.ts --log-level warn
+
+.PHONY: clean
+clean: ts-clean ## Run cargo clean and the ts-clean target, remove all stamps
+	cargo clean && \
+	rm -r $(STAMPS)
