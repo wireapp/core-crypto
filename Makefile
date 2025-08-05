@@ -366,7 +366,7 @@ $(STAMPS)/android: $(STAMPS)/android-armv7 $(STAMPS)/android-armv8 $(STAMPS)/and
 android: $(STAMPS)/android ## Build core-crypto-ffi for all Android targets
 
 .PHONY: android-test
-android-test: android ## Run Kotlin tests on Android
+android-test: ## Run Kotlin tests on Android (assuming you ran `make android` at some earlier time)
 	cd crypto-ffi/bindings && \
 	./gradlew android:build -x lint -x lintRelease
 
@@ -410,7 +410,7 @@ $(error Unsupported host platform for jvm: $(UNAME_S))
 endif
 
 .PHONY: jvm-test
-jvm-test: jvm ## Run Kotlin tests on JVM
+jvm-test: ## Run Kotlin tests on JVM (assuming you ran `make jvm` at some earlier time)
 	cd crypto-ffi/bindings && \
 	./gradlew jvm:build -x lint -x lintRelease
 
@@ -488,7 +488,7 @@ ts: $(DTS_OUT) ## Build the TypeScript wrapper
 
 # run WebDriver tests + bun’s built-in tests
 .PHONY: ts-test
-ts-test: ts ## Run TypeScript wrapper tests via wdio and bun
+ts-test: ## Run TypeScript wrapper tests via wdio and bun (assuming you ran `make ts` at some earlier time)
 	cd $(JS_DIR) && \
 	bun x wdio run wdio.conf.ts --spec test/wdio/*.test.ts && \
 	bun test
