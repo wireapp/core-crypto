@@ -163,7 +163,7 @@ Calling this method in an asynchronous context may result in a deadlock.</p>
 <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>reader, <span class="number">1</span>);
 
 <span class="macro">assert!</span>(lock.try_read().is_some());</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.try_upgradable_read" class="method"><h4 class="code-header">pub fn <a href="#method.try_upgradable_read" class="fn">try_upgradable_read</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;RwLockUpgradableReadGuard&lt;'_, T&gt;&gt;</h4></section></summary><div class="docblock"><p>Attempts to acquire a read lock with the possiblity to upgrade to a write lock.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.try_upgradable_read" class="method"><h4 class="code-header">pub fn <a href="#method.try_upgradable_read" class="fn">try_upgradable_read</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;RwLockUpgradableReadGuard&lt;'_, T&gt;&gt;</h4></section></summary><div class="docblock"><p>Attempts to acquire a read lock with the possibility to upgrade to a write lock.</p>
 <p>If a read lock could not be acquired at this time, then <a href="https://doc.rust-lang.org/1.88.0/core/option/enum.Option.html#variant.None" title="variant core::option::Option::None"><code>None</code></a> is returned. Otherwise, a
 guard is returned that releases the lock when dropped.</p>
 <p>Upgradable read lock reserves the right to be upgraded to a write lock, which means there
@@ -179,7 +179,7 @@ can be at most one upgradable read lock at a time.</p>
 
 <span class="kw">let </span><span class="kw-2">mut </span>writer = RwLockUpgradableReadGuard::upgrade(reader).<span class="kw">await</span>;
 <span class="kw-2">*</span>writer = <span class="number">2</span>;</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.upgradable_read" class="method"><h4 class="code-header">pub fn <a href="#method.upgradable_read" class="fn">upgradable_read</a>(&amp;self) -&gt; UpgradableRead&lt;'_, T&gt;</h4></section></summary><div class="docblock"><p>Acquires a read lock with the possiblity to upgrade to a write lock.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.upgradable_read" class="method"><h4 class="code-header">pub fn <a href="#method.upgradable_read" class="fn">upgradable_read</a>(&amp;self) -&gt; UpgradableRead&lt;'_, T&gt;</h4></section></summary><div class="docblock"><p>Acquires a read lock with the possibility to upgrade to a write lock.</p>
 <p>Returns a guard that releases the lock when dropped.</p>
 <p>Upgradable read lock reserves the right to be upgraded to a write lock, which means there
 can be at most one upgradable read lock at a time.</p>
@@ -196,7 +196,7 @@ attempts to acquire another upgradable read lock or a write lock.</p>
 
 <span class="kw">let </span><span class="kw-2">mut </span>writer = RwLockUpgradableReadGuard::upgrade(reader).<span class="kw">await</span>;
 <span class="kw-2">*</span>writer = <span class="number">2</span>;</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.upgradable_read_blocking" class="method"><h4 class="code-header">pub fn <a href="#method.upgradable_read_blocking" class="fn">upgradable_read_blocking</a>(&amp;self) -&gt; RwLockUpgradableReadGuard&lt;'_, T&gt;</h4></section></summary><div class="docblock"><p>Attempts to acquire a read lock with the possiblity to upgrade to a write lock.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.upgradable_read_blocking" class="method"><h4 class="code-header">pub fn <a href="#method.upgradable_read_blocking" class="fn">upgradable_read_blocking</a>(&amp;self) -&gt; RwLockUpgradableReadGuard&lt;'_, T&gt;</h4></section></summary><div class="docblock"><p>Attempts to acquire a read lock with the possibility to upgrade to a write lock.</p>
 <p>Returns a guard that releases the lock when dropped.</p>
 <p>Upgradable read lock reserves the right to be upgraded to a write lock, which means there
 can be at most one upgradable read lock at a time.</p>
@@ -222,7 +222,7 @@ Calling this method in an asynchronous context may result in a deadlock.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.upgradable_read_arc_blocking" class="method"><h4 class="code-header">pub fn <a href="#method.upgradable_read_arc_blocking" class="fn">upgradable_read_arc_blocking</a>(
     self: &amp;<a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;RwLock&lt;T&gt;&gt;,
 ) -&gt; RwLockUpgradableReadGuardArc&lt;T&gt;</h4></section></summary><div class="docblock"><p>Attempts to acquire an owned, reference-counted read lock
-with the possiblity to upgrade to a write lock.</p>
+with the possibility to upgrade to a write lock.</p>
 <p>Returns a guard that releases the lock when dropped.</p>
 <p>Upgradable read lock reserves the right to be upgraded to a write lock, which means there
 can be at most one upgradable read lock at a time.</p>
@@ -248,7 +248,7 @@ Calling this method in an asynchronous context may result in a deadlock.</p>
 <span class="kw-2">*</span>writer = <span class="number">2</span>;</code></pre></div>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.try_upgradable_read_arc" class="method"><h4 class="code-header">pub fn <a href="#method.try_upgradable_read_arc" class="fn">try_upgradable_read_arc</a>(
     self: &amp;<a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;RwLock&lt;T&gt;&gt;,
-) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;RwLockUpgradableReadGuardArc&lt;T&gt;&gt;</h4></section></summary><div class="docblock"><p>Attempts to acquire an owned, reference-counted read lock with the possiblity to
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;RwLockUpgradableReadGuardArc&lt;T&gt;&gt;</h4></section></summary><div class="docblock"><p>Attempts to acquire an owned, reference-counted read lock with the possibility to
 upgrade to a write lock.</p>
 <p>If a read lock could not be acquired at this time, then <a href="https://doc.rust-lang.org/1.88.0/core/option/enum.Option.html#variant.None" title="variant core::option::Option::None"><code>None</code></a> is returned. Otherwise, a
 guard is returned that releases the lock when dropped.</p>
@@ -268,7 +268,7 @@ can be at most one upgradable read lock at a time.</p>
 <span class="kw-2">*</span>writer = <span class="number">2</span>;</code></pre></div>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.upgradable_read_arc" class="method"><h4 class="code-header">pub fn <a href="#method.upgradable_read_arc" class="fn">upgradable_read_arc</a>&lt;'a&gt;(
     self: &amp;'a <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;RwLock&lt;T&gt;&gt;,
-) -&gt; UpgradableReadArc&lt;'a, T&gt;</h4></section></summary><div class="docblock"><p>Acquires an owned, reference-counted read lock with the possiblity
+) -&gt; UpgradableReadArc&lt;'a, T&gt;</h4></section></summary><div class="docblock"><p>Acquires an owned, reference-counted read lock with the possibility
 to upgrade to a write lock.</p>
 <p>Returns a guard that releases the lock when dropped.</p>
 <p>Upgradable read lock reserves the right to be upgraded to a write lock, which means there
