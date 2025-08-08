@@ -559,7 +559,7 @@ mod tests {
                 const ALICE_NEW_HANDLE: &str = "new_alice_wire";
                 const ALICE_NEW_DISPLAY_NAME: &str = "New Alice Smith";
 
-                fn init_alice(wrapper: e2ei_utils::E2eiInitWrapper) -> e2ei_utils::InitFnReturn<'_> {
+                fn init_alice(wrapper: e2ei_utils::E2eiInitWrapper<'_>) -> e2ei_utils::InitFnReturn<'_> {
                     Box::pin(async move {
                         let e2ei_utils::E2eiInitWrapper { context: cc, case } = wrapper;
                         let cs = case.ciphersuite();
@@ -619,7 +619,7 @@ mod tests {
                 const BOB_NEW_HANDLE: &str = "new_bob_wire";
                 const BOB_NEW_DISPLAY_NAME: &str = "New Bob Smith";
 
-                fn init_bob(wrapper: e2ei_utils::E2eiInitWrapper) -> e2ei_utils::InitFnReturn<'_> {
+                fn init_bob(wrapper: e2ei_utils::E2eiInitWrapper<'_>) -> e2ei_utils::InitFnReturn<'_> {
                     Box::pin(async move {
                         let e2ei_utils::E2eiInitWrapper { context: cc, case } = wrapper;
                         let cs = case.ciphersuite();

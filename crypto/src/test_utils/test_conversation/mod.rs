@@ -360,7 +360,7 @@ impl<'a> TestConversation<'a> {
         // the MLS group
         let cid = self.actor().get_client_id().await;
         let guard = self.guard().await;
-        let group_identities = guard.get_device_identities(&[cid.clone()]).await.unwrap();
+        let group_identities = guard.get_device_identities(std::slice::from_ref(&cid)).await.unwrap();
         let group_identity = group_identities.first().unwrap();
         assert_eq!(group_identity.client_id.as_bytes(), cid.0.as_slice());
         assert_eq!(

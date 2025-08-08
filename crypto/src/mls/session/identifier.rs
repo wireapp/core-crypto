@@ -23,7 +23,7 @@ pub enum ClientIdentifier {
 impl ClientIdentifier {
     /// Extract the unique [ClientId] from an identifier. Use with parsimony as, in case of a x509
     /// certificate this leads to parsing the certificate
-    pub fn get_id(&self) -> Result<std::borrow::Cow<ClientId>> {
+    pub fn get_id(&self) -> Result<std::borrow::Cow<'_, ClientId>> {
         match self {
             ClientIdentifier::Basic(id) => Ok(std::borrow::Cow::Borrowed(id)),
             ClientIdentifier::X509(certs) => {

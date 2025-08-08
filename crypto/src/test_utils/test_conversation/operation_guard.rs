@@ -99,7 +99,7 @@ impl<'a, T> OperationGuard<'a, T> {
     }
 
     /// The [TestConversation] this operation was performed on.
-    pub fn conversation(&self) -> &'a TestConversation {
+    pub fn conversation(&self) -> &'a TestConversation<'_> {
         &self.conversation
     }
 

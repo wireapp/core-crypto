@@ -27,7 +27,7 @@ impl PkiEnvironmentProvider {
 
     pub async fn borrow(
         &self,
-    ) -> RwLockReadGuard<Option<wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>> {
+    ) -> RwLockReadGuard<'_, Option<wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>> {
         self.0.read().await
     }
 
@@ -438,7 +438,7 @@ impl PkiKeypair {
         }
     }
 
-    pub fn signature_algorithm(&self) -> spki::AlgorithmIdentifierRef {
+    pub fn signature_algorithm(&self) -> spki::AlgorithmIdentifierRef<'_> {
         match self {
             Self::P256(_) => p256::ecdsa::SigningKey::SIGNATURE_ALGORITHM_IDENTIFIER,
             Self::P384(_) => p384::ecdsa::SigningKey::SIGNATURE_ALGORITHM_IDENTIFIER,

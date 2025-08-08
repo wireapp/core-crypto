@@ -87,7 +87,7 @@ impl<T> ToValue for Obfuscated<T>
 where
     T: Obfuscate,
 {
-    fn to_value(&self) -> Value {
+    fn to_value(&self) -> Value<'_> {
         Value::from_debug(self)
     }
 }

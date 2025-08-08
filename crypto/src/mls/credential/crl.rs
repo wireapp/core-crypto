@@ -36,10 +36,10 @@ pub(crate) fn extract_crl_uris_from_proposals(proposals: &[Proposal]) -> Result<
 }
 
 pub(crate) fn extract_crl_uris_from_update_path(commit: &StagedCommit) -> Result<HashSet<String>> {
-    if let Some(update_path) = commit.get_update_path_leaf_node() {
-        if let MlsCredentialType::X509(cert) = update_path.credential().mls_credential() {
-            return extract_dp(cert);
-        }
+    if let Some(update_path) = commit.get_update_path_leaf_node()
+        && let MlsCredentialType::X509(cert) = update_path.credential().mls_credential()
+    {
+        return extract_dp(cert);
     }
     Ok(HashSet::new())
 }

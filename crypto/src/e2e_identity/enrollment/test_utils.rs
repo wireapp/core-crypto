@@ -35,7 +35,7 @@ impl E2eiEnrollment {
     }
 }
 
-pub(crate) fn init_enrollment(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
+pub(crate) fn init_enrollment(wrapper: E2eiInitWrapper<'_>) -> InitFnReturn<'_> {
     Box::pin(async move {
         let E2eiInitWrapper { context: cc, case } = wrapper;
         let cs = case.ciphersuite();
@@ -53,7 +53,7 @@ pub(crate) fn init_enrollment(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
     })
 }
 
-pub(crate) fn init_activation_or_rotation(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
+pub(crate) fn init_activation_or_rotation(wrapper: E2eiInitWrapper<'_>) -> InitFnReturn<'_> {
     Box::pin(async move {
         let E2eiInitWrapper { context: cc, case } = wrapper;
         let cs = case.ciphersuite();

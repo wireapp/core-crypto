@@ -36,7 +36,7 @@ impl WasmConnection {
     }
 
     // for compatibility with the uniffi version
-    pub async fn conn(&self) -> TransactionCreator {
+    pub async fn conn(&self) -> TransactionCreator<'_> {
         TransactionCreator { conn: &self.conn }
     }
 

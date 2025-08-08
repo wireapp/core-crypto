@@ -50,7 +50,7 @@ impl ConversationGuard {
         Self { inner, central_context }
     }
 
-    pub(crate) async fn conversation_mut(&mut self) -> RwLockWriteGuard<MlsConversation> {
+    pub(crate) async fn conversation_mut(&mut self) -> RwLockWriteGuard<'_, MlsConversation> {
         self.inner.write().await
     }
 

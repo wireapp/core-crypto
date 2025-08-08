@@ -858,7 +858,7 @@ mod tests {
                 // Finds both Alice's devices
                 let alice_user_id = alice_1.get_user_id().await;
                 let alice_identities = conversation_guard
-                    .get_user_identities(&[alice_user_id.clone()])
+                    .get_user_identities(std::slice::from_ref(&alice_user_id))
                     .await
                     .unwrap();
                 assert_eq!(alice_identities.len(), 1);
@@ -868,7 +868,7 @@ mod tests {
                 // Finds Bob only device
                 let bob_user_id = bob.get_user_id().await;
                 let bob_identities = conversation_guard
-                    .get_user_identities(&[bob_user_id.clone()])
+                    .get_user_identities(std::slice::from_ref(&bob_user_id))
                     .await
                     .unwrap();
                 assert_eq!(bob_identities.len(), 1);
@@ -910,7 +910,7 @@ mod tests {
                 let alice_identities = conversation
                     .guard()
                     .await
-                    .get_user_identities(&[alice_user_id.clone()])
+                    .get_user_identities(std::slice::from_ref(&alice_user_id))
                     .await
                     .unwrap();
                 assert_eq!(alice_identities.len(), 1);
@@ -922,7 +922,7 @@ mod tests {
                 let bob_identities = conversation
                     .guard()
                     .await
-                    .get_user_identities(&[bob_user_id.clone()])
+                    .get_user_identities(std::slice::from_ref(&bob_user_id))
                     .await
                     .unwrap();
                 assert_eq!(bob_identities.len(), 1);
