@@ -41,17 +41,9 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack
-      - uses: davidB/rust-cargo-make@v1
-      - name: build wasm
-        run: |
-          cd crypto-ffi
-          cargo make wasm
       - name: bench wasm/js
         run: |
-          cd crypto-ffi/bindings/js
-          bun install --frozen-lockfile
-          bun run build
-          bun run bench
+          make ts-bench WASM_RELEASE=1
       - uses: actions/checkout@v4
         with:
           # Keep result file
