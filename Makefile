@@ -197,7 +197,7 @@ bindings-js: wasm-build $(JS_OUT) ## Generate JavaScript bindings (append `WASM_
 
 # All bindings
 .PHONY: bindings
-bindings: bindings-swift bindings-kotlin bindings-js ## Generate all bindings
+bindings: bindings-kotlin bindings-js $(if $(filter Darwin,$(UNAME_S)),bindings-swift) ## Generate all bindings
 
 #-------------------------------------------------------------------------------
 # 5) Documentation targets (stamp-based if desired)
