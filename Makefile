@@ -419,10 +419,9 @@ jvm-test: ## Run Kotlin tests on JVM (assuming you ran `make jvm` at some earlie
 # 9) Aggregate targets
 #-------------------------------------------------------------------------------
 
-.PHONY: mobile wasm all
-mobile: android $(if $(filter Darwin,$(UNAME_S)),ios) ## Generate bindings for android, and, if on macOS, also for iOS
+.PHONY: wasm all
 wasm: bindings-js  ## Alias for bindings-js
-all: mobile wasm docs ## Generate bindings for all platforms (mobile, wasm) and generate docs
+all: android wasm jvm $(if $(filter Darwin,$(UNAME_S)),ios) docs ## Generate bindings for all platforms (android, iOS, wasm) and generate docs
 
 #-------------------------------------------------------------------------------
 # TypeScript / JS tasks (from crypto-ffi/bindings/js/package.json)
