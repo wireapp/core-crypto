@@ -65,7 +65,7 @@ WASM_PACK      := wasm-pack
 UNIFFI_BINDGEN := target/release/uniffi-bindgen
 
 # Default goal
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL := local
 
 # Directory we store timestamps in
 STAMPS := .stamps
@@ -419,8 +419,9 @@ jvm-test: ## Run Kotlin tests on JVM (assuming you ran `make jvm` at some earlie
 # 9) Aggregate targets
 #-------------------------------------------------------------------------------
 
-.PHONY: wasm all
+.PHONY: wasm local all
 wasm: bindings-js  ## Alias for bindings-js
+local: bindings ts-fmt ## Generate and format all bindings
 all: android wasm jvm $(if $(filter Darwin,$(UNAME_S)),ios) docs ## Generate bindings for all platforms (android, iOS, wasm) and generate docs
 
 #-------------------------------------------------------------------------------
