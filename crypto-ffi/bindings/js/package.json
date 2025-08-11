@@ -49,9 +49,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "scripts": {
-    "clean": "rm -f src/corecrypto.js src/corecrypto.d.ts"
-  },
   "type": "module",
   "types": "src/corecrypto.d.ts"
 }

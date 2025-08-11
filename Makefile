@@ -460,7 +460,7 @@ $(JS_GEN): wasm-build
 $(WASM_GEN): wasm-build
 
 # build corecrypto.js
-$(JS_OUT): $(STAMPS)/bun-deps $(JS_GEN) $(WASM_GEN) $(TS_SRCS) $(PACKAGE_JSON)
+$(JS_OUT): ts-clean $(STAMPS)/bun-deps $(JS_GEN) $(WASM_GEN) $(TS_SRCS) $(PACKAGE_JSON)
 	cd $(JS_DIR) && \
 	bun build \
 	  --target browser \
