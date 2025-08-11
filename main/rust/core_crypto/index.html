@@ -17,37 +17,34 @@ groups.</p>
 <p>See <a href="docs/ARCHITECTURE.md">ARCHITECTURE.md</a></p>
 <h3 id="usage"><a class="doc-anchor" href="#usage">§</a>Usage</h3><h4 id="api-docs"><a class="doc-anchor" href="#api-docs">§</a><a href="https://wireapp.github.io/core-crypto/">API Docs</a></h4><h3 id="building"><a class="doc-anchor" href="#building">§</a>Building</h3><h4 id="general-requirements"><a class="doc-anchor" href="#general-requirements">§</a>General Requirements</h4>
 <ul>
-<li>rust: <a href="https://www.rust-lang.org/tools/install">https://www.rust-lang.org/tools/install</a></li>
-<li>cargo-make: <a href="https://sagiegurari.github.io/cargo-make/">https://sagiegurari.github.io/cargo-make/</a></li>
+<li>rust: <a href="https://rustup.rs/">https://rustup.rs/</a></li>
+<li>GNU make: <a href="https://www.gnu.org/software/make/">https://www.gnu.org/software/make/</a></li>
 </ul>
 <p>If you’re using macOS, you’ll also need to install GNU sed:</p>
-<div class="example-wrap"><pre class="language-text"><code>brew install gnu-sed</code></pre></div>
+<div class="example-wrap"><pre class="language-sh"><code>brew install gnu-sed</code></pre></div>
 <p>and add an alias to your shell configuration file: <code>alias sed=gsed</code> (e.g. to <code>~/.zshenv</code> if you’re using zsh).</p>
-<h4 id="development-requirements"><a class="doc-anchor" href="#development-requirements">§</a>Development Requirements</h4><h5 id="pre-commit"><a class="doc-anchor" href="#pre-commit">§</a>Pre-commit</h5>
+<h5 id="pre-commit"><a class="doc-anchor" href="#pre-commit">§</a>Pre-commit</h5>
 <ul>
 <li>Install the <a href="https://pre-commit.com/"><code>pre-commit</code> framework</a></li>
 <li>Run <code>pre-commit install</code> to initialize the pre-commit hooks</li>
 </ul>
 <h4 id="android"><a class="doc-anchor" href="#android">§</a>Android</h4>
-<p>Install Android SDK and Build-Tools for API level 30+</p>
+<p><a href="https://developer.android.com/studio">Install Android SDK</a> and Build-Tools for API level 30+</p>
 <blockquote>
 <p>If you are building on macOS you’ll need to setup <code>$ANDROID_SDK_ROOT</code> path variable manually:</p>
 <div class="example-wrap"><pre class="language-text"><code>export ANDROID_SDK_ROOT=~/Android/Sdk</code></pre></div></blockquote>
+<p><a href="https://developer.android.com/studio/projects/install-ndk">Install the Android NDK</a></p>
 <p>Install android rust targets:</p>
 <div class="example-wrap"><pre class="language-text"><code>rustup target add x86_64-linux-android aarch64-linux-android armv7-linux-androideabi</code></pre></div>
 <p>Build:</p>
-<div class="example-wrap"><pre class="language-text"><code>cd crypto-ffi
-cargo make android
-cd bindings
-./gradlew android:build</code></pre></div><h4 id="ios"><a class="doc-anchor" href="#ios">§</a>iOS</h4>
+<div class="example-wrap"><pre class="language-text"><code>make android</code></pre></div><h4 id="ios"><a class="doc-anchor" href="#ios">§</a>iOS</h4>
 <p>Install Xcode &amp; its command-line tools: <a href="https://developer.apple.com/xcode/">https://developer.apple.com/xcode/</a>.</p>
 <p>Install iOS rust targets:</p>
 <div class="example-wrap"><pre class="language-text"><code>rustup target add aarch64-apple-ios aarch64-apple-ios-sim</code></pre></div>
 <p>Build:</p>
-<div class="example-wrap"><pre class="language-text"><code>cd crypto-ffi
-cargo make ios
+<div class="example-wrap"><pre class="language-text"><code>make ios
 # Additionally, if you want to export a .XCFramework:
-cargo make ios-create-xcframework</code></pre></div><h4 id="macos"><a class="doc-anchor" href="#macos">§</a>MacOS</h4>
+make ios-create-xcframework</code></pre></div><h4 id="macos"><a class="doc-anchor" href="#macos">§</a>MacOS</h4>
 <p>Install macOS rust targets:</p>
 <div class="example-wrap"><pre class="language-text"><code>rustup target add aarch64-apple-darwin</code></pre></div><h4 id="linux"><a class="doc-anchor" href="#linux">§</a>Linux</h4>
 <blockquote>
@@ -64,24 +61,19 @@ cargo make ios-create-xcframework</code></pre></div><h4 id="macos"><a class="doc
 <li>Install Bun (follow the instructions on <a href="https://bun.sh/">Bun’s website</a>)</li>
 </ul>
 <p>Build:</p>
-<div class="example-wrap"><pre class="language-text"><code>cd crypto-ffi
-cargo make wasm
-cd bindings/js
-bun run build</code></pre></div><h4 id="bindings"><a class="doc-anchor" href="#bindings">§</a>Bindings</h4>
+<div class="example-wrap"><pre class="language-text"><code>make ts</code></pre></div><h4 id="bindings"><a class="doc-anchor" href="#bindings">§</a>Bindings</h4>
 <p>Build bindings for Android, JVM, iOS and WASM</p>
-<div class="example-wrap"><pre class="language-text"><code>cd crypto-ffi
-
-# builds bindings and targets for the JVM (macOS / Linux)
-cargo make jvm
+<div class="example-wrap"><pre class="language-text"><code># builds bindings and targets for the JVM (macOS / Linux)
+make jvm
 
 # builds bindings and targets for Android
-cargo make android
+make android
 
 # builds iOS framework
-cargo make ios-create-xcframework
+make ios-create-xcframework
 
 # builds wasm binary &amp; TS bindings
-cargo make wasm</code></pre></div><h3 id="testing"><a class="doc-anchor" href="#testing">§</a>Testing</h3><h4 id="general-testing"><a class="doc-anchor" href="#general-testing">§</a>General testing</h4><div class="example-wrap"><pre class="language-text"><code># Install cargo-nextest if you haven&#39;t done so, it yields some substantial speedup
+make ts</code></pre></div><h3 id="testing"><a class="doc-anchor" href="#testing">§</a>Testing</h3><h4 id="general-testing"><a class="doc-anchor" href="#general-testing">§</a>General testing</h4><div class="example-wrap"><pre class="language-text"><code># Install cargo-nextest if you haven&#39;t done so, it yields some substantial speedup
 cargo install cargo-nextest
 cargo nextest run</code></pre></div><h4 id="run-core-crypto-internal-tests-on-wasm-target"><a class="doc-anchor" href="#run-core-crypto-internal-tests-on-wasm-target">§</a>Run core crypto internal tests on WASM target</h4>
 <p>If you haven’t already, install the target and wasm-pack:</p>
@@ -94,29 +86,11 @@ browser you want to test for, respectively.</p>
 <blockquote>
 <p>This takes quite a while.</p>
 </blockquote>
-<div class="example-wrap"><pre class="language-text"><code>cargo nextest run --features test-all-cipher</code></pre></div><h4 id="platform-specific-tests-for-kotlinjvm"><a class="doc-anchor" href="#platform-specific-tests-for-kotlinjvm">§</a>Platform-specific tests for Kotlin/JVM</h4>
-<p>Build the JVM target every timee the Rust code changes:</p>
-<div class="example-wrap"><pre class="language-sh"><code># substitute with `jvm-darwin` on OSX
-core-crypto/crypto-ffi$ cargo make jvm-linux</code></pre></div>
-<p>Then run the tests each time the wrapper or wrapper tests change</p>
-<div class="example-wrap"><pre class="language-sh"><code>core-crypto/crypto-ffi/bindings$ ./gradlew jvm:build -x lint -x lintRelease</code></pre></div><h4 id="platform-specific-tests-for-android"><a class="doc-anchor" href="#platform-specific-tests-for-android">§</a>Platform-specific tests for Android</h4>
-<p>Build the Android target every timee the Rust code changes:</p>
-<div class="example-wrap"><pre class="language-sh"><code>core-crypto/crypto-ffi$ cargo make android</code></pre></div>
-<p>Then run the tests each time the wrapper or wrapper tests change</p>
-<div class="example-wrap"><pre class="language-sh"><code>core-crypto/crypto-ffi/bindings$ ./gradlew android:build -x lint -x lintRelease</code></pre></div><h4 id="swiftios"><a class="doc-anchor" href="#swiftios">§</a>Swift/iOS</h4>
+<div class="example-wrap"><pre class="language-text"><code>cargo nextest run --features test-all-cipher</code></pre></div><h4 id="platform-specific-tests-for-kotlinjvm"><a class="doc-anchor" href="#platform-specific-tests-for-kotlinjvm">§</a>Platform-specific tests for Kotlin/JVM</h4><div class="example-wrap"><pre class="language-sh"><code>make jvm-test</code></pre></div><h4 id="platform-specific-tests-for-android"><a class="doc-anchor" href="#platform-specific-tests-for-android">§</a>Platform-specific tests for Android</h4><div class="example-wrap"><pre class="language-sh"><code>make android-test</code></pre></div><h4 id="swiftios"><a class="doc-anchor" href="#swiftios">§</a>Swift/iOS</h4>
 <p><em>No E2E testing is available as of now on Swift.</em></p>
-<h4 id="platform-specific-tests-for-wasmweb"><a class="doc-anchor" href="#platform-specific-tests-for-wasmweb">§</a>Platform-specific tests for WASM/Web</h4>
-<p>Install TS dependencies on first go, and each time they change:</p>
-<div class="example-wrap"><pre class="language-sh"><code>core-crypto/crypto-ffi/bindings/js$ bun install</code></pre></div>
-<p>Build the WASM target every time the Rust code changes:</p>
-<div class="example-wrap"><pre class="language-sh"><code>core-crypto/crypto-ffi$ cargo make wasm</code></pre></div>
-<p>Compile Typescript code into Javascript and integrate with the auto-generated wasm bindings:</p>
-<div class="example-wrap"><pre class="language-sh"><code>core-crypto/crypto-ffi/bindings/js$ bun run build</code></pre></div>
-<p>Run tests:</p>
-<div class="example-wrap"><pre class="language-sh"><code>core-crypto/crypto-ffi/bindings/js$ CC_TEST_LOG_LEVEL=1 bun run test</code></pre></div>
+<h4 id="platform-specific-tests-for-wasmweb"><a class="doc-anchor" href="#platform-specific-tests-for-wasmweb">§</a>Platform-specific tests for WASM/Web</h4><div class="example-wrap"><pre class="language-sh"><code>make ts-test</code></pre></div>
 <p>Note the <code>CC_TEST_LOG_LEVEL</code> environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto logs.</p>
-<p>Note that CI will fail if it doesn’t like your formatting. This can typically be automtically adjusted with</p>
-<div class="example-wrap"><pre class="language-sh"><code>core-crypto/crypto-ffi/bindings/js$ bun eslint --max-warnings=0 --fix</code></pre></div><h3 id="benchmarks"><a class="doc-anchor" href="#benchmarks">§</a>Benchmarks</h3>
+<h3 id="benchmarks"><a class="doc-anchor" href="#benchmarks">§</a>Benchmarks</h3>
 <p>There are benches implemented in <a href="crypto/benches/"><code>crypto/benches</code></a> for several operations on mls groups with varying sizes or proteus.
 Parameters like minimum or maximum group sizes and step sizes are defined in <a href="crypto/benches/utils/mod.rs"><code>crypto/benches/utils/mod.rs</code></a>.</p>
 <h4 id="executing-benches"><a class="doc-anchor" href="#executing-benches">§</a>Executing Benches</h4>
