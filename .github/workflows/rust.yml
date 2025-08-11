@@ -29,7 +29,7 @@ jobs:
           - cargo clippy --locked --all-targets
           - cargo clippy --locked --target wasm32-unknown-unknown
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           components: rustfmt, clippy
@@ -39,7 +39,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-and-cache-rust
       - uses: taiki-e/install-action@nextest
       - name: "test corecrypto"
@@ -55,7 +55,7 @@ jobs:
   proteus-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-and-cache-rust
       - uses: taiki-e/install-action@nextest
       - name: "test corecrypto's proteus implementation"
@@ -74,7 +74,7 @@ jobs:
             feature: --features proteus-keystore
             module: -- proteus
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: wasm32-unknown-unknown
@@ -92,7 +92,7 @@ jobs:
   hack:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-and-cache-rust
         # Per default, we're using "-D warnings" for rustflags. However, it's a lot of (unnecessary) effort to fix all "unused import"
         # issue for every possible feature set, that's why we don't want to fail on warnings here. For this, we're passing

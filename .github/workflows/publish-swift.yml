@@ -24,7 +24,7 @@ jobs:
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '16.2.0'
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: force-fetch the tag to work around actions/checkout#290
         run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}
       - name: ensure the tag is signed
