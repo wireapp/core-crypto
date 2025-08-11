@@ -43,13 +43,15 @@ and add an alias to your shell configuration file: `alias sed=gsed` (e.g. to `~/
 
 ### Android
 
-Install Android SDK and Build-Tools for API level 30+
+[Install Android SDK](https://developer.android.com/studio) and Build-Tools for API level 30+
 
 > [!important]
 > If you are building on macOS you'll need to setup `$ANDROID_SDK_ROOT` path variable manually:
 > ```ignore
 > export ANDROID_SDK_ROOT=~/Android/Sdk
 > ```
+
+[Install the Android NDK](https://developer.android.com/studio/projects/install-ndk)
 
 Install android rust targets:
 ```ignore
