@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## v8.0.3 - 2025-08-12
+
+This is only relevant for Kotlin.
+
+Fixes page size alignment for all supported linkers.
+
+Adds `ClientId.copyBytes()`.
+
+Adds `ClientId.toString()`.
+
+Changes `ClientId.value` from `ByteArray` to the generated FFI type `com.wire.crypto.uniffi.ClientId`
+
 ## v8.0.2 - 2025-07-23
 
 This is only relevant for Kotlin.
