@@ -17,7 +17,6 @@ macro_rules! pat_to_bool {
 macro_rules! test_for_entity {
     ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update:$ignore_update:literal)? $(ignore_find_many:$ignore_find_many:literal)?) => {
         #[apply(all_storage_types)]
-        #[wasm_bindgen_test]
         async fn $test_name(context: KeystoreTestContext) {
             let store = context.store();
             let _ = env_logger::try_init();
@@ -181,7 +180,6 @@ mod tests {
     }
 
     #[apply(all_storage_types)]
-    #[wasm_bindgen_test]
     pub async fn update_e2ei_enrollment_emits_error(context: KeystoreTestContext) {
         let store = context.store();
 

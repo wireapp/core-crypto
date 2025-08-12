@@ -930,7 +930,6 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "sha2",
- "smol",
  "smol-macros",
  "thiserror 2.0.14",
  "uuid",

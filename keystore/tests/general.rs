@@ -13,7 +13,6 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(all_storage_types)]
-    #[wasm_bindgen_test]
     pub async fn can_create_and_init_store(_context: KeystoreTestContext) {
         // just runs the setup and teardown, which creates the store and wipes it afterward.
     }

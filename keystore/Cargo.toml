@@ -98,7 +98,8 @@ core-crypto-keystore = { path = ".", features = [
 ] }
 env_logger = "0.11"
 proteus-wasm = { workspace = true }
-smol.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 smol-macros.workspace = true
 macro_rules_attribute.workspace = true
 

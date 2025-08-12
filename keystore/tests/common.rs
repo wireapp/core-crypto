@@ -57,7 +57,7 @@ impl KeystoreTestContext {
 impl Drop for KeystoreTestContext {
     fn drop(&mut self) {
         if let Some(store) = self.store.take() {
-            smol::block_on(async {
+            futures_lite::future::block_on(async {
                 store.commit_transaction().await.expect("Could not commit transaction");
                 store.wipe().await.expect("Could not wipe store");
             });
@@ -69,5 +69,9 @@ impl Drop for KeystoreTestContext {
 #[rstest]
 #[case::persistent(setup(store_name(), false).await)]
 #[case::in_memory(setup(store_name(), true).await)]
-#[test_attr(macro_rules_attribute::apply(smol_macros::test))]
+#[cfg_attr(
+    not(target_family = "wasm"),
+    test_attr(macro_rules_attribute::apply(smol_macros::test))
+)]
+#[cfg_attr(target_family = "wasm", test_attr(wasm_bindgen_test))]
 pub async fn all_storage_types(#[case] context: KeystoreTestContext) {}
