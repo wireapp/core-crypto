@@ -2,12 +2,29 @@
 
 ## Unreleased
 
+## v8.0.1 - 2025-07-23
+
+This release is relevant only for Kotlin. It adds several pseudo-constructors and accessors for newtypes around byte vectors.
+
+For other platforms, no relevant changes are included.
+
+### Documentation
+
+- add docs for `ByteArray.toGroupInfo()` ([ac7723f](https://github.com/wireapp/core-crypto/commit/ac7723f3e0fa48e3123a0928c22e3009f473a96d))
+- remove `7.x` series from `index.md` ([7ae7133](https://github.com/wireapp/core-crypto/commit/7ae7133ca51d44b7c3d455825e4b1eb61a9a04c2))
+- remove unintended code comment showing up in  `index.md` ([b635818](https://github.com/wireapp/core-crypto/commit/b63581895dce87cb7cfb71764019e92c7ddb8a8c))
+- update links in `index.md` ([020aba4](https://github.com/wireapp/core-crypto/commit/020aba4c0e89a23ef62b91a7522404931e6ada34))
+
+### Other Breaking Changes
+
+- [**breaking**] Revert "refactor!(kotlin): `CoreCryptoContext.exportSecretKey` now returns a newtype" ([5c5427c](https://github.com/wireapp/core-crypto/commit/5c5427c21e600f9d58a45959687bf2f6ee404d54))
+
 ## v8.0.0 - 2025-07-17
 
 ### Highlights
 
 This release contains the complete API necessary for history sharing in conversations. We've improved
-the generated types in bindings to be more typesafe, and we've added the feature to rotate the key used
+the generated types in bindings to be more typesafe, and we've added the feature to rotate the key used 
 for the core crypto database.
 
 ### Breaking changes
@@ -128,7 +145,7 @@ for the core crypto database.
 
 - Support Android environments with 16k page size
 - Added a module-level function `updateDatabaseKey`, to update the key of an existing CoreCrypto database
-- Support for history sharing which can be enabled by calling `enableHistorySharing()` and disabled again by calling `disableHistorySharing()`.
+- Support for history sharing which can be enabled by calling `enableHistorySharing()` and disabled again by calling `disableHistorySharing()`. 
 
 ---
 
