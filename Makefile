@@ -17,8 +17,10 @@ SHELL := /usr/bin/env bash
 #
 # This will also optimize the Wasm binary.
 ifeq ($(RELEASE),)
+  TARGET_DIR := target/debug
   CARGO_BUILD_ARGS :=
 else
+  TARGET_DIR := target/release
   CARGO_BUILD_ARGS := --release
 endif
 
@@ -74,7 +76,7 @@ export CLANG_RT_DIR
 CARGO          := cargo
 BUN            := bun
 WASM_PACK      := wasm-pack
-UNIFFI_BINDGEN := target/release/uniffi-bindgen
+UNIFFI_BINDGEN := $(TARGET_DIR)/uniffi-bindgen
 
 # Default goal
 .DEFAULT_GOAL := local
@@ -94,7 +96,7 @@ FORCE:
 #-------------------------------------------------------------------------------
 
 # Build bindgen binary
-target/release/uniffi-bindgen: FORCE
+$(TARGET_DIR)/uniffi-bindgen: FORCE
 	cargo build $(CARGO_BUILD_ARGS) \
 		--locked \
 		--features uniffi/cli \
@@ -102,7 +104,7 @@ target/release/uniffi-bindgen: FORCE
 		--bin uniffi-bindgen
 
 # Build the FFI library
-target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION): FORCE
+$(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION): FORCE
 	cargo build $(CARGO_BUILD_ARGS) \
 		--locked \
 		--package core-crypto-ffi \
@@ -110,8 +112,8 @@ target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION): FORCE
 
 # Make aliases
 .PHONY: uniffi-bindgen release-build
-uniffi-bindgen:  target/release/uniffi-bindgen
-release-build:   target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION) ## Build core-crypto-ffi for the native arch (needed for uniffi)
+uniffi-bindgen:  $(TARGET_DIR)/uniffi-bindgen
+release-build:   $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION) ## Build core-crypto-ffi for the native arch (needed for uniffi)
 
 #-------------------------------------------------------------------------------
 # 3) Use stamp files for generators: only re-run when inputs change
@@ -123,13 +125,13 @@ $(STAMPS)/bindings-swift:
 	$(warning Skipping build for "bindings-swift", as swift bindings generation is only supported on Darwin because OpenSSL can't be cross-compiled on non-Darwin systems; this is "$(UNAME_S)".)
 else
 $(STAMPS)/bindings-swift: \
-	target/release/uniffi-bindgen \
+	$(TARGET_DIR)/uniffi-bindgen \
 	release-build
 	mkdir -p crypto-ffi/bindings/Swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --language swift \
 	  --out-dir crypto-ffi/bindings/Swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi \
-	  --library target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+	  --library $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 	$(TOUCH_STAMP)
 endif
 
@@ -138,27 +140,27 @@ bindings-swift: $(STAMPS)/bindings-swift ## Generate Swift bindings
 swift: $(STAMPS)/bindings-swift $(STAMPS)/docs-swift
 
 # Kotlin-Android bindings
-$(STAMPS)/bindings-kotlin-android: target/release/uniffi-bindgen release-build
+$(STAMPS)/bindings-kotlin-android: $(TARGET_DIR)/uniffi-bindgen release-build
 	mkdir -p crypto-ffi/bindings/android/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --config uniffi-android.toml \
 	  --language kotlin \
 	  --no-format \
 	  --out-dir crypto-ffi/bindings/android/src/main/uniffi \
-	  --library target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+	  --library $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 	$(TOUCH_STAMP)
 
 .PHONY: bindings-kotlin-android
 bindings-kotlin-android: $(STAMPS)/bindings-kotlin-android ## Generate Kotlin bindings for Android
 
 # Kotlin-JVM bindings
-$(STAMPS)/bindings-kotlin-jvm: target/release/uniffi-bindgen release-build
+$(STAMPS)/bindings-kotlin-jvm: $(TARGET_DIR)/uniffi-bindgen release-build
 	mkdir -p crypto-ffi/bindings/jvm/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --language kotlin \
 	  --no-format \
 	  --out-dir crypto-ffi/bindings/jvm/src/main/uniffi \
-	  --library target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+	  --library $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 	$(TOUCH_STAMP)
 
 .PHONY: bindings-kotlin-jvm
