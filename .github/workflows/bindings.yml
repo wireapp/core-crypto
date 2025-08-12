@@ -41,13 +41,13 @@ jobs:
               sh ./scripts/clean.sh
       - uses: actions/checkout@v5
       - name: download artifacts for ios
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: target
           pattern: ${{github.event.number}}-ios-*
           merge-multiple: 'true'
       - name: download ffi artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: ${{github.event.number}}-swift-ffi
           path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
@@ -86,7 +86,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: android
       - name: enable kvm group perms
@@ -118,12 +118,12 @@ jobs:
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
       - name: download linux library
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: jvm-linux-so-file-${{ github.run_id }}
           path: target/x86_64-unknown-linux-gnu/release
       - name: download linux bindings
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: jvm-linux-bindings-${{ github.run_id }}
           path: crypto-ffi/bindings
@@ -152,12 +152,12 @@ jobs:
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
       - name: download linux library
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: jvm-linux-so-file-${{ github.run_id }}
           path: target/x86_64-unknown-linux-gnu/release
       - name: download linux bindings
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: jvm-linux-bindings-${{ github.run_id }}
           path: crypto-ffi/bindings
@@ -184,13 +184,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: download artifacts for ios
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: target
           pattern: ${{github.event.number}}-ios-*
           merge-multiple: 'true'
       - name: download ffi artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: ${{github.event.number}}-swift-ffi
           path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
@@ -209,13 +209,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: download artifacts for ios
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: target
           pattern: ${{github.event.number}}-ios-*
           merge-multiple: 'true'
       - name: download ios artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: ${{github.event.number}}-swift-ffi
           path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
@@ -286,13 +286,13 @@ jobs:
         run: |
           make ts
       - name: download artifacts for ios
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: target
           pattern: ${{github.event.number}}-ios-*
           merge-multiple: 'true'
       - name: download ffi artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: ${{github.event.number}}-swift-ffi
           path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
@@ -419,7 +419,7 @@ jobs:
       uses: actions/checkout@v5
 
     - name: download pre-rendered docs
-      uses: actions/download-artifact@v4.1.8
+      uses: actions/download-artifact@v5
       with:
         pattern: '{typescript,swift,kotlin,rust}'
         path: "./target/doc/${{ env.GIT_TAG }}"

@@ -68,12 +68,12 @@ jobs:
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
       - name: download x86_64 linux artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: jvm-linux-so-file-${{ github.run_id }}
           path: target/x86_64-unknown-linux-gnu/release
       - name: download aarch64 apple darwin artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: aarch64-apple-darwin
           path: target/aarch64-apple-darwin/release

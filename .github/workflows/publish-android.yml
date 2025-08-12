@@ -41,7 +41,7 @@ jobs:
         uses: gradle/actions/wrapper-validation@v4
       - name: setup android sdk
         uses: android-actions/setup-android@v3
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: android
       - name: publish package
