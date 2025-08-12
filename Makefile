@@ -10,6 +10,18 @@ help: ## Show this help message
 
 SHELL := /usr/bin/env bash
 
+# Only build in release mode if explicitly requested by
+# setting the `RELEASE` variable to any non-empty value, e.g.
+#
+#   make wasm RELEASE=1
+#
+# This will also optimize the Wasm binary.
+ifeq ($(RELEASE),)
+  CARGO_BUILD_ARGS :=
+else
+  CARGO_BUILD_ARGS := --release
+endif
+
 # Detect host platform for NDK and library extensions
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
@@ -83,7 +95,7 @@ FORCE:
 
 # Build bindgen binary
 target/release/uniffi-bindgen: FORCE
-	cargo build --release \
+	cargo build $(CARGO_BUILD_ARGS) \
 		--locked \
 		--features uniffi/cli \
 		--package core-crypto-ffi \
@@ -91,7 +103,7 @@ target/release/uniffi-bindgen: FORCE
 
 # Build the FFI library
 target/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION): FORCE
-	cargo build --release \
+	cargo build $(CARGO_BUILD_ARGS) \
 		--locked \
 		--package core-crypto-ffi \
 		--lib
@@ -161,11 +173,6 @@ bindings-kotlin: bindings-kotlin-android bindings-kotlin-jvm ## Generate all Kot
 #-------------------------------------------------------------------------------
 
 # The default build condition is `dev`, which is much faster.
-# To enable optimizations, set the `RELEASE` variable to any non-empty value:
-#
-# i.e.
-#
-#   make wasm RELEASE=1
 WASM_BUILD_ARGS := $(if $(RELEASE),,--dev)
 
 # Generate WASM package
@@ -272,7 +279,7 @@ $(STAMPS)/ios-device: $(STAMPS)/bindings-swift
 	  --crate-type=cdylib \
 	  --crate-type=staticlib \
 	  --package core-crypto-ffi \
-	  --release -- -C strip=symbols
+	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
 	$(TOUCH_STAMP)
 
 .PHONY: ios-device
@@ -288,7 +295,7 @@ $(STAMPS)/ios-simulator-arm: $(STAMPS)/bindings-swift
 	  --crate-type=cdylib \
 	  --crate-type=staticlib \
 	  --package core-crypto-ffi \
-	  --release -- -C strip=symbols
+	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
 	$(TOUCH_STAMP)
 
 .PHONY: ios-simulator-arm
@@ -327,7 +334,7 @@ $(STAMPS)/android-armv7: android-env
 	  --target armv7-linux-androideabi \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
-	  --release -- -C strip=symbols
+	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
 	$(TOUCH_STAMP)
 
 .PHONY: android-armv7
@@ -338,7 +345,7 @@ $(STAMPS)/android-armv8: android-env
 	  --target aarch64-linux-android \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
-	  --release -- -C strip=symbols
+	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
 	$(TOUCH_STAMP)
 
 .PHONY: android-armv8
@@ -350,7 +357,7 @@ $(STAMPS)/android-x86: android-env
 	  --target x86_64-linux-android \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
-	  --release -- \
+	  $(CARGO_BUILD_ARGS) -- \
 	  -C strip=symbols \
 	  -l static=clang_rt.builtins-x86_64-android \
 	  -L $$(dirname $$($(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(PLATFORM_DIR)/bin/clang --print-runtime-dir))/linux
@@ -381,7 +388,7 @@ $(STAMPS)/jvm-darwin: $(STAMPS)/bindings-kotlin-jvm
 	  --target aarch64-apple-darwin \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
-	  --release -- -C strip=symbols
+	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
 	$(TOUCH_STAMP)
 
 .PHONY: jvm-darwin
@@ -394,7 +401,7 @@ $(STAMPS)/jvm-linux: $(STAMPS)/bindings-kotlin-jvm
 	  --target x86_64-unknown-linux-gnu \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
-	  --release -- -C strip=symbols
+	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
 	$(TOUCH_STAMP)
 
 .PHONY: jvm-linux
