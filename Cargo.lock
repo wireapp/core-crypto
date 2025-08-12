@@ -475,7 +475,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "thiserror 2.0.12",
+ "thiserror 2.0.14",
 ]
 
 [[package]]
@@ -693,7 +693,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fa961b519f0b462e3a3b4a34b64d119eeaca1d59af726fe450bbba07a9fc0a1"
 dependencies = [
- "thiserror 2.0.12",
+ "thiserror 2.0.14",
 ]
 
 [[package]]
@@ -849,7 +849,7 @@ dependencies = [
  "sha2",
  "strum",
  "tempfile",
- "thiserror 2.0.12",
+ "thiserror 2.0.14",
  "time",
  "tls_codec",
  "typed-builder",
@@ -890,7 +890,7 @@ dependencies = [
  "sha2",
  "strum",
  "testing_logger",
- "thiserror 2.0.12",
+ "thiserror 2.0.14",
  "tls_codec",
  "tokio",
  "uniffi",
@@ -944,7 +944,7 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "sha2",
- "thiserror 2.0.12",
+ "thiserror 2.0.14",
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -2314,7 +2314,7 @@ dependencies = [
  "sha2",
  "spinoff",
  "tempfile",
- "thiserror 2.0.12",
+ "thiserror 2.0.14",
  "tls_codec",
  "tokio",
  "tree-sitter",
@@ -2678,7 +2678,7 @@ dependencies = [
  "sha2",
  "signature",
  "spki",
- "thiserror 2.0.12",
+ "thiserror 2.0.14",
  "tls_codec",
  "typed-builder",
  "uuid",
@@ -3616,7 +3616,7 @@ dependencies = [
  "serde",
  "serde_json",
  "signature",
- "thiserror 2.0.12",
+ "thiserror 2.0.14",
  "time",
  "url",
  "web-time",
@@ -3644,7 +3644,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "thiserror 2.0.12",
+ "thiserror 2.0.14",
  "time",
  "url",
  "uuid",
@@ -3661,7 +3661,7 @@ dependencies = [
  "der",
  "flagset",
  "hex",
- "thiserror 2.0.12",
+ "thiserror 2.0.14",
  "web-time",
  "x509-cert",
 ]
@@ -4251,11 +4251,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.12"
+version = "2.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "567b8a2dae586314f7be2a752ec7474332959c6460e02bde30d702a66d488708"
+checksum = "0b0949c3a6c842cbde3f1686d6eea5a010516deb7085f79db747562d4102f41e"
 dependencies = [
- "thiserror-impl 2.0.12",
+ "thiserror-impl 2.0.14",
 ]
 
 [[package]]
@@ -4271,9 +4271,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.12"
+version = "2.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f7cf42b4507d8ea322120659672cf1b9dbb93f8f2d4ecfd6e51350ff5b17a1d"
+checksum = "cc5b44b4ab9c2fdd0e0512e6bece8388e214c0749f5862b114cc5b7a25daf227"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5298,7 +5298,7 @@ dependencies = [
  "rusty-jwt-tools",
  "serde",
  "serde_json",
- "thiserror 2.0.12",
+ "thiserror 2.0.14",
  "url",
  "uuid",
  "x509-cert",
