@@ -136,6 +136,12 @@
 
 - In our Swift bindings we are now protecting against concurrent access from multiple core crypto instances.
 
+## v8.0.2 - 2025-07-23
+
+This is only relevant for Kotlin.
+
+Adds `MLSKeyPackage.copyBytes()`.
+
 ## v8.0.1 - 2025-07-23
 
 This release is relevant only for Kotlin. It adds several pseudo-constructors and accessors for newtypes around byte vectors.
