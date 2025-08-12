@@ -161,12 +161,12 @@ bindings-kotlin: bindings-kotlin-android bindings-kotlin-jvm ## Generate all Kot
 #-------------------------------------------------------------------------------
 
 # The default build condition is `dev`, which is much faster.
-# To enable optimizations, set the `WASM_RELEASE` variable to any non-empty value:
+# To enable optimizations, set the `RELEASE` variable to any non-empty value:
 #
 # i.e.
 #
-#   make wasm WASM_RELEASE=1
-WASM_BUILD_ARGS := $(if $(WASM_RELEASE),,--dev)
+#   make wasm RELEASE=1
+WASM_BUILD_ARGS := $(if $(RELEASE),,--dev)
 
 # Generate WASM package
 $(STAMPS)/wasm-build: FORCE
@@ -193,7 +193,7 @@ $(STAMPS)/bun-deps: $(PACKAGE_JSON)
 bun-deps: $(STAMPS)/bun-deps ## Install JS dependencies using bun
 
 # Full JS binding step
-bindings-js: wasm-build $(JS_OUT) ## Generate JavaScript bindings (append `WASM_RELEASE=1` to this command or any dependents for the release build)
+bindings-js: wasm-build $(JS_OUT) ## Generate JavaScript bindings
 
 # All bindings
 .PHONY: bindings
