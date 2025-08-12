@@ -71,6 +71,7 @@ use super::{
     )),
     case::pure_ciphertext(TestContext::default_cipher()),
 )]
+#[async_std::test]
 #[allow(non_snake_case)]
 pub fn all_cred_cipher(case: TestContext) {}
 

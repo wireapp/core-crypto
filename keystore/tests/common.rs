@@ -69,4 +69,5 @@ impl Drop for KeystoreTestContext {
 #[rstest]
 #[case::persistent(setup(store_name(), false).await)]
 #[case::in_memory(setup(store_name(), true).await)]
+#[async_std::test]
 pub async fn all_storage_types(#[case] context: KeystoreTestContext) {}

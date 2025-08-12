@@ -39,6 +39,7 @@ pub(crate) async fn setup(#[default(false)] in_memory: bool) -> MlsCryptoProvide
 
 #[template]
 #[rstest]
+#[async_std::test]
 async fn use_provider(
     #[from(setup)]
     #[with(true)]
@@ -156,6 +157,7 @@ pub fn entropy() -> EntropySeed {
     openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
     Some(entropy())
 )]
+#[async_std::test]
 pub fn all_storage_types_and_ciphersuites(
     #[case]
     #[future]
