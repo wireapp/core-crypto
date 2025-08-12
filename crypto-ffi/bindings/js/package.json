@@ -1,6 +1,6 @@
 {
   "name": "@wireapp/core-crypto",
-  "version": "8.0.1",
+  "version": "8.0.3",
   "author": "Wire CoreCrypto team <team.corecrypto@wire.com>",
   "repository": {
     "type": "git",
