@@ -266,7 +266,7 @@ mod tests {
             let elapsed = start.elapsed();
             // Give time to the certificate to expire
             if expiration_time > elapsed {
-                async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(2)).await;
+                smol::Timer::after(expiration_time - elapsed + core::time::Duration::from_secs(2)).await;
             }
 
             assert!(conversation.is_functional_and_contains([&alice, &bob]).await);

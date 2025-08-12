@@ -253,7 +253,7 @@ mod tests {
 
     type TestGroupStore = GroupStore<DummyValue>;
 
-    #[async_std::test]
+    #[macro_rules_attribute::apply(smol_macros::test)]
     async fn group_store_init() {
         let store = TestGroupStore::new_with_limit(1);
         assert_eq!(store.len(), 0);
@@ -269,7 +269,7 @@ mod tests {
         assert_eq!(store.len(), 0);
     }
 
-    #[async_std::test]
+    #[macro_rules_attribute::apply(smol_macros::test)]
     async fn group_store_common_ops() {
         let mut store = TestGroupStore::new(Some(u32::MAX), Some(usize::MAX));
         for i in 1..=3 {
@@ -292,7 +292,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[macro_rules_attribute::apply(smol_macros::test)]
     async fn group_store_operations_len_limiter() {
         let mut store = TestGroupStore::new_with_limit(2);
         assert!(store.try_insert(b"1".to_vec(), "1".into()).is_ok());
@@ -308,7 +308,7 @@ mod tests {
         assert_eq!(store.len(), 2);
     }
 
-    #[async_std::test]
+    #[macro_rules_attribute::apply(smol_macros::test)]
     async fn group_store_operations_mem_limiter() {
         use schnellru::{LruMap, UnlimitedCompact};
         let mut lru: LruMap<Vec<u8>, DummyValue, UnlimitedCompact> =

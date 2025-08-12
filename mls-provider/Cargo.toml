@@ -55,6 +55,7 @@ uuid = { workspace = true, features = ["v4", "js"] }
 openmls.workspace = true
 rstest = "0.26"
 rstest_reuse = "0.7"
-async-std = { workspace = true, features = ["attributes"] }
 cfg-if.workspace = true
 hex-literal = "1.0"
+smol-macros.workspace = true
+macro_rules_attribute.workspace = true

@@ -91,7 +91,6 @@ openmls = { workspace = true, features = ["crypto-subtle"] }
 mls-crypto-provider.workspace = true
 rstest = "0.26"
 rstest_reuse = "0.7"
-async-std = { workspace = true, features = ["attributes"] }
 futures-lite = "2.6"
 core-crypto-keystore = { path = ".", features = [
     "idb-regression-test",
@@ -99,6 +98,9 @@ core-crypto-keystore = { path = ".", features = [
 ] }
 env_logger = "0.11"
 proteus-wasm = { workspace = true }
+smol.workspace = true
+smol-macros.workspace = true
+macro_rules_attribute.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
 version = "0.7"

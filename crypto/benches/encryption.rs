@@ -17,7 +17,7 @@ fn encryption_bench_var_group_size(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        async_std::task::block_on(async {
+                        smol::block_on(async {
                             let (central, id, ..) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
                             let text = Alphanumeric.sample_string(&mut rand::thread_rng(), MSG_MAX);
@@ -52,7 +52,7 @@ fn encryption_bench_var_msg_size(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        async_std::task::block_on(async {
+                        smol::block_on(async {
                             let (central, id, ..) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, GROUP_MAX).await;
                             let text = Alphanumeric.sample_string(&mut rand::thread_rng(), *i);
@@ -87,7 +87,7 @@ fn decryption_bench_var_msg_size(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        async_std::task::block_on(async {
+                        smol::block_on(async {
                             let (mut alice_central, id, delivery_service) =
                                 setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
                             let (mut bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;

@@ -19,7 +19,7 @@ mod tests {
     }
 
     #[cfg(target_os = "ios")]
-    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
+    #[cfg_attr(not(target_family = "wasm"), macro_rules_attribute::apply(smol_macros::test))]
     async fn can_preserve_wal_compat_for_ios() {
         let store1 = setup("ios-wal-compat", false).await;
         drop(store1);

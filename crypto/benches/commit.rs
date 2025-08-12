@@ -19,7 +19,7 @@ fn commit_add_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        async_std::task::block_on(async {
+                        smol::block_on(async {
                             let (central, id, ..) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
                             let (kp, _) = rand_key_package(ciphersuite).await;
@@ -47,7 +47,7 @@ fn commit_add_n_clients_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        async_std::task::block_on(async {
+                        smol::block_on(async {
                             let (central, id, _) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
                             let mut kps = Vec::with_capacity(*i);
                             for _ in 0..*i {
@@ -79,7 +79,7 @@ fn commit_remove_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        async_std::task::block_on(async {
+                        smol::block_on(async {
                             let (central, id, client_ids, ..) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
                             (central, id, client_ids)
@@ -116,7 +116,7 @@ fn commit_remove_n_clients_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        async_std::task::block_on(async {
+                        smol::block_on(async {
                             let (central, id, client_ids, ..) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, GROUP_MAX).await;
                             let to_remove = client_ids[..*i].to_vec();
@@ -153,7 +153,7 @@ fn commit_update_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        async_std::task::block_on(async {
+                        smol::block_on(async {
                             let (central, id, ..) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
                             (central, id)
@@ -190,7 +190,7 @@ fn commit_pending_proposals_bench_var_n_proposals(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        async_std::task::block_on(async {
+                        smol::block_on(async {
                             let (central, id, ..) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, GROUP_MAX).await;
 
@@ -235,7 +235,7 @@ fn commit_pending_proposals_bench_var_group_size(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        async_std::task::block_on(async {
+                        smol::block_on(async {
                             let (central, id, ..) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
                             let context = central.new_transaction().await.unwrap();

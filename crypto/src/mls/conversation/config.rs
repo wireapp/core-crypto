@@ -198,8 +198,8 @@ mod tests {
     use crate::mls::conversation::ConversationWithMls as _;
     use crate::{prelude::MlsConversationConfiguration, test_utils::*};
 
-    #[async_std::test]
-    pub async fn group_should_have_required_capabilities() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn group_should_have_required_capabilities() {
         let case = TestContext::default();
 
         let [session] = case.sessions().await;

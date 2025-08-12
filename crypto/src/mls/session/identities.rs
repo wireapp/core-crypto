@@ -142,7 +142,7 @@ mod tests {
                 let old = central.new_credential_bundle(&case, cert.as_ref()).await;
 
                 // wait to make sure we're not in the same second
-                async_std::task::sleep(core::time::Duration::from_secs(1)).await;
+                smol::Timer::after(core::time::Duration::from_secs(1)).await;
 
                 let new = central.new_credential_bundle(&case, cert.as_ref()).await;
                 assert_ne!(old, new);

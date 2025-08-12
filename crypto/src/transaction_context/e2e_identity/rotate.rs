@@ -443,7 +443,7 @@ mod tests {
 
                 // simulate a real rotation where both credential are not created within the same second
                 // we only have a precision of 1 second for the `created_at` field of the Credential
-                async_std::task::sleep(core::time::Duration::from_secs(1)).await;
+                smol::Timer::after(core::time::Duration::from_secs(1)).await;
 
                 let is_renewal = case.credential_type == MlsCredentialType::X509;
 

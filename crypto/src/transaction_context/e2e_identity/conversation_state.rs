@@ -190,7 +190,7 @@ mod tests {
             let elapsed = start.elapsed();
             // Give time to the certificate to expire
             if expiration_time > elapsed {
-                async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
+                smol::Timer::after(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
             }
 
             let alice_state = conversation.e2ei_state().await;
@@ -249,7 +249,7 @@ mod tests {
             let elapsed = start.elapsed();
             // Give time to the certificate to expire
             if expiration_time > elapsed {
-                async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
+                smol::Timer::after(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
             }
 
             let alice_state = conversation.e2ei_state().await;

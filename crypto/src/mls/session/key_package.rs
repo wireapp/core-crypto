@@ -381,7 +381,7 @@ mod tests {
             .unwrap();
         let kp_1s_exp = session.generate_one_keypackage(&backend, cs, ct).await.unwrap();
         // Sleep 2 seconds to make sure we make the kp expire
-        async_std::task::sleep(std::time::Duration::from_secs(2)).await;
+        smol::Timer::after(std::time::Duration::from_secs(2)).await;
         assert!(Session::is_mls_keypackage_expired(&kp_1s_exp));
     }
 
@@ -582,7 +582,7 @@ mod tests {
         assert_eq!(partially_expired_kpbs.len(), EXPIRED_COUNT);
 
         // Sleep to trigger the expiration
-        async_std::task::sleep(std::time::Duration::from_secs(10)).await;
+        smol::Timer::after(std::time::Duration::from_secs(10)).await;
 
         // Request the same number of keypackages. The automatic lifetime-based expiration should take
         // place and remove old expired keypackages and generate fresh ones instead

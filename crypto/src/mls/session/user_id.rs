@@ -49,14 +49,14 @@ impl TryFrom<UserId<'_>> for String {
 mod tests {
     use super::*;
 
-    #[async_std::test]
+    #[macro_rules_attribute::apply(smol_macros::test)]
     async fn should_parse_client_id() {
         let user_id = "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com";
         let user_id = UserId::try_from(user_id).unwrap();
         assert_eq!(user_id, UserId("LcksJb74Tm6N12cDjFy7lQ".as_bytes()));
     }
 
-    #[async_std::test]
+    #[macro_rules_attribute::apply(smol_macros::test)]
     async fn should_fail_when_invalid() {
         let user_id = "LcksJb74Tm6N12cDjFy7lQ/8e6424430d3b28be@world.com";
         let user_id = UserId::try_from(user_id);

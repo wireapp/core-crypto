@@ -26,7 +26,7 @@ fn decrypt_transaction(c: &mut Criterion) {
         group.bench_with_input(id, &transactional, |b, transactional| {
             b.to_async(FuturesExecutor).iter_batched(
                 || {
-                    async_std::task::block_on(async {
+                    smol::block_on(async {
                         let (mut alice_central, id, delivery_service) =
                             setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
                         let (mut bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;

@@ -672,7 +672,7 @@ mod tests {
         drop(db_file);
     }
 
-    #[async_std::test]
+    #[macro_rules_attribute::apply(smol_macros::test)]
     async fn can_init() {
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
@@ -700,7 +700,7 @@ mod tests {
         drop(db_file);
     }
 
-    #[async_std::test]
+    #[macro_rules_attribute::apply(smol_macros::test)]
     async fn can_talk_with_proteus() {
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
@@ -741,7 +741,7 @@ mod tests {
         drop(db_file);
     }
 
-    #[async_std::test]
+    #[macro_rules_attribute::apply(smol_macros::test)]
     async fn can_produce_proteus_consumed_prekeys() {
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
@@ -782,7 +782,7 @@ mod tests {
         drop(db_file);
     }
 
-    #[async_std::test]
+    #[macro_rules_attribute::apply(smol_macros::test)]
     async fn auto_prekeys_are_sequential() {
         use core_crypto_keystore::entities::ProteusPrekey;
         const GAP_AMOUNT: u16 = 5;

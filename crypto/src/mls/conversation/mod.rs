@@ -620,7 +620,7 @@ mod tests {
             );
         }
 
-        #[async_std::test]
+        #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_read_device_identities() {
             let case = TestContext::default_x509();
 
@@ -679,7 +679,7 @@ mod tests {
             .await
         }
 
-        #[async_std::test]
+        #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_read_revoked_device_cross_signed() {
             let case = TestContext::default_x509();
             let alice_user_id = uuid::Uuid::new_v4();
@@ -734,7 +734,7 @@ mod tests {
             .await
         }
 
-        #[async_std::test]
+        #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_read_revoked_device() {
             let case = TestContext::default_x509();
             let rupert_user_id = uuid::Uuid::new_v4();
@@ -780,7 +780,7 @@ mod tests {
             .await
         }
 
-        #[async_std::test]
+        #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_not_fail_when_basic() {
             let case = TestContext::default();
 
@@ -822,7 +822,7 @@ mod tests {
 
         // this test is a duplicate of its counterpart but taking federation into account
         // The heavy lifting of cross-signing the certificates is being done by the test utils.
-        #[async_std::test]
+        #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_read_users_cross_signed() {
             let case = TestContext::default_x509();
             let [alice_1_id, alice_2_id] = case.x509_client_ids_for_user(&uuid::Uuid::new_v4());
@@ -886,7 +886,7 @@ mod tests {
             .await
         }
 
-        #[async_std::test]
+        #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_read_users() {
             let case = TestContext::default_x509();
             let [alice_android, alice_ios] = case.x509_client_ids_for_user(&uuid::Uuid::new_v4());
@@ -939,7 +939,7 @@ mod tests {
             .await
         }
 
-        #[async_std::test]
+        #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_exchange_messages_cross_signed() {
             let case = TestContext::default_x509();
             let sessions = case.sessions_x509_cross_signed::<3, 3>().await;

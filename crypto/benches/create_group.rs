@@ -22,7 +22,7 @@ fn create_group_bench(c: &mut Criterion) {
             |b, ciphersuite| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        async_std::task::block_on(async {
+                        smol::block_on(async {
                             let (central, ..) = new_central(*ciphersuite, credential.as_ref(), in_memory).await;
                             let id = conversation_id();
                             let cfg = MlsConversationConfiguration {
@@ -57,7 +57,7 @@ fn join_from_welcome_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        async_std::task::block_on(async {
+                        smol::block_on(async {
                             let (alice_central, id, _, _, delivery_service) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
 
@@ -108,7 +108,7 @@ fn join_from_group_info_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        async_std::task::block_on(async {
+                        smol::block_on(async {
                             let (_, _, _, group_info, ..) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
                             let (bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
