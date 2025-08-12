@@ -43,7 +43,7 @@ jobs:
           tool: wasm-pack
       - name: bench wasm/js
         run: |
-          make ts-bench WASM_RELEASE=1
+          make ts-bench RELEASE=1
       - uses: actions/checkout@v5
         with:
           # Keep result file
