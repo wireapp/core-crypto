@@ -22,7 +22,6 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(use_provider)]
-    #[wasm_bindgen_test]
     async fn ciphersuite_support_is_consistent(backend: MlsCryptoProvider) {
         let backend = backend.await;
         let crypto = backend.crypto();
@@ -35,7 +34,6 @@ mod tests {
     }
 
     #[apply(all_storage_types_and_ciphersuites)]
-    #[wasm_bindgen_test]
     async fn hkdf_is_consistent(
         backend: MlsCryptoProvider,
         ciphersuite: Ciphersuite,
@@ -68,7 +66,6 @@ mod tests {
     }
 
     #[apply(all_storage_types_and_ciphersuites)]
-    #[wasm_bindgen_test]
     async fn hash_is_consistent(
         backend: MlsCryptoProvider,
         ciphersuite: Ciphersuite,
@@ -87,7 +84,6 @@ mod tests {
     }
 
     #[apply(all_storage_types_and_ciphersuites)]
-    #[wasm_bindgen_test]
     async fn aead_is_consistent_and_can_roundtrip(
         backend: MlsCryptoProvider,
         ciphersuite: Ciphersuite,
@@ -121,7 +117,6 @@ mod tests {
     }
 
     #[apply(all_storage_types_and_ciphersuites)]
-    #[wasm_bindgen_test]
     async fn signature_is_consistent(
         backend: MlsCryptoProvider,
         ciphersuite: Ciphersuite,
@@ -145,7 +140,6 @@ mod tests {
     }
 
     #[apply(all_storage_types_and_ciphersuites)]
-    #[wasm_bindgen_test]
     async fn hpke_is_consistent(
         backend: MlsCryptoProvider,
         ciphersuite: Ciphersuite,

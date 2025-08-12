@@ -51,7 +51,6 @@ mod tests {
     }
 
     #[apply(use_provider)]
-    #[wasm_bindgen_test]
     async fn can_generate_sufficient_randomness_ext_entropy(backend: MlsCryptoProvider) {
         let mut backend = backend.await;
         test_randomness(&mut backend, Some(entropy()));
@@ -59,7 +58,6 @@ mod tests {
     }
 
     #[apply(use_provider)]
-    #[wasm_bindgen_test]
     async fn can_generate_sufficient_randomness_sys_entropy(backend: MlsCryptoProvider) {
         let mut backend = backend.await;
         test_randomness(&mut backend, None);
@@ -69,7 +67,6 @@ mod tests {
     // ? Test vectors taken from https://github.com/rust-random/rand/blob/c797f070b125084d727dc0ba5104bbdae966ba78/rand_chacha/src/chacha.rs#L411
 
     #[apply(use_provider)]
-    #[wasm_bindgen_test]
     async fn can_be_externally_seeded_ietf_vectors_1_2(backend: MlsCryptoProvider) {
         let backend = backend.await;
         // Test vectors 1 and 2 from
@@ -103,7 +100,6 @@ mod tests {
     }
 
     #[apply(use_provider)]
-    #[wasm_bindgen_test]
     async fn can_be_externally_seeded_ietf_vector_3(backend: MlsCryptoProvider) {
         let backend = backend.await;
         // Test vector 3 from
@@ -135,7 +131,6 @@ mod tests {
     }
 
     #[apply(use_provider)]
-    #[wasm_bindgen_test]
     async fn can_be_externally_seeded_ietf_vector_4(backend: MlsCryptoProvider) {
         let backend = backend.await;
         // Test vector 4 from
@@ -192,7 +187,6 @@ mod tests {
     }
 
     #[apply(use_provider)]
-    #[wasm_bindgen_test]
     async fn can_be_externally_seeded_ietf_vector_5(backend: MlsCryptoProvider) {
         let backend = backend.await;
         // Test vector 5 from

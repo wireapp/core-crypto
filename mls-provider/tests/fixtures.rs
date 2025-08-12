@@ -39,7 +39,11 @@ pub(crate) async fn setup(#[default(false)] in_memory: bool) -> MlsCryptoProvide
 
 #[template]
 #[rstest]
-#[test_attr(macro_rules_attribute::apply(smol_macros::test))]
+#[cfg_attr(
+    not(target_family = "wasm"),
+    test_attr(macro_rules_attribute::apply(smol_macros::test))
+)]
+#[cfg_attr(target_family = "wasm", test_attr(wasm_bindgen_test))]
 async fn use_provider(
     #[from(setup)]
     #[with(true)]
@@ -157,7 +161,11 @@ pub fn entropy() -> EntropySeed {
     openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
     Some(entropy())
 )]
-#[test_attr(macro_rules_attribute::apply(smol_macros::test))]
+#[cfg_attr(
+    not(target_family = "wasm"),
+    test_attr(macro_rules_attribute::apply(smol_macros::test))
+)]
+#[cfg_attr(target_family = "wasm", test_attr(wasm_bindgen_test))]
 pub fn all_storage_types_and_ciphersuites(
     #[case]
     #[future]

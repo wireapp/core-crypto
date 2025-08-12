@@ -57,5 +57,7 @@ rstest = "0.26"
 rstest_reuse = "0.7"
 cfg-if.workspace = true
 hex-literal = "1.0"
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 smol-macros.workspace = true
 macro_rules_attribute.workspace = true
