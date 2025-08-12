@@ -102,7 +102,11 @@ fun String.toGroupId() = MLSGroupId(com.wire.crypto.uniffi.ConversationId(toByte
 /** Construct a group ID */
 fun com.wire.crypto.uniffi.ConversationId.toGroupId() = MLSGroupId(this)
 
-/** Client ID */
+/**
+ * Client ID
+ *
+ * @property value the FFI client ID
+ */
 @JvmInline
 value class ClientId(val value: com.wire.crypto.uniffi.ClientId) {
     /** Lower this wrapper to the internal FFI type */
