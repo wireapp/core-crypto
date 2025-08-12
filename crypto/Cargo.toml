@@ -99,7 +99,7 @@ proteus = { git = "https://github.com/wireapp/proteus", branch = "otak/fix-1.0.3
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
 version = "0.7"
-features = ["html_reports"]
+features = ["async_smol", "html_reports"]
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = [

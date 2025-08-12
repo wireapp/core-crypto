@@ -1016,6 +1016,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
+ "smol",
  "tinytemplate",
  "walkdir",
 ]

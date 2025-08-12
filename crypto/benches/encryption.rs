@@ -1,7 +1,7 @@
 use std::hint::black_box;
 
 use criterion::{
-    BatchSize, Criterion, async_executor::AsyncStdExecutor as FuturesExecutor, criterion_group, criterion_main,
+    BatchSize, Criterion, async_executor::SmolExecutor as FuturesExecutor, criterion_group, criterion_main,
 };
 use rand::distributions::{Alphanumeric, DistString};
 
