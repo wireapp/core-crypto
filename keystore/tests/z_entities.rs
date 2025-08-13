@@ -179,6 +179,10 @@ mod tests {
         }
     }
 
+    // This test cannot pass on WASM: if you grep through the codebase, you'll note that
+    // `CoreCryptoKeystore::AlreadyExists` is only produced in one place: in the entity derive macro,
+    // in the non-wasm branch of the derive implementation.
+    #[cfg_attr(target_family = "wasm", should_panic)]
     #[apply(all_storage_types)]
     pub async fn update_e2ei_enrollment_emits_error(context: KeystoreTestContext) {
         let store = context.store();

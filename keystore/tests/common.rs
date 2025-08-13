@@ -57,10 +57,15 @@ impl KeystoreTestContext {
 impl Drop for KeystoreTestContext {
     fn drop(&mut self) {
         if let Some(store) = self.store.take() {
-            futures_lite::future::block_on(async {
+            let commit_and_wipe = async {
                 store.commit_transaction().await.expect("Could not commit transaction");
                 store.wipe().await.expect("Could not wipe store");
-            });
+            };
+
+            #[cfg(not(target_family = "wasm"))]
+            futures_lite::future::block_on(commit_and_wipe);
+            #[cfg(target_family = "wasm")]
+            wasm_bindgen_futures::spawn_local(commit_and_wipe);
         }
     }
 }
