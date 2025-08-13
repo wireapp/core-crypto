@@ -6,7 +6,7 @@ fn main() -> Result<()> {
 }
 
 #[cfg(not(target_family = "wasm"))]
-#[tokio::main]
+#[macro_rules_attribute::apply(smol_macros::main)]
 async fn main() -> Result<()> {
     #[derive(Debug, clap::Parser)]
     #[command(author, version, about, long_about = None)]
@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
 
     let args = Args::parse();
 
-    if !tokio::fs::try_exists(&args.path).await.unwrap_or_default() {
+    if !std::path::Path::new(&args.path).exists() {
         return Err(eyre!("File not found: {}", args.path));
     }
 

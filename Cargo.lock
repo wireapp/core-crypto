@@ -867,6 +867,7 @@ dependencies = [
  "js-sys",
  "log",
  "log-reload",
+ "macro_rules_attribute",
  "paste",
  "proteus-wasm",
  "rmp-serde",
@@ -874,11 +875,11 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "sha2",
+ "smol-macros",
  "strum",
  "testing_logger",
  "thiserror 2.0.14",
  "tls_codec",
- "tokio",
  "uniffi",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -2431,6 +2432,7 @@ dependencies = [
  "core-crypto",
  "core-crypto-keystore",
  "hex",
+ "macro_rules_attribute",
  "openmls",
  "openmls_basic_credential",
  "openmls_traits",
@@ -2440,8 +2442,8 @@ dependencies = [
  "serde",
  "serde-transcode",
  "serde_json",
+ "smol-macros",
  "tls_codec",
- "tokio",
 ]
 
 [[package]]
@@ -2509,9 +2511,9 @@ checksum = "4ee93343901ab17bd981295f2cf0026d4ad018c7c31ba84549a4ddbb47a45104"
 
 [[package]]
 name = "lock_api"
-version = "0.4.12"
+version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07af8b9cdd281b7915f413fa73f29ebd5d55d0d3f0155584dade1ff18cea1b17"
+checksum = "96936507f153605bddfcda068dd804796c84324ed2510809e5b2a624c81da765"
 dependencies = [
  "autocfg",
  "scopeguard",
@@ -2957,9 +2959,9 @@ checksum = "bb813b8af86854136c6922af0598d719255ecb2179515e6e7730d468f05c9cae"
 
 [[package]]
 name = "parking_lot"
-version = "0.12.3"
+version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1bf18183cf54e8d6059647fc3063646a1801cf30896933ec2311622cc4b9a27"
+checksum = "70d58bf43669b5795d1576d0641cfb6fbb2057bf629506267a92807158584a13"
 dependencies = [
  "lock_api",
  "parking_lot_core",
@@ -2967,9 +2969,9 @@ dependencies = [
 
 [[package]]
 name = "parking_lot_core"
-version = "0.9.10"
+version = "0.9.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e401f977ab385c9e4e3ab30627d6f26d00e2c73eef317493c4ec6d468726cf8"
+checksum = "bc838d2a56b5b1a6c25f55575dfc605fabb63bb2365f6c2353ef9159aa69e4a5"
 dependencies = [
  "cfg-if",
  "libc",
@@ -3348,9 +3350,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.3"
+version = "0.5.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a908a6e00f1fdd0dfd9c0eb08ce85126f6d8bbda50017e74bc4a4b7d4a926a4"
+checksum = "5407465600fb0548f1442edf71dd20683c6ed326200ace4b1ef0763521bb3b77"
 dependencies = [
  "bitflags",
 ]

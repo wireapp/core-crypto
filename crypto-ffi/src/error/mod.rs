@@ -93,7 +93,7 @@ mod tests {
         ));
     }
 
-    #[tokio::test]
+    #[macro_rules_attribute::apply(smol_macros::test)]
     async fn test_error_is_logged() {
         testing_logger::setup();
         // we shouldn't be able to create a SQLite DB in `/root` unless we are running this test as root
