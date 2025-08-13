@@ -67,7 +67,7 @@ tls_codec = "0.4.2"
 typed-builder = "0.21.1"
 uniffi = "0.29"
 url = "2.5"
-uuid = "1.17"
+uuid = "1.18"
 x509-cert = "0.2"
 zeroize = "1.8"
 
