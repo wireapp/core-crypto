@@ -183,6 +183,7 @@ mod tests {
     #[apply(all_storage_types)]
     #[wasm_bindgen_test]
     pub async fn update_e2ei_enrollment_emits_error(context: KeystoreTestContext) {
+        println!("starting test: update_e2ei_enrollment_emits_error");
         let store = context.store();
 
         let mut entity = E2eiEnrollment::random();
@@ -194,6 +195,7 @@ mod tests {
         store.new_transaction().await.unwrap();
         entity.random_update();
         store.save(entity).await.unwrap();
+        println!("  getting error from tx store");
         let error = store.commit_transaction().await.unwrap_err();
 
         assert!(matches!(
@@ -204,6 +206,7 @@ mod tests {
         // It's required by cleanup to have a running transaction before finishing the test
         store.rollback_transaction().await.unwrap();
         store.new_transaction().await.unwrap();
+        println!("ending test: update_e2ei_enrollment_emits_error");
     }
 }
 
