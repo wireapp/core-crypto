@@ -443,7 +443,7 @@
 <a href=#443 id=443 data-nosnippet>443</a>
 <a href=#444 id=444 data-nosnippet>444</a>                <span class="comment">// simulate a real rotation where both credential are not created within the same second
 <a href=#445 id=445 data-nosnippet>445</a>                // we only have a precision of 1 second for the `created_at` field of the Credential
-<a href=#446 id=446 data-nosnippet>446</a>                </span>async_std::task::sleep(core::time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
+<a href=#446 id=446 data-nosnippet>446</a>                </span>smol::Timer::after(core::time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
 <a href=#447 id=447 data-nosnippet>447</a>
 <a href=#448 id=448 data-nosnippet>448</a>                <span class="kw">let </span>is_renewal = case.credential_type == MlsCredentialType::X509;
 <a href=#449 id=449 data-nosnippet>449</a>

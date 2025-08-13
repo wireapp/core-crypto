@@ -381,7 +381,7 @@
 <a href=#381 id=381 data-nosnippet>381</a>            </span>.unwrap();
 <a href=#382 id=382 data-nosnippet>382</a>        <span class="kw">let </span>kp_1s_exp = session.generate_one_keypackage(<span class="kw-2">&amp;</span>backend, cs, ct).<span class="kw">await</span>.unwrap();
 <a href=#383 id=383 data-nosnippet>383</a>        <span class="comment">// Sleep 2 seconds to make sure we make the kp expire
-<a href=#384 id=384 data-nosnippet>384</a>        </span>async_std::task::sleep(std::time::Duration::from_secs(<span class="number">2</span>)).<span class="kw">await</span>;
+<a href=#384 id=384 data-nosnippet>384</a>        </span>smol::Timer::after(std::time::Duration::from_secs(<span class="number">2</span>)).<span class="kw">await</span>;
 <a href=#385 id=385 data-nosnippet>385</a>        <span class="macro">assert!</span>(Session::is_mls_keypackage_expired(<span class="kw-2">&amp;</span>kp_1s_exp));
 <a href=#386 id=386 data-nosnippet>386</a>    }
 <a href=#387 id=387 data-nosnippet>387</a>
@@ -582,7 +582,7 @@
 <a href=#582 id=582 data-nosnippet>582</a>        <span class="macro">assert_eq!</span>(partially_expired_kpbs.len(), EXPIRED_COUNT);
 <a href=#583 id=583 data-nosnippet>583</a>
 <a href=#584 id=584 data-nosnippet>584</a>        <span class="comment">// Sleep to trigger the expiration
-<a href=#585 id=585 data-nosnippet>585</a>        </span>async_std::task::sleep(std::time::Duration::from_secs(<span class="number">10</span>)).<span class="kw">await</span>;
+<a href=#585 id=585 data-nosnippet>585</a>        </span>smol::Timer::after(std::time::Duration::from_secs(<span class="number">10</span>)).<span class="kw">await</span>;
 <a href=#586 id=586 data-nosnippet>586</a>
 <a href=#587 id=587 data-nosnippet>587</a>        <span class="comment">// Request the same number of keypackages. The automatic lifetime-based expiration should take
 <a href=#588 id=588 data-nosnippet>588</a>        // place and remove old expired keypackages and generate fresh ones instead

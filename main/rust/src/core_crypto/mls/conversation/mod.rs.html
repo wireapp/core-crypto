@@ -620,7 +620,7 @@
 <a href=#620 id=620 data-nosnippet>620</a>            );
 <a href=#621 id=621 data-nosnippet>621</a>        }
 <a href=#622 id=622 data-nosnippet>622</a>
-<a href=#623 id=623 data-nosnippet>623</a>        <span class="attr">#[async_std::test]
+<a href=#623 id=623 data-nosnippet>623</a>        <span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
 <a href=#624 id=624 data-nosnippet>624</a>        </span><span class="kw">async fn </span>should_read_device_identities() {
 <a href=#625 id=625 data-nosnippet>625</a>            <span class="kw">let </span>case = TestContext::default_x509();
 <a href=#626 id=626 data-nosnippet>626</a>
@@ -679,7 +679,7 @@
 <a href=#679 id=679 data-nosnippet>679</a>            .<span class="kw">await
 <a href=#680 id=680 data-nosnippet>680</a>        </span>}
 <a href=#681 id=681 data-nosnippet>681</a>
-<a href=#682 id=682 data-nosnippet>682</a>        <span class="attr">#[async_std::test]
+<a href=#682 id=682 data-nosnippet>682</a>        <span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
 <a href=#683 id=683 data-nosnippet>683</a>        </span><span class="kw">async fn </span>should_read_revoked_device_cross_signed() {
 <a href=#684 id=684 data-nosnippet>684</a>            <span class="kw">let </span>case = TestContext::default_x509();
 <a href=#685 id=685 data-nosnippet>685</a>            <span class="kw">let </span>alice_user_id = uuid::Uuid::new_v4();
@@ -734,7 +734,7 @@
 <a href=#734 id=734 data-nosnippet>734</a>            .<span class="kw">await
 <a href=#735 id=735 data-nosnippet>735</a>        </span>}
 <a href=#736 id=736 data-nosnippet>736</a>
-<a href=#737 id=737 data-nosnippet>737</a>        <span class="attr">#[async_std::test]
+<a href=#737 id=737 data-nosnippet>737</a>        <span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
 <a href=#738 id=738 data-nosnippet>738</a>        </span><span class="kw">async fn </span>should_read_revoked_device() {
 <a href=#739 id=739 data-nosnippet>739</a>            <span class="kw">let </span>case = TestContext::default_x509();
 <a href=#740 id=740 data-nosnippet>740</a>            <span class="kw">let </span>rupert_user_id = uuid::Uuid::new_v4();
@@ -780,7 +780,7 @@
 <a href=#780 id=780 data-nosnippet>780</a>            .<span class="kw">await
 <a href=#781 id=781 data-nosnippet>781</a>        </span>}
 <a href=#782 id=782 data-nosnippet>782</a>
-<a href=#783 id=783 data-nosnippet>783</a>        <span class="attr">#[async_std::test]
+<a href=#783 id=783 data-nosnippet>783</a>        <span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
 <a href=#784 id=784 data-nosnippet>784</a>        </span><span class="kw">async fn </span>should_not_fail_when_basic() {
 <a href=#785 id=785 data-nosnippet>785</a>            <span class="kw">let </span>case = TestContext::default();
 <a href=#786 id=786 data-nosnippet>786</a>
@@ -822,7 +822,7 @@
 <a href=#822 id=822 data-nosnippet>822</a>
 <a href=#823 id=823 data-nosnippet>823</a>        <span class="comment">// this test is a duplicate of its counterpart but taking federation into account
 <a href=#824 id=824 data-nosnippet>824</a>        // The heavy lifting of cross-signing the certificates is being done by the test utils.
-<a href=#825 id=825 data-nosnippet>825</a>        </span><span class="attr">#[async_std::test]
+<a href=#825 id=825 data-nosnippet>825</a>        </span><span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
 <a href=#826 id=826 data-nosnippet>826</a>        </span><span class="kw">async fn </span>should_read_users_cross_signed() {
 <a href=#827 id=827 data-nosnippet>827</a>            <span class="kw">let </span>case = TestContext::default_x509();
 <a href=#828 id=828 data-nosnippet>828</a>            <span class="kw">let </span>[alice_1_id, alice_2_id] = case.x509_client_ids_for_user(<span class="kw-2">&amp;</span>uuid::Uuid::new_v4());
@@ -886,7 +886,7 @@
 <a href=#886 id=886 data-nosnippet>886</a>            .<span class="kw">await
 <a href=#887 id=887 data-nosnippet>887</a>        </span>}
 <a href=#888 id=888 data-nosnippet>888</a>
-<a href=#889 id=889 data-nosnippet>889</a>        <span class="attr">#[async_std::test]
+<a href=#889 id=889 data-nosnippet>889</a>        <span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
 <a href=#890 id=890 data-nosnippet>890</a>        </span><span class="kw">async fn </span>should_read_users() {
 <a href=#891 id=891 data-nosnippet>891</a>            <span class="kw">let </span>case = TestContext::default_x509();
 <a href=#892 id=892 data-nosnippet>892</a>            <span class="kw">let </span>[alice_android, alice_ios] = case.x509_client_ids_for_user(<span class="kw-2">&amp;</span>uuid::Uuid::new_v4());
@@ -939,7 +939,7 @@
 <a href=#939 id=939 data-nosnippet>939</a>            .<span class="kw">await
 <a href=#940 id=940 data-nosnippet>940</a>        </span>}
 <a href=#941 id=941 data-nosnippet>941</a>
-<a href=#942 id=942 data-nosnippet>942</a>        <span class="attr">#[async_std::test]
+<a href=#942 id=942 data-nosnippet>942</a>        <span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
 <a href=#943 id=943 data-nosnippet>943</a>        </span><span class="kw">async fn </span>should_exchange_messages_cross_signed() {
 <a href=#944 id=944 data-nosnippet>944</a>            <span class="kw">let </span>case = TestContext::default_x509();
 <a href=#945 id=945 data-nosnippet>945</a>            <span class="kw">let </span>sessions = case.sessions_x509_cross_signed::&lt;<span class="number">3</span>, <span class="number">3</span>&gt;().<span class="kw">await</span>;

@@ -253,7 +253,7 @@
 <a href=#253 id=253 data-nosnippet>253</a>
 <a href=#254 id=254 data-nosnippet>254</a>    <span class="kw">type </span>TestGroupStore = GroupStore&lt;DummyValue&gt;;
 <a href=#255 id=255 data-nosnippet>255</a>
-<a href=#256 id=256 data-nosnippet>256</a>    <span class="attr">#[async_std::test]
+<a href=#256 id=256 data-nosnippet>256</a>    <span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
 <a href=#257 id=257 data-nosnippet>257</a>    </span><span class="kw">async fn </span>group_store_init() {
 <a href=#258 id=258 data-nosnippet>258</a>        <span class="kw">let </span>store = TestGroupStore::new_with_limit(<span class="number">1</span>);
 <a href=#259 id=259 data-nosnippet>259</a>        <span class="macro">assert_eq!</span>(store.len(), <span class="number">0</span>);
@@ -269,7 +269,7 @@
 <a href=#269 id=269 data-nosnippet>269</a>        <span class="macro">assert_eq!</span>(store.len(), <span class="number">0</span>);
 <a href=#270 id=270 data-nosnippet>270</a>    }
 <a href=#271 id=271 data-nosnippet>271</a>
-<a href=#272 id=272 data-nosnippet>272</a>    <span class="attr">#[async_std::test]
+<a href=#272 id=272 data-nosnippet>272</a>    <span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
 <a href=#273 id=273 data-nosnippet>273</a>    </span><span class="kw">async fn </span>group_store_common_ops() {
 <a href=#274 id=274 data-nosnippet>274</a>        <span class="kw">let </span><span class="kw-2">mut </span>store = TestGroupStore::new(<span class="prelude-val">Some</span>(u32::MAX), <span class="prelude-val">Some</span>(usize::MAX));
 <a href=#275 id=275 data-nosnippet>275</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">1</span>..=<span class="number">3 </span>{
@@ -292,7 +292,7 @@
 <a href=#292 id=292 data-nosnippet>292</a>        }
 <a href=#293 id=293 data-nosnippet>293</a>    }
 <a href=#294 id=294 data-nosnippet>294</a>
-<a href=#295 id=295 data-nosnippet>295</a>    <span class="attr">#[async_std::test]
+<a href=#295 id=295 data-nosnippet>295</a>    <span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
 <a href=#296 id=296 data-nosnippet>296</a>    </span><span class="kw">async fn </span>group_store_operations_len_limiter() {
 <a href=#297 id=297 data-nosnippet>297</a>        <span class="kw">let </span><span class="kw-2">mut </span>store = TestGroupStore::new_with_limit(<span class="number">2</span>);
 <a href=#298 id=298 data-nosnippet>298</a>        <span class="macro">assert!</span>(store.try_insert(<span class="string">b"1"</span>.to_vec(), <span class="string">"1"</span>.into()).is_ok());
@@ -308,7 +308,7 @@
 <a href=#308 id=308 data-nosnippet>308</a>        <span class="macro">assert_eq!</span>(store.len(), <span class="number">2</span>);
 <a href=#309 id=309 data-nosnippet>309</a>    }
 <a href=#310 id=310 data-nosnippet>310</a>
-<a href=#311 id=311 data-nosnippet>311</a>    <span class="attr">#[async_std::test]
+<a href=#311 id=311 data-nosnippet>311</a>    <span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
 <a href=#312 id=312 data-nosnippet>312</a>    </span><span class="kw">async fn </span>group_store_operations_mem_limiter() {
 <a href=#313 id=313 data-nosnippet>313</a>        <span class="kw">use </span>schnellru::{LruMap, UnlimitedCompact};
 <a href=#314 id=314 data-nosnippet>314</a>        <span class="kw">let </span><span class="kw-2">mut </span>lru: LruMap&lt;Vec&lt;u8&gt;, DummyValue, UnlimitedCompact&gt; =

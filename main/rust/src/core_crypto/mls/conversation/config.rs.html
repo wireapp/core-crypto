@@ -198,8 +198,8 @@
 <a href=#198 id=198 data-nosnippet>198</a>    <span class="kw">use </span><span class="kw">crate</span>::mls::conversation::ConversationWithMls <span class="kw">as _</span>;
 <a href=#199 id=199 data-nosnippet>199</a>    <span class="kw">use crate</span>::{prelude::MlsConversationConfiguration, test_utils::<span class="kw-2">*</span>};
 <a href=#200 id=200 data-nosnippet>200</a>
-<a href=#201 id=201 data-nosnippet>201</a>    <span class="attr">#[async_std::test]
-<a href=#202 id=202 data-nosnippet>202</a>    </span><span class="kw">pub async fn </span>group_should_have_required_capabilities() {
+<a href=#201 id=201 data-nosnippet>201</a>    <span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
+<a href=#202 id=202 data-nosnippet>202</a>    </span><span class="kw">async fn </span>group_should_have_required_capabilities() {
 <a href=#203 id=203 data-nosnippet>203</a>        <span class="kw">let </span>case = TestContext::default();
 <a href=#204 id=204 data-nosnippet>204</a>
 <a href=#205 id=205 data-nosnippet>205</a>        <span class="kw">let </span>[session] = case.sessions().<span class="kw">await</span>;
