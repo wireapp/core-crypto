@@ -6,15 +6,13 @@
 
 use jwt_simple::prelude::*;
 use rstest::rstest;
-use serde_json::{Value, json};
 
 use rusty_acme::prelude::*;
 use rusty_jwt_tools::prelude::*;
 use utils::{
     TestError,
     cfg::{E2eTest, EnrollmentFlow, TestEnvironment, WireServer},
-    docker::{stepca::CaCfg, wiremock::WiremockImage},
-    id_token::resign_id_token,
+    docker::stepca::CaCfg,
     idp::{IdpServer, start_idp_server},
     rand_base64_str, rand_client_id,
 };
@@ -456,36 +454,6 @@ mod dpop_challenge {
         ));
     }
 
-    // TODO: not testable in practice because leeway of 360s is hardcoded in acme server
-    #[ignore]
-    #[should_panic]
-    #[rstest]
-    #[tokio::test]
-    /// Client DPoP token is nested within access token. The former should not be expired when
-    /// acme server verifies the DPoP challenge
-    // @SF.PROVISIONING @TSFI.ACME @S8
-    async fn should_fail_when_expired_client_dpop_token(test_env: TestEnvironment) {
-        let test = E2eTest::new(test_env).start().await;
-
-        let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(
-                |mut test, (dpop_chall, backend_nonce, handle, team, display_name, _expiry)| {
-                    Box::pin(async move {
-                        let leeway = 360;
-                        let expiry = core::time::Duration::from_secs(0);
-                        let client_dpop_token = test
-                            .create_dpop_token(&dpop_chall, backend_nonce, handle, team, display_name, expiry)
-                            .await?;
-                        tokio::time::sleep(core::time::Duration::from_secs(leeway + 1)).await;
-                        Ok((test, client_dpop_token))
-                    })
-                },
-            ),
-            ..Default::default()
-        };
-        test.enrollment(flow).await.unwrap();
-    }
-
     #[rstest]
     #[tokio::test]
     /// In order to tie DPoP challenge verification on the acme server, the latter is configured
@@ -866,92 +834,6 @@ mod oidc_challenge {
         assert!(matches!(
             test.nominal_enrollment().await.unwrap_err(),
             TestError::OidcChallengeError
-        ));
-    }
-
-    #[rstest]
-    #[tokio::test]
-    #[ignore] // FIXME: adapt with Keycloak
-    /// An id token with an invalid name is supplied to ACME server. It should verify that the handle
-    /// is the same as the one used in the order.
-    // @SF.PROVISIONING @TSFI.ACME @S8
-    async fn should_fail_when_invalid_handle(test_env: TestEnvironment) {
-        let test = E2eTest::new(test_env);
-
-        // setup fake jwks_uri to be able to resign the id token
-        let (jwks_stub, new_kp, kid) = test.new_jwks_uri_mock();
-        let attacker_host = "attacker-keycloak";
-        let _attacker_keycloak = WiremockImage::run(attacker_host, vec![jwks_stub]);
-
-        let test = test.start().await;
-
-        let flow = EnrollmentFlow {
-            fetch_id_token: Box::new(|mut test, (oidc_chall, keyauth)| {
-                Box::pin(async move {
-                    let idp_pubkey = test.fetch_idp_public_key().await;
-                    let idp_pubkey = RS256PublicKey::from_pem(&idp_pubkey).unwrap();
-                    let id_token = test.fetch_id_token(&oidc_chall, keyauth).await?;
-
-                    let change_handle = |mut claims: JWTClaims<Value>| {
-                        let wrong_handle = format!("{}john.doe.qa@wire.com", ClientId::URI_SCHEME);
-                        *claims.custom.get_mut("name").unwrap() = json!(wrong_handle);
-                        claims
-                    };
-                    let modified_id_token = resign_id_token(&id_token, idp_pubkey, kid, new_kp, change_handle);
-                    Ok((test, modified_id_token))
-                })
-            }),
-            ..Default::default()
-        };
-
-        assert!(matches!(
-            test.enrollment(flow).await.unwrap_err(),
-            TestError::Acme(RustyAcmeError::ClientImplementationError(
-                "a challenge is not supposed to be pending at this point. It must either be 'valid' or 'processing'."
-            ))
-        ));
-    }
-
-    #[rstest]
-    #[tokio::test]
-    #[ignore] // FIXME: adapt with Keycloak
-    /// An id token with an invalid name is supplied to ACME server. It should verify that the display name
-    /// is the same as the one used in the order.
-    // @SF.PROVISIONING @TSFI.ACME @S8
-    async fn should_fail_when_invalid_display_name(test_env: TestEnvironment) {
-        let test = E2eTest::new(test_env);
-
-        // setup fake jwks_uri to be able to resign the id token
-        let (jwks_stub, new_kp, kid) = test.new_jwks_uri_mock();
-        let attacker_host = "attacker-dex";
-        let _attacker_dex = WiremockImage::run(attacker_host, vec![jwks_stub]);
-
-        let test = test.start().await;
-
-        let flow = EnrollmentFlow {
-            fetch_id_token: Box::new(|mut test, (oidc_chall, keyauth)| {
-                Box::pin(async move {
-                    let idp_pubkey = test.fetch_idp_public_key().await;
-                    let idp_pubkey = RS256PublicKey::from_pem(&idp_pubkey).unwrap();
-                    let id_token = test.fetch_id_token(&oidc_chall, keyauth).await?;
-
-                    let change_handle = |mut claims: JWTClaims<Value>| {
-                        let wrong_handle = "Doe, John (QA)";
-                        *claims.custom.get_mut("preferred_username").unwrap() = json!(wrong_handle);
-                        claims
-                    };
-                    let modified_id_token = resign_id_token(&id_token, idp_pubkey, kid, new_kp, change_handle);
-                    Ok((test, modified_id_token))
-                })
-            }),
-            ..Default::default()
-        };
-
-        assert!(matches!(
-            test.enrollment(flow).await.unwrap_err(),
-            TestError::Acme(RustyAcmeError::ClientImplementationError(
-                "a challenge is not supposed to be pending at this point. It must either be 'valid' or 'processing'."
-            ))
         ));
     }
 
