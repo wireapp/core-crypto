@@ -2,7 +2,6 @@
 
 pub mod keycloak;
 pub mod stepca;
-pub mod wiremock;
 
 use jwt_simple::reexports::rand;
 
