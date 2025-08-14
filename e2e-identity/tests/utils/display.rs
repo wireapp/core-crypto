@@ -97,7 +97,7 @@ impl TestDisplay {
         from: Actor,
         to: Actor,
         req: Option<&reqwest::Request>,
-        url_pattern: Option<&'static str>,
+        url_pattern: Option<impl Into<String>>,
     ) {
         let event = Event::Request {
             from,
@@ -467,7 +467,7 @@ const EXCEPT_HEADERS: [&str; 2] = ["date", "content-length"];
 pub struct Req(String, String, bool);
 
 impl Req {
-    pub fn new(req: &reqwest::Request, url_pattern: Option<&'static str>) -> Self {
+    pub fn new(req: &reqwest::Request, url_pattern: Option<impl Into<String>>) -> Self {
         let is_tls = matches!(req.url().scheme(), "https");
         let method = req.method().as_str();
         let url = req.url().as_str();
@@ -480,7 +480,7 @@ impl Req {
             .join("\n");
         let url = format!("{method} {url}");
 
-        let url = if let Some(pattern) = url_pattern {
+        let url = if let Some(pattern) = url_pattern.map(Into::into) {
             // calculate at which position to insert the url pattern
             let path_len = req.url().path().len();
             let position = url.len() - path_len;

@@ -127,12 +127,8 @@ impl E2eTest {
         self.display_step("fetch acme directory for hyperlinks");
         let directory_url = format!("{ca_url}/acme/{}/directory", stepca::ACME_PROVISIONER);
         let req = self.client.get(&directory_url).build()?;
-        self.display_req(
-            Actor::WireClient,
-            Actor::AcmeServer,
-            Some(&req),
-            Some("/acme/{acme-provisioner}/directory"),
-        );
+        let url_pattern = format!("/acme/{}/directory", stepca::ACME_PROVISIONER);
+        self.display_req(Actor::WireClient, Actor::AcmeServer, Some(&req), Some(&url_pattern));
 
         self.display_step("get the ACME directory with links for newNonce, newAccount & newOrder");
         let mut resp = self.client.execute(req).await?;
@@ -317,7 +313,7 @@ impl E2eTest {
         self.display_step("fetch a nonce from wire-server");
         let nonce_url = format!("{}/clients/{:x}/nonce", self.env.wire_server.uri(), self.sub.device_id);
         let req = self.client.get(nonce_url).build()?;
-        self.display_req(Actor::WireClient, Actor::WireServer, Some(&req), None);
+        self.display_req(Actor::WireClient, Actor::WireServer, Some(&req), None::<&str>);
 
         self.display_step("get wire-server nonce");
         let mut resp = self.client.execute(req).await?;
@@ -581,7 +577,12 @@ impl E2eTest {
 
         self.display_step("OAUTH authorization request (auth code endpoint)");
         let authz_req = self.client.get(authz_url.as_str()).build().unwrap();
-        self.display_req(Actor::WireClient, Actor::IdentityProvider, Some(&authz_req), None);
+        self.display_req(
+            Actor::WireClient,
+            Actor::IdentityProvider,
+            Some(&authz_req),
+            None::<&str>,
+        );
 
         // Authorization Server redirects to login prompt
         let resp = self.client.execute(authz_req).await.unwrap();
@@ -627,7 +628,7 @@ impl E2eTest {
             Actor::WireClient,
             Actor::IdentityProvider,
             Some(&exchange_code_req),
-            None,
+            None::<&str>,
         );
         self.display_str(Self::req_body_str(&exchange_code_req)?.unwrap(), false);
 
