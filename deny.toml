@@ -1,30 +1,30 @@
 [graph]
 targets = [
-    # Desktop
-    { triple = "x86_64-unknown-linux-gnu" },
-    { triple = "aarch64-unknown-linux-gnu" },
-    { triple = "x86_64-unknown-linux-musl" },
-    { triple = "aarch64-apple-darwin" },
-    { triple = "x86_64-pc-windows-msvc" },
-    # WASM
-    { triple = "wasm32-unknown-unknown" },
-    # iOS
-    { triple = "aarch64-apple-ios-sim" },
-    { triple = "aarch64-apple-ios" },
-    # Android
-    { triple = "aarch64-linux-android" },
-    { triple = "armv7-linux-androideabi" },
-    { triple = "x86_64-linux-android" },
+  # Desktop
+  { triple = "x86_64-unknown-linux-gnu" },
+  { triple = "aarch64-unknown-linux-gnu" },
+  { triple = "x86_64-unknown-linux-musl" },
+  { triple = "aarch64-apple-darwin" },
+  { triple = "x86_64-pc-windows-msvc" },
+  # WASM
+  { triple = "wasm32-unknown-unknown" },
+  # iOS
+  { triple = "aarch64-apple-ios-sim" },
+  { triple = "aarch64-apple-ios" },
+  # Android
+  { triple = "aarch64-linux-android" },
+  { triple = "armv7-linux-androideabi" },
+  { triple = "x86_64-linux-android" },
 ]
 
 [advisories]
 version = 2
 ignore = [
-    # `sodiumoxide` is only used in tests
-    "RUSTSEC-2021-0137",
-    # `paste` is no longer maintained and its repo is archived,
-    # however `uniffi` still depends on it.
-    "RUSTSEC-2024-0436"
+  # `sodiumoxide` is only used in tests
+  "RUSTSEC-2021-0137",
+  # `paste` is no longer maintained and its repo is archived,
+  # however `uniffi` still depends on it.
+  "RUSTSEC-2024-0436",
 ]
 
 [bans]
@@ -32,11 +32,19 @@ multiple-versions = "allow"
 
 [licenses]
 version = 2
-allow = ["Apache-2.0", "MIT", "MPL-2.0", "GPL-3.0", "CC0-1.0", "BSD-3-Clause",
-         "Apache-2.0 WITH LLVM-exception", "ISC", "Zlib", "Unicode-3.0"]
-exceptions = [
-    { allow = ["Unicode-DFS-2016"], name = "unicode-ident" },
+allow = [
+  "Apache-2.0",
+  "MIT",
+  "MPL-2.0",
+  "GPL-3.0",
+  "CC0-1.0",
+  "BSD-3-Clause",
+  "Apache-2.0 WITH LLVM-exception",
+  "ISC",
+  "Zlib",
+  "Unicode-3.0",
 ]
+exceptions = [{ allow = ["Unicode-DFS-2016"], name = "unicode-ident" }]
 
 [[licenses.clarify]]
 name = "pkiprocmacros"

@@ -32,8 +32,8 @@ openmls_x509_credential.workspace = true
 tls_codec.workspace = true
 
 chrono = { version = "0.4", default-features = false, features = [
-    "std",
-    "serde",
+  "std",
+  "serde",
 ] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.proteus-wasm]

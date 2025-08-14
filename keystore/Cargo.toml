@@ -58,12 +58,12 @@ blocking = "1.6"
 version = "0.33"
 default-features = false
 features = [
-    "bundled-sqlcipher-vendored-openssl",
-    "blob",
-    "limits",
-    "unlock_notify",
-    "uuid",
-    "functions",
+  "bundled-sqlcipher-vendored-openssl",
+  "blob",
+  "limits",
+  "unlock_notify",
+  "uuid",
+  "functions",
 ]
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.refinery]
@@ -93,8 +93,8 @@ rstest = "0.26"
 rstest_reuse = "0.7"
 futures-lite = "2.6"
 core-crypto-keystore = { path = ".", features = [
-    "idb-regression-test",
-    "log-queries",
+  "idb-regression-test",
+  "log-queries",
 ] }
 env_logger = "0.11"
 proteus-wasm = { workspace = true }
@@ -109,8 +109,8 @@ features = ["async_futures", "html_reports"]
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = [
-    "-Os",
-    "--enable-mutable-globals",
-    "--enable-threads",
-    "--detect-features",
+  "-Os",
+  "--enable-mutable-globals",
+  "--enable-threads",
+  "--detect-features",
 ]

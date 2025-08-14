@@ -77,10 +77,10 @@ wasm-opt = false
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = [
-    "-Os",
-    "--enable-mutable-globals",
-    "--enable-threads",
-    "--detect-features",
+  "-Os",
+  "--enable-mutable-globals",
+  "--enable-threads",
+  "--detect-features",
 ]
 
 [dev-dependencies]

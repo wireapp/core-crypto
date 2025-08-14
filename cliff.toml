@@ -21,10 +21,10 @@ tag_pattern = "v[0-9]*"
 date_order = true
 sort_commits = "newest"
 commit_parsers = [
-    { message = "^feat", group = "<!-- 0 -->Features"},
-    { message = "^fix", group = "<!-- 1 -->Bug Fixes"},
-    { message = "^doc", group = "<!-- 2 -->Documentation"},
-    { message = "^perf", group = "<!-- 3 -->Performance"},
-    { message = "^test", group = "<!-- 4 -->Testing"},
-    { message = "^\\w+(\\(.*?\\))?!", group = "<-- 5 -->Other Breaking Changes"},
+  { message = "^feat", group = "<!-- 0 -->Features" },
+  { message = "^fix", group = "<!-- 1 -->Bug Fixes" },
+  { message = "^doc", group = "<!-- 2 -->Documentation" },
+  { message = "^perf", group = "<!-- 3 -->Performance" },
+  { message = "^test", group = "<!-- 4 -->Testing" },
+  { message = "^\\w+(\\(.*?\\))?!", group = "<-- 5 -->Other Breaking Changes" },
 ]

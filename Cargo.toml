@@ -1,13 +1,13 @@
 [workspace]
 members = [
-    "crypto",
-    "crypto-ffi",
-    "crypto-macros",
-    "keystore",
-    "keystore-dump",
-    "mls-provider",
-    "interop",
-    "decode",
+  "crypto",
+  "crypto-ffi",
+  "crypto-macros",
+  "keystore",
+  "keystore-dump",
+  "mls-provider",
+  "interop",
+  "decode",
 ]
 resolver = "2"
 
@@ -17,7 +17,7 @@ undocumented_unsafe_blocks = "deny"
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
-    'cfg(wasm_bindgen_unstable_test_coverage)',
+  'cfg(wasm_bindgen_unstable_test_coverage)',
 ] }
 
 [workspace.dependencies]
@@ -34,15 +34,15 @@ core-crypto = { path = "crypto" }
 core-crypto-keystore = { path = "keystore" }
 core-crypto-macros = { path = "crypto-macros" }
 derive_more = { version = "2.0", features = [
-    "from",
-    "into",
-    "try_from",
-    "constructor",
-    "display",
-    "debug",
-    "as_ref",
-    "deref",
-    "deref_mut",
+  "from",
+  "into",
+  "try_from",
+  "constructor",
+  "display",
+  "debug",
+  "as_ref",
+  "deref",
+  "deref_mut",
 ] }
 futures-util = "0.3"
 hex = "0.4"

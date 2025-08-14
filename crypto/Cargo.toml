@@ -17,9 +17,9 @@ workspace = true
 [features]
 default = ["proteus"]
 proteus = [
-    "dep:proteus-wasm",
-    "dep:proteus-traits",
-    "core-crypto-keystore/proteus-keystore",
+  "dep:proteus-wasm",
+  "dep:proteus-traits",
+  "core-crypto-keystore/proteus-keystore",
 ]
 # for test/bench all ciphersuites
 test-all-cipher = []
@@ -103,10 +103,10 @@ features = ["async_smol", "html_reports"]
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = [
-    "-Os",
-    "--enable-mutable-globals",
-    "--enable-threads",
-    "--detect-features",
+  "-Os",
+  "--enable-mutable-globals",
+  "--enable-threads",
+  "--detect-features",
 ]
 
 [[bench]]

@@ -6,10 +6,7 @@ license = "GPL-3.0-only"
 
 [features]
 default = ["proteus"]
-proteus = [
-    "dep:proteus-wasm",
-    "core-crypto/proteus",
-]
+proteus = ["dep:proteus-wasm", "core-crypto/proteus"]
 
 [lints]
 workspace = true
@@ -35,7 +32,7 @@ bitflags.workspace = true
 uuid = { workspace = true, features = ["v4"] }
 tempfile = { version = "3.20" }
 spinoff = { version = "0.8", features = [
-    "aesthetic",
+  "aesthetic",
 ], default-features = false }
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
