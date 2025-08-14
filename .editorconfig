@@ -25,3 +25,6 @@ ktlint_standard_trailing-comma-on-declaration-site = disabled
 
 [Makefile]
 indent_style = tab
+
+[*.toml]
+indent_size = 2
