@@ -1,3 +1,6 @@
+// No public item in this crate should lack documentation.
+#![cfg_attr(not(test), deny(missing_docs))]
+
 #[cfg(not(target_family = "wasm"))]
 uniffi::setup_scaffolding!("core_crypto_ffi");
 
