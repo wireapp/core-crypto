@@ -12,5 +12,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: uncenter/setup-taplo@v1
-      - uses: coriolinus/setup-fd@v0.1.0
+      - uses: wireapp/setup-fd@v0.1.0
       - run: fd --glob '*.toml' -X taplo fmt --check
