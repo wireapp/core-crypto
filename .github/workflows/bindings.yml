@@ -205,7 +205,7 @@ jobs:
 
   docs-swift:
     needs: build-ios
-    runs-on: macos-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v5
       - name: download artifacts for ios
