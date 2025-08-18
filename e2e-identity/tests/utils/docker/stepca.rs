@@ -247,6 +247,15 @@ pub async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
     run_command(&node, "chmod -R o+r certs").await;
     run_command(&node, "chmod o+rx config certs").await;
 
+    // GitHub doesn't allow the host user by default to read or write files created
+    // by the container user.
+    //
+    // Also, running this command breaks the tests on macOS and/or Podman for unknown
+    // reasons. This is why we run this in CI only.
+    if std::env::var("CI").is_ok_and(|value| value == "true") {
+        run_command(&node, "chmod o+rw config/ca.json").await;
+    }
+
     // Alter the CA configuration by substituting our provisioner.
     alter_configuration(&host_volume, ca_cfg);
 
