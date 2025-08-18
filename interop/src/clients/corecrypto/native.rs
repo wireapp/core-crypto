@@ -1,14 +1,16 @@
-use color_eyre::eyre::Result;
+#[cfg(feature = "proteus")]
 use std::cell::Cell;
 use std::sync::Arc;
+
+use color_eyre::eyre::Result;
 use tls_codec::Serialize;
 
 use core_crypto::{DatabaseKey, prelude::*};
 
-use crate::util::MlsTransportSuccessProvider;
 use crate::{
     CIPHERSUITE_IN_USE,
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
+    util::MlsTransportSuccessProvider,
 };
 
 #[derive(Debug)]

@@ -1,12 +1,19 @@
+#[cfg(feature = "proteus")]
+use std::cell::Cell;
+use std::{collections::HashMap, net::SocketAddr, sync::LazyLock};
+
+#[cfg(feature = "proteus")]
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::{ContextCompat as _, Result};
+use tls_codec::Deserialize;
+use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator as _};
+
+use core_crypto::prelude::{KeyPackage, KeyPackageIn};
+
 use crate::{
     CIPHERSUITE_IN_USE,
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
-use color_eyre::eyre::{ContextCompat as _, Result, eyre};
-use core_crypto::prelude::{KeyPackage, KeyPackageIn};
-use std::{cell::Cell, collections::HashMap, net::SocketAddr, sync::LazyLock};
-use tls_codec::Deserialize;
-use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator as _};
 
 /// Parse the source, returning all function bodies by function name
 ///

@@ -94,6 +94,7 @@ impl<V: GroupStoreEntity> std::ops::DerefMut for GroupStore<V> {
 }
 
 impl<V: GroupStoreEntity> GroupStore<V> {
+    #[cfg_attr(not(feature = "proteus"), expect(dead_code))]
     pub(crate) fn new_with_limit(len: u32) -> Self {
         let limiter = HybridMemoryLimiter::new(Some(len), None);
         let store = schnellru::LruMap::new(limiter);
@@ -152,6 +153,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         self.insert_prepped(k, value_to_insert)
     }
 
+    #[cfg_attr(not(feature = "proteus"), expect(dead_code))]
     pub(crate) fn try_insert(&mut self, k: Vec<u8>, entity: V) -> Result<(), V> {
         let value_to_insert = Arc::new(async_lock::RwLock::new(entity));
 
@@ -167,6 +169,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         self.0.remove(k)
     }
 
+    #[cfg_attr(not(feature = "proteus"), expect(dead_code))]
     pub(crate) fn get(&mut self, k: &[u8]) -> Option<&mut GroupStoreValue<V>> {
         self.0.get(k)
     }

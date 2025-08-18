@@ -12,7 +12,9 @@ use crate::{
     mls::HasSessionAndCrypto,
     prelude::{ClientIdentifier, MlsCiphersuite},
 };
-use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
+#[cfg(feature = "proteus")]
+use async_lock::Mutex;
+use async_lock::{RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use core_crypto_keystore::{CryptoKeystoreError, connection::FetchFromDatabase, entities::ConsumerData};
 pub use error::{Error, Result};
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};

@@ -1,12 +1,16 @@
+#[cfg(feature = "proteus")]
+use std::cell::Cell;
+use std::sync::Arc;
+
+use color_eyre::eyre::Result;
+use tempfile::NamedTempFile;
+
+use core_crypto_ffi::{ClientId, CoreCrypto, CredentialType, CustomConfiguration, TransactionHelper};
+
 use crate::{
     CIPHERSUITE_IN_USE,
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
-use color_eyre::eyre::Result;
-use core_crypto_ffi::{ClientId, CoreCrypto, CredentialType, CustomConfiguration, TransactionHelper};
-use std::cell::Cell;
-use std::sync::Arc;
-use tempfile::NamedTempFile;
 
 #[derive(Debug)]
 pub(crate) struct CoreCryptoFfiClient {

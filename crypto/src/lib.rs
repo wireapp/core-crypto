@@ -7,10 +7,10 @@
 #![cfg_attr(not(test), deny(missing_docs))]
 #![allow(clippy::single_component_path_imports)]
 
-use async_lock::Mutex;
 #[cfg(test)]
 pub use core_crypto_macros::{dispotent, durable, idempotent};
-use std::sync::Arc;
+#[cfg(feature = "proteus")]
+use {async_lock::Mutex, std::sync::Arc};
 
 pub use self::error::*;
 
