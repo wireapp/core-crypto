@@ -1,3 +1,8 @@
+//! FFI bindings for core-crypto.
+//!
+//! Actual implementation happens in the `core-crypto` crate. This crate is about setting up all the necessary
+//! annotations, wrappers, etc necessary to package those types, items, and methods for FFI via uniffi and wasm-bindgen.
+
 // No public item in this crate should lack documentation.
 #![cfg_attr(not(test), deny(missing_docs))]
 

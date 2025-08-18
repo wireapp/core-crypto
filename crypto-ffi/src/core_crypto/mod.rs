@@ -38,6 +38,7 @@ pub(crate) fn entropy_seed_map(e: EntropySeed) -> Vec<u8> {
     e
 }
 
+/// CoreCrypto wraps around MLS and Proteus implementations and provides a transactional interface for each.
 #[derive(Debug)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
@@ -86,6 +87,7 @@ pub async fn core_crypto_deferred_init(
 }
 
 impl CoreCrypto {
+    /// Instantiate CC
     pub async fn new(
         path: String,
         key: DatabaseKeyMaybeArc,
@@ -140,6 +142,7 @@ impl CoreCrypto {
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
 impl CoreCrypto {
+    /// Instantiate CC, asynchronously.
     pub async fn async_new(
         path: String,
         key: DatabaseKeyMaybeArc,
@@ -151,6 +154,8 @@ impl CoreCrypto {
         Self::new(path, key, client_id, ciphersuites, entropy_seed, nb_key_package).await
     }
 
+    /// Asynchronously instantiate CC, deferring MLS initialization. MLS can be initialized later
+    /// with `mls_init`.
     pub async fn deferred_init(
         path: String,
         key: DatabaseKeyMaybeArc,

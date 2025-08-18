@@ -112,11 +112,19 @@ impl CoreCryptoContext {
         })
     }
 
+    /// Creates a new Proteus prekey with the given id and returns the CBOR-serialized version of the prekey bundle
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with `proteus_init` first or an error will be returned
+    ///
     /// See [core_crypto::transaction_context::TransactionContext::proteus_new_prekey]
     pub async fn proteus_new_prekey(&self, prekey_id: u16) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({ self.inner.proteus_new_prekey(prekey_id).await.map_err(Into::into) })
     }
 
+    /// Creates a new Proteus prekey with an automatically incremented ID and returns the CBOR-serialized version of the prekey bundle
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with `proteus_init` first or an error will be returned
+    ///
     /// See [core_crypto::transaction_context::TransactionContext::proteus_new_prekey_auto]
     pub async fn proteus_new_prekey_auto(&self) -> CoreCryptoResult<ProteusAutoPrekeyBundle> {
         proteus_impl!({

@@ -4,6 +4,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::{CoreCryptoError, CoreCryptoResult};
 
+/// The key used to encrypt the database.
 #[derive(Debug, derive_more::From, derive_more::Into, PartialEq, Eq)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(
@@ -14,6 +15,9 @@ use crate::{CoreCryptoError, CoreCryptoResult};
 pub struct DatabaseKey(core_crypto_keystore::DatabaseKey);
 
 impl DatabaseKey {
+    /// Convert a [`core_crypto_keystore::DatabaseKey`] into the local type.
+    ///
+    /// Note that the target of this conversion changes according to the compilation target.
     pub fn from_cc(cc: core_crypto_keystore::DatabaseKey) -> DatabaseKeyMaybeArc {
         #[cfg_attr(target_family = "wasm", expect(clippy::useless_conversion))]
         Self(cc).into()
@@ -23,6 +27,7 @@ impl DatabaseKey {
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
 impl DatabaseKey {
+    /// Construct a new instance from a byte vector.
     #[wasm_bindgen(constructor)]
     pub fn new(buf: &[u8]) -> Result<DatabaseKey, wasm_bindgen::JsError> {
         let key = core_crypto_keystore::DatabaseKey::try_from(buf).map_err(CoreCryptoError::generic())?;
@@ -33,6 +38,7 @@ impl DatabaseKey {
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
 impl DatabaseKey {
+    /// Construct a new instance from a byte vector.
     #[uniffi::constructor]
     pub fn new(key: Vec<u8>) -> CoreCryptoResult<Self> {
         core_crypto_keystore::DatabaseKey::try_from(key.as_slice())

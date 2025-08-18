@@ -85,6 +85,7 @@ impl From<CustomConfiguration> for MlsCustomConfiguration {
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
 impl CustomConfiguration {
+    /// Construct a `CustomConfiguration` from its parts.
     #[wasm_bindgen(constructor)]
     pub fn new(key_rotation_span: Option<u32>, wire_policy: Option<WirePolicy>) -> Self {
         Self {
@@ -94,6 +95,8 @@ impl CustomConfiguration {
     }
 }
 
+/// The configuration parameters for a group/conversation
+///
 /// See [core_crypto::prelude::MlsConversationConfiguration]
 #[derive(Debug, Clone)]
 #[cfg_attr(
@@ -103,10 +106,13 @@ impl CustomConfiguration {
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct ConversationConfiguration {
+    /// The ciphersuite used in the group
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub ciphersuite: Option<Ciphersuite>,
+    /// Delivery service public signature key and credential
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name=externalSenders))]
     pub external_senders: Vec<ExternalSenderKeyMaybeArc>,
+    /// Implementation specific configuration
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub custom: CustomConfiguration,
 }
@@ -114,6 +120,7 @@ pub struct ConversationConfiguration {
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
 impl ConversationConfiguration {
+    /// Construct a `ConversationConfiguration` from its parts.
     #[wasm_bindgen(constructor)]
     pub fn new(
         ciphersuite: Option<Ciphersuite>,

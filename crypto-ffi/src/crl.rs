@@ -26,6 +26,7 @@ impl From<core_crypto::e2e_identity::CrlRegistration> for CrlRegistration {
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
 impl CrlRegistration {
+    /// Contstruct a CRL registration from its fields
     #[wasm_bindgen(constructor)]
     pub fn new(dirty: bool, expiration: Option<u64>) -> Self {
         Self { dirty, expiration }

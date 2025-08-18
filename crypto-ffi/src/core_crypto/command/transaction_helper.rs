@@ -47,6 +47,7 @@ where
     Fut: Future<Output = CoreCryptoResult<T>> + Send,
     T: Send + Sync,
 {
+    /// Instantiate a new `TransactionHelper` from its function.
     pub fn new(func: F) -> Arc<Self> {
         Arc::new(Self {
             func: Mutex::new(Some(func)),

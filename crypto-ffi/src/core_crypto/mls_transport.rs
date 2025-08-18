@@ -22,6 +22,7 @@ use crate::ClientId;
 use crate::CoreCryptoError;
 use crate::{CommitBundle, CoreCrypto, CoreCryptoResult, HistorySecret as HistorySecretFfi};
 
+/// MLS transport may or may not succeeed; this response indicates to CC the outcome of the transport attempt.
 #[cfg(not(target_family = "wasm"))]
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
 pub enum MlsTransportResponse {
@@ -30,17 +31,26 @@ pub enum MlsTransportResponse {
     /// A client should have consumed all incoming messages before re-trying.
     Retry,
     /// The message was rejected by the delivery service and there's no recovery.
-    Abort { reason: String },
+    Abort {
+        /// Why was this message rejected
+        reason: String,
+    },
 }
 
+/// An entity / data which has been packaged by the application to be encrypted
+/// and transmitted in an application message.
 #[cfg(target_family = "wasm")]
 #[derive(Debug, derive_more::From, derive_more::Into, serde::Serialize, serde::Deserialize)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct MlsTransportData {
+    /// The specific data which has been packaged to be encrypted/transmitted.
     #[wasm_bindgen(readonly)]
     pub data: Vec<u8>,
 }
 
+/// An entity / data which has been packaged by the application to be encrypted
+/// and transmitted in an application message.
+//
 // TODO: We derive Constructor here only because we need to construct an instance in interop.
 // Remove it once we drop the FFI client from interop.
 #[cfg(not(target_family = "wasm"))]
@@ -127,12 +137,14 @@ impl core_crypto::prelude::MlsTransport for MlsTransportShim {
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
 impl MlsTransportData {
+    /// Construct `MlsTransportData` by providing data
     #[wasm_bindgen(constructor)]
     pub fn new(buf: &[u8]) -> MlsTransportData {
         MlsTransportData { data: buf.into() }
     }
 }
 
+/// MLS transport may or may not succeeed; this response indicates to CC the outcome of the transport attempt.
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, strum::FromRepr)]
@@ -155,12 +167,15 @@ impl TryFrom<u8> for MlsTransportResponseVariant {
     }
 }
 
+/// MLS transport may or may not succeeed; this response indicates to CC the outcome of the transport attempt.
 #[cfg(target_family = "wasm")]
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[wasm_bindgen(inspectable)]
 pub struct MlsTransportResponse {
+    /// Outcome of the MLS transport attempt
     pub variant: MlsTransportResponseVariant,
+    /// If `variant` is "Abort", why?
     #[wasm_bindgen(getter_with_clone)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub abort_reason: Option<String>,
@@ -169,6 +184,7 @@ pub struct MlsTransportResponse {
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
 impl MlsTransportResponse {
+    /// Construct a transport response from its fields
     #[wasm_bindgen(constructor)]
     pub fn new(variant: MlsTransportResponseVariant, abort_reason: Option<String>) -> MlsTransportResponse {
         MlsTransportResponse { variant, abort_reason }

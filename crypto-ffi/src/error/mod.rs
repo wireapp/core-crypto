@@ -5,11 +5,14 @@ pub(crate) mod proteus;
 #[cfg(target_family = "wasm")]
 pub(crate) mod wasm;
 
+/// The primary error type for CoreCrypto
 #[cfg(target_family = "wasm")]
 pub type CoreCryptoError = wasm::CoreCryptoError;
+/// The primary error type for CoreCrypto
 #[cfg(not(target_family = "wasm"))]
 pub type CoreCryptoError = core_crypto::CoreCryptoError;
 
+/// A result which produces a [`CoreCryptoError`] by default.
 pub type CoreCryptoResult<T, E = CoreCryptoError> = Result<T, E>;
 
 /// Prepare and dispatch a log message reporting this error.

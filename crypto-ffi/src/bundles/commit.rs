@@ -7,6 +7,7 @@ use crate::{
     core_crypto_context::mls::{WelcomeMaybeArc, welcome_coerce_maybe_arc},
 };
 
+/// Information returned when a commit is created.
 #[derive(Debug)]
 #[cfg_attr(
     target_family = "wasm",
@@ -15,11 +16,14 @@ use crate::{
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct CommitBundle {
+    /// A welcome message if there are pending Add proposals
     pub welcome: Option<WelcomeMaybeArc>,
+    /// The commit message
     pub commit: Vec<u8>,
+    /// `GroupInfo` if the commit is merged
     pub group_info: GroupInfoBundle,
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = "encryptedMessage", readonly))]
     /// An encrypted message to fan out to all other conversation members in the new epoch
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = "encryptedMessage", readonly))]
     pub encrypted_message: Option<Vec<u8>>,
 }
 

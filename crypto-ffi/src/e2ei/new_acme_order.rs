@@ -13,8 +13,10 @@ use wasm_bindgen::prelude::*;
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct NewAcmeOrder {
+    /// Opaque raw json value
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub delegate: Vec<u8>,
+    /// Authorizations to create with `new_authz_request`
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub authorizations: Vec<String>,
 }

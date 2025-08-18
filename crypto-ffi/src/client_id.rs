@@ -1,6 +1,11 @@
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
+/// A Client identifier
+///
+/// A unique identifier for clients. A client is an identifier for each App a user is using, such as desktop,
+/// mobile, etc. Users can have multiple clients.
+/// More information [here](https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients)
 #[derive(Debug, Clone, Eq, Hash, PartialEq, derive_more::From)]
 #[cfg_attr(
     target_family = "wasm",
@@ -20,12 +25,14 @@ pub(crate) type ClientIdMaybeArc = std::sync::Arc<ClientId>;
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl ClientId {
+    /// Instantiate a client id from a byte array.
     #[cfg_attr(target_family = "wasm", wasm_bindgen(constructor))]
     #[cfg_attr(not(target_family = "wasm"), uniffi::constructor)]
     pub fn new(bytes: Vec<u8>) -> Self {
         Self(bytes.into())
     }
 
+    /// Copy the id into a new byte array.
     #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = copyBytes))]
     pub fn copy_bytes(&self) -> Vec<u8> {
         self.0.to_vec()

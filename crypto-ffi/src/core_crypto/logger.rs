@@ -22,6 +22,7 @@ use crate::{CoreCrypto, CoreCryptoError, CoreCryptoResult};
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
 #[repr(u8)]
+#[expect(missing_docs)] // these are standard log levels and additional docs are pointless
 pub enum CoreCryptoLogLevel {
     Off = 1,
     Trace,
@@ -288,10 +289,12 @@ pub fn set_max_log_level(level: CoreCryptoLogLevel) {
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
 impl CoreCrypto {
+    /// Set the CC logger
     pub fn set_logger(logger: CoreCryptoLogger) {
         set_logger_only_inner(logger);
     }
 
+    /// Set the CC max log level
     pub fn set_max_log_level(level: CoreCryptoLogLevel) {
         log::set_max_level(level.into());
     }

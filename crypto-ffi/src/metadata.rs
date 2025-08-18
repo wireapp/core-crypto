@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// The version of `core-crypto`.
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 pub fn version() -> String {

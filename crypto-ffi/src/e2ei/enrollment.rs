@@ -6,6 +6,8 @@ use wasm_bindgen::prelude::*;
 
 use crate::{AcmeDirectory, CoreCryptoResult, NewAcmeAuthz, NewAcmeOrder};
 
+/// Wire end to end identity solution for fetching a x509 certificate which identifies a client.
+///
 /// See [core_crypto::e2e_identity::E2eiEnrollment]
 #[derive(Debug)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = FfiWireE2EIdentity))]
@@ -13,11 +15,11 @@ use crate::{AcmeDirectory, CoreCryptoResult, NewAcmeAuthz, NewAcmeOrder};
 pub struct E2eiEnrollment(Arc<RwLock<core_crypto::prelude::E2eiEnrollment>>);
 
 impl E2eiEnrollment {
-    pub fn new(inner: core_crypto::prelude::E2eiEnrollment) -> Self {
+    pub(crate) fn new(inner: core_crypto::prelude::E2eiEnrollment) -> Self {
         Self(Arc::new(RwLock::new(inner)))
     }
 
-    pub fn into_inner(self) -> Option<core_crypto::prelude::E2eiEnrollment> {
+    pub(crate) fn into_inner(self) -> Option<core_crypto::prelude::E2eiEnrollment> {
         Arc::into_inner(self.0).map(|rwlock| rwlock.into_inner())
     }
 }

@@ -31,8 +31,11 @@ where
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
 extern "C" {
+    /// A `CoreCryptoCommand` is a [duck-typed interface](https://wasm-bindgen.github.io/wasm-bindgen/reference/working-with-duck-typed-interfaces.html)
+    /// which defines a struct containing a single member: `execute`, which is a function accepting `CoreCryptoContext` and returning nothing.
     pub type CoreCryptoCommand;
 
+    /// Execute this command
     #[wasm_bindgen(structural, method, catch)]
     pub async fn execute(this: &CoreCryptoCommand, ctx: CoreCryptoContext) -> Result<(), JsValue>;
 }

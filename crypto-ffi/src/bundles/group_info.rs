@@ -66,6 +66,7 @@ impl From<MlsRatchetTreeType> for core_crypto::prelude::MlsRatchetTreeType {
     }
 }
 
+/// A `GroupInfo` with some metadata
 #[derive(Debug, Clone)]
 #[cfg_attr(
     target_family = "wasm",
@@ -74,8 +75,11 @@ impl From<MlsRatchetTreeType> for core_crypto::prelude::MlsRatchetTreeType {
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct GroupInfoBundle {
+    /// How the group info is encrypetd
     pub encryption_type: MlsGroupInfoEncryptionType,
+    /// What kind of ratchet tree is used
     pub ratchet_tree_type: MlsRatchetTreeType,
+    /// The group info
     pub payload: GroupInfoMaybeArc,
 }
 

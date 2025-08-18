@@ -1,8 +1,10 @@
 use core_crypto::InnermostErrorMessage as _;
 
+/// MLS produces these kinds of error
 #[derive(Debug, thiserror::Error)]
 #[cfg_attr(target_family = "wasm", derive(strum::AsRefStr))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Error))]
+#[allow(missing_docs)] // error variants are self-describing
 pub enum MlsError {
     /// The byte vector included in this error variant is the raw conversation id.
     ///
@@ -42,12 +44,8 @@ pub enum MlsError {
         "Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit"
     )]
     OrphanWelcome,
-    /// Message rejected by the delivery service
     #[error("Message rejected by the delivery service. Reason: {reason}")]
-    MessageRejected {
-        /// Why was the message rejected by the delivery service?
-        reason: String,
-    },
+    MessageRejected { reason: String },
     #[error("{msg}")]
     Other { msg: String },
 }

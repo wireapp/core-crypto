@@ -7,6 +7,10 @@ pub(crate) mod new_acme_order;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
+/// Indicates the state of a Conversation regarding end-to-end identity.
+///
+/// Note: this does not check pending state (pending commit, pending proposals) so it does not
+/// consider members about to be added/removed
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]

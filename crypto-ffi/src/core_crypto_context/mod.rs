@@ -11,6 +11,13 @@ use core_crypto::transaction_context::TransactionContext;
 
 use crate::CoreCryptoResult;
 
+/// The `CoreCryptoContext` holds the primary `CoreCrypto` APIs.
+///
+/// An instance of this struct is provided to the function handed to `CoreCrypto::transaction`.
+///
+/// Every mutable operation is done through this struct. This struct will buffer all
+/// operations in memory and when [TransactionContext::finish] is called, it will persist the data into
+/// the keystore.
 #[derive(Debug)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]

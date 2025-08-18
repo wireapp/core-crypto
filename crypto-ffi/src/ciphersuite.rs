@@ -74,12 +74,14 @@ impl From<MlsCiphersuite> for Ciphersuite {
     }
 }
 
+/// Construct a ciphersuite enum instance from its discriminant.
 #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = ciphersuiteFromU16))]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 pub fn ciphersuite_from_u16(discriminant: u16) -> CoreCryptoResult<Ciphersuite> {
     Ciphersuite::try_from(discriminant).map_err(CoreCryptoError::generic())
 }
 
+/// Get an instance of the default ciphersuite.
 #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = ciphersuiteDefault))]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 pub fn ciphersuite_default() -> Ciphersuite {

@@ -29,7 +29,7 @@ pub mod test_utils;
 
 /// This struct provides transactional support for Core Crypto.
 ///
-/// This is struct provides mutable access to the internals of Core Crypto. Every operation that
+/// This struct provides mutable access to the internals of Core Crypto. Every operation that
 /// causes data to be persisted needs to be done through this struct. This struct will buffer all
 /// operations in memory and when [TransactionContext::finish] is called, it will persist the data into
 /// the keystore.

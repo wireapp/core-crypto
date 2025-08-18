@@ -1,6 +1,7 @@
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
+/// Type of Credential
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]

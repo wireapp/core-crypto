@@ -1,8 +1,10 @@
 use core_crypto::LeafError;
 
+/// Proteus produces these kinds of error
 #[derive(Debug, thiserror::Error)]
 #[cfg_attr(target_family = "wasm", derive(strum::AsRefStr))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Error))]
+#[allow(missing_docs)] // error variants are self-describing
 pub enum ProteusError {
     #[error("The requested session was not found")]
     SessionNotFound,
@@ -15,6 +17,7 @@ pub enum ProteusError {
 }
 
 impl ProteusError {
+    /// Convert a numeric error code into the relevant proteus error
     pub fn from_error_code(code: impl Into<Option<u16>>) -> Option<Self> {
         let code = code.into()?;
         if code == 0 {
@@ -30,6 +33,7 @@ impl ProteusError {
         .into()
     }
 
+    /// Convert a proteus error into the relevant error code
     pub fn error_code(&self) -> u16 {
         match self {
             Self::SessionNotFound => 102,
