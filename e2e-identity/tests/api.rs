@@ -11,6 +11,7 @@ wasm_bindgen_test_configure!(run_in_browser);
 #[path = "utils/mod.rs"]
 mod utils;
 
+#[cfg_attr(target_family = "wasm", expect(dead_code))]
 fn parse_public_key_pem(pem: String) -> (JwsAlgorithm, Pem) {
     let alg = if Ed25519PublicKey::from_pem(&pem).is_ok() {
         JwsAlgorithm::Ed25519
