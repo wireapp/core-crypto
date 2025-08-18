@@ -31,6 +31,8 @@ fn parse_public_key_pem(pem: String) -> (JwsAlgorithm, Pem) {
 #[wasm_bindgen_test]
 fn e2e_api() {
     let prev_nonce = || utils::rand_base64_str(32);
+
+    #[cfg_attr(target_family = "wasm", expect(unused_variables))]
     for (enrollment, backend_kp, backend_pk, hash_algorithm) in enrollments() {
         let (user_id, device_id) = ("obakjPOHQ2CkNb0rOrNM3A", "ba54e8ace8b4c90d");
         let domain = "wire.org";
