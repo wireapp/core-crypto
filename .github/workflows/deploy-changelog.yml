@@ -1,4 +1,4 @@
-name: document unreleased changes
+name: document changes
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -10,30 +10,20 @@ on:
 
 jobs:
   deploy:
-    name: document unreleased changes
+    name: document changes
     runs-on: ubuntu-latest
     if: github.repository == 'wireapp/core-crypto'
     env:
-      CHANGELOG: docs/UNRELEASED_CHANGES.md
+      CHANGELOG: CHANGELOG.md
 
     steps:
     - name: checkout repository
       uses: actions/checkout@v5
-      with:
-        fetch-depth: 0 # we want the entire history, so git-cliff can generate reasonable changesets
 
-    - name: generate unreleased changelog
-      uses: orhun/git-cliff-action@v4
-      with:
-        config: cliff.toml
-        args: -vv --unreleased
-      env:
-        OUTPUT: ${{ env.CHANGELOG }}
-
-    - name: fixup unreleased changelog
+    - name: move changelog
       run: |
         mkdir -p target/doc
-        sed -e 's/##  - 1970-01-01/## Unreleased/g' "$CHANGELOG" > target/doc/UNRELEASED_CHANGES.md
+        mv "$CHANGELOG" target/doc/"$CHANGELOG"
 
     - name: deploy
       uses: peaceiris/actions-gh-pages@v4
