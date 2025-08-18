@@ -1,4 +1,4 @@
-/// Wrapper over a [Result] with a [RustyAcmeError] error
+/// Wrapper over a [Result] with a [`RustyAcmeError`](rusty_acme::prelude::RustyAcmeError) error
 pub type E2eIdentityResult<T> = Result<T, E2eIdentityError>;
 
 /// All e2e identity related errors
