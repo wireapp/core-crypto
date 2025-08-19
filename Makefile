@@ -183,7 +183,7 @@ bindings-kotlin-jvm: $(STAMPS)/bindings-kotlin-jvm ## Generate Kotlin bindings f
 
 # Grouped Kotlin bindings
 .PHONY: bindings-kotlin
-bindings-kotlin: bindings-kotlin-android bindings-kotlin-jvm ## Generate all Kotlin bindings
+bindings-kotlin: $(STAMPS)/bindings-kotlin-android $(STAMPS)/bindings-kotlin-jvm ## Generate all Kotlin bindings
 
 #-------------------------------------------------------------------------------
 # WASM build + JS deps via stamps
@@ -387,7 +387,7 @@ android-x86: target/x86_64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LI
 android-all: android-armv7 android-armv8 android-x86 ## Build core-crypto-ffi for all Android targets
 
 .PHONY: android-test
-android-test: android-all bindings-kotlin-android ## Run Kotlin tests on Android
+android-test: android-all $(STAMPS)/bindings-kotlin-android ## Run Kotlin tests on Android
 	cd crypto-ffi/bindings && \
 	./gradlew android:build -x lint -x lintRelease
 
