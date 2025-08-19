@@ -1,0 +1,10 @@
+# kotlin
+core_crypto_ffi.kt
+
+# js
+corecrypto.js
+corecrypto.d.ts
+
+# swift
+swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/
+!swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/WireCoreCryptoUniffi.h
