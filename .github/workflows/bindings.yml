@@ -239,7 +239,7 @@ jobs:
       - name: swift docs
         run: |
           mkdir -p target/doc/core_crypto_ffi/bindings/swift
-          make docs-swift
+          sh ./scripts/debug-xcode.sh make docs-swift
 
       - uses: actions/upload-artifact@v4.5.0
         with:
