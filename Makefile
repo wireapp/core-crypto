@@ -117,7 +117,6 @@ $(UNIFFI_BINDGEN):
 	cargo build $(CARGO_BUILD_ARGS) \
 		--locked \
 		--features uniffi/cli \
-		--package core-crypto-ffi \
 		--bin uniffi-bindgen
 
 # Build the FFI library
