@@ -17,14 +17,16 @@ SHELL := /usr/bin/env bash
 #
 # This will also optimize the Wasm binary.
 ifeq ($(RELEASE),)
-  TARGET_DIR := target/debug
   CARGO_BUILD_ARGS :=
   XCODE_CONFIG := Debug
+  RELEASE_MODE := debug
 else
-  TARGET_DIR := target/release
   CARGO_BUILD_ARGS := --release
   XCODE_CONFIG := Release
+  RELEASE_MODE := release
 endif
+
+TARGET_DIR := target/$(RELEASE_MODE)
 
 # Detect host platform for NDK and library extensions
 UNAME_S := $(shell uname -s)
@@ -333,7 +335,7 @@ android-env:
 	@echo "  clang-rt:  $(CLANG_RT_DIR)"
 
 
-$(STAMPS)/android-armv7: android-env
+target/armv7-linux-androideabi/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION): android-env
 	$(CARGO) rustc --locked \
 	  --target armv7-linux-androideabi \
 	  --package core-crypto-ffi \
@@ -342,9 +344,9 @@ $(STAMPS)/android-armv7: android-env
 	$(TOUCH_STAMP)
 
 .PHONY: android-armv7
-android-armv7: $(STAMPS)/android-armv7 ## Build core-crypto-ffi for armv7-linux-androideabi
+android-armv7: target/armv7-linux-androideabi/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION) ## Build core-crypto-ffi for armv7-linux-androideabi
 
-$(STAMPS)/android-armv8: android-env
+target/aarch64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION): android-env
 	$(CARGO) rustc --locked \
 	  --target aarch64-linux-android \
 	  --package core-crypto-ffi \
@@ -353,9 +355,9 @@ $(STAMPS)/android-armv8: android-env
 	$(TOUCH_STAMP)
 
 .PHONY: android-armv8
-android-armv8: $(STAMPS)/android-armv8 ## Build core-crypto-ffi for aarch64-linux-android
+android-armv8: target/aarch64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION) ## Build core-crypto-ffi for aarch64-linux-android
 
-$(STAMPS)/android-x86: android-env
+target/x86_64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION): android-env
 	# Link clang_rt.builtins statically for x86_64 Android
 	$(CARGO) rustc --locked \
 	  --target x86_64-linux-android \
@@ -368,13 +370,10 @@ $(STAMPS)/android-x86: android-env
 	$(TOUCH_STAMP)
 
 .PHONY: android-x86
-android-x86: $(STAMPS)/android-x86 ## Build core-crypto-ffi for x86_64-linux-android
+android-x86: target/x86_64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION) ## Build core-crypto-ffi for x86_64-linux-android
 
-$(STAMPS)/android: $(STAMPS)/android-armv7 $(STAMPS)/android-armv8 $(STAMPS)/android-x86
-	$(TOUCH_STAMP)
-
-.PHONY: android
-android: $(STAMPS)/android ## Build core-crypto-ffi for all Android targets
+.PHONY: android-all
+android-all: android-armv7 android-armv8 android-x86 ## Build core-crypto-ffi for all Android targets
 
 .PHONY: android-test
 android-test: ## Run Kotlin tests on Android (assuming you ran `make android` at some earlier time)
