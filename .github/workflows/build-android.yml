@@ -84,13 +84,9 @@ jobs:
           name: android-target-x86_64-linux-android
           path: target/x86_64-linux-android/release
 
-      - name: generate bindings
-        run: |
-          make bindings-kotlin-android
       - name: build package
         run: |
-          cd crypto-ffi/bindings
-          ./gradlew android:build -x lint -x lintRelease
+          make android
       - uses: actions/upload-artifact@v4
         with:
           name: android
