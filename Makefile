@@ -382,17 +382,14 @@ $(ANDROID_X86): $(RUST_SOURCES) | android-env
 .PHONY: android-x86
 android-x86: $(ANDROID_X86) ## Build core-crypto-ffi for x86_64-linux-android
 
-.PHONY: android-all
-android-all: android-armv7 android-armv8 android-x86 ## Build core-crypto-ffi for all Android targets
-
-.PHONY: android-test-mode-check
-android-test-mode-check:
+.PHONY: android-mode-check
+android-mode-check:
 ifneq ($(RELEASE_MODE),release)
 	$(error Gradle is configured only for release mode and will not work properly in debug mode)
 endif
 
-.PHONY: android-test
-android-test: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) $(STAMPS)/bindings-kotlin-android | android-test-mode-check ## Run Kotlin tests on Android
+.PHONY: android
+android: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) $(STAMPS)/bindings-kotlin-android | android-mode-check ## Run Kotlin tests on Android
 	cd crypto-ffi/bindings && \
 	./gradlew android:build -x lint -x lintRelease
 
