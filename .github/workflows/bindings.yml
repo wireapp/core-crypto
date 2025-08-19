@@ -69,7 +69,8 @@ jobs:
       - name: ios tests
         run: |
           cd crypto-ffi/bindings/swift/WireCoreCrypto
-          xcodebuild test -scheme TestHost -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16'
+          xcodebuild test -scheme TestHost -configuration Release -sdk iphonesimulator \
+                          -destination 'platform=iOS Simulator,name=iPhone 16'
 
   test-android:
     if: github.repository == 'wireapp/core-crypto' && github.event_name == 'pull_request'
@@ -296,7 +297,8 @@ jobs:
       - name: build & install iOS Interop client
         run: |
           cd interop/src/clients/InteropClient
-          xcodebuild -scheme InteropClient -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' clean build install  DSTROOT=./Products
+          xcodebuild -scheme InteropClient -sdk iphonesimulator -configuration Release \
+                     -destination 'platform=iOS Simulator,name=iPhone 16' clean build install DSTROOT=./Products
           echo "INTEROP_SIMULATOR_DEVICE=$(./create_simulator.sh)" >> $GITHUB_ENV
       - name: run e2e interop test
         run: cargo run --bin interop
