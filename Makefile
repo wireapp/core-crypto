@@ -90,10 +90,23 @@ STAMPS := .stamps
 TOUCH_STAMP = @mkdir -p $(STAMPS) && touch $@
 
 #-------------------------------------------------------------------------------
-# Dummy force target: always out-of-date, so Cargo build commands run every time
+# Rust file-based heuristics
 #-------------------------------------------------------------------------------
-.PHONY: FORCE
-FORCE:
+
+# Relevant crates for FFI builds
+CRATES := crypto keystore crypto-macros mls-provider
+
+# Workspace-level Cargo config
+WORKSPACE_CARGO_FILES := Cargo.toml Cargo.lock
+
+# Per-crate manifests
+CRATE_MANIFESTS := $(addsuffix /Cargo.toml,$(CRATES))
+
+# Enumerate all .rs files in relevant crates
+RUST_RS_FILES := $(shell find $(CRATES) -type f -name '*.rs' 2>/dev/null)
+
+# Complete dependency set for FFI-related Cargo builds
+RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
 
 #-------------------------------------------------------------------------------
 # Build artifacts via Cargo (always run Cargo; Cargo itself detects up-to-date)
@@ -108,7 +121,7 @@ $(TARGET_DIR)/uniffi-bindgen: FORCE
 		--bin uniffi-bindgen
 
 # Build the FFI library
-$(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION): FORCE
+$(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION): $(RUST_SOURCES)
 	cargo build $(CARGO_BUILD_ARGS) \
 		--locked \
 		--package core-crypto-ffi \
@@ -182,7 +195,7 @@ bindings-kotlin: bindings-kotlin-android bindings-kotlin-jvm ## Generate all Kot
 WASM_BUILD_ARGS := $(if $(RELEASE),,--dev)
 
 # Generate WASM package
-$(STAMPS)/wasm-build: FORCE
+$(STAMPS)/wasm-build: $(RUST_SOURCES)
 	cd crypto-ffi && \
 	$(WASM_PACK) build \
 	  --locked \
@@ -217,7 +230,7 @@ bindings: bindings-kotlin bindings-js $(if $(filter Darwin,$(UNAME_S)),bindings-
 #-------------------------------------------------------------------------------
 
 # Rust generic docs
-$(STAMPS)/docs-rust-generic: FORCE
+$(STAMPS)/docs-rust-generic: $(RUST_SOURCES)
 	$(CARGO) doc --no-deps
 	$(TOUCH_STAMP)
 
@@ -225,7 +238,7 @@ $(STAMPS)/docs-rust-generic: FORCE
 docs-rust-generic: $(STAMPS)/docs-rust-generic ## Generate Rust docs for the host platform's default target ("generic")
 
 # Rust WASM docs
-$(STAMPS)/docs-rust-wasm: FORCE
+$(STAMPS)/docs-rust-wasm: $(RUST_SOURCES)
 	$(CARGO) doc --no-deps --target=wasm32-unknown-unknown
 	$(TOUCH_STAMP)
 
