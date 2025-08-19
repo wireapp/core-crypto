@@ -109,7 +109,7 @@ RUST_RS_FILES := $(shell find $(CRATES) -type f -name '*.rs' 2>/dev/null)
 RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
 
 #-------------------------------------------------------------------------------
-# Build artifacts via Cargo (always run Cargo; Cargo itself detects up-to-date)
+# Build FFI artifacts
 #-------------------------------------------------------------------------------
 
 # Build bindgen binary (independent of rust sources changing)
@@ -121,16 +121,16 @@ $(UNIFFI_BINDGEN):
 		--bin uniffi-bindgen
 
 # Build the FFI library
-$(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION): $(RUST_SOURCES)
+FFI_LIBRARY := $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+$(FFI_LIBRARY): $(RUST_SOURCES)
 	cargo build $(CARGO_BUILD_ARGS) \
 		--locked \
 		--package core-crypto-ffi \
 		--lib
 
 # Make aliases
-.PHONY: uniffi-bindgen release-build
+.PHONY: uniffi-bindgen
 uniffi-bindgen:  $(TARGET_DIR)/uniffi-bindgen
-release-build:   $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION) ## Build core-crypto-ffi for the native arch (needed for uniffi)
 
 #-------------------------------------------------------------------------------
 # Use stamp files for generators: only re-run when inputs change
@@ -141,14 +141,12 @@ ifneq ($(UNAME_S),Darwin)
 $(STAMPS)/bindings-swift:
 	$(warning Skipping build for "bindings-swift", as swift bindings generation is only supported on Darwin because OpenSSL can't be cross-compiled on non-Darwin systems; this is "$(UNAME_S)".)
 else
-$(STAMPS)/bindings-swift: \
-	$(TARGET_DIR)/uniffi-bindgen \
-	release-build
+$(STAMPS)/bindings-swift: $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
 	mkdir -p crypto-ffi/bindings/Swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --language swift \
 	  --out-dir crypto-ffi/bindings/Swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi \
-	  --library $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+	  --library $(FFI_LIBRARY)
 	$(TOUCH_STAMP)
 endif
 
@@ -157,27 +155,27 @@ bindings-swift: $(STAMPS)/bindings-swift ## Generate Swift bindings
 swift: $(STAMPS)/bindings-swift $(STAMPS)/docs-swift
 
 # Kotlin-Android bindings
-$(STAMPS)/bindings-kotlin-android: $(TARGET_DIR)/uniffi-bindgen release-build
+$(STAMPS)/bindings-kotlin-android: $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
 	mkdir -p crypto-ffi/bindings/android/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --config uniffi-android.toml \
 	  --language kotlin \
 	  --no-format \
 	  --out-dir crypto-ffi/bindings/android/src/main/uniffi \
-	  --library $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+	  --library $(FFI_LIBRARY)
 	$(TOUCH_STAMP)
 
 .PHONY: bindings-kotlin-android
 bindings-kotlin-android: $(STAMPS)/bindings-kotlin-android ## Generate Kotlin bindings for Android
 
 # Kotlin-JVM bindings
-$(STAMPS)/bindings-kotlin-jvm: $(TARGET_DIR)/uniffi-bindgen release-build
+$(STAMPS)/bindings-kotlin-jvm: $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
 	mkdir -p crypto-ffi/bindings/jvm/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --language kotlin \
 	  --no-format \
 	  --out-dir crypto-ffi/bindings/jvm/src/main/uniffi \
-	  --library $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+	  --library $(FFI_LIBRARY)
 	$(TOUCH_STAMP)
 
 .PHONY: bindings-kotlin-jvm
