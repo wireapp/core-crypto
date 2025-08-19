@@ -45,10 +45,39 @@ jobs:
           path: target/${{ matrix.target }}/release/libcore_crypto_ffi.*
           retention-days: 1
 
+  uniffi-bindgen:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+      - run: make uniffi-bindgen
+      - uses: actions/upload-artifact@v4
+        with:
+          name: uniffi-bindgen
+          path: target/release/uniffi-bindgen
+          retention-days: 1
+
+  ffi-library:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+      - run: make ffi-library
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ffi-library
+          path: target/release/libcore_crypto_ffi.so
+          retention-days: 1
+
   package-android:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
-    needs: build-android
+    needs:
+      - build-android
+      - uniffi-bindgen
+      - ffi-library
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-and-cache-rust
@@ -84,9 +113,21 @@ jobs:
           name: android-target-x86_64-linux-android
           path: target/x86_64-linux-android/release
 
-      - name: build package
-        run: |
-          make android
+      - name: download ffi-library
+        uses: actions/download-artifact@v5
+        with:
+          name: ffi-library
+          path: target/release/
+
+      - name: download uniffi-bindgen
+        uses: actions/download-artifact@v5
+        with:
+          name: uniffi-bindgen
+          path: target/release/
+
+      - run: chmod +x target/release/uniffi-bindgen
+
+      - run: make android
       - uses: actions/upload-artifact@v4
         with:
           name: android

@@ -128,8 +128,9 @@ $(FFI_LIBRARY): $(RUST_SOURCES)
 		--lib
 
 # Make aliases
-.PHONY: uniffi-bindgen
+.PHONY: uniffi-bindgen ffi-library
 uniffi-bindgen:  $(TARGET_DIR)/uniffi-bindgen
+ffi-library: $(FFI_LIBRARY)
 
 #-------------------------------------------------------------------------------
 # Use stamp files for generators: only re-run when inputs change
