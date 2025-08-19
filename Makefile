@@ -19,9 +19,11 @@ SHELL := /usr/bin/env bash
 ifeq ($(RELEASE),)
   TARGET_DIR := target/debug
   CARGO_BUILD_ARGS :=
+  XCODE_CONFIG := Debug
 else
   TARGET_DIR := target/release
   CARGO_BUILD_ARGS := --release
+  XCODE_CONFIG := Release
 endif
 
 # Detect host platform for NDK and library extensions
@@ -259,7 +261,7 @@ $(STAMPS)/docs-swift: ios
 	cd crypto-ffi/bindings/Swift/WireCoreCrypto && \
 	jazzy \
 	  --modules WireCoreCrypto,WireCoreCryptoUniffi \
-	  --build-tool-arguments "-project WireCoreCrypto.xcodeproj -scheme WireCoreCrypto" \
+	  --build-tool-arguments -project,WireCoreCrypto.xcodeproj,-scheme,WireCoreCrypto,-configuration,$(XCODE_CONFIG) \
 	  -o ../../../target/swift/doc
 	$(TOUCH_STAMP)
 
