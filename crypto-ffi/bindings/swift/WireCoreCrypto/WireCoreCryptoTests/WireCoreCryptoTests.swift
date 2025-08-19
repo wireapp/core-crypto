@@ -1,8 +1,7 @@
 import CryptoKit
 import Foundation
+import WireCoreCrypto
 import XCTest
-
-@testable import WireCoreCrypto
 
 // swiftlint:disable file_length
 // swiftlint:disable:next type_body_length
