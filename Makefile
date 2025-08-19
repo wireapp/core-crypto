@@ -112,8 +112,8 @@ RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
 # Build artifacts via Cargo (always run Cargo; Cargo itself detects up-to-date)
 #-------------------------------------------------------------------------------
 
-# Build bindgen binary
-$(TARGET_DIR)/uniffi-bindgen: FORCE
+# Build bindgen binary (independent of rust sources changing)
+$(UNIFFI_BINDGEN):
 	cargo build $(CARGO_BUILD_ARGS) \
 		--locked \
 		--features uniffi/cli \
