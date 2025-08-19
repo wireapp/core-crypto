@@ -345,30 +345,30 @@ android-env:
 	@echo "  toolchain: $(NDK_TOOLCHAIN)"
 	@echo "  clang-rt:  $(CLANG_RT_DIR)"
 
-
-target/armv7-linux-androideabi/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION): android-env
+ANDROID_ARMv7 := target/armv7-linux-androideabi/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+$(ANDROID_ARMv7): $(RUST_SOURCES) | android-env
 	$(CARGO) rustc --locked \
 	  --target armv7-linux-androideabi \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
 	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
-	$(TOUCH_STAMP)
 
 .PHONY: android-armv7
-android-armv7: target/armv7-linux-androideabi/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION) ## Build core-crypto-ffi for armv7-linux-androideabi
+android-armv7: $(ANDROID_ARMv7) ## Build core-crypto-ffi for armv7-linux-androideabi
 
-target/aarch64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION): android-env
+ANDROID_ARMv8 := target/aarch64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+$(ANDROID_ARMv8): $(RUST_SOURCES) | android-env
 	$(CARGO) rustc --locked \
 	  --target aarch64-linux-android \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
 	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
-	$(TOUCH_STAMP)
 
 .PHONY: android-armv8
-android-armv8: target/aarch64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION) ## Build core-crypto-ffi for aarch64-linux-android
+android-armv8: $(ANDROID_ARMv8) ## Build core-crypto-ffi for aarch64-linux-android
 
-target/x86_64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION): android-env
+ANDROID_X86 := target/x86_64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+$(ANDROID_X86): $(RUST_SOURCES) | android-env
 	# Link clang_rt.builtins statically for x86_64 Android
 	$(CARGO) rustc --locked \
 	  --target x86_64-linux-android \
@@ -378,16 +378,21 @@ target/x86_64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSI
 	  -C strip=symbols \
 	  -l static=clang_rt.builtins-x86_64-android \
 	  -L $$(dirname $$($(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(PLATFORM_DIR)/bin/clang --print-runtime-dir))/linux
-	$(TOUCH_STAMP)
 
 .PHONY: android-x86
-android-x86: target/x86_64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION) ## Build core-crypto-ffi for x86_64-linux-android
+android-x86: $(ANDROID_X86) ## Build core-crypto-ffi for x86_64-linux-android
 
 .PHONY: android-all
 android-all: android-armv7 android-armv8 android-x86 ## Build core-crypto-ffi for all Android targets
 
+.PHONY: android-test-mode-check
+android-test-mode-check:
+ifneq ($(RELEASE_MODE),release)
+	$(error Gradle is configured only for release mode and will not work properly in debug mode)
+endif
+
 .PHONY: android-test
-android-test: android-all $(STAMPS)/bindings-kotlin-android ## Run Kotlin tests on Android
+android-test: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) $(STAMPS)/bindings-kotlin-android | android-test-mode-check ## Run Kotlin tests on Android
 	cd crypto-ffi/bindings && \
 	./gradlew android:build -x lint -x lintRelease
 
