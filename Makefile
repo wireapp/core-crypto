@@ -90,13 +90,13 @@ STAMPS := .stamps
 TOUCH_STAMP = @mkdir -p $(STAMPS) && touch $@
 
 #-------------------------------------------------------------------------------
-# 1) Dummy force target: always out-of-date, so Cargo build commands run every time
+# Dummy force target: always out-of-date, so Cargo build commands run every time
 #-------------------------------------------------------------------------------
 .PHONY: FORCE
 FORCE:
 
 #-------------------------------------------------------------------------------
-# 2) Build artifacts via Cargo (always run Cargo; Cargo itself detects up-to-date)
+# Build artifacts via Cargo (always run Cargo; Cargo itself detects up-to-date)
 #-------------------------------------------------------------------------------
 
 # Build bindgen binary
@@ -120,7 +120,7 @@ uniffi-bindgen:  $(TARGET_DIR)/uniffi-bindgen
 release-build:   $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION) ## Build core-crypto-ffi for the native arch (needed for uniffi)
 
 #-------------------------------------------------------------------------------
-# 3) Use stamp files for generators: only re-run when inputs change
+# Use stamp files for generators: only re-run when inputs change
 #-------------------------------------------------------------------------------
 
 # Swift bindings
@@ -175,7 +175,7 @@ bindings-kotlin-jvm: $(STAMPS)/bindings-kotlin-jvm ## Generate Kotlin bindings f
 bindings-kotlin: bindings-kotlin-android bindings-kotlin-jvm ## Generate all Kotlin bindings
 
 #-------------------------------------------------------------------------------
-# 4) WASM build + JS deps via stamps
+# WASM build + JS deps via stamps
 #-------------------------------------------------------------------------------
 
 # The default build condition is `dev`, which is much faster.
@@ -213,7 +213,7 @@ bindings-js: wasm-build $(JS_OUT) ## Generate JavaScript bindings
 bindings: bindings-kotlin bindings-js $(if $(filter Darwin,$(UNAME_S)),bindings-swift) ## Generate all bindings
 
 #-------------------------------------------------------------------------------
-# 5) Documentation targets (stamp-based if desired)
+# Documentation targets
 #-------------------------------------------------------------------------------
 
 # Rust generic docs
@@ -275,7 +275,7 @@ docs-swift: $(STAMPS)/docs-swift ## Generate Swift iOS docs (macOS only)
 docs: docs-rust-generic docs-rust-wasm docs-kotlin docs-ts $(if $(filter Darwin,$(UNAME_S)),docs-swift) ## Generate all docs (excluding Swift on non-Darwin platforms)
 
 #-------------------------------------------------------------------------------
-# 6) iOS builds (create stamp per sub‐target)
+# iOS builds
 #-------------------------------------------------------------------------------
 
 $(STAMPS)/ios-device: $(STAMPS)/bindings-swift
@@ -321,7 +321,7 @@ $(STAMPS)/ios-create-xcframework: ios
 ios-create-xcframework: $(STAMPS)/ios-create-xcframework ## Build the XCode framework (macOS only)
 
 #-------------------------------------------------------------------------------
-# 7) Android builds (stamp per architecture)
+# Android builds
 #-------------------------------------------------------------------------------
 
 # Check NDK env
@@ -376,12 +376,12 @@ android-x86: target/x86_64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LI
 android-all: android-armv7 android-armv8 android-x86 ## Build core-crypto-ffi for all Android targets
 
 .PHONY: android-test
-android-test: ## Run Kotlin tests on Android (assuming you ran `make android` at some earlier time)
+android-test: android-all bindings-kotlin-android ## Run Kotlin tests on Android
 	cd crypto-ffi/bindings && \
 	./gradlew android:build -x lint -x lintRelease
 
 #-------------------------------------------------------------------------------
-# 8) JVM native builds (Darwin + Linux)
+# JVM native builds (Darwin + Linux)
 #-------------------------------------------------------------------------------
 
 # darwin build
@@ -426,7 +426,7 @@ jvm-test: ## Run Kotlin tests on JVM (assuming you ran `make jvm` at some earlie
 
 
 #-------------------------------------------------------------------------------
-# 9) Aggregate targets
+# Aggregate targets
 #-------------------------------------------------------------------------------
 
 .PHONY: wasm local all
