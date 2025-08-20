@@ -398,7 +398,7 @@ android: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) $(STAMPS)/bindings-kot
 #-------------------------------------------------------------------------------
 
 # darwin build
-$(STAMPS)/jvm-darwin: $(STAMPS)/bindings-kotlin-jvm
+$(STAMPS)/jvm-darwin:
 	cd crypto-ffi && \
 	$(CARGO) rustc --locked \
 	  --target aarch64-apple-darwin \
@@ -411,7 +411,7 @@ $(STAMPS)/jvm-darwin: $(STAMPS)/bindings-kotlin-jvm
 jvm-darwin: $(STAMPS)/jvm-darwin ## Build core-crypto-ffi for JVM on aarch64-apple-darwin
 
 # linux build
-$(STAMPS)/jvm-linux: $(STAMPS)/bindings-kotlin-jvm
+$(STAMPS)/jvm-linux:
 	cd crypto-ffi && \
 	$(CARGO) rustc --locked \
 	  --target x86_64-unknown-linux-gnu \
@@ -435,7 +435,7 @@ $(error Unsupported host platform for jvm: $(UNAME_S))
 endif
 
 .PHONY: jvm-test
-jvm-test: $(JVM_STAMP) | ensure-release-mode ## Run Kotlin tests on JVM
+jvm-test: $(JVM_STAMP) $(STAMPS)/bindings-kotlin-jvm | ensure-release-mode ## Run Kotlin tests on JVM
 	cd crypto-ffi/bindings && \
 	./gradlew jvm:build -x lint -x lintRelease
 
