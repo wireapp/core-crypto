@@ -132,6 +132,7 @@ jobs:
         with:
           name: android
           path: |
-            crypto-ffi/bindings
-            target/*android*
+            crypto-ffi/bindings/android/build/outputs/aar
+            crypto-ffi/bindings/android/src
+            target/*android*/release/libcore_crypto_ffi.so
           retention-days: 1
