@@ -33,13 +33,24 @@ jobs:
         run: |
           make ${{ matrix.task }}
 
+      # We are collecting the binaries into a tar archive first so the dir
+      # hierarchy is preserved. The upload-artifact action does not preserve
+      # the dir hierarchy when multiple files are given, it uses the least
+      # common ancestor of all paths.
+      - name: prepare artifact
+        run: |
+            tar cf ${{ matrix.target }}.tar \
+              target/${{ matrix.target }}/release/libcore_crypto_ffi.a \
+              target/${{ matrix.target }}/release/libcore_crypto_ffi.dylib
+
       - name: upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{github.event.number}}-${{ matrix.task }}
-          path: target
+          path: ${{ matrix.target }}.tar
           retention-days: 1
           overwrite: 'true'
+
       # Only needs to be uploaded once, this step finishes fastest.
       - name: upload ffi artifact
         if: startsWith(matrix.task, 'ios-simulator-arm')

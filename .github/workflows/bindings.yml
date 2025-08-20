@@ -43,9 +43,12 @@ jobs:
       - name: download artifacts for ios
         uses: actions/download-artifact@v5
         with:
-          path: target
           pattern: ${{github.event.number}}-ios-*
           merge-multiple: 'true'
+      - name: extract artifacts
+        run: |
+          tar xf aarch64-apple-ios.tar
+          tar xf aarch64-apple-ios-sim.tar
       - name: download ffi artifacts
         uses: actions/download-artifact@v5
         with:
@@ -188,9 +191,12 @@ jobs:
       - name: download artifacts for ios
         uses: actions/download-artifact@v5
         with:
-          path: target
           pattern: ${{github.event.number}}-ios-*
           merge-multiple: 'true'
+      - name: extract artifacts
+        run: |
+          tar xf aarch64-apple-ios.tar
+          tar xf aarch64-apple-ios-sim.tar
       - name: download ffi artifacts
         uses: actions/download-artifact@v5
         with:
@@ -213,9 +219,12 @@ jobs:
       - name: download artifacts for ios
         uses: actions/download-artifact@v5
         with:
-          path: target
           pattern: ${{github.event.number}}-ios-*
           merge-multiple: 'true'
+      - name: extract artifacts
+        run: |
+          tar xf aarch64-apple-ios.tar
+          tar xf aarch64-apple-ios-sim.tar
       - name: download ios artifacts
         uses: actions/download-artifact@v5
         with:
@@ -291,9 +300,12 @@ jobs:
       - name: download artifacts for ios
         uses: actions/download-artifact@v5
         with:
-          path: target
           pattern: ${{github.event.number}}-ios-*
           merge-multiple: 'true'
+      - name: extract artifacts
+        run: |
+          tar xf aarch64-apple-ios.tar
+          tar xf aarch64-apple-ios-sim.tar
       - name: download ffi artifacts
         uses: actions/download-artifact@v5
         with:
