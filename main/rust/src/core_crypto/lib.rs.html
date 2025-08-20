@@ -7,10 +7,10 @@
 <a href=#7 id=7 data-nosnippet>7</a>#![cfg_attr(not(test), deny(missing_docs))]
 <a href=#8 id=8 data-nosnippet>8</a>#![allow(clippy::single_component_path_imports)]
 <a href=#9 id=9 data-nosnippet>9</a>
-<a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">use </span>async_lock::Mutex;
-<a href=#11 id=11 data-nosnippet>11</a><span class="attr">#[cfg(test)]
-<a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">pub use </span>core_crypto_macros::{dispotent, durable, idempotent};
-<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>std::sync::Arc;
+<a href=#10 id=10 data-nosnippet>10</a>#[cfg(test)]
+<a href=#11 id=11 data-nosnippet>11</a></span><span class="kw">pub use </span>core_crypto_macros::{dispotent, durable, idempotent};
+<a href=#12 id=12 data-nosnippet>12</a><span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
+<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">use </span>{async_lock::Mutex, std::sync::Arc};
 <a href=#14 id=14 data-nosnippet>14</a>
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">pub use </span><span class="self">self</span>::error::<span class="kw-2">*</span>;
 <a href=#16 id=16 data-nosnippet>16</a>

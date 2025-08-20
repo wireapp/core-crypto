@@ -6,7 +6,7 @@
 <a href=#6 id=6 data-nosnippet>6</a>}
 <a href=#7 id=7 data-nosnippet>7</a>
 <a href=#8 id=8 data-nosnippet>8</a><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-<a href=#9 id=9 data-nosnippet>9</a>#[tokio::main]
+<a href=#9 id=9 data-nosnippet>9</a>#[macro_rules_attribute::apply(smol_macros::main)]
 <a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#11 id=11 data-nosnippet>11</a>    <span class="attr">#[derive(Debug, clap::Parser)]
 <a href=#12 id=12 data-nosnippet>12</a>    #[command(author, version, about, long_about = <span class="prelude-val">None</span>)]
@@ -31,7 +31,7 @@
 <a href=#31 id=31 data-nosnippet>31</a>
 <a href=#32 id=32 data-nosnippet>32</a>    <span class="kw">let </span>args = Args::parse();
 <a href=#33 id=33 data-nosnippet>33</a>
-<a href=#34 id=34 data-nosnippet>34</a>    <span class="kw">if </span>!tokio::fs::try_exists(<span class="kw-2">&amp;</span>args.path).<span class="kw">await</span>.unwrap_or_default() {
+<a href=#34 id=34 data-nosnippet>34</a>    <span class="kw">if </span>!std::path::Path::new(<span class="kw-2">&amp;</span>args.path).exists() {
 <a href=#35 id=35 data-nosnippet>35</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">eyre!</span>(<span class="string">"File not found: {}"</span>, args.path));
 <a href=#36 id=36 data-nosnippet>36</a>    }
 <a href=#37 id=37 data-nosnippet>37</a>

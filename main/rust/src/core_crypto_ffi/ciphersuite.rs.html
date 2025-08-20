@@ -74,16 +74,18 @@
 <a href=#74 id=74 data-nosnippet>74</a>    }
 <a href=#75 id=75 data-nosnippet>75</a>}
 <a href=#76 id=76 data-nosnippet>76</a>
-<a href=#77 id=77 data-nosnippet>77</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(js_name = ciphersuiteFromU16))]
-<a href=#78 id=78 data-nosnippet>78</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
-<a href=#79 id=79 data-nosnippet>79</a></span><span class="kw">pub fn </span>ciphersuite_from_u16(discriminant: u16) -&gt; CoreCryptoResult&lt;Ciphersuite&gt; {
-<a href=#80 id=80 data-nosnippet>80</a>    Ciphersuite::try_from(discriminant).map_err(CoreCryptoError::generic())
-<a href=#81 id=81 data-nosnippet>81</a>}
-<a href=#82 id=82 data-nosnippet>82</a>
-<a href=#83 id=83 data-nosnippet>83</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(js_name = ciphersuiteDefault))]
-<a href=#84 id=84 data-nosnippet>84</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
-<a href=#85 id=85 data-nosnippet>85</a></span><span class="kw">pub fn </span>ciphersuite_default() -&gt; Ciphersuite {
-<a href=#86 id=86 data-nosnippet>86</a>    Ciphersuite::default()
-<a href=#87 id=87 data-nosnippet>87</a>}
-<a href=#88 id=88 data-nosnippet>88</a>
-<a href=#89 id=89 data-nosnippet>89</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>Ciphersuites = Vec&lt;Ciphersuite&gt;;</code></pre></div></section></main></body></html>
+<a href=#77 id=77 data-nosnippet>77</a><span class="doccomment">/// Construct a ciphersuite enum instance from its discriminant.
+<a href=#78 id=78 data-nosnippet>78</a></span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(js_name = ciphersuiteFromU16))]
+<a href=#79 id=79 data-nosnippet>79</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
+<a href=#80 id=80 data-nosnippet>80</a></span><span class="kw">pub fn </span>ciphersuite_from_u16(discriminant: u16) -&gt; CoreCryptoResult&lt;Ciphersuite&gt; {
+<a href=#81 id=81 data-nosnippet>81</a>    Ciphersuite::try_from(discriminant).map_err(CoreCryptoError::generic())
+<a href=#82 id=82 data-nosnippet>82</a>}
+<a href=#83 id=83 data-nosnippet>83</a>
+<a href=#84 id=84 data-nosnippet>84</a><span class="doccomment">/// Get an instance of the default ciphersuite.
+<a href=#85 id=85 data-nosnippet>85</a></span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(js_name = ciphersuiteDefault))]
+<a href=#86 id=86 data-nosnippet>86</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
+<a href=#87 id=87 data-nosnippet>87</a></span><span class="kw">pub fn </span>ciphersuite_default() -&gt; Ciphersuite {
+<a href=#88 id=88 data-nosnippet>88</a>    Ciphersuite::default()
+<a href=#89 id=89 data-nosnippet>89</a>}
+<a href=#90 id=90 data-nosnippet>90</a>
+<a href=#91 id=91 data-nosnippet>91</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>Ciphersuites = Vec&lt;Ciphersuite&gt;;</code></pre></div></section></main></body></html>

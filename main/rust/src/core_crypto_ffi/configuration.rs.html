@@ -85,50 +85,57 @@
 <a href=#85 id=85 data-nosnippet>85</a><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
 <a href=#86 id=86 data-nosnippet>86</a>#[wasm_bindgen]
 <a href=#87 id=87 data-nosnippet>87</a></span><span class="kw">impl </span>CustomConfiguration {
-<a href=#88 id=88 data-nosnippet>88</a>    <span class="attr">#[wasm_bindgen(constructor)]
-<a href=#89 id=89 data-nosnippet>89</a>    </span><span class="kw">pub fn </span>new(key_rotation_span: <span class="prelude-ty">Option</span>&lt;u32&gt;, wire_policy: <span class="prelude-ty">Option</span>&lt;WirePolicy&gt;) -&gt; <span class="self">Self </span>{
-<a href=#90 id=90 data-nosnippet>90</a>        <span class="self">Self </span>{
-<a href=#91 id=91 data-nosnippet>91</a>            key_rotation_span,
-<a href=#92 id=92 data-nosnippet>92</a>            wire_policy,
-<a href=#93 id=93 data-nosnippet>93</a>        }
-<a href=#94 id=94 data-nosnippet>94</a>    }
-<a href=#95 id=95 data-nosnippet>95</a>}
-<a href=#96 id=96 data-nosnippet>96</a>
-<a href=#97 id=97 data-nosnippet>97</a><span class="doccomment">/// See [core_crypto::prelude::MlsConversationConfiguration]
-<a href=#98 id=98 data-nosnippet>98</a></span><span class="attr">#[derive(Debug, Clone)]
-<a href=#99 id=99 data-nosnippet>99</a>#[cfg_attr(
-<a href=#100 id=100 data-nosnippet>100</a>    target_family = <span class="string">"wasm"</span>,
-<a href=#101 id=101 data-nosnippet>101</a>    wasm_bindgen(getter_with_clone),
-<a href=#102 id=102 data-nosnippet>102</a>    derive(serde::Serialize, serde::Deserialize)
-<a href=#103 id=103 data-nosnippet>103</a>)]
-<a href=#104 id=104 data-nosnippet>104</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), derive(uniffi::Record))]
-<a href=#105 id=105 data-nosnippet>105</a></span><span class="kw">pub struct </span>ConversationConfiguration {
-<a href=#106 id=106 data-nosnippet>106</a>    <span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(readonly))]
-<a href=#107 id=107 data-nosnippet>107</a>    </span><span class="kw">pub </span>ciphersuite: <span class="prelude-ty">Option</span>&lt;Ciphersuite&gt;,
-<a href=#108 id=108 data-nosnippet>108</a>    <span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(readonly, js_name=externalSenders))]
-<a href=#109 id=109 data-nosnippet>109</a>    </span><span class="kw">pub </span>external_senders: Vec&lt;ExternalSenderKeyMaybeArc&gt;,
-<a href=#110 id=110 data-nosnippet>110</a>    <span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(readonly))]
-<a href=#111 id=111 data-nosnippet>111</a>    </span><span class="kw">pub </span>custom: CustomConfiguration,
-<a href=#112 id=112 data-nosnippet>112</a>}
-<a href=#113 id=113 data-nosnippet>113</a>
-<a href=#114 id=114 data-nosnippet>114</a><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
-<a href=#115 id=115 data-nosnippet>115</a>#[wasm_bindgen]
-<a href=#116 id=116 data-nosnippet>116</a></span><span class="kw">impl </span>ConversationConfiguration {
-<a href=#117 id=117 data-nosnippet>117</a>    <span class="attr">#[wasm_bindgen(constructor)]
-<a href=#118 id=118 data-nosnippet>118</a>    </span><span class="kw">pub fn </span>new(
-<a href=#119 id=119 data-nosnippet>119</a>        ciphersuite: <span class="prelude-ty">Option</span>&lt;Ciphersuite&gt;,
-<a href=#120 id=120 data-nosnippet>120</a>        external_senders: <span class="prelude-ty">Option</span>&lt;Vec&lt;ExternalSenderKeyMaybeArc&gt;&gt;,
-<a href=#121 id=121 data-nosnippet>121</a>        key_rotation_span: <span class="prelude-ty">Option</span>&lt;u32&gt;,
-<a href=#122 id=122 data-nosnippet>122</a>        wire_policy: <span class="prelude-ty">Option</span>&lt;WirePolicy&gt;,
-<a href=#123 id=123 data-nosnippet>123</a>    ) -&gt; <span class="kw">crate</span>::CoreCryptoResult&lt;ConversationConfiguration&gt; {
-<a href=#124 id=124 data-nosnippet>124</a>        <span class="kw">let </span>external_senders = external_senders.unwrap_or_default();
-<a href=#125 id=125 data-nosnippet>125</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-<a href=#126 id=126 data-nosnippet>126</a>            ciphersuite,
-<a href=#127 id=127 data-nosnippet>127</a>            external_senders,
-<a href=#128 id=128 data-nosnippet>128</a>            custom: CustomConfiguration {
-<a href=#129 id=129 data-nosnippet>129</a>                key_rotation_span,
-<a href=#130 id=130 data-nosnippet>130</a>                wire_policy,
-<a href=#131 id=131 data-nosnippet>131</a>            },
-<a href=#132 id=132 data-nosnippet>132</a>        })
-<a href=#133 id=133 data-nosnippet>133</a>    }
-<a href=#134 id=134 data-nosnippet>134</a>}</code></pre></div></section></main></body></html>
+<a href=#88 id=88 data-nosnippet>88</a>    <span class="doccomment">/// Construct a `CustomConfiguration` from its parts.
+<a href=#89 id=89 data-nosnippet>89</a>    </span><span class="attr">#[wasm_bindgen(constructor)]
+<a href=#90 id=90 data-nosnippet>90</a>    </span><span class="kw">pub fn </span>new(key_rotation_span: <span class="prelude-ty">Option</span>&lt;u32&gt;, wire_policy: <span class="prelude-ty">Option</span>&lt;WirePolicy&gt;) -&gt; <span class="self">Self </span>{
+<a href=#91 id=91 data-nosnippet>91</a>        <span class="self">Self </span>{
+<a href=#92 id=92 data-nosnippet>92</a>            key_rotation_span,
+<a href=#93 id=93 data-nosnippet>93</a>            wire_policy,
+<a href=#94 id=94 data-nosnippet>94</a>        }
+<a href=#95 id=95 data-nosnippet>95</a>    }
+<a href=#96 id=96 data-nosnippet>96</a>}
+<a href=#97 id=97 data-nosnippet>97</a>
+<a href=#98 id=98 data-nosnippet>98</a><span class="doccomment">/// The configuration parameters for a group/conversation
+<a href=#99 id=99 data-nosnippet>99</a>///
+<a href=#100 id=100 data-nosnippet>100</a>/// See [core_crypto::prelude::MlsConversationConfiguration]
+<a href=#101 id=101 data-nosnippet>101</a></span><span class="attr">#[derive(Debug, Clone)]
+<a href=#102 id=102 data-nosnippet>102</a>#[cfg_attr(
+<a href=#103 id=103 data-nosnippet>103</a>    target_family = <span class="string">"wasm"</span>,
+<a href=#104 id=104 data-nosnippet>104</a>    wasm_bindgen(getter_with_clone),
+<a href=#105 id=105 data-nosnippet>105</a>    derive(serde::Serialize, serde::Deserialize)
+<a href=#106 id=106 data-nosnippet>106</a>)]
+<a href=#107 id=107 data-nosnippet>107</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), derive(uniffi::Record))]
+<a href=#108 id=108 data-nosnippet>108</a></span><span class="kw">pub struct </span>ConversationConfiguration {
+<a href=#109 id=109 data-nosnippet>109</a>    <span class="doccomment">/// The ciphersuite used in the group
+<a href=#110 id=110 data-nosnippet>110</a>    </span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(readonly))]
+<a href=#111 id=111 data-nosnippet>111</a>    </span><span class="kw">pub </span>ciphersuite: <span class="prelude-ty">Option</span>&lt;Ciphersuite&gt;,
+<a href=#112 id=112 data-nosnippet>112</a>    <span class="doccomment">/// Delivery service public signature key and credential
+<a href=#113 id=113 data-nosnippet>113</a>    </span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(readonly, js_name=externalSenders))]
+<a href=#114 id=114 data-nosnippet>114</a>    </span><span class="kw">pub </span>external_senders: Vec&lt;ExternalSenderKeyMaybeArc&gt;,
+<a href=#115 id=115 data-nosnippet>115</a>    <span class="doccomment">/// Implementation specific configuration
+<a href=#116 id=116 data-nosnippet>116</a>    </span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(readonly))]
+<a href=#117 id=117 data-nosnippet>117</a>    </span><span class="kw">pub </span>custom: CustomConfiguration,
+<a href=#118 id=118 data-nosnippet>118</a>}
+<a href=#119 id=119 data-nosnippet>119</a>
+<a href=#120 id=120 data-nosnippet>120</a><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
+<a href=#121 id=121 data-nosnippet>121</a>#[wasm_bindgen]
+<a href=#122 id=122 data-nosnippet>122</a></span><span class="kw">impl </span>ConversationConfiguration {
+<a href=#123 id=123 data-nosnippet>123</a>    <span class="doccomment">/// Construct a `ConversationConfiguration` from its parts.
+<a href=#124 id=124 data-nosnippet>124</a>    </span><span class="attr">#[wasm_bindgen(constructor)]
+<a href=#125 id=125 data-nosnippet>125</a>    </span><span class="kw">pub fn </span>new(
+<a href=#126 id=126 data-nosnippet>126</a>        ciphersuite: <span class="prelude-ty">Option</span>&lt;Ciphersuite&gt;,
+<a href=#127 id=127 data-nosnippet>127</a>        external_senders: <span class="prelude-ty">Option</span>&lt;Vec&lt;ExternalSenderKeyMaybeArc&gt;&gt;,
+<a href=#128 id=128 data-nosnippet>128</a>        key_rotation_span: <span class="prelude-ty">Option</span>&lt;u32&gt;,
+<a href=#129 id=129 data-nosnippet>129</a>        wire_policy: <span class="prelude-ty">Option</span>&lt;WirePolicy&gt;,
+<a href=#130 id=130 data-nosnippet>130</a>    ) -&gt; <span class="kw">crate</span>::CoreCryptoResult&lt;ConversationConfiguration&gt; {
+<a href=#131 id=131 data-nosnippet>131</a>        <span class="kw">let </span>external_senders = external_senders.unwrap_or_default();
+<a href=#132 id=132 data-nosnippet>132</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+<a href=#133 id=133 data-nosnippet>133</a>            ciphersuite,
+<a href=#134 id=134 data-nosnippet>134</a>            external_senders,
+<a href=#135 id=135 data-nosnippet>135</a>            custom: CustomConfiguration {
+<a href=#136 id=136 data-nosnippet>136</a>                key_rotation_span,
+<a href=#137 id=137 data-nosnippet>137</a>                wire_policy,
+<a href=#138 id=138 data-nosnippet>138</a>            },
+<a href=#139 id=139 data-nosnippet>139</a>        })
+<a href=#140 id=140 data-nosnippet>140</a>    }
+<a href=#141 id=141 data-nosnippet>141</a>}</code></pre></div></section></main></body></html>
