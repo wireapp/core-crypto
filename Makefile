@@ -425,15 +425,17 @@ jvm-linux: $(STAMPS)/jvm-linux ## Build core-crypto-ffi for JVM on x86_64-unknow
 
 .PHONY: jvm
 ifeq ($(UNAME_S),Linux)
+JVM_STAMP := $(STAMPS)/jvm-linux
 jvm: jvm-linux ## Build core-crypto-ffi for JVM (automatically select the target based on the host machine)
 else ifeq ($(UNAME_S),Darwin)
+JVM_STAMP := $(STAMPS)/jvm-darwin
 jvm: jvm-darwin
 else
 $(error Unsupported host platform for jvm: $(UNAME_S))
 endif
 
 .PHONY: jvm-test
-jvm-test: ## Run Kotlin tests on JVM (assuming you ran `make jvm` at some earlier time)
+jvm-test: $(JVM_STAMP) ## Run Kotlin tests on JVM
 	cd crypto-ffi/bindings && \
 	./gradlew jvm:build -x lint -x lintRelease
 
