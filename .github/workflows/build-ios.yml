@@ -60,3 +60,13 @@ jobs:
           path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
           retention-days: 1
           overwrite: 'true'
+
+      # Only needs to be uploaded once.
+      - name: upload uniffi-bindgen-ios artifact
+        if: startsWith(matrix.task, 'ios-simulator-arm')
+        uses: actions/upload-artifact@v4
+        with:
+          name: uniffi-bindgen-ios
+          path: target/release/uniffi-bindgen
+          retention-days: 1
+          overwrite: 'true'

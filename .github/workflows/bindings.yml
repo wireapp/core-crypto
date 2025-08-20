@@ -231,6 +231,12 @@ jobs:
           name: ${{github.event.number}}-swift-ffi
           path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
 
+      - name: download uniffi-bindgen-ios
+        uses: actions/download-artifact@v5
+        with:
+          name: uniffi-bindgen-ios
+          path: target/release
+
       - run: chmod +x target/release/uniffi-bindgen
 
       - name: setup Xcode
