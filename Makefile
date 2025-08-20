@@ -94,7 +94,7 @@ TOUCH_STAMP = @mkdir -p $(STAMPS) && touch $@
 #-------------------------------------------------------------------------------
 
 # Relevant crates for FFI builds
-CRATES := crypto keystore crypto-macros mls-provider
+CRATES := crypto crypto-ffi keystore crypto-macros mls-provider
 
 # Workspace-level Cargo config
 WORKSPACE_CARGO_FILES := Cargo.toml Cargo.lock
