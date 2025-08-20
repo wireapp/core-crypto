@@ -260,7 +260,7 @@ $(STAMPS)/docs-ts: $(STAMPS)/wasm-build $(STAMPS)/bun-deps
 	  --basePath ./ \
 	  --entryPoints src/CoreCrypto.ts \
 	  --tsconfig tsconfig.json \
-	  --out ../../target/typescript/doc \
+	  --out ../../../target/typescript/doc \
 	  --readme none \
 	  --treatWarningsAsErrors
 	$(TOUCH_STAMP)
@@ -275,7 +275,7 @@ $(STAMPS)/docs-swift: ios
 	jazzy \
 	  --modules WireCoreCrypto,WireCoreCryptoUniffi \
 	  --build-tool-arguments -project,WireCoreCrypto.xcodeproj,-scheme,WireCoreCrypto,-configuration,$(XCODE_CONFIG) \
-	  -o ../../../target/swift/doc
+	  -o ../../../../target/swift/doc
 	$(TOUCH_STAMP)
 
 .PHONY: docs-swift
