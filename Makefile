@@ -525,4 +525,4 @@ ts-bench: ts ## Run TypeScript wrapper benches in Chrome via wdio
 .PHONY: clean
 clean: ts-clean ## Run cargo clean and the ts-clean target, remove all stamps
 	cargo clean && \
-	rm -r $(STAMPS)
+	rm -rf $(STAMPS)
