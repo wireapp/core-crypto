@@ -398,7 +398,8 @@ android: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) $(STAMPS)/bindings-kot
 #-------------------------------------------------------------------------------
 
 # darwin build
-$(STAMPS)/jvm-darwin:
+JVM_DARWIN_LIB := target/aarch64-apple-darwin/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+$(JVM_DARWIN_LIB): $(RUST_SOURCES)
 	cd crypto-ffi && \
 	$(CARGO) rustc --locked \
 	  --target aarch64-apple-darwin \
@@ -408,10 +409,11 @@ $(STAMPS)/jvm-darwin:
 	$(TOUCH_STAMP)
 
 .PHONY: jvm-darwin
-jvm-darwin: $(STAMPS)/jvm-darwin ## Build core-crypto-ffi for JVM on aarch64-apple-darwin
+jvm-darwin: $(JVM_DARWIN_LIB) ## Build core-crypto-ffi for JVM on aarch64-apple-darwin
 
 # linux build
-$(STAMPS)/jvm-linux:
+JVM_LINUX_LIB := target/x86_64-unknown-linux-gnu/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+$(JVM_LINUX_LIB): $(RUST_SOURCES)
 	cd crypto-ffi && \
 	$(CARGO) rustc --locked \
 	  --target x86_64-unknown-linux-gnu \
@@ -421,21 +423,21 @@ $(STAMPS)/jvm-linux:
 	$(TOUCH_STAMP)
 
 .PHONY: jvm-linux
-jvm-linux: $(STAMPS)/jvm-linux ## Build core-crypto-ffi for JVM on x86_64-unknown-linux-gnu
+jvm-linux: $(JVM_LINUX_LIB) ## Build core-crypto-ffi for JVM on x86_64-unknown-linux-gnu
 
 .PHONY: jvm
 ifeq ($(UNAME_S),Linux)
-JVM_STAMP := $(STAMPS)/jvm-linux
+JVM_LIB := $(JVM_LINUX_LIB)
 jvm: jvm-linux ## Build core-crypto-ffi for JVM (automatically select the target based on the host machine)
 else ifeq ($(UNAME_S),Darwin)
-JVM_STAMP := $(STAMPS)/jvm-darwin
+JVM_LIB := $(JVM_DARWIN_LIB)
 jvm: jvm-darwin
 else
 $(error Unsupported host platform for jvm: $(UNAME_S))
 endif
 
 .PHONY: jvm-test
-jvm-test: $(JVM_STAMP) $(STAMPS)/bindings-kotlin-jvm | ensure-release-mode ## Run Kotlin tests on JVM
+jvm-test: $(JVM_LIB) $(STAMPS)/bindings-kotlin-jvm | ensure-release-mode ## Run Kotlin tests on JVM
 	cd crypto-ffi/bindings && \
 	./gradlew jvm:build -x lint -x lintRelease
 
