@@ -220,6 +220,9 @@ jobs:
         with:
           name: ${{github.event.number}}-swift-ffi
           path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
+
+      - run: chmod +x target/release/uniffi-bindgen
+
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
