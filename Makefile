@@ -443,12 +443,17 @@ $(JS_GEN) $(WASM_GEN) &: $(RUST_SOURCES)
 wasm-build: $(WASM_GEN)
 
 # Install JS deps with Bun
-$(BUN_LOCK): $(PACKAGE_JSON)
+# We want the `node_modules` directory to exist, and we want never to manually create it,
+# and we want to ensure that this runs if the directory does not exist. So:
+NODE_MODULES := $(JS_DIR)/node_modules/.stamp
+$(BUN_LOCK) $(NODE_MODULES) &: $(PACKAGE_JSON)
 	bun install $(BUN_FROZEN_LOCKFILE) --cwd $(JS_DIR)
 # if the lockfile is unchanged, bun reports "no changes" and does not update the lock file
 # which would be fine, bun is fast, except that every step thereafter is dirty
 # so we update the mtime manually here
-	@touch $@
+	@touch $(BUN_LOCK)
+# also ensure the `NODE_MODULES` stamp file exists / is current
+	@touch $(NODE_MODULES)
 
 .PHONY: bun-deps
 bun-deps: $(BUN_LOCK) ## Install JS dependencies using bun
@@ -460,7 +465,7 @@ ts-clean: ## Cleanup old TypeScript build outputs
 	&& rm -rf $(GEN_DIR)
 
 # build corecrypto.js
-$(JS_OUT): $(BUN_LOCK) $(JS_GEN) $(WASM_GEN) $(TS_SRCS) $(PACKAGE_JSON) $(BUNFIG)
+$(JS_OUT): $(BUN_LOCK) $(NODE_MODULES) $(JS_GEN) $(WASM_GEN) $(TS_SRCS) $(PACKAGE_JSON) $(BUNFIG)
 # clean the output files before building; otherwise `bun` appends instead of replacing
 # we do _not_ want to rm `$(GEN_DIR); that kills our generated wasm code
 	rm -f $(JS_OUT) $(DTS_OUT)
