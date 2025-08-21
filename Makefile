@@ -195,68 +195,6 @@ bindings-kotlin-jvm: $(STAMPS)/bindings-kotlin-jvm ## Generate Kotlin bindings f
 bindings-kotlin: $(STAMPS)/bindings-kotlin-android $(STAMPS)/bindings-kotlin-jvm ## Generate all Kotlin bindings
 
 #-------------------------------------------------------------------------------
-# Documentation targets
-#-------------------------------------------------------------------------------
-
-# Rust generic docs
-$(STAMPS)/docs-rust-generic: $(RUST_SOURCES)
-	cargo doc --no-deps
-	$(TOUCH_STAMP)
-
-.PHONY: docs-rust-generic
-docs-rust-generic: $(STAMPS)/docs-rust-generic ## Generate Rust docs for the host platform's default target ("generic")
-
-# Rust WASM docs
-$(STAMPS)/docs-rust-wasm: $(RUST_SOURCES)
-	cargo doc --no-deps --target=wasm32-unknown-unknown
-	$(TOUCH_STAMP)
-
-.PHONY: docs-rust-wasm
-docs-rust-wasm: $(STAMPS)/docs-rust-wasm ## Generate Rust docs for wasm32-unknown-unknown
-
-# Kotlin Dokka (Android) docs
-$(STAMPS)/docs-kotlin: jvm
-	cd crypto-ffi/bindings && ./gradlew android:dokkaGeneratePublicationHtml
-	mkdir -p target/kotlin/doc
-	cp -R crypto-ffi/bindings/android/build/dokka/html/ target/kotlin/doc
-	$(TOUCH_STAMP)
-
-.PHONY: docs-kotlin
-docs-kotlin: $(STAMPS)/docs-kotlin ## Generate Kotlin docs
-
-# TypeScript docs via Typedoc
-$(STAMPS)/docs-ts: $(WASM_GEN) $(STAMPS)/bun-deps
-	cd crypto-ffi/bindings/js && \
-	bun x typedoc \
-	  --basePath ./ \
-	  --entryPoints src/CoreCrypto.ts \
-	  --tsconfig tsconfig.json \
-	  --out ../../../target/typescript/doc \
-	  --readme none \
-	  --treatWarningsAsErrors
-	$(TOUCH_STAMP)
-
-.PHONY: docs-ts
-docs-ts: $(STAMPS)/docs-ts ## Generate TypeScript docs
-
-# Swift docs via Jazzy (macOS only)
-$(STAMPS)/docs-swift: ios
-	mkdir -p target/swift/doc
-	cd crypto-ffi/bindings/Swift/WireCoreCrypto && \
-	jazzy \
-	  --modules WireCoreCrypto,WireCoreCryptoUniffi \
-	  --build-tool-arguments -project,WireCoreCrypto.xcodeproj,-scheme,WireCoreCrypto,-configuration,$(XCODE_CONFIG) \
-	  -o ../../../../target/swift/doc
-	$(TOUCH_STAMP)
-
-.PHONY: docs-swift
-docs-swift: $(STAMPS)/docs-swift ## Generate Swift iOS docs (macOS only)
-
-# Group all docs
-.PHONY: docs
-docs: docs-rust-generic docs-rust-wasm docs-kotlin docs-ts $(if $(filter Darwin,$(UNAME_S)),docs-swift) ## Generate all docs (excluding Swift on non-Darwin platforms)
-
-#-------------------------------------------------------------------------------
 # iOS builds
 #-------------------------------------------------------------------------------
 
@@ -521,6 +459,68 @@ ts-test: $(DTS_OUT) ## Run TypeScript wrapper tests via wdio and bun
 ts-bench: $(DTS_OUT) ## Run TypeScript wrapper benches in Chrome via wdio
 	cd $(JS_DIR) && \
 	bun x wdio run wdio.conf.ts --spec benches/**/*.bench.ts --log-level warn
+
+#-------------------------------------------------------------------------------
+# Documentation targets
+#-------------------------------------------------------------------------------
+
+# Rust generic docs
+$(STAMPS)/docs-rust-generic: $(RUST_SOURCES)
+	cargo doc --no-deps
+	$(TOUCH_STAMP)
+
+.PHONY: docs-rust-generic
+docs-rust-generic: $(STAMPS)/docs-rust-generic ## Generate Rust docs for the host platform's default target ("generic")
+
+# Rust WASM docs
+$(STAMPS)/docs-rust-wasm: $(RUST_SOURCES)
+	cargo doc --no-deps --target=wasm32-unknown-unknown
+	$(TOUCH_STAMP)
+
+.PHONY: docs-rust-wasm
+docs-rust-wasm: $(STAMPS)/docs-rust-wasm ## Generate Rust docs for wasm32-unknown-unknown
+
+# Kotlin Dokka (Android) docs
+$(STAMPS)/docs-kotlin: jvm
+	cd crypto-ffi/bindings && ./gradlew android:dokkaGeneratePublicationHtml
+	mkdir -p target/kotlin/doc
+	cp -R crypto-ffi/bindings/android/build/dokka/html/ target/kotlin/doc
+	$(TOUCH_STAMP)
+
+.PHONY: docs-kotlin
+docs-kotlin: $(STAMPS)/docs-kotlin ## Generate Kotlin docs
+
+# TypeScript docs via Typedoc
+$(STAMPS)/docs-ts: $(DTS_OUT)
+	cd crypto-ffi/bindings/js && \
+	bun x typedoc \
+	  --basePath ./ \
+	  --entryPoints src/CoreCrypto.ts \
+	  --tsconfig tsconfig.json \
+	  --out ../../../target/typescript/doc \
+	  --readme none \
+	  --treatWarningsAsErrors
+	$(TOUCH_STAMP)
+
+.PHONY: docs-ts
+docs-ts: $(STAMPS)/docs-ts ## Generate TypeScript docs
+
+# Swift docs via Jazzy (macOS only)
+$(STAMPS)/docs-swift: ios
+	mkdir -p target/swift/doc
+	cd crypto-ffi/bindings/Swift/WireCoreCrypto && \
+	jazzy \
+	  --modules WireCoreCrypto,WireCoreCryptoUniffi \
+	  --build-tool-arguments -project,WireCoreCrypto.xcodeproj,-scheme,WireCoreCrypto,-configuration,$(XCODE_CONFIG) \
+	  -o ../../../../target/swift/doc
+	$(TOUCH_STAMP)
+
+.PHONY: docs-swift
+docs-swift: $(STAMPS)/docs-swift ## Generate Swift iOS docs (macOS only)
+
+# Group all docs
+.PHONY: docs
+docs: docs-rust-generic docs-rust-wasm docs-kotlin docs-ts $(if $(filter Darwin,$(UNAME_S)),docs-swift) ## Generate all docs (excluding Swift on non-Darwin platforms)
 
 #-------------------------------------------------------------------------------
 # Aggregate targets
