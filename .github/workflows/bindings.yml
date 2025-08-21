@@ -327,21 +327,22 @@ jobs:
         with:
           name: ${{github.event.number}}-swift-ffi
           path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
+      - name: create simulator
+        run: |
+          echo "SIMULATOR=$(./scripts/create-ios-sim-device.sh "iPhone 16 e2e-interop-test")" >> $GITHUB_ENV
       - name: build & install iOS Interop client
         run: |
-          echo "INTEROP_SIMULATOR_DEVICE_1=$(./scripts/create-ios-sim-device.sh "iPhone 16 e2e-interop-test")" >> $GITHUB_ENV
           cd interop/src/clients/InteropClient
           xcodebuild -scheme InteropClient -sdk iphonesimulator -configuration Release \
                      -destination 'platform=iOS Simulator,name=iPhone 16 e2e-interop-test' clean build install DSTROOT=./Products
-          echo "INTEROP_SIMULATOR_DEVICE_2=$(./create_simulator.sh)" >> $GITHUB_ENV
+          ./install-interop-client.sh ${{ env.SIMULATOR }}
       - name: run e2e interop test
         run: cargo run --bin interop
-      - name: delete simulators
+        # we separate shutdown from deletion to make sure the device is always removed, even when shutdown failed
+      - name: delete simulator
         if: always()
         run: |
-          ./scripts/delete-ios-sim-device.sh ${{ env.INTEROP_SIMULATOR_DEVICE_1 }}
-          xcrun simctl shutdown ${{ env.INTEROP_SIMULATOR_DEVICE_2 }}
-          ./scripts/delete-ios-sim-device.sh ${{ env.INTEROP_SIMULATOR_DEVICE_2 }}
+          ./scripts/delete-ios-sim-device.sh ${{ env.SIMULATOR }}
 
   build-and-test-wasm:
     if: github.event_name == 'pull_request'

@@ -3,9 +3,8 @@
 # Fail on first error
 set -e
 
-SIMULATOR_NAME="Interop Simulator - `uuidgen`"
-SIMULATOR_UDID=`xcrun simctl create "$SIMULATOR_NAME" "iPhone 16"`
-echo "Creating new simulator" >&2
+SIMULATOR_UDID="$1"
+echo "Booting simulator" >&2
 xcrun simctl boot $SIMULATOR_UDID
 echo "Installing application" >&2
 xcrun simctl install $SIMULATOR_UDID Products/Applications/InteropClient.app
