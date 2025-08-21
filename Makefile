@@ -515,5 +515,5 @@ bindings: bindings-kotlin ts $(if $(filter Darwin,$(UNAME_S)),bindings-swift) ##
 local: bindings ts-fmt ## Generate and format all bindings
 all: android wasm jvm $(if $(filter Darwin,$(UNAME_S)),ios) docs ## Generate bindings for all platforms (android, iOS, wasm) and generate docs
 clean: ts-clean ## Run cargo clean and the ts-clean target, remove all stamps
-	cargo clean && \
+	cargo clean
 	rm -rf $(STAMPS)
