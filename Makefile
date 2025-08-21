@@ -400,17 +400,6 @@ jvm-test: $(JVM_LIB) $(STAMPS)/bindings-kotlin-jvm | ensure-release-mode ## Run 
 	cd crypto-ffi/bindings && \
 	./gradlew jvm:build -x lint -x lintRelease
 
-
-#-------------------------------------------------------------------------------
-# Aggregate targets
-#-------------------------------------------------------------------------------
-
-.PHONY: wasm local all bindings
-wasm: ts  ## Alias for ts
-bindings: bindings-kotlin ts $(if $(filter Darwin,$(UNAME_S)),bindings-swift) ## Generate all bindings
-local: bindings ts-fmt ## Generate and format all bindings
-all: android wasm jvm $(if $(filter Darwin,$(UNAME_S)),ios) docs ## Generate bindings for all platforms (android, iOS, wasm) and generate docs
-
 #-------------------------------------------------------------------------------
 # TypeScript / JS tasks
 #-------------------------------------------------------------------------------
@@ -516,7 +505,15 @@ ts-bench: $(DTS_OUT) ## Run TypeScript wrapper benches in Chrome via wdio
 	cd $(JS_DIR) && \
 	bun x wdio run wdio.conf.ts --spec benches/**/*.bench.ts --log-level warn
 
-.PHONY: clean
+#-------------------------------------------------------------------------------
+# Aggregate targets
+#-------------------------------------------------------------------------------
+
+.PHONY: wasm bindings local all clean
+wasm: ts  ## Alias for ts
+bindings: bindings-kotlin ts $(if $(filter Darwin,$(UNAME_S)),bindings-swift) ## Generate all bindings
+local: bindings ts-fmt ## Generate and format all bindings
+all: android wasm jvm $(if $(filter Darwin,$(UNAME_S)),ios) docs ## Generate bindings for all platforms (android, iOS, wasm) and generate docs
 clean: ts-clean ## Run cargo clean and the ts-clean target, remove all stamps
 	cargo clean && \
 	rm -rf $(STAMPS)
