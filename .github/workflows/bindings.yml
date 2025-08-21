@@ -69,11 +69,21 @@ jobs:
         run: |
           swift format lint -r -s ./interop/src/clients/InteropClient
           swiftlint --strict ./interop/src/clients/InteropClient
+      - name: Create simulator
+        run: |
+          echo "SIMULATOR=$(sh ./scripts/create-ios-sim-device.sh "iPhone 16 test-ios")" >> $GITHUB_ENV
+
       - name: ios tests
         run: |
           cd crypto-ffi/bindings/swift/WireCoreCrypto
+
+          # run tests
           xcodebuild test -scheme TestHost -configuration Release -sdk iphonesimulator \
-                          -destination 'platform=iOS Simulator,name=iPhone 16'
+                          -destination 'platform=iOS Simulator,name=iPhone 16 test-ios'
+      - name: Delete simulator
+        if: always()
+        run: |
+          ./scripts/delete-ios-sim-device.sh ${{ env.SIMULATOR }}
 
   test-android:
     if: github.repository == 'wireapp/core-crypto' && github.event_name == 'pull_request'
@@ -319,17 +329,19 @@ jobs:
           path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
       - name: build & install iOS Interop client
         run: |
+          echo "INTEROP_SIMULATOR_DEVICE_1=$(./scripts/create-ios-sim-device.sh "iPhone 16 e2e-interop-test")" >> $GITHUB_ENV
           cd interop/src/clients/InteropClient
           xcodebuild -scheme InteropClient -sdk iphonesimulator -configuration Release \
-                     -destination 'platform=iOS Simulator,name=iPhone 16' clean build install DSTROOT=./Products
-          echo "INTEROP_SIMULATOR_DEVICE=$(./create_simulator.sh)" >> $GITHUB_ENV
+                     -destination 'platform=iOS Simulator,name=iPhone 16 e2e-interop-test' clean build install DSTROOT=./Products
+          echo "INTEROP_SIMULATOR_DEVICE_2=$(./create_simulator.sh)" >> $GITHUB_ENV
       - name: run e2e interop test
         run: cargo run --bin interop
-      - name: delete simulator
+      - name: delete simulators
         if: always()
         run: |
-          cd interop/src/clients/InteropClient
-          ./delete_simulator.sh ${{ env.INTEROP_SIMULATOR_DEVICE }}
+          ./scripts/delete-ios-sim-device.sh ${{ env.INTEROP_SIMULATOR_DEVICE_1 }}
+          xcrun simctl shutdown ${{ env.INTEROP_SIMULATOR_DEVICE_2 }}
+          ./scripts/delete-ios-sim-device.sh ${{ env.INTEROP_SIMULATOR_DEVICE_2 }}
 
   build-and-test-wasm:
     if: github.event_name == 'pull_request'
