@@ -75,10 +75,6 @@ export ANDROID_NDK_HOME := $(ANDROID_NDK_ROOT)
 export NDK_HOME         := $(ANDROID_NDK_ROOT)
 export CLANG_RT_DIR
 
-
-# Tools
-UNIFFI_BINDGEN := $(TARGET_DIR)/uniffi-bindgen
-
 # Default goal
 .DEFAULT_GOAL := local
 
@@ -110,7 +106,23 @@ RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
 #-------------------------------------------------------------------------------
 
 # Build bindgen binary (independent of rust sources changing)
-$(UNIFFI_BINDGEN):
+#
+# We need to build this binary if it does not exist, or if the uniffi version
+# has changed (see https://github.com/mozilla/uniffi-rs/issues/2622).
+GET_UNIFFI_VERSION = cargo metadata --format-version 1 | jq -r '.packages[] | select(.name == "uniffi") | .version'
+UNIFFI_VERSION_FILE := $(STAMPS)/uniffi-version
+
+# Version file: only rewrite if version changed
+$(UNIFFI_VERSION_FILE): Cargo.lock
+	current_version="$$( $(GET_UNIFFI_VERSION) )"; \
+	if [ ! -f $@ ] || [ "$$(cat $@)" != "$$current_version" ]; then \
+		mkdir -p .stamps; \
+	    echo "$$current_version" > $@; \
+	fi
+
+
+UNIFFI_BINDGEN := $(TARGET_DIR)/uniffi-bindgen
+$(UNIFFI_BINDGEN): $(UNIFFI_VERSION_FILE)
 	cargo build $(CARGO_BUILD_ARGS) \
 		--locked \
 		--features uniffi/cli \
