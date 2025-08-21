@@ -220,10 +220,6 @@ bun-deps: $(STAMPS)/bun-deps ## Install JS dependencies using bun
 # Full JS binding step
 bindings-js: wasm-build $(JS_OUT) ## Generate JavaScript bindings
 
-# All bindings
-.PHONY: bindings
-bindings: bindings-kotlin bindings-js $(if $(filter Darwin,$(UNAME_S)),bindings-swift) ## Generate all bindings
-
 #-------------------------------------------------------------------------------
 # Documentation targets
 #-------------------------------------------------------------------------------
@@ -447,8 +443,9 @@ jvm-test: $(JVM_LIB) $(STAMPS)/bindings-kotlin-jvm | ensure-release-mode ## Run 
 # Aggregate targets
 #-------------------------------------------------------------------------------
 
-.PHONY: wasm local all
+.PHONY: wasm local all bindings
 wasm: bindings-js  ## Alias for bindings-js
+bindings: bindings-kotlin bindings-js $(if $(filter Darwin,$(UNAME_S)),bindings-swift) ## Generate all bindings
 local: bindings ts-fmt ## Generate and format all bindings
 all: android wasm jvm $(if $(filter Darwin,$(UNAME_S)),ios) docs ## Generate bindings for all platforms (android, iOS, wasm) and generate docs
 
