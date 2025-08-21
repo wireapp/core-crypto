@@ -66,11 +66,24 @@ jobs:
         run: |
           swift format lint -r -s ./interop/src/clients/InteropClient
           swiftlint --strict ./interop/src/clients/InteropClient
+
       - name: ios tests
         run: |
+          # create a device to run the tests
+          UDID=$(xcrun simctl create "iPhone 16 test-ios" \
+                    com.apple.CoreSimulator.SimDeviceType.iPhone-16 \
+                    com.apple.CoreSimulator.SimRuntime.iOS-18-6)
           cd crypto-ffi/bindings/swift/WireCoreCrypto
+
+          # run tests
           xcodebuild test -scheme TestHost -configuration Release -sdk iphonesimulator \
-                          -destination 'platform=iOS Simulator,name=iPhone 16'
+                          -destination 'platform=iOS Simulator,name=iPhone 16 test-ios'
+
+          # remove the device
+          xcrun simctl delete $UDID
+          rm -rf ~/Library/Logs/CoreSimulator/$UDID
+          rm -rf ~/Library/Developer/CoreSimulator/Devices/$UDID
+
 
   test-android:
     if: github.repository == 'wireapp/core-crypto' && github.event_name == 'pull_request'
@@ -177,7 +190,6 @@ jobs:
           retention-days: 1
           overwrite: true
           include-hidden-files: true
-          if-no-files-found: error
 
   create-xcframework:
     if: github.event_name == 'pull_request'
@@ -221,9 +233,6 @@ jobs:
         with:
           name: ${{github.event.number}}-swift-ffi
           path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
-
-      - run: chmod +x target/release/uniffi-bindgen
-
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -252,7 +261,6 @@ jobs:
           retention-days: 1
           overwrite: true
           include-hidden-files: true
-          if-no-files-found: error
 
   e2e-interop-test:
     if: github.event_name == 'pull_request'
@@ -302,16 +310,24 @@ jobs:
       - name: build & install iOS Interop client
         run: |
           cd interop/src/clients/InteropClient
+
+          echo "INTEROP_SIMULATOR_DEVICE_1=$(xcrun simctl create "iPhone 16 e2e-interop-test" \
+                    com.apple.CoreSimulator.SimDeviceType.iPhone-16 \
+                    com.apple.CoreSimulator.SimRuntime.iOS-18-6)" >> $GITHUB_ENV
           xcodebuild -scheme InteropClient -sdk iphonesimulator -configuration Release \
                      -destination 'platform=iOS Simulator,name=iPhone 16' clean build install DSTROOT=./Products
-          echo "INTEROP_SIMULATOR_DEVICE=$(./create_simulator.sh)" >> $GITHUB_ENV
+          echo "INTEROP_SIMULATOR_DEVICE_2=$(./create_simulator.sh)" >> $GITHUB_ENV
       - name: run e2e interop test
         run: cargo run --bin interop
-      - name: delete simulator
+      - name: delete simulators
         if: always()
         run: |
+          xcrun simctl delete ${{ env.INTEROP_SIMULATOR_DEVICE_1 }}
+          rm -rf ~/Library/Logs/CoreSimulator/$INTEROP_SIMULATOR_DEVICE_1
+          rm -rf ~/Library/Developer/CoreSimulator/Devices/$INTEROP_SIMULATOR_DEVICE_1
+
           cd interop/src/clients/InteropClient
-          ./delete_simulator.sh ${{ env.INTEROP_SIMULATOR_DEVICE }}
+          ./delete_simulator.sh ${{ env.INTEROP_SIMULATOR_DEVICE_2 }}
 
   build-and-test-wasm:
     if: github.event_name == 'pull_request'
@@ -371,7 +387,6 @@ jobs:
         retention-days: 1
         overwrite: true
         include-hidden-files: true
-        if-no-files-found: error
 
   docs-ts:
     runs-on: ubuntu-latest
@@ -407,7 +422,6 @@ jobs:
         retention-days: 1
         overwrite: true
         include-hidden-files: true
-        if-no-files-found: error
 
   deploy-docs:
     runs-on: ubuntu-latest
