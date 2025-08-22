@@ -1,6 +1,5 @@
 [versions]
 kotlin = "1.9.25"
-app-compat = "1.7.1"
 coroutines = "1.7.3"
 jna = "5.17.0"
 ktx-core = "1.16.0"
@@ -24,7 +23,6 @@ dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 
 [libraries]
-appCompat = { module = "androidx.appcompat:appcompat", version.ref = "app-compat" }
 coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version.ref = "coroutines" }
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }

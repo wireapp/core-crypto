@@ -19,7 +19,6 @@ dependencies {
     implementation(platform(libs.coroutines.bom))
     implementation(kotlin("stdlib-jdk7"))
     implementation("${libs.jna.get()}@aar")
-    implementation(libs.appCompat)
     implementation(libs.ktx.core)
     implementation(libs.coroutines.core)
     implementation(libs.slf4j)
