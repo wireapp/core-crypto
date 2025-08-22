@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener};
 
 use serde::{Deserialize, Serialize};
 
@@ -15,9 +15,16 @@ pub struct IdpServer {
     pub realm: String,
 }
 
+/// Get a free port from the OS
+fn free_tcp_port() -> Option<u16> {
+    let addr = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0);
+    let port = TcpListener::bind(addr).ok()?.local_addr().ok()?.port();
+    Some(port)
+}
+
 pub async fn start_idp_server(wire_server_hostname: &str, redirect_uri: &str) -> IdpServer {
     let hostname = "keycloak".to_string();
-    let port = portpicker::pick_unused_port().unwrap();
+    let port = free_tcp_port().unwrap();
     let username = format!("alice_wire@{wire_server_hostname}");
     let email = format!("alicesmith@{wire_server_hostname}");
     let password = "foo".to_string();

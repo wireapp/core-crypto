@@ -9,7 +9,6 @@ hyper = { workspace = true, features = ["server"] }
 http = { workspace = true }
 http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["full"] }
-portpicker = { workspace = true }
 rusty-jwt-tools = { version = "0.13.0", path = "../jwt" }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }

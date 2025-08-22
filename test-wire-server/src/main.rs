@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::net::{Ipv4Addr, SocketAddrV4};
 use std::str::FromStr as _;
 use std::sync::{Arc, Mutex};
 
@@ -128,9 +129,9 @@ fn not_found() -> http::Result<Response<Full<Bytes>>> {
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let port = portpicker::pick_unused_port().unwrap();
-    let addr = format!("127.0.0.1:{port}");
+    let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0);
     let listener = TcpListener::bind(&addr).await.unwrap();
+    let addr = listener.local_addr().unwrap();
     println!("{addr}");
 
     let nonces: Arc<Mutex<Nonces>> = Mutex::new(HashMap::new()).into();

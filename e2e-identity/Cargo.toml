@@ -52,7 +52,6 @@ scraper = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 lazy_static = { workspace = true }
-portpicker = { workspace = true }
 pem = { workspace = true }
 rand = { workspace = true }
 rstest = { workspace = true }
