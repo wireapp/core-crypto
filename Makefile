@@ -151,10 +151,10 @@ $(STAMPS)/bindings-swift:
 	$(warning Skipping build for "bindings-swift", as swift bindings generation is only supported on Darwin because OpenSSL can't be cross-compiled on non-Darwin systems; this is "$(UNAME_S)".)
 else
 $(STAMPS)/bindings-swift: $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
-	mkdir -p crypto-ffi/bindings/Swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
+	mkdir -p crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --language swift \
-	  --out-dir crypto-ffi/bindings/Swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi \
+	  --out-dir crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi \
 	  --library $(FFI_LIBRARY)
 	$(TOUCH_STAMP)
 endif
@@ -508,7 +508,7 @@ docs-ts: $(STAMPS)/docs-ts ## Generate TypeScript docs
 # Swift docs via Jazzy (macOS only)
 $(STAMPS)/docs-swift: ios
 	mkdir -p target/swift/doc
-	cd crypto-ffi/bindings/Swift/WireCoreCrypto && \
+	cd crypto-ffi/bindings/swift/WireCoreCrypto && \
 	jazzy \
 	  --modules WireCoreCrypto,WireCoreCryptoUniffi \
 	  --build-tool-arguments -project,WireCoreCrypto.xcodeproj,-scheme,WireCoreCrypto,-configuration,$(XCODE_CONFIG) \
