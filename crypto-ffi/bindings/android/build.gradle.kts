@@ -22,7 +22,6 @@ dependencies {
     implementation(libs.coroutines.core)
 
     androidTestImplementation(kotlin("test"))
-    androidTestImplementation(libs.android.logback)
     androidTestImplementation(libs.android.junit)
     androidTestImplementation(libs.espresso)
     androidTestImplementation(libs.coroutines.test)
