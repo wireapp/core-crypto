@@ -21,7 +21,6 @@ dependencies {
     implementation("${libs.jna.get()}@aar")
     implementation(libs.ktx.core)
     implementation(libs.coroutines.core)
-    implementation(libs.slf4j)
 
     androidTestImplementation(kotlin("test"))
     androidTestImplementation(libs.android.logback)
