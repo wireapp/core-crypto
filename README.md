@@ -26,15 +26,15 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 ### General Requirements
 
 - rust: <https://rustup.rs/>
-- GNU make: <https://www.gnu.org/software/make/>
+- GNU make: <https://www.gnu.org/software/make/> (min version: 4.3)
 
 If you're using macOS, you'll also need to install GNU sed:
 
 ```sh,ignore
-brew install gnu-sed
+brew install gnu-sed make
 ```
 
-and add an alias to your shell configuration file: `alias sed=gsed` (e.g. to `~/.zshenv` if you're using zsh).
+and add aliases to your shell configuration file: `alias sed=gsed`, `aliase make=gmake` (e.g. to `~/.zshenv` if you're using zsh).
 
 #### Pre-commit
 
