@@ -1,0 +1,16 @@
+name: Fetch or make uniffi-bindgen binary
+
+runs:
+  using: composite
+  steps:
+    - name: uniffi bindgen artifact name
+      run: echo "ARTIFACT_NAME=uniffi-$(uname -s)-$(cargo info uniffi | grep version | head -1 | awk '{print $2}')" >> $GITHUB_ENV
+      shell: bash
+    - uses: ./.github/actions/make
+      with:
+        key: ${{ env.ARTIFACT_NAME }}
+        make-rule: uniffi-bindgen
+        target-path: target/release/uniffi-bindgen
+
+    - run: chmod +x target/release/uniffi-bindgen
+      shell: bash
