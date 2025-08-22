@@ -37,7 +37,7 @@ runs:
     - name: Run make ${{ inputs.make-rule }} if needed
       if: steps.artifact-download.outputs.cache-hit != 'true'
       run: make ${{ inputs.make-rule }}
-      shell: bash
+      shell: bash -leo pipefail {0}
 
     - name: Upload artifact if needed
       if: steps.artifact-download.outputs.cache-hit != 'true'

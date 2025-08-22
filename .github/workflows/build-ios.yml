@@ -5,6 +5,10 @@ concurrency:
 on:
   workflow_call:
 
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
 env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: true

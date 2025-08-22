@@ -2,13 +2,15 @@ name: Fetch or make uniffi-bindgen binary
 
 runs:
   using: composite
+
   steps:
     - name: uniffi bindgen artifact name
       run: |
         os="$(uname -s)"
         uniffi_version="$(cargo metadata --format-version 1 | jq -r '.packages[] | select(.name == "uniffi") | .version')"
         echo "ARTIFACT_NAME=uniffi-${os}-${uniffi_version}" >> $GITHUB_ENV
-      shell: bash
+      shell: bash -leo pipefail {0}
+
     - uses: ./.github/actions/make
       with:
         key: ${{ env.ARTIFACT_NAME }}
@@ -16,4 +18,4 @@ runs:
         target-path: target/release/uniffi-bindgen
 
     - run: chmod +x target/release/uniffi-bindgen
-      shell: bash
+      shell: bash -leo pipefail {0}
