@@ -298,7 +298,7 @@ ifneq ($(RELEASE_MODE),release)
 endif
 
 .PHONY: android
-android: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) $(STAMPS)/bindings-kotlin-android | ensure-release-mode ## Run Kotlin tests on Android
+android: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) $(STAMPS)/bindings-kotlin-android | ensure-release-mode ## Build all Android targets
 	cd crypto-ffi/bindings && \
 	./gradlew android:build -x lint -x lintRelease
 
