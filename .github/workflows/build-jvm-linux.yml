@@ -20,6 +20,10 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: "x86_64-unknown-linux-gnu"
+
+      - name: fetch uniffi bindgen artifact
+        uses: ./.github/actions/make/uniffi-bindgen
+
       - run: make jvm-linux
       - name: upload dynamic library
         uses: actions/upload-artifact@v4
@@ -36,6 +40,10 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: "x86_64-unknown-linux-gnu"
+
+      - name: fetch uniffi bindgen artifact
+        uses: ./.github/actions/make/uniffi-bindgen
+
       - run: make bindings-kotlin-jvm
       - name: upload bindings
         uses: actions/upload-artifact@v4

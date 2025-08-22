@@ -19,12 +19,22 @@ env:
   RELEASE: 1
 
 jobs:
+  uniffi-bindgen-linux:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+      - uses: ./.github/actions/make/uniffi-bindgen
+
   build-android:
     if: github.event_name == 'pull_request'
+    needs:  uniffi-bindgen-linux
     uses: ./.github/workflows/build-android.yml
 
   build-jvm-linux:
     uses: ./.github/workflows/build-jvm-linux.yml
+    needs:  uniffi-bindgen-linux
 
   build-ios:
     uses: ./.github/workflows/build-ios.yml
