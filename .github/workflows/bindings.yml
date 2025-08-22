@@ -27,21 +27,52 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
       - uses: ./.github/actions/make/uniffi-bindgen
 
+  ffi-library-linux:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+      - uses: ./.github/actions/make/ffi-library
+
+  uniffi-bindgen-macos:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+      - uses: ./.github/actions/make/uniffi-bindgen
+
+  ffi-library-macos:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+      - uses: ./.github/actions/make/ffi-library
+
   build-android:
     if: github.event_name == 'pull_request'
-    needs:  uniffi-bindgen-linux
+    needs:
+      - uniffi-bindgen-linux
+      - ffi-library-linux
     uses: ./.github/workflows/build-android.yml
 
   build-jvm-linux:
     uses: ./.github/workflows/build-jvm-linux.yml
-    needs:  uniffi-bindgen-linux
+    needs:
+      - uniffi-bindgen-linux
+      - ffi-library-linux
 
   build-ios:
     uses: ./.github/workflows/build-ios.yml
 
   test-ios:
     if: github.event_name == 'pull_request'
-    needs: build-ios
+    needs:
+      - build-ios
+      - ffi-library-macos
+      - uniffi-bindgen-macos
     runs-on: self-hosted
     steps:
       - name: Cleanup on post
@@ -50,6 +81,13 @@ jobs:
             post: |
               sh ./scripts/clean.sh
       - uses: actions/checkout@v5
+
+      - name: fetch uniffi bindgen artifact
+        uses: ./.github/actions/make/uniffi-bindgen
+
+      - name: fetch ffi library
+        uses: ./.github/actions/make/ffi-library
+
       - name: download artifacts for ios
         uses: actions/download-artifact@v5
         with:
@@ -204,10 +242,20 @@ jobs:
 
   create-xcframework:
     if: github.event_name == 'pull_request'
-    needs: build-ios
+    needs:
+      - build-ios
+      - ffi-library-macos
+      - uniffi-bindgen-macos
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v5
+
+      - name: fetch uniffi bindgen artifact
+        uses: ./.github/actions/make/uniffi-bindgen
+
+      - name: fetch ffi library
+        uses: ./.github/actions/make/ffi-library
+
       - name: download artifacts for ios
         uses: actions/download-artifact@v5
         with:
@@ -232,10 +280,20 @@ jobs:
           ./build-xcframework.sh
 
   docs-swift:
-    needs: build-ios
+    needs:
+      - build-ios
+      - ffi-library-macos
+      - uniffi-bindgen-macos
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
+
+      - name: fetch uniffi bindgen artifact
+        uses: ./.github/actions/make/uniffi-bindgen
+
+      - name: fetch ffi library
+        uses: ./.github/actions/make/ffi-library
+
       - name: download artifacts for ios
         uses: actions/download-artifact@v5
         with:
@@ -250,9 +308,6 @@ jobs:
         with:
           name: ${{github.event.number}}-swift-ffi
           path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
-
-      - name: fetch uniffi bindgen artifact
-        uses: ./.github/actions/make/uniffi-bindgen
 
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -287,7 +342,10 @@ jobs:
   e2e-interop-test:
     if: github.event_name == 'pull_request'
     runs-on: self-hosted
-    needs: build-ios
+    needs:
+      - build-ios
+      - ffi-library-macos
+      - uniffi-bindgen-macos
     steps:
       - uses: actions/checkout@v5
       - name: Setup rust macOS

@@ -16,18 +16,9 @@ env:
   RELEASE: 1
 
 jobs:
-  uniffi-bindgen-macos:
-    if: github.repository == 'wireapp/core-crypto'
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-and-cache-rust
-      - uses: ./.github/actions/make/uniffi-bindgen
-
   build-ios:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: self-hosted
-    needs: uniffi-bindgen-macos
     strategy:
       matrix:
         include:
@@ -41,9 +32,6 @@ jobs:
         uses: ./.github/actions/setup-and-cache-rust
         with:
           target: ${{ matrix.target }}
-
-      - name: fetch uniffi bindgen artifact
-        uses: ./.github/actions/make/uniffi-bindgen
 
       - name: build ${{ matrix.task }}
         run: |
@@ -64,15 +52,5 @@ jobs:
         with:
           name: ${{github.event.number}}-${{ matrix.task }}
           path: ${{ matrix.target }}.tar
-          retention-days: 1
-          overwrite: 'true'
-
-      # Only needs to be uploaded once, this step finishes fastest.
-      - name: upload ffi artifact
-        if: startsWith(matrix.task, 'ios-device')
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
           retention-days: 1
           overwrite: 'true'

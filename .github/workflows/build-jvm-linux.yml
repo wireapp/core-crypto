@@ -24,6 +24,9 @@ jobs:
       - name: fetch uniffi bindgen artifact
         uses: ./.github/actions/make/uniffi-bindgen
 
+      - name: fetch ffi library
+        uses: ./.github/actions/make/ffi-library
+
       - run: make jvm-linux
       - name: upload dynamic library
         uses: actions/upload-artifact@v4
@@ -43,6 +46,9 @@ jobs:
 
       - name: fetch uniffi bindgen artifact
         uses: ./.github/actions/make/uniffi-bindgen
+
+      - name: fetch ffi library
+        uses: ./.github/actions/make/ffi-library
 
       - run: make bindings-kotlin-jvm
       - name: upload bindings
