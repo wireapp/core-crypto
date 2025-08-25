@@ -20,22 +20,11 @@ jobs:
       matrix:
         include:
           - task: android-armv7
-            target: armv7-linux-androideabi
           - task: android-armv8
-            target: aarch64-linux-android
           - task: android-x86
-            target: x86_64-linux-android
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-and-cache-rust
-        with:
-          target: ${{ matrix.target }}
-
-      - name: fetch uniffi bindgen artifact
-        uses: ./.github/actions/make/uniffi-bindgen
-
-      - name: fetch ffi library
-        uses: ./.github/actions/make/ffi-library
 
       - name: setup android sdk
         uses: android-actions/setup-android@v3
@@ -46,66 +35,6 @@ jobs:
       - name: build android package
         env:
           ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/${{ env.ANDROID_NDK_VERSION}}
-        run: |
-          make ${{ matrix.task }}
-
-      - uses: actions/upload-artifact@v4
+        uses: ./.github/actions/make/android/lib
         with:
-          name: android-target-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/libcore_crypto_ffi.*
-          retention-days: 1
-
-  package-android:
-    if: github.repository == 'wireapp/core-crypto'
-    runs-on: ubuntu-latest
-    needs:
-      - build-android
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-and-cache-rust
-
-      - name: set up jdk 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: "17"
-          distribution: "adopt"
-      - name: gradle setup
-        uses: gradle/actions/setup-gradle@v4
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v4
-      - name: setup android sdk
-        uses: android-actions/setup-android@v3
-      - name: install ndk
-        run: echo "y" | sdkmanager --install "ndk;$ANDROID_NDK_VERSION"
-
-      - name: download armv7-linux-androideabi binaries
-        uses: actions/download-artifact@v5
-        with:
-          name: android-target-armv7-linux-androideabi
-          path: target/armv7-linux-androideabi/release
-
-      - name: download aarch64-linux-android binaries
-        uses: actions/download-artifact@v5
-        with:
-          name: android-target-aarch64-linux-android
-          path: target/aarch64-linux-android/release
-
-      - name: download x86_64-linux-android binaries
-        uses: actions/download-artifact@v5
-        with:
-          name: android-target-x86_64-linux-android
-          path: target/x86_64-linux-android/release
-
-      - name: fetch ffi library
-        uses: ./.github/actions/make/ffi-library
-
-      - name: fetch uniffi bindgen artifact
-        uses: ./.github/actions/make/uniffi-bindgen
-
-      - name: make android
-        uses: ./.github/actions/make
-        with:
-          key: android-${{ github.sha }}
-          make-rule: android
-          target-path: crypto-ffi/bindings
-                target/*android*
+          task: ${{ matrix.task }}
