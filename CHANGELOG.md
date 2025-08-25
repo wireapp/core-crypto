@@ -4,6 +4,10 @@
 
 ### Breaking Changes
 
+- Bumped the minimum version of Android SDK to 35.
+
+  Affected platforms: Android
+
 - Removed support for migrating CoreCrypto database to version 1.
 
   Affected platforms: Web
