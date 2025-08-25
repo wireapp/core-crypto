@@ -50,11 +50,24 @@ jobs:
       - ffi-library-linux
     uses: ./.github/workflows/build-android.yml
 
-  build-jvm-linux:
-    uses: ./.github/workflows/build-jvm-linux.yml
+  jvm-linux:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+      - uses: ./.github/actions/make/jvm-linux
+
+  jvm-bindings:
     needs:
       - uniffi-bindgen-linux
       - ffi-library-linux
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+      - uses: ./.github/actions/make/bindings-kotlin-jvm
 
   build-ios:
     uses: ./.github/workflows/build-ios.yml
@@ -157,7 +170,9 @@ jobs:
   test-jvm:
     if: github.repository == 'wireapp/core-crypto' && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    needs: build-jvm-linux
+    needs:
+      - jvm-bindings
+      - jvm-linux
     steps:
       - uses: actions/checkout@v5
       - name: set up jdk 17
@@ -169,16 +184,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
+
       - name: download linux library
-        uses: actions/download-artifact@v5
-        with:
-          name: jvm-linux-so-file-${{ github.run_id }}
-          path: target/x86_64-unknown-linux-gnu/release
+        uses: ./.github/actions/make/jvm-linux
+
       - name: download linux bindings
-        uses: actions/download-artifact@v5
-        with:
-          name: jvm-linux-bindings-${{ github.run_id }}
-          path: crypto-ffi/bindings
+        uses: ./.github/actions/make/bindings-kotlin-jvm
+
       - name: run detekt
         run: |
           cd crypto-ffi/bindings
@@ -191,7 +203,9 @@ jobs:
   docs-jvm:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
-    needs: build-jvm-linux
+    needs:
+       - jvm-bindings
+       - jvm-linux
     steps:
       - uses: actions/checkout@v5
       - name: set up jdk 17
@@ -203,16 +217,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
+
       - name: download linux library
-        uses: actions/download-artifact@v5
-        with:
-          name: jvm-linux-so-file-${{ github.run_id }}
-          path: target/x86_64-unknown-linux-gnu/release
+        uses: ./.github/actions/make/jvm-linux
+
       - name: download linux bindings
-        uses: actions/download-artifact@v5
-        with:
-          name: jvm-linux-bindings-${{ github.run_id }}
-          path: crypto-ffi/bindings
+        uses: ./.github/actions/make/bindings-kotlin-jvm
+
       - name: run dokka
         run: |
             cd crypto-ffi/bindings
