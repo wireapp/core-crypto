@@ -64,12 +64,6 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-and-cache-rust
 
-      - name: fetch ffi library
-        uses: ./.github/actions/make/ffi-library
-
-      - name: fetch uniffi bindgen artifact
-        uses: ./.github/actions/make/uniffi-bindgen
-
       - name: set up jdk 17
         uses: actions/setup-java@v4
         with:
@@ -102,11 +96,16 @@ jobs:
           name: android-target-x86_64-linux-android
           path: target/x86_64-linux-android/release
 
-      - run: make android
-      - uses: actions/upload-artifact@v4
+      - name: fetch ffi library
+        uses: ./.github/actions/make/ffi-library
+
+      - name: fetch uniffi bindgen artifact
+        uses: ./.github/actions/make/uniffi-bindgen
+
+      - name: make android
+        uses: ./.github/actions/make
         with:
-          name: android
-          path: |
-            crypto-ffi/bindings
-            target/*android*
-          retention-days: 1
+          key: android-${{ github.sha }}
+          make-rule: android
+          target-path: crypto-ffi/bindings
+                target/*android*
