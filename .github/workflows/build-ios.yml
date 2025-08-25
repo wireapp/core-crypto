@@ -5,6 +5,10 @@ concurrency:
 on:
   workflow_call:
 
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
 env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: true
@@ -48,25 +52,5 @@ jobs:
         with:
           name: ${{github.event.number}}-${{ matrix.task }}
           path: ${{ matrix.target }}.tar
-          retention-days: 1
-          overwrite: 'true'
-
-      # Only needs to be uploaded once, this step finishes fastest.
-      - name: upload ffi artifact
-        if: startsWith(matrix.task, 'ios-simulator-arm')
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
-          retention-days: 1
-          overwrite: 'true'
-
-      # Only needs to be uploaded once.
-      - name: upload uniffi-bindgen-ios artifact
-        if: startsWith(matrix.task, 'ios-simulator-arm')
-        uses: actions/upload-artifact@v4
-        with:
-          name: uniffi-bindgen-ios
-          path: target/release/uniffi-bindgen
           retention-days: 1
           overwrite: 'true'

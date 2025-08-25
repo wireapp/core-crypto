@@ -1,0 +1,17 @@
+name: Fetch or make kotlin bindings for jvm
+
+runs:
+  using: composite
+
+  steps:
+    - name: fetch uniffi bindgen artifact
+      uses: ./.github/actions/make/uniffi-bindgen
+
+    - name: fetch ffi library
+      uses: ./.github/actions/make/ffi-library
+
+    - uses: ./.github/actions/make
+      with:
+        key: bindings-kotlin-jvm-${{ github.sha }}
+        make-rule: bindings-kotlin-jvm
+        target-path: crypto-ffi/bindings
