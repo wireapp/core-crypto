@@ -153,6 +153,7 @@ else
 $(STAMPS)/bindings-swift: $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
 	mkdir -p crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
 	$(UNIFFI_BINDGEN) generate \
+	  --config crypto-ffi/uniffi.toml \
 	  --language swift \
 	  --out-dir crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi \
 	  --library $(FFI_LIBRARY)
@@ -167,7 +168,7 @@ swift: $(STAMPS)/bindings-swift $(STAMPS)/docs-swift
 $(STAMPS)/bindings-kotlin-android: $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
 	mkdir -p crypto-ffi/bindings/android/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
-	  --config uniffi-android.toml \
+	  --config crypto-ffi/uniffi-android.toml \
 	  --language kotlin \
 	  --no-format \
 	  --out-dir crypto-ffi/bindings/android/src/main/uniffi \
@@ -181,6 +182,7 @@ bindings-kotlin-android: $(STAMPS)/bindings-kotlin-android ## Generate Kotlin bi
 $(STAMPS)/bindings-kotlin-jvm: $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
 	mkdir -p crypto-ffi/bindings/jvm/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
+	  --config crypto-ffi/uniffi.toml \
 	  --language kotlin \
 	  --no-format \
 	  --out-dir crypto-ffi/bindings/jvm/src/main/uniffi \
