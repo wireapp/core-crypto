@@ -35,21 +35,13 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
       - uses: ./.github/actions/make/ffi-library
 
-  uniffi-bindgen-macos:
+  bindings-swift:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-and-cache-rust
-      - uses: ./.github/actions/make/uniffi-bindgen
-
-  ffi-library-macos:
-    if: github.repository == 'wireapp/core-crypto'
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-and-cache-rust
-      - uses: ./.github/actions/make/ffi-library
+      - uses: ./.github/actions/make/bindings-swift
 
   build-android:
     if: github.event_name == 'pull_request'
@@ -71,8 +63,7 @@ jobs:
     if: github.event_name == 'pull_request'
     needs:
       - build-ios
-      - ffi-library-macos
-      - uniffi-bindgen-macos
+      - bindings-swift
     runs-on: self-hosted
     steps:
       - name: Cleanup on post
@@ -97,11 +88,10 @@ jobs:
         run: |
           tar xf aarch64-apple-ios.tar
           tar xf aarch64-apple-ios-sim.tar
-      - name: download ffi artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
+
+      - name: download swift bindings
+        uses: ./.github/actions/make/bindings-swift
+
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -244,17 +234,10 @@ jobs:
     if: github.event_name == 'pull_request'
     needs:
       - build-ios
-      - ffi-library-macos
-      - uniffi-bindgen-macos
+      - bindings-swift
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v5
-
-      - name: fetch uniffi bindgen artifact
-        uses: ./.github/actions/make/uniffi-bindgen
-
-      - name: fetch ffi library
-        uses: ./.github/actions/make/ffi-library
 
       - name: download artifacts for ios
         uses: actions/download-artifact@v5
@@ -265,11 +248,10 @@ jobs:
         run: |
           tar xf aarch64-apple-ios.tar
           tar xf aarch64-apple-ios-sim.tar
-      - name: download ffi artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
+
+      - name: download swift bindings
+        uses: ./.github/actions/make/bindings-swift
+
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -282,17 +264,13 @@ jobs:
   docs-swift:
     needs:
       - build-ios
-      - ffi-library-macos
-      - uniffi-bindgen-macos
+      - bindings-swift
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
 
-      - name: fetch uniffi bindgen artifact
-        uses: ./.github/actions/make/uniffi-bindgen
-
-      - name: fetch ffi library
-        uses: ./.github/actions/make/ffi-library
+      - name: download swift bindings
+        uses: ./.github/actions/make/bindings-swift
 
       - name: download artifacts for ios
         uses: actions/download-artifact@v5
@@ -303,11 +281,6 @@ jobs:
         run: |
           tar xf aarch64-apple-ios.tar
           tar xf aarch64-apple-ios-sim.tar
-      - name: download ios artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
 
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -344,8 +317,7 @@ jobs:
     runs-on: self-hosted
     needs:
       - build-ios
-      - ffi-library-macos
-      - uniffi-bindgen-macos
+      - bindings-swift
     steps:
       - uses: actions/checkout@v5
       - name: Setup rust macOS
@@ -385,11 +357,10 @@ jobs:
         run: |
           tar xf aarch64-apple-ios.tar
           tar xf aarch64-apple-ios-sim.tar
-      - name: download ffi artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
+
+      - name: download swift bindings
+        uses: ./.github/actions/make/bindings-swift
+
       - name: create simulator
         run: |
           echo "SIMULATOR=$(./scripts/create-ios-sim-device.sh "iPhone 16 e2e-interop-test")" >> $GITHUB_ENV
