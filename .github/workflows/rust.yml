@@ -52,14 +52,15 @@ jobs:
         with:
           files: target/nextest/default/junit.xml
 
-  proteus-test:
+  all-features:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-and-cache-rust
       - uses: taiki-e/install-action@nextest
-      - name: "test corecrypto's proteus implementation"
-        run: cargo nextest run --locked --verbose --features proteus,proteus-keystore proteus
+      - run: cargo nextest run --locked --all-features --no-fail-fast --retries 5
+        # certain tests are flaky when run in parallel like this, but
+        # experiments suggest 5 is enough retries that they'll generally pass eventually
 
   wasm-test:
     runs-on: ubuntu-latest
