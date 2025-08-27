@@ -1,0 +1,23 @@
+name: Fetch or make ffi library
+
+runs:
+  using: composite
+
+  steps:
+    - name: ffi library extension
+      run: |
+        os="$(uname -s)"
+        echo "ARTIFACT_NAME=uniffi-${os}-${uniffi_version}" >> $GITHUB_ENV
+        if [ "$os" = "Linux" ]; then
+          library_extension="so"
+        elif [ "$os" = "Darwin" ]; then
+          library_extension="dylib"
+        fi
+        echo "LIBRARY_EXTENSION=${library_extension}" >> $GITHUB_ENV
+      shell: bash -leo pipefail {0}
+
+    - uses: ./.github/actions/make
+      with:
+        key: libcore_crypto_ffi.${{ env.LIBRARY_EXTENSION }}-${{ github.sha }}
+        make-rule: ffi-library
+        target-path: target/release/libcore_crypto_ffi.${{ env.LIBRARY_EXTENSION }}

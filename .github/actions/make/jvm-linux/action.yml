@@ -1,0 +1,11 @@
+name: Fetch or make the ffi lib for jvm linux
+
+runs:
+  using: composite
+
+  steps:
+      - uses: ./.github/actions/make
+        with:
+          key: jvm-linux-${{ github.sha }}
+          make-rule: jvm-linux
+          target-path: target/x86_64-unknown-linux-gnu/release/libcore_crypto_ffi.so

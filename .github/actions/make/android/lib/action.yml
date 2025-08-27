@@ -1,0 +1,37 @@
+name: Fetch or make ffi lib for android
+
+inputs:
+  task:
+    description: The make task
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: map task to target
+      shell: bash
+      run: |
+        case "${{ inputs.task }}" in
+          android-armv7)
+            target="armv7-linux-androideabi"
+            ;;
+          android-armv8)
+            target="aarch64-linux-android"
+            ;;
+          android-x86)
+            target="x86_64-linux-android"
+            ;;
+          *)
+            echo "Unknown task: ${{ inputs.task }}" >&2
+            exit 1
+            ;;
+        esac
+        echo "ANDROID_TARGET=$target" >> $GITHUB_ENV
+
+    - uses: ./.github/actions/make
+      with:
+        key: lib-${{ inputs.task }}-${{ github.sha }}
+        make-rule: ${{ inputs.task }}
+        target-path: |
+          target/${{ env.ANDROID_TARGET }}/release/libcore_crypto_ffi.a
+          target/${{ env.ANDROID_TARGET }}/release/libcore_crypto_ffi.so

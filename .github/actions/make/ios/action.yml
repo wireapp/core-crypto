@@ -1,0 +1,34 @@
+name: Fetch or make ffi lib for ios
+
+inputs:
+  task:
+    description: The make task
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: map task to target
+      shell: bash
+      run: |
+        case "${{ inputs.task }}" in
+          ios-device)
+            target="aarch64-apple-ios"
+            ;;
+          ios-simulator-arm)
+            target="aarch64-apple-ios-sim"
+            ;;
+          *)
+            echo "Unknown task: ${{ inputs.task }}" >&2
+            exit 1
+            ;;
+        esac
+        echo "IOS_TARGET=$target" >> $GITHUB_ENV
+
+    - uses: ./.github/actions/make
+      with:
+        key: lib-${{ inputs.task }}-${{ github.sha }}
+        make-rule: ${{ inputs.task }}
+        target-path: |
+          target/${{ env.IOS_TARGET }}/release/libcore_crypto_ffi.a
+          target/${{ env.IOS_TARGET }}/release/libcore_crypto_ffi.dylib
