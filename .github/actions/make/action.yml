@@ -1,5 +1,6 @@
 name: Fetch or make an artifact
-description: Fetch an artifact with a given key. If it doesn't exist, run the given command and upload it.
+description: Fetch the newest artifact (on the current branch or on main) with a given key.
+  If it doesn't exist, run the given command and upload it.
 inputs:
   key:
     description: The artifact key
@@ -10,24 +11,47 @@ inputs:
   target-path:
     description: The relative path of the final artifact(s)
     required: true
+  gh-token:
+    required: true
 
 runs:
   using: composite
   steps:
-    - name: Attempt to download the artifact
-      uses: actions/cache/restore@v4
-      with:
-        key: ${{ inputs.key }}
-        path: |
-          ${{ inputs.target-path }}
-          .stamps
-      id: artifact-download
-
-    # This is necessary because the github checkout action doesn't preserve
-    # timestamps on checked out files.
-    - name: Touch downloaded files to update timestamps
-      if: steps.artifact-download.outputs.cache-hit == 'true'
+    - name: Download artifact
       run: |
+        branch="${{ github.head_ref || github.ref_name }}"
+
+        runs_current_branch=$(gh run list --branch "$branch" --limit 10 -w bindings.yml --json databaseId | jq '.[].databaseId')
+        runs_main=$(gh run list --branch "$branch" --limit 10 -w bindings.yml --json databaseId | jq '.[].databaseId')
+
+        # Prioritize current branch over main
+        runs=$(printf "%s\n%s\n" "$runs_current_branch" "$runs_main")
+
+        artifact_name="${{ inputs.key }}"
+
+        echo "found=false" >> $GITHUB_ENV
+
+        # For each run in the sorted list of run ids, try downloading the artifact
+        # with the given name.
+        for run_id in $runs; do
+        if gh run download "$run_id" -n "$artifact_name" >/dev/null 2>&1; then
+            echo "Downloaded artifact $artifact_name from run with id: $run_id"
+            echo "found=true" >> $GITHUB_ENV
+            exit 0
+          fi
+        done
+
+        echo "No artifact '$artifact_name' found." >&2
+      env:
+        GITHUB_TOKEN: ${{ inputs.gh-token }}
+      shell: bash -euo pipefail {0}
+
+    - name: Unpack and touch downloaded files to update timestamps
+      if: env.found == 'true'
+      run: |
+        tar -xzf artifact.tar.gz
+        # This is necessary because the github checkout action doesn't preserve
+        # timestamps on checked out files.
         paths="${{ inputs.target-path }}"
         for dir in $paths; do
           touch "$dir"
@@ -35,15 +59,26 @@ runs:
       shell: bash -leo pipefail {0}
 
     - name: Run make ${{ inputs.make-rule }} if needed
-      if: steps.artifact-download.outputs.cache-hit != 'true'
+      if: env.found != true
       run: make ${{ inputs.make-rule }}
       shell: bash -leo pipefail {0}
 
-    - name: Upload artifact if needed
-      if: steps.artifact-download.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v4
+    - name: Prepare artifact
+      run: |
+        mkdir -p .stamps
+        printf '%s\n' "${{ inputs.target-path }}" | tar -czf artifact.tar.gz -T - .stamps
+      shell: bash -leo pipefail {0}
+
+    # We re-upload to ensure we always the artifact on the most recent workflow run.
+    # This should be fine, as uploads are comparatively cheap.
+    - name: Always upload artifact
+      uses: actions/upload-artifact@v4
       with:
-        key: ${{ inputs.key }}
-        path: |
-          ${{ inputs.target-path }}
-          .stamps
+        name: ${{ inputs.key }}
+        path: artifact.tar.gz
+        overwrite: true
+
+    - name: Cleanup
+      run: |
+        rm artifact.tar.gz
+      shell: bash -leo pipefail {0}

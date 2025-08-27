@@ -4,6 +4,8 @@ inputs:
   task:
     description: The make task
     required: true
+  gh-token:
+    required: true
 
 runs:
   using: composite
@@ -35,3 +37,4 @@ runs:
         target-path: |
           target/${{ env.ANDROID_TARGET }}/release/libcore_crypto_ffi.a
           target/${{ env.ANDROID_TARGET }}/release/libcore_crypto_ffi.so
+        gh-token: ${{ inputs.gh-token }}

@@ -1,4 +1,7 @@
 name: Fetch or make swift bindings
+inputs:
+  gh-token:
+    required: true
 
 runs:
   using: composite
@@ -6,12 +9,17 @@ runs:
   steps:
       - name: fetch uniffi bindgen artifact
         uses: ./.github/actions/make/uniffi-bindgen
+        with:
+          gh-token: ${{ inputs.gh-token }}
 
       - name: fetch ffi library
         uses: ./.github/actions/make/ffi-library
+        with:
+          gh-token: ${{ inputs.gh-token }}
 
       - uses: ./.github/actions/make
         with:
           key: bindings-swift-${{ github.sha }}
           make-rule: bindings-swift
           target-path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
+          gh-token: ${{ inputs.gh-token }}

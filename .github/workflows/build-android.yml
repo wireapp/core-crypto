@@ -28,4 +28,5 @@ jobs:
       - name: build android lib
         uses: ./.github/actions/make/android/lib
         with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
           task: ${{ matrix.task }}

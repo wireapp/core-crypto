@@ -34,4 +34,5 @@ jobs:
       - name: build ${{ matrix.task }}
         uses: ./.github/actions/make/ios
         with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
           task: ${{ matrix.task }}

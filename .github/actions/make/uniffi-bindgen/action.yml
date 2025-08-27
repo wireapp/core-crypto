@@ -1,4 +1,7 @@
 name: Fetch or make uniffi-bindgen binary
+inputs:
+  gh-token:
+    required: true
 
 runs:
   using: composite
@@ -16,6 +19,7 @@ runs:
         key: ${{ env.ARTIFACT_NAME }}
         make-rule: uniffi-bindgen
         target-path: target/release/uniffi-bindgen
+        gh-token: ${{ inputs.gh-token }}
 
     - run: chmod +x target/release/uniffi-bindgen
       shell: bash -leo pipefail {0}

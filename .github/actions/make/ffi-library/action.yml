@@ -1,5 +1,9 @@
 name: Fetch or make ffi library
 
+inputs:
+  gh-token:
+    required: true
+
 runs:
   using: composite
 
@@ -21,3 +25,4 @@ runs:
         key: libcore_crypto_ffi.${{ env.LIBRARY_EXTENSION }}-${{ github.sha }}
         make-rule: ffi-library
         target-path: target/release/libcore_crypto_ffi.${{ env.LIBRARY_EXTENSION }}
+        gh-token: ${{ inputs.gh-token }}
