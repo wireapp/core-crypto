@@ -1,0 +1,49 @@
+name: Fetch or make an artifact
+description: Fetch an artifact with a given key. If it doesn't exist, run the given command and upload it.
+inputs:
+  key:
+    description: The artifact key
+    required: true
+  make-rule:
+    description: The GNU make rule which produces the artifact
+    required: true
+  target-path:
+    description: The relative path of the final artifact(s)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Attempt to download the artifact
+      uses: actions/cache/restore@v4
+      with:
+        key: ${{ inputs.key }}
+        path: |
+          ${{ inputs.target-path }}
+          .stamps
+      id: artifact-download
+
+    # This is necessary because the github checkout action doesn't preserve
+    # timestamps on checked out files.
+    - name: Touch downloaded files to update timestamps
+      if: steps.artifact-download.outputs.cache-hit == 'true'
+      run: |
+        paths="${{ inputs.target-path }}"
+        for dir in $paths; do
+          touch "$dir"
+        done
+      shell: bash -leo pipefail {0}
+
+    - name: Run make ${{ inputs.make-rule }} if needed
+      if: steps.artifact-download.outputs.cache-hit != 'true'
+      run: make ${{ inputs.make-rule }}
+      shell: bash
+
+    - name: Upload artifact if needed
+      if: steps.artifact-download.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        key: ${{ inputs.key }}
+        path: |
+          ${{ inputs.target-path }}
+          .stamps
