@@ -200,7 +200,7 @@ bindings-kotlin: $(STAMPS)/bindings-kotlin-android $(STAMPS)/bindings-kotlin-jvm
 # iOS builds
 #-------------------------------------------------------------------------------
 
-$(STAMPS)/ios-device: $(STAMPS)/bindings-swift
+$(STAMPS)/ios-device:
 	IPHONEOS_DEPLOYMENT_TARGET=16.0 \
 	cargo rustc --locked \
 	  --target aarch64-apple-ios \
@@ -213,7 +213,7 @@ $(STAMPS)/ios-device: $(STAMPS)/bindings-swift
 .PHONY: ios-device
 ios-device: $(STAMPS)/ios-device ## Build core-crypto-ffi for aarch64-apple-ios for iOS 16.0 (macOS only)
 
-$(STAMPS)/ios-simulator-arm: $(STAMPS)/bindings-swift
+$(STAMPS)/ios-simulator-arm:
 	CRATE_CC_NO_DEFAULTS=1 \
 	TARGET_CFLAGS="--target=arm64-apple-ios14.0.0-simulator \
 	-mios-simulator-version-min=14.0 \
@@ -235,7 +235,7 @@ $(STAMPS)/ios: $(STAMPS)/ios-device $(STAMPS)/ios-simulator-arm
 ios: $(STAMPS)/ios
 
 # Build XCFramework (macOS only)
-$(STAMPS)/ios-create-xcframework: ios
+$(STAMPS)/ios-create-xcframework: ios $(STAMPS)/bindings-swift
 	cd crypto-ffi/bindings/swift && ./build-xcframework.sh
 	$(TOUCH_STAMP)
 
@@ -508,7 +508,7 @@ $(STAMPS)/docs-ts: $(DTS_OUT)
 docs-ts: $(STAMPS)/docs-ts ## Generate TypeScript docs
 
 # Swift docs via Jazzy (macOS only)
-$(STAMPS)/docs-swift: ios
+$(STAMPS)/docs-swift: ios $(STAMPS)/bindings-swift
 	mkdir -p target/swift/doc
 	cd crypto-ffi/bindings/swift/WireCoreCrypto && \
 	jazzy \
