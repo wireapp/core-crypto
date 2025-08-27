@@ -19,19 +19,96 @@ env:
   RELEASE: 1
 
 jobs:
+  uniffi-bindgen-linux:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+        with:
+          target: x86_64-unknown-linux-gnu
+      - uses: ./.github/actions/make/uniffi-bindgen
+
+  ffi-library-linux:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+        with:
+          target: x86_64-unknown-linux-gnu
+      - uses: ./.github/actions/make/ffi-library
+
+  bindings-swift:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+      - uses: ./.github/actions/make/bindings-swift
+
   build-android:
     if: github.event_name == 'pull_request'
     uses: ./.github/workflows/build-android.yml
 
+  package-android:
+    env:
+      ANDROID_NDK_VERSION: 28.1.13356709
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    needs:
+      - uniffi-bindgen-linux
+      - ffi-library-linux
+      - build-android
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+      - name: set up jdk 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "adopt"
+      - name: gradle setup
+        uses: gradle/actions/setup-gradle@v4
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+      - name: setup android sdk
+        uses: android-actions/setup-android@v3
+      - name: install ndk
+        run: echo "y" | sdkmanager --install "ndk;$ANDROID_NDK_VERSION"
+      - uses: ./.github/actions/make/android/package
+
   build-jvm-linux:
-    uses: ./.github/workflows/build-jvm-linux.yml
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+        with:
+          target: x86_64-unknown-linux-gnu
+      - uses: ./.github/actions/make/jvm-linux
+
+  bindings-jvm:
+    needs:
+      - uniffi-bindgen-linux
+      - ffi-library-linux
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+        with:
+          target: x86_64-unknown-linux-gnu
+      - uses: ./.github/actions/make/bindings-kotlin-jvm
 
   build-ios:
     uses: ./.github/workflows/build-ios.yml
 
   test-ios:
     if: github.event_name == 'pull_request'
-    needs: build-ios
+    needs:
+      - build-ios
+      - bindings-swift
     runs-on: self-hosted
     steps:
       - name: Cleanup on post
@@ -40,20 +117,26 @@ jobs:
             post: |
               sh ./scripts/clean.sh
       - uses: actions/checkout@v5
-      - name: download artifacts for ios
-        uses: actions/download-artifact@v5
+
+      - name: fetch uniffi bindgen artifact
+        uses: ./.github/actions/make/uniffi-bindgen
+
+      - name: fetch ffi library
+        uses: ./.github/actions/make/ffi-library
+
+      - name: download artifacts for ios device
+        uses: ./.github/actions/make/ios
         with:
-          pattern: ${{github.event.number}}-ios-*
-          merge-multiple: 'true'
-      - name: extract artifacts
-        run: |
-          tar xf aarch64-apple-ios.tar
-          tar xf aarch64-apple-ios-sim.tar
-      - name: download ffi artifacts
-        uses: actions/download-artifact@v5
+          task: ios-device
+
+      - name: download artifacts for ios simulator
+        uses: ./.github/actions/make/ios
         with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
+          task: ios-simulator-arm
+
+      - name: download swift bindings
+        uses: ./.github/actions/make/bindings-swift
+
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -88,7 +171,9 @@ jobs:
   test-android:
     if: github.repository == 'wireapp/core-crypto' && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    needs: build-android
+    needs: package-android
+    env:
+      ANDROID_NDK_VERSION: 28.1.13356709
     steps:
       - uses: actions/checkout@v5
       - name: set up jdk 17
@@ -100,14 +185,15 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
-      - uses: actions/download-artifact@v5
-        with:
-          name: android
       - name: enable kvm group perms
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+
+      - name: download android package
+        uses: ./.github/actions/make/android/package
+
       - name: android instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -119,7 +205,9 @@ jobs:
   test-jvm:
     if: github.repository == 'wireapp/core-crypto' && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    needs: build-jvm-linux
+    needs:
+      - bindings-jvm
+      - build-jvm-linux
     steps:
       - uses: actions/checkout@v5
       - name: set up jdk 17
@@ -131,16 +219,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
+
       - name: download linux library
-        uses: actions/download-artifact@v5
-        with:
-          name: jvm-linux-so-file-${{ github.run_id }}
-          path: target/x86_64-unknown-linux-gnu/release
+        uses: ./.github/actions/make/jvm-linux
+
       - name: download linux bindings
-        uses: actions/download-artifact@v5
-        with:
-          name: jvm-linux-bindings-${{ github.run_id }}
-          path: crypto-ffi/bindings
+        uses: ./.github/actions/make/bindings-kotlin-jvm
+
       - name: run detekt
         run: |
           cd crypto-ffi/bindings
@@ -153,7 +238,9 @@ jobs:
   docs-jvm:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
-    needs: build-jvm-linux
+    needs:
+       - bindings-jvm
+       - build-jvm-linux
     steps:
       - uses: actions/checkout@v5
       - name: set up jdk 17
@@ -165,16 +252,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
+
       - name: download linux library
-        uses: actions/download-artifact@v5
-        with:
-          name: jvm-linux-so-file-${{ github.run_id }}
-          path: target/x86_64-unknown-linux-gnu/release
+        uses: ./.github/actions/make/jvm-linux
+
       - name: download linux bindings
-        uses: actions/download-artifact@v5
-        with:
-          name: jvm-linux-bindings-${{ github.run_id }}
-          path: crypto-ffi/bindings
+        uses: ./.github/actions/make/bindings-kotlin-jvm
+
       - name: run dokka
         run: |
             cd crypto-ffi/bindings
@@ -194,24 +278,26 @@ jobs:
 
   create-xcframework:
     if: github.event_name == 'pull_request'
-    needs: build-ios
+    needs:
+      - build-ios
+      - bindings-swift
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v5
-      - name: download artifacts for ios
-        uses: actions/download-artifact@v5
+
+      - name: download artifacts for ios device
+        uses: ./.github/actions/make/ios
         with:
-          pattern: ${{github.event.number}}-ios-*
-          merge-multiple: 'true'
-      - name: extract artifacts
-        run: |
-          tar xf aarch64-apple-ios.tar
-          tar xf aarch64-apple-ios-sim.tar
-      - name: download ffi artifacts
-        uses: actions/download-artifact@v5
+          task: ios-device
+
+      - name: download artifacts for ios simulator
+        uses: ./.github/actions/make/ios
         with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
+          task: ios-simulator-arm
+
+      - name: download swift bindings
+        uses: ./.github/actions/make/bindings-swift
+
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -222,32 +308,25 @@ jobs:
           ./build-xcframework.sh
 
   docs-swift:
-    needs: build-ios
+    needs:
+      - build-ios
+      - bindings-swift
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
-      - name: download artifacts for ios
-        uses: actions/download-artifact@v5
-        with:
-          pattern: ${{github.event.number}}-ios-*
-          merge-multiple: 'true'
-      - name: extract artifacts
-        run: |
-          tar xf aarch64-apple-ios.tar
-          tar xf aarch64-apple-ios-sim.tar
-      - name: download ios artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
 
-      - name: download uniffi-bindgen-ios
-        uses: actions/download-artifact@v5
-        with:
-          name: uniffi-bindgen-ios
-          path: target/release
+      - name: download swift bindings
+        uses: ./.github/actions/make/bindings-swift
 
-      - run: chmod +x target/release/uniffi-bindgen
+      - name: download artifacts for ios device
+        uses: ./.github/actions/make/ios
+        with:
+          task: ios-device
+
+      - name: download artifacts for ios simulator
+        uses: ./.github/actions/make/ios
+        with:
+          task: ios-simulator-arm
 
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -282,7 +361,9 @@ jobs:
   e2e-interop-test:
     if: github.event_name == 'pull_request'
     runs-on: self-hosted
-    needs: build-ios
+    needs:
+      - build-ios
+      - bindings-swift
     steps:
       - uses: actions/checkout@v5
       - name: Setup rust macOS
@@ -313,20 +394,19 @@ jobs:
       - name: build ts artifacts
         run: |
           make ts
-      - name: download artifacts for ios
-        uses: actions/download-artifact@v5
+      - name: download artifacts for ios device
+        uses: ./.github/actions/make/ios
         with:
-          pattern: ${{github.event.number}}-ios-*
-          merge-multiple: 'true'
-      - name: extract artifacts
-        run: |
-          tar xf aarch64-apple-ios.tar
-          tar xf aarch64-apple-ios-sim.tar
-      - name: download ffi artifacts
-        uses: actions/download-artifact@v5
+          task: ios-device
+
+      - name: download artifacts for ios simulator
+        uses: ./.github/actions/make/ios
         with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
+          task: ios-simulator-arm
+
+      - name: download swift bindings
+        uses: ./.github/actions/make/bindings-swift
+
       - name: create simulator
         run: |
           echo "SIMULATOR=$(./scripts/create-ios-sim-device.sh "iPhone 16 e2e-interop-test")" >> $GITHUB_ENV
