@@ -1,7 +1,7 @@
 use base64::Engine;
 use clap::{Parser, Subcommand};
 use clap_stdin::FileOrStdin;
-use openmls::prelude::{MlsMessageIn, TlsDeserializeTrait};
+use openmls::prelude::{MlsMessageIn, TlsDeserializeTrait, group_info::VerifiableGroupInfo};
 use proteus_wasm::internal::message::SessionTag;
 use proteus_wasm::internal::util::fmt_hex;
 use proteus_wasm::keys::{PreKeyBundle, Signature};
@@ -125,6 +125,9 @@ enum Command {
     },
     /// Decode a MLS message
     MlsMessage { message: FileOrStdin<String> },
+
+    /// Decode an MLS GroupInfo object
+    GroupInfo { data: FileOrStdin<String> },
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -149,6 +152,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;
             let message = MlsMessageIn::tls_deserialize(&mut bytes.as_slice())?;
             println!("{message:#?}");
+            Ok(())
+        }
+        Command::GroupInfo { data } => {
+            let input: String = data.contents()?;
+            let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;
+            let group_info = VerifiableGroupInfo::tls_deserialize(&mut bytes.as_slice())?;
+            println!("{group_info:#?}");
             Ok(())
         }
     }
