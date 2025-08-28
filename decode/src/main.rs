@@ -1,5 +1,6 @@
 use base64::Engine;
 use clap::{Parser, Subcommand};
+use clap_stdin::FileOrStdin;
 use openmls::prelude::{MlsMessageIn, TlsDeserializeTrait};
 use proteus_wasm::internal::message::SessionTag;
 use proteus_wasm::internal::util::fmt_hex;
@@ -116,33 +117,36 @@ pub struct App {
 #[derive(Debug, Subcommand)]
 enum Command {
     /// Decode a proteus prekey bundle
-    PrekeyBundle { bundle: String },
+    PrekeyBundle { bundle: FileOrStdin<String> },
     /// Decode a proteus message
     ProteusMessage {
         /// Base64 encoded proteus message
-        message: String,
+        message: FileOrStdin<String>,
     },
     /// Decode a MLS message
-    MlsMessage { message: String },
+    MlsMessage { message: FileOrStdin<String> },
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = App::parse();
     match app.command {
         Command::PrekeyBundle { bundle } => {
-            let bytes = base64::prelude::BASE64_STANDARD.decode(bundle)?;
+            let input: String = bundle.contents()?;
+            let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;
             let bundle = PreKeyBundle::deserialise(&bytes)?;
             println!("{:#?}", ProteusPreKeyBundle::from(bundle));
             Ok(())
         }
         Command::ProteusMessage { message } => {
-            let bytes = base64::prelude::BASE64_STANDARD.decode(message)?;
+            let input: String = message.contents()?;
+            let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;
             let message = Envelope::deserialise(&bytes)?;
             println!("{:#?}", ProteusEnvelope::from(message));
             Ok(())
         }
         Command::MlsMessage { message } => {
-            let bytes = base64::prelude::BASE64_STANDARD.decode(message)?;
+            let input: String = message.contents()?;
+            let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;
             let message = MlsMessageIn::tls_deserialize(&mut bytes.as_slice())?;
             println!("{message:#?}");
             Ok(())
