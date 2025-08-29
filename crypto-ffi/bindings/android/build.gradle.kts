@@ -35,6 +35,37 @@ mavenPublishing {
     signAllPublications()
 }
 
+val targets = listOf(
+    "aarch64-linux-android" to "arm64-v8a",
+    "armv7-linux-androideabi" to "armeabi-v7a",
+    "x86_64-linux-android" to "x86_64"
+)
+
+// This is the base directory under `build` that holds all libraries, organized by
+// the build type (debug or release) and the Android target (arm64-v8a etc.).
+// Libraries are copied there during the preDebugBuild and preReleaseBuild tasks.
+val ffiLibsBase = layout.buildDirectory.dir("ffiLibs").get().asFile
+
+fun copyFfiLibraries(buildType: String) {
+    for ((rustTarget, androidTarget) in targets) {
+        val src = projectDir.resolve("../../../target/$rustTarget/$buildType/libcore_crypto_ffi.so")
+        val dest = ffiLibsBase.resolve("$buildType/$androidTarget/libcore_crypto_ffi.so")
+        src.copyTo(dest, overwrite = true)
+    }
+}
+
+tasks.matching { it.name == "preDebugBuild" }.configureEach {
+    doLast {
+        copyFfiLibraries("debug")
+    }
+}
+
+tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+    doLast {
+        copyFfiLibraries("release")
+    }
+}
+
 android {
     namespace = "com.wire.crypto"
 
@@ -67,6 +98,20 @@ android {
         }
     }
 
+    sourceSets {
+        getByName("debug") {
+            jniLibs {
+                srcDirs(ffiLibsBase.resolve("debug"))
+            }
+        }
+
+        getByName("release") {
+            jniLibs {
+                srcDirs(ffiLibsBase.resolve("release"))
+            }
+        }
+    }
+
     publishing {
         singleVariant("release") {
             withSourcesJar()
@@ -79,35 +124,6 @@ android {
             proguardFiles(file("proguard-android-optimize.txt"), file("proguard-rules.pro"))
         }
     }
-}
-
-val processedResourcesDir = layout.buildDirectory.dir("processedResources").get().asFile
-
-fun registerCopyJvmBinaryTask(target: String, jniTarget: String, include: String = "*.so"): TaskProvider<Copy> =
-    tasks.register<Copy>("copy-$target") {
-        group = "uniffi"
-        from(projectDir.resolve("../../../target/$target/release"))
-        include(include)
-        into(processedResourcesDir.resolve(jniTarget))
-    }
-
-val copyBinariesTasks = listOf(
-    registerCopyJvmBinaryTask("aarch64-linux-android", "arm64-v8a"),
-    registerCopyJvmBinaryTask("armv7-linux-androideabi", "armeabi-v7a"),
-    registerCopyJvmBinaryTask("x86_64-linux-android", "x86_64")
-)
-
-project.afterEvaluate {
-    tasks.getByName("mergeReleaseJniLibFolders") { dependsOn(copyBinariesTasks) }
-    tasks.getByName("mergeDebugJniLibFolders") { dependsOn(copyBinariesTasks) }
-}
-
-tasks.withType<ProcessResources> {
-    dependsOn(copyBinariesTasks)
-}
-
-android.sourceSets.getByName("main").apply {
-    jniLibs.srcDir(processedResourcesDir)
 }
 
 // Allows skipping signing jars published to 'MavenLocal' repository
