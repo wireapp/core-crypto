@@ -298,14 +298,8 @@ $(ANDROID_X86): $(RUST_SOURCES) | android-env
 .PHONY: android-x86
 android-x86: $(ANDROID_X86) ## Build core-crypto-ffi for x86_64-linux-android
 
-.PHONY: ensure-release-mode
-ensure-release-mode:
-ifneq ($(RELEASE_MODE),release)
-	$(error Gradle is configured only for release mode and will not work properly in debug mode)
-endif
-
 .PHONY: android
-android: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) bindings-kotlin-android | ensure-release-mode ## Build all Android targets
+android: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) bindings-kotlin-android ## Build all Android targets
 	cd crypto-ffi/bindings && \
 	./gradlew android:build -x lint -x lintRelease
 
@@ -353,7 +347,7 @@ $(error Unsupported host platform for jvm: $(UNAME_S))
 endif
 
 .PHONY: jvm-test
-jvm-test: $(JVM_LIB) bindings-kotlin-jvm | ensure-release-mode ## Run Kotlin tests on JVM
+jvm-test: $(JVM_LIB) bindings-kotlin-jvm ## Run Kotlin tests on JVM
 	cd crypto-ffi/bindings && \
 	./gradlew jvm:build -x lint -x lintRelease
 
