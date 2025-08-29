@@ -146,26 +146,30 @@ ffi-library: $(FFI_LIBRARY)
 #-------------------------------------------------------------------------------
 
 # Swift bindings
+UNIFFI_SWIFT_OUTPUT := crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift
+
 ifneq ($(UNAME_S),Darwin)
-$(STAMPS)/bindings-swift:
+$(UNIFFI_SWIFT_OUTPUT):
 	$(warning Skipping build for "bindings-swift", as swift bindings generation is only supported on Darwin because OpenSSL can't be cross-compiled on non-Darwin systems; this is "$(UNAME_S)".)
 else
-$(STAMPS)/bindings-swift: $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
+$(UNIFFI_SWIFT_OUTPUT): $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
 	mkdir -p crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --config crypto-ffi/uniffi.toml \
 	  --language swift \
 	  --out-dir crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi \
 	  --library $(FFI_LIBRARY)
-	$(TOUCH_STAMP)
 endif
 
 .PHONY: bindings-swift swift
-bindings-swift: $(STAMPS)/bindings-swift ## Generate Swift bindings
-swift: $(STAMPS)/bindings-swift $(STAMPS)/docs-swift
+bindings-swift: $(UNIFFI_SWIFT_OUTPUT) ## Generate Swift bindings
+
+swift: bindings-swift $(STAMPS)/docs-swift
 
 # Kotlin-Android bindings
-$(STAMPS)/bindings-kotlin-android: $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
+UNIFFI_ANDROID_OUTPUT := crypto-ffi/bindings/android/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt
+
+$(UNIFFI_ANDROID_OUTPUT): $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
 	mkdir -p crypto-ffi/bindings/android/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --config crypto-ffi/uniffi-android.toml \
@@ -173,13 +177,14 @@ $(STAMPS)/bindings-kotlin-android: $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
 	  --no-format \
 	  --out-dir crypto-ffi/bindings/android/src/main/uniffi \
 	  --library $(FFI_LIBRARY)
-	$(TOUCH_STAMP)
 
 .PHONY: bindings-kotlin-android
-bindings-kotlin-android: $(STAMPS)/bindings-kotlin-android ## Generate Kotlin bindings for Android
+bindings-kotlin-android: $(UNIFFI_ANDROID_OUTPUT)  ## Generate Kotlin bindings for Android
 
 # Kotlin-JVM bindings
-$(STAMPS)/bindings-kotlin-jvm: $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
+UNIFFI_JVM_OUTPUT := crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt
+
+$(UNIFFI_JVM_OUTPUT): $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
 	mkdir -p crypto-ffi/bindings/jvm/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --config crypto-ffi/uniffi.toml \
@@ -187,14 +192,13 @@ $(STAMPS)/bindings-kotlin-jvm: $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
 	  --no-format \
 	  --out-dir crypto-ffi/bindings/jvm/src/main/uniffi \
 	  --library $(FFI_LIBRARY)
-	$(TOUCH_STAMP)
 
 .PHONY: bindings-kotlin-jvm
-bindings-kotlin-jvm: $(STAMPS)/bindings-kotlin-jvm ## Generate Kotlin bindings for JVM
+bindings-kotlin-jvm: $(UNIFFI_JVM_OUTPUT) ## Generate Kotlin bindings for JVM
 
 # Grouped Kotlin bindings
 .PHONY: bindings-kotlin
-bindings-kotlin: $(STAMPS)/bindings-kotlin-android $(STAMPS)/bindings-kotlin-jvm ## Generate all Kotlin bindings
+bindings-kotlin: bindings-kotlin-android bindings-kotlin-jvm ## Generate all Kotlin bindings
 
 #-------------------------------------------------------------------------------
 # iOS builds
@@ -235,7 +239,7 @@ $(STAMPS)/ios: $(STAMPS)/ios-device $(STAMPS)/ios-simulator-arm
 ios: $(STAMPS)/ios
 
 # Build XCFramework (macOS only)
-$(STAMPS)/ios-create-xcframework: ios $(STAMPS)/bindings-swift
+$(STAMPS)/ios-create-xcframework: ios bindings-swift
 	cd crypto-ffi/bindings/swift && ./build-xcframework.sh
 	$(TOUCH_STAMP)
 
@@ -300,7 +304,7 @@ ifneq ($(RELEASE_MODE),release)
 endif
 
 .PHONY: android
-android: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) $(STAMPS)/bindings-kotlin-android | ensure-release-mode ## Build all Android targets
+android: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) bindings-kotlin-android | ensure-release-mode ## Build all Android targets
 	cd crypto-ffi/bindings && \
 	./gradlew android:build -x lint -x lintRelease
 
@@ -348,7 +352,7 @@ $(error Unsupported host platform for jvm: $(UNAME_S))
 endif
 
 .PHONY: jvm-test
-jvm-test: $(JVM_LIB) $(STAMPS)/bindings-kotlin-jvm | ensure-release-mode ## Run Kotlin tests on JVM
+jvm-test: $(JVM_LIB) bindings-kotlin-jvm | ensure-release-mode ## Run Kotlin tests on JVM
 	cd crypto-ffi/bindings && \
 	./gradlew jvm:build -x lint -x lintRelease
 
@@ -508,7 +512,7 @@ $(STAMPS)/docs-ts: $(DTS_OUT)
 docs-ts: $(STAMPS)/docs-ts ## Generate TypeScript docs
 
 # Swift docs via Jazzy (macOS only)
-$(STAMPS)/docs-swift: ios $(STAMPS)/bindings-swift
+$(STAMPS)/docs-swift: ios bindings-swift
 	mkdir -p target/swift/doc
 	cd crypto-ffi/bindings/swift/WireCoreCrypto && \
 	jazzy \
