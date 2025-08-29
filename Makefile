@@ -150,7 +150,8 @@ UNIFFI_SWIFT_OUTPUT := crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCr
 
 ifneq ($(UNAME_S),Darwin)
 $(UNIFFI_SWIFT_OUTPUT):
-	$(warning Skipping build for "bindings-swift", as swift bindings generation is only supported on Darwin because OpenSSL can't be cross-compiled on non-Darwin systems; this is "$(UNAME_S)".)
+	$(warning Skipping build for "bindings-swift", as swift bindings generation is only supported on \
+	          Darwin because OpenSSL can't be cross-compiled on non-Darwin systems; this is "$(UNAME_S)".)
 else
 $(UNIFFI_SWIFT_OUTPUT): $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
 	mkdir -p crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
