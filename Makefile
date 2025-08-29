@@ -19,10 +19,12 @@ SHELL := /usr/bin/env bash
 ifeq ($(RELEASE),)
   CARGO_BUILD_ARGS :=
   XCODE_CONFIG := Debug
+  GRADLE_BUILD_TYPE := Debug
   RELEASE_MODE := debug
 else
   CARGO_BUILD_ARGS := --release
   XCODE_CONFIG := Release
+  GRADLE_BUILD_TYPE := Release
   RELEASE_MODE := release
 endif
 
@@ -301,7 +303,7 @@ android-x86: $(ANDROID_X86) ## Build core-crypto-ffi for x86_64-linux-android
 .PHONY: android
 android: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) bindings-kotlin-android ## Build all Android targets
 	cd crypto-ffi/bindings && \
-	./gradlew android:build -x lint -x lintRelease
+	./gradlew android:assemble$(GRADLE_BUILD_TYPE)
 
 #-------------------------------------------------------------------------------
 # JVM native builds (Darwin + Linux)
