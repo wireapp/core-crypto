@@ -124,6 +124,8 @@ android {
             proguardFiles(file("proguard-android-optimize.txt"), file("proguard-rules.pro"))
         }
     }
+
+    testBuildType = if (System.getenv("RELEASE") == "1") "release" else "debug"
 }
 
 // Allows skipping signing jars published to 'MavenLocal' repository
