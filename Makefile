@@ -351,7 +351,7 @@ endif
 .PHONY: jvm-test
 jvm-test: $(JVM_LIB) bindings-kotlin-jvm ## Run Kotlin tests on JVM
 	cd crypto-ffi/bindings && \
-	./gradlew jvm:build -x lint -x lintRelease
+	./gradlew jvm:test --rerun
 
 #-------------------------------------------------------------------------------
 # TypeScript / JS tasks
