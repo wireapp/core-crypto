@@ -25,25 +25,31 @@ dependencies {
     testImplementation(libs.assertj.core)
 }
 
-val processedResourcesDir = buildDir.resolve("processedResources")
+val buildType = if (System.getenv("RELEASE") == "1") "release" else "debug"
 
-fun registerCopyJvmBinaryTask(target: String, jniTarget: String, include: String = "*.so"): TaskProvider<Copy> =
-    tasks.register<Copy>("copy-$target") {
-        group = "uniffi"
-        from(projectDir.resolve("../../../target/$target/release"))
-        include(include)
-        into(processedResourcesDir.resolve(jniTarget))
+// This is the base directory under `build` that holds all libraries, organized by
+// the build type (debug or release) and the target (linux-x86-64 etc.).
+val ffiLibsBase = layout.buildDirectory.dir("ffiLibs").get().asFile
+
+val copyFfiLibrary by tasks.registering {
+    doLast {
+        val osName = System.getProperty("os.name")
+        val (rustTarget, jvmTarget, ext) = if (osName == "Linux") {
+            Triple("x86_64-unknown-linux-gnu", "linux-x86-64", "so")
+        } else {
+            Triple("aarch64-apple-darwin", "darwin-aarch64", "dylib")
+        }
+
+        val libName = "libcore_crypto_ffi.$ext"
+        val src = projectDir.resolve("../../../target/$rustTarget/$buildType/$libName")
+        val dest = ffiLibsBase.resolve("$buildType/$jvmTarget/$libName")
+        src.copyTo(dest, overwrite = true)
     }
+}
 
-val copyBinariesTasks = listOf(
-    registerCopyJvmBinaryTask("x86_64-unknown-linux-gnu", "linux-x86-64"),
-    registerCopyJvmBinaryTask("aarch64-apple-darwin", "darwin-aarch64", "*.dylib"),
-)
-
-tasks.withType<ProcessResources> { dependsOn(copyBinariesTasks) }
-
-tasks.withType<Test> { dependsOn(copyBinariesTasks) }
-tasks.withType<Jar> { dependsOn(copyBinariesTasks) }
+tasks.named("compileKotlin") {
+    dependsOn(copyFfiLibrary)
+}
 
 sourceSets {
     main {
@@ -52,7 +58,7 @@ sourceSets {
             srcDir(projectDir.resolve("src/main/uniffi"))
         }
         resources {
-            srcDir(processedResourcesDir)
+            srcDirs(ffiLibsBase.resolve(buildType))
         }
     }
 }
