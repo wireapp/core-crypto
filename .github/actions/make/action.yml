@@ -17,6 +17,13 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: compute artifact key
+      shell: bash -euo pipefail {0}
+      id: compute-key
+      run: |
+        files_hash=$(make "${{ inputs.make-rule }}"-hash-deps)
+        echo "key=${{ inputs.key }}-$files_hash" >> "$GITHUB_OUTPUT"
+
     - name: Download artifact
       run: |
         branch="${{ github.head_ref || github.ref_name }}"
@@ -27,7 +34,7 @@ runs:
         # Prioritize current branch over main
         runs=$(printf "%s\n%s\n" "$runs_current_branch" "$runs_main")
 
-        artifact_name="${{ inputs.key }}"
+        artifact_name="${{ steps.compute-key.outputs.key }}"
 
         echo "found=false" >> $GITHUB_ENV
         echo "found_in_this_run=false" >> $GITHUB_ENV
@@ -77,7 +84,7 @@ runs:
       if: env.found_in_this_run != 'true'
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ inputs.key }}
+        name: ${{ steps.compute-key.outputs.key }}
         path: artifact.tar.gz
 
     - name: Cleanup
