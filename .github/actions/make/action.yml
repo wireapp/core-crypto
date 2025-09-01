@@ -30,6 +30,7 @@ runs:
         artifact_name="${{ inputs.key }}"
 
         echo "found=false" >> $GITHUB_ENV
+        echo "found_in_this_run=false" >> $GITHUB_ENV
 
         # For each run in the sorted list of run ids, try downloading the artifact
         # with the given name.
@@ -37,6 +38,9 @@ runs:
           if gh run download "$run_id" -n "$artifact_name" >/dev/null 2>&1; then
             echo "Downloaded artifact $artifact_name from run with id: $run_id"
             echo "found=true" >> $GITHUB_ENV
+            if [ "$run_id" = "${{ github.run_id }}" ]; then
+              echo "found_in_this_run=true" >> $GITHUB_ENV
+            fi
             exit 0
           fi
         done
@@ -59,7 +63,7 @@ runs:
       shell: bash -leo pipefail {0}
 
     - name: Run make ${{ inputs.make-rule }} if needed
-      if: env.found != true
+      if: env.found != 'true'
       run: make ${{ inputs.make-rule }}
       shell: bash -leo pipefail {0}
 
@@ -69,19 +73,12 @@ runs:
         printf '%s\n' "${{ inputs.target-path }}" | tar -czf artifact.tar.gz -T - .stamps
       shell: bash -leo pipefail {0}
 
-    # We re-upload to ensure we always the artifact on the most recent workflow run.
-    # This should be fine, as uploads are comparatively cheap.
-    - name: Always upload artifact
-      # If the artifact already exists on this workflow run, continue.
-      # In most cases, the error is prevented by overwrite: true,
-      # howevever, we still need this, because of actions/upload-artifact#506
-      # (the _overwrite_ behavior is not atomic).
-      continue-on-error: true
+    - name: Upload artifact if it doesn't exist for this workflow run
+      if: env.found_in_this_run != 'true'
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.key }}
         path: artifact.tar.gz
-        overwrite: true
 
     - name: Cleanup
       run: |
