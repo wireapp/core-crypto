@@ -72,6 +72,11 @@ runs:
     # We re-upload to ensure we always the artifact on the most recent workflow run.
     # This should be fine, as uploads are comparatively cheap.
     - name: Always upload artifact
+      # If the artifact already exists on this workflow run, continue.
+      # In most cases, the error is prevented by overwrite: true,
+      # howevever, we still need this, because of actions/upload-artifact#506
+      # (the _overwrite_ behavior is not atomic).
+      continue-on-error: true
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.key }}
