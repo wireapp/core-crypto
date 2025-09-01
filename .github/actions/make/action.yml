@@ -34,7 +34,7 @@ runs:
         # For each run in the sorted list of run ids, try downloading the artifact
         # with the given name.
         for run_id in $runs; do
-        if gh run download "$run_id" -n "$artifact_name" >/dev/null 2>&1; then
+          if gh run download "$run_id" -n "$artifact_name" >/dev/null 2>&1; then
             echo "Downloaded artifact $artifact_name from run with id: $run_id"
             echo "found=true" >> $GITHUB_ENV
             exit 0
