@@ -343,7 +343,6 @@ $(JVM_DARWIN_LIB): $(jvm-darwin-deps)
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
 	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
-	$(TOUCH_STAMP)
 
 .PHONY: jvm-darwin
 jvm-darwin: $(JVM_DARWIN_LIB) ## Build core-crypto-ffi for JVM on aarch64-apple-darwin
@@ -358,7 +357,6 @@ $(JVM_LINUX_LIB): $(jvm-linux-deps)
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
 	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
-	$(TOUCH_STAMP)
 
 .PHONY: jvm-linux
 jvm-linux: $(JVM_LINUX_LIB) ## Build core-crypto-ffi for JVM on x86_64-unknown-linux-gnu
@@ -417,7 +415,6 @@ $(JS_GEN) $(WASM_GEN) &: $(wasm-build-deps)
 	  --mode normal \
 	  --target web \
 	  $(WASM_BUILD_ARGS)
-	$(TOUCH_STAMP)
 
 .PHONY: wasm-build
 wasm-build: $(WASM_GEN)
