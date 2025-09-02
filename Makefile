@@ -82,7 +82,10 @@ export CLANG_RT_DIR
 
 # Directory we store timestamps in
 STAMPS := .stamps
-TOUCH_STAMP = @mkdir -p $(STAMPS) && touch $@
+
+# We're writing a timestamp into the file because CI relies on file hashes to
+# change when the stamp files are updated.
+TOUCH_STAMP = @mkdir -p $(STAMPS) && echo "$$(date)" > $@
 
 #-------------------------------------------------------------------------------
 # Rust file-based heuristics
