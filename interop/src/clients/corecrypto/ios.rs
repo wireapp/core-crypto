@@ -2,8 +2,8 @@ use crate::{
     CIPHERSUITE_IN_USE,
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
+use anyhow::Result;
 use base64::{Engine as _, engine::general_purpose};
-use color_eyre::eyre::Result;
 use core_crypto::prelude::{KeyPackage, KeyPackageIn};
 use std::cell::{Cell, RefCell};
 use std::fs;

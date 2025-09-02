@@ -2,7 +2,7 @@
 use std::cell::Cell;
 use std::sync::Arc;
 
-use color_eyre::eyre::Result;
+use anyhow::Result;
 use tempfile::NamedTempFile;
 
 use core_crypto_ffi::{ClientId, CoreCrypto, CredentialType, CustomConfiguration, TransactionHelper};

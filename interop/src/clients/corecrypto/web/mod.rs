@@ -3,8 +3,8 @@ use std::cell::Cell;
 use std::{collections::HashMap, net::SocketAddr, sync::LazyLock};
 
 #[cfg(feature = "proteus")]
-use color_eyre::eyre::eyre;
-use color_eyre::eyre::{ContextCompat as _, Result};
+use anyhow::anyhow;
+use anyhow::{Context as _, Result};
 use tls_codec::Deserialize;
 use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator as _};
 
@@ -291,6 +291,6 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoWebClient {
             .await?
             .as_str()
             .map(ToOwned::to_owned)
-            .ok_or(eyre!("no proteus fingerprint returned"))
+            .ok_or(anyhow!("no proteus fingerprint returned"))
     }
 }

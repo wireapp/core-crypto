@@ -4,7 +4,7 @@ use core_crypto::DatabaseKey;
 
 #[cfg(not(target_family = "wasm"))]
 use crate::util::{MlsTransportSuccessProvider, MlsTransportTestExt};
-use color_eyre::eyre::{Result, eyre};
+use anyhow::{Result, anyhow};
 use core_crypto::prelude::CiphersuiteName;
 use std::sync::Arc;
 use tls_codec::Serialize;
@@ -78,7 +78,6 @@ fn run_test() -> Result<()> {
 
     use tokio::net::{TcpListener, TcpStream};
 
-    color_eyre::install()?;
     env_logger::init();
 
     // Check if we have a correct pwd
@@ -228,7 +227,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
                 .decrypt_message(&conversation_id, &message_to_decrypt)
                 .await?
                 .ok_or_else(|| {
-                    eyre!(
+                    anyhow!(
                         "[MLS] No message, something went very wrong [Client = {}]",
                         c.client_type()
                     )
@@ -262,7 +261,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
             .decrypt_message(message_to_decrypt)
             .await?
             .app_msg
-            .ok_or_else(|| eyre!("[MLS] No message received on master client"))?;
+            .ok_or_else(|| anyhow!("[MLS] No message received on master client"))?;
 
         let decrypted_master = String::from_utf8(decrypted_master_raw)?;
 

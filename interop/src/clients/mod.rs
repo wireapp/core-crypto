@@ -1,6 +1,6 @@
 #![allow(clippy::assign_op_pattern)]
 
-use color_eyre::eyre::Result;
+use anyhow::Result;
 use core_crypto::prelude::MlsCiphersuite;
 
 pub(crate) mod corecrypto;
