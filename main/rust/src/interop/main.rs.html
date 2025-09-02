@@ -100,7 +100,7 @@
 <a href=#100 id=100 data-nosnippet>100</a>        util::cp_wasm_files(tempdir.path().to_path_buf()).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#101 id=101 data-nosnippet>101</a>
 <a href=#102 id=102 data-nosnippet>102</a>        <span class="kw">let </span>spinner = util::RunningProcess::new(<span class="string">"Starting HTTP server..."</span>, <span class="bool-val">false</span>);
-<a href=#103 id=103 data-nosnippet>103</a>        <span class="kw">let </span>(server, server_task) = util::bind_http_server(tempdir.path().to_path_buf());
+<a href=#103 id=103 data-nosnippet>103</a>        <span class="kw">let </span>(server, server_task) = util::bind_http_server(tempdir.path().to_path_buf()).<span class="kw">await</span>;
 <a href=#104 id=104 data-nosnippet>104</a>        <span class="kw">let </span>http_server_hwnd = tokio::task::spawn(server_task);
 <a href=#105 id=105 data-nosnippet>105</a>        spinner.success(<span class="macro">format!</span>(<span class="string">"HTTP server started {server} [OK]"</span>));
 <a href=#106 id=106 data-nosnippet>106</a>
