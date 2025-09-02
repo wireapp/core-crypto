@@ -24,6 +24,14 @@ runs:
       run: |
         echo HOMEBREW_NO_AUTO_UPDATE=1 >> $GITHUB_ENV
         echo HOMEBREW_NO_INSTALL_UPGRADE=1 >> $GITHUB_ENV
+    - name: remove toolchain target list
+      shell: bash
+      run: |
+        SED="sed"
+        if [[ "$RUNNER_OS" == "macOS" ]]; then
+          SED="gsed"
+        fi
+        $SED -i '/^targets = \[/,/^]/d' rust-toolchain.toml
     - name:
       uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
