@@ -32,7 +32,7 @@ runs:
 
     - uses: ./.github/actions/make
       with:
-        key: lib-${{ inputs.task }}-${{ github.sha }}
+        key: lib-${{ inputs.task }}
         make-rule: ${{ inputs.task }}
         target-path: |
           target/${{ env.ANDROID_TARGET }}/release/libcore_crypto_ffi.a

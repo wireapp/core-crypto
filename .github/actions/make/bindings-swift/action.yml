@@ -19,7 +19,7 @@ runs:
 
       - uses: ./.github/actions/make
         with:
-          key: bindings-swift-${{ github.sha }}
+          key: bindings-swift
           make-rule: bindings-swift
           target-path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
           gh-token: ${{ inputs.gh-token }}

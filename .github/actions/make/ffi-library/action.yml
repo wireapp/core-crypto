@@ -22,7 +22,7 @@ runs:
 
     - uses: ./.github/actions/make
       with:
-        key: libcore_crypto_ffi.${{ env.LIBRARY_EXTENSION }}-${{ github.sha }}
+        key: libcore_crypto_ffi.${{ env.LIBRARY_EXTENSION }}
         make-rule: ffi-library
         target-path: target/release/libcore_crypto_ffi.${{ env.LIBRARY_EXTENSION }}
         gh-token: ${{ inputs.gh-token }}

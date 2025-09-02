@@ -19,7 +19,7 @@ runs:
 
     - uses: ./.github/actions/make
       with:
-        key: bindings-kotlin-jvm-${{ github.sha }}
+        key: bindings-kotlin-jvm
         make-rule: bindings-kotlin-jvm
         target-path: crypto-ffi/bindings
         gh-token: ${{ inputs.gh-token }}

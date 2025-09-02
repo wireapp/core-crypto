@@ -38,7 +38,7 @@ runs:
     - name: make android
       uses: ./.github/actions/make
       with:
-        key: android-${{ github.sha }}
+        key: android
         make-rule: android
         target-path: |
           crypto-ffi/bindings/android/build/outputs/aar
