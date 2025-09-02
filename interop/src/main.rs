@@ -100,7 +100,7 @@ fn run_test() -> Result<()> {
         util::cp_wasm_files(tempdir.path().to_path_buf()).await?;
 
         let spinner = util::RunningProcess::new("Starting HTTP server...", false);
-        let (server, server_task) = util::bind_http_server(tempdir.path().to_path_buf());
+        let (server, server_task) = util::bind_http_server(tempdir.path().to_path_buf()).await;
         let http_server_hwnd = tokio::task::spawn(server_task);
         spinner.success(format!("HTTP server started {server} [OK]"));
 

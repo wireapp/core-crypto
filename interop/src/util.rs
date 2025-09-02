@@ -163,11 +163,13 @@ pub(crate) async fn cp_wasm_files(wasm_deploy_path: PathBuf) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn bind_http_server(wasm_deploy_path: PathBuf) -> (SocketAddr, impl Future<Output = ()> + 'static) {
+pub(crate) async fn bind_http_server(wasm_deploy_path: PathBuf) -> (SocketAddr, impl Future<Output = ()> + 'static) {
     use warp::Filter as _;
     let warp_filter_cc = warp::path("core-crypto").and(warp::fs::dir(wasm_deploy_path));
 
-    warp::serve(warp_filter_cc).bind_ephemeral(([0, 0, 0, 0], 0))
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    (addr, warp::serve(warp_filter_cc).incoming(listener).run())
 }
 
 pub(crate) async fn start_webdriver_chrome(addr: &std::net::SocketAddr) -> Result<tokio::process::Child> {
