@@ -1,13 +1,15 @@
-use color_eyre::eyre::Result;
+#[cfg(not(target_family = "wasm"))]
+use anyhow::{anyhow, bail};
+
 #[cfg(target_family = "wasm")]
-fn main() -> Result<()> {
+fn main() -> anyhow::Result<()> {
     println!("the keystore dump tool is not available for WASM");
     Ok(())
 }
 
 #[cfg(not(target_family = "wasm"))]
 #[macro_rules_attribute::apply(smol_macros::main)]
-async fn main() -> Result<()> {
+async fn main() -> anyhow::Result<()> {
     #[derive(Debug, clap::Parser)]
     #[command(author, version, about, long_about = None)]
     struct Args {
@@ -20,25 +22,22 @@ async fn main() -> Result<()> {
 
     use chrono::TimeZone;
     use clap::Parser as _;
-    use color_eyre::eyre::eyre;
     use core_crypto_keystore::{
         Connection as Keystore, ConnectionType, DatabaseKey, connection::FetchFromDatabase, entities::*,
     };
     use openmls::prelude::TlsDeserializeTrait;
     use serde::ser::{SerializeMap, Serializer};
 
-    color_eyre::install()?;
-
     let args = Args::parse();
 
     if !std::path::Path::new(&args.path).exists() {
-        return Err(eyre!("File not found: {}", args.path));
+        bail!("File not found: {}", args.path);
     }
 
     let key = DatabaseKey::try_from(hex::decode(&args.key)?.as_slice())?;
     let keystore = Keystore::open(ConnectionType::Persistent(&args.path), &key)
         .await
-        .map_err(|e| eyre!("The passkey is probably wrong; [err: {e}]"))?;
+        .map_err(|e| anyhow!("The passkey is probably wrong; [err: {e}]"))?;
 
     let mut json_serializer = serde_json::Serializer::pretty(std::io::stdout());
     let mut json_map = json_serializer.serialize_map(None)?;
@@ -53,7 +52,7 @@ async fn main() -> Result<()> {
         let date = chrono::Utc
             .timestamp_opt(cred.created_at as i64, 0)
             .single()
-            .ok_or_else(|| eyre!("Cannot parse credential creation date"))?;
+            .ok_or_else(|| anyhow!("Cannot parse credential creation date"))?;
 
         credentials.push(serde_json::json!({
             "id": cred.id,

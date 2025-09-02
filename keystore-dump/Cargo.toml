@@ -10,7 +10,7 @@ workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-color-eyre = "0.6"
+anyhow = "1.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 core-crypto-keystore = { workspace = true }
