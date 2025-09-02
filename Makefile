@@ -103,6 +103,12 @@ RUST_RS_FILES := $(shell find $(CRATES) -type f -name '*.rs' 2>/dev/null)
 # Complete dependency set for FFI-related Cargo builds
 RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
 
+# Used by CI to calculate a hash of prerequisite files of a make rule
+%-hash-deps:
+	@deps="$($*-deps)"; \
+	hash=$$(sha256sum $$deps | sha256sum | awk '{print $$1}'); \
+	echo "$$hash"
+
 #-------------------------------------------------------------------------------
 # Build FFI artifacts
 #-------------------------------------------------------------------------------
