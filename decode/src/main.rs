@@ -1,7 +1,11 @@
 use base64::Engine;
 use clap::{Parser, Subcommand};
 use clap_stdin::FileOrStdin;
-use openmls::prelude::{MlsMessageIn, TlsDeserializeTrait};
+use mls_rs::MlsMessage;
+use mls_rs::extension::built_in::RatchetTreeExt;
+use mls_rs::extension::{ExtensionType, MlsExtension};
+use mls_rs::group::GroupInfo;
+use mls_rs::mls_rs_codec::MlsDecode;
 use proteus_wasm::internal::message::SessionTag;
 use proteus_wasm::internal::util::fmt_hex;
 use proteus_wasm::keys::{PreKeyBundle, Signature};
@@ -116,15 +120,27 @@ pub struct App {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Decode a proteus prekey bundle
+    /// Decode and display a proteus prekey bundle
     PrekeyBundle { bundle: FileOrStdin<String> },
-    /// Decode a proteus message
+    /// Decode and display a proteus message
     ProteusMessage {
-        /// Base64 encoded proteus message
+        /// File containing a base64 encoded proteus message, or `-` to read from stdin.
         message: FileOrStdin<String>,
     },
-    /// Decode a MLS message
-    MlsMessage { message: FileOrStdin<String> },
+    /// Decode and display an MLS message
+    MlsMessage {
+        /// File containing a base64 encoded mls message, or `-` to read from stdin.
+        message: FileOrStdin<String>,
+        /// Display raw mls tls decoded structure.
+        #[arg(short, long)]
+        raw_message: bool,
+        /// Display all members if group info is provided.
+        #[arg(short, long)]
+        members: bool,
+        /// Display decoded basic identities if group info is provided.
+        #[arg(short, long)]
+        identities: bool,
+    },
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -144,12 +160,71 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("{:#?}", ProteusEnvelope::from(message));
             Ok(())
         }
-        Command::MlsMessage { message } => {
+        Command::MlsMessage {
+            message,
+            raw_message,
+            members,
+            identities,
+        } => {
             let input: String = message.contents()?;
             let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;
-            let message = MlsMessageIn::tls_deserialize(&mut bytes.as_slice())?;
-            println!("{message:#?}");
+            let mut group_info = None;
+
+            if let Ok(message) = MlsMessage::mls_decode(&mut bytes.as_slice()) {
+                if raw_message {
+                    println!("{message:#?}");
+                }
+                group_info = message.into_group_info();
+            }
+
+            if let Ok(gi) = GroupInfo::mls_decode(&mut bytes.as_slice()) {
+                if raw_message {
+                    println!("{gi:#?}");
+                }
+                group_info = Some(gi);
+            }
+
+            if let Some(group_info) = group_info {
+                if members {
+                    print_members(&group_info);
+                }
+
+                if identities {
+                    print_basic_identities(&group_info);
+                }
+            }
+
             Ok(())
         }
     }
+}
+
+fn print_members(group_info: &GroupInfo) {
+    group_info.extensions().iter().for_each(|ext| {
+        if ext.extension_type == ExtensionType::RATCHET_TREE
+            && let Some(tree) = RatchetTreeExt::from_bytes(ext.extension_data.as_slice()).ok()
+        {
+            tree.tree_data.roster().members().iter().for_each(|member| {
+                println!("{:#?}", member);
+            });
+        }
+    })
+}
+
+fn print_basic_identities(group_info: &GroupInfo) {
+    group_info.extensions().iter().for_each(|ext| {
+        if ext.extension_type == ExtensionType::RATCHET_TREE
+            && let Some(tree) = RatchetTreeExt::from_bytes(ext.extension_data.as_slice()).ok()
+        {
+            tree.tree_data.roster().members().iter().for_each(|member| {
+                if let Some(bytes) = member.signing_identity.credential.as_basic().map(|f| &f.identifier) {
+                    println!(
+                        "leaf index: {:#?} identity: {:#?}",
+                        member.index,
+                        str::from_utf8(bytes).unwrap_or("invalid utf-8")
+                    );
+                }
+            });
+        }
+    });
 }
