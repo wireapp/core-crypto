@@ -130,7 +130,8 @@ $(UNIFFI_VERSION_FILE): Cargo.lock
 
 
 UNIFFI_BINDGEN := $(TARGET_DIR)/uniffi-bindgen
-$(UNIFFI_BINDGEN): $(UNIFFI_VERSION_FILE)
+uniffi-bindgen-deps := $(UNIFFI_VERSION_FILE)
+$(UNIFFI_BINDGEN): $(uniffi-bindgen-deps)
 	cargo build $(CARGO_BUILD_ARGS) \
 		--locked \
 		--features uniffi/cli \
@@ -138,7 +139,8 @@ $(UNIFFI_BINDGEN): $(UNIFFI_VERSION_FILE)
 
 # Build the FFI library
 FFI_LIBRARY := $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
-$(FFI_LIBRARY): $(RUST_SOURCES)
+ffi-library-deps := $(RUST_SOURCES)
+$(FFI_LIBRARY): $(ffi-library-deps)
 	cargo build $(CARGO_BUILD_ARGS) \
 		--locked \
 		--package core-crypto-ffi \
@@ -146,22 +148,25 @@ $(FFI_LIBRARY): $(RUST_SOURCES)
 
 # Make aliases
 .PHONY: uniffi-bindgen ffi-library
-uniffi-bindgen:  $(TARGET_DIR)/uniffi-bindgen
-ffi-library: $(FFI_LIBRARY)
+uniffi-bindgen: $(UNIFFI_BINDGEN)  ## Build the uniffi bindgen binary
+ffi-library: $(FFI_LIBRARY) ## Build the libcore_crypto_ffi library
 
 #-------------------------------------------------------------------------------
 # Use stamp files for generators: only re-run when inputs change
 #-------------------------------------------------------------------------------
 
+bindings-deps := $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
+
 # Swift bindings
 UNIFFI_SWIFT_OUTPUT := crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift
+bindings-swift-deps := $(bindings-deps)
 
 ifneq ($(UNAME_S),Darwin)
 $(UNIFFI_SWIFT_OUTPUT):
 	$(warning Skipping build for "bindings-swift", as swift bindings generation is only supported on \
 	          Darwin because OpenSSL can't be cross-compiled on non-Darwin systems; this is "$(UNAME_S)".)
 else
-$(UNIFFI_SWIFT_OUTPUT): $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
+$(UNIFFI_SWIFT_OUTPUT): $(bindings-swift-deps)
 	mkdir -p crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --config crypto-ffi/uniffi.toml \
@@ -177,8 +182,9 @@ swift: bindings-swift $(STAMPS)/docs-swift
 
 # Kotlin-Android bindings
 UNIFFI_ANDROID_OUTPUT := crypto-ffi/bindings/android/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt
+bindings-kotlin-android-deps := $(bindings-deps)
 
-$(UNIFFI_ANDROID_OUTPUT): $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
+$(UNIFFI_ANDROID_OUTPUT): $(bindings-kotlin-android-deps)
 	mkdir -p crypto-ffi/bindings/android/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --config crypto-ffi/uniffi-android.toml \
@@ -192,8 +198,9 @@ bindings-kotlin-android: $(UNIFFI_ANDROID_OUTPUT)  ## Generate Kotlin bindings f
 
 # Kotlin-JVM bindings
 UNIFFI_JVM_OUTPUT := crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt
+bindings-kotlin-jvm-deps := $(bindings-deps)
 
-$(UNIFFI_JVM_OUTPUT): $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
+$(UNIFFI_JVM_OUTPUT): $(bindings-kotlin-jvm-deps)
 	mkdir -p crypto-ffi/bindings/jvm/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --config crypto-ffi/uniffi.toml \
@@ -213,7 +220,8 @@ bindings-kotlin: bindings-kotlin-android bindings-kotlin-jvm ## Generate all Kot
 # iOS builds
 #-------------------------------------------------------------------------------
 
-$(STAMPS)/ios-device:
+ios-device-deps := $(RUST_SOURCES)
+$(STAMPS)/ios-device: $(ios-device-deps)
 	IPHONEOS_DEPLOYMENT_TARGET=16.0 \
 	cargo rustc --locked \
 	  --target aarch64-apple-ios \
@@ -226,7 +234,8 @@ $(STAMPS)/ios-device:
 .PHONY: ios-device
 ios-device: $(STAMPS)/ios-device ## Build core-crypto-ffi for aarch64-apple-ios for iOS 16.0 (macOS only)
 
-$(STAMPS)/ios-simulator-arm:
+ios-simulator-arm-deps := $(RUST_SOURCES)
+$(STAMPS)/ios-simulator-arm: $(ios-simulator-arm-deps)
 	CRATE_CC_NO_DEFAULTS=1 \
 	TARGET_CFLAGS="--target=arm64-apple-ios14.0.0-simulator \
 	-mios-simulator-version-min=14.0 \
@@ -248,7 +257,9 @@ $(STAMPS)/ios: $(STAMPS)/ios-device $(STAMPS)/ios-simulator-arm
 ios: $(STAMPS)/ios
 
 # Build XCFramework (macOS only)
-$(STAMPS)/ios-create-xcframework: ios bindings-swift
+
+ios-create-xcframework-deps := $(STAMPS)/ios $(STAMPS)/bindings-swift
+$(STAMPS)/ios-create-xcframework: $(ios-create-xcframework-deps)
 	cd crypto-ffi/bindings/swift && ./build-xcframework.sh
 	$(TOUCH_STAMP)
 
@@ -270,7 +281,8 @@ android-env:
 	@echo "  clang-rt:  $(CLANG_RT_DIR)"
 
 ANDROID_ARMv7 := target/armv7-linux-androideabi/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
-$(ANDROID_ARMv7): $(RUST_SOURCES) | android-env
+android-armv7-deps := $(RUST_SOURCES)
+$(ANDROID_ARMv7): $(android-armv7-deps) | android-env
 	cargo rustc --locked \
 	  --target armv7-linux-androideabi \
 	  --package core-crypto-ffi \
@@ -281,7 +293,8 @@ $(ANDROID_ARMv7): $(RUST_SOURCES) | android-env
 android-armv7: $(ANDROID_ARMv7) ## Build core-crypto-ffi for armv7-linux-androideabi
 
 ANDROID_ARMv8 := target/aarch64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
-$(ANDROID_ARMv8): $(RUST_SOURCES) | android-env
+android-armv8-deps := $(RUST_SOURCES)
+$(ANDROID_ARMv8): $(android-armv8-deps) | android-env
 	cargo rustc --locked \
 	  --target aarch64-linux-android \
 	  --package core-crypto-ffi \
@@ -292,7 +305,8 @@ $(ANDROID_ARMv8): $(RUST_SOURCES) | android-env
 android-armv8: $(ANDROID_ARMv8) ## Build core-crypto-ffi for aarch64-linux-android
 
 ANDROID_X86 := target/x86_64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
-$(ANDROID_X86): $(RUST_SOURCES) | android-env
+android-x86-deps := $(RUST_SOURCES)
+$(ANDROID_X86): $(android-x86-deps) | android-env
 	# Link clang_rt.builtins statically for x86_64 Android
 	cargo rustc --locked \
 	  --target x86_64-linux-android \
@@ -307,7 +321,8 @@ $(ANDROID_X86): $(RUST_SOURCES) | android-env
 android-x86: $(ANDROID_X86) ## Build core-crypto-ffi for x86_64-linux-android
 
 .PHONY: android
-android: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) bindings-kotlin-android ## Build all Android targets
+android-deps := $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) $(UNIFFI_ANDROID_OUTPUT)
+android: $(android-deps) ## Build all Android targets
 	cd crypto-ffi/bindings && \
 	./gradlew android:assemble$(GRADLE_BUILD_TYPE)
 
@@ -317,7 +332,8 @@ android: $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) bindings-kotlin-androi
 
 # darwin build
 JVM_DARWIN_LIB := target/aarch64-apple-darwin/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
-$(JVM_DARWIN_LIB): $(RUST_SOURCES)
+jvm-darwin-deps := $(RUST_SOURCES)
+$(JVM_DARWIN_LIB): $(jvm-darwin-deps)
 	cd crypto-ffi && \
 	cargo rustc --locked \
 	  --target aarch64-apple-darwin \
@@ -331,7 +347,8 @@ jvm-darwin: $(JVM_DARWIN_LIB) ## Build core-crypto-ffi for JVM on aarch64-apple-
 
 # linux build
 JVM_LINUX_LIB := target/x86_64-unknown-linux-gnu/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
-$(JVM_LINUX_LIB): $(RUST_SOURCES)
+jvm-linux-deps := $(RUST_SOURCES)
+$(JVM_LINUX_LIB): $(jvm-linux-deps)
 	cd crypto-ffi && \
 	cargo rustc --locked \
 	  --target x86_64-unknown-linux-gnu \
@@ -385,8 +402,9 @@ WASM_BUILD_ARGS := $(if $(RELEASE),,--dev)
 BUN_FROZEN_LOCKFILE := $(if $(RELEASE),--frozen-lockfile)
 
 # Generate WASM
+wasm-build-deps := $(RUST_SOURCES)
 # Note the `&:` syntax: that's a "grouped target" rule: https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html
-$(JS_GEN) $(WASM_GEN) &: $(RUST_SOURCES)
+$(JS_GEN) $(WASM_GEN) &: $(wasm-build-deps)
 	cd crypto-ffi && \
 	wasm-pack build \
 	  --locked \
@@ -424,7 +442,8 @@ ts-clean: ## Cleanup old TypeScript build outputs
 	&& rm -rf $(GEN_DIR)
 
 # build corecrypto.js
-$(JS_OUT): $(BUN_LOCK) $(NODE_MODULES) $(JS_GEN) $(WASM_GEN) $(TS_SRCS) $(PACKAGE_JSON) $(BUNFIG)
+js-deps := $(BUN_LOCK) $(NODE_MODULES) $(JS_GEN) $(WASM_GEN) $(TS_SRCS) $(PACKAGE_JSON) $(BUNFIG)
+$(JS_OUT): $(js-deps)
 # clean the output files before building; otherwise `bun` appends instead of replacing
 # we do _not_ want to rm `$(GEN_DIR); that kills our generated wasm code
 	rm -f $(JS_OUT) $(DTS_OUT)
@@ -435,8 +454,12 @@ $(JS_OUT): $(BUN_LOCK) $(NODE_MODULES) $(JS_GEN) $(WASM_GEN) $(TS_SRCS) $(PACKAG
 	  --outfile src/corecrypto.js \
 	  src/CoreCrypto.ts
 
+.PHONY: js
+js: $(JS_OUT)
+
 # generate TypeScript defs only when corecrypto.js changed
-$(DTS_OUT): $(JS_OUT)
+ts-deps := $(JS_OUT)
+$(DTS_OUT): $(ts-deps)
 	cd $(JS_DIR) && \
 	bun x dts-bundle-generator \
 	  --project tsconfig.json \
@@ -515,7 +538,8 @@ $(STAMPS)/docs-ts: $(DTS_OUT)
 docs-ts: $(STAMPS)/docs-ts ## Generate TypeScript docs
 
 # Swift docs via Jazzy (macOS only)
-$(STAMPS)/docs-swift: ios bindings-swift
+docs-swift-deps := $(STAMPS)/ios $(STAMPS)/bindings-swift
+$(STAMPS)/docs-swift: $(docs-swift-deps)
 	mkdir -p target/swift/doc
 	cd crypto-ffi/bindings/swift/WireCoreCrypto && \
 	jazzy \
