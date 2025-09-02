@@ -135,6 +135,7 @@
 ### Features
 
 - In our Swift bindings we are now protecting against concurrent access from multiple core crypto instances.
+- In the decode tool we add support for listing members or identities present in a group info.
 
 ## v8.0.3 - 2025-08-12
 
