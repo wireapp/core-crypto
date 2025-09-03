@@ -7,16 +7,20 @@ runs:
   using: composite
 
   steps:
+    - name: write uniffi version file
+      run: make .stamps/uniffi-version
+      shell: bash -leo pipefail {0}
+
     - name: uniffi bindgen artifact name
+      id: get-artifact-name
       run: |
         os="$(uname -s)"
-        uniffi_version="$(cargo metadata --format-version 1 | jq -r '.packages[] | select(.name == "uniffi") | .version')"
-        echo "ARTIFACT_NAME=uniffi-${os}-${uniffi_version}" >> $GITHUB_ENV
+        echo "artifact-name=uniffi-${os}" >> $GITHUB_OUTPUT
       shell: bash -leo pipefail {0}
 
     - uses: ./.github/actions/make
       with:
-        key: ${{ env.ARTIFACT_NAME }}
+        key: ${{ steps.get-artifact-name.outputs.artifact-name }}
         make-rule: uniffi-bindgen
         target-path: target/release/uniffi-bindgen
         gh-token: ${{ inputs.gh-token }}
