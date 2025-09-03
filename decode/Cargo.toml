@@ -9,7 +9,7 @@ workspace = true
 
 [dependencies]
 clap = { version = "4.5.46", features = ["derive"] }
-clap-stdin = "0.6.0"
+clap-stdin = "0.7.0"
 proteus-wasm = { workspace = true, features = ["serde"] }
 base64 = { workspace = true }
 openmls = { workspace = true }

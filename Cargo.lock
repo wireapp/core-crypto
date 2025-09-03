@@ -621,9 +621,9 @@ dependencies = [
 
 [[package]]
 name = "clap-stdin"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1101d998d15574d862ee282bcb93e0cf2d192c2fb12338dec35daa91425769a9"
+checksum = "ce9eaafece93d07ba62941de901e54d8df03800b7d775000d0d8cd5f876a592d"
 dependencies = [
  "thiserror 2.0.16",
 ]
@@ -4987,7 +4987,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
