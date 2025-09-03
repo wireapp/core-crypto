@@ -1,0 +1,35 @@
+name: Fetch or make the web bindings files and wrappers
+inputs:
+  gh-token:
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+      - name: download wasm binary
+        uses: ./.github/actions/make/web/wasm
+        with:
+          gh-token: ${{ inputs.gh-token }}
+
+      # ensure bun deps are installed freshly before any command using bun is invoked
+      - name: install bun deps
+        run: |
+          make bun-deps
+        shell: bash -leo pipefail {0}
+
+      - name: make js bindings
+        uses: ./.github/actions/make
+        with:
+          key: js
+          make-rule: js
+          target-path: crypto-ffi/bindings/js/src/corecrypto.js
+          gh-token: ${{ inputs.gh-token }}
+
+      - name: transpile js to ts
+        uses: ./.github/actions/make
+        with:
+          key: ts
+          make-rule: ts
+          target-path: crypto-ffi/bindings/js/src/corecrypto.d.ts
+          gh-token: ${{ inputs.gh-token }}
