@@ -29,7 +29,7 @@ runs:
         branch="${{ github.head_ref || github.ref_name }}"
 
         runs_current_branch=$(gh run list --branch "$branch" --limit 10 -w bindings.yml --json databaseId | jq '.[].databaseId')
-        runs_main=$(gh run list --branch "$branch" --limit 10 -w bindings.yml --json databaseId | jq '.[].databaseId')
+        runs_main=$(gh run list --branch main --limit 10 -w bindings.yml --json databaseId | jq '.[].databaseId')
 
         # Prioritize current branch over main
         runs=$(printf "%s\n%s\n" "$runs_current_branch" "$runs_main")
