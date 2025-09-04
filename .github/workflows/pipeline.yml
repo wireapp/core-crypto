@@ -1,4 +1,4 @@
-name: build bindings
+name: 🚀 pipeline
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
