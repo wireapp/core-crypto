@@ -433,7 +433,7 @@ $(BUN_LOCK) $(NODE_MODULES) &: $(PACKAGE_JSON)
 	@touch $(NODE_MODULES)
 
 .PHONY: bun-deps
-bun-deps: $(BUN_LOCK) ## Install JS dependencies using bun
+bun-deps: $(BUN_LOCK) $(NODE_MODULES) ## Install JS dependencies using bun
 
 # always remove old outputs
 .PHONY: ts-clean
