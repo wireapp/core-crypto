@@ -1,0 +1,86 @@
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-test-ios"
+  cancel-in-progress: true
+
+on:
+  workflow_call:
+
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
+env:
+  RELEASE: 1
+
+jobs:
+  test-ios:
+    if: github.repository == 'wireapp/core-crypto' && github.event_name == 'pull_request'
+    runs-on: self-hosted
+    steps:
+      - name: Cleanup on post
+        uses: gacts/run-and-post-run@v1
+        with:
+            post: |
+              sh ./scripts/clean.sh
+      - uses: actions/checkout@v5
+
+      - name: fetch uniffi bindgen artifact
+        uses: ./.github/actions/make/uniffi-bindgen
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: fetch ffi library
+        uses: ./.github/actions/make/ffi-library
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: download artifacts for ios device
+        uses: ./.github/actions/make/ios
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          task: ios-device
+
+      - name: download artifacts for ios simulator
+        uses: ./.github/actions/make/ios
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          task: ios-simulator-arm
+
+      - name: download swift bindings
+        uses: ./.github/actions/make/bindings-swift
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.4.0'
+      - name: Install swiftlint
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_INSTALL_UPGRADE: 1
+        run: |
+          brew install swiftlint
+      - name: Format-check and lint swift bindings
+        run: |
+          swift format lint -r -s ./crypto-ffi/bindings/swift/WireCoreCrypto
+          swiftlint --strict ./crypto-ffi/bindings/swift/WireCoreCrypto
+      - name: Format-check and lint swift interop client
+        run: |
+          swift format lint -r -s ./interop/src/clients/InteropClient
+          swiftlint --strict ./interop/src/clients/InteropClient
+      - name: Create simulator
+        run: |
+          echo "SIMULATOR=$(sh ./scripts/create-ios-sim-device.sh "iPhone 16 test-ios")" >> $GITHUB_ENV
+
+      - name: ios tests
+        run: |
+          cd crypto-ffi/bindings/swift/WireCoreCrypto
+
+          # run tests
+          xcodebuild test -scheme TestHost -configuration Release -sdk iphonesimulator \
+                          -destination 'platform=iOS Simulator,name=iPhone 16 test-ios'
+      - name: Delete simulator
+        if: always()
+        run: |
+          ./scripts/delete-ios-sim-device.sh ${{ env.SIMULATOR }}

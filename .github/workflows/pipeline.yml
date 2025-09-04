@@ -43,16 +43,6 @@ jobs:
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
-  bindings-swift:
-    if: github.repository == 'wireapp/core-crypto'
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-and-cache-rust
-      - uses: ./.github/actions/make/bindings-swift
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-
   build-android:
     if: github.event_name == 'pull_request'
     uses: ./.github/workflows/build-android.yml
@@ -113,83 +103,39 @@ jobs:
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
+  #################
+  # iOS/Swift
+
   build-ios:
     uses: ./.github/workflows/build-ios.yml
 
-  test-ios:
-    if: github.event_name == 'pull_request'
+  bindings-swift:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+      - uses: ./.github/actions/make/bindings-swift
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+  package-ios:
     needs:
       - build-ios
       - bindings-swift
-    runs-on: self-hosted
-    steps:
-      - name: Cleanup on post
-        uses: gacts/run-and-post-run@v1
-        with:
-            post: |
-              sh ./scripts/clean.sh
-      - uses: actions/checkout@v5
+    uses: ./.github/workflows/package-ios.yml
 
-      - name: fetch uniffi bindgen artifact
-        uses: ./.github/actions/make/uniffi-bindgen
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
+  test-ios:
+    needs:
+      - build-ios
+      - bindings-swift
+    uses: ./.github/workflows/test-ios.yml
 
-      - name: fetch ffi library
-        uses: ./.github/actions/make/ffi-library
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: download artifacts for ios device
-        uses: ./.github/actions/make/ios
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          task: ios-device
-
-      - name: download artifacts for ios simulator
-        uses: ./.github/actions/make/ios
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          task: ios-simulator-arm
-
-      - name: download swift bindings
-        uses: ./.github/actions/make/bindings-swift
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '16.4.0'
-      - name: Install swiftlint
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: 1
-          HOMEBREW_NO_INSTALL_UPGRADE: 1
-        run: |
-          brew install swiftlint
-      - name: Format-check and lint swift bindings
-        run: |
-          swift format lint -r -s ./crypto-ffi/bindings/swift/WireCoreCrypto
-          swiftlint --strict ./crypto-ffi/bindings/swift/WireCoreCrypto
-      - name: Format-check and lint swift interop client
-        run: |
-          swift format lint -r -s ./interop/src/clients/InteropClient
-          swiftlint --strict ./interop/src/clients/InteropClient
-      - name: Create simulator
-        run: |
-          echo "SIMULATOR=$(sh ./scripts/create-ios-sim-device.sh "iPhone 16 test-ios")" >> $GITHUB_ENV
-
-      - name: ios tests
-        run: |
-          cd crypto-ffi/bindings/swift/WireCoreCrypto
-
-          # run tests
-          xcodebuild test -scheme TestHost -configuration Release -sdk iphonesimulator \
-                          -destination 'platform=iOS Simulator,name=iPhone 16 test-ios'
-      - name: Delete simulator
-        if: always()
-        run: |
-          ./scripts/delete-ios-sim-device.sh ${{ env.SIMULATOR }}
+  docs-swift:
+    needs:
+      - build-ios
+      - bindings-swift
+    uses: ./.github/workflows/docs-swift.yml
 
   test-android:
     if: github.repository == 'wireapp/core-crypto' && github.event_name == 'pull_request'
@@ -309,99 +255,6 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
 
-  create-xcframework:
-    if: github.event_name == 'pull_request'
-    needs:
-      - build-ios
-      - bindings-swift
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: download artifacts for ios device
-        uses: ./.github/actions/make/ios
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          task: ios-device
-
-      - name: download artifacts for ios simulator
-        uses: ./.github/actions/make/ios
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          task: ios-simulator-arm
-
-      - name: download swift bindings
-        uses: ./.github/actions/make/bindings-swift
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '16.4.0'
-      - name: create xcframework
-        run: |
-          cd crypto-ffi/bindings/swift
-          ./build-xcframework.sh
-
-  docs-swift:
-    needs:
-      - build-ios
-      - bindings-swift
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: download swift bindings
-        uses: ./.github/actions/make/bindings-swift
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: download artifacts for ios device
-        uses: ./.github/actions/make/ios
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          task: ios-device
-
-      - name: download artifacts for ios simulator
-        uses: ./.github/actions/make/ios
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          task: ios-simulator-arm
-
-      - name: setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '16.4.0'
-      - name: Set up Ruby environment
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-
-      - name: install jazzy
-        run: gem install jazzy
-
-      - uses: swift-actions/setup-swift@v2.3.0
-        with:
-          swift-version: "6.0"
-
-      - name: swift docs
-        run: |
-          mkdir -p target/doc/core_crypto_ffi/bindings/swift
-          cd crypto-ffi/bindings/swift/WireCoreCrypto
-          jazzy \
-          	  --modules WireCoreCrypto,WireCoreCryptoUniffi \
-          	  --build-tool-arguments -project,WireCoreCrypto.xcodeproj,-scheme,WireCoreCrypto,-configuration,Release \
-          	  -o ../../../../target/swift/doc
-
-      - uses: actions/upload-artifact@v4.5.0
-        with:
-          name: swift
-          path: target/swift/doc
-          retention-days: 1
-          overwrite: true
-          include-hidden-files: true
-          if-no-files-found: error
 
   e2e-interop-test:
     if: github.event_name == 'pull_request'
