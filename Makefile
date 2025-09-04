@@ -101,7 +101,7 @@ WORKSPACE_CARGO_FILES := Cargo.toml Cargo.lock
 CRATE_MANIFESTS := $(addsuffix /Cargo.toml,$(CRATES))
 
 # Enumerate all .rs files in relevant crates
-RUST_RS_FILES := $(shell find $(CRATES) -type f -name '*.rs' 2>/dev/null)
+RUST_RS_FILES := $(shell find $(CRATES) -type f -name '*.rs' 2>/dev/null | LC_ALL=C sort)
 
 # Complete dependency set for FFI-related Cargo builds
 RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
@@ -392,7 +392,7 @@ JS_GEN := $(GEN_DIR)/core-crypto-ffi.js
 WASM_GEN := $(GEN_DIR)/core-crypto-ffi_bg.wasm
 
 # find all .ts source files under src/ except `*.d.ts`
-TS_SRCS := $(shell find $(JS_SRC_DIR) -type f -name '*.ts' -not -name '*.d.ts' 2>/dev/null)
+TS_SRCS := $(shell find $(JS_SRC_DIR) -type f -name '*.ts' -not -name '*.d.ts' 2>/dev/null | LC_ALL=C sort)
 
 JS_OUT := $(JS_DIR)/src/corecrypto.js
 DTS_OUT := $(JS_DIR)/src/corecrypto.d.ts
