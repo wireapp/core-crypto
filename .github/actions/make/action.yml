@@ -65,7 +65,11 @@ runs:
         # timestamps on checked out files.
         paths="${{ inputs.target-path }}"
         for dir in $paths; do
-          touch "$dir"
+          if [ -d "$dir" ]; then
+            find "$dir" -type f -exec touch {} +
+          elif [ -f "$dir" ]; then
+            touch "$dir"
+          fi
         done
       shell: bash -leo pipefail {0}
 
