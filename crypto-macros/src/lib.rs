@@ -8,6 +8,7 @@ use syn::{
     Attribute, Block, FnArg, ItemFn, ReturnType, Visibility, parse_macro_input, punctuated::Punctuated, token::Comma,
 };
 
+mod debug_bytes;
 mod durable;
 mod entity_derive;
 mod idempotent;
@@ -89,4 +90,11 @@ pub(crate) fn items(
     let attrs = &ast.attrs;
     let vis = &ast.vis;
     (ret, name, inputs, body, attrs, vis)
+}
+
+/// Implements the `Debug` trait for the given struct changing the formatting of `Vec<u8>` fields.
+/// Structs deriving this custom `Debug` debug `Vec<u8>` or `Option<Vec<u8>>` as a hex string.
+#[proc_macro_derive(Debug)]
+pub fn derive_debug_bytes(input: TokenStream) -> TokenStream {
+    debug_bytes::derive_debug(input)
 }
