@@ -2,7 +2,7 @@ use zeroize::Zeroize;
 
 use crate::connection::FetchFromDatabase;
 
-#[derive(Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct ProteusIdentity {
     pub sk: Vec<u8>,
@@ -29,7 +29,7 @@ impl ProteusIdentity {
     }
 }
 
-#[derive(Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct ProteusPrekey {
     pub id: u16,
@@ -83,7 +83,16 @@ impl ProteusPrekey {
     }
 }
 
-#[derive(Debug, Clone, Zeroize, PartialEq, Eq, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
+#[derive(
+    core_crypto_macros::Debug,
+    Clone,
+    Zeroize,
+    PartialEq,
+    Eq,
+    core_crypto_macros::Entity,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 #[zeroize(drop)]
 pub struct ProteusSession {
     pub id: String,

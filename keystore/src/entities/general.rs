@@ -1,6 +1,6 @@
 /// Consumers of this library can use this to specify data to be persisted at the end of
 /// a transaction.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ConsumerData {
     pub content: Vec<u8>,
 }

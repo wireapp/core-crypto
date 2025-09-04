@@ -4,7 +4,16 @@ use openmls_traits::types::SignatureScheme;
 use zeroize::Zeroize;
 
 /// Entity representing a persisted `MlsGroup`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
+#[derive(
+    core_crypto_macros::Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Zeroize,
+    core_crypto_macros::Entity,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 #[zeroize(drop)]
 #[entity(collection_name = "mls_groups")]
 pub struct PersistedMlsGroup {
@@ -46,7 +55,7 @@ pub trait PersistedMlsGroupExt: Entity {
 }
 
 /// Entity representing a temporarily persisted `MlsGroup`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct PersistedMlsPendingGroup {
     pub id: Vec<u8>,
@@ -56,7 +65,7 @@ pub struct PersistedMlsPendingGroup {
 }
 
 /// Entity representing a buffered message
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct MlsPendingMessage {
     pub foreign_id: Vec<u8>,
@@ -70,7 +79,16 @@ pub struct MlsPendingMessage {
 ///
 /// We don't automatically zeroize on drop because the commit data is still encrypted at this point;
 /// it is not risky to leave it in memory.
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
+#[derive(
+    core_crypto_macros::Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Zeroize,
+    core_crypto_macros::Entity,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub struct MlsBufferedCommit {
     // we'd ideally just call this field `conversation_id`, but as of right now the
     // Entity macro does not yet support id columns not named `id`
@@ -102,7 +120,7 @@ impl MlsBufferedCommit {
 }
 
 /// Entity representing a persisted `Credential`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct MlsCredential {
     pub id: Vec<u8>,
@@ -117,7 +135,7 @@ pub trait MlsCredentialExt: Entity {
 }
 
 /// Entity representing a persisted `SignatureKeyPair`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct MlsSignatureKeyPair {
     pub signature_scheme: u16,
@@ -138,7 +156,7 @@ impl MlsSignatureKeyPair {
 }
 
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct MlsHpkePrivateKey {
     pub sk: Vec<u8>,
@@ -146,7 +164,7 @@ pub struct MlsHpkePrivateKey {
 }
 
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct MlsEncryptionKeyPair {
     pub sk: Vec<u8>,
@@ -154,7 +172,16 @@ pub struct MlsEncryptionKeyPair {
 }
 
 /// Entity representing a list of [MlsEncryptionKeyPair]
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
+#[derive(
+    core_crypto_macros::Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Zeroize,
+    core_crypto_macros::Entity,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 #[zeroize(drop)]
 #[entity(collection_name = "mls_epoch_encryption_keypairs")]
 pub struct MlsEpochEncryptionKeyPair {
@@ -164,7 +191,7 @@ pub struct MlsEpochEncryptionKeyPair {
 }
 
 /// Entity representing a persisted `SignatureKeyPair`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct MlsPskBundle {
     pub psk_id: Vec<u8>,
@@ -172,7 +199,16 @@ pub struct MlsPskBundle {
 }
 
 /// Entity representing a persisted `KeyPackage`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
+#[derive(
+    core_crypto_macros::Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Zeroize,
+    core_crypto_macros::Entity,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 #[zeroize(drop)]
 #[entity(collection_name = "mls_keypackages")]
 pub struct MlsKeyPackage {
@@ -183,7 +219,16 @@ pub struct MlsKeyPackage {
 
 /// Entity representing an enrollment instance used to fetch a x509 certificate and persisted when
 /// context switches and the memory it lives in is about to be erased
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
+#[derive(
+    core_crypto_macros::Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Zeroize,
+    core_crypto_macros::Entity,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 #[zeroize(drop)]
 #[entity(collection_name = "e2ei_enrollment", no_upsert)]
 pub struct E2eiEnrollment {
@@ -356,19 +401,28 @@ impl<T: UniqueEntity + Send + Sync> EntityTransactionExt for T {
 }
 
 /// OIDC refresh token used in E2EI
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct E2eiRefreshToken {
     pub content: Vec<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct E2eiAcmeCA {
     pub content: Vec<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
+#[derive(
+    core_crypto_macros::Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Zeroize,
+    core_crypto_macros::Entity,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 #[zeroize(drop)]
 pub struct E2eiIntermediateCert {
     // key to identify the CA cert; Using a combination of SKI & AKI extensions concatenated like so is suitable: `SKI[+AKI]`
@@ -377,7 +431,16 @@ pub struct E2eiIntermediateCert {
     pub content: Vec<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity, serde::Serialize, serde::Deserialize)]
+#[derive(
+    core_crypto_macros::Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Zeroize,
+    core_crypto_macros::Entity,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 #[zeroize(drop)]
 pub struct E2eiCrl {
     #[id]
