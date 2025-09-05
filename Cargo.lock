@@ -844,6 +844,7 @@ dependencies = [
  "console_error_panic_hook",
  "core-crypto",
  "core-crypto-keystore",
+ "core-crypto-macros",
  "derive_more",
  "futures-util",
  "hex",
