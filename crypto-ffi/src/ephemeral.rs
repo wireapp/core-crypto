@@ -6,7 +6,7 @@ use core_crypto::prelude::{CoreCrypto as CoreCryptoFfi, HistorySecret as CoreCry
 
 /// A `HistorySecret` encodes sufficient client state that it can be used to instantiate an
 /// ephemeral client.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen(getter_with_clone))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct HistorySecret {
