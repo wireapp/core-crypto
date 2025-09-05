@@ -62,6 +62,7 @@ proteus-traits = { workspace = true, optional = true }
 sha2 = "0.10.9"
 core-crypto-keystore.workspace = true
 typed-builder.workspace = true
+core-crypto-macros = { workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = { version = "2.1", optional = true }
@@ -88,7 +89,6 @@ wire-e2e-identity = { workspace = true, features = ["builder"] }
 web-time = "1.1.0"
 time = { version = "0.3", features = ["wasm-bindgen"] }
 core-crypto-keystore = { workspace = true, features = ["dummy-entity"] }
-core-crypto-macros = { workspace = true }
 rmp-serde = { workspace = true }
 smol.workspace = true
 smol-macros.workspace = true
