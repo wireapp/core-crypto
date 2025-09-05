@@ -12,7 +12,7 @@ use crate::{
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
 
-#[derive(Debug)]
+#[derive(core_crypto_macros::Debug)]
 pub(crate) struct CoreCryptoFfiClient {
     cc: CoreCrypto,
     client_id: Vec<u8>,
