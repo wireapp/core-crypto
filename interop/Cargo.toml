@@ -17,6 +17,7 @@ log = "0.4"
 env_logger = "0.11"
 core-crypto = { path = "../crypto" }
 core-crypto-ffi = { path = "../crypto-ffi" }
+core-crypto-macros = { path = "../crypto-macros" }
 openmls.workspace = true
 tls_codec.workspace = true
 
