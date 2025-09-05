@@ -12,7 +12,7 @@ use zeroize::Zeroize;
 
 use crate::{RecursiveError, e2e_identity::id::WireQualifiedClientId, prelude::ClientId};
 
-#[derive(Debug, Clone, Zeroize)]
+#[derive(core_crypto_macros::Debug, Clone, Zeroize)]
 #[zeroize(drop)]
 pub struct CertificatePrivateKey {
     pub(crate) value: Vec<u8>,
