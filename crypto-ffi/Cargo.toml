@@ -36,6 +36,7 @@ serde_json.workspace = true
 derive_more.workspace = true
 proteus-wasm = { workspace = true, optional = true }
 core-crypto-keystore.workspace = true
+core-crypto-macros.workspace = true
 core-crypto.workspace = true
 rmp-serde.workspace = true
 paste = "1.0.15"
