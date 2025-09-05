@@ -2289,6 +2289,7 @@ dependencies = [
  "const_format",
  "core-crypto",
  "core-crypto-ffi",
+ "core-crypto-macros",
  "env_logger",
  "fantoccini",
  "hex",
