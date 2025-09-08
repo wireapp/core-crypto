@@ -13,7 +13,7 @@ env:
 
 jobs:
   build-android:
-    if: github.repository == 'wireapp/core-crypto'
+    if: github.repository == 'wireapp/core-crypto' && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       matrix:
