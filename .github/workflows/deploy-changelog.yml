@@ -12,7 +12,6 @@ jobs:
   deploy:
     name: document changes
     runs-on: ubuntu-latest
-    if: github.repository == 'wireapp/core-crypto'
     env:
       CHANGELOG: CHANGELOG.md
 

@@ -24,7 +24,6 @@ jobs:
   # Shared between JVM Linux and Android
 
   uniffi-bindgen-linux:
-    if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -36,7 +35,6 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
   ffi-library-linux:
-    if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -68,7 +66,6 @@ jobs:
   # JVM Linux
 
   build-jvm-linux:
-    if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -83,7 +80,6 @@ jobs:
     needs:
       - uniffi-bindgen-linux
       - ffi-library-linux
-    if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

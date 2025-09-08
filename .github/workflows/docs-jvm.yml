@@ -10,7 +10,6 @@ env:
 
 jobs:
   docs-jvm:
-    if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
 
     steps:

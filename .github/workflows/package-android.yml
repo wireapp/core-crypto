@@ -10,7 +10,7 @@ env:
 
 jobs:
   package-android:
-    if: github.repository == 'wireapp/core-crypto'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
 
     env:
