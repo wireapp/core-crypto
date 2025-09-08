@@ -140,6 +140,53 @@ jobs:
       - bindings-swift
     uses: ./.github/workflows/docs-swift.yml
 
+  #################
+  # Web
+
+  build-wasm:
+    runs-on: ubuntu-latest
+    env:
+      # ensures we have same flags as when publishing
+      RUSTFLAGS: "-D warnings -W unreachable-pub"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+        with:
+          target: wasm32-unknown-unknown
+      - name: install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      - name: build wasm
+        uses: ./.github/actions/make/web/wasm
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+  bindings-ts:
+    needs: build-wasm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      - name: build ts
+        uses: ./.github/actions/make/web/ts
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+  test-ts:
+    needs: bindings-ts
+    uses: ./.github/workflows/test-ts.yml
+
+  docs-ts:
+    needs: bindings-ts
+    uses: ./.github/workflows/docs-ts.yml
+
   e2e-interop-test:
     if: github.event_name == 'pull_request'
     runs-on: self-hosted
@@ -207,70 +254,6 @@ jobs:
         run: |
           ./scripts/delete-ios-sim-device.sh ${{ env.SIMULATOR }}
 
-  build-wasm:
-    runs-on: ubuntu-latest
-    env:
-      # ensures we have same flags as when publishing
-      RUSTFLAGS: "-D warnings -W unreachable-pub"
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-and-cache-rust
-        with:
-          target: wasm32-unknown-unknown
-      - name: install wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack
-      - name: build wasm
-        uses: ./.github/actions/make/web/wasm
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-  bindings-ts:
-    needs: build-wasm
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: install wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack
-      - name: build ts
-        uses: ./.github/actions/make/web/ts
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-  test-ts:
-    if: github.event_name == 'pull_request'
-    needs: bindings-ts
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: wireapp/setup-chrome@master
-        id: setup-chrome
-        with:
-          chrome-version: stable
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: download web files
-        uses: ./.github/actions/make/web/ts
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: lint
-        run: |
-          cd crypto-ffi/bindings/js
-          bun eslint . --max-warnings=0
-      - name: check all ts files
-        run: |
-          cd crypto-ffi/bindings/js
-          bun tsc --noEmit
-      - name: test
-        run: make ts-test
-
   docs-rust:
     runs-on: ubuntu-latest
     env:
@@ -294,35 +277,6 @@ jobs:
         include-hidden-files: true
         if-no-files-found: error
 
-  docs-ts:
-    runs-on: ubuntu-latest
-    needs: bindings-ts
-
-    steps:
-    - name: checkout repository
-      uses: actions/checkout@v5
-
-    - name: setup bun
-      uses: oven-sh/setup-bun@v2
-      with:
-        bun-version: latest
-
-    - name: download web files
-      uses: ./.github/actions/make/web/ts
-      with:
-        gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: make ts docs
-      run: make docs-ts
-
-    - uses: actions/upload-artifact@v4.5.0
-      with:
-        name: typescript
-        path: target/typescript/doc
-        retention-days: 1
-        overwrite: true
-        include-hidden-files: true
-        if-no-files-found: error
 
   deploy-docs:
     runs-on: ubuntu-latest
