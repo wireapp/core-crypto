@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"attr":["dispotent","durable","idempotent"],"derive":["Entity"]};
+window.SIDEBAR_ITEMS = {"attr":["dispotent","durable","idempotent"],"derive":["Debug","Entity"]};
