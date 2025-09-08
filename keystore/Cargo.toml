@@ -47,7 +47,7 @@ itertools.workspace = true
 
 [target.'cfg(target_os = "ios")'.dependencies]
 security-framework = "3.3"
-security-framework-sys = "2.14"
+security-framework-sys = "2.15"
 core-foundation = "0.10"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
