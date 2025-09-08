@@ -162,6 +162,9 @@ jobs:
         with:
           xcode-version: '16.4.0'
       - name: Install swiftlint
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_INSTALL_UPGRADE: 1
         run: |
           brew install swiftlint
       - name: Format-check and lint swift bindings
