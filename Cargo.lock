@@ -897,6 +897,7 @@ dependencies = [
  "log",
  "macro_rules_attribute 0.2.2",
  "mls-crypto-provider",
+ "obfuscate",
  "openmls",
  "openmls_basic_credential",
  "openmls_traits",
