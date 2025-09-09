@@ -94,7 +94,8 @@ pub(crate) fn items(
 
 /// Implements the `Debug` trait for the given struct changing the formatting of `Vec<u8>` fields.
 /// Structs deriving this custom `Debug` debug `Vec<u8>` or `Option<Vec<u8>>` as a hex string.
-#[proc_macro_derive(Debug)]
+/// Fields can be marked as sensitive to obfuscate them when logged. This needs the field type to implement `Obfuscate`.
+#[proc_macro_derive(Debug, attributes(sensitive))]
 pub fn derive_debug_bytes(input: TokenStream) -> TokenStream {
     debug_bytes::derive_debug(input)
 }

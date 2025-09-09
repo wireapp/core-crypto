@@ -8,11 +8,12 @@ use syn::{Data, DeriveInput, Fields, FieldsNamed, FieldsUnnamed, Ident, Type, pa
 pub(crate) fn derive_debug(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
+    let struct_sensitive = input.attrs.iter().any(|attr| attr.path().is_ident("sensitive"));
 
     let debug_body = match input.data {
         Data::Struct(s) => match s.fields {
-            Fields::Named(named) => expand_named_fields(&name, &named),
-            Fields::Unnamed(unnamed) => expand_unnamed_fields(&name, &unnamed),
+            Fields::Named(named) => expand_named_fields(&name, &named, struct_sensitive),
+            Fields::Unnamed(unnamed) => expand_unnamed_fields(&name, &unnamed, struct_sensitive),
             Fields::Unit => {
                 quote! { f.debug_tuple(stringify!(#name)).finish() }
             }
@@ -24,6 +25,12 @@ pub(crate) fn derive_debug(input: TokenStream) -> TokenStream {
         impl core::fmt::Debug for #name {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 #debug_body
+            }
+        }
+
+        impl log::kv::ToValue for #name {
+            fn to_value(&self) -> log::kv::Value<'_> {
+                log::kv::Value::from_debug(self)
             }
         }
     };
@@ -47,16 +54,16 @@ fn parse_type(ty: &Type) -> BytesType {
     }
 }
 
-fn expand_named_fields(name: &Ident, named: &FieldsNamed) -> TokenStream2 {
+fn expand_named_fields(name: &Ident, named: &FieldsNamed, struct_sensitive: bool) -> TokenStream2 {
     let field_debugs = named.named.iter().map(|field| {
         let field_name = field.ident.as_ref().unwrap();
         let field_str = field_name.to_string();
 
-        match parse_type(&field.ty) {
-            BytesType::Bytes => quote! {
+        match (struct_sensitive || is_sensitive(field), parse_type(&field.ty)) {
+            (false, BytesType::Bytes) => quote! {
                 .field(#field_str, &format_args!("0x{}", hex::encode(&self.#field_name)))
             },
-            BytesType::OptionalBytes => quote! {
+            (false, BytesType::OptionalBytes) => quote! {
                 .field(#field_str,
                     &{ // format_args creates a temporary value that is freed too early, so allocate here
                         if let Some(v) = &self.#field_name {
@@ -67,8 +74,11 @@ fn expand_named_fields(name: &Ident, named: &FieldsNamed) -> TokenStream2 {
                     }
                 )
             },
-            _ => quote! {
+            (false, BytesType::Other) => quote! {
                 .field(#field_str, &self.#field_name)
+            },
+            (true, _) => quote! {
+                .field(#field_str, &obfuscate::Obfuscated::from(&self.#field_name))
             },
         }
     });
@@ -80,15 +90,15 @@ fn expand_named_fields(name: &Ident, named: &FieldsNamed) -> TokenStream2 {
     }
 }
 
-fn expand_unnamed_fields(name: &Ident, unnamed: &FieldsUnnamed) -> TokenStream2 {
+fn expand_unnamed_fields(name: &Ident, unnamed: &FieldsUnnamed, struct_sensitive: bool) -> TokenStream2 {
     let field_debugs = unnamed.unnamed.iter().enumerate().map(|(i, field)| {
         let index = syn::Index::from(i); // tuple index
 
-        match parse_type(&field.ty) {
-            BytesType::Bytes => quote! {
+        match (struct_sensitive || is_sensitive(field), parse_type(&field.ty)) {
+            (false, BytesType::Bytes) => quote! {
                 .field(&format_args!("0x{}", hex::encode(&self.#index)))
             },
-            BytesType::OptionalBytes => quote! {
+            (false, BytesType::OptionalBytes) => quote! {
                 .field(
             &{ // format_args creates a temporary value that is freed to early, so we allocate memory here
                 if let Some(v) = &self.#index {
@@ -98,8 +108,11 @@ fn expand_unnamed_fields(name: &Ident, unnamed: &FieldsUnnamed) -> TokenStream2 
                 }
              })
             },
-            _ => quote! {
+            (false, BytesType::Other) => quote! {
                 .field(&self.#index)
+            },
+            (true, _) => quote! {
+                .field(&obfuscate::Obfuscated::from(&self.#index))
             },
         }
     });
@@ -109,4 +122,8 @@ fn expand_unnamed_fields(name: &Ident, unnamed: &FieldsUnnamed) -> TokenStream2 
             #(#field_debugs)*
             .finish()
     }
+}
+
+fn is_sensitive(field: &syn::Field) -> bool {
+    field.attrs.iter().any(|attr| attr.path().is_ident("sensitive"))
 }
