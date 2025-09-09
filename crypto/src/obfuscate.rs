@@ -6,7 +6,10 @@ use openmls::framing::Sender;
 use openmls::group::QueuedProposal;
 use openmls::prelude::Proposal;
 use sha2::{Digest, Sha256};
-use std::fmt::{Debug, Formatter};
+use std::{
+    fmt::{Debug, Formatter},
+    sync::LazyLock,
+};
 
 pub(crate) trait Obfuscate {
     fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result;
@@ -93,9 +96,22 @@ where
 }
 
 fn compute_hash(bytes: &[u8]) -> [u8; 10] {
+    /// Store a per-instantiation salt, so that obfuscated values cannot turn into pseudo-ids.
+    ///
+    /// This will be regenerated each time the library is instantiated. This will be approximately
+    /// once per client instantiation.
+    static SALT: LazyLock<[u8; 32]> = LazyLock::new(|| {
+        use rand::Rng as _;
+        let mut salt = [0; _];
+        rand::thread_rng().fill(&mut salt);
+        salt
+    });
+
     let mut hasher = Sha256::new();
-    let mut output = [0; 10];
+    hasher.update(*SALT);
     hasher.update(bytes);
+
+    let mut output = [0; 10];
     output.copy_from_slice(&hasher.finalize().as_slice()[0..10]);
     output
 }
