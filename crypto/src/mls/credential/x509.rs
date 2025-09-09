@@ -15,6 +15,7 @@ use crate::{RecursiveError, e2e_identity::id::WireQualifiedClientId, prelude::Cl
 #[derive(core_crypto_macros::Debug, Clone, Zeroize)]
 #[zeroize(drop)]
 pub struct CertificatePrivateKey {
+    #[sensitive]
     pub(crate) value: Vec<u8>,
     #[zeroize(skip)]
     pub(crate) signature_scheme: SignatureScheme,
