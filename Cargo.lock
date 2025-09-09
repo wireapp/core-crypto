@@ -909,7 +909,7 @@ dependencies = [
  "rstest",
  "rstest_reuse",
  "rusqlite",
- "security-framework 3.3.0",
+ "security-framework 3.4.0",
  "security-framework-sys",
  "serde",
  "serde-wasm-bindgen",
@@ -3979,9 +3979,9 @@ dependencies = [
 
 [[package]]
 name = "security-framework"
-version = "3.3.0"
+version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80fb1d92c5028aa318b4b8bd7302a5bfcf48be96a37fc6fc790f806b0004ee0c"
+checksum = "60b369d18893388b345804dc0007963c99b7d665ae71d275812d828c6f089640"
 dependencies = [
  "bitflags",
  "core-foundation 0.10.1",
