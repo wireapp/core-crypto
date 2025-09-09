@@ -241,3 +241,42 @@ jobs:
       - docs-jvm
       - docs-swift
     uses: ./.github/workflows/deploy-docs.yml
+
+
+  #################
+  # Publish
+
+  prepare-publish:
+    needs:
+      - package-ios
+      - package-android
+      - bindings-ts
+      - build-jvm-linux
+      - build-jvm-darwin
+      - bindings-jvm
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: force-fetch the tag to work around actions/checkout#290
+        run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}
+
+      - name: ensure the tag is signed
+        run: git cat-file tag ${{ github.ref_name }} | grep -q -- '-----BEGIN PGP SIGNATURE-----'
+
+  publish-jvm:
+    needs: prepare-publish
+    uses: ./.github/workflows/publish-jvm.yml
+
+  publish-android:
+    needs: prepare-publish
+    uses: ./.github/workflows/publish-android.yml
+
+  publish-ios:
+    needs: prepare-publish
+    uses: ./.github/workflows/publish-swift.yml
+
+  publish-web:
+    needs: prepare-publish
+    uses: ./.github/workflows/publish-wasm.yml

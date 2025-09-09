@@ -1,54 +1,18 @@
 name: publish jvm packages
 
 concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}"
+  group: "${{ github.workflow }}-${{ github.ref }}-publish-jvm"
 
 on:
-  push:
-    tags:
-      - "**"
+  workflow_call:
 
 env:
-  CARGO_INCREMENTAL: 0
-  CARGO_NET_RETRY: 10
-  RUSTUP_MAX_RETRIES: 10
-  CARGO_TERM_COLOR: always
-  CARGO_NET_GIT_FETCH_WITH_CLI: true
-  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
   RELEASE: 1
 
 jobs:
-  build-linux:
-    uses: ./.github/workflows/build-jvm-linux.yml
-
-  build-darwin-artifacts:
-    if: github.repository == 'wireapp/core-crypto'
-    name: build darwin artifacts
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v5
-      - name: force-fetch the tag to work around actions/checkout#290
-        run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}
-      - name: ensure the tag is signed
-        run: git cat-file tag ${{ github.ref_name }} | grep -q -- '-----BEGIN PGP SIGNATURE-----'
-      - name: setup rust
-        uses: ./.github/actions/setup-and-cache-rust
-        with:
-          rustflags: ''
-          target: "aarch64-apple-darwin"
-      - name: build artifacts
-        run: |
-          make jvm-darwin
-      - name: upload aarch64-apple-darwin artifacts
-        uses: actions/upload-artifact@v4
-        with:
-            name: aarch64-apple-darwin
-            path: target/aarch64-apple-darwin/release/*.dylib
-
   publish-jvm:
     if: github.repository == 'wireapp/core-crypto'
     name: publish jvm package
-    needs: [build-linux, build-darwin-artifacts]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -57,26 +21,50 @@ jobs:
         with:
           java-version: "17"
           distribution: "adopt"
-      - uses: ./.github/actions/setup-and-cache-rust
+
+      - name: download bindings artifact
+        uses: ./.github/actions/make/bindings-kotlin-jvm
         with:
-          rustflags: ''
-      - name: build artifacts
-        run: |
-          make bindings-kotlin-jvm
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: gradle setup
         uses: gradle/actions/setup-gradle@v4
+
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
+
+      - name: download jvm bindings
+        uses: ./.github/actions/make/bindings-kotlin-jvm
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: download x86_64 linux artifact
-        uses: actions/download-artifact@v5
+        uses: ./.github/actions/make/jvm
         with:
-          name: jvm-linux-so-file-${{ github.run_id }}
-          path: target/x86_64-unknown-linux-gnu/release
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # The specific jvm action uses `uname -s` to determine which `jvm` make rule to call.
+      # Because this workflow runs on ubuntu, we're using the generic action
       - name: download aarch64 apple darwin artifact
-        uses: actions/download-artifact@v5
+        uses: ./.github/actions/make
         with:
-          name: aarch64-apple-darwin
-          path: target/aarch64-apple-darwin/release
+          key: jvm-darwin
+          make-rule: jvm-darwin
+          target-path: target/aarch64-apple-darwin/release/libcore_crypto_ffi.dylib
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: zip package
+        run: |
+          zip -r jvm.zip \
+          crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt \
+          target/aarch64-apple-darwin/release/libcore_crypto_ffi.dylib \
+          target/x86_64-unknown-linux-gnu/release/libcore_crypto_ffi.so
+
+      - name: upload package
+        uses: softprops/action-gh-release@v2
+        with:
+            files: jvm.zip
+
       - name: publish package
         run: |
           cd crypto-ffi/bindings
@@ -87,3 +75,8 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.PGP_KEY_ID }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.PGP_SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.PGP_PASSPHRASE }}
+
+      - name: delete package from gh release
+        run: gh release delete-asset $GITHUB_REF_NAME jvm.zip --yes
+        env:
+          GH_TOKEN: ${{ github.token }}

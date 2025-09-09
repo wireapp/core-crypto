@@ -13,7 +13,7 @@ env:
 
 jobs:
   build-android:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
     strategy:
       matrix:
