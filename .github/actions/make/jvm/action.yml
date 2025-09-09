@@ -1,0 +1,31 @@
+name: Fetch or make the ffi lib for jvm
+inputs:
+  gh-token:
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+      - name: get platform specifics
+        id: platform-specs
+        run: |
+          os="$(uname -s)"
+          if [ "$os" = "Linux" ]; then
+            library_extension="so"
+            target="x86_64-unknown-linux-gnu"
+            rule="jvm-linux"
+          elif [ "$os" = "Darwin" ]; then
+            library_extension="dylib"
+            target="aarch64-apple-darwin"
+            rule="jvm-darwin"
+          fi
+          echo "target-path=target/${target}/release/libcore_crypto_ffi.${library_extension}" >> $GITHUB_OUTPUT
+          echo "rule=${rule}" >> $GITHUB_OUTPUT
+        shell: bash -leo pipefail {0}
+      - uses: ./.github/actions/make
+        with:
+          key: ${{ steps.platform-specs.outputs.rule }}
+          make-rule: ${{ steps.platform-specs.outputs.rule }}
+          target-path: ${{ steps.platform-specs.outputs.target-path }}
+          gh-token: ${{ inputs.gh-token }}

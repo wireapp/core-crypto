@@ -63,6 +63,21 @@ jobs:
     uses: ./.github/workflows/test-android.yml
 
   #################
+  # JVM Darwin
+
+  build-jvm-darwin:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+        with:
+          target: aarch64-apple-darwin
+      - uses: ./.github/actions/make/jvm
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+  #################
   # JVM Linux
 
   build-jvm-linux:
@@ -72,7 +87,7 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: x86_64-unknown-linux-gnu
-      - uses: ./.github/actions/make/jvm-linux
+      - uses: ./.github/actions/make/jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
