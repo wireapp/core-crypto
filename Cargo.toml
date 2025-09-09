@@ -8,6 +8,7 @@ members = [
   "mls-provider",
   "interop",
   "decode",
+  "obfuscate",
 ]
 resolver = "2"
 
@@ -53,6 +54,7 @@ log = { version = "0.4", features = ["kv_serde"] }
 log-reload = "0.1.3"
 macro_rules_attribute = "0.2"
 mls-crypto-provider = { path = "mls-provider" }
+obfuscate = { path = "obfuscate" }
 pem = "3.0"
 rand = { version = "0.8", features = ["getrandom"] }
 rmp-serde = "1.3.0"

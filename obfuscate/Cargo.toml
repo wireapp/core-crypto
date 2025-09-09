@@ -1,0 +1,15 @@
+[package]
+name = "obfuscate"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+hex.workspace = true
+sha2.workspace = true
+openmls.workspace = true
+derive_more.workspace = true
+rand.workspace = true
+log.workspace = true
+
+[lints]
+workspace = true
