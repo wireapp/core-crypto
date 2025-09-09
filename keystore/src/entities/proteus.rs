@@ -5,7 +5,9 @@ use crate::connection::FetchFromDatabase;
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct ProteusIdentity {
+    #[sensitive]
     pub sk: Vec<u8>,
+    #[sensitive]
     pub pk: Vec<u8>,
 }
 
@@ -34,6 +36,7 @@ impl ProteusIdentity {
 pub struct ProteusPrekey {
     pub id: u16,
     id_bytes: Vec<u8>,
+    #[sensitive]
     pub prekey: Vec<u8>,
 }
 
