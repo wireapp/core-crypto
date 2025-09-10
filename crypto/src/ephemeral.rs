@@ -28,6 +28,7 @@ use crate::{
     CoreCrypto, Error, MlsError, RecursiveError, Result,
     prelude::{ClientId, ClientIdentifier, MlsCiphersuite, MlsCredentialType, Session, SessionConfig},
 };
+use obfuscate::{Obfuscate, Obfuscated};
 
 /// We always instantiate history clients with this prefix in their client id, so
 /// we can use prefix testing to determine with some accuracy whether or not something is a history client.
@@ -40,6 +41,15 @@ pub struct HistorySecret {
     /// Client id of the associated history client
     pub client_id: ClientId,
     pub(crate) key_package: KeyPackageSecretEncapsulation,
+}
+
+impl Obfuscate for HistorySecret {
+    fn obfuscate(&self, f: &mut std::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("HistorySecret")
+            .field("client_id", &self.client_id)
+            .field("key_package", &Obfuscated::from(&self.key_package))
+            .finish()
+    }
 }
 
 /// Create a new [`CoreCrypto`] with an **uninitialized** mls session.
