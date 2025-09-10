@@ -222,7 +222,7 @@ impl ConversationGuard {
                 debug!(
                     group_id = Obfuscated::from(&conversation.id),
                     epoch = epoch.as_u64(),
-                    sender_client_id = Obfuscated::from(&sender_client_id);
+                    sender_client_id = sender_client_id;
                     "Application message"
                 );
 
