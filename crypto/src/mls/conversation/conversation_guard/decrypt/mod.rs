@@ -19,11 +19,11 @@ use crate::mls::credential::crl::{
     extract_crl_uris_from_proposals, extract_crl_uris_from_update_path, get_new_crl_distribution_points,
 };
 use crate::mls::credential::ext::CredentialExt as _;
-use crate::obfuscate::Obfuscated;
 use crate::prelude::{ClientId, E2eiConversationState, Session};
 use crate::prelude::{MlsProposalBundle, WireIdentity};
 use crate::{MlsError, RecursiveError};
 use log::{debug, info};
+use obfuscate::Obfuscated;
 use openmls::framing::errors::{MessageDecryptionError, SecretTreeError};
 use openmls::framing::{MlsMessageIn, MlsMessageInBody, ProcessedMessage, ProtocolMessage};
 use openmls::prelude::{
