@@ -11,13 +11,14 @@
 //!     * 409 CONFLICT --> do nothing. [ConversationGuard::decrypt_message] will restore the proposals not committed
 //!     * 5xx --> retry
 
+use obfuscate::Obfuscated;
 use openmls::prelude::MlsGroupStateError;
 
 use super::{ConversationGuard, Result};
 use crate::{
     MlsError,
     mls::conversation::{ConversationWithMls as _, Error},
-    prelude::{MlsProposalRef, Obfuscated},
+    prelude::MlsProposalRef,
 };
 
 impl ConversationGuard {

@@ -6,10 +6,10 @@
 use super::{RecursionPolicy, Result};
 use crate::KeystoreError;
 use crate::mls::conversation::{ConversationGuard, ConversationWithMls, Error};
-use crate::obfuscate::Obfuscated;
 use crate::prelude::MlsBufferedConversationDecryptMessage;
 use core_crypto_keystore::entities::MlsPendingMessage;
 use log::{error, info};
+use obfuscate::Obfuscated;
 use openmls::framing::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;
 
