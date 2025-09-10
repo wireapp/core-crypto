@@ -261,7 +261,7 @@ ios: $(STAMPS)/ios
 
 # Build XCFramework (macOS only)
 
-ios-create-xcframework-deps := $(STAMPS)/ios $(STAMPS)/bindings-swift
+ios-create-xcframework-deps := $(STAMPS)/ios $(UNIFFI_SWIFT_OUTPUT)
 $(STAMPS)/ios-create-xcframework: $(ios-create-xcframework-deps)
 	cd crypto-ffi/bindings/swift && ./build-xcframework.sh
 	$(TOUCH_STAMP)

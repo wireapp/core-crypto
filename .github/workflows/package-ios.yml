@@ -41,6 +41,11 @@ jobs:
         with:
           xcode-version: '16.4.0'
       - name: create xcframework
-        run: |
-          cd crypto-ffi/bindings/swift
-          ./build-xcframework.sh
+        uses: ./.github/actions/make
+        with:
+          key: ios-create-xcframework
+          make-rule: ios-create-xcframework
+          target-path: |
+              crypto-ffi/bindings/swift/WireCoreCrypto.xcframework.zip
+              crypto-ffi/bindings/swift/WireCoreCryptoUniffi.xcframework.zip
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
