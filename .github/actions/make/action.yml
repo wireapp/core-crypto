@@ -24,9 +24,26 @@ runs:
         files_hash=$(make "${{ inputs.make-rule }}"-hash-deps)
         echo "key=${{ inputs.key }}-$files_hash" >> "$GITHUB_OUTPUT"
 
+    - name: branch name
+      id: branch-name
+      run: |
+        if [[ -n "${GITHUB_HEAD_REF}" ]]; then
+          # Pull request
+          branch="${GITHUB_HEAD_REF}"
+        elif [[ "${GITHUB_REF_TYPE}" == "branch" ]]; then
+          # Direct branch push
+          branch="${GITHUB_REF_NAME}"
+        else
+          # Tag push -> resolve the branch the tag points to
+          git fetch -f --all --no-tags >/dev/null 2>&1
+          branch="$(git branch -r --contains "${GITHUB_SHA}" --format '%(refname:lstrip=3)')"
+        fi
+        echo "branch=$branch" >> "$GITHUB_OUTPUT"
+      shell: bash -euo pipefail {0}
+
     - name: Download artifact
       run: |
-        branch="${{ github.head_ref || github.ref_name }}"
+        branch="${{ steps.branch-name.outputs.branch }}"
 
         workflow_name="pipeline.yml"
         runs_current_branch=$(gh run list --branch "$branch" --limit 10 -w "$workflow_name" --json databaseId | jq '.[].databaseId')
