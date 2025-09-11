@@ -33,7 +33,6 @@ pub mod proteus;
 
 mod ephemeral;
 mod group_store;
-mod obfuscate;
 pub mod transaction_context;
 
 mod build_metadata;
@@ -87,7 +86,6 @@ pub mod prelude {
                 *,
             },
         },
-        obfuscate::Obfuscated,
         transaction_context::e2e_identity::conversation_state::E2eiConversationState,
     };
 }
