@@ -8,7 +8,7 @@ use syn::{
     Attribute, Block, FnArg, ItemFn, ReturnType, Visibility, parse_macro_input, punctuated::Punctuated, token::Comma,
 };
 
-mod debug_bytes;
+mod debug;
 mod durable;
 mod entity_derive;
 mod idempotent;
@@ -97,5 +97,5 @@ pub(crate) fn items(
 /// Fields can be marked as sensitive to obfuscate them when logged. This needs the field type to implement `Obfuscate`.
 #[proc_macro_derive(Debug, attributes(sensitive))]
 pub fn derive_debug_bytes(input: TokenStream) -> TokenStream {
-    debug_bytes::derive_debug(input)
+    debug::derive_debug(input)
 }
