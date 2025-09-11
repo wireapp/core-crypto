@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use core_crypto::prelude::Obfuscated;
 #[cfg(target_family = "wasm")]
 use js_sys::Promise;
 #[cfg(target_family = "wasm")]
@@ -16,6 +15,7 @@ use crate::ConversationId;
 use crate::ConversationIdMaybeArc;
 use crate::{CoreCrypto, CoreCryptoError, CoreCryptoResult, conversation_id_coerce_maybe_arc};
 use ::core_crypto::prelude::ConversationId as InternalConversationId;
+use obfuscate::Obfuscated;
 
 #[cfg(not(target_family = "wasm"))]
 #[derive(Debug, thiserror::Error, uniffi::Error)]
@@ -71,7 +71,7 @@ impl core_crypto::mls::EpochObserver for ObserverShim {
             // we don't _care_ if an error is thrown by the notification function, per se,
             // but this would probably be useful information for downstream debugging efforts
             log::warn!(
-                conversation_id = Obfuscated::new(&conversation_id),
+                conversation_id = Obfuscated::from(&conversation_id),
                 epoch,
                 err = log::kv::Value::from_dyn_error(&err);
                 "caught an error when attempting to notify the epoch observer of an epoch change"
@@ -171,7 +171,7 @@ impl core_crypto::mls::EpochObserver for EpochObserver {
             // we don't _care_ if an error is thrown by the notification function, per se,
             // but this would probably be useful information for downstream debugging efforts
             log::warn!(
-                conversation_id = Obfuscated::new(&conversation_id),
+                conversation_id = Obfuscated::from(&conversation_id),
                 epoch,
                 err = LoggableJsValue(err);
                 "caught an error when attempting to notify the epoch observer of an epoch change"
