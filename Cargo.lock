@@ -853,6 +853,7 @@ dependencies = [
  "log",
  "log-reload",
  "macro_rules_attribute 0.2.2",
+ "obfuscate",
  "paste",
  "proteus-wasm",
  "rmp-serde",
