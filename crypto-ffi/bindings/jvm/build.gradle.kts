@@ -34,16 +34,23 @@ val ffiLibsBase = layout.buildDirectory.dir("ffiLibs").get().asFile
 val copyFfiLibrary by tasks.registering {
     doLast {
         val osName = System.getProperty("os.name")
-        val (rustTarget, jvmTarget, ext) = if (osName == "Linux") {
-            Triple("x86_64-unknown-linux-gnu", "linux-x86-64", "so")
-        } else {
+        val libs = listOf(
+            Triple("x86_64-unknown-linux-gnu", "linux-x86-64", "so"),
             Triple("aarch64-apple-darwin", "darwin-aarch64", "dylib")
+        )
+        libs.forEach { (rustTarget, jvmTarget, ext) ->
+            val libName = "libcore_crypto_ffi.$ext"
+            val src = projectDir.resolve("../../../target/$rustTarget/$buildType/$libName")
+            val dest = ffiLibsBase.resolve("$buildType/$jvmTarget/$libName")
+            // We try to copy all libraries. If a library does not exist and
+            // we're not on CI, just skip it (presumably it does not exist because
+            // we're on a different platform). However, if we're on CI, always try
+            // to copy the library, which will fail if it does not exist, indicating
+            // a bug in the CI setup.
+            if (src.exists() || System.getenv("CI") != null) {
+                src.copyTo(dest, overwrite = true)
+            }
         }
-
-        val libName = "libcore_crypto_ffi.$ext"
-        val src = projectDir.resolve("../../../target/$rustTarget/$buildType/$libName")
-        val dest = ffiLibsBase.resolve("$buildType/$jvmTarget/$libName")
-        src.copyTo(dest, overwrite = true)
     }
 }
 
