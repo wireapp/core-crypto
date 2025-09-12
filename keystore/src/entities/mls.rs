@@ -169,20 +169,18 @@ impl MlsSignatureKeyPair {
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
+#[sensitive]
 pub struct MlsHpkePrivateKey {
-    #[sensitive]
     pub sk: Vec<u8>,
-    #[sensitive]
     pub pk: Vec<u8>,
 }
 
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
+#[sensitive]
 pub struct MlsEncryptionKeyPair {
-    #[sensitive]
     pub sk: Vec<u8>,
-    #[sensitive]
     pub pk: Vec<u8>,
 }
 
@@ -209,10 +207,9 @@ pub struct MlsEpochEncryptionKeyPair {
 /// Entity representing a persisted `SignatureKeyPair`
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
+#[sensitive]
 pub struct MlsPskBundle {
-    #[sensitive]
     pub psk_id: Vec<u8>,
-    #[sensitive]
     pub psk: Vec<u8>,
 }
 
