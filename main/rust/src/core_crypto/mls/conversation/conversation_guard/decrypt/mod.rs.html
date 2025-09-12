@@ -19,11 +19,11 @@
 <a href=#19 id=19 data-nosnippet>19</a>    extract_crl_uris_from_proposals, extract_crl_uris_from_update_path, get_new_crl_distribution_points,
 <a href=#20 id=20 data-nosnippet>20</a>};
 <a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span><span class="kw">crate</span>::mls::credential::ext::CredentialExt <span class="kw">as _</span>;
-<a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span><span class="kw">crate</span>::obfuscate::Obfuscated;
-<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span><span class="kw">crate</span>::prelude::{ClientId, E2eiConversationState, Session};
-<a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span><span class="kw">crate</span>::prelude::{MlsProposalBundle, WireIdentity};
-<a href=#25 id=25 data-nosnippet>25</a><span class="kw">use crate</span>::{MlsError, RecursiveError};
-<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>log::{debug, info};
+<a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span><span class="kw">crate</span>::prelude::{ClientId, E2eiConversationState, Session};
+<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span><span class="kw">crate</span>::prelude::{MlsProposalBundle, WireIdentity};
+<a href=#24 id=24 data-nosnippet>24</a><span class="kw">use crate</span>::{MlsError, RecursiveError};
+<a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>log::{debug, info};
+<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>obfuscate::Obfuscated;
 <a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>openmls::framing::errors::{MessageDecryptionError, SecretTreeError};
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>openmls::framing::{MlsMessageIn, MlsMessageInBody, ProcessedMessage, ProtocolMessage};
 <a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span>openmls::prelude::{
@@ -222,7 +222,7 @@
 <a href=#222 id=222 data-nosnippet>222</a>                <span class="macro">debug!</span>(
 <a href=#223 id=223 data-nosnippet>223</a>                    group_id = Obfuscated::from(<span class="kw-2">&amp;</span>conversation.id),
 <a href=#224 id=224 data-nosnippet>224</a>                    epoch = epoch.as_u64(),
-<a href=#225 id=225 data-nosnippet>225</a>                    sender_client_id = Obfuscated::from(<span class="kw-2">&amp;</span>sender_client_id);
+<a href=#225 id=225 data-nosnippet>225</a>                    sender_client_id = sender_client_id;
 <a href=#226 id=226 data-nosnippet>226</a>                    <span class="string">"Application message"
 <a href=#227 id=227 data-nosnippet>227</a>                </span>);
 <a href=#228 id=228 data-nosnippet>228</a>
