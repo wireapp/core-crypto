@@ -277,6 +277,7 @@ fn e2e_api() {
                     &client_id,
                     &handle,
                     display_name,
+                    &team.into(),
                     challenge,
                     leeway,
                     max_expiry,
