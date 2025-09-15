@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Note
+
+In this release we include a fix for missing artifacts in our Web release. The faulty release process affects
+all `8.x` versions. Therefore, instead of migrating from any version < `8.x` to `8.x`, directly migrate to
+this version.
+
 ### Breaking Changes
 
 - Removed support for migrating CoreCrypto database to version 1.
