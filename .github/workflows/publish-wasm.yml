@@ -25,25 +25,27 @@ jobs:
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: zip package
+      - name: package tarball
+        id: package
         run: |
-          zip -r web.zip \
-          crypto-ffi/bindings/js/src/*
+          filename=$(make web-package | tail -n 1)
+          echo "filename=$filename" >> "$GITHUB_OUTPUT"
+          echo "path=crypto-ffi/bindings/js/$filename" >> "$GITHUB_OUTPUT"
 
       - name: upload artifacts
         uses: softprops/action-gh-release@v2
         with:
-            files: web.zip
+            files: "${{ steps.package.outputs.path }}"
             fail_on_unmatched_files: true
 
       - name: publishes package to npm
-        uses: JS-DevTools/npm-publish@v3
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
-          package: "crypto-ffi/bindings/js/package.json"
+        env:
+          NPM_CONFIG_TOKEN: "${{ secrets.NPM_TOKEN }}"
+        run: |
+          cd crypto-ffi/bindings/js
+          bun publish ./"${{ steps.package.outputs.filename }}"
 
       - name: delete package from gh release
-        run: gh release delete-asset $GITHUB_REF_NAME web.zip --yes
+        run: gh release delete-asset $GITHUB_REF_NAME "${{ steps.package.outputs.filename }}" --yes
         env:
           GH_TOKEN: ${{ github.token }}

@@ -545,6 +545,10 @@ ts-bench: $(DTS_OUT) ## Run TypeScript wrapper benches in Chrome via wdio
 	cd $(JS_DIR) && \
 	bun x wdio run wdio.conf.ts --spec benches/**/*.bench.ts --log-level warn
 
+web-package: $(DTS_OUT)  ## Package the ready-to-release tarball
+	@cd $(JS_DIR) && \
+	bun pm pack --quiet
+
 #-------------------------------------------------------------------------------
 # Documentation targets
 #-------------------------------------------------------------------------------
