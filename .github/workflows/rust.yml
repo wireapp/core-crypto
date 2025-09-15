@@ -51,6 +51,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: target/nextest/default/junit.xml
+          fail_on_unmatched_files: true
 
   proteus-test:
     runs-on: ubuntu-latest

@@ -49,3 +49,4 @@ jobs:
             files: |
               crypto-ffi/bindings/swift/WireCoreCrypto.xcframework.zip
               crypto-ffi/bindings/swift/WireCoreCryptoUniffi.xcframework.zip
+            fail_on_unmatched_files: true

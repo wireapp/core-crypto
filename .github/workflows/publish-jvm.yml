@@ -64,6 +64,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
             files: jvm.zip
+            fail_on_unmatched_files: true
 
       - name: publish package
         run: |
