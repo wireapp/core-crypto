@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["find_js_functions"],"static":["MLS_FUNCTIONS","PROTEUS_FUNCTIONS"],"struct":["CoreCryptoWebClient"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["external_commit","external_sender","welcome"]};

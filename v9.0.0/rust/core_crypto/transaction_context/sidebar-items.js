@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Error"],"mod":["conversation","e2e_identity","key_package","proteus"],"struct":["TransactionContext"],"type":["Result"]};

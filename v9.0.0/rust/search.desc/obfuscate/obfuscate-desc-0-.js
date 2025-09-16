@@ -1,1 +1,0 @@
-searchState.loadedDescShard("obfuscate", 0, "We often want logging for some values that we shouldn’t …\nReturns the argument unchanged.\nCalls <code>U::from(self)</code>.")
