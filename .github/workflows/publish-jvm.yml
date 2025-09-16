@@ -6,6 +6,8 @@ concurrency:
 on:
   workflow_call:
     secrets:
+      SONATYPE_USERNAME:
+        required: true
       SONATYPE_PASSWORD:
         required: true
       PGP_KEY_ID:
