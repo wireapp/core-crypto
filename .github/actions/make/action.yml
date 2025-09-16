@@ -36,7 +36,7 @@ runs:
         else
           # Tag push -> resolve the branch the tag points to
           git fetch -f --all --no-tags >/dev/null 2>&1
-          branch="$(git branch -r --contains "${GITHUB_SHA}" --format '%(refname:lstrip=3)')"
+          branch="$(git branch -r --contains "${GITHUB_SHA}" --format '%(refname:lstrip=3)' | grep -v '^HEAD$' | head -n1)"
         fi
         echo "branch=$branch" >> "$GITHUB_OUTPUT"
       shell: bash -euo pipefail {0}
