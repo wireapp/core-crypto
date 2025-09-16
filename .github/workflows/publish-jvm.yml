@@ -5,6 +5,15 @@ concurrency:
 
 on:
   workflow_call:
+    secrets:
+      SONATYPE_PASSWORD:
+        required: true
+      PGP_KEY_ID:
+        required: true
+      PGP_SIGNING_KEY:
+        required: true
+      PGP_PASSPHRASE:
+        required: true
 
 env:
   RELEASE: 1

@@ -5,6 +5,9 @@ concurrency:
 
 on:
   workflow_call:
+    secrets:
+      NPM_TOKEN:
+        required: true
 
 env:
   RELEASE: 1
