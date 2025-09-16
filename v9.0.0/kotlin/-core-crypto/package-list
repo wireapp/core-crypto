@@ -1,0 +1,27 @@
+$dokka.format:html-v1
+$dokka.linkExtension:html
+$dokka.location:com.wire.crypto////PointingToDeclaration/-core-crypto/com.wire.crypto/index.html
+$dokka.location:com.wire.crypto//CIPHERSUITES_DEFAULT/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-c-i-p-h-e-r-s-u-i-t-e-s_-d-e-f-a-u-l-t.html
+$dokka.location:com.wire.crypto//CIPHERSUITE_DEFAULT/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-c-i-p-h-e-r-s-u-i-t-e_-d-e-f-a-u-l-t.html
+$dokka.location:com.wire.crypto//CONVERSATION_CONFIGURATION_DEFAULT/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-c-o-n-v-e-r-s-a-t-i-o-n_-c-o-n-f-i-g-u-r-a-t-i-o-n_-d-e-f-a-u-l-t.html
+$dokka.location:com.wire.crypto//CREDENTIAL_TYPE_DEFAULT/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-c-r-e-d-e-n-t-i-a-l_-t-y-p-e_-d-e-f-a-u-l-t.html
+$dokka.location:com.wire.crypto//CUSTOM_CONFIGURATION_DEFAULT/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-c-u-s-t-o-m_-c-o-n-f-i-g-u-r-a-t-i-o-n_-d-e-f-a-u-l-t.html
+$dokka.location:com.wire.crypto//historyClient/#[Error type: Unresolved type for HistorySecret]/PointingToDeclaration/-core-crypto/com.wire.crypto/history-client.html
+$dokka.location:com.wire.crypto//invoke/[Error type: Unresolved type for CoreCrypto.Companion]#kotlin.String#[Error type: Unresolved type for DatabaseKey]/PointingToDeclaration/-core-crypto/com.wire.crypto/invoke.html
+$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for CoreCrypto]#/PointingToDeclaration/-core-crypto/com.wire.crypto/lift.html
+$dokka.location:com.wire.crypto//toAvsSecret/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-avs-secret.html
+$dokka.location:com.wire.crypto//toClientId/kotlin.String#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-client-id.html
+$dokka.location:com.wire.crypto//toExternalSenderKey/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-external-sender-key.html
+$dokka.location:com.wire.crypto//toGroupInfo/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-group-info.html
+$dokka.location:com.wire.crypto//toMLSKeyPackage/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-m-l-s-key-package.html
+$dokka.location:com.wire.crypto//toWelcome/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-welcome.html
+$dokka.location:com.wire.crypto/CoreCryptoClient.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-client/-companion/index.html
+$dokka.location:com.wire.crypto/CoreCryptoClient///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-client/index.html
+$dokka.location:com.wire.crypto/CoreCryptoClient/CoreCryptoClient/#[Error type: Unresolved type for CoreCrypto]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-client/-core-crypto-client.html
+$dokka.location:com.wire.crypto/CoreCryptoClient/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-client/close.html
+$dokka.location:com.wire.crypto/CoreCryptoClient/isHistorySharingEnabled/#[Error type: Unresolved type for ConversationId]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-client/is-history-sharing-enabled.html
+$dokka.location:com.wire.crypto/CoreCryptoClient/provideTransport/#[Error type: Unresolved type for MlsTransport]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-client/provide-transport.html
+$dokka.location:com.wire.crypto/CoreCryptoClient/registerEpochObserver/#kotlinx.coroutines.CoroutineScope#[Error type: Unresolved type for EpochObserver]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-client/register-epoch-observer.html
+$dokka.location:com.wire.crypto/CoreCryptoClient/registerHistoryObserver/#kotlinx.coroutines.CoroutineScope#[Error type: Unresolved type for HistoryObserver]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-client/register-history-observer.html
+$dokka.location:com.wire.crypto/CoreCryptoClient/transaction/#kotlin.coroutines.SuspendFunction1[[Error type: Unresolved type for CoreCryptoContext],TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-client/transaction.html
+com.wire.crypto
