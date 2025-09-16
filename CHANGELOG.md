@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## v9.0.0 - 2025-09-16
+
+### Highlights
+
+- we're now tying the Kotlin wrapper more closely to the generated bindings which allows for greater velocity
+when making changes in code that affects our API - this causes most of the breaking changes in this release
+- removed cryptobox migration API
+- in Swift, added protection against concurrent access from multiple core crypto instances
+- added implicit obfuscation of sensitive data in logs
+- reworked the entire build system and CI
+
 ### Note
 
 In this release we include a fix for missing artifacts in our Web release. The faulty release process affects
@@ -142,6 +153,66 @@ this version.
 
 - In our Swift bindings we are now protecting against concurrent access from multiple core crypto instances.
 - In the decode tool we add support for listing members or identities present in a group info.
+
+---
+
+### Features
+
+- crypto: mark sensitive fields to add obfuscation ([7a3f557](https://github.com/wireapp/core-crypto/commit/7a3f557246d9b4e696268696d7796295d1f9ba8c))
+- keystore: mark sensitive fields to add obfuscation ([03aa8af](https://github.com/wireapp/core-crypto/commit/03aa8af98e17ce7d635b617ab4e136ad4119fb91))
+- add #[sensitive] attribute to debug macro ([2aefaf8](https://github.com/wireapp/core-crypto/commit/2aefaf8deb6c69faf98e34eb97d156d6b39fd81c))
+- define obfuscate trait and Obfuscated type ([2d25985](https://github.com/wireapp/core-crypto/commit/2d2598548f36f5a0c550d91432f3d632d12b446c))
+- salt obfuscated values ([217bd6d](https://github.com/wireapp/core-crypto/commit/217bd6de2fccfc242ca009e8627bb655e8526ce4))
+- add DebugBytes derive macro ([1e63c68](https://github.com/wireapp/core-crypto/commit/1e63c68cc22d1f2f17dd9ec55be478fb0fde630f))
+- add options for listing members or identities ([491221e](https://github.com/wireapp/core-crypto/commit/491221e545cd2ba41480f5aa9484ff28af52439e))
+- take input from stdin or a file ([a1489f7](https://github.com/wireapp/core-crypto/commit/a1489f74a48a091ba075d686806caff311a96218))
+- [**breaking**] remove the cryptobox-migrate feature ([bacf33b](https://github.com/wireapp/core-crypto/commit/bacf33b76c1572a6e07b3aabccda97ec08212105))
+- hold a file lock on they keystore while executing a transaction ([1abf479](https://github.com/wireapp/core-crypto/commit/1abf4794532b07c7ea04a77354fdbce010bb4a3a))
+
+### Bug Fixes
+
+- include previously (v8.x) missing artifacts in released web package ([d576172](https://github.com/wireapp/core-crypto/commit/d576172514b1c7d5b53cbb70667ef842e45fe81c))
+- warning about DYLIB_CURRENT_VERSION getting truncated ([04c623c](https://github.com/wireapp/core-crypto/commit/04c623c3882bf2cdcff6b59471c699d03e906f38))
+- fix android build ([fdf2451](https://github.com/wireapp/core-crypto/commit/fdf245164c466db577d40e7f8be2d7bec52aad17))
+- don't throw an error when calling proteus_reload_sessions without having called proteus_init ([2ca0907](https://github.com/wireapp/core-crypto/commit/2ca0907334a063853be9e91998c249f2ac1b1476))
+- use `HashMap` for in-memory cache [WPB-18762] ([4bc12dc](https://github.com/wireapp/core-crypto/commit/4bc12dc382328cc937854d7b95eabb5f2461bf8a))
+- use consistent ids for `ProteusIdentity` ([6b9f1e2](https://github.com/wireapp/core-crypto/commit/6b9f1e20f632802aafc5bec086d3ed93d5c734fe))
+
+### Documentation
+
+- update changelog ([1c28a61](https://github.com/wireapp/core-crypto/commit/1c28a616a69c62f0ff43b4749c8ef3176c44d37a))
+- add js README for npm ([4783f66](https://github.com/wireapp/core-crypto/commit/4783f666f2358273cb40676130f4455077e0adb7))
+- fix swift and ts docs target directory ([7d2de8c](https://github.com/wireapp/core-crypto/commit/7d2de8c5bc5ef8c9c748e44471cf756a25099700))
+- link to `CHANGELOG.md` from docs landing page [WPB-19490] ([812865c](https://github.com/wireapp/core-crypto/commit/812865c4c16d3bb1fa79c60e7cf2e7afa8ed865a))
+- ensure that all public items in `core-crypto-ffi` have docs ([b02c1dd](https://github.com/wireapp/core-crypto/commit/b02c1ddea9f4995c249c3072ae31c10676226a61))
+- add make help output for relevant targets ([48f9db9](https://github.com/wireapp/core-crypto/commit/48f9db94a9569a2d6db32ad33b4fcaa0c2c51b88))
+- update `README.md` ([eec14b0](https://github.com/wireapp/core-crypto/commit/eec14b0095589c61eef7d92873f07039dfd85ce1))
+- add android ndk installation to readme ([335576e](https://github.com/wireapp/core-crypto/commit/335576e675c1818861765b36ff307871fdf25321))
+- update CHANGELOG ([e716bac](https://github.com/wireapp/core-crypto/commit/e716bac6474f6e0b50190f7b0088da451727e77c))
+- update keystore docs ([60ecf12](https://github.com/wireapp/core-crypto/commit/60ecf1260aa5e7e675ce1f7cae64075fe95f1f70))
+- update CHANGELOG ([83c143f](https://github.com/wireapp/core-crypto/commit/83c143f17487f55a76f1e57a5d91c5f773690dc0))
+- bindings/swift: add missing doc strings ([31530e9](https://github.com/wireapp/core-crypto/commit/31530e90ea4c345a9af61e7c432dde6b174d74d1))
+- remove `7.x` series from `index.md` ([6102d9f](https://github.com/wireapp/core-crypto/commit/6102d9fa5c364c18d2a8439cb60d381e11f4b298))
+- add docs for `ByteArray.toGroupInfo()` ([748082b](https://github.com/wireapp/core-crypto/commit/748082b8d127f4571982d64cb48ebdf7bd4f6364))
+- remove unintended code comment showing up in  `index.md` ([7dd028b](https://github.com/wireapp/core-crypto/commit/7dd028b55c575c63c8d917073842c7f5c31dba17))
+- update links in `index.md` ([a085ae6](https://github.com/wireapp/core-crypto/commit/a085ae67d1af84c3d00be1e6478c6e5b496f67d3))
+
+### Testing
+
+- add scheduled test of all features to run nightly on main ([4f4b5c3](https://github.com/wireapp/core-crypto/commit/4f4b5c32ce05b7f02d0a4dcda2812c21a19f7e1f))
+- fix previously-invisible test failures ([e7686c7](https://github.com/wireapp/core-crypto/commit/e7686c79d687f3004aa10bf300580f9faa7ab628))
+- keystore: use the correct minimum supported db version ([826bc0f](https://github.com/wireapp/core-crypto/commit/826bc0fde57cc88707625fa23fe914aefc02dba4))
+- add test asserting that transactions are performally serially also across multiple CoreCrypto instances ([d4c6667](https://github.com/wireapp/core-crypto/commit/d4c6667d06d4be7971ab0d0af144587456d7023e))
+- update tests according to refactorings for new in-memory cache ([5b15f83](https://github.com/wireapp/core-crypto/commit/5b15f8337f41eaacecf9880d019669f99cb8fb99))
+- crypto-ffi: remove now-unused global const IDs ([c0029c7](https://github.com/wireapp/core-crypto/commit/c0029c78777e6178d59d61a3fbeddef186a62366))
+- crypto-ffi: do not use same IDs across different tests ([cdf3aa3](https://github.com/wireapp/core-crypto/commit/cdf3aa3c9f98e0a794f63b4e301486f8528dc6e3))
+
+### Other Breaking Changes
+
+- [**breaking**] keystore: remove migration to DB_VERSION_1 ([11eb669](https://github.com/wireapp/core-crypto/commit/11eb6698fc8fec3854ff4e49847ff95de0045058))
+- [**breaking**] keystore: remove keystore_v_1_0_0 ([72b9e7b](https://github.com/wireapp/core-crypto/commit/72b9e7bc38986d367d584e6004e630ec27f53878))
+- [**breaking**] eliminate log level setter wrapping ([8efc319](https://github.com/wireapp/core-crypto/commit/8efc319b766335b173b20e1746329b6eb8f61cf2))
+- [**breaking**] Revert "refactor!(kotlin): `CoreCryptoContext.exportSecretKey` now returns a newtype" ([2e61956](https://github.com/wireapp/core-crypto/commit/2e6195669a9840c7c4448d61acd6be4906d5dfcb))
 
 ## v8.0.3 - 2025-08-12
 
