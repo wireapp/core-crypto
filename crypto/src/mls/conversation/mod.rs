@@ -25,6 +25,8 @@ use openmls_traits::types::SignatureScheme;
 use std::{collections::HashMap, sync::Arc};
 use std::{collections::HashSet, ops::Deref};
 
+use obfuscate::Obfuscate;
+
 use crate::{
     KeystoreError, LeafError, MlsError, RecursiveError,
     mls::Session,
@@ -262,7 +264,31 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
 impl<'a, T: ConversationWithMls<'a>> Conversation<'a> for T {}
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
-pub type ConversationId = Vec<u8>;
+#[derive(core_crypto_macros::Debug)]
+#[sensitive]
+#[derive(derive_more::AsRef, derive_more::From, derive_more::Into)]
+#[as_ref([u8])]
+#[from(&[u8], Vec<u8>)]
+pub struct ConversationId(Vec<u8>);
+
+impl Obfuscate for ConversationId {
+    fn obfuscate(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ConversationId({})", hex::encode(obfuscate::compute_hash(&self.0)))
+    }
+}
+
+impl Clone for ConversationId {
+    fn clone(self: &ConversationId) -> Self {
+        ConversationId(self.0.clone())
+    }
+}
+
+impl From<&ConversationId> for Vec<u8> {
+    fn from(value: &ConversationId) -> Self {
+        value.0.clone()
+    }
+}
+
 
 /// This is a wrapper on top of the OpenMls's [MlsGroup], that provides Core Crypto specific functionality
 ///
@@ -307,7 +333,7 @@ impl MlsConversation {
             backend,
             &cb.signature_key,
             &configuration.as_openmls_default_configuration()?,
-            openmls::prelude::GroupId::from_slice(id.as_slice()),
+            openmls::prelude::GroupId::from_slice(id.as_ref()),
             cb.to_mls_credential_with_key(),
         )
         .await
@@ -434,9 +460,9 @@ impl MlsConversation {
         if force || self.group.state_changed() == openmls::group::InnerState::Changed {
             keystore
                 .mls_group_persist(
-                    &self.id,
+                    self.id.as_ref(),
                     &core_crypto_keystore::ser(&self.group).map_err(KeystoreError::wrap("serializing group state"))?,
-                    self.parent_id.as_deref(),
+                    self.parent_id.as_ref().map(|id| id.as_ref())
                 )
                 .await
                 .map_err(KeystoreError::wrap("persisting mls group"))?;

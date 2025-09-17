@@ -21,7 +21,7 @@ impl ConversationGuard {
         let conversation = self.conversation().await;
         info!(group_id = Obfuscated::from(conversation.id()); "buffering commit");
 
-        let buffered_commit = MlsBufferedCommit::new(conversation.id().clone(), commit.as_ref().to_owned());
+        let buffered_commit = MlsBufferedCommit::new(conversation.id().into(), commit.as_ref().to_owned());
 
         self.crypto_provider()
             .await?
@@ -39,7 +39,7 @@ impl ConversationGuard {
         self.crypto_provider()
             .await?
             .keystore()
-            .find::<MlsBufferedCommit>(conversation.id())
+            .find::<MlsBufferedCommit>(conversation.id().as_ref())
             .await
             .map(|option| option.map(MlsBufferedCommit::into_commit_data))
             .map_err(KeystoreError::wrap("attempting to retrieve buffered commit"))
