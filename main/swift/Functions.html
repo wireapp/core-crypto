@@ -160,10 +160,7 @@
                 <a href="Functions.html#/s:20WireCoreCryptoUniffi04coreC3New4path3key8clientId12ciphersuites11entropySeed12nbKeyPackageAA0bC0CSS_AA08DatabaseO0CAA06ClientJ0CSayAA11CiphersuiteOG10Foundation4DataVSgs6UInt32VSgtYaKF">coreCryptoNew(path:key:clientId:ciphersuites:entropySeed:nbKeyPackage:)</a>
               </li>
               <li class="nav-group-task">
-                <a href="Functions.html#/s:14WireCoreCrypto29migrateDatabaseKeyTypeToBytes4path03oldF003newF0ySS_SS0abC6Uniffi0eF0CtYaKF">migrateDatabaseKeyTypeToBytes(path:oldKey:newKey:)</a>
-              </li>
-              <li class="nav-group-task">
-                <a href="Functions.html#/s:20WireCoreCryptoUniffi23migrateDbKeyTypeToBytes4name03oldG003newG0ySS_SSAA08DatabaseG0CtYaKF">migrateDbKeyTypeToBytes(name:oldKey:newKey:)</a>
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi29migrateDatabaseKeyTypeToBytes4path03oldG003newG0ySS_SSAA0fG0CtYaKF">migrateDatabaseKeyTypeToBytes(path:oldKey:newKey:)</a>
               </li>
               <li class="nav-group-task">
                 <a href="Functions.html#/s:20WireCoreCryptoUniffi9setLogger6logger5levelyAA0bcF0_p_AA0bC8LogLevelOtF">setLogger(logger:level:)</a>
@@ -317,38 +314,6 @@
           <section class="section task-group-section">
             <div class="task-group">
               <ul>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:14WireCoreCrypto29migrateDatabaseKeyTypeToBytes4path03oldF003newF0ySS_SS0abC6Uniffi0eF0CtYaKF"></a>
-                    <a name="//apple_ref/swift/Function/migrateDatabaseKeyTypeToBytes(path:oldKey:newKey:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:14WireCoreCrypto29migrateDatabaseKeyTypeToBytes4path03oldF003newF0ySS_SS0abC6Uniffi0eF0CtYaKF">migrateDatabaseKeyTypeToBytes(path:<wbr>oldKey:<wbr>newKey:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous, from WireCoreCrypto
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Updates the key of the CoreCrypto database.
-To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">migrateDatabaseKeyTypeToBytes</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">oldKey</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">newKey</span><span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Classes/DatabaseKey.html">DatabaseKey</a></span><span class="p">)</span>
-    <span class="k">async</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
                 <li class="item">
                   <div>
                     <code>
@@ -572,9 +537,9 @@ To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.</
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi23migrateDbKeyTypeToBytes4name03oldG003newG0ySS_SSAA08DatabaseG0CtYaKF"></a>
-                    <a name="//apple_ref/swift/Function/migrateDbKeyTypeToBytes(name:oldKey:newKey:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi23migrateDbKeyTypeToBytes4name03oldG003newG0ySS_SSAA08DatabaseG0CtYaKF">migrateDbKeyTypeToBytes(name:<wbr>oldKey:<wbr>newKey:<wbr>)</a>
+                    <a name="/s:20WireCoreCryptoUniffi29migrateDatabaseKeyTypeToBytes4path03oldG003newG0ySS_SSAA0fG0CtYaKF"></a>
+                    <a name="//apple_ref/swift/Function/migrateDatabaseKeyTypeToBytes(path:oldKey:newKey:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi29migrateDatabaseKeyTypeToBytes4path03oldG003newG0ySS_SSAA0fG0CtYaKF">migrateDatabaseKeyTypeToBytes(path:<wbr>oldKey:<wbr>newKey:<wbr>)</a>
                     </code>
                       <span class="declaration-note">
                         Asynchronous, from WireCoreCryptoUniffi
@@ -593,7 +558,7 @@ To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.</
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">migrateDbKeyTypeToBytes</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">oldKey</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">newKey</span><span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Classes/DatabaseKey.html">DatabaseKey</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">migrateDatabaseKeyTypeToBytes</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">oldKey</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">newKey</span><span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Classes/DatabaseKey.html">DatabaseKey</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
@@ -787,7 +752,7 @@ To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.</
           </section>
         </section>
         <section id="footer">
-          <p>&copy; 2025 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2025-09-16)</p>
+          <p>&copy; 2025 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2025-09-17)</p>
           <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
         </section>
       </article>
