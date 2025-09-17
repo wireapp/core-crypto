@@ -1,4 +1,4 @@
-use core_crypto_keystore::{Connection as Database, ConnectionType};
+use core_crypto_keystore::{ConnectionType, Database};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 

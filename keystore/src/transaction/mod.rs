@@ -12,7 +12,7 @@ use crate::entities::mls::*;
 use crate::entities::proteus::*;
 use crate::entities::{ConsumerData, EntityBase, EntityFindParams, EntityTransactionExt, UniqueEntity};
 use crate::transaction::dynamic_dispatch::EntityId;
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::Connection};
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::Database};
 
 pub mod dynamic_dispatch;
 
@@ -394,7 +394,7 @@ macro_rules! commit_transaction {
 impl KeystoreTransaction {
     /// Persists all the operations in the database. It will effectively open a transaction
     /// internally, perform all the buffered operations and commit.
-    pub(crate) async fn commit(&self, db: &Connection) -> Result<(), CryptoKeystoreError> {
+    pub(crate) async fn commit(&self, db: &Database) -> Result<(), CryptoKeystoreError> {
         commit_transaction!(
             self, db,
             [

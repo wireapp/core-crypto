@@ -1,6 +1,6 @@
 #![allow(dead_code, unused_macros, unused_imports)]
 
-pub(crate) use core_crypto_keystore::{Connection as CryptoKeystore, DatabaseKey};
+pub(crate) use core_crypto_keystore::{Database as CryptoKeystore, DatabaseKey};
 use std::array;
 use std::sync::{Arc, LazyLock};
 
@@ -33,7 +33,7 @@ pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> KeystoreTestContex
     } else {
         ConnectionType::Persistent(name.as_ref())
     };
-    let store = core_crypto_keystore::Connection::open(location, &TEST_ENCRYPTION_KEY)
+    let store = core_crypto_keystore::Database::open(location, &TEST_ENCRYPTION_KEY)
         .await
         .expect("Could not open keystore");
     store.new_transaction().await.expect("Could not create transaction");
@@ -41,15 +41,15 @@ pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> KeystoreTestContex
 }
 
 pub struct KeystoreTestContext {
-    store: Option<core_crypto_keystore::Connection>,
+    store: Option<core_crypto_keystore::Database>,
 }
 
 impl KeystoreTestContext {
-    pub fn store(&self) -> &core_crypto_keystore::Connection {
+    pub fn store(&self) -> &core_crypto_keystore::Database {
         self.store.as_ref().expect("KeystoreTestFixture store is missing")
     }
 
-    pub fn store_mut(&mut self) -> &mut core_crypto_keystore::Connection {
+    pub fn store_mut(&mut self) -> &mut core_crypto_keystore::Database {
         self.store.as_mut().expect("KeystoreTestFixture store is missing")
     }
 }

@@ -3,7 +3,7 @@ use crate::{
     group_store::{GroupStore, GroupStoreEntity, GroupStoreValue},
 };
 use core_crypto_keystore::{
-    Connection as CryptoKeystore,
+    Database as CryptoKeystore,
     connection::FetchFromDatabase,
     entities::{ProteusIdentity, ProteusSession},
 };
@@ -35,11 +35,7 @@ impl ProteusConversationSession {
     }
 
     /// Decrypts a message for this Proteus session
-    pub async fn decrypt(
-        &mut self,
-        store: &mut core_crypto_keystore::Connection,
-        ciphertext: &[u8],
-    ) -> Result<Vec<u8>> {
+    pub async fn decrypt(&mut self, store: &mut core_crypto_keystore::Database, ciphertext: &[u8]) -> Result<Vec<u8>> {
         let envelope = Envelope::deserialise(ciphertext).map_err(ProteusError::wrap("deserializing envelope"))?;
         self.session
             .decrypt(store, &envelope)
@@ -233,7 +229,7 @@ impl ProteusCentral {
 
     /// Restores the saved sessions in memory. This is performed automatically on init
     async fn restore_sessions(
-        keystore: &core_crypto_keystore::Connection,
+        keystore: &core_crypto_keystore::Database,
         identity: &Arc<IdentityKeyPair>,
     ) -> Result<GroupStore<ProteusConversationSession>> {
         let mut proteus_sessions = GroupStore::new_with_limit(crate::group_store::ITEM_LIMIT * 2);
@@ -679,7 +675,7 @@ mod tests {
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
         let key = DatabaseKey::generate();
-        let keystore = core_crypto_keystore::Connection::open(ConnectionType::Persistent(&path), &key)
+        let keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
             .await
             .unwrap();
         keystore.new_transaction().await.unwrap();
@@ -687,7 +683,7 @@ mod tests {
         let identity = (*central.proteus_identity).clone();
         keystore.commit_transaction().await.unwrap();
 
-        let keystore = core_crypto_keystore::Connection::open(ConnectionType::Persistent(&path), &key)
+        let keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
             .await
             .unwrap();
         keystore.new_transaction().await.unwrap();
@@ -710,7 +706,7 @@ mod tests {
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let key = DatabaseKey::generate();
-        let mut keystore = core_crypto_keystore::Connection::open(ConnectionType::Persistent(&path), &key)
+        let mut keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
             .await
             .unwrap();
         keystore.new_transaction().await.unwrap();
@@ -751,7 +747,7 @@ mod tests {
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let key = DatabaseKey::generate();
-        let mut keystore = core_crypto_keystore::Connection::open(ConnectionType::Persistent(&path), &key)
+        let mut keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
             .await
             .unwrap();
         keystore.new_transaction().await.unwrap();
@@ -794,7 +790,7 @@ mod tests {
         let (path, _) = tmp_db_file();
 
         let key = DatabaseKey::generate();
-        let keystore = core_crypto_keystore::Connection::open(ConnectionType::Persistent(&path), &key)
+        let keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
             .await
             .unwrap();
         keystore.new_transaction().await.unwrap();

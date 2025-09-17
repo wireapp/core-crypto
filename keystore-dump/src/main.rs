@@ -23,7 +23,7 @@ async fn main() -> anyhow::Result<()> {
     use chrono::TimeZone;
     use clap::Parser as _;
     use core_crypto_keystore::{
-        Connection as Keystore, ConnectionType, DatabaseKey, connection::FetchFromDatabase, entities::*,
+        ConnectionType, Database as Keystore, DatabaseKey, connection::FetchFromDatabase, entities::*,
     };
     use openmls::prelude::TlsDeserializeTrait;
     use serde::ser::{SerializeMap, Serializer};

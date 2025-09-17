@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 
-pub use core_crypto_keystore::{Connection as CryptoKeystore, DatabaseKey};
+pub use core_crypto_keystore::{Database as CryptoKeystore, DatabaseKey};
 
 mod crypto_provider;
 mod error;

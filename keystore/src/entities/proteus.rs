@@ -68,7 +68,7 @@ impl ProteusPrekey {
         self.id_bytes = self.id.to_le_bytes().into();
     }
 
-    pub async fn get_free_id(conn: &crate::Connection) -> crate::CryptoKeystoreResult<u16> {
+    pub async fn get_free_id(conn: &crate::Database) -> crate::CryptoKeystoreResult<u16> {
         let mut id = 1u16;
         let limit = u16::MAX;
         while id <= limit {

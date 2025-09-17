@@ -1,6 +1,6 @@
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
-    connection::{Connection, FetchFromDatabase},
+    connection::{Database, FetchFromDatabase},
     entities::ProteusPrekey,
 };
 
@@ -12,7 +12,7 @@ pub trait CryptoKeystoreProteus {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl CryptoKeystoreProteus for Connection {
+impl CryptoKeystoreProteus for Database {
     async fn proteus_store_prekey(&self, id: u16, prekey: &[u8]) -> CryptoKeystoreResult<()> {
         let entity = ProteusPrekey::from_raw(id, prekey.to_vec());
         self.save(entity).await?;
@@ -22,7 +22,7 @@ impl CryptoKeystoreProteus for Connection {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl proteus_traits::PreKeyStore for Connection {
+impl proteus_traits::PreKeyStore for Database {
     type Error = CryptoKeystoreError;
 
     async fn prekey(
@@ -36,7 +36,7 @@ impl proteus_traits::PreKeyStore for Connection {
     }
 
     async fn remove(&mut self, id: proteus_traits::RawPreKeyId) -> Result<(), Self::Error> {
-        Connection::remove::<ProteusPrekey, _>(self, id.to_le_bytes()).await?;
+        Database::remove::<ProteusPrekey, _>(self, id.to_le_bytes()).await?;
 
         Ok(())
     }

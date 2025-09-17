@@ -118,7 +118,7 @@ pub trait CryptoKeystoreMls: Sized {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl CryptoKeystoreMls for crate::Connection {
+impl CryptoKeystoreMls for crate::Database {
     async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
         cfg_if::cfg_if! {
             if #[cfg(not(target_family = "wasm"))] {
@@ -241,7 +241,7 @@ pub fn ser<T: MlsEntity>(value: &T) -> Result<Vec<u8>, CryptoKeystoreError> {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connection {
+impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database {
     type Error = CryptoKeystoreError;
 
     async fn store<V: MlsEntity + Sync>(&self, k: &[u8], v: &V) -> Result<(), Self::Error>

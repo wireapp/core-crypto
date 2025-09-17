@@ -24,7 +24,7 @@ use crate::{
 };
 use async_lock::RwLock;
 use core_crypto_keystore::{
-    Connection, CryptoKeystoreError,
+    CryptoKeystoreError, Database,
     connection::FetchFromDatabase,
     entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair},
 };
@@ -510,7 +510,7 @@ impl Session {
 
     pub(crate) async fn save_identity(
         &self,
-        keystore: &Connection,
+        keystore: &Database,
         id: Option<&ClientId>,
         signature_scheme: SignatureScheme,
         mut credential_bundle: CredentialBundle,
@@ -621,7 +621,7 @@ impl Session {
 
     pub(crate) async fn save_new_x509_credential_bundle(
         &self,
-        keystore: &Connection,
+        keystore: &Database,
         sc: SignatureScheme,
         cb: CertificateBundle,
     ) -> Result<CredentialBundle> {

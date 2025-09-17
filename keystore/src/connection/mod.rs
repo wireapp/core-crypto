@@ -129,7 +129,7 @@ pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
 }
 
 #[derive(Debug, Clone)]
-pub struct Connection {
+pub struct Database {
     pub(crate) conn: Arc<Mutex<KeystoreDatabaseConnection>>,
     pub(crate) transaction: Arc<Mutex<Option<KeystoreTransaction>>>,
     transaction_semaphore: Arc<Semaphore>,
@@ -164,9 +164,9 @@ pub trait FetchFromDatabase: Send + Sync {
 }
 
 // SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
-unsafe impl Send for Connection {}
+unsafe impl Send for Database {}
 // SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
-unsafe impl Sync for Connection {}
+unsafe impl Sync for Database {}
 
 /// Where to open a connection
 #[derive(Debug, Clone)]
@@ -177,7 +177,7 @@ pub enum ConnectionType<'a> {
     InMemory,
 }
 
-impl Connection {
+impl Database {
     pub async fn open(location: ConnectionType<'_>, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let conn = match location {
             ConnectionType::Persistent(name) => KeystoreDatabaseConnection::open(name, key).await?.into(),
@@ -338,7 +338,7 @@ impl Connection {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl FetchFromDatabase for Connection {
+impl FetchFromDatabase for Database {
     async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
         id: &[u8],

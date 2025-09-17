@@ -1,5 +1,5 @@
 use async_lock::RwLock;
-use core_crypto_keystore::{Connection as CryptoKeystore, ConnectionType};
+use core_crypto_keystore::{ConnectionType, Database as CryptoKeystore};
 use criterion::BenchmarkId;
 use rand::distributions::{Alphanumeric, DistString};
 use std::fmt::{Display, Formatter};
