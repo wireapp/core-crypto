@@ -49,7 +49,7 @@ class DatabaseKeyTest {
         path = path.copyTo(tmpdir / path.name)
 
         val newKey = genDatabaseKey()
-        migrateDbKeyTypeToBytes(path.absolutePathString(), oldKey, newKey)
+        migrateDatabaseKeyTypeToBytes(path.absolutePathString(), oldKey, newKey)
 
         CoreCrypto(path.absolutePathString(), newKey)
 
