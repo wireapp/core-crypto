@@ -78,11 +78,11 @@ impl ToCc for DatabaseKeyMaybeArc {
 #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = "migrateDatabaseKeyTypeToBytes"))]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 pub async fn migrate_database_key_type_to_bytes(
-    name: &str,
+    path: &str,
     old_key: &str,
     new_key: &DatabaseKey,
 ) -> CoreCryptoResult<()> {
-    Database::migrate_db_key_type_to_bytes(name, old_key, &new_key.0)
+    Database::migrate_db_key_type_to_bytes(path, old_key, &new_key.0)
         .await
         .map_err(CoreCryptoError::generic())
 }
