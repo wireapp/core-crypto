@@ -1,0 +1,18 @@
+name: markdown
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: wireapp/setup-fd@v0.1.0
+      - name: install mdformat
+        run: |
+          pip3 install mdformat mdformat-gfm mdformat-frontmatter mdformat-footnote mdformat-gfm-alerts
+      - run: fd --glob '*.md' -X mdformat --check
