@@ -381,16 +381,16 @@ export class CoreCrypto {
      * Registers the transport callbacks for core crypto to give it access to backend endpoints for sending
      * a commit bundle or a message, respectively.
      *
-     * @param transportProvider - Any implementor of the {@link MlsTransport} interface
+     * @param transport - Any implementor of the {@link MlsTransport} interface
      * @param _ctx - unused
      */
     async provideTransport(
-        transportProvider: MlsTransport,
+        transport: MlsTransport,
         _ctx: unknown = null
     ): Promise<void> {
-        const transport = mlsTransportToFfi(transportProvider);
+        const transport_ffi = mlsTransportToFfi(transport);
         return await CoreCryptoError.asyncMapErr(
-            this.#cc.provide_transport(transport)
+            this.#cc.provide_transport(transport_ffi)
         );
     }
 
@@ -680,11 +680,11 @@ export class CoreCrypto {
     /**
      * Registers an epoch observer, which will then be notified every time a conversation's epoch changes.
      *
-     * @param observer must conform to the {@link EpochObserver} interface
+     * @param epochObserver must conform to the {@link EpochObserver} interface
      * @returns nothing
      */
-    async registerEpochObserver(observer: EpochObserver): Promise<void> {
-        const shim = new EpochObserverShim(observer);
+    async registerEpochObserver(epochObserver: EpochObserver): Promise<void> {
+        const shim = new EpochObserverShim(epochObserver);
         const ffi = new EpochObserverFfi(shim, shim.epochChanged);
         return await CoreCryptoError.asyncMapErr(
             this.#cc.register_epoch_observer(ffi)
@@ -694,11 +694,13 @@ export class CoreCrypto {
     /**
      * Registers a history observer, which will then be notified every time a history client is created.
      *
-     * @param observer must conform to the {@link HistoryObserver} interface
+     * @param historyObserver must conform to the {@link HistoryObserver} interface
      * @returns nothing
      */
-    async registerHistoryObserver(observer: HistoryObserver): Promise<void> {
-        const shim = new HistoryObserverShim(observer);
+    async registerHistoryObserver(
+        historyObserver: HistoryObserver
+    ): Promise<void> {
+        const shim = new HistoryObserverShim(historyObserver);
         const ffi = new HistoryObserverFfi(shim, shim.historyClientCreated);
         return await CoreCryptoError.asyncMapErr(
             this.#cc.register_history_observer(ffi)
