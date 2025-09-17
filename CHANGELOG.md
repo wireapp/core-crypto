@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Breaking Changes
+
+- v9.0.0 had erroneously renamed `migrateDatabaseKeyTypeToBytes` to `migrateDbKeyTypeToBytes`.
+  This has been fixed, and `migrateDatabaseKeyTypeToBytes` is usable again on all platforms.
+
+  Affected platforms: Android
+
+
 ## v9.0.0 - 2025-09-16
 
 ### Highlights
