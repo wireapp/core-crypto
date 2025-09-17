@@ -18,7 +18,7 @@ mod core_crypto;
 mod core_crypto_context;
 mod credential_type;
 mod crl;
-mod database_key;
+mod database;
 mod decrypted_message;
 mod e2ei;
 mod ephemeral;
@@ -53,7 +53,7 @@ pub use core_crypto::{
 pub use core_crypto_context::CoreCryptoContext;
 pub use credential_type::CredentialType;
 pub use crl::CrlRegistration;
-pub use database_key::{DatabaseKey, migrate_database_key_type_to_bytes, update_database_key};
+pub use database::{DatabaseKey, migrate_database_key_type_to_bytes, update_database_key};
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 pub use e2ei::{
     E2eiConversationState, acme_challenge::AcmeChallenge, acme_directory::AcmeDirectory, enrollment::E2eiEnrollment,

@@ -17,7 +17,7 @@ use crate::{
     CoreCryptoError, CoreCryptoResult,
     ciphersuite::Ciphersuites,
     client_id::ClientIdMaybeArc,
-    database_key::{DatabaseKeyMaybeArc, ToCc as _},
+    database::{DatabaseKeyMaybeArc, ToCc as _},
 };
 
 /// In Wasm, boxed slices are the natural way to communicate an immutable byte slice
