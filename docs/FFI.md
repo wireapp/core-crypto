@@ -15,16 +15,15 @@ These docs are most useful for Core-Crypto developers working internally, but ma
 ## Naming conventions table
 
 | Item                | Rust         | Swift        | Kotlin       | TypeScript   |
-|---------------------|--------------|--------------|--------------|--------------|
+| ------------------- | ------------ | ------------ | ------------ | ------------ |
 | Methods/Functions   | `snake_case` | `camelCase`  | `camelCase`  | `camelCase`  |
 | Variables/Arguments | `snake_case` | `camelCase`  | `camelCase`  | `camelCase`  |
 | Classes/Interfaces  | `PascalCase` | `PascalCase` | `PascalCase` | `PascalCase` |
 
-
 ## Types equivalence table
 
 | Rust                    | Swift                              | Kotlin                     | TypeScript                               |
-|-------------------------|------------------------------------|----------------------------|------------------------------------------|
+| ----------------------- | ---------------------------------- | -------------------------- | ---------------------------------------- |
 | `bool`                  | `Bool`                             | `Boolean`                  | `boolean`                                |
 | `u8`                    | `UInt8`                            | `UByte`                    | `number`                                 |
 | `u16`                   | `UInt16`                           | `UShort`                   | `number`                                 |

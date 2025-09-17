@@ -7,17 +7,19 @@
 - [Crypto Dependencies](./CRYPTO_DEPENDENCIES.md)
 
 ## API Documentation
+
 <!-- If you want to try to deploy docs for an old tag, go to
 https://github.com/wireapp/core-crypto/actions/workflows/docs.yml, click "run workflow" and provide the tag number as
 input, and confirm by "run workflow" below the input. Note that deployment depends on successfully building all docs. -->
 
 <!-- Apparently, markdown doesn't support comments inside a table, so this needs to remain here. -->
+
 <!-- For convencience to copy and replace x.x.x when adding a new row. -->
 
 <!-- | **vx.x.x** | [TypeScript](./vx.x.x/typescript)                          | [Kotlin](./vx.x.x/kotlin/)                              | [Swift](./vx.x.x/swift)                          | [Rust](./vx.x.x/rust/core_crypto)      | -->
 
 |            | TypeScript                                                 | Kotlin                                                  | Swift                                            | Rust                                   |
-|------------|------------------------------------------------------------|---------------------------------------------------------|--------------------------------------------------|----------------------------------------|
+| ---------- | ---------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------ | -------------------------------------- |
 | **main**   | [TypeScript](./main/typescript/)                           | [Kotlin](./main/kotlin/)                                | [Swift](./main/swift/)                           | [Rust](./main/rust/core_crypto/)       |
 | **v9.0.0** | [TypeScript](./v9.0.0/typescript)                          | [Kotlin](./v9.0.0/kotlin/)                              | [Swift](./v9.0.0/swift)                          | [Rust](./v9.0.0/rust/core_crypto)      |
 | **v8.0.3** | [TypeScript](./v8.0.3/typescript)                          | [Kotlin](./v8.0.3/kotlin/)                              | [Swift](./v8.0.3/swift)                          | [Rust](./v8.0.3/rust/core_crypto)      |

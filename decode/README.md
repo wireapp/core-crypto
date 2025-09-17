@@ -11,11 +11,14 @@ cargo install --git https://github.com/wireapp/core-crypto.git[decode]
 ## Examples
 
 ### Decode proteus prekey bundle
+
 ```
 decode prekey-bundle - <<< "pQABAQoCoQBYIJHnFfQBrfDW+f0MNoaGxi63gLbFMRfqfVGPhiLl5AWYA6EAoQBYIGOJPLc39t4CVMcwil00ri/XSvML7LF3IP2zg+YstiHuBPY="
 
 ```
+
 Output:
+
 ```
 ProteusPreKeyBundle {
     version: 1,
@@ -32,7 +35,9 @@ ProteusPreKeyBundle {
 echo -n "AAEAATQAAQAA0T+Dx7aERkqm8jl1oWIAQgpjb25mZXJlbmNlAAAAAHN0YWdpbmcuemluZnJhLmlvAAAAAAAAAEMCAAAAAAACAAMAAAAHQEgwRgIhAOrk4aL0X6mJwCJWyNzKHIr5qXt05gx5FyP4rmcgviyYAiEAmUwSh7zTqTJAifMn/UnAVNjZKR19DukHS6iVkIP64Oo=" > message.base64
 decode mls-message message.base64
 ```
+
 Output:
+
 ```
 MlsMessageIn {
     version: Mls10,
