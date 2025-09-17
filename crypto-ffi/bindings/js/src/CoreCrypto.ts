@@ -74,6 +74,8 @@ export {
     ciphersuiteDefault,
     ClientId,
     CustomConfiguration,
+    openDatabase,
+    Database,
     DatabaseKey,
     MlsTransportData,
     migrateDatabaseKeyTypeToBytes,
