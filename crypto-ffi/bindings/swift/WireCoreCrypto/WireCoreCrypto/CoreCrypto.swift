@@ -255,13 +255,3 @@ final actor TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand 
     }
 
 }
-
-/// Updates the key of the CoreCrypto database.
-/// To be used only once, when moving from CoreCrypto <= 5.x to CoreCrypto 6.x.
-///
-public func migrateDatabaseKeyTypeToBytes(path: String, oldKey: String, newKey: DatabaseKey)
-    async throws
-{
-    try await WireCoreCryptoUniffi.migrateDbKeyTypeToBytes(
-        name: path, oldKey: oldKey, newKey: newKey)
-}
