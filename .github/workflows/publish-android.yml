@@ -44,6 +44,12 @@ jobs:
       - name: zip package and bindings
         run: |
           zip -r android.zip \
+          target/armv7-linux-androideabi/release/libcore_crypto_ffi.a \
+          target/armv7-linux-androideabi/release/libcore_crypto_ffi.so \
+          target/aarch64-linux-android/release/libcore_crypto_ffi.a \
+          target/aarch64-linux-android/release/libcore_crypto_ffi.so \
+          target/x86_64-linux-android/release/libcore_crypto_ffi.a \
+          target/x86_64-linux-android/release/libcore_crypto_ffi.so \
           crypto-ffi/bindings/android/build/outputs/aar/android-release.aar \
           crypto-ffi/bindings/android/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt
 
