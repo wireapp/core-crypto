@@ -288,10 +288,10 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
 
 Publishing Android / JVM bindings happens automatically by a github workflow when a release tag is pushed.
 
-If you would like to publish the bindings to a local maven cache, run:
+If you would like to publish the bindings to a local Maven cache, run:
 
 ```ignore
-cd crypto-ffi/bindings/android
+cd crypto-ffi/bindings
 ./gradlew :jvm:publishToMavenLocal
 ./gradlew :android:publishToMavenLocal
 ```
