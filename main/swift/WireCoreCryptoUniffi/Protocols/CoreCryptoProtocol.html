@@ -53,6 +53,9 @@
                 <a href="../../WireCoreCryptoUniffi/Classes/CoreCrypto.html">CoreCrypto</a>
               </li>
               <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/CoreCryptoCommandImpl.html">CoreCryptoCommandImpl</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Classes/CoreCryptoContext.html">CoreCryptoContext</a>
               </li>
               <li class="nav-group-task">
@@ -195,6 +198,9 @@
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Protocols/ConversationIdProtocol.html">ConversationIdProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/CoreCryptoCommand.html">CoreCryptoCommand</a>
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Protocols/CoreCryptoContextProtocol.html">CoreCryptoContextProtocol</a>
@@ -1033,7 +1039,7 @@
  otherwise, every operation performed with the context will be discarded.</p>
 
 <p>When calling this function from within Rust, async functions accepting a context
- implement <code>CoreCryptoCommand</code>, so operations can be defined inline as follows:</p>
+ implement <code><a href="../../WireCoreCryptoUniffi/Protocols/CoreCryptoCommand.html">CoreCryptoCommand</a></code>, so operations can be defined inline as follows:</p>
 <pre class="highlight plaintext"><code> core_crypto.transaction(Arc::new(async |context| {
  // your implementation here
  Ok(())
@@ -1045,7 +1051,7 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">transaction</span><span class="p">(</span><span class="nv">command</span><span class="p">:</span> <span class="kt">CoreCryptoCommand</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">transaction</span><span class="p">(</span><span class="nv">command</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Protocols/CoreCryptoCommand.html">CoreCryptoCommand</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
