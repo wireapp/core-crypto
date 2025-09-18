@@ -227,7 +227,8 @@ bindings-kotlin: bindings-kotlin-android bindings-kotlin-jvm ## Generate all Kot
 #-------------------------------------------------------------------------------
 
 ios-device-deps := $(RUST_SOURCES)
-$(STAMPS)/ios-device: $(ios-device-deps)
+IOS_DEVICE := target/aarch64-apple-ios/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+$(IOS_DEVICE): $(ios-device-deps)
 	IPHONEOS_DEPLOYMENT_TARGET=16.0 \
 	cargo rustc --locked \
 	  --target aarch64-apple-ios \
@@ -235,13 +236,13 @@ $(STAMPS)/ios-device: $(ios-device-deps)
 	  --crate-type=staticlib \
 	  --package core-crypto-ffi \
 	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
-	$(TOUCH_STAMP)
 
 .PHONY: ios-device
-ios-device: $(STAMPS)/ios-device ## Build core-crypto-ffi for aarch64-apple-ios for iOS 16.0 (macOS only)
+ios-device: $(IOS_DEVICE) ## Build core-crypto-ffi for aarch64-apple-ios for iOS 16.0 (macOS only)
 
+IOS_SIMULATOR_ARM := target/aarch64-apple-ios-sim/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 ios-simulator-arm-deps := $(RUST_SOURCES)
-$(STAMPS)/ios-simulator-arm: $(ios-simulator-arm-deps)
+$(IOS_SIMULATOR_ARM): $(ios-simulator-arm-deps)
 	CRATE_CC_NO_DEFAULTS=1 \
 	TARGET_CFLAGS="--target=arm64-apple-ios14.0.0-simulator \
 	-mios-simulator-version-min=14.0 \
@@ -252,19 +253,16 @@ $(STAMPS)/ios-simulator-arm: $(ios-simulator-arm-deps)
 	  --crate-type=staticlib \
 	  --package core-crypto-ffi \
 	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
-	$(TOUCH_STAMP)
 
 .PHONY: ios-simulator-arm
-ios-simulator-arm: $(STAMPS)/ios-simulator-arm ## Build core-crypto-ffi for aarch64-apple-ios-sim, iOS 14.0.0 (macOS only)
-$(STAMPS)/ios: $(STAMPS)/ios-device $(STAMPS)/ios-simulator-arm
-	$(TOUCH_STAMP)
+ios-simulator-arm: $(IOS_SIMULATOR_ARM) ## Build core-crypto-ffi for aarch64-apple-ios-sim, iOS 14.0.0 (macOS only)
 
 .PHONY: ios
-ios: $(STAMPS)/ios
+ios: ios-device ios-simulator-arm
 
 # Build XCFramework (macOS only)
 
-ios-create-xcframework-deps := $(STAMPS)/ios $(UNIFFI_SWIFT_OUTPUT)
+ios-create-xcframework-deps := $(IOS_DEVICE) $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT)
 $(STAMPS)/ios-create-xcframework: $(ios-create-xcframework-deps)
 	cd crypto-ffi/bindings/swift && \
 	set -e; \
@@ -603,7 +601,7 @@ $(STAMPS)/docs-ts: $(DTS_OUT)
 docs-ts: $(STAMPS)/docs-ts ## Generate TypeScript docs
 
 # Swift docs via Jazzy (macOS only)
-docs-swift-deps := $(STAMPS)/ios $(STAMPS)/bindings-swift
+docs-swift-deps := $(IOS_DEVICE) $(IOS_SIMULATOR_ARM) $(STAMPS)/bindings-swift
 $(STAMPS)/docs-swift: $(docs-swift-deps)
 	mkdir -p target/swift/doc
 	cd crypto-ffi/bindings/swift/WireCoreCrypto && \
