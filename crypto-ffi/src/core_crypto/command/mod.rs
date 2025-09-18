@@ -6,7 +6,9 @@ use std::sync::Arc;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-/// :nodoc:
+/// A `CoreCryptoCommand` has an `execute` method which accepts a `CoreCryptoContext` and returns nothing.
+///
+/// It is the argument to a `CoreCrypto::transaction` call.
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export(with_foreign)]
 #[async_trait::async_trait]
@@ -15,7 +17,7 @@ pub trait CoreCryptoCommand: Send + Sync {
     async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()>;
 }
 
-/// :nodoc:
+/// When building outside WASM, any async function of appropriate signature is a `CoreCryptoCommand`.
 #[cfg(not(target_family = "wasm"))]
 #[async_trait::async_trait]
 impl<F, Fut> CoreCryptoCommand for F
@@ -33,6 +35,8 @@ where
 extern "C" {
     /// A `CoreCryptoCommand` is a [duck-typed interface](https://wasm-bindgen.github.io/wasm-bindgen/reference/working-with-duck-typed-interfaces.html)
     /// which defines a struct containing a single member: `execute`, which is a function accepting `CoreCryptoContext` and returning nothing.
+    ///
+    /// It is the argument to a `CoreCrypto::transaction` call.
     pub type CoreCryptoCommand;
 
     /// Execute this command
