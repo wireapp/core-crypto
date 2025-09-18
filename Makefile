@@ -569,11 +569,11 @@ $(STAMPS)/docs-rust-wasm: $(RUST_SOURCES)
 .PHONY: docs-rust-wasm
 docs-rust-wasm: $(STAMPS)/docs-rust-wasm ## Generate Rust docs for wasm32-unknown-unknown
 
-# Kotlin Dokka (Android) docs
+# Kotlin docs
 $(STAMPS)/docs-kotlin: jvm
-	cd crypto-ffi/bindings && ./gradlew android:dokkaGeneratePublicationHtml
+	cd crypto-ffi/bindings && ./gradlew jvm:dokkaGeneratePublicationHtml
 	mkdir -p target/kotlin/doc
-	cp -R crypto-ffi/bindings/android/build/dokka/html/ target/kotlin/doc
+	cp -R crypto-ffi/bindings/jvm/build/dokka/html/ target/kotlin/doc
 	$(TOUCH_STAMP)
 
 .PHONY: docs-kotlin
