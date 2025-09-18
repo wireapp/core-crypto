@@ -11,6 +11,61 @@ afterEach(async () => {
 });
 
 describe("database", () => {
+    it("open previously created db works", async () => {
+        await expect(
+            browser.execute(async () => {
+                const databaseName = crypto.randomUUID();
+                const key = new Uint8Array(32);
+                window.crypto.getRandomValues(key);
+
+                await window.ccModule.openDatabase(
+                    databaseName,
+                    new window.ccModule.DatabaseKey(key)
+                );
+
+                const db = await window.ccModule.openDatabase(
+                    databaseName,
+                    new window.ccModule.DatabaseKey(key)
+                );
+
+                return { dbIsDefined: db !== undefined };
+            })
+        ).resolves.toMatchObject({ dbIsDefined: true });
+    });
+
+    it("open db created by cc works", async () => {
+        await expect(
+            browser.execute(async () => {
+                const cipherSuite = window.defaultCipherSuite;
+                const databaseName = crypto.randomUUID();
+
+                const makeClientId = () => {
+                    const array = new Uint8Array([1, 2]);
+                    return new window.ccModule.ClientId(array);
+                };
+
+                const key = new Uint8Array(32);
+                window.crypto.getRandomValues(key);
+
+                const clientConfig = {
+                    databaseName,
+                    key: new window.ccModule.DatabaseKey(key),
+                    ciphersuites: [cipherSuite],
+                    clientId: makeClientId(),
+                };
+
+                const cc = await window.ccModule.CoreCrypto.init(clientConfig);
+                await cc.close();
+
+                const db = await window.ccModule.openDatabase(
+                    databaseName,
+                    new window.ccModule.DatabaseKey(key)
+                );
+                return { dbIsDefined: db !== undefined };
+            })
+        ).resolves.toMatchObject({ dbIsDefined: true });
+    });
+
     it("key must have correct length", async () => {
         expect(() =>
             browser.execute(async () => {

@@ -33,6 +33,52 @@ final class WireCoreCryptoTests: XCTestCase {
         }
     }
 
+    func testOpenExistingDbWorks() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "mls")
+        let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+
+        let key = genDatabaseKey()
+
+        let database = try await openDatabase(name: keystore.path, key: key)
+
+        let database2 = try await openDatabase(name: keystore.path, key: key)
+
+        XCTAssertNotNil(database)
+        XCTAssertNotNil(database2)
+    }
+
+    func testOpenCcDbWorks() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "mls")
+        let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+
+        let key = genDatabaseKey()
+        try await _ = CoreCrypto(keystorePath: keystore.path, key: key)
+
+        let database = try await openDatabase(name: keystore.path, key: key)
+
+        XCTAssertNotNil(database)
+    }
+
+    func testOpenExistingDbWithInvalidKeyFails() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "mls")
+        let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+
+        let key = genDatabaseKey()
+
+        try await _ = openDatabase(name: keystore.path, key: key)
+
+        let invalidKey = genDatabaseKey()
+
+        await XCTAssertThrowsErrorAsync {
+            try await openDatabase(
+                name: keystore.path, key: invalidKey
+            )
+        }
+    }
+
     func testUpdatingDatabaseKeyWorks() async throws {
         let root = FileManager.default.temporaryDirectory.appending(path: "mls")
         let keystore = root.appending(path: "keystore-\(UUID().uuidString)")

@@ -28,10 +28,51 @@ class GeneralTest {
     }
 }
 
+class DatabaseTest {
+    @Test
+    fun givenDatabase_whenUsingSameNameAndKey_thenOpenShouldSucceed() = runTest {
+        val tmpdir = createTempDirectory("cc-test-")
+        val keyStore = tmpdir / "keystore"
+        val key = genDatabaseKey()
+        val db = openDatabase(keyStore.toString(), key)
+        db.close()
+
+        openDatabase(keyStore.toString(), key)
+
+        tmpdir.toFile().deleteRecursively()
+    }
+
+    @Test
+    fun givenCcInstance_whenUsingSameNameAndKey_thenOpenShouldSucceed() = runTest {
+        val tmpdir = createTempDirectory("cc-test-")
+        val keyStore = tmpdir / "keystore"
+        val key = genDatabaseKey()
+        val cc = CoreCrypto(keyStore.toString(), key)
+        cc.close()
+
+        openDatabase(keyStore.toString(), key)
+
+        tmpdir.toFile().deleteRecursively()
+    }
+
+    @Test
+    fun givenDatabase_whenUsingWrongKey_thenOpenShouldFail() = runTest {
+        val tmpdir = createTempDirectory("cc-test-")
+        val keyStore = tmpdir / "keystore"
+        val key = genDatabaseKey()
+        openDatabase(keyStore.toString(), key)
+
+        val key2 = genDatabaseKey()
+        assertFailsWith<CoreCryptoException.Other> { openDatabase(keyStore.toString(), key2) }
+            .also { assertEquals("msg=file is not a database", it.message) }
+
+        tmpdir.toFile().deleteRecursively()
+    }
+}
+
 class DatabaseKeyTest {
     @Test
     fun invalid_length() = runTest {
-        val path = Files.createTempFile("keystore-", null).toString()
         val exc = assertFailsWith<CoreCryptoException.Other> { DatabaseKey(ByteArray(48)) }
         assertThat(exc.msg.contains("Invalid database key size, expected 32, got 48")).isTrue
     }
