@@ -570,14 +570,14 @@ $(STAMPS)/docs-rust-wasm: $(RUST_SOURCES)
 docs-rust-wasm: $(STAMPS)/docs-rust-wasm ## Generate Rust docs for wasm32-unknown-unknown
 
 # Kotlin docs
-$(STAMPS)/docs-kotlin: jvm
+DOCS_KOTLIN := target/kotlin/doc/html/index.html
+$(DOCS_KOTLIN): jvm
 	cd crypto-ffi/bindings && ./gradlew jvm:dokkaGeneratePublicationHtml
 	mkdir -p target/kotlin/doc
 	cp -R crypto-ffi/bindings/jvm/build/dokka/html/ target/kotlin/doc
-	$(TOUCH_STAMP)
 
 .PHONY: docs-kotlin
-docs-kotlin: $(STAMPS)/docs-kotlin ## Generate Kotlin docs
+docs-kotlin: $(DOCS_KOTLIN) ## Generate Kotlin docs
 
 # TypeScript docs via Typedoc
 $(STAMPS)/docs-ts: $(DTS_OUT)
