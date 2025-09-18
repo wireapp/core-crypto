@@ -2,12 +2,33 @@
 
 ## Unreleased
 
+## v9.0.1 - 2025-09-18
+
 ### Breaking Changes
 
 - v9.0.0 had erroneously renamed `migrateDatabaseKeyTypeToBytes` to `migrateDbKeyTypeToBytes`.
   This has been fixed, and `migrateDatabaseKeyTypeToBytes` is usable again on all platforms.
 
   Affected platforms: Android
+
+### Bug Fixes
+
+- Kotlin documentation is now correctly generated and deployed.
+
+______________________________________________________________________
+
+### Bug Fixes
+
+- crypto-ffi: use the old parameter name ([8d18b71](https://github.com/wireapp/core-crypto/commit/8d18b718ae61e8801b9c1facf8937d8302304ffd))
+- crypto-ffi: use the correct name, migrateDatabaseKeyTypeToBytes, for uniffi ([870aaae](https://github.com/wireapp/core-crypto/commit/870aaaece3684502f783f631a19bb1f1586f91c5))
+
+### Documentation
+
+- eliminate `:nodoc:` by writing proper docs ([f85d9fb](https://github.com/wireapp/core-crypto/commit/f85d9fb5840e0de3e66922dd6b5a249e977686ac))
+
+### Testing
+
+- crypto-ffi: fix Kotlin test to use the correct API ([b1d5509](https://github.com/wireapp/core-crypto/commit/b1d550937581e917169885ebb2d0d912f7c4efbd))
 
 ## v9.0.0 - 2025-09-16
 
