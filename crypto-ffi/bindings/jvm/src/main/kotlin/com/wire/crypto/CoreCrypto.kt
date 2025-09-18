@@ -121,10 +121,10 @@ class CoreCryptoClient(private val cc: CoreCrypto) {
     /**
      * See [CoreCryptoContext.isHistorySharingEnabled]
      *
-     * @param id conversation identifier
+     * @param conversationId conversation identifier
      * @return true if history sharing is enabled
      */
-    suspend fun isHistorySharingEnabled(id: ConversationId): Boolean = cc.isHistorySharingEnabled(id)
+    suspend fun isHistorySharingEnabled(conversationId: ConversationId): Boolean = cc.isHistorySharingEnabled(conversationId)
 
     /**
      * Closes this [CoreCrypto] instance and deallocates all loaded resources.
