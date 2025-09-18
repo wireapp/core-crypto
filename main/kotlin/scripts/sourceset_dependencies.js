@@ -1,1 +1,1 @@
-sourceset_dependencies='{":android/debug":[],":android/main":[],":android/release":[]}'
+sourceset_dependencies='{":jvm/main":[]}'

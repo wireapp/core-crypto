@@ -50,7 +50,7 @@
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
                 <button class="platform-tag platform-selector jvm-like" data-active=""
-                        data-filter=":android/release">androidJvm</button>
+                        data-filter=":jvm/main">jvm</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox"
                         data-role="dropdown-toggle"
@@ -67,10 +67,10 @@
                     </div>
                         <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
                             <label class="checkbox">
-                                <input type="checkbox" class="checkbox--input" id=":android/release"
-                                       data-filter=":android/release"/>
+                                <input type="checkbox" class="checkbox--input" id=":jvm/main"
+                                       data-filter=":jvm/main"/>
                                 <span class="checkbox--icon"></span>
-                                androidJvm
+                                jvm
                             </label>
                         </li>
                 </ul>
@@ -104,13 +104,13 @@
                 </div>
             </div>
             <div id="main">
-<div class="main-content" data-page-type="member" id="content" pageIds="CoreCrypto::com.wire.crypto/HistoryObserver/historyClientCreated/#com.wire.crypto.MLSGroupId#com.wire.crypto.HistorySecret/PointingToDeclaration//617928872">
+<div class="main-content" data-page-type="member" id="content" pageIds="CoreCrypto::com.wire.crypto/HistoryObserver/historyClientCreated/#com.wire.crypto.ConversationId#com.wire.crypto.HistorySecret/PointingToDeclaration//1144021071">
   <div class="breadcrumbs"><a href="../../../index.html">CoreCrypto</a><span class="delimiter">/</span><a href="../index.html">com.wire.crypto</a><span class="delimiter">/</span><a href="index.html">HistoryObserver</a><span class="delimiter">/</span><span class="current">historyClientCreated</span></div>
   <div class="cover ">
     <h1 class="cover"><span>history</span><wbr></wbr><span>Client</span><wbr></wbr><span><span>Created</span></span></h1>
   </div>
-  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android/release"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="history-client-created.html"><span class="token function">historyClientCreated</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-m-l-s-group-id/index.html">MLSGroupId</a><span class="token punctuation">, </span></span><span class="parameter ">secret<span class="token operator">: </span><a href="../-history-secret/index.html">HistorySecret</a></span></span><span class="token punctuation">)</span></div><p class="paragraph">This function will be called every time a new history client is created.</p><p class="paragraph">The <code class="lang-kotlin">secret</code> parameter is the associated secret of the new history client</p><div class="warning">
-This function must not block! Foreign implementors of this inteface can
+  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="history-client-created.html"><span class="token function">historyClientCreated</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">secret<span class="token operator">: </span><a href="../-history-secret/index.html">HistorySecret</a></span></span><span class="token punctuation">)</span><span class="clearfix"><span class="floating-right">(<a href="https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt#L9234">source</a>)</span></span></div><p class="paragraph">This function will be called every time a new history client is created.</p><p class="paragraph">The <code class="lang-kotlin">secret</code> parameter is the secret associated with the new history client</p><div class="warning">
+This function must not block! Foreign implementors of this interface can
 spawn a task indirecting the notification, or (unblocking) send the notification
 on some kind of channel, or anything else, as long as the operation completes
 quickly.

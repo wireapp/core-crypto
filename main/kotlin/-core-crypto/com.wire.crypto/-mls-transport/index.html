@@ -50,7 +50,7 @@
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
                 <button class="platform-tag platform-selector jvm-like" data-active=""
-                        data-filter=":android/release">androidJvm</button>
+                        data-filter=":jvm/main">jvm</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox"
                         data-role="dropdown-toggle"
@@ -67,10 +67,10 @@
                     </div>
                         <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
                             <label class="checkbox">
-                                <input type="checkbox" class="checkbox--input" id=":android/release"
-                                       data-filter=":android/release"/>
+                                <input type="checkbox" class="checkbox--input" id=":jvm/main"
+                                       data-filter=":jvm/main"/>
                                 <span class="checkbox--icon"></span>
-                                androidJvm
+                                jvm
                             </label>
                         </li>
                 </ul>
@@ -104,58 +104,77 @@
                 </div>
             </div>
             <div id="main">
-<div class="main-content" data-page-type="classlike" id="content" pageIds="CoreCrypto::com.wire.crypto/MlsTransport///PointingToDeclaration//617928872">
+<div class="main-content" data-page-type="classlike" id="content" pageIds="CoreCrypto::com.wire.crypto/MlsTransport///PointingToDeclaration//1144021071">
   <div class="breadcrumbs"><a href="../../../index.html">CoreCrypto</a><span class="delimiter">/</span><a href="../index.html">com.wire.crypto</a><span class="delimiter">/</span><span class="current">MlsTransport</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Mls</span><wbr></wbr><span><span>Transport</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android/release"><div class="symbol monospace"><span class="token keyword">interface </span><a href="index.html">MlsTransport</a></div><p class="paragraph">You must implement this interface and pass the implementing object to <a href="../-core-crypto/provide-transport.html">CoreCrypto.provideTransport</a>. CoreCrypto uses it to communicate with the delivery service.</p></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">interface </span><a href="index.html">MlsTransport</a><span class="clearfix"><span class="floating-right">(<a href="https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt#L9862">source</a>)</span></span></div><p class="paragraph">Used by core crypto to send commits or application messages to the delivery service. This trait must be implemented before calling any functions that produce commits.</p><h4 class="">Inheritors</h4><div class="table"><div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../-mls-transport-impl/index.html">MlsTransportImpl</a></div></span></div><div></div></div></div></div></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="349285804%2FClasslikes%2F1144021071" anchor-label="Companion" id="349285804%2FClasslikes%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="349285804%2FClasslikes%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div data-togglable="FUNCTION">
         <h2 class="">Functions</h2>
-        <div class="table"><a data-name="-1632597199%2FFunctions%2F617928872" anchor-label="prepareForTransport" id="-1632597199%2FFunctions%2F617928872" data-filterable-set=":android/release"></a>
-          <div class="table-row" data-filterable-current=":android/release" data-filterable-set=":android/release">
+        <div class="table"><a data-name="-1632597199%2FFunctions%2F1144021071" anchor-label="prepareForTransport" id="-1632597199%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="prepare-for-transport.html"><span>prepare</span><wbr></wbr><span>For</span><wbr></wbr><span><span>Transport</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1632597199%2FFunctions%2F617928872"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1632597199%2FFunctions%2F1144021071"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android/release"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="prepare-for-transport.html"><span class="token function">prepareForTransport</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">historySecret<span class="token operator">: </span><a href="../-history-secret/index.html">HistorySecret</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-mls-transport-data/index.html">MlsTransportData</a></div><div class="brief "><p class="paragraph">Prepare a history secret before being sent</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="prepare-for-transport.html"><span class="token function">prepareForTransport</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">historySecret<span class="token operator">: </span><a href="../-history-secret/index.html">HistorySecret</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-mls-transport-data/index.html">MlsTransportData</a></div><div class="brief "><p class="paragraph">Prepare a history secret before being sent</p></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1329796490%2FFunctions%2F617928872" anchor-label="sendCommitBundle" id="1329796490%2FFunctions%2F617928872" data-filterable-set=":android/release"></a>
-          <div class="table-row" data-filterable-current=":android/release" data-filterable-set=":android/release">
+<a data-name="1329796490%2FFunctions%2F1144021071" anchor-label="sendCommitBundle" id="1329796490%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="send-commit-bundle.html"><span>send</span><wbr></wbr><span>Commit</span><wbr></wbr><span><span>Bundle</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1329796490%2FFunctions%2F617928872"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1329796490%2FFunctions%2F1144021071"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android/release"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="send-commit-bundle.html"><span class="token function">sendCommitBundle</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">commitBundle<span class="token operator">: </span><a href="../-commit-bundle/index.html">CommitBundle</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-mls-transport-response/index.html">MlsTransportResponse</a></div><div class="brief "><p class="paragraph">Send a commit bundle to the delivery service.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="send-commit-bundle.html"><span class="token function">sendCommitBundle</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">commitBundle<span class="token operator">: </span><a href="../-commit-bundle/index.html">CommitBundle</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-mls-transport-response/index.html">MlsTransportResponse</a></div><div class="brief "><p class="paragraph">Send a commit bundle to the corresponding endpoint.</p></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-186274814%2FFunctions%2F617928872" anchor-label="sendMessage" id="-186274814%2FFunctions%2F617928872" data-filterable-set=":android/release"></a>
-          <div class="table-row" data-filterable-current=":android/release" data-filterable-set=":android/release">
+<a data-name="-186274814%2FFunctions%2F1144021071" anchor-label="sendMessage" id="-186274814%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="send-message.html"><span>send</span><wbr></wbr><span><span>Message</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-186274814%2FFunctions%2F617928872"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-186274814%2FFunctions%2F1144021071"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android/release"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="send-message.html"><span class="token function">sendMessage</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">mlsMessage<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-mls-transport-response/index.html">MlsTransportResponse</a></div><div class="brief "><p class="paragraph">Send a message to the delivery service.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="send-message.html"><span class="token function">sendMessage</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">mlsMessage<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-mls-transport-response/index.html">MlsTransportResponse</a></div><div class="brief "><p class="paragraph">Send a message to the corresponding endpoint.</p></div></div></div>
                 </div>
               </div>
             </div>
