@@ -417,9 +417,11 @@ jvm-linux: $(JVM_LINUX_LIB) ## Build core-crypto-ffi for JVM on x86_64-unknown-l
 .PHONY: jvm
 ifeq ($(UNAME_S),Linux)
 JVM_LIB := $(JVM_LINUX_LIB)
+jvm-deps := $(jvm-linux-deps)
 jvm: jvm-linux ## Build core-crypto-ffi for JVM (automatically select the target based on the host machine)
 else ifeq ($(UNAME_S),Darwin)
 JVM_LIB := $(JVM_DARWIN_LIB)
+jvm-deps := $(jvm-darwin-deps)
 jvm: jvm-darwin
 else
 $(error Unsupported host platform for jvm: $(UNAME_S))
@@ -570,13 +572,16 @@ $(STAMPS)/docs-rust-wasm: $(RUST_SOURCES)
 docs-rust-wasm: $(STAMPS)/docs-rust-wasm ## Generate Rust docs for wasm32-unknown-unknown
 
 # Kotlin docs
+KOTLIN_SOURCES := $(shell find crypto-ffi/bindings/jvm/src/main/kotlin \
+	                           -type f -name '*.kt' 2>/dev/null | LC_ALL=C sort)
 DOCS_KOTLIN := target/kotlin/doc/html/index.html
-$(DOCS_KOTLIN): jvm
+$(DOCS_KOTLIN): $(JVM_LIB) $(KOTLIN_SOURCES)
 	cd crypto-ffi/bindings && ./gradlew jvm:dokkaGeneratePublicationHtml
 	mkdir -p target/kotlin/doc
 	cp -R crypto-ffi/bindings/jvm/build/dokka/html/ target/kotlin/doc
 
 .PHONY: docs-kotlin
+docs-kotlin-deps := $(jvm-deps) $(KOTLIN_SOURCES)
 docs-kotlin: $(DOCS_KOTLIN) ## Generate Kotlin docs
 
 # TypeScript docs via Typedoc
