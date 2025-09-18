@@ -108,8 +108,11 @@ RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
 
 # Used by CI to calculate a hash of prerequisite files of a make rule
 %-hash-deps:
-	@deps="$($*-deps)"; \
-	hash=$$(sha256sum $$deps | sha256sum | awk '{print $$1}'); \
+	@if [ -z "$($*-deps)" ]; then \
+	  echo "ERROR: The \"$*-deps\" variable doesn't exist in the Makefile."; exit 1; \
+	fi
+	@set -euo pipefail; \
+	hash=$$(sha256sum $($*-deps) | sha256sum | awk '{print $$1}'); \
 	echo "$$hash"
 
 #-------------------------------------------------------------------------------
