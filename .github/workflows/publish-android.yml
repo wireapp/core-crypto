@@ -59,6 +59,8 @@ jobs:
             files: android.zip
             fail_on_unmatched_files: true
 
+      # For Android, we're not deleting the release artifacts after this step succeds,
+      # because publishing may still fail later.
       - name: publish package
         run: |
           cd crypto-ffi/bindings
@@ -69,8 +71,3 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.PGP_KEY_ID }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.PGP_SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.PGP_PASSPHRASE }}
-
-      - name: delete package from gh release
-        run: gh release delete-asset $GITHUB_REF_NAME android.zip --yes
-        env:
-          GH_TOKEN: ${{ github.token }}
