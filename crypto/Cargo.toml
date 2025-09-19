@@ -67,7 +67,7 @@ rand.workspace = true
 obfuscate.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-async-fs = { version = "2.1", optional = true }
+async-fs = { version = "2.2", optional = true }
 futures-lite = { version = "2.6", optional = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]

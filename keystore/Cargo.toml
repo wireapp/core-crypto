@@ -52,7 +52,7 @@ security-framework-sys = "2.15"
 core-foundation = "0.10"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-async-fs = "2.1"
+async-fs = "2.2"
 blocking = "1.6"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.rusqlite]
