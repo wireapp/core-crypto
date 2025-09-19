@@ -12,7 +12,7 @@
 <a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">use </span><span class="kw">crate</span>::entities::proteus::<span class="kw-2">*</span>;
 <a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><span class="kw">crate</span>::entities::{ConsumerData, EntityBase, EntityFindParams, EntityTransactionExt, UniqueEntity};
 <a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::transaction::dynamic_dispatch::EntityId;
-<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use crate</span>::{CryptoKeystoreError, CryptoKeystoreResult, connection::Connection};
+<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use crate</span>::{CryptoKeystoreError, CryptoKeystoreResult, connection::Database};
 <a href=#16 id=16 data-nosnippet>16</a>
 <a href=#17 id=17 data-nosnippet>17</a><span class="kw">pub mod </span>dynamic_dispatch;
 <a href=#18 id=18 data-nosnippet>18</a>
@@ -394,7 +394,7 @@
 <a href=#394 id=394 data-nosnippet>394</a><span class="kw">impl </span>KeystoreTransaction {
 <a href=#395 id=395 data-nosnippet>395</a>    <span class="doccomment">/// Persists all the operations in the database. It will effectively open a transaction
 <a href=#396 id=396 data-nosnippet>396</a>    /// internally, perform all the buffered operations and commit.
-<a href=#397 id=397 data-nosnippet>397</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>commit(<span class="kw-2">&amp;</span><span class="self">self</span>, db: <span class="kw-2">&amp;</span>Connection) -&gt; <span class="prelude-ty">Result</span>&lt;(), CryptoKeystoreError&gt; {
+<a href=#397 id=397 data-nosnippet>397</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>commit(<span class="kw-2">&amp;</span><span class="self">self</span>, db: <span class="kw-2">&amp;</span>Database) -&gt; <span class="prelude-ty">Result</span>&lt;(), CryptoKeystoreError&gt; {
 <a href=#398 id=398 data-nosnippet>398</a>        <span class="macro">commit_transaction!</span>(
 <a href=#399 id=399 data-nosnippet>399</a>            <span class="self">self</span>, db,
 <a href=#400 id=400 data-nosnippet>400</a>            [

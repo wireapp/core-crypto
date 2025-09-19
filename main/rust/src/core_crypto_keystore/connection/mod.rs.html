@@ -129,7 +129,7 @@
 <a href=#129 id=129 data-nosnippet>129</a>}
 <a href=#130 id=130 data-nosnippet>130</a>
 <a href=#131 id=131 data-nosnippet>131</a><span class="attr">#[derive(Debug, Clone)]
-<a href=#132 id=132 data-nosnippet>132</a></span><span class="kw">pub struct </span>Connection {
+<a href=#132 id=132 data-nosnippet>132</a></span><span class="kw">pub struct </span>Database {
 <a href=#133 id=133 data-nosnippet>133</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) conn: Arc&lt;Mutex&lt;KeystoreDatabaseConnection&gt;&gt;,
 <a href=#134 id=134 data-nosnippet>134</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) transaction: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;KeystoreTransaction&gt;&gt;&gt;,
 <a href=#135 id=135 data-nosnippet>135</a>    transaction_semaphore: Arc&lt;Semaphore&gt;,
@@ -164,9 +164,9 @@
 <a href=#164 id=164 data-nosnippet>164</a>}
 <a href=#165 id=165 data-nosnippet>165</a>
 <a href=#166 id=166 data-nosnippet>166</a><span class="comment">// SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
-<a href=#167 id=167 data-nosnippet>167</a></span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>Connection {}
+<a href=#167 id=167 data-nosnippet>167</a></span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>Database {}
 <a href=#168 id=168 data-nosnippet>168</a><span class="comment">// SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
-<a href=#169 id=169 data-nosnippet>169</a></span><span class="kw">unsafe impl </span>Sync <span class="kw">for </span>Connection {}
+<a href=#169 id=169 data-nosnippet>169</a></span><span class="kw">unsafe impl </span>Sync <span class="kw">for </span>Database {}
 <a href=#170 id=170 data-nosnippet>170</a>
 <a href=#171 id=171 data-nosnippet>171</a><span class="doccomment">/// Where to open a connection
 <a href=#172 id=172 data-nosnippet>172</a></span><span class="attr">#[derive(Debug, Clone)]
@@ -177,7 +177,7 @@
 <a href=#177 id=177 data-nosnippet>177</a>    </span>InMemory,
 <a href=#178 id=178 data-nosnippet>178</a>}
 <a href=#179 id=179 data-nosnippet>179</a>
-<a href=#180 id=180 data-nosnippet>180</a><span class="kw">impl </span>Connection {
+<a href=#180 id=180 data-nosnippet>180</a><span class="kw">impl </span>Database {
 <a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">pub async fn </span>open(location: ConnectionType&lt;<span class="lifetime">'_</span>&gt;, key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
 <a href=#182 id=182 data-nosnippet>182</a>        <span class="kw">let </span>conn = <span class="kw">match </span>location {
 <a href=#183 id=183 data-nosnippet>183</a>            ConnectionType::Persistent(name) =&gt; KeystoreDatabaseConnection::open(name, key).<span class="kw">await</span><span class="question-mark">?</span>.into(),
@@ -338,7 +338,7 @@
 <a href=#338 id=338 data-nosnippet>338</a>
 <a href=#339 id=339 data-nosnippet>339</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
 <a href=#340 id=340 data-nosnippet>340</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
-<a href=#341 id=341 data-nosnippet>341</a></span><span class="kw">impl </span>FetchFromDatabase <span class="kw">for </span>Connection {
+<a href=#341 id=341 data-nosnippet>341</a></span><span class="kw">impl </span>FetchFromDatabase <span class="kw">for </span>Database {
 <a href=#342 id=342 data-nosnippet>342</a>    <span class="kw">async fn </span>find&lt;E: Entity&lt;ConnectionType = KeystoreDatabaseConnection&gt;&gt;(
 <a href=#343 id=343 data-nosnippet>343</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#344 id=344 data-nosnippet>344</a>        id: <span class="kw-2">&amp;</span>[u8],

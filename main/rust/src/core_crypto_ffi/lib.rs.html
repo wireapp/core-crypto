@@ -18,7 +18,7 @@
 <a href=#18 id=18 data-nosnippet>18</a><span class="kw">mod </span>core_crypto_context;
 <a href=#19 id=19 data-nosnippet>19</a><span class="kw">mod </span>credential_type;
 <a href=#20 id=20 data-nosnippet>20</a><span class="kw">mod </span>crl;
-<a href=#21 id=21 data-nosnippet>21</a><span class="kw">mod </span>database_key;
+<a href=#21 id=21 data-nosnippet>21</a><span class="kw">mod </span>database;
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">mod </span>decrypted_message;
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">mod </span>e2ei;
 <a href=#24 id=24 data-nosnippet>24</a><span class="kw">mod </span>ephemeral;
@@ -53,7 +53,7 @@
 <a href=#53 id=53 data-nosnippet>53</a><span class="kw">pub use </span>core_crypto_context::CoreCryptoContext;
 <a href=#54 id=54 data-nosnippet>54</a><span class="kw">pub use </span>credential_type::CredentialType;
 <a href=#55 id=55 data-nosnippet>55</a><span class="kw">pub use </span>crl::CrlRegistration;
-<a href=#56 id=56 data-nosnippet>56</a><span class="kw">pub use </span>database_key::{DatabaseKey, migrate_database_key_type_to_bytes, update_database_key};
+<a href=#56 id=56 data-nosnippet>56</a><span class="kw">pub use </span>database::{Database, DatabaseKey, migrate_database_key_type_to_bytes, open_database, update_database_key};
 <a href=#57 id=57 data-nosnippet>57</a><span class="kw">pub use </span>decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 <a href=#58 id=58 data-nosnippet>58</a><span class="kw">pub use </span>e2ei::{
 <a href=#59 id=59 data-nosnippet>59</a>    E2eiConversationState, acme_challenge::AcmeChallenge, acme_directory::AcmeDirectory, enrollment::E2eiEnrollment,

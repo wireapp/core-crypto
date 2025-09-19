@@ -118,7 +118,7 @@
 <a href=#118 id=118 data-nosnippet>118</a>
 <a href=#119 id=119 data-nosnippet>119</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
 <a href=#120 id=120 data-nosnippet>120</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
-<a href=#121 id=121 data-nosnippet>121</a></span><span class="kw">impl </span>CryptoKeystoreMls <span class="kw">for </span><span class="kw">crate</span>::Connection {
+<a href=#121 id=121 data-nosnippet>121</a></span><span class="kw">impl </span>CryptoKeystoreMls <span class="kw">for </span><span class="kw">crate</span>::Database {
 <a href=#122 id=122 data-nosnippet>122</a>    <span class="kw">async fn </span>mls_fetch_keypackages&lt;V: MlsEntity&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, count: u32) -&gt; CryptoKeystoreResult&lt;Vec&lt;V&gt;&gt; {
 <a href=#123 id=123 data-nosnippet>123</a>        <span class="macro">cfg_if::cfg_if!</span> {
 <a href=#124 id=124 data-nosnippet>124</a>            <span class="kw">if </span><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))] </span>{
@@ -241,7 +241,7 @@
 <a href=#241 id=241 data-nosnippet>241</a>
 <a href=#242 id=242 data-nosnippet>242</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
 <a href=#243 id=243 data-nosnippet>243</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
-<a href=#244 id=244 data-nosnippet>244</a></span><span class="kw">impl </span>openmls_traits::key_store::OpenMlsKeyStore <span class="kw">for </span><span class="kw">crate</span>::connection::Connection {
+<a href=#244 id=244 data-nosnippet>244</a></span><span class="kw">impl </span>openmls_traits::key_store::OpenMlsKeyStore <span class="kw">for </span><span class="kw">crate</span>::connection::Database {
 <a href=#245 id=245 data-nosnippet>245</a>    <span class="kw">type </span>Error = CryptoKeystoreError;
 <a href=#246 id=246 data-nosnippet>246</a>
 <a href=#247 id=247 data-nosnippet>247</a>    <span class="kw">async fn </span>store&lt;V: MlsEntity + Sync&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, k: <span class="kw-2">&amp;</span>[u8], v: <span class="kw-2">&amp;</span>V) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;

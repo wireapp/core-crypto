@@ -24,7 +24,7 @@
 <a href=#24 id=24 data-nosnippet>24</a>};
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>async_lock::RwLock;
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>core_crypto_keystore::{
-<a href=#27 id=27 data-nosnippet>27</a>    Connection, CryptoKeystoreError,
+<a href=#27 id=27 data-nosnippet>27</a>    CryptoKeystoreError, Database,
 <a href=#28 id=28 data-nosnippet>28</a>    connection::FetchFromDatabase,
 <a href=#29 id=29 data-nosnippet>29</a>    entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair},
 <a href=#30 id=30 data-nosnippet>30</a>};
@@ -510,7 +510,7 @@
 <a href=#510 id=510 data-nosnippet>510</a>
 <a href=#511 id=511 data-nosnippet>511</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>save_identity(
 <a href=#512 id=512 data-nosnippet>512</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#513 id=513 data-nosnippet>513</a>        keystore: <span class="kw-2">&amp;</span>Connection,
+<a href=#513 id=513 data-nosnippet>513</a>        keystore: <span class="kw-2">&amp;</span>Database,
 <a href=#514 id=514 data-nosnippet>514</a>        id: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>ClientId&gt;,
 <a href=#515 id=515 data-nosnippet>515</a>        signature_scheme: SignatureScheme,
 <a href=#516 id=516 data-nosnippet>516</a>        <span class="kw-2">mut </span>credential_bundle: CredentialBundle,
@@ -621,7 +621,7 @@
 <a href=#621 id=621 data-nosnippet>621</a>
 <a href=#622 id=622 data-nosnippet>622</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>save_new_x509_credential_bundle(
 <a href=#623 id=623 data-nosnippet>623</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#624 id=624 data-nosnippet>624</a>        keystore: <span class="kw-2">&amp;</span>Connection,
+<a href=#624 id=624 data-nosnippet>624</a>        keystore: <span class="kw-2">&amp;</span>Database,
 <a href=#625 id=625 data-nosnippet>625</a>        sc: SignatureScheme,
 <a href=#626 id=626 data-nosnippet>626</a>        cb: CertificateBundle,
 <a href=#627 id=627 data-nosnippet>627</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;CredentialBundle&gt; {
