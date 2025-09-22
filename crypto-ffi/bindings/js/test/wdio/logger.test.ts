@@ -1,5 +1,15 @@
 import { browser, expect } from "@wdio/globals";
-import { ccInit, createConversation, invite, setup, teardown } from "./utils";
+import {
+    ccInit,
+    consumeLastestCommit,
+    createConversation,
+    invite,
+    recordLogs,
+    remove,
+    retrieveLogs,
+    setup,
+    teardown,
+} from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -233,6 +243,44 @@ describe("logger", () => {
             group_id: expect.anything(),
             sender_client_id: expect.anything(),
             epoch: expect.anything(),
+        });
+    });
+
+    it("forward logs with member changes", async () => {
+        const alice = crypto.randomUUID();
+        const bob = crypto.randomUUID();
+        const carol = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
+        await ccInit(bob);
+        await ccInit(carol);
+        await recordLogs();
+        await createConversation(alice, convId);
+        await invite(alice, bob, convId);
+        await invite(alice, carol, convId);
+        await consumeLastestCommit(bob, convId);
+        await remove(alice, carol, convId);
+        await consumeLastestCommit(bob, convId);
+
+        const logs = await retrieveLogs();
+        const epochChangedContext1 = logs.find(
+            (element) => element.message === "Epoch advanced"
+        )!.context;
+        const epochChangedContext2 = logs.findLast(
+            (element) => element.message === "Epoch advanced"
+        )!.context;
+
+        expect(JSON.parse(epochChangedContext1)).toMatchObject({
+            group_id: expect.anything(),
+            epoch: expect.anything(),
+            removed: "[]",
+            added: expect.stringContaining("Member"),
+        });
+        expect(JSON.parse(epochChangedContext2)).toMatchObject({
+            group_id: expect.anything(),
+            epoch: expect.anything(),
+            removed: expect.stringContaining("Member"),
+            added: "[]",
         });
     });
 });
