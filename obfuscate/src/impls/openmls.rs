@@ -1,8 +1,11 @@
+use openmls::credentials::Certificate;
+use openmls::prelude::{
+    BasicCredential, Credential, KeyPackageSecretEncapsulation, Member, MlsCredentialType, Proposal, QueuedProposal,
+    Sender,
+};
 use std::fmt::Formatter;
 
-use openmls::prelude::{KeyPackageSecretEncapsulation, Proposal, QueuedProposal, Sender};
-
-use crate::Obfuscate;
+use crate::{Obfuscate, compute_hash};
 
 impl Obfuscate for Proposal {
     fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
@@ -38,6 +41,49 @@ impl Obfuscate for Sender {
             Sender::External(external_sender_index) => write!(f, "External{external_sender_index:?}"),
             Sender::NewMemberProposal => write!(f, "NewMemberProposal"),
             Sender::NewMemberCommit => write!(f, "NewMemberCommit"),
+        }
+    }
+}
+
+impl Obfuscate for Member {
+    fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str("Member { ")?;
+        write!(f, "index: {:?}", self.index)?;
+        f.write_str(", credential: ")?;
+        self.credential.obfuscate(f)?;
+        f.write_str(" }")
+    }
+}
+
+impl Obfuscate for Credential {
+    fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        self.mls_credential().obfuscate(f)
+    }
+}
+
+impl Obfuscate for BasicCredential {
+    fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "BasicCredential( {} )",
+            hex::encode(compute_hash(format!("{:?}", self).as_bytes())).as_str()
+        )
+    }
+}
+
+impl Obfuscate for Certificate {
+    fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str("Certificate( ")?;
+        self.identity.obfuscate(f)?;
+        f.write_str(")")
+    }
+}
+
+impl Obfuscate for MlsCredentialType {
+    fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            MlsCredentialType::Basic(basic_credential) => basic_credential.obfuscate(f),
+            MlsCredentialType::X509(identity_cert) => identity_cert.obfuscate(f),
         }
     }
 }

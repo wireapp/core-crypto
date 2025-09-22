@@ -8,6 +8,16 @@ impl Obfuscate for Vec<u8> {
     }
 }
 
+impl<T: Obfuscate> Obfuscate for Vec<T> {
+    fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str("[")?;
+        for item in self.iter() {
+            item.obfuscate(f)?;
+        }
+        f.write_str("]")
+    }
+}
+
 impl<T: Obfuscate> Obfuscate for Option<T> {
     fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
