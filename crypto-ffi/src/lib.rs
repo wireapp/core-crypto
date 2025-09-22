@@ -41,15 +41,11 @@ pub use core_crypto::{
     CoreCrypto,
     command::CoreCryptoCommand,
     epoch_observer::EpochObserver,
-    logger::{CoreCryptoLogLevel, CoreCryptoLogger},
+    logger::{CoreCryptoLogLevel, CoreCryptoLogger, set_logger, set_max_log_level},
     mls_transport::{MlsTransport, MlsTransportData, MlsTransportResponse},
 };
 #[cfg(not(target_family = "wasm"))]
-pub use core_crypto::{
-    command::transaction_helper::TransactionHelper,
-    core_crypto_deferred_init, core_crypto_new,
-    logger::{set_logger, set_logger_only, set_max_log_level},
-};
+pub use core_crypto::{command::transaction_helper::TransactionHelper, core_crypto_deferred_init, core_crypto_new};
 pub use core_crypto_context::CoreCryptoContext;
 pub use credential_type::CredentialType;
 pub use crl::CrlRegistration;

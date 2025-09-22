@@ -146,7 +146,7 @@ public final class CoreCrypto: CoreCryptoProtocol {
     }
 
     public static func setLogger(_ logger: CoreCryptoLogger) {
-        WireCoreCryptoUniffi.setLoggerOnly(logger: logger)
+        WireCoreCryptoUniffi.setLogger(logger: logger)
     }
 
     public static func setMaxLogLevel(_ level: CoreCryptoLogLevel) {
