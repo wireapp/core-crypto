@@ -26,9 +26,10 @@ use log::{debug, info};
 use obfuscate::Obfuscated;
 use openmls::framing::errors::{MessageDecryptionError, SecretTreeError};
 use openmls::framing::{MlsMessageIn, MlsMessageInBody, ProcessedMessage, ProtocolMessage};
+use openmls::group::MlsGroup;
 use openmls::prelude::{
-    ContentType, CredentialType, ProcessMessageError, ProcessedMessageContent, Proposal, StageCommitError,
-    StagedCommit, ValidationError,
+    ContentType, CredentialType, LeafNodeIndex, Member, ProcessMessageError, ProcessedMessageContent, Proposal,
+    StageCommitError, StagedCommit, ValidationError,
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
@@ -340,11 +341,29 @@ impl ConversationGuard {
                 // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
                 let pending_commit = conversation.group.pending_commit().cloned();
 
+                let removed_indices = staged_commit
+                    .remove_proposals()
+                    .map(|p| p.remove_proposal().removed())
+                    .collect::<Vec<_>>();
+
+                let added_credentials = staged_commit
+                    .add_proposals()
+                    .map(|p| p.add_proposal().key_package.leaf_node().credential().to_owned())
+                    .collect::<Vec<_>>();
+
+                let removed_members = Self::members_at_indices(removed_indices, conversation.group());
+
                 conversation
                     .group
                     .merge_staged_commit(backend, *staged_commit.clone())
                     .await
                     .map_err(MlsError::wrap("merge staged commit"))?;
+
+                let added_members = conversation
+                    .group
+                    .members()
+                    .filter_map(|member| added_credentials.contains(&member.credential).then(|| member.clone()))
+                    .collect::<Vec<_>>();
 
                 let (proposals_to_renew, needs_update) = Renew::renew(
                     &conversation.group.own_leaf_index(),
@@ -367,6 +386,8 @@ impl ConversationGuard {
                 let conversation = self.conversation().await;
                 let epoch = staged_commit.staged_context().epoch().as_u64();
                 info!(
+                    added = Obfuscated::from(&added_members),
+                    removed = Obfuscated::from(&removed_members),
                     group_id = Obfuscated::from(&conversation.id),
                     epoch,
                     proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
@@ -426,6 +447,13 @@ impl ConversationGuard {
             .await?;
 
         Ok(decrypted)
+    }
+
+    fn members_at_indices(indices: Vec<LeafNodeIndex>, group: &MlsGroup) -> Vec<Member> {
+        group
+            .members()
+            .filter_map(|member| indices.contains(&member.index).then_some(member))
+            .collect::<Vec<_>>()
     }
 
     async fn parse_message(&self, msg_in: MlsMessageIn) -> Result<ParsedMessage> {
