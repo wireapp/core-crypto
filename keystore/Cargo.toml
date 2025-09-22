@@ -47,7 +47,7 @@ proteus-traits = { workspace = true, optional = true }
 itertools.workspace = true
 
 [target.'cfg(target_os = "ios")'.dependencies]
-security-framework = "3.4"
+security-framework = "3.5"
 security-framework-sys = "2.15"
 core-foundation = "0.10"
 
