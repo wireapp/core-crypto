@@ -19,6 +19,15 @@ type ccModuleType = typeof import("../../src/CoreCrypto");
 // 2 = browser logs + CoreCrypto logs
 const logLevel = Number(process.env["CC_TEST_LOG_LEVEL"] || "0");
 
+/**
+ * Log entry from the core crypto logger
+ */
+export interface LogEntry {
+    level: number;
+    message: string;
+    context: string;
+}
+
 declare global {
     interface Window {
         ccModule: ccModuleType;
@@ -26,6 +35,7 @@ declare global {
         defaultCipherSuite: Ciphersuite;
         deliveryService: DeliveryService;
         _latestCommitBundle: CommitBundle;
+        recordedLogs: LogEntry[];
 
         // Helper functions that are used inside the browser context
         /**
@@ -174,6 +184,45 @@ export async function ccInit(clientName: string): Promise<void> {
 }
 
 /**
+ * Records logs by setting a logger and maximum log level in the browser's context.
+ * The logs are stored in a global variable `window.recordedLogs` for further retrieval.
+ *
+ * @return {Promise<void>}
+ */
+export async function recordLogs(): Promise<void> {
+    await browser.execute(async () => {
+        const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
+            window.ccModule;
+        window.recordedLogs = [];
+
+        setLogger({
+            log: (level: number, message: string, context: string) => {
+                console.log(message, context);
+                window.recordedLogs.push({
+                    level: level,
+                    message: message,
+                    context: context,
+                });
+            },
+        });
+        setMaxLogLevel(CoreCryptoLogLevel.Debug);
+    });
+}
+
+/**
+ * Retrieves the logs recorded on the browser-side.
+ *
+ * @return {Promise<LogEntry[]>} A promise that resolves to an array of log entries
+ */
+export async function retrieveLogs(): Promise<LogEntry[]> {
+    return await browser.execute(async () => {
+        return window.recordedLogs.map((entry) => {
+            return entry;
+        });
+    });
+}
+
+/**
  * Create a conversation on a {@link CoreCrypto} instance that has
  * been initialized before via {@link ccInit}.
  *
@@ -245,15 +294,89 @@ export async function invite(
             await cc1.transaction((ctx) =>
                 ctx.addClientsToConversation(cid, [kp!])
             );
-            const { groupInfo, welcome } =
+            const commitBundle =
                 await window.deliveryService.getLatestCommitBundle();
+            await cc2.transaction((ctx) =>
+                ctx.processWelcomeMessage(commitBundle.welcome!)
+            );
 
-            await cc2.transaction((ctx) => ctx.processWelcomeMessage(welcome!));
-
-            return groupInfo;
+            return commitBundle.groupInfo;
         },
         client1,
         client2,
+        conversationId
+    );
+}
+
+/**
+ * Remove {@link client2} from a previously created conversation on the
+ * instance of {@link client1} (via {@link createConversation}).
+ *
+ * @param client1 The name of the {@link CoreCrypto} instance on which the
+ * conversation was created previously.
+ * @param client2 The name of the {@link CoreCrypto} instance that will be
+ * removed.
+ * @param conversationId The id of the previously created conversation.
+ *
+ * @returns {Promise<GroupInfoBundle>} The resulting group info.
+ *
+ * @throws Error if {@link client1} or {@link client2} instances cannot be found.
+ */
+export async function remove(
+    client1: string,
+    client2: string,
+    conversationId: string
+): Promise<GroupInfoBundle> {
+    return await browser.execute(
+        async (client1, client2, conversationId) => {
+            const cc1 = window.ensureCcDefined(client1);
+            const cid = new window.ccModule.ConversationId(
+                new TextEncoder().encode(conversationId)
+            );
+            const clientId = new window.ccModule.ClientId(
+                new TextEncoder().encode(client2)
+            );
+            await cc1.transaction((ctx) =>
+                ctx.removeClientsFromConversation(cid, [clientId])
+            );
+            const commitBundle =
+                await window.deliveryService.getLatestCommitBundle();
+
+            return commitBundle.groupInfo;
+        },
+        client1,
+        client2,
+        conversationId
+    );
+}
+
+/**
+ * Consume the last commit message on {@link client1}
+ *
+ * @param client1 The name of the {@link CoreCrypto} instance on which to consume the commit.
+ * @param conversationId The id of the previously created conversation.
+ *
+ * @returns {Promise<void>}
+ *
+ * @throws Error if {@link client1} instances cannot be found.
+ */
+export async function consumeLastestCommit(
+    client1: string,
+    conversationId: string
+): Promise<void> {
+    return await browser.execute(
+        async (client1, conversationId) => {
+            const cc1 = window.ensureCcDefined(client1);
+            const cid = new window.ccModule.ConversationId(
+                new TextEncoder().encode(conversationId)
+            );
+            const commitBundle =
+                await window.deliveryService.getLatestCommitBundle();
+            await cc1.transaction((ctx) =>
+                ctx.decryptMessage(cid, commitBundle.commit)
+            );
+        },
+        client1,
         conversationId
     );
 }
