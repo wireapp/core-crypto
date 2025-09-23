@@ -17,21 +17,21 @@ suspend operator fun CoreCrypto.Companion.invoke(
 ) = coreCryptoDeferredInit(keystore, databaseKey, null).lift()
 
 /**
- * Instantiate a history client.
- *
- * This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
- * Other use is a logic error.
- */
-suspend fun historyClient(historySecret: HistorySecret) = coreCryptoHistoryClient(historySecret).lift()
-
-/**
  * A high-level wrapper around a CoreCrypto client as emitted by Uniffi.
  *
  * This wrapper should be largely transparent to end users. It exists to improve the
  * callback interfaces: `.transaction(...)`, `.registerFooObserver(...)`, etc.
  */
 class CoreCryptoClient(private val cc: CoreCrypto) {
-    companion object
+    companion object {
+        /**
+         * Instantiate a history client.
+         *
+         * This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
+         * Other use is a logic error.
+         */
+        suspend fun historyClient(historySecret: HistorySecret) = coreCryptoHistoryClient(historySecret).lift()
+    }
 
     /**
      * Starts a [NonCancellable] transaction in Core Crypto. If the callback succeeds, it will be committed,
