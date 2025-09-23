@@ -51,24 +51,6 @@ public protocol CoreCryptoProtocol {
     /// Check if history sharing is enabled, i.e., if any of the conversation members have a ``ClientId`` starting
     /// with the specific history client prefix.
     func isHistorySharingEnabled(conversationId: ConversationId) async throws -> Bool
-
-    /// Register CoreCrypto a logger
-    ///
-    static func setLogger(_ logger: CoreCryptoLogger)
-
-    /// Set the log level limit for logs which should be forwarded to the registered ``CoreCryptoLogger-5nvug``
-    ///
-    /// The default log level is `info`.
-    ///
-    static func setMaxLogLevel(_ level: CoreCryptoLogLevel)
-
-    /// CoreCrypto build version number
-    ///
-    static func version() -> String
-
-    /// Build metadata describing under which conditions this version of CoreCrypto was build.
-    ///
-    static func buildMetadata() -> BuildMetadata
 }
 
 /// CoreCrypto client which manages one cryptographic client for proteus and MLS.
@@ -143,22 +125,6 @@ public final class CoreCrypto: CoreCryptoProtocol {
 
     public func isHistorySharingEnabled(conversationId: ConversationId) async throws -> Bool {
         try await coreCrypto.isHistorySharingEnabled(conversationId: conversationId)
-    }
-
-    public static func setLogger(_ logger: CoreCryptoLogger) {
-        WireCoreCryptoUniffi.setLogger(logger: logger)
-    }
-
-    public static func setMaxLogLevel(_ level: CoreCryptoLogLevel) {
-        WireCoreCryptoUniffi.setMaxLogLevel(level: level)
-    }
-
-    public static func version() -> String {
-        return WireCoreCryptoUniffi.version()
-    }
-
-    public static func buildMetadata() -> BuildMetadata {
-        WireCoreCryptoUniffi.buildMetadata()
     }
 }
 
