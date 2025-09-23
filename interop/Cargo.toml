@@ -31,7 +31,7 @@ const_format.workspace = true
 rand.workspace = true
 bitflags.workspace = true
 uuid = { workspace = true, features = ["v4"] }
-tempfile = { version = "3.22" }
+tempfile = { version = "3.23" }
 spinoff = { version = "0.8", features = [
   "aesthetic",
 ], default-features = false }
