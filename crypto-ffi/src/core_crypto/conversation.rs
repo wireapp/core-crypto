@@ -3,7 +3,7 @@ use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    Ciphersuite, ClientId, CoreCrypto, CoreCryptoResult, bytes_wrapper::bytes_wrapper, client_id::ClientIdMaybeArc,
+    Ciphersuite, ClientId, CoreCryptoFfi, CoreCryptoResult, bytes_wrapper::bytes_wrapper, client_id::ClientIdMaybeArc,
 };
 
 bytes_wrapper!(
@@ -19,7 +19,7 @@ bytes_wrapper!(
 
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
-impl CoreCrypto {
+impl CoreCryptoFfi {
     /// See [core_crypto::mls::conversation::Conversation::epoch]
     pub async fn conversation_epoch(&self, conversation_id: &ConversationId) -> CoreCryptoResult<u64> {
         let conversation = self

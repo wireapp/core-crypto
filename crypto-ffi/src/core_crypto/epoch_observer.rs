@@ -13,7 +13,7 @@ use wasm_bindgen_futures::JsFuture;
 use crate::ConversationId;
 #[cfg(not(target_family = "wasm"))]
 use crate::ConversationIdMaybeArc;
-use crate::{CoreCrypto, CoreCryptoError, CoreCryptoResult, conversation_id_coerce_maybe_arc};
+use crate::{CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, conversation_id_coerce_maybe_arc};
 use ::core_crypto::prelude::ConversationId as InternalConversationId;
 use obfuscate::Obfuscated;
 
@@ -82,7 +82,7 @@ impl core_crypto::mls::EpochObserver for ObserverShim {
 
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
-impl CoreCrypto {
+impl CoreCryptoFfi {
     /// Add an epoch observer to this client.
     ///
     /// This function should be called 0 or 1 times in a session's lifetime. If called
@@ -182,7 +182,7 @@ impl core_crypto::mls::EpochObserver for EpochObserver {
 
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
-impl CoreCrypto {
+impl CoreCryptoFfi {
     /// Add an epoch observer to this client.
     ///
     /// This function should be called 0 or 1 times in a client's lifetime.

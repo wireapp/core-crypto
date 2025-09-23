@@ -4,7 +4,7 @@ use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{ConversationId, CoreCrypto, CoreCryptoResult, WireIdentity, client_id::ClientIdMaybeArc};
+use crate::{ConversationId, CoreCryptoFfi, CoreCryptoResult, WireIdentity, client_id::ClientIdMaybeArc};
 
 #[cfg(not(target_family = "wasm"))]
 type DeviceIdentities = Vec<WireIdentity>;
@@ -20,7 +20,7 @@ pub(crate) type UserIdentities = JsValue;
 
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
-impl CoreCrypto {
+impl CoreCryptoFfi {
     /// See [core_crypto::mls::conversation::Conversation::get_device_identities]
     #[cfg_attr(target_family = "wasm", wasm_bindgen(unchecked_return_type = "WireIdentity[]"))]
     pub async fn get_device_identities(

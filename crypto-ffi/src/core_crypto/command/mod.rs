@@ -1,7 +1,7 @@
 #[cfg(not(target_family = "wasm"))]
 pub(crate) mod transaction_helper;
 
-use crate::{CoreCrypto, CoreCryptoContext, CoreCryptoResult};
+use crate::{CoreCryptoContext, CoreCryptoFfi, CoreCryptoResult};
 use std::sync::Arc;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
@@ -54,7 +54,7 @@ type Command = CoreCryptoCommand;
 
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-impl CoreCrypto {
+impl CoreCryptoFfi {
     /// Starts a new transaction in Core Crypto. If the callback succeeds, it will be committed,
     /// otherwise, every operation performed with the context will be discarded.
     ///

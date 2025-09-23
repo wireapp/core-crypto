@@ -99,7 +99,7 @@ pub fn build_metadata() -> BuildMetadata {
 }
 
 #[cfg(target_family = "wasm")]
-impl crate::CoreCrypto {
+impl crate::CoreCryptoFfi {
     /// Returns the current version of CoreCrypto
     pub fn version() -> String {
         version()

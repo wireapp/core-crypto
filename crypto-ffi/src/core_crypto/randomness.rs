@@ -1,13 +1,13 @@
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{CoreCrypto, CoreCryptoError, CoreCryptoResult};
+use crate::{CoreCryptoError, CoreCryptoFfi, CoreCryptoResult};
 
 use super::EntropySeed;
 
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
-impl CoreCrypto {
+impl CoreCryptoFfi {
     /// See [core_crypto::prelude::Session::random_bytes]
     pub async fn random_bytes(&self, len: u32) -> CoreCryptoResult<Vec<u8>> {
         let len = len.try_into().map_err(CoreCryptoError::generic())?;

@@ -38,7 +38,7 @@ pub use core_crypto::conversation::ConversationId;
 pub(crate) use core_crypto::conversation::{ConversationIdMaybeArc, conversation_id_coerce_maybe_arc};
 pub(crate) use core_crypto::e2ei::identities::UserIdentities;
 pub use core_crypto::{
-    CoreCrypto,
+    CoreCryptoFfi,
     command::CoreCryptoCommand,
     epoch_observer::EpochObserver,
     logger::{CoreCryptoLogLevel, CoreCryptoLogger, set_logger, set_max_log_level},

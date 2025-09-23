@@ -5,7 +5,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use tempfile::NamedTempFile;
 
-use core_crypto_ffi::{ClientId, CoreCrypto, CredentialType, CustomConfiguration, TransactionHelper};
+use core_crypto_ffi::{ClientId, CoreCryptoFfi, CredentialType, CustomConfiguration, TransactionHelper};
 
 use crate::{
     CIPHERSUITE_IN_USE,
@@ -14,7 +14,7 @@ use crate::{
 
 #[derive(core_crypto_macros::Debug)]
 pub(crate) struct CoreCryptoFfiClient {
-    cc: CoreCrypto,
+    cc: CoreCryptoFfi,
     client_id: Vec<u8>,
     // We will create a NamedTempFile which we will immediately use to get the path.
     // Once we get the path, we don't need to read from it anymore, but the compiler
@@ -37,7 +37,7 @@ impl CoreCryptoFfiClient {
         let ciphersuite = CIPHERSUITE_IN_USE.into();
         let temp_file = NamedTempFile::with_prefix("interop-ffi-keystore-")?;
 
-        let cc = CoreCrypto::new(
+        let cc = CoreCryptoFfi::new(
             temp_file.path().to_string_lossy().into_owned(),
             core_crypto_ffi::DatabaseKey::from_cc(core_crypto::DatabaseKey::generate()),
             Some(client_id),

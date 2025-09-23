@@ -42,11 +42,11 @@ pub(crate) fn entropy_seed_map(e: EntropySeed) -> Vec<u8> {
 #[derive(Debug)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
-pub struct CoreCrypto {
+pub struct CoreCryptoFfi {
     pub(crate) inner: core_crypto::CoreCrypto,
 }
 
-/// Free function to construct a new `CoreCrypto` instance.
+/// Free function to construct a new `CoreCryptoFfi` instance.
 ///
 /// This is necessary because in uniffi async constructors are not supported.
 ///
@@ -60,8 +60,8 @@ pub async fn core_crypto_new(
     ciphersuites: Ciphersuites,
     entropy_seed: Option<EntropySeed>,
     nb_key_package: Option<u32>,
-) -> CoreCryptoResult<CoreCrypto> {
-    CoreCrypto::new(
+) -> CoreCryptoResult<CoreCryptoFfi> {
+    CoreCryptoFfi::new(
         path,
         key,
         Some(client_id),
@@ -72,7 +72,7 @@ pub async fn core_crypto_new(
     .await
 }
 
-/// Free function to construct a new `CoreCrypto` instance.
+/// Free function to construct a new `CoreCryptoFfi` instance.
 ///
 /// Similar to [`core_crypto_new`] but defers MLS initialization. It can be initialized later
 /// with [core_crypto::transaction_context::TransactionContext::mls_init].
@@ -82,11 +82,11 @@ pub async fn core_crypto_deferred_init(
     path: String,
     key: DatabaseKeyMaybeArc,
     entropy_seed: Option<EntropySeed>,
-) -> CoreCryptoResult<CoreCrypto> {
-    CoreCrypto::deferred_init_impl(path, key, entropy_seed).await
+) -> CoreCryptoResult<CoreCryptoFfi> {
+    CoreCryptoFfi::deferred_init_impl(path, key, entropy_seed).await
 }
 
-impl CoreCrypto {
+impl CoreCryptoFfi {
     /// Instantiate CC
     pub async fn new(
         path: String,
@@ -125,7 +125,7 @@ impl CoreCrypto {
             .external_entropy_opt(entropy_seed.as_deref())
             .build()
             .validate()?;
-        CoreCrypto::from_config(configuration).await
+        CoreCryptoFfi::from_config(configuration).await
     }
 
     async fn from_config(configuration: ValidatedSessionConfig<'_>) -> CoreCryptoResult<Self> {
@@ -141,7 +141,7 @@ impl CoreCrypto {
 
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
-impl CoreCrypto {
+impl CoreCryptoFfi {
     /// Instantiate CC, asynchronously.
     pub async fn async_new(
         path: String,
@@ -160,8 +160,8 @@ impl CoreCrypto {
         path: String,
         key: DatabaseKeyMaybeArc,
         entropy_seed: Option<Box<[u8]>>,
-    ) -> CoreCryptoResult<CoreCrypto> {
-        CoreCrypto::deferred_init_impl(path, key, entropy_seed).await
+    ) -> CoreCryptoResult<CoreCryptoFfi> {
+        CoreCryptoFfi::deferred_init_impl(path, key, entropy_seed).await
     }
 
     /// See [Session::close]

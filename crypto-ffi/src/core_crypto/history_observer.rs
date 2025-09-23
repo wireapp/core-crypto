@@ -11,7 +11,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 
 use crate::{
-    ConversationIdMaybeArc, CoreCrypto, CoreCryptoError, CoreCryptoResult, HistorySecret,
+    ConversationIdMaybeArc, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, HistorySecret,
     conversation_id_coerce_maybe_arc,
 };
 use core_crypto::prelude::ConversationId;
@@ -92,7 +92,7 @@ impl core_crypto::mls::HistoryObserver for ObserverShim {
 
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
-impl CoreCrypto {
+impl CoreCryptoFfi {
     /// Add a history observer to this client.
     ///
     /// This function should be called 0 or 1 times in a session's lifetime. If called
@@ -207,7 +207,7 @@ impl core_crypto::mls::HistoryObserver for HistoryObserver {
 
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
-impl CoreCrypto {
+impl CoreCryptoFfi {
     /// Add a history observer to this client.
     ///
     /// This function should be called 0 or 1 times in a client's lifetime.

@@ -1,8 +1,8 @@
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{ClientId, CoreCrypto, CoreCryptoError, CoreCryptoResult, client_id::ClientIdMaybeArc};
-use core_crypto::prelude::{CoreCrypto as CoreCryptoFfi, HistorySecret as CoreCryptoHistorySecret};
+use crate::{ClientId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, client_id::ClientIdMaybeArc};
+use core_crypto::prelude::{CoreCrypto, HistorySecret as CoreCryptoHistorySecret};
 
 /// A `HistorySecret` encodes sufficient client state that it can be used to instantiate an
 /// ephemeral client.
@@ -45,18 +45,18 @@ impl TryFrom<&CoreCryptoHistorySecret> for HistorySecret {
     }
 }
 
-async fn history_client_inner(history_secret: HistorySecret) -> CoreCryptoResult<CoreCrypto> {
+async fn history_client_inner(history_secret: HistorySecret) -> CoreCryptoResult<CoreCryptoFfi> {
     let secret =
         rmp_serde::from_slice::<CoreCryptoHistorySecret>(&history_secret.data).map_err(CoreCryptoError::generic())?;
-    CoreCryptoFfi::history_client(secret)
+    CoreCrypto::history_client(secret)
         .await
-        .map(|inner| CoreCrypto { inner })
+        .map(|inner| CoreCryptoFfi { inner })
         .map_err(Into::into)
 }
 
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
-impl CoreCrypto {
+impl CoreCryptoFfi {
     /// Instantiate a history client.
     ///
     /// This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
@@ -72,6 +72,6 @@ impl CoreCrypto {
 /// Other use is a logic error.
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
-pub async fn core_crypto_history_client(history_secret: HistorySecret) -> CoreCryptoResult<CoreCrypto> {
+pub async fn core_crypto_history_client(history_secret: HistorySecret) -> CoreCryptoResult<CoreCryptoFfi> {
     history_client_inner(history_secret).await
 }

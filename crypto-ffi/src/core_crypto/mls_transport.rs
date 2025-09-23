@@ -20,7 +20,7 @@ use core_crypto::prelude::{HistorySecret, MlsCommitBundle};
 use crate::ClientId;
 #[cfg(target_family = "wasm")]
 use crate::CoreCryptoError;
-use crate::{CommitBundle, CoreCrypto, CoreCryptoResult, HistorySecret as HistorySecretFfi};
+use crate::{CommitBundle, CoreCryptoFfi, CoreCryptoResult, HistorySecret as HistorySecretFfi};
 
 /// MLS transport may or may not succeeed; this response indicates to CC the outcome of the transport attempt.
 #[cfg(not(target_family = "wasm"))]
@@ -410,7 +410,7 @@ fn callback_shim(callbacks: Callbacks) -> Arc<dyn core_crypto::MlsTransport> {
 
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-impl CoreCrypto {
+impl CoreCryptoFfi {
     /// See [core_crypto::prelude::Session::provide_transport]
     pub async fn provide_transport(&self, callbacks: Callbacks) -> CoreCryptoResult<()> {
         self.inner.provide_transport(callback_shim(callbacks)).await;

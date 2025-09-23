@@ -49,7 +49,7 @@ mod tests {
     use ::core_crypto::{LeafError, RecursiveError};
     use core_crypto::ProteusError;
 
-    use crate::{CoreCrypto, CoreCryptoError, MlsError, ProteusError as ProteusErrorFfi};
+    use crate::{CoreCryptoError, CoreCryptoFfi, MlsError, ProteusError as ProteusErrorFfi};
 
     #[test]
     fn test_mls_error_mapping() {
@@ -102,7 +102,7 @@ mod tests {
         // we shouldn't be able to create a SQLite DB in `/root` unless we are running this test as root
         // Don't do that!
         let key = crate::DatabaseKey::from_cc(core_crypto_keystore::DatabaseKey::generate());
-        let result = CoreCrypto::new("/root/asdf".into(), key, None, None, None, None).await;
+        let result = CoreCryptoFfi::new("/root/asdf".into(), key, None, None, None, None).await;
         assert!(
             result.is_err(),
             "result must be an error in order to verify that something was logged"
