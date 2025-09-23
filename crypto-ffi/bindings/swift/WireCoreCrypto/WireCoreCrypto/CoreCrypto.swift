@@ -57,11 +57,11 @@ public protocol CoreCryptoProtocol {
 ///
 public final class CoreCrypto: CoreCryptoProtocol {
 
-    let coreCrypto: WireCoreCryptoUniffi.CoreCrypto
+    let coreCrypto: WireCoreCryptoUniffi.CoreCryptoFfi
     let keystorePath: FilePath?
 
     /// Initialize CoreCrypto with a Ffi instance
-    private init(_ coreCrypto: WireCoreCryptoUniffi.CoreCrypto, keystorePath: FilePath? = nil) {
+    private init(_ coreCrypto: WireCoreCryptoUniffi.CoreCryptoFfi, keystorePath: FilePath? = nil) {
         self.coreCrypto = coreCrypto
         self.keystorePath = keystorePath
     }
