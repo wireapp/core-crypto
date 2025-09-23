@@ -537,10 +537,15 @@ ts-fmt: $(STAMPS)/ts-fmt ## Format TypeScript files via eslint
 
 # run WebDriver tests + bun’s built-in tests
 .PHONY: ts-test
-ts-test: $(DTS_OUT) ## Run TypeScript wrapper tests via wdio and bun
-	cd $(JS_DIR) && \
-	bun x wdio run wdio.conf.ts --spec test/wdio/*.test.ts && \
-	bun test
+ts-test: $(DTS_OUT) ## Run TypeScript wrapper tests via wdio and bun. Optionally pass TEST=<test> to filter by test name.
+	@cd $(JS_DIR) && \
+	if [ -n "$(TEST)" ]; then \
+		bun x wdio run wdio.conf.ts --mochaOpts.grep "$(TEST)"; \
+		bun test --filter "$(TEST)"; \
+	else \
+		bun x wdio run wdio.conf.ts --spec test/wdio/*.test.ts; \
+		bun test; \
+	fi
 
 # run WebDriver benches
 .PHONY: ts-bench
