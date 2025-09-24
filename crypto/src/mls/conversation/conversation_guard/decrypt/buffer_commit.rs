@@ -21,7 +21,7 @@ impl ConversationGuard {
         let conversation = self.conversation().await;
         info!(group_id = Obfuscated::from(conversation.id()); "buffering commit");
 
-        let buffered_commit = MlsBufferedCommit::new(conversation.id().clone(), commit.as_ref().to_owned());
+        let buffered_commit = MlsBufferedCommit::new(conversation.id().as_ref().to_owned(), commit.as_ref().to_owned());
 
         self.crypto_provider()
             .await?

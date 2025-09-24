@@ -26,7 +26,7 @@ impl TransactionContext {
         let inner = self
             .mls_groups()
             .await?
-            .get_fetch(id, &keystore, None)
+            .get_fetch(id.as_ref(), &keystore, None)
             .await
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?;
 
@@ -42,7 +42,7 @@ impl TransactionContext {
     pub(crate) async fn pending_conversation(&self, id: &ConversationId) -> Result<PendingConversation> {
         let keystore = self.keystore().await?;
         let Some(pending_group) = keystore
-            .find::<PersistedMlsPendingGroup>(id)
+            .find::<PersistedMlsPendingGroup>(id.as_ref())
             .await
             .map_err(KeystoreError::wrap("finding persisted mls pending group"))?
         else {
@@ -82,7 +82,7 @@ impl TransactionContext {
         .await
         .map_err(RecursiveError::mls_conversation("creating conversation"))?;
 
-        self.mls_groups().await?.insert(id.clone(), conversation);
+        self.mls_groups().await?.insert(id.as_ref().to_owned(), conversation);
 
         Ok(())
     }
@@ -91,7 +91,7 @@ impl TransactionContext {
     pub async fn conversation_exists(&self, id: &ConversationId) -> Result<bool> {
         self.mls_groups()
             .await?
-            .get_fetch(id, &self.mls_provider().await?.keystore(), None)
+            .get_fetch(id.as_ref(), &self.mls_provider().await?.keystore(), None)
             .await
             .map(|option| option.is_some())
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))

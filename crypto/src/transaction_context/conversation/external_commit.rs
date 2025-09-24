@@ -133,7 +133,7 @@ impl TransactionContext {
         };
 
         let welcome_bundle = WelcomeBundle {
-            id: new_group_id,
+            id: ConversationId::from(new_group_id),
             crl_new_distribution_points,
         };
 

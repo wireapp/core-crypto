@@ -27,7 +27,7 @@ impl ConversationGuard {
         let keystore = backend.keystore();
         let conversation = self.conversation().await;
         let pending_msg = MlsPendingMessage {
-            foreign_id: conversation.id().clone(),
+            foreign_id: conversation.id().as_ref().to_owned(),
             message: message.as_ref().to_vec(),
         };
         keystore
@@ -41,7 +41,7 @@ impl ConversationGuard {
         let provider = self.crypto_provider().await?;
         let keystore = provider.keystore();
         keystore
-            .remove_pending_messages_by_conversation_id(self.conversation().await.id())
+            .remove_pending_messages_by_conversation_id(self.conversation().await.id().as_ref())
             .await
             .map_err(KeystoreError::wrap("removing pending mls messages"))
             .map_err(Into::into)
@@ -80,7 +80,7 @@ impl ConversationGuard {
             }
 
             let mut pending_messages = keystore
-                .find_pending_messages_by_conversation_id(conversation_id)
+                .find_pending_messages_by_conversation_id(conversation_id.as_ref())
                 .await
                 .map_err(KeystoreError::wrap("finding all mls pending messages"))?
                 .into_iter()

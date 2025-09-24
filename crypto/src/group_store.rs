@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{KeystoreError, RecursiveError, Result, prelude::MlsConversation};
+use crate::{KeystoreError, RecursiveError, Result, prelude::{ConversationId, MlsConversation}};
 use core_crypto_keystore::connection::FetchFromDatabase;
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -37,7 +37,7 @@ impl GroupStoreEntity for MlsConversation {
             return Ok(None);
         };
 
-        let conversation = Self::from_serialized_state(store_value.state.clone(), store_value.parent_id.clone())
+        let conversation = Self::from_serialized_state(store_value.state.clone(), store_value.parent_id.as_ref().map(|id| ConversationId::from(id.as_ref())))
             .map_err(RecursiveError::mls_conversation("deserializing mls conversation"))?;
         // If the conversation is not active, pretend it doesn't exist
         Ok(conversation.group.is_active().then_some(conversation))

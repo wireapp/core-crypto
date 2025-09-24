@@ -319,7 +319,7 @@ impl MlsConversation {
             backend,
             &cb.signature_key,
             &configuration.as_openmls_default_configuration()?,
-            openmls::prelude::GroupId::from_slice(id.as_slice()),
+            openmls::prelude::GroupId::from_slice(id.as_ref()),
             cb.to_mls_credential_with_key(),
         )
         .await
@@ -446,9 +446,9 @@ impl MlsConversation {
         if force || self.group.state_changed() == openmls::group::InnerState::Changed {
             keystore
                 .mls_group_persist(
-                    &self.id,
+                    self.id.as_ref(),
                     &core_crypto_keystore::ser(&self.group).map_err(KeystoreError::wrap("serializing group state"))?,
-                    self.parent_id.as_deref(),
+                    self.parent_id.as_ref().map(|id| id.as_ref()),
                 )
                 .await
                 .map_err(KeystoreError::wrap("persisting mls group"))?;
