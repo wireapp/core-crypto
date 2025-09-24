@@ -25,7 +25,7 @@ import {
     build_metadata,
     Ciphersuite,
     ClientId,
-    CoreCrypto as CoreCryptoFfi,
+    CoreCryptoFfi,
     CoreCryptoLogger as CoreCryptoLoggerFfi,
     EpochObserver as EpochObserverFfi,
     HistoryObserver as HistoryObserverFfi,
@@ -217,13 +217,13 @@ export function version(): string {
  */
 export class CoreCrypto {
     /** @hidden */
-    #cc: CoreCryptoFfiTypes.CoreCrypto;
+    #cc: CoreCryptoFfiTypes.CoreCryptoFfi;
 
     /**
      * Should only be used internally
      */
     inner(): unknown {
-        return this.#cc as CoreCryptoFfiTypes.CoreCrypto;
+        return this.#cc as CoreCryptoFfiTypes.CoreCryptoFfi;
     }
 
     /**
@@ -356,7 +356,7 @@ export class CoreCrypto {
     }
 
     /** @hidden */
-    private constructor(cc: CoreCryptoFfiTypes.CoreCrypto) {
+    private constructor(cc: CoreCryptoFfiTypes.CoreCryptoFfi) {
         this.#cc = cc;
     }
 
