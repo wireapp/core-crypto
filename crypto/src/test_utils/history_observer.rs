@@ -22,7 +22,7 @@ impl std::fmt::Debug for HistoryObserverInner {
                 &self
                     .observed_history_clients
                     .iter()
-                    .map(|(id, secret)| (Obfuscated::from(id), Obfuscated::from(secret)))
+                    .map(|(id, secret)| (format!("{:?}", id), Obfuscated::from(secret)))
                     .collect::<Vec<_>>(),
             )
             .finish()

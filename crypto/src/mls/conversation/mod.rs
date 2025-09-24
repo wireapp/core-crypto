@@ -262,7 +262,19 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
 impl<'a, T: ConversationWithMls<'a>> Conversation<'a> for T {}
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
-pub type ConversationId = Vec<u8>;
+#[derive(core_crypto_macros::Debug, Clone)]
+#[sensitive]
+#[derive(derive_more::AsRef, derive_more::From, derive_more::Into)]
+#[as_ref([u8])]
+#[from(&[u8], Vec<u8>)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
+pub struct ConversationId(Vec<u8>);
+
+impl From<&str> for ConversationId {
+    fn from(value: &str) -> Self {
+        value.as_bytes().into()
+    }
+}
 
 /// This is a wrapper on top of the OpenMls's [MlsGroup], that provides Core Crypto specific functionality
 ///
