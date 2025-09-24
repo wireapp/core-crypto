@@ -33,7 +33,7 @@ impl TransactionContext {
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
     ) -> Result<MlsMessageOut> {
-        let group_id = GroupId::from_slice(conversation_id.as_slice());
+        let group_id = GroupId::from_slice(conversation_id.as_ref());
         let mls_provider = self
             .mls_provider()
             .await
