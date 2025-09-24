@@ -146,7 +146,7 @@ impl From<RecursiveError> for CoreCryptoError {
         }
 
         match_heterogenous!(innermost => {
-            core_crypto::LeafError::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists { conversation_id: id.clone() }.into(),
+            core_crypto::LeafError::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists { conversation_id: id.clone().into() }.into(),
             core_crypto::mls::conversation::Error::BufferedFutureMessage{..} => MlsError::BufferedFutureMessage.into(),
             core_crypto::mls::conversation::Error::DuplicateMessage => MlsError::DuplicateMessage.into(),
             core_crypto::mls::conversation::Error::MessageEpochTooOld => MlsError::MessageEpochTooOld.into(),

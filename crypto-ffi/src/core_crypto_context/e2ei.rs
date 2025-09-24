@@ -130,7 +130,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::mls::conversation::ConversationGuard::e2ei_rotate]
     pub async fn e2ei_rotate(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
-        let mut conversation = self.inner.conversation(conversation_id).await?;
+        let mut conversation = self.inner.conversation(&conversation_id.as_ref().into()).await?;
         conversation.e2ei_rotate(None).await.map_err(Into::into)
     }
 
@@ -192,7 +192,7 @@ impl CoreCryptoContext {
         &self,
         conversation_id: &ConversationId,
     ) -> CoreCryptoResult<E2eiConversationState> {
-        let conversation = self.inner.conversation(conversation_id).await?;
+        let conversation = self.inner.conversation(&conversation_id.as_ref().into()).await?;
         conversation
             .e2ei_conversation_state()
             .await
@@ -219,7 +219,7 @@ impl CoreCryptoContext {
     ) -> CoreCryptoResult<Vec<WireIdentity>> {
         let device_ids = device_ids.into_iter().map(|cid| cid.as_cc()).collect::<Vec<_>>();
 
-        let conversation = self.inner.conversation(conversation_id).await?;
+        let conversation = self.inner.conversation(&conversation_id.as_ref().into()).await?;
         let wire_ids = conversation.get_device_identities(device_ids.as_slice()).await?;
         Ok(wire_ids.into_iter().map(Into::into).collect())
     }
@@ -234,7 +234,7 @@ impl CoreCryptoContext {
         conversation_id: &ConversationId,
         user_ids: Vec<String>,
     ) -> CoreCryptoResult<UserIdentities> {
-        let conversation = self.inner.conversation(conversation_id).await?;
+        let conversation = self.inner.conversation(&conversation_id.as_ref().into()).await?;
         let user_ids = conversation.get_user_identities(user_ids.as_slice()).await?;
         let user_ids = user_ids
             .into_iter()
