@@ -35,7 +35,11 @@ pub struct PendingConversation {
 impl PendingConversation {
     pub(crate) fn new(inner: PersistedMlsPendingGroup, context: TransactionContext) -> Self {
         let conversation_id = ConversationId::from(inner.id.as_ref());
-        Self { inner, context, conversation_id }
+        Self {
+            inner,
+            context,
+            conversation_id,
+        }
     }
 
     pub(crate) fn from_mls_group(
@@ -77,7 +81,12 @@ impl PendingConversation {
     pub(crate) async fn save(&self) -> Result<()> {
         let keystore = self.keystore().await?;
         keystore
-            .mls_pending_groups_save(self.id().as_ref(), &self.inner.state, &self.inner.custom_configuration, None)
+            .mls_pending_groups_save(
+                self.id().as_ref(),
+                &self.inner.state,
+                &self.inner.custom_configuration,
+                None,
+            )
             .await
             .map_err(KeystoreError::wrap("saving mls pending groups"))
             .map_err(Into::into)

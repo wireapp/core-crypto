@@ -15,7 +15,6 @@ use crate::{
     conversation_id_coerce_maybe_arc,
 };
 use core_crypto::prelude::ConversationId;
-use obfuscate::Obfuscated;
 
 #[cfg(not(target_family = "wasm"))]
 #[derive(Debug, thiserror::Error, uniffi::Error)]
@@ -82,7 +81,7 @@ impl core_crypto::mls::HistoryObserver for ObserverShim {
             // we don't _care_ if an error is thrown by the notification function, per se,
             // but this would probably be useful information for downstream debugging efforts
             log::warn!(
-                conversation_id = Obfuscated::from(&conversation_id),
+                conversation_id = conversation_id,
                 err = log::kv::Value::from_dyn_error(&err);
                 "caught an error when attempting to notify the history observer of a new history client"
             );
@@ -186,7 +185,7 @@ impl core_crypto::mls::HistoryObserver for HistoryObserver {
         let Ok(secret) = HistorySecret::try_from(secret) else {
             // weird that we couldn't convert this but ¯\_(ツ)_/¯
             log::warn!(
-                conversation_id = Obfuscated::from(&conversation_id);
+                conversation_id = conversation_id;
                 "failed to convert to ffi history secret during creation notification");
             return;
         };
@@ -200,7 +199,7 @@ impl core_crypto::mls::HistoryObserver for HistoryObserver {
             // we don't _care_ if an error is thrown by the notification function, per se,
             // but this would probably be useful information for downstream debugging efforts
             log::warn!(
-                conversation_id = Obfuscated::from(&conversation_id),
+                conversation_id = &conversation_id,
                 err = LoggableJsValue(err);
                 "caught an error when attempting to notify the history observer of a new history client"
             );

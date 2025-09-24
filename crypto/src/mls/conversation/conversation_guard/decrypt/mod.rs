@@ -143,7 +143,7 @@ impl ConversationGuard {
         if let Err(Error::BufferedFutureMessage { message_epoch }) = decrypt_message_result {
             self.buffer_future_message(message.as_ref()).await?;
             let conversation = self.conversation().await;
-            info!(group_id = Obfuscated::from(conversation.id()); "Buffered future message from epoch {message_epoch}");
+            info!(group_id = conversation.id(); "Buffered future message from epoch {message_epoch}");
         }
         if let Err(Error::BufferedCommit) = decrypt_message_result {
             self.buffer_commit(message).await?;
@@ -221,7 +221,7 @@ impl ConversationGuard {
             ProcessedMessageContent::ApplicationMessage(app_msg) => {
                 let conversation = self.conversation().await;
                 debug!(
-                    group_id = Obfuscated::from(&conversation.id),
+                    group_id = conversation.id,
                     epoch = epoch.as_u64(),
                     sender_client_id = sender_client_id;
                     "Application message"
@@ -250,7 +250,7 @@ impl ConversationGuard {
                     .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
                 info!(
-                    group_id = Obfuscated::from(&conversation.id),
+                    group_id = conversation.id,
                     sender = Obfuscated::from(proposal.sender()),
                     proposals = Obfuscated::from(&proposal.proposal);
                     "Received proposal"
@@ -388,7 +388,7 @@ impl ConversationGuard {
                 info!(
                     added = Obfuscated::from(&added_members),
                     removed = Obfuscated::from(&removed_members),
-                    group_id = Obfuscated::from(&conversation.id),
+                    group_id = conversation.id,
                     epoch,
                     proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
                     "Epoch advanced"
@@ -412,7 +412,7 @@ impl ConversationGuard {
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
                 let mut conversation = self.conversation_mut().await;
                 info!(
-                    group_id = Obfuscated::from(&conversation.id),
+                    group_id = conversation.id,
                     sender = Obfuscated::from(proposal.sender());
                     "Received external join proposal"
                 );
