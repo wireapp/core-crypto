@@ -22,7 +22,7 @@ suspend operator fun CoreCrypto.Companion.invoke(
  * This wrapper should be largely transparent to end users. It exists to improve the
  * callback interfaces: `.transaction(...)`, `.registerFooObserver(...)`, etc.
  */
-class CoreCryptoClient(private val cc: CoreCrypto) {
+class CoreCryptoClient(private val cc: CoreCryptoFfi) {
     companion object {
         /**
          * Instantiate a history client.
