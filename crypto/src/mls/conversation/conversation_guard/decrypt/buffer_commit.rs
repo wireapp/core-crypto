@@ -7,7 +7,6 @@ use crate::prelude::MlsConversationDecryptMessage;
 use core_crypto_keystore::connection::FetchFromDatabase as _;
 use core_crypto_keystore::entities::MlsBufferedCommit;
 use log::info;
-use obfuscate::Obfuscated;
 use openmls::framing::MlsMessageIn;
 use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
@@ -19,7 +18,7 @@ impl ConversationGuard {
     /// security guarantees. When we do restore, it's as though the commit had simply been received later.
     pub(super) async fn buffer_commit(&self, commit: impl AsRef<[u8]>) -> Result<()> {
         let conversation = self.conversation().await;
-        info!(group_id = Obfuscated::from(conversation.id()); "buffering commit");
+        info!(group_id = conversation.id(); "buffering commit");
 
         let buffered_commit = MlsBufferedCommit::new(conversation.id().as_ref().to_owned(), commit.as_ref().to_owned());
 
@@ -35,7 +34,7 @@ impl ConversationGuard {
     /// Retrieve the bytes of a pending commit.
     pub(super) async fn retrieve_buffered_commit(&self) -> Result<Option<Vec<u8>>> {
         let conversation = self.conversation().await;
-        info!(group_id = Obfuscated::from(conversation.id()); "attempting to retrieve buffered commit");
+        info!(group_id = conversation.id(); "attempting to retrieve buffered commit");
         self.crypto_provider()
             .await?
             .keystore()
@@ -58,7 +57,7 @@ impl ConversationGuard {
         recursion_policy: RecursionPolicy,
     ) -> Result<MlsConversationDecryptMessage> {
         let conversation = self.conversation().await;
-        info!(group_id = Obfuscated::from(conversation.id()); "attempting to process buffered commit");
+        info!(group_id = conversation.id(); "attempting to process buffered commit");
         drop(conversation);
 
         let message =
@@ -70,7 +69,7 @@ impl ConversationGuard {
     /// Remove the buffered commit for this conversation; it has been applied.
     pub(super) async fn clear_buffered_commit(&self) -> Result<()> {
         let conversation = self.conversation().await;
-        info!(group_id = Obfuscated::from(conversation.id()); "attempting to delete buffered commit");
+        info!(group_id = conversation.id(); "attempting to delete buffered commit");
         self.crypto_provider()
             .await?
             .keystore()
