@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
 <a href=#5 id=5 data-nosnippet>5</a></span><span class="kw">use </span>wasm_bindgen::prelude::<span class="kw-2">*</span>;
 <a href=#6 id=6 data-nosnippet>6</a>
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{ConversationId, CoreCrypto, CoreCryptoResult, WireIdentity, client_id::ClientIdMaybeArc};
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{ConversationId, CoreCryptoFfi, CoreCryptoResult, WireIdentity, client_id::ClientIdMaybeArc};
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
 <a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">type </span>DeviceIdentities = Vec&lt;WireIdentity&gt;;
@@ -20,7 +20,7 @@
 <a href=#20 id=20 data-nosnippet>20</a>
 <a href=#21 id=21 data-nosnippet>21</a><span class="attr">#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
 <a href=#22 id=22 data-nosnippet>22</a>#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen)]
-<a href=#23 id=23 data-nosnippet>23</a></span><span class="kw">impl </span>CoreCrypto {
+<a href=#23 id=23 data-nosnippet>23</a></span><span class="kw">impl </span>CoreCryptoFfi {
 <a href=#24 id=24 data-nosnippet>24</a>    <span class="doccomment">/// See [core_crypto::mls::conversation::Conversation::get_device_identities]
 <a href=#25 id=25 data-nosnippet>25</a>    </span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(unchecked_return_type = <span class="string">"WireIdentity[]"</span>))]
 <a href=#26 id=26 data-nosnippet>26</a>    </span><span class="kw">pub async fn </span>get_device_identities(

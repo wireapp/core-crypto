@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>CoreCryptoFfi</title>
+    <link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">
+    <script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async="async"></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/clipboard.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer="defer"></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async="async"></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer="defer"></script>
+<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer="defer"></script>
+</head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+            <a class="library-name--link" href="../../../index.html">
+                    CoreCrypto
+            </a>
+        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle"
+                type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active=""
+                        data-filter=":jvm/main">jvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox"
+                        data-role="dropdown-toggle"
+                        aria-controls="platform-tags-listbox"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                        aria-label="Toggle source sets"
+                ></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":jvm/main"
+                                       data-filter=":jvm/main"/>
+                                <span class="checkbox--icon"></span>
+                                jvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button"
+                    type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list"
+                        data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    CoreCrypto
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageIds="CoreCrypto::com.wire.crypto/CoreCryptoFfi///PointingToDeclaration//1144021071">
+  <div class="breadcrumbs"><a href="../../../index.html">CoreCrypto</a><span class="delimiter">/</span><a href="../index.html">com.wire.crypto</a><span class="delimiter">/</span><span class="current">CoreCryptoFfi</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Core</span><wbr></wbr><span>Crypto</span><wbr></wbr><span><span>Ffi</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="index.html">CoreCryptoFfi</a> : <a href="../-disposable/index.html">Disposable</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/AutoCloseable.html">AutoCloseable</a>, <a href="../-core-crypto-ffi-interface/index.html">CoreCryptoFfiInterface</a><span class="clearfix"><span class="floating-right">(<a href="https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt#L6205">source</a>)</span></span></div><p class="paragraph">CoreCrypto wraps around MLS and Proteus implementations and provides a transactional interface for each.</p></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button><button class="section-tab" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION,EXTENSION_PROPERTY,EXTENSION_FUNCTION">Members &amp; Extensions</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="1753355358%2FConstructors%2F1144021071" anchor-label="CoreCryptoFfi" id="1753355358%2FConstructors%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-core-crypto-ffi.html"><span>Core</span><wbr></wbr><span>Crypto</span><wbr></wbr><span><span>Ffi</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1753355358%2FConstructors%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">pointer<span class="token operator">: </span><span data-unresolved-link="com.sun.jna/Pointer///PointingToDeclaration/">Pointer</span></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">noPointer<span class="token operator">: </span><span data-unresolved-link="com.wire.crypto/NoPointer///PointingToDeclaration/">NoPointer</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">This constructor can be used to instantiate a fake object. Only used for tests. Any attempt to actually use an object constructed this way will fail as there is no connected Rust object.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="-1680418532%2FClasslikes%2F1144021071" anchor-label="Companion" id="-1680418532%2FClasslikes%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1680418532%2FClasslikes%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="356201313%2FFunctions%2F1144021071" anchor-label="clientPublicKey" id="356201313%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="client-public-key.html"><span>client</span><wbr></wbr><span>Public</span><wbr></wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="356201313%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="client-public-key.html"><span class="token function">clientPublicKey</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">ciphersuite<span class="token operator">: </span><a href="../-ciphersuite/index.html">Ciphersuite</a><span class="token punctuation">, </span></span><span class="parameter ">credentialType<span class="token operator">: </span><a href="../-credential-type/index.html">CredentialType</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></div><div class="brief "><p class="paragraph">See core_crypto::transaction_context::TransactionContext::client_public_key</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="652549341%2FFunctions%2F1144021071" anchor-label="close" id="652549341%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="close.html"><span><span>close</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="652549341%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-synchronized/index.html"><span class="token annotation builtin">Synchronized</span></a></div></div><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="close.html"><span class="token function">close</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1070048668%2FFunctions%2F1144021071" anchor-label="conversationCiphersuite" id="1070048668%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="conversation-ciphersuite.html"><span>conversation</span><wbr></wbr><span><span>Ciphersuite</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1070048668%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="conversation-ciphersuite.html"><span class="token function">conversationCiphersuite</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-conversation-id/index.html">ConversationId</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-ciphersuite/index.html">Ciphersuite</a></div><div class="brief "><p class="paragraph">See core_crypto::mls::conversation::Conversation::ciphersuite</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1596916320%2FFunctions%2F1144021071" anchor-label="conversationEpoch" id="-1596916320%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="conversation-epoch.html"><span>conversation</span><wbr></wbr><span><span>Epoch</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1596916320%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="conversation-epoch.html"><span class="token function">conversationEpoch</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-conversation-id/index.html">ConversationId</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-u-long/index.html">ULong</a></div><div class="brief "><p class="paragraph">See core_crypto::mls::conversation::Conversation::epoch</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1496870057%2FFunctions%2F1144021071" anchor-label="conversationExists" id="-1496870057%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="conversation-exists.html"><span>conversation</span><wbr></wbr><span><span>Exists</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1496870057%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="conversation-exists.html"><span class="token function">conversationExists</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-conversation-id/index.html">ConversationId</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">See core_crypto::prelude::Session::conversation_exists</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="800889627%2FFunctions%2F1144021071" anchor-label="destroy" id="800889627%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="destroy.html"><span><span>destroy</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="800889627%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="destroy.html"><span class="token function">destroy</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-525644137%2FFunctions%2F1144021071" anchor-label="e2eiIsEnabled" id="-525644137%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="e2ei-is-enabled.html"><span>e2ei</span><wbr></wbr><span>Is</span><wbr></wbr><span><span>Enabled</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-525644137%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="e2ei-is-enabled.html"><span class="token function">e2eiIsEnabled</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">ciphersuite<span class="token operator">: </span><a href="../-ciphersuite/index.html">Ciphersuite</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">See core_crypto::prelude::Session::e2ei_is_enabled</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-194596462%2FFunctions%2F1144021071" anchor-label="e2eiIsPkiEnvSetup" id="-194596462%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="e2ei-is-pki-env-setup.html"><span>e2ei</span><wbr></wbr><span>Is</span><wbr></wbr><span>Pki</span><wbr></wbr><span>Env</span><wbr></wbr><span><span>Setup</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-194596462%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="e2ei-is-pki-env-setup.html"><span class="token function">e2eiIsPkiEnvSetup</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">See core_crypto::prelude::Session::e2ei_is_pki_env_setup</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1824511463%2FFunctions%2F1144021071" anchor-label="exportSecretKey" id="1824511463%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="export-secret-key.html"><span>export</span><wbr></wbr><span>Secret</span><wbr></wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1824511463%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="export-secret-key.html"><span class="token function">exportSecretKey</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">keyLength<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-u-int/index.html">UInt</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></div><div class="brief "><p class="paragraph">See core_crypto::mls::conversation::Conversation::export_secret_key</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1966384351%2FFunctions%2F1144021071" anchor-label="getClientIds" id="1966384351%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-client-ids.html"><span>get</span><wbr></wbr><span>Client</span><wbr></wbr><span><span>Ids</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1966384351%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-client-ids.html"><span class="token function">getClientIds</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-conversation-id/index.html">ConversationId</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-client-id/index.html">ClientId</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">See core_crypto::mls::conversation::Conversation::get_client_ids</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1745609550%2FFunctions%2F1144021071" anchor-label="getDeviceIdentities" id="-1745609550%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-device-identities.html"><span>get</span><wbr></wbr><span>Device</span><wbr></wbr><span><span>Identities</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1745609550%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-device-identities.html"><span class="token function">getDeviceIdentities</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">deviceIds<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-client-id/index.html">ClientId</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-wire-identity/index.html">WireIdentity</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">See core_crypto::mls::conversation::Conversation::get_device_identities</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1946778992%2FFunctions%2F1144021071" anchor-label="getExternalSender" id="-1946778992%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-external-sender.html"><span>get</span><wbr></wbr><span>External</span><wbr></wbr><span><span>Sender</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1946778992%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-external-sender.html"><span class="token function">getExternalSender</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-conversation-id/index.html">ConversationId</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></div><div class="brief "><p class="paragraph">See core_crypto::mls::conversation::Conversation::get_external_sender</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2077723232%2FFunctions%2F1144021071" anchor-label="getUserIdentities" id="2077723232%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-user-identities.html"><span>get</span><wbr></wbr><span>User</span><wbr></wbr><span><span>Identities</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2077723232%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-user-identities.html"><span class="token function">getUserIdentities</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">userIds<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-wire-identity/index.html">WireIdentity</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">See core_crypto::mls::conversation::Conversation::get_user_identities</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1261595095%2FFunctions%2F1144021071" anchor-label="isHistorySharingEnabled" id="1261595095%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-history-sharing-enabled.html"><span>is</span><wbr></wbr><span>History</span><wbr></wbr><span>Sharing</span><wbr></wbr><span><span>Enabled</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1261595095%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="is-history-sharing-enabled.html"><span class="token function">isHistorySharingEnabled</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-conversation-id/index.html">ConversationId</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">See core_crypto::mls::conversation::Conversation::is_history_sharing_enabled</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1667575199%2FFunctions%2F1144021071" anchor-label="lift" id="1667575199%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../lift.html"><span><span>lift</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1667575199%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="index.html">CoreCryptoFfi</a><span class="token punctuation">.</span><a href="../lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-core-crypto/index.html">CoreCrypto</a></div><div class="brief "><p class="paragraph">Wrap a <code class="lang-kotlin">CoreCrypto</code> instance in a <code class="lang-kotlin">CoreCryptoClient</code> instance. Should largely be invisible to end-users.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1466202461%2FFunctions%2F1144021071" anchor-label="proteusFingerprint" id="1466202461%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="proteus-fingerprint.html"><span>proteus</span><wbr></wbr><span><span>Fingerprint</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1466202461%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="proteus-fingerprint.html"><span class="token function">proteusFingerprint</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">See core_crypto::proteus::ProteusCentral::fingerprint</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="270660882%2FFunctions%2F1144021071" anchor-label="proteusFingerprintLocal" id="270660882%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="proteus-fingerprint-local.html"><span>proteus</span><wbr></wbr><span>Fingerprint</span><wbr></wbr><span><span>Local</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="270660882%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="proteus-fingerprint-local.html"><span class="token function">proteusFingerprintLocal</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sessionId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">See core_crypto::proteus::ProteusCentral::fingerprint_local</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-413594437%2FFunctions%2F1144021071" anchor-label="proteusFingerprintPrekeybundle" id="-413594437%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="proteus-fingerprint-prekeybundle.html"><span>proteus</span><wbr></wbr><span>Fingerprint</span><wbr></wbr><span><span>Prekeybundle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-413594437%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="proteus-fingerprint-prekeybundle.html"><span class="token function">proteusFingerprintPrekeybundle</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">prekey<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">See core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2135004845%2FFunctions%2F1144021071" anchor-label="proteusFingerprintRemote" id="2135004845%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="proteus-fingerprint-remote.html"><span>proteus</span><wbr></wbr><span>Fingerprint</span><wbr></wbr><span><span>Remote</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2135004845%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="proteus-fingerprint-remote.html"><span class="token function">proteusFingerprintRemote</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sessionId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">See core_crypto::proteus::ProteusCentral::fingerprint_remote</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1481525701%2FFunctions%2F1144021071" anchor-label="proteusLastResortPrekeyId" id="-1481525701%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="proteus-last-resort-prekey-id.html"><span>proteus</span><wbr></wbr><span>Last</span><wbr></wbr><span>Resort</span><wbr></wbr><span>Prekey</span><wbr></wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1481525701%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="proteus-last-resort-prekey-id.html"><span class="token function">proteusLastResortPrekeyId</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-u-short/index.html">UShort</a></div><div class="brief "><p class="paragraph">See core_crypto::proteus::ProteusCentral::last_resort_prekey_id</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1241728757%2FFunctions%2F1144021071" anchor-label="proteusSessionExists" id="1241728757%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="proteus-session-exists.html"><span>proteus</span><wbr></wbr><span>Session</span><wbr></wbr><span><span>Exists</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1241728757%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="proteus-session-exists.html"><span class="token function">proteusSessionExists</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sessionId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">See core_crypto::proteus::ProteusCentral::session_exists</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1796333431%2FFunctions%2F1144021071" anchor-label="provideTransport" id="1796333431%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="provide-transport.html"><span>provide</span><wbr></wbr><span><span>Transport</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1796333431%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="provide-transport.html"><span class="token function">provideTransport</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">callbacks<span class="token operator">: </span><a href="../-mls-transport/index.html">MlsTransport</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">See core_crypto::prelude::Session::provide_transport</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="632311086%2FFunctions%2F1144021071" anchor-label="randomBytes" id="632311086%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="random-bytes.html"><span>random</span><wbr></wbr><span><span>Bytes</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="632311086%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="random-bytes.html"><span class="token function">randomBytes</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">len<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-u-int/index.html">UInt</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></div><div class="brief "><p class="paragraph">See core_crypto::prelude::Session::random_bytes</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1496583963%2FFunctions%2F1144021071" anchor-label="registerEpochObserver" id="1496583963%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="register-epoch-observer.html"><span>register</span><wbr></wbr><span>Epoch</span><wbr></wbr><span><span>Observer</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1496583963%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="register-epoch-observer.html"><span class="token function">registerEpochObserver</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">epochObserver<span class="token operator">: </span><a href="../-epoch-observer/index.html">EpochObserver</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Add an epoch observer to this client.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="812421691%2FFunctions%2F1144021071" anchor-label="registerHistoryObserver" id="812421691%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="register-history-observer.html"><span>register</span><wbr></wbr><span>History</span><wbr></wbr><span><span>Observer</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="812421691%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="register-history-observer.html"><span class="token function">registerHistoryObserver</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">historyObserver<span class="token operator">: </span><a href="../-history-observer/index.html">HistoryObserver</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Add a history observer to this client.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2054604266%2FFunctions%2F1144021071" anchor-label="reseedRng" id="2054604266%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="reseed-rng.html"><span>reseed</span><wbr></wbr><span><span>Rng</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2054604266%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="reseed-rng.html"><span class="token function">reseedRng</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">seed<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">see core_crypto::prelude::Session::reseed</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1435377521%2FFunctions%2F1144021071" anchor-label="transaction" id="1435377521%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="transaction.html"><span><span>transaction</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1435377521%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="transaction.html"><span class="token function">transaction</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">command<span class="token operator">: </span><a href="../-core-crypto-command/index.html">CoreCryptoCommand</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Starts a new transaction in Core Crypto. If the callback succeeds, it will be committed, otherwise, every operation performed with the context will be discarded.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="434845516%2FFunctions%2F1144021071" anchor-label="uniffiClonePointer" id="434845516%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="uniffi-clone-pointer.html"><span>uniffi</span><wbr></wbr><span>Clone</span><wbr></wbr><span><span>Pointer</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="434845516%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="uniffi-clone-pointer.html"><span class="token function">uniffiClonePointer</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.sun.jna/Pointer///PointingToDeclaration/">Pointer</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>Copyright Wire GmbH</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

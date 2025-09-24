@@ -20,7 +20,7 @@
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span><span class="kw">crate</span>::ClientId;
 <a href=#21 id=21 data-nosnippet>21</a><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
 <a href=#22 id=22 data-nosnippet>22</a></span><span class="kw">use </span><span class="kw">crate</span>::CoreCryptoError;
-<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use crate</span>::{CommitBundle, CoreCrypto, CoreCryptoResult, HistorySecret <span class="kw">as </span>HistorySecretFfi};
+<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use crate</span>::{CommitBundle, CoreCryptoFfi, CoreCryptoResult, HistorySecret <span class="kw">as </span>HistorySecretFfi};
 <a href=#24 id=24 data-nosnippet>24</a>
 <a href=#25 id=25 data-nosnippet>25</a><span class="doccomment">/// MLS transport may or may not succeeed; this response indicates to CC the outcome of the transport attempt.
 <a href=#26 id=26 data-nosnippet>26</a></span><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
@@ -410,7 +410,7 @@
 <a href=#410 id=410 data-nosnippet>410</a>
 <a href=#411 id=411 data-nosnippet>411</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen)]
 <a href=#412 id=412 data-nosnippet>412</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
-<a href=#413 id=413 data-nosnippet>413</a></span><span class="kw">impl </span>CoreCrypto {
+<a href=#413 id=413 data-nosnippet>413</a></span><span class="kw">impl </span>CoreCryptoFfi {
 <a href=#414 id=414 data-nosnippet>414</a>    <span class="doccomment">/// See [core_crypto::prelude::Session::provide_transport]
 <a href=#415 id=415 data-nosnippet>415</a>    </span><span class="kw">pub async fn </span>provide_transport(<span class="kw-2">&amp;</span><span class="self">self</span>, callbacks: Callbacks) -&gt; CoreCryptoResult&lt;()&gt; {
 <a href=#416 id=416 data-nosnippet>416</a>        <span class="self">self</span>.inner.provide_transport(callback_shim(callbacks)).<span class="kw">await</span>;
