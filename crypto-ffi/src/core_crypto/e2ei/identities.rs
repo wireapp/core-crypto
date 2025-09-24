@@ -30,7 +30,7 @@ impl CoreCryptoFfi {
     ) -> CoreCryptoResult<DeviceIdentities> {
         let conversation = self
             .inner
-            .get_raw_conversation(conversation_id)
+            .get_raw_conversation(&conversation_id.as_ref().into())
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation"))?;
         let device_ids = device_ids.into_iter().map(|id| id.as_cc()).collect::<Vec<_>>();
@@ -58,7 +58,7 @@ impl CoreCryptoFfi {
     ) -> CoreCryptoResult<UserIdentities> {
         let conversation = self
             .inner
-            .get_raw_conversation(conversation_id)
+            .get_raw_conversation(&conversation_id.as_ref().into())
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation"))?;
         let identities = conversation.get_user_identities(user_ids.as_slice()).await?;
