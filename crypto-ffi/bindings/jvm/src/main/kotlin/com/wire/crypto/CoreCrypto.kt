@@ -8,13 +8,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Wrap a `CoreCrypto` instance in a `CoreCryptoClient` instance. Should largely be invisible to end-users. */
-fun CoreCrypto.lift() = CoreCryptoClient(this)
-
-/** Opens an existing core crypto client or creates a new one if one doesn't exist at the `keystore` path */
-suspend operator fun CoreCrypto.Companion.invoke(
-    keystore: String,
-    databaseKey: DatabaseKey
-) = coreCryptoDeferredInit(keystore, databaseKey, null).lift()
+fun CoreCryptoFfi.lift() = CoreCrypto(this)
 
 /**
  * A high-level wrapper around a CoreCrypto client as emitted by Uniffi.
@@ -22,15 +16,22 @@ suspend operator fun CoreCrypto.Companion.invoke(
  * This wrapper should be largely transparent to end users. It exists to improve the
  * callback interfaces: `.transaction(...)`, `.registerFooObserver(...)`, etc.
  */
-class CoreCryptoClient(private val cc: CoreCryptoFfi) {
+class CoreCrypto(private val cc: CoreCryptoFfi) {
     companion object {
+        /** Opens an existing core crypto client or creates a new one if one doesn't exist at the `keystore` path */
+        suspend operator fun invoke(
+            keystore: String,
+            databaseKey: DatabaseKey
+        ) =
+            CoreCrypto(coreCryptoDeferredInit(keystore, databaseKey, null))
+
         /**
          * Instantiate a history client.
          *
          * This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
          * Other use is a logic error.
          */
-        suspend fun historyClient(historySecret: HistorySecret) = coreCryptoHistoryClient(historySecret).lift()
+        suspend fun historyClient(historySecret: HistorySecret) = CoreCrypto(coreCryptoHistoryClient(historySecret))
     }
 
     /**
@@ -51,7 +52,7 @@ class CoreCryptoClient(private val cc: CoreCryptoFfi) {
         var result: R? = null
         var error: Throwable? = null
         try {
-            this@CoreCryptoClient.cc.transaction(object : CoreCryptoCommand {
+            this@CoreCrypto.cc.transaction(object : CoreCryptoCommand {
                 override suspend fun execute(context: CoreCryptoContext) {
                     try {
                         result = block(context)
