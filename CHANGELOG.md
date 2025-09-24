@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+- Renamed `CoreCryptoClient` to `CoreCrypto` and moved `historyClient(historySecret: HistorySecret)` into `CoreCrypto` Companion functions
+  Affected platforms: jvm, android
+
+- Removed static methods from `CoreCrypto` that are globally available:
+
+  - removed `version()`
+  - removed `buildMetadata()`
+
+  Affected platforms: ios
+
+- Removed static methods from `CoreCrypto` that are globally available:
+
+  - removed `setMaxLogLevel(level: CoreCryptoLogLevel)` on ios, web
+  - removed `setLogger(logger: CoreCryptoLogger)` on ios, web
+
+  Affected platforms: ios, web
+
+- Removed `setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)` and
+  renamed `setLoggerOnly(logger: CoreCryptoLogger)` to `setLogger(logger: CoreCryptoLogger)`.
+  To set the loglevel use `setMaxLogLevel(level: CoreCryptoLogLevel)`
+
+  Affected platforms: all
+
 ## v9.0.1 - 2025-09-18
 
 ### Breaking Changes
