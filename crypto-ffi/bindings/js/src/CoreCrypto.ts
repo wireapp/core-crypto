@@ -15,7 +15,20 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 export type { ConversationConfiguration } from "./ConversationConfiguration";
-export { CoreCryptoError, type CoreCryptoRichError } from "./CoreCryptoError";
+export {
+    CoreCryptoError,
+    ErrorType,
+    MlsErrorType,
+    ProteusErrorType,
+    type CoreCryptoRichError,
+    type ErrorContext,
+    type ErrorTypeWithContext,
+    type MlsErrorContext,
+    type ProteusErrorContext,
+    isCcError,
+    isMlsError,
+    isProteusError,
+} from "./CoreCryptoError";
 
 export { CoreCryptoContext } from "./CoreCryptoContext";
 
