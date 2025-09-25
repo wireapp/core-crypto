@@ -145,7 +145,7 @@ impl<'a> TestConversation<'a> {
         let (sc, ct) = (self.case.signature_scheme(), self.case.credential_type);
         let cb = external_actor.find_most_recent_credential_bundle(sc, ct).await.unwrap();
 
-        let group_id = openmls::group::GroupId::from_slice(self.id());
+        let group_id = openmls::group::GroupId::from_slice(self.id().as_ref());
         let epoch = self.guard().await.epoch().await;
         let proposal =
             ExternalProposal::new_remove(to_remove_index, group_id, epoch.into(), &cb.signature_key, sender_index)

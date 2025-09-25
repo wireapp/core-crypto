@@ -156,10 +156,10 @@ pub mod test_utils {
                 .unwrap()
                 .mls_groups_restore()
                 .await
-                .map(|mut groups| groups.remove(id.as_slice()).unwrap())
+                .map(|mut groups| groups.remove(id.as_ref()).unwrap())
                 .unwrap();
-            let group = MlsConversation::from_serialized_state(group, parent_id).unwrap();
-            context.mls_groups().await.unwrap().insert(id.clone(), group);
+            let group = MlsConversation::from_serialized_state(group, parent_id.map(Into::into)).unwrap();
+            context.mls_groups().await.unwrap().insert(id.clone().into(), group);
         }
     }
 }

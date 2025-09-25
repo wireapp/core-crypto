@@ -366,7 +366,7 @@ pub fn tmp_db_file() -> (String, ()) {
 
 pub fn conversation_id() -> ConversationId {
     let uuid = uuid::Uuid::new_v4();
-    ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()))
+    ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()).as_bytes())
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]

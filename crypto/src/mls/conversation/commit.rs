@@ -148,7 +148,7 @@ mod tests {
                         .group
                         .group_id()
                         .as_slice(),
-                    id
+                    id.as_ref()
                 );
                 assert_eq!(conversation.member_count().await, 2);
                 assert!(conversation.is_functional_and_contains([&alice, &bob]).await);

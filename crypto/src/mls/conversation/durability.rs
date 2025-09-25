@@ -13,7 +13,7 @@ impl MlsConversation {
             .await
             .map(|mut groups| groups.remove(group_id.as_slice()).unwrap())
             .unwrap();
-        let group = MlsConversation::from_serialized_state(group, parent_id).unwrap();
+        let group = MlsConversation::from_serialized_state(group, parent_id.map(Into::into)).unwrap();
         *self = group;
     }
 }

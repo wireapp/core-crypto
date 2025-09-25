@@ -187,7 +187,7 @@ pub(crate) fn tmp_db_file() -> (String, tempfile::TempDir) {
 
 pub fn conversation_id() -> ConversationId {
     let uuid = uuid::Uuid::new_v4();
-    ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()))
+    ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()).as_bytes())
 }
 
 pub async fn add_clients(

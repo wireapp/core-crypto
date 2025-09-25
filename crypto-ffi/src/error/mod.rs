@@ -44,10 +44,10 @@ fn log_error(error: &dyn std::error::Error) {
     log::warn!(target: "core-crypto", err:serde; "core-crypto returning this error across ffi; see recent log messages for context");
 }
 
-#[cfg(all(test, not(target_family = "wasm")))]
+#[cfg(test)]
 mod tests {
     use ::core_crypto::{LeafError, RecursiveError};
-    use core_crypto::ProteusError;
+    use core_crypto::{ProteusError, prelude::ConversationId};
 
     use crate::{CoreCryptoError, CoreCryptoFfi, MlsError, ProteusError as ProteusErrorFfi};
 
@@ -65,9 +65,9 @@ mod tests {
         ));
 
         let conversation_exists_error = RecursiveError::mls_conversation("test conversation exists error")(
-            core_crypto::mls::conversation::Error::Leaf(LeafError::ConversationAlreadyExists(
-                "test conversation id".into(),
-            )),
+            core_crypto::mls::conversation::Error::Leaf(LeafError::ConversationAlreadyExists(ConversationId::from(
+                "test conversation id".as_bytes(),
+            ))),
         );
         let mapped_error = CoreCryptoError::from(conversation_exists_error);
         assert!(matches!(
@@ -82,7 +82,7 @@ mod tests {
     fn test_proteus_error_mapping() {
         let session_not_found_eror = RecursiveError::root("recursive error wrapping core crypto error")(
             core_crypto::Error::Proteus(ProteusError::wrap("recursive error wrapping leaf error")(
-                LeafError::ConversationNotFound("test_session_id".as_bytes().to_vec()),
+                LeafError::ConversationNotFound(ConversationId::from("test_session_id".as_bytes())),
             )),
         );
 
