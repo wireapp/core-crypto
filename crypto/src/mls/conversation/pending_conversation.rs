@@ -34,7 +34,7 @@ pub struct PendingConversation {
 
 impl PendingConversation {
     pub(crate) fn new(inner: PersistedMlsPendingGroup, context: TransactionContext) -> Self {
-        let conversation_id = ConversationId::from(inner.id.as_ref());
+        let conversation_id = inner.id.clone().into();
         Self {
             inner,
             context,

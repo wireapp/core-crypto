@@ -190,7 +190,7 @@ mod tests {
                 .keystore()
                 .await
                 .unwrap()
-                .mls_pending_groups_load(&id)
+                .mls_pending_groups_load(id.as_ref())
                 .await;
             assert!(matches!(
                 error.unwrap_err(),
