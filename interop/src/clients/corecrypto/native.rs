@@ -101,7 +101,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
     }
 
     async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
-        let conversation_id = conversation_id.to_vec();
+        let conversation_id = ConversationId::from(conversation_id);
         let transaction = self.cc.new_transaction().await?;
         if !transaction.conversation_exists(&conversation_id).await? {
             let config = MlsConversationConfiguration {
@@ -128,8 +128,9 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
 
     async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
         let transaction = self.cc.new_transaction().await?;
+        let conversation_id = ConversationId::from(conversation_id);
         transaction
-            .conversation(&conversation_id.to_owned())
+            .conversation(&conversation_id.into())
             .await?
             .remove_members(&[client_id.to_owned().into()])
             .await?;
@@ -146,13 +147,14 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
             .await?
             .id;
         transaction.finish().await?;
-        Ok(result)
+        Ok(result.into())
     }
 
     async fn encrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
         let transaction = self.cc.new_transaction().await?;
+        let conversation_id = ConversationId::from(conversation_id);
         let result = transaction
-            .conversation(&conversation_id.to_vec())
+            .conversation(&conversation_id.into())
             .await?
             .encrypt_message(message)
             .await?;
@@ -162,8 +164,9 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
 
     async fn decrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>> {
         let transaction = self.cc.new_transaction().await?;
+        let conversation_id = ConversationId::from(conversation_id);
         let result = transaction
-            .conversation(&conversation_id.to_vec())
+            .conversation(&conversation_id.into())
             .await?
             .decrypt_message(message)
             .await?
