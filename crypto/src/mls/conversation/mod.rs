@@ -269,6 +269,7 @@ impl<'a, T: ConversationWithMls<'a>> Conversation<'a> for T {}
 #[derive(derive_more::AsRef, derive_more::From, derive_more::Into)]
 #[as_ref([u8])]
 #[from(&[u8], Vec<u8>)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub struct ConversationId(Vec<u8>);
 
 impl Obfuscate for ConversationId {
@@ -286,6 +287,12 @@ impl Clone for ConversationId {
 impl From<&ConversationId> for Vec<u8> {
     fn from(value: &ConversationId) -> Self {
         value.0.clone()
+    }
+}
+
+impl From<&str> for ConversationId {
+    fn from(value: &str) -> Self {
+        value.as_bytes().into()
     }
 }
 
