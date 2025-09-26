@@ -262,12 +262,10 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
 impl<'a, T: ConversationWithMls<'a>> Conversation<'a> for T {}
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
-#[derive(core_crypto_macros::Debug, Clone)]
+#[derive(core_crypto_macros::Debug, derive_more::AsRef, derive_more::From, derive_more::Into, PartialEq, Eq, Clone)]
 #[sensitive]
-#[derive(derive_more::AsRef, derive_more::From, derive_more::Into)]
 #[as_ref([u8])]
 #[from(&[u8], Vec<u8>)]
-#[cfg_attr(test, derive(PartialEq, Eq))]
 pub struct ConversationId(Vec<u8>);
 
 impl From<&str> for ConversationId {
@@ -282,10 +280,12 @@ impl From<&str> for ConversationId {
 //
 // pattern from https://stackoverflow.com/a/64990850
 #[repr(transparent)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ConversationIdRef([u8]);
 
 impl ConversationIdRef {
-    fn new<Bytes>(bytes: &Bytes) -> &ConversationIdRef
+    /// Creates a `ConversationId` Ref, needed to implement `Borrow<ConversationIdRef>` for `T`
+    pub fn new<Bytes>(bytes: &Bytes) -> &ConversationIdRef
     where
         Bytes: AsRef<[u8]> + ?Sized,
     {
@@ -314,6 +314,12 @@ impl ToOwned for ConversationIdRef {
 
     fn to_owned(&self) -> Self::Owned {
         ConversationId(self.0.to_owned())
+    }
+}
+
+impl AsRef<[u8]> for ConversationIdRef {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
     }
 }
 

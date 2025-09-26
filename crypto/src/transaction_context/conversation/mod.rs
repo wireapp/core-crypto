@@ -9,9 +9,9 @@ pub mod welcome;
 use core_crypto_keystore::connection::FetchFromDatabase as _;
 use core_crypto_keystore::entities::PersistedMlsPendingGroup;
 
-use crate::mls::conversation::ConversationGuard;
 use crate::mls::conversation::pending_conversation::PendingConversation;
-use crate::prelude::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsCredentialType};
+use crate::mls::conversation::{ConversationGuard, ConversationIdRef};
+use crate::prelude::{MlsConversation, MlsConversationConfiguration, MlsCredentialType};
 use crate::{KeystoreError, LeafError, RecursiveError};
 
 use super::TransactionContext;
@@ -21,7 +21,7 @@ impl TransactionContext {
     /// Acquire a conversation guard.
     ///
     /// This helper struct permits mutations on a conversation.
-    pub async fn conversation(&self, id: &ConversationId) -> Result<ConversationGuard> {
+    pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationGuard> {
         let keystore = self.mls_provider().await?.keystore();
         let inner = self
             .mls_groups()
@@ -39,14 +39,14 @@ impl TransactionContext {
         Err(pending)
     }
 
-    pub(crate) async fn pending_conversation(&self, id: &ConversationId) -> Result<PendingConversation> {
+    pub(crate) async fn pending_conversation(&self, id: &ConversationIdRef) -> Result<PendingConversation> {
         let keystore = self.keystore().await?;
         let Some(pending_group) = keystore
-            .find::<PersistedMlsPendingGroup>(id.as_ref())
+            .find::<PersistedMlsPendingGroup>(id)
             .await
             .map_err(KeystoreError::wrap("finding persisted mls pending group"))?
         else {
-            return Err(LeafError::ConversationNotFound(id.clone()).into());
+            return Err(LeafError::ConversationNotFound(id.to_owned()).into());
         };
         Ok(PendingConversation::new(pending_group, self.clone()))
     }
@@ -65,15 +65,15 @@ impl TransactionContext {
     #[cfg_attr(test, crate::dispotent)]
     pub async fn new_conversation(
         &self,
-        id: &ConversationId,
+        id: &ConversationIdRef,
         creator_credential_type: MlsCredentialType,
         config: MlsConversationConfiguration,
     ) -> Result<()> {
         if self.conversation_exists(id).await? || self.pending_conversation_exists(id).await? {
-            return Err(LeafError::ConversationAlreadyExists(id.clone()).into());
+            return Err(LeafError::ConversationAlreadyExists(id.to_owned()).into());
         }
         let conversation = MlsConversation::create(
-            id.clone(),
+            id.to_owned(),
             &self.session().await?,
             creator_credential_type,
             config,
@@ -88,7 +88,7 @@ impl TransactionContext {
     }
 
     /// Checks if a given conversation id exists locally
-    pub async fn conversation_exists(&self, id: &ConversationId) -> Result<bool> {
+    pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
         self.mls_groups()
             .await?
             .get_fetch(id.as_ref(), &self.mls_provider().await?.keystore(), None)

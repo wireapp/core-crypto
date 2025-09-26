@@ -14,12 +14,12 @@ use crate::{
     group_store::GroupStore,
     mls::{
         self, HasSessionAndCrypto,
-        conversation::ImmutableConversation,
+        conversation::{ConversationIdRef, ImmutableConversation},
         credential::{CredentialBundle, ext::CredentialExt},
     },
     prelude::{
-        CertificateBundle, ClientId, ConversationId, HistorySecret, MlsCiphersuite, MlsCredentialType,
-        config::ValidatedSessionConfig, identifier::ClientIdentifier, key_package::KEYPACKAGE_DEFAULT_LIFETIME,
+        CertificateBundle, ClientId, HistorySecret, MlsCiphersuite, MlsCredentialType, config::ValidatedSessionConfig,
+        identifier::ClientIdentifier, key_package::KEYPACKAGE_DEFAULT_LIFETIME,
     },
 };
 use async_lock::RwLock;
@@ -252,11 +252,12 @@ impl Session {
     /// Because it operates on the raw conversation type, this may be faster than
     /// [crate::transaction_context::TransactionContext::conversation]. for transient and immutable
     /// purposes. For long-lived or mutable purposes, prefer the other method.
-    pub async fn get_raw_conversation(&self, id: &ConversationId) -> Result<ImmutableConversation> {
-        let raw_conversation = GroupStore::fetch_from_keystore(id.as_ref(), &self.crypto_provider.keystore(), None)
-            .await
-            .map_err(RecursiveError::root("getting conversation by id"))?
-            .ok_or_else(|| LeafError::ConversationNotFound(id.clone()))?;
+    pub async fn get_raw_conversation(&self, id: &ConversationIdRef) -> Result<ImmutableConversation> {
+        let raw_conversation =
+            GroupStore::fetch_from_keystore(id.to_owned().as_ref(), &self.crypto_provider.keystore(), None)
+                .await
+                .map_err(RecursiveError::root("getting conversation by id"))?
+                .ok_or_else(|| LeafError::ConversationNotFound(id.to_owned()))?;
         Ok(ImmutableConversation::new(raw_conversation, self.clone()))
     }
 
@@ -319,7 +320,7 @@ impl Session {
     }
 
     /// Checks if a given conversation id exists locally
-    pub async fn conversation_exists(&self, id: &ConversationId) -> Result<bool> {
+    pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
         match self.get_raw_conversation(id).await {
             Ok(_) => Ok(true),
             Err(Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),

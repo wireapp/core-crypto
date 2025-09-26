@@ -4,12 +4,13 @@
 
 use super::Result;
 use super::{ConversationWithMls, Error};
+use crate::mls::conversation::ConversationIdRef;
 use crate::mls::conversation::conversation_guard::decrypt::buffer_messages::MessageRestorePolicy;
 use crate::mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points};
 use crate::mls::credential::ext::CredentialExt as _;
 use crate::prelude::{
-    ConversationId, MlsBufferedConversationDecryptMessage, MlsCommitBundle, MlsConversation,
-    MlsConversationConfiguration, MlsConversationDecryptMessage, MlsCustomConfiguration,
+    MlsBufferedConversationDecryptMessage, MlsCommitBundle, MlsConversation, MlsConversationConfiguration,
+    MlsConversationDecryptMessage, MlsCustomConfiguration,
 };
 use crate::transaction_context::TransactionContext;
 use crate::{KeystoreError, LeafError, MlsError, MlsTransportResponse, RecursiveError};
@@ -28,18 +29,11 @@ use tls_codec::Deserialize as _;
 pub struct PendingConversation {
     inner: PersistedMlsPendingGroup,
     context: TransactionContext,
-    // This is ridiculous.
-    conversation_id: ConversationId,
 }
 
 impl PendingConversation {
     pub(crate) fn new(inner: PersistedMlsPendingGroup, context: TransactionContext) -> Self {
-        let conversation_id = inner.id.clone().into();
-        Self {
-            inner,
-            context,
-            conversation_id,
-        }
+        Self { inner, context }
     }
 
     pub(crate) fn from_mls_group(
@@ -74,8 +68,8 @@ impl PendingConversation {
         Ok(backend.keystore())
     }
 
-    fn id(&self) -> &ConversationId {
-        &self.conversation_id
+    fn id(&self) -> &ConversationIdRef {
+        ConversationIdRef::new(&self.inner.id)
     }
 
     pub(crate) async fn save(&self) -> Result<()> {
