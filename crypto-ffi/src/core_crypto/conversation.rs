@@ -1,4 +1,9 @@
-use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
+use std::borrow::Borrow;
+
+use core_crypto::{
+    RecursiveError,
+    mls::conversation::{Conversation as _, ConversationIdRef},
+};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -17,6 +22,18 @@ bytes_wrapper!(
     ConversationId
 );
 
+impl Borrow<ConversationIdRef> for ConversationId {
+    fn borrow(&self) -> &ConversationIdRef {
+        ConversationIdRef::new(&self.0)
+    }
+}
+
+impl AsRef<ConversationIdRef> for ConversationId {
+    fn as_ref(&self) -> &ConversationIdRef {
+        ConversationIdRef::new(&self.0)
+    }
+}
+
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 impl CoreCryptoFfi {
@@ -24,7 +41,7 @@ impl CoreCryptoFfi {
     pub async fn conversation_epoch(&self, conversation_id: &ConversationId) -> CoreCryptoResult<u64> {
         let conversation = self
             .inner
-            .get_raw_conversation(&conversation_id.as_ref().into())
+            .get_raw_conversation(conversation_id.as_ref())
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation by id"))?;
         Ok(conversation.epoch().await)
@@ -34,7 +51,7 @@ impl CoreCryptoFfi {
     pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
         let cs = self
             .inner
-            .get_raw_conversation(&conversation_id.as_ref().into())
+            .get_raw_conversation(conversation_id.as_ref())
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation by id"))?
             .ciphersuite()
@@ -45,7 +62,7 @@ impl CoreCryptoFfi {
     /// See [core_crypto::prelude::Session::conversation_exists]
     pub async fn conversation_exists(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
         self.inner
-            .conversation_exists(&conversation_id.as_ref().into())
+            .conversation_exists(conversation_id.as_ref())
             .await
             .map_err(RecursiveError::mls_client("getting conversation existence by id"))
             .map_err(Into::into)
@@ -55,7 +72,7 @@ impl CoreCryptoFfi {
     pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<ClientIdMaybeArc>> {
         let conversation = self
             .inner
-            .get_raw_conversation(&conversation_id.as_ref().into())
+            .get_raw_conversation(conversation_id.as_ref())
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation"))?;
         Ok(conversation
@@ -70,7 +87,7 @@ impl CoreCryptoFfi {
     pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<u8>> {
         let conversation = self
             .inner
-            .get_raw_conversation(&conversation_id.as_ref().into())
+            .get_raw_conversation(conversation_id.as_ref())
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation"))?;
         conversation.get_external_sender().await.map_err(Into::into)
@@ -83,7 +100,7 @@ impl CoreCryptoFfi {
         key_length: u32,
     ) -> CoreCryptoResult<Vec<u8>> {
         self.inner
-            .get_raw_conversation(&conversation_id.as_ref().into())
+            .get_raw_conversation(conversation_id.as_ref())
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation"))?
             .export_secret_key(key_length as usize)
@@ -95,7 +112,7 @@ impl CoreCryptoFfi {
     pub async fn is_history_sharing_enabled(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
         let conversation = self
             .inner
-            .get_raw_conversation(&conversation_id.as_ref().into())
+            .get_raw_conversation(conversation_id.as_ref())
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation"))?;
         Ok(conversation.is_history_sharing_enabled().await)
