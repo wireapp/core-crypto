@@ -18,7 +18,7 @@ runs:
           library_extension="dylib"
         fi
         echo "LIBRARY_EXTENSION=${library_extension}" >> $GITHUB_ENV
-      shell: bash -leo pipefail {0}
+      shell: bash -euo pipefail {0}
 
     - uses: ./.github/actions/make
       with:

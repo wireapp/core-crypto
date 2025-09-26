@@ -7,16 +7,19 @@ runs:
   using: composite
 
   steps:
+    - name: Set MAKE
+      uses: ./.github/actions/make/set-make-executable
+
     - name: write uniffi version file
-      run: make .stamps/uniffi-version
-      shell: bash -leo pipefail {0}
+      run: $MAKE .stamps/uniffi-version
+      shell: bash -euo pipefail {0}
 
     - name: uniffi bindgen artifact name
       id: get-artifact-name
       run: |
         os="$(uname -s)"
         echo "artifact-name=uniffi-${os}" >> $GITHUB_OUTPUT
-      shell: bash -leo pipefail {0}
+      shell: bash -euo pipefail {0}
 
     - uses: ./.github/actions/make
       with:
@@ -26,4 +29,4 @@ runs:
         gh-token: ${{ inputs.gh-token }}
 
     - run: chmod +x target/release/uniffi-bindgen
-      shell: bash -leo pipefail {0}
+      shell: bash -euo pipefail {0}

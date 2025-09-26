@@ -7,7 +7,7 @@ on:
 
 defaults:
   run:
-    shell: bash -leo pipefail {0}
+    shell: bash -euo pipefail {0}
 
 env:
   CARGO_TERM_COLOR: always

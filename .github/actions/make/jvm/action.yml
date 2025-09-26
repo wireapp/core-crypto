@@ -22,7 +22,7 @@ runs:
           fi
           echo "target-path=target/${target}/release/libcore_crypto_ffi.${library_extension}" >> $GITHUB_OUTPUT
           echo "rule=${rule}" >> $GITHUB_OUTPUT
-        shell: bash -leo pipefail {0}
+        shell: bash -euo pipefail {0}
       - uses: ./.github/actions/make
         with:
           key: ${{ steps.platform-specs.outputs.rule }}

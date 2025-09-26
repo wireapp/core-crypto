@@ -1,0 +1,15 @@
+name: Set make executable based on OS
+
+runs:
+  using: composite
+
+  steps:
+    - name: set make executable based on OS
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          MAKE_CMD="gmake"
+        else
+          MAKE_CMD="make"
+        fi
+        echo "MAKE=$MAKE_CMD" >> $GITHUB_ENV

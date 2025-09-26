@@ -7,6 +7,9 @@ runs:
   using: composite
 
   steps:
+      - name: Set MAKE
+        uses: ./.github/actions/make/set-make-executable
+
       - name: download wasm binary
         uses: ./.github/actions/make/web/wasm
         with:
@@ -15,8 +18,8 @@ runs:
       # ensure bun deps are installed freshly before any command using bun is invoked
       - name: install bun deps
         run: |
-          make bun-deps
-        shell: bash -leo pipefail {0}
+          $MAKE bun-deps
+        shell: bash -euo pipefail {0}
 
       - name: make js bindings
         uses: ./.github/actions/make

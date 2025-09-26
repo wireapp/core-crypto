@@ -17,11 +17,14 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Set MAKE
+      uses: ./.github/actions/make/set-make-executable
+
     - name: compute artifact key
       shell: bash -euo pipefail {0}
       id: compute-key
       run: |
-        files_hash=$(make "${{ inputs.make-rule }}"-hash-deps)
+        files_hash=$($MAKE "${{ inputs.make-rule }}"-hash-deps)
         echo "key=${{ inputs.key }}-$files_hash" >> "$GITHUB_OUTPUT"
 
     - name: branch name
@@ -89,18 +92,18 @@ runs:
             touch "$dir"
           fi
         done
-      shell: bash -leo pipefail {0}
+      shell: bash -euo pipefail {0}
 
     - name: Run make ${{ inputs.make-rule }} if needed
       if: env.found != 'true'
-      run: make ${{ inputs.make-rule }}
-      shell: bash -leo pipefail {0}
+      run: $MAKE ${{ inputs.make-rule }}
+      shell: bash -euo pipefail {0}
 
     - name: Prepare artifact
       run: |
         mkdir -p .stamps
         printf '%s\n' "${{ inputs.target-path }}" | tar -czf artifact.tar.gz -T - .stamps
-      shell: bash -leo pipefail {0}
+      shell: bash -euo pipefail {0}
 
     - name: Upload artifact if it doesn't exist for this workflow run
       if: env.found_in_this_run != 'true'
@@ -112,4 +115,4 @@ runs:
     - name: Cleanup
       run: |
         rm artifact.tar.gz
-      shell: bash -leo pipefail {0}
+      shell: bash -euo pipefail {0}
