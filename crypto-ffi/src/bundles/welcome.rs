@@ -28,7 +28,7 @@ impl From<core_crypto::prelude::WelcomeBundle> for WelcomeBundle {
             crl_new_distribution_points,
         }: core_crypto::prelude::WelcomeBundle,
     ) -> Self {
-        let id = conversation_id_coerce_maybe_arc(id.as_ref());
+        let id = conversation_id_coerce_maybe_arc(id);
         let crl_new_distribution_points = crl_new_distribution_points.into();
         Self {
             id,

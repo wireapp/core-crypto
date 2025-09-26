@@ -64,7 +64,7 @@ impl core_crypto::mls::EpochObserver for ObserverShim {
     async fn epoch_changed(&self, conversation_id: InternalConversationId, epoch: u64) {
         if let Err(err) = self
             .0
-            .epoch_changed(conversation_id_coerce_maybe_arc(conversation_id.as_ref()), epoch)
+            .epoch_changed(conversation_id_coerce_maybe_arc(&conversation_id), epoch)
             .await
         {
             // we don't _care_ if an error is thrown by the notification function, per se,
@@ -164,7 +164,7 @@ impl EpochObserver {
 impl core_crypto::mls::EpochObserver for EpochObserver {
     async fn epoch_changed(&self, conversation_id: InternalConversationId, epoch: u64) {
         if let Err(err) = self
-            .epoch_changed(conversation_id_coerce_maybe_arc(conversation_id.as_ref()), epoch)
+            .epoch_changed(conversation_id_coerce_maybe_arc(&conversation_id), epoch)
             .await
         {
             // we don't _care_ if an error is thrown by the notification function, per se,

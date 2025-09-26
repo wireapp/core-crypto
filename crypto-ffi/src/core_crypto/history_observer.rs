@@ -75,7 +75,7 @@ impl core_crypto::mls::HistoryObserver for ObserverShim {
         };
         if let Err(err) = self
             .0
-            .history_client_created(conversation_id_coerce_maybe_arc(conversation_id.as_ref()), secret)
+            .history_client_created(conversation_id_coerce_maybe_arc(&conversation_id), secret)
             .await
         {
             // we don't _care_ if an error is thrown by the notification function, per se,
@@ -190,10 +190,7 @@ impl core_crypto::mls::HistoryObserver for HistoryObserver {
             return;
         };
         if let Err(err) = self
-            .history_client_created(
-                conversation_id_coerce_maybe_arc(conversation_id.as_ref()),
-                secret.into(),
-            )
+            .history_client_created(conversation_id_coerce_maybe_arc(&conversation_id), secret.into())
             .await
         {
             // we don't _care_ if an error is thrown by the notification function, per se,
