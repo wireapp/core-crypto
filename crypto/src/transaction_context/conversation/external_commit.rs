@@ -3,6 +3,7 @@
 use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
 use super::{Error, Result};
+use crate::mls::conversation::ConversationIdRef;
 use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::prelude::{MlsCommitBundle, WelcomeBundle};
 use crate::{
@@ -133,14 +134,14 @@ impl TransactionContext {
         };
 
         let welcome_bundle = WelcomeBundle {
-            id: new_group_id,
+            id: ConversationId::from(new_group_id),
             crl_new_distribution_points,
         };
 
         Ok((commit_bundle, welcome_bundle, pending_conversation))
     }
 
-    pub(crate) async fn pending_conversation_exists(&self, id: &ConversationId) -> Result<bool> {
+    pub(crate) async fn pending_conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
         match self.pending_conversation(id).await {
             Ok(_) => Ok(true),
             Err(Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
@@ -190,7 +191,7 @@ mod tests {
                 .keystore()
                 .await
                 .unwrap()
-                .mls_pending_groups_load(&id)
+                .mls_pending_groups_load(id.as_ref())
                 .await;
             assert!(matches!(
                 error.unwrap_err(),

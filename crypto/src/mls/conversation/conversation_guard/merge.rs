@@ -11,7 +11,6 @@
 //!     * 409 CONFLICT --> do nothing. [ConversationGuard::decrypt_message] will restore the proposals not committed
 //!     * 5xx --> retry
 
-use obfuscate::Obfuscated;
 use openmls::prelude::MlsGroupStateError;
 
 use super::{ConversationGuard, Result};
@@ -68,7 +67,7 @@ impl ConversationGuard {
         if conversation.group.pending_commit().is_some() {
             conversation.group.clear_pending_commit();
             conversation.persist_group_when_changed(&keystore, true).await?;
-            log::info!(group_id = Obfuscated::from(conversation.id()); "Cleared pending commit.");
+            log::info!(group_id = conversation.id(); "Cleared pending commit.");
             Ok(())
         } else {
             Err(Error::PendingCommitNotFound)

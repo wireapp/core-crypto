@@ -7,8 +7,8 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{ConversationWithMls, Error, MlsConversation, Result};
 use crate::MlsTransport;
+use crate::mls::conversation::ConversationIdRef;
 use crate::mls::credential::CredentialBundle;
-use crate::prelude::ConversationId;
 use crate::{
     KeystoreError, LeafError, RecursiveError, group_store::GroupStoreValue, prelude::MlsGroupInfoBundle,
     transaction_context::TransactionContext,
@@ -84,10 +84,10 @@ impl ConversationGuard {
         conversation.wipe_associated_entities(&provider).await?;
         provider
             .key_store()
-            .mls_group_delete(conversation.id())
+            .mls_group_delete(conversation.id().as_ref())
             .await
             .map_err(KeystoreError::wrap("deleting mls group"))?;
-        let _ = group_store.remove(conversation.id());
+        let _ = group_store.remove(conversation.id().as_ref());
         Ok(())
     }
 
@@ -109,12 +109,12 @@ impl ConversationGuard {
 
     /// Marks this conversation as child of another.
     /// Prerequisite: Must be a member of the parent group, and it must exist in the keystore
-    pub async fn mark_as_child_of(&mut self, parent_id: &ConversationId) -> Result<()> {
+    pub async fn mark_as_child_of(&mut self, parent_id: &ConversationIdRef) -> Result<()> {
         let backend = self.crypto_provider().await?;
         let keystore = &backend.keystore();
         let mut conversation = self.conversation_mut().await;
-        if keystore.mls_group_exists(parent_id).await {
-            conversation.parent_id = Some(parent_id.clone());
+        if keystore.mls_group_exists(parent_id.as_ref()).await {
+            conversation.parent_id = Some(parent_id.to_owned());
             conversation.persist_group_when_changed(keystore, true).await?;
             Ok(())
         } else {
@@ -156,10 +156,10 @@ pub mod test_utils {
                 .unwrap()
                 .mls_groups_restore()
                 .await
-                .map(|mut groups| groups.remove(id.as_slice()).unwrap())
+                .map(|mut groups| groups.remove(id.as_ref()).unwrap())
                 .unwrap();
-            let group = MlsConversation::from_serialized_state(group, parent_id).unwrap();
-            context.mls_groups().await.unwrap().insert(id.clone(), group);
+            let group = MlsConversation::from_serialized_state(group, parent_id.map(Into::into)).unwrap();
+            context.mls_groups().await.unwrap().insert(id.clone().into(), group);
         }
     }
 }

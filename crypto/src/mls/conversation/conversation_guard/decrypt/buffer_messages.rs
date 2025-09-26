@@ -9,7 +9,6 @@ use crate::mls::conversation::{ConversationGuard, ConversationWithMls, Error};
 use crate::prelude::MlsBufferedConversationDecryptMessage;
 use core_crypto_keystore::entities::MlsPendingMessage;
 use log::{error, info};
-use obfuscate::Obfuscated;
 use openmls::framing::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;
 
@@ -27,7 +26,7 @@ impl ConversationGuard {
         let keystore = backend.keystore();
         let conversation = self.conversation().await;
         let pending_msg = MlsPendingMessage {
-            foreign_id: conversation.id().clone(),
+            foreign_id: conversation.id().as_ref().to_owned(),
             message: message.as_ref().to_vec(),
         };
         keystore
@@ -41,7 +40,7 @@ impl ConversationGuard {
         let provider = self.crypto_provider().await?;
         let keystore = provider.keystore();
         keystore
-            .remove_pending_messages_by_conversation_id(self.conversation().await.id())
+            .remove_pending_messages_by_conversation_id(self.conversation().await.id().as_ref())
             .await
             .map_err(KeystoreError::wrap("removing pending mls messages"))
             .map_err(Into::into)
@@ -80,7 +79,7 @@ impl ConversationGuard {
             }
 
             let mut pending_messages = keystore
-                .find_pending_messages_by_conversation_id(conversation_id)
+                .find_pending_messages_by_conversation_id(conversation_id.as_ref())
                 .await
                 .map_err(KeystoreError::wrap("finding all mls pending messages"))?
                 .into_iter()
@@ -100,16 +99,14 @@ impl ConversationGuard {
             // luckily for us that's the exact same order as the [ContentType] enum
             pending_messages.sort_by(|(a, _), (b, _)| a.cmp(b));
 
-            info!(group_id = Obfuscated::from(conversation_id); "Attempting to restore {} buffered messages", pending_messages.len());
+            info!(group_id = conversation_id; "Attempting to restore {} buffered messages", pending_messages.len());
 
             // Need to drop conversation to allow borrowing `self` again.
             drop(conversation);
 
             let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
             for (_, m) in pending_messages {
-                let decrypted = self
-                    .decrypt_message_inner(m, RecursionPolicy::None)
-                    .await?;
+                let decrypted = self.decrypt_message_inner(m, RecursionPolicy::None).await?;
                 decrypted_messages.push(decrypted.into());
             }
 
@@ -117,7 +114,7 @@ impl ConversationGuard {
 
             Ok(decrypted_messages)
         }
-            .await;
+        .await;
         if let Err(e) = &result {
             error!(error:% = e; "Error restoring pending messages");
         }

@@ -37,8 +37,11 @@ impl GroupStoreEntity for MlsConversation {
             return Ok(None);
         };
 
-        let conversation = Self::from_serialized_state(store_value.state.clone(), store_value.parent_id.clone())
-            .map_err(RecursiveError::mls_conversation("deserializing mls conversation"))?;
+        let conversation = Self::from_serialized_state(
+            store_value.state.clone(),
+            store_value.parent_id.as_ref().map(|id| id.clone().into()),
+        )
+        .map_err(RecursiveError::mls_conversation("deserializing mls conversation"))?;
         // If the conversation is not active, pretend it doesn't exist
         Ok(conversation.group.is_active().then_some(conversation))
     }
