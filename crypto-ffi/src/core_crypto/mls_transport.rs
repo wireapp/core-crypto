@@ -170,7 +170,6 @@ impl TryFrom<u8> for MlsTransportResponseVariant {
 /// MLS transport may or may not succeeed; this response indicates to CC the outcome of the transport attempt.
 #[cfg(target_family = "wasm")]
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
 #[wasm_bindgen(inspectable)]
 pub struct MlsTransportResponse {
     /// Outcome of the MLS transport attempt

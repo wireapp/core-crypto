@@ -1,4 +1,12 @@
+#[cfg(target_family = "wasm")]
+use js_sys::Object;
+#[cfg(target_family = "wasm")]
+use wasm_bindgen::JsValue;
+
 use core_crypto::InnermostErrorMessage as _;
+
+#[cfg(target_family = "wasm")]
+use super::wasm::{JsErrorContext, JsValueMutationExt as _};
 
 /// MLS produces these kinds of error
 #[derive(Debug, thiserror::Error)]
@@ -36,7 +44,7 @@ pub enum MlsError {
     StaleProposal,
     #[error("The received commit is deemed stale and is from an older epoch.")]
     StaleCommit,
-    /// This happens when the DS cannot flag KeyPackages as claimed or not. It this scenario, a client
+    /// This happens when the DS cannot flag KeyPackages as claimed or not. In this scenario, a client
     /// requests their old KeyPackages to be deleted but one has already been claimed by another client to create a Welcome.
     /// In that case the only solution is that the client receiving such a Welcome tries to join the group
     /// with an External Commit instead
@@ -56,5 +64,42 @@ impl From<core_crypto::MlsError> for MlsError {
         Self::Other {
             msg: e.innermost_error_message(),
         }
+    }
+}
+
+#[cfg(target_family = "wasm")]
+impl JsErrorContext for MlsError {
+    fn get_context(&self) -> JsValue {
+        let context = Object::new();
+        let inner_context = Object::new();
+        match &self {
+            e @ MlsError::ConversationAlreadyExists { conversation_id } => {
+                context.set_field("type", e.as_ref());
+                inner_context.set_field(
+                    "conversationId",
+                    serde_wasm_bindgen::to_value(conversation_id).expect("constructing json array"),
+                );
+            }
+            e @ (MlsError::DuplicateMessage
+            | MlsError::BufferedFutureMessage
+            | MlsError::WrongEpoch
+            | MlsError::BufferedCommit
+            | MlsError::MessageEpochTooOld
+            | MlsError::SelfCommitIgnored
+            | MlsError::UnmergedPendingGroup
+            | MlsError::StaleProposal
+            | MlsError::StaleCommit
+            | MlsError::OrphanWelcome) => context.set_field("type", e.as_ref()),
+            e @ MlsError::MessageRejected { reason } => {
+                context.set_field("type", e.as_ref());
+                inner_context.set_field("reason", reason);
+            }
+            e @ MlsError::Other { msg } => {
+                context.set_field("type", e.as_ref());
+                inner_context.set_field("msg", msg);
+            }
+        }
+        context.set_field("context", inner_context);
+        context.into()
     }
 }

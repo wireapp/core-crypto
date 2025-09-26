@@ -1,7 +1,11 @@
 import { browser, expect } from "@wdio/globals";
 import { ccInit, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { CoreCryptoError, CoreCryptoContext } from "../../src/CoreCrypto";
+import {
+    CoreCryptoError,
+    CoreCryptoContext,
+    ErrorType,
+} from "../../src/CoreCrypto";
 
 beforeEach(async () => {
     await setup();
@@ -54,7 +58,7 @@ describe("transaction context", () => {
                     1
                 );
             } catch (err) {
-                const error = err as CoreCryptoError;
+                const error = err as CoreCryptoError<ErrorType>;
                 return { name: error.name, message: error.message };
             }
             return null;
@@ -111,7 +115,7 @@ describe("transaction context", () => {
                     );
                 });
             } catch (err) {
-                const error = err as CoreCryptoError;
+                const error = err as CoreCryptoError<ErrorType>;
                 return { name: error.name, message: error.message };
             }
             throw new Error("Expected 'Conversation already exists' error");

@@ -3,9 +3,10 @@ import { ccInit, createConversation, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import {
     ConversationId,
-    CoreCryptoError,
+    type CommitBundle,
     type CoreCryptoRichError,
 } from "../../src/CoreCrypto";
+import { ErrorType } from "../../src/CoreCryptoError";
 
 beforeEach(async () => {
     await setup();
@@ -21,30 +22,38 @@ describe("core crypto errors", () => {
         await ccInit(alice);
         const result = await browser.execute(async () => {
             const CoreCryptoError = window.ccModule.CoreCryptoError;
-            const richErrorJSON: CoreCryptoRichError = {
+            const ErrorType = window.ccModule.ErrorType;
+            const ProteusErrorType = window.ccModule.ProteusErrorType;
+            const isProteusError = window.ccModule.isProteusError;
+            const richErrorJSON: CoreCryptoRichError<ErrorType.Proteus> = {
                 error_name: "ErrorTest",
                 message: "Hello world",
                 error_stack: ["test"],
-                proteus_error_code: 22,
+                type: ErrorType.Proteus,
+                context: {
+                    type: ProteusErrorType.SessionNotFound,
+                    context: {
+                        errorCode: 102,
+                    },
+                },
             };
 
             const testStr = JSON.stringify(richErrorJSON);
 
             const e = new Error(testStr);
-            const ccErrMaybe = CoreCryptoError.fromStdError(e);
-            const isCorrectInstance = ccErrMaybe instanceof CoreCryptoError;
-            const ccErr = ccErrMaybe as CoreCryptoError;
+            const ccErr = CoreCryptoError.fromStdError(e);
             const ccErr2 = CoreCryptoError.build(e.message);
 
             return {
                 errorNamesAreIdentical:
                     ccErr.name === ccErr2.name && ccErr.name === "ErrorTest",
-                proteusErrorCodeIsCorrect: ccErr.proteusErrorCode === 22,
-                isCorrectInstance,
+                proteusErrorCodeIsCorrect:
+                    isProteusError(ccErr, ProteusErrorType.SessionNotFound) &&
+                    isProteusError(ccErr2, ProteusErrorType.SessionNotFound) &&
+                    ccErr.context.context.errorCode === 102,
             };
         });
         expect(result.errorNamesAreIdentical).toBe(true);
-        expect(result.isCorrectInstance).toBe(true);
         expect(result.proteusErrorCodeIsCorrect).toBe(true);
     });
 
@@ -60,6 +69,8 @@ describe("core crypto errors", () => {
                 const conversationId = new window.ccModule.ConversationId(
                     new TextEncoder().encode(convId)
                 );
+                const MlsErrorType = window.ccModule.MlsErrorType;
+                const isMlsError = window.ccModule.isMlsError;
                 const CoreCryptoError = window.ccModule.CoreCryptoError;
 
                 try {
@@ -73,18 +84,38 @@ describe("core crypto errors", () => {
                         errorWasThrown: false,
                     };
                 } catch (err) {
-                    const ccErr = CoreCryptoError.fromStdError(err as Error);
-
-                    const errorSerialized = JSON.stringify(err);
-                    const standardError = new Error(errorSerialized);
-                    const errorDeserialized =
-                        CoreCryptoError.fromStdError(standardError);
-                    return {
-                        errorWasThrown: true,
-                        isCorrectInstance: ccErr instanceof CoreCryptoError,
-                        errorTypeSurvivesSerialization:
-                            errorDeserialized instanceof CoreCryptoError,
-                    };
+                    if (
+                        isMlsError(err, MlsErrorType.ConversationAlreadyExists)
+                    ) {
+                        const conversationIdFromError =
+                            err.context.context.conversationId;
+                        const errorSerialized = JSON.stringify(err);
+                        const standardError = new Error(errorSerialized);
+                        const errorDeserialized =
+                            CoreCryptoError.fromStdError(standardError);
+                        return {
+                            errorWasThrown: true,
+                            isCorrectInstance: true,
+                            errorTypeSurvivesSerialization: isMlsError(
+                                errorDeserialized,
+                                MlsErrorType.ConversationAlreadyExists
+                            ),
+                            stackExsists: errorDeserialized.stack !== undefined,
+                            errorConvIdMatches:
+                                JSON.stringify(conversationIdFromError) ===
+                                JSON.stringify(
+                                    Array.from(new TextEncoder().encode(convId))
+                                ),
+                        };
+                    } else {
+                        return {
+                            errorWasThrown: true,
+                            isCorrectInstance: false,
+                            errorTypeSurvivesSerialization: false,
+                            stackExsists: false,
+                            errorConvIdMatches: false,
+                        };
+                    }
                 }
             },
             alice,
@@ -94,6 +125,63 @@ describe("core crypto errors", () => {
         expect(result.errorWasThrown).toBe(true);
         expect(result.isCorrectInstance).toBe(true);
         expect(result.errorTypeSurvivesSerialization).toBe(true);
+        expect(result.stackExsists).toBe(true);
+        expect(result.errorConvIdMatches).toBe(true);
+    });
+
+    it("should be correct when message rejected", async () => {
+        const alice = crypto.randomUUID();
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
+        await createConversation(alice, convId);
+
+        const result = await browser.execute(
+            async (clientName, convId) => {
+                const cc = window.ensureCcDefined(clientName);
+
+                window.deliveryService = {
+                    ...window.deliveryService,
+                    ...{
+                        async sendCommitBundle(_: CommitBundle) {
+                            return { abort: { reason: "just testing" } };
+                        },
+                    },
+                };
+
+                cc.provideTransport(window.deliveryService);
+
+                const conversationId = new window.ccModule.ConversationId(
+                    new TextEncoder().encode(convId)
+                );
+                const MlsErrorType = window.ccModule.MlsErrorType;
+                const isMlsError = window.ccModule.isMlsError;
+
+                try {
+                    await cc.transaction(async (cx) => {
+                        await cx.updateKeyingMaterial(conversationId);
+                    });
+                    return {
+                        errorWasThrown: false,
+                    };
+                } catch (err) {
+                    return isMlsError(err, MlsErrorType.MessageRejected)
+                        ? {
+                              errorWasThrown: true,
+                              errorTypeAndReasonMatch:
+                                  "just testing" === err.context.context.reason,
+                          }
+                        : {
+                              errorWasThrown: true,
+                              errorTypeAndReasonMatch: false,
+                          };
+                }
+            },
+            alice,
+            convId
+        );
+
+        expect(result.errorWasThrown).toBe(true);
+        expect(result.errorTypeAndReasonMatch).toBe(true);
     });
 });
 
