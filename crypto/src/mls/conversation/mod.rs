@@ -22,7 +22,7 @@ use openmls::{
 };
 use openmls_traits::OpenMlsCryptoProvider;
 use openmls_traits::types::SignatureScheme;
-use std::{collections::HashMap, sync::Arc};
+use std::{borrow::Borrow, collections::HashMap, sync::Arc};
 use std::{collections::HashSet, ops::Deref};
 
 use crate::{
@@ -273,6 +273,47 @@ pub struct ConversationId(Vec<u8>);
 impl From<&str> for ConversationId {
     fn from(value: &str) -> Self {
         value.as_bytes().into()
+    }
+}
+
+/// Reference to a ConversationId.
+///
+/// This type is `!Sized` and is only ever seen as a reference, like `str` or `[u8]`.
+//
+// pattern from https://stackoverflow.com/a/64990850
+#[repr(transparent)]
+pub struct ConversationIdRef([u8]);
+
+impl ConversationIdRef {
+    fn new<Bytes>(bytes: &Bytes) -> &ConversationIdRef
+    where
+        Bytes: AsRef<[u8]> + ?Sized,
+    {
+        // safety: because of `repr(transparent)` we know that `ConversationIdRef` has a memory layout
+        // identical to `[u8]`, so we can perform this cast
+        unsafe { &*(bytes.as_ref() as *const [u8] as *const ConversationIdRef) }
+    }
+}
+
+impl Borrow<ConversationIdRef> for ConversationId {
+    fn borrow(&self) -> &ConversationIdRef {
+        ConversationIdRef::new(&self.0)
+    }
+}
+
+impl Deref for ConversationId {
+    type Target = ConversationIdRef;
+
+    fn deref(&self) -> &Self::Target {
+        ConversationIdRef::new(&self.0)
+    }
+}
+
+impl ToOwned for ConversationIdRef {
+    type Owned = ConversationId;
+
+    fn to_owned(&self) -> Self::Owned {
+        ConversationId(self.0.to_owned())
     }
 }
 
