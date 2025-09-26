@@ -74,7 +74,7 @@ pub enum Error {
     ProposalVariantCannotBeRenewed,
     #[error("caller error: {0}")]
     CallerError(&'static str),
-    /// This happens when the DS cannot flag KeyPackages as claimed or not. It this scenario, a client
+    /// This happens when the DS cannot flag KeyPackages as claimed or not. In this scenario, a client
     /// requests their old KeyPackages to be deleted but one has already been claimed by another client to create a Welcome.
     /// In that case the only solution is that the client receiving such a Welcome tries to join the group
     /// with an External Commit instead
