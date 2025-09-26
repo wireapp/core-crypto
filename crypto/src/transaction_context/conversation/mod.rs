@@ -82,7 +82,7 @@ impl TransactionContext {
         .await
         .map_err(RecursiveError::mls_conversation("creating conversation"))?;
 
-        self.mls_groups().await?.insert(id.into(), conversation);
+        self.mls_groups().await?.insert(id.as_ref().to_owned(), conversation);
 
         Ok(())
     }

@@ -130,7 +130,7 @@ impl PendingConversation {
         let keystore = self.keystore().await?;
 
         let pending_msg = MlsPendingMessage {
-            foreign_id: self.id().into(),
+            foreign_id: self.id().as_ref().to_owned(),
             message: message.as_ref().to_vec(),
         };
         keystore
@@ -279,7 +279,7 @@ impl PendingConversation {
             .mls_groups()
             .await
             .map_err(RecursiveError::transaction("getting mls groups"))?
-            .insert(id.into(), conversation);
+            .insert(id.as_ref().to_owned(), conversation);
 
         // This is the now merged conversation
         let mut conversation = context
