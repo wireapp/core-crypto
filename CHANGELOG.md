@@ -2,6 +2,51 @@
 
 ## Unreleased
 
+### Features
+
+- Web: structural errors
+
+  #### Example Usage
+
+  Extract the abort reason given via an `MlsTransportResponse`
+
+  ```typescript
+  try {
+      // send a commit that is rejected by the DS
+  } catch (err) {
+    if(isMlsMessageRejectedError(err)) {
+      const rejectReason = err.context.context.reason;
+      // other things you want to do with this error...
+    } else {
+        // log error
+    }
+  }
+  ```
+
+  Extract the proteus error code
+
+  ```typescript
+  try {
+      // look for a proteus session that doesn't exist
+  } catch (err) {
+    if(isProteusSessionNotFoundError(err)) {
+      const errorCode = err.context.context.errorCode;
+      // other things you want to do with this error...
+    } else {
+        // log error
+    }
+  }
+  ```
+
+### Bug Fixes
+
+- Web: fixed the abort reason of an `MlsTransportResponse` not being forwarded to rust.
+
+### Breaking Changes
+
+- `proteusErrorCode` field was removed from the root error type, you can get it from the nested context now (see above).
+  Affected platforms: web
+
 ## v9.0.1 - 2025-09-18
 
 ### Breaking Changes
