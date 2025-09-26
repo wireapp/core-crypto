@@ -144,7 +144,7 @@ const ALLOWED_CONCURRENT_TRANSACTIONS_COUNT: usize = 1;
 pub trait FetchFromDatabase: Send + Sync {
     async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
-        id: &[u8],
+        id: impl AsRef<[u8]> + Send,
     ) -> CryptoKeystoreResult<Option<E>>;
 
     async fn find_unique<U: UniqueEntity<ConnectionType = KeystoreDatabaseConnection>>(
@@ -341,12 +341,12 @@ impl Database {
 impl FetchFromDatabase for Database {
     async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
-        id: &[u8],
+        id: impl AsRef<[u8]> + Send,
     ) -> CryptoKeystoreResult<Option<E>> {
         // If a transaction is in progress...
         if let Some(transaction) = self.transaction.lock().await.as_ref()
             //... and it has information about this entity, ...
-            && let Some(cached_record) = transaction.find::<E>(id).await?
+            && let Some(cached_record) = transaction.find::<E>(id.as_ref()).await?
         {
             // ... return that result
             return Ok(cached_record);
@@ -354,7 +354,7 @@ impl FetchFromDatabase for Database {
 
         // Otherwise get it from the database
         let mut conn = self.conn.lock().await;
-        E::find_one(&mut conn, &id.into()).await
+        E::find_one(&mut conn, &id.as_ref().into()).await
     }
 
     async fn find_unique<U: UniqueEntity>(&self) -> CryptoKeystoreResult<U> {

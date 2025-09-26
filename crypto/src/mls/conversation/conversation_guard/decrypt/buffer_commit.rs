@@ -38,7 +38,7 @@ impl ConversationGuard {
         self.crypto_provider()
             .await?
             .keystore()
-            .find::<MlsBufferedCommit>(conversation.id().as_ref())
+            .find::<MlsBufferedCommit>(conversation.id())
             .await
             .map(|option| option.map(MlsBufferedCommit::into_commit_data))
             .map_err(KeystoreError::wrap("attempting to retrieve buffered commit"))
