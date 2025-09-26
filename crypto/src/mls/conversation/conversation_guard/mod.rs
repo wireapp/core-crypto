@@ -7,8 +7,8 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{ConversationWithMls, Error, MlsConversation, Result};
 use crate::MlsTransport;
+use crate::mls::conversation::ConversationIdRef;
 use crate::mls::credential::CredentialBundle;
-use crate::prelude::ConversationId;
 use crate::{
     KeystoreError, LeafError, RecursiveError, group_store::GroupStoreValue, prelude::MlsGroupInfoBundle,
     transaction_context::TransactionContext,
@@ -109,12 +109,12 @@ impl ConversationGuard {
 
     /// Marks this conversation as child of another.
     /// Prerequisite: Must be a member of the parent group, and it must exist in the keystore
-    pub async fn mark_as_child_of(&mut self, parent_id: &ConversationId) -> Result<()> {
+    pub async fn mark_as_child_of(&mut self, parent_id: &ConversationIdRef) -> Result<()> {
         let backend = self.crypto_provider().await?;
         let keystore = &backend.keystore();
         let mut conversation = self.conversation_mut().await;
         if keystore.mls_group_exists(parent_id.as_ref()).await {
-            conversation.parent_id = Some(parent_id.clone());
+            conversation.parent_id = Some(parent_id.to_owned());
             conversation.persist_group_when_changed(keystore, true).await?;
             Ok(())
         } else {

@@ -3,6 +3,7 @@
 use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
 use super::{Error, Result};
+use crate::mls::conversation::ConversationIdRef;
 use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::prelude::{MlsCommitBundle, WelcomeBundle};
 use crate::{
@@ -140,7 +141,7 @@ impl TransactionContext {
         Ok((commit_bundle, welcome_bundle, pending_conversation))
     }
 
-    pub(crate) async fn pending_conversation_exists(&self, id: &ConversationId) -> Result<bool> {
+    pub(crate) async fn pending_conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
         match self.pending_conversation(id).await {
             Ok(_) => Ok(true),
             Err(Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
