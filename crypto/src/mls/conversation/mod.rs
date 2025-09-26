@@ -25,8 +25,6 @@ use openmls_traits::types::SignatureScheme;
 use std::{collections::HashMap, sync::Arc};
 use std::{collections::HashSet, ops::Deref};
 
-use obfuscate::Obfuscate;
-
 use crate::{
     KeystoreError, LeafError, MlsError, RecursiveError,
     mls::Session,
@@ -264,31 +262,13 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
 impl<'a, T: ConversationWithMls<'a>> Conversation<'a> for T {}
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
-#[derive(core_crypto_macros::Debug)]
+#[derive(core_crypto_macros::Debug, Clone)]
 #[sensitive]
 #[derive(derive_more::AsRef, derive_more::From, derive_more::Into)]
 #[as_ref([u8])]
 #[from(&[u8], Vec<u8>)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
 pub struct ConversationId(Vec<u8>);
-
-impl Obfuscate for ConversationId {
-    fn obfuscate(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "ConversationId({})", hex::encode(obfuscate::compute_hash(&self.0)))
-    }
-}
-
-impl Clone for ConversationId {
-    fn clone(self: &ConversationId) -> Self {
-        ConversationId(self.0.clone())
-    }
-}
-
-impl From<&ConversationId> for Vec<u8> {
-    fn from(value: &ConversationId) -> Self {
-        value.0.clone()
-    }
-}
 
 impl From<&str> for ConversationId {
     fn from(value: &str) -> Self {
