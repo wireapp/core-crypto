@@ -71,15 +71,15 @@ macro_rules! bytes_wrapper {
             #[cfg(target_family = "wasm")]
             #[allow(dead_code)]
             #[inline]
-            pub(crate) fn [<$id:snake _coerce_maybe_arc>]<'a>(value: impl Into<std::borrow::Cow<'a, [u8]>>) -> [<$id MaybeArc>] {
-                $id(value.into().into_owned())
+            pub(crate) fn [<$id:snake _coerce_maybe_arc>](value: impl AsRef<[u8]>) -> [<$id MaybeArc>] {
+                $id(value.as_ref().to_vec())
             }
 
             #[cfg(not(target_family = "wasm"))]
             #[allow(dead_code)]
             #[inline]
-            pub(crate) fn [<$id:snake _coerce_maybe_arc>]<'a>(value: impl Into<std::borrow::Cow<'a, [u8]>>) -> [<$id MaybeArc>] {
-                std::sync::Arc::new($id(value.into().into_owned()))
+            pub(crate) fn [<$id:snake _coerce_maybe_arc>](value: impl AsRef<[u8]>) -> [<$id MaybeArc>] {
+                std::sync::Arc::new($id(value.as_ref().to_vec()))
             }
         }
     };
