@@ -153,7 +153,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
         .validate()?;
     let master_client = Session::try_new(configuration).await?;
 
-    let conversation_id = MLS_CONVERSATION_ID.into();
+    let conversation_id: ConversationId = MLS_CONVERSATION_ID.into();
     let config = MlsConversationConfiguration {
         ciphersuite: CIPHERSUITE_IN_USE.into(),
         ..Default::default()

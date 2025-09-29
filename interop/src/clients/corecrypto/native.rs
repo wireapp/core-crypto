@@ -130,7 +130,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         let transaction = self.cc.new_transaction().await?;
         let conversation_id = ConversationId::from(conversation_id);
         transaction
-            .conversation(&conversation_id.into())
+            .conversation(&conversation_id)
             .await?
             .remove_members(&[client_id.to_owned().into()])
             .await?;
@@ -154,7 +154,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         let transaction = self.cc.new_transaction().await?;
         let conversation_id = ConversationId::from(conversation_id);
         let result = transaction
-            .conversation(&conversation_id.into())
+            .conversation(&conversation_id)
             .await?
             .encrypt_message(message)
             .await?;
@@ -166,7 +166,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         let transaction = self.cc.new_transaction().await?;
         let conversation_id = ConversationId::from(conversation_id);
         let result = transaction
-            .conversation(&conversation_id.into())
+            .conversation(&conversation_id)
             .await?
             .decrypt_message(message)
             .await?
