@@ -11,7 +11,7 @@ runs:
     - name: ffi library extension
       run: |
         os="$(uname -s)"
-        echo "ARTIFACT_NAME=uniffi-${os}-${uniffi_version}" >> $GITHUB_ENV
+        echo "ARTIFACT_NAME=uniffi-${os}" >> $GITHUB_ENV
         if [ "$os" = "Linux" ]; then
           library_extension="so"
         elif [ "$os" = "Darwin" ]; then
