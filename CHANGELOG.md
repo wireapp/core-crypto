@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## v9.1.0 - 2025-09-29
+
+Note: even though this is a minor version bump, it contains a breaking change. See below for more information.
+
+### Highlights
+
+- added typescript structured errors
+- fix the message rejected reason not being propagated on web
+- improvements to logs when epochs advance
+
 ### Features
 
 - Web: structural errors
@@ -46,6 +56,31 @@
 
 - `proteusErrorCode` field was removed from the root error type, you can get it from the nested context now (see above).
   Affected platforms: web
+
+______________________________________________________________________
+
+### Features
+
+- \[**breaking**\] expose error structure in ts wrapper ([ff9dc8d](https://github.com/wireapp/core-crypto/commit/ff9dc8d636994b89923c3b49400e5a260b007d02))
+- \[**breaking**\] structural wasm errors ([eb2760b](https://github.com/wireapp/core-crypto/commit/eb2760b425e84752568ac0ef57b8d31b98aea635))
+- extend the epoch advanced log with context on which members were added/removed ([d039879](https://github.com/wireapp/core-crypto/commit/d0398794218a0935d6a23bf7153b8d634f5b9f8a))
+- add new `Database` type [WPB-19568] ([431dc15](https://github.com/wireapp/core-crypto/commit/431dc15bed76878bba4b3bbebcd35ed495899f50))
+
+### Bug Fixes
+
+- `MlsTransportResponse` abort reason wasn't propagated ([90ab72f](https://github.com/wireapp/core-crypto/commit/90ab72f3b3d959bf8006bae9bf81c1789409e140))
+
+### Documentation
+
+- update changelog for structured ts errors ([8b58236](https://github.com/wireapp/core-crypto/commit/8b58236d6c2ee1e292f4323e6e7a3d0d23e9069c))
+- README: fix instructions for local Maven publishing ([a045972](https://github.com/wireapp/core-crypto/commit/a045972857f268cbc648af19c11ab74dc34bd4ae))
+
+### Testing
+
+- test structured errors ([65aeeb4](https://github.com/wireapp/core-crypto/commit/65aeeb432825577393c02d5c432863e9feca50c4))
+- add a typescript test verifying the added/removed context when logging epoch advances ([b4177db](https://github.com/wireapp/core-crypto/commit/b4177db719d145811f74def1a9923caacbe5d523))
+- add additional utility functions to the js test suite ([35f51d7](https://github.com/wireapp/core-crypto/commit/35f51d7c680d073098bb3a1f62c787e3a0f8d465))
+- test initialization of `Database` ([9fb6c9a](https://github.com/wireapp/core-crypto/commit/9fb6c9a0d056adced9bc52f6295142d94e1d7927))
 
 ## v9.0.1 - 2025-09-18
 
