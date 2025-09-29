@@ -459,7 +459,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -625,7 +625,7 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce9eaafece93d07ba62941de901e54d8df03800b7d775000d0d8cd5f876a592d"
 dependencies = [
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -687,7 +687,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fa961b519f0b462e3a3b4a34b64d119eeaca1d59af726fe450bbba07a9fc0a1"
 dependencies = [
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -819,7 +819,7 @@ dependencies = [
  "smol-macros",
  "strum",
  "tempfile",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "time",
  "tls_codec",
  "typed-builder",
@@ -864,7 +864,7 @@ dependencies = [
  "smol-macros",
  "strum",
  "testing_logger",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "tls_codec",
  "uniffi",
  "wasm-bindgen",
@@ -919,7 +919,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "smol-macros",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -2305,7 +2305,7 @@ dependencies = [
  "sha2",
  "spinoff",
  "tempfile",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "tls_codec",
  "tokio",
  "tree-sitter",
@@ -2714,7 +2714,7 @@ dependencies = [
  "signature",
  "smol-macros",
  "spki",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "tls_codec",
  "typed-builder",
  "uuid",
@@ -2749,7 +2749,7 @@ dependencies = [
  "safer-ffi-gen",
  "serde",
  "spin 0.10.0",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "wasm-bindgen",
  "zeroize",
 ]
@@ -2762,7 +2762,7 @@ checksum = "45bd834f164dc06c1fed805540ae307a460b7ed7c2769a35a376f1de577a0dc1"
 dependencies = [
  "itertools 0.14.0",
  "mls-rs-codec-derive",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "wasm-bindgen",
 ]
 
@@ -2790,7 +2790,7 @@ dependencies = [
  "mls-rs-codec",
  "safer-ffi-gen",
  "serde",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "wasm-bindgen",
  "zeroize",
 ]
@@ -2804,7 +2804,7 @@ dependencies = [
  "async-trait",
  "maybe-async",
  "mls-rs-core",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "wasm-bindgen",
 ]
 
@@ -3782,7 +3782,7 @@ dependencies = [
  "serde",
  "serde_json",
  "signature",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "time",
  "url",
  "web-time",
@@ -3810,7 +3810,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "time",
  "url",
  "uuid",
@@ -3827,7 +3827,7 @@ dependencies = [
  "der",
  "flagset",
  "hex",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "web-time",
  "x509-cert",
 ]
@@ -4545,11 +4545,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.16"
+version = "2.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3467d614147380f2e4e374161426ff399c91084acd2363eaf549172b3d5e60c0"
+checksum = "f63587ca0f12b72a0600bcba1d40081f830876000bb46dd2337a3051618f4fc8"
 dependencies = [
- "thiserror-impl 2.0.16",
+ "thiserror-impl 2.0.17",
 ]
 
 [[package]]
@@ -4565,9 +4565,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.16"
+version = "2.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c5e1be1c48b9172ee610da68fd9cd2770e7a4056cb3fc98710ee6906f0c7960"
+checksum = "3ff15c8ecd7de3849db632e14d18d2571fa09dfc5ed93479bc4485c7a517c913"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5631,7 +5631,7 @@ dependencies = [
  "rusty-jwt-tools",
  "serde",
  "serde_json",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "url",
  "uuid",
  "x509-cert",
