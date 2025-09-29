@@ -18,6 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # This is only needed because of our composite actions calling gmake on ios
+      # to support our local runners without bash configs.
+      - name: Install gmake
+        run: brew install make
+
       - name: download swift bindings
         uses: ./.github/actions/make/bindings-swift
         with:
