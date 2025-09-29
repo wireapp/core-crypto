@@ -22,7 +22,11 @@ use openmls::{
 };
 use openmls_traits::OpenMlsCryptoProvider;
 use openmls_traits::types::SignatureScheme;
-use std::{borrow::Borrow, collections::HashMap, sync::Arc};
+use std::{
+    borrow::{Borrow, Cow},
+    collections::HashMap,
+    sync::Arc,
+};
 use std::{collections::HashSet, ops::Deref};
 
 use crate::{
@@ -274,6 +278,18 @@ impl From<&str> for ConversationId {
     }
 }
 
+impl From<ConversationId> for Cow<'_, [u8]> {
+    fn from(value: ConversationId) -> Self {
+        Cow::Owned(value.0)
+    }
+}
+
+impl<'a> From<&'a ConversationId> for Cow<'a, [u8]> {
+    fn from(value: &'a ConversationId) -> Self {
+        Cow::Borrowed(value.as_ref())
+    }
+}
+
 /// Reference to a ConversationId.
 ///
 /// This type is `!Sized` and is only ever seen as a reference, like `str` or `[u8]`.
@@ -320,6 +336,12 @@ impl ToOwned for ConversationIdRef {
 impl AsRef<[u8]> for ConversationIdRef {
     fn as_ref(&self) -> &[u8] {
         &self.0
+    }
+}
+
+impl<'a> From<&'a ConversationIdRef> for Cow<'a, [u8]> {
+    fn from(value: &'a ConversationIdRef) -> Self {
+        Cow::Borrowed(value.as_ref())
     }
 }
 
