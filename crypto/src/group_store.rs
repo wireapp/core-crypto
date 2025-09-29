@@ -42,10 +42,7 @@ impl GroupStoreEntity for MlsConversation {
 
         let conversation = Self::from_serialized_state(
             store_value.state.clone(),
-            store_value
-                .parent_id
-                .as_ref()
-                .map(|id| ConversationId::from(id.as_ref())),
+            store_value.parent_id.as_deref().map(ConversationId::from),
         )
         .map_err(RecursiveError::mls_conversation("deserializing mls conversation"))?;
         // If the conversation is not active, pretend it doesn't exist
