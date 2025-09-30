@@ -67,7 +67,7 @@ impl GroupStoreEntity for ProteusConversationSession {
     type IdentityType = Arc<proteus_wasm::keys::IdentityKeyPair>;
 
     async fn fetch_from_id(
-        id: &[u8],
+        id: impl AsRef<[u8]> + Send,
         identity: Option<Self::IdentityType>,
         keystore: &impl FetchFromDatabase,
     ) -> crate::Result<Option<Self>> {
@@ -309,7 +309,8 @@ impl ProteusCentral {
             session: proteus_session,
         };
 
-        self.proteus_sessions.insert(session_id.into(), proteus_conversation);
+        self.proteus_sessions
+            .insert(session_id.as_bytes(), proteus_conversation);
 
         Ok(self.proteus_sessions.get(session_id.as_bytes()).unwrap().clone())
     }
@@ -331,7 +332,8 @@ impl ProteusCentral {
             session,
         };
 
-        self.proteus_sessions.insert(session_id.into(), proteus_conversation);
+        self.proteus_sessions
+            .insert(session_id.as_bytes(), proteus_conversation);
 
         Ok((
             self.proteus_sessions.get(session_id.as_bytes()).unwrap().clone(),

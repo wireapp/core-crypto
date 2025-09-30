@@ -13,7 +13,7 @@ pub(crate) trait GroupStoreEntity: std::fmt::Debug {
     type IdentityType;
 
     async fn fetch_from_id(
-        id: &[u8],
+        id: impl AsRef<[u8]> + Send,
         identity: Option<Self::IdentityType>,
         keystore: &impl FetchFromDatabase,
     ) -> Result<Option<Self>>
@@ -28,7 +28,7 @@ impl GroupStoreEntity for MlsConversation {
     type IdentityType = ();
 
     async fn fetch_from_id(
-        id: &[u8],
+        id: impl AsRef<[u8]> + Send,
         _: Option<Self::IdentityType>,
         keystore: &impl FetchFromDatabase,
     ) -> crate::Result<Option<Self>> {
@@ -121,7 +121,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
 
     pub(crate) async fn get_fetch(
         &mut self,
-        k: &[u8],
+        k: impl AsRef<[u8]>,
         keystore: &impl FetchFromDatabase,
         identity: Option<V::IdentityType>,
     ) -> crate::Result<Option<GroupStoreValue<V>>> {
@@ -133,7 +133,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         // Not in store, fetch the thing in the keystore
         let inserted_value = V::fetch_from_id(k.as_ref(), identity, keystore).await?.map(|value| {
             let value_to_insert = Arc::new(async_lock::RwLock::new(value));
-            self.insert_prepped(k.as_ref().to_owned(), value_to_insert.clone());
+            self.insert_prepped(k, value_to_insert.clone());
             value_to_insert
         });
         Ok(inserted_value)
@@ -143,18 +143,18 @@ impl<V: GroupStoreEntity> GroupStore<V> {
     /// WARNING: the returned value is not attached to the keystore and mutations on it will be
     /// lost when the object is dropped
     pub(crate) async fn fetch_from_keystore(
-        k: &[u8],
+        k: impl AsRef<[u8]> + Send,
         keystore: &impl FetchFromDatabase,
         identity: Option<V::IdentityType>,
     ) -> crate::Result<Option<V>> {
         V::fetch_from_id(k, identity, keystore).await
     }
 
-    fn insert_prepped(&mut self, k: Vec<u8>, prepped_entity: GroupStoreValue<V>) {
-        self.0.insert(k, prepped_entity);
+    fn insert_prepped(&mut self, k: impl AsRef<[u8]>, prepped_entity: GroupStoreValue<V>) {
+        self.0.insert(k.as_ref().to_owned(), prepped_entity);
     }
 
-    pub(crate) fn insert(&mut self, k: Vec<u8>, entity: V) {
+    pub(crate) fn insert(&mut self, k: impl AsRef<[u8]>, entity: V) {
         let value_to_insert = Arc::new(async_lock::RwLock::new(entity));
         self.insert_prepped(k, value_to_insert)
     }
@@ -171,8 +171,8 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         }
     }
 
-    pub(crate) fn remove(&mut self, k: &[u8]) -> Option<GroupStoreValue<V>> {
-        self.0.remove(k)
+    pub(crate) fn remove(&mut self, k: impl AsRef<[u8]>) -> Option<GroupStoreValue<V>> {
+        self.0.remove(k.as_ref())
     }
 
     #[cfg_attr(not(feature = "proteus"), expect(dead_code))]
@@ -250,12 +250,12 @@ mod tests {
         type IdentityType = ();
 
         async fn fetch_from_id(
-            id: &[u8],
+            id: impl AsRef<[u8]> + Send,
             _identity: Option<Self::IdentityType>,
             _keystore: &impl FetchFromDatabase,
         ) -> crate::Result<Option<Self>> {
             // it's not worth adding a variant to the Error type here to handle test dummy values
-            let id = std::str::from_utf8(id).expect("dummy value ids are strings");
+            let id = std::str::from_utf8(id.as_ref()).expect("dummy value ids are strings");
             Ok(Some(id.into()))
         }
     }
@@ -292,7 +292,7 @@ mod tests {
         }
         for i in 4..=6 {
             let i_str = i.to_string();
-            store.insert(i_str.as_bytes().to_vec(), i_str.as_str().into());
+            store.insert(i_str.as_bytes(), i_str.as_str().into());
             assert_eq!(store.len(), i);
         }
 
@@ -313,7 +313,7 @@ mod tests {
         assert!(!store.contains_key(b"1"));
         assert!(store.contains_key(b"2"));
         assert!(store.contains_key(b"3"));
-        store.insert(b"4".to_vec(), "4".into());
+        store.insert(b"4", "4".into());
         assert_eq!(store.len(), 2);
     }
 
@@ -364,7 +364,7 @@ mod tests {
             store.get(i.to_le_bytes().as_ref()).unwrap();
         }
 
-        store.insert(8usize.to_le_bytes().to_vec(), "80".into());
+        store.insert(8usize.to_le_bytes(), "80".into());
         for i in [8usize, 7, 6, 5].iter() {
             assert_eq!(
                 *(store

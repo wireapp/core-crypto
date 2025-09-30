@@ -87,7 +87,7 @@ impl ConversationGuard {
             .mls_group_delete(conversation.id())
             .await
             .map_err(KeystoreError::wrap("deleting mls group"))?;
-        let _ = group_store.remove(conversation.id().as_ref());
+        let _ = group_store.remove(conversation.id());
         Ok(())
     }
 
@@ -159,7 +159,7 @@ pub mod test_utils {
                 .map(|mut groups| groups.remove(id.as_ref()).unwrap())
                 .unwrap();
             let group = MlsConversation::from_serialized_state(group, parent_id.map(Into::into)).unwrap();
-            context.mls_groups().await.unwrap().insert(id.clone().into(), group);
+            context.mls_groups().await.unwrap().insert(id, group);
         }
     }
 }

@@ -88,7 +88,7 @@ impl TransactionContext {
         .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
         let id = conversation.id.clone();
-        mls_groups.insert(id.clone().into(), conversation);
+        mls_groups.insert(&id, conversation);
 
         Ok(WelcomeBundle {
             id,

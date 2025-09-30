@@ -26,7 +26,7 @@ impl TransactionContext {
         let inner = self
             .mls_groups()
             .await?
-            .get_fetch(id.as_ref(), &keystore, None)
+            .get_fetch(id, &keystore, None)
             .await
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?;
 
@@ -82,7 +82,7 @@ impl TransactionContext {
         .await
         .map_err(RecursiveError::mls_conversation("creating conversation"))?;
 
-        self.mls_groups().await?.insert(id.as_ref().to_owned(), conversation);
+        self.mls_groups().await?.insert(id, conversation);
 
         Ok(())
     }
@@ -91,7 +91,7 @@ impl TransactionContext {
     pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
         self.mls_groups()
             .await?
-            .get_fetch(id.as_ref(), &self.mls_provider().await?.keystore(), None)
+            .get_fetch(id, &self.mls_provider().await?.keystore(), None)
             .await
             .map(|option| option.is_some())
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))

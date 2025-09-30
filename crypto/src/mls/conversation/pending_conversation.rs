@@ -75,12 +75,7 @@ impl PendingConversation {
     pub(crate) async fn save(&self) -> Result<()> {
         let keystore = self.keystore().await?;
         keystore
-            .mls_pending_groups_save(
-                self.id().as_ref(),
-                &self.inner.state,
-                &self.inner.custom_configuration,
-                None,
-            )
+            .mls_pending_groups_save(self.id(), &self.inner.state, &self.inner.custom_configuration, None)
             .await
             .map_err(KeystoreError::wrap("saving mls pending groups"))
             .map_err(Into::into)
@@ -273,7 +268,7 @@ impl PendingConversation {
             .mls_groups()
             .await
             .map_err(RecursiveError::transaction("getting mls groups"))?
-            .insert(id.as_ref().to_owned(), conversation);
+            .insert(id, conversation);
 
         // This is the now merged conversation
         let mut conversation = context
