@@ -26,7 +26,7 @@ impl ConversationGuard {
         let keystore = backend.keystore();
         let conversation = self.conversation().await;
         let pending_msg = MlsPendingMessage {
-            foreign_id: conversation.id().as_ref().to_owned(),
+            foreign_id: conversation.id().to_bytes(),
             message: message.as_ref().to_vec(),
         };
         keystore

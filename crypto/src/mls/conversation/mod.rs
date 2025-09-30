@@ -311,6 +311,12 @@ impl ConversationIdRef {
     }
 }
 
+impl ConversationIdRef {
+    fn to_bytes(&self) -> Vec<u8> {
+        self.as_ref().to_owned()
+    }
+}
+
 impl Borrow<ConversationIdRef> for ConversationId {
     fn borrow(&self) -> &ConversationIdRef {
         ConversationIdRef::new(&self.0)
