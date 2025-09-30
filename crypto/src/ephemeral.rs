@@ -21,6 +21,7 @@
 //! Any attempt to encrypt a message will fail because the client cannot retrieve the signature key from
 //! its keystore.
 
+use core_crypto_keystore::{ConnectionType, Database};
 use mls_crypto_provider::DatabaseKey;
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
@@ -56,10 +57,12 @@ impl Obfuscate for HistorySecret {
 ///
 /// You must initialize the session yourself before using this!
 async fn in_memory_cc_with_ciphersuite(ciphersuite: impl Into<MlsCiphersuite>) -> Result<CoreCrypto> {
+    let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
+        .await
+        .unwrap();
     let config = SessionConfig::builder()
-        .in_memory()
         .ciphersuites([ciphersuite.into()])
-        .database_key(DatabaseKey::generate())
+        .database(db)
         .nb_key_packages(Some(0)) // don't generate any keypackages; we will never add this client to another group
         .build()
         .validate()

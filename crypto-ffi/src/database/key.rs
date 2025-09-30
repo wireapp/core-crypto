@@ -47,15 +47,13 @@ impl DatabaseKey {
     }
 }
 
-pub(crate) trait ToCc {
-    fn to_cc(self) -> core_crypto_keystore::DatabaseKey;
-}
-
 #[cfg(target_family = "wasm")]
 pub(crate) type DatabaseKeyMaybeArc = DatabaseKey;
 
 #[cfg(target_family = "wasm")]
-impl ToCc for DatabaseKeyMaybeArc {
+impl super::ToCc for DatabaseKeyMaybeArc {
+    type Target = core_crypto_keystore::DatabaseKey;
+
     #[inline]
     fn to_cc(self) -> core_crypto_keystore::DatabaseKey {
         self.0
@@ -66,7 +64,9 @@ impl ToCc for DatabaseKeyMaybeArc {
 pub(crate) type DatabaseKeyMaybeArc = std::sync::Arc<DatabaseKey>;
 
 #[cfg(not(target_family = "wasm"))]
-impl ToCc for DatabaseKeyMaybeArc {
+impl super::ToCc for DatabaseKeyMaybeArc {
+    type Target = core_crypto_keystore::DatabaseKey;
+
     #[inline]
     fn to_cc(self) -> core_crypto_keystore::DatabaseKey {
         std::sync::Arc::unwrap_or_clone(self).0

@@ -49,7 +49,7 @@ mod tests {
     use ::core_crypto::{LeafError, RecursiveError};
     use core_crypto::{ProteusError, prelude::ConversationId};
 
-    use crate::{CoreCryptoError, CoreCryptoFfi, MlsError, ProteusError as ProteusErrorFfi};
+    use crate::{CoreCryptoError, MlsError, ProteusError as ProteusErrorFfi};
 
     #[test]
     fn test_mls_error_mapping() {
@@ -96,17 +96,16 @@ mod tests {
         ));
     }
 
-    #[macro_rules_attribute::apply(smol_macros::test)]
-    async fn test_error_is_logged() {
+    #[test]
+    fn test_recursive_error_is_logged_when_converted() {
         testing_logger::setup();
-        // we shouldn't be able to create a SQLite DB in `/root` unless we are running this test as root
-        // Don't do that!
-        let key = crate::DatabaseKey::from_cc(core_crypto_keystore::DatabaseKey::generate());
-        let result = CoreCryptoFfi::new("/root/asdf".into(), key, None, None, None, None).await;
-        assert!(
-            result.is_err(),
-            "result must be an error in order to verify that something was logged"
+        let duplicate_message_error = RecursiveError::mls_conversation("test duplicate message error")(
+            core_crypto::mls::conversation::Error::DuplicateMessage,
         );
+
+        // this conversion should trigger a log
+        let _ = CoreCryptoError::from(duplicate_message_error);
+
         testing_logger::validate(|captured_logs| {
             assert!(
                 captured_logs.iter().any(|log| log.level == log::Level::Warn

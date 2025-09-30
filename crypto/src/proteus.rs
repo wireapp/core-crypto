@@ -592,7 +592,7 @@ mod tests {
 
     use super::*;
 
-    use core_crypto_keystore::{ConnectionType, DatabaseKey};
+    use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
 
     #[apply(all_cred_cipher)]
     async fn cc_can_init(case: TestContext) {
@@ -601,9 +601,11 @@ mod tests {
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
         let client_id = "alice".into();
+        let db = Database::open(ConnectionType::Persistent(&path), &DatabaseKey::generate())
+            .await
+            .unwrap();
         let cfg = SessionConfig::builder()
-            .persistent(&path)
-            .database_key(DatabaseKey::generate())
+            .database(db)
             .client_id(client_id)
             .ciphersuites([case.ciphersuite()])
             .build()
@@ -625,10 +627,12 @@ mod tests {
         let (path, db_file) = tmp_db_file();
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
+        let db = Database::open(ConnectionType::Persistent(&path), &DatabaseKey::generate())
+            .await
+            .unwrap();
         // we are deferring MLS initialization here, not passing a MLS 'client_id' yet
         let cfg = SessionConfig::builder()
-            .persistent(&path)
-            .database_key(DatabaseKey::generate())
+            .database(db)
             .ciphersuites([case.ciphersuite()])
             .build()
             .validate()

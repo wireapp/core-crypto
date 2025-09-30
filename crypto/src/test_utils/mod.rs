@@ -29,7 +29,7 @@ use crate::{
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     transaction_context::TransactionContext,
 };
-use core_crypto_keystore::DatabaseKey;
+use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
 
 use async_lock::RwLock;
 use openmls::framing::MlsMessageOut;
@@ -101,10 +101,7 @@ pub struct SessionContext {
     history_observer: Arc<RwLock<Option<Arc<TestHistoryObserver>>>>,
     // We need to store the `TempDir` struct for the duration of the test session,
     // because its drop implementation takes care of the directory deletion.
-    #[cfg(not(target_family = "wasm"))]
-    _db_file: Option<(String, Arc<tempfile::TempDir>)>,
-    #[cfg(target_family = "wasm")]
-    _db_file: Option<(String, ())>,
+    _db: Option<(Database, Arc<tempfile::TempDir>)>,
 }
 
 #[derive(Default, Clone, Copy)]
@@ -128,9 +125,11 @@ impl SessionContext {
         // because its drop implementation takes care of the directory deletion.
         let (db_path, db_dir) = tmp_db_file();
         let transport = context.transport.clone();
+        let db = Database::open(ConnectionType::Persistent(&db_path), &DatabaseKey::generate())
+            .await
+            .unwrap();
         let configuration = SessionConfig::builder()
-            .db_connection_type(core_crypto_keystore::ConnectionType::Persistent(&db_path))
-            .database_key(DatabaseKey::generate())
+            .database(db.clone())
             .ciphersuites([context.cfg.ciphersuite])
             .build()
             .validate()
@@ -161,10 +160,7 @@ impl SessionContext {
             mls_transport: Arc::new(RwLock::new(transport)),
             x509_test_chain: Arc::new(chain.cloned()),
             history_observer: Default::default(),
-            #[cfg(not(target_family = "wasm"))]
-            _db_file: Some((db_path, Arc::new(db_dir))),
-            #[cfg(target_family = "wasm")]
-            _db_file: Some((db_path, db_dir)),
+            _db: Some((db, db_dir.into())),
         };
         Ok(result)
     }
@@ -187,15 +183,17 @@ impl SessionContext {
             mls_transport: Arc::new(RwLock::new(transport)),
             x509_test_chain: Arc::new(chain.cloned()),
             history_observer: Default::default(),
-            _db_file: None,
+            _db: None,
         }
     }
 
     pub(crate) async fn new_uninitialized(context: &TestContext) -> Self {
         let (db_path, db_dir) = tmp_db_file();
+        let db = Database::open(ConnectionType::Persistent(&db_path), &DatabaseKey::generate())
+            .await
+            .unwrap();
         let configuration = SessionConfig::builder()
-            .db_connection_type(core_crypto_keystore::ConnectionType::Persistent(&db_path))
-            .database_key(DatabaseKey::generate())
+            .database(db.clone())
             .ciphersuites([context.cfg.ciphersuite])
             .build()
             .validate()
@@ -212,10 +210,7 @@ impl SessionContext {
             mls_transport: Arc::new(RwLock::new(transport.clone())),
             x509_test_chain: None.into(),
             history_observer: Default::default(),
-            #[cfg(not(target_family = "wasm"))]
-            _db_file: Some((db_path, Arc::new(db_dir))),
-            #[cfg(target_family = "wasm")]
-            _db_file: Some((db_path, db_dir)),
+            _db: Some((db, db_dir.into())),
         }
     }
 

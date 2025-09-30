@@ -5,7 +5,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use tls_codec::Serialize;
 
-use core_crypto::{DatabaseKey, prelude::*};
+use core_crypto::{ConnectionType, Database, DatabaseKey, prelude::*};
 
 use crate::{
     CIPHERSUITE_IN_USE,
@@ -31,9 +31,12 @@ impl CoreCryptoNativeClient {
         let client_id = uuid::Uuid::new_v4();
         let cid = (!deferred).then(|| client_id.as_hyphenated().to_string().as_bytes().into());
 
+        let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
+            .await
+            .unwrap();
+
         let configuration = SessionConfig::builder()
-            .in_memory()
-            .database_key(DatabaseKey::generate())
+            .database(db)
             .client_id_opt(cid)
             .ciphersuites([CIPHERSUITE_IN_USE.into()])
             .nb_key_packages(Some(100))

@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
+
 pub use crate::prelude::{
     MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsWirePolicy,
 };
@@ -80,10 +82,7 @@ pub struct TestContext {
     pub credential_type: MlsCredentialType,
     pub cfg: MlsConversationConfiguration,
     pub transport: Arc<dyn MlsTransportTestExt>,
-    #[cfg(not(target_family = "wasm"))]
-    db_file: Option<(String, Arc<tempfile::TempDir>)>,
-    #[cfg(target_family = "wasm")]
-    db_file: Option<(String, Arc<()>)>,
+    pub db: Option<(Database, Option<Arc<tempfile::TempDir>>)>,
 }
 
 impl TestContext {
@@ -110,12 +109,21 @@ impl TestContext {
         self.cfg.custom.clone()
     }
 
+    pub async fn create_in_memory_database(&mut self) -> Database {
+        let database = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
+            .await
+            .unwrap();
+        let out = database.clone();
+        self.db = Some((database, None));
+        out
+    }
+
     pub fn default_x509() -> Self {
         Self {
             credential_type: MlsCredentialType::X509,
             cfg: MlsConversationConfiguration::default(),
             transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
-            db_file: None,
+            db: None,
         }
     }
 
@@ -137,12 +145,16 @@ impl TestContext {
         matches!(self.cfg.custom.wire_policy, MlsWirePolicy::Ciphertext)
     }
 
-    /// Create a new temporary directory a db can be opened at. Will be deleted on drop of [TestContext].
+    /// Create a new temporary directory and open a db there. Will be deleted on drop of [TestContext].
     /// Use this only if you're not instantiating a [SessionContext] in your test.
-    pub async fn tmp_dir(&mut self) -> String {
+    pub async fn create_persistent_db(&mut self) -> Database {
         let (db_dir_string, db_dir) = tmp_db_file();
-        self.db_file = Some((db_dir_string.clone(), Arc::new(db_dir)));
-        db_dir_string
+        let db = Database::open(ConnectionType::Persistent(&db_dir_string), &DatabaseKey::generate())
+            .await
+            .unwrap();
+        let out = db.clone();
+        self.db = Some((db, Some(db_dir.into())));
+        out
     }
 
     pub fn x509_client_ids<const N: usize>(&self) -> [ClientId; N] {
@@ -417,7 +429,7 @@ impl Default for TestContext {
             credential_type: MlsCredentialType::Basic,
             cfg: MlsConversationConfiguration::default(),
             transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
-            db_file: None,
+            db: None,
         }
     }
 }

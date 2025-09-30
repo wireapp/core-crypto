@@ -33,7 +33,7 @@ pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
 use identities::Identities;
 use log::debug;
-use mls_crypto_provider::{CryptoKeystore, EntropySeed, MlsCryptoProvider};
+use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 use openmls::prelude::{Credential, CredentialType};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
@@ -99,20 +99,16 @@ impl Session {
     ///   or the key generation fails
     pub async fn try_new(
         ValidatedSessionConfig {
-            db_connection_type,
-            database_key,
+            database,
             client_id,
             external_entropy,
             ciphersuites,
             nb_key_packages,
-        }: ValidatedSessionConfig<'_>,
+        }: ValidatedSessionConfig,
     ) -> crate::mls::Result<Self> {
         // Init backend (crypto + rand + keystore)
-        let key_store = CryptoKeystore::open(db_connection_type, &database_key)
-            .await
-            .map_err(MlsError::wrap("initializing keystore"))?;
         let mls_backend = MlsCryptoProvider::builder()
-            .key_store(key_store)
+            .key_store(database)
             .entropy_seed_opt(external_entropy)
             .build();
 
@@ -638,7 +634,7 @@ mod tests {
     use super::*;
     use crate::test_utils::*;
     use crate::transaction_context::test_utils::EntitiesCount;
-    use core_crypto_keystore::connection::{ConnectionType, DatabaseKey, FetchFromDatabase};
+    use core_crypto_keystore::connection::FetchFromDatabase;
     use core_crypto_keystore::entities::*;
     use mls_crypto_provider::MlsCryptoProvider;
 
@@ -728,10 +724,9 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    async fn can_generate_session(case: TestContext) {
+    async fn can_generate_session(mut case: TestContext) {
         let [alice] = case.sessions().await;
-        let key = DatabaseKey::generate();
-        let key_store = CryptoKeystore::open(ConnectionType::InMemory, &key).await.unwrap();
+        let key_store = case.create_in_memory_database().await;
         let backend = MlsCryptoProvider::builder().key_store(key_store).build();
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());

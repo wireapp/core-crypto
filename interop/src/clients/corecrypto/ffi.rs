@@ -5,7 +5,9 @@ use std::sync::Arc;
 use anyhow::Result;
 use tempfile::NamedTempFile;
 
-use core_crypto_ffi::{ClientId, CoreCryptoFfi, CredentialType, CustomConfiguration, TransactionHelper};
+use core_crypto_ffi::{
+    ClientId, CoreCryptoFfi, CredentialType, CustomConfiguration, Database, DatabaseKey, TransactionHelper,
+};
 
 use crate::{
     CIPHERSUITE_IN_USE,
@@ -36,16 +38,12 @@ impl CoreCryptoFfiClient {
         )));
         let ciphersuite = CIPHERSUITE_IN_USE.into();
         let temp_file = NamedTempFile::with_prefix("interop-ffi-keystore-")?;
-
-        let cc = CoreCryptoFfi::new(
-            temp_file.path().to_string_lossy().into_owned(),
-            core_crypto_ffi::DatabaseKey::from_cc(core_crypto::DatabaseKey::generate()),
-            Some(client_id),
-            Some(vec![ciphersuite]),
-            None,
-            None,
-        )
-        .await?;
+        let key = DatabaseKey::from_cc(core_crypto::DatabaseKey::generate());
+        let db = Database::open(&temp_file.path().to_string_lossy(), key)
+            .await
+            .unwrap()
+            .into();
+        let cc = CoreCryptoFfi::new(db, Some(client_id), Some(vec![ciphersuite]), None, None).await?;
 
         cc.provide_transport(Arc::new(crate::MlsTransportSuccessProvider::default()))
             .await?;

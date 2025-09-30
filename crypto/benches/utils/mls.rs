@@ -10,7 +10,7 @@ use core_crypto::prelude::{
     MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle, Session,
     SessionConfig,
 };
-use core_crypto::{CoreCrypto, DatabaseKey, MlsTransport, MlsTransportData, MlsTransportResponse};
+use core_crypto::{CoreCrypto, Database, DatabaseKey, MlsTransport, MlsTransportData, MlsTransportResponse};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::framing::MlsMessageOut;
 use openmls::{
@@ -159,10 +159,9 @@ pub async fn new_central(
         ConnectionType::Persistent(&path)
     };
     let client_id = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
-    let key = DatabaseKey::generate();
+    let db = Database::open(connection_type, &DatabaseKey::generate()).await.unwrap();
     let cfg = SessionConfig::builder()
-        .db_connection_type(connection_type)
-        .database_key(key)
+        .database(db)
         .client_id(client_id.as_bytes().into())
         .ciphersuites([ciphersuite])
         .nb_key_packages(Some(100))

@@ -21,18 +21,15 @@ pub(crate) trait HasSessionAndCrypto: Send {
 
 #[cfg(test)]
 mod tests {
-    use crate::transaction_context::Error as TransactionError;
-
     use crate::prelude::{
         CertificateBundle, ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType, SessionConfig,
     };
+    use crate::transaction_context::Error as TransactionError;
     use crate::{
         CoreCrypto,
         mls::Session,
         test_utils::{x509::X509TestChain, *},
     };
-
-    use core_crypto_keystore::DatabaseKey;
 
     mod conversation_epoch {
         use super::*;
@@ -77,11 +74,10 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         async fn can_create_from_valid_configuration(mut case: TestContext) {
-            let tmp_dir = case.tmp_dir().await;
+            let db = case.create_persistent_db().await;
             Box::pin(async move {
                 let configuration = SessionConfig::builder()
-                    .persistent(&tmp_dir)
-                    .database_key(DatabaseKey::generate())
+                    .database(db)
                     .client_id("alice".into())
                     .ciphersuites([case.ciphersuite()])
                     .build()
@@ -94,27 +90,13 @@ mod tests {
             .await
         }
 
-        #[test]
-        fn store_path_should_not_be_empty_nor_blank() {
-            let config_err = SessionConfig::builder()
-                .persistent(" ")
-                .database_key(DatabaseKey::generate())
-                .ciphersuites([MlsCiphersuite::default()])
-                .build()
-                .validate()
-                .unwrap_err();
-
-            assert!(matches!(config_err, mls::Error::MalformedIdentifier(msg) if msg.contains("path")));
-        }
-
         #[macro_rules_attribute::apply(smol_macros::test)]
         async fn client_id_should_not_be_empty() {
             let mut case = TestContext::default();
-            let tmp_dir = case.tmp_dir().await;
+            let db = case.create_persistent_db().await;
             Box::pin(async move {
                 let config_err = SessionConfig::builder()
-                    .persistent(&tmp_dir)
-                    .database_key(DatabaseKey::generate())
+                    .database(db)
                     .client_id("".into())
                     .ciphersuites([MlsCiphersuite::default()])
                     .build()
@@ -148,11 +130,10 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn can_fetch_client_public_key(mut case: TestContext) {
-        let tmp_dir = case.tmp_dir().await;
+        let db = case.create_persistent_db().await;
         Box::pin(async move {
             let configuration = SessionConfig::builder()
-                .persistent(&tmp_dir)
-                .database_key(DatabaseKey::generate())
+                .database(db)
                 .client_id("potato".into())
                 .ciphersuites([case.ciphersuite()])
                 .build()
@@ -168,12 +149,11 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn can_2_phase_init_central(mut case: TestContext) {
-        let tmp_dir = case.tmp_dir().await;
+        let db = case.create_persistent_db().await;
         Box::pin(async move {
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
             let configuration = SessionConfig::builder()
-                .persistent(&tmp_dir)
-                .database_key(DatabaseKey::generate())
+                .database(db)
                 .ciphersuites([case.ciphersuite()])
                 .build()
                 .validate()

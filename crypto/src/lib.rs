@@ -40,7 +40,7 @@ use crate::prelude::MlsCommitBundle;
 pub use build_metadata::{BUILD_METADATA, BuildMetadata};
 
 use crate::ephemeral::HistorySecret;
-pub use core_crypto_keystore::DatabaseKey;
+pub use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
 
 /// Common imports that should be useful for most uses of the crate
 pub mod prelude {

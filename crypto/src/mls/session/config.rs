@@ -1,5 +1,5 @@
-use core_crypto_keystore::ConnectionType;
-use mls_crypto_provider::{DatabaseKey, EntropySeed};
+use core_crypto_keystore::Database;
+use mls_crypto_provider::EntropySeed;
 use typed_builder::TypedBuilder;
 
 use crate::{
@@ -16,10 +16,8 @@ use crate::{
 /// These can be set directly or via the [builder][SessionConfig::builder].
 #[derive(Debug, Clone, TypedBuilder)]
 pub struct SessionConfig<'a> {
-    /// Connection type for the database
-    pub db_connection_type: ConnectionType<'a>,
-    /// Database key to be used to instantiate the [MlsCryptoProvider][mls_crypto_provider::MlsCryptoProvider]
-    pub database_key: DatabaseKey,
+    /// Database to be used to instantiate the [MlsCryptoProvider][mls_crypto_provider::MlsCryptoProvider]
+    pub database: Database,
     /// Identifier for the client to be used by [Session][crate::mls::session::Session]
     ///
     /// If set, this initializes the MLS session. Otherwise, the session is left uninitialized.
@@ -37,32 +35,13 @@ pub struct SessionConfig<'a> {
     #[builder(default)]
     pub nb_key_packages: Option<usize>,
 }
-impl<'a, Key, ClientId, ExternalEntropy, Ciphersuites, KPs>
-    SessionConfigBuilder<'a, ((), Key, ClientId, ExternalEntropy, Ciphersuites, KPs)>
-{
-    /// Use an in-memory database
-    pub fn in_memory(
-        self,
-    ) -> SessionConfigBuilder<'a, ((ConnectionType<'a>,), Key, ClientId, ExternalEntropy, Ciphersuites, KPs)> {
-        self.db_connection_type(ConnectionType::InMemory)
-    }
-
-    /// Use a persistent database at the given path
-    pub fn persistent(
-        self,
-        path: &'a str,
-    ) -> SessionConfigBuilder<'a, ((ConnectionType<'a>,), Key, ClientId, ExternalEntropy, Ciphersuites, KPs)> {
-        self.db_connection_type(ConnectionType::Persistent(path))
-    }
-}
 
 /// Validated configuration parameters for [Session][crate::mls::session::Session].
 ///
 /// These can not be constructed directly, only via [SessionConfig].
 #[derive(Debug)]
-pub struct ValidatedSessionConfig<'a> {
-    pub(super) db_connection_type: ConnectionType<'a>,
-    pub(super) database_key: DatabaseKey,
+pub struct ValidatedSessionConfig {
+    pub(super) database: Database,
     pub(super) client_id: Option<ClientId>,
     pub(super) external_entropy: Option<EntropySeed>,
     pub(super) ciphersuites: Vec<MlsCiphersuite>,
@@ -73,21 +52,14 @@ impl<'a> SessionConfig<'a> {
     /// Validate this configuration to produce a validated configuration.
     ///
     /// This can then be passed to [Session::try_new][crate::mls::session::Session::try_new].
-    pub fn validate(self) -> Result<ValidatedSessionConfig<'a>> {
+    pub fn validate(self) -> Result<ValidatedSessionConfig> {
         let Self {
-            db_connection_type,
-            database_key,
+            database,
             client_id,
             external_entropy,
             ciphersuites,
             nb_key_packages,
         } = self;
-
-        if let ConnectionType::Persistent(path) = &db_connection_type
-            && path.trim().is_empty()
-        {
-            return Err(Error::MalformedIdentifier("persistent db path"));
-        }
         if let Some(client_id) = &client_id
             && client_id.is_empty()
         {
@@ -108,8 +80,7 @@ impl<'a> SessionConfig<'a> {
         let nb_key_packages = nb_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
 
         Ok(ValidatedSessionConfig {
-            db_connection_type,
-            database_key,
+            database,
             client_id,
             external_entropy,
             ciphersuites,
@@ -118,7 +89,7 @@ impl<'a> SessionConfig<'a> {
     }
 }
 
-impl<'a> TryFrom<SessionConfig<'a>> for ValidatedSessionConfig<'a> {
+impl<'a> TryFrom<SessionConfig<'a>> for ValidatedSessionConfig {
     type Error = Error;
 
     fn try_from(value: SessionConfig<'a>) -> std::result::Result<Self, Self::Error> {

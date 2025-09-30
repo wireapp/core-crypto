@@ -13,11 +13,9 @@ use core_crypto::prelude::{Session, SessionConfig, ValidatedSessionConfig};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
+use crate::database::DatabaseMaybeArc;
 use crate::{
-    CoreCryptoError, CoreCryptoResult,
-    ciphersuite::Ciphersuites,
-    client_id::ClientIdMaybeArc,
-    database::{DatabaseKeyMaybeArc, ToCc as _},
+    CoreCryptoError, CoreCryptoResult, ciphersuite::Ciphersuites, client_id::ClientIdMaybeArc, database::ToCc as _,
 };
 
 /// In Wasm, boxed slices are the natural way to communicate an immutable byte slice
@@ -54,16 +52,14 @@ pub struct CoreCryptoFfi {
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
 pub async fn core_crypto_new(
-    path: String,
-    key: DatabaseKeyMaybeArc,
+    database: DatabaseMaybeArc,
     client_id: ClientIdMaybeArc,
     ciphersuites: Ciphersuites,
     entropy_seed: Option<EntropySeed>,
     nb_key_package: Option<u32>,
 ) -> CoreCryptoResult<CoreCryptoFfi> {
     CoreCryptoFfi::new(
-        path,
-        key,
+        database,
         Some(client_id),
         Some(ciphersuites),
         entropy_seed,
@@ -79,18 +75,16 @@ pub async fn core_crypto_new(
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
 pub async fn core_crypto_deferred_init(
-    path: String,
-    key: DatabaseKeyMaybeArc,
+    database: DatabaseMaybeArc,
     entropy_seed: Option<EntropySeed>,
 ) -> CoreCryptoResult<CoreCryptoFfi> {
-    CoreCryptoFfi::deferred_init_impl(path, key, entropy_seed).await
+    CoreCryptoFfi::deferred_init_impl(database, entropy_seed).await
 }
 
 impl CoreCryptoFfi {
     /// Instantiate CC
     pub async fn new(
-        path: String,
-        key: DatabaseKeyMaybeArc,
+        database: DatabaseMaybeArc,
         client_id: Option<ClientIdMaybeArc>,
         ciphersuites: Option<Ciphersuites>,
         entropy_seed: Option<EntropySeed>,
@@ -102,8 +96,7 @@ impl CoreCryptoFfi {
             .map_err(CoreCryptoError::generic())?;
         let entropy_seed = entropy_seed.map(entropy_seed_map);
         let configuration = SessionConfig::builder()
-            .persistent(&path)
-            .database_key(key.to_cc())
+            .database(database.to_cc())
             .client_id_opt(client_id.map(|cid| cid.as_cc()))
             .ciphersuites(ciphersuites.unwrap_or_default().into_iter().map(Into::into))
             .external_entropy_opt(entropy_seed.as_deref())
@@ -114,21 +107,19 @@ impl CoreCryptoFfi {
     }
 
     async fn deferred_init_impl(
-        path: String,
-        key: DatabaseKeyMaybeArc,
+        database: DatabaseMaybeArc,
         entropy_seed: Option<EntropySeed>,
     ) -> CoreCryptoResult<Self> {
         let entropy_seed = entropy_seed.map(entropy_seed_map);
         let configuration = SessionConfig::builder()
-            .persistent(&path)
-            .database_key(key.to_cc())
+            .database(database.to_cc())
             .external_entropy_opt(entropy_seed.as_deref())
             .build()
             .validate()?;
         CoreCryptoFfi::from_config(configuration).await
     }
 
-    async fn from_config(configuration: ValidatedSessionConfig<'_>) -> CoreCryptoResult<Self> {
+    async fn from_config(configuration: ValidatedSessionConfig) -> CoreCryptoResult<Self> {
         #[cfg(target_family = "wasm")]
         console_error_panic_hook::set_once();
 
@@ -144,24 +135,22 @@ impl CoreCryptoFfi {
 impl CoreCryptoFfi {
     /// Instantiate CC, asynchronously.
     pub async fn async_new(
-        path: String,
-        key: DatabaseKeyMaybeArc,
+        database: DatabaseMaybeArc,
         client_id: Option<ClientIdMaybeArc>,
         ciphersuites: Option<Ciphersuites>,
         entropy_seed: Option<EntropySeed>,
         nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<Self> {
-        Self::new(path, key, client_id, ciphersuites, entropy_seed, nb_key_package).await
+        Self::new(database, client_id, ciphersuites, entropy_seed, nb_key_package).await
     }
 
     /// Asynchronously instantiate CC, deferring MLS initialization. MLS can be initialized later
     /// with `mls_init`.
     pub async fn deferred_init(
-        path: String,
-        key: DatabaseKeyMaybeArc,
+        database: DatabaseMaybeArc,
         entropy_seed: Option<Box<[u8]>>,
     ) -> CoreCryptoResult<CoreCryptoFfi> {
-        CoreCryptoFfi::deferred_init_impl(path, key, entropy_seed).await
+        CoreCryptoFfi::deferred_init_impl(database, entropy_seed).await
     }
 
     /// See [Session::close]

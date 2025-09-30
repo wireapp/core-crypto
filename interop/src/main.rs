@@ -136,17 +136,19 @@ fn run_test() -> Result<()> {
 
 #[cfg(not(target_family = "wasm"))]
 async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &std::net::SocketAddr) -> Result<()> {
-    use core_crypto::prelude::*;
+    use core_crypto::{ConnectionType, Database, prelude::*};
     use rand::distributions::DistString;
 
     log::info!("Using ciphersuite {CIPHERSUITE_IN_USE}");
 
     let spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
+    let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
+        .await
+        .unwrap();
 
     let mut clients = create_mls_clients(chrome_driver_addr, web_server).await;
     let configuration = SessionConfig::builder()
-        .in_memory()
-        .database_key(DatabaseKey::generate())
+        .database(db)
         .client_id(MLS_MAIN_CLIENTID.into())
         .ciphersuites([CIPHERSUITE_IN_USE.into()])
         .build()
@@ -287,7 +289,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
 
 #[cfg(all(not(target_family = "wasm"), feature = "proteus"))]
 async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &std::net::SocketAddr) -> Result<()> {
-    use core_crypto::prelude::*;
+    use core_crypto::{ConnectionType, Database, prelude::*};
 
     let spinner = util::RunningProcess::new("[Proteus] Step 0: Initializing clients & env...", true);
 
@@ -297,9 +299,12 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
         client.init().await?;
     }
 
+    let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
+        .await
+        .unwrap();
+
     let configuration = SessionConfig::builder()
-        .in_memory()
-        .database_key(DatabaseKey::generate())
+        .database(db)
         .client_id(MLS_MAIN_CLIENTID.into())
         .ciphersuites([CIPHERSUITE_IN_USE.into()])
         .build()
