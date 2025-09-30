@@ -266,7 +266,18 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
 impl<'a, T: ConversationWithMls<'a>> Conversation<'a> for T {}
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
-#[derive(core_crypto_macros::Debug, derive_more::AsRef, derive_more::From, derive_more::Into, PartialEq, Eq, Clone)]
+#[derive(
+    core_crypto_macros::Debug,
+    derive_more::AsRef,
+    derive_more::From,
+    derive_more::Into,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Clone,
+)]
 #[sensitive]
 #[as_ref([u8])]
 #[from(&[u8], Vec<u8>)]
