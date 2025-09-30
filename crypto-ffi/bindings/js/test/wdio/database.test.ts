@@ -33,39 +33,6 @@ describe("database", () => {
         ).resolves.toMatchObject({ dbIsDefined: true });
     });
 
-    it("open db created by cc works", async () => {
-        await expect(
-            browser.execute(async () => {
-                const cipherSuite = window.defaultCipherSuite;
-                const databaseName = crypto.randomUUID();
-
-                const makeClientId = () => {
-                    const array = new Uint8Array([1, 2]);
-                    return new window.ccModule.ClientId(array);
-                };
-
-                const key = new Uint8Array(32);
-                window.crypto.getRandomValues(key);
-
-                const clientConfig = {
-                    databaseName,
-                    key: new window.ccModule.DatabaseKey(key),
-                    ciphersuites: [cipherSuite],
-                    clientId: makeClientId(),
-                };
-
-                const cc = await window.ccModule.CoreCrypto.init(clientConfig);
-                await cc.close();
-
-                const db = await window.ccModule.openDatabase(
-                    databaseName,
-                    new window.ccModule.DatabaseKey(key)
-                );
-                return { dbIsDefined: db !== undefined };
-            })
-        ).resolves.toMatchObject({ dbIsDefined: true });
-    });
-
     it("key must have correct length", async () => {
         expect(() =>
             browser.execute(async () => {
@@ -87,9 +54,13 @@ describe("database", () => {
             const key = new Uint8Array(32);
             window.crypto.getRandomValues(key);
 
+            const database = await window.ccModule.openDatabase(
+                databaseName,
+                new window.ccModule.DatabaseKey(key)
+            );
+
             const clientConfig = {
-                databaseName: databaseName,
-                key: new window.ccModule.DatabaseKey(key),
+                database,
                 ciphersuites: [cipherSuite],
                 clientId: makeClientId(),
             };
@@ -112,7 +83,12 @@ describe("database", () => {
                 new window.ccModule.DatabaseKey(newKey)
             );
 
-            clientConfig.key = new window.ccModule.DatabaseKey(newKey);
+            const newDatabase = await window.ccModule.openDatabase(
+                databaseName,
+                new window.ccModule.DatabaseKey(newKey)
+            );
+
+            clientConfig.database = newDatabase;
             clientConfig.clientId = makeClientId();
 
             cc = await window.ccModule.CoreCrypto.init(clientConfig);
@@ -190,9 +166,12 @@ describe("database", () => {
             // Reconstruct the client based on the migrated database and fetch the epoch.
             const cipherSuite = window.defaultCipherSuite;
             const encoder = new TextEncoder();
+            const database = await window.ccModule.openDatabase(
+                clientName,
+                new_key
+            );
             const clientConfig = {
-                databaseName: clientName,
-                key: new_key,
+                database,
                 wasmModule: undefined,
                 ciphersuites: [cipherSuite],
                 clientId: new window.ccModule.ClientId(

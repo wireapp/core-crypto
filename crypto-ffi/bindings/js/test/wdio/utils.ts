@@ -166,9 +166,13 @@ export async function ccInit(clientName: string): Promise<void> {
         const key = new Uint8Array(32);
         window.crypto.getRandomValues(key);
 
+        const database = await window.ccModule.openDatabase(
+            clientName,
+            new window.ccModule.DatabaseKey(key)
+        );
+
         const clientConfig = {
-            databaseName: clientName,
-            key: new window.ccModule.DatabaseKey(key),
+            database,
             wasmModule: undefined,
             ciphersuites: [cipherSuite],
             clientId,
@@ -467,9 +471,13 @@ export async function proteusInit(clientName: string): Promise<void> {
         const key = new Uint8Array(32);
         window.crypto.getRandomValues(key);
 
+        const database = await window.ccModule.openDatabase(
+            clientName,
+            new window.ccModule.DatabaseKey(key)
+        );
+
         const clientConfig = {
-            databaseName: clientName,
-            key: new window.ccModule.DatabaseKey(key),
+            database,
             clientId: encoder.encode(clientName),
         };
         const instance =

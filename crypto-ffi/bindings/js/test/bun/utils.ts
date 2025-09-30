@@ -15,6 +15,7 @@ import {
     setMaxLogLevel,
     initWasmModule,
     ClientId,
+    openDatabase,
 } from "../../src/CoreCrypto";
 
 const CC_INSTANCES: CoreCrypto[] = [];
@@ -98,9 +99,10 @@ export async function ccInit(clientName: string): Promise<CoreCrypto> {
     const key = new Uint8Array(32);
     crypto.getRandomValues(key);
 
+    const database = await openDatabase(clientName, new DatabaseKey(key));
+
     const clientConfig = {
-        databaseName: clientName,
-        key: new DatabaseKey(key),
+        database,
         ciphersuites: [DEFAULT_CIPHERSUITE],
         clientId,
     };
@@ -219,9 +221,10 @@ export async function proteusInit(clientName: string): Promise<CoreCrypto> {
     const key = new Uint8Array(32);
     crypto.getRandomValues(key);
 
+    const database = await openDatabase(clientName, new DatabaseKey(key));
+
     const clientConfig = {
-        databaseName: clientName,
-        key: new DatabaseKey(key),
+        database,
         clientId,
     };
     const instance = await CoreCrypto.deferredInit(clientConfig);
