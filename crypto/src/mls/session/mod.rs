@@ -253,11 +253,10 @@ impl Session {
     /// [crate::transaction_context::TransactionContext::conversation]. for transient and immutable
     /// purposes. For long-lived or mutable purposes, prefer the other method.
     pub async fn get_raw_conversation(&self, id: &ConversationIdRef) -> Result<ImmutableConversation> {
-        let raw_conversation =
-            GroupStore::fetch_from_keystore(id.to_owned().as_ref(), &self.crypto_provider.keystore(), None)
-                .await
-                .map_err(RecursiveError::root("getting conversation by id"))?
-                .ok_or_else(|| LeafError::ConversationNotFound(id.to_owned()))?;
+        let raw_conversation = GroupStore::fetch_from_keystore(id, &self.crypto_provider.keystore(), None)
+            .await
+            .map_err(RecursiveError::root("getting conversation by id"))?
+            .ok_or_else(|| LeafError::ConversationNotFound(id.to_owned()))?;
         Ok(ImmutableConversation::new(raw_conversation, self.clone()))
     }
 
