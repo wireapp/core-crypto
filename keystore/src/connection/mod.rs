@@ -317,7 +317,10 @@ impl Database {
             .await
     }
 
-    pub async fn remove_pending_messages_by_conversation_id(&self, conversation_id: &[u8]) -> CryptoKeystoreResult<()> {
+    pub async fn remove_pending_messages_by_conversation_id(
+        &self,
+        conversation_id: impl AsRef<[u8]> + Send,
+    ) -> CryptoKeystoreResult<()> {
         let transaction_guard = self.transaction.lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
             return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);

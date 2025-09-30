@@ -141,7 +141,7 @@ impl PendingConversation {
         let keystore = backend.keystore();
         // Instantiate the pending group
         let (group, _cfg) = keystore
-            .mls_pending_groups_load(self.id().as_ref())
+            .mls_pending_groups_load(self.id())
             .await
             .map_err(KeystoreError::wrap("loading mls pending groups"))?;
         let mut mls_group = core_crypto_keystore::deser::<MlsGroup>(&group)
@@ -250,7 +250,7 @@ impl PendingConversation {
 
         // We have to determine the restore policy before we persist the group, because it depends
         // on whether the group already exists.
-        let restore_policy = if mls_provider.key_store().mls_group_exists(id.as_ref()).await {
+        let restore_policy = if mls_provider.key_store().mls_group_exists(id).await {
             // If the group already exists, it means the external commit is about rejoining the group.
             // This is most of the time a last resort measure (for example when a commit is dropped,
             // and you go out of sync), so there's no point in decrypting buffered messages
@@ -288,7 +288,7 @@ impl PendingConversation {
         if pending_messages.is_some() {
             mls_provider
                 .keystore()
-                .remove_pending_messages_by_conversation_id(id.as_ref())
+                .remove_pending_messages_by_conversation_id(id)
                 .await
                 .map_err(KeystoreError::wrap("deleting mls pending messages by conversation id"))?;
         }
@@ -308,7 +308,7 @@ impl PendingConversation {
     pub(crate) async fn clear(&mut self) -> Result<()> {
         self.keystore()
             .await?
-            .mls_pending_groups_delete(self.id().as_ref())
+            .mls_pending_groups_delete(self.id())
             .await
             .map_err(KeystoreError::wrap("deleting pending groups by id"))?;
         Ok(())

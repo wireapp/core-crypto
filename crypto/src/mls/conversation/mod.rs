@@ -515,7 +515,7 @@ impl MlsConversation {
         if force || self.group.state_changed() == openmls::group::InnerState::Changed {
             keystore
                 .mls_group_persist(
-                    self.id.as_ref(),
+                    &self.id,
                     &core_crypto_keystore::ser(&self.group).map_err(KeystoreError::wrap("serializing group state"))?,
                     self.parent_id.as_ref().map(|id| id.as_ref()),
                 )

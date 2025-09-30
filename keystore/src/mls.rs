@@ -29,7 +29,7 @@ pub trait CryptoKeystoreMls: Sized {
     ///
     /// # Arguments
     /// * `group_id` - group/conversation id
-    async fn mls_group_exists(&self, group_id: &[u8]) -> bool;
+    async fn mls_group_exists(&self, group_id: impl AsRef<[u8]> + Send) -> bool;
 
     /// Persists a `MlsGroup`
     ///
@@ -42,7 +42,7 @@ pub trait CryptoKeystoreMls: Sized {
     /// for example.
     async fn mls_group_persist(
         &self,
-        group_id: &[u8],
+        group_id: impl AsRef<[u8]> + Send,
         state: &[u8],
         parent_group_id: Option<&[u8]>,
     ) -> CryptoKeystoreResult<()>;
@@ -61,7 +61,7 @@ pub trait CryptoKeystoreMls: Sized {
     /// # Errors
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
-    async fn mls_group_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()>;
+    async fn mls_group_delete(&self, group_id: impl AsRef<[u8]> + Send) -> CryptoKeystoreResult<()>;
 
     /// Saves a `MlsGroup` in a temporary table (typically used in scenarios where the group cannot
     /// be committed until the backend acknowledges it, like external commits)
@@ -76,7 +76,7 @@ pub trait CryptoKeystoreMls: Sized {
     /// for example.
     async fn mls_pending_groups_save(
         &self,
-        group_id: &[u8],
+        group_id: impl AsRef<[u8]> + Send,
         mls_group: &[u8],
         custom_configuration: &[u8],
         parent_group_id: Option<&[u8]>,
@@ -90,7 +90,10 @@ pub trait CryptoKeystoreMls: Sized {
     /// # Errors
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
-    async fn mls_pending_groups_load(&self, group_id: &[u8]) -> CryptoKeystoreResult<(Vec<u8>, Vec<u8>)>;
+    async fn mls_pending_groups_load(
+        &self,
+        group_id: impl AsRef<[u8]> + Send,
+    ) -> CryptoKeystoreResult<(Vec<u8>, Vec<u8>)>;
 
     /// Deletes a temporary `MlsGroup` from the database
     ///
@@ -100,7 +103,7 @@ pub trait CryptoKeystoreMls: Sized {
     /// # Errors
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
-    async fn mls_pending_groups_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()>;
+    async fn mls_pending_groups_delete(&self, group_id: impl AsRef<[u8]> + Send) -> CryptoKeystoreResult<()>;
 
     /// Persists an enrollment instance
     ///
@@ -141,18 +144,18 @@ impl CryptoKeystoreMls for crate::Database {
             .collect())
     }
 
-    async fn mls_group_exists(&self, group_id: &[u8]) -> bool {
+    async fn mls_group_exists(&self, group_id: impl AsRef<[u8]> + Send) -> bool {
         matches!(self.find::<PersistedMlsGroup>(group_id).await, Ok(Some(_)))
     }
 
     async fn mls_group_persist(
         &self,
-        group_id: &[u8],
+        group_id: impl AsRef<[u8]> + Send,
         state: &[u8],
         parent_group_id: Option<&[u8]>,
     ) -> CryptoKeystoreResult<()> {
         self.save(PersistedMlsGroup {
-            id: group_id.into(),
+            id: group_id.as_ref().to_owned(),
             state: state.into(),
             parent_id: parent_group_id.map(Into::into),
         })
@@ -171,7 +174,7 @@ impl CryptoKeystoreMls for crate::Database {
             .collect())
     }
 
-    async fn mls_group_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {
+    async fn mls_group_delete(&self, group_id: impl AsRef<[u8]> + Send) -> CryptoKeystoreResult<()> {
         self.remove::<PersistedMlsGroup, _>(group_id).await?;
 
         Ok(())
@@ -179,13 +182,13 @@ impl CryptoKeystoreMls for crate::Database {
 
     async fn mls_pending_groups_save(
         &self,
-        group_id: &[u8],
+        group_id: impl AsRef<[u8]> + Send,
         mls_group: &[u8],
         custom_configuration: &[u8],
         parent_group_id: Option<&[u8]>,
     ) -> CryptoKeystoreResult<()> {
         self.save(PersistedMlsPendingGroup {
-            id: group_id.into(),
+            id: group_id.as_ref().to_owned(),
             state: mls_group.into(),
             custom_configuration: custom_configuration.into(),
             parent_id: parent_group_id.map(Into::into),
@@ -194,7 +197,10 @@ impl CryptoKeystoreMls for crate::Database {
         Ok(())
     }
 
-    async fn mls_pending_groups_load(&self, group_id: &[u8]) -> CryptoKeystoreResult<(Vec<u8>, Vec<u8>)> {
+    async fn mls_pending_groups_load(
+        &self,
+        group_id: impl AsRef<[u8]> + Send,
+    ) -> CryptoKeystoreResult<(Vec<u8>, Vec<u8>)> {
         self.find(group_id)
             .await?
             .map(|r: PersistedMlsPendingGroup| (r.state.clone(), r.custom_configuration.clone()))
@@ -203,7 +209,7 @@ impl CryptoKeystoreMls for crate::Database {
             ))
     }
 
-    async fn mls_pending_groups_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {
+    async fn mls_pending_groups_delete(&self, group_id: impl AsRef<[u8]> + Send) -> CryptoKeystoreResult<()> {
         self.remove::<PersistedMlsPendingGroup, _>(group_id).await
     }
 

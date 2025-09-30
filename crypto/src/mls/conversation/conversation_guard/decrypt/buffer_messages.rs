@@ -40,7 +40,7 @@ impl ConversationGuard {
         let provider = self.crypto_provider().await?;
         let keystore = provider.keystore();
         keystore
-            .remove_pending_messages_by_conversation_id(self.conversation().await.id().as_ref())
+            .remove_pending_messages_by_conversation_id(self.conversation().await.id())
             .await
             .map_err(KeystoreError::wrap("removing pending mls messages"))
             .map_err(Into::into)

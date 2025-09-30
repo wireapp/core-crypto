@@ -84,7 +84,7 @@ impl ConversationGuard {
         conversation.wipe_associated_entities(&provider).await?;
         provider
             .key_store()
-            .mls_group_delete(conversation.id().as_ref())
+            .mls_group_delete(conversation.id())
             .await
             .map_err(KeystoreError::wrap("deleting mls group"))?;
         let _ = group_store.remove(conversation.id().as_ref());
@@ -113,7 +113,7 @@ impl ConversationGuard {
         let backend = self.crypto_provider().await?;
         let keystore = &backend.keystore();
         let mut conversation = self.conversation_mut().await;
-        if keystore.mls_group_exists(parent_id.as_ref()).await {
+        if keystore.mls_group_exists(parent_id).await {
             conversation.parent_id = Some(parent_id.to_owned());
             conversation.persist_group_when_changed(keystore, true).await?;
             Ok(())

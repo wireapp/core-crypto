@@ -113,7 +113,7 @@ impl KeystoreTransaction {
 
     pub(crate) async fn remove_pending_messages_by_conversation_id(
         &self,
-        conversation_id: &[u8],
+        conversation_id: impl AsRef<[u8]> + Send,
     ) -> CryptoKeystoreResult<()> {
         // We cannot return an error from `retain()`, so we've got to do this dance with a mutable result.
         let mut result = Ok(());
@@ -122,7 +122,7 @@ impl KeystoreTransaction {
         if let Entry::Occupied(mut table) = cache_guard.entry(MlsPendingMessage::COLLECTION_NAME.to_string()) {
             table.get_mut().retain(|_key, record_bytes| {
                 postcard::from_bytes::<MlsPendingMessage>(record_bytes)
-                    .map(|pending_message| pending_message.foreign_id != conversation_id)
+                    .map(|pending_message| pending_message.foreign_id != conversation_id.as_ref())
                     .inspect_err(|err| result = Err(err.clone()))
                     .unwrap_or(false)
             });
