@@ -48,19 +48,6 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertNotNil(database2)
     }
 
-    func testOpenCcDbWorks() async throws {
-        let root = FileManager.default.temporaryDirectory.appending(path: "mls")
-        let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-
-        let key = genDatabaseKey()
-        try await _ = CoreCrypto(keystorePath: keystore.path, key: key)
-
-        let database = try await openDatabase(name: keystore.path, key: key)
-
-        XCTAssertNotNil(database)
-    }
-
     func testOpenExistingDbWithInvalidKeyFails() async throws {
         let root = FileManager.default.temporaryDirectory.appending(path: "mls")
         let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
@@ -85,7 +72,8 @@ final class WireCoreCryptoTests: XCTestCase {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 
         let key1 = genDatabaseKey()
-        var coreCrypto = try await CoreCrypto(keystorePath: keystore.path, key: key1)
+        let database1 = try await Database(keystorePath: keystore.path, key: key1)
+        var coreCrypto = try await CoreCrypto(database: database1)
 
         let clientId = ClientId(bytes: UUID().uuidString.data(using: .utf8)!)
         let ciphersuite = Ciphersuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
@@ -100,8 +88,9 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertNotEqual(key1, key2)
 
         try await updateDatabaseKey(name: keystore.path, oldKey: key1, newKey: key2)
+        let database2 = try await Database(keystorePath: keystore.path, key: key2)
 
-        coreCrypto = try await CoreCrypto(keystorePath: keystore.path, key: key2)
+        coreCrypto = try await CoreCrypto(database: database2)
         let pubkey2 = try await coreCrypto.transaction {
             try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite], nbKeyPackage: 1)
             return try await $0.clientPublicKey(
@@ -153,9 +142,10 @@ final class WireCoreCryptoTests: XCTestCase {
         try await migrateDatabaseKeyTypeToBytes(
             path: targetPath.lastPathComponent, oldKey: oldKey, newKey: newKey)
 
+        let database = try await Database(keystorePath: targetPath.lastPathComponent, key: newKey)
+
         // Check if we can read the conversation from the migrated database
-        let alice = try await CoreCrypto(
-            keystorePath: targetPath.lastPathComponent, key: newKey)
+        let alice = try await CoreCrypto(database: database)
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let epoch = try await alice.transaction {
             try await $0.conversationEpoch(conversationId: conversationId)
@@ -301,8 +291,7 @@ final class WireCoreCryptoTests: XCTestCase {
         for _ in (0..<transactionCount) {
             coreCryptoInstances.append(
                 try await CoreCrypto(
-                    keystorePath: keystore.path,
-                    key: keystoreKey
+                    database: Database(keystorePath: keystore.path, key: keystoreKey)
                 )
             )
         }
@@ -673,9 +662,9 @@ final class WireCoreCryptoTests: XCTestCase {
         let root = FileManager.default.temporaryDirectory.appending(path: "mls")
         let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let database = try await Database(keystorePath: keystore.path, key: genDatabaseKey())
         let coreCrypto = try await CoreCrypto(
-            keystorePath: keystore.path,
-            key: genDatabaseKey()
+            database: database
         )
         try await coreCrypto.provideTransport(transport: mockMlsTransport)
         return coreCrypto

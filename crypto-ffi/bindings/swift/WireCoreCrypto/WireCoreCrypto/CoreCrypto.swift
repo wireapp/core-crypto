@@ -1,6 +1,29 @@
 import System
 @_exported public import WireCoreCryptoUniffi
 
+/// The database needed to initialize ``CoreCrypto``.
+public final class Database {
+    let inner: WireCoreCryptoUniffi.Database
+    let path: FilePath
+
+    /// Initialize the database with an Ffi instance
+    private init(_ database: WireCoreCryptoUniffi.Database, keystorePath: FilePath) {
+        self.inner = database
+        self.path = keystorePath
+    }
+
+    /// Initialise or open a Database.
+    ///
+    /// - Parameter keystorePath: path to the database
+    /// - Parameter key: secret key to unlock the database
+    ///
+    public convenience init(keystorePath: String, key: DatabaseKey) async throws {
+        let database = try await openDatabase(name: keystorePath, key: key)
+        self.init(database, keystorePath: FilePath(stringLiteral: keystorePath))
+    }
+
+}
+
 /// Defines the protocol for a client.
 ///
 public protocol CoreCryptoProtocol {
@@ -58,12 +81,12 @@ public protocol CoreCryptoProtocol {
 public final class CoreCrypto: CoreCryptoProtocol {
 
     let coreCrypto: WireCoreCryptoUniffi.CoreCryptoFfi
-    let keystorePath: FilePath?
+    let database: Database?
 
     /// Initialize CoreCrypto with a Ffi instance
-    private init(_ coreCrypto: WireCoreCryptoUniffi.CoreCryptoFfi, keystorePath: FilePath? = nil) {
+    private init(_ coreCrypto: WireCoreCryptoUniffi.CoreCryptoFfi, database: Database? = nil) {
         self.coreCrypto = coreCrypto
-        self.keystorePath = keystorePath
+        self.database = database
     }
 
     ///
@@ -72,14 +95,13 @@ public final class CoreCrypto: CoreCryptoProtocol {
     /// - Parameter keystorePath: path to the encrypted key store
     /// - Parameter key: secret key to unlock the encrypted key store
     ///
-    public convenience init(keystorePath: String, key: DatabaseKey) async throws {
+    public convenience init(database: Database) async throws {
         let coreCrypto =
             try await WireCoreCryptoUniffi.coreCryptoDeferredInit(
-                path: keystorePath,
-                key: key,
+                database: database.inner,
                 entropySeed: nil
             )
-        self.init(coreCrypto, keystorePath: FilePath(stringLiteral: keystorePath))
+        self.init(coreCrypto, database: database)
     }
 
     /// Instantiate a history client.
@@ -95,7 +117,8 @@ public final class CoreCrypto: CoreCryptoProtocol {
     public func transaction<Result>(
         _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
     ) async throws -> Result {
-        let transactionExecutor = try TransactionExecutor<Result>(keystorePath: keystorePath, block)
+        let transactionExecutor = try TransactionExecutor<Result>(
+            keystorePath: database?.path, block)
         do {
             try await coreCrypto.transaction(command: transactionExecutor)
         } catch {

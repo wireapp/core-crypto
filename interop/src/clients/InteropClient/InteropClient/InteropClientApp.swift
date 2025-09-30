@@ -101,9 +101,9 @@ struct InteropClientApp: App {
         switch action {
         case .initMLS(let clientId, let ciphersuite):
             let key = try generateDatabaseKey()
+            let database = try await Database(keystorePath: generateKeystorePath(), key: key)
             self.coreCrypto = try await CoreCrypto(
-                keystorePath: generateKeystorePath(),
-                key: key
+                database: database
             )
 
             try await self.coreCrypto?.provideTransport(
@@ -233,9 +233,9 @@ struct InteropClientApp: App {
         case .initProteus:
             if coreCrypto == nil {
                 let key = try generateDatabaseKey()
+                let database = try await Database(keystorePath: generateKeystorePath(), key: key)
                 self.coreCrypto = try await CoreCrypto(
-                    keystorePath: generateKeystorePath(),
-                    key: key
+                    database: database
                 )
 
                 try await self.coreCrypto?.provideTransport(
