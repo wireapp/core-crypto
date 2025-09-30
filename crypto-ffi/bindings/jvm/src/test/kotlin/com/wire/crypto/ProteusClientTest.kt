@@ -52,10 +52,11 @@ internal class ProteusClientTest {
 
     private fun newProteusClient(clientId: ClientId): CoreCrypto = runBlocking {
         val root = Files.createTempDirectory("mls").toFile()
-        val keyStore = root.resolve("keystore-$clientId")
+        val path = root.resolve("keystore-$clientId")
         val key = genDatabaseKey()
-        val cc = CoreCrypto(keyStore.absolutePath, key)
-        cc.transaction { ctx -> ctx.proteusInit() }
+        val db = openDatabase(path.absolutePath, key)
+        val cc = CoreCrypto(db)
+        cc.transaction { it.proteusInit() }
         cc
     }
 

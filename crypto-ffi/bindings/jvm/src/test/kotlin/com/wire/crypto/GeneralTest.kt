@@ -32,25 +32,12 @@ class DatabaseTest {
     @Test
     fun givenDatabase_whenUsingSameNameAndKey_thenOpenShouldSucceed() = runTest {
         val tmpdir = createTempDirectory("cc-test-")
-        val keyStore = tmpdir / "keystore"
+        val path = tmpdir / "keystore"
         val key = genDatabaseKey()
-        val db = openDatabase(keyStore.toString(), key)
+        val db = openDatabase(path.absolutePathString(), key)
         db.close()
 
-        openDatabase(keyStore.toString(), key)
-
-        tmpdir.toFile().deleteRecursively()
-    }
-
-    @Test
-    fun givenCcInstance_whenUsingSameNameAndKey_thenOpenShouldSucceed() = runTest {
-        val tmpdir = createTempDirectory("cc-test-")
-        val keyStore = tmpdir / "keystore"
-        val key = genDatabaseKey()
-        val cc = CoreCrypto(keyStore.toString(), key)
-        cc.close()
-
-        openDatabase(keyStore.toString(), key)
+        openDatabase(path.toString(), key)
 
         tmpdir.toFile().deleteRecursively()
     }
@@ -58,12 +45,12 @@ class DatabaseTest {
     @Test
     fun givenDatabase_whenUsingWrongKey_thenOpenShouldFail() = runTest {
         val tmpdir = createTempDirectory("cc-test-")
-        val keyStore = tmpdir / "keystore"
+        val path = tmpdir / "keystore"
         val key = genDatabaseKey()
-        openDatabase(keyStore.toString(), key)
+        openDatabase(path.absolutePathString(), key)
 
         val key2 = genDatabaseKey()
-        assertFailsWith<CoreCryptoException.Other> { openDatabase(keyStore.toString(), key2) }
+        assertFailsWith<CoreCryptoException.Other> { openDatabase(path.toString(), key2) }
             .also { assertEquals("msg=file is not a database", it.message) }
 
         tmpdir.toFile().deleteRecursively()
@@ -91,8 +78,9 @@ class DatabaseKeyTest {
 
         val newKey = genDatabaseKey()
         migrateDatabaseKeyTypeToBytes(path.absolutePathString(), oldKey, newKey)
+        val db = openDatabase(path.absolutePathString(), newKey)
 
-        CoreCrypto(path.absolutePathString(), newKey)
+        CoreCrypto(db)
 
         tmpdir.toFile().deleteRecursively()
     }
@@ -100,10 +88,11 @@ class DatabaseKeyTest {
     @Test
     fun update_database_key_works() = runTest {
         val tmpdir = createTempDirectory("cc-test-")
-        val keyStore = tmpdir / "keystore"
+        val path = tmpdir / "keystore"
         val oldKey = genDatabaseKey()
         val clientId = "alice".toClientId()
-        var cc = CoreCrypto(keyStore.toString(), oldKey)
+        val db = openDatabase(path.absolutePathString(), oldKey)
+        var cc = CoreCrypto(db)
         val pubkey1 = cc.transaction {
             it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT, nbKeyPackage = 1u)
             it.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
@@ -113,8 +102,9 @@ class DatabaseKeyTest {
         val newKey = genDatabaseKey()
         assertNotEquals(oldKey, newKey)
 
-        updateDatabaseKey(keyStore.toString(), oldKey, newKey)
-        cc = CoreCrypto(keyStore.toString(), newKey)
+        updateDatabaseKey(path.absolutePathString(), oldKey, newKey)
+        val newDb = openDatabase(path.absolutePathString(), newKey)
+        cc = CoreCrypto(newDb)
         val pubkey2 = cc.transaction {
             it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT, nbKeyPackage = 0u)
             it.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)

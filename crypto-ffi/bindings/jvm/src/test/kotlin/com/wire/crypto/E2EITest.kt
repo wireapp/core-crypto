@@ -24,9 +24,10 @@ internal class E2EITest : HasMockDeliveryService() {
         val aliceId = genClientId()
 
         val root = Files.createTempDirectory("mls").toFile()
-        val keyStore = root.resolve("keystore-$aliceId")
+        val path = root.resolve("keystore-$aliceId")
         val key = genDatabaseKey()
-        val cc = CoreCrypto(keyStore.absolutePath, key)
+        val db = openDatabase(path.absolutePath, key)
+        val cc = CoreCrypto(db)
         val enrollment = cc.transaction {
             it.e2eiNewEnrollment(
                 clientId = "b7ac11a4-8f01-4527-af88-1c30885a7931:6c1866f567616f31@wire.com",

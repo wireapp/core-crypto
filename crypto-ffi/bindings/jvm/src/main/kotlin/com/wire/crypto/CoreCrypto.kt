@@ -18,12 +18,11 @@ fun CoreCryptoFfi.lift() = CoreCrypto(this)
  */
 class CoreCrypto(private val cc: CoreCryptoFfi) {
     companion object {
-        /** Opens an existing core crypto client or creates a new one if one doesn't exist at the `keystore` path */
+        /** Opens a core crypto client with the specified database, previously instantiated via [openDatabase].  */
         suspend operator fun invoke(
-            keystore: String,
-            databaseKey: DatabaseKey
+            database: Database,
         ) =
-            CoreCrypto(coreCryptoDeferredInit(keystore, databaseKey, null))
+            CoreCrypto(coreCryptoDeferredInit(database, null))
 
         /**
          * Instantiate a history client.

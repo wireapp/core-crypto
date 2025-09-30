@@ -79,9 +79,10 @@ fun newClients(instance: HasMockDeliveryService, vararg clientIds: ClientId) = r
 
 fun initCc(_instance: HasMockDeliveryService): CoreCrypto = runBlocking {
     val root = Files.createTempDirectory("mls").toFile()
-    val keyStore = root.resolve("keystore-${randomIdentifier()}")
+    val path = root.resolve("keystore-${randomIdentifier()}")
     val key = genDatabaseKey()
-    val cc = CoreCrypto(keyStore.absolutePath, key)
+    val db = openDatabase(path.absolutePath, key)
+    val cc = CoreCrypto(db)
     cc.provideTransport(HasMockDeliveryService.mockDeliveryService)
     cc
 }
