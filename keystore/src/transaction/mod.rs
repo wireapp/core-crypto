@@ -131,7 +131,7 @@ impl KeystoreTransaction {
         let mut deleted_list = self.deleted.write().await;
         deleted_list.push(EntityId::from_collection_name(
             MlsPendingMessage::COLLECTION_NAME,
-            conversation_id,
+            conversation_id.as_ref(),
         )?);
         result.map_err(Into::into)
     }

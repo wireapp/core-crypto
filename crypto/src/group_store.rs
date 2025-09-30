@@ -126,14 +126,14 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         identity: Option<V::IdentityType>,
     ) -> crate::Result<Option<GroupStoreValue<V>>> {
         // Optimistic cache lookup
-        if let Some(value) = self.0.get(k) {
+        if let Some(value) = self.0.get(k.as_ref()) {
             return Ok(Some(value.clone()));
         }
 
         // Not in store, fetch the thing in the keystore
-        let inserted_value = V::fetch_from_id(k, identity, keystore).await?.map(|value| {
+        let inserted_value = V::fetch_from_id(k.as_ref(), identity, keystore).await?.map(|value| {
             let value_to_insert = Arc::new(async_lock::RwLock::new(value));
-            self.insert_prepped(k.to_vec(), value_to_insert.clone());
+            self.insert_prepped(k.as_ref().to_owned(), value_to_insert.clone());
             value_to_insert
         });
         Ok(inserted_value)
