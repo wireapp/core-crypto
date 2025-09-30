@@ -283,12 +283,6 @@ impl<'a, T: ConversationWithMls<'a>> Conversation<'a> for T {}
 #[from(&[u8], Vec<u8>)]
 pub struct ConversationId(Vec<u8>);
 
-impl From<&str> for ConversationId {
-    fn from(value: &str) -> Self {
-        value.as_bytes().into()
-    }
-}
-
 impl From<ConversationId> for Cow<'_, [u8]> {
     fn from(value: ConversationId) -> Self {
         Cow::Owned(value.0)
