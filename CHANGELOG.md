@@ -4,6 +4,9 @@
 
 ### Features
 
+- Allow in-memory database instantiation and usage with core crypto. Just call `inMemoryDatabase()` (Android, Web)
+  or the `Database` constructor without a path (iOS).
+
 - Web: structural errors
 
   #### Example Usage
@@ -43,6 +46,13 @@
 - Web: fixed the abort reason of an `MlsTransportResponse` not being forwarded to rust.
 
 ### Breaking Changes
+
+<!-- TODO(SimonThormeyer) this will be refined and extended once the new client API is finished. -->
+
+- The core crypto constructor now takes a `Database` instance instead of a `DatabaseKey` and a path.
+  To instantiate, call `openDatabase()` (Android, Web) or the `Database` constructor (iOS).
+
+  Affected platforms: all
 
 - `proteusErrorCode` field was removed from the root error type, you can get it from the nested context now (see above).
   Affected platforms: web
