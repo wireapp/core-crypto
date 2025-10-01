@@ -171,13 +171,11 @@ export async function ccInit(clientName: string): Promise<void> {
             new window.ccModule.DatabaseKey(key)
         );
 
-        const clientConfig = {
-            database,
-            wasmModule: undefined,
-            ciphersuites: [cipherSuite],
-            clientId,
-        };
-        const instance = await window.ccModule.CoreCrypto.init(clientConfig);
+        const instance = await window.ccModule.CoreCrypto.init(database);
+        await instance.transaction(async (ctx) => {
+            await ctx.mlsInit(clientId, [cipherSuite]);
+        });
+
         await instance.provideTransport(window.deliveryService);
 
         if (window.cc === undefined) {
@@ -467,7 +465,6 @@ export async function roundTripMessage(
  */
 export async function proteusInit(clientName: string): Promise<void> {
     return await browser.execute(async (clientName) => {
-        const encoder = new TextEncoder();
         const key = new Uint8Array(32);
         window.crypto.getRandomValues(key);
 
@@ -476,12 +473,7 @@ export async function proteusInit(clientName: string): Promise<void> {
             new window.ccModule.DatabaseKey(key)
         );
 
-        const clientConfig = {
-            database,
-            clientId: encoder.encode(clientName),
-        };
-        const instance =
-            await window.ccModule.CoreCrypto.deferredInit(clientConfig);
+        const instance = await window.ccModule.CoreCrypto.init(database);
         await instance.transaction((ctx) => ctx.proteusInit());
 
         if (window.cc === undefined) {

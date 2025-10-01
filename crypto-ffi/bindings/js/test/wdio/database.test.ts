@@ -59,13 +59,10 @@ describe("database", () => {
                 new window.ccModule.DatabaseKey(key)
             );
 
-            const clientConfig = {
-                database,
-                ciphersuites: [cipherSuite],
-                clientId: makeClientId(),
-            };
-
-            let cc = await window.ccModule.CoreCrypto.init(clientConfig);
+            let cc = await window.ccModule.CoreCrypto.init(database);
+            cc.transaction(async (ctx) => {
+                await ctx.mlsInit(makeClientId(), [cipherSuite]);
+            });
             const pubkey1 = await cc.transaction((ctx) =>
                 ctx.clientPublicKey(
                     cipherSuite,
@@ -88,16 +85,14 @@ describe("database", () => {
                 new window.ccModule.DatabaseKey(newKey)
             );
 
-            clientConfig.database = newDatabase;
-            clientConfig.clientId = makeClientId();
-
-            cc = await window.ccModule.CoreCrypto.init(clientConfig);
-            const pubkey2 = await cc.transaction((ctx) =>
-                ctx.clientPublicKey(
+            cc = await window.ccModule.CoreCrypto.init(newDatabase);
+            const pubkey2 = await cc.transaction(async (ctx) => {
+                await ctx.mlsInit(makeClientId(), [cipherSuite]);
+                return await ctx.clientPublicKey(
                     cipherSuite,
                     window.ccModule.CredentialType.Basic
-                )
-            );
+                );
+            });
             cc.close();
 
             return [JSON.stringify(pubkey1), JSON.stringify(pubkey2)];
@@ -164,22 +159,13 @@ describe("database", () => {
             );
 
             // Reconstruct the client based on the migrated database and fetch the epoch.
-            const cipherSuite = window.defaultCipherSuite;
             const encoder = new TextEncoder();
             const database = await window.ccModule.openDatabase(
                 clientName,
                 new_key
             );
-            const clientConfig = {
-                database,
-                wasmModule: undefined,
-                ciphersuites: [cipherSuite],
-                clientId: new window.ccModule.ClientId(
-                    encoder.encode(clientName)
-                ),
-            };
-            const instance =
-                await window.ccModule.CoreCrypto.init(clientConfig);
+
+            const instance = await window.ccModule.CoreCrypto.init(database);
             const epoch = await instance.conversationEpoch(
                 new window.ccModule.ConversationId(encoder.encode("convId"))
             );

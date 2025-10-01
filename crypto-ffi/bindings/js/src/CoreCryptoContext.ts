@@ -69,19 +69,17 @@ export class CoreCryptoContext {
     }
 
     /**
-     * Use this after {@link CoreCrypto.deferredInit} when you have a clientId. It initializes MLS.
+     * Use this after {@link CoreCrypto.init} when you have a clientId. It initializes MLS.
      *
-     * @param clientId - {@link CoreCryptoParams#clientId} but required
+     * @param clientId - required
      * @param ciphersuites - All the ciphersuites supported by this MLS client
-     * @param nbKeyPackage - number of initial KeyPackage to create when initializing the client
      */
     async mlsInit(
         clientId: ClientId,
-        ciphersuites: Ciphersuite[],
-        nbKeyPackage?: number
+        ciphersuites: Ciphersuite[]
     ): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
-            this.#ctx.mls_init(clientId, ciphersuites, nbKeyPackage)
+            this.#ctx.mls_init(clientId, ciphersuites)
         );
     }
 
@@ -811,18 +809,15 @@ export class CoreCryptoContext {
      *
      * @param enrollment - the enrollment instance used to fetch the certificates
      * @param certificateChain - the raw response from ACME server
-     * @param nbKeyPackage - number of initial KeyPackage to create when initializing the client
      * @returns a MlsClient initialized with only a x509 credential
      */
     async e2eiMlsInitOnly(
         enrollment: E2eiEnrollment,
-        certificateChain: string,
-        nbKeyPackage?: number
+        certificateChain: string
     ): Promise<NewCrlDistributionPoints> {
         return await this.#ctx.e2ei_mls_init_only(
             enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity,
-            certificateChain,
-            nbKeyPackage
+            certificateChain
         );
     }
 

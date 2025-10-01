@@ -101,12 +101,10 @@ export async function ccInit(clientName: string): Promise<CoreCrypto> {
 
     const database = await openDatabase(clientName, new DatabaseKey(key));
 
-    const clientConfig = {
-        database,
-        ciphersuites: [DEFAULT_CIPHERSUITE],
-        clientId,
-    };
-    const instance = await CoreCrypto.init(clientConfig);
+    const instance = await CoreCrypto.init(database);
+    await instance.transaction(async (ctx) => {
+        await ctx.mlsInit(clientId, [DEFAULT_CIPHERSUITE]);
+    });
     await instance.provideTransport(DELIVERY_SERVICE);
     return instance;
 }
@@ -215,20 +213,16 @@ export async function roundTripMessage(
  * @returns {Promise<CoreCrypto>}
  */
 export async function proteusInit(clientName: string): Promise<CoreCrypto> {
-    const encoder = new TextEncoder();
-    const clientId = encoder.encode(clientName);
-
     const key = new Uint8Array(32);
     crypto.getRandomValues(key);
 
     const database = await openDatabase(clientName, new DatabaseKey(key));
 
-    const clientConfig = {
-        database,
-        clientId,
-    };
-    const instance = await CoreCrypto.deferredInit(clientConfig);
-    await instance.provideTransport(DELIVERY_SERVICE);
+    const instance = await CoreCrypto.init(database);
+    await instance.transaction(async (ctx) => {
+        await ctx.proteusInit();
+    });
+
     return instance;
 }
 

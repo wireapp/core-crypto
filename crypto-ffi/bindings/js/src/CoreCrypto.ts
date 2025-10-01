@@ -62,9 +62,8 @@ export {
     version,
     CoreCrypto,
 } from "./CoreCryptoInstance";
+
 export type {
-    CoreCryptoDeferredParams,
-    CoreCryptoParams,
     CoreCryptoLogger,
     EpochObserver,
     HistoryObserver,

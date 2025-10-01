@@ -51,42 +51,6 @@ import { CoreCryptoContext } from "./CoreCryptoContext";
 
 import { safeBigintToNumber } from "./Conversions";
 
-/**
- * Params for CoreCrypto deferred initialization
- * Please note that the `entropySeed` parameter MUST be exactly 32 bytes
- */
-export interface CoreCryptoDeferredParams {
-    /**
-     * The {@link Database} instance, created via {@link _openDatabase}.
-     */
-    database: Database;
-    /**
-     * External PRNG entropy pool seed.
-     * This **must** be exactly 32 bytes
-     */
-    entropySeed?: Uint8Array;
-}
-
-/**
- * Params for CoreCrypto initialization
- * Please note that the `entropySeed` parameter MUST be exactly 32 bytes
- */
-export interface CoreCryptoParams extends CoreCryptoDeferredParams {
-    /**
-     * MLS Client ID.
-     * This should stay consistent as it will be verified against the stored signature & identity to validate the persisted credential
-     */
-    clientId: ClientId;
-    /**
-     * All the ciphersuites this MLS client can support
-     */
-    ciphersuites: Ciphersuite[];
-    /**
-     * Number of initial KeyPackage to create when initializing the client
-     */
-    nbKeyPackage?: number;
-}
-
 export interface EpochObserver {
     epochChanged(conversationId: ConversationId, epoch: number): Promise<void>;
 }
@@ -225,66 +189,14 @@ export class CoreCrypto {
     /**
      * This is your entrypoint to initialize {@link CoreCrypto}!
      *
-     * @param params - {@link CoreCryptoParams}
-     *
-     * @example
-     * ## Simple init
-     * ```ts
-     * const cc = await CoreCrypto.init({ databaseName: "test", key: "test", clientId: "test" });
-     * // Do the rest with `cc`
-     * ```
-     *
-     * ## Custom Entropy seed init
-     * ```ts
-     * // FYI, this is the IETF test vector #1
-     * const entropySeed = Uint32Array.from([
-     *   0xade0b876, 0x903df1a0, 0xe56a5d40, 0x28bd8653,
-     *   0xb819d2bd, 0x1aed8da0, 0xccef36a8, 0xc70d778b,
-     *   0x7c5941da, 0x8d485751, 0x3fe02477, 0x374ad8b8,
-     *   0xf4b8436a, 0x1ca11815, 0x69b687c3, 0x8665eeb2,
-     * ]);
-     *
-     * const cc = await CoreCrypto.init({
-     *   databaseName: "test",
-     *   key: "test",
-     *   clientId: "test",
-     *   entropySeed,
-     * });
-     * ````
-     */
-    static async init({
-        database,
-        clientId,
-        ciphersuites,
-        entropySeed,
-        nbKeyPackage,
-    }: CoreCryptoParams): Promise<CoreCrypto> {
-        return new this(
-            await CoreCryptoError.asyncMapErr(
-                CoreCryptoFfi.async_new(
-                    database,
-                    clientId,
-                    ciphersuites,
-                    entropySeed,
-                    nbKeyPackage
-                )
-            )
-        );
-    }
-
-    /**
-     * Almost identical to {@link CoreCrypto.init} but allows a 2 phase initialization of MLS.
-     * First, calling this will set up the keystore and will allow generating proteus prekeys.
+     * Calling this will generate proteus prekeys.
      * Then, those keys can be traded for a clientId.
      * Use this clientId to initialize MLS with {@link CoreCryptoContext.mlsInit}.
-     * @param params - {@link CoreCryptoDeferredParams}
+     * @param database - {@link Database}, initialized via {@link _openDatabase}
      */
-    static async deferredInit({
-        database,
-        entropySeed,
-    }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
+    static async init(database: Database): Promise<CoreCrypto> {
         const cc = await CoreCryptoError.asyncMapErr(
-            CoreCryptoFfi.deferred_init(database, entropySeed)
+            CoreCryptoFfi.async_new(database)
         );
         return new this(cc);
     }
