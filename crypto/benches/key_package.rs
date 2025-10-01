@@ -1,6 +1,6 @@
 use std::hint::black_box;
 
-use core_crypto::prelude::MlsCredentialType;
+use core_crypto::MlsCredentialType;
 use criterion::{
     BatchSize, Criterion, async_executor::SmolExecutor as FuturesExecutor, criterion_group, criterion_main,
 };
@@ -21,7 +21,7 @@ fn generate_key_package_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || smol::block_on(setup_mls(ciphersuite, credential.as_ref(), in_memory)),
-                    |(central, _, _)| async move {
+                    |(central, ..)| async move {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
                             context

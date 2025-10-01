@@ -3,12 +3,11 @@ use mls_crypto_provider::EntropySeed;
 use typed_builder::TypedBuilder;
 
 use crate::{
-    MlsError,
+    ClientId, INITIAL_KEYING_MATERIAL_COUNT, MlsError,
     mls::{
         ciphersuite::MlsCiphersuite,
         error::{Error, Result},
     },
-    prelude::{ClientId, INITIAL_KEYING_MATERIAL_COUNT},
 };
 
 /// Configuration parameters for [Session][crate::mls::session::Session]
@@ -31,7 +30,7 @@ pub struct SessionConfig<'a> {
     pub ciphersuites: Vec<MlsCiphersuite>,
     /// Number of [openmls::prelude::KeyPackage] to create when creating a MLS client.
     ///
-    /// Defaults to [crate::prelude::INITIAL_KEYING_MATERIAL_COUNT].
+    /// Defaults to [crate::INITIAL_KEYING_MATERIAL_COUNT].
     #[builder(default)]
     pub nb_key_packages: Option<usize>,
 }

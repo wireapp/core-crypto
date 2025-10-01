@@ -1,11 +1,12 @@
-use crate::{
-    e2e_identity::{device_status::DeviceStatus, id::WireQualifiedClientId},
-    prelude::MlsCredentialType,
-};
 use std::str::FromStr;
+
 use x509_cert::der::pem::LineEnding;
 
 use super::{Error, Result};
+use crate::{
+    MlsCredentialType,
+    e2e_identity::{device_status::DeviceStatus, id::WireQualifiedClientId},
+};
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group

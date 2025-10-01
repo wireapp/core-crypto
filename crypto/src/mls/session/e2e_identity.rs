@@ -2,16 +2,11 @@ use openmls::{
     prelude::{Credential, Node, SignatureScheme, group_info::VerifiableGroupInfo},
     treesync::RatchetTree,
 };
+use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::prelude::WireIdentityReader as _;
 
-use crate::{
-    MlsError,
-    mls::session::CredentialExt as _,
-    prelude::{E2eiConversationState, MlsCiphersuite, MlsCredentialType},
-};
-use openmls_traits::OpenMlsCryptoProvider as _;
-
 use super::{Error, Result, Session};
+use crate::{E2eiConversationState, MlsCiphersuite, MlsCredentialType, MlsError, mls::session::CredentialExt as _};
 
 impl Session {
     /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)

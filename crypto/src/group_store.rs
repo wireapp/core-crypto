@@ -1,10 +1,8 @@
 use std::sync::Arc;
 
-use crate::{
-    KeystoreError, RecursiveError, Result,
-    prelude::{ConversationId, MlsConversation},
-};
 use core_crypto_keystore::connection::FetchFromDatabase;
+
+use crate::{ConversationId, KeystoreError, MlsConversation, RecursiveError, Result};
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]

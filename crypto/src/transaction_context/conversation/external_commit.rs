@@ -3,15 +3,12 @@
 use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
 use super::{Error, Result};
-use crate::mls::conversation::ConversationIdRef;
-use crate::mls::conversation::pending_conversation::PendingConversation;
-use crate::prelude::{MlsCommitBundle, WelcomeBundle};
 use crate::{
-    LeafError, MlsError, RecursiveError, mls,
-    mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
-    prelude::{
-        ConversationId, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
-        MlsGroupInfoBundle,
+    ConversationId, LeafError, MlsCiphersuite, MlsCommitBundle, MlsConversationConfiguration, MlsCredentialType,
+    MlsCustomConfiguration, MlsError, MlsGroupInfoBundle, RecursiveError, WelcomeBundle, mls,
+    mls::{
+        conversation::{ConversationIdRef, pending_conversation::PendingConversation},
+        credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     },
     transaction_context::TransactionContext,
 };
@@ -155,8 +152,10 @@ mod tests {
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
 
     use super::Error;
-    use crate::mls::conversation::ConversationWithMls as _;
-    use crate::{LeafError, prelude::MlsConversationConfiguration, test_utils::*, transaction_context};
+    use crate::{
+        LeafError, MlsConversationConfiguration, mls::conversation::ConversationWithMls as _, test_utils::*,
+        transaction_context,
+    };
 
     #[apply(all_cred_cipher)]
     async fn join_by_external_commit_should_succeed(case: TestContext) {

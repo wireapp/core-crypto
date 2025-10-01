@@ -1,11 +1,9 @@
-use std::collections::HashSet;
-use std::marker::PhantomData;
+use std::{collections::HashSet, marker::PhantomData};
 
 use openmls::prelude::MlsMessageOut;
 
-use crate::{mls::conversation::Conversation as _, prelude::MlsConversationDecryptMessage};
-
 use super::{SessionContext, TestConversation};
+use crate::{MlsConversationDecryptMessage, mls::conversation::Conversation as _};
 
 pub struct Commit;
 

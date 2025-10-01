@@ -2,14 +2,14 @@
 
 use std::borrow::BorrowMut as _;
 
-use super::{Error, Result, TransactionContext};
-use crate::{
-    RecursiveError,
-    mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
-    prelude::{MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration, WelcomeBundle},
-};
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize as _;
+
+use super::{Error, Result, TransactionContext};
+use crate::{
+    MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration, RecursiveError, WelcomeBundle,
+    mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
+};
 
 impl TransactionContext {
     /// Create a conversation from a TLS serialized MLS Welcome message. The `MlsConversationConfiguration` used in this function will be the default implementation.
@@ -99,9 +99,8 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
-
     use super::*;
+    use crate::test_utils::*;
 
     #[apply(all_cred_cipher)]
     async fn joining_from_welcome_should_prune_local_key_material(case: TestContext) {

@@ -3,14 +3,16 @@
 //! This module deals with buffering these messages until we receive the commit that advances the
 //! group epoch.
 
-use super::{RecursionPolicy, Result};
-use crate::KeystoreError;
-use crate::mls::conversation::{ConversationGuard, ConversationWithMls, Error};
-use crate::prelude::MlsBufferedConversationDecryptMessage;
 use core_crypto_keystore::entities::MlsPendingMessage;
 use log::{error, info};
 use openmls::framing::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;
+
+use super::{RecursionPolicy, Result};
+use crate::{
+    KeystoreError, MlsBufferedConversationDecryptMessage,
+    mls::conversation::{ConversationGuard, ConversationWithMls, Error},
+};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum MessageRestorePolicy {
@@ -125,8 +127,7 @@ impl ConversationGuard {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::prelude::MlsConversationDecryptMessage;
-    use crate::test_utils::*;
+    use crate::{MlsConversationDecryptMessage, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn can_operate_with_pending_commit_wpb_17356(case: TestContext) {

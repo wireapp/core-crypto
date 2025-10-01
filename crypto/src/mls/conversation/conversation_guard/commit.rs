@@ -2,20 +2,20 @@
 
 use openmls::prelude::{KeyPackageIn, LeafNode};
 
-use crate::mls::conversation::{Conversation as _, ConversationWithMls as _, Error};
-use crate::mls::credential::CredentialBundle;
-use crate::prelude::{MlsCredentialType, MlsGroupInfoBundle};
+use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
-    LeafError, MlsError, MlsTransportResponse, RecursiveError,
+    ClientId, LeafError, MlsCredentialType, MlsError, MlsGroupInfoBundle, MlsTransportResponse, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::{
-        conversation::{ConversationGuard, Result, commit::MlsCommitBundle},
-        credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
+        conversation::{
+            Conversation as _, ConversationGuard, ConversationWithMls as _, Error, Result, commit::MlsCommitBundle,
+        },
+        credential::{
+            CredentialBundle,
+            crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
+        },
     },
-    prelude::ClientId,
 };
-
-use super::history_sharing::HistoryClientUpdateOutcome;
 
 /// What to do with a commit after it has been sent via [crate::MlsTransport].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

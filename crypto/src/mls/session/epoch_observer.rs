@@ -2,9 +2,8 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::prelude::ConversationId;
-
 use super::{Error, Result, Session};
+use crate::ConversationId;
 
 /// An `EpochObserver` is notified whenever a conversation's epoch changes.
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]

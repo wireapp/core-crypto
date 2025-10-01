@@ -1,8 +1,5 @@
 use super::Result;
-use crate::RecursiveError;
-use crate::e2e_identity::EnrollmentHandle;
-use crate::prelude::E2eiEnrollment;
-use crate::transaction_context::TransactionContext;
+use crate::{E2eiEnrollment, RecursiveError, e2e_identity::EnrollmentHandle, transaction_context::TransactionContext};
 
 impl TransactionContext {
     /// Allows persisting an active enrollment (for example while redirecting the user during OAuth)
@@ -46,14 +43,14 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        e2e_identity::{enrollment::test_utils::*, id::WireQualifiedClientId},
-        prelude::{E2eiEnrollment, INITIAL_KEYING_MATERIAL_COUNT},
-        test_utils::{x509::X509TestChain, *},
-    };
+    use core_crypto_keystore::{ConnectionType, DatabaseKey};
     use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
-    use core_crypto_keystore::{ConnectionType, DatabaseKey};
+    use crate::{
+        E2eiEnrollment, INITIAL_KEYING_MATERIAL_COUNT,
+        e2e_identity::{enrollment::test_utils::*, id::WireQualifiedClientId},
+        test_utils::{x509::X509TestChain, *},
+    };
 
     #[apply(all_cred_cipher)]
     async fn stash_and_pop_should_not_abort_enrollment(case: TestContext) {

@@ -1,6 +1,7 @@
-use super::{Error, Result};
-use crate::prelude::ClientId;
 use base64::Engine;
+
+use super::{Error, Result};
+use crate::ClientId;
 
 #[cfg(test)]
 const DOMAIN: &str = "wire.com";

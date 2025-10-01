@@ -1,13 +1,13 @@
-use crate::{
-    RecursiveError,
-    e2e_identity::{E2eiEnrollment, Result, id::QualifiedE2eiClientId},
-    prelude::{CertificateBundle, MlsCredentialType},
-    test_utils::{SessionContext, TestContext, context::TEAM, x509::X509TestChain},
-    transaction_context::TransactionContext,
-};
 use itertools::Itertools as _;
 use mls_crypto_provider::PkiKeypair;
 use serde_json::json;
+
+use crate::{
+    CertificateBundle, MlsCredentialType, RecursiveError,
+    e2e_identity::{E2eiEnrollment, Result, id::QualifiedE2eiClientId},
+    test_utils::{SessionContext, TestContext, context::TEAM, x509::X509TestChain},
+    transaction_context::TransactionContext,
+};
 
 pub(crate) const E2EI_DISPLAY_NAME: &str = "Alice Smith";
 pub(crate) const E2EI_HANDLE: &str = "alice_wire";

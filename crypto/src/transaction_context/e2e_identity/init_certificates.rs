@@ -1,9 +1,3 @@
-use super::{Error, Result};
-use crate::{
-    KeystoreError, MlsError, RecursiveError,
-    e2e_identity::{CrlRegistration, NewCrlDistributionPoints, restore_pki_env},
-    transaction_context::TransactionContext,
-};
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
@@ -14,6 +8,13 @@ use wire_e2e_identity::prelude::x509::{
     revocation::{PkiEnvironment, PkiEnvironmentParams},
 };
 use x509_cert::der::Decode;
+
+use super::{Error, Result};
+use crate::{
+    KeystoreError, MlsError, RecursiveError,
+    e2e_identity::{CrlRegistration, NewCrlDistributionPoints, restore_pki_env},
+    transaction_context::TransactionContext,
+};
 
 impl TransactionContext {
     /// See [crate::mls::session::Session::e2ei_is_pki_env_setup].
@@ -239,9 +240,8 @@ impl TransactionContext {
 mod tests {
     use x509_cert::der::EncodePem;
 
-    use crate::test_utils::*;
-
     use super::super::Error;
+    use crate::test_utils::*;
 
     #[apply(all_cred_cipher)]
     async fn register_acme_ca_should_fail_when_already_set(case: TestContext) {

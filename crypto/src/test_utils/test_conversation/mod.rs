@@ -2,16 +2,14 @@ use std::sync::Arc;
 
 use openmls::{group::QueuedProposal, prelude::group_info::VerifiableGroupInfo};
 
+use super::{MessageExt as _, MlsCredentialType, MlsTransportTestExt, SessionContext, TestContext, TestError};
 use crate::{
-    RecursiveError,
+    ConversationId, E2eiConversationState, MlsProposalRef, RecursiveError,
     mls::{
         conversation::{Conversation, ConversationGuard, ConversationWithMls as _},
         credential::{CredentialBundle, ext::CredentialExt as _},
     },
-    prelude::{ConversationId, E2eiConversationState, MlsProposalRef},
 };
-
-use super::{MessageExt as _, MlsCredentialType, MlsTransportTestExt, SessionContext, TestContext, TestError};
 
 mod commit;
 pub(crate) mod operation_guard;
@@ -368,7 +366,7 @@ impl<'a> TestConversation<'a> {
             new_display_name
         );
         assert_eq!(group_identity.x509_identity.as_ref().unwrap().handle, new_handle);
-        assert_eq!(group_identity.status, crate::prelude::DeviceStatus::Valid);
+        assert_eq!(group_identity.status, crate::DeviceStatus::Valid);
         assert!(!group_identity.thumbprint.is_empty());
 
         // the in-memory mapping
@@ -386,7 +384,7 @@ impl<'a> TestConversation<'a> {
             new_display_name
         );
         assert_eq!(local_identity.x509_identity.as_ref().unwrap().handle, new_handle);
-        assert_eq!(local_identity.status, crate::prelude::DeviceStatus::Valid);
+        assert_eq!(local_identity.status, crate::DeviceStatus::Valid);
         assert!(!local_identity.thumbprint.is_empty());
 
         // the keystore
@@ -413,7 +411,7 @@ impl<'a> TestConversation<'a> {
             new_display_name
         );
         assert_eq!(keystore_identity.x509_identity.as_ref().unwrap().handle, new_handle);
-        assert_eq!(keystore_identity.status, crate::prelude::DeviceStatus::Valid);
+        assert_eq!(keystore_identity.status, crate::DeviceStatus::Valid);
         assert!(!keystore_identity.thumbprint.is_empty());
     }
 }

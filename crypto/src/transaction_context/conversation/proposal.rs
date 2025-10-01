@@ -2,9 +2,7 @@ use openmls::prelude::KeyPackage;
 
 use super::{Error, Result};
 use crate::{
-    RecursiveError,
-    prelude::{ClientId, ConversationId, MlsProposal, MlsProposalBundle},
-    transaction_context::TransactionContext,
+    ClientId, ConversationId, MlsProposal, MlsProposalBundle, RecursiveError, transaction_context::TransactionContext,
 };
 
 impl TransactionContext {
@@ -71,10 +69,8 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use crate::mls::conversation::ConversationWithMls as _;
-    use crate::{prelude::*, test_utils::*};
-
     use super::Error;
+    use crate::{mls::conversation::ConversationWithMls as _, test_utils::*, *};
 
     mod add {
         use super::*;
@@ -98,8 +94,9 @@ mod tests {
     }
 
     mod update {
-        use super::*;
         use itertools::Itertools;
+
+        use super::*;
 
         #[apply(all_cred_cipher)]
         pub async fn should_update_hpke_key(case: TestContext) {

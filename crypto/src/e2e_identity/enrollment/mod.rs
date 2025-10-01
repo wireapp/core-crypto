@@ -8,12 +8,8 @@ use openmls_traits::{OpenMlsCryptoProvider as _, random::OpenMlsRand as _};
 use wire_e2e_identity::{RustyE2eIdentity, prelude::E2eiAcmeAuthorization};
 use zeroize::Zeroize as _;
 
-use crate::{
-    KeystoreError, MlsError,
-    prelude::{ClientId, MlsCiphersuite},
-};
-
 use super::{EnrollmentHandle, Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
+use crate::{ClientId, KeystoreError, MlsCiphersuite, MlsError};
 
 /// Wire end to end identity solution for fetching a x509 certificate which identifies a client.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

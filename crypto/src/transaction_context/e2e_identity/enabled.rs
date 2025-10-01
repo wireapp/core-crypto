@@ -1,8 +1,9 @@
 //! Utility for clients to get the current state of E2EI when the app resumes
 
+use openmls_traits::types::SignatureScheme;
+
 use super::Result;
 use crate::{RecursiveError, transaction_context::TransactionContext};
-use openmls_traits::types::SignatureScheme;
 
 impl TransactionContext {
     /// See [crate::mls::session::Session::e2ei_is_enabled]
@@ -21,9 +22,10 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use super::super::Error;
-    use crate::{RecursiveError, mls, prelude::MlsCredentialType, test_utils::*};
     use openmls_traits::types::SignatureScheme;
+
+    use super::super::Error;
+    use crate::{MlsCredentialType, RecursiveError, mls, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn should_be_false_when_basic_and_true_when_x509(case: TestContext) {

@@ -27,7 +27,9 @@ pub mod proteus;
 pub mod transaction_context;
 
 pub use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
-
+#[cfg(test)]
+pub use core_crypto_macros::{dispotent, durable, idempotent};
+pub use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed};
 pub use openmls::{
     group::{MlsGroup, MlsGroupConfig},
     prelude::{
@@ -35,8 +37,8 @@ pub use openmls::{
         Node, group_info::VerifiableGroupInfo,
     },
 };
-
-pub use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed};
+#[cfg(feature = "proteus")]
+use {async_lock::Mutex, std::sync::Arc};
 
 pub use crate::{
     build_metadata::{BUILD_METADATA, BuildMetadata},
@@ -65,7 +67,7 @@ pub use crate::{
         credential::{typ::MlsCredentialType, x509::CertificateBundle},
         proposal::{MlsProposal, MlsProposalRef},
         session::{
-            Session,
+            EpochObserver, HistoryObserver, Session,
             config::{SessionConfig, ValidatedSessionConfig},
             id::ClientId,
             identifier::ClientIdentifier,
@@ -75,11 +77,6 @@ pub use crate::{
     },
     transaction_context::e2e_identity::conversation_state::E2eiConversationState,
 };
-
-#[cfg(test)]
-pub use core_crypto_macros::{dispotent, durable, idempotent};
-#[cfg(feature = "proteus")]
-use {async_lock::Mutex, std::sync::Arc};
 
 /// Response from the delivery service
 pub enum MlsTransportResponse {

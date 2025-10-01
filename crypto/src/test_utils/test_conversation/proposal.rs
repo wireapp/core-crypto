@@ -1,11 +1,10 @@
 use openmls::prelude::ExternalProposal;
 
-use crate::mls::conversation::Conversation;
-use crate::mls::conversation::ConversationWithMls as _;
-
-use super::super::SessionContext;
-use super::super::TestConversation;
-use super::operation_guard::{AddGuard, OperationGuard, Proposal, TestOperation};
+use super::{
+    super::{SessionContext, TestConversation},
+    operation_guard::{AddGuard, OperationGuard, Proposal, TestOperation},
+};
+use crate::mls::conversation::{Conversation, ConversationWithMls as _};
 
 impl<'a> TestConversation<'a> {
     /// Propose inviting a member and notify all members.

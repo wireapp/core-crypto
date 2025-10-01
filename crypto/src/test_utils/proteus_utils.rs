@@ -1,8 +1,9 @@
-use crate::test_utils::Result;
 use proteus_wasm::{
     keys::{IdentityKeyPair, PreKey},
     session::Session,
 };
+
+use crate::test_utils::Result;
 
 #[derive(Debug, Default)]
 pub struct CryptoboxLike {

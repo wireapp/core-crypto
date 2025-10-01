@@ -1,10 +1,9 @@
 //! The methods in this module are concerned with message encryption.
 
-use super::ConversationGuard;
-use super::Result;
-use crate::MlsError;
-use crate::mls::conversation::ConversationWithMls as _;
 use openmls::prelude::MlsMessageOutBody;
+
+use super::{ConversationGuard, Result};
+use crate::{MlsError, mls::conversation::ConversationWithMls as _};
 
 impl ConversationGuard {
     /// Encrypts a raw payload then serializes it to the TLS wire format

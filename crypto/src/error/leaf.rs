@@ -4,10 +4,10 @@
 pub enum LeafError {
     /// This error is emitted when the requested conversation already exists with the given if
     #[error("Conversation already exists")]
-    ConversationAlreadyExists(crate::prelude::ConversationId),
+    ConversationAlreadyExists(crate::ConversationId),
     /// This error is emitted when the requested conversation couldn't be found in our store
     #[error("Couldn't find conversation")]
-    ConversationNotFound(crate::prelude::ConversationId),
+    ConversationNotFound(crate::ConversationId),
     /// When looking for a X509 credential for a given ciphersuite and it has not been done
     #[error("End-to-end identity enrollment has not been done")]
     E2eiEnrollmentNotDone,

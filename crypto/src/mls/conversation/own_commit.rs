@@ -1,15 +1,15 @@
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls::prelude::{
+    ConfirmationTag, ContentType, CredentialWithKey, FramedContentBodyIn, MlsMessageIn, MlsMessageInBody, Sender,
+};
+
 use super::{Error, Result};
 use crate::{
-    RecursiveError,
+    MlsConversation, MlsConversationDecryptMessage, RecursiveError, Session,
     mls::credential::{
         crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
         ext::CredentialExt,
     },
-    prelude::{MlsConversation, MlsConversationDecryptMessage, Session},
-};
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::{
-    ConfirmationTag, ContentType, CredentialWithKey, FramedContentBodyIn, MlsMessageIn, MlsMessageInBody, Sender,
 };
 
 impl MlsConversation {
@@ -128,13 +128,10 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
     use openmls::prelude::{ProcessMessageError, ValidationError};
 
     use super::super::error::Error;
-    use crate::prelude::MlsError;
-
-    use crate::mls::conversation::Conversation as _;
+    use crate::{MlsError, mls::conversation::Conversation as _, test_utils::*};
 
     // If there’s a pending commit & it matches the incoming commit: mark pending commit as accepted
     #[apply(all_cred_cipher)]

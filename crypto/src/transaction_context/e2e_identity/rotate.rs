@@ -1,14 +1,14 @@
-use super::{error::Error, error::Result};
-use crate::{
-    KeystoreError, MlsError, RecursiveError,
-    e2e_identity::NewCrlDistributionPoints,
-    mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
-    prelude::{CertificateBundle, E2eiEnrollment, MlsCiphersuite, MlsCredentialType},
-    transaction_context::TransactionContext,
-};
 use core_crypto_keystore::{CryptoKeystoreMls, connection::FetchFromDatabase, entities::MlsKeyPackage};
 use openmls::prelude::KeyPackage;
 use openmls_traits::OpenMlsCryptoProvider;
+
+use super::error::{Error, Result};
+use crate::{
+    CertificateBundle, E2eiEnrollment, KeystoreError, MlsCiphersuite, MlsCredentialType, MlsError, RecursiveError,
+    e2e_identity::NewCrlDistributionPoints,
+    mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
+    transaction_context::TransactionContext,
+};
 
 impl TransactionContext {
     /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential)
@@ -233,15 +233,17 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        e2e_identity::enrollment::test_utils as e2ei_utils, mls::credential::ext::CredentialExt,
-        prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT, test_utils::*,
-    };
+    use std::collections::HashSet;
+
     use core_crypto_keystore::entities::{EntityFindParams, MlsCredential};
     use openmls::prelude::SignaturePublicKey;
-    use std::collections::HashSet;
     use tls_codec::Deserialize;
+
+    use super::*;
+    use crate::{
+        INITIAL_KEYING_MATERIAL_COUNT, e2e_identity::enrollment::test_utils as e2ei_utils,
+        mls::credential::ext::CredentialExt, test_utils::*,
+    };
 
     pub(crate) mod all {
         use e2ei_utils::E2EI_EXPIRY;

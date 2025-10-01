@@ -9,17 +9,16 @@ mod stash;
 
 use std::collections::{HashMap, HashSet};
 
-use crate::{
-    RecursiveError,
-    mls::credential::{crl::get_new_crl_distribution_points, x509::CertificatePrivateKey},
-    prelude::{CertificateBundle, ClientId, ClientIdentifier, E2eiEnrollment, MlsCiphersuite},
-};
+pub use error::{Error, Result};
 use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
 use super::TransactionContext;
-use crate::e2e_identity::NewCrlDistributionPoints;
-pub use error::{Error, Result};
+use crate::{
+    CertificateBundle, ClientId, ClientIdentifier, E2eiEnrollment, MlsCiphersuite, RecursiveError,
+    e2e_identity::NewCrlDistributionPoints,
+    mls::credential::{crl::get_new_crl_distribution_points, x509::CertificatePrivateKey},
+};
 
 impl TransactionContext {
     /// Creates an enrollment instance with private key material you can use in order to fetch
@@ -147,10 +146,12 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use crate::e2e_identity::enrollment::test_utils as e2ei_utils;
-    use crate::mls::conversation::Conversation as _;
-    use crate::test_utils::x509::X509TestChain;
-    use crate::{prelude::*, test_utils::*};
+    use crate::{
+        e2e_identity::enrollment::test_utils as e2ei_utils,
+        mls::conversation::Conversation as _,
+        test_utils::{x509::X509TestChain, *},
+        *,
+    };
 
     #[apply(all_cred_cipher)]
     async fn e2e_identity_should_work(case: TestContext) {

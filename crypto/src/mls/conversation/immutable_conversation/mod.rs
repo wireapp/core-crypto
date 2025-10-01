@@ -1,5 +1,5 @@
 use super::{ConversationWithMls, MlsConversation, Result};
-use crate::prelude::Session;
+use crate::Session;
 
 /// An ImmutableConversation wraps a `MlsConversation`.
 ///

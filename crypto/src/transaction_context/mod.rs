@@ -1,17 +1,8 @@
 //! This module contains the primitives to enable transactional support on a higher level within the
 //! [Session]. All mutating operations need to be done through a [TransactionContext].
 
-#[cfg(feature = "proteus")]
-use crate::proteus::ProteusCentral;
-use crate::{
-    CoreCrypto, KeystoreError, MlsError, MlsTransport, RecursiveError,
-    group_store::GroupStore,
-    prelude::{ClientId, INITIAL_KEYING_MATERIAL_COUNT, MlsConversation, MlsCredentialType, Session},
-};
-use crate::{
-    mls::HasSessionAndCrypto,
-    prelude::{ClientIdentifier, MlsCiphersuite},
-};
+use std::{ops::Deref, sync::Arc};
+
 #[cfg(feature = "proteus")]
 use async_lock::Mutex;
 use async_lock::{RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
@@ -19,7 +10,14 @@ use core_crypto_keystore::{CryptoKeystoreError, connection::FetchFromDatabase, e
 pub use error::{Error, Result};
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use openmls_traits::OpenMlsCryptoProvider as _;
-use std::{ops::Deref, sync::Arc};
+
+#[cfg(feature = "proteus")]
+use crate::proteus::ProteusCentral;
+use crate::{
+    ClientId, ClientIdentifier, CoreCrypto, INITIAL_KEYING_MATERIAL_COUNT, KeystoreError, MlsCiphersuite,
+    MlsConversation, MlsCredentialType, MlsError, MlsTransport, RecursiveError, Session, group_store::GroupStore,
+    mls::HasSessionAndCrypto,
+};
 pub mod conversation;
 pub mod e2e_identity;
 mod error;

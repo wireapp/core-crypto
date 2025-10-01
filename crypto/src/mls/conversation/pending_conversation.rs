@@ -2,26 +2,33 @@
 //! (most of the time renewed external proposals) for the new epoch whereas it does not yet have
 //! the confirmation from the DS that the external join commit has been accepted.
 
-use super::Result;
-use super::{ConversationWithMls, Error};
-use crate::mls::conversation::ConversationIdRef;
-use crate::mls::conversation::conversation_guard::decrypt::buffer_messages::MessageRestorePolicy;
-use crate::mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points};
-use crate::mls::credential::ext::CredentialExt as _;
-use crate::prelude::{
-    MlsBufferedConversationDecryptMessage, MlsCommitBundle, MlsConversation, MlsConversationConfiguration,
-    MlsConversationDecryptMessage, MlsCustomConfiguration,
+use core_crypto_keystore::{
+    CryptoKeystoreMls as _,
+    entities::{MlsPendingMessage, PersistedMlsPendingGroup},
 };
-use crate::transaction_context::TransactionContext;
-use crate::{KeystoreError, LeafError, MlsError, MlsTransportResponse, RecursiveError};
-use core_crypto_keystore::CryptoKeystoreMls as _;
-use core_crypto_keystore::entities::{MlsPendingMessage, PersistedMlsPendingGroup};
 use log::trace;
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
-use openmls::credentials::CredentialWithKey;
-use openmls::prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody};
+use openmls::{
+    credentials::CredentialWithKey,
+    prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody},
+};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize as _;
+
+use super::{ConversationWithMls, Error, Result};
+use crate::{
+    KeystoreError, LeafError, MlsBufferedConversationDecryptMessage, MlsCommitBundle, MlsConversation,
+    MlsConversationConfiguration, MlsConversationDecryptMessage, MlsCustomConfiguration, MlsError,
+    MlsTransportResponse, RecursiveError,
+    mls::{
+        conversation::{ConversationIdRef, conversation_guard::decrypt::buffer_messages::MessageRestorePolicy},
+        credential::{
+            crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
+            ext::CredentialExt as _,
+        },
+    },
+    transaction_context::TransactionContext,
+};
 
 /// A pending conversation is a conversation that has been created via an external join commit
 /// locally, while this commit has not yet been approved by the DS.
@@ -313,8 +320,7 @@ impl PendingConversation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::prelude::MlsConversationDecryptMessage;
-    use crate::test_utils::*;
+    use crate::{MlsConversationDecryptMessage, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {

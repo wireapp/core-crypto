@@ -1,7 +1,8 @@
-use super::Result;
-use crate::{MlsError, prelude::MlsConversation};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
+
+use super::Result;
+use crate::{MlsConversation, MlsError};
 
 impl MlsConversation {
     pub(crate) async fn wipe_associated_entities(&mut self, backend: &MlsCryptoProvider) -> Result<()> {

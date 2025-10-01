@@ -11,6 +11,13 @@
 //! | merge     | ❌           | ❌            | ✅           | ✅            |
 //! | decrypt   | ✅           | ✅            | ✅           | ✅            |
 
+use std::{
+    borrow::{Borrow, Cow},
+    collections::{HashMap, HashSet},
+    ops::Deref,
+    sync::Arc,
+};
+
 use config::MlsConversationConfiguration;
 use core_crypto_keystore::CryptoKeystoreMls;
 use itertools::Itertools as _;
@@ -20,19 +27,11 @@ use openmls::{
     group::MlsGroup,
     prelude::{Credential, CredentialWithKey, LeafNodeIndex, Proposal, SignaturePublicKey},
 };
-use openmls_traits::OpenMlsCryptoProvider;
-use openmls_traits::types::SignatureScheme;
-use std::{
-    borrow::{Borrow, Cow},
-    collections::HashMap,
-    sync::Arc,
-};
-use std::{collections::HashSet, ops::Deref};
+use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 
 use crate::{
-    KeystoreError, LeafError, MlsError, RecursiveError,
-    mls::Session,
-    prelude::{ClientId, E2eiConversationState, MlsCiphersuite, MlsCredentialType, WireIdentity},
+    ClientId, E2eiConversationState, KeystoreError, LeafError, MlsCiphersuite, MlsCredentialType, MlsError,
+    RecursiveError, WireIdentity, mls::Session,
 };
 
 pub(crate) mod commit;
@@ -54,14 +53,15 @@ mod renew;
 pub(crate) mod welcome;
 mod wipe;
 
-use crate::mls::HasSessionAndCrypto;
-use crate::mls::credential::ext::CredentialExt as _;
-use crate::prelude::user_id::UserId;
 pub use conversation_guard::ConversationGuard;
 pub use error::{Error, Result};
 pub use immutable_conversation::ImmutableConversation;
 
 use super::credential::CredentialBundle;
+use crate::{
+    UserId,
+    mls::{HasSessionAndCrypto, credential::ext::CredentialExt as _},
+};
 
 /// The base layer for [Conversation].
 /// The trait is only exposed internally.
@@ -240,12 +240,12 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
             .process_results(|iter| iter.into_group_map())
     }
 
-    /// Generate a new [`crate::prelude::HistorySecret`].
+    /// Generate a new [`crate::HistorySecret`].
     ///
     /// This is useful when it's this client's turn to generate a new history client.
     ///
     /// The generated secret is cryptographically unrelated to the current CoreCrypto client.
-    async fn generate_history_secret(&'a self) -> Result<crate::prelude::HistorySecret> {
+    async fn generate_history_secret(&'a self) -> Result<crate::HistorySecret> {
         let ciphersuite = self.ciphersuite().await;
         crate::ephemeral::generate_history_secret(ciphersuite)
             .await
@@ -254,7 +254,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
     }
 
     /// Check if history sharing is enabled, i.e., if any of the conversation members have a [ClientId] starting
-    /// with [crate::prelude::HISTORY_CLIENT_ID_PREFIX].
+    /// with [crate::HISTORY_CLIENT_ID_PREFIX].
     async fn is_history_sharing_enabled(&'a self) -> bool {
         self.get_client_ids()
             .await
@@ -654,10 +654,8 @@ mod tests {
 
     mod wire_identity_getters {
         use super::Error;
-        use crate::mls::conversation::Conversation;
-        use crate::prelude::{ClientId, MlsCredentialType};
         use crate::{
-            prelude::{DeviceStatus, E2eiConversationState},
+            ClientId, DeviceStatus, E2eiConversationState, MlsCredentialType, mls::conversation::Conversation,
             test_utils::*,
         };
 
@@ -1048,9 +1046,10 @@ mod tests {
     }
 
     mod export_secret {
+        use openmls::prelude::ExportSecretError;
+
         use super::*;
         use crate::MlsErrorKind;
-        use openmls::prelude::ExportSecretError;
 
         #[apply(all_cred_cipher)]
         pub async fn can_export_secret_key(case: TestContext) {

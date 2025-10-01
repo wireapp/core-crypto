@@ -5,16 +5,14 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn, prelude::LeafNode};
-
 use mls_crypto_provider::MlsCryptoProvider;
+use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn, prelude::LeafNode};
 
 use super::{Error, Result};
 use crate::{
-    MlsError, RecursiveError,
+    MlsConversation, MlsError, MlsProposalRef, RecursiveError, Session,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
-    prelude::{MlsConversation, MlsProposalRef, Session},
 };
 
 /// Creating proposals
@@ -160,10 +158,8 @@ impl MlsProposalBundle {
 mod tests {
     use itertools::Itertools;
 
-    use crate::mls::conversation::ConversationWithMls as _;
-    use crate::test_utils::*;
-
     use super::*;
+    use crate::{mls::conversation::ConversationWithMls as _, test_utils::*};
 
     mod propose_add_members {
         use super::*;

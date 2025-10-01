@@ -6,11 +6,10 @@ use openmls::prelude::group_info::GroupInfo;
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{ConversationWithMls, Error, MlsConversation, Result};
-use crate::MlsTransport;
-use crate::mls::conversation::ConversationIdRef;
-use crate::mls::credential::CredentialBundle;
 use crate::{
-    KeystoreError, LeafError, RecursiveError, group_store::GroupStoreValue, prelude::MlsGroupInfoBundle,
+    KeystoreError, LeafError, MlsGroupInfoBundle, MlsTransport, RecursiveError,
+    group_store::GroupStoreValue,
+    mls::{conversation::ConversationIdRef, credential::CredentialBundle},
     transaction_context::TransactionContext,
 };
 mod commit;
@@ -140,7 +139,7 @@ impl ConversationGuard {
 #[cfg(test)]
 pub mod test_utils {
     use super::ConversationGuard;
-    use crate::{mls::conversation::ConversationWithMls as _, prelude::MlsConversation};
+    use crate::{MlsConversation, mls::conversation::ConversationWithMls as _};
 
     impl ConversationGuard {
         /// Replaces the MLS group in memory with the one from keystore.

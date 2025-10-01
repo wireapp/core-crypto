@@ -1,5 +1,5 @@
-use super::{Error, Result};
-use crate::{KeystoreError, RecursiveError, e2e_identity::NewCrlDistributionPoints};
+use std::collections::HashSet;
+
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::E2eiCrl};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
@@ -7,8 +7,10 @@ use openmls::{
     prelude::{Certificate, MlsCredentialType, Proposal, StagedCommit},
 };
 use openmls_traits::OpenMlsCryptoProvider;
-use std::collections::HashSet;
 use wire_e2e_identity::prelude::x509::extract_crl_uris;
+
+use super::{Error, Result};
+use crate::{KeystoreError, RecursiveError, e2e_identity::NewCrlDistributionPoints};
 
 pub(crate) fn extract_crl_uris_from_credentials<'a>(
     mut credentials: impl Iterator<Item = &'a MlsCredentialType>,

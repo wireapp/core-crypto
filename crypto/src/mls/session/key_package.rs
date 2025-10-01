@@ -1,19 +1,18 @@
-use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
-use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::{HashMap, HashSet};
-use tls_codec::{Deserialize, Serialize};
 
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{EntityFindParams, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage},
 };
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
+use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
+use openmls_traits::OpenMlsCryptoProvider;
+use tls_codec::{Deserialize, Serialize};
 
 use super::{Error, Result};
 use crate::{
-    KeystoreError, MlsError,
+    KeystoreError, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsError, Session,
     mls::{credential::CredentialBundle, session::SessionInner},
-    prelude::{MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, Session},
 };
 
 /// Default number of KeyPackages a client generates the first time it's created
@@ -330,19 +329,17 @@ impl Session {
 
 #[cfg(test)]
 mod tests {
-    use openmls::prelude::{KeyPackage, KeyPackageIn, KeyPackageRef, ProtocolVersion};
-    use openmls_traits::OpenMlsCryptoProvider;
-    use openmls_traits::types::VerifiableCiphersuite;
-
-    use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
-
-    use crate::e2e_identity::enrollment::test_utils::{e2ei_enrollment, init_activation_or_rotation, noop_restore};
-    use crate::prelude::MlsConversationConfiguration;
-    use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
-    use crate::test_utils::*;
     use core_crypto_keystore::{ConnectionType, DatabaseKey};
+    use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
+    use openmls::prelude::{KeyPackage, KeyPackageIn, KeyPackageRef, ProtocolVersion};
+    use openmls_traits::{OpenMlsCryptoProvider, types::VerifiableCiphersuite};
 
     use super::Session;
+    use crate::{
+        INITIAL_KEYING_MATERIAL_COUNT, MlsConversationConfiguration,
+        e2e_identity::enrollment::test_utils::{e2ei_enrollment, init_activation_or_rotation, noop_restore},
+        test_utils::*,
+    };
 
     #[apply(all_cred_cipher)]
     async fn can_assess_keypackage_expiration(case: TestContext) {

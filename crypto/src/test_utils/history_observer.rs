@@ -1,9 +1,10 @@
+use std::sync::Arc;
+
 use async_lock::Mutex;
 use async_trait::async_trait;
 use obfuscate::Obfuscated;
-use std::sync::Arc;
 
-use crate::prelude::{ConversationId, HistoryObserver, HistorySecret};
+use crate::{ConversationId, HistoryObserver, HistorySecret};
 
 #[derive(Debug)]
 pub(crate) struct TestHistoryObserver(Mutex<HistoryObserverInner>);

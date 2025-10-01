@@ -2,9 +2,8 @@ use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, MlsMessageOut};
 
 use super::Result;
 use crate::{
-    LeafError, MlsError, RecursiveError,
+    ConversationId, LeafError, MlsCiphersuite, MlsError, RecursiveError,
     mls::{self, credential::typ::MlsCredentialType},
-    prelude::{ConversationId, MlsCiphersuite},
     transaction_context::TransactionContext,
 };
 
@@ -122,9 +121,10 @@ mod tests {
     }
 
     mod remove {
-        use super::*;
-        use crate::{MlsErrorKind, prelude::MlsError};
         use openmls::prelude::{ProcessMessageError, ValidationError};
+
+        use super::*;
+        use crate::{MlsError, MlsErrorKind};
 
         #[apply(all_cred_cipher)]
         async fn ds_should_remove_guest_from_conversation(mut case: TestContext) {

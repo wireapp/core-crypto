@@ -1,16 +1,15 @@
 #[cfg(test)]
-use crate::test_utils::x509::X509Certificate;
-#[cfg(test)]
 use mls_crypto_provider::PkiKeypair;
-#[cfg(test)]
-use x509_cert::der::Encode;
-
-use super::{Error, Result};
 use openmls_traits::types::SignatureScheme;
 use wire_e2e_identity::prelude::{HashAlgorithm, WireIdentityReader};
+#[cfg(test)]
+use x509_cert::der::Encode;
 use zeroize::Zeroize;
 
-use crate::{RecursiveError, e2e_identity::id::WireQualifiedClientId, prelude::ClientId};
+use super::{Error, Result};
+#[cfg(test)]
+use crate::test_utils::x509::X509Certificate;
+use crate::{ClientId, RecursiveError, e2e_identity::id::WireQualifiedClientId};
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize)]
 #[zeroize(drop)]
@@ -167,8 +166,8 @@ impl CertificateBundle {
     pub fn rand_identifier(
         name: &str,
         signers: &[&crate::test_utils::x509::X509Certificate],
-    ) -> crate::prelude::ClientIdentifier {
-        crate::prelude::ClientIdentifier::X509(
+    ) -> crate::ClientIdentifier {
+        crate::ClientIdentifier::X509(
             signers
                 .iter()
                 .map(|signer| (signer.signature_scheme, Self::rand(&name.into(), signer)))

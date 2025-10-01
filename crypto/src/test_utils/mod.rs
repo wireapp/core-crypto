@@ -14,30 +14,25 @@ pub mod x509;
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
 
-pub(crate) use self::epoch_observer::TestEpochObserver;
-use self::error::Result;
-pub(crate) use self::history_observer::TestHistoryObserver;
-pub use self::{error::Error as TestError, message::*, test_context::*, test_conversation::TestConversation};
-pub use crate::prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
-use crate::{
-    CoreCrypto, Error, MlsTransport, MlsTransportData, MlsTransportResponse, RecursiveError,
-    e2e_identity::id::QualifiedE2eiClientId,
-    mls::HistoryObserver,
-    prelude::{
-        CertificateBundle, ClientId, ConversationId, MlsCommitBundle, MlsGroupInfoBundle, Session, SessionConfig,
-    },
-    test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
-    transaction_context::TransactionContext,
-};
-use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
+use std::{collections::HashMap, ops::Deref, sync::Arc};
 
 use async_lock::RwLock;
 use openmls::framing::MlsMessageOut;
 pub use openmls_traits::types::SignatureScheme;
 
-use std::collections::HashMap;
-use std::ops::Deref;
-use std::sync::Arc;
+use self::error::Result;
+pub(crate) use self::{epoch_observer::TestEpochObserver, history_observer::TestHistoryObserver};
+pub use self::{error::Error as TestError, message::*, test_context::*, test_conversation::TestConversation};
+use crate::{
+    CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Database, DatabaseKey, Error,
+    MlsCommitBundle, MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse, RecursiveError, Session,
+    SessionConfig,
+    e2e_identity::id::QualifiedE2eiClientId,
+    mls::HistoryObserver,
+    test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
+    transaction_context::TransactionContext,
+};
+pub use crate::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
 
 pub const GROUP_SAMPLE_SIZE: usize = 9;
 
@@ -87,10 +82,9 @@ macro_rules! innermost_source_matches {
         outcome
     }};
 }
-use crate::RecursiveError::Test;
-use crate::ephemeral::HistorySecret;
-use crate::test_utils::TestError::ImplementationError;
 pub(crate) use innermost_source_matches;
+
+use crate::{RecursiveError::Test, ephemeral::HistorySecret, test_utils::TestError::ImplementationError};
 
 #[derive(Debug, Clone)]
 pub struct SessionContext {
@@ -223,7 +217,7 @@ impl SessionContext {
         // Take bundle from chain or generate a new one
         let bundle = match cert_source {
             TestCertificateSource::Generated => {
-                crate::prelude::CertificateBundle::rand(client_id, chain.find_local_intermediate_ca())
+                crate::CertificateBundle::rand(client_id, chain.find_local_intermediate_ca())
             }
             TestCertificateSource::TestChainActor(i) => {
                 use x509_cert::der::Encode as _;

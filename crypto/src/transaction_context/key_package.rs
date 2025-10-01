@@ -2,12 +2,8 @@
 
 use openmls::prelude::{KeyPackage, KeyPackageRef};
 
-use crate::{
-    RecursiveError,
-    prelude::{MlsCiphersuite, MlsCredentialType},
-};
-
 use super::{Result, TransactionContext};
+use crate::{MlsCiphersuite, MlsCredentialType, RecursiveError};
 
 impl TransactionContext {
     /// Returns `amount_requested` OpenMLS [openmls::key_packages::KeyPackage]s.

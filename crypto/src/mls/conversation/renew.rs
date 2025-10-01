@@ -1,14 +1,10 @@
 use core_crypto_keystore::entities::MlsEncryptionKeyPair;
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{LeafNode, LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
 
-use mls_crypto_provider::MlsCryptoProvider;
-
 use super::{Error, Result};
-use crate::{
-    KeystoreError, RecursiveError,
-    prelude::{MlsConversation, MlsProposalBundle, Session},
-};
+use crate::{KeystoreError, MlsConversation, MlsProposalBundle, RecursiveError, Session};
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
 /// in case another commit has been accepted by the backend instead of ours

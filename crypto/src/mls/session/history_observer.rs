@@ -1,8 +1,9 @@
-use crate::prelude::{ConversationId, HistorySecret};
-use async_trait::async_trait;
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use super::{Error, Session};
+use crate::{ConversationId, HistorySecret, ToRecursiveError as _};
 
 /// The `HistoryObserver` will be called when updating the history client in a conversation
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
@@ -21,13 +22,12 @@ impl Session {
     ///
     /// This function should be called 0 or 1 times in a session's lifetime. If called
     /// when an epoch observer already exists, this will return an error.
-    pub async fn register_history_observer(
-        &self,
-        history_observer: Arc<dyn HistoryObserver>,
-    ) -> crate::prelude::Result<()> {
+    pub async fn register_history_observer(&self, history_observer: Arc<dyn HistoryObserver>) -> crate::Result<()> {
         let mut history_guard = self.history_observer.write().await;
         if history_guard.is_some() {
-            return Err(Error::HistoryObserverAlreadyExists);
+            return Err(Error::HistoryObserverAlreadyExists
+                .construct_recursive("cannot register a new history observer")
+                .into());
         }
         history_guard.replace(history_observer);
         Ok(())

@@ -1,16 +1,18 @@
-use crate::mls::session::{
-    SessionInner,
-    error::{Error, Result},
-};
-use crate::{
-    mls::credential::{CredentialBundle, typ::MlsCredentialType},
-    prelude::Session,
-};
+use std::{collections::HashMap, ops::Deref, sync::Arc};
+
 use openmls::prelude::{Credential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
-use std::collections::HashMap;
-use std::ops::Deref;
-use std::sync::Arc;
+
+use crate::{
+    Session,
+    mls::{
+        credential::{CredentialBundle, typ::MlsCredentialType},
+        session::{
+            SessionInner,
+            error::{Error, Result},
+        },
+    },
+};
 
 /// In memory Map of a Session's identities: one per SignatureScheme.
 /// We need `indexmap::IndexSet` because each `CredentialBundle` has to be unique and insertion
@@ -127,9 +129,10 @@ impl Session {
 
 #[cfg(test)]
 mod tests {
-    use crate::{mls, test_utils::*};
     use openmls::prelude::SignaturePublicKey;
     use rand::Rng;
+
+    use crate::{mls, test_utils::*};
 
     mod find {
         use super::*;

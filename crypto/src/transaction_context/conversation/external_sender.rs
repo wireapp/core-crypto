@@ -1,7 +1,7 @@
 //! This module is concerned with setting the external sender.
 
 use super::{Result, TransactionContext};
-use crate::{RecursiveError, prelude::MlsConversationConfiguration};
+use crate::{MlsConversationConfiguration, RecursiveError};
 
 impl TransactionContext {
     /// Parses external senders' keys provided by the delivery service

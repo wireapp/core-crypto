@@ -1,7 +1,10 @@
+use std::{
+    cmp::Ordering,
+    hash::{Hash, Hasher},
+};
+
 use openmls::prelude::{Credential, CredentialWithKey};
 use openmls_basic_credential::SignatureKeyPair;
-use std::cmp::Ordering;
-use std::hash::{Hash, Hasher};
 
 pub(crate) mod crl;
 mod error;
@@ -102,15 +105,14 @@ impl PartialOrd for CredentialBundle {
 // Requires more than 1 ciphersuite supported at the moment.
 #[cfg(test)]
 mod tests {
-    use mls_crypto_provider::PkiKeypair;
     use std::collections::HashMap;
 
-    use super::x509::CertificateBundle;
-    use super::*;
-    use crate::mls::conversation::Conversation as _;
+    use mls_crypto_provider::PkiKeypair;
+
+    use super::{x509::CertificateBundle, *};
     use crate::{
-        mls::credential::x509::CertificatePrivateKey,
-        prelude::{ClientIdentifier, E2eiConversationState, MlsCredentialType},
+        ClientIdentifier, E2eiConversationState, MlsCredentialType,
+        mls::{conversation::Conversation as _, credential::x509::CertificatePrivateKey},
         test_utils::{
             x509::{CertificateParams, X509TestChain},
             *,

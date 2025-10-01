@@ -12,12 +12,11 @@
 //!
 
 use core_crypto_keystore::entities::MlsEncryptionKeyPair;
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 
-use mls_crypto_provider::MlsCryptoProvider;
-
 use super::Result;
-use crate::{MlsError, mls::MlsConversation, prelude::Session};
+use crate::{MlsError, Session, mls::MlsConversation};
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {

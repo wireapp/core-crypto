@@ -1,4 +1,3 @@
-use super::TransactionContext;
 use core_crypto_keystore::{
     connection::FetchFromDatabase as _,
     entities::{
@@ -7,6 +6,8 @@ use core_crypto_keystore::{
         PersistedMlsPendingGroup,
     },
 };
+
+use super::TransactionContext;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct EntitiesCount {

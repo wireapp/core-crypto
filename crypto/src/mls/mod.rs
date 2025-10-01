@@ -1,5 +1,6 @@
-use crate::prelude::{ClientId, MlsConversation, Session};
 use mls_crypto_provider::MlsCryptoProvider;
+
+use crate::{ClientId, MlsConversation, Session};
 
 pub(crate) mod ciphersuite;
 pub mod conversation;
@@ -9,8 +10,7 @@ pub(crate) mod proposal;
 pub(crate) mod session;
 
 pub use error::{Error, Result};
-pub use session::EpochObserver;
-pub use session::HistoryObserver;
+pub use session::{EpochObserver, HistoryObserver};
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
@@ -21,14 +21,13 @@ pub(crate) trait HasSessionAndCrypto: Send {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::{
-        CertificateBundle, ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType, SessionConfig,
-    };
-    use crate::transaction_context::Error as TransactionError;
+
     use crate::{
-        CoreCrypto,
+        CertificateBundle, ClientIdentifier, CoreCrypto, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType,
+        SessionConfig,
         mls::Session,
         test_utils::{x509::X509TestChain, *},
+        transaction_context::Error as TransactionError,
     };
 
     mod conversation_epoch {
@@ -68,9 +67,8 @@ mod tests {
     }
 
     mod invariants {
-        use crate::{mls, prelude::MlsCiphersuite};
-
         use super::*;
+        use crate::{MlsCiphersuite, mls};
 
         #[apply(all_cred_cipher)]
         async fn can_create_from_valid_configuration(mut case: TestContext) {

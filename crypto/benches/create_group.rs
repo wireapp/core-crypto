@@ -1,10 +1,9 @@
 use std::hint::black_box;
 
+use core_crypto::{MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration};
 use criterion::{
     BatchSize, BenchmarkId, Criterion, async_executor::SmolExecutor as FuturesExecutor, criterion_group, criterion_main,
 };
-
-use core_crypto::prelude::{MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration};
 
 use crate::utils::*;
 

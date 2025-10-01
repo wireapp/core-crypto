@@ -9,19 +9,8 @@ pub(crate) mod identities;
 pub(crate) mod key_package;
 pub(crate) mod user_id;
 
-use crate::{
-    CoreCrypto, KeystoreError, LeafError, MlsError, MlsTransport, RecursiveError,
-    group_store::GroupStore,
-    mls::{
-        self, HasSessionAndCrypto,
-        conversation::{ConversationIdRef, ImmutableConversation},
-        credential::{CredentialBundle, ext::CredentialExt},
-    },
-    prelude::{
-        CertificateBundle, ClientId, HistorySecret, MlsCiphersuite, MlsCredentialType, config::ValidatedSessionConfig,
-        identifier::ClientIdentifier, key_package::KEYPACKAGE_DEFAULT_LIFETIME,
-    },
-};
+use std::{collections::HashSet, ops::Deref, sync::Arc};
+
 use async_lock::RwLock;
 use core_crypto_keystore::{
     CryptoKeystoreError, Database,
@@ -32,16 +21,25 @@ pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
 use identities::Identities;
+use key_package::KEYPACKAGE_DEFAULT_LIFETIME;
 use log::debug;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 use openmls::prelude::{Credential, CredentialType};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
 use openmls_x509_credential::CertificateKeyPair;
-use std::collections::HashSet;
-use std::ops::Deref;
-use std::sync::Arc;
 use tls_codec::{Deserialize, Serialize};
+
+use crate::{
+    CertificateBundle, ClientId, ClientIdentifier, CoreCrypto, HistorySecret, KeystoreError, LeafError, MlsCiphersuite,
+    MlsCredentialType, MlsError, MlsTransport, RecursiveError, ValidatedSessionConfig,
+    group_store::GroupStore,
+    mls::{
+        self, HasSessionAndCrypto,
+        conversation::{ConversationIdRef, ImmutableConversation},
+        credential::{CredentialBundle, ext::CredentialExt},
+    },
+};
 
 /// A MLS Session enables a user device to communicate via the MLS protocol.
 ///
@@ -631,12 +629,11 @@ impl Session {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::test_utils::*;
-    use crate::transaction_context::test_utils::EntitiesCount;
-    use core_crypto_keystore::connection::FetchFromDatabase;
-    use core_crypto_keystore::entities::*;
+    use core_crypto_keystore::{connection::FetchFromDatabase as _, entities::*};
     use mls_crypto_provider::MlsCryptoProvider;
+
+    use super::*;
+    use crate::{test_utils::*, transaction_context::test_utils::EntitiesCount};
 
     impl Session {
         // test functions are not held to the same documentation standard as proper functions
@@ -660,7 +657,7 @@ mod tests {
                 }
             };
             let nb_key_package = if provision {
-                crate::prelude::INITIAL_KEYING_MATERIAL_COUNT
+                crate::INITIAL_KEYING_MATERIAL_COUNT
             } else {
                 0
             };

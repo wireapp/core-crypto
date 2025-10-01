@@ -1,14 +1,8 @@
-use crate::{
-    MlsError, RecursiveError,
-    prelude::{MlsCredentialType, Session},
-};
-
+use openmls::{messages::group_info::VerifiableGroupInfo, prelude::Node};
 use openmls_traits::OpenMlsCryptoProvider;
 
-use crate::transaction_context::TransactionContext;
-use openmls::{messages::group_info::VerifiableGroupInfo, prelude::Node};
-
 use super::Result;
+use crate::{MlsCredentialType, MlsError, RecursiveError, Session, transaction_context::TransactionContext};
 
 /// Indicates the state of a Conversation regarding end-to-end identity.
 ///
@@ -95,10 +89,7 @@ impl TransactionContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        prelude::{CertificateBundle, MlsCredentialType, Session},
-        test_utils::*,
-    };
+    use crate::{CertificateBundle, MlsCredentialType, Session, test_utils::*};
 
     // testing the case where both Bob & Alice have the same Credential type
     #[apply(all_cred_cipher)]

@@ -1,7 +1,8 @@
-use super::{Error, Result};
-use crate::prelude::CiphersuiteName;
 use openmls_traits::types::{Ciphersuite, HashType};
 use wire_e2e_identity::prelude::HashAlgorithm;
+
+use super::{Error, Result};
+use crate::CiphersuiteName;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, derive_more::Deref, serde::Serialize, serde::Deserialize)]
 #[serde(transparent)]

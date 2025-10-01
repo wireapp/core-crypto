@@ -2,13 +2,11 @@ use std::collections::HashSet;
 
 use itertools::{Either, Itertools as _};
 
-use crate::{
-    RecursiveError,
-    mls::conversation::{Conversation as _, ConversationWithMls, conversation_guard::commit::TransportedCommitPolicy},
-    prelude::{HistorySecret, MlsCommitBundle},
-};
-
 use super::{ConversationGuard, Error, Result};
+use crate::{
+    HistorySecret, MlsCommitBundle, RecursiveError,
+    mls::conversation::{Conversation as _, ConversationWithMls, conversation_guard::commit::TransportedCommitPolicy},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum HistoryClientUpdateOutcome {
@@ -203,9 +201,11 @@ mod tests {
     use rstest::rstest;
     use rstest_reuse::apply;
 
-    use crate::ephemeral::HISTORY_CLIENT_ID_PREFIX;
-    use crate::mls::conversation::Conversation;
-    use crate::test_utils::{TestContext, all_cred_cipher};
+    use crate::{
+        ephemeral::HISTORY_CLIENT_ID_PREFIX,
+        mls::conversation::Conversation,
+        test_utils::{TestContext, all_cred_cipher},
+    };
 
     #[apply(all_cred_cipher)]
     /// Together with the tests in [crate::ephemeral] this proves that we can create ephemeral clients from the

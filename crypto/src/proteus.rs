@@ -1,7 +1,5 @@
-use crate::{
-    CoreCrypto, Error, KeystoreError, LeafError, ProteusError, Result,
-    group_store::{GroupStore, GroupStoreEntity, GroupStoreValue},
-};
+use std::{collections::HashMap, sync::Arc};
+
 use core_crypto_keystore::{
     Database as CryptoKeystore,
     connection::FetchFromDatabase,
@@ -12,7 +10,11 @@ use proteus_wasm::{
     message::Envelope,
     session::Session,
 };
-use std::{collections::HashMap, sync::Arc};
+
+use crate::{
+    CoreCrypto, Error, KeystoreError, LeafError, ProteusError, Result,
+    group_store::{GroupStore, GroupStoreEntity, GroupStoreValue},
+};
 
 /// Proteus session IDs, it seems it's basically a string
 pub type SessionIdentifier = String;
@@ -583,16 +585,13 @@ impl ProteusCentral {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        prelude::{CertificateBundle, ClientIdentifier, MlsCredentialType, Session, SessionConfig},
-        test_utils::{proteus_utils::*, x509::X509TestChain, *},
-    };
-
-    use crate::prelude::INITIAL_KEYING_MATERIAL_COUNT;
+    use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
 
     use super::*;
-
-    use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
+    use crate::{
+        CertificateBundle, ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType, Session, SessionConfig,
+        test_utils::{proteus_utils::*, x509::X509TestChain, *},
+    };
 
     #[apply(all_cred_cipher)]
     async fn cc_can_init(case: TestContext) {

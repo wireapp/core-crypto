@@ -1,5 +1,6 @@
-use crate::mls::ClientId;
 use openmls::prelude::{KeyPackage, hash_ref::ProposalRef};
+
+use crate::mls::ClientId;
 
 /// Abstraction over a [openmls::prelude::hash_ref::ProposalRef] to deal with conversions
 #[derive(Debug, Clone, Eq, PartialEq, derive_more::From, derive_more::Deref, derive_more::Display)]

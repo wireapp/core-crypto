@@ -1,34 +1,34 @@
-use super::test_conversation::operation_guard::{Commit, OperationGuard};
-use super::{Result, TestConversation};
-use crate::CoreCrypto;
-use crate::test_utils::SessionContext;
-use crate::{
-    RecursiveError,
-    e2e_identity::{
-        device_status::DeviceStatus,
-        id::{QualifiedE2eiClientId, WireQualifiedClientId},
+use std::sync::Arc;
+
+use core_crypto_keystore::{
+    connection::FetchFromDatabase,
+    entities::{
+        EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
     },
-    mls::credential::{CredentialBundle, ext::CredentialExt},
-    prelude::{
-        CertificateBundle, MlsCiphersuite, MlsConversationConfiguration, MlsConversationDecryptMessage,
-        MlsCredentialType, Session, WireIdentity,
-    },
-    test_utils::{TestContext, x509::X509Certificate},
-};
-use core_crypto_keystore::connection::FetchFromDatabase;
-use core_crypto_keystore::entities::{
-    EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
 };
 use openmls::prelude::{
     Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey, KeyPackage, KeyPackageIn, Lifetime,
     SignaturePublicKey,
 };
-use openmls_traits::crypto::OpenMlsCrypto;
-use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
-use std::sync::Arc;
+use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
 use tls_codec::Serialize;
 use wire_e2e_identity::prelude::WireIdentityReader;
 use x509_cert::der::Encode;
+
+use super::{
+    Result, TestConversation,
+    test_conversation::operation_guard::{Commit, OperationGuard},
+};
+use crate::{
+    CertificateBundle, CoreCrypto, MlsCiphersuite, MlsConversationConfiguration, MlsConversationDecryptMessage,
+    MlsCredentialType, RecursiveError, Session, WireIdentity,
+    e2e_identity::{
+        device_status::DeviceStatus,
+        id::{QualifiedE2eiClientId, WireQualifiedClientId},
+    },
+    mls::credential::{CredentialBundle, ext::CredentialExt},
+    test_utils::{SessionContext, TestContext, x509::X509Certificate},
+};
 
 #[allow(clippy::redundant_static_lifetimes)]
 pub const TEAM: &'static str = "world";

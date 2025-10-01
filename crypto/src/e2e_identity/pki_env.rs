@@ -1,13 +1,14 @@
-use crate::KeystoreError;
+use std::collections::HashSet;
 
-use super::Result;
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
 };
-use std::collections::HashSet;
 use wire_e2e_identity::prelude::x509::revocation::{PkiEnvironment, PkiEnvironmentParams};
 use x509_cert::der::Decode;
+
+use super::Result;
+use crate::KeystoreError;
 
 /// New Certificate Revocation List distribution points.
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::DerefMut)]

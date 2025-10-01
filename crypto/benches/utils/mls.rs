@@ -1,26 +1,25 @@
-use async_lock::RwLock;
-use core_crypto_keystore::{ConnectionType, Database as CryptoKeystore};
-use criterion::BenchmarkId;
-use rand::distributions::{Alphanumeric, DistString};
-use std::fmt::{Display, Formatter};
-use std::sync::Arc;
-
-use core_crypto::prelude::{
-    CertificateBundle, ClientId, ConversationId, HistorySecret, MlsCiphersuite, MlsCommitBundle,
-    MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle, Session,
-    SessionConfig,
+use std::{
+    fmt::{Display, Formatter},
+    sync::Arc,
 };
-use core_crypto::{CoreCrypto, Database, DatabaseKey, MlsTransport, MlsTransportData, MlsTransportResponse};
+
+use async_lock::RwLock;
+use core_crypto::{
+    CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Database, DatabaseKey, HistorySecret,
+    MlsCiphersuite, MlsCommitBundle, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
+    MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse, Session, SessionConfig,
+};
+use criterion::BenchmarkId;
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::framing::MlsMessageOut;
 use openmls::{
-    framing::MlsMessageInBody,
+    framing::{MlsMessageInBody, MlsMessageOut},
     prelude::{
         Credential, CredentialWithKey, CryptoConfig, KeyPackage, SignaturePublicKey, group_info::VerifiableGroupInfo,
     },
 };
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{OpenMlsCryptoProvider, random::OpenMlsRand, types::Ciphersuite};
+use rand::distributions::{Alphanumeric, DistString};
 use tls_codec::Deserialize;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -261,7 +260,7 @@ pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, Clien
         .as_bytes()
         .to_vec();
     let key = DatabaseKey::generate();
-    let key_store = CryptoKeystore::open(ConnectionType::InMemory, &key).await.unwrap();
+    let key_store = Database::open(ConnectionType::InMemory, &key).await.unwrap();
     let backend = MlsCryptoProvider::builder().key_store(key_store).build();
     let cs: Ciphersuite = ciphersuite.into();
     let signer = create_signature_keypair(&backend, cs);

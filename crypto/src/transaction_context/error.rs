@@ -1,9 +1,8 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
-use crate::mls::conversation::pending_conversation::PendingConversation;
-
 use super::e2e_identity;
+use crate::mls::conversation::pending_conversation::PendingConversation;
 
 /// A module-specific [Result][core::result::Result] type with a default error variant.
 pub type Result<T, E = Error> = core::result::Result<T, E>;
@@ -18,7 +17,7 @@ pub enum Error {
     #[error("The conversation with the specified id is pending")]
     PendingConversation(PendingConversation),
     #[error("Couldn't find client")]
-    ClientNotFound(crate::prelude::ClientId),
+    ClientNotFound(crate::ClientId),
     #[error("Proteus client hasn't been initialized")]
     ProteusNotInitialized,
     #[error("Serializing {item} for TLS")]

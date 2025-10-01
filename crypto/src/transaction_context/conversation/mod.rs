@@ -6,16 +6,13 @@ pub mod external_sender;
 pub(crate) mod proposal;
 pub mod welcome;
 
-use core_crypto_keystore::connection::FetchFromDatabase as _;
-use core_crypto_keystore::entities::PersistedMlsPendingGroup;
+use core_crypto_keystore::{connection::FetchFromDatabase as _, entities::PersistedMlsPendingGroup};
 
-use crate::mls::conversation::pending_conversation::PendingConversation;
-use crate::mls::conversation::{ConversationGuard, ConversationIdRef};
-use crate::prelude::{MlsConversation, MlsConversationConfiguration, MlsCredentialType};
-use crate::{KeystoreError, LeafError, RecursiveError};
-
-use super::TransactionContext;
-use super::{Error, Result};
+use super::{Error, Result, TransactionContext};
+use crate::{
+    KeystoreError, LeafError, MlsConversation, MlsConversationConfiguration, MlsCredentialType, RecursiveError,
+    mls::conversation::{ConversationGuard, ConversationIdRef, pending_conversation::PendingConversation},
+};
 
 impl TransactionContext {
     /// Acquire a conversation guard.

@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
 use super::Result;
-use crate::{MlsError, RecursiveError, prelude::MlsCiphersuite};
+use crate::{MlsCiphersuite, MlsError, RecursiveError};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -195,8 +195,7 @@ mod tests {
     };
     use wire_e2e_identity::prelude::JwsAlgorithm;
 
-    use crate::mls::conversation::ConversationWithMls as _;
-    use crate::{prelude::MlsConversationConfiguration, test_utils::*};
+    use crate::{MlsConversationConfiguration, mls::conversation::ConversationWithMls as _, test_utils::*};
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn group_should_have_required_capabilities() {

@@ -23,13 +23,13 @@
 
 use core_crypto_keystore::{ConnectionType, Database};
 use mls_crypto_provider::DatabaseKey;
+use obfuscate::{Obfuscate, Obfuscated};
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
-    CoreCrypto, Error, MlsError, RecursiveError, Result,
-    prelude::{ClientId, ClientIdentifier, MlsCiphersuite, MlsCredentialType, Session, SessionConfig},
+    ClientId, ClientIdentifier, CoreCrypto, Error, MlsCiphersuite, MlsCredentialType, MlsError, RecursiveError, Result,
+    Session, SessionConfig,
 };
-use obfuscate::{Obfuscate, Obfuscated};
 
 /// We always instantiate history clients with this prefix in their client id, so
 /// we can use prefix testing to determine with some accuracy whether or not something is a history client.

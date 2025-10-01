@@ -11,28 +11,36 @@
 mod buffer_commit;
 pub(crate) mod buffer_messages;
 
-use super::{ConversationGuard, Result};
-use crate::e2e_identity::NewCrlDistributionPoints;
-use crate::mls::conversation::renew::Renew;
-use crate::mls::conversation::{Conversation, ConversationWithMls, Error};
-use crate::mls::credential::crl::{
-    extract_crl_uris_from_proposals, extract_crl_uris_from_update_path, get_new_crl_distribution_points,
-};
-use crate::mls::credential::ext::CredentialExt as _;
-use crate::prelude::{ClientId, E2eiConversationState, Session};
-use crate::prelude::{MlsProposalBundle, WireIdentity};
-use crate::{MlsError, RecursiveError};
 use log::{debug, info};
 use obfuscate::Obfuscated;
-use openmls::framing::errors::{MessageDecryptionError, SecretTreeError};
-use openmls::framing::{MlsMessageIn, MlsMessageInBody, ProcessedMessage, ProtocolMessage};
-use openmls::group::MlsGroup;
-use openmls::prelude::{
-    ContentType, CredentialType, LeafNodeIndex, Member, ProcessMessageError, ProcessedMessageContent, Proposal,
-    StageCommitError, StagedCommit, ValidationError,
+use openmls::{
+    framing::{
+        MlsMessageIn, MlsMessageInBody, ProcessedMessage, ProtocolMessage,
+        errors::{MessageDecryptionError, SecretTreeError},
+    },
+    group::MlsGroup,
+    prelude::{
+        ContentType, CredentialType, LeafNodeIndex, Member, ProcessMessageError, ProcessedMessageContent, Proposal,
+        StageCommitError, StagedCommit, ValidationError,
+    },
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
+
+use super::{ConversationGuard, Result};
+use crate::{
+    ClientId, E2eiConversationState, MlsError, MlsProposalBundle, RecursiveError, Session, WireIdentity,
+    e2e_identity::NewCrlDistributionPoints,
+    mls::{
+        conversation::{Conversation, ConversationWithMls, Error, renew::Renew},
+        credential::{
+            crl::{
+                extract_crl_uris_from_proposals, extract_crl_uris_from_update_path, get_new_crl_distribution_points,
+            },
+            ext::CredentialExt as _,
+        },
+    },
+};
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
 /// have decrypted for him
@@ -556,7 +564,7 @@ impl ConversationGuard {
             let state = Session::compute_conversation_state(
                 self.ciphersuite().await,
                 credentials.iter(),
-                crate::prelude::MlsCredentialType::X509,
+                crate::MlsCredentialType::X509,
                 backend.authentication_service().borrow().await.as_ref(),
             )
             .await;
@@ -571,12 +579,11 @@ impl ConversationGuard {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{
         mls::conversation::{config::MAX_PAST_EPOCHS, error::Error},
         test_utils::*,
     };
-
-    use super::*;
 
     mod is_active {
         use super::*;

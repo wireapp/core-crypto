@@ -8,7 +8,7 @@
 use openmls::prelude::MlsMessageOut;
 
 use super::{Error, Result};
-use crate::prelude::MlsGroupInfoBundle;
+use crate::MlsGroupInfoBundle;
 
 /// Returned when a commit is created
 #[derive(Debug, Clone)]
@@ -52,16 +52,17 @@ mod tests {
     use itertools::Itertools;
     use openmls::prelude::SignaturePublicKey;
 
-    use crate::mls::conversation::Conversation as _;
-    use crate::mls::conversation::ConversationWithMls as _;
-    use crate::test_utils::*;
-    use crate::transaction_context::Error as TransactionError;
-
     use super::{Error, *};
+    use crate::{
+        mls::conversation::{Conversation as _, ConversationWithMls as _},
+        test_utils::*,
+        transaction_context::Error as TransactionError,
+    };
 
     mod transport {
-        use super::*;
         use std::sync::Arc;
+
+        use super::*;
 
         #[apply(all_cred_cipher)]
         async fn retry_should_work(case: TestContext) {
@@ -106,8 +107,9 @@ mod tests {
     }
 
     mod add_members {
-        use super::*;
         use std::sync::Arc;
+
+        use super::*;
 
         #[apply(all_cred_cipher)]
         async fn can_add_members_to_conversation(case: TestContext) {

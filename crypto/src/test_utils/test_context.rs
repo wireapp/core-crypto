@@ -1,15 +1,5 @@
 use std::sync::Arc;
 
-use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
-
-pub use crate::prelude::{
-    MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsWirePolicy,
-};
-use crate::{
-    e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId},
-    prelude::ClientId,
-    test_utils::SessionContext,
-};
 pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
@@ -19,56 +9,64 @@ use super::{
     init_x509_test_chain, tmp_db_file,
     x509::{CertificateParams, X509TestChain},
 };
+use crate::{
+    ClientId, ConnectionType, Database, DatabaseKey,
+    e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId},
+    test_utils::SessionContext,
+};
+pub use crate::{
+    MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsWirePolicy,
+};
 
 #[template]
 #[rstest(
     case,
     case::basic_cs1(TestContext::new(
-        crate::prelude::MlsCredentialType::Basic,
+        crate::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
     case::cert_cs1(TestContext::new(
-        crate::prelude::MlsCredentialType::X509,
+        crate::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs2(TestContext::new(
-        crate::prelude::MlsCredentialType::Basic,
+        crate::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     )),
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs2(TestContext::new(
-        crate::prelude::MlsCredentialType::X509,
+        crate::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs3(TestContext::new(
-        crate::prelude::MlsCredentialType::Basic,
+        crate::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs3(TestContext::new(
-        crate::prelude::MlsCredentialType::X509,
+        crate::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs5(TestContext::new(
-        crate::prelude::MlsCredentialType::Basic,
+        crate::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521
     )),
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs5(TestContext::new(
-        crate::prelude::MlsCredentialType::X509,
+        crate::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs7(TestContext::new(
-        crate::prelude::MlsCredentialType::Basic,
+        crate::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs7(TestContext::new(
-        crate::prelude::MlsCredentialType::X509,
+        crate::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
     case::pure_ciphertext(TestContext::default_cipher()),

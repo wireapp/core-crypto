@@ -15,9 +15,8 @@ use openmls::prelude::MlsGroupStateError;
 
 use super::{ConversationGuard, Result};
 use crate::{
-    MlsError,
+    MlsError, MlsProposalRef,
     mls::conversation::{ConversationWithMls as _, Error},
-    prelude::MlsProposalRef,
 };
 
 impl ConversationGuard {
@@ -29,7 +28,7 @@ impl ConversationGuard {
     ///
     /// # Arguments
     /// * `conversation_id` - the group/conversation id
-    /// * `proposal_ref` - unique proposal identifier which is present in [crate::prelude::MlsProposalBundle]
+    /// * `proposal_ref` - unique proposal identifier which is present in [crate::MlsProposalBundle]
     ///   and returned from all operation creating a proposal
     ///
     /// # Errors
@@ -88,9 +87,8 @@ impl ConversationGuard {
 mod tests {
     use openmls::prelude::Proposal;
 
-    use crate::test_utils::*;
-
     use super::*;
+    use crate::test_utils::*;
 
     mod clear_pending_proposal {
         use super::*;

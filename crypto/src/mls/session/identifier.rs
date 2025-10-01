@@ -1,14 +1,13 @@
+use std::collections::{HashMap, HashSet};
+
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls_traits::types::SignatureScheme;
+
 use super::{
     CredentialBundle,
     error::{Error, Result},
 };
-use crate::{
-    RecursiveError,
-    prelude::{CertificateBundle, ClientId, Session},
-};
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls_traits::types::SignatureScheme;
-use std::collections::{HashMap, HashSet};
+use crate::{CertificateBundle, ClientId, RecursiveError, Session};
 
 /// Used by consumers to initializes a MLS client. Encompasses all the client types available.
 /// Could be enriched later with Verifiable Presentations.
