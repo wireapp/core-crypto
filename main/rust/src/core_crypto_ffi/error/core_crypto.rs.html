@@ -146,7 +146,7 @@
 <a href=#146 id=146 data-nosnippet>146</a>        }
 <a href=#147 id=147 data-nosnippet>147</a>
 <a href=#148 id=148 data-nosnippet>148</a>        <span class="macro">match_heterogenous!</span>(innermost =&gt; {
-<a href=#149 id=149 data-nosnippet>149</a>            core_crypto::LeafError::ConversationAlreadyExists(id) =&gt; MlsError::ConversationAlreadyExists { conversation_id: id.clone() }.into(),
+<a href=#149 id=149 data-nosnippet>149</a>            core_crypto::LeafError::ConversationAlreadyExists(id) =&gt; MlsError::ConversationAlreadyExists { conversation_id: id.clone().into() }.into(),
 <a href=#150 id=150 data-nosnippet>150</a>            core_crypto::mls::conversation::Error::BufferedFutureMessage{..} =&gt; MlsError::BufferedFutureMessage.into(),
 <a href=#151 id=151 data-nosnippet>151</a>            core_crypto::mls::conversation::Error::DuplicateMessage =&gt; MlsError::DuplicateMessage.into(),
 <a href=#152 id=152 data-nosnippet>152</a>            core_crypto::mls::conversation::Error::MessageEpochTooOld =&gt; MlsError::MessageEpochTooOld.into(),

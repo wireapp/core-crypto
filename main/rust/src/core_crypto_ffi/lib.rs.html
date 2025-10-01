@@ -49,20 +49,22 @@
 <a href=#49 id=49 data-nosnippet>49</a><span class="kw">pub use </span>core_crypto_context::CoreCryptoContext;
 <a href=#50 id=50 data-nosnippet>50</a><span class="kw">pub use </span>credential_type::CredentialType;
 <a href=#51 id=51 data-nosnippet>51</a><span class="kw">pub use </span>crl::CrlRegistration;
-<a href=#52 id=52 data-nosnippet>52</a><span class="kw">pub use </span>database::{Database, DatabaseKey, migrate_database_key_type_to_bytes, open_database, update_database_key};
-<a href=#53 id=53 data-nosnippet>53</a><span class="kw">pub use </span>decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
-<a href=#54 id=54 data-nosnippet>54</a><span class="kw">pub use </span>e2ei::{
-<a href=#55 id=55 data-nosnippet>55</a>    E2eiConversationState, acme_challenge::AcmeChallenge, acme_directory::AcmeDirectory, enrollment::E2eiEnrollment,
-<a href=#56 id=56 data-nosnippet>56</a>    new_acme_authz::NewAcmeAuthz, new_acme_order::NewAcmeOrder,
-<a href=#57 id=57 data-nosnippet>57</a>};
-<a href=#58 id=58 data-nosnippet>58</a><span class="kw">pub use </span>ephemeral::HistorySecret;
-<a href=#59 id=59 data-nosnippet>59</a><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-<a href=#60 id=60 data-nosnippet>60</a></span><span class="kw">pub use </span>ephemeral::core_crypto_history_client;
-<a href=#61 id=61 data-nosnippet>61</a><span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
-<a href=#62 id=62 data-nosnippet>62</a></span><span class="kw">pub use </span>error::proteus::ProteusError;
-<a href=#63 id=63 data-nosnippet>63</a><span class="kw">pub use </span>error::{CoreCryptoError, CoreCryptoResult, mls::MlsError};
-<a href=#64 id=64 data-nosnippet>64</a><span class="kw">pub use </span>identity::{
-<a href=#65 id=65 data-nosnippet>65</a>    wire::{DeviceStatus, WireIdentity},
-<a href=#66 id=66 data-nosnippet>66</a>    x509::X509Identity,
-<a href=#67 id=67 data-nosnippet>67</a>};
-<a href=#68 id=68 data-nosnippet>68</a><span class="kw">pub use </span>metadata::{BuildMetadata, build_metadata, version};</code></pre></div></section></main></body></html>
+<a href=#52 id=52 data-nosnippet>52</a><span class="kw">pub use </span>database::{
+<a href=#53 id=53 data-nosnippet>53</a>    Database, DatabaseKey, in_memory_database, migrate_database_key_type_to_bytes, open_database, update_database_key,
+<a href=#54 id=54 data-nosnippet>54</a>};
+<a href=#55 id=55 data-nosnippet>55</a><span class="kw">pub use </span>decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
+<a href=#56 id=56 data-nosnippet>56</a><span class="kw">pub use </span>e2ei::{
+<a href=#57 id=57 data-nosnippet>57</a>    E2eiConversationState, acme_challenge::AcmeChallenge, acme_directory::AcmeDirectory, enrollment::E2eiEnrollment,
+<a href=#58 id=58 data-nosnippet>58</a>    new_acme_authz::NewAcmeAuthz, new_acme_order::NewAcmeOrder,
+<a href=#59 id=59 data-nosnippet>59</a>};
+<a href=#60 id=60 data-nosnippet>60</a><span class="kw">pub use </span>ephemeral::HistorySecret;
+<a href=#61 id=61 data-nosnippet>61</a><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
+<a href=#62 id=62 data-nosnippet>62</a></span><span class="kw">pub use </span>ephemeral::core_crypto_history_client;
+<a href=#63 id=63 data-nosnippet>63</a><span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
+<a href=#64 id=64 data-nosnippet>64</a></span><span class="kw">pub use </span>error::proteus::ProteusError;
+<a href=#65 id=65 data-nosnippet>65</a><span class="kw">pub use </span>error::{CoreCryptoError, CoreCryptoResult, mls::MlsError};
+<a href=#66 id=66 data-nosnippet>66</a><span class="kw">pub use </span>identity::{
+<a href=#67 id=67 data-nosnippet>67</a>    wire::{DeviceStatus, WireIdentity},
+<a href=#68 id=68 data-nosnippet>68</a>    x509::X509Identity,
+<a href=#69 id=69 data-nosnippet>69</a>};
+<a href=#70 id=70 data-nosnippet>70</a><span class="kw">pub use </span>metadata::{BuildMetadata, build_metadata, version};</code></pre></div></section></main></body></html>

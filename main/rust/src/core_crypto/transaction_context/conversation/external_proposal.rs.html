@@ -33,7 +33,7 @@
 <a href=#33 id=33 data-nosnippet>33</a>        ciphersuite: MlsCiphersuite,
 <a href=#34 id=34 data-nosnippet>34</a>        credential_type: MlsCredentialType,
 <a href=#35 id=35 data-nosnippet>35</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsMessageOut&gt; {
-<a href=#36 id=36 data-nosnippet>36</a>        <span class="kw">let </span>group_id = GroupId::from_slice(conversation_id.as_slice());
+<a href=#36 id=36 data-nosnippet>36</a>        <span class="kw">let </span>group_id = GroupId::from_slice(conversation_id.as_ref());
 <a href=#37 id=37 data-nosnippet>37</a>        <span class="kw">let </span>mls_provider = <span class="self">self
 <a href=#38 id=38 data-nosnippet>38</a>            </span>.mls_provider()
 <a href=#39 id=39 data-nosnippet>39</a>            .<span class="kw">await

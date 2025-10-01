@@ -9,9 +9,10 @@ $dokka.location:com.wire.crypto//CUSTOM_CONFIGURATION_DEFAULT/#/PointingToDeclar
 $dokka.location:com.wire.crypto//buildMetadata/#/PointingToDeclaration/-core-crypto/com.wire.crypto/build-metadata.html
 $dokka.location:com.wire.crypto//ciphersuiteDefault/#/PointingToDeclaration/-core-crypto/com.wire.crypto/ciphersuite-default.html
 $dokka.location:com.wire.crypto//ciphersuiteFromU16/#kotlin.UShort/PointingToDeclaration/-core-crypto/com.wire.crypto/ciphersuite-from-u16.html
-$dokka.location:com.wire.crypto//coreCryptoDeferredInit/#kotlin.String#com.wire.crypto.DatabaseKey#kotlin.ByteArray?/PointingToDeclaration/-core-crypto/com.wire.crypto/core-crypto-deferred-init.html
+$dokka.location:com.wire.crypto//coreCryptoDeferredInit/#com.wire.crypto.Database#kotlin.ByteArray?/PointingToDeclaration/-core-crypto/com.wire.crypto/core-crypto-deferred-init.html
 $dokka.location:com.wire.crypto//coreCryptoHistoryClient/#com.wire.crypto.HistorySecret/PointingToDeclaration/-core-crypto/com.wire.crypto/core-crypto-history-client.html
-$dokka.location:com.wire.crypto//coreCryptoNew/#kotlin.String#com.wire.crypto.DatabaseKey#com.wire.crypto.ClientId#kotlin.collections.List[com.wire.crypto.Ciphersuite]#kotlin.ByteArray?#kotlin.UInt?/PointingToDeclaration/-core-crypto/com.wire.crypto/core-crypto-new.html
+$dokka.location:com.wire.crypto//coreCryptoNew/#com.wire.crypto.Database#com.wire.crypto.ClientId#kotlin.collections.List[com.wire.crypto.Ciphersuite]#kotlin.ByteArray?#kotlin.UInt?/PointingToDeclaration/-core-crypto/com.wire.crypto/core-crypto-new.html
+$dokka.location:com.wire.crypto//inMemoryDatabase/#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/in-memory-database.html
 $dokka.location:com.wire.crypto//lift/com.wire.crypto.CoreCryptoFfi#/PointingToDeclaration/-core-crypto/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//migrateDatabaseKeyTypeToBytes/#kotlin.String#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/migrate-database-key-type-to-bytes.html
 $dokka.location:com.wire.crypto//openDatabase/#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/open-database.html
@@ -119,7 +120,7 @@ $dokka.location:com.wire.crypto/ConversationIdInterface///PointingToDeclaration/
 $dokka.location:com.wire.crypto/ConversationIdInterface/copyBytes/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-conversation-id-interface/copy-bytes.html
 $dokka.location:com.wire.crypto/CoreCrypto.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto/-companion/index.html
 $dokka.location:com.wire.crypto/CoreCrypto.Companion/historyClient/#com.wire.crypto.HistorySecret/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto/-companion/history-client.html
-$dokka.location:com.wire.crypto/CoreCrypto.Companion/invoke/#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto/-companion/invoke.html
+$dokka.location:com.wire.crypto/CoreCrypto.Companion/invoke/#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto/-companion/invoke.html
 $dokka.location:com.wire.crypto/CoreCrypto///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto/index.html
 $dokka.location:com.wire.crypto/CoreCrypto/CoreCrypto/#com.wire.crypto.CoreCryptoFfi/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto/-core-crypto.html
 $dokka.location:com.wire.crypto/CoreCrypto/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto/close.html

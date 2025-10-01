@@ -130,7 +130,7 @@
 <a href=#130 id=130 data-nosnippet>130</a>
 <a href=#131 id=131 data-nosnippet>131</a>    <span class="doccomment">/// See [core_crypto::mls::conversation::ConversationGuard::e2ei_rotate]
 <a href=#132 id=132 data-nosnippet>132</a>    </span><span class="kw">pub async fn </span>e2ei_rotate(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>ConversationId) -&gt; CoreCryptoResult&lt;()&gt; {
-<a href=#133 id=133 data-nosnippet>133</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.inner.conversation(conversation_id).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#133 id=133 data-nosnippet>133</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.inner.conversation(conversation_id.as_ref()).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#134 id=134 data-nosnippet>134</a>        conversation.e2ei_rotate(<span class="prelude-val">None</span>).<span class="kw">await</span>.map_err(Into::into)
 <a href=#135 id=135 data-nosnippet>135</a>    }
 <a href=#136 id=136 data-nosnippet>136</a>
@@ -192,7 +192,7 @@
 <a href=#192 id=192 data-nosnippet>192</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#193 id=193 data-nosnippet>193</a>        conversation_id: <span class="kw-2">&amp;</span>ConversationId,
 <a href=#194 id=194 data-nosnippet>194</a>    ) -&gt; CoreCryptoResult&lt;E2eiConversationState&gt; {
-<a href=#195 id=195 data-nosnippet>195</a>        <span class="kw">let </span>conversation = <span class="self">self</span>.inner.conversation(conversation_id).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#195 id=195 data-nosnippet>195</a>        <span class="kw">let </span>conversation = <span class="self">self</span>.inner.conversation(conversation_id.as_ref()).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#196 id=196 data-nosnippet>196</a>        conversation
 <a href=#197 id=197 data-nosnippet>197</a>            .e2ei_conversation_state()
 <a href=#198 id=198 data-nosnippet>198</a>            .<span class="kw">await
@@ -219,7 +219,7 @@
 <a href=#219 id=219 data-nosnippet>219</a>    ) -&gt; CoreCryptoResult&lt;Vec&lt;WireIdentity&gt;&gt; {
 <a href=#220 id=220 data-nosnippet>220</a>        <span class="kw">let </span>device_ids = device_ids.into_iter().map(|cid| cid.as_cc()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 <a href=#221 id=221 data-nosnippet>221</a>
-<a href=#222 id=222 data-nosnippet>222</a>        <span class="kw">let </span>conversation = <span class="self">self</span>.inner.conversation(conversation_id).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#222 id=222 data-nosnippet>222</a>        <span class="kw">let </span>conversation = <span class="self">self</span>.inner.conversation(conversation_id.as_ref()).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#223 id=223 data-nosnippet>223</a>        <span class="kw">let </span>wire_ids = conversation.get_device_identities(device_ids.as_slice()).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#224 id=224 data-nosnippet>224</a>        <span class="prelude-val">Ok</span>(wire_ids.into_iter().map(Into::into).collect())
 <a href=#225 id=225 data-nosnippet>225</a>    }
@@ -234,7 +234,7 @@
 <a href=#234 id=234 data-nosnippet>234</a>        conversation_id: <span class="kw-2">&amp;</span>ConversationId,
 <a href=#235 id=235 data-nosnippet>235</a>        user_ids: Vec&lt;String&gt;,
 <a href=#236 id=236 data-nosnippet>236</a>    ) -&gt; CoreCryptoResult&lt;UserIdentities&gt; {
-<a href=#237 id=237 data-nosnippet>237</a>        <span class="kw">let </span>conversation = <span class="self">self</span>.inner.conversation(conversation_id).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#237 id=237 data-nosnippet>237</a>        <span class="kw">let </span>conversation = <span class="self">self</span>.inner.conversation(conversation_id.as_ref()).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#238 id=238 data-nosnippet>238</a>        <span class="kw">let </span>user_ids = conversation.get_user_identities(user_ids.as_slice()).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#239 id=239 data-nosnippet>239</a>        <span class="kw">let </span>user_ids = user_ids
 <a href=#240 id=240 data-nosnippet>240</a>            .into_iter()

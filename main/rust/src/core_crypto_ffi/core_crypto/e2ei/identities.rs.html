@@ -30,7 +30,7 @@
 <a href=#30 id=30 data-nosnippet>30</a>    ) -&gt; CoreCryptoResult&lt;DeviceIdentities&gt; {
 <a href=#31 id=31 data-nosnippet>31</a>        <span class="kw">let </span>conversation = <span class="self">self
 <a href=#32 id=32 data-nosnippet>32</a>            </span>.inner
-<a href=#33 id=33 data-nosnippet>33</a>            .get_raw_conversation(conversation_id)
+<a href=#33 id=33 data-nosnippet>33</a>            .get_raw_conversation(conversation_id.as_ref())
 <a href=#34 id=34 data-nosnippet>34</a>            .<span class="kw">await
 <a href=#35 id=35 data-nosnippet>35</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting raw conversation"</span>))<span class="question-mark">?</span>;
 <a href=#36 id=36 data-nosnippet>36</a>        <span class="kw">let </span>device_ids = device_ids.into_iter().map(|id| id.as_cc()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
@@ -58,7 +58,7 @@
 <a href=#58 id=58 data-nosnippet>58</a>    ) -&gt; CoreCryptoResult&lt;UserIdentities&gt; {
 <a href=#59 id=59 data-nosnippet>59</a>        <span class="kw">let </span>conversation = <span class="self">self
 <a href=#60 id=60 data-nosnippet>60</a>            </span>.inner
-<a href=#61 id=61 data-nosnippet>61</a>            .get_raw_conversation(conversation_id)
+<a href=#61 id=61 data-nosnippet>61</a>            .get_raw_conversation(conversation_id.as_ref())
 <a href=#62 id=62 data-nosnippet>62</a>            .<span class="kw">await
 <a href=#63 id=63 data-nosnippet>63</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting raw conversation"</span>))<span class="question-mark">?</span>;
 <a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">let </span>identities = conversation.get_user_identities(user_ids.as_slice()).<span class="kw">await</span><span class="question-mark">?</span>;

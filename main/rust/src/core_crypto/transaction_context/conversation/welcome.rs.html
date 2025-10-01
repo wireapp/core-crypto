@@ -88,7 +88,7 @@
 <a href=#88 id=88 data-nosnippet>88</a>        </span>.map_err(RecursiveError::mls_credential(<span class="string">"getting new crl distribution points"</span>))<span class="question-mark">?</span>;
 <a href=#89 id=89 data-nosnippet>89</a>
 <a href=#90 id=90 data-nosnippet>90</a>        <span class="kw">let </span>id = conversation.id.clone();
-<a href=#91 id=91 data-nosnippet>91</a>        mls_groups.insert(id.clone(), conversation);
+<a href=#91 id=91 data-nosnippet>91</a>        mls_groups.insert(<span class="kw-2">&amp;</span>id, conversation);
 <a href=#92 id=92 data-nosnippet>92</a>
 <a href=#93 id=93 data-nosnippet>93</a>        <span class="prelude-val">Ok</span>(WelcomeBundle {
 <a href=#94 id=94 data-nosnippet>94</a>            id,
