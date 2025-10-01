@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a>//! it doesn't work on newtypes around external enums. We therefore redefine the ciphersuites enum
 <a href=#5 id=5 data-nosnippet>5</a>//! here with appropriate annotations such that it gets exported to all relevant bindings.
 <a href=#6 id=6 data-nosnippet>6</a>
-<a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">use </span>core_crypto::prelude::{CiphersuiteName, MlsCiphersuite};
+<a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">use </span>core_crypto::{CiphersuiteName, MlsCiphersuite};
 <a href=#8 id=8 data-nosnippet>8</a><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
 <a href=#9 id=9 data-nosnippet>9</a></span><span class="kw">use </span>wasm_bindgen::prelude::<span class="kw-2">*</span>;
 <a href=#10 id=10 data-nosnippet>10</a>

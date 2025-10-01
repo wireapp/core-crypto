@@ -109,11 +109,11 @@
 <a href=#109 id=109 data-nosnippet>109</a>        .collect::&lt;postcard::Result&lt;<span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
 <a href=#110 id=110 data-nosnippet>110</a>    json_map.serialize_entry(<span class="string">"mls_keypackages"</span>, <span class="kw-2">&amp;</span>keypackages)<span class="question-mark">?</span>;
 <a href=#111 id=111 data-nosnippet>111</a>
-<a href=#112 id=112 data-nosnippet>112</a>    <span class="kw">let </span>e2ei_enrollments: Vec&lt;core_crypto::prelude::E2eiEnrollment&gt; = keystore
+<a href=#112 id=112 data-nosnippet>112</a>    <span class="kw">let </span>e2ei_enrollments: Vec&lt;core_crypto::E2eiEnrollment&gt; = keystore
 <a href=#113 id=113 data-nosnippet>113</a>        .find_all::&lt;E2eiEnrollment&gt;(Default::default())
 <a href=#114 id=114 data-nosnippet>114</a>        .<span class="kw">await</span><span class="question-mark">?
 <a href=#115 id=115 data-nosnippet>115</a>        </span>.into_iter()
-<a href=#116 id=116 data-nosnippet>116</a>        .map(|enrollment| serde_json::from_slice::&lt;core_crypto::prelude::E2eiEnrollment&gt;(<span class="kw-2">&amp;</span>enrollment.content))
+<a href=#116 id=116 data-nosnippet>116</a>        .map(|enrollment| serde_json::from_slice::&lt;core_crypto::E2eiEnrollment&gt;(<span class="kw-2">&amp;</span>enrollment.content))
 <a href=#117 id=117 data-nosnippet>117</a>        .collect::&lt;serde_json::Result&lt;<span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
 <a href=#118 id=118 data-nosnippet>118</a>    json_map.serialize_entry(<span class="string">"e2ei_enrollments"</span>, <span class="kw-2">&amp;</span>e2ei_enrollments)<span class="question-mark">?</span>;
 <a href=#119 id=119 data-nosnippet>119</a>

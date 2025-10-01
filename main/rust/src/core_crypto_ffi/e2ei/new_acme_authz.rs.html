@@ -26,8 +26,8 @@
 <a href=#26 id=26 data-nosnippet>26</a>    </span><span class="kw">pub </span>challenge: AcmeChallenge,
 <a href=#27 id=27 data-nosnippet>27</a>}
 <a href=#28 id=28 data-nosnippet>28</a>
-<a href=#29 id=29 data-nosnippet>29</a><span class="kw">impl </span>From&lt;core_crypto::prelude::E2eiNewAcmeAuthz&gt; <span class="kw">for </span>NewAcmeAuthz {
-<a href=#30 id=30 data-nosnippet>30</a>    <span class="kw">fn </span>from(new_authz: core_crypto::prelude::E2eiNewAcmeAuthz) -&gt; <span class="self">Self </span>{
+<a href=#29 id=29 data-nosnippet>29</a><span class="kw">impl </span>From&lt;core_crypto::E2eiNewAcmeAuthz&gt; <span class="kw">for </span>NewAcmeAuthz {
+<a href=#30 id=30 data-nosnippet>30</a>    <span class="kw">fn </span>from(new_authz: core_crypto::E2eiNewAcmeAuthz) -&gt; <span class="self">Self </span>{
 <a href=#31 id=31 data-nosnippet>31</a>        <span class="self">Self </span>{
 <a href=#32 id=32 data-nosnippet>32</a>            identifier: new_authz.identifier,
 <a href=#33 id=33 data-nosnippet>33</a>            keyauth: new_authz.keyauth,
@@ -36,7 +36,7 @@
 <a href=#36 id=36 data-nosnippet>36</a>    }
 <a href=#37 id=37 data-nosnippet>37</a>}
 <a href=#38 id=38 data-nosnippet>38</a>
-<a href=#39 id=39 data-nosnippet>39</a><span class="kw">impl </span>From&lt;NewAcmeAuthz&gt; <span class="kw">for </span>core_crypto::prelude::E2eiNewAcmeAuthz {
+<a href=#39 id=39 data-nosnippet>39</a><span class="kw">impl </span>From&lt;NewAcmeAuthz&gt; <span class="kw">for </span>core_crypto::E2eiNewAcmeAuthz {
 <a href=#40 id=40 data-nosnippet>40</a>    <span class="kw">fn </span>from(new_authz: NewAcmeAuthz) -&gt; <span class="self">Self </span>{
 <a href=#41 id=41 data-nosnippet>41</a>        <span class="self">Self </span>{
 <a href=#42 id=42 data-nosnippet>42</a>            identifier: new_authz.identifier,
