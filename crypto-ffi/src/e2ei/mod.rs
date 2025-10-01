@@ -24,12 +24,12 @@ pub enum E2eiConversationState {
     NotEnabled,
 }
 
-impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState {
-    fn from(value: core_crypto::prelude::E2eiConversationState) -> Self {
+impl From<core_crypto::E2eiConversationState> for E2eiConversationState {
+    fn from(value: core_crypto::E2eiConversationState) -> Self {
         match value {
-            core_crypto::prelude::E2eiConversationState::Verified => Self::Verified,
-            core_crypto::prelude::E2eiConversationState::NotVerified => Self::NotVerified,
-            core_crypto::prelude::E2eiConversationState::NotEnabled => Self::NotEnabled,
+            core_crypto::E2eiConversationState::Verified => Self::Verified,
+            core_crypto::E2eiConversationState::NotVerified => Self::NotVerified,
+            core_crypto::E2eiConversationState::NotEnabled => Self::NotEnabled,
         }
     }
 }

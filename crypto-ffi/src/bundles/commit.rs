@@ -1,4 +1,4 @@
-use core_crypto::prelude::MlsCommitBundle;
+use core_crypto::MlsCommitBundle;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 

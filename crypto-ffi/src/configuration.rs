@@ -1,14 +1,13 @@
 #[cfg(not(target_family = "wasm"))]
 use std::time::Duration;
 
+use core_crypto::MlsCustomConfiguration;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use core_crypto::prelude::MlsCustomConfiguration;
-
 use crate::{Ciphersuite, core_crypto_context::mls::ExternalSenderKeyMaybeArc};
 
-/// See [core_crypto::prelude::MlsWirePolicy]
+/// See [core_crypto::MlsWirePolicy]
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
@@ -21,25 +20,25 @@ pub enum WirePolicy {
     Ciphertext = 2,
 }
 
-impl From<core_crypto::prelude::MlsWirePolicy> for WirePolicy {
-    fn from(value: core_crypto::prelude::MlsWirePolicy) -> Self {
+impl From<core_crypto::MlsWirePolicy> for WirePolicy {
+    fn from(value: core_crypto::MlsWirePolicy) -> Self {
         match value {
-            core_crypto::prelude::MlsWirePolicy::Plaintext => Self::Plaintext,
-            core_crypto::prelude::MlsWirePolicy::Ciphertext => Self::Ciphertext,
+            core_crypto::MlsWirePolicy::Plaintext => Self::Plaintext,
+            core_crypto::MlsWirePolicy::Ciphertext => Self::Ciphertext,
         }
     }
 }
 
-impl From<WirePolicy> for core_crypto::prelude::MlsWirePolicy {
-    fn from(value: WirePolicy) -> core_crypto::prelude::MlsWirePolicy {
+impl From<WirePolicy> for core_crypto::MlsWirePolicy {
+    fn from(value: WirePolicy) -> core_crypto::MlsWirePolicy {
         match value {
-            WirePolicy::Plaintext => core_crypto::prelude::MlsWirePolicy::Plaintext,
-            WirePolicy::Ciphertext => core_crypto::prelude::MlsWirePolicy::Ciphertext,
+            WirePolicy::Plaintext => core_crypto::MlsWirePolicy::Plaintext,
+            WirePolicy::Ciphertext => core_crypto::MlsWirePolicy::Ciphertext,
         }
     }
 }
 
-/// see [core_crypto::prelude::MlsCustomConfiguration]
+/// see [core_crypto::MlsCustomConfiguration]
 #[derive(Debug, Default, Clone, Copy)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
@@ -97,7 +96,7 @@ impl CustomConfiguration {
 
 /// The configuration parameters for a group/conversation
 ///
-/// See [core_crypto::prelude::MlsConversationConfiguration]
+/// See [core_crypto::MlsConversationConfiguration]
 #[derive(Debug, Clone)]
 #[cfg_attr(
     target_family = "wasm",

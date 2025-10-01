@@ -21,8 +21,8 @@ pub struct NewAcmeOrder {
     pub authorizations: Vec<String>,
 }
 
-impl From<core_crypto::prelude::E2eiNewAcmeOrder> for NewAcmeOrder {
-    fn from(new_order: core_crypto::prelude::E2eiNewAcmeOrder) -> Self {
+impl From<core_crypto::E2eiNewAcmeOrder> for NewAcmeOrder {
+    fn from(new_order: core_crypto::E2eiNewAcmeOrder) -> Self {
         Self {
             delegate: new_order.delegate,
             authorizations: new_order.authorizations,
@@ -30,7 +30,7 @@ impl From<core_crypto::prelude::E2eiNewAcmeOrder> for NewAcmeOrder {
     }
 }
 
-impl From<NewAcmeOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
+impl From<NewAcmeOrder> for core_crypto::E2eiNewAcmeOrder {
     fn from(new_order: NewAcmeOrder) -> Self {
         Self {
             delegate: new_order.delegate,

@@ -1,4 +1,4 @@
-use core_crypto::prelude::MlsGroupInfoBundle;
+use core_crypto::MlsGroupInfoBundle;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -15,16 +15,16 @@ pub enum MlsGroupInfoEncryptionType {
     JweEncrypted = 2,
 }
 
-impl From<core_crypto::prelude::MlsGroupInfoEncryptionType> for MlsGroupInfoEncryptionType {
-    fn from(value: core_crypto::prelude::MlsGroupInfoEncryptionType) -> Self {
+impl From<core_crypto::MlsGroupInfoEncryptionType> for MlsGroupInfoEncryptionType {
+    fn from(value: core_crypto::MlsGroupInfoEncryptionType) -> Self {
         match value {
-            core_crypto::prelude::MlsGroupInfoEncryptionType::Plaintext => Self::Plaintext,
-            core_crypto::prelude::MlsGroupInfoEncryptionType::JweEncrypted => Self::JweEncrypted,
+            core_crypto::MlsGroupInfoEncryptionType::Plaintext => Self::Plaintext,
+            core_crypto::MlsGroupInfoEncryptionType::JweEncrypted => Self::JweEncrypted,
         }
     }
 }
 
-impl From<MlsGroupInfoEncryptionType> for core_crypto::prelude::MlsGroupInfoEncryptionType {
+impl From<MlsGroupInfoEncryptionType> for core_crypto::MlsGroupInfoEncryptionType {
     fn from(value: MlsGroupInfoEncryptionType) -> Self {
         match value {
             MlsGroupInfoEncryptionType::Plaintext => Self::Plaintext,
@@ -46,17 +46,17 @@ pub enum MlsRatchetTreeType {
     ByRef = 3,
 }
 
-impl From<core_crypto::prelude::MlsRatchetTreeType> for MlsRatchetTreeType {
-    fn from(value: core_crypto::prelude::MlsRatchetTreeType) -> Self {
+impl From<core_crypto::MlsRatchetTreeType> for MlsRatchetTreeType {
+    fn from(value: core_crypto::MlsRatchetTreeType) -> Self {
         match value {
-            core_crypto::prelude::MlsRatchetTreeType::Full => Self::Full,
-            core_crypto::prelude::MlsRatchetTreeType::Delta => Self::Delta,
-            core_crypto::prelude::MlsRatchetTreeType::ByRef => Self::ByRef,
+            core_crypto::MlsRatchetTreeType::Full => Self::Full,
+            core_crypto::MlsRatchetTreeType::Delta => Self::Delta,
+            core_crypto::MlsRatchetTreeType::ByRef => Self::ByRef,
         }
     }
 }
 
-impl From<MlsRatchetTreeType> for core_crypto::prelude::MlsRatchetTreeType {
+impl From<MlsRatchetTreeType> for core_crypto::MlsRatchetTreeType {
     fn from(value: MlsRatchetTreeType) -> Self {
         match value {
             MlsRatchetTreeType::Full => Self::Full,

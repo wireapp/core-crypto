@@ -56,10 +56,10 @@ impl CoreCryptoFfi {
             .map_err(RecursiveError::mls_client("getting raw conversation by id"))?
             .ciphersuite()
             .await;
-        Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
+        Ok(Ciphersuite::from(core_crypto::CiphersuiteName::from(cs)))
     }
 
-    /// See [core_crypto::prelude::Session::conversation_exists]
+    /// See [core_crypto::Session::conversation_exists]
     pub async fn conversation_exists(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
         self.inner
             .conversation_exists(conversation_id.as_ref())

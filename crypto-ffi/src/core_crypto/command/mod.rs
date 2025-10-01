@@ -1,10 +1,12 @@
 #[cfg(not(target_family = "wasm"))]
 pub(crate) mod transaction_helper;
 
-use crate::{CoreCryptoContext, CoreCryptoFfi, CoreCryptoResult};
 use std::sync::Arc;
+
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
+
+use crate::{CoreCryptoContext, CoreCryptoFfi, CoreCryptoResult};
 
 /// A `CoreCryptoCommand` has an `execute` method which accepts a `CoreCryptoContext` and returns nothing.
 ///

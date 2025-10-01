@@ -1,8 +1,8 @@
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
-
 #[cfg(not(target_family = "wasm"))]
 use std::time::{Duration, SystemTime};
+
+#[cfg(target_family = "wasm")]
+use wasm_bindgen::prelude::*;
 
 /// Represents the parts of [WireIdentity][crate::WireIdentity] that are specific to a X509 certificate (and not a Basic one).
 ///
@@ -51,8 +51,8 @@ pub struct X509Identity {
     pub not_after: SystemTime,
 }
 
-impl From<core_crypto::prelude::X509Identity> for X509Identity {
-    fn from(i: core_crypto::prelude::X509Identity) -> Self {
+impl From<core_crypto::X509Identity> for X509Identity {
+    fn from(i: core_crypto::X509Identity) -> Self {
         #[cfg(target_family = "wasm")]
         let not_before = i.not_before;
 

@@ -31,8 +31,8 @@ pub struct WireIdentity {
     pub x509_identity: Option<X509Identity>,
 }
 
-impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
-    fn from(i: core_crypto::prelude::WireIdentity) -> Self {
+impl From<core_crypto::WireIdentity> for WireIdentity {
+    fn from(i: core_crypto::WireIdentity) -> Self {
         Self {
             client_id: i.client_id,
             status: i.status.into(),
@@ -59,12 +59,12 @@ pub enum DeviceStatus {
     Revoked = 3,
 }
 
-impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {
-    fn from(value: core_crypto::prelude::DeviceStatus) -> Self {
+impl From<core_crypto::DeviceStatus> for DeviceStatus {
+    fn from(value: core_crypto::DeviceStatus) -> Self {
         match value {
-            core_crypto::prelude::DeviceStatus::Valid => Self::Valid,
-            core_crypto::prelude::DeviceStatus::Expired => Self::Expired,
-            core_crypto::prelude::DeviceStatus::Revoked => Self::Revoked,
+            core_crypto::DeviceStatus::Valid => Self::Valid,
+            core_crypto::DeviceStatus::Expired => Self::Expired,
+            core_crypto::DeviceStatus::Revoked => Self::Revoked,
         }
     }
 }

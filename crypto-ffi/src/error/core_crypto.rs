@@ -1,10 +1,10 @@
 use core_crypto::{InnermostErrorMessage as _, RecursiveError};
+#[cfg(target_family = "wasm")]
+use wasm_bindgen::JsValue;
 
 #[cfg(feature = "proteus")]
 use crate::ProteusError;
 use crate::{MlsError, error::log_error};
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::JsValue;
 
 #[derive(Debug, thiserror::Error)]
 #[cfg_attr(target_family = "wasm", derive(strum::AsRefStr))]

@@ -1,15 +1,16 @@
+use std::collections::HashMap;
+#[cfg(not(target_family = "wasm"))]
+use std::sync::Arc;
+
+use core_crypto::{mls::conversation::Conversation as _, transaction_context::Error as TransactionError};
+#[cfg(target_family = "wasm")]
+use wasm_bindgen::prelude::*;
+
 use crate::{
     Ciphersuite, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CrlRegistration,
     E2eiConversationState, E2eiEnrollment, UserIdentities, WireIdentity, client_id::ClientIdMaybeArc,
     crl::NewCrlDistributionPoints,
 };
-use core_crypto::mls::conversation::Conversation as _;
-use core_crypto::transaction_context::Error as TransactionError;
-use std::collections::HashMap;
-#[cfg(not(target_family = "wasm"))]
-use std::sync::Arc;
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
 
 #[cfg(not(target_family = "wasm"))]
 type EnrollmentParameter = Arc<E2eiEnrollment>;
@@ -200,10 +201,10 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::prelude::Session::e2ei_is_enabled]
+    /// See [core_crypto::Session::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
-        let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
-            .signature_algorithm();
+        let sc =
+            core_crypto::MlsCiphersuite::from(core_crypto::CiphersuiteName::from(ciphersuite)).signature_algorithm();
         self.inner
             .e2ei_is_enabled(sc)
             .await
@@ -245,7 +246,7 @@ impl CoreCryptoContext {
         Ok(user_ids)
     }
 
-    /// See [core_crypto::prelude::Session::e2ei_is_pki_env_setup]
+    /// See [core_crypto::Session::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> CoreCryptoResult<bool> {
         self.inner
             .e2ei_is_pki_env_setup()

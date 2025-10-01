@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
+use ::core_crypto::ConversationId as InternalConversationId;
 use async_trait::async_trait;
 #[cfg(target_family = "wasm")]
 use js_sys::Promise;
 #[cfg(target_family = "wasm")]
 use log::kv;
-use std::sync::Arc;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 #[cfg(target_family = "wasm")]
@@ -14,7 +16,6 @@ use crate::ConversationId;
 #[cfg(not(target_family = "wasm"))]
 use crate::ConversationIdMaybeArc;
 use crate::{CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, conversation_id_coerce_maybe_arc};
-use ::core_crypto::prelude::ConversationId as InternalConversationId;
 
 #[cfg(not(target_family = "wasm"))]
 #[derive(Debug, thiserror::Error, uniffi::Error)]

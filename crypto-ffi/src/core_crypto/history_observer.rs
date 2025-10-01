@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use core_crypto::ConversationId;
 #[cfg(target_family = "wasm")]
 use js_sys::Promise;
 #[cfg(target_family = "wasm")]
@@ -14,7 +15,6 @@ use crate::{
     ConversationIdMaybeArc, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, HistorySecret,
     conversation_id_coerce_maybe_arc,
 };
-use core_crypto::prelude::ConversationId;
 
 #[cfg(not(target_family = "wasm"))]
 #[derive(Debug, thiserror::Error, uniffi::Error)]
@@ -61,11 +61,7 @@ struct ObserverShim(Arc<dyn HistoryObserver>);
 #[cfg(not(target_family = "wasm"))]
 #[async_trait]
 impl core_crypto::mls::HistoryObserver for ObserverShim {
-    async fn history_client_created(
-        &self,
-        conversation_id: ConversationId,
-        secret: &core_crypto::prelude::HistorySecret,
-    ) {
+    async fn history_client_created(&self, conversation_id: ConversationId, secret: &core_crypto::HistorySecret) {
         let Ok(secret) = HistorySecret::try_from(secret) else {
             // weird that we couldn't convert this but ¯\_(ツ)_/¯
             log::warn!(
@@ -177,11 +173,7 @@ impl HistoryObserver {
 #[cfg(target_family = "wasm")]
 #[async_trait(?Send)]
 impl core_crypto::mls::HistoryObserver for HistoryObserver {
-    async fn history_client_created(
-        &self,
-        conversation_id: ConversationId,
-        secret: &core_crypto::prelude::HistorySecret,
-    ) {
+    async fn history_client_created(&self, conversation_id: ConversationId, secret: &core_crypto::HistorySecret) {
         let Ok(secret) = HistorySecret::try_from(secret) else {
             // weird that we couldn't convert this but ¯\_(ツ)_/¯
             log::warn!(

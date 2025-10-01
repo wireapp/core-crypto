@@ -1,8 +1,6 @@
 use core_crypto::{
-    RecursiveError,
-    mls::conversation::Conversation as _,
-    prelude::{ClientIdentifier, KeyPackageIn, MlsConversationConfiguration, VerifiableGroupInfo},
-    transaction_context::Error as TransactionError,
+    ClientIdentifier, KeyPackageIn, MlsConversationConfiguration, RecursiveError, VerifiableGroupInfo,
+    mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
 };
 use tls_codec::{Deserialize as _, Serialize as _};
 #[cfg(target_family = "wasm")]
@@ -105,10 +103,10 @@ impl CoreCryptoContext {
             .await?
             .ciphersuite()
             .await;
-        Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
+        Ok(Ciphersuite::from(core_crypto::CiphersuiteName::from(cs)))
     }
 
-    /// See [core_crypto::prelude::Session::conversation_exists]
+    /// See [core_crypto::Session::conversation_exists]
     pub async fn conversation_exists(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
         self.inner
             .conversation_exists(conversation_id.as_ref())
@@ -261,7 +259,7 @@ impl CoreCryptoContext {
         conversation_id: &ConversationId,
         clients: Vec<ClientIdMaybeArc>,
     ) -> CoreCryptoResult<()> {
-        let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.as_cc()).collect();
+        let clients: Vec<core_crypto::ClientId> = clients.into_iter().map(|c| c.as_cc()).collect();
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         conversation.remove_members(&clients).await.map_err(Into::into)
     }

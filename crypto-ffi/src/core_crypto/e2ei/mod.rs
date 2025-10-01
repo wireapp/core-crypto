@@ -10,16 +10,15 @@ pub(crate) mod identities;
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl CoreCryptoFfi {
-    /// See [core_crypto::prelude::Session::e2ei_is_pki_env_setup]
+    /// See [core_crypto::Session::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
         self.inner.e2ei_is_pki_env_setup().await
     }
 
-    /// See [core_crypto::prelude::Session::e2ei_is_enabled]
+    /// See [core_crypto::Session::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
         let signature_scheme =
-            core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
-                .signature_algorithm();
+            core_crypto::MlsCiphersuite::from(core_crypto::CiphersuiteName::from(ciphersuite)).signature_algorithm();
         self.inner
             .e2ei_is_enabled(signature_scheme)
             .await

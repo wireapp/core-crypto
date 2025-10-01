@@ -12,20 +12,20 @@ use crate::{AcmeDirectory, CoreCryptoResult, NewAcmeAuthz, NewAcmeOrder};
 #[derive(Debug)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = FfiWireE2EIdentity))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
-pub struct E2eiEnrollment(Arc<RwLock<core_crypto::prelude::E2eiEnrollment>>);
+pub struct E2eiEnrollment(Arc<RwLock<core_crypto::E2eiEnrollment>>);
 
 impl E2eiEnrollment {
-    pub(crate) fn new(inner: core_crypto::prelude::E2eiEnrollment) -> Self {
+    pub(crate) fn new(inner: core_crypto::E2eiEnrollment) -> Self {
         Self(Arc::new(RwLock::new(inner)))
     }
 
-    pub(crate) fn into_inner(self) -> Option<core_crypto::prelude::E2eiEnrollment> {
+    pub(crate) fn into_inner(self) -> Option<core_crypto::E2eiEnrollment> {
         Arc::into_inner(self.0).map(|rwlock| rwlock.into_inner())
     }
 }
 
 impl Deref for E2eiEnrollment {
-    type Target = RwLock<core_crypto::prelude::E2eiEnrollment>;
+    type Target = RwLock<core_crypto::E2eiEnrollment>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -129,17 +129,17 @@ impl E2eiEnrollment {
         self.write().await.check_order_response(order).map_err(Into::into)
     }
 
-    /// See [core_crypto::prelude::E2eiEnrollment::finalize_request]
+    /// See [core_crypto::E2eiEnrollment::finalize_request]
     pub async fn finalize_request(&self, previous_nonce: String) -> CoreCryptoResult<Vec<u8>> {
         self.write().await.finalize_request(previous_nonce).map_err(Into::into)
     }
 
-    /// See [core_crypto::prelude::E2eiEnrollment::finalize_response]
+    /// See [core_crypto::E2eiEnrollment::finalize_response]
     pub async fn finalize_response(&self, finalize: Vec<u8>) -> CoreCryptoResult<String> {
         self.write().await.finalize_response(finalize).map_err(Into::into)
     }
 
-    /// See [core_crypto::prelude::E2eiEnrollment::certificate_request]
+    /// See [core_crypto::E2eiEnrollment::certificate_request]
     pub async fn certificate_request(&self, previous_nonce: String) -> CoreCryptoResult<Vec<u8>> {
         self.write()
             .await

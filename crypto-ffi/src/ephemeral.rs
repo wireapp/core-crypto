@@ -1,8 +1,8 @@
+use core_crypto::{CoreCrypto, HistorySecret as CoreCryptoHistorySecret};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
 use crate::{ClientId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, client_id::ClientIdMaybeArc};
-use core_crypto::prelude::{CoreCrypto, HistorySecret as CoreCryptoHistorySecret};
 
 /// A `HistorySecret` encodes sufficient client state that it can be used to instantiate an
 /// ephemeral client.

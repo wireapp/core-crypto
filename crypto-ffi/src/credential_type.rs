@@ -14,20 +14,20 @@ pub enum CredentialType {
     X509 = 0x02,
 }
 
-impl From<core_crypto::prelude::MlsCredentialType> for CredentialType {
-    fn from(value: core_crypto::prelude::MlsCredentialType) -> Self {
+impl From<core_crypto::MlsCredentialType> for CredentialType {
+    fn from(value: core_crypto::MlsCredentialType) -> Self {
         match value {
-            core_crypto::prelude::MlsCredentialType::Basic => Self::Basic,
-            core_crypto::prelude::MlsCredentialType::X509 => Self::X509,
+            core_crypto::MlsCredentialType::Basic => Self::Basic,
+            core_crypto::MlsCredentialType::X509 => Self::X509,
         }
     }
 }
 
-impl From<CredentialType> for core_crypto::prelude::MlsCredentialType {
-    fn from(value: CredentialType) -> core_crypto::prelude::MlsCredentialType {
+impl From<CredentialType> for core_crypto::MlsCredentialType {
+    fn from(value: CredentialType) -> core_crypto::MlsCredentialType {
         match value {
-            CredentialType::Basic => core_crypto::prelude::MlsCredentialType::Basic,
-            CredentialType::X509 => core_crypto::prelude::MlsCredentialType::X509,
+            CredentialType::Basic => core_crypto::MlsCredentialType::Basic,
+            CredentialType::X509 => core_crypto::MlsCredentialType::X509,
         }
     }
 }

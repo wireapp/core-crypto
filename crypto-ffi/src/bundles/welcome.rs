@@ -1,10 +1,9 @@
-use crate::{ConversationIdMaybeArc, conversation_id_coerce_maybe_arc};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::crl::NewCrlDistributionPoints;
+use crate::{ConversationIdMaybeArc, conversation_id_coerce_maybe_arc, crl::NewCrlDistributionPoints};
 
-/// see [core_crypto::prelude::WelcomeBundle]
+/// see [core_crypto::WelcomeBundle]
 #[derive(Debug)]
 #[cfg_attr(
     target_family = "wasm",
@@ -21,12 +20,12 @@ pub struct WelcomeBundle {
     pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
-impl From<core_crypto::prelude::WelcomeBundle> for WelcomeBundle {
+impl From<core_crypto::WelcomeBundle> for WelcomeBundle {
     fn from(
-        core_crypto::prelude::WelcomeBundle {
+        core_crypto::WelcomeBundle {
             id,
             crl_new_distribution_points,
-        }: core_crypto::prelude::WelcomeBundle,
+        }: core_crypto::WelcomeBundle,
     ) -> Self {
         let id = conversation_id_coerce_maybe_arc(id);
         let crl_new_distribution_points = crl_new_distribution_points.into();

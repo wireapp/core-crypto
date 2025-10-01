@@ -9,13 +9,15 @@ pub(crate) mod mls_transport;
 mod proteus;
 mod randomness;
 
-use core_crypto::prelude::{Session, SessionConfig, ValidatedSessionConfig};
+use core_crypto::{Session, SessionConfig, ValidatedSessionConfig};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::database::DatabaseMaybeArc;
 use crate::{
-    CoreCryptoError, CoreCryptoResult, ciphersuite::Ciphersuites, client_id::ClientIdMaybeArc, database::ToCc as _,
+    CoreCryptoError, CoreCryptoResult,
+    ciphersuite::Ciphersuites,
+    client_id::ClientIdMaybeArc,
+    database::{DatabaseMaybeArc, ToCc as _},
 };
 
 /// In Wasm, boxed slices are the natural way to communicate an immutable byte slice

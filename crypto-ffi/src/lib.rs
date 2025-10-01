@@ -34,18 +34,20 @@ pub use bundles::{
 pub use ciphersuite::{Ciphersuite, ciphersuite_default, ciphersuite_from_u16};
 pub use client_id::ClientId;
 pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePolicy};
-pub use core_crypto::conversation::ConversationId;
-pub(crate) use core_crypto::conversation::{ConversationIdMaybeArc, conversation_id_coerce_maybe_arc};
-pub(crate) use core_crypto::e2ei::identities::UserIdentities;
 pub use core_crypto::{
     CoreCryptoFfi,
     command::CoreCryptoCommand,
+    conversation::ConversationId,
     epoch_observer::EpochObserver,
     logger::{CoreCryptoLogLevel, CoreCryptoLogger, set_logger, set_max_log_level},
     mls_transport::{MlsTransport, MlsTransportData, MlsTransportResponse},
 };
 #[cfg(not(target_family = "wasm"))]
 pub use core_crypto::{command::transaction_helper::TransactionHelper, core_crypto_deferred_init, core_crypto_new};
+pub(crate) use core_crypto::{
+    conversation::{ConversationIdMaybeArc, conversation_id_coerce_maybe_arc},
+    e2ei::identities::UserIdentities,
+};
 pub use core_crypto_context::CoreCryptoContext;
 pub use credential_type::CredentialType;
 pub use crl::CrlRegistration;

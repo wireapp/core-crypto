@@ -3,18 +3,17 @@
 //! Unfortunately, there is no good way to reuse code between uniffi and wasm for an interface
 //! like this; the fundamental techniques in use are very different. So we just have to feature-gate
 //! everything.
+#[cfg(not(target_family = "wasm"))]
+use std::fmt;
+use std::sync::Arc;
+
+use core_crypto::{HistorySecret, MlsCommitBundle};
 #[cfg(target_family = "wasm")]
 use js_sys::{Promise, Uint8Array};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen_futures::JsFuture;
-
-#[cfg(not(target_family = "wasm"))]
-use std::fmt;
-use std::sync::Arc;
-
-use core_crypto::prelude::{HistorySecret, MlsCommitBundle};
 
 #[cfg(not(target_family = "wasm"))]
 use crate::ClientId;
@@ -105,7 +104,7 @@ impl fmt::Debug for MlsTransportShim {
 
 #[cfg(not(target_family = "wasm"))]
 #[async_trait::async_trait]
-impl core_crypto::prelude::MlsTransport for MlsTransportShim {
+impl core_crypto::MlsTransport for MlsTransportShim {
     async fn send_commit_bundle(
         &self,
         commit_bundle: MlsCommitBundle,
@@ -410,7 +409,7 @@ fn callback_shim(callbacks: Callbacks) -> Arc<dyn core_crypto::MlsTransport> {
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl CoreCryptoFfi {
-    /// See [core_crypto::prelude::Session::provide_transport]
+    /// See [core_crypto::Session::provide_transport]
     pub async fn provide_transport(&self, callbacks: Callbacks) -> CoreCryptoResult<()> {
         self.inner.provide_transport(callback_shim(callbacks)).await;
         Ok(())

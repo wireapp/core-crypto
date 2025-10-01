@@ -1,7 +1,6 @@
+use core_crypto::LeafError;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::JsValue;
-
-use core_crypto::LeafError;
 
 #[cfg(target_family = "wasm")]
 use super::wasm::{JsErrorContext, JsValueMutationExt as _};

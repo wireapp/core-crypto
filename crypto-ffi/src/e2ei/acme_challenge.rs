@@ -25,8 +25,8 @@ pub struct AcmeChallenge {
     pub target: String,
 }
 
-impl From<core_crypto::prelude::E2eiAcmeChallenge> for AcmeChallenge {
-    fn from(chall: core_crypto::prelude::E2eiAcmeChallenge) -> Self {
+impl From<core_crypto::E2eiAcmeChallenge> for AcmeChallenge {
+    fn from(chall: core_crypto::E2eiAcmeChallenge) -> Self {
         Self {
             delegate: chall.delegate,
             url: chall.url,
@@ -35,7 +35,7 @@ impl From<core_crypto::prelude::E2eiAcmeChallenge> for AcmeChallenge {
     }
 }
 
-impl From<AcmeChallenge> for core_crypto::prelude::E2eiAcmeChallenge {
+impl From<AcmeChallenge> for core_crypto::E2eiAcmeChallenge {
     fn from(chall: AcmeChallenge) -> Self {
         Self {
             delegate: chall.delegate,

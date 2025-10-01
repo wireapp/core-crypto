@@ -14,7 +14,7 @@ use wasm_bindgen::prelude::*;
     serde(from = "ClientIdSerializationShim", into = "ClientIdSerializationShim")
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
-pub struct ClientId(pub(crate) core_crypto::prelude::ClientId);
+pub struct ClientId(pub(crate) core_crypto::ClientId);
 
 #[cfg(target_family = "wasm")]
 pub(crate) type ClientIdMaybeArc = ClientId;
@@ -58,11 +58,11 @@ impl From<ClientIdSerializationShim> for ClientId {
 }
 
 impl ClientId {
-    pub(crate) fn as_cc(&self) -> core_crypto::prelude::ClientId {
+    pub(crate) fn as_cc(&self) -> core_crypto::ClientId {
         self.0.clone()
     }
 
-    pub(crate) fn from_cc(id: core_crypto::prelude::ClientId) -> ClientIdMaybeArc {
+    pub(crate) fn from_cc(id: core_crypto::ClientId) -> ClientIdMaybeArc {
         #[cfg(target_family = "wasm")]
         {
             ClientId(id)

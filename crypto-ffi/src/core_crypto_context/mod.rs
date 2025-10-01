@@ -4,10 +4,9 @@ mod proteus;
 
 use std::{ops::Deref, sync::Arc};
 
+use core_crypto::transaction_context::TransactionContext;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
-
-use core_crypto::transaction_context::TransactionContext;
 
 use crate::CoreCryptoResult;
 
@@ -46,7 +45,7 @@ impl CoreCryptoContext {
         self.inner.get_data().await.map_err(Into::into)
     }
 
-    /// See [core_crypto::prelude::Session::random_bytes].
+    /// See [core_crypto::Session::random_bytes].
     pub async fn random_bytes(&self, len: u32) -> CoreCryptoResult<Vec<u8>> {
         self.inner.random_bytes(len as _).await.map_err(Into::into)
     }

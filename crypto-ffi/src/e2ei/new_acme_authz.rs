@@ -26,8 +26,8 @@ pub struct NewAcmeAuthz {
     pub challenge: AcmeChallenge,
 }
 
-impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAcmeAuthz {
-    fn from(new_authz: core_crypto::prelude::E2eiNewAcmeAuthz) -> Self {
+impl From<core_crypto::E2eiNewAcmeAuthz> for NewAcmeAuthz {
+    fn from(new_authz: core_crypto::E2eiNewAcmeAuthz) -> Self {
         Self {
             identifier: new_authz.identifier,
             keyauth: new_authz.keyauth,
@@ -36,7 +36,7 @@ impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAcmeAuthz {
     }
 }
 
-impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
+impl From<NewAcmeAuthz> for core_crypto::E2eiNewAcmeAuthz {
     fn from(new_authz: NewAcmeAuthz) -> Self {
         Self {
             identifier: new_authz.identifier,

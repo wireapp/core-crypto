@@ -2,13 +2,12 @@
 
 mod key;
 
+pub(super) use key::*;
+pub use key::{DatabaseKey, migrate_database_key_type_to_bytes, update_database_key};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
 use crate::{CoreCryptoError, CoreCryptoResult};
-
-pub(super) use key::*;
-pub use key::{DatabaseKey, migrate_database_key_type_to_bytes, update_database_key};
 
 pub(crate) trait ToCc {
     type Target;

@@ -27,8 +27,8 @@ pub struct AcmeDirectory {
     pub revoke_cert: String,
 }
 
-impl From<core_crypto::prelude::E2eiAcmeDirectory> for AcmeDirectory {
-    fn from(directory: core_crypto::prelude::E2eiAcmeDirectory) -> Self {
+impl From<core_crypto::E2eiAcmeDirectory> for AcmeDirectory {
+    fn from(directory: core_crypto::E2eiAcmeDirectory) -> Self {
         Self {
             new_nonce: directory.new_nonce,
             new_account: directory.new_account,
@@ -38,7 +38,7 @@ impl From<core_crypto::prelude::E2eiAcmeDirectory> for AcmeDirectory {
     }
 }
 
-impl From<AcmeDirectory> for core_crypto::prelude::E2eiAcmeDirectory {
+impl From<AcmeDirectory> for core_crypto::E2eiAcmeDirectory {
     fn from(directory: AcmeDirectory) -> Self {
         Self {
             new_nonce: directory.new_nonce,
