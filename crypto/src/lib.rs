@@ -8,87 +8,78 @@
 #![allow(clippy::single_component_path_imports)]
 
 #[cfg(test)]
-pub use core_crypto_macros::{dispotent, durable, idempotent};
-#[cfg(feature = "proteus")]
-use {async_lock::Mutex, std::sync::Arc};
-
-pub use self::error::*;
-
-#[cfg(test)]
 #[macro_use]
 pub mod test_utils;
 // both imports above have to be defined at the beginning of the crate for rstest to work
 
+mod build_metadata;
+mod ephemeral;
 mod error;
-
-/// MLS Abstraction
-pub mod mls;
+mod group_store;
 
 /// re-export [rusty-jwt-tools](https://github.com/wireapp/rusty-jwt-tools) API
 pub mod e2e_identity;
-
+/// MLS Abstraction
+pub mod mls;
 /// Proteus Abstraction
 #[cfg(feature = "proteus")]
 pub mod proteus;
-
-mod ephemeral;
-mod group_store;
 pub mod transaction_context;
 
-mod build_metadata;
-use crate::prelude::MlsCommitBundle;
-pub use build_metadata::{BUILD_METADATA, BuildMetadata};
-
-use crate::ephemeral::HistorySecret;
 pub use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
 
-/// Common imports that should be useful for most uses of the crate
-pub mod prelude {
-    pub use openmls::{
-        group::{MlsGroup, MlsGroupConfig},
-        prelude::{
-            Ciphersuite as CiphersuiteName, Credential, GroupEpoch, KeyPackage, KeyPackageIn, KeyPackageRef,
-            MlsMessageIn, Node, group_info::VerifiableGroupInfo,
-        },
-    };
+pub use openmls::{
+    group::{MlsGroup, MlsGroupConfig},
+    prelude::{
+        Ciphersuite as CiphersuiteName, Credential, GroupEpoch, KeyPackage, KeyPackageIn, KeyPackageRef, MlsMessageIn,
+        Node, group_info::VerifiableGroupInfo,
+    },
+};
 
-    pub use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed};
+pub use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed};
 
-    pub use crate::{
-        CoreCrypto, MlsTransport,
-        e2e_identity::{
-            E2eiEnrollment,
-            device_status::DeviceStatus,
-            identity::{WireIdentity, X509Identity},
-            types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
+pub use crate::{
+    build_metadata::{BUILD_METADATA, BuildMetadata},
+    e2e_identity::{
+        E2eiEnrollment,
+        device_status::DeviceStatus,
+        identity::{WireIdentity, X509Identity},
+        types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
+    },
+    ephemeral::{HISTORY_CLIENT_ID_PREFIX, HistorySecret},
+    error::{
+        Error, InnermostErrorMessage, KeystoreError, LeafError, MlsError, MlsErrorKind, ProteusError, ProteusErrorKind,
+        RecursiveError, Result, ToRecursiveError,
+    },
+    mls::{
+        ciphersuite::MlsCiphersuite,
+        conversation::{
+            ConversationId, MlsConversation,
+            commit::MlsCommitBundle,
+            config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
+            conversation_guard::decrypt::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
+            group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
+            proposal::MlsProposalBundle,
+            welcome::WelcomeBundle,
         },
-        ephemeral::{HISTORY_CLIENT_ID_PREFIX, HistorySecret},
-        error::{Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
-        mls::{
-            ciphersuite::MlsCiphersuite,
-            conversation::{
-                ConversationId, MlsConversation,
-                commit::MlsCommitBundle,
-                config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
-                conversation_guard::decrypt::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
-                group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
-                proposal::MlsProposalBundle,
-                welcome::WelcomeBundle,
-            },
-            credential::{typ::MlsCredentialType, x509::CertificateBundle},
-            proposal::{MlsProposal, MlsProposalRef},
-            session::{
-                Session,
-                config::{SessionConfig, ValidatedSessionConfig},
-                id::ClientId,
-                identifier::ClientIdentifier,
-                key_package::INITIAL_KEYING_MATERIAL_COUNT,
-                *,
-            },
+        credential::{typ::MlsCredentialType, x509::CertificateBundle},
+        proposal::{MlsProposal, MlsProposalRef},
+        session::{
+            Session,
+            config::{SessionConfig, ValidatedSessionConfig},
+            id::ClientId,
+            identifier::ClientIdentifier,
+            key_package::INITIAL_KEYING_MATERIAL_COUNT,
+            user_id::UserId,
         },
-        transaction_context::e2e_identity::conversation_state::E2eiConversationState,
-    };
-}
+    },
+    transaction_context::e2e_identity::conversation_state::E2eiConversationState,
+};
+
+#[cfg(test)]
+pub use core_crypto_macros::{dispotent, durable, idempotent};
+#[cfg(feature = "proteus")]
+use {async_lock::Mutex, std::sync::Arc};
 
 /// Response from the delivery service
 pub enum MlsTransportResponse {
