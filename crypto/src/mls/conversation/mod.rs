@@ -22,7 +22,7 @@ use config::MlsConversationConfiguration;
 use core_crypto_keystore::CryptoKeystoreMls;
 use itertools::Itertools as _;
 use log::trace;
-use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
+use mls_crypto_provider::{Database, MlsCryptoProvider};
 use openmls::{
     group::MlsGroup,
     prelude::{Credential, CredentialWithKey, LeafNodeIndex, Proposal, SignaturePublicKey},
@@ -522,7 +522,7 @@ impl MlsConversation {
         })
     }
 
-    pub(crate) async fn persist_group_when_changed(&mut self, keystore: &CryptoKeystore, force: bool) -> Result<()> {
+    pub(crate) async fn persist_group_when_changed(&mut self, keystore: &Database, force: bool) -> Result<()> {
         if force || self.group.state_changed() == openmls::group::InnerState::Changed {
             keystore
                 .mls_group_persist(

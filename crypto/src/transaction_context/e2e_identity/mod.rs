@@ -63,7 +63,6 @@ impl TransactionContext {
         &self,
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
-        nb_init_key_packages: Option<usize>,
     ) -> Result<NewCrlDistributionPoints> {
         let sk = enrollment
             .get_sign_key_for_mls()
@@ -96,7 +95,7 @@ impl TransactionContext {
             private_key,
         };
         let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
-        self.mls_init(identifier, vec![cs], nb_init_key_packages)
+        self.mls_init(identifier, vec![cs])
             .await
             .map_err(RecursiveError::transaction("initializing mls"))?;
         Ok(crl_new_distribution_points)
@@ -177,7 +176,7 @@ mod tests {
 
             session
                 .transaction
-                .e2ei_mls_init_only(&mut enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
+                .e2ei_mls_init_only(&mut enrollment, cert)
                 .await
                 .unwrap();
 

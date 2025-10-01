@@ -4,7 +4,7 @@ use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{EntityFindParams, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage},
 };
-use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
+use mls_crypto_provider::{Database, MlsCryptoProvider};
 use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize, Serialize};
@@ -248,7 +248,7 @@ impl Session {
     async fn _prune_keypackages<'a>(
         &self,
         kps: &'a [(MlsKeyPackage, KeyPackage)],
-        keystore: &CryptoKeystore,
+        keystore: &Database,
         refs: impl IntoIterator<Item = KeyPackageRef>,
     ) -> Result<HashSet<&'a [u8]>, Error> {
         let refs = refs
@@ -292,7 +292,7 @@ impl Session {
         Ok(kp_to_delete.map(|(_, kpref)| kpref.as_slice()).collect())
     }
 
-    async fn find_all_keypackages(&self, keystore: &CryptoKeystore) -> Result<Vec<(MlsKeyPackage, KeyPackage)>> {
+    async fn find_all_keypackages(&self, keystore: &Database) -> Result<Vec<(MlsKeyPackage, KeyPackage)>> {
         let kps: Vec<MlsKeyPackage> = keystore
             .find_all(EntityFindParams::default())
             .await
@@ -330,13 +330,13 @@ impl Session {
 #[cfg(test)]
 mod tests {
     use core_crypto_keystore::{ConnectionType, DatabaseKey};
-    use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
+    use mls_crypto_provider::{Database, MlsCryptoProvider};
     use openmls::prelude::{KeyPackage, KeyPackageIn, KeyPackageRef, ProtocolVersion};
     use openmls_traits::{OpenMlsCryptoProvider, types::VerifiableCiphersuite};
 
     use super::Session;
     use crate::{
-        INITIAL_KEYING_MATERIAL_COUNT, MlsConversationConfiguration,
+        MlsConversationConfiguration,
         e2e_identity::enrollment::test_utils::{e2ei_enrollment, init_activation_or_rotation, noop_restore},
         test_utils::*,
     };
@@ -346,8 +346,8 @@ mod tests {
         let [session] = case.sessions().await;
         let (cs, ct) = (case.ciphersuite(), case.credential_type);
         let key = DatabaseKey::generate();
-        let key_store = CryptoKeystore::open(ConnectionType::InMemory, &key).await.unwrap();
-        let backend = MlsCryptoProvider::builder().key_store(key_store).build();
+        let database = Database::open(ConnectionType::InMemory, &key).await.unwrap();
+        let backend = MlsCryptoProvider::new(database);
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
             x509_test_chain.register_with_provider(&backend).await;
@@ -362,7 +362,6 @@ mod tests {
             .random_generate(
                 &case,
                 x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
-                false,
             )
             .await
             .unwrap();
@@ -455,9 +454,9 @@ mod tests {
             const COUNT: usize = 109;
 
             let init = cc.transaction.count_entities().await;
-            assert_eq!(init.key_package, INITIAL_KEYING_MATERIAL_COUNT);
-            assert_eq!(init.encryption_keypair, INITIAL_KEYING_MATERIAL_COUNT);
-            assert_eq!(init.hpke_private_key, INITIAL_KEYING_MATERIAL_COUNT);
+            assert_eq!(init.key_package, 0);
+            assert_eq!(init.encryption_keypair, 0);
+            assert_eq!(init.hpke_private_key, 0);
             assert_eq!(init.credential, 1);
             assert_eq!(init.signature_keypair, 1);
 
@@ -533,8 +532,8 @@ mod tests {
         const UNEXPIRED_COUNT: usize = 125;
         const EXPIRED_COUNT: usize = 200;
         let key = DatabaseKey::generate();
-        let key_store = CryptoKeystore::open(ConnectionType::InMemory, &key).await.unwrap();
-        let backend = MlsCryptoProvider::builder().key_store(key_store).build();
+        let key_store = Database::open(ConnectionType::InMemory, &key).await.unwrap();
+        let backend = MlsCryptoProvider::new(key_store);
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
             x509_test_chain.register_with_provider(&backend).await;
@@ -548,7 +547,6 @@ mod tests {
             .random_generate(
                 &case,
                 x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
-                false,
             )
             .await
             .unwrap();

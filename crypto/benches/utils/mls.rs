@@ -163,7 +163,6 @@ pub async fn new_central(
         .database(db)
         .client_id(client_id.as_bytes().into())
         .ciphersuites([ciphersuite])
-        .nb_key_packages(Some(100))
         .build()
         .validate()
         .unwrap();
@@ -261,7 +260,7 @@ pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, Clien
         .to_vec();
     let key = DatabaseKey::generate();
     let key_store = Database::open(ConnectionType::InMemory, &key).await.unwrap();
-    let backend = MlsCryptoProvider::builder().key_store(key_store).build();
+    let backend = MlsCryptoProvider::new(key_store);
     let cs: Ciphersuite = ciphersuite.into();
     let signer = create_signature_keypair(&backend, cs);
 

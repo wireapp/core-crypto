@@ -44,10 +44,10 @@ impl TransactionContext {
 #[cfg(test)]
 mod tests {
     use core_crypto_keystore::{ConnectionType, DatabaseKey};
-    use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
+    use mls_crypto_provider::{Database, MlsCryptoProvider};
 
     use crate::{
-        E2eiEnrollment, INITIAL_KEYING_MATERIAL_COUNT,
+        E2eiEnrollment,
         e2e_identity::{enrollment::test_utils::*, id::WireQualifiedClientId},
         test_utils::{x509::X509TestChain, *},
     };
@@ -76,12 +76,7 @@ mod tests {
             .await
             .unwrap();
 
-            assert!(
-                cc.transaction
-                    .e2ei_mls_init_only(&mut enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
-                    .await
-                    .is_ok()
-            );
+            assert!(cc.transaction.e2ei_mls_init_only(&mut enrollment, cert,).await.is_ok());
         })
         .await
     }
@@ -105,8 +100,8 @@ mod tests {
                     Box::pin(async move {
                         // this restore recreates a partial enrollment
                         let key = DatabaseKey::generate();
-                        let key_store = CryptoKeystore::open(ConnectionType::InMemory, &key).await.unwrap();
-                        let backend = MlsCryptoProvider::builder().key_store(key_store).build();
+                        let key_store = Database::open(ConnectionType::InMemory, &key).await.unwrap();
+                        let backend = MlsCryptoProvider::new(key_store);
                         backend.new_transaction().await.unwrap();
                         let client_id = e.client_id().parse::<WireQualifiedClientId>().unwrap();
                         E2eiEnrollment::try_new(

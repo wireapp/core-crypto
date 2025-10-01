@@ -43,7 +43,7 @@ pub use core_crypto::{
     mls_transport::{MlsTransport, MlsTransportData, MlsTransportResponse},
 };
 #[cfg(not(target_family = "wasm"))]
-pub use core_crypto::{command::transaction_helper::TransactionHelper, core_crypto_deferred_init, core_crypto_new};
+pub use core_crypto::{command::transaction_helper::TransactionHelper, core_crypto_new};
 pub(crate) use core_crypto::{
     conversation::{ConversationIdMaybeArc, conversation_id_coerce_maybe_arc},
     e2ei::identities::UserIdentities,

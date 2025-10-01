@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 
-pub use core_crypto_keystore::{Database as CryptoKeystore, DatabaseKey};
+pub use core_crypto_keystore::{Database, DatabaseKey};
 
 mod crypto_provider;
 mod error;
@@ -11,7 +11,6 @@ pub use error::{MlsProviderError, MlsProviderResult};
 pub use crypto_provider::RustCrypto;
 
 pub use pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
-use typed_builder::TypedBuilder;
 
 use crate::pki::PkiEnvironmentProvider;
 
@@ -62,52 +61,25 @@ impl std::ops::DerefMut for EntropySeed {
     }
 }
 
-// we don't want to document this type; it's purely an implementation detail
-// people get the builder from `MlsCryptoProvider::builder`, and the builder produces
-// a `MlsCryptoProvider`
-#[doc(hidden)]
-#[derive(TypedBuilder)]
-#[builder(build_method(into = MlsCryptoProvider))]
-pub struct MlsCryptoProviderConfiguration {
-    key_store: CryptoKeystore,
-    /// External seed for the ChaCha20 PRNG entropy pool
-    #[builder(default, setter(strip_option(fallback=entropy_seed_opt)))]
-    entropy_seed: Option<EntropySeed>,
-}
-
 #[derive(Debug, Clone)]
 pub struct MlsCryptoProvider {
     crypto: RustCrypto,
-    key_store: CryptoKeystore,
+    key_store: Database,
     pki_env: PkiEnvironmentProvider,
 }
 
-impl From<MlsCryptoProviderConfiguration> for MlsCryptoProvider {
-    fn from(
-        MlsCryptoProviderConfiguration {
-            key_store,
-            entropy_seed,
-        }: MlsCryptoProviderConfiguration,
-    ) -> Self {
-        let crypto = entropy_seed.map(RustCrypto::new_with_seed).unwrap_or_default();
-        let pki_env = PkiEnvironmentProvider::default();
-
-        Self {
-            crypto,
-            key_store,
-            pki_env,
-        }
-    }
-}
-
 impl MlsCryptoProvider {
-    /// Construct a builder which can build a crypto provider.
+    /// Construct a crypto provider with defaults and a given [Database].
     ///
     /// See also:
     ///
-    /// - [CryptoKeystore::open]
-    pub fn builder() -> MlsCryptoProviderConfigurationBuilder {
-        MlsCryptoProviderConfiguration::builder()
+    /// - [Database::open]
+    pub fn new(key_store: Database) -> Self {
+        Self {
+            key_store,
+            crypto: Default::default(),
+            pki_env: Default::default(),
+        }
     }
 
     /// Clones the references of the PkiEnvironment and the CryptoProvider into a transaction
@@ -144,12 +116,12 @@ impl MlsCryptoProvider {
     }
 
     /// Clone keystore (its an `Arc` internnaly)
-    pub fn keystore(&self) -> CryptoKeystore {
+    pub fn keystore(&self) -> Database {
         self.key_store.clone()
     }
 
     /// Allows to retrieve the underlying key store directly
-    pub fn unwrap_keystore(self) -> CryptoKeystore {
+    pub fn unwrap_keystore(self) -> Database {
         self.key_store
     }
 }
@@ -157,7 +129,7 @@ impl MlsCryptoProvider {
 impl openmls_traits::OpenMlsCryptoProvider for MlsCryptoProvider {
     type CryptoProvider = RustCrypto;
     type RandProvider = RustCrypto;
-    type KeyStoreProvider = CryptoKeystore;
+    type KeyStoreProvider = Database;
     type AuthenticationServiceProvider = PkiEnvironmentProvider;
 
     fn crypto(&self) -> &Self::CryptoProvider {

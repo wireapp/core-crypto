@@ -267,6 +267,16 @@ mod tests {
                     conversations.push(conversation)
                 }
 
+                alice
+                    .transaction
+                    .get_or_create_client_keypackages(
+                        case.ciphersuite(),
+                        case.credential_type,
+                        INITIAL_KEYING_MATERIAL_COUNT,
+                    )
+                    .await
+                    .unwrap();
+
                 // Count the key material before the rotation to compare it later
                 let before_rotate = alice.transaction.count_entities().await;
                 assert_eq!(before_rotate.key_package, INITIAL_KEYING_MATERIAL_COUNT);

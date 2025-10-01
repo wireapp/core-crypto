@@ -33,7 +33,7 @@ pub(crate) async fn setup(#[default(false)] in_memory: bool) -> MlsCryptoProvide
     }
     .unwrap();
 
-    MlsCryptoProvider::builder().key_store(store).build()
+    MlsCryptoProvider::new(store)
 }
 
 #[template]

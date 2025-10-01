@@ -20,7 +20,6 @@ pub(crate) struct CoreCryptoNativeClient {
     prekey_last_id: Cell<u16>,
 }
 
-#[allow(dead_code)]
 impl CoreCryptoNativeClient {
     pub(crate) async fn new() -> Result<Self> {
         Self::internal_new(false).await
@@ -38,7 +37,6 @@ impl CoreCryptoNativeClient {
             .database(db)
             .client_id_opt(cid)
             .ciphersuites([CIPHERSUITE_IN_USE.into()])
-            .nb_key_packages(Some(100))
             .build()
             .validate()?;
 

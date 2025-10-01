@@ -114,15 +114,10 @@ impl CoreCryptoContext {
         &self,
         enrollment: EnrollmentParameter,
         certificate_chain: String,
-        nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        let nb_key_package = nb_key_package
-            .map(usize::try_from)
-            .transpose()
-            .map_err(CoreCryptoError::generic())?;
         let mut enrollment = enrollment.write().await;
         self.inner
-            .e2ei_mls_init_only(&mut enrollment, certificate_chain, nb_key_package)
+            .e2ei_mls_init_only(&mut enrollment, certificate_chain)
             .await
             .map(Into::into)
             .map_err(Into::<TransactionError>::into)

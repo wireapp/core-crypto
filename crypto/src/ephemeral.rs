@@ -63,7 +63,6 @@ async fn in_memory_cc_with_ciphersuite(ciphersuite: impl Into<MlsCiphersuite>) -
     let config = SessionConfig::builder()
         .ciphersuites([ciphersuite.into()])
         .database(db)
-        .nb_key_packages(Some(0)) // don't generate any keypackages; we will never add this client to another group
         .build()
         .validate()
         .map_err(RecursiveError::mls("validating ephemeral session configuration"))?;
@@ -98,7 +97,7 @@ pub(crate) async fn generate_history_secret(ciphersuite: MlsCiphersuite) -> Resu
         .new_transaction()
         .await
         .map_err(RecursiveError::transaction("creating new transaction"))?;
-    cc.init(identifier, &[ciphersuite], &cc.crypto_provider, 0)
+    cc.init(identifier, &[ciphersuite], &cc.crypto_provider)
         .await
         .map_err(RecursiveError::mls_client("initializing ephemeral cc"))?;
 

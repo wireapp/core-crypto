@@ -23,8 +23,7 @@ pub(crate) trait HasSessionAndCrypto: Send {
 mod tests {
 
     use crate::{
-        CertificateBundle, ClientIdentifier, CoreCrypto, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType,
-        SessionConfig,
+        CertificateBundle, ClientIdentifier, CoreCrypto, MlsCredentialType, SessionConfig,
         mls::Session,
         test_utils::{x509::X509TestChain, *},
         transaction_context::Error as TransactionError,
@@ -172,14 +171,7 @@ mod tests {
                     CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
                 }
             };
-            context
-                .mls_init(
-                    identifier,
-                    vec![case.ciphersuite()],
-                    Some(INITIAL_KEYING_MATERIAL_COUNT),
-                )
-                .await
-                .unwrap();
+            context.mls_init(identifier, vec![case.ciphersuite()]).await.unwrap();
             assert!(context.session().await.unwrap().is_ready().await);
             // expect mls_client to work
             assert_eq!(

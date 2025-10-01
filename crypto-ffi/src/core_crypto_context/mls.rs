@@ -7,10 +7,9 @@ use tls_codec::{Deserialize as _, Serialize as _};
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoError,
-    CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle,
-    bytes_wrapper::bytes_wrapper, ciphersuite::Ciphersuites, client_id::ClientIdMaybeArc,
-    crl::NewCrlDistributionPoints,
+    Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoResult,
+    CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle, bytes_wrapper::bytes_wrapper,
+    ciphersuite::Ciphersuites, client_id::ClientIdMaybeArc, crl::NewCrlDistributionPoints,
 };
 
 bytes_wrapper!(
@@ -57,21 +56,11 @@ bytes_wrapper!(
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::mls_init]
-    pub async fn mls_init(
-        &self,
-        client_id: ClientIdMaybeArc,
-        ciphersuites: Ciphersuites,
-        nb_key_package: Option<u32>,
-    ) -> CoreCryptoResult<()> {
-        let nb_key_package = nb_key_package
-            .map(usize::try_from)
-            .transpose()
-            .map_err(CoreCryptoError::generic())?;
+    pub async fn mls_init(&self, client_id: ClientIdMaybeArc, ciphersuites: Ciphersuites) -> CoreCryptoResult<()> {
         self.inner
             .mls_init(
                 ClientIdentifier::Basic(client_id.as_cc()),
                 ciphersuites.into_iter().map(Into::into).collect(),
-                nb_key_package,
             )
             .await?;
         Ok(())

@@ -7,7 +7,7 @@ use core_crypto_keystore::{
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
 };
 use log::trace;
-use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
+use mls_crypto_provider::{Database, MlsCryptoProvider};
 use openmls::{
     credentials::CredentialWithKey,
     prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody},
@@ -70,7 +70,7 @@ impl PendingConversation {
             .map_err(Into::into)
     }
 
-    async fn keystore(&self) -> Result<CryptoKeystore> {
+    async fn keystore(&self) -> Result<Database> {
         let backend = self.mls_provider().await?;
         Ok(backend.keystore())
     }

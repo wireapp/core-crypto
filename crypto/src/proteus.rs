@@ -589,7 +589,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        CertificateBundle, ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType, Session, SessionConfig,
+        CertificateBundle, ClientIdentifier, MlsCredentialType, Session, SessionConfig,
         test_utils::{proteus_utils::*, x509::X509TestChain, *},
     };
 
@@ -653,11 +653,7 @@ mod tests {
             }
         };
         transaction
-            .mls_init(
-                identifier,
-                vec![case.ciphersuite()],
-                Some(INITIAL_KEYING_MATERIAL_COUNT),
-            )
+            .mls_init(identifier, vec![case.ciphersuite()])
             .await
             .unwrap();
         // expect MLS to work

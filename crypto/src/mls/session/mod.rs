@@ -99,16 +99,11 @@ impl Session {
         ValidatedSessionConfig {
             database,
             client_id,
-            external_entropy,
             ciphersuites,
-            nb_key_packages,
         }: ValidatedSessionConfig,
     ) -> crate::mls::Result<Self> {
         // Init backend (crypto + rand + keystore)
-        let mls_backend = MlsCryptoProvider::builder()
-            .key_store(database)
-            .entropy_seed_opt(external_entropy)
-            .build();
+        let mls_backend = MlsCryptoProvider::new(database);
 
         // We create the core crypto instance first to enable creating a transaction from it and
         // doing all subsequent actions inside a single transaction, though it forces us to clone
@@ -129,12 +124,7 @@ impl Session {
 
         if let Some(id) = client_id {
             cc.mls
-                .init(
-                    ClientIdentifier::Basic(id),
-                    ciphersuites.as_slice(),
-                    &mls_backend,
-                    nb_key_packages,
-                )
+                .init(ClientIdentifier::Basic(id), ciphersuites.as_slice(), &mls_backend)
                 .await
                 .map_err(RecursiveError::mls_client("initializing mls client"))?
         }
@@ -173,7 +163,6 @@ impl Session {
         identifier: ClientIdentifier,
         ciphersuites: &[MlsCiphersuite],
         backend: &MlsCryptoProvider,
-        nb_key_packages: usize,
     ) -> Result<()> {
         self.ensure_unready().await?;
         let id = identifier.get_id()?;
@@ -195,9 +184,8 @@ impl Session {
             .collect::<Result<Vec<_>>>()?;
 
         if credentials.is_empty() {
-            debug!(count = nb_key_packages, ciphersuites:? = ciphersuites; "Generating client");
-            self.generate(identifier, backend, ciphersuites, nb_key_packages)
-                .await?;
+            debug!(ciphersuites:? = ciphersuites; "Generating client");
+            self.generate(identifier, backend, ciphersuites).await?;
         } else {
             let signature_schemes = ciphersuites
                 .iter()
@@ -205,9 +193,8 @@ impl Session {
                 .collect::<HashSet<_>>();
             let load_result = self.load(backend, id.as_ref(), credentials, signature_schemes).await;
             if let Err(Error::ClientSignatureNotFound) = load_result {
-                debug!(count = nb_key_packages, ciphersuites:? = ciphersuites; "Client signature not found. Generating client");
-                self.generate(identifier, backend, ciphersuites, nb_key_packages)
-                    .await?;
+                debug!(ciphersuites:? = ciphersuites; "Client signature not found. Generating client");
+                self.generate(identifier, backend, ciphersuites).await?;
             } else {
                 load_result?;
             }
@@ -358,7 +345,6 @@ impl Session {
         identifier: ClientIdentifier,
         backend: &MlsCryptoProvider,
         ciphersuites: &[MlsCiphersuite],
-        nb_key_package: usize,
     ) -> Result<()> {
         self.ensure_unready().await?;
         let id = identifier.get_id()?;
@@ -377,22 +363,6 @@ impl Session {
 
         for (sc, id, cb) in identities {
             self.save_identity(&backend.keystore(), Some(&id), sc, cb).await?;
-        }
-
-        let guard = self.inner.read().await;
-        let SessionInner { identities, .. } = guard.as_ref().ok_or(Error::MlsNotInitialized)?;
-
-        if nb_key_package != 0 {
-            for ciphersuite in ciphersuites.iter().copied() {
-                let ciphersuite_signature_scheme = ciphersuite.signature_algorithm();
-                for credential_bundle in identities.iter().filter_map(|(signature_scheme, credential_bundle)| {
-                    (signature_scheme == ciphersuite_signature_scheme).then_some(credential_bundle)
-                }) {
-                    let credential_type = credential_bundle.credential.credential_type().into();
-                    self.request_key_packages(nb_key_package, ciphersuite, credential_type, backend)
-                        .await?;
-                }
-            }
         }
 
         Ok(())
@@ -643,7 +613,6 @@ mod tests {
             &self,
             case: &crate::test_utils::TestContext,
             signer: Option<&crate::test_utils::x509::X509Certificate>,
-            provision: bool,
         ) -> Result<()> {
             self.reset().await;
             let user_uuid = uuid::Uuid::new_v4();
@@ -656,14 +625,8 @@ mod tests {
                     CertificateBundle::rand_identifier(&client_id, &[signer])
                 }
             };
-            let nb_key_package = if provision {
-                crate::INITIAL_KEYING_MATERIAL_COUNT
-            } else {
-                0
-            };
             let backend = self.crypto_provider.clone();
-            self.generate(identity, &backend, &[case.ciphersuite()], nb_key_package)
-                .await?;
+            self.generate(identity, &backend, &[case.ciphersuite()]).await?;
             Ok(())
         }
 
@@ -724,7 +687,7 @@ mod tests {
     async fn can_generate_session(mut case: TestContext) {
         let [alice] = case.sessions().await;
         let key_store = case.create_in_memory_database().await;
-        let backend = MlsCryptoProvider::builder().key_store(key_store).build();
+        let backend = MlsCryptoProvider::new(key_store);
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
             x509_test_chain.register_with_provider(&backend).await;
@@ -738,7 +701,6 @@ mod tests {
             .random_generate(
                 &case,
                 x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
-                false,
             )
             .await
             .unwrap();

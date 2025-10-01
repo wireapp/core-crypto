@@ -8,15 +8,14 @@ use async_lock::Mutex;
 use async_lock::{RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use core_crypto_keystore::{CryptoKeystoreError, connection::FetchFromDatabase, entities::ConsumerData};
 pub use error::{Error, Result};
-use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
+use mls_crypto_provider::{Database, MlsCryptoProvider};
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    ClientId, ClientIdentifier, CoreCrypto, INITIAL_KEYING_MATERIAL_COUNT, KeystoreError, MlsCiphersuite,
-    MlsConversation, MlsCredentialType, MlsError, MlsTransport, RecursiveError, Session, group_store::GroupStore,
-    mls::HasSessionAndCrypto,
+    ClientId, ClientIdentifier, CoreCrypto, KeystoreError, MlsCiphersuite, MlsConversation, MlsCredentialType,
+    MlsError, MlsTransport, RecursiveError, Session, group_store::GroupStore, mls::HasSessionAndCrypto,
 };
 pub mod conversation;
 pub mod e2e_identity;
@@ -152,7 +151,7 @@ impl TransactionContext {
         }
     }
 
-    pub(crate) async fn keystore(&self) -> Result<CryptoKeystore> {
+    pub(crate) async fn keystore(&self) -> Result<Database> {
         match self.inner.read().await.deref() {
             TransactionContextInner::Valid { provider, .. } => Ok(provider.keystore()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
@@ -215,19 +214,11 @@ impl TransactionContext {
         result
     }
 
-    /// Initializes the MLS client if [super::CoreCrypto] has previously been initialized with
-    /// `CoreCrypto::deferred_init` instead of `CoreCrypto::new`.
-    /// This should stay as long as proteus is supported. Then it should be removed.
-    pub async fn mls_init(
-        &self,
-        identifier: ClientIdentifier,
-        ciphersuites: Vec<MlsCiphersuite>,
-        nb_init_key_packages: Option<usize>,
-    ) -> Result<()> {
-        let nb_key_package = nb_init_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
+    /// Initializes the MLS client of [super::CoreCrypto].
+    pub async fn mls_init(&self, identifier: ClientIdentifier, ciphersuites: Vec<MlsCiphersuite>) -> Result<()> {
         let mls_client = self.session().await?;
         mls_client
-            .init(identifier, &ciphersuites, &self.mls_provider().await?, nb_key_package)
+            .init(identifier, &ciphersuites, &self.mls_provider().await?)
             .await
             .map_err(RecursiveError::mls_client("initializing mls client"))?;
 
