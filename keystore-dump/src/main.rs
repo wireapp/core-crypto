@@ -109,11 +109,11 @@ async fn main() -> anyhow::Result<()> {
         .collect::<postcard::Result<_>>()?;
     json_map.serialize_entry("mls_keypackages", &keypackages)?;
 
-    let e2ei_enrollments: Vec<core_crypto::prelude::E2eiEnrollment> = keystore
+    let e2ei_enrollments: Vec<core_crypto::E2eiEnrollment> = keystore
         .find_all::<E2eiEnrollment>(Default::default())
         .await?
         .into_iter()
-        .map(|enrollment| serde_json::from_slice::<core_crypto::prelude::E2eiEnrollment>(&enrollment.content))
+        .map(|enrollment| serde_json::from_slice::<core_crypto::E2eiEnrollment>(&enrollment.content))
         .collect::<serde_json::Result<_>>()?;
     json_map.serialize_entry("e2ei_enrollments", &e2ei_enrollments)?;
 
