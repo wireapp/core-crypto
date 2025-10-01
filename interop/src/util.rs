@@ -1,12 +1,10 @@
+use std::{net::SocketAddr, path::PathBuf};
+
 use anyhow::Result;
-use core_crypto::{
-    MlsTransport,
-    prelude::{HistorySecret, MlsCommitBundle},
-};
+use core_crypto::{HistorySecret, MlsCommitBundle, MlsTransport};
 use core_crypto_ffi::{CommitBundle, HistorySecret as HistorySecretFfi};
 use openmls::prelude::MlsMessageOut;
 use spinoff::Spinner;
-use std::{net::SocketAddr, path::PathBuf};
 use tokio::sync::RwLock;
 use which::which;
 

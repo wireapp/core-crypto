@@ -1,17 +1,21 @@
+use std::{
+    cell::{Cell, RefCell},
+    fs,
+    io::{BufRead, BufReader, Read},
+    process::{Child, ChildStdout, Command, Output, Stdio},
+    time::Duration,
+};
+
+use anyhow::Result;
+use base64::{Engine as _, engine::general_purpose};
+use core_crypto::{KeyPackage, KeyPackageIn};
+use thiserror::Error;
+use tls_codec::Deserialize;
+
 use crate::{
     CIPHERSUITE_IN_USE,
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
-use anyhow::Result;
-use base64::{Engine as _, engine::general_purpose};
-use core_crypto::prelude::{KeyPackage, KeyPackageIn};
-use std::cell::{Cell, RefCell};
-use std::fs;
-use std::io::{BufRead, BufReader, Read};
-use std::process::{Child, ChildStdout, Command, Output, Stdio};
-use std::time::Duration;
-use thiserror::Error;
-use tls_codec::Deserialize;
 
 #[derive(Debug)]
 struct SimulatorDriver {

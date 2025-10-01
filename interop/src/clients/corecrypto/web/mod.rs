@@ -5,10 +5,9 @@ use std::{collections::HashMap, net::SocketAddr, sync::LazyLock};
 #[cfg(feature = "proteus")]
 use anyhow::anyhow;
 use anyhow::{Context as _, Result};
+use core_crypto::{KeyPackage, KeyPackageIn};
 use tls_codec::Deserialize;
 use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator as _};
-
-use core_crypto::prelude::{KeyPackage, KeyPackageIn};
 
 use crate::{
     CIPHERSUITE_IN_USE,

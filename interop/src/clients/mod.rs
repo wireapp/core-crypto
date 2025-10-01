@@ -1,7 +1,7 @@
 #![allow(clippy::assign_op_pattern)]
 
 use anyhow::Result;
-use core_crypto::prelude::MlsCiphersuite;
+use core_crypto::MlsCiphersuite;
 
 pub(crate) mod corecrypto;
 

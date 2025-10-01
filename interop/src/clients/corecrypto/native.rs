@@ -3,9 +3,8 @@ use std::cell::Cell;
 use std::sync::Arc;
 
 use anyhow::Result;
+use core_crypto::*;
 use tls_codec::Serialize;
-
-use core_crypto::{ConnectionType, Database, DatabaseKey, prelude::*};
 
 use crate::{
     CIPHERSUITE_IN_USE,
