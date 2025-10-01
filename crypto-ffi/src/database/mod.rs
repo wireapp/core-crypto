@@ -30,6 +30,14 @@ impl Database {
             .map(Database)
             .map_err(CoreCryptoError::generic())
     }
+
+    /// Create an in-memory [Database] whose data will be lost when the instance is dropped.
+    pub async fn in_memory(key: DatabaseKeyMaybeArc) -> CoreCryptoResult<Self> {
+        core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::InMemory, &key.to_cc())
+            .await
+            .map(Database)
+            .map_err(CoreCryptoError::generic())
+    }
 }
 
 /// Open or create a [Database].
@@ -37,6 +45,13 @@ impl Database {
 #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = openDatabase))]
 pub async fn open_database(name: &str, key: DatabaseKeyMaybeArc) -> CoreCryptoResult<Database> {
     Database::open(name, key).await
+}
+
+/// Create an in-memory [Database] whose data will be lost when the instance is dropped.
+#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+#[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = inMemoryDatabase))]
+pub async fn in_memory_database(key: DatabaseKeyMaybeArc) -> CoreCryptoResult<Database> {
+    Database::in_memory(key).await
 }
 
 #[cfg(target_family = "wasm")]

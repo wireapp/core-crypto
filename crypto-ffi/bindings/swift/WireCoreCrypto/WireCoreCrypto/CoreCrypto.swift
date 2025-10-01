@@ -4,10 +4,10 @@ import System
 /// The database needed to initialize ``CoreCrypto``.
 public final class Database {
     let inner: WireCoreCryptoUniffi.Database
-    let path: FilePath
+    let path: FilePath?
 
     /// Initialize the database with an Ffi instance
-    private init(_ database: WireCoreCryptoUniffi.Database, keystorePath: FilePath) {
+    private init(_ database: WireCoreCryptoUniffi.Database, keystorePath: FilePath? = nil) {
         self.inner = database
         self.path = keystorePath
     }
@@ -20,6 +20,14 @@ public final class Database {
     public convenience init(keystorePath: String, key: DatabaseKey) async throws {
         let database = try await openDatabase(name: keystorePath, key: key)
         self.init(database, keystorePath: FilePath(stringLiteral: keystorePath))
+    }
+
+    /// Initialise an in-memory Database whose data will be lost when the instance is dropped.
+    ///
+    /// - Parameter key: secret key to unlock the database
+    public convenience init(key: DatabaseKey) async throws {
+        let database = try await inMemoryDatabase(key: key)
+        self.init(database)
     }
 
 }

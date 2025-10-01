@@ -49,7 +49,9 @@ pub use core_crypto::{command::transaction_helper::TransactionHelper, core_crypt
 pub use core_crypto_context::CoreCryptoContext;
 pub use credential_type::CredentialType;
 pub use crl::CrlRegistration;
-pub use database::{Database, DatabaseKey, migrate_database_key_type_to_bytes, open_database, update_database_key};
+pub use database::{
+    Database, DatabaseKey, in_memory_database, migrate_database_key_type_to_bytes, open_database, update_database_key,
+};
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 pub use e2ei::{
     E2eiConversationState, acme_challenge::AcmeChallenge, acme_directory::AcmeDirectory, enrollment::E2eiEnrollment,
