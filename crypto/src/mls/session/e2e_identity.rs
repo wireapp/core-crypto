@@ -6,7 +6,7 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::prelude::WireIdentityReader as _;
 
 use super::{Error, Result, Session};
-use crate::{E2eiConversationState, MlsCiphersuite, MlsCredentialType, MlsError, mls::session::CredentialExt as _};
+use crate::{Ciphersuite, E2eiConversationState, MlsCredentialType, MlsError, mls::session::CredentialExt as _};
 
 impl Session {
     /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
@@ -83,7 +83,7 @@ impl Session {
         .await
     }
     pub(crate) async fn get_credential_in_use_in_ratchet_tree(
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
         ratchet_tree: RatchetTree,
         credential_type: MlsCredentialType,
         env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
@@ -98,7 +98,7 @@ impl Session {
     /// _credential_type will be used in the future to get the usage of VC Credentials, even Basics one.
     /// Right now though, we do not need anything other than X509 so let's keep things simple.
     pub(crate) async fn compute_conversation_state<'a>(
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
         credentials: impl Iterator<Item = &'a Credential>,
         _credential_type: MlsCredentialType,
         env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,

@@ -5,8 +5,8 @@ use std::{
 
 use async_lock::RwLock;
 use core_crypto::{
-    CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Database, DatabaseKey, HistorySecret,
-    MlsCiphersuite, MlsCommitBundle, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
+    CertificateBundle, Ciphersuite, ClientId, ConnectionType, ConversationId, CoreCrypto, Database, DatabaseKey,
+    HistorySecret, MlsCommitBundle, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
     MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse, Session, SessionConfig,
 };
 use criterion::BenchmarkId;
@@ -35,7 +35,7 @@ pub enum MlsTestCase {
 }
 
 impl MlsTestCase {
-    pub fn get(&self) -> (Self, MlsCiphersuite, Option<CertificateBundle>) {
+    pub fn get(&self) -> (Self, Ciphersuite, Option<CertificateBundle>) {
         match self {
             MlsTestCase::Basic_Ciphersuite1 => (
                 *self,
@@ -59,7 +59,7 @@ impl MlsTestCase {
         }
     }
 
-    pub fn values() -> impl Iterator<Item = (Self, MlsCiphersuite, Option<CertificateBundle>, bool)> {
+    pub fn values() -> impl Iterator<Item = (Self, Ciphersuite, Option<CertificateBundle>, bool)> {
         [
             MlsTestCase::Basic_Ciphersuite1,
             #[cfg(feature = "test-all-cipher")]
@@ -121,7 +121,7 @@ impl Display for MlsTestCase {
 }
 
 pub async fn setup_mls(
-    ciphersuite: MlsCiphersuite,
+    ciphersuite: Ciphersuite,
     credential: Option<&CertificateBundle>,
     in_memory: bool,
 ) -> (CoreCrypto, ConversationId, Arc<dyn MlsTransportTestExt>) {
@@ -146,7 +146,7 @@ pub async fn setup_mls(
 }
 
 pub async fn new_central(
-    ciphersuite: MlsCiphersuite,
+    ciphersuite: Ciphersuite,
     // TODO: always None for the moment. Need to update the benches with some realistic certificates. Tracking issue: WPB-9589
     _credential: Option<&CertificateBundle>,
     in_memory: bool,
@@ -190,7 +190,7 @@ pub fn conversation_id() -> ConversationId {
 pub async fn add_clients(
     central: &mut Session,
     id: &ConversationId,
-    ciphersuite: MlsCiphersuite,
+    ciphersuite: Ciphersuite,
     nb_clients: usize,
     main_client_delivery_service: Arc<dyn MlsTransportTestExt>,
 ) -> (Vec<ClientId>, VerifiableGroupInfo) {
@@ -225,7 +225,7 @@ pub async fn add_clients(
 }
 
 pub async fn setup_mls_and_add_clients(
-    cipher_suite: MlsCiphersuite,
+    cipher_suite: Ciphersuite,
     credential: Option<&CertificateBundle>,
     in_memory: bool,
     client_count: usize,
@@ -253,7 +253,7 @@ fn create_signature_keypair(backend: &MlsCryptoProvider, ciphersuite: Ciphersuit
     SignatureKeyPair::new(ciphersuite.signature_algorithm(), &mut *rng).unwrap()
 }
 
-pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, ClientId) {
+pub async fn rand_key_package(ciphersuite: Ciphersuite) -> (KeyPackage, ClientId) {
     let client_id = Alphanumeric
         .sample_string(&mut rand::thread_rng(), 16)
         .as_bytes()
@@ -286,7 +286,7 @@ pub async fn invite(
     from: &mut Session,
     other: &mut Session,
     id: &ConversationId,
-    ciphersuite: MlsCiphersuite,
+    ciphersuite: Ciphersuite,
     delivery_service: Arc<dyn MlsTransportTestExt>,
 ) {
     let core_crypto = CoreCrypto::from(from.clone());

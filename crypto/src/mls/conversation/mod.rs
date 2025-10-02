@@ -30,7 +30,7 @@ use openmls::{
 use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 
 use crate::{
-    ClientId, E2eiConversationState, KeystoreError, LeafError, MlsCiphersuite, MlsCredentialType, MlsError,
+    Ciphersuite, ClientId, E2eiConversationState, KeystoreError, LeafError, MlsCredentialType, MlsError,
     RecursiveError, WireIdentity, mls::Session,
 };
 
@@ -110,7 +110,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
     }
 
     /// Returns the ciphersuite of a given conversation
-    async fn ciphersuite(&'a self) -> MlsCiphersuite {
+    async fn ciphersuite(&'a self) -> Ciphersuite {
         self.conversation().await.ciphersuite()
     }
 
@@ -549,7 +549,7 @@ impl MlsConversation {
             .into())
     }
 
-    pub(crate) fn ciphersuite(&self) -> MlsCiphersuite {
+    pub(crate) fn ciphersuite(&self) -> Ciphersuite {
         self.configuration.ciphersuite
     }
 
