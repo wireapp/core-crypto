@@ -3,8 +3,9 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use openmls::prelude::{Credential, CredentialWithKey};
+use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, SignatureScheme};
 use openmls_basic_credential::SignatureKeyPair;
+use openmls_traits::crypto::OpenMlsCrypto;
 
 pub(crate) mod crl;
 mod error;
@@ -14,72 +15,96 @@ pub(crate) mod x509;
 
 pub(crate) use error::{Error, Result};
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct CredentialBundle {
-    pub(crate) credential: Credential,
-    pub(crate) signature_key: SignatureKeyPair,
+use crate::{ClientId, MlsError};
+
+/// A cryptographic credential.
+///
+/// This is tied to a particular client via either its client id or certificate bundle,
+/// depending on its credential type, but is independent of any client instance or storage.
+///
+/// To attach to a particular client instance and store, see [`Session::add_credential`][crate::Session::add_credential].
+#[derive(core_crypto_macros::Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Credential {
+    /// MLS internal credential. Stores the credential type.
+    pub(crate) mls_credential: MlsCredential,
+    /// Public and private keys, and the signature scheme.
+    #[sensitive]
+    pub(crate) signature_key_pair: SignatureKeyPair,
+    /// Earliest valid time of creation for this credential.
+    ///
+    /// This is represented as seconds after the unix epoch.
+    ///
+    /// Only meaningful for X509, where it is the "valid_from" claim of the leaf credential.
+    /// For basic credentials, this is always 0.
     pub(crate) created_at: u64,
 }
 
-impl CredentialBundle {
-    pub fn credential(&self) -> &Credential {
-        &self.credential
+impl Credential {
+    /// Generate a basic credential.
+    ///
+    /// The result is independent of any client instance and the database; it lives in memory only.
+    pub fn basic(signature_scheme: SignatureScheme, client_id: &ClientId, crypto: impl OpenMlsCrypto) -> Result<Self> {
+        let (private, public) = crypto
+            .signature_key_gen(signature_scheme)
+            .map_err(MlsError::wrap("generating signature keys for basic credential"))?;
+        let mls_credential = MlsCredential::new_basic(client_id.0.clone());
+        let signature_key_pair = SignatureKeyPair::from_raw(signature_scheme, private, public);
+
+        Ok(Self {
+            mls_credential,
+            signature_key_pair,
+            created_at: 0,
+        })
     }
 
+    /// Get the Openmls Credential type.
+    ///
+    /// This stores the credential type (basic/x509).
+    pub fn credential(&self) -> &MlsCredential {
+        &self.mls_credential
+    }
+
+    /// Get a reference to the `SignatureKeyPair`.
     pub(crate) fn signature_key(&self) -> &SignatureKeyPair {
-        &self.signature_key
+        &self.signature_key_pair
     }
 
+    /// Generate a `CredentialWithKey`, which combines the credential type with the public portion of the keypair.
     pub fn to_mls_credential_with_key(&self) -> CredentialWithKey {
         CredentialWithKey {
-            credential: self.credential.clone(),
-            signature_key: self.signature_key.to_public_vec().into(),
+            credential: self.mls_credential.clone(),
+            signature_key: self.signature_key_pair.to_public_vec().into(),
         }
     }
 }
 
-impl From<CredentialBundle> for CredentialWithKey {
-    fn from(cb: CredentialBundle) -> Self {
+impl From<Credential> for CredentialWithKey {
+    fn from(cb: Credential) -> Self {
         Self {
-            credential: cb.credential,
-            signature_key: cb.signature_key.public().into(),
+            credential: cb.mls_credential,
+            signature_key: cb.signature_key_pair.public().into(),
         }
     }
 }
 
-impl Clone for CredentialBundle {
-    fn clone(&self) -> Self {
-        Self {
-            credential: self.credential.clone(),
-            signature_key: SignatureKeyPair::from_raw(
-                self.signature_key.signature_scheme(),
-                self.signature_key.private().to_vec(),
-                self.signature_key.to_public_vec(),
-            ),
-            created_at: self.created_at,
-        }
-    }
-}
-
-impl Eq for CredentialBundle {}
-impl PartialEq for CredentialBundle {
+impl Eq for Credential {}
+impl PartialEq for Credential {
     fn eq(&self, other: &Self) -> bool {
-        self.credential.eq(&other.credential)
-            && self.created_at.eq(&other.created_at)
-            && self
-                .signature_key
-                .signature_scheme()
-                .eq(&other.signature_key.signature_scheme())
-            && self.signature_key.public().eq(other.signature_key.public())
+        self.mls_credential == other.mls_credential && self.created_at == other.created_at && {
+            let sk = &self.signature_key_pair;
+            let ok = &other.signature_key_pair;
+            sk.signature_scheme() == ok.signature_scheme() && sk.public() == ok.public() && sk.private() == ok.private()
+        }
     }
 }
 
-impl Hash for CredentialBundle {
+impl Hash for Credential {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.created_at.hash(state);
-        self.signature_key.signature_scheme().hash(state);
-        self.signature_key.public().hash(state);
-        self.credential().identity().hash(state);
+        self.signature_key_pair.signature_scheme().hash(state);
+        self.signature_key_pair.public().hash(state);
+        // self.mls_credential.credential_type().hash(state); // not implemented for Reasons, idk
+        self.mls_credential.identity().hash(state);
         match self.credential().mls_credential() {
             openmls::prelude::MlsCredentialType::X509(cert) => {
                 cert.certificates.hash(state);
@@ -89,13 +114,13 @@ impl Hash for CredentialBundle {
     }
 }
 
-impl Ord for CredentialBundle {
+impl Ord for Credential {
     fn cmp(&self, other: &Self) -> Ordering {
         self.created_at.cmp(&other.created_at)
     }
 }
 
-impl PartialOrd for CredentialBundle {
+impl PartialOrd for Credential {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
