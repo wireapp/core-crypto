@@ -104,7 +104,7 @@ impl KeystoreTransaction {
 
     pub(crate) async fn cred_delete_by_credential(&self, cred: Vec<u8>) -> CryptoKeystoreResult<()> {
         let mut cache_guard = self.cache.write().await;
-        if let Entry::Occupied(mut table) = cache_guard.entry(MlsCredential::COLLECTION_NAME.to_string()) {
+        if let Entry::Occupied(mut table) = cache_guard.entry(StoredCredential::COLLECTION_NAME.to_string()) {
             table.get_mut().retain(|_, value| **value != cred);
         }
 
@@ -292,7 +292,7 @@ impl KeystoreTransaction {
         maybe_credential: &E,
         deleted_credentials: &[Vec<u8>],
     ) -> bool {
-        let Some(credential) = maybe_credential.downcast::<MlsCredential>() else {
+        let Some(credential) = maybe_credential.downcast::<StoredCredential>() else {
             return false;
         };
         deleted_credentials.contains(&credential.credential)
@@ -386,7 +386,7 @@ macro_rules! commit_transaction {
         }
 
         for deleted_credential in $keystore_transaction.deleted_credentials.read().await.iter() {
-            MlsCredential::delete_by_credential(&tx, deleted_credential.to_owned()).await?;
+            StoredCredential::delete_by_credential(&tx, deleted_credential.to_owned()).await?;
         }
 
          tx.commit_tx().await?;
@@ -400,17 +400,17 @@ impl KeystoreTransaction {
         commit_transaction!(
             self, db,
             [
-                (identifier_01, MlsCredential),
-                (identifier_02, MlsSignatureKeyPair),
-                (identifier_03, MlsHpkePrivateKey),
-                (identifier_04, MlsEncryptionKeyPair),
-                (identifier_05, MlsEpochEncryptionKeyPair),
-                (identifier_06, MlsPskBundle),
-                (identifier_07, MlsKeyPackage),
+                (identifier_01, StoredCredential),
+                (identifier_02, StoredSignatureKeypair),
+                (identifier_03, StoredHpkePrivateKey),
+                (identifier_04, StoredEncryptionKeyPair),
+                (identifier_05, StoredEpochEncryptionKeypair),
+                (identifier_06, StoredPskBundle),
+                (identifier_07, StoredKeypackage),
                 (identifier_08, PersistedMlsGroup),
                 (identifier_09, PersistedMlsPendingGroup),
                 (identifier_10, MlsPendingMessage),
-                (identifier_11, E2eiEnrollment),
+                (identifier_11, StoredE2eiEnrollment),
                 // (identifier_12, E2eiRefreshToken),
                 (identifier_13, E2eiAcmeCA),
                 (identifier_14, E2eiIntermediateCert),

@@ -9,28 +9,28 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     connection::TransactionWrapper,
     entities::{
-        ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, EntityBase, EntityTransactionExt,
-        MlsBufferedCommit, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
-        MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
-        PersistedMlsPendingGroup, StringEntityId, UniqueEntity,
+        ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, EntityBase, EntityTransactionExt, MlsPendingMessage,
+        PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
+        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        StoredSignatureKeypair, StringEntityId, UniqueEntity,
     },
 };
 
 #[derive(Debug)]
 pub enum Entity {
     ConsumerData(ConsumerData),
-    SignatureKeyPair(MlsSignatureKeyPair),
-    HpkePrivateKey(MlsHpkePrivateKey),
-    MlsKeyPackage(MlsKeyPackage),
-    PskBundle(MlsPskBundle),
-    EncryptionKeyPair(MlsEncryptionKeyPair),
-    MlsEpochEncryptionKeyPair(MlsEpochEncryptionKeyPair),
-    MlsCredential(MlsCredential),
-    MlsBufferedCommit(MlsBufferedCommit),
+    SignatureKeyPair(StoredSignatureKeypair),
+    HpkePrivateKey(StoredHpkePrivateKey),
+    StoredKeypackage(StoredKeypackage),
+    PskBundle(StoredPskBundle),
+    EncryptionKeyPair(StoredEncryptionKeyPair),
+    StoredEpochEncryptionKeypair(StoredEpochEncryptionKeypair),
+    MlsCredential(StoredCredential),
+    StoredBufferedCommit(StoredBufferedCommit),
     PersistedMlsGroup(PersistedMlsGroup),
     PersistedMlsPendingGroup(PersistedMlsPendingGroup),
     MlsPendingMessage(MlsPendingMessage),
-    E2eiEnrollment(E2eiEnrollment),
+    StoredE2eiEnrollment(StoredE2eiEnrollment),
     #[cfg(target_family = "wasm")]
     E2eiRefreshToken(E2eiRefreshToken),
     E2eiAcmeCA(E2eiAcmeCA),
@@ -102,18 +102,18 @@ impl EntityId {
 
     pub(crate) fn from_collection_name(entity_id: &'static str, id: &[u8]) -> CryptoKeystoreResult<Self> {
         match entity_id {
-            MlsSignatureKeyPair::COLLECTION_NAME => Ok(Self::SignatureKeyPair(id.into())),
-            MlsHpkePrivateKey::COLLECTION_NAME => Ok(Self::HpkePrivateKey(id.into())),
-            MlsKeyPackage::COLLECTION_NAME => Ok(Self::KeyPackage(id.into())),
-            MlsPskBundle::COLLECTION_NAME => Ok(Self::PskBundle(id.into())),
-            MlsEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EncryptionKeyPair(id.into())),
-            MlsEpochEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EpochEncryptionKeyPair(id.into())),
-            MlsBufferedCommit::COLLECTION_NAME => Ok(Self::MlsBufferedCommit(id.into())),
+            StoredSignatureKeypair::COLLECTION_NAME => Ok(Self::SignatureKeyPair(id.into())),
+            StoredHpkePrivateKey::COLLECTION_NAME => Ok(Self::HpkePrivateKey(id.into())),
+            StoredKeypackage::COLLECTION_NAME => Ok(Self::KeyPackage(id.into())),
+            StoredPskBundle::COLLECTION_NAME => Ok(Self::PskBundle(id.into())),
+            StoredEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EncryptionKeyPair(id.into())),
+            StoredEpochEncryptionKeypair::COLLECTION_NAME => Ok(Self::EpochEncryptionKeyPair(id.into())),
+            StoredBufferedCommit::COLLECTION_NAME => Ok(Self::MlsBufferedCommit(id.into())),
             PersistedMlsGroup::COLLECTION_NAME => Ok(Self::PersistedMlsGroup(id.into())),
             PersistedMlsPendingGroup::COLLECTION_NAME => Ok(Self::PersistedMlsPendingGroup(id.into())),
-            MlsCredential::COLLECTION_NAME => Ok(Self::MlsCredential(id.into())),
+            StoredCredential::COLLECTION_NAME => Ok(Self::MlsCredential(id.into())),
             MlsPendingMessage::COLLECTION_NAME => Ok(Self::MlsPendingMessage(id.into())),
-            E2eiEnrollment::COLLECTION_NAME => Ok(Self::E2eiEnrollment(id.into())),
+            StoredE2eiEnrollment::COLLECTION_NAME => Ok(Self::E2eiEnrollment(id.into())),
             E2eiCrl::COLLECTION_NAME => Ok(Self::E2eiCrl(id.into())),
             E2eiAcmeCA::COLLECTION_NAME => Ok(Self::E2eiAcmeCA(id.into())),
             #[cfg(target_family = "wasm")]
@@ -131,17 +131,17 @@ impl EntityId {
 
     pub(crate) fn collection_name(&self) -> &'static str {
         match self {
-            EntityId::SignatureKeyPair(_) => MlsSignatureKeyPair::COLLECTION_NAME,
-            EntityId::KeyPackage(_) => MlsKeyPackage::COLLECTION_NAME,
-            EntityId::PskBundle(_) => MlsPskBundle::COLLECTION_NAME,
-            EntityId::EncryptionKeyPair(_) => MlsEncryptionKeyPair::COLLECTION_NAME,
-            EntityId::EpochEncryptionKeyPair(_) => MlsEpochEncryptionKeyPair::COLLECTION_NAME,
-            EntityId::MlsCredential(_) => MlsCredential::COLLECTION_NAME,
-            EntityId::MlsBufferedCommit(_) => MlsBufferedCommit::COLLECTION_NAME,
+            EntityId::SignatureKeyPair(_) => StoredSignatureKeypair::COLLECTION_NAME,
+            EntityId::KeyPackage(_) => StoredKeypackage::COLLECTION_NAME,
+            EntityId::PskBundle(_) => StoredPskBundle::COLLECTION_NAME,
+            EntityId::EncryptionKeyPair(_) => StoredEncryptionKeyPair::COLLECTION_NAME,
+            EntityId::EpochEncryptionKeyPair(_) => StoredEpochEncryptionKeypair::COLLECTION_NAME,
+            EntityId::MlsCredential(_) => StoredCredential::COLLECTION_NAME,
+            EntityId::MlsBufferedCommit(_) => StoredBufferedCommit::COLLECTION_NAME,
             EntityId::PersistedMlsGroup(_) => PersistedMlsGroup::COLLECTION_NAME,
             EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::COLLECTION_NAME,
             EntityId::MlsPendingMessage(_) => MlsPendingMessage::COLLECTION_NAME,
-            EntityId::E2eiEnrollment(_) => E2eiEnrollment::COLLECTION_NAME,
+            EntityId::E2eiEnrollment(_) => StoredE2eiEnrollment::COLLECTION_NAME,
             #[cfg(target_family = "wasm")]
             EntityId::E2eiRefreshToken(_) => E2eiRefreshToken::COLLECTION_NAME,
             EntityId::E2eiAcmeCA(_) => E2eiAcmeCA::COLLECTION_NAME,
@@ -153,7 +153,7 @@ impl EntityId {
             EntityId::ProteusPrekey(_) => ProteusPrekey::COLLECTION_NAME,
             #[cfg(feature = "proteus-keystore")]
             EntityId::ProteusSession(_) => ProteusSession::COLLECTION_NAME,
-            EntityId::HpkePrivateKey(_) => MlsHpkePrivateKey::COLLECTION_NAME,
+            EntityId::HpkePrivateKey(_) => StoredHpkePrivateKey::COLLECTION_NAME,
         }
     }
 }
@@ -163,18 +163,18 @@ pub async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> Crypt
         Entity::ConsumerData(consumer_data) => consumer_data.replace(tx).await,
         Entity::SignatureKeyPair(mls_signature_key_pair) => mls_signature_key_pair.save(tx).await,
         Entity::HpkePrivateKey(mls_hpke_private_key) => mls_hpke_private_key.save(tx).await,
-        Entity::MlsKeyPackage(mls_key_package) => mls_key_package.save(tx).await,
+        Entity::StoredKeypackage(mls_key_package) => mls_key_package.save(tx).await,
         Entity::PskBundle(mls_psk_bundle) => mls_psk_bundle.save(tx).await,
         Entity::EncryptionKeyPair(mls_encryption_key_pair) => mls_encryption_key_pair.save(tx).await,
-        Entity::MlsEpochEncryptionKeyPair(mls_epoch_encryption_key_pair) => {
+        Entity::StoredEpochEncryptionKeypair(mls_epoch_encryption_key_pair) => {
             mls_epoch_encryption_key_pair.save(tx).await
         }
         Entity::MlsCredential(mls_credential) => mls_credential.save(tx).await,
-        Entity::MlsBufferedCommit(mls_pending_commit) => mls_pending_commit.save(tx).await,
+        Entity::StoredBufferedCommit(mls_pending_commit) => mls_pending_commit.save(tx).await,
         Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.save(tx).await,
         Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => persisted_mls_pending_group.save(tx).await,
         Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.save(tx).await,
-        Entity::E2eiEnrollment(e2ei_enrollment) => e2ei_enrollment.save(tx).await,
+        Entity::StoredE2eiEnrollment(e2ei_enrollment) => e2ei_enrollment.save(tx).await,
         #[cfg(target_family = "wasm")]
         Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.replace(tx).await,
         Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.replace(tx).await,
@@ -191,18 +191,18 @@ pub async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> Crypt
 
 pub async fn execute_delete(tx: &TransactionWrapper<'_>, entity_id: &EntityId) -> CryptoKeystoreResult<()> {
     match entity_id {
-        id @ EntityId::SignatureKeyPair(_) => MlsSignatureKeyPair::delete(tx, id.as_id()).await,
-        id @ EntityId::HpkePrivateKey(_) => MlsHpkePrivateKey::delete(tx, id.as_id()).await,
-        id @ EntityId::KeyPackage(_) => MlsKeyPackage::delete(tx, id.as_id()).await,
-        id @ EntityId::PskBundle(_) => MlsPskBundle::delete(tx, id.as_id()).await,
-        id @ EntityId::EncryptionKeyPair(_) => MlsEncryptionKeyPair::delete(tx, id.as_id()).await,
-        id @ EntityId::EpochEncryptionKeyPair(_) => MlsEpochEncryptionKeyPair::delete(tx, id.as_id()).await,
-        id @ EntityId::MlsCredential(_) => MlsCredential::delete(tx, id.as_id()).await,
-        id @ EntityId::MlsBufferedCommit(_) => MlsBufferedCommit::delete(tx, id.as_id()).await,
+        id @ EntityId::SignatureKeyPair(_) => StoredSignatureKeypair::delete(tx, id.as_id()).await,
+        id @ EntityId::HpkePrivateKey(_) => StoredHpkePrivateKey::delete(tx, id.as_id()).await,
+        id @ EntityId::KeyPackage(_) => StoredKeypackage::delete(tx, id.as_id()).await,
+        id @ EntityId::PskBundle(_) => StoredPskBundle::delete(tx, id.as_id()).await,
+        id @ EntityId::EncryptionKeyPair(_) => StoredEncryptionKeyPair::delete(tx, id.as_id()).await,
+        id @ EntityId::EpochEncryptionKeyPair(_) => StoredEpochEncryptionKeypair::delete(tx, id.as_id()).await,
+        id @ EntityId::MlsCredential(_) => StoredCredential::delete(tx, id.as_id()).await,
+        id @ EntityId::MlsBufferedCommit(_) => StoredBufferedCommit::delete(tx, id.as_id()).await,
         id @ EntityId::PersistedMlsGroup(_) => PersistedMlsGroup::delete(tx, id.as_id()).await,
         id @ EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::delete(tx, id.as_id()).await,
         id @ EntityId::MlsPendingMessage(_) => MlsPendingMessage::delete(tx, id.as_id()).await,
-        id @ EntityId::E2eiEnrollment(_) => E2eiEnrollment::delete(tx, id.as_id()).await,
+        id @ EntityId::E2eiEnrollment(_) => StoredE2eiEnrollment::delete(tx, id.as_id()).await,
         #[cfg(target_family = "wasm")]
         id @ EntityId::E2eiRefreshToken(_) => E2eiRefreshToken::delete(tx, id.as_id()).await,
         id @ EntityId::E2eiAcmeCA(_) => E2eiAcmeCA::delete(tx, id.as_id()).await,

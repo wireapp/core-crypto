@@ -11,7 +11,7 @@ use crate::{
             Conversation as _, ConversationGuard, ConversationWithMls as _, Error, Result, commit::MlsCommitBundle,
         },
         credential::{
-            CredentialBundle,
+            Credential,
             crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
         },
     },
@@ -109,7 +109,7 @@ impl ConversationGuard {
     ) -> Result<(NewCrlDistributionPoints, MlsCommitBundle)> {
         self.ensure_no_pending_commit().await?;
         let backend = self.crypto_provider().await?;
-        let credential = self.credential_bundle().await?;
+        let credential = self.credential().await?;
         let signer = credential.signature_key();
         let mut conversation = self.conversation_mut().await;
 
@@ -155,7 +155,7 @@ impl ConversationGuard {
     pub async fn remove_members(&mut self, clients: &[ClientId]) -> Result<()> {
         self.ensure_no_pending_commit().await?;
         let backend = self.crypto_provider().await?;
-        let credential = self.credential_bundle().await?;
+        let credential = self.credential().await?;
         let signer = credential.signature_key();
         let mut conversation = self.inner.write().await;
 
@@ -205,19 +205,19 @@ impl ConversationGuard {
     /// [crate::transaction_context::TransactionContext::e2ei_new_activation_enrollment] or
     /// [crate::transaction_context::TransactionContext::e2ei_new_rotate_enrollment] and having saved it with
     /// [crate::transaction_context::TransactionContext::save_x509_credential].
-    pub async fn e2ei_rotate(&mut self, cb: Option<&CredentialBundle>) -> Result<()> {
+    pub async fn e2ei_rotate(&mut self, cb: Option<&Credential>) -> Result<()> {
         let client = &self.session().await?;
         let conversation = self.conversation().await;
 
         let cb = match cb {
             Some(cb) => cb,
-            None => &client
-                .find_most_recent_credential_bundle(
+            None => &*client
+                .find_most_recent_credential(
                     conversation.ciphersuite().signature_algorithm(),
                     MlsCredentialType::X509,
                 )
                 .await
-                .map_err(RecursiveError::mls_client("finding most recent x509 credential bundle"))?,
+                .map_err(RecursiveError::mls_client("finding most recent x509 credential"))?,
         };
 
         let mut leaf_node = conversation
@@ -237,7 +237,7 @@ impl ConversationGuard {
 
     pub(crate) async fn update_key_material_inner(
         &mut self,
-        cb: Option<&CredentialBundle>,
+        cb: Option<&Credential>,
         leaf_node: Option<LeafNode>,
     ) -> Result<MlsCommitBundle> {
         self.ensure_no_pending_commit().await?;
@@ -245,12 +245,12 @@ impl ConversationGuard {
         let backend = &self.crypto_provider().await?;
         let mut conversation = self.conversation_mut().await;
         let cb = match cb {
-            None => &conversation.find_most_recent_credential_bundle(session).await?,
+            None => &conversation.find_most_recent_credential(session).await?,
             Some(cb) => cb,
         };
         let (commit, welcome, group_info) = conversation
             .group
-            .explicit_self_update(backend, &cb.signature_key, leaf_node)
+            .explicit_self_update(backend, &cb.signature_key_pair, leaf_node)
             .await
             .map_err(MlsError::wrap("group self update"))?;
 
@@ -288,7 +288,7 @@ impl ConversationGuard {
             return Ok(None);
         }
 
-        let signer = &inner.find_most_recent_credential_bundle(session).await?.signature_key;
+        let signer = &inner.find_most_recent_credential(session).await?.signature_key_pair;
 
         let (commit, welcome, gi) = inner
             .group
@@ -317,7 +317,7 @@ impl ConversationGuard {
         if proposals.is_empty() {
             return Ok(None);
         }
-        let signer = &inner.find_most_recent_credential_bundle(session).await?.signature_key;
+        let signer = &inner.find_most_recent_credential(session).await?.signature_key_pair;
 
         let (commit, welcome, gi) = inner
             .group

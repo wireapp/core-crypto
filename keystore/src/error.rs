@@ -4,7 +4,7 @@ pub enum MissingKeyErrorKind {
     #[error("Consumer Data")]
     ConsumerData,
     #[error("MLS KeyPackage")]
-    MlsKeyPackage,
+    StoredKeypackage,
     #[error("MLS SignatureKeyPair")]
     MlsSignatureKeyPair,
     #[error("MLS HpkePrivateKey")]
@@ -12,13 +12,13 @@ pub enum MissingKeyErrorKind {
     #[error("MLS EncryptionKeyPair")]
     MlsEncryptionKeyPair,
     #[error("MLS Epoch EncryptionKeyPair")]
-    MlsEpochEncryptionKeyPair,
+    StoredEpochEncryptionKeypair,
     #[error("MLS PreSharedKeyBundle")]
     MlsPskBundle,
-    #[error("MLS CredentialBundle")]
+    #[error("MLS Credential")]
     MlsCredential,
     #[error("MLS Buffered Commit")]
-    MlsBufferedCommit,
+    StoredBufferedCommit,
     #[error("MLS Persisted Group")]
     PersistedMlsGroup,
     #[error("MLS Persisted Pending Group")]
@@ -26,7 +26,7 @@ pub enum MissingKeyErrorKind {
     #[error("MLS Pending Messages")]
     MlsPendingMessages,
     #[error("End-to-end identity enrollment")]
-    E2eiEnrollment,
+    StoredE2eiEnrollment,
     #[error("OIDC refresh token")]
     E2eiRefreshToken,
     #[error("End-to-end identity root trust anchor CA cert")]

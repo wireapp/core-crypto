@@ -11,8 +11,8 @@ pub enum Error {
     InvalidUserId,
     #[error("X509 certificate bundle set was empty")]
     NoX509CertificateBundle,
-    #[error("Tried to insert an already existing CredentialBundle")]
-    CredentialBundleConflict,
+    #[error("Tried to insert an already existing Credential")]
+    CredentialConflict,
     #[error("A MLS operation was requested but MLS hasn't been initialized on this instance")]
     MlsNotInitialized,
     #[error("A Credential of type {0:?} was not found locally which is very likely an implementation error")]
