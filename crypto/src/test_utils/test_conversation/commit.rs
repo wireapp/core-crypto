@@ -9,7 +9,7 @@ use crate::{
     MlsCredentialType,
     mls::{
         conversation::{ConversationWithMls as _, pending_conversation::PendingConversation},
-        credential::CredentialBundle,
+        credential::Credential,
     },
 };
 
@@ -96,20 +96,20 @@ impl<'a> TestConversation<'a> {
     }
 
     /// Replace the existing credential with an x509 one and notify all members.
-    pub async fn e2ei_rotate_notify(self, credential_bundle: Option<&CredentialBundle>) -> TestConversation<'a> {
-        self.e2ei_rotate(credential_bundle).await.notify_members().await
+    pub async fn e2ei_rotate_notify(self, credential: Option<&Credential>) -> TestConversation<'a> {
+        self.e2ei_rotate(credential).await.notify_members().await
     }
 
     /// Create an update commit with a leaf node containing x509 credentials, that hasn't been merged by the actor.
     /// On [OperationGuard::notify_members], the actor will receive this commit.
-    pub async fn e2ei_rotate_unmerged(self, credential_bundle: &CredentialBundle) -> OperationGuard<'a, Commit> {
+    pub async fn e2ei_rotate_unmerged(self, credential: &Credential) -> OperationGuard<'a, Commit> {
         let mut conversation_guard = self.guard().await;
         let conversation = conversation_guard.conversation().await;
         let mut leaf_node = conversation.group.own_leaf().unwrap().clone();
         drop(conversation);
-        leaf_node.set_credential_with_key(credential_bundle.to_mls_credential_with_key());
+        leaf_node.set_credential_with_key(credential.to_mls_credential_with_key());
         let commit = conversation_guard
-            .update_key_material_inner(Some(credential_bundle), Some(leaf_node))
+            .update_key_material_inner(Some(credential), Some(leaf_node))
             .await
             .unwrap()
             .commit;
@@ -118,19 +118,16 @@ impl<'a> TestConversation<'a> {
     }
 
     /// Like [Self::e2ei_rotate_notify], but also when notifying other members, call [SessionContext::verify_sender_identity].
-    pub async fn e2ei_rotate_notify_and_verify_sender(
-        self,
-        credential_bundle: Option<&CredentialBundle>,
-    ) -> TestConversation<'a> {
-        self.e2ei_rotate(credential_bundle)
+    pub async fn e2ei_rotate_notify_and_verify_sender(self, credential: Option<&Credential>) -> TestConversation<'a> {
+        self.e2ei_rotate(credential)
             .await
             .notify_members_and_verify_sender()
             .await
     }
 
     /// Replace the existing credential with an x509 one.
-    pub async fn e2ei_rotate(self, credential_bundle: Option<&CredentialBundle>) -> OperationGuard<'a, Commit> {
-        self.guard().await.e2ei_rotate(credential_bundle).await.unwrap();
+    pub async fn e2ei_rotate(self, credential: Option<&Credential>) -> OperationGuard<'a, Commit> {
+        self.guard().await.e2ei_rotate(credential).await.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;
         let committer_index = self.actor_index();
         OperationGuard::new(TestOperation::Update, commit, self, [committer_index])

@@ -18,8 +18,8 @@ mod tests {
     use core_crypto_keystore::{
         MissingKeyErrorKind,
         entities::{
-            EntityBase, MlsCredential, MlsHpkePrivateKey, MlsKeyPackage, MlsPskBundle, MlsSignatureKeyPair,
-            PersistedMlsGroup, PersistedMlsPendingGroup,
+            EntityBase, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredHpkePrivateKey,
+            StoredKeypackage, StoredPskBundle, StoredSignatureKeypair,
         },
     };
     use mls_crypto_provider::MlsCryptoProvider;
@@ -30,13 +30,13 @@ mod tests {
     #[wasm_bindgen_test]
     fn mls_entities_have_correct_error_kinds() {
         assert_eq!(
-            MlsCredential::to_missing_key_err_kind(),
+            StoredCredential::to_missing_key_err_kind(),
             MissingKeyErrorKind::MlsCredential
         );
 
         assert_eq!(
-            MlsKeyPackage::to_missing_key_err_kind(),
-            MissingKeyErrorKind::MlsKeyPackage
+            StoredKeypackage::to_missing_key_err_kind(),
+            MissingKeyErrorKind::StoredKeypackage
         );
 
         assert_eq!(
@@ -50,23 +50,23 @@ mod tests {
         );
 
         assert_eq!(
-            MlsHpkePrivateKey::to_missing_key_err_kind(),
+            StoredHpkePrivateKey::to_missing_key_err_kind(),
             MissingKeyErrorKind::MlsHpkePrivateKey
         );
 
         assert_eq!(
-            MlsSignatureKeyPair::to_missing_key_err_kind(),
+            StoredSignatureKeypair::to_missing_key_err_kind(),
             MissingKeyErrorKind::MlsSignatureKeyPair
         );
 
         assert_eq!(
-            MlsPskBundle::to_missing_key_err_kind(),
+            StoredPskBundle::to_missing_key_err_kind(),
             MissingKeyErrorKind::MlsPskBundle
         );
     }
 
     #[apply(all_storage_types)]
-    pub async fn can_add_read_delete_credential_bundle_openmls_traits(context: KeystoreTestContext) {
+    pub async fn can_add_read_delete_credential_openmls_traits(context: KeystoreTestContext) {
         use core_crypto_keystore::connection::FetchFromDatabase;
         use itertools::Itertools as _;
         use openmls_basic_credential::SignatureKeyPair;
@@ -82,7 +82,7 @@ mod tests {
 
         let credential_id: Vec<u8> = credential.identity().into();
 
-        let store_credential = MlsCredential {
+        let store_credential = StoredCredential {
             id: credential_id.clone(),
             credential: credential.tls_serialize_detached().unwrap(),
             created_at: 0,
@@ -96,7 +96,7 @@ mod tests {
         )
         .unwrap();
 
-        let store_keypair = MlsSignatureKeyPair::new(
+        let store_keypair = StoredSignatureKeypair::new(
             keypair.signature_scheme(),
             keypair.to_public_vec(),
             keypair.tls_serialize_detached().unwrap(),
@@ -107,14 +107,14 @@ mod tests {
 
         let (credential_from_store,) = backend
             .key_store()
-            .find_all::<MlsCredential>(Default::default())
+            .find_all::<StoredCredential>(Default::default())
             .await
             .unwrap()
             .into_iter()
             .filter(|cred| cred.id == credential_id)
             .collect_tuple()
             .expect("credentials should be exactly one");
-        let keypair2: MlsSignatureKeyPair = backend.key_store().find(keypair.public()).await.unwrap().unwrap();
+        let keypair2: StoredSignatureKeypair = backend.key_store().find(keypair.public()).await.unwrap().unwrap();
 
         assert_eq!(keypair2.credential_id, credential_from_store.id);
 
@@ -132,7 +132,7 @@ mod tests {
             .unwrap();
         backend
             .key_store()
-            .remove::<MlsSignatureKeyPair, _>(keypair.public())
+            .remove::<StoredSignatureKeypair, _>(keypair.public())
             .await
             .unwrap();
     }
