@@ -27,6 +27,10 @@ runs:
         esac
         echo "IOS_TARGET=$target" >> $GITHUB_ENV
 
+    - uses: ./.github/actions/setup-and-cache-rust
+      with:
+        target: ${{ env.IOS_TARGET }}
+
     - uses: ./.github/actions/make
       with:
         key: lib-${{ inputs.task }}

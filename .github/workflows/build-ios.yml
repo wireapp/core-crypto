@@ -26,10 +26,6 @@ jobs:
           - task: ios-simulator-arm
     steps:
       - uses: actions/checkout@v5
-      - name: Setup rust macOS
-        uses: ./.github/actions/setup-and-cache-rust
-        with:
-          target: ${{ matrix.target }}
 
       - name: build ${{ matrix.task }}
         uses: ./.github/actions/make/ios
