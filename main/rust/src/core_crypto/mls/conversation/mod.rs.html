@@ -22,7 +22,7 @@
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>core_crypto_keystore::CryptoKeystoreMls;
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span>itertools::Itertools <span class="kw">as _</span>;
 <a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span>log::trace;
-<a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
+<a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>mls_crypto_provider::{Database, MlsCryptoProvider};
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>openmls::{
 <a href=#27 id=27 data-nosnippet>27</a>    group::MlsGroup,
 <a href=#28 id=28 data-nosnippet>28</a>    prelude::{Credential, CredentialWithKey, LeafNodeIndex, Proposal, SignaturePublicKey},
@@ -522,7 +522,7 @@
 <a href=#522 id=522 data-nosnippet>522</a>        })
 <a href=#523 id=523 data-nosnippet>523</a>    }
 <a href=#524 id=524 data-nosnippet>524</a>
-<a href=#525 id=525 data-nosnippet>525</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>persist_group_when_changed(<span class="kw-2">&amp;mut </span><span class="self">self</span>, keystore: <span class="kw-2">&amp;</span>CryptoKeystore, force: bool) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#525 id=525 data-nosnippet>525</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>persist_group_when_changed(<span class="kw-2">&amp;mut </span><span class="self">self</span>, keystore: <span class="kw-2">&amp;</span>Database, force: bool) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#526 id=526 data-nosnippet>526</a>        <span class="kw">if </span>force || <span class="self">self</span>.group.state_changed() == openmls::group::InnerState::Changed {
 <a href=#527 id=527 data-nosnippet>527</a>            keystore
 <a href=#528 id=528 data-nosnippet>528</a>                .mls_group_persist(

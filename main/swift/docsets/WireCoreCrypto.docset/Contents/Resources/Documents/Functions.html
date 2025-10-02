@@ -160,13 +160,10 @@
                 <a href="Functions.html#/s:20WireCoreCryptoUniffi18ciphersuiteFromU1612discriminantAA11CiphersuiteOs6UInt16V_tKF">ciphersuiteFromU16(discriminant:)</a>
               </li>
               <li class="nav-group-task">
-                <a href="Functions.html#/s:20WireCoreCryptoUniffi04coreC12DeferredInit8database11entropySeedAA0bC3FfiCAA8DatabaseC_10Foundation4DataVSgtYaKF">coreCryptoDeferredInit(database:entropySeed:)</a>
-              </li>
-              <li class="nav-group-task">
                 <a href="Functions.html#/s:20WireCoreCryptoUniffi04coreC13HistoryClient13historySecretAA0bC3FfiCAA0fI0V_tYaKF">coreCryptoHistoryClient(historySecret:)</a>
               </li>
               <li class="nav-group-task">
-                <a href="Functions.html#/s:20WireCoreCryptoUniffi04coreC3New8database8clientId12ciphersuites11entropySeed12nbKeyPackageAA0bC3FfiCAA8DatabaseC_AA06ClientI0CSayAA11CiphersuiteOG10Foundation4DataVSgs6UInt32VSgtYaKF">coreCryptoNew(database:clientId:ciphersuites:entropySeed:nbKeyPackage:)</a>
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi04coreC3New8databaseAA0bC3FfiCAA8DatabaseC_tYaKF">coreCryptoNew(database:)</a>
               </li>
               <li class="nav-group-task">
                 <a href="Functions.html#/s:20WireCoreCryptoUniffi16inMemoryDatabase3keyAA0G0CAA0G3KeyC_tYaKF">inMemoryDatabase(key:)</a>
@@ -455,39 +452,6 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi04coreC12DeferredInit8database11entropySeedAA0bC3FfiCAA8DatabaseC_10Foundation4DataVSgtYaKF"></a>
-                    <a name="//apple_ref/swift/Function/coreCryptoDeferredInit(database:entropySeed:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi04coreC12DeferredInit8database11entropySeedAA0bC3FfiCAA8DatabaseC_10Foundation4DataVSgtYaKF">coreCryptoDeferredInit(database:<wbr>entropySeed:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous, from WireCoreCryptoUniffi
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Free function to construct a new <code><a href="WireCoreCryptoUniffi/Classes/CoreCryptoFfi.html">CoreCryptoFfi</a></code> instance.</p>
-
-<p>Similar to [<code>core_crypto_new</code>] but defers MLS initialization. It can be initialized later
- with [core_crypto::transaction_context::TransactionContext::mls_init].</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">coreCryptoDeferredInit</span><span class="p">(</span><span class="nv">database</span><span class="p">:</span> <span class="kt"><a href="Classes.html#/s:20WireCoreCryptoUniffi8DatabaseC">Database</a></span><span class="p">,</span> <span class="nv">entropySeed</span><span class="p">:</span> <span class="kt">Data</span><span class="p">?)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="WireCoreCryptoUniffi/Classes/CoreCryptoFfi.html">CoreCryptoFfi</a></span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
                     <a name="/s:20WireCoreCryptoUniffi04coreC13HistoryClient13historySecretAA0bC3FfiCAA0fI0V_tYaKF"></a>
                     <a name="//apple_ref/swift/Function/coreCryptoHistoryClient(historySecret:)" class="dashAnchor"></a>
                     <a class="token" href="#/s:20WireCoreCryptoUniffi04coreC13HistoryClient13historySecretAA0bC3FfiCAA0fI0V_tYaKF">coreCryptoHistoryClient(historySecret:<wbr>)</a>
@@ -521,9 +485,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi04coreC3New8database8clientId12ciphersuites11entropySeed12nbKeyPackageAA0bC3FfiCAA8DatabaseC_AA06ClientI0CSayAA11CiphersuiteOG10Foundation4DataVSgs6UInt32VSgtYaKF"></a>
-                    <a name="//apple_ref/swift/Function/coreCryptoNew(database:clientId:ciphersuites:entropySeed:nbKeyPackage:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi04coreC3New8database8clientId12ciphersuites11entropySeed12nbKeyPackageAA0bC3FfiCAA8DatabaseC_AA06ClientI0CSayAA11CiphersuiteOG10Foundation4DataVSgs6UInt32VSgtYaKF">coreCryptoNew(database:<wbr>clientId:<wbr>ciphersuites:<wbr>entropySeed:<wbr>nbKeyPackage:<wbr>)</a>
+                    <a name="/s:20WireCoreCryptoUniffi04coreC3New8databaseAA0bC3FfiCAA8DatabaseC_tYaKF"></a>
+                    <a name="//apple_ref/swift/Function/coreCryptoNew(database:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi04coreC3New8databaseAA0bC3FfiCAA8DatabaseC_tYaKF">coreCryptoNew(database:<wbr>)</a>
                     </code>
                       <span class="declaration-note">
                         Asynchronous, from WireCoreCryptoUniffi
@@ -538,14 +502,15 @@
 
 <p>This is necessary because in uniffi async constructors are not supported.</p>
 
-<p>See [Session::try_new]</p>
+<p>MLS or proteus can be initialized  with [core_crypto::transaction_context::TransactionContext::mls_init] or
+ [core_crypto::transaction_context::TransactionContext::proteus_init], respectively.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">coreCryptoNew</span><span class="p">(</span><span class="nv">database</span><span class="p">:</span> <span class="kt"><a href="Classes.html#/s:20WireCoreCryptoUniffi8DatabaseC">Database</a></span><span class="p">,</span> <span class="nv">clientId</span><span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">,</span> <span class="nv">ciphersuites</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="WireCoreCryptoUniffi/Enums/Ciphersuite.html">Ciphersuite</a></span><span class="p">],</span> <span class="nv">entropySeed</span><span class="p">:</span> <span class="kt">Data</span><span class="p">?,</span> <span class="nv">nbKeyPackage</span><span class="p">:</span> <span class="kt">UInt32</span><span class="p">?)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="WireCoreCryptoUniffi/Classes/CoreCryptoFfi.html">CoreCryptoFfi</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">coreCryptoNew</span><span class="p">(</span><span class="nv">database</span><span class="p">:</span> <span class="kt"><a href="Classes.html#/s:20WireCoreCryptoUniffi8DatabaseC">Database</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="WireCoreCryptoUniffi/Classes/CoreCryptoFfi.html">CoreCryptoFfi</a></span></code></pre>
 
                         </div>
                       </div>
