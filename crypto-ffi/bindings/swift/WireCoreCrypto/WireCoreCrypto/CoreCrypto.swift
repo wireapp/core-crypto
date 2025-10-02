@@ -105,9 +105,8 @@ public final class CoreCrypto: CoreCryptoProtocol {
     ///
     public convenience init(database: Database) async throws {
         let coreCrypto =
-            try await WireCoreCryptoUniffi.coreCryptoDeferredInit(
-                database: database.inner,
-                entropySeed: nil
+            try await WireCoreCryptoUniffi.coreCryptoNew(
+                database: database.inner
             )
         self.init(coreCrypto, database: database)
     }

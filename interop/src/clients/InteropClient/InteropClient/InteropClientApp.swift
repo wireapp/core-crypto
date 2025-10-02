@@ -113,8 +113,7 @@ struct InteropClientApp: App {
             try await self.coreCrypto?.transaction({ context in
                 try await context.mlsInit(
                     clientId: ClientId(bytes: clientId),
-                    ciphersuites: [ciphersuite],
-                    nbKeyPackage: nil)
+                    ciphersuites: [ciphersuite])
             })
 
             return "Initialised MLS with ciphersuite: \(ciphersuite)"

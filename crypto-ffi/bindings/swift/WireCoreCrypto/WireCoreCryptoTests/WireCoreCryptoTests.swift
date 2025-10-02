@@ -79,7 +79,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let ciphersuite = Ciphersuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
 
         let pubkey1 = try await coreCrypto.transaction {
-            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite], nbKeyPackage: 1)
+            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite])
             return try await $0.clientPublicKey(
                 ciphersuite: ciphersuite, credentialType: CredentialType.basic)
         }
@@ -92,7 +92,7 @@ final class WireCoreCryptoTests: XCTestCase {
 
         coreCrypto = try await CoreCrypto(database: database2)
         let pubkey2 = try await coreCrypto.transaction {
-            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite], nbKeyPackage: 1)
+            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite])
             return try await $0.clientPublicKey(
                 ciphersuite: ciphersuite, credentialType: CredentialType.basic)
         }
@@ -168,8 +168,7 @@ final class WireCoreCryptoTests: XCTestCase {
         await XCTAssertThrowsErrorAsync {
             try await context?.mlsInit(
                 clientId: aliceId,
-                ciphersuites: [ciphersuite],
-                nbKeyPackage: nil
+                ciphersuites: [ciphersuite]
             )
         }
     }
@@ -209,8 +208,7 @@ final class WireCoreCryptoTests: XCTestCase {
         try await coreCrypto.transaction {
             try await $0.mlsInit(
                 clientId: aliceId,
-                ciphersuites: [ciphersuite],
-                nbKeyPackage: nil
+                ciphersuites: [ciphersuite]
             )
         }
 
@@ -550,8 +548,7 @@ final class WireCoreCryptoTests: XCTestCase {
         try await coreCrypto.transaction { context in
             try await context.mlsInit(
                 clientId: aliceId,
-                ciphersuites: [ciphersuite],
-                nbKeyPackage: nil
+                ciphersuites: [ciphersuite]
             )
             try await context.createConversation(
                 conversationId: conversationId,
@@ -606,8 +603,7 @@ final class WireCoreCryptoTests: XCTestCase {
         try await coreCrypto.transaction {
             try await $0.mlsInit(
                 clientId: aliceId,
-                ciphersuites: [ciphersuite],
-                nbKeyPackage: nil
+                ciphersuites: [ciphersuite]
             )
             try await $0.createConversation(
                 conversationId: conversationId,
@@ -678,8 +674,7 @@ final class WireCoreCryptoTests: XCTestCase {
             try await coreCrypto.transaction({
                 try await $0.mlsInit(
                     clientId: ClientId(bytes: clientId.data(using: .utf8)!),
-                    ciphersuites: [ciphersuite],
-                    nbKeyPackage: nil)
+                    ciphersuites: [ciphersuite])
             }
             )
             clients.append(coreCrypto)
