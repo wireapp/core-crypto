@@ -1,25 +1,25 @@
 use mls_crypto_provider::PkiKeypair;
 use openmls_basic_credential::SignatureKeyPair as OpenMlsSignatureKeyPair;
-use openmls_traits::types::{Ciphersuite, SignatureScheme};
+use openmls_traits::types::{Ciphersuite as MlsCiphersuite, SignatureScheme};
 use wire_e2e_identity::prelude::JwsAlgorithm;
 use zeroize::Zeroize;
 
 use super::error::*;
-use crate::{MlsCiphersuite, MlsError};
+use crate::{Ciphersuite, MlsError};
 
-impl TryFrom<MlsCiphersuite> for JwsAlgorithm {
+impl TryFrom<Ciphersuite> for JwsAlgorithm {
     type Error = Error;
 
-    fn try_from(cs: MlsCiphersuite) -> Result<Self> {
-        let cs = openmls_traits::types::Ciphersuite::from(cs);
+    fn try_from(cs: Ciphersuite) -> Result<Self> {
+        let cs = MlsCiphersuite::from(cs);
         Ok(match cs {
-            Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-            | Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 => JwsAlgorithm::Ed25519,
-            Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 => JwsAlgorithm::P256,
-            Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => JwsAlgorithm::P384,
-            Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 => JwsAlgorithm::P521,
-            Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
-            | Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 => return Err(Error::NotYetSupported),
+            MlsCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+            | MlsCiphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 => JwsAlgorithm::Ed25519,
+            MlsCiphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 => JwsAlgorithm::P256,
+            MlsCiphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => JwsAlgorithm::P384,
+            MlsCiphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 => JwsAlgorithm::P521,
+            MlsCiphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
+            | MlsCiphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 => return Err(Error::NotYetSupported),
         })
     }
 }

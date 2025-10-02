@@ -4,7 +4,7 @@
 //! it doesn't work on newtypes around external enums. We therefore redefine the ciphersuites enum
 //! here with appropriate annotations such that it gets exported to all relevant bindings.
 
-use core_crypto::{CiphersuiteName, MlsCiphersuite};
+use core_crypto::{Ciphersuite, CiphersuiteName};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -60,16 +60,16 @@ impl From<CiphersuiteName> for Ciphersuite {
     }
 }
 
-impl From<Ciphersuite> for MlsCiphersuite {
+impl From<Ciphersuite> for Ciphersuite {
     #[inline]
     fn from(value: Ciphersuite) -> Self {
         CiphersuiteName::from(value).into()
     }
 }
 
-impl From<MlsCiphersuite> for Ciphersuite {
+impl From<Ciphersuite> for Ciphersuite {
     #[inline]
-    fn from(value: MlsCiphersuite) -> Self {
+    fn from(value: Ciphersuite) -> Self {
         CiphersuiteName::from(value).into()
     }
 }

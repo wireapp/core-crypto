@@ -4,7 +4,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use super::error::{Error, Result};
 use crate::{
-    CertificateBundle, E2eiEnrollment, KeystoreError, MlsCiphersuite, MlsCredentialType, MlsError, RecursiveError,
+    CertificateBundle, Ciphersuite, E2eiEnrollment, KeystoreError, MlsCredentialType, MlsError, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     transaction_context::TransactionContext,
@@ -22,7 +22,7 @@ impl TransactionContext {
         handle: String,
         team: Option<String>,
         expiry_sec: u32,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
     ) -> Result<E2eiEnrollment> {
         let mls_provider = self
             .mls_provider()
@@ -70,7 +70,7 @@ impl TransactionContext {
         handle: Option<String>,
         team: Option<String>,
         expiry_sec: u32,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
     ) -> Result<E2eiEnrollment> {
         let mls_provider = self
             .mls_provider()
@@ -184,7 +184,7 @@ impl TransactionContext {
 
     /// Deletes all key packages whose leaf node's credential does not match the most recently
     /// saved x509 credential with the provided signature scheme.
-    pub async fn delete_stale_key_packages(&self, cipher_suite: MlsCiphersuite) -> Result<()> {
+    pub async fn delete_stale_key_packages(&self, cipher_suite: Ciphersuite) -> Result<()> {
         let signature_scheme = cipher_suite.signature_algorithm();
         let keystore = self
             .keystore()

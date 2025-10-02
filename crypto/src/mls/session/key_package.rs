@@ -13,7 +13,7 @@ use tls_codec::{Deserialize, Serialize};
 
 use super::{Error, Result};
 use crate::{
-    Credential, KeystoreError, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsError, Session,
+    Ciphersuite, Credential, KeystoreError, MlsConversationConfiguration, MlsCredentialType, MlsError, Session,
     mls::session::SessionInner,
 };
 
@@ -39,7 +39,7 @@ impl Session {
     pub async fn generate_one_keypackage_from_credential(
         &self,
         backend: &MlsCryptoProvider,
-        cs: MlsCiphersuite,
+        cs: Ciphersuite,
         cb: &Credential,
     ) -> Result<KeyPackage> {
         let guard = self.inner.read().await;
@@ -81,7 +81,7 @@ impl Session {
     pub async fn request_key_packages(
         &self,
         count: usize,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
         backend: &MlsCryptoProvider,
     ) -> Result<Vec<KeyPackage>> {
@@ -120,7 +120,7 @@ impl Session {
     pub(crate) async fn generate_new_keypackages(
         &self,
         backend: &MlsCryptoProvider,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
         cb: &Credential,
         count: usize,
     ) -> Result<Vec<KeyPackage>> {
@@ -140,7 +140,7 @@ impl Session {
     pub async fn valid_keypackages_count(
         &self,
         backend: &MlsCryptoProvider,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
     ) -> Result<usize> {
         let kps: Vec<StoredKeypackage> = backend

@@ -2,7 +2,7 @@ use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, MlsMessageOut};
 
 use super::Result;
 use crate::{
-    ConversationId, LeafError, MlsCiphersuite, MlsError, RecursiveError,
+    Ciphersuite, ConversationId, LeafError, MlsError, RecursiveError,
     mls::{self, credential::typ::MlsCredentialType},
     transaction_context::TransactionContext,
 };
@@ -29,7 +29,7 @@ impl TransactionContext {
         &self,
         conversation_id: ConversationId,
         epoch: GroupEpoch,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
     ) -> Result<MlsMessageOut> {
         let group_id = GroupId::from_slice(conversation_id.as_ref());

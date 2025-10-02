@@ -67,7 +67,7 @@ mod tests {
 
     mod invariants {
         use super::*;
-        use crate::{MlsCiphersuite, mls};
+        use crate::{Ciphersuite, mls};
 
         #[apply(all_cred_cipher)]
         async fn can_create_from_valid_configuration(mut case: TestContext) {
@@ -95,7 +95,7 @@ mod tests {
                 let config_err = SessionConfig::builder()
                     .database(db)
                     .client_id("".into())
-                    .ciphersuites([MlsCiphersuite::default()])
+                    .ciphersuites([Ciphersuite::default()])
                     .build()
                     .validate()
                     .unwrap_err();

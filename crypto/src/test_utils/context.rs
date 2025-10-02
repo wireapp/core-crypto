@@ -21,7 +21,7 @@ use super::{
     test_conversation::operation_guard::{Commit, OperationGuard},
 };
 use crate::{
-    CertificateBundle, CoreCrypto, MlsCiphersuite, MlsConversationConfiguration, MlsConversationDecryptMessage,
+    CertificateBundle, Ciphersuite, CoreCrypto, MlsConversationConfiguration, MlsConversationDecryptMessage,
     MlsCredentialType, RecursiveError, WireIdentity,
     e2e_identity::{
         device_status::DeviceStatus,
@@ -73,7 +73,7 @@ impl SessionContext {
             .unwrap()
     }
 
-    pub async fn count_key_package(&self, cs: MlsCiphersuite, ct: Option<MlsCredentialType>) -> usize {
+    pub async fn count_key_package(&self, cs: Ciphersuite, ct: Option<MlsCredentialType>) -> usize {
         self.transaction
             .mls_provider()
             .await
@@ -263,7 +263,7 @@ impl SessionContext {
         &self,
         all_conversations: Vec<TestConversation<'a>>,
         cb: &Credential,
-        cipher_suite: MlsCiphersuite,
+        cipher_suite: Ciphersuite,
         key_package_count: usize,
     ) -> Result<RotateAllResult<'a>> {
         let mut commits = Vec::with_capacity(all_conversations.len());

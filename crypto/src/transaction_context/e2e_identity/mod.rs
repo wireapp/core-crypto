@@ -15,7 +15,7 @@ use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
 use super::TransactionContext;
 use crate::{
-    CertificateBundle, ClientId, ClientIdentifier, E2eiEnrollment, MlsCiphersuite, RecursiveError,
+    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, E2eiEnrollment, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{crl::get_new_crl_distribution_points, x509::CertificatePrivateKey},
 };
@@ -36,7 +36,7 @@ impl TransactionContext {
         handle: String,
         team: Option<String>,
         expiry_sec: u32,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
     ) -> Result<E2eiEnrollment> {
         let signature_keypair = None; // fresh install without a Basic client. Supplying None will generate a new keypair
         E2eiEnrollment::try_new(
