@@ -13,4 +13,4 @@ jobs:
       - uses: actions/checkout@v5
       - uses: uncenter/setup-taplo@v1
       - uses: wireapp/setup-fd@v0.1.0
-      - run: fd --glob '*.toml' -X taplo fmt --check
+      - run: fd --glob --hidden '*.toml' -X taplo fmt --check
