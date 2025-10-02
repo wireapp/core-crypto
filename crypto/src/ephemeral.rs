@@ -27,7 +27,7 @@ use obfuscate::{Obfuscate, Obfuscated};
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
-    ClientId, ClientIdentifier, CoreCrypto, Error, MlsCiphersuite, MlsCredentialType, MlsError, RecursiveError, Result,
+    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Error, MlsCredentialType, MlsError, RecursiveError, Result,
     Session, SessionConfig,
 };
 
@@ -56,7 +56,7 @@ impl Obfuscate for HistorySecret {
 /// Create a new [`CoreCrypto`] with an **uninitialized** mls session.
 ///
 /// You must initialize the session yourself before using this!
-async fn in_memory_cc_with_ciphersuite(ciphersuite: impl Into<MlsCiphersuite>) -> Result<CoreCrypto> {
+async fn in_memory_cc_with_ciphersuite(ciphersuite: impl Into<Ciphersuite>) -> Result<CoreCrypto> {
     let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
         .await
         .unwrap();
@@ -85,7 +85,7 @@ async fn in_memory_cc_with_ciphersuite(ciphersuite: impl Into<MlsCiphersuite>) -
 /// Note that this is a crate-private function; the public interface for this feature is
 /// [`Conversation::generate_history_secret`][core_crypto::mls::conversation::Conversation::generate_history_secret].
 /// This implementation lives here instead of there for organizational reasons.
-pub(crate) async fn generate_history_secret(ciphersuite: MlsCiphersuite) -> Result<HistorySecret> {
+pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<HistorySecret> {
     // generate a new completely arbitrary client id
     let client_id = uuid::Uuid::new_v4();
     let client_id = format!("{HISTORY_CLIENT_ID_PREFIX}-{client_id}");

@@ -54,7 +54,7 @@ pub use crate::{
         RecursiveError, Result, ToRecursiveError,
     },
     mls::{
-        ciphersuite::MlsCiphersuite,
+        ciphersuite::Ciphersuite,
         conversation::{
             ConversationId, MlsConversation,
             commit::MlsCommitBundle,

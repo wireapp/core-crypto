@@ -198,7 +198,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::Session::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
-        let sc = core_crypto::MlsCiphersuite::from(ciphersuite).signature_algorithm();
+        let sc = core_crypto::Ciphersuite::from(ciphersuite).signature_algorithm();
         self.inner
             .e2ei_is_enabled(sc)
             .await

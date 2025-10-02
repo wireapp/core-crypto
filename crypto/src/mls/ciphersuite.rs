@@ -1,4 +1,4 @@
-use openmls_traits::types::{Ciphersuite, HashType};
+use openmls_traits::types::{Ciphersuite as MlsCiphersuite, HashType};
 use wire_e2e_identity::prelude::HashAlgorithm;
 
 use super::{Error, Result};
@@ -10,9 +10,9 @@ use crate::CiphersuiteName;
 #[serde(transparent)]
 #[repr(transparent)]
 /// A wrapper for the OpenMLS Ciphersuite, so that we are able to provide a default value.
-pub struct MlsCiphersuite(pub(crate) Ciphersuite);
+pub struct Ciphersuite(pub(crate) MlsCiphersuite);
 
-impl MlsCiphersuite {
+impl Ciphersuite {
     pub(crate) fn e2ei_hash_alg(&self) -> HashAlgorithm {
         match self.0.hash_algorithm() {
             HashType::Sha2_256 => HashAlgorithm::SHA256,
@@ -22,31 +22,31 @@ impl MlsCiphersuite {
     }
 }
 
-impl Default for MlsCiphersuite {
+impl Default for Ciphersuite {
     fn default() -> Self {
-        Self(Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
-    }
-}
-
-impl From<Ciphersuite> for MlsCiphersuite {
-    fn from(value: Ciphersuite) -> Self {
-        Self(value)
+        Self(MlsCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
     }
 }
 
 impl From<MlsCiphersuite> for Ciphersuite {
-    fn from(ciphersuite: MlsCiphersuite) -> Self {
+    fn from(value: MlsCiphersuite) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Ciphersuite> for MlsCiphersuite {
+    fn from(ciphersuite: Ciphersuite) -> Self {
         ciphersuite.0
     }
 }
 
-impl From<MlsCiphersuite> for u16 {
-    fn from(cs: MlsCiphersuite) -> Self {
+impl From<Ciphersuite> for u16 {
+    fn from(cs: Ciphersuite) -> Self {
         (&cs.0).into()
     }
 }
 
-impl TryFrom<u16> for MlsCiphersuite {
+impl TryFrom<u16> for Ciphersuite {
     type Error = Error;
 
     fn try_from(c: u16) -> Result<Self> {

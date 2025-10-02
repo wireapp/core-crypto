@@ -3,7 +3,7 @@
 use openmls::prelude::{KeyPackage, KeyPackageRef};
 
 use super::{Result, TransactionContext};
-use crate::{MlsCiphersuite, MlsCredentialType, RecursiveError};
+use crate::{Ciphersuite, MlsCredentialType, RecursiveError};
 
 impl TransactionContext {
     /// Returns `amount_requested` OpenMLS [openmls::key_packages::KeyPackage]s.
@@ -21,7 +21,7 @@ impl TransactionContext {
     /// Errors can happen when accessing the KeyStore
     pub async fn get_or_create_client_keypackages(
         &self,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
         amount_requested: usize,
     ) -> Result<Vec<KeyPackage>> {
@@ -41,7 +41,7 @@ impl TransactionContext {
     /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [MlsCiphersuite] and [MlsCredentialType]
     pub async fn client_valid_key_packages_count(
         &self,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
     ) -> Result<usize> {
         let session = self.session().await?;

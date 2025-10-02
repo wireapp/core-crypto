@@ -4,7 +4,7 @@ use typed_builder::TypedBuilder;
 use crate::{
     ClientId,
     mls::{
-        ciphersuite::MlsCiphersuite,
+        ciphersuite::Ciphersuite,
         error::{Error, Result},
     },
 };
@@ -22,8 +22,8 @@ pub struct SessionConfig {
     #[builder(default, setter(strip_option(fallback = client_id_opt)))]
     pub client_id: Option<ClientId>,
     /// All supported ciphersuites in this session
-    #[builder(default, setter(transform = |iter: impl IntoIterator<Item = MlsCiphersuite>| iter.into_iter().collect()))]
-    pub ciphersuites: Vec<MlsCiphersuite>,
+    #[builder(default, setter(transform = |iter: impl IntoIterator<Item = Ciphersuite>| iter.into_iter().collect()))]
+    pub ciphersuites: Vec<Ciphersuite>,
 }
 
 /// Validated configuration parameters for [Session][crate::mls::session::Session].
@@ -33,7 +33,7 @@ pub struct SessionConfig {
 pub struct ValidatedSessionConfig {
     pub(super) database: Database,
     pub(super) client_id: Option<ClientId>,
-    pub(super) ciphersuites: Vec<MlsCiphersuite>,
+    pub(super) ciphersuites: Vec<Ciphersuite>,
 }
 
 impl SessionConfig {
