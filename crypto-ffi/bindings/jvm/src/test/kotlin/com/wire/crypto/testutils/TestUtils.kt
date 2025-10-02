@@ -95,7 +95,7 @@ fun randomIdentifier(n: Int = 12): String {
 }
 
 /** Shorthand for initializing MLS with only a client id */
-suspend fun CoreCryptoContext.mlsInitShort(clientId: ClientId) = mlsInit(clientId, CIPHERSUITES_DEFAULT, 1U)
+suspend fun CoreCryptoContext.mlsInitShort(clientId: ClientId) = mlsInit(clientId, CIPHERSUITES_DEFAULT)
 
 /** Shorthand for creating a conversation with defaults */
 suspend fun CoreCryptoContext.createConversationShort(

@@ -94,7 +94,7 @@ class DatabaseKeyTest {
         val db = openDatabase(path.absolutePathString(), oldKey)
         var cc = CoreCrypto(db)
         val pubkey1 = cc.transaction {
-            it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT, nbKeyPackage = 1u)
+            it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT)
             it.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
         }
         cc.close()
@@ -106,7 +106,7 @@ class DatabaseKeyTest {
         val newDb = openDatabase(path.absolutePathString(), newKey)
         cc = CoreCrypto(newDb)
         val pubkey2 = cc.transaction {
-            it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT, nbKeyPackage = 0u)
+            it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT)
             it.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
         }
         cc.close()

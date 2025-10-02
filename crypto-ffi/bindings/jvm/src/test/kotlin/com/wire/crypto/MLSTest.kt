@@ -150,12 +150,12 @@ class MLSTest : HasMockDeliveryService() {
     fun calling_generateKeyPackages_should_return_expected_number() = runTest {
         val (alice) = newClients(this@MLSTest, genClientId())
 
-        // by default
+        // by default, no key packages are generated
         assertThat(
             alice.transaction { ctx ->
                 ctx.clientValidKeypackagesCount(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
             }
-        ).isEqualTo(1.toULong()) // based on the default in newClients, a test helper
+        ).isEqualTo(0.toULong())
         assertThat(alice.transaction { ctx -> ctx.clientKeypackagesShort(200U) }).isNotEmpty().hasSize(200)
         assertThat(
             alice.transaction { ctx ->

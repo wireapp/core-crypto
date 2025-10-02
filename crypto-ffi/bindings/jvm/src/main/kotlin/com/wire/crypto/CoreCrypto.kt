@@ -22,7 +22,7 @@ class CoreCrypto(private val cc: CoreCryptoFfi) {
         suspend operator fun invoke(
             database: Database,
         ) =
-            CoreCrypto(coreCryptoDeferredInit(database, null))
+            CoreCrypto(coreCryptoNew(database))
 
         /**
          * Instantiate a history client.
