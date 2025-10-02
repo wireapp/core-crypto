@@ -20,7 +20,7 @@ impl ConversationGuard {
     /// from OpenMls and the KeyStore
     pub async fn encrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<Vec<u8>> {
         let backend = self.crypto_provider().await?;
-        let credential = self.credential_bundle().await?;
+        let credential = self.credential().await?;
         let signer = credential.signature_key();
         let mut inner = self.conversation_mut().await;
         let encrypted = inner

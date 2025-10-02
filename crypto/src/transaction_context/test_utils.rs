@@ -1,9 +1,9 @@
 use core_crypto_keystore::{
     connection::FetchFromDatabase as _,
     entities::{
-        E2eiEnrollment, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
-        MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
-        PersistedMlsPendingGroup,
+        MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredE2eiEnrollment,
+        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        StoredSignatureKeypair,
     },
 };
 
@@ -28,17 +28,17 @@ impl TransactionContext {
     /// Count the entities
     pub async fn count_entities(&self) -> EntitiesCount {
         let keystore = self.keystore().await.unwrap();
-        let credential = keystore.count::<MlsCredential>().await.unwrap();
-        let encryption_keypair = keystore.count::<MlsEncryptionKeyPair>().await.unwrap();
-        let epoch_encryption_keypair = keystore.count::<MlsEpochEncryptionKeyPair>().await.unwrap();
-        let enrollment = keystore.count::<E2eiEnrollment>().await.unwrap();
+        let credential = keystore.count::<StoredCredential>().await.unwrap();
+        let encryption_keypair = keystore.count::<StoredEncryptionKeyPair>().await.unwrap();
+        let epoch_encryption_keypair = keystore.count::<StoredEpochEncryptionKeypair>().await.unwrap();
+        let enrollment = keystore.count::<StoredE2eiEnrollment>().await.unwrap();
         let group = keystore.count::<PersistedMlsGroup>().await.unwrap();
-        let hpke_private_key = keystore.count::<MlsHpkePrivateKey>().await.unwrap();
-        let key_package = keystore.count::<MlsKeyPackage>().await.unwrap();
+        let hpke_private_key = keystore.count::<StoredHpkePrivateKey>().await.unwrap();
+        let key_package = keystore.count::<StoredKeypackage>().await.unwrap();
         let pending_group = keystore.count::<PersistedMlsPendingGroup>().await.unwrap();
         let pending_messages = keystore.count::<MlsPendingMessage>().await.unwrap();
-        let psk_bundle = keystore.count::<MlsPskBundle>().await.unwrap();
-        let signature_keypair = keystore.count::<MlsSignatureKeyPair>().await.unwrap();
+        let psk_bundle = keystore.count::<StoredPskBundle>().await.unwrap();
+        let signature_keypair = keystore.count::<StoredSignatureKeypair>().await.unwrap();
         EntitiesCount {
             credential,
             encryption_keypair,

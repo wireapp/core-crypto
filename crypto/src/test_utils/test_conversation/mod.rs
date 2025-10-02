@@ -7,7 +7,7 @@ use crate::{
     ConversationId, E2eiConversationState, MlsProposalRef, RecursiveError,
     mls::{
         conversation::{Conversation, ConversationGuard, ConversationWithMls as _},
-        credential::{CredentialBundle, ext::CredentialExt as _},
+        credential::{Credential, ext::CredentialExt as _},
     },
 };
 
@@ -81,25 +81,29 @@ impl<'a> TestConversation<'a> {
     }
 
     pub(crate) async fn export_group_info(&self) -> VerifiableGroupInfo {
-        let credential = self.credential_bundle().await;
+        let credential = self.credential().await;
         let conversation = self.guard().await;
         let conversation = conversation.conversation().await;
         let group = conversation.group();
 
         let gi = group
-            .export_group_info(&self.actor().session.crypto_provider, &credential.signature_key, true)
+            .export_group_info(
+                &self.actor().session.crypto_provider,
+                &credential.signature_key_pair,
+                true,
+            )
             .unwrap();
         gi.group_info().unwrap()
     }
 
-    /// Find the actor's credential bundle used in this conversation.
-    pub(crate) async fn credential_bundle(&self) -> Arc<CredentialBundle> {
+    /// Find the actor's credential used in this conversation.
+    pub(crate) async fn credential(&self) -> Arc<Credential> {
         let conversation = self.guard().await;
         let conversation = conversation.conversation().await;
         conversation
-            .find_current_credential_bundle(&self.actor().session)
+            .find_current_credential(&self.actor().session)
             .await
-            .expect("expecting credential bundle")
+            .expect("expecting credential")
     }
 
     /// Count the members. Also, assert that the count is the same from the point of view of every member.
@@ -373,9 +377,9 @@ impl<'a> TestConversation<'a> {
         let cb = self
             .actor()
             .session
-            .find_most_recent_credential_bundle(self.case.signature_scheme(), MlsCredentialType::X509)
+            .find_most_recent_credential(self.case.signature_scheme(), MlsCredentialType::X509)
             .await
-            .expect("x509 credential bundle");
+            .expect("x509 credential");
         let cs = guard.ciphersuite().await;
         let local_identity = cb.to_mls_credential_with_key().extract_identity(cs, None).unwrap();
         assert_eq!(&local_identity.client_id.as_bytes(), &cid.0);
@@ -390,7 +394,7 @@ impl<'a> TestConversation<'a> {
         // the keystore
         let signature_key = self
             .actor()
-            .find_signature_keypair_from_keystore(cb.signature_key.public())
+            .find_signature_keypair_from_keystore(cb.signature_key_pair.public())
             .await
             .unwrap();
         let signature_key = openmls::prelude::SignaturePublicKey::from(signature_key.pk.as_slice());

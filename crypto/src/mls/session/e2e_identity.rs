@@ -17,11 +17,11 @@ impl Session {
     /// Returns true when end-to-end-identity is enabled for the given SignatureScheme
     pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
         let x509_result = self
-            .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509)
+            .find_most_recent_credential(signature_scheme, MlsCredentialType::X509)
             .await;
         match x509_result {
             Err(Error::CredentialNotFound(MlsCredentialType::X509)) => {
-                self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic)
+                self.find_most_recent_credential(signature_scheme, MlsCredentialType::Basic)
                     .await?;
                 Ok(false)
             }

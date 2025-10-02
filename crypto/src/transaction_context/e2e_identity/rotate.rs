@@ -1,4 +1,4 @@
-use core_crypto_keystore::{CryptoKeystoreMls, connection::FetchFromDatabase, entities::MlsKeyPackage};
+use core_crypto_keystore::{CryptoKeystoreMls, connection::FetchFromDatabase, entities::StoredKeypackage};
 use openmls::prelude::KeyPackage;
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -33,7 +33,7 @@ impl TransactionContext {
             .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
+            .find_most_recent_credential(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
             .await
             .map_err(|_| Error::MissingExistingClient(MlsCredentialType::Basic))?;
         let client_id = cb.credential().identity().into();
@@ -81,7 +81,7 @@ impl TransactionContext {
             .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
+            .find_most_recent_credential(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
             .await
             .map_err(|_| Error::MissingExistingClient(MlsCredentialType::X509))?;
         let client_id = cb.credential().identity().into();
@@ -167,7 +167,7 @@ impl TransactionContext {
             .map_err(RecursiveError::transaction("getting mls provider"))?;
 
         client
-            .save_new_x509_credential_bundle(
+            .save_new_x509_credential(
                 &self
                     .mls_provider()
                     .await
@@ -177,7 +177,7 @@ impl TransactionContext {
                 cert_bundle,
             )
             .await
-            .map_err(RecursiveError::mls_client("saving new x509 credential bundle"))?;
+            .map_err(RecursiveError::mls_client("saving new x509 credential"))?;
 
         Ok(crl_new_distribution_points)
     }
@@ -191,7 +191,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting keystore"))?;
         let nb_kp = keystore
-            .count::<MlsKeyPackage>()
+            .count::<StoredKeypackage>()
             .await
             .map_err(KeystoreError::wrap("counting key packages"))?;
         let kps: Vec<KeyPackage> = keystore
@@ -204,9 +204,9 @@ impl TransactionContext {
             .map_err(RecursiveError::transaction("getting mls client"))?;
 
         let cb = client
-            .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509)
+            .find_most_recent_credential(signature_scheme, MlsCredentialType::X509)
             .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
+            .map_err(RecursiveError::mls_client("finding most recent credential"))?;
 
         let mut kp_refs = vec![];
 
@@ -235,7 +235,7 @@ impl TransactionContext {
 mod tests {
     use std::collections::HashSet;
 
-    use core_crypto_keystore::entities::{EntityFindParams, MlsCredential};
+    use core_crypto_keystore::entities::{EntityFindParams, StoredCredential};
     use openmls::prelude::SignaturePublicKey;
     use tls_codec::Deserialize;
 
@@ -288,7 +288,7 @@ mod tests {
 
                 assert_eq!(before_rotate.credential, 1);
                 let old_credential = alice
-                    .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+                    .find_most_recent_credential(case.signature_scheme(), case.credential_type)
                     .await
                     .unwrap()
                     .clone();
@@ -314,7 +314,7 @@ mod tests {
                     .unwrap();
 
                 let cb = alice
-                    .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
+                    .find_most_recent_credential(case.signature_scheme(), MlsCredentialType::X509)
                     .await
                     .unwrap();
 
@@ -366,10 +366,10 @@ mod tests {
                 // But first let's verify the previous credential material is present
                 assert!(
                     alice
-                        .find_credential_bundle(
+                        .find_credential(
                             case.signature_scheme(),
                             case.credential_type,
-                            &old_credential.signature_key.public().into()
+                            &old_credential.signature_key_pair.public().into()
                         )
                         .await
                         .is_some()
@@ -388,7 +388,7 @@ mod tests {
                 // and the signature keypair is still present
                 assert!(
                     alice
-                        .find_signature_keypair_from_keystore(old_credential.signature_key.public())
+                        .find_signature_keypair_from_keystore(old_credential.signature_key_pair.public())
                         .await
                         .is_some()
                 );
@@ -448,7 +448,7 @@ mod tests {
                 case.create_conversation([&alice]).await;
 
                 let old_cb = alice
-                    .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+                    .find_most_recent_credential(case.signature_scheme(), case.credential_type)
                     .await
                     .unwrap()
                     .clone();
@@ -479,7 +479,7 @@ mod tests {
 
                 // So alice has a new Credential as expected
                 let cb = alice
-                    .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
+                    .find_most_recent_credential(case.signature_scheme(), MlsCredentialType::X509)
                     .await
                     .unwrap();
                 let identity = cb
@@ -496,9 +496,9 @@ mod tests {
                 );
 
                 // but keeps her old one since it's referenced from some KeyPackages
-                let old_spk = SignaturePublicKey::from(old_cb.signature_key.public());
+                let old_spk = SignaturePublicKey::from(old_cb.signature_key_pair.public());
                 let old_cb_found = alice
-                    .find_credential_bundle(case.signature_scheme(), case.credential_type, &old_spk)
+                    .find_credential(case.signature_scheme(), case.credential_type, &old_spk)
                     .await
                     .unwrap();
                 assert_eq!(old_cb, old_cb_found);
@@ -514,7 +514,7 @@ mod tests {
                         .keystore()
                         .await
                         .unwrap()
-                        .find_all::<MlsCredential>(EntityFindParams::default())
+                        .find_all::<StoredCredential>(EntityFindParams::default())
                         .await
                         .unwrap()
                         .into_iter()
@@ -538,7 +538,7 @@ mod tests {
 
                 // Verify that Alice has the same credentials
                 let cb = new_client
-                    .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
+                    .find_most_recent_credential(case.signature_scheme(), MlsCredentialType::X509)
                     .await
                     .unwrap();
                 let identity = cb

@@ -8,9 +8,6 @@ mod pki;
 
 pub use crypto_provider::RustCrypto;
 pub use error::{MlsProviderError, MlsProviderResult};
-pub use pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
-
-use crate::pki::PkiEnvironmentProvider;
 use openmls_traits::{
     crypto::OpenMlsCrypto,
     types::{
@@ -18,6 +15,9 @@ use openmls_traits::{
         KemOutput, SignatureScheme,
     },
 };
+pub use pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
+
+use crate::pki::PkiEnvironmentProvider;
 
 pub mod reexports {
     pub use rand_core;
