@@ -9,7 +9,7 @@ use super::{ConversationWithMls, Error, MlsConversation, Result};
 use crate::{
     KeystoreError, LeafError, MlsGroupInfoBundle, MlsTransport, RecursiveError,
     group_store::GroupStoreValue,
-    mls::{conversation::ConversationIdRef, credential::CredentialBundle},
+    mls::{conversation::ConversationIdRef, credential::Credential},
     transaction_context::TransactionContext,
 };
 mod commit;
@@ -121,11 +121,11 @@ impl ConversationGuard {
         }
     }
 
-    async fn credential_bundle(&self) -> Result<Arc<CredentialBundle>> {
+    async fn credential(&self) -> Result<Arc<Credential>> {
         let client = self.session().await?;
         let inner = self.conversation().await;
         inner
-            .find_current_credential_bundle(&client)
+            .find_current_credential(&client)
             .await
             .map_err(|_| Error::IdentityInitializationError)
     }

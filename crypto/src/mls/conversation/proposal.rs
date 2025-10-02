@@ -26,10 +26,10 @@ impl MlsConversation {
         key_package: KeyPackageIn,
     ) -> Result<MlsProposalBundle> {
         let signer = &self
-            .find_current_credential_bundle(client)
+            .find_current_credential(client)
             .await
             .map_err(|_| Error::IdentityInitializationError)?
-            .signature_key;
+            .signature_key_pair;
 
         let crl_new_distribution_points = get_new_crl_distribution_points(
             backend,
@@ -62,10 +62,10 @@ impl MlsConversation {
         member: LeafNodeIndex,
     ) -> Result<MlsProposalBundle> {
         let signer = &self
-            .find_current_credential_bundle(client)
+            .find_current_credential(client)
             .await
             .map_err(|_| Error::IdentityInitializationError)?
-            .signature_key;
+            .signature_key_pair;
         let proposal = self
             .group
             .propose_remove_member(backend, signer, member)
@@ -94,13 +94,13 @@ impl MlsConversation {
         leaf_node: Option<LeafNode>,
     ) -> Result<MlsProposalBundle> {
         let msg_signer = &self
-            .find_current_credential_bundle(client)
+            .find_current_credential(client)
             .await
             .map_err(|_| Error::IdentityInitializationError)?
-            .signature_key;
+            .signature_key_pair;
 
         let proposal = if let Some(leaf_node) = leaf_node {
-            let leaf_node_signer = &self.find_most_recent_credential_bundle(client).await?.signature_key;
+            let leaf_node_signer = &self.find_most_recent_credential(client).await?.signature_key_pair;
 
             self.group
                 .propose_explicit_self_update(backend, msg_signer, leaf_node, leaf_node_signer)

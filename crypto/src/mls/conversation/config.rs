@@ -10,7 +10,6 @@ use openmls::prelude::{
     RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy,
 };
 use openmls_traits::{
-    OpenMlsCryptoProvider,
     crypto::OpenMlsCrypto,
     types::{Ciphersuite, SignatureScheme},
 };
@@ -125,7 +124,6 @@ impl MlsConversationConfiguration {
         backend: &MlsCryptoProvider,
     ) -> Result<ExternalSender> {
         backend
-            .crypto()
             .validate_signature_key(signature_scheme, &key[..])
             .map_err(MlsError::wrap("validating signature key"))?;
         let key = OpenMlsSignaturePublicKey::new(key.into(), signature_scheme)

@@ -3,12 +3,13 @@ use std::sync::Arc;
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{
-        EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
+        EntityFindParams, StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage,
+        StoredSignatureKeypair,
     },
 };
 use openmls::prelude::{
-    Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey, KeyPackage, KeyPackageIn, Lifetime,
-    SignaturePublicKey,
+    Credential as MlsCredential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey, KeyPackage,
+    KeyPackageIn, Lifetime, SignaturePublicKey,
 };
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
 use tls_codec::Serialize;
@@ -21,12 +22,12 @@ use super::{
 };
 use crate::{
     CertificateBundle, CoreCrypto, MlsCiphersuite, MlsConversationConfiguration, MlsConversationDecryptMessage,
-    MlsCredentialType, RecursiveError, Session, WireIdentity,
+    MlsCredentialType, RecursiveError, WireIdentity,
     e2e_identity::{
         device_status::DeviceStatus,
         id::{QualifiedE2eiClientId, WireQualifiedClientId},
     },
-    mls::credential::{CredentialBundle, ext::CredentialExt},
+    mls::credential::{Credential, ext::CredentialExt},
     test_utils::{SessionContext, TestContext, x509::X509Certificate},
 };
 
@@ -50,7 +51,7 @@ impl SessionContext {
 
     pub async fn new_keypackage(&self, case: &TestContext, lifetime: Lifetime) -> KeyPackage {
         let cb = self
-            .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+            .find_most_recent_credential(case.signature_scheme(), case.credential_type)
             .await
             .unwrap();
         KeyPackage::builder()
@@ -62,10 +63,10 @@ impl SessionContext {
                     version: openmls::versions::ProtocolVersion::default(),
                 },
                 &self.transaction.mls_provider().await.unwrap(),
-                &cb.signature_key,
+                &cb.signature_key_pair,
                 CredentialWithKey {
-                    credential: cb.credential.clone(),
-                    signature_key: cb.signature_key.public().into(),
+                    credential: cb.mls_credential.clone(),
+                    signature_key: cb.signature_key_pair.public().into(),
                 },
             )
             .await
@@ -78,7 +79,7 @@ impl SessionContext {
             .await
             .unwrap()
             .key_store()
-            .find_all::<MlsKeyPackage>(EntityFindParams::default())
+            .find_all::<StoredKeypackage>(EntityFindParams::default())
             .await
             .unwrap()
             .into_iter()
@@ -122,19 +123,15 @@ impl SessionContext {
     pub async fn client_signature_key(&self, case: &TestContext) -> SignaturePublicKey {
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
         let client = self.session().await;
-        let cb = client.find_most_recent_credential_bundle(sc, ct).await.unwrap();
-        SignaturePublicKey::from(cb.signature_key.public())
+        let cb = client.find_most_recent_credential(sc, ct).await.unwrap();
+        SignaturePublicKey::from(cb.signature_key_pair.public())
     }
 
     pub async fn get_user_id(&self) -> String {
         WireQualifiedClientId::from(self.get_client_id().await).get_user_id()
     }
 
-    pub async fn new_credential_bundle(
-        &mut self,
-        case: &TestContext,
-        signer: Option<&X509Certificate>,
-    ) -> CredentialBundle {
+    pub async fn new_credential(&mut self, case: &TestContext, signer: Option<&X509Certificate>) -> Credential {
         let backend = &self.transaction.mls_provider().await.unwrap();
         let transaction = &self.transaction.keystore().await.unwrap();
         let client = self.session().await;
@@ -142,7 +139,7 @@ impl SessionContext {
 
         match case.credential_type {
             MlsCredentialType::Basic => {
-                let cb = Session::new_basic_credential_bundle(&client_id, case.signature_scheme(), backend).unwrap();
+                let cb = Credential::basic(case.signature_scheme(), &client_id, backend).unwrap();
                 client
                     .save_identity(&backend.keystore(), None, case.signature_scheme(), cb)
                     .await
@@ -151,61 +148,61 @@ impl SessionContext {
             MlsCredentialType::X509 => {
                 let cert_bundle = CertificateBundle::rand(&client_id, signer.unwrap());
                 client
-                    .save_new_x509_credential_bundle(transaction, case.signature_scheme(), cert_bundle)
+                    .save_new_x509_credential(transaction, case.signature_scheme(), cert_bundle)
                     .await
                     .unwrap()
             }
         }
     }
 
-    pub async fn find_most_recent_credential_bundle(
+    pub async fn find_most_recent_credential(
         &self,
         sc: SignatureScheme,
         ct: MlsCredentialType,
-    ) -> Option<Arc<CredentialBundle>> {
-        self.session.find_most_recent_credential_bundle(sc, ct).await.ok()
+    ) -> Option<Arc<Credential>> {
+        self.session.find_most_recent_credential(sc, ct).await.ok()
     }
 
-    pub async fn find_credential_bundle(
+    pub async fn find_credential(
         &self,
         sc: SignatureScheme,
         ct: MlsCredentialType,
         pk: &SignaturePublicKey,
-    ) -> Option<Arc<CredentialBundle>> {
+    ) -> Option<Arc<Credential>> {
         self.session()
             .await
-            .find_credential_bundle_by_public_key(sc, ct, pk)
+            .find_credential_by_public_key(sc, ct, pk)
             .await
             .ok()
     }
 
-    pub async fn find_signature_keypair_from_keystore(&self, id: &[u8]) -> Option<MlsSignatureKeyPair> {
+    pub async fn find_signature_keypair_from_keystore(&self, id: &[u8]) -> Option<StoredSignatureKeypair> {
         self.transaction
             .keystore()
             .await
             .unwrap()
-            .find::<MlsSignatureKeyPair>(id)
+            .find::<StoredSignatureKeypair>(id)
             .await
             .unwrap()
     }
 
-    pub async fn find_hpke_private_key_from_keystore(&self, skp: &HpkePublicKey) -> Option<MlsHpkePrivateKey> {
+    pub async fn find_hpke_private_key_from_keystore(&self, skp: &HpkePublicKey) -> Option<StoredHpkePrivateKey> {
         self.transaction
             .keystore()
             .await
             .unwrap()
-            .find::<MlsHpkePrivateKey>(&skp.tls_serialize_detached().unwrap())
+            .find::<StoredHpkePrivateKey>(&skp.tls_serialize_detached().unwrap())
             .await
             .unwrap()
     }
 
-    pub async fn find_credential_from_keystore(&self, cb: &CredentialBundle) -> Option<MlsCredential> {
-        let credential = cb.credential.tls_serialize_detached().unwrap();
+    pub async fn find_credential_from_keystore(&self, cb: &Credential) -> Option<StoredCredential> {
+        let credential = cb.mls_credential.tls_serialize_detached().unwrap();
         self.transaction
             .keystore()
             .await
             .unwrap()
-            .find_all::<MlsCredential>(EntityFindParams::default())
+            .find_all::<StoredCredential>(EntityFindParams::default())
             .await
             .unwrap()
             .into_iter()
@@ -217,7 +214,7 @@ impl SessionContext {
             .keystore()
             .await
             .unwrap()
-            .count::<MlsHpkePrivateKey>()
+            .count::<StoredHpkePrivateKey>()
             .await
             .unwrap()
     }
@@ -227,7 +224,7 @@ impl SessionContext {
             .keystore()
             .await
             .unwrap()
-            .count::<MlsEncryptionKeyPair>()
+            .count::<StoredEncryptionKeyPair>()
             .await
             .unwrap()
     }
@@ -237,7 +234,7 @@ impl SessionContext {
             .keystore()
             .await
             .unwrap()
-            .count::<MlsCredential>()
+            .count::<StoredCredential>()
             .await
             .unwrap()
     }
@@ -248,12 +245,12 @@ impl SessionContext {
         handle: &str,
         display_name: &str,
         signer: &X509Certificate,
-    ) -> CredentialBundle {
+    ) -> Credential {
         let cid = QualifiedE2eiClientId::try_from(self.get_client_id().await.as_slice()).unwrap();
         let new_cert = CertificateBundle::new(handle, display_name, Some(&cid), None, signer);
         let client = self.session().await;
         client
-            .save_new_x509_credential_bundle(
+            .save_new_x509_credential(
                 &self.transaction.keystore().await.unwrap(),
                 case.signature_scheme(),
                 new_cert,
@@ -265,7 +262,7 @@ impl SessionContext {
     pub(crate) async fn create_key_packages_and_update_credential_in_all_conversations<'a>(
         &self,
         all_conversations: Vec<TestConversation<'a>>,
-        cb: &CredentialBundle,
+        cb: &Credential,
         cipher_suite: MlsCiphersuite,
         key_package_count: usize,
     ) -> Result<RotateAllResult<'a>> {
@@ -303,7 +300,7 @@ impl SessionContext {
     pub async fn verify_sender_identity(&self, case: &TestContext, decrypted: &MlsConversationDecryptMessage) {
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
         let client = self.session().await;
-        let sender_cb = client.find_most_recent_credential_bundle(sc, ct).await.unwrap();
+        let sender_cb = client.find_most_recent_credential(sc, ct).await.unwrap();
 
         if let openmls::prelude::MlsCredentialType::X509(certificate) = &sender_cb.credential().mls_credential() {
             let mls_identity = certificate.extract_identity(case.ciphersuite(), None).unwrap();
@@ -371,7 +368,7 @@ impl SessionContext {
 
         let signature_key = SignaturePublicKey::from(pk);
 
-        let credential = Credential::new_basic(b"server".to_vec());
+        let credential = MlsCredential::new_basic(b"server".to_vec());
 
         ExternalSender::new(signature_key, credential)
     }

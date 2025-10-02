@@ -25,7 +25,7 @@ use log::trace;
 use mls_crypto_provider::{Database, MlsCryptoProvider};
 use openmls::{
     group::MlsGroup,
-    prelude::{Credential, CredentialWithKey, LeafNodeIndex, Proposal, SignaturePublicKey},
+    prelude::{Credential as MlsCredential, CredentialWithKey, LeafNodeIndex, Proposal, SignaturePublicKey},
 };
 use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 
@@ -57,7 +57,7 @@ pub use conversation_guard::ConversationGuard;
 pub use error::{Error, Result};
 pub use immutable_conversation::ImmutableConversation;
 
-use super::credential::CredentialBundle;
+use super::credential::Credential;
 use crate::{
     UserId,
     mls::{HasSessionAndCrypto, credential::ext::CredentialExt as _},
@@ -391,13 +391,13 @@ impl MlsConversation {
     ) -> Result<Self> {
         let (cs, ct) = (configuration.ciphersuite, creator_credential_type);
         let cb = author_client
-            .get_most_recent_or_create_credential_bundle(backend, cs.signature_algorithm(), ct)
+            .get_most_recent_or_create_credential(backend, cs.signature_algorithm(), ct)
             .await
-            .map_err(RecursiveError::mls_client("getting or creating credential bundle"))?;
+            .map_err(RecursiveError::mls_client("getting or creating credential"))?;
 
         let group = MlsGroup::new_with_group_id(
             backend,
-            &cb.signature_key,
+            &cb.signature_key_pair,
             &configuration.as_openmls_default_configuration()?,
             openmls::prelude::GroupId::from_slice(id.as_ref()),
             cb.to_mls_credential_with_key(),
@@ -469,7 +469,7 @@ impl MlsConversation {
     }
 
     /// Returns all members credentials from the group/conversation
-    pub fn members(&self) -> HashMap<Vec<u8>, Credential> {
+    pub fn members(&self) -> HashMap<Vec<u8>, MlsCredential> {
         self.group.members().fold(HashMap::new(), |mut acc, kp| {
             let credential = kp.credential;
             let id = credential.identity().to_vec();
@@ -557,7 +557,7 @@ impl MlsConversation {
         self.ciphersuite().signature_algorithm()
     }
 
-    pub(crate) async fn find_current_credential_bundle(&self, client: &Session) -> Result<Arc<CredentialBundle>> {
+    pub(crate) async fn find_current_credential(&self, client: &Session) -> Result<Arc<Credential>> {
         let own_leaf = self.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self
@@ -565,22 +565,22 @@ impl MlsConversation {
             .map_err(RecursiveError::mls_conversation("getting own credential type"))?;
 
         client
-            .find_credential_bundle_by_public_key(sc, ct, own_leaf.signature_key())
+            .find_credential_by_public_key(sc, ct, own_leaf.signature_key())
             .await
-            .map_err(RecursiveError::mls_client("finding current credential bundle"))
+            .map_err(RecursiveError::mls_client("finding current credential"))
             .map_err(Into::into)
     }
 
-    pub(crate) async fn find_most_recent_credential_bundle(&self, client: &Session) -> Result<Arc<CredentialBundle>> {
+    pub(crate) async fn find_most_recent_credential(&self, client: &Session) -> Result<Arc<Credential>> {
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self
             .own_credential_type()
             .map_err(RecursiveError::mls_conversation("getting own credential type"))?;
 
         client
-            .find_most_recent_credential_bundle(sc, ct)
+            .find_most_recent_credential(sc, ct)
             .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))
+            .map_err(RecursiveError::mls_client("finding most recent credential"))
             .map_err(Into::into)
     }
 }
