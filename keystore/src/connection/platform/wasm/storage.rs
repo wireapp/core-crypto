@@ -1,17 +1,17 @@
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
+
 use aes_gcm::KeyInit as _;
 use idb::TransactionMode;
 use js_sys::Uint8Array;
 use sha2::Digest as _;
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use wasm_bindgen::JsValue;
 
+use super::WasmConnection;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     connection::DatabaseKey,
     entities::{Entity, EntityFindParams},
 };
-
-use super::WasmConnection;
 
 type InMemoryDB = HashMap<String, HashMap<Vec<u8>, JsValue>>;
 

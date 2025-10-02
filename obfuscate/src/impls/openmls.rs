@@ -1,9 +1,12 @@
-use openmls::credentials::Certificate;
-use openmls::prelude::{
-    BasicCredential, Credential, KeyPackageSecretEncapsulation, Member, MlsCredentialType, Proposal, QueuedProposal,
-    Sender,
-};
 use std::fmt::Formatter;
+
+use openmls::{
+    credentials::Certificate,
+    prelude::{
+        BasicCredential, Credential, KeyPackageSecretEncapsulation, Member, MlsCredentialType, Proposal,
+        QueuedProposal, Sender,
+    },
+};
 
 use crate::{Obfuscate, compute_hash};
 

@@ -44,13 +44,13 @@ macro_rules! test_for_entity {
 
 #[cfg(test)]
 mod tests_impl {
-    use super::common::*;
-    use crate::{ENTITY_COUNT, utils::EntityRandomUpdateExt};
-    use core_crypto_keystore::entities::{EntityTransactionExt, MlsCredential, MlsPendingMessage};
     use core_crypto_keystore::{
         connection::{FetchFromDatabase, KeystoreDatabaseConnection},
-        entities::{Entity, EntityFindParams},
+        entities::{Entity, EntityFindParams, EntityTransactionExt, MlsCredential, MlsPendingMessage},
     };
+
+    use super::common::*;
+    use crate::{ENTITY_COUNT, utils::EntityRandomUpdateExt};
 
     pub(crate) async fn can_save_entity<
         R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
@@ -147,11 +147,13 @@ mod tests_impl {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::*;
-    use crate::utils::EntityRandomExt;
-    use crate::utils::EntityRandomUpdateExt;
     use core_crypto_keystore::CryptoKeystoreError;
     use wasm_bindgen_test::*;
+
+    use crate::{
+        common::*,
+        utils::{EntityRandomExt, EntityRandomUpdateExt},
+    };
 
     wasm_bindgen_test_configure!(run_in_browser);
 

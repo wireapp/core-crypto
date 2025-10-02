@@ -3,8 +3,7 @@ use core_foundation::{
     dictionary::CFDictionary,
     string::{CFString, CFStringRef},
 };
-use security_framework::base::Error;
-use security_framework::passwords as ios_keychain;
+use security_framework::{base::Error, passwords as ios_keychain};
 use security_framework_sys::{
     base::errSecSuccess,
     item::{kSecAttrAccount, kSecAttrService, kSecClass, kSecClassGenericPassword},

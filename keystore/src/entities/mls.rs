@@ -1,7 +1,8 @@
-use super::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId};
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::TransactionWrapper};
 use openmls_traits::types::SignatureScheme;
 use zeroize::Zeroize;
+
+use super::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId};
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::TransactionWrapper};
 
 /// Entity representing a persisted `MlsGroup`
 #[derive(
@@ -278,7 +279,7 @@ where
     async fn find_all(conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         match Self::find_unique(conn).await {
             Ok(record) => Ok(vec![record]),
-            Err(CryptoKeystoreError::NotFound(_, _)) => Ok(vec![]),
+            Err(CryptoKeystoreError::NotFound(..)) => Ok(vec![]),
             Err(err) => Err(err),
         }
     }
@@ -286,7 +287,7 @@ where
     async fn find_one(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>> {
         match Self::find_unique(conn).await {
             Ok(record) => Ok(Some(record)),
-            Err(CryptoKeystoreError::NotFound(_, _)) => Ok(None),
+            Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
             Err(err) => Err(err),
         }
     }
@@ -331,7 +332,7 @@ pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreD
     async fn find_all(conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         match Self::find_unique(conn).await {
             Ok(record) => Ok(vec![record]),
-            Err(CryptoKeystoreError::NotFound(_, _)) => Ok(vec![]),
+            Err(CryptoKeystoreError::NotFound(..)) => Ok(vec![]),
             Err(err) => Err(err),
         }
     }
@@ -339,7 +340,7 @@ pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreD
     async fn find_one(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>> {
         match Self::find_unique(conn).await {
             Ok(record) => Ok(Some(record)),
-            Err(CryptoKeystoreError::NotFound(_, _)) => Ok(None),
+            Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
             Err(err) => Err(err),
         }
     }

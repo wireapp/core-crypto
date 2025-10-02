@@ -1,10 +1,12 @@
 use aes_gcm::KeyInit as _;
+use idb::{Factory, TransactionMode};
 use serde::Serialize as _;
 
-use crate::connection::platform::wasm::migrations::open_and_migrate;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
-    connection::{DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey},
+    connection::{
+        DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey, platform::wasm::migrations::open_and_migrate,
+    },
     entities::{
         E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, Entity as _, EntityBase as _, MlsCredential,
         MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage,
@@ -12,7 +14,6 @@ use crate::{
         ProteusSession,
     },
 };
-use idb::{Factory, TransactionMode};
 
 mod migrations;
 mod rekey;

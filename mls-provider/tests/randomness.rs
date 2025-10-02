@@ -10,15 +10,15 @@ const RAND_ARR_LEN: usize = 128;
 
 #[cfg(test)]
 mod tests {
-    use crate::{ITER_ROUNDS, RAND_ARR_LEN, fixtures::*};
     use getrandom::getrandom;
     use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
     use openmls::prelude::Ciphersuite;
     use openmls_traits::{OpenMlsCryptoProvider, random::OpenMlsRand};
     use rand::RngCore as _;
     use sha2::{Digest, Sha256};
-
     use wasm_bindgen_test::*;
+
+    use crate::{ITER_ROUNDS, RAND_ARR_LEN, fixtures::*};
     wasm_bindgen_test_configure!(run_in_browser);
 
     fn test_randomness(backend: &mut MlsCryptoProvider, entropy: Option<EntropySeed>) {

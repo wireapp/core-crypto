@@ -1,9 +1,10 @@
+use std::io::{Read, Write};
+
 use crate::{
     CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsSignatureKeyPair, StringEntityId},
 };
-use std::io::{Read, Write};
 
 #[async_trait::async_trait]
 impl Entity for MlsSignatureKeyPair {

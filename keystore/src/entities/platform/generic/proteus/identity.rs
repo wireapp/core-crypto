@@ -1,12 +1,10 @@
-use crate::CryptoKeystoreError;
-use crate::connection::TransactionWrapper;
-use crate::entities::{EntityFindParams, EntityTransactionExt, ProteusIdentity, StringEntityId};
-use crate::{
-    MissingKeyErrorKind,
-    connection::KeystoreDatabaseConnection,
-    entities::{Entity, EntityBase},
-};
 use rusqlite::OptionalExtension;
+
+use crate::{
+    CryptoKeystoreError, MissingKeyErrorKind,
+    connection::{KeystoreDatabaseConnection, TransactionWrapper},
+    entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, ProteusIdentity, StringEntityId},
+};
 
 #[async_trait::async_trait]
 impl Entity for ProteusIdentity {

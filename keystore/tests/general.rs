@@ -5,10 +5,11 @@ mod common;
 
 #[cfg(test)]
 mod tests {
-    use crate::common::*;
     #[cfg(target_family = "wasm")]
     use idb::builder::{DatabaseBuilder, ObjectStoreBuilder};
     use wasm_bindgen_test::*;
+
+    use crate::common::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 

@@ -1,18 +1,20 @@
-use std::collections::HashMap;
-use std::collections::hash_map::Entry;
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, hash_map::Entry},
+    sync::Arc,
+};
 
 use async_lock::{RwLock, SemaphoreGuardArc};
 use itertools::Itertools;
 use zeroize::Zeroizing;
 
-use crate::connection::KeystoreDatabaseConnection;
-use crate::entities::mls::*;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::proteus::*;
-use crate::entities::{ConsumerData, EntityBase, EntityFindParams, EntityTransactionExt, UniqueEntity};
-use crate::transaction::dynamic_dispatch::EntityId;
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::Database};
+use crate::{
+    CryptoKeystoreError, CryptoKeystoreResult,
+    connection::{Database, KeystoreDatabaseConnection},
+    entities::{ConsumerData, EntityBase, EntityFindParams, EntityTransactionExt, UniqueEntity, mls::*},
+    transaction::dynamic_dispatch::EntityId,
+};
 
 pub mod dynamic_dispatch;
 

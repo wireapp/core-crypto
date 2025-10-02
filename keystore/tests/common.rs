@@ -1,10 +1,12 @@
 #![allow(dead_code, unused_macros, unused_imports)]
 
-pub(crate) use core_crypto_keystore::{Database as CryptoKeystore, DatabaseKey};
-use std::array;
-use std::sync::{Arc, LazyLock};
+use std::{
+    array,
+    sync::{Arc, LazyLock},
+};
 
 use core_crypto_keystore::connection::{ConnectionType, DatabaseConnection, KeystoreDatabaseConnection};
+pub(crate) use core_crypto_keystore::{Database as CryptoKeystore, DatabaseKey};
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
 

@@ -1,11 +1,9 @@
 #![allow(non_snake_case, dead_code, unused_macros, unused_imports)]
 
 use getrandom::getrandom;
-
+use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
-
-use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 
 pub(crate) fn store_name() -> String {
     use rand::Rng as _;

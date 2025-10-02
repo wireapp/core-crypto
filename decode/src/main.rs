@@ -1,16 +1,19 @@
+use std::ops::Deref;
+
 use base64::Engine;
 use clap::{Parser, Subcommand};
 use clap_stdin::FileOrStdin;
-use mls_rs::MlsMessage;
-use mls_rs::extension::built_in::RatchetTreeExt;
-use mls_rs::extension::{ExtensionType, MlsExtension};
-use mls_rs::group::GroupInfo;
-use mls_rs::mls_rs_codec::MlsDecode;
-use proteus_wasm::internal::message::SessionTag;
-use proteus_wasm::internal::util::fmt_hex;
-use proteus_wasm::keys::{PreKeyBundle, Signature};
-use proteus_wasm::message::{CipherMessage, Envelope, Message, PreKeyMessage};
-use std::ops::Deref;
+use mls_rs::{
+    MlsMessage,
+    extension::{ExtensionType, MlsExtension, built_in::RatchetTreeExt},
+    group::GroupInfo,
+    mls_rs_codec::MlsDecode,
+};
+use proteus_wasm::{
+    internal::{message::SessionTag, util::fmt_hex},
+    keys::{PreKeyBundle, Signature},
+    message::{CipherMessage, Envelope, Message, PreKeyMessage},
+};
 
 #[derive(Debug)]
 #[allow(dead_code)]

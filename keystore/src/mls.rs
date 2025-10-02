@@ -1,14 +1,14 @@
-use crate::connection::FetchFromDatabase;
-use crate::entities::MlsEpochEncryptionKeyPair;
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
-    entities::{
-        E2eiEnrollment, EntityFindParams, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsPskBundle,
-        MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup,
-    },
-};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
+
+use crate::{
+    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
+    connection::FetchFromDatabase,
+    entities::{
+        E2eiEnrollment, EntityFindParams, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
+        MlsKeyPackage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup,
+    },
+};
 
 /// An interface for the specialized queries in the KeyStore
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]

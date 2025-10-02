@@ -8,10 +8,10 @@ mod v4;
 mod v5;
 
 pub(super) use db_key_type_to_bytes::migrate_db_key_type_to_bytes;
+use idb::{Database, Factory};
 use metabuilder::Metabuilder;
 
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::DatabaseKey};
-use idb::{Database, Factory};
 
 const fn db_version_number(counter: u32) -> u32 {
     // When the DB version was tied to core crypto, the version counter was the sum of 10_000_000

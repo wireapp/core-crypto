@@ -1,3 +1,6 @@
+use wasm_bindgen::JsValue;
+use web_time::SystemTime;
+
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, storage::WasmStorageTransaction},
@@ -5,8 +8,6 @@ use crate::{
         Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsCredential, MlsCredentialExt, StringEntityId,
     },
 };
-use wasm_bindgen::JsValue;
-use web_time::SystemTime;
 
 #[async_trait::async_trait(?Send)]
 impl EntityBase for MlsCredential {

@@ -1,9 +1,9 @@
-use crate::entity_derive::{Column, ColumnType, Columns, IdColumn, IdColumnType, IdTransformation, KeyStoreEntity};
 use heck::ToSnakeCase;
 use proc_macro2::{Ident, Span};
 use quote::ToTokens;
-use syn::spanned::Spanned;
-use syn::{Attribute, Data, DataStruct, Fields, FieldsNamed, Token, Type};
+use syn::{Attribute, Data, DataStruct, Fields, FieldsNamed, Token, Type, spanned::Spanned};
+
+use crate::entity_derive::{Column, ColumnType, Columns, IdColumn, IdColumnType, IdTransformation, KeyStoreEntity};
 
 impl syn::parse::Parse for KeyStoreEntity {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {

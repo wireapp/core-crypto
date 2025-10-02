@@ -1,5 +1,6 @@
-use crate::entity_derive::{IdColumnType, IdTransformation, KeyStoreEntityFlattened};
 use quote::quote;
+
+use crate::entity_derive::{IdColumnType, IdTransformation, KeyStoreEntityFlattened};
 
 impl quote::ToTokens for KeyStoreEntityFlattened {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {

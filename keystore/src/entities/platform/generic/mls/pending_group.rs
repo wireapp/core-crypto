@@ -1,12 +1,7 @@
 use crate::{
-    CryptoKeystoreError, MissingKeyErrorKind,
-    connection::KeystoreDatabaseConnection,
-    entities::{Entity, EntityBase, EntityFindParams, PersistedMlsPendingGroup, StringEntityId},
-};
-use crate::{
-    CryptoKeystoreResult,
-    connection::{DatabaseConnection, TransactionWrapper},
-    entities::EntityTransactionExt,
+    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
+    connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
+    entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, PersistedMlsPendingGroup, StringEntityId},
 };
 
 #[async_trait::async_trait]
@@ -19,8 +14,9 @@ impl Entity for PersistedMlsPendingGroup {
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        use rusqlite::OptionalExtension as _;
         use std::io::Read as _;
+
+        use rusqlite::OptionalExtension as _;
 
         let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;

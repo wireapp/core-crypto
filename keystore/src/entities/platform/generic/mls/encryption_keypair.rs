@@ -1,14 +1,13 @@
-use crate::{
-    CryptoKeystoreResult,
-    connection::TransactionWrapper,
-    entities::{EntityIdStringExt, EntityTransactionExt},
-};
-use crate::{
-    MissingKeyErrorKind,
-    connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, MlsEncryptionKeyPair, StringEntityId},
-};
 use std::io::{Read, Write};
+
+use crate::{
+    CryptoKeystoreResult, MissingKeyErrorKind,
+    connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
+    entities::{
+        Entity, EntityBase, EntityFindParams, EntityIdStringExt, EntityTransactionExt, MlsEncryptionKeyPair,
+        StringEntityId,
+    },
+};
 
 #[async_trait::async_trait]
 impl Entity for MlsEncryptionKeyPair {

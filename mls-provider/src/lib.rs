@@ -6,10 +6,8 @@ mod crypto_provider;
 mod error;
 mod pki;
 
-pub use error::{MlsProviderError, MlsProviderResult};
-
 pub use crypto_provider::RustCrypto;
-
+pub use error::{MlsProviderError, MlsProviderResult};
 pub use pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
 
 use crate::pki::PkiEnvironmentProvider;

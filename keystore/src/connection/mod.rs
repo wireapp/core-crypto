@@ -1,5 +1,4 @@
-use std::fmt;
-use std::ops::Deref;
+use std::{fmt, ops::Deref};
 
 use sha2::{Digest as _, Sha256};
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -19,15 +18,16 @@ pub mod platform {
     }
 }
 
-pub use self::platform::*;
-use crate::entities::{Entity, EntityFindParams, MlsPendingMessage, StringEntityId};
-use std::ops::DerefMut;
+use std::{ops::DerefMut, sync::Arc};
 
-use crate::entities::{EntityTransactionExt, UniqueEntity};
-use crate::transaction::KeystoreTransaction;
-use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use async_lock::{Mutex, MutexGuard, Semaphore};
-use std::sync::Arc;
+
+pub use self::platform::*;
+use crate::{
+    CryptoKeystoreError, CryptoKeystoreResult,
+    entities::{Entity, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StringEntityId, UniqueEntity},
+    transaction::KeystoreTransaction,
+};
 
 /// Limit on the length of a blob to be stored in the database.
 ///

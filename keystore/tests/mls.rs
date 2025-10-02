@@ -4,21 +4,25 @@ pub use rstest_reuse::{self, *};
 mod common;
 
 mod tests {
-    use crate::common::*;
-    use openmls::prelude::TlsDeserializeTrait;
-    use openmls::{credentials::Credential, prelude::Ciphersuite};
+    use openmls::{
+        credentials::Credential,
+        prelude::{Ciphersuite, TlsDeserializeTrait},
+    };
     use openmls_traits::random::OpenMlsRand;
     use wasm_bindgen_test::*;
 
+    use crate::common::*;
+
     wasm_bindgen_test_configure!(run_in_browser);
 
-    use mls_crypto_provider::MlsCryptoProvider;
-
-    use core_crypto_keystore::MissingKeyErrorKind;
-    use core_crypto_keystore::entities::{
-        EntityBase, MlsCredential, MlsHpkePrivateKey, MlsKeyPackage, MlsPskBundle, MlsSignatureKeyPair,
-        PersistedMlsGroup, PersistedMlsPendingGroup,
+    use core_crypto_keystore::{
+        MissingKeyErrorKind,
+        entities::{
+            EntityBase, MlsCredential, MlsHpkePrivateKey, MlsKeyPackage, MlsPskBundle, MlsSignatureKeyPair,
+            PersistedMlsGroup, PersistedMlsPendingGroup,
+        },
     };
+    use mls_crypto_provider::MlsCryptoProvider;
     use openmls::prelude::TlsSerializeTrait as _;
     use openmls_traits::OpenMlsCryptoProvider as _;
 

@@ -1,8 +1,7 @@
-use crate::entities::EntityTransactionExt;
 use crate::{
     CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, ProteusPrekey, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, ProteusPrekey, StringEntityId},
 };
 
 #[async_trait::async_trait(?Send)]

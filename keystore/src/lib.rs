@@ -10,8 +10,7 @@ pub mod entities;
 pub mod transaction;
 
 pub(crate) mod mls;
-pub use self::mls::CryptoKeystoreMls;
-pub use self::mls::{deser, ser};
+pub use self::mls::{CryptoKeystoreMls, deser, ser};
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "proteus-keystore")] {

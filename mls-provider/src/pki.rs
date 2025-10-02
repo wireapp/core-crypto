@@ -1,13 +1,13 @@
-use crate::error::{MlsProviderError, MlsProviderResult};
-use async_lock::RwLock;
-use async_lock::RwLockReadGuard;
+use std::sync::Arc;
+
+use async_lock::{RwLock, RwLockReadGuard};
 use openmls_traits::{
     authentication_service::{CredentialAuthenticationStatus, CredentialRef},
     types::SignatureScheme,
 };
-use spki::SignatureAlgorithmIdentifier;
-use spki::der::referenced::RefToOwned;
-use std::sync::Arc;
+use spki::{SignatureAlgorithmIdentifier, der::referenced::RefToOwned};
+
+use crate::error::{MlsProviderError, MlsProviderResult};
 
 #[derive(Debug, Clone, Default)]
 pub struct PkiEnvironmentProvider(Arc<RwLock<Option<wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>>>);
@@ -620,6 +620,7 @@ impl PkiKeypair {
 
     pub fn generate_cert(&self, args: CertificateGenerationArgs) -> MlsProviderResult<x509_cert::Certificate> {
         use std::str::FromStr as _;
+
         use x509_cert::builder::Builder as _;
         let mut subject_fmt = format!("O={}", args.org);
         if let Some(cn) = args.common_name {

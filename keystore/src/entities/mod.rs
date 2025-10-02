@@ -1,8 +1,7 @@
 pub(crate) mod general;
 pub(crate) mod mls;
 
-pub use self::general::*;
-pub use self::mls::*;
+pub use self::{general::*, mls::*};
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "proteus-keystore")] {
@@ -23,16 +22,14 @@ mod platform {
     }
 }
 
-pub use self::platform::*;
-
-use crate::connection::DatabaseConnection;
-#[cfg(not(target_family = "wasm"))]
-use crate::sha256;
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind};
 #[cfg(target_family = "wasm")]
 use aes_gcm::Aes256Gcm;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+
+pub use self::platform::*;
+#[cfg(not(target_family = "wasm"))]
+use crate::sha256;
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind, connection::DatabaseConnection};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]

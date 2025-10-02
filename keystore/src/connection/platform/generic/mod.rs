@@ -1,16 +1,16 @@
-use std::ops::Deref;
-use std::path::Path;
+use std::{ops::Deref, path::Path};
 
-use zeroize::Zeroize as _;
-
-use crate::CryptoKeystoreResult;
-use crate::connection::{DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey};
 use async_lock::{Mutex, MutexGuard};
 use blocking::unblock;
-use rusqlite::{Transaction, functions::FunctionFlags};
-
 #[cfg(feature = "log-queries")]
 use rusqlite::trace::{TraceEvent, TraceEventCodes};
+use rusqlite::{Transaction, functions::FunctionFlags};
+use zeroize::Zeroize as _;
+
+use crate::{
+    CryptoKeystoreResult,
+    connection::{DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey},
+};
 
 #[cfg(target_os = "ios")]
 mod ios_wal_compat;

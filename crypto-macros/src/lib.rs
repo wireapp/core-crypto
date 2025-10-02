@@ -1,12 +1,13 @@
 extern crate proc_macro;
 
-use crate::entity_derive::KeyStoreEntity;
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use quote::quote;
 use syn::{
     Attribute, Block, FnArg, ItemFn, ReturnType, Visibility, parse_macro_input, punctuated::Punctuated, token::Comma,
 };
+
+use crate::entity_derive::KeyStoreEntity;
 
 mod debug;
 mod durable;

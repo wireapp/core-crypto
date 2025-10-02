@@ -1,5 +1,6 @@
-use crate::{compile_error, doc_attributes, items};
 use proc_macro::TokenStream;
+
+use crate::{compile_error, doc_attributes, items};
 
 pub(crate) fn durable(item: TokenStream) -> TokenStream {
     const ASYNC_ERROR_MSG: &str = "Since a durable method requires persistence in the keystore, it has to be async";

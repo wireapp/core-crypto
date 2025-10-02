@@ -5,13 +5,14 @@ mod common;
 
 #[cfg(feature = "proteus-keystore")]
 mod tests {
-    use crate::common::*;
     use core_crypto_keystore::{
         MissingKeyErrorKind,
         entities::{EntityBase, ProteusPrekey},
     };
     use proteus_wasm::keys::{PreKey, PreKeyId};
     use wasm_bindgen_test::*;
+
+    use crate::common::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
