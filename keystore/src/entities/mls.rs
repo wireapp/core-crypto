@@ -95,7 +95,8 @@ pub struct MlsPendingMessage {
     serde::Serialize,
     serde::Deserialize,
 )]
-pub struct MlsBufferedCommit {
+#[entity(collection_name = "mls_buffered_commits")]
+pub struct StoredBufferedCommit {
     // we'd ideally just call this field `conversation_id`, but as of right now the
     // Entity macro does not yet support id columns not named `id`
     #[id(hex, column = "conversation_id_hex")]
@@ -104,7 +105,7 @@ pub struct MlsBufferedCommit {
     commit_data: Vec<u8>,
 }
 
-impl MlsBufferedCommit {
+impl StoredBufferedCommit {
     /// Create a new `Self` from conversation id and the commit data.
     pub fn new(conversation_id: Vec<u8>, commit_data: Vec<u8>) -> Self {
         Self {
@@ -129,7 +130,7 @@ impl MlsBufferedCommit {
 /// Entity representing a persisted `Credential`
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-pub struct MlsCredential {
+pub struct StoredCredential {
     #[sensitive]
     pub id: Vec<u8>,
     #[sensitive]
@@ -146,7 +147,7 @@ pub trait MlsCredentialExt: Entity {
 /// Entity representing a persisted `SignatureKeyPair`
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-pub struct MlsSignatureKeyPair {
+pub struct StoredSignatureKeypair {
     pub signature_scheme: u16,
     #[sensitive]
     pub pk: Vec<u8>,
@@ -156,7 +157,7 @@ pub struct MlsSignatureKeyPair {
     pub credential_id: Vec<u8>,
 }
 
-impl MlsSignatureKeyPair {
+impl StoredSignatureKeypair {
     pub fn new(signature_scheme: SignatureScheme, pk: Vec<u8>, keypair: Vec<u8>, credential_id: Vec<u8>) -> Self {
         Self {
             signature_scheme: signature_scheme as u16,
@@ -171,7 +172,7 @@ impl MlsSignatureKeyPair {
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 #[sensitive]
-pub struct MlsHpkePrivateKey {
+pub struct StoredHpkePrivateKey {
     pub sk: Vec<u8>,
     pub pk: Vec<u8>,
 }
@@ -180,12 +181,12 @@ pub struct MlsHpkePrivateKey {
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 #[sensitive]
-pub struct MlsEncryptionKeyPair {
+pub struct StoredEncryptionKeyPair {
     pub sk: Vec<u8>,
     pub pk: Vec<u8>,
 }
 
-/// Entity representing a list of [MlsEncryptionKeyPair]
+/// Entity representing a list of [StoredEncryptionKeyPair]
 #[derive(
     core_crypto_macros::Debug,
     Clone,
@@ -198,7 +199,7 @@ pub struct MlsEncryptionKeyPair {
 )]
 #[zeroize(drop)]
 #[entity(collection_name = "mls_epoch_encryption_keypairs")]
-pub struct MlsEpochEncryptionKeyPair {
+pub struct StoredEpochEncryptionKeypair {
     #[id(hex, column = "id_hex")]
     pub id: Vec<u8>,
     #[sensitive]
@@ -209,7 +210,7 @@ pub struct MlsEpochEncryptionKeyPair {
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 #[sensitive]
-pub struct MlsPskBundle {
+pub struct StoredPskBundle {
     pub psk_id: Vec<u8>,
     pub psk: Vec<u8>,
 }
@@ -227,7 +228,7 @@ pub struct MlsPskBundle {
 )]
 #[zeroize(drop)]
 #[entity(collection_name = "mls_keypackages")]
-pub struct MlsKeyPackage {
+pub struct StoredKeypackage {
     #[id(hex, column = "keypackage_ref_hex")]
     pub keypackage_ref: Vec<u8>,
     #[sensitive]
@@ -248,7 +249,7 @@ pub struct MlsKeyPackage {
 )]
 #[zeroize(drop)]
 #[entity(collection_name = "e2ei_enrollment", no_upsert)]
-pub struct E2eiEnrollment {
+pub struct StoredE2eiEnrollment {
     pub id: Vec<u8>,
     pub content: Vec<u8>,
 }

@@ -74,9 +74,9 @@ impl TransactionContext {
         let cs: MlsCiphersuite = group_info.ciphersuite().into();
         let mls_provider = self.mls_provider().await?;
         let cb = client
-            .get_most_recent_or_create_credential_bundle(&mls_provider, cs.signature_algorithm(), credential_type)
+            .get_most_recent_or_create_credential(&mls_provider, cs.signature_algorithm(), credential_type)
             .await
-            .map_err(RecursiveError::mls_client("getting or creating credential bundle"))?;
+            .map_err(RecursiveError::mls_client("getting or creating credential"))?;
 
         let configuration = MlsConversationConfiguration {
             ciphersuite: cs,
@@ -86,7 +86,7 @@ impl TransactionContext {
 
         let (group, commit, group_info) = MlsGroup::join_by_external_commit(
             &mls_provider,
-            &cb.signature_key,
+            &cb.signature_key_pair,
             None,
             group_info,
             &configuration
@@ -400,15 +400,12 @@ mod tests {
             let ct = group.credential().unwrap().credential_type();
             let cs = group.ciphersuite();
             let client = alice.session().await;
-            let cb = client
-                .find_most_recent_credential_bundle(cs.into(), ct.into())
-                .await
-                .unwrap();
+            let cb = client.find_most_recent_credential(cs.into(), ct.into()).await.unwrap();
 
             let gi = group
                 .export_group_info(
                     &alice.transaction.mls_provider().await.unwrap(),
-                    &cb.signature_key,
+                    &cb.signature_key_pair,
                     // joining by external commit assumes we include a ratchet tree, but this `false`
                     // says to leave it out
                     false,

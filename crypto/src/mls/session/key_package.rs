@@ -2,17 +2,19 @@ use std::collections::{HashMap, HashSet};
 
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
-    entities::{EntityFindParams, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage},
+    entities::{EntityFindParams, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
 };
 use mls_crypto_provider::{Database, MlsCryptoProvider};
-use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
+use openmls::prelude::{
+    Credential as MlsCredential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime,
+};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize, Serialize};
 
 use super::{Error, Result};
 use crate::{
-    KeystoreError, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsError, Session,
-    mls::{credential::CredentialBundle, session::SessionInner},
+    Credential, KeystoreError, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsError, Session,
+    mls::session::SessionInner,
 };
 
 /// Default number of KeyPackages a client generates the first time it's created
@@ -34,11 +36,11 @@ impl Session {
     ///
     /// # Errors
     /// KeyStore and OpenMls errors
-    pub async fn generate_one_keypackage_from_credential_bundle(
+    pub async fn generate_one_keypackage_from_credential(
         &self,
         backend: &MlsCryptoProvider,
         cs: MlsCiphersuite,
-        cb: &CredentialBundle,
+        cb: &Credential,
     ) -> Result<KeyPackage> {
         let guard = self.inner.read().await;
         let SessionInner {
@@ -54,10 +56,10 @@ impl Session {
                     version: openmls::versions::ProtocolVersion::default(),
                 },
                 backend,
-                &cb.signature_key,
+                &cb.signature_key_pair,
                 CredentialWithKey {
-                    credential: cb.credential.clone(),
-                    signature_key: cb.signature_key.public().into(),
+                    credential: cb.mls_credential.clone(),
+                    signature_key: cb.signature_key_pair.public().into(),
                 },
             )
             .await
@@ -101,7 +103,7 @@ impl Session {
         let mut kps = if count > kpb_count {
             let to_generate = count - kpb_count;
             let cb = self
-                .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+                .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
                 .await?;
             self.generate_new_keypackages(backend, ciphersuite, &cb, to_generate)
                 .await?
@@ -119,14 +121,14 @@ impl Session {
         &self,
         backend: &MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
-        cb: &CredentialBundle,
+        cb: &Credential,
         count: usize,
     ) -> Result<Vec<KeyPackage>> {
         let mut kps = Vec::with_capacity(count);
 
         for _ in 0..count {
             let kp = self
-                .generate_one_keypackage_from_credential_bundle(backend, ciphersuite, cb)
+                .generate_one_keypackage_from_credential(backend, ciphersuite, cb)
                 .await?;
             kps.push(kp);
         }
@@ -141,7 +143,7 @@ impl Session {
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
     ) -> Result<usize> {
-        let kps: Vec<MlsKeyPackage> = backend
+        let kps: Vec<StoredKeypackage> = backend
             .key_store()
             .find_all(EntityFindParams::default())
             .await
@@ -232,7 +234,7 @@ impl Session {
                     .cred_delete_by_credential(credential.clone())
                     .await
                     .map_err(KeystoreError::wrap("deleting credential"))?;
-                let credential = Credential::tls_deserialize(&mut credential.as_slice())
+                let credential = MlsCredential::tls_deserialize(&mut credential.as_slice())
                     .map_err(Error::tls_deserialize("credential"))?;
                 identities.remove(&credential).await?;
             }
@@ -247,7 +249,7 @@ impl Session {
     /// * Signature KeyPairs & Credentials (use [Self::prune_keypackages_and_credential])
     async fn _prune_keypackages<'a>(
         &self,
-        kps: &'a [(MlsKeyPackage, KeyPackage)],
+        kps: &'a [(StoredKeypackage, KeyPackage)],
         keystore: &Database,
         refs: impl IntoIterator<Item = KeyPackageRef>,
     ) -> Result<HashSet<&'a [u8]>, Error> {
@@ -276,15 +278,15 @@ impl Session {
         // note: we're cloning the iterator here, not the data
         for (kp, kp_ref) in kp_to_delete.clone() {
             keystore
-                .remove::<MlsKeyPackage, &[u8]>(kp_ref.as_slice())
+                .remove::<StoredKeypackage, &[u8]>(kp_ref.as_slice())
                 .await
                 .map_err(KeystoreError::wrap("removing key package from keystore"))?;
             keystore
-                .remove::<MlsHpkePrivateKey, &[u8]>(kp.hpke_init_key().as_slice())
+                .remove::<StoredHpkePrivateKey, &[u8]>(kp.hpke_init_key().as_slice())
                 .await
                 .map_err(KeystoreError::wrap("removing private key from keystore"))?;
             keystore
-                .remove::<MlsEncryptionKeyPair, &[u8]>(kp.leaf_node().encryption_key().as_slice())
+                .remove::<StoredEncryptionKeyPair, &[u8]>(kp.leaf_node().encryption_key().as_slice())
                 .await
                 .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
         }
@@ -292,8 +294,8 @@ impl Session {
         Ok(kp_to_delete.map(|(_, kpref)| kpref.as_slice()).collect())
     }
 
-    async fn find_all_keypackages(&self, keystore: &Database) -> Result<Vec<(MlsKeyPackage, KeyPackage)>> {
-        let kps: Vec<MlsKeyPackage> = keystore
+    async fn find_all_keypackages(&self, keystore: &Database) -> Result<Vec<(StoredKeypackage, KeyPackage)>> {
+        let kps: Vec<StoredKeypackage> = keystore
             .find_all(EntityFindParams::default())
             .await
             .map_err(KeystoreError::wrap("finding all keypackages"))?;

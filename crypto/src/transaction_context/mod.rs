@@ -243,10 +243,10 @@ impl TransactionContext {
         let cb = self
             .session()
             .await?
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+            .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
             .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
-        Ok(cb.signature_key.to_public_vec())
+            .map_err(RecursiveError::mls_client("finding most recent credential"))?;
+        Ok(cb.signature_key_pair.to_public_vec())
     }
 
     /// see [Session::id]

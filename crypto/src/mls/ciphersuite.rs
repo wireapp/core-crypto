@@ -4,7 +4,9 @@ use wire_e2e_identity::prelude::HashAlgorithm;
 use super::{Error, Result};
 use crate::CiphersuiteName;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, derive_more::Deref, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash, derive_more::Deref, serde::Serialize, serde::Deserialize,
+)]
 #[serde(transparent)]
 #[repr(transparent)]
 /// A wrapper for the OpenMLS Ciphersuite, so that we are able to provide a default value.

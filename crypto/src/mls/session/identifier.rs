@@ -4,7 +4,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::types::SignatureScheme;
 
 use super::{
-    CredentialBundle,
+    Credential,
     error::{Error, Result},
 };
 use crate::{CertificateBundle, ClientId, RecursiveError, Session};
@@ -38,18 +38,19 @@ impl ClientIdentifier {
         }
     }
 
-    /// Generate a new CredentialBundle (Credential + KeyPair) for each ciphersuite.
+    /// Generate a new Credential (Credential + KeyPair) for each ciphersuite.
     /// This method does not persist them in the keystore !
-    pub fn generate_credential_bundles(
+    pub fn generate_credentials(
         self,
         backend: &MlsCryptoProvider,
         signature_schemes: HashSet<SignatureScheme>,
-    ) -> Result<Vec<(SignatureScheme, ClientId, CredentialBundle)>> {
+    ) -> Result<Vec<(SignatureScheme, ClientId, Credential)>> {
         match self {
             ClientIdentifier::Basic(id) => signature_schemes.iter().try_fold(
                 Vec::with_capacity(signature_schemes.len()),
                 |mut acc, &sc| -> Result<_> {
-                    let cb = Session::new_basic_credential_bundle(&id, sc, backend)?;
+                    let cb = Credential::basic(sc, &id, backend)
+                        .map_err(RecursiveError::mls_credential("generating basic credential"))?;
                     acc.push((sc, id.clone(), cb));
                     Ok(acc)
                 },
@@ -62,7 +63,7 @@ impl ClientIdentifier {
                         let id = cert
                             .get_client_id()
                             .map_err(RecursiveError::mls_credential("getting client id"))?;
-                        let cb = Session::new_x509_credential_bundle(cert)?;
+                        let cb = Session::new_x509_credential(cert)?;
                         acc.push((sc, id, cb));
                         Ok(acc)
                     })

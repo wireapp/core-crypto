@@ -44,7 +44,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut credentials: Vec<serde_json::Value> = vec![];
     for cred in keystore
-        .find_all::<MlsCredential>(Default::default())
+        .find_all::<StoredCredential>(Default::default())
         .await?
         .into_iter()
     {
@@ -64,7 +64,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut signature_keypairs: Vec<serde_json::Value> = vec![];
     for kp in keystore
-        .find_all::<MlsSignatureKeyPair>(Default::default())
+        .find_all::<StoredSignatureKeypair>(Default::default())
         .await?
         .into_iter()
     {
@@ -78,7 +78,7 @@ async fn main() -> anyhow::Result<()> {
     json_map.serialize_entry("mls_signature_keypairs", &signature_keypairs)?;
 
     let hpke_sks: Vec<openmls_traits::types::HpkePrivateKey> = keystore
-        .find_all::<MlsHpkePrivateKey>(Default::default())
+        .find_all::<StoredHpkePrivateKey>(Default::default())
         .await?
         .into_iter()
         .map(|hpke_sk| postcard::from_bytes::<openmls_traits::types::HpkePrivateKey>(&hpke_sk.sk))
@@ -86,7 +86,7 @@ async fn main() -> anyhow::Result<()> {
     json_map.serialize_entry("mls_hpke_private_keys", &hpke_sks)?;
 
     let hpke_keypairs: Vec<openmls_traits::types::HpkeKeyPair> = keystore
-        .find_all::<MlsEncryptionKeyPair>(Default::default())
+        .find_all::<StoredEncryptionKeyPair>(Default::default())
         .await?
         .into_iter()
         .map(|hpke_kp| postcard::from_bytes::<openmls_traits::types::HpkeKeyPair>(&hpke_kp.sk))
@@ -94,7 +94,11 @@ async fn main() -> anyhow::Result<()> {
     json_map.serialize_entry("mls_hpke_keypairs", &hpke_keypairs)?;
 
     let mut external_psks: std::collections::HashMap<String, openmls::schedule::psk::PskBundle> = Default::default();
-    for psk in keystore.find_all::<MlsPskBundle>(Default::default()).await?.into_iter() {
+    for psk in keystore
+        .find_all::<StoredPskBundle>(Default::default())
+        .await?
+        .into_iter()
+    {
         let mls_psk = postcard::from_bytes::<openmls::schedule::psk::PskBundle>(&psk.psk)?;
         external_psks.insert(hex::encode(&psk.psk_id), mls_psk);
     }
@@ -102,7 +106,7 @@ async fn main() -> anyhow::Result<()> {
     json_map.serialize_entry("external_psks", &external_psks)?;
 
     let keypackages: Vec<openmls::prelude::KeyPackage> = keystore
-        .find_all::<MlsKeyPackage>(Default::default())
+        .find_all::<StoredKeypackage>(Default::default())
         .await?
         .into_iter()
         .map(|kp| postcard::from_bytes::<openmls::prelude::KeyPackage>(&kp.keypackage))
@@ -110,7 +114,7 @@ async fn main() -> anyhow::Result<()> {
     json_map.serialize_entry("mls_keypackages", &keypackages)?;
 
     let e2ei_enrollments: Vec<core_crypto::E2eiEnrollment> = keystore
-        .find_all::<E2eiEnrollment>(Default::default())
+        .find_all::<StoredE2eiEnrollment>(Default::default())
         .await?
         .into_iter()
         .map(|enrollment| serde_json::from_slice::<core_crypto::E2eiEnrollment>(&enrollment.content))

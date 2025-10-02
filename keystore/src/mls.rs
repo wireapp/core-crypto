@@ -5,8 +5,8 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
     connection::FetchFromDatabase,
     entities::{
-        E2eiEnrollment, EntityFindParams, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
-        MlsKeyPackage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup,
+        EntityFindParams, PersistedMlsGroup, PersistedMlsPendingGroup, StoredE2eiEnrollment, StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle, StoredSignatureKeypair,
     },
 };
 
@@ -131,7 +131,7 @@ impl CryptoKeystoreMls for crate::Database {
             }
         }
         let keypackages = self
-            .find_all::<MlsKeyPackage>(EntityFindParams {
+            .find_all::<StoredKeypackage>(EntityFindParams {
                 limit: Some(count),
                 offset: None,
                 reverse,
@@ -214,7 +214,7 @@ impl CryptoKeystoreMls for crate::Database {
     }
 
     async fn save_e2ei_enrollment(&self, id: &[u8], content: &[u8]) -> CryptoKeystoreResult<()> {
-        self.save(E2eiEnrollment {
+        self.save(StoredE2eiEnrollment {
             id: id.into(),
             content: content.into(),
         })
@@ -225,12 +225,12 @@ impl CryptoKeystoreMls for crate::Database {
     async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
         // someone who has time could try to optimize this but honestly it's really on the cold path
         let enrollment = self
-            .find::<E2eiEnrollment>(id)
+            .find::<StoredE2eiEnrollment>(id)
             .await?
             .ok_or(CryptoKeystoreError::MissingKeyInStore(
-                MissingKeyErrorKind::E2eiEnrollment,
+                MissingKeyErrorKind::StoredE2eiEnrollment,
             ))?;
-        self.remove::<E2eiEnrollment, _>(id).await?;
+        self.remove::<StoredE2eiEnrollment, _>(id).await?;
         Ok(enrollment.content.clone())
     }
 }
@@ -275,7 +275,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
 
                 // Having an empty credential id seems tolerable, since the SignatureKeyPair type is retrieved from the key store via its public key.
                 let credential_id = vec![];
-                let kp = MlsSignatureKeyPair::new(
+                let kp = StoredSignatureKeypair::new(
                     concrete_signature_keypair.signature_scheme(),
                     k.into(),
                     data,
@@ -284,29 +284,29 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
                 self.save(kp).await?;
             }
             MlsEntityId::KeyPackage => {
-                let kp = MlsKeyPackage {
+                let kp = StoredKeypackage {
                     keypackage_ref: k.into(),
                     keypackage: data,
                 };
                 self.save(kp).await?;
             }
             MlsEntityId::HpkePrivateKey => {
-                let kp = MlsHpkePrivateKey { pk: k.into(), sk: data };
+                let kp = StoredHpkePrivateKey { pk: k.into(), sk: data };
                 self.save(kp).await?;
             }
             MlsEntityId::PskBundle => {
-                let kp = MlsPskBundle {
+                let kp = StoredPskBundle {
                     psk_id: k.into(),
                     psk: data,
                 };
                 self.save(kp).await?;
             }
             MlsEntityId::EncryptionKeyPair => {
-                let kp = MlsEncryptionKeyPair { pk: k.into(), sk: data };
+                let kp = StoredEncryptionKeyPair { pk: k.into(), sk: data };
                 self.save(kp).await?;
             }
             MlsEntityId::EpochEncryptionKeyPair => {
-                let kp = MlsEpochEncryptionKeyPair {
+                let kp = StoredEpochEncryptionKeypair {
                     id: k.into(),
                     keypairs: data,
                 };
@@ -331,27 +331,27 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
                 deser(&group.state).ok()
             }
             MlsEntityId::SignatureKeyPair => {
-                let sig: MlsSignatureKeyPair = self.find(k).await.ok().flatten()?;
+                let sig: StoredSignatureKeypair = self.find(k).await.ok().flatten()?;
                 deser(&sig.keypair).ok()
             }
             MlsEntityId::KeyPackage => {
-                let kp: MlsKeyPackage = self.find(k).await.ok().flatten()?;
+                let kp: StoredKeypackage = self.find(k).await.ok().flatten()?;
                 deser(&kp.keypackage).ok()
             }
             MlsEntityId::HpkePrivateKey => {
-                let hpke_pk: MlsHpkePrivateKey = self.find(k).await.ok().flatten()?;
+                let hpke_pk: StoredHpkePrivateKey = self.find(k).await.ok().flatten()?;
                 deser(&hpke_pk.sk).ok()
             }
             MlsEntityId::PskBundle => {
-                let psk_bundle: MlsPskBundle = self.find(k).await.ok().flatten()?;
+                let psk_bundle: StoredPskBundle = self.find(k).await.ok().flatten()?;
                 deser(&psk_bundle.psk).ok()
             }
             MlsEntityId::EncryptionKeyPair => {
-                let kp: MlsEncryptionKeyPair = self.find(k).await.ok().flatten()?;
+                let kp: StoredEncryptionKeyPair = self.find(k).await.ok().flatten()?;
                 deser(&kp.sk).ok()
             }
             MlsEntityId::EpochEncryptionKeyPair => {
-                let kp: MlsEpochEncryptionKeyPair = self.find(k).await.ok().flatten()?;
+                let kp: StoredEpochEncryptionKeypair = self.find(k).await.ok().flatten()?;
                 deser(&kp.keypairs).ok()
             }
         }
@@ -360,12 +360,12 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
     async fn delete<V: MlsEntity>(&self, k: &[u8]) -> Result<(), Self::Error> {
         match V::ID {
             MlsEntityId::GroupState => self.remove::<PersistedMlsGroup, _>(k).await?,
-            MlsEntityId::SignatureKeyPair => self.remove::<MlsSignatureKeyPair, _>(k).await?,
-            MlsEntityId::HpkePrivateKey => self.remove::<MlsHpkePrivateKey, _>(k).await?,
-            MlsEntityId::KeyPackage => self.remove::<MlsKeyPackage, _>(k).await?,
-            MlsEntityId::PskBundle => self.remove::<MlsPskBundle, _>(k).await?,
-            MlsEntityId::EncryptionKeyPair => self.remove::<MlsEncryptionKeyPair, _>(k).await?,
-            MlsEntityId::EpochEncryptionKeyPair => self.remove::<MlsEpochEncryptionKeyPair, _>(k).await?,
+            MlsEntityId::SignatureKeyPair => self.remove::<StoredSignatureKeypair, _>(k).await?,
+            MlsEntityId::HpkePrivateKey => self.remove::<StoredHpkePrivateKey, _>(k).await?,
+            MlsEntityId::KeyPackage => self.remove::<StoredKeypackage, _>(k).await?,
+            MlsEntityId::PskBundle => self.remove::<StoredPskBundle, _>(k).await?,
+            MlsEntityId::EncryptionKeyPair => self.remove::<StoredEncryptionKeyPair, _>(k).await?,
+            MlsEntityId::EpochEncryptionKeyPair => self.remove::<StoredEpochEncryptionKeypair, _>(k).await?,
         }
 
         Ok(())

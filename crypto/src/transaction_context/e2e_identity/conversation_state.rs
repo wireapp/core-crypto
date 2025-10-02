@@ -164,14 +164,14 @@ mod tests {
 
             let intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
             let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
-            let cb = Session::new_x509_credential_bundle(cert.clone()).unwrap();
+            let cb = Session::new_x509_credential(cert.clone()).unwrap();
             let conversation = conversation.e2ei_rotate_notify(Some(&cb)).await;
 
             let alice_client = alice.transaction.session().await.unwrap();
             let alice_provider = alice.transaction.mls_provider().await.unwrap();
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
             alice_client
-                .save_new_x509_credential_bundle(&alice_provider.keystore(), case.signature_scheme(), cert)
+                .save_new_x509_credential(&alice_provider.keystore(), case.signature_scheme(), cert)
                 .await
                 .unwrap();
 
@@ -225,7 +225,7 @@ mod tests {
 
             let cert_bundle =
                 CertificateBundle::from_certificate_and_issuer(&alice_cert.certificate, alice_intermediate_ca);
-            let cb = Session::new_x509_credential_bundle(cert_bundle.clone()).unwrap();
+            let cb = Session::new_x509_credential(cert_bundle.clone()).unwrap();
             let conversation = conversation.e2ei_rotate_notify(Some(&cb)).await;
 
             let alice_client = alice.session().await;
@@ -233,7 +233,7 @@ mod tests {
 
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
             alice_client
-                .save_new_x509_credential_bundle(&alice_provider.keystore(), case.signature_scheme(), cert_bundle)
+                .save_new_x509_credential(&alice_provider.keystore(), case.signature_scheme(), cert_bundle)
                 .await
                 .unwrap();
 
