@@ -30,9 +30,10 @@ jobs:
           - cargo clippy --locked --target wasm32-unknown-unknown
     steps:
       - uses: actions/checkout@v5
+      - run: echo "NIGHTLY_RUST_VERSION=$(grep '^channel =' rust-toolchain.toml | grep -o '".*"' | tr -d '"')" >> $GITHUB_ENV
       - uses: ./.github/actions/setup-and-cache-rust
         with:
-          toolchain: nightly-2025-08-24
+          toolchain: ${{ env.NIGHTLY_RUST_VERSION }}
           components: rustfmt, clippy
           target: wasm32-unknown-unknown
       - run: ${{ matrix.command }}
