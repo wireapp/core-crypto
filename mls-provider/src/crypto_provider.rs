@@ -234,6 +234,7 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
+    /// Generate a `(secret key, public key)` pair from a signature scheme.
     fn signature_key_gen(&self, alg: SignatureScheme) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
         let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
 

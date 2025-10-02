@@ -11,6 +11,13 @@ pub use error::{MlsProviderError, MlsProviderResult};
 pub use pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
 
 use crate::pki::PkiEnvironmentProvider;
+use openmls_traits::{
+    crypto::OpenMlsCrypto,
+    types::{
+        AeadType, Ciphersuite, CryptoError, ExporterSecret, HashType, HpkeCiphertext, HpkeConfig, HpkeKeyPair,
+        KemOutput, SignatureScheme,
+    },
+};
 
 pub mod reexports {
     pub use rand_core;
@@ -144,5 +151,134 @@ impl openmls_traits::OpenMlsCryptoProvider for MlsCryptoProvider {
 
     fn authentication_service(&self) -> &Self::AuthenticationServiceProvider {
         &self.pki_env
+    }
+}
+
+/// Passthrough implementation of crypto functionality for references to `MlsCryptoProvider`.
+impl OpenMlsCrypto for &MlsCryptoProvider {
+    fn supports(&self, ciphersuite: Ciphersuite) -> Result<(), CryptoError> {
+        self.crypto.supports(ciphersuite)
+    }
+
+    fn supported_ciphersuites(&self) -> Vec<Ciphersuite> {
+        self.crypto.supported_ciphersuites()
+    }
+
+    fn hkdf_extract(
+        &self,
+        hash_type: HashType,
+        salt: &[u8],
+        ikm: &[u8],
+    ) -> Result<tls_codec::SecretVLBytes, CryptoError> {
+        self.crypto.hkdf_extract(hash_type, salt, ikm)
+    }
+
+    fn hkdf_expand(
+        &self,
+        hash_type: HashType,
+        prk: &[u8],
+        info: &[u8],
+        okm_len: usize,
+    ) -> Result<tls_codec::SecretVLBytes, CryptoError> {
+        self.crypto.hkdf_expand(hash_type, prk, info, okm_len)
+    }
+
+    fn hash(&self, hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        self.crypto.hash(hash_type, data)
+    }
+
+    fn aead_encrypt(
+        &self,
+        alg: AeadType,
+        key: &[u8],
+        data: &[u8],
+        nonce: &[u8],
+        aad: &[u8],
+    ) -> Result<Vec<u8>, CryptoError> {
+        self.crypto.aead_encrypt(alg, key, data, nonce, aad)
+    }
+
+    fn aead_decrypt(
+        &self,
+        alg: AeadType,
+        key: &[u8],
+        ct_tag: &[u8],
+        nonce: &[u8],
+        aad: &[u8],
+    ) -> Result<Vec<u8>, CryptoError> {
+        self.crypto.aead_decrypt(alg, key, ct_tag, nonce, aad)
+    }
+
+    fn signature_key_gen(&self, alg: SignatureScheme) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
+        self.crypto.signature_key_gen(alg)
+    }
+
+    fn signature_public_key_len(&self, alg: SignatureScheme) -> usize {
+        self.crypto.signature_public_key_len(alg)
+    }
+
+    fn verify_signature(
+        &self,
+        alg: SignatureScheme,
+        data: &[u8],
+        pk: &[u8],
+        signature: &[u8],
+    ) -> Result<(), CryptoError> {
+        self.crypto.verify_signature(alg, data, pk, signature)
+    }
+
+    fn sign(&self, alg: SignatureScheme, data: &[u8], key: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        self.crypto.sign(alg, data, key)
+    }
+
+    fn hpke_seal(
+        &self,
+        config: HpkeConfig,
+        pk_r: &[u8],
+        info: &[u8],
+        aad: &[u8],
+        ptxt: &[u8],
+    ) -> Result<HpkeCiphertext, CryptoError> {
+        self.crypto.hpke_seal(config, pk_r, info, aad, ptxt)
+    }
+
+    fn hpke_open(
+        &self,
+        config: HpkeConfig,
+        input: &HpkeCiphertext,
+        sk_r: &[u8],
+        info: &[u8],
+        aad: &[u8],
+    ) -> Result<Vec<u8>, CryptoError> {
+        self.crypto.hpke_open(config, input, sk_r, info, aad)
+    }
+
+    fn hpke_setup_sender_and_export(
+        &self,
+        config: HpkeConfig,
+        pk_r: &[u8],
+        info: &[u8],
+        exporter_context: &[u8],
+        exporter_length: usize,
+    ) -> Result<(KemOutput, ExporterSecret), CryptoError> {
+        self.crypto
+            .hpke_setup_sender_and_export(config, pk_r, info, exporter_context, exporter_length)
+    }
+
+    fn hpke_setup_receiver_and_export(
+        &self,
+        config: HpkeConfig,
+        enc: &[u8],
+        sk_r: &[u8],
+        info: &[u8],
+        exporter_context: &[u8],
+        exporter_length: usize,
+    ) -> Result<ExporterSecret, CryptoError> {
+        self.crypto
+            .hpke_setup_receiver_and_export(config, enc, sk_r, info, exporter_context, exporter_length)
+    }
+
+    fn derive_hpke_keypair(&self, config: HpkeConfig, ikm: &[u8]) -> Result<HpkeKeyPair, CryptoError> {
+        self.crypto.derive_hpke_keypair(config, ikm)
     }
 }
