@@ -23,6 +23,9 @@ jobs:
       - name: Install gmake
         run: brew install make
 
+      - name: Install gsed
+        run: brew install gnu-sed
+
       - name: download swift bindings
         uses: ./.github/actions/make/bindings-swift
         with:
