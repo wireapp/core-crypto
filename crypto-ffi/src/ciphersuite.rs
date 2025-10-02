@@ -87,5 +87,3 @@ pub fn ciphersuite_from_u16(discriminant: u16) -> CoreCryptoResult<Ciphersuite> 
 pub fn ciphersuite_default() -> Ciphersuite {
     Ciphersuite::default()
 }
-
-pub(crate) type Ciphersuites = Vec<Ciphersuite>;

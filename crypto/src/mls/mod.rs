@@ -171,7 +171,7 @@ mod tests {
                     CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
                 }
             };
-            context.mls_init(identifier, vec![case.ciphersuite()]).await.unwrap();
+            context.mls_init(identifier, &[case.ciphersuite()]).await.unwrap();
             assert!(context.session().await.unwrap().is_ready().await);
             // expect mls_client to work
             assert_eq!(

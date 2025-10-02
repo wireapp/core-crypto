@@ -1,5 +1,5 @@
 use core_crypto::{
-    ClientIdentifier, KeyPackageIn, MlsConversationConfiguration, RecursiveError, VerifiableGroupInfo,
+    ClientIdentifier, KeyPackageIn, MlsCiphersuite, MlsConversationConfiguration, RecursiveError, VerifiableGroupInfo,
     mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
 };
 use tls_codec::{Deserialize as _, Serialize as _};
@@ -9,7 +9,7 @@ use wasm_bindgen::prelude::*;
 use crate::{
     Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoResult,
     CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle, bytes_wrapper::bytes_wrapper,
-    ciphersuite::Ciphersuites, client_id::ClientIdMaybeArc, crl::NewCrlDistributionPoints,
+    client_id::ClientIdMaybeArc, crl::NewCrlDistributionPoints,
 };
 
 bytes_wrapper!(
@@ -56,11 +56,11 @@ bytes_wrapper!(
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::mls_init]
-    pub async fn mls_init(&self, client_id: ClientIdMaybeArc, ciphersuites: Ciphersuites) -> CoreCryptoResult<()> {
+    pub async fn mls_init(&self, client_id: ClientIdMaybeArc, ciphersuites: Vec<Ciphersuite>) -> CoreCryptoResult<()> {
         self.inner
             .mls_init(
                 ClientIdentifier::Basic(client_id.as_cc()),
-                ciphersuites.into_iter().map(Into::into).collect(),
+                &ciphersuites.into_iter().map(MlsCiphersuite::from).collect::<Vec<_>>(),
             )
             .await?;
         Ok(())
@@ -92,7 +92,7 @@ impl CoreCryptoContext {
             .await?
             .ciphersuite()
             .await;
-        Ok(Ciphersuite::from(core_crypto::CiphersuiteName::from(cs)))
+        Ok(Ciphersuite::from(cs))
     }
 
     /// See [core_crypto::Session::conversation_exists]

@@ -215,10 +215,10 @@ impl TransactionContext {
     }
 
     /// Initializes the MLS client of [super::CoreCrypto].
-    pub async fn mls_init(&self, identifier: ClientIdentifier, ciphersuites: Vec<MlsCiphersuite>) -> Result<()> {
+    pub async fn mls_init(&self, identifier: ClientIdentifier, ciphersuites: &[MlsCiphersuite]) -> Result<()> {
         let mls_client = self.session().await?;
         mls_client
-            .init(identifier, &ciphersuites, &self.mls_provider().await?)
+            .init(identifier, ciphersuites, &self.mls_provider().await?)
             .await
             .map_err(RecursiveError::mls_client("initializing mls client"))?;
 

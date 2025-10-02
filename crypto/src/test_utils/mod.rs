@@ -139,7 +139,7 @@ impl SessionContext {
         }
 
         transaction
-            .mls_init(identifier, vec![context.cfg.ciphersuite])
+            .mls_init(identifier, &[context.cfg.ciphersuite])
             .await
             .map_err(RecursiveError::transaction("mls init"))?;
         session.provide_transport(transport.clone()).await;

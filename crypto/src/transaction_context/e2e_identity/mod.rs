@@ -95,7 +95,7 @@ impl TransactionContext {
             private_key,
         };
         let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
-        self.mls_init(identifier, vec![cs])
+        self.mls_init(identifier, &[cs])
             .await
             .map_err(RecursiveError::transaction("initializing mls"))?;
         Ok(crl_new_distribution_points)

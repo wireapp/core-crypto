@@ -652,10 +652,7 @@ mod tests {
                 CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
             }
         };
-        transaction
-            .mls_init(identifier, vec![case.ciphersuite()])
-            .await
-            .unwrap();
+        transaction.mls_init(identifier, &[case.ciphersuite()]).await.unwrap();
         // expect MLS to work
         assert_eq!(
             transaction
