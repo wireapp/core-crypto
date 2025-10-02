@@ -1,6 +1,13 @@
 [toolchain]
-channel = "1.90"
-components = ["rust-analyzer"]
+channel = "nightly-2025-08-24"
+components = [
+  "rust-analyzer",
+  "cargo",
+  "rustfmt",
+  "clippy",
+  "rustc",
+  "rust-src",
+]
 targets = [
   "aarch64-apple-ios",
   "aarch64-apple-ios-sim",
