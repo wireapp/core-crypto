@@ -16,6 +16,9 @@ inputs:
     description: A custom cache key prefix to be used instead of the rust target. Must be used if there are
       multiple rust targets because keys cannot contain commas.
     required: false
+  toolchain:
+    description: Set this to overwrite the stable default rust toolchain
+    default: 'stable'
 runs:
   using: composite
   steps:
@@ -35,6 +38,7 @@ runs:
     - name:
       uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
+        toolchain: ${{ inputs.toolchain }}
         target: ${{ inputs.target }}
         rustflags: ${{ inputs.rustflags }}
         components: ${{ inputs.components }}
