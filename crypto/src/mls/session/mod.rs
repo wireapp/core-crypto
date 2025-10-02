@@ -31,7 +31,7 @@ use openmls_x509_credential::CertificateKeyPair;
 use tls_codec::{Deserialize, Serialize};
 
 use crate::{
-    CertificateBundle, ClientId, ClientIdentifier, CoreCrypto, HistorySecret, KeystoreError, LeafError, MlsCiphersuite,
+    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, HistorySecret, KeystoreError, LeafError,
     MlsCredentialType, MlsError, MlsTransport, RecursiveError, ValidatedSessionConfig,
     group_store::GroupStore,
     mls::{
@@ -161,7 +161,7 @@ impl Session {
     pub async fn init(
         &self,
         identifier: ClientIdentifier,
-        ciphersuites: &[MlsCiphersuite],
+        ciphersuites: &[Ciphersuite],
         backend: &MlsCryptoProvider,
     ) -> Result<()> {
         self.ensure_unready().await?;
@@ -249,7 +249,7 @@ impl Session {
     /// * `credential_type` - of the credential to look for
     pub async fn public_key(
         &self,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
     ) -> crate::mls::Result<Vec<u8>> {
         let cb = self
@@ -323,7 +323,7 @@ impl Session {
         &self,
         identifier: ClientIdentifier,
         backend: &MlsCryptoProvider,
-        ciphersuites: &[MlsCiphersuite],
+        ciphersuites: &[Ciphersuite],
     ) -> Result<()> {
         self.ensure_unready().await?;
         let id = identifier.get_id()?;
@@ -617,7 +617,7 @@ mod tests {
         pub(crate) async fn generate_one_keypackage(
             &self,
             backend: &MlsCryptoProvider,
-            cs: MlsCiphersuite,
+            cs: Ciphersuite,
             ct: MlsCredentialType,
         ) -> Result<openmls::prelude::KeyPackage> {
             let cb = self.find_most_recent_credential(cs.signature_algorithm(), ct).await?;

@@ -15,7 +15,7 @@ use crate::{
     test_utils::SessionContext,
 };
 pub use crate::{
-    MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsWirePolicy,
+    Ciphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsWirePolicy,
 };
 
 #[template]
@@ -95,7 +95,7 @@ impl TestContext {
         }
     }
 
-    pub fn ciphersuite(&self) -> MlsCiphersuite {
+    pub fn ciphersuite(&self) -> Ciphersuite {
         self.cfg.ciphersuite
     }
 

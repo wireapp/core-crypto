@@ -3,11 +3,11 @@ use openmls::prelude::SignatureScheme;
 use openmls_traits::crypto::OpenMlsCrypto as _;
 
 use super::{Error, Result};
-use crate::{MlsCiphersuite, MlsError, e2e_identity::crypto::E2eiSignatureKeypair};
+use crate::{Ciphersuite, MlsError, e2e_identity::crypto::E2eiSignatureKeypair};
 
 impl super::E2eiEnrollment {
     pub(crate) fn new_sign_key(
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
         backend: &MlsCryptoProvider,
     ) -> Result<E2eiSignatureKeypair> {
         let (sk, _) = backend
