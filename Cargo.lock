@@ -2896,6 +2896,7 @@ dependencies = [
  "hex",
  "log",
  "openmls",
+ "openmls_basic_credential",
  "rand",
  "sha2",
 ]

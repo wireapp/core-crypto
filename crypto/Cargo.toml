@@ -65,7 +65,10 @@ core-crypto-keystore.workspace = true
 typed-builder.workspace = true
 core-crypto-macros.workspace = true
 rand.workspace = true
-obfuscate = { workspace = true, features = ["openmls"] }
+obfuscate = { workspace = true, features = [
+  "openmls",
+  "openmls_basic_credential",
+] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = { version = "2.2", optional = true }

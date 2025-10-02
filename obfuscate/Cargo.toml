@@ -5,12 +5,13 @@ edition = "2024"
 rust-version = "1.90"
 
 [dependencies]
-hex.workspace = true
-sha2.workspace = true
-openmls = { workspace = true, optional = true }
 derive_more.workspace = true
-rand.workspace = true
+hex.workspace = true
 log.workspace = true
+openmls = { workspace = true, optional = true }
+openmls_basic_credential = { workspace = true, optional = true }
+rand.workspace = true
+sha2.workspace = true
 
 [lints]
 workspace = true
