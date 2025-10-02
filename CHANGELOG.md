@@ -47,12 +47,24 @@
 
 ### Breaking Changes
 
-<!-- TODO(SimonThormeyer) this will be refined and extended once the new client API is finished. -->
+- Deferred init is now the only way to instantiate core crypto.
+
+  Affected platforms: all
+
+  Migration: instead of calling `deferredInit()`, call `init()` (TypeScript), or the regular `CoreCrypto` constructor
+  (Swift, Kotlin).
+  As before with `deferredInit()`, call `mlsInit()` in a transaction to initialize MLS.
 
 - The core crypto constructor now takes a `Database` instance instead of a `DatabaseKey` and a path.
   To instantiate, call `openDatabase()` (Android, Web) or the `Database` constructor (iOS).
 
   Affected platforms: all
+
+- `mlsInit()` was decoupled from key package creation.
+
+  Affected platforms: all
+
+  Migration: to create key packages after initializing MLS, call `clientKeypackages()` in a transaction.
 
 - `proteusErrorCode` field was removed from the root error type, you can get it from the nested context now (see above).
   Affected platforms: web
