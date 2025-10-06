@@ -30,11 +30,7 @@ runs:
     - name: remove toolchain target list
       shell: bash
       run: |
-        SED="sed"
-        if [[ "$RUNNER_OS" == "macOS" ]]; then
-          SED="gsed"
-        fi
-        $SED -i '/^targets = \[/,/^]/d' rust-toolchain.toml
+        perl -0777 -pi -e 's/^targets = \[.*?\]//ms' rust-toolchain.toml
     - name:
       uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
