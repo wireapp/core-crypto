@@ -23,7 +23,7 @@ pub(crate) trait HasSessionAndCrypto: Send {
 mod tests {
 
     use crate::{
-        CertificateBundle, ClientIdentifier, CoreCrypto, MlsCredentialType, SessionConfig,
+        CertificateBundle, ClientIdentifier, CoreCrypto, CredentialType, SessionConfig,
         mls::Session,
         test_utils::{x509::X509TestChain, *},
         transaction_context::Error as TransactionError,
@@ -166,8 +166,8 @@ mod tests {
             // phase 2: init mls_client
             let client_id = "alice";
             let identifier = match case.credential_type {
-                MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
-                MlsCredentialType::X509 => {
+                CredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
+                CredentialType::X509 => {
                     CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
                 }
             };

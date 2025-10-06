@@ -589,7 +589,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        CertificateBundle, ClientIdentifier, MlsCredentialType, Session, SessionConfig,
+        CertificateBundle, ClientIdentifier, CredentialType, Session, SessionConfig,
         test_utils::{proteus_utils::*, x509::X509TestChain, *},
     };
 
@@ -647,8 +647,8 @@ mod tests {
         // 👇 and so a unique 'client_id' can be fetched from wire-server
         let client_id = "alice";
         let identifier = match case.credential_type {
-            MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
-            MlsCredentialType::X509 => {
+            CredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
+            CredentialType::X509 => {
                 CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
             }
         };

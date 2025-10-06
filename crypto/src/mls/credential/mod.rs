@@ -151,7 +151,7 @@ mod tests {
 
     use super::{x509::CertificateBundle, *};
     use crate::{
-        ClientIdentifier, E2eiConversationState, MlsCredentialType,
+        ClientIdentifier, E2eiConversationState, CredentialType,
         mls::{conversation::Conversation as _, credential::x509::CertificatePrivateKey},
         test_utils::{
             x509::{CertificateParams, X509TestChain},
@@ -185,8 +185,8 @@ mod tests {
         let ([x509_session], [basic_session]) = case.sessions_mixed_credential_types().await;
         // That way the conversation creator (Alice) will have a different credential type than Bob
         let (alice, bob, alice_credential_type) = match case.credential_type {
-            MlsCredentialType::Basic => (x509_session, basic_session, MlsCredentialType::X509),
-            MlsCredentialType::X509 => (basic_session, x509_session, MlsCredentialType::Basic),
+            CredentialType::Basic => (x509_session, basic_session, CredentialType::X509),
+            CredentialType::X509 => (basic_session, x509_session, CredentialType::Basic),
         };
 
         let conversation = case
@@ -347,7 +347,7 @@ mod tests {
 
             // Charlie is a basic client that tries to join (i.e. emulates guest links in Wire)
             let conversation = conversation
-                .invite_with_credential_type_notify(MlsCredentialType::Basic, [&charlie])
+                .invite_with_credential_type_notify(CredentialType::Basic, [&charlie])
                 .await;
 
             assert_eq!(

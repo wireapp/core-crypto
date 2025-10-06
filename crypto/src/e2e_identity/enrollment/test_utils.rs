@@ -3,7 +3,7 @@ use mls_crypto_provider::PkiKeypair;
 use serde_json::json;
 
 use crate::{
-    CertificateBundle, MlsCredentialType, RecursiveError,
+    CertificateBundle, CredentialType, RecursiveError,
     e2e_identity::{E2eiEnrollment, Result, id::QualifiedE2eiClientId},
     test_utils::{SessionContext, TestContext, context::TEAM, x509::X509TestChain},
     transaction_context::TransactionContext,
@@ -58,7 +58,7 @@ pub(crate) fn init_activation_or_rotation(wrapper: E2eiInitWrapper<'_>) -> InitF
         let E2eiInitWrapper { context: cc, case } = wrapper;
         let cs = case.ciphersuite();
         match case.credential_type {
-            MlsCredentialType::Basic => {
+            CredentialType::Basic => {
                 cc.e2ei_new_activation_enrollment(
                     NEW_DISPLAY_NAME.to_string(),
                     NEW_HANDLE.to_string(),
@@ -68,7 +68,7 @@ pub(crate) fn init_activation_or_rotation(wrapper: E2eiInitWrapper<'_>) -> InitF
                 )
                 .await
             }
-            MlsCredentialType::X509 => {
+            CredentialType::X509 => {
                 cc.e2ei_new_rotate_enrollment(
                     Some(NEW_DISPLAY_NAME.to_string()),
                     Some(NEW_HANDLE.to_string()),

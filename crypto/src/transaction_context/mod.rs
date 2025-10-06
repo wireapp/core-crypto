@@ -14,7 +14,7 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, KeystoreError, MlsConversation, MlsCredentialType, MlsError,
+    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, KeystoreError, MlsConversation, CredentialType, MlsError,
     MlsTransport, RecursiveError, Session, group_store::GroupStore, mls::HasSessionAndCrypto,
 };
 pub mod conversation;
@@ -238,7 +238,7 @@ impl TransactionContext {
     pub async fn client_public_key(
         &self,
         ciphersuite: Ciphersuite,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> Result<Vec<u8>> {
         let cb = self
             .session()

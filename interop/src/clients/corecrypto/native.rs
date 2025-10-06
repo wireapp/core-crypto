@@ -83,7 +83,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         let transaction = self.cc.new_transaction().await?;
         let start = std::time::Instant::now();
         let kp = transaction
-            .get_or_create_client_keypackages(CIPHERSUITE_IN_USE.into(), MlsCredentialType::Basic, 1)
+            .get_or_create_client_keypackages(CIPHERSUITE_IN_USE.into(), CredentialType::Basic, 1)
             .await?
             .pop()
             .unwrap();
@@ -109,7 +109,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
                 ..Default::default()
             };
             transaction
-                .new_conversation(&conversation_id, MlsCredentialType::Basic, config)
+                .new_conversation(&conversation_id, CredentialType::Basic, config)
                 .await?;
         }
 
