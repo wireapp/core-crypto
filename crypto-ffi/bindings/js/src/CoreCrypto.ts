@@ -70,6 +70,7 @@ export type {
 } from "./CoreCryptoInstance";
 
 export {
+    Credential,
     CredentialType,
     WirePolicy,
     GroupInfoEncryptionType,
