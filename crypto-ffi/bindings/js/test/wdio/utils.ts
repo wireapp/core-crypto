@@ -160,7 +160,7 @@ export async function ccInit(clientName: string): Promise<void> {
         const cipherSuite = window.defaultCipherSuite;
         const encoder = new TextEncoder();
         const clientId = new window.ccModule.ClientId(
-            encoder.encode(clientName)
+            encoder.encode(clientName).buffer
         );
 
         const key = new Uint8Array(32);
@@ -168,7 +168,7 @@ export async function ccInit(clientName: string): Promise<void> {
 
         const database = await window.ccModule.openDatabase(
             clientName,
-            new window.ccModule.DatabaseKey(key)
+            new window.ccModule.DatabaseKey(key.buffer)
         );
 
         const instance = await window.ccModule.CoreCrypto.init(database);
