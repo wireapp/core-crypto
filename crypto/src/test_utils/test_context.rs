@@ -20,51 +20,51 @@ use crate::{
 #[rstest(
     case,
     case::basic_cs1(TestContext::new(
-        crate::MlsCredentialType::Basic,
+        crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
     case::cert_cs1(TestContext::new(
-        crate::MlsCredentialType::X509,
+        crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs2(TestContext::new(
-        crate::MlsCredentialType::Basic,
+        crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     )),
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs2(TestContext::new(
-        crate::MlsCredentialType::X509,
+        crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs3(TestContext::new(
-        crate::MlsCredentialType::Basic,
+        crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs3(TestContext::new(
-        crate::MlsCredentialType::X509,
+        crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs5(TestContext::new(
-        crate::MlsCredentialType::Basic,
+        crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521
     )),
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs5(TestContext::new(
-        crate::MlsCredentialType::X509,
+        crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs7(TestContext::new(
-        crate::MlsCredentialType::Basic,
+        crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs7(TestContext::new(
-        crate::MlsCredentialType::X509,
+        crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
     case::pure_ciphertext(TestContext::default_cipher()),

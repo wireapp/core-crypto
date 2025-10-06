@@ -14,7 +14,6 @@ use openmls_traits::crypto::OpenMlsCrypto;
 pub(crate) mod crl;
 mod error;
 pub(crate) mod ext;
-pub(crate) mod typ;
 pub(crate) mod x509;
 
 pub use error::Error;
@@ -151,7 +150,7 @@ mod tests {
 
     use super::{x509::CertificateBundle, *};
     use crate::{
-        ClientIdentifier, E2eiConversationState, CredentialType,
+        ClientIdentifier, CredentialType, E2eiConversationState,
         mls::{conversation::Conversation as _, credential::x509::CertificatePrivateKey},
         test_utils::{
             x509::{CertificateParams, X509TestChain},
@@ -187,6 +186,7 @@ mod tests {
         let (alice, bob, alice_credential_type) = match case.credential_type {
             CredentialType::Basic => (x509_session, basic_session, CredentialType::X509),
             CredentialType::X509 => (basic_session, x509_session, CredentialType::Basic),
+            _ => panic!("only basic and x509 credential types supported"),
         };
 
         let conversation = case

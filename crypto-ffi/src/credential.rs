@@ -1,6 +1,4 @@
-use core_crypto::{
-    Ciphersuite as CryptoCiphersuite, Credential as CryptoCredential, CredentialType as CryptoCredentialType,
-};
+use core_crypto::{Ciphersuite as CryptoCiphersuite, Credential as CryptoCredential};
 use mls_crypto_provider::RustCrypto;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
@@ -55,8 +53,8 @@ impl Credential {
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl Credential {
     /// Get the type of this credential.
-    pub fn r#type(&self) -> CredentialType {
-        CryptoCredentialType::from(self.0.credential().credential_type()).into()
+    pub fn r#type(&self) -> CoreCryptoResult<CredentialType> {
+        self.0.credential().credential_type().try_into()
     }
 
     /// Get the earliest possible validity of this credential, expressed as seconds after the unix epoch.

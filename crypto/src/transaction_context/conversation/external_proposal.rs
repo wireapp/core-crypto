@@ -2,8 +2,7 @@ use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, MlsMessageOut};
 
 use super::Result;
 use crate::{
-    Ciphersuite, ConversationId, LeafError, MlsError, RecursiveError,
-    mls::{self, credential::typ::CredentialType},
+    Ciphersuite, ConversationId, CredentialType, LeafError, MlsError, RecursiveError, mls,
     transaction_context::TransactionContext,
 };
 
@@ -22,7 +21,7 @@ impl TransactionContext {
     ///
     /// # Errors
     /// Errors resulting from the creation of the proposal within OpenMls.
-    /// Fails when `credential_type` is [MlsCredentialType::X509] and no Credential has been created
+    /// Fails when `credential_type` is [CredentialType::X509] and no Credential has been created
     /// for it beforehand with [TransactionContext::e2ei_mls_init_only] or variants.
     #[cfg_attr(test, crate::dispotent)]
     pub async fn new_external_add_proposal(

@@ -216,7 +216,7 @@ impl CoreCryptoContext {
 
         let conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         let wire_ids = conversation.get_device_identities(device_ids.as_slice()).await?;
-        Ok(wire_ids.into_iter().map(Into::into).collect())
+        wire_ids.into_iter().map(TryInto::try_into).collect()
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_user_identities]
@@ -233,8 +233,14 @@ impl CoreCryptoContext {
         let user_ids = conversation.get_user_identities(user_ids.as_slice()).await?;
         let user_ids = user_ids
             .into_iter()
-            .map(|(k, v)| (k, v.into_iter().map(WireIdentity::from).collect()))
-            .collect::<HashMap<_, Vec<_>>>();
+            .map(|(k, v)| -> CoreCryptoResult<_> {
+                let identities = v
+                    .into_iter()
+                    .map(WireIdentity::try_from)
+                    .collect::<CoreCryptoResult<Vec<_>>>()?;
+                Ok((k, identities))
+            })
+            .collect::<CoreCryptoResult<HashMap<_, _>>>()?;
         #[cfg(target_family = "wasm")]
         let user_ids = serde_wasm_bindgen::to_value(&user_ids)?;
         Ok(user_ids)

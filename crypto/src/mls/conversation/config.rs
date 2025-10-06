@@ -5,7 +5,7 @@
 
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
-    Capabilities, Credential, CredentialType as MlsCredentialType, ExternalSender, OpenMlsSignaturePublicKey,
+    Capabilities, Credential, CredentialType, ExternalSender, OpenMlsSignaturePublicKey,
     PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY, ProtocolVersion,
     RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy,
 };
@@ -49,8 +49,8 @@ impl MlsConversationConfiguration {
     pub(crate) const DEFAULT_PROTOCOL_VERSION: ProtocolVersion = ProtocolVersion::Mls10;
 
     /// List all until further notice
-    pub(crate) const DEFAULT_SUPPORTED_CREDENTIALS: &'static [MlsCredentialType] =
-        &[MlsCredentialType::Basic, MlsCredentialType::X509];
+    pub(crate) const DEFAULT_SUPPORTED_CREDENTIALS: &'static [CredentialType] =
+        &[CredentialType::Basic, CredentialType::X509];
 
     /// Conservative sensible defaults
     pub(crate) const DEFAULT_SUPPORTED_CIPHERSUITES: &'static [MlsCiphersuite] = &[

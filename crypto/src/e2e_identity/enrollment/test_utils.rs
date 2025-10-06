@@ -78,6 +78,7 @@ pub(crate) fn init_activation_or_rotation(wrapper: E2eiInitWrapper<'_>) -> InitF
                 )
                 .await
             }
+            CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
         }
         .map_err(RecursiveError::transaction("creating new enrollment"))
         .map_err(Into::into)

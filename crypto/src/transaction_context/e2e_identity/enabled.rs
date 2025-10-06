@@ -35,6 +35,7 @@ mod tests {
             match case.credential_type {
                 CredentialType::Basic => assert!(!e2ei_is_enabled),
                 CredentialType::X509 => assert!(e2ei_is_enabled),
+                CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
             };
         })
         .await

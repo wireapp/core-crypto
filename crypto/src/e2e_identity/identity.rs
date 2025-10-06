@@ -20,7 +20,7 @@ pub struct WireIdentity {
     pub status: DeviceStatus,
     /// Indicates whether the credential is Basic or X509
     pub credential_type: CredentialType,
-    /// In case 'credential_type' is [MlsCredentialType::X509] this is populated
+    /// In case 'credential_type' is [CredentialType::X509] this is populated
     pub x509_identity: Option<X509Identity>,
 }
 

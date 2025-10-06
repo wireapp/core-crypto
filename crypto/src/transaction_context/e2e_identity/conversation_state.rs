@@ -117,6 +117,8 @@ mod tests {
                     let state = conversation.e2ei_state_via_group_info().await;
                     assert_eq!(state, E2eiConversationState::Verified);
                 }
+
+                CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
             }
         })
         .await
@@ -131,6 +133,7 @@ mod tests {
             let (alice, bob, alice_credential_type) = match case.credential_type {
                 CredentialType::Basic => (x509_session, basic_session, CredentialType::X509),
                 CredentialType::X509 => (basic_session, x509_session, CredentialType::Basic),
+                CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
             };
 
             let conversation = case

@@ -31,6 +31,8 @@ pub enum Error {
     IdentityAlreadyPresent,
     #[error("The supplied credential does not match the id or signature schemes provided")]
     WrongCredential,
+    #[error("Credentials of type {0} are unknown")]
+    UnknownCredential(u16),
     #[error("An EpochObserver has already been registered; reregistration is not possible")]
     EpochObserverAlreadyExists,
     #[error("An HistoryHandler has already been registered; reregistration is not possible")]

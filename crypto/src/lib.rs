@@ -33,8 +33,8 @@ pub use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed};
 pub use openmls::{
     group::{MlsGroup, MlsGroupConfig},
     prelude::{
-        Ciphersuite as MlsCiphersuite, GroupEpoch, KeyPackage, KeyPackageIn, KeyPackageRef, MlsMessageIn, Node,
-        group_info::VerifiableGroupInfo,
+        Ciphersuite as MlsCiphersuite, CredentialType, GroupEpoch, KeyPackage, KeyPackageIn, KeyPackageRef,
+        MlsMessageIn, Node, group_info::VerifiableGroupInfo,
     },
 };
 #[cfg(feature = "proteus")]
@@ -64,7 +64,7 @@ pub use crate::{
             proposal::MlsProposalBundle,
             welcome::WelcomeBundle,
         },
-        credential::{Credential, typ::CredentialType, x509::CertificateBundle},
+        credential::{Credential, x509::CertificateBundle},
         proposal::{MlsProposal, MlsProposalRef},
         session::{
             EpochObserver, HistoryObserver, Session,

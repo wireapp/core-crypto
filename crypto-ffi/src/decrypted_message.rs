@@ -68,16 +68,17 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             .transpose()?;
 
         #[expect(deprecated)]
-        Ok(Self {
+        let msg = Self {
             message: from.app_msg,
             is_active: from.is_active,
             commit_delay: from.delay,
             sender_client_id: from.sender_client_id.map(ClientId::from_cc),
             has_epoch_changed: from.has_epoch_changed,
-            identity: from.identity.into(),
+            identity: from.identity.try_into()?,
             buffered_messages,
             crl_new_distribution_points: from.crl_new_distribution_points.into(),
-        })
+        };
+        Ok(msg)
     }
 }
 
@@ -124,14 +125,15 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
 
     fn try_from(from: MlsBufferedConversationDecryptMessage) -> Result<Self, Self::Error> {
         #[expect(deprecated)]
-        Ok(Self {
+        let msg = Self {
             message: from.app_msg,
             is_active: from.is_active,
             commit_delay: from.delay,
             sender_client_id: from.sender_client_id.map(ClientId::from_cc),
             has_epoch_changed: from.has_epoch_changed,
-            identity: from.identity.into(),
+            identity: from.identity.try_into()?,
             crl_new_distribution_points: from.crl_new_distribution_points.into(),
-        })
+        };
+        Ok(msg)
     }
 }
