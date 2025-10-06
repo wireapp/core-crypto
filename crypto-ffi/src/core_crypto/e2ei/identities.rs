@@ -38,8 +38,8 @@ impl CoreCryptoFfi {
             .get_device_identities(&device_ids)
             .await?
             .into_iter()
-            .map(WireIdentity::from)
-            .collect::<Vec<_>>();
+            .map(WireIdentity::try_from)
+            .collect::<CoreCryptoResult<Vec<WireIdentity>>>()?;
         #[cfg(target_family = "wasm")]
         let wire_identities =
             serde_wasm_bindgen::to_value(&wire_identities).expect("device identities can always be serialized");
@@ -64,8 +64,14 @@ impl CoreCryptoFfi {
         let identities = conversation.get_user_identities(user_ids.as_slice()).await?;
         let identities = identities
             .into_iter()
-            .map(|(k, v)| (k, v.into_iter().map(WireIdentity::from).collect()))
-            .collect::<HashMap<_, Vec<_>>>();
+            .map(|(k, v)| -> CoreCryptoResult<_> {
+                let identities = v
+                    .into_iter()
+                    .map(WireIdentity::try_from)
+                    .collect::<CoreCryptoResult<Vec<_>>>()?;
+                Ok((k, identities))
+            })
+            .collect::<CoreCryptoResult<HashMap<_, _>>>()?;
         #[cfg(target_family = "wasm")]
         let identities = serde_wasm_bindgen::to_value(&identities).expect("user identities can always be serialized");
         Ok(identities)

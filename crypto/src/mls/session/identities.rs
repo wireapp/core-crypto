@@ -4,13 +4,10 @@ use openmls::prelude::{Credential as MlsCredential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
 
 use crate::{
-    Session,
-    mls::{
-        credential::{Credential, typ::CredentialType},
-        session::{
-            SessionInner,
-            error::{Error, Result},
-        },
+    Credential, CredentialType, Session,
+    mls::session::{
+        SessionInner,
+        error::{Error, Result},
     },
 };
 

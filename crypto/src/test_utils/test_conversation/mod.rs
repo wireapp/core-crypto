@@ -34,7 +34,7 @@ impl<'a> TestConversation<'a> {
         Self::new_with_credential_type(case, creator, case.credential_type).await
     }
 
-    /// Like [Self::new], but with the provided [MlsCredentialType].
+    /// Like [Self::new], but with the provided [CredentialType].
     pub async fn new_with_credential_type(
         case: &'a TestContext,
         creator: &'a SessionContext,

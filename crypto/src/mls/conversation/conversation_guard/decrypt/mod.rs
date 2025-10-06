@@ -20,7 +20,7 @@ use openmls::{
     },
     group::MlsGroup,
     prelude::{
-        ContentType, CredentialType as MlsCredentialType, LeafNodeIndex, Member, ProcessMessageError,
+        ContentType, CredentialType as CredentialType, LeafNodeIndex, Member, ProcessMessageError,
         ProcessedMessageContent, Proposal, StageCommitError, StagedCommit, ValidationError,
     },
 };
@@ -558,7 +558,7 @@ impl ConversationGuard {
                 .filter_map(|add_proposal| {
                     let credential = add_proposal.add_proposal().key_package().leaf_node().credential();
 
-                    matches!(credential.credential_type(), MlsCredentialType::X509).then(|| credential.clone())
+                    matches!(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
                 })
                 .collect();
             let state = Session::compute_conversation_state(
