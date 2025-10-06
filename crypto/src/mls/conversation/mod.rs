@@ -30,7 +30,7 @@ use openmls::{
 use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 
 use crate::{
-    Ciphersuite, ClientId, E2eiConversationState, KeystoreError, LeafError, MlsCredentialType, MlsError,
+    Ciphersuite, ClientId, E2eiConversationState, KeystoreError, LeafError, CredentialType, MlsError,
     RecursiveError, WireIdentity, mls::Session,
 };
 
@@ -171,7 +171,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         let state = Session::compute_conversation_state(
             inner.ciphersuite(),
             inner.group.members_credentials(),
-            MlsCredentialType::X509,
+            CredentialType::X509,
             authentication_service.borrow().await.as_ref(),
         )
         .await;
@@ -385,7 +385,7 @@ impl MlsConversation {
     pub async fn create(
         id: ConversationId,
         author_client: &Session,
-        creator_credential_type: MlsCredentialType,
+        creator_credential_type: CredentialType,
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> Result<Self> {
@@ -539,7 +539,7 @@ impl MlsConversation {
         Ok(())
     }
 
-    pub(crate) fn own_credential_type(&self) -> Result<MlsCredentialType> {
+    pub(crate) fn own_credential_type(&self) -> Result<CredentialType> {
         Ok(self
             .group
             .own_leaf_node()
@@ -655,7 +655,7 @@ mod tests {
     mod wire_identity_getters {
         use super::Error;
         use crate::{
-            ClientId, DeviceStatus, E2eiConversationState, MlsCredentialType, mls::conversation::Conversation,
+            ClientId, DeviceStatus, E2eiConversationState, CredentialType, mls::conversation::Conversation,
             test_utils::*,
         };
 
@@ -900,7 +900,7 @@ mod tests {
                 assert_eq!(ios_ids, android_ids);
 
                 assert!(ios_ids.iter().all(|i| {
-                    matches!(i.credential_type, MlsCredentialType::Basic)
+                    matches!(i.credential_type, CredentialType::Basic)
                         && matches!(i.status, DeviceStatus::Valid)
                         && i.x509_identity.is_none()
                         && !i.thumbprint.is_empty()

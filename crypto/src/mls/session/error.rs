@@ -16,7 +16,7 @@ pub enum Error {
     #[error("A MLS operation was requested but MLS hasn't been initialized on this instance")]
     MlsNotInitialized,
     #[error("A Credential of type {0:?} was not found locally which is very likely an implementation error")]
-    CredentialNotFound(crate::MlsCredentialType),
+    CredentialNotFound(crate::CredentialType),
     #[error("supplied signature scheme was not valid")]
     InvalidSignatureScheme,
     /// The keystore has no knowledge of such client; this shouldn't happen as Client::init is failsafe (find-else-create)

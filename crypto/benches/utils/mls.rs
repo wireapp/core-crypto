@@ -6,7 +6,7 @@ use std::{
 use async_lock::RwLock;
 use core_crypto::{
     CertificateBundle, Ciphersuite, ClientId, ConnectionType, ConversationId, CoreCrypto, Database, DatabaseKey,
-    HistorySecret, MlsCommitBundle, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
+    HistorySecret, MlsCommitBundle, MlsConversationConfiguration, CredentialType, MlsCustomConfiguration,
     MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse, Session, SessionConfig,
 };
 use criterion::BenchmarkId;
@@ -136,7 +136,7 @@ pub async fn setup_mls(
     context
         .new_conversation(
             &id,
-            MlsCredentialType::Basic,
+            CredentialType::Basic,
             MlsConversationConfiguration {
                 ciphersuite,
                 ..Default::default()
@@ -298,7 +298,7 @@ pub async fn invite(
     let core_crypto = CoreCrypto::from(other.clone());
     let other_context = core_crypto.new_transaction().await.unwrap();
     let other_kps = other_context
-        .get_or_create_client_keypackages(ciphersuite, MlsCredentialType::Basic, 1)
+        .get_or_create_client_keypackages(ciphersuite, CredentialType::Basic, 1)
         .await
         .unwrap();
     let other_kp = other_kps.first().unwrap().clone();

@@ -2,7 +2,7 @@ use openmls::{messages::group_info::VerifiableGroupInfo, prelude::Node};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use super::Result;
-use crate::{MlsCredentialType, MlsError, RecursiveError, Session, transaction_context::TransactionContext};
+use crate::{CredentialType, MlsError, RecursiveError, Session, transaction_context::TransactionContext};
 
 /// Indicates the state of a Conversation regarding end-to-end identity.
 ///
@@ -50,14 +50,14 @@ impl TransactionContext {
         });
 
         let auth_service = auth_service.borrow().await;
-        Ok(Session::compute_conversation_state(cs, credentials, MlsCredentialType::X509, auth_service.as_ref()).await)
+        Ok(Session::compute_conversation_state(cs, credentials, CredentialType::X509, auth_service.as_ref()).await)
     }
 
     /// See [crate::mls::session::Session::get_credential_in_use].
     pub async fn get_credential_in_use(
         &self,
         group_info: VerifiableGroupInfo,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> Result<E2eiConversationState> {
         let cs = group_info.ciphersuite().into();
         // Not verifying the supplied the GroupInfo here could let attackers lure the clients about
@@ -89,7 +89,7 @@ impl TransactionContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CertificateBundle, MlsCredentialType, Session, test_utils::*};
+    use crate::{CertificateBundle, CredentialType, Session, test_utils::*};
 
     // testing the case where both Bob & Alice have the same Credential type
     #[apply(all_cred_cipher)]
@@ -99,7 +99,7 @@ mod tests {
             let conversation = case.create_conversation([&alice, &bob]).await;
 
             match case.credential_type {
-                MlsCredentialType::Basic => {
+                CredentialType::Basic => {
                     let alice_state = conversation.e2ei_state().await;
                     let bob_state = conversation.e2ei_state_of(&bob).await;
                     assert_eq!(alice_state, E2eiConversationState::NotEnabled);
@@ -108,7 +108,7 @@ mod tests {
                     let state = conversation.e2ei_state_via_group_info().await;
                     assert_eq!(state, E2eiConversationState::NotEnabled);
                 }
-                MlsCredentialType::X509 => {
+                CredentialType::X509 => {
                     let alice_state = conversation.e2ei_state().await;
                     let bob_state = conversation.e2ei_state_of(&bob).await;
                     assert_eq!(alice_state, E2eiConversationState::Verified);
@@ -129,8 +129,8 @@ mod tests {
         Box::pin(async move {
             // That way the conversation creator (Alice) will have a different credential type than Bob
             let (alice, bob, alice_credential_type) = match case.credential_type {
-                MlsCredentialType::Basic => (x509_session, basic_session, MlsCredentialType::X509),
-                MlsCredentialType::X509 => (basic_session, x509_session, MlsCredentialType::Basic),
+                CredentialType::Basic => (x509_session, basic_session, CredentialType::X509),
+                CredentialType::X509 => (basic_session, x509_session, CredentialType::Basic),
             };
 
             let conversation = case
@@ -191,7 +191,7 @@ mod tests {
 
             let state = alice
                 .transaction
-                .get_credential_in_use(gi, MlsCredentialType::X509)
+                .get_credential_in_use(gi, CredentialType::X509)
                 .await
                 .unwrap();
             assert_eq!(state, E2eiConversationState::NotVerified);

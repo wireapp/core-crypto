@@ -10,7 +10,7 @@ use core_crypto_keystore::{connection::FetchFromDatabase as _, entities::Persist
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    KeystoreError, LeafError, MlsConversation, MlsConversationConfiguration, MlsCredentialType, RecursiveError,
+    KeystoreError, LeafError, MlsConversation, MlsConversationConfiguration, CredentialType, RecursiveError,
     mls::conversation::{ConversationGuard, ConversationIdRef, pending_conversation::PendingConversation},
 };
 
@@ -63,7 +63,7 @@ impl TransactionContext {
     pub async fn new_conversation(
         &self,
         id: &ConversationIdRef,
-        creator_credential_type: MlsCredentialType,
+        creator_credential_type: CredentialType,
         config: MlsConversationConfiguration,
     ) -> Result<()> {
         if self.conversation_exists(id).await? || self.pending_conversation_exists(id).await? {

@@ -6,7 +6,7 @@ use openmls_traits::types::SignatureScheme;
 use crate::{
     Session,
     mls::{
-        credential::{Credential, typ::MlsCredentialType},
+        credential::{Credential, typ::CredentialType},
         session::{
             SessionInner,
             error::{Error, Result},
@@ -30,7 +30,7 @@ impl Identities {
     pub(crate) async fn find_credential_by_public_key(
         &self,
         sc: SignatureScheme,
-        ct: MlsCredentialType,
+        ct: CredentialType,
         pk: &SignaturePublicKey,
     ) -> Option<Arc<Credential>> {
         self.0
@@ -47,7 +47,7 @@ impl Identities {
     pub(crate) async fn find_most_recent_credential(
         &self,
         sc: SignatureScheme,
-        ct: MlsCredentialType,
+        ct: CredentialType,
     ) -> Option<Arc<Credential>> {
         self.0
             .get(&sc)?
@@ -92,7 +92,7 @@ impl Session {
     pub(crate) async fn find_most_recent_credential(
         &self,
         sc: SignatureScheme,
-        ct: MlsCredentialType,
+        ct: CredentialType,
     ) -> Result<Arc<Credential>> {
         match self.inner.read().await.deref() {
             None => Err(Error::MlsNotInitialized),
@@ -106,7 +106,7 @@ impl Session {
     pub(crate) async fn find_credential_by_public_key(
         &self,
         sc: SignatureScheme,
-        ct: MlsCredentialType,
+        ct: CredentialType,
         pk: &SignaturePublicKey,
     ) -> Result<Arc<Credential>> {
         match self.inner.read().await.deref() {

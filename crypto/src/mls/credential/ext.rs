@@ -1,15 +1,15 @@
-use openmls::prelude::{Credential, CredentialType, CredentialWithKey};
+use openmls::prelude::{Credential, CredentialType as MlsCredentialType, CredentialWithKey};
 use openmls_traits::types::{HashType, SignatureScheme};
 use wire_e2e_identity::prelude::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint};
 use x509_cert::{Certificate, der::Decode};
 
 use super::{Error, Result};
-use crate::{Ciphersuite, DeviceStatus, MlsCredentialType, RecursiveError, WireIdentity};
+use crate::{Ciphersuite, CredentialType, DeviceStatus, RecursiveError, WireIdentity};
 
 #[allow(dead_code)]
 pub(crate) trait CredentialExt {
     fn parse_leaf_cert(&self) -> Result<Option<Certificate>>;
-    fn get_type(&self) -> Result<MlsCredentialType>;
+    fn get_type(&self) -> Result<CredentialType>;
     fn extract_identity(
         &self,
         cs: Ciphersuite,
@@ -24,7 +24,7 @@ impl CredentialExt for CredentialWithKey {
         self.credential.parse_leaf_cert()
     }
 
-    fn get_type(&self) -> Result<MlsCredentialType> {
+    fn get_type(&self) -> Result<CredentialType> {
         self.credential.get_type()
     }
 
@@ -46,7 +46,7 @@ impl CredentialExt for CredentialWithKey {
 
                 Ok(WireIdentity {
                     client_id,
-                    credential_type: MlsCredentialType::Basic,
+                    credential_type: CredentialType::Basic,
                     thumbprint,
                     status: DeviceStatus::Valid,
                     x509_identity: None,
@@ -72,11 +72,11 @@ impl CredentialExt for Credential {
         }
     }
 
-    fn get_type(&self) -> Result<MlsCredentialType> {
+    fn get_type(&self) -> Result<CredentialType> {
         match self.credential_type() {
-            CredentialType::Basic => Ok(MlsCredentialType::Basic),
-            CredentialType::X509 => Ok(MlsCredentialType::X509),
-            CredentialType::Unknown(_) => Err(Error::UnsupportedCredentialType),
+            MlsCredentialType::Basic => Ok(CredentialType::Basic),
+            MlsCredentialType::X509 => Ok(CredentialType::X509),
+            MlsCredentialType::Unknown(_) => Err(Error::UnsupportedCredentialType),
         }
     }
 
@@ -110,8 +110,8 @@ impl CredentialExt for openmls::prelude::Certificate {
         Ok(Some(leaf))
     }
 
-    fn get_type(&self) -> Result<MlsCredentialType> {
-        Ok(MlsCredentialType::X509)
+    fn get_type(&self) -> Result<CredentialType> {
+        Ok(CredentialType::X509)
     }
 
     fn extract_identity(

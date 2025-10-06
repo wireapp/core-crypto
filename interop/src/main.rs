@@ -169,7 +169,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     cc.provide_transport(success_provider.clone()).await;
     let transaction = cc.new_transaction().await?;
     transaction
-        .new_conversation(&conversation_id, MlsCredentialType::Basic, config)
+        .new_conversation(&conversation_id, CredentialType::Basic, config)
         .await?;
 
     spinner.success("[MLS] Step 0: Initializing clients [OK]");

@@ -182,7 +182,7 @@ mod tests {
 
             // verify the created client can create a conversation
             let conversation = case
-                .create_conversation_with_credential_type(MlsCredentialType::X509, [&session])
+                .create_conversation_with_credential_type(CredentialType::X509, [&session])
                 .await;
             conversation
                 .guard()

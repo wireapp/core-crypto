@@ -1,6 +1,6 @@
 use std::hint::black_box;
 
-use core_crypto::{MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration};
+use core_crypto::{MlsConversationConfiguration, CredentialType, MlsCustomConfiguration};
 use criterion::{
     BatchSize, BenchmarkId, Criterion, async_executor::SmolExecutor as FuturesExecutor, criterion_group, criterion_main,
 };
@@ -33,7 +33,7 @@ fn create_group_bench(c: &mut Criterion) {
                     |(central, id, cfg)| async move {
                         let context = central.new_transaction().await.unwrap();
                         context
-                            .new_conversation(&id, MlsCredentialType::Basic, cfg)
+                            .new_conversation(&id, CredentialType::Basic, cfg)
                             .await
                             .unwrap();
                         context.finish().await.unwrap();
@@ -62,7 +62,7 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                             let (bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
                             let bob_context = bob_central.new_transaction().await.unwrap();
                             let bob_kpbs = bob_context
-                                .get_or_create_client_keypackages(ciphersuite, MlsCredentialType::Basic, 1)
+                                .get_or_create_client_keypackages(ciphersuite, CredentialType::Basic, 1)
                                 .await
                                 .unwrap();
                             let bob_kp = bob_kpbs.first().unwrap().clone();
@@ -120,7 +120,7 @@ fn join_from_group_info_bench(c: &mut Criterion) {
                                 .join_by_external_commit(
                                     group_info,
                                     MlsCustomConfiguration::default(),
-                                    MlsCredentialType::Basic,
+                                    CredentialType::Basic,
                                 )
                                 .await
                                 .unwrap(),

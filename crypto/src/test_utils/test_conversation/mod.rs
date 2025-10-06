@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use openmls::{group::QueuedProposal, prelude::group_info::VerifiableGroupInfo};
 
-use super::{MessageExt as _, MlsCredentialType, MlsTransportTestExt, SessionContext, TestContext, TestError};
+use super::{MessageExt as _, CredentialType, MlsTransportTestExt, SessionContext, TestContext, TestError};
 use crate::{
     ConversationId, E2eiConversationState, MlsProposalRef, RecursiveError,
     mls::{
@@ -38,7 +38,7 @@ impl<'a> TestConversation<'a> {
     pub async fn new_with_credential_type(
         case: &'a TestContext,
         creator: &'a SessionContext,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> Self {
         let id = super::conversation_id();
         creator
@@ -271,7 +271,7 @@ impl<'a> TestConversation<'a> {
 
         self.actor()
             .transaction
-            .get_credential_in_use(gi, MlsCredentialType::X509)
+            .get_credential_in_use(gi, CredentialType::X509)
             .await
             .unwrap()
     }
@@ -377,7 +377,7 @@ impl<'a> TestConversation<'a> {
         let cb = self
             .actor()
             .session
-            .find_most_recent_credential(self.case.signature_scheme(), MlsCredentialType::X509)
+            .find_most_recent_credential(self.case.signature_scheme(), CredentialType::X509)
             .await
             .expect("x509 credential");
         let cs = guard.ciphersuite().await;

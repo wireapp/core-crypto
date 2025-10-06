@@ -3,7 +3,7 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
-use crate::MlsCredentialType;
+use crate::CredentialType;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
@@ -12,7 +12,7 @@ pub enum Error {
     #[error("Incorrect usage of this API")]
     ImplementationError,
     #[error("Expected a MLS client with credential type {0:?} but none found")]
-    MissingExistingClient(MlsCredentialType),
+    MissingExistingClient(CredentialType),
     #[error(
         "We already have an ACME Root Trust Anchor registered. Cannot proceed but this is usually indicative of double registration and can be ignored"
     )]

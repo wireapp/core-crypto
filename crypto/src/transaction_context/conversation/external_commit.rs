@@ -4,7 +4,7 @@ use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
 use super::{Error, Result};
 use crate::{
-    Ciphersuite, ConversationId, LeafError, MlsCommitBundle, MlsConversationConfiguration, MlsCredentialType,
+    Ciphersuite, ConversationId, LeafError, MlsCommitBundle, MlsConversationConfiguration, CredentialType,
     MlsCustomConfiguration, MlsError, MlsGroupInfoBundle, RecursiveError, WelcomeBundle, mls,
     mls::{
         conversation::{ConversationIdRef, pending_conversation::PendingConversation},
@@ -39,7 +39,7 @@ impl TransactionContext {
         &self,
         group_info: VerifiableGroupInfo,
         custom_cfg: MlsCustomConfiguration,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> Result<WelcomeBundle> {
         let (commit_bundle, welcome_bundle, mut pending_conversation) = self
             .create_external_join_commit(group_info, custom_cfg, credential_type)
@@ -67,7 +67,7 @@ impl TransactionContext {
         &self,
         group_info: VerifiableGroupInfo,
         custom_cfg: MlsCustomConfiguration,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> Result<(MlsCommitBundle, WelcomeBundle, PendingConversation)> {
         let client = &self.session().await?;
 
