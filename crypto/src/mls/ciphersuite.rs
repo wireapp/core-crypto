@@ -1,8 +1,8 @@
-use openmls_traits::types::{Ciphersuite as MlsCiphersuite, HashType};
+use openmls_traits::types::HashType;
 use wire_e2e_identity::prelude::HashAlgorithm;
 
 use super::{Error, Result};
-use crate::CiphersuiteName;
+use crate::MlsCiphersuite;
 
 #[derive(
     Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash, derive_more::Deref, serde::Serialize, serde::Deserialize,
@@ -50,7 +50,7 @@ impl TryFrom<u16> for Ciphersuite {
     type Error = Error;
 
     fn try_from(c: u16) -> Result<Self> {
-        Ok(CiphersuiteName::try_from(c)
+        Ok(MlsCiphersuite::try_from(c)
             .map_err(|_| Error::UnknownCiphersuite)?
             .into())
     }

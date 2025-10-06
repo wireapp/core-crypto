@@ -56,7 +56,7 @@ impl CoreCryptoFfi {
             .map_err(RecursiveError::mls_client("getting raw conversation by id"))?
             .ciphersuite()
             .await;
-        Ok(Ciphersuite::from(core_crypto::CiphersuiteName::from(cs)))
+        Ok(Ciphersuite::from(core_crypto::MlsCiphersuite::from(cs)))
     }
 
     /// See [core_crypto::Session::conversation_exists]
