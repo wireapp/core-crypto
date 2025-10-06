@@ -18,7 +18,7 @@ use openmls::{
     },
 };
 use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::{OpenMlsCryptoProvider, random::OpenMlsRand, types::Ciphersuite};
+use openmls_traits::{OpenMlsCryptoProvider, random::OpenMlsRand, types::Ciphersuite as MlsCiphersuite};
 use rand::distributions::{Alphanumeric, DistString};
 use tls_codec::Deserialize;
 
@@ -39,23 +39,27 @@ impl MlsTestCase {
         match self {
             MlsTestCase::Basic_Ciphersuite1 => (
                 *self,
-                Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.into(),
+                MlsCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.into(),
                 None,
             ),
             #[cfg(feature = "test-all-cipher")]
-            MlsTestCase::Basic_Ciphersuite2 => {
-                (*self, Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256.into(), None)
-            }
+            MlsTestCase::Basic_Ciphersuite2 => (
+                *self,
+                MlsCiphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256.into(),
+                None,
+            ),
             #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite3 => (
                 *self,
-                Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519.into(),
+                MlsCiphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519.into(),
                 None,
             ),
             #[cfg(feature = "test-all-cipher")]
-            MlsTestCase::Basic_Ciphersuite7 => {
-                (*self, Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384.into(), None)
-            }
+            MlsTestCase::Basic_Ciphersuite7 => (
+                *self,
+                MlsCiphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384.into(),
+                None,
+            ),
         }
     }
 
@@ -248,7 +252,7 @@ pub async fn setup_mls_and_add_clients(
     (core_crypto, id, client_ids, group_info, delivery_service)
 }
 
-fn create_signature_keypair(backend: &MlsCryptoProvider, ciphersuite: Ciphersuite) -> SignatureKeyPair {
+fn create_signature_keypair(backend: &MlsCryptoProvider, ciphersuite: MlsCiphersuite) -> SignatureKeyPair {
     let mut rng = backend.rand().borrow_rand().unwrap();
     SignatureKeyPair::new(ciphersuite.signature_algorithm(), &mut *rng).unwrap()
 }
@@ -261,7 +265,7 @@ pub async fn rand_key_package(ciphersuite: Ciphersuite) -> (KeyPackage, ClientId
     let key = DatabaseKey::generate();
     let key_store = Database::open(ConnectionType::InMemory, &key).await.unwrap();
     let backend = MlsCryptoProvider::new(key_store);
-    let cs: Ciphersuite = ciphersuite.into();
+    let cs: MlsCiphersuite = ciphersuite.into();
     let signer = create_signature_keypair(&backend, cs);
 
     let cred = Credential::new_basic(client_id.clone());

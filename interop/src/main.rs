@@ -3,9 +3,9 @@
 use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
-use core_crypto::CiphersuiteName;
 #[cfg(target_family = "wasm")]
 use core_crypto::DatabaseKey;
+use core_crypto::MlsCiphersuite;
 use tls_codec::Serialize;
 
 #[cfg(not(target_family = "wasm"))]
@@ -20,7 +20,7 @@ const MLS_MAIN_CLIENTID: &[u8] = b"test_main";
 const MLS_CONVERSATION_ID: &[u8] = b"test_conversation";
 const ROUNDTRIP_MSG_AMOUNT: usize = 100;
 
-const CIPHERSUITE_IN_USE: CiphersuiteName = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+const CIPHERSUITE_IN_USE: MlsCiphersuite = MlsCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 
 // TODO: Add support for Android emulator. Tracking issue: WPB-9646
 // TODO: Add support for iOS emulator when on macOS. Tracking issue: WPB-9646
