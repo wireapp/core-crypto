@@ -33,7 +33,7 @@ pub use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed};
 pub use openmls::{
     group::{MlsGroup, MlsGroupConfig},
     prelude::{
-        Ciphersuite as CiphersuiteName, GroupEpoch, KeyPackage, KeyPackageIn, KeyPackageRef, MlsMessageIn, Node,
+        Ciphersuite as MlsCiphersuite, GroupEpoch, KeyPackage, KeyPackageIn, KeyPackageRef, MlsMessageIn, Node,
         group_info::VerifiableGroupInfo,
     },
 };
