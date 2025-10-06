@@ -4,7 +4,7 @@ use openmls::prelude::{KeyPackageIn, LeafNode};
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
-    ClientId, LeafError, CredentialType, MlsError, MlsGroupInfoBundle, MlsTransportResponse, RecursiveError,
+    ClientId, CredentialType, LeafError, MlsError, MlsGroupInfoBundle, MlsTransportResponse, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::{
         conversation::{
@@ -212,10 +212,7 @@ impl ConversationGuard {
         let cb = match cb {
             Some(cb) => cb,
             None => &*client
-                .find_most_recent_credential(
-                    conversation.ciphersuite().signature_algorithm(),
-                    CredentialType::X509,
-                )
+                .find_most_recent_credential(conversation.ciphersuite().signature_algorithm(), CredentialType::X509)
                 .await
                 .map_err(RecursiveError::mls_client("finding most recent x509 credential"))?,
         };

@@ -24,7 +24,7 @@ use identities::Identities;
 use key_package::KEYPACKAGE_DEFAULT_LIFETIME;
 use log::debug;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
-use openmls::prelude::{Credential as MlsCredential, CredentialType as MlsCredentialType};
+use openmls::prelude::Credential as MlsCredential;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
 use openmls_x509_credential::CertificateKeyPair;
@@ -518,7 +518,7 @@ impl Session {
             None => false,
             Some(SessionInner { identities, .. }) => identities
                 .iter()
-                .any(|(_, cred)| cred.credential().credential_type() == MlsCredentialType::X509),
+                .any(|(_, cred)| cred.credential().credential_type() == CredentialType::X509),
         }
     }
 
@@ -537,6 +537,7 @@ impl Session {
                 Error::CredentialNotFound(_) => LeafError::E2eiEnrollmentNotDone.into(),
                 _ => e,
             }),
+            CredentialType::Unknown(n) => Err(Error::UnknownCredential(n)),
         }
     }
 
@@ -598,6 +599,7 @@ mod tests {
                     let signer = signer.expect("Missing intermediate CA");
                     CertificateBundle::rand_identifier(&client_id, &[signer])
                 }
+                CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
             };
             let backend = self.crypto_provider.clone();
             self.generate(identity, &backend, &[case.ciphersuite()]).await?;

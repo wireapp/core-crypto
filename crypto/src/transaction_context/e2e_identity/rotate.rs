@@ -4,7 +4,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use super::error::{Error, Result};
 use crate::{
-    CertificateBundle, Ciphersuite, E2eiEnrollment, KeystoreError, CredentialType, MlsError, RecursiveError,
+    CertificateBundle, Ciphersuite, CredentialType, E2eiEnrollment, KeystoreError, MlsError, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     transaction_context::TransactionContext,
@@ -596,6 +596,7 @@ mod tests {
                                 )
                                 .await
                             }
+                            CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
                         }
                         .map_err(RecursiveError::transaction("creating new enrollment"))
                         .map_err(Into::into)
@@ -656,6 +657,7 @@ mod tests {
                                 )
                                 .await
                             }
+                            CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
                         }
                         .map_err(RecursiveError::transaction("creating new enrollment"))
                         .map_err(Into::into)

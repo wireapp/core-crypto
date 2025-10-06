@@ -21,8 +21,8 @@ use super::{
     test_conversation::operation_guard::{Commit, OperationGuard},
 };
 use crate::{
-    CertificateBundle, Ciphersuite, CoreCrypto, MlsConversationConfiguration, MlsConversationDecryptMessage,
-    CredentialType, RecursiveError, WireIdentity,
+    CertificateBundle, Ciphersuite, CoreCrypto, CredentialType, MlsConversationConfiguration,
+    MlsConversationDecryptMessage, RecursiveError, WireIdentity,
     e2e_identity::{
         device_status::DeviceStatus,
         id::{QualifiedE2eiClientId, WireQualifiedClientId},
@@ -152,6 +152,7 @@ impl SessionContext {
                     .await
                     .unwrap()
             }
+            CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
         }
     }
 
