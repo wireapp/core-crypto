@@ -7,8 +7,11 @@ for crate in crypto-macros \
              keystore-dump \
              keystore \
              mls-provider; do
-    sed -i "0,/^version = \"[^\"]\+\"/{s//version = \"${new_version}\"/;b;}" $crate/Cargo.toml
-done
+
+        perl -0777 -pi -e \
+            's/^version = "[^"]+"/version = "'"$new_version"'"/m' \
+            "$crate/Cargo.toml"
+    done
 
 # Make sure workspace Cargo.lock is updated with new versions.
 cargo update -w
@@ -20,8 +23,8 @@ jq "setpath([\"version\"]; \"${new_version}\")" ${js_path}/package.json > ${js_p
 mv ${js_path}/package.json.new ${js_path}/package.json
 
 # Update Maven package version.
-sed -i "0,/^VERSION_NAME=[0-9.]\+$/{s//VERSION_NAME=${new_version}/;b;}" crypto-ffi/bindings/gradle.properties
+perl -pi -e 's/^VERSION_NAME=[0-9.]+/VERSION_NAME='"$new_version"'/' crypto-ffi/bindings/gradle.properties
 
 # Update Swift package version.
-sed -i "0,/^MARKETING_VERSION=[0-9.]\+$/{s//MARKETING_VERSION=${new_version}/;b;}" crypto-ffi/bindings/swift/BuildSettings.xcconfig
-sed -i "0,/^CURRENT_PROJECT_VERSION=[0-9.]\+$/{s//CURRENT_PROJECT_VERSION=${new_version}/;b;}" crypto-ffi/bindings/swift/BuildSettings.xcconfig
+perl -pi -e 's/^MARKETING_VERSION=[0-9.]+/MARKETING_VERSION='"$new_version"'/' crypto-ffi/bindings/swift/BuildSettings.xcconfig
+perl -pi -e 's/^CURRENT_PROJECT_VERSION=[0-9.]+/CURRENT_PROJECT_VERSION='"$new_version"'/' crypto-ffi/bindings/swift/BuildSettings.xcconfig
