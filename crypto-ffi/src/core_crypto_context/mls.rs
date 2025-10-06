@@ -1,6 +1,6 @@
 use core_crypto::{
-    Ciphersuite, ClientIdentifier, KeyPackageIn, MlsConversationConfiguration, RecursiveError, VerifiableGroupInfo,
-    mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
+    Ciphersuite as CryptoCiphersuite, ClientIdentifier, KeyPackageIn, MlsConversationConfiguration, RecursiveError,
+    VerifiableGroupInfo, mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
 };
 use tls_codec::{Deserialize as _, Serialize as _};
 #[cfg(target_family = "wasm")]
@@ -60,7 +60,10 @@ impl CoreCryptoContext {
         self.inner
             .mls_init(
                 ClientIdentifier::Basic(client_id.as_cc()),
-                &ciphersuites.into_iter().map(Ciphersuite::from).collect::<Vec<_>>(),
+                &ciphersuites
+                    .into_iter()
+                    .map(CryptoCiphersuite::from)
+                    .collect::<Vec<_>>(),
             )
             .await?;
         Ok(())
