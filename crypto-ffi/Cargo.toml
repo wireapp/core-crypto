@@ -25,24 +25,25 @@ default = ["proteus"]
 proteus = ["core-crypto/proteus", "dep:proteus-wasm"]
 
 [dependencies]
-thiserror.workspace = true
-cfg-if.workspace = true
-futures-util.workspace = true
-async-trait.workspace = true
-tls_codec.workspace = true
 async-lock.workspace = true
-log.workspace = true
-log-reload.workspace = true
-serde_json.workspace = true
-derive_more.workspace = true
-proteus-wasm = { workspace = true, optional = true }
+async-trait.workspace = true
+cfg-if.workspace = true
 core-crypto-keystore.workspace = true
 core-crypto-macros.workspace = true
 core-crypto.workspace = true
-obfuscate = { workspace = true, features = ["openmls"] }
-rmp-serde.workspace = true
-paste = "1.0.15"
+derive_more.workspace = true
+futures-util.workspace = true
 hex.workspace = true
+log-reload.workspace = true
+log.workspace = true
+mls-crypto-provider.workspace = true
+obfuscate = { workspace = true, features = ["openmls"] }
+paste = "1.0.15"
+proteus-wasm = { workspace = true, optional = true }
+rmp-serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tls_codec.workspace = true
 
 # see https://github.com/RustCrypto/hashes/issues/404
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")))'.dependencies]

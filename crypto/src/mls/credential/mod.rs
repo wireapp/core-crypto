@@ -1,3 +1,7 @@
+//! This module focuses on [`Credential`]s: cryptographic assertions of identity.
+//!
+//! Credentials can be basic, or based on an x509 certificate chain.
+
 use std::{
     cmp::Ordering,
     hash::{Hash, Hasher},
@@ -13,7 +17,8 @@ pub(crate) mod ext;
 pub(crate) mod typ;
 pub(crate) mod x509;
 
-pub(crate) use error::{Error, Result};
+pub use error::Error;
+pub(crate) use error::Result;
 
 use crate::{ClientId, MlsError};
 
@@ -75,6 +80,16 @@ impl Credential {
             credential: self.mls_credential.clone(),
             signature_key: self.signature_key_pair.to_public_vec().into(),
         }
+    }
+
+    /// Earliest valid time of creation for this credential.
+    ///
+    /// This is represented as seconds after the unix epoch.
+    ///
+    /// Only meaningful for X509, where it is the "valid_from" claim of the leaf credential.
+    /// For basic credentials, this is always 0.
+    pub fn earliest_validity(&self) -> u64 {
+        self.created_at
     }
 }
 
