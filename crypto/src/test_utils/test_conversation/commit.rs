@@ -6,7 +6,7 @@ use super::{
     operation_guard::{AddGuard, Commit, OperationGuard, TestOperation},
 };
 use crate::{
-    MlsCredentialType,
+    CredentialType,
     mls::{
         conversation::{ConversationWithMls as _, pending_conversation::PendingConversation},
         credential::Credential,
@@ -31,7 +31,7 @@ impl<'a> TestConversation<'a> {
     /// Like [Self::invite_notify], but the key packages of the invited members will be of the provided credential type.
     pub async fn invite_with_credential_type_notify(
         self,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
         sessions: impl IntoIterator<Item = &'a SessionContext>,
     ) -> TestConversation<'a> {
         self.invite_with_credential_type(credential_type, sessions)
@@ -43,7 +43,7 @@ impl<'a> TestConversation<'a> {
     /// Like [Self::invite], but the key packages of the invited members will be of the provided credential type.
     pub async fn invite_with_credential_type(
         self,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
         sessions: impl IntoIterator<Item = &'a SessionContext>,
     ) -> OperationGuard<'a, Commit> {
         let new_members = sessions.into_iter().collect::<Vec<_>>();

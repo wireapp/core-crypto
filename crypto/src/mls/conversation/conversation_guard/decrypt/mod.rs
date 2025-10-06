@@ -20,8 +20,8 @@ use openmls::{
     },
     group::MlsGroup,
     prelude::{
-        ContentType, CredentialType, LeafNodeIndex, Member, ProcessMessageError, ProcessedMessageContent, Proposal,
-        StageCommitError, StagedCommit, ValidationError,
+        ContentType, CredentialType as MlsCredentialType, LeafNodeIndex, Member, ProcessMessageError,
+        ProcessedMessageContent, Proposal, StageCommitError, StagedCommit, ValidationError,
     },
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
@@ -558,13 +558,13 @@ impl ConversationGuard {
                 .filter_map(|add_proposal| {
                     let credential = add_proposal.add_proposal().key_package().leaf_node().credential();
 
-                    matches!(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
+                    matches!(credential.credential_type(), MlsCredentialType::X509).then(|| credential.clone())
                 })
                 .collect();
             let state = Session::compute_conversation_state(
                 self.ciphersuite().await,
                 credentials.iter(),
-                crate::MlsCredentialType::X509,
+                crate::CredentialType::X509,
                 backend.authentication_service().borrow().await.as_ref(),
             )
             .await;

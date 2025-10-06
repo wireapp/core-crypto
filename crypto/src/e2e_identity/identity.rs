@@ -4,7 +4,7 @@ use x509_cert::der::pem::LineEnding;
 
 use super::{Error, Result};
 use crate::{
-    MlsCredentialType,
+    CredentialType,
     e2e_identity::{device_status::DeviceStatus, id::WireQualifiedClientId},
 };
 
@@ -19,7 +19,7 @@ pub struct WireIdentity {
     /// Status of the Credential at the moment T when this object is created
     pub status: DeviceStatus,
     /// Indicates whether the credential is Basic or X509
-    pub credential_type: MlsCredentialType,
+    pub credential_type: CredentialType,
     /// In case 'credential_type' is [MlsCredentialType::X509] this is populated
     pub x509_identity: Option<X509Identity>,
 }
@@ -60,7 +60,7 @@ impl<'a> TryFrom<(wire_e2e_identity::prelude::WireIdentity, &'a [u8])> for WireI
             client_id: client_id.try_into()?,
             status: i.status.into(),
             thumbprint: i.thumbprint,
-            credential_type: MlsCredentialType::X509,
+            credential_type: CredentialType::X509,
             x509_identity: Some(X509Identity {
                 handle: i.handle.to_string(),
                 display_name: i.display_name,

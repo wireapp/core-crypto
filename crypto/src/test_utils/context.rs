@@ -22,7 +22,7 @@ use super::{
 };
 use crate::{
     CertificateBundle, Ciphersuite, CoreCrypto, MlsConversationConfiguration, MlsConversationDecryptMessage,
-    MlsCredentialType, RecursiveError, WireIdentity,
+    CredentialType, RecursiveError, WireIdentity,
     e2e_identity::{
         device_status::DeviceStatus,
         id::{QualifiedE2eiClientId, WireQualifiedClientId},
@@ -73,7 +73,7 @@ impl SessionContext {
             .unwrap()
     }
 
-    pub async fn count_key_package(&self, cs: Ciphersuite, ct: Option<MlsCredentialType>) -> usize {
+    pub async fn count_key_package(&self, cs: Ciphersuite, ct: Option<CredentialType>) -> usize {
         self.transaction
             .mls_provider()
             .await
@@ -96,7 +96,7 @@ impl SessionContext {
         self.rand_key_package_of_type(case, case.credential_type).await
     }
 
-    pub async fn rand_key_package_of_type(&self, case: &TestContext, ct: MlsCredentialType) -> KeyPackageIn {
+    pub async fn rand_key_package_of_type(&self, case: &TestContext, ct: CredentialType) -> KeyPackageIn {
         let client = self.transaction.session().await.unwrap();
         client
             .generate_one_keypackage(&self.transaction.mls_provider().await.unwrap(), case.ciphersuite(), ct)
@@ -138,14 +138,14 @@ impl SessionContext {
         let client_id = client.id().await.unwrap();
 
         match case.credential_type {
-            MlsCredentialType::Basic => {
+            CredentialType::Basic => {
                 let cb = Credential::basic(case.signature_scheme(), &client_id, backend).unwrap();
                 client
                     .save_identity(&backend.keystore(), None, case.signature_scheme(), cb)
                     .await
                     .unwrap()
             }
-            MlsCredentialType::X509 => {
+            CredentialType::X509 => {
                 let cert_bundle = CertificateBundle::rand(&client_id, signer.unwrap());
                 client
                     .save_new_x509_credential(transaction, case.signature_scheme(), cert_bundle)
@@ -158,7 +158,7 @@ impl SessionContext {
     pub async fn find_most_recent_credential(
         &self,
         sc: SignatureScheme,
-        ct: MlsCredentialType,
+        ct: CredentialType,
     ) -> Option<Arc<Credential>> {
         self.session.find_most_recent_credential(sc, ct).await.ok()
     }
@@ -166,7 +166,7 @@ impl SessionContext {
     pub async fn find_credential(
         &self,
         sc: SignatureScheme,
-        ct: MlsCredentialType,
+        ct: CredentialType,
         pk: &SignaturePublicKey,
     ) -> Option<Arc<Credential>> {
         self.session()

@@ -27,7 +27,7 @@ use obfuscate::{Obfuscate, Obfuscated};
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
-    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Error, MlsCredentialType, MlsError, RecursiveError, Result,
+    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Error, CredentialType, MlsError, RecursiveError, Result,
     Session, SessionConfig,
 };
 
@@ -103,7 +103,7 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
 
     // we can generate a key package from the ephemeral cc and ciphersutite
     let [key_package] = tx
-        .get_or_create_client_keypackages(ciphersuite, MlsCredentialType::Basic, 1)
+        .get_or_create_client_keypackages(ciphersuite, CredentialType::Basic, 1)
         .await
         .map_err(RecursiveError::transaction("generating keypackages"))?
         .try_into()

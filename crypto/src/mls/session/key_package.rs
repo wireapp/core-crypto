@@ -13,7 +13,7 @@ use tls_codec::{Deserialize, Serialize};
 
 use super::{Error, Result};
 use crate::{
-    Ciphersuite, Credential, KeystoreError, MlsConversationConfiguration, MlsCredentialType, MlsError, Session,
+    Ciphersuite, Credential, KeystoreError, MlsConversationConfiguration, CredentialType, MlsError, Session,
     mls::session::SessionInner,
 };
 
@@ -82,7 +82,7 @@ impl Session {
         &self,
         count: usize,
         ciphersuite: Ciphersuite,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
         backend: &MlsCryptoProvider,
     ) -> Result<Vec<KeyPackage>> {
         // Auto-prune expired keypackages on request
@@ -96,7 +96,7 @@ impl Session {
             .into_iter()
             // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
             .filter(|kp|
-                kp.ciphersuite() == ciphersuite.0 && MlsCredentialType::from(kp.leaf_node().credential().credential_type()) == credential_type)
+                kp.ciphersuite() == ciphersuite.0 && CredentialType::from(kp.leaf_node().credential().credential_type()) == credential_type)
             .collect::<Vec<_>>();
 
         let kpb_count = existing_kps.len();
@@ -141,7 +141,7 @@ impl Session {
         &self,
         backend: &MlsCryptoProvider,
         ciphersuite: Ciphersuite,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> Result<usize> {
         let kps: Vec<StoredKeypackage> = backend
             .key_store()
@@ -156,7 +156,7 @@ impl Session {
             // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
             .filter(|kp| {
                 kp.as_ref()
-                    .map(|b| b.ciphersuite() == ciphersuite.0 && MlsCredentialType::from(b.leaf_node().credential().credential_type()) == credential_type)
+                    .map(|b| b.ciphersuite() == ciphersuite.0 && CredentialType::from(b.leaf_node().credential().credential_type()) == credential_type)
                     .unwrap_or_default()
             })
         {
@@ -398,7 +398,7 @@ mod tests {
             // Generate 5 Basic key packages first
             let _basic_key_packages = session_context
                 .transaction
-                .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::Basic, 5)
+                .get_or_create_client_keypackages(cipher_suite, CredentialType::Basic, 5)
                 .await
                 .unwrap();
 
@@ -435,14 +435,14 @@ mod tests {
             // Request X509 key packages
             let x509_key_packages = session_context
                 .transaction
-                .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::X509, 5)
+                .get_or_create_client_keypackages(cipher_suite, CredentialType::X509, 5)
                 .await
                 .unwrap();
 
             // Verify that the key packages are X509
             assert!(
-                x509_key_packages.iter().all(|kp| MlsCredentialType::X509
-                    == MlsCredentialType::from(kp.leaf_node().credential().credential_type()))
+                x509_key_packages.iter().all(|kp| CredentialType::X509
+                    == CredentialType::from(kp.leaf_node().credential().credential_type()))
             );
         })
         .await

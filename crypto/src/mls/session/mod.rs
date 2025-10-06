@@ -24,15 +24,15 @@ use identities::Identities;
 use key_package::KEYPACKAGE_DEFAULT_LIFETIME;
 use log::debug;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
-use openmls::prelude::{Credential as MlsCredential, CredentialType};
+use openmls::prelude::{Credential as MlsCredential, CredentialType as MlsCredentialType};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
 use openmls_x509_credential::CertificateKeyPair;
 use tls_codec::{Deserialize, Serialize};
 
 use crate::{
-    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, HistorySecret, KeystoreError, LeafError,
-    MlsCredentialType, MlsError, MlsTransport, RecursiveError, ValidatedSessionConfig,
+    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, CredentialType, HistorySecret,
+    KeystoreError, LeafError, MlsError, MlsTransport, RecursiveError, ValidatedSessionConfig,
     group_store::GroupStore,
     mls::{
         self, HasSessionAndCrypto,
@@ -250,7 +250,7 @@ impl Session {
     pub async fn public_key(
         &self,
         ciphersuite: Ciphersuite,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> crate::mls::Result<Vec<u8>> {
         let cb = self
             .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
@@ -518,7 +518,7 @@ impl Session {
             None => false,
             Some(SessionInner { identities, .. }) => identities
                 .iter()
-                .any(|(_, cred)| cred.credential().credential_type() == CredentialType::X509),
+                .any(|(_, cred)| cred.credential().credential_type() == MlsCredentialType::X509),
         }
     }
 
@@ -526,14 +526,14 @@ impl Session {
         &self,
         backend: &MlsCryptoProvider,
         sc: SignatureScheme,
-        ct: MlsCredentialType,
+        ct: CredentialType,
     ) -> Result<Arc<Credential>> {
         match ct {
-            MlsCredentialType::Basic => {
+            CredentialType::Basic => {
                 self.init_basic_credential_if_missing(backend, sc).await?;
                 self.find_most_recent_credential(sc, ct).await
             }
-            MlsCredentialType::X509 => self.find_most_recent_credential(sc, ct).await.map_err(|e| match e {
+            CredentialType::X509 => self.find_most_recent_credential(sc, ct).await.map_err(|e| match e {
                 Error::CredentialNotFound(_) => LeafError::E2eiEnrollmentNotDone.into(),
                 _ => e,
             }),
@@ -545,7 +545,7 @@ impl Session {
         backend: &MlsCryptoProvider,
         sc: SignatureScheme,
     ) -> Result<()> {
-        let existing_cb = self.find_most_recent_credential(sc, MlsCredentialType::Basic).await;
+        let existing_cb = self.find_most_recent_credential(sc, CredentialType::Basic).await;
         if matches!(existing_cb, Err(Error::CredentialNotFound(_))) {
             let id = self.id().await?;
             debug!(id:% = &id; "Initializing basic credential");
@@ -593,8 +593,8 @@ mod tests {
             let rnd_id = rand::random::<usize>();
             let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated());
             let identity = match case.credential_type {
-                MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.as_str().into()),
-                MlsCredentialType::X509 => {
+                CredentialType::Basic => ClientIdentifier::Basic(client_id.as_str().into()),
+                CredentialType::X509 => {
                     let signer = signer.expect("Missing intermediate CA");
                     CertificateBundle::rand_identifier(&client_id, &[signer])
                 }
@@ -618,7 +618,7 @@ mod tests {
             &self,
             backend: &MlsCryptoProvider,
             cs: Ciphersuite,
-            ct: MlsCredentialType,
+            ct: CredentialType,
         ) -> Result<openmls::prelude::KeyPackage> {
             let cb = self.find_most_recent_credential(cs.signature_algorithm(), ct).await?;
             self.generate_one_keypackage_from_credential(backend, cs, &cb).await

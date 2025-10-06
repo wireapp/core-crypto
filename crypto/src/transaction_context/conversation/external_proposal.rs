@@ -3,7 +3,7 @@ use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, MlsMessageOut};
 use super::Result;
 use crate::{
     Ciphersuite, ConversationId, LeafError, MlsError, RecursiveError,
-    mls::{self, credential::typ::MlsCredentialType},
+    mls::{self, credential::typ::CredentialType},
     transaction_context::TransactionContext,
 };
 
@@ -30,7 +30,7 @@ impl TransactionContext {
         conversation_id: ConversationId,
         epoch: GroupEpoch,
         ciphersuite: Ciphersuite,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> Result<MlsMessageOut> {
         let group_id = GroupId::from_slice(conversation_id.as_ref());
         let mls_provider = self
@@ -47,7 +47,7 @@ impl TransactionContext {
             .await;
         let cb = match (cb, credential_type) {
             (Ok(cb), _) => cb,
-            (Err(mls::session::Error::CredentialNotFound(_)), MlsCredentialType::Basic) => {
+            (Err(mls::session::Error::CredentialNotFound(_)), CredentialType::Basic) => {
                 // If a Basic Credential does not exist, just create one instead of failing
                 client
                     .init_basic_credential_if_missing(&mls_provider, ciphersuite.signature_algorithm())
@@ -61,7 +61,7 @@ impl TransactionContext {
                         "finding most recent credential (which we just created)",
                     ))?
             }
-            (Err(mls::session::Error::CredentialNotFound(_)), MlsCredentialType::X509) => {
+            (Err(mls::session::Error::CredentialNotFound(_)), CredentialType::X509) => {
                 return Err(LeafError::E2eiEnrollmentNotDone.into());
             }
             (Err(e), _) => return Err(RecursiveError::mls_client("finding most recent credential")(e).into()),
