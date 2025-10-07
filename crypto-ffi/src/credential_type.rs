@@ -1,12 +1,7 @@
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
-
 use crate::CoreCryptoError;
 
 /// Type of Credential
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, uniffi::Enum)]
 #[repr(u8)]
 pub enum CredentialType {
     /// Basic credential i.e. a KeyPair
