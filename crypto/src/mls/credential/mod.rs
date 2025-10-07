@@ -2,24 +2,35 @@
 //!
 //! Credentials can be basic, or based on an x509 certificate chain.
 
+pub(crate) mod crl;
+mod error;
+pub(crate) mod ext;
+mod keypairs;
+pub(crate) mod x509;
+
 use std::{
     cmp::Ordering,
     hash::{Hash, Hasher},
 };
 
-use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, SignatureScheme};
-use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::crypto::OpenMlsCrypto;
-
-pub(crate) mod crl;
-mod error;
-pub(crate) mod ext;
-pub(crate) mod x509;
-
+use core_crypto_keystore::{
+    connection::FetchFromDatabase,
+    entities::{EntityFindParams, StoredCredential},
+};
 pub use error::Error;
 pub(crate) use error::Result;
+use mls_crypto_provider::Database;
+use openmls::prelude::{
+    Credential as MlsCredential, CredentialType, CredentialWithKey, MlsCredentialType, SignatureScheme,
+};
+use openmls_basic_credential::SignatureKeyPair;
+use openmls_traits::crypto::OpenMlsCrypto;
+use tls_codec::Deserialize;
 
-use crate::{ClientId, MlsError};
+use crate::{
+    ClientId, KeystoreError, MlsError, RecursiveError,
+    mls::credential::{error::CredentialValidationError, ext::CredentialExt as _},
+};
 
 /// A cryptographic credential.
 ///
@@ -27,6 +38,17 @@ use crate::{ClientId, MlsError};
 /// depending on its credential type, but is independent of any client instance or storage.
 ///
 /// To attach to a particular client instance and store, see [`Session::add_credential`][crate::Session::add_credential].
+///
+/// Note: the current database design makes some questionable assumptions:
+///
+/// - There are always either 0 or 1 `StoredSignatureKeypair` instances in the DB for a particular signature scheme
+/// - There may be multiple `StoredCredential` instances in the DB for a particular signature scheme, but they all share
+///   the same `ClientId` / signing key. In other words, the same signing keypair is _reused_ between credentials.
+/// - Practically, the code ensures that there is a 1:1 correspondence between signing scheme <-> identity/credential,
+///   and we need to maintain that property for now.
+///
+/// Work is ongoing to fix those limitations; see WPB-20844. Until that is resolved, we enforce those restrictions by
+/// raising errors as required to preserve DB integrity.
 #[derive(core_crypto_macros::Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Credential {
     /// MLS internal credential. Stores the credential type.
@@ -44,6 +66,33 @@ pub struct Credential {
 }
 
 impl Credential {
+    /// Ensure that the provided `MlsCredential` matches the client id / signature key provided
+    pub(crate) fn validate_mls_credential(
+        mls_credential: &MlsCredential,
+        client_id: &ClientId,
+        signature_key: &SignatureKeyPair,
+    ) -> Result<(), CredentialValidationError> {
+        match mls_credential.mls_credential() {
+            openmls::prelude::MlsCredentialType::Basic(_) => {
+                if client_id.as_slice() != mls_credential.identity() {
+                    return Err(CredentialValidationError::WrongCredential);
+                }
+            }
+            openmls::prelude::MlsCredentialType::X509(cert) => {
+                let certificate_public_key = cert
+                    .extract_public_key()
+                    .map_err(RecursiveError::mls_credential(
+                        "extracting public key from certificate in credential validation",
+                    ))?
+                    .ok_or(CredentialValidationError::NoPublicKey)?;
+                if signature_key.public() != certificate_public_key {
+                    return Err(CredentialValidationError::WrongCredential);
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Generate a basic credential.
     ///
     /// The result is independent of any client instance and the database; it lives in memory only.
@@ -90,6 +139,90 @@ impl Credential {
     pub fn earliest_validity(&self) -> u64 {
         self.created_at
     }
+
+    /// Get the client ID associated with this credential
+    pub fn client_id(&self) -> ClientId {
+        self.mls_credential.identity().to_owned().into()
+    }
+
+    /// Find all credentials in the database matching the provided client id and signature scheme.
+    ///
+    /// Our database does not currently support indices or even in-db searching, so this moves all data
+    /// from the DB to the runtime, decodes everything, and then filters. This is obviously suboptimal,
+    /// but that's only going to be improved with WPB-20839.
+    pub(crate) async fn find(
+        database: &Database,
+        client_id: Option<&ClientId>,
+        signature_scheme: Option<SignatureScheme>,
+        credential_type: Option<CredentialType>,
+    ) -> Result<Vec<Self>> {
+        let mut stored_keypairs = keypairs::load_all(database).await?;
+        if let Some(signature_scheme) = signature_scheme {
+            stored_keypairs.retain(|keypair| keypair.signature_scheme == signature_scheme as u16);
+        }
+        if stored_keypairs.is_empty() {
+            return Ok(Vec::new());
+        }
+        let stored_keypairs = stored_keypairs
+            .iter()
+            .map(keypairs::deserialize)
+            .collect::<Result<Vec<_>>>()
+            .map_err(RecursiveError::mls_credential(
+                "deserializing keypairs when finding credentials",
+            ))?;
+
+        let partial_credentials = database
+            .find_all::<StoredCredential>(EntityFindParams::default())
+            .await
+            .map_err(KeystoreError::wrap("finding all credentials"))?
+            .into_iter()
+            .filter(|stored| {
+                client_id
+                    .map(|client_id| client_id.as_ref() == stored.id)
+                    .unwrap_or(true)
+            })
+            .map(|stored| -> Result<_> {
+                let mls_credential = MlsCredential::tls_deserialize_exact(&stored.credential)
+                    .map_err(Error::tls_deserialize("Credential"))?;
+                // What a perfect example of a place where a `ClientIdRef` would be very helpful
+                let client_id = ClientId::from(stored.id.to_owned());
+                Ok((mls_credential, client_id, stored.created_at))
+            });
+
+        let mut out = Vec::new();
+        for partial in partial_credentials {
+            let (ref mls_credential, client_id, created_at) = partial?;
+
+            if !credential_type
+                .map(|credential_type| credential_type == mls_credential.credential_type())
+                .unwrap_or(true)
+            {
+                // credential type did not match
+                continue;
+            }
+
+            for signature_key_pair in &stored_keypairs {
+                if Self::validate_mls_credential(mls_credential, &client_id, signature_key_pair).is_err() {
+                    // this probably doesn't happen often, but no point getting weird about it if it does;
+                    // just indicates it's not a match
+                    continue;
+                }
+
+                out.push(Self {
+                    mls_credential: mls_credential.to_owned(),
+                    signature_key_pair: signature_key_pair.to_owned(),
+                    created_at,
+                })
+            }
+        }
+
+        Ok(out)
+    }
+
+    /// Load all credentials from the database
+    pub(crate) async fn get_all(database: &Database) -> Result<Vec<Self>> {
+        Self::find(database, None, None, None).await
+    }
 }
 
 impl From<Credential> for CredentialWithKey {
@@ -120,10 +253,10 @@ impl Hash for Credential {
         // self.mls_credential.credential_type().hash(state); // not implemented for Reasons, idk
         self.mls_credential.identity().hash(state);
         match self.credential().mls_credential() {
-            openmls::prelude::MlsCredentialType::X509(cert) => {
+            MlsCredentialType::X509(cert) => {
                 cert.certificates.hash(state);
             }
-            openmls::prelude::MlsCredentialType::Basic(_) => {}
+            MlsCredentialType::Basic(_) => {}
         };
     }
 }
