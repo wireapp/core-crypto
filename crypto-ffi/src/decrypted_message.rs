@@ -2,8 +2,6 @@
 #![allow(deprecated)]
 
 use core_crypto::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage};
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
 
 use crate::{
     ClientId, CoreCryptoError, CoreCryptoResult, WireIdentity, client_id::ClientIdMaybeArc,
@@ -11,46 +9,32 @@ use crate::{
 };
 
 /// A decrypted message and various associated metadata
-#[derive(Debug)]
-#[cfg_attr(
-    target_family = "wasm",
-    wasm_bindgen(getter_with_clone),
-    derive(serde::Serialize, serde::Deserialize)
-)]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
+#[derive(Debug, uniffi::Record)]
 pub struct DecryptedMessage {
     /// Decrypted plaintext
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub message: Option<Vec<u8>>,
     /// False if processing this message caused the client to be removed from the group, i.e. due to a Remove commit
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = isActive))]
     pub is_active: bool,
     /// Commit delay in seconds.
     ///
     /// When set, clients must delay this long before processing a commit.
     /// This reduces load on the backend, which otherwise would receive epoch change notifications from all clients simultaneously.
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = commitDelay))]
     pub commit_delay: Option<u64>,
     /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = senderClientId))]
     pub sender_client_id: Option<ClientIdMaybeArc>,
     /// true when the decrypted message resulted in an epoch change i.e. it was a commit
     ///
     /// Deprecated: this member will be removed in the future. Prefer using the `EpochObserver` interface.
     #[deprecated = "This member will be removed in the future. Prefer using the `EpochObserver` interface."]
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = hasEpochChanged))]
     pub has_epoch_changed: bool,
     /// Identity claims present in the sender credential
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub identity: WireIdentity,
     /// Only set when the decrypted message is a commit.
     ///
     /// Contains buffered messages for next epoch which were received before the commit creating the epoch
     /// because the DS did not fan them out in order.
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = bufferedMessages))]
     pub buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
     /// New CRL distribution points that appeared by the introduction of a new credential
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = crlNewDistributionPoints))]
     pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
@@ -83,40 +67,27 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
 }
 
 /// to avoid recursive structs
-#[derive(Debug, Clone)]
-#[cfg_attr(
-    target_family = "wasm",
-    wasm_bindgen(getter_with_clone),
-    derive(serde::Serialize, serde::Deserialize)
-)]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
+#[derive(Debug, Clone, uniffi::Record)]
 pub struct BufferedDecryptedMessage {
     /// Decrypted plaintext
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub message: Option<Vec<u8>>,
     /// False if processing this message caused the client to be removed from the group, i.e. due to a Remove commit
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = isActive))]
     pub is_active: bool,
     /// Commit delay in seconds.
     ///
     /// When set, clients must delay this long before processing a commit.
     /// This reduces load on the backend, which otherwise would receive epoch change notifications from all clients simultaneously.
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = commitDelay))]
     pub commit_delay: Option<u64>,
     /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = senderClientId))]
     pub sender_client_id: Option<ClientIdMaybeArc>,
     /// true when the decrypted message resulted in an epoch change i.e. it was a commit
     ///
     /// Deprecated: this member will be removed in the future. Prefer using the `EpochObserver` interface.
     #[deprecated = "This member will be removed in the future. Prefer using the `EpochObserver` interface."]
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = hasEpochChanged))]
     pub has_epoch_changed: bool,
     /// Identity claims present in the sender credential
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub identity: WireIdentity,
     /// New CRL distribution points that appeared by the introduction of a new credential
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = crlNewDistributionPoints))]
     pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
