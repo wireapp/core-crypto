@@ -1,22 +1,11 @@
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
-
 use crate::{ConversationIdMaybeArc, conversation_id_coerce_maybe_arc, crl::NewCrlDistributionPoints};
 
 /// see [core_crypto::WelcomeBundle]
-#[derive(Debug)]
-#[cfg_attr(
-    target_family = "wasm",
-    wasm_bindgen(getter_with_clone),
-    derive(serde::Serialize, serde::Deserialize)
-)]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
+#[derive(Debug, uniffi::Record)]
 pub struct WelcomeBundle {
     /// Identifier of the joined conversation
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub id: ConversationIdMaybeArc,
     /// New CRL Distribution of members of this group
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = crlNewDistributionPoints))]
     pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 

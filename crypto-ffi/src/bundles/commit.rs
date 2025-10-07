@@ -15,7 +15,6 @@ pub struct CommitBundle {
     /// `GroupInfo` if the commit is merged
     pub group_info: GroupInfoBundle,
     /// An encrypted message to fan out to all other conversation members in the new epoch
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = "encryptedMessage", readonly))]
     pub encrypted_message: Option<Vec<u8>>,
 }
 
