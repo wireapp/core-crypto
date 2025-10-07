@@ -1,10 +1,6 @@
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
-
 use crate::{Ciphersuite, CoreCryptoFfi, CoreCryptoResult, CredentialType};
 
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+#[uniffi::export]
 impl CoreCryptoFfi {
     /// Gets the public key from a [`Credential`][crate::Credential] which has been added to this client.
     ///

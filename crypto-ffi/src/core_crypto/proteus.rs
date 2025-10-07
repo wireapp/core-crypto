@@ -3,8 +3,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::{CoreCryptoFfi, CoreCryptoResult, proteus_impl};
 
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+#[uniffi::export]
 impl CoreCryptoFfi {
     /// See [core_crypto::proteus::ProteusCentral::session_exists]
     pub async fn proteus_session_exists(&self, session_id: String) -> CoreCryptoResult<bool> {
