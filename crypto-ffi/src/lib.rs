@@ -6,7 +6,6 @@
 // No public item in this crate should lack documentation.
 #![cfg_attr(not(test), deny(missing_docs))]
 
-#[cfg(not(target_family = "wasm"))]
 uniffi::setup_scaffolding!("core_crypto_ffi");
 
 mod bundles;
@@ -65,9 +64,7 @@ pub use e2ei::{
     E2eiConversationState, acme_challenge::AcmeChallenge, acme_directory::AcmeDirectory, enrollment::E2eiEnrollment,
     new_acme_authz::NewAcmeAuthz, new_acme_order::NewAcmeOrder,
 };
-pub use ephemeral::HistorySecret;
-#[cfg(not(target_family = "wasm"))]
-pub use ephemeral::core_crypto_history_client;
+pub use ephemeral::{HistorySecret, core_crypto_history_client};
 #[cfg(feature = "proteus")]
 pub use error::proteus::ProteusError;
 pub use error::{CoreCryptoError, CoreCryptoResult, mls::MlsError};
