@@ -5,8 +5,8 @@ use std::{
 
 use async_lock::RwLock;
 use core_crypto::{
-    CertificateBundle, Ciphersuite, ClientId, ConnectionType, ConversationId, CoreCrypto, Database, DatabaseKey,
-    HistorySecret, MlsCommitBundle, MlsConversationConfiguration, CredentialType, MlsCustomConfiguration,
+    CertificateBundle, Ciphersuite, ClientId, ConnectionType, ConversationId, CoreCrypto, CredentialType, Database,
+    DatabaseKey, HistorySecret, MlsCommitBundle, MlsConversationConfiguration, MlsCustomConfiguration,
     MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse, Session, SessionConfig,
 };
 use criterion::BenchmarkId;
