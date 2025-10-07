@@ -1,10 +1,6 @@
-use std::collections::HashMap;
-#[cfg(not(target_family = "wasm"))]
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use core_crypto::{mls::conversation::Conversation as _, transaction_context::Error as TransactionError};
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
 
 use crate::{
     Ciphersuite, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CrlRegistration,
@@ -12,14 +8,9 @@ use crate::{
     crl::NewCrlDistributionPoints,
 };
 
-#[cfg(not(target_family = "wasm"))]
 type EnrollmentParameter = Arc<E2eiEnrollment>;
 
-#[cfg(target_family = "wasm")]
-type EnrollmentParameter = E2eiEnrollment;
-
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+#[uniffi::export]
 impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::e2ei_new_enrollment]
     pub async fn e2ei_new_enrollment(
@@ -216,10 +207,6 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_user_identities]
-    #[cfg_attr(
-        target_family = "wasm",
-        wasm_bindgen(unchecked_return_type = "Map<string, WireIdentity[]>")
-    )]
     pub async fn get_user_identities(
         &self,
         conversation_id: &ConversationId,
@@ -237,8 +224,6 @@ impl CoreCryptoContext {
                 Ok((k, identities))
             })
             .collect::<CoreCryptoResult<HashMap<_, _>>>()?;
-        #[cfg(target_family = "wasm")]
-        let user_ids = serde_wasm_bindgen::to_value(&user_ids)?;
         Ok(user_ids)
     }
 

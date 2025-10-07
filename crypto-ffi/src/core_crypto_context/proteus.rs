@@ -1,16 +1,8 @@
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
-
 use crate::{CoreCryptoContext, CoreCryptoResult, ProteusAutoPrekeyBundle, proteus_impl};
 
-#[cfg(not(target_family = "wasm"))]
 type BatchedEncryptedMessages = std::collections::HashMap<String, Vec<u8>>;
 
-#[cfg(target_family = "wasm")]
-type BatchedEncryptedMessages = JsValue;
-
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+#[uniffi::export]
 impl CoreCryptoContext {
     /// See [core_crypto::proteus::ProteusCentral::try_new]
     pub async fn proteus_init(&self) -> CoreCryptoResult<()> {
@@ -93,10 +85,6 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::proteus_encrypt_batched]
-    #[cfg_attr(
-        target_family = "wasm",
-        wasm_bindgen(unchecked_return_type = "Map<string, Uint8Array>")
-    )]
     pub async fn proteus_encrypt_batched(
         &self,
         sessions: Vec<String>,
@@ -104,10 +92,6 @@ impl CoreCryptoContext {
     ) -> CoreCryptoResult<BatchedEncryptedMessages> {
         proteus_impl!({
             let batched_encrypted_messages = self.inner.proteus_encrypt_batched(&sessions, &plaintext).await?;
-
-            #[cfg(target_family = "wasm")]
-            let batched_encrypted_messages = serde_wasm_bindgen::to_value(&batched_encrypted_messages)?;
-
             Ok(batched_encrypted_messages)
         })
     }
@@ -181,21 +165,6 @@ fn fingerprint_prekeybundle_inner(prekey: Vec<u8>) -> CoreCryptoResult<String> {
     proteus_impl!({ core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(&prekey).map_err(Into::into) })
 }
 
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen]
-impl CoreCryptoContext {
-    /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey_id]
-    pub fn proteus_last_resort_prekey_id() -> CoreCryptoResult<u16> {
-        last_resort_prekey_id_inner()
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle]
-    pub fn proteus_fingerprint_prekeybundle(prekey: Vec<u8>) -> CoreCryptoResult<String> {
-        fingerprint_prekeybundle_inner(prekey)
-    }
-}
-
-#[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
 impl CoreCryptoContext {
     /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey_id]
