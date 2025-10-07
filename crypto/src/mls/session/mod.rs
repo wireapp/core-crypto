@@ -1,4 +1,5 @@
 pub(crate) mod config;
+mod credential;
 pub(crate) mod e2e_identity;
 mod epoch_observer;
 mod error;

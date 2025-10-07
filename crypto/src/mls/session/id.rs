@@ -35,6 +35,12 @@ impl From<ClientId> for Box<[u8]> {
     }
 }
 
+impl AsRef<[u8]> for ClientId {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 #[cfg(test)]
 impl From<&str> for ClientId {
     fn from(value: &str) -> Self {
