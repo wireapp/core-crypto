@@ -1,14 +1,10 @@
 use core_crypto::{InnermostErrorMessage as _, RecursiveError};
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::JsValue;
 
 #[cfg(feature = "proteus")]
 use crate::ProteusError;
 use crate::{MlsError, error::log_error};
 
-#[derive(Debug, thiserror::Error)]
-#[cfg_attr(target_family = "wasm", derive(strum::AsRefStr))]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Error))]
+#[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum CoreCryptoError {
     #[error(transparent)]
     Mls {
@@ -23,23 +19,12 @@ pub enum CoreCryptoError {
     },
     #[error("End to end identity error: {e2ei_error}")]
     E2ei { e2ei_error: String },
-    #[cfg(target_family = "wasm")]
-    #[error(transparent)]
-    SerializationError(#[from] serde_wasm_bindgen::Error),
-    #[cfg(target_family = "wasm")]
-    #[error("Unknown ciphersuite identifier")]
-    UnknownCiphersuite,
-    #[cfg(target_family = "wasm")]
-    #[error("Transaction rolled back due to unexpected JS error: {error:?}")]
-    TransactionFailed { error: JsValue },
-    #[cfg(not(target_family = "wasm"))]
     #[error("Transaction rolled back due to unexpected uniffi error: {error:?}")]
     TransactionFailed { error: String },
     #[error("{msg}")]
     Other { msg: String },
 }
 
-#[cfg(not(target_family = "wasm"))]
 impl From<uniffi::UnexpectedUniFFICallbackError> for CoreCryptoError {
     fn from(value: uniffi::UnexpectedUniFFICallbackError) -> Self {
         Self::TransactionFailed {
@@ -256,30 +241,5 @@ impl CoreCryptoError {
 
     pub(crate) fn ad_hoc(err: impl ToString) -> Self {
         Self::Other { msg: err.to_string() }
-    }
-
-    #[cfg(target_family = "wasm")]
-    pub(crate) fn variant_name(&self) -> String {
-        let mut out = self.as_ref().to_string() + "Error";
-        match self {
-            Self::Mls { mls_error } => out += mls_error.as_ref(),
-            Self::Proteus { exception } => out += exception.as_ref(),
-            _ => {}
-        }
-        out
-    }
-
-    #[cfg(target_family = "wasm")]
-    pub(crate) fn stack(&self) -> Vec<String> {
-        let mut stack = Vec::new();
-        let mut err: &dyn std::error::Error = self;
-        stack.push(err.to_string());
-
-        while let Some(source) = err.source() {
-            stack.push(source.to_string());
-            err = source;
-        }
-
-        stack
     }
 }

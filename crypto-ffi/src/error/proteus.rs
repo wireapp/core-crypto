@@ -1,14 +1,7 @@
 use core_crypto::LeafError;
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::JsValue;
-
-#[cfg(target_family = "wasm")]
-use super::wasm::{JsErrorContext, JsValueMutationExt as _};
 
 /// Proteus produces these kinds of error
-#[derive(Debug, thiserror::Error)]
-#[cfg_attr(target_family = "wasm", derive(strum::AsRefStr))]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Error))]
+#[derive(Debug, thiserror::Error, uniffi::Error)]
 #[allow(missing_docs)] // error variants are self-describing
 pub enum ProteusError {
     #[error("The requested session was not found")]
@@ -45,26 +38,6 @@ impl ProteusError {
             Self::RemoteIdentityChanged => 204,
             Self::DuplicateMessage => 209,
             Self::Other { error_code: code } => *code,
-        }
-    }
-}
-
-#[cfg(target_family = "wasm")]
-impl JsErrorContext for ProteusError {
-    fn get_context(&self) -> JsValue {
-        match &self {
-            e @ (ProteusError::SessionNotFound
-            | ProteusError::DuplicateMessage
-            | ProteusError::RemoteIdentityChanged) => {
-                let value = JsValue::new_with_property("type", e.as_ref());
-                value.set_field("errorCode", js_sys::Number::from(e.error_code()));
-                value
-            }
-            e @ ProteusError::Other { error_code } => {
-                let value = JsValue::new_with_property("type", e.as_ref());
-                value.set_field("errorCode", js_sys::Number::from(*error_code));
-                value
-            }
         }
     }
 }
