@@ -54,23 +54,10 @@ async fn history_client_inner(history_secret: HistorySecret) -> CoreCryptoResult
         .map_err(Into::into)
 }
 
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen]
-impl CoreCryptoFfi {
-    /// Instantiate a history client.
-    ///
-    /// This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
-    /// Other use is a logic error.
-    pub async fn history_client(history_secret: HistorySecret) -> CoreCryptoResult<Self> {
-        history_client_inner(history_secret).await
-    }
-}
-
 /// Instantiate a history client.
 ///
 /// This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
 /// Other use is a logic error.
-#[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
 pub async fn core_crypto_history_client(history_secret: HistorySecret) -> CoreCryptoResult<CoreCryptoFfi> {
     history_client_inner(history_secret).await
