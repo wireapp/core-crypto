@@ -3,6 +3,8 @@ use std::{
     time::SystemTime,
 };
 
+use rusqlite::Transaction;
+
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
@@ -10,6 +12,28 @@ use crate::{
         Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsCredentialExt, StoredCredential, StringEntityId,
     },
 };
+
+impl StoredCredential {
+    fn load(transaction: &Transaction<'_>, rowid: i64, created_at: u64) -> CryptoKeystoreResult<Self> {
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "id", rowid, true)?;
+
+        let mut id = vec![];
+        blob.read_to_end(&mut id)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "credential", rowid, true)?;
+
+        let mut credential = vec![];
+        blob.read_to_end(&mut credential)?;
+        blob.close()?;
+
+        Ok(Self {
+            id,
+            credential,
+            created_at,
+        })
+    }
+}
 
 #[async_trait::async_trait]
 impl Entity for StoredCredential {
@@ -33,34 +57,18 @@ impl Entity for StoredCredential {
             params.to_sql()
         );
 
-        let mut stmt = transaction.prepare_cached(&query)?;
-        let mut rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
-        let entities = rows.try_fold(Vec::new(), |mut acc, rowid_result| {
-            use std::io::Read as _;
-            let (rowid, created_at) = rowid_result?;
-
-            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "id", rowid, true)?;
-
-            let mut id = vec![];
-            blob.read_to_end(&mut id)?;
-            blob.close()?;
-
-            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "credential", rowid, true)?;
-
-            let mut credential = vec![];
-            blob.read_to_end(&mut credential)?;
-            blob.close()?;
-
-            acc.push(Self {
-                id,
-                credential,
-                created_at,
-            });
-
-            crate::CryptoKeystoreResult::Ok(acc)
-        })?;
-
-        Ok(entities)
+        transaction
+            .prepare_cached(&query)?
+            .query_map([], |row| {
+                let rowid = row.get(0)?;
+                let created_at = row.get(1)?;
+                Ok((rowid, created_at))
+            })?
+            .map(|rowid_result| -> CryptoKeystoreResult<_> {
+                let (rowid, created_at) = rowid_result?;
+                Self::load(&transaction, rowid, created_at)
+            })
+            .collect()
     }
 
     async fn find_one(
@@ -70,29 +78,15 @@ impl Entity for StoredCredential {
         let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         use rusqlite::OptionalExtension as _;
-        let maybe_rowid = transaction
+        transaction
             .query_row(
                 "SELECT rowid, unixepoch(created_at) FROM mls_credentials WHERE id = ?",
                 [id.as_slice()],
                 |r| Ok((r.get::<_, i64>(0)?, r.get(1)?)),
             )
-            .optional()?;
-
-        if let Some((rowid, created_at)) = maybe_rowid {
-            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "credential", rowid, true)?;
-
-            let mut credential = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut credential)?;
-            blob.close()?;
-
-            Ok(Some(Self {
-                id: id.to_bytes(),
-                credential,
-                created_at,
-            }))
-        } else {
-            Ok(None)
-        }
+            .optional()?
+            .map(|(rowid, created_at)| Self::load(&transaction, rowid, created_at))
+            .transpose()
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
