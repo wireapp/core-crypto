@@ -63,9 +63,7 @@ impl DerefMut for WriteGuard<'_> {
 /// Wire end to end identity solution for fetching a x509 certificate which identifies a client.
 ///
 /// See [core_crypto::e2e_identity::E2eiEnrollment]
-#[derive(Debug)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = FfiWireE2EIdentity))]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
+#[derive(Debug, uniffi::Object)]
 pub struct E2eiEnrollment(RwLock<Option<core_crypto::E2eiEnrollment>>);
 
 // only these functions ever touch the contained lock directly
@@ -91,8 +89,7 @@ impl E2eiEnrollment {
     }
 }
 
-#[cfg_attr(target_family = "wasm", wasm_bindgen(js_class = FfiWireE2EIdentity))]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+#[uniffi::export]
 impl E2eiEnrollment {
     /// See [core_crypto::e2e_identity::E2eiEnrollment::directory_response]
     pub async fn directory_response(&self, directory: Vec<u8>) -> CoreCryptoResult<AcmeDirectory> {

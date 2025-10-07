@@ -1,23 +1,12 @@
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
-
 /// Result of an order creation.
 ///
 /// - See <https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4>
 /// - See [core_crypto::e2e_identity::types::E2eiNewAcmeOrder]
-#[derive(Debug)]
-#[cfg_attr(
-    target_family = "wasm",
-    wasm_bindgen(getter_with_clone),
-    derive(serde::Serialize, serde::Deserialize)
-)]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
+#[derive(Debug, uniffi::Record)]
 pub struct NewAcmeOrder {
     /// Opaque raw json value
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub delegate: Vec<u8>,
     /// Authorizations to create with `new_authz_request`
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub authorizations: Vec<String>,
 }
 

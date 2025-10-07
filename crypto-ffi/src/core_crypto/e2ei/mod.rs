@@ -1,14 +1,11 @@
 use core_crypto::RecursiveError;
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
 
 use crate::{Ciphersuite, CoreCryptoFfi, CoreCryptoResult};
 
 pub(crate) mod identities;
 
 // End-to-end identity methods
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+#[uniffi::export]
 impl CoreCryptoFfi {
     /// See [core_crypto::Session::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
