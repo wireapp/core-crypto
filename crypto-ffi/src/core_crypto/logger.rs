@@ -1,9 +1,7 @@
-#[cfg(not(target_family = "wasm"))]
-use std::sync::Arc;
 use std::{
     collections::BTreeMap,
     ops::Deref as _,
-    sync::{LazyLock, Once},
+    sync::{Arc, LazyLock, Once},
 };
 
 use log::{
@@ -11,16 +9,9 @@ use log::{
     kv::{Key, Value, VisitSource},
 };
 use log_reload::ReloadLog;
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
-
-#[cfg(target_family = "wasm")]
-use crate::{CoreCryptoError, CoreCryptoResult};
 
 /// Defines the log level for a CoreCrypto
-#[derive(Debug, Clone, Copy)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
+#[derive(Debug, Clone, Copy, uniffi::Enum)]
 #[repr(u8)]
 #[expect(missing_docs)] // these are standard log levels and additional docs are pointless
 pub enum CoreCryptoLogLevel {
@@ -57,7 +48,6 @@ impl From<Level> for CoreCryptoLogLevel {
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 #[uniffi(flat_error)]
 pub enum LoggingError {
@@ -66,7 +56,6 @@ pub enum LoggingError {
 }
 
 /// This trait is used to provide a callback mechanism to hook up the respective platform logging system.
-#[cfg(not(target_family = "wasm"))]
 #[uniffi::export(with_foreign)]
 pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
     /// Core Crypto will call this method whenever it needs to log a message.
@@ -75,66 +64,10 @@ pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
     fn log(&self, level: CoreCryptoLogLevel, message: String, context: Option<String>) -> Result<(), LoggingError>;
 }
 
-/// This struct stores a log function and its `this` value, which should be a class instance if defined.
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen]
-#[derive(Debug, Clone, Default)]
-pub struct CoreCryptoLogger {
-    logger: js_sys::Function,
-    this: JsValue,
-}
-
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen]
-impl CoreCryptoLogger {
-    /// Construct a new logger.
-    ///
-    /// The logger itself is a function which accepts three arguments:
-    /// `(level, message, context)`.
-    ///
-    /// The `this` value is the class which should be passed as `this` in the context of that function;
-    /// this is typically useful if the function is a class method instead of a free function.
-    /// It is normal and legal to pass `null` as the `this` value.
-    #[wasm_bindgen(constructor)]
-    pub fn new(logger: js_sys::Function, this: JsValue) -> CoreCryptoResult<Self> {
-        if logger.length() != 3 {
-            return Err(CoreCryptoError::ad_hoc(format!(
-                "logger function must accept 3 arguments but accepts {}",
-                logger.length()
-            )));
-        }
-        // let this = this.unwrap_or(JsValue::NULL);
-        Ok(Self { logger, this })
-    }
-}
-
-#[cfg(target_family = "wasm")]
-impl CoreCryptoLogger {
-    fn log(&self, level: CoreCryptoLogLevel, message: String, context: Option<String>) {
-        if let Err(meta_err) = self
-            .logger
-            .call3(&self.this, &level.into(), &(&message).into(), &context.into())
-        {
-            web_sys::console::error_2(&meta_err, &message.into());
-        }
-    }
-}
-
-#[cfg(target_family = "wasm")]
-// SAFETY: WASM only ever runs in a single-threaded context, so this is intrinsically thread-safe.
-// If that invariant ever varies, we may need to rethink this (but more likely that would be addressed
-// upstream where the types are defined).
-unsafe impl Send for CoreCryptoLogger {}
-#[cfg(target_family = "wasm")]
-// SAFETY: WASM only ever runs in a single-threaded context, so this is intrinsically thread-safe.
-unsafe impl Sync for CoreCryptoLogger {}
-
 /// The dummy logger is a suitable default value for the log shim
-#[cfg(not(target_family = "wasm"))]
 #[derive(Debug)]
 struct DummyLogger;
 
-#[cfg(not(target_family = "wasm"))]
 impl CoreCryptoLogger for DummyLogger {
     #[allow(unused_variables)]
     fn log(&self, level: CoreCryptoLogLevel, message: String, context: Option<String>) -> Result<(), LoggingError> {
@@ -143,13 +76,11 @@ impl CoreCryptoLogger for DummyLogger {
 }
 
 /// The uniffi log shim is a simple wrapper around the foreign implementer of the trait
-#[cfg(not(target_family = "wasm"))]
 #[derive(Clone, derive_more::Constructor)]
 struct LogShim {
     logger: Arc<dyn CoreCryptoLogger>,
 }
 
-#[cfg(not(target_family = "wasm"))]
 impl Default for LogShim {
     fn default() -> Self {
         Self {
@@ -158,7 +89,6 @@ impl Default for LogShim {
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
 impl LogShim {
     fn adjusted_log_level(&self, metadata: &Metadata) -> Level {
         match (metadata.level(), metadata.target()) {
@@ -170,28 +100,9 @@ impl LogShim {
     }
 }
 
-#[cfg(target_family = "wasm")]
-#[derive(Clone, Default)]
-struct LogShim {
-    logger: CoreCryptoLogger,
-}
-
-#[cfg(target_family = "wasm")]
-impl LogShim {
-    fn new(logger: CoreCryptoLogger) -> Self {
-        Self { logger }
-    }
-}
-
 impl log::Log for LogShim {
-    #[cfg_attr(target_family = "wasm", expect(unused_variables))]
     fn enabled(&self, metadata: &Metadata) -> bool {
-        cfg_if::cfg_if! {
-        if #[cfg(target_family = "wasm")] {
-            true
-        } else {
-            log::max_level() >= self.adjusted_log_level(metadata)
-        }}
+        log::max_level() >= self.adjusted_log_level(metadata)
     }
 
     fn log(&self, record: &Record) {
@@ -217,22 +128,14 @@ impl log::Log for LogShim {
         let context = serde_json::to_string(&visitor.0).ok();
 
         // uniffi-style
-        #[cfg(not(target_family = "wasm"))]
-        {
-            let log_result = self.logger.log(
-                CoreCryptoLogLevel::from(self.adjusted_log_level(record.metadata())),
-                message.clone(),
-                context,
-            );
-            if let Err(LoggingError::Ffi(meta_err @ uniffi::UnexpectedUniFFICallbackError { .. })) = log_result {
-                eprintln!("{meta_err} while attempting to produce {message}");
-            }
-        }
 
-        // wasm-style
-        #[cfg(target_family = "wasm")]
-        {
-            self.logger.log(record.metadata().level().into(), message, context);
+        let log_result = self.logger.log(
+            CoreCryptoLogLevel::from(self.adjusted_log_level(record.metadata())),
+            message.clone(),
+            context,
+        );
+        if let Err(LoggingError::Ffi(meta_err @ uniffi::UnexpectedUniFFICallbackError { .. })) = log_result {
+            eprintln!("{meta_err} while attempting to produce {message}");
         }
     }
 
@@ -242,17 +145,9 @@ impl log::Log for LogShim {
 static INIT_LOGGER: Once = Once::new();
 static LOGGER: LazyLock<ReloadLog<LogShim>> = LazyLock::new(|| ReloadLog::new(LogShim::default()));
 
-/// In uniffi the logger interface is a boxed trait instance
-#[cfg(not(target_family = "wasm"))]
-type Logger = Arc<dyn CoreCryptoLogger>;
-
-#[cfg(target_family = "wasm")]
-type Logger = CoreCryptoLogger;
-
 /// Initializes the logger
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-pub fn set_logger(logger: Logger) {
+#[uniffi::export]
+pub fn set_logger(logger: Arc<dyn CoreCryptoLogger>) {
     LOGGER
         .handle()
         .replace(LogShim::new(logger))
@@ -266,8 +161,7 @@ pub fn set_logger(logger: Logger) {
 }
 
 /// Set maximum log level forwarded to the logger
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+#[uniffi::export]
 pub fn set_max_log_level(level: CoreCryptoLogLevel) {
     log::set_max_level(level.into());
 }
