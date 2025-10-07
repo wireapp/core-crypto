@@ -3,8 +3,6 @@ use core_crypto::{
     mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
 };
 use tls_codec::{Deserialize as _, Serialize as _};
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
 
 use crate::{
     Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoResult,
@@ -23,7 +21,6 @@ bytes_wrapper!(
     ///
     /// This can be used to initialize a subconversation.
     #[derive(Debug, Clone)]
-    #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
     ExternalSenderKey
 );
 bytes_wrapper!(
@@ -32,7 +29,6 @@ bytes_wrapper!(
     /// This is used when joining by external commit.
     /// It can be found within the `GroupInfoBundle` within a `CommitBundle`.
     #[derive(Debug, Clone)]
-    #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
     GroupInfo
 );
 bytes_wrapper!(
@@ -48,12 +44,10 @@ bytes_wrapper!(
     /// This structure is defined in RFC 9420:
     /// <https://www.rfc-editor.org/rfc/rfc9420.html#joining-via-welcome-message>.
     #[derive(Debug, Clone)]
-    #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
     Welcome
 );
 
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+#[uniffi::export]
 impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::mls_init]
     pub async fn mls_init(&self, client_id: ClientIdMaybeArc, ciphersuites: Vec<Ciphersuite>) -> CoreCryptoResult<()> {
