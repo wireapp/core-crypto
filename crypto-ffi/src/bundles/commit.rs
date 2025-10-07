@@ -1,20 +1,12 @@
 use core_crypto::MlsCommitBundle;
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
 
 use crate::{
+    core_crypto_context::mls::{welcome_coerce_maybe_arc, WelcomeMaybeArc},
     CoreCryptoError, GroupInfoBundle,
-    core_crypto_context::mls::{WelcomeMaybeArc, welcome_coerce_maybe_arc},
 };
 
 /// Information returned when a commit is created.
-#[derive(Debug)]
-#[cfg_attr(
-    target_family = "wasm",
-    wasm_bindgen(getter_with_clone),
-    derive(serde::Serialize, serde::Deserialize)
-)]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
+#[derive(uniffi::Record)]
 pub struct CommitBundle {
     /// A welcome message if there are pending Add proposals
     pub welcome: Option<WelcomeMaybeArc>,
