@@ -5,8 +5,6 @@
 //! here with appropriate annotations such that it gets exported to all relevant bindings.
 
 use core_crypto::{Ciphersuite as CryptoCiphersuite, MlsCiphersuite};
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
 
 use crate::{CoreCryptoError, CoreCryptoResult};
 
@@ -16,8 +14,7 @@ use crate::{CoreCryptoError, CoreCryptoResult};
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::TryFrom)]
 #[try_from(repr)]
 #[repr(u16)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
+#[derive(uniffi::Enum)]
 pub enum Ciphersuite {
     /// DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
     #[default]
@@ -75,15 +72,13 @@ impl From<CryptoCiphersuite> for Ciphersuite {
 }
 
 /// Construct a ciphersuite enum instance from its discriminant.
-#[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = ciphersuiteFromU16))]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+#[uniffi::export]
 pub fn ciphersuite_from_u16(discriminant: u16) -> CoreCryptoResult<Ciphersuite> {
     Ciphersuite::try_from(discriminant).map_err(CoreCryptoError::generic())
 }
 
 /// Get an instance of the default ciphersuite.
-#[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = ciphersuiteDefault))]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+#[uniffi::export]
 pub fn ciphersuite_default() -> Ciphersuite {
     Ciphersuite::default()
 }
