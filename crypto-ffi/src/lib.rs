@@ -6,7 +6,6 @@
 // No public item in this crate should lack documentation.
 #![cfg_attr(not(test), deny(missing_docs))]
 
-#[cfg(not(target_family = "wasm"))]
 uniffi::setup_scaffolding!("core_crypto_ffi");
 
 mod bundles;
@@ -31,42 +30,40 @@ pub use bundles::{
     commit::CommitBundle, group_info::GroupInfoBundle, proteus_auto_prekey::ProteusAutoPrekeyBundle,
     welcome::WelcomeBundle,
 };
-pub use ciphersuite::{Ciphersuite, ciphersuite_default, ciphersuite_from_u16};
+pub use ciphersuite::{ciphersuite_default, ciphersuite_from_u16, Ciphersuite};
 pub use client_id::ClientId;
 pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePolicy};
+#[cfg(not(target_family = "wasm"))]
+pub use core_crypto::{command::transaction_helper::TransactionHelper, core_crypto_new};
 pub use core_crypto::{
-    CoreCryptoFfi,
     command::CoreCryptoCommand,
     conversation::ConversationId,
     epoch_observer::EpochObserver,
-    logger::{CoreCryptoLogLevel, CoreCryptoLogger, set_logger, set_max_log_level},
+    logger::{set_logger, set_max_log_level, CoreCryptoLogLevel, CoreCryptoLogger},
     mls_transport::{MlsTransport, MlsTransportData, MlsTransportResponse},
+    CoreCryptoFfi,
 };
-#[cfg(not(target_family = "wasm"))]
-pub use core_crypto::{command::transaction_helper::TransactionHelper, core_crypto_new};
 pub(crate) use core_crypto::{
-    conversation::{ConversationIdMaybeArc, conversation_id_coerce_maybe_arc},
+    conversation::{conversation_id_coerce_maybe_arc, ConversationIdMaybeArc},
     e2ei::identities::UserIdentities,
 };
 pub use core_crypto_context::CoreCryptoContext;
 pub use credential_type::CredentialType;
 pub use crl::CrlRegistration;
 pub use database::{
-    Database, DatabaseKey, in_memory_database, migrate_database_key_type_to_bytes, open_database, update_database_key,
+    in_memory_database, migrate_database_key_type_to_bytes, open_database, update_database_key, Database, DatabaseKey,
 };
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 pub use e2ei::{
-    E2eiConversationState, acme_challenge::AcmeChallenge, acme_directory::AcmeDirectory, enrollment::E2eiEnrollment,
-    new_acme_authz::NewAcmeAuthz, new_acme_order::NewAcmeOrder,
+    acme_challenge::AcmeChallenge, acme_directory::AcmeDirectory, enrollment::E2eiEnrollment,
+    new_acme_authz::NewAcmeAuthz, new_acme_order::NewAcmeOrder, E2eiConversationState,
 };
-pub use ephemeral::HistorySecret;
-#[cfg(not(target_family = "wasm"))]
-pub use ephemeral::core_crypto_history_client;
+pub use ephemeral::{core_crypto_history_client, HistorySecret};
 #[cfg(feature = "proteus")]
 pub use error::proteus::ProteusError;
-pub use error::{CoreCryptoError, CoreCryptoResult, mls::MlsError};
+pub use error::{mls::MlsError, CoreCryptoError, CoreCryptoResult};
 pub use identity::{
     wire::{DeviceStatus, WireIdentity},
     x509::X509Identity,
 };
-pub use metadata::{BuildMetadata, build_metadata, version};
+pub use metadata::{build_metadata, version, BuildMetadata};
