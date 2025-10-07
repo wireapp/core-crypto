@@ -45,39 +45,22 @@ serde_json.workspace = true
 thiserror.workspace = true
 tls_codec.workspace = true
 
+# UniFFI - Android + iOS bindings - Runtime support
+uniffi.workspace = true
+
 # see https://github.com/RustCrypto/hashes/issues/404
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")))'.dependencies]
 sha2 = { version = "0.10", features = ["force-soft"] }
 
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
-# UniFFI - Android + iOS bindings - Runtime support
-uniffi.workspace = true
-
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }
-
-[target.wasm32-unknown-unknown.dependencies]
-wasm-bindgen = "0.2.100"
-wasm-bindgen-futures = "0.4"
-serde-wasm-bindgen = "0.6"
-serde_json.workspace = true
-serde = { workspace = true, features = ["derive"] }
 js-sys = "0.3"
 web-sys = "0.3"
-strum.workspace = true
-async-channel.workspace = true
 console_error_panic_hook.workspace = true
-
-# UniFFI - Android + iOS bindings - Build support
-[target.'cfg(not(target_family = "wasm"))'.build-dependencies.uniffi]
-workspace = true
-features = ["build", "bindgen"]
 
 [build-dependencies]
 cfg-if = "1.0"
-
-[target.wasm32-unknown-unknown.dev-dependencies]
-wasm-bindgen-test = "0.3"
+uniffi = { workspace = true, features = ["build", "bindgen"] }
 
 [package.metadata.wasm-pack.profile.dev]
 wasm-opt = false

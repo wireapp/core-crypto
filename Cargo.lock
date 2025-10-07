@@ -837,7 +837,6 @@ dependencies = [
 name = "core-crypto-ffi"
 version = "9.0.1"
 dependencies = [
- "async-channel",
  "async-lock",
  "async-trait",
  "cfg-if",
@@ -858,19 +857,13 @@ dependencies = [
  "paste",
  "proteus-wasm",
  "rmp-serde",
- "serde",
- "serde-wasm-bindgen",
  "serde_json",
  "sha2",
  "smol-macros",
- "strum",
  "testing_logger",
  "thiserror 2.0.17",
  "tls_codec",
  "uniffi",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-bindgen-test",
  "web-sys",
 ]
 
