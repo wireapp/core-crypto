@@ -1,6 +1,6 @@
 use std::hint::black_box;
 
-use core_crypto::{MlsConversationConfiguration, CredentialType, MlsCustomConfiguration};
+use core_crypto::{CredentialType, MlsConversationConfiguration, MlsCustomConfiguration};
 use criterion::{
     BatchSize, BenchmarkId, Criterion, async_executor::SmolExecutor as FuturesExecutor, criterion_group, criterion_main,
 };
@@ -32,10 +32,7 @@ fn create_group_bench(c: &mut Criterion) {
                     },
                     |(central, id, cfg)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        context
-                            .new_conversation(&id, CredentialType::Basic, cfg)
-                            .await
-                            .unwrap();
+                        context.new_conversation(&id, CredentialType::Basic, cfg).await.unwrap();
                         context.finish().await.unwrap();
                         black_box(());
                     },
