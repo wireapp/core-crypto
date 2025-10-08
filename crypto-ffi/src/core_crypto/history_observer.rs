@@ -17,7 +17,8 @@ pub enum NewHistoryClientReportingError {
 
 /// An `HistoryObserver` is notified whenever a new history client is created.
 #[uniffi::export(with_foreign)]
-#[async_trait]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait HistoryObserver: Send + Sync {
     /// This function will be called every time a new history client is created.
     ///

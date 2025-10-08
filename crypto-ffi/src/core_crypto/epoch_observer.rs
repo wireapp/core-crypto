@@ -16,7 +16,8 @@ pub enum EpochChangedReportingError {
 
 /// An `EpochObserver` is notified whenever a conversation's epoch changes.
 #[uniffi::export(with_foreign)]
-#[async_trait]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
 pub trait EpochObserver: Send + Sync {
     /// This function will be called every time a conversation's epoch changes.
     ///
@@ -46,8 +47,8 @@ pub trait EpochObserver: Send + Sync {
 /// together directly, so this is the straightforward way to accomplish that.
 struct ObserverShim(Arc<dyn EpochObserver>);
 
-#[cfg_attr(target_family = "wasm", async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl core_crypto::mls::EpochObserver for ObserverShim {
     async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64) {
         if let Err(err) = self

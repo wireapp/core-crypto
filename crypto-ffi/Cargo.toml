@@ -60,7 +60,11 @@ console_error_panic_hook.workspace = true
 
 [build-dependencies]
 cfg-if = "1.0"
-uniffi = { workspace = true, features = ["build", "bindgen"] }
+uniffi = { workspace = true, features = [
+  "build",
+  "bindgen",
+  "wasm-unstable-single-threaded",
+] }
 
 [package.metadata.wasm-pack.profile.dev]
 wasm-opt = false

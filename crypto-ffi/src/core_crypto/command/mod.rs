@@ -9,14 +9,17 @@ use crate::{CoreCryptoContext, CoreCryptoFfi, CoreCryptoResult};
 ///
 /// It is the argument to a `CoreCrypto::transaction` call.
 #[uniffi::export(with_foreign)]
-#[async_trait::async_trait]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait CoreCryptoCommand: Send + Sync {
     /// Will be called inside a transaction in CoreCrypto
     async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()>;
 }
 
 /// When building outside WASM, any async function of appropriate signature is a `CoreCryptoCommand`.
-#[async_trait::async_trait]
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl<F, Fut> CoreCryptoCommand for F
 where
     F: Fn(Arc<CoreCryptoContext>) -> Fut + Send + Sync,
