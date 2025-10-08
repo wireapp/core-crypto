@@ -51,7 +51,8 @@ impl From<MlsTransportResponse> for core_crypto::MlsTransportResponse {
 /// Used by core crypto to send commits or application messages to the delivery service.
 /// This trait must be implemented before calling any functions that produce commits.
 #[uniffi::export(with_foreign)]
-#[async_trait::async_trait]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait MlsTransport: Send + Sync {
     /// Send a commit bundle to the corresponding endpoint.
     async fn send_commit_bundle(&self, commit_bundle: CommitBundle) -> MlsTransportResponse;
@@ -72,7 +73,8 @@ impl std::fmt::Debug for MlsTransportShim {
     }
 }
 
-#[async_trait::async_trait]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl core_crypto::MlsTransport for MlsTransportShim {
     async fn send_commit_bundle(
         &self,
