@@ -20,8 +20,8 @@ use openmls::{
     },
     group::MlsGroup,
     prelude::{
-        ContentType, CredentialType as CredentialType, LeafNodeIndex, Member, ProcessMessageError,
-        ProcessedMessageContent, Proposal, StageCommitError, StagedCommit, ValidationError,
+        ContentType, CredentialType, LeafNodeIndex, Member, ProcessMessageError, ProcessedMessageContent, Proposal,
+        StageCommitError, StagedCommit, ValidationError,
     },
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
@@ -223,7 +223,7 @@ impl ConversationGuard {
             )
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
-        let sender_client_id: ClientId = credential.credential.identity().into();
+        let sender_client_id: ClientId = credential.credential.identity().to_owned().into();
 
         let decrypted = match message.into_content() {
             ProcessedMessageContent::ApplicationMessage(app_msg) => {

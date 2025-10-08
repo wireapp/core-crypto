@@ -165,7 +165,7 @@ pub async fn new_central(
     let db = Database::open(connection_type, &DatabaseKey::generate()).await.unwrap();
     let cfg = SessionConfig::builder()
         .database(db)
-        .client_id(client_id.as_bytes().into())
+        .client_id(client_id.as_bytes().to_owned().into())
         .ciphersuites([ciphersuite])
         .build()
         .validate()
@@ -203,7 +203,7 @@ pub async fn add_clients(
     let mut key_packages = vec![];
     for _ in 0..nb_clients {
         let (kp, id) = rand_key_package(ciphersuite).await;
-        client_ids.push(id.as_slice().into());
+        client_ids.push(id);
         key_packages.push(kp.into())
     }
 

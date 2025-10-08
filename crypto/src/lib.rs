@@ -69,7 +69,7 @@ pub use crate::{
         session::{
             EpochObserver, HistoryObserver, Session,
             config::{SessionConfig, ValidatedSessionConfig},
-            id::ClientId,
+            id::{ClientId, ClientIdRef},
             identifier::ClientIdentifier,
             key_package::INITIAL_KEYING_MATERIAL_COUNT,
             user_id::UserId,

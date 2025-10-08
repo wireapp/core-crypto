@@ -21,14 +21,16 @@
 //! Any attempt to encrypt a message will fail because the client cannot retrieve the signature key from
 //! its keystore.
 
+use std::borrow::Borrow;
+
 use core_crypto_keystore::{ConnectionType, Database};
 use mls_crypto_provider::DatabaseKey;
 use obfuscate::{Obfuscate, Obfuscated};
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
-    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Error, CredentialType, MlsError, RecursiveError, Result,
-    Session, SessionConfig,
+    Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, CredentialType, Error, MlsError, RecursiveError,
+    Result, Session, SessionConfig,
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -117,8 +119,8 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
     Ok(HistorySecret { client_id, key_package })
 }
 
-pub(crate) fn is_history_client(client_id: &ClientId) -> bool {
-    client_id.starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes())
+pub(crate) fn is_history_client(client_id: impl Borrow<ClientIdRef>) -> bool {
+    client_id.borrow().starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes())
 }
 
 impl CoreCrypto {
