@@ -274,7 +274,7 @@ impl Session {
         let cb = Credential {
             mls_credential: credential,
             signature_key_pair: kp.0,
-            created_at,
+            earliest_validity: created_at,
         };
         Ok(cb)
     }
@@ -416,7 +416,7 @@ impl Session {
                 let cb = Credential {
                     mls_credential: credential.clone(),
                     signature_key_pair: signature_key.clone(),
-                    created_at: *created_at,
+                    earliest_validity: *created_at,
                 };
                 identities.push_credential(signature_scheme, cb).await?;
             }
@@ -498,7 +498,7 @@ impl Session {
         })?;
 
         // set the creation date of the signature keypair which is the same for the Credential
-        credential.created_at = stored_credential.created_at;
+        credential.earliest_validity = stored_credential.created_at;
 
         identities.push_credential(signature_scheme, credential.clone()).await?;
 

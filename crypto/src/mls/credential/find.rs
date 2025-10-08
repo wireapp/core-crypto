@@ -45,6 +45,10 @@ pub struct FindFilters<'a> {
 
 impl Credential {
     /// Find all credentials in the database matching the provided filters.
+    ///
+    /// If you have all the components of a filter, it is more efficient to use those to construct a
+    /// [`CredentialRef`][crate::CredentialRef] and then call [`Credential::load`] or [`Credential::load_with_caches`]
+    /// to load the appropriate credentials.
     //
     // Our database does not currently support indices or even in-db searching, so this moves all data
     // from the DB to the runtime, decodes everything, and then filters. This is obviously suboptimal,
@@ -111,7 +115,7 @@ impl Credential {
                 out.push(Self {
                     mls_credential: mls_credential.to_owned(),
                     signature_key_pair: signature_key_pair.to_owned(),
-                    created_at,
+                    earliest_validity: created_at,
                 })
             }
         }
