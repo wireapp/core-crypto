@@ -75,7 +75,7 @@ impl Identities {
 
     pub(crate) async fn remove(&mut self, credential: &MlsCredential) -> Result<()> {
         self.0.iter_mut().for_each(|(_, cbs)| {
-            cbs.retain(|c| c.credential() != credential);
+            cbs.retain(|c| c.mls_credential() != credential);
         });
         Ok(())
     }
