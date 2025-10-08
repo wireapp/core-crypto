@@ -1,3 +1,12 @@
+import {
+    CoreCryptoError_Tags,
+    CoreCryptoError as CoreCryptoErrorFfi,
+    MlsError as MlsErrorFfi,
+    ProteusError as ProteusErrorFfi,
+    MlsError_Tags,
+    ProteusError_Tags,
+} from "./index.web";
+
 /**
  * The error structure produced by our rust code.
  **/
@@ -19,62 +28,153 @@ export interface CoreCryptoRichError<T extends ErrorType> {
  * Please note that in this case the extra properties will not be available.
  */
 export class CoreCryptoError<T extends ErrorType> extends Error {
-    errorStack: string[];
     context?: ErrorContext[T];
     type?: T;
 
-    /* eslint @typescript-eslint/no-explicit-any: off */
-    private constructor(richError: CoreCryptoRichError<T>, ...params: any[]) {
-        super(richError.message, ...params);
-        Object.setPrototypeOf(this, new.target.prototype);
+    private constructor(message: string, type?: T, context?: ErrorContext[T]) {
+        super(message);
+        this.type = type;
+        this.context = context;
+    }
 
-        if (richError.error_name) {
-            this.name = richError.error_name;
-        }
-        if (richError.error_stack) {
-            this.errorStack = richError.error_stack;
+    static fromStdError(error: unknown): CoreCryptoError<ErrorType> {
+        if (CoreCryptoErrorFfi.instanceOf(error)) {
+            switch (error.tag) {
+                case CoreCryptoError_Tags.E2ei:
+                    return new CoreCryptoError(error.message, ErrorType.E2ei, {
+                        e2eiError: error.inner.e2eiError,
+                    });
+                case CoreCryptoError_Tags.Mls:
+                    return CoreCryptoError.fromMlsError(error.inner.mlsError);
+                case CoreCryptoError_Tags.Proteus:
+                    return CoreCryptoError.fromProteusError(
+                        error.inner.exception
+                    );
+                case CoreCryptoError_Tags.Other:
+                    return new CoreCryptoError(error.message, ErrorType.Other, {
+                        msg: error.inner.msg,
+                    });
+                case CoreCryptoError_Tags.TransactionFailed:
+                    return new CoreCryptoError(
+                        error.message,
+                        ErrorType.TransactionFailed,
+                        { error: error.inner.error }
+                    );
+            }
         } else {
-            this.errorStack = [];
-        }
-        if (
-            richError.context &&
-            richError.type &&
-            Object.values<string>(ErrorType).includes(richError.type)
-        ) {
-            this.context = richError.context;
-            this.type = richError.type as T;
-        }
-    }
-
-    private static fallback<E extends ErrorType>(
-        message: string,
-        ...params: any[]
-    ): CoreCryptoError<E> {
-        return new CoreCryptoError({ message }, ...params);
-    }
-
-    static build<E extends ErrorType>(
-        msg: string,
-        ...params: unknown[]
-    ): CoreCryptoError<E> {
-        try {
-            const richError: CoreCryptoRichError<E> = JSON.parse(msg);
-            return new this(richError, ...params);
-        } catch {
-            return this.fallback(msg, ...params);
+            if (error instanceof Error) {
+                throw Error(
+                    `Unexpected error instance. Context: constructing CoreCryptoError. Error: ${error.message}`
+                );
+            }
+            throw Error(
+                `Unexpected error instance. Context: constructing CoreCryptoError.`
+            );
         }
     }
 
-    static fromStdError(e: Error): CoreCryptoError<ErrorType> {
-        if (isCcErrorGeneric(e)) {
-            return e;
-        }
-        const opts = {
-            cause: e.cause || undefined,
-            stack: e.stack || undefined,
-        };
+    private static fromMlsError(
+        error: MlsErrorFfi
+    ): CoreCryptoError<ErrorType.Mls> {
+        switch (error.tag) {
+            case MlsError_Tags.BufferedCommit:
+                return new CoreCryptoError(error.message, ErrorType.Mls, {
+                    type: MlsErrorType.BufferedCommit,
+                    context: {},
+                });
 
-        return this.build(e.message, opts);
+            case MlsError_Tags.BufferedFutureMessage:
+                return new CoreCryptoError(error.message, ErrorType.Mls, {
+                    type: MlsErrorType.BufferedFutureMessage,
+                    context: {},
+                });
+
+            case MlsError_Tags.ConversationAlreadyExists:
+                return new CoreCryptoError(error.message, ErrorType.Mls, {
+                    type: MlsErrorType.ConversationAlreadyExists,
+                    context: {
+                        conversationId: error.inner.conversationId,
+                    },
+                });
+            case MlsError_Tags.DuplicateMessage:
+                return new CoreCryptoError(error.message, ErrorType.Mls, {
+                    type: MlsErrorType.DuplicateMessage,
+                    context: {},
+                });
+
+            case MlsError_Tags.MessageEpochTooOld:
+                return new CoreCryptoError(error.message, ErrorType.Mls, {
+                    type: MlsErrorType.MessageEpochTooOld,
+                    context: {},
+                });
+            case MlsError_Tags.MessageRejected:
+                return new CoreCryptoError(error.message, ErrorType.Mls, {
+                    type: MlsErrorType.MessageRejected,
+                    context: { reason: error.inner.reason },
+                });
+            case MlsError_Tags.OrphanWelcome:
+                return new CoreCryptoError(error.message, ErrorType.Mls, {
+                    type: MlsErrorType.OrphanWelcome,
+                    context: {},
+                });
+            case MlsError_Tags.Other:
+                return new CoreCryptoError(error.message, ErrorType.Mls, {
+                    type: MlsErrorType.Other,
+                    context: { msg: error.inner.msg },
+                });
+            case MlsError_Tags.SelfCommitIgnored:
+                return new CoreCryptoError(error.message, ErrorType.Mls, {
+                    type: MlsErrorType.SelfCommitIgnored,
+                    context: {},
+                });
+            case MlsError_Tags.StaleCommit:
+                return new CoreCryptoError(error.message, ErrorType.Mls, {
+                    type: MlsErrorType.StaleCommit,
+                    context: {},
+                });
+            case MlsError_Tags.StaleProposal:
+                return new CoreCryptoError(error.message, ErrorType.Mls, {
+                    type: MlsErrorType.StaleProposal,
+                    context: {},
+                });
+            case MlsError_Tags.UnmergedPendingGroup:
+                return new CoreCryptoError(error.message, ErrorType.Mls, {
+                    type: MlsErrorType.UnmergedPendingGroup,
+                    context: {},
+                });
+            case MlsError_Tags.WrongEpoch:
+                return new CoreCryptoError(error.message, ErrorType.Mls, {
+                    type: MlsErrorType.WrongEpoch,
+                    context: {},
+                });
+        }
+    }
+
+    private static fromProteusError(
+        error: ProteusErrorFfi
+    ): CoreCryptoError<ErrorType.Proteus> {
+        switch (error.tag) {
+            case ProteusError_Tags.DuplicateMessage:
+                return new CoreCryptoError(error.message, ErrorType.Proteus, {
+                    type: ProteusErrorType.DuplicateMessage,
+                    context: {},
+                });
+            case ProteusError_Tags.Other:
+                return new CoreCryptoError(error.message, ErrorType.Proteus, {
+                    type: ProteusErrorType.Other,
+                    context: { errorCode: error.inner.errorCode },
+                });
+            case ProteusError_Tags.RemoteIdentityChanged:
+                return new CoreCryptoError(error.message, ErrorType.Proteus, {
+                    type: ProteusErrorType.RemoteIdentityChanged,
+                    context: {},
+                });
+            case ProteusError_Tags.SessionNotFound:
+                return new CoreCryptoError(error.message, ErrorType.Proteus, {
+                    type: ProteusErrorType.SessionNotFound,
+                    context: {},
+                });
+        }
     }
 
     static async asyncMapErr<T, E extends ErrorType>(
@@ -114,7 +214,6 @@ function isCcErrorGeneric(error: unknown): error is CoreCryptoError<ErrorType> {
     return (
         typeof error === "object" &&
         error !== null &&
-        "errorStack" in error &&
         "context" in error &&
         "type" in error
     );
@@ -185,7 +284,7 @@ export enum MlsErrorType {
  * Structured core crypto mls error (embedded in a core crypto error)
  */
 export interface MlsErrorContext {
-    [MlsErrorType.ConversationAlreadyExists]: { conversationId: Array<number> };
+    [MlsErrorType.ConversationAlreadyExists]: { conversationId: ArrayBuffer };
     [MlsErrorType.DuplicateMessage]: Record<string, never>;
     [MlsErrorType.BufferedFutureMessage]: Record<string, never>;
     [MlsErrorType.WrongEpoch]: Record<string, never>;
@@ -356,9 +455,9 @@ export enum ProteusErrorType {
  * Structured core crypto proteus error (embedded in a core crypto error)
  */
 export interface ProteusErrorContext {
-    [ProteusErrorType.SessionNotFound]: { errorCode: number };
-    [ProteusErrorType.DuplicateMessage]: { errorCode: number };
-    [ProteusErrorType.RemoteIdentityChanged]: { errorCode: number };
+    [ProteusErrorType.SessionNotFound]: Record<string, never>;
+    [ProteusErrorType.DuplicateMessage]: Record<string, never>;
+    [ProteusErrorType.RemoteIdentityChanged]: Record<string, never>;
     [ProteusErrorType.Other]: { errorCode: number };
 }
 
