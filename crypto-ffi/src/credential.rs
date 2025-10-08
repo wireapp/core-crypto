@@ -54,7 +54,7 @@ impl Credential {
 impl Credential {
     /// Get the type of this credential.
     pub fn r#type(&self) -> CoreCryptoResult<CredentialType> {
-        self.0.credential().credential_type().try_into()
+        self.0.mls_credential().credential_type().try_into()
     }
 
     /// Get the earliest possible validity of this credential, expressed as seconds after the unix epoch.
