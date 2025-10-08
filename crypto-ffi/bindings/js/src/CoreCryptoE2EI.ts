@@ -82,8 +82,8 @@ export class E2eiEnrollment {
     /**
      * Should only be used internally
      */
-    inner(): unknown {
-        return this.#enrollment as CoreCryptoFfiTypes.FfiWireE2EIdentity;
+    inner(): CoreCryptoFfiTypes.FfiWireE2EIdentity {
+        return this.#enrollment;
     }
 
     /**
