@@ -303,7 +303,7 @@ impl SessionContext {
         let client = self.session().await;
         let sender_cb = client.find_most_recent_credential(sc, ct).await.unwrap();
 
-        if let openmls::prelude::MlsCredentialType::X509(certificate) = &sender_cb.credential().mls_credential() {
+        if let openmls::prelude::MlsCredentialType::X509(certificate) = &sender_cb.mls_credential().mls_credential() {
             let mls_identity = certificate.extract_identity(case.ciphersuite(), None).unwrap();
             let mls_client_id = mls_identity.client_id.as_bytes();
 

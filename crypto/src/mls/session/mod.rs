@@ -519,7 +519,7 @@ impl Session {
             None => false,
             Some(SessionInner { identities, .. }) => identities
                 .iter()
-                .any(|(_, cred)| cred.credential().credential_type() == CredentialType::X509),
+                .any(|(_, cred)| cred.mls_credential().credential_type() == CredentialType::X509),
         }
     }
 

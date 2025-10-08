@@ -107,7 +107,7 @@ impl Credential {
     /// Get the Openmls Credential type.
     ///
     /// This stores the credential type (basic/x509).
-    pub fn credential(&self) -> &MlsCredential {
+    pub fn mls_credential(&self) -> &MlsCredential {
         &self.mls_credential
     }
 
@@ -138,7 +138,6 @@ impl Credential {
     pub fn client_id(&self) -> ClientId {
         self.mls_credential.identity().to_owned().into()
     }
-
 }
 
 impl From<Credential> for CredentialWithKey {
@@ -168,7 +167,7 @@ impl Hash for Credential {
         self.signature_key_pair.public().hash(state);
         // self.mls_credential.credential_type().hash(state); // not implemented for Reasons, idk
         self.mls_credential.identity().hash(state);
-        match self.credential().mls_credential() {
+        match self.mls_credential().mls_credential() {
             MlsCredentialType::X509(cert) => {
                 cert.certificates.hash(state);
             }

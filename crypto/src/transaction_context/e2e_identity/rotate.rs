@@ -36,7 +36,7 @@ impl TransactionContext {
             .find_most_recent_credential(ciphersuite.signature_algorithm(), CredentialType::Basic)
             .await
             .map_err(|_| Error::MissingExistingClient(CredentialType::Basic))?;
-        let client_id = cb.credential().identity().into();
+        let client_id = cb.mls_credential().identity().into();
 
         let sign_keypair = Some(
             cb.signature_key()
@@ -84,7 +84,7 @@ impl TransactionContext {
             .find_most_recent_credential(ciphersuite.signature_algorithm(), CredentialType::X509)
             .await
             .map_err(|_| Error::MissingExistingClient(CredentialType::X509))?;
-        let client_id = cb.credential().identity().into();
+        let client_id = cb.mls_credential().identity().into();
         let sign_keypair = Some(
             cb.signature_key()
                 .try_into()
@@ -216,7 +216,7 @@ impl TransactionContext {
             .map_err(RecursiveError::transaction("getting mls provider"))?;
         for kp in kps {
             let kp_cred = kp.leaf_node().credential().mls_credential();
-            let local_cred = cb.credential().mls_credential();
+            let local_cred = cb.mls_credential().mls_credential();
             if kp_cred != local_cred {
                 let kpr = kp
                     .hash_ref(provider.crypto())
