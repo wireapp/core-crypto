@@ -34,7 +34,7 @@ impl Identities {
             .get(&sc)?
             .iter()
             .find(|c| {
-                let ct_match = ct == c.mls_credential.credential_type().into();
+                let ct_match = ct == c.mls_credential.credential_type();
                 let pk_match = c.signature_key_pair.public() == pk.as_slice();
                 ct_match && pk_match
             })
@@ -49,7 +49,7 @@ impl Identities {
         self.0
             .get(&sc)?
             .iter()
-            .rfind(|c| ct == c.mls_credential.credential_type().into())
+            .rfind(|c| ct == c.mls_credential.credential_type())
             .cloned()
     }
 
@@ -57,7 +57,7 @@ impl Identities {
     /// only then store it in this in-memory map
     pub(crate) async fn push_credential(&mut self, sc: SignatureScheme, cb: Credential) -> Result<()> {
         // this would mean we have messed something up and that we do no init this Credential from a keypair just inserted in the keystore
-        debug_assert_ne!(cb.created_at, 0);
+        debug_assert_ne!(cb.earliest_validity, 0);
 
         match self.0.get_mut(&sc) {
             Some(cbs) => {

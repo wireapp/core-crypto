@@ -7,6 +7,7 @@ mod error;
 pub(crate) mod ext;
 mod find;
 mod keypairs;
+mod persistence;
 pub(crate) mod x509;
 
 use std::{
@@ -56,7 +57,7 @@ pub struct Credential {
     ///
     /// Only meaningful for X509, where it is the "valid_from" claim of the leaf credential.
     /// For basic credentials, this is always 0.
-    pub(crate) created_at: u64,
+    pub(crate) earliest_validity: u64,
 }
 
 impl Credential {
@@ -100,7 +101,7 @@ impl Credential {
         Ok(Self {
             mls_credential,
             signature_key_pair,
-            created_at: 0,
+            earliest_validity: 0,
         })
     }
 
@@ -129,9 +130,10 @@ impl Credential {
     /// This is represented as seconds after the unix epoch.
     ///
     /// Only meaningful for X509, where it is the "valid_from" claim of the leaf credential.
-    /// For basic credentials, this is always 0.
+    /// For basic credentials, this is always 0 when the credential is first created.
+    /// It is updated upon being persisted to the database.
     pub fn earliest_validity(&self) -> u64 {
-        self.created_at
+        self.earliest_validity
     }
 
     /// Get the client ID associated with this credential
@@ -152,7 +154,7 @@ impl From<Credential> for CredentialWithKey {
 impl Eq for Credential {}
 impl PartialEq for Credential {
     fn eq(&self, other: &Self) -> bool {
-        self.mls_credential == other.mls_credential && self.created_at == other.created_at && {
+        self.mls_credential == other.mls_credential && self.earliest_validity == other.earliest_validity && {
             let sk = &self.signature_key_pair;
             let ok = &other.signature_key_pair;
             sk.signature_scheme() == ok.signature_scheme() && sk.public() == ok.public() && sk.private() == ok.private()
@@ -162,7 +164,7 @@ impl PartialEq for Credential {
 
 impl Hash for Credential {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.created_at.hash(state);
+        self.earliest_validity.hash(state);
         self.signature_key_pair.signature_scheme().hash(state);
         self.signature_key_pair.public().hash(state);
         // self.mls_credential.credential_type().hash(state); // not implemented for Reasons, idk
@@ -178,7 +180,7 @@ impl Hash for Credential {
 
 impl Ord for Credential {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.created_at.cmp(&other.created_at)
+        self.earliest_validity.cmp(&other.earliest_validity)
     }
 }
 
