@@ -22,7 +22,7 @@ use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::crypto::OpenMlsCrypto;
 
 use crate::{
-    ClientId, MlsError, RecursiveError,
+    ClientId, ClientIdRef, MlsError, RecursiveError,
     mls::credential::{error::CredentialValidationError, ext::CredentialExt as _},
 };
 
@@ -63,16 +63,16 @@ impl Credential {
     /// Ensure that the provided `MlsCredential` matches the client id / signature key provided
     pub(crate) fn validate_mls_credential(
         mls_credential: &MlsCredential,
-        client_id: &ClientId,
+        client_id: &ClientIdRef,
         signature_key: &SignatureKeyPair,
     ) -> Result<(), CredentialValidationError> {
         match mls_credential.mls_credential() {
-            openmls::prelude::MlsCredentialType::Basic(_) => {
+            MlsCredentialType::Basic(_) => {
                 if client_id.as_slice() != mls_credential.identity() {
                     return Err(CredentialValidationError::WrongCredential);
                 }
             }
-            openmls::prelude::MlsCredentialType::X509(cert) => {
+            MlsCredentialType::X509(cert) => {
                 let certificate_public_key = cert
                     .extract_public_key()
                     .map_err(RecursiveError::mls_credential(
@@ -90,11 +90,11 @@ impl Credential {
     /// Generate a basic credential.
     ///
     /// The result is independent of any client instance and the database; it lives in memory only.
-    pub fn basic(signature_scheme: SignatureScheme, client_id: &ClientId, crypto: impl OpenMlsCrypto) -> Result<Self> {
+    pub fn basic(signature_scheme: SignatureScheme, client_id: ClientId, crypto: impl OpenMlsCrypto) -> Result<Self> {
         let (private, public) = crypto
             .signature_key_gen(signature_scheme)
             .map_err(MlsError::wrap("generating signature keys for basic credential"))?;
-        let mls_credential = MlsCredential::new_basic(client_id.0.clone());
+        let mls_credential = MlsCredential::new_basic(client_id.into_inner());
         let signature_key_pair = SignatureKeyPair::from_raw(signature_scheme, private, public);
 
         Ok(Self {
@@ -135,8 +135,8 @@ impl Credential {
     }
 
     /// Get the client ID associated with this credential
-    pub fn client_id(&self) -> ClientId {
-        self.mls_credential.identity().to_owned().into()
+    pub fn client_id(&self) -> &ClientIdRef {
+        self.mls_credential.identity().into()
     }
 }
 

@@ -2,9 +2,15 @@ use std::fmt::Formatter;
 
 use crate::{Obfuscate, compute_hash};
 
-impl Obfuscate for Vec<u8> {
+impl Obfuscate for [u8] {
     fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(hex::encode(compute_hash(self)).as_str())
+    }
+}
+
+impl Obfuscate for Vec<u8> {
+    fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        (**self).obfuscate(f)
     }
 }
 

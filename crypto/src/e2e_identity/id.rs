@@ -104,7 +104,7 @@ impl QualifiedE2eiClientId {
     }
 
     pub fn from_str_unchecked(s: &str) -> Self {
-        Self(s.as_bytes().into())
+        Self(s.as_bytes().to_owned().into())
     }
 }
 

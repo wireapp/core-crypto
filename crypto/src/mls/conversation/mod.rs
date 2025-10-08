@@ -30,8 +30,8 @@ use openmls::{
 use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 
 use crate::{
-    Ciphersuite, ClientId, E2eiConversationState, KeystoreError, LeafError, CredentialType, MlsError,
-    RecursiveError, WireIdentity, mls::Session,
+    Ciphersuite, ClientId, CredentialType, E2eiConversationState, KeystoreError, LeafError, MlsError, RecursiveError,
+    WireIdentity, mls::Session,
 };
 
 pub(crate) mod commit;
@@ -143,7 +143,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         inner
             .group()
             .members()
-            .map(|kp| ClientId::from(kp.credential.identity()))
+            .map(|kp| ClientId::from(kp.credential.identity().to_owned()))
             .collect()
     }
 
@@ -196,7 +196,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         conversation
             .members_with_key()
             .into_iter()
-            .filter(|(id, _)| device_ids.contains(&ClientId::from(id.as_slice())))
+            .filter(|(id, _)| device_ids.iter().any(|client_id| *client_id == id.as_slice()))
             .map(|(_, c)| {
                 c.extract_identity(conversation.ciphersuite(), env)
                     .map_err(RecursiveError::mls_credential("extracting identity"))
@@ -486,7 +486,7 @@ impl MlsConversation {
             .members()
             .filter_map(|kp| {
                 if !pending_removals.contains(&kp.index) {
-                    Some(kp.credential.identity().into())
+                    Some(kp.credential.identity().to_owned().into())
                 } else {
                     trace!(client_index:% = kp.index; "Client is pending removal");
                     None
@@ -655,7 +655,7 @@ mod tests {
     mod wire_identity_getters {
         use super::Error;
         use crate::{
-            ClientId, DeviceStatus, E2eiConversationState, CredentialType, mls::conversation::Conversation,
+            ClientId, CredentialType, DeviceStatus, E2eiConversationState, mls::conversation::Conversation,
             test_utils::*,
         };
 

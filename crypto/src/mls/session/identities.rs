@@ -12,7 +12,7 @@ use crate::{
 };
 
 /// In memory Map of a Session's identities: one per SignatureScheme.
-/// We need `indexmap::IndexSet` because each `Credential` has to be unique and insertion
+/// We need `indexmap::IndexSet` because each `Credential` has to be unique at insertion
 /// order matters in order to keep values sorted by time `created_at` so that we can identify most recent ones.
 ///
 /// We keep each credential inside an arc to avoid cloning them, as X509 credentials can get quite large.
