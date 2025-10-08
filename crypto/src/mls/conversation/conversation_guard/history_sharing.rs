@@ -4,7 +4,7 @@ use itertools::{Either, Itertools as _};
 
 use super::{ConversationGuard, Error, Result};
 use crate::{
-    HistorySecret, MlsCommitBundle, RecursiveError,
+    ClientIdRef, HistorySecret, MlsCommitBundle, RecursiveError,
     mls::conversation::{Conversation as _, ConversationWithMls, conversation_guard::commit::TransportedCommitPolicy},
 };
 
@@ -84,7 +84,7 @@ impl ConversationGuard {
         // at most one history client in a conversation?
         // Then we could use something like `into_iter().find_map()` to lazily evaluate client ids, but this way we're making sure to
         // remove any history client, and not just the first one we find.
-        history_client_ids.retain(crate::ephemeral::is_history_client);
+        history_client_ids.retain(|client_id| crate::ephemeral::is_history_client(client_id));
 
         if history_client_ids.is_empty() {
             log::warn!("History sharing is already disabled.");
@@ -122,7 +122,8 @@ impl ConversationGuard {
         // Distinguish between history clients and other clients for the following operations
         let (existing_history_clients, other_clients): (HashSet<_>, HashSet<_>) =
             conversation.group().members().partition_map(|member| {
-                let is_history_client = crate::ephemeral::is_history_client(&member.credential.identity().into());
+                let is_history_client =
+                    crate::ephemeral::is_history_client(ClientIdRef::new(member.credential.identity()));
                 let member_index = member.index;
                 if is_history_client {
                     Either::Left(member_index)

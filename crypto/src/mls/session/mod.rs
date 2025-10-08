@@ -32,7 +32,7 @@ use openmls_x509_credential::CertificateKeyPair;
 use tls_codec::{Deserialize, Serialize};
 
 use crate::{
-    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, CredentialType, HistorySecret,
+    CertificateBundle, Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, CredentialType, HistorySecret,
     KeystoreError, LeafError, MlsError, MlsTransport, RecursiveError, ValidatedSessionConfig,
     group_store::GroupStore,
     mls::{
@@ -176,7 +176,7 @@ impl Session {
 
         let credentials = credentials
             .into_iter()
-            .filter(|mls_credential| mls_credential.id.as_slice() == id.as_slice())
+            .filter(|mls_credential| *mls_credential.id.as_slice() == **id)
             .map(|mls_credential| -> Result<_> {
                 let credential = MlsCredential::tls_deserialize(&mut mls_credential.credential.as_slice())
                     .map_err(Error::tls_deserialize("mls credential"))?;
@@ -352,7 +352,7 @@ impl Session {
     pub(crate) async fn load(
         &self,
         backend: &MlsCryptoProvider,
-        id: &ClientId,
+        id: &ClientIdRef,
         mut credentials: Vec<(MlsCredential, u64)>,
         signature_schemes: HashSet<SignatureScheme>,
     ) -> Result<()> {
@@ -422,7 +422,7 @@ impl Session {
             }
         }
         self.replace_inner(SessionInner {
-            id: id.clone(),
+            id: id.to_owned(),
             identities,
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
         })
@@ -455,7 +455,7 @@ impl Session {
     pub(crate) async fn save_identity(
         &self,
         keystore: &Database,
-        id: Option<&ClientId>,
+        id: Option<&ClientIdRef>,
         signature_scheme: SignatureScheme,
         mut credential: Credential,
     ) -> Result<Credential> {
@@ -466,14 +466,14 @@ impl Session {
             ..
         } = guard.as_mut().ok_or(Error::MlsNotInitialized)?;
 
-        let id = id.unwrap_or(existing_id);
+        let id = id.unwrap_or(existing_id.as_ref());
 
         let credential_data = credential
             .mls_credential
             .tls_serialize_detached()
             .map_err(Error::tls_serialize("credential"))?;
         let stored_credential = StoredCredential {
-            id: id.clone().into(),
+            id: id.as_slice().to_owned(),
             credential: credential_data,
             created_at: 0,
         };
@@ -490,7 +490,7 @@ impl Session {
                 .signature_key_pair
                 .tls_serialize_detached()
                 .map_err(Error::tls_serialize("signature keypair"))?,
-            id.clone().into(),
+            id.as_slice().to_owned(),
         );
         keystore.save(sign_kp).await.map_err(|e| match e {
             CryptoKeystoreError::AlreadyExists(_) => Error::CredentialConflict,
@@ -551,7 +551,7 @@ impl Session {
         if matches!(existing_cb, Err(Error::CredentialNotFound(_))) {
             let id = self.id().await?;
             debug!(id:% = &id; "Initializing basic credential");
-            let cb = Credential::basic(sc, &id, backend).map_err(RecursiveError::mls_credential(
+            let cb = Credential::basic(sc, id, backend).map_err(RecursiveError::mls_credential(
                 "generating credential to replace missing",
             ))?;
             self.save_identity(&backend.keystore(), None, sc, cb).await?;

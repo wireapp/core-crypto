@@ -7,7 +7,7 @@ use openmls::prelude::{Credential as MlsCredential, CredentialType, SignatureSch
 use tls_codec::Deserialize as _;
 
 use super::{Error, Result, keypairs};
-use crate::{ClientId, Credential, KeystoreError, RecursiveError};
+use crate::{ClientId, Credential, KeystoreError, RecursiveError, mls::session::id::ClientIdRef};
 
 /// Filters to narrow down the set of credentials returned from [`Credential::find`][super::Credential::find].
 ///
@@ -34,7 +34,7 @@ use crate::{ClientId, Credential, KeystoreError, RecursiveError};
 pub struct FindFilters<'a> {
     /// Client ID to search for
     #[builder(default, setter(strip_option))]
-    pub client_id: Option<&'a ClientId>,
+    pub client_id: Option<&'a ClientIdRef>,
     /// Signature scheme / ciphersuite to build for
     #[builder(default, setter(strip_option))]
     pub signature_scheme: Option<SignatureScheme>,

@@ -151,7 +151,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     let mut clients = create_mls_clients(chrome_driver_addr, web_server).await;
     let configuration = SessionConfig::builder()
         .database(db)
-        .client_id(MLS_MAIN_CLIENTID.into())
+        .client_id(MLS_MAIN_CLIENTID.to_owned().into())
         .ciphersuites([CIPHERSUITE_IN_USE.into()])
         .build()
         .validate()?;
@@ -307,7 +307,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
 
     let configuration = SessionConfig::builder()
         .database(db)
-        .client_id(MLS_MAIN_CLIENTID.into())
+        .client_id(MLS_MAIN_CLIENTID.to_owned().into())
         .ciphersuites([CIPHERSUITE_IN_USE.into()])
         .build()
         .validate()?;

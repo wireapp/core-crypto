@@ -139,7 +139,7 @@ impl SessionContext {
 
         match case.credential_type {
             CredentialType::Basic => {
-                let cb = Credential::basic(case.signature_scheme(), &client_id, backend).unwrap();
+                let cb = Credential::basic(case.signature_scheme(), client_id, backend).unwrap();
                 client
                     .save_identity(&backend.keystore(), None, case.signature_scheme(), cb)
                     .await

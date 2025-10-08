@@ -7,7 +7,7 @@ use super::{
     Credential,
     error::{Error, Result},
 };
-use crate::{CertificateBundle, ClientId, RecursiveError, Session};
+use crate::{CertificateBundle, ClientId, RecursiveError, Session, mls::session::id::ClientIdRef};
 
 /// Used by consumers to initializes a MLS client. Encompasses all the client types available.
 /// Could be enriched later with Verifiable Presentations.
@@ -22,7 +22,7 @@ pub enum ClientIdentifier {
 impl ClientIdentifier {
     /// Extract the unique [ClientId] from an identifier. Use with parsimony as, in case of a x509
     /// certificate this leads to parsing the certificate
-    pub fn get_id(&self) -> Result<std::borrow::Cow<'_, ClientId>> {
+    pub fn get_id(&self) -> Result<std::borrow::Cow<'_, ClientIdRef>> {
         match self {
             ClientIdentifier::Basic(id) => Ok(std::borrow::Cow::Borrowed(id)),
             ClientIdentifier::X509(certs) => {
@@ -46,28 +46,24 @@ impl ClientIdentifier {
         signature_schemes: HashSet<SignatureScheme>,
     ) -> Result<Vec<(SignatureScheme, ClientId, Credential)>> {
         match self {
-            ClientIdentifier::Basic(id) => signature_schemes.iter().try_fold(
-                Vec::with_capacity(signature_schemes.len()),
-                |mut acc, &sc| -> Result<_> {
-                    let cb = Credential::basic(sc, &id, backend)
+            ClientIdentifier::Basic(client_id) => signature_schemes
+                .into_iter()
+                .map(|signature_scheme| {
+                    let credential = Credential::basic(signature_scheme, client_id.clone(), backend)
                         .map_err(RecursiveError::mls_credential("generating basic credential"))?;
-                    acc.push((sc, id.clone(), cb));
-                    Ok(acc)
-                },
-            ),
-            ClientIdentifier::X509(certs) => {
-                let cap = certs.len();
-                certs
-                    .into_iter()
-                    .try_fold(Vec::with_capacity(cap), |mut acc, (sc, cert)| -> Result<_> {
-                        let id = cert
-                            .get_client_id()
-                            .map_err(RecursiveError::mls_credential("getting client id"))?;
-                        let cb = Session::new_x509_credential(cert)?;
-                        acc.push((sc, id, cb));
-                        Ok(acc)
-                    })
-            }
+                    Ok((signature_scheme, client_id.clone(), credential))
+                })
+                .collect(),
+            ClientIdentifier::X509(certs) => certs
+                .into_iter()
+                .map(|(signature_scheme, certificate_bundle)| {
+                    let id = certificate_bundle
+                        .get_client_id()
+                        .map_err(RecursiveError::mls_credential("getting client id"))?;
+                    let credential = Session::new_x509_credential(certificate_bundle)?;
+                    Ok((signature_scheme, id, credential))
+                })
+                .collect(),
         }
     }
 }

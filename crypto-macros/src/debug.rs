@@ -49,7 +49,7 @@ fn parse_type(ty: &Type) -> BytesType {
     type_string.retain(|c| !c.is_whitespace());
     match type_string.as_str() {
         "Option<Vec<u8>>" => BytesType::OptionalBytes,
-        "Vec<u8>" => BytesType::Bytes,
+        "Vec<u8>" | "[u8]" => BytesType::Bytes,
         _ => BytesType::Other,
     }
 }

@@ -1,10 +1,12 @@
 //! The methods in this module all produce or handle commits.
 
+use std::borrow::Borrow;
+
 use openmls::prelude::{KeyPackageIn, LeafNode};
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
-    ClientId, CredentialType, LeafError, MlsError, MlsGroupInfoBundle, MlsTransportResponse, RecursiveError,
+    ClientIdRef, CredentialType, LeafError, MlsError, MlsGroupInfoBundle, MlsTransportResponse, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::{
         conversation::{
@@ -152,7 +154,7 @@ impl ConversationGuard {
     /// # Arguments
     /// * `id` - group/conversation id
     /// * `clients` - list of client ids to be removed from the group
-    pub async fn remove_members(&mut self, clients: &[ClientId]) -> Result<()> {
+    pub async fn remove_members(&mut self, clients: &[impl Borrow<ClientIdRef>]) -> Result<()> {
         self.ensure_no_pending_commit().await?;
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
@@ -165,7 +167,7 @@ impl ConversationGuard {
             .filter_map(|kp| {
                 clients
                     .iter()
-                    .any(move |client_id| client_id.as_slice() == kp.credential.identity())
+                    .any(move |client_id| client_id.borrow() == kp.credential.identity())
                     .then_some(kp.index)
             })
             .collect::<Vec<_>>();

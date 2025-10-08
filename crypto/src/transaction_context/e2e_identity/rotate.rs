@@ -36,7 +36,7 @@ impl TransactionContext {
             .find_most_recent_credential(ciphersuite.signature_algorithm(), CredentialType::Basic)
             .await
             .map_err(|_| Error::MissingExistingClient(CredentialType::Basic))?;
-        let client_id = cb.mls_credential().identity().into();
+        let client_id = cb.mls_credential().identity().to_owned().into();
 
         let sign_keypair = Some(
             cb.signature_key()
@@ -84,7 +84,7 @@ impl TransactionContext {
             .find_most_recent_credential(ciphersuite.signature_algorithm(), CredentialType::X509)
             .await
             .map_err(|_| Error::MissingExistingClient(CredentialType::X509))?;
-        let client_id = cb.mls_credential().identity().into();
+        let client_id = cb.mls_credential().identity().to_owned().into();
         let sign_keypair = Some(
             cb.signature_key()
                 .try_into()

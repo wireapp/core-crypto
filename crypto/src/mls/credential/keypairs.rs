@@ -8,7 +8,7 @@ use openmls_basic_credential::SignatureKeyPair;
 use tls_codec::{Deserialize as _, Serialize as _};
 
 use super::{Error, Result};
-use crate::{ClientId, KeystoreError, MlsError};
+use crate::{KeystoreError, MlsError, mls::session::id::ClientIdRef};
 
 /// Load all stored keypairs from the keystore
 pub(super) async fn load_all(database: &Database) -> Result<Vec<StoredSignatureKeypair>> {
@@ -28,7 +28,7 @@ pub(super) fn generate(crypto: impl OpenMlsCrypto, signature_scheme: SignatureSc
 }
 
 /// Store a keypair in the keystore, attached to a particular client id
-pub(super) async fn store(database: &Database, id: &ClientId, keypair: &SignatureKeyPair) -> Result<()> {
+pub(super) async fn store(database: &Database, id: &ClientIdRef, keypair: &SignatureKeyPair) -> Result<()> {
     let data = keypair
         .tls_serialize_detached()
         .map_err(Error::tls_serialize("keypair"))?;

@@ -158,10 +158,13 @@ mod tests {
                 let conversation = case.create_conversation([&alice]).await;
                 let id = conversation.id().clone();
 
-                let remove_proposal = alice.transaction.new_remove_proposal(&id, b"unknown"[..].into()).await;
+                let remove_proposal = alice
+                    .transaction
+                    .new_remove_proposal(&id, b"unknown".as_slice().to_owned().into())
+                    .await;
                 assert!(matches!(
                     remove_proposal.unwrap_err(),
-                    Error::ClientNotFound(client_id) if client_id == b"unknown"[..].into()
+                    Error::ClientNotFound(client_id) if client_id == b"unknown".as_slice()
                 ));
             })
             .await
