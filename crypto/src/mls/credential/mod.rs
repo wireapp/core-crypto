@@ -5,6 +5,7 @@
 pub(crate) mod crl;
 mod error;
 pub(crate) mod ext;
+mod find_filters;
 mod keypairs;
 pub(crate) mod x509;
 
@@ -19,6 +20,7 @@ use core_crypto_keystore::{
 };
 pub use error::Error;
 pub(crate) use error::Result;
+pub use find_filters::FindFilters;
 use mls_crypto_provider::Database;
 use openmls::prelude::{
     Credential as MlsCredential, CredentialType, CredentialWithKey, MlsCredentialType, SignatureScheme,
@@ -145,17 +147,18 @@ impl Credential {
         self.mls_credential.identity().to_owned().into()
     }
 
-    /// Find all credentials in the database matching the provided client id and signature scheme.
-    ///
-    /// Our database does not currently support indices or even in-db searching, so this moves all data
-    /// from the DB to the runtime, decodes everything, and then filters. This is obviously suboptimal,
-    /// but that's only going to be improved with WPB-20839.
-    pub(crate) async fn find(
-        database: &Database,
-        client_id: Option<&ClientId>,
-        signature_scheme: Option<SignatureScheme>,
-        credential_type: Option<CredentialType>,
-    ) -> Result<Vec<Self>> {
+    /// Find all credentials in the database matching the provided filters.
+    //
+    // Our database does not currently support indices or even in-db searching, so this moves all data
+    // from the DB to the runtime, decodes everything, and then filters. This is obviously suboptimal,
+    // but that's only going to be improved with WPB-20839.
+    pub async fn find(database: &Database, find_filters: FindFilters<'_>) -> Result<Vec<Self>> {
+        let FindFilters {
+            client_id,
+            signature_scheme,
+            credential_type,
+        } = find_filters;
+
         let mut stored_keypairs = keypairs::load_all(database).await?;
         if let Some(signature_scheme) = signature_scheme {
             stored_keypairs.retain(|keypair| keypair.signature_scheme == signature_scheme as u16);
@@ -220,8 +223,8 @@ impl Credential {
     }
 
     /// Load all credentials from the database
-    pub(crate) async fn get_all(database: &Database) -> Result<Vec<Self>> {
-        Self::find(database, None, None, None).await
+    pub async fn get_all(database: &Database) -> Result<Vec<Self>> {
+        Self::find(database, FindFilters::default()).await
     }
 }
 
