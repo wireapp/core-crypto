@@ -11,6 +11,8 @@ use super::{Error, Result};
 use crate::{KeystoreError, MlsError, mls::session::id::ClientIdRef};
 
 /// Load all stored keypairs from the keystore
+///
+/// Ensures the keypairs are sorted in order of their creation date.
 pub(super) async fn load_all(database: &Database) -> Result<Vec<StoredSignatureKeypair>> {
     database
         .find_all::<StoredSignatureKeypair>(EntityFindParams::default())
@@ -44,14 +46,14 @@ pub(super) async fn store(database: &Database, id: &ClientIdRef, keypair: &Signa
         "serialized keypair data must deserialize correctly"
     );
 
-    let store_keypair = StoredSignatureKeypair::new(
+    let stored_keypair = StoredSignatureKeypair::new(
         keypair.signature_scheme(),
         keypair.public().to_owned(),
         data,
         id.as_slice().into(),
     );
     database
-        .save(store_keypair)
+        .save(stored_keypair)
         .await
         .map_err(KeystoreError::wrap("storing keypairs in keystore"))?;
 

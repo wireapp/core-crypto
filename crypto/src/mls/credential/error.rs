@@ -29,6 +29,10 @@ pub enum Error {
     UnsupportedOperation(&'static str),
     #[error("unsupported algorithm")]
     UnsupportedAlgorithm,
+    #[error("keypair not found in keystore")]
+    KeypairNotFound,
+    #[error("credential failed to validate")]
+    ValidationFailed(#[from] CredentialValidationError),
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
