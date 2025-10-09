@@ -9,7 +9,7 @@ use super::{
     init_x509_test_chain, tmp_db_file,
     x509::{CertificateParams, X509TestChain},
 };
-pub use crate::{Ciphersuite, MlsConversationConfiguration, CredentialType, MlsCustomConfiguration, MlsWirePolicy};
+pub use crate::{Ciphersuite, CredentialType, MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy};
 use crate::{
     ClientId, ConnectionType, Database, DatabaseKey,
     e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId},
@@ -250,9 +250,7 @@ impl TestContext {
         let x509_sessions = self.sessions_x509().await;
         let chain = x509_sessions[0].x509_chain_unchecked();
         let basic_ids = self.basic_client_ids();
-        let basic_sessions = self
-            .sessions_inner(basic_ids, Some(chain), CredentialType::Basic)
-            .await;
+        let basic_sessions = self.sessions_inner(basic_ids, Some(chain), CredentialType::Basic).await;
         (x509_sessions, basic_sessions)
     }
 

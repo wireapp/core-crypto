@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use openmls::{group::QueuedProposal, prelude::group_info::VerifiableGroupInfo};
 
-use super::{MessageExt as _, CredentialType, MlsTransportTestExt, SessionContext, TestContext, TestError};
+use super::{CredentialType, MessageExt as _, MlsTransportTestExt, SessionContext, TestContext, TestError};
 use crate::{
     ConversationId, E2eiConversationState, MlsProposalRef, RecursiveError,
     mls::{
