@@ -423,8 +423,8 @@ WASM_GEN := $(GEN_DIR)/wasm-bindgen/index_bg.wasm
 # find all .ts source files under src/ except `*.d.ts`
 TS_SRCS := $(shell find $(JS_SRC_DIR) -type f -name '*.ts' -not -name '*.d.ts' 2>/dev/null | LC_ALL=C sort)
 
-JS_OUT := $(JS_DIR)/src/corecrypto.js
-DTS_OUT := $(JS_DIR)/src/corecrypto.d.ts
+JS_OUT := $(JS_DIR)/out/corecrypto.js
+DTS_OUT := $(JS_DIR)/out/corecrypto.d.ts
 
 # In release mode, fail if the lockfile does not match
 BUN_FROZEN_LOCKFILE := $(if $(RELEASE),--frozen-lockfile)
@@ -468,11 +468,12 @@ $(JS_OUT): $(js-deps)
 # we do _not_ want to rm `$(GEN_DIR); that kills our generated wasm code
 	rm -f $(JS_OUT) $(DTS_OUT)
 	cd $(JS_DIR) && \
-	bun build \
+	bun build src/CoreCrypto.ts \
 	  --target browser \
 	  --format esm \
-	  --outfile src/corecrypto.js \
-	  src/CoreCrypto.ts
+	  --outdir out \
+	  --asset-naming "[dir]/[name].[ext]" \
+	  --entry-naming "corecrypto.[ext]"
 
 .PHONY: js
 js: $(JS_OUT)
@@ -483,7 +484,7 @@ $(DTS_OUT): $(ts-deps)
 	cd $(JS_DIR) && \
 	bun x dts-bundle-generator \
 	  --project tsconfig.json \
-	  -o src/corecrypto.d.ts \
+	  -o out/corecrypto.d.ts \
 	  --no-check \
 	  --export-referenced-types false \
 	  src/CoreCrypto.ts
