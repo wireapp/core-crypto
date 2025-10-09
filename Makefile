@@ -457,7 +457,7 @@ DTS_OUT := $(JS_DIR)/src/corecrypto.d.ts
 BUN_FROZEN_LOCKFILE := $(if $(RELEASE),--frozen-lockfile)
 
 # Generate WASM
-wasm-build-deps := $(RUST_SOURCES)
+wasm-build-deps := $(RUST_SOURCES) $(FFI_LIBRARY)
 # Note the `&:` syntax: that's a "grouped target" rule: https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html
 $(JS_GEN) $(WASM_GEN) &: $(wasm-build-deps)
 	cd crypto-ffi/bindings/js && \
