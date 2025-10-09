@@ -11,56 +11,55 @@
 //! | merge     | ❌           | ❌            | ✅           | ✅            |
 //! | decrypt   | ✅           | ✅            | ✅           | ✅            |
 
-use std::{
-    borrow::{Borrow, Cow},
-    collections::{HashMap, HashSet},
-    ops::Deref,
-    sync::Arc,
-};
-
-use config::MlsConversationConfiguration;
-use core_crypto_keystore::CryptoKeystoreMls;
-use itertools::Itertools as _;
-use log::trace;
-use mls_crypto_provider::{Database, MlsCryptoProvider};
-use openmls::{
-    group::MlsGroup,
-    prelude::{Credential as MlsCredential, CredentialWithKey, LeafNodeIndex, Proposal, SignaturePublicKey},
-};
-use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
-
-use crate::{
-    Ciphersuite, ClientId, CredentialType, E2eiConversationState, KeystoreError, LeafError, MlsError, RecursiveError,
-    WireIdentity, mls::Session,
-};
-
 pub(crate) mod commit;
 mod commit_delay;
 pub(crate) mod config;
 pub(crate) mod conversation_guard;
+mod credential;
 mod duplicate;
 #[cfg(test)]
 mod durability;
 mod error;
 pub(crate) mod group_info;
+mod id;
 mod immutable_conversation;
 pub(crate) mod merge;
 mod orphan_welcome;
 mod own_commit;
 pub(crate) mod pending_conversation;
+mod persistence;
 pub(crate) mod proposal;
 mod renew;
 pub(crate) mod welcome;
 mod wipe;
 
-pub use conversation_guard::ConversationGuard;
-pub use error::{Error, Result};
-pub use immutable_conversation::ImmutableConversation;
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Deref,
+    sync::Arc,
+};
 
+use itertools::Itertools as _;
+use log::trace;
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls::{
+    group::MlsGroup,
+    prelude::{LeafNodeIndex, Proposal},
+};
+use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
+
+use self::config::MlsConversationConfiguration;
+pub use self::{
+    conversation_guard::ConversationGuard,
+    error::{Error, Result},
+    id::{ConversationId, ConversationIdRef},
+    immutable_conversation::ImmutableConversation,
+};
 use super::credential::Credential;
 use crate::{
-    UserId,
-    mls::{HasSessionAndCrypto, credential::ext::CredentialExt as _},
+    Ciphersuite, ClientId, CredentialType, E2eiConversationState, LeafError, MlsError, RecursiveError, UserId,
+    WireIdentity,
+    mls::{HasSessionAndCrypto, Session, credential::ext::CredentialExt as _},
 };
 
 /// The base layer for [Conversation].
@@ -265,97 +264,6 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
 
 impl<'a, T: ConversationWithMls<'a>> Conversation<'a> for T {}
 
-/// A unique identifier for a group/conversation. The identifier must be unique within a client.
-#[derive(
-    core_crypto_macros::Debug,
-    derive_more::AsRef,
-    derive_more::From,
-    derive_more::Into,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Clone,
-)]
-#[sensitive]
-#[as_ref([u8])]
-#[from(&[u8], Vec<u8>)]
-pub struct ConversationId(Vec<u8>);
-
-impl From<ConversationId> for Cow<'_, [u8]> {
-    fn from(value: ConversationId) -> Self {
-        Cow::Owned(value.0)
-    }
-}
-
-impl<'a> From<&'a ConversationId> for Cow<'a, [u8]> {
-    fn from(value: &'a ConversationId) -> Self {
-        Cow::Borrowed(value.as_ref())
-    }
-}
-
-/// Reference to a ConversationId.
-///
-/// This type is `!Sized` and is only ever seen as a reference, like `str` or `[u8]`.
-//
-// pattern from https://stackoverflow.com/a/64990850
-#[repr(transparent)]
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ConversationIdRef([u8]);
-
-impl ConversationIdRef {
-    /// Creates a `ConversationId` Ref, needed to implement `Borrow<ConversationIdRef>` for `T`
-    pub fn new<Bytes>(bytes: &Bytes) -> &ConversationIdRef
-    where
-        Bytes: AsRef<[u8]> + ?Sized,
-    {
-        // SAFETY: because of `repr(transparent)` we know that `ConversationIdRef` has a memory layout
-        // identical to `[u8]`, so we can perform this cast
-        unsafe { &*(bytes.as_ref() as *const [u8] as *const ConversationIdRef) }
-    }
-}
-
-impl ConversationIdRef {
-    fn to_bytes(&self) -> Vec<u8> {
-        self.as_ref().to_owned()
-    }
-}
-
-impl Borrow<ConversationIdRef> for ConversationId {
-    fn borrow(&self) -> &ConversationIdRef {
-        ConversationIdRef::new(&self.0)
-    }
-}
-
-impl Deref for ConversationId {
-    type Target = ConversationIdRef;
-
-    fn deref(&self) -> &Self::Target {
-        ConversationIdRef::new(&self.0)
-    }
-}
-
-impl ToOwned for ConversationIdRef {
-    type Owned = ConversationId;
-
-    fn to_owned(&self) -> Self::Owned {
-        ConversationId(self.0.to_owned())
-    }
-}
-
-impl AsRef<[u8]> for ConversationIdRef {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl<'a> From<&'a ConversationIdRef> for Cow<'a, [u8]> {
-    fn from(value: &'a ConversationIdRef) -> Self {
-        Cow::Borrowed(value.as_ref())
-    }
-}
-
 /// This is a wrapper on top of the OpenMls's [MlsGroup], that provides Core Crypto specific functionality
 ///
 /// This type will store the state of a group. With the [MlsGroup] it holds, it provides all
@@ -441,24 +349,6 @@ impl MlsConversation {
         Ok(conversation)
     }
 
-    /// Internal API: restore the conversation from a persistence-saved serialized Group State.
-    pub(crate) fn from_serialized_state(buf: Vec<u8>, parent_id: Option<ConversationId>) -> Result<Self> {
-        let group: MlsGroup =
-            core_crypto_keystore::deser(&buf).map_err(KeystoreError::wrap("deserializing group state"))?;
-        let id = ConversationId::from(group.group_id().as_slice());
-        let configuration = MlsConversationConfiguration {
-            ciphersuite: group.ciphersuite().into(),
-            ..Default::default()
-        };
-
-        Ok(Self {
-            id,
-            group,
-            parent_id,
-            configuration,
-        })
-    }
-
     /// Group/conversation id
     pub fn id(&self) -> &ConversationId {
         &self.id
@@ -466,16 +356,6 @@ impl MlsConversation {
 
     pub(crate) fn group(&self) -> &MlsGroup {
         &self.group
-    }
-
-    /// Returns all members credentials from the group/conversation
-    pub fn members(&self) -> HashMap<Vec<u8>, MlsCredential> {
-        self.group.members().fold(HashMap::new(), |mut acc, kp| {
-            let credential = kp.credential;
-            let id = credential.identity().to_vec();
-            acc.entry(id).or_insert(credential);
-            acc
-        })
     }
 
     /// Get actual group members and subtract pending remove proposals
@@ -505,48 +385,6 @@ impl MlsConversation {
                 _ => None,
             })
             .collect::<Vec<_>>()
-    }
-
-    /// Returns all members credentials with their signature public key from the group/conversation
-    pub fn members_with_key(&self) -> HashMap<Vec<u8>, CredentialWithKey> {
-        self.group.members().fold(HashMap::new(), |mut acc, kp| {
-            let credential = kp.credential;
-            let id = credential.identity().to_vec();
-            let signature_key = SignaturePublicKey::from(kp.signature_key);
-            let credential = CredentialWithKey {
-                credential,
-                signature_key,
-            };
-            acc.entry(id).or_insert(credential);
-            acc
-        })
-    }
-
-    pub(crate) async fn persist_group_when_changed(&mut self, keystore: &Database, force: bool) -> Result<()> {
-        if force || self.group.state_changed() == openmls::group::InnerState::Changed {
-            keystore
-                .mls_group_persist(
-                    &self.id,
-                    &core_crypto_keystore::ser(&self.group).map_err(KeystoreError::wrap("serializing group state"))?,
-                    self.parent_id.as_ref().map(|id| id.as_ref()),
-                )
-                .await
-                .map_err(KeystoreError::wrap("persisting mls group"))?;
-
-            self.group.set_state(openmls::group::InnerState::Persisted);
-        }
-
-        Ok(())
-    }
-
-    pub(crate) fn own_credential_type(&self) -> Result<CredentialType> {
-        Ok(self
-            .group
-            .own_leaf_node()
-            .ok_or(Error::MlsGroupInvalidState("own_leaf_node not present in group"))?
-            .credential()
-            .credential_type()
-            .into())
     }
 
     pub(crate) fn ciphersuite(&self) -> Ciphersuite {
@@ -587,6 +425,8 @@ impl MlsConversation {
 
 #[cfg(test)]
 pub mod test_utils {
+    use openmls::prelude::SignaturePublicKey;
+
     use super::*;
 
     impl MlsConversation {
