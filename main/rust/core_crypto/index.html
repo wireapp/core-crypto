@@ -3,15 +3,20 @@ through Web Assembly and in mobile devices through FFI.</p>
 <p>The goal is provide a easier and less verbose API to create, manage and interact with MLS
 groups.</p>
 <h2 id="wire-corecrypto"><a class="doc-anchor" href="#wire-corecrypto">§</a>Wire CoreCrypto</h2>
-<p>This repository is part of the source code of Wire. You can find more information at <a href="https://wire.com">wire.com</a> or by contacting opensource@wire.com.</p>
+<p>This repository is part of the source code of Wire. You can find more information at <a href="https://wire.com">wire.com</a> or by
+contacting opensource@wire.com.</p>
 <p>You can find the published source code at <a href="https://github.com/wireapp/wire">github.com/wireapp/wire</a>.</p>
-<p>For licensing information, see the attached LICENSE file and the list of third-party licenses at <a href="https://wire.com/legal/licenses/">wire.com/legal/licenses/</a>.</p>
-<p>No license is granted to the Wire trademark and its associated logos, all of which will continue to be owned exclusively by Wire Swiss GmbH. Any use of the Wire trademark and/or its associated logos is expressly prohibited without the express prior written consent of Wire Swiss GmbH.</p>
+<p>For licensing information, see the attached LICENSE file and the list of third-party licenses at
+<a href="https://wire.com/legal/licenses/">wire.com/legal/licenses/</a>.</p>
+<p>No license is granted to the Wire trademark and its associated logos, all of which will continue to be owned exclusively
+by Wire Swiss GmbH. Any use of the Wire trademark and/or its associated logos is expressly prohibited without the
+express prior written consent of Wire Swiss GmbH.</p>
 <h3 id="parts"><a class="doc-anchor" href="#parts">§</a>Parts</h3>
 <ul>
 <li>CoreCrypto: Abstracts MLS &amp; Proteus in a unified API</li>
 <li>CoreCryptoFFI: FFI bindings for iOS, Android and WASM</li>
-<li>Keystore: Encrypted Keystore powered by SQLCipher on all platforms except WASM. WASM uses an IndexedDB-backed, encrypted store with AES256-GCM</li>
+<li>Keystore: Encrypted Keystore powered by SQLCipher on all platforms except WASM. WASM uses an IndexedDB-backed,
+encrypted store with AES256-GCM</li>
 <li>MlsProvider: RustCrypto + Keystore MLS provider</li>
 </ul>
 <p>See <a href="docs/ARCHITECTURE.md">ARCHITECTURE.md</a></p>
@@ -22,7 +27,8 @@ groups.</p>
 </ul>
 <p>If you’re using macOS, you’ll also need to install GNU sed:</p>
 <div class="example-wrap"><pre class="language-sh"><code>brew install gnu-sed make</code></pre></div>
-<p>and add aliases to your shell configuration file: <code>alias sed=gsed</code>, <code>aliase make=gmake</code> (e.g. to <code>~/.zshenv</code> if you’re using zsh).</p>
+<p>and add aliases to your shell configuration file: <code>alias sed=gsed</code>, <code>aliase make=gmake</code> (e.g. to <code>~/.zshenv</code> if you’re
+using zsh).</p>
 <h5 id="pre-commit"><a class="doc-anchor" href="#pre-commit">§</a>Pre-commit</h5>
 <ul>
 <li>Install the <a href="https://pre-commit.com/"><code>pre-commit</code> framework</a></li>
@@ -89,30 +95,34 @@ browser you want to test for, respectively.</p>
 <div class="example-wrap"><pre class="language-text"><code>cargo nextest run --features test-all-cipher</code></pre></div><h4 id="platform-specific-tests-for-kotlinjvm"><a class="doc-anchor" href="#platform-specific-tests-for-kotlinjvm">§</a>Platform-specific tests for Kotlin/JVM</h4><div class="example-wrap"><pre class="language-sh"><code>make jvm-test</code></pre></div><h4 id="platform-specific-tests-for-android"><a class="doc-anchor" href="#platform-specific-tests-for-android">§</a>Platform-specific tests for Android</h4><div class="example-wrap"><pre class="language-sh"><code>make android-test</code></pre></div><h4 id="swiftios"><a class="doc-anchor" href="#swiftios">§</a>Swift/iOS</h4>
 <p><em>No E2E testing is available as of now on Swift.</em></p>
 <h4 id="platform-specific-tests-for-wasmweb"><a class="doc-anchor" href="#platform-specific-tests-for-wasmweb">§</a>Platform-specific tests for WASM/Web</h4><div class="example-wrap"><pre class="language-sh"><code>make ts-test</code></pre></div>
-<p>Note the <code>CC_TEST_LOG_LEVEL</code> environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto logs.</p>
+<p>Note the <code>CC_TEST_LOG_LEVEL</code> environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto
+logs.</p>
 <h3 id="benchmarks"><a class="doc-anchor" href="#benchmarks">§</a>Benchmarks</h3>
-<p>There are benches implemented in <a href="crypto/benches/"><code>crypto/benches</code></a> for several operations on mls groups with varying sizes or proteus.
-Parameters like minimum or maximum group sizes and step sizes are defined in <a href="crypto/benches/utils/mod.rs"><code>crypto/benches/utils/mod.rs</code></a>.</p>
+<p>There are benches implemented in <a href="crypto/benches/"><code>crypto/benches</code></a> for several operations on mls groups with varying
+sizes or proteus. Parameters like minimum or maximum group sizes and step sizes are defined in
+<a href="crypto/benches/utils/mod.rs"><code>crypto/benches/utils/mod.rs</code></a>.</p>
 <h4 id="executing-benches"><a class="doc-anchor" href="#executing-benches">§</a>Executing Benches</h4>
 <p>To execute the benches, e.g. for creating commits, run</p>
 <div class="example-wrap"><pre class="language-bash"><code>cargo bench --bench=commit -- --quick</code></pre></div>
-<p>where <code>commit</code> is the name of the bench specified in <a href="crypto/Cargo.toml"><code>crypto/Cargo.toml</code></a>, and the corresponding file in <a href="crypto/benches/"><code>crypto/benches</code></a>.
-In case you’re interested in higher accuracy, and willing to trade it for execution speed, omit the <code>--quick</code> flag.
-If you need reporting plots, remove the <code>.without_plots()</code> call in <a href="crypto/benches/utils/mod.rs"><code>crypto/benches/utils/mod.rs</code></a>.
-The reports generated by criterion will be located in <code>target/criterion</code>.</p>
+<p>where <code>commit</code> is the name of the bench specified in <a href="crypto/Cargo.toml"><code>crypto/Cargo.toml</code></a>, and the corresponding
+file in <a href="crypto/benches/"><code>crypto/benches</code></a>. In case you’re interested in higher accuracy, and willing to trade it for
+execution speed, omit the <code>--quick</code> flag. If you need reporting plots, remove the <code>.without_plots()</code> call in
+<a href="crypto/benches/utils/mod.rs"><code>crypto/benches/utils/mod.rs</code></a>. The reports generated by criterion will be located in
+<code>target/criterion</code>.</p>
 <h3 id="git-workflow"><a class="doc-anchor" href="#git-workflow">§</a>Git workflow</h3>
 <ul>
 <li>The <code>main</code> branch is used as the everyday development branch.</li>
 <li>No merge commits. Always rebase on top of <code>main</code>.</li>
 <li>Release branches are named <code>release/&lt;series&gt;</code>, e.g. <code>release/1.x</code>, <code>release/2.x</code>.</li>
 <li>Release branches contain fixes relevant to their specific release series and are never merged to <code>main</code>.</li>
-<li>Release branches always branch off their first major release tag. For example,
-the output of <code>git merge-base main release/2.x</code> must be a commit pointed to by tag <code>v2.0.0</code>.</li>
-<li>Release branches are created lazily, that is, only when the first fix needs to be applied and released
-for a specific release series.</li>
-<li>Use <a href="https://www.conventionalcommits.org/en/v1.0.0/">conventional commits</a> – those are picked up by the changelog generator.</li>
-<li>If there is a JIRA ticket related to the change, you should mention it in either the PR title or the commit(s),
-with the following format: <code>[TICKET_ID]</code>.</li>
+<li>Release branches always branch off their first major release tag. For example, the output of
+<code>git merge-base main release/2.x</code> must be a commit pointed to by tag <code>v2.0.0</code>.</li>
+<li>Release branches are created lazily, that is, only when the first fix needs to be applied and released for a specific
+release series.</li>
+<li>Use <a href="https://www.conventionalcommits.org/en/v1.0.0/">conventional commits</a> – those are picked up by the changelog
+generator.</li>
+<li>If there is a JIRA ticket related to the change, you should mention it in either the PR title or the commit(s), with
+the following format: <code>[TICKET_ID]</code>.</li>
 <li>Sign your <a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits">commits</a>
 and <a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-tags">tags</a>.</li>
 <li>Remove branches from the remote once you don’t need them anymore.</li>
@@ -126,12 +136,11 @@ and <a href="https://docs.github.com/en/authentication/managing-commit-signature
 <ul>
 <li>all workspace member crates</li>
 <li><code>package.json</code></li>
-<li><code>crypto-ffi/bindings/gradle.properties</code>
-Make sure the result of the script run is correct.</li>
+<li><code>crypto-ffi/bindings/gradle.properties</code> Make sure the result of the script run is correct.</li>
 </ul>
 </li>
-<li>Generate the relevant changelog section:<div class="example-wrap"><pre class="language-bash"><code>git cliff --bump --unreleased</code></pre></div>and add it to the top of <code>CHANGELOG.md</code>.
-Make sure the version number generated by <code>git cliff</code> matches the release version.</li>
+<li>Generate the relevant changelog section:<div class="example-wrap"><pre class="language-bash"><code>git cliff --bump --unreleased</code></pre></div>and add it to the top of <code>CHANGELOG.md</code>. Make sure the version number generated by <code>git cliff</code> matches the release
+version.</li>
 <li>If there are any release highlights, add them as the first subsection below release title:<div class="example-wrap"><pre class="language-markdown"><code>## v1.0.2 - 2024-08-16
 
 ### Highlights
@@ -140,7 +149,8 @@ Make sure the version number generated by <code>git cliff</code> matches the rel
 - bar
 - baz</code></pre></div></li>
 <li>In <a href="docs/index.md">index.md</a>, copy the commented-out table row from the bottom of the file to the appropriate place
-in the table, ordering by version number, descending. Search and replace the first 5 occurrences of <code>x.x.x</code> with <code>X.Y.Z</code>.</li>
+in the table, ordering by version number, descending. Search and replace the first 5 occurrences of <code>x.x.x</code> with
+<code>X.Y.Z</code>.</li>
 <li>Make sure the changes look reasonable and complete; you can use the previous release as a reference</li>
 <li>Push your <code>prepare-release/X.Y.Z</code> branch and create a PR for it</li>
 <li>Get it reviewed, then merge it into <code>main</code> and remove the <code>prepare-release/X.Y.Z</code> branch from the remote</li>
@@ -153,9 +163,10 @@ in the table, ordering by version number, descending. Search and replace the fir
 <h5 id="consider-when-making-a-release-from-a-release-branch"><a class="doc-anchor" href="#consider-when-making-a-release-from-a-release-branch">§</a>Consider when making a release from a release branch</h5>
 <ol>
 <li>Isolate the changes to <a href="docs/index.md">index.md</a> and <code>CHANGELOG.md</code> from the release commit itself</li>
-<li>After the release is finished, cherry-pick the changes to <a href="docs/index.md">index.md</a> and <code>CHANGELOG.md</code> and get them into <code>main</code></li>
-<li>For release series <code>4.x</code> and newer, docs upload happens automatically.
-If you released from the series <code>3.x</code> or older, you need to trigger docs upload manually:
+<li>After the release is finished, cherry-pick the changes to <a href="docs/index.md">index.md</a> and <code>CHANGELOG.md</code> and get them
+into <code>main</code></li>
+<li>For release series <code>4.x</code> and newer, docs upload happens automatically. If you released from the series <code>3.x</code> or
+older, you need to trigger docs upload manually:
 <ol>
 <li>On GitHub, go to the <a href="https://github.com/wireapp/core-crypto/actions/workflows/docs.yml">docs workflow</a></li>
 <li>Click the <code>Run workflow</code> button</li>
@@ -170,8 +181,7 @@ If you released from the series <code>3.x</code> or older, you need to trigger d
 ./gradlew :jvm:publishToMavenLocal
 ./gradlew :android:publishToMavenLocal</code></pre></div><h4 id="publishing-js--wasm-bindings"><a class="doc-anchor" href="#publishing-js--wasm-bindings">§</a>Publishing JS / WASM bindings</h4>
 <p>Publishing JS / WASM bindings happens automatically by a github workflow when a release tag is pushed.</p>
-<p>If you would like to publish to <code>@wireapp/core-crypto</code> manually, log into NPM and
-just run <code>bun publish</code>.</p>
+<p>If you would like to publish to <code>@wireapp/core-crypto</code> manually, log into NPM and just run <code>bun publish</code>.</p>
 </div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><dl class="item-table reexports"><dt id="reexport.E2eiEnrollment"><code>pub use crate::e2e_identity::<a class="struct" href="e2e_identity/struct.E2eiEnrollment.html" title="struct core_crypto::e2e_identity::E2eiEnrollment">E2eiEnrollment</a>;</code></dt><dt id="reexport.E2eiAcmeChallenge"><code>pub use crate::e2e_identity::types::<a class="struct" href="e2e_identity/types/struct.E2eiAcmeChallenge.html" title="struct core_crypto::e2e_identity::types::E2eiAcmeChallenge">E2eiAcmeChallenge</a>;</code></dt><dt id="reexport.E2eiAcmeDirectory"><code>pub use crate::e2e_identity::types::<a class="struct" href="e2e_identity/types/struct.E2eiAcmeDirectory.html" title="struct core_crypto::e2e_identity::types::E2eiAcmeDirectory">E2eiAcmeDirectory</a>;</code></dt><dt id="reexport.E2eiNewAcmeAuthz"><code>pub use crate::e2e_identity::types::<a class="struct" href="e2e_identity/types/struct.E2eiNewAcmeAuthz.html" title="struct core_crypto::e2e_identity::types::E2eiNewAcmeAuthz">E2eiNewAcmeAuthz</a>;</code></dt><dt id="reexport.E2eiNewAcmeOrder"><code>pub use crate::e2e_identity::types::<a class="struct" href="e2e_identity/types/struct.E2eiNewAcmeOrder.html" title="struct core_crypto::e2e_identity::types::E2eiNewAcmeOrder">E2eiNewAcmeOrder</a>;</code></dt><dt id="reexport.ConversationId"><code>pub use crate::mls::conversation::<a class="struct" href="mls/conversation/struct.ConversationId.html" title="struct core_crypto::mls::conversation::ConversationId">ConversationId</a>;</code></dt><dt id="reexport.MlsConversation"><code>pub use crate::mls::conversation::<a class="struct" href="mls/conversation/struct.MlsConversation.html" title="struct core_crypto::mls::conversation::MlsConversation">MlsConversation</a>;</code></dt></dl><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="e2e_identity/index.html" title="mod core_crypto::e2e_identity">e2e_<wbr>identity</a></dt><dd>re-export <a href="https://github.com/wireapp/rusty-jwt-tools">rusty-jwt-tools</a> API</dd><dt><a class="mod" href="mls/index.html" title="mod core_crypto::mls">mls</a></dt><dd>MLS Abstraction</dd><dt><a class="mod" href="proteus/index.html" title="mod core_crypto::proteus">proteus</a></dt><dd>Proteus Abstraction</dd><dt><a class="mod" href="transaction_context/index.html" title="mod core_crypto::transaction_context">transaction_<wbr>context</a></dt><dd>This module contains the primitives to enable transactional support on a higher level within the
 <a href="struct.Session.html" title="struct core_crypto::Session">Session</a>. All mutating operations need to be done through a <a href="transaction_context/struct.TransactionContext.html" title="struct core_crypto::transaction_context::TransactionContext">TransactionContext</a>.</dd></dl><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.BuildMetadata.html" title="struct core_crypto::BuildMetadata">Build<wbr>Metadata</a></dt><dd>Metadata describing the conditions of the build of this software.</dd><dt><a class="struct" href="struct.CertificateBundle.html" title="struct core_crypto::CertificateBundle">Certificate<wbr>Bundle</a></dt><dd>Represents a x509 certificate chain supplied by the client
 It can fetch it after an end-to-end identity process where it can get back a certificate
