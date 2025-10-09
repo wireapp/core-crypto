@@ -12,9 +12,7 @@ afterEach(async () => {
 
 describe("metadata", () => {
     test("metadata can be retrieved and contains key 'gitDescribe'", async () => {
-        expect(buildMetadata().toJSON()).toMatchObject({
-            gitDescribe: expect.anything(),
-        });
+        expect(buildMetadata()).toHaveProperty("gitDescribe");
     });
 
     test("version can be retrieved and is a semantic version number", async () => {
