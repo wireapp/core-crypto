@@ -1,10 +1,9 @@
 # Wire CoreCrypto
 
-This crate is the core of this whole project. It contains a wrapper on top
-of [openmls](https://github.com/openmls/openmls) for all the MLS operations. Most of them use
-the [keystore](../keystore) in order to persist the group's state and make each operation atomic.
-It only implements the required set of MLS operations required by Wire client applications ; it does not intend to be a
-generic purpose MLS library.
+This crate is the core of this whole project. It contains a wrapper on top of
+[openmls](https://github.com/openmls/openmls) for all the MLS operations. Most of them use the [keystore](../keystore)
+in order to persist the group's state and make each operation atomic. It only implements the required set of MLS
+operations required by Wire client applications ; it does not intend to be a generic purpose MLS library.
 
 This crate's public API could be used as-is by an hypothetical higher-level Rust client. However, since it's not the
 case, it is exposed in the [crypto-ffi](../crypto-ffi) crate.

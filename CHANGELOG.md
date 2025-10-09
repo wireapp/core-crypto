@@ -4,8 +4,8 @@
 
 ### Features
 
-- Allow in-memory database instantiation and usage with core crypto. Just call `inMemoryDatabase()` (Android, Web)
-  or the `Database` constructor without a path (iOS).
+- Allow in-memory database instantiation and usage with core crypto. Just call `inMemoryDatabase()` (Android, Web) or
+  the `Database` constructor without a path (iOS).
 
 - Web: structural errors
 
@@ -52,11 +52,10 @@
   Affected platforms: all
 
   Migration: instead of calling `deferredInit()`, call `init()` (TypeScript), or the regular `CoreCrypto` constructor
-  (Swift, Kotlin).
-  As before with `deferredInit()`, call `mlsInit()` in a transaction to initialize MLS.
+  (Swift, Kotlin). As before with `deferredInit()`, call `mlsInit()` in a transaction to initialize MLS.
 
-- The core crypto constructor now takes a `Database` instance instead of a `DatabaseKey` and a path.
-  To instantiate, call `openDatabase()` (Android, Web) or the `Database` constructor (iOS).
+- The core crypto constructor now takes a `Database` instance instead of a `DatabaseKey` and a path. To instantiate,
+  call `openDatabase()` (Android, Web) or the `Database` constructor (iOS).
 
   Affected platforms: all
 
@@ -69,8 +68,8 @@
 - `proteusErrorCode` field was removed from the root error type, you can get it from the nested context now (see above).
   Affected platforms: web
 
-- Renamed `CoreCryptoClient` to `CoreCrypto` and moved `historyClient(historySecret: HistorySecret)` into `CoreCrypto` Companion functions
-  Affected platforms: jvm, android
+- Renamed `CoreCryptoClient` to `CoreCrypto` and moved `historyClient(historySecret: HistorySecret)` into `CoreCrypto`
+  Companion functions Affected platforms: jvm, android
 
 - Removed static methods from `CoreCrypto` that are globally available:
 
@@ -86,9 +85,9 @@
 
   Affected platforms: ios, web
 
-- Removed `setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)` and
-  renamed `setLoggerOnly(logger: CoreCryptoLogger)` to `setLogger(logger: CoreCryptoLogger)`.
-  To set the loglevel use `setMaxLogLevel(level: CoreCryptoLogLevel)`
+- Removed `setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)` and renamed
+  `setLoggerOnly(logger: CoreCryptoLogger)` to `setLogger(logger: CoreCryptoLogger)`. To set the loglevel use
+  `setMaxLogLevel(level: CoreCryptoLogLevel)`
 
   Affected platforms: all
 
@@ -151,33 +150,44 @@ ______________________________________________________________________
 
 ### Features
 
-- \[**breaking**\] expose error structure in ts wrapper ([ff9dc8d](https://github.com/wireapp/core-crypto/commit/ff9dc8d636994b89923c3b49400e5a260b007d02))
-- \[**breaking**\] structural wasm errors ([eb2760b](https://github.com/wireapp/core-crypto/commit/eb2760b425e84752568ac0ef57b8d31b98aea635))
-- extend the epoch advanced log with context on which members were added/removed ([d039879](https://github.com/wireapp/core-crypto/commit/d0398794218a0935d6a23bf7153b8d634f5b9f8a))
-- add new `Database` type [WPB-19568] ([431dc15](https://github.com/wireapp/core-crypto/commit/431dc15bed76878bba4b3bbebcd35ed495899f50))
+- \[**breaking**\] expose error structure in ts wrapper
+  ([ff9dc8d](https://github.com/wireapp/core-crypto/commit/ff9dc8d636994b89923c3b49400e5a260b007d02))
+- \[**breaking**\] structural wasm errors
+  ([eb2760b](https://github.com/wireapp/core-crypto/commit/eb2760b425e84752568ac0ef57b8d31b98aea635))
+- extend the epoch advanced log with context on which members were added/removed
+  ([d039879](https://github.com/wireapp/core-crypto/commit/d0398794218a0935d6a23bf7153b8d634f5b9f8a))
+- add new `Database` type [WPB-19568]
+  ([431dc15](https://github.com/wireapp/core-crypto/commit/431dc15bed76878bba4b3bbebcd35ed495899f50))
 
 ### Bug Fixes
 
-- `MlsTransportResponse` abort reason wasn't propagated ([90ab72f](https://github.com/wireapp/core-crypto/commit/90ab72f3b3d959bf8006bae9bf81c1789409e140))
+- `MlsTransportResponse` abort reason wasn't propagated
+  ([90ab72f](https://github.com/wireapp/core-crypto/commit/90ab72f3b3d959bf8006bae9bf81c1789409e140))
 
 ### Documentation
 
-- update changelog for structured ts errors ([8b58236](https://github.com/wireapp/core-crypto/commit/8b58236d6c2ee1e292f4323e6e7a3d0d23e9069c))
-- README: fix instructions for local Maven publishing ([a045972](https://github.com/wireapp/core-crypto/commit/a045972857f268cbc648af19c11ab74dc34bd4ae))
+- update changelog for structured ts errors
+  ([8b58236](https://github.com/wireapp/core-crypto/commit/8b58236d6c2ee1e292f4323e6e7a3d0d23e9069c))
+- README: fix instructions for local Maven publishing
+  ([a045972](https://github.com/wireapp/core-crypto/commit/a045972857f268cbc648af19c11ab74dc34bd4ae))
 
 ### Testing
 
-- test structured errors ([65aeeb4](https://github.com/wireapp/core-crypto/commit/65aeeb432825577393c02d5c432863e9feca50c4))
-- add a typescript test verifying the added/removed context when logging epoch advances ([b4177db](https://github.com/wireapp/core-crypto/commit/b4177db719d145811f74def1a9923caacbe5d523))
-- add additional utility functions to the js test suite ([35f51d7](https://github.com/wireapp/core-crypto/commit/35f51d7c680d073098bb3a1f62c787e3a0f8d465))
-- test initialization of `Database` ([9fb6c9a](https://github.com/wireapp/core-crypto/commit/9fb6c9a0d056adced9bc52f6295142d94e1d7927))
+- test structured errors
+  ([65aeeb4](https://github.com/wireapp/core-crypto/commit/65aeeb432825577393c02d5c432863e9feca50c4))
+- add a typescript test verifying the added/removed context when logging epoch advances
+  ([b4177db](https://github.com/wireapp/core-crypto/commit/b4177db719d145811f74def1a9923caacbe5d523))
+- add additional utility functions to the js test suite
+  ([35f51d7](https://github.com/wireapp/core-crypto/commit/35f51d7c680d073098bb3a1f62c787e3a0f8d465))
+- test initialization of `Database`
+  ([9fb6c9a](https://github.com/wireapp/core-crypto/commit/9fb6c9a0d056adced9bc52f6295142d94e1d7927))
 
 ## v9.0.1 - 2025-09-18
 
 ### Breaking Changes
 
-- v9.0.0 had erroneously renamed `migrateDatabaseKeyTypeToBytes` to `migrateDbKeyTypeToBytes`.
-  This has been fixed, and `migrateDatabaseKeyTypeToBytes` is usable again on all platforms.
+- v9.0.0 had erroneously renamed `migrateDatabaseKeyTypeToBytes` to `migrateDbKeyTypeToBytes`. This has been fixed, and
+  `migrateDatabaseKeyTypeToBytes` is usable again on all platforms.
 
   Affected platforms: Android
 
@@ -189,23 +199,27 @@ ______________________________________________________________________
 
 ### Bug Fixes
 
-- crypto-ffi: use the old parameter name ([8d18b71](https://github.com/wireapp/core-crypto/commit/8d18b718ae61e8801b9c1facf8937d8302304ffd))
-- crypto-ffi: use the correct name, migrateDatabaseKeyTypeToBytes, for uniffi ([870aaae](https://github.com/wireapp/core-crypto/commit/870aaaece3684502f783f631a19bb1f1586f91c5))
+- crypto-ffi: use the old parameter name
+  ([8d18b71](https://github.com/wireapp/core-crypto/commit/8d18b718ae61e8801b9c1facf8937d8302304ffd))
+- crypto-ffi: use the correct name, migrateDatabaseKeyTypeToBytes, for uniffi
+  ([870aaae](https://github.com/wireapp/core-crypto/commit/870aaaece3684502f783f631a19bb1f1586f91c5))
 
 ### Documentation
 
-- eliminate `:nodoc:` by writing proper docs ([f85d9fb](https://github.com/wireapp/core-crypto/commit/f85d9fb5840e0de3e66922dd6b5a249e977686ac))
+- eliminate `:nodoc:` by writing proper docs
+  ([f85d9fb](https://github.com/wireapp/core-crypto/commit/f85d9fb5840e0de3e66922dd6b5a249e977686ac))
 
 ### Testing
 
-- crypto-ffi: fix Kotlin test to use the correct API ([b1d5509](https://github.com/wireapp/core-crypto/commit/b1d550937581e917169885ebb2d0d912f7c4efbd))
+- crypto-ffi: fix Kotlin test to use the correct API
+  ([b1d5509](https://github.com/wireapp/core-crypto/commit/b1d550937581e917169885ebb2d0d912f7c4efbd))
 
 ## v9.0.0 - 2025-09-16
 
 ### Highlights
 
-- we're now tying the Kotlin wrapper more closely to the generated bindings which allows for greater velocity
-  when making changes in code that affects our API - this causes most of the breaking changes in this release
+- we're now tying the Kotlin wrapper more closely to the generated bindings which allows for greater velocity when
+  making changes in code that affects our API - this causes most of the breaking changes in this release
 - removed cryptobox migration API
 - in Swift, added protection against concurrent access from multiple core crypto instances
 - added implicit obfuscation of sensitive data in logs
@@ -213,9 +227,8 @@ ______________________________________________________________________
 
 ### Note
 
-In this release we include a fix for missing artifacts in our Web release. The faulty release process affects
-all `8.x` versions. Therefore, instead of migrating from any version < `8.x` to `8.x`, directly migrate to
-this version.
+In this release we include a fix for missing artifacts in our Web release. The faulty release process affects all `8.x`
+versions. Therefore, instead of migrating from any version < `8.x` to `8.x`, directly migrate to this version.
 
 ### Breaking Changes
 
@@ -223,8 +236,7 @@ this version.
 
   Affected platforms: Web
 
-  Databases saved by CoreCrypto versions older than 2.0 cannot be migrated
-  anymore.
+  Databases saved by CoreCrypto versions older than 2.0 cannot be migrated anymore.
 
 - Removed `proteusCryptoboxMigrate`.
 
@@ -238,11 +250,10 @@ this version.
 
   Affected platforms: Android
 
-  It used to be the case that the Kotlin bindings hid the actual behavior of `proteusDecrypt` by adding
-  a higher-level behavior, trading away some efficiency for ease-of-use. With this change, we have
-  exposed the low-level behavior of `proteusDecrypt`, enabling for more efficient uses when decrypting
-  many proteus messages at once. The old higher-level behavior of `proteusDecrypt` is now exposed as
-  `proteusDecryptSafe`.
+  It used to be the case that the Kotlin bindings hid the actual behavior of `proteusDecrypt` by adding a higher-level
+  behavior, trading away some efficiency for ease-of-use. With this change, we have exposed the low-level behavior of
+  `proteusDecrypt`, enabling for more efficient uses when decrypting many proteus messages at once. The old higher-level
+  behavior of `proteusDecrypt` is now exposed as `proteusDecryptSafe`.
 
   Migration: replace all calls to `proteusDecrypt` with calls to `proteusDecryptSafe`.
 
@@ -250,8 +261,8 @@ this version.
 
   Affected platforms: Android
 
-  We've brought the uniffi-generated code to very near parity with the older high-level bindings.
-  The following breaking changes were necessary to eliminate the old binding class:
+  We've brought the uniffi-generated code to very near parity with the older high-level bindings. The following breaking
+  changes were necessary to eliminate the old binding class:
 
   **Name changes:**
 
@@ -266,8 +277,8 @@ this version.
 
   Affected platforms: Android
 
-  We've brought the uniffi-generated code to very near parity with the older high-level bindings.
-  The following breaking changes were necessar to eliminate the old binding class:
+  We've brought the uniffi-generated code to very near parity with the older high-level bindings. The following breaking
+  changes were necessar to eliminate the old binding class:
 
   **Name changes:**
 
@@ -289,8 +300,8 @@ this version.
 
   **Parameter order changes:**
 
-  These methods have had the order of their parameters changed. To migrate, either name the arguments in the caller
-  or reorder the parameters appropriately.
+  These methods have had the order of their parameters changed. To migrate, either name the arguments in the caller or
+  reorder the parameters appropriately.
 
   - `generateKeyPackages` / `clientKeypackages`: `amount` is now the final parameter, not the first
   - `joinByExternalCommit`: `credentialType` and `configuration` have swapped positions
@@ -305,7 +316,8 @@ this version.
 
   These methods have had the set of their parameters changed. To migrate, see instructions for each changed method.
 
-  - `createConversation`: accepts `(ConversationId, CredentialType, ConversationConfiguration)`. Conversation configuration must be constructed externally.
+  - `createConversation`: accepts `(ConversationId, CredentialType, ConversationConfiguration)`. Conversation
+    configuration must be constructed externally.
 
   **Removed Methods:**
 
@@ -357,61 +369,99 @@ ______________________________________________________________________
 
 ### Features
 
-- crypto: mark sensitive fields to add obfuscation ([7a3f557](https://github.com/wireapp/core-crypto/commit/7a3f557246d9b4e696268696d7796295d1f9ba8c))
-- keystore: mark sensitive fields to add obfuscation ([03aa8af](https://github.com/wireapp/core-crypto/commit/03aa8af98e17ce7d635b617ab4e136ad4119fb91))
-- add #[sensitive] attribute to debug macro ([2aefaf8](https://github.com/wireapp/core-crypto/commit/2aefaf8deb6c69faf98e34eb97d156d6b39fd81c))
-- define obfuscate trait and Obfuscated type ([2d25985](https://github.com/wireapp/core-crypto/commit/2d2598548f36f5a0c550d91432f3d632d12b446c))
-- salt obfuscated values ([217bd6d](https://github.com/wireapp/core-crypto/commit/217bd6de2fccfc242ca009e8627bb655e8526ce4))
-- add DebugBytes derive macro ([1e63c68](https://github.com/wireapp/core-crypto/commit/1e63c68cc22d1f2f17dd9ec55be478fb0fde630f))
-- add options for listing members or identities ([491221e](https://github.com/wireapp/core-crypto/commit/491221e545cd2ba41480f5aa9484ff28af52439e))
-- take input from stdin or a file ([a1489f7](https://github.com/wireapp/core-crypto/commit/a1489f74a48a091ba075d686806caff311a96218))
-- \[**breaking**\] remove the cryptobox-migrate feature ([bacf33b](https://github.com/wireapp/core-crypto/commit/bacf33b76c1572a6e07b3aabccda97ec08212105))
-- hold a file lock on they keystore while executing a transaction ([1abf479](https://github.com/wireapp/core-crypto/commit/1abf4794532b07c7ea04a77354fdbce010bb4a3a))
+- crypto: mark sensitive fields to add obfuscation
+  ([7a3f557](https://github.com/wireapp/core-crypto/commit/7a3f557246d9b4e696268696d7796295d1f9ba8c))
+- keystore: mark sensitive fields to add obfuscation
+  ([03aa8af](https://github.com/wireapp/core-crypto/commit/03aa8af98e17ce7d635b617ab4e136ad4119fb91))
+- add #[sensitive] attribute to debug macro
+  ([2aefaf8](https://github.com/wireapp/core-crypto/commit/2aefaf8deb6c69faf98e34eb97d156d6b39fd81c))
+- define obfuscate trait and Obfuscated type
+  ([2d25985](https://github.com/wireapp/core-crypto/commit/2d2598548f36f5a0c550d91432f3d632d12b446c))
+- salt obfuscated values
+  ([217bd6d](https://github.com/wireapp/core-crypto/commit/217bd6de2fccfc242ca009e8627bb655e8526ce4))
+- add DebugBytes derive macro
+  ([1e63c68](https://github.com/wireapp/core-crypto/commit/1e63c68cc22d1f2f17dd9ec55be478fb0fde630f))
+- add options for listing members or identities
+  ([491221e](https://github.com/wireapp/core-crypto/commit/491221e545cd2ba41480f5aa9484ff28af52439e))
+- take input from stdin or a file
+  ([a1489f7](https://github.com/wireapp/core-crypto/commit/a1489f74a48a091ba075d686806caff311a96218))
+- \[**breaking**\] remove the cryptobox-migrate feature
+  ([bacf33b](https://github.com/wireapp/core-crypto/commit/bacf33b76c1572a6e07b3aabccda97ec08212105))
+- hold a file lock on they keystore while executing a transaction
+  ([1abf479](https://github.com/wireapp/core-crypto/commit/1abf4794532b07c7ea04a77354fdbce010bb4a3a))
 
 ### Bug Fixes
 
-- include previously (v8.x) missing artifacts in released web package ([d576172](https://github.com/wireapp/core-crypto/commit/d576172514b1c7d5b53cbb70667ef842e45fe81c))
-- warning about DYLIB_CURRENT_VERSION getting truncated ([04c623c](https://github.com/wireapp/core-crypto/commit/04c623c3882bf2cdcff6b59471c699d03e906f38))
+- include previously (v8.x) missing artifacts in released web package
+  ([d576172](https://github.com/wireapp/core-crypto/commit/d576172514b1c7d5b53cbb70667ef842e45fe81c))
+- warning about DYLIB_CURRENT_VERSION getting truncated
+  ([04c623c](https://github.com/wireapp/core-crypto/commit/04c623c3882bf2cdcff6b59471c699d03e906f38))
 - fix android build ([fdf2451](https://github.com/wireapp/core-crypto/commit/fdf245164c466db577d40e7f8be2d7bec52aad17))
-- don't throw an error when calling proteus_reload_sessions without having called proteus_init ([2ca0907](https://github.com/wireapp/core-crypto/commit/2ca0907334a063853be9e91998c249f2ac1b1476))
-- use `HashMap` for in-memory cache [WPB-18762] ([4bc12dc](https://github.com/wireapp/core-crypto/commit/4bc12dc382328cc937854d7b95eabb5f2461bf8a))
-- use consistent ids for `ProteusIdentity` ([6b9f1e2](https://github.com/wireapp/core-crypto/commit/6b9f1e20f632802aafc5bec086d3ed93d5c734fe))
+- don't throw an error when calling proteus_reload_sessions without having called proteus_init
+  ([2ca0907](https://github.com/wireapp/core-crypto/commit/2ca0907334a063853be9e91998c249f2ac1b1476))
+- use `HashMap` for in-memory cache [WPB-18762]
+  ([4bc12dc](https://github.com/wireapp/core-crypto/commit/4bc12dc382328cc937854d7b95eabb5f2461bf8a))
+- use consistent ids for `ProteusIdentity`
+  ([6b9f1e2](https://github.com/wireapp/core-crypto/commit/6b9f1e20f632802aafc5bec086d3ed93d5c734fe))
 
 ### Documentation
 
 - update changelog ([1c28a61](https://github.com/wireapp/core-crypto/commit/1c28a616a69c62f0ff43b4749c8ef3176c44d37a))
-- add js README for npm ([4783f66](https://github.com/wireapp/core-crypto/commit/4783f666f2358273cb40676130f4455077e0adb7))
-- fix swift and ts docs target directory ([7d2de8c](https://github.com/wireapp/core-crypto/commit/7d2de8c5bc5ef8c9c748e44471cf756a25099700))
-- link to `CHANGELOG.md` from docs landing page [WPB-19490] ([812865c](https://github.com/wireapp/core-crypto/commit/812865c4c16d3bb1fa79c60e7cf2e7afa8ed865a))
-- ensure that all public items in `core-crypto-ffi` have docs ([b02c1dd](https://github.com/wireapp/core-crypto/commit/b02c1ddea9f4995c249c3072ae31c10676226a61))
-- add make help output for relevant targets ([48f9db9](https://github.com/wireapp/core-crypto/commit/48f9db94a9569a2d6db32ad33b4fcaa0c2c51b88))
+- add js README for npm
+  ([4783f66](https://github.com/wireapp/core-crypto/commit/4783f666f2358273cb40676130f4455077e0adb7))
+- fix swift and ts docs target directory
+  ([7d2de8c](https://github.com/wireapp/core-crypto/commit/7d2de8c5bc5ef8c9c748e44471cf756a25099700))
+- link to `CHANGELOG.md` from docs landing page [WPB-19490]
+  ([812865c](https://github.com/wireapp/core-crypto/commit/812865c4c16d3bb1fa79c60e7cf2e7afa8ed865a))
+- ensure that all public items in `core-crypto-ffi` have docs
+  ([b02c1dd](https://github.com/wireapp/core-crypto/commit/b02c1ddea9f4995c249c3072ae31c10676226a61))
+- add make help output for relevant targets
+  ([48f9db9](https://github.com/wireapp/core-crypto/commit/48f9db94a9569a2d6db32ad33b4fcaa0c2c51b88))
 - update `README.md` ([eec14b0](https://github.com/wireapp/core-crypto/commit/eec14b0095589c61eef7d92873f07039dfd85ce1))
-- add android ndk installation to readme ([335576e](https://github.com/wireapp/core-crypto/commit/335576e675c1818861765b36ff307871fdf25321))
+- add android ndk installation to readme
+  ([335576e](https://github.com/wireapp/core-crypto/commit/335576e675c1818861765b36ff307871fdf25321))
 - update CHANGELOG ([e716bac](https://github.com/wireapp/core-crypto/commit/e716bac6474f6e0b50190f7b0088da451727e77c))
-- update keystore docs ([60ecf12](https://github.com/wireapp/core-crypto/commit/60ecf1260aa5e7e675ce1f7cae64075fe95f1f70))
+- update keystore docs
+  ([60ecf12](https://github.com/wireapp/core-crypto/commit/60ecf1260aa5e7e675ce1f7cae64075fe95f1f70))
 - update CHANGELOG ([83c143f](https://github.com/wireapp/core-crypto/commit/83c143f17487f55a76f1e57a5d91c5f773690dc0))
-- bindings/swift: add missing doc strings ([31530e9](https://github.com/wireapp/core-crypto/commit/31530e90ea4c345a9af61e7c432dde6b174d74d1))
-- remove `7.x` series from `index.md` ([6102d9f](https://github.com/wireapp/core-crypto/commit/6102d9fa5c364c18d2a8439cb60d381e11f4b298))
-- add docs for `ByteArray.toGroupInfo()` ([748082b](https://github.com/wireapp/core-crypto/commit/748082b8d127f4571982d64cb48ebdf7bd4f6364))
-- remove unintended code comment showing up in `index.md` ([7dd028b](https://github.com/wireapp/core-crypto/commit/7dd028b55c575c63c8d917073842c7f5c31dba17))
-- update links in `index.md` ([a085ae6](https://github.com/wireapp/core-crypto/commit/a085ae67d1af84c3d00be1e6478c6e5b496f67d3))
+- bindings/swift: add missing doc strings
+  ([31530e9](https://github.com/wireapp/core-crypto/commit/31530e90ea4c345a9af61e7c432dde6b174d74d1))
+- remove `7.x` series from `index.md`
+  ([6102d9f](https://github.com/wireapp/core-crypto/commit/6102d9fa5c364c18d2a8439cb60d381e11f4b298))
+- add docs for `ByteArray.toGroupInfo()`
+  ([748082b](https://github.com/wireapp/core-crypto/commit/748082b8d127f4571982d64cb48ebdf7bd4f6364))
+- remove unintended code comment showing up in `index.md`
+  ([7dd028b](https://github.com/wireapp/core-crypto/commit/7dd028b55c575c63c8d917073842c7f5c31dba17))
+- update links in `index.md`
+  ([a085ae6](https://github.com/wireapp/core-crypto/commit/a085ae67d1af84c3d00be1e6478c6e5b496f67d3))
 
 ### Testing
 
-- add scheduled test of all features to run nightly on main ([4f4b5c3](https://github.com/wireapp/core-crypto/commit/4f4b5c32ce05b7f02d0a4dcda2812c21a19f7e1f))
-- fix previously-invisible test failures ([e7686c7](https://github.com/wireapp/core-crypto/commit/e7686c79d687f3004aa10bf300580f9faa7ab628))
-- keystore: use the correct minimum supported db version ([826bc0f](https://github.com/wireapp/core-crypto/commit/826bc0fde57cc88707625fa23fe914aefc02dba4))
-- add test asserting that transactions are performally serially also across multiple CoreCrypto instances ([d4c6667](https://github.com/wireapp/core-crypto/commit/d4c6667d06d4be7971ab0d0af144587456d7023e))
-- update tests according to refactorings for new in-memory cache ([5b15f83](https://github.com/wireapp/core-crypto/commit/5b15f8337f41eaacecf9880d019669f99cb8fb99))
-- crypto-ffi: remove now-unused global const IDs ([c0029c7](https://github.com/wireapp/core-crypto/commit/c0029c78777e6178d59d61a3fbeddef186a62366))
-- crypto-ffi: do not use same IDs across different tests ([cdf3aa3](https://github.com/wireapp/core-crypto/commit/cdf3aa3c9f98e0a794f63b4e301486f8528dc6e3))
+- add scheduled test of all features to run nightly on main
+  ([4f4b5c3](https://github.com/wireapp/core-crypto/commit/4f4b5c32ce05b7f02d0a4dcda2812c21a19f7e1f))
+- fix previously-invisible test failures
+  ([e7686c7](https://github.com/wireapp/core-crypto/commit/e7686c79d687f3004aa10bf300580f9faa7ab628))
+- keystore: use the correct minimum supported db version
+  ([826bc0f](https://github.com/wireapp/core-crypto/commit/826bc0fde57cc88707625fa23fe914aefc02dba4))
+- add test asserting that transactions are performally serially also across multiple CoreCrypto instances
+  ([d4c6667](https://github.com/wireapp/core-crypto/commit/d4c6667d06d4be7971ab0d0af144587456d7023e))
+- update tests according to refactorings for new in-memory cache
+  ([5b15f83](https://github.com/wireapp/core-crypto/commit/5b15f8337f41eaacecf9880d019669f99cb8fb99))
+- crypto-ffi: remove now-unused global const IDs
+  ([c0029c7](https://github.com/wireapp/core-crypto/commit/c0029c78777e6178d59d61a3fbeddef186a62366))
+- crypto-ffi: do not use same IDs across different tests
+  ([cdf3aa3](https://github.com/wireapp/core-crypto/commit/cdf3aa3c9f98e0a794f63b4e301486f8528dc6e3))
 
 ### Other Breaking Changes
 
-- \[**breaking**\] keystore: remove migration to DB_VERSION_1 ([11eb669](https://github.com/wireapp/core-crypto/commit/11eb6698fc8fec3854ff4e49847ff95de0045058))
-- \[**breaking**\] keystore: remove keystore_v_1_0_0 ([72b9e7b](https://github.com/wireapp/core-crypto/commit/72b9e7bc38986d367d584e6004e630ec27f53878))
-- \[**breaking**\] eliminate log level setter wrapping ([8efc319](https://github.com/wireapp/core-crypto/commit/8efc319b766335b173b20e1746329b6eb8f61cf2))
-- \[**breaking**\] Revert "refactor!(kotlin): `CoreCryptoContext.exportSecretKey` now returns a newtype" ([2e61956](https://github.com/wireapp/core-crypto/commit/2e6195669a9840c7c4448d61acd6be4906d5dfcb))
+- \[**breaking**\] keystore: remove migration to DB_VERSION_1
+  ([11eb669](https://github.com/wireapp/core-crypto/commit/11eb6698fc8fec3854ff4e49847ff95de0045058))
+- \[**breaking**\] keystore: remove keystore_v_1_0_0
+  ([72b9e7b](https://github.com/wireapp/core-crypto/commit/72b9e7bc38986d367d584e6004e630ec27f53878))
+- \[**breaking**\] eliminate log level setter wrapping
+  ([8efc319](https://github.com/wireapp/core-crypto/commit/8efc319b766335b173b20e1746329b6eb8f61cf2))
+- \[**breaking**\] Revert "refactor!(kotlin): `CoreCryptoContext.exportSecretKey` now returns a newtype"
+  ([2e61956](https://github.com/wireapp/core-crypto/commit/2e6195669a9840c7c4448d61acd6be4906d5dfcb))
 
 ## v8.0.3 - 2025-08-12
 
@@ -433,28 +483,33 @@ Adds `MLSKeyPackage.copyBytes()`.
 
 ## v8.0.1 - 2025-07-23
 
-This release is relevant only for Kotlin. It adds several pseudo-constructors and accessors for newtypes around byte vectors.
+This release is relevant only for Kotlin. It adds several pseudo-constructors and accessors for newtypes around byte
+vectors.
 
 For other platforms, no relevant changes are included.
 
 ### Documentation
 
-- add docs for `ByteArray.toGroupInfo()` ([ac7723f](https://github.com/wireapp/core-crypto/commit/ac7723f3e0fa48e3123a0928c22e3009f473a96d))
-- remove `7.x` series from `index.md` ([7ae7133](https://github.com/wireapp/core-crypto/commit/7ae7133ca51d44b7c3d455825e4b1eb61a9a04c2))
-- remove unintended code comment showing up in `index.md` ([b635818](https://github.com/wireapp/core-crypto/commit/b63581895dce87cb7cfb71764019e92c7ddb8a8c))
-- update links in `index.md` ([020aba4](https://github.com/wireapp/core-crypto/commit/020aba4c0e89a23ef62b91a7522404931e6ada34))
+- add docs for `ByteArray.toGroupInfo()`
+  ([ac7723f](https://github.com/wireapp/core-crypto/commit/ac7723f3e0fa48e3123a0928c22e3009f473a96d))
+- remove `7.x` series from `index.md`
+  ([7ae7133](https://github.com/wireapp/core-crypto/commit/7ae7133ca51d44b7c3d455825e4b1eb61a9a04c2))
+- remove unintended code comment showing up in `index.md`
+  ([b635818](https://github.com/wireapp/core-crypto/commit/b63581895dce87cb7cfb71764019e92c7ddb8a8c))
+- update links in `index.md`
+  ([020aba4](https://github.com/wireapp/core-crypto/commit/020aba4c0e89a23ef62b91a7522404931e6ada34))
 
 ### Other Breaking Changes
 
-- \[**breaking**\] Revert "refactor!(kotlin): `CoreCryptoContext.exportSecretKey` now returns a newtype" ([5c5427c](https://github.com/wireapp/core-crypto/commit/5c5427c21e600f9d58a45959687bf2f6ee404d54))
+- \[**breaking**\] Revert "refactor!(kotlin): `CoreCryptoContext.exportSecretKey` now returns a newtype"
+  ([5c5427c](https://github.com/wireapp/core-crypto/commit/5c5427c21e600f9d58a45959687bf2f6ee404d54))
 
 ## v8.0.0 - 2025-07-17
 
 ### Highlights
 
-This release contains the complete API necessary for history sharing in conversations. We've improved
-the generated types in bindings to be more typesafe, and we've added the feature to rotate the key used
-for the core crypto database.
+This release contains the complete API necessary for history sharing in conversations. We've improved the generated
+types in bindings to be more typesafe, and we've added the feature to rotate the key used for the core crypto database.
 
 ### Breaking changes
 
@@ -464,14 +519,13 @@ for the core crypto database.
 
   Migration: Only needed if you were relying on the output of `canClose()` before calling `close()`:
 
-  Call `close()` directly. Instead of handling the `false` case of `canClose()`, catch the error that
-  `close()` may throw: `Cannot close as multiple strong refs exist`, then try again.
+  Call `close()` directly. Instead of handling the `false` case of `canClose()`, catch the error that `close()` may
+  throw: `Cannot close as multiple strong refs exist`, then try again.
 
-  The behavior of `close()` was adjusted, so that it waits for any running transaction to finish,
-  instead of throwing an error.
+  The behavior of `close()` was adjusted, so that it waits for any running transaction to finish, instead of throwing an
+  error.
 
-- Removed `mlsInitWithClientId`, `mlsGenerateKeypairs`, `e2eiDumpPKIEnv`, `deleteKeypackages`,
-  `getCredentialInUse`
+- Removed `mlsInitWithClientId`, `mlsGenerateKeypairs`, `e2eiDumpPKIEnv`, `deleteKeypackages`, `getCredentialInUse`
 
   Affected platforms: Web, Android, iOS
 
@@ -481,13 +535,12 @@ for the core crypto database.
 
   Affected platforms: Web
 
-  The Wasm bytecode file, `core-crypto-ffi_bg.wasm`, has been moved to a
-  subdirectory named `autogenerated`. While this is an internal change
-  and should normally not be breaking, in reality it may break the Web
-  client, which assumes the location of that internal file.
+  The Wasm bytecode file, `core-crypto-ffi_bg.wasm`, has been moved to a subdirectory named `autogenerated`. While this
+  is an internal change and should normally not be breaking, in reality it may break the Web client, which assumes the
+  location of that internal file.
 
-  Migration: update relevant paths in the Web client to point to the new
-  location, under `autogenerated`, including in any calls to `initWasmModule`.
+  Migration: update relevant paths in the Web client to point to the new location, under `autogenerated`, including in
+  any calls to `initWasmModule`.
 
 - Added a parameter `refreshToken` to `newOidcChallengeRequest`
 
@@ -495,8 +548,7 @@ for the core crypto database.
 
   This fixes an inconsistency between Web and other platforms.
 
-  Migration: pass the refresh token received from the identity provider when
-  calling `newOidcChallengeRequest`.
+  Migration: pass the refresh token received from the identity provider when calling `newOidcChallengeRequest`.
 
 - Added a parameter `context` to `newOidcChallengeResponse`
 
@@ -508,12 +560,11 @@ for the core crypto database.
 
   Affected platforms: Web, Android, iOS
 
-  This field is used to bundle encrypted history secrets with a commit that adds a new
-  history client.
+  This field is used to bundle encrypted history secrets with a commit that adds a new history client.
 
-  Migration: update any pattern-matching or other code that depends on the structure of
-  `MlsCommitBundle` to include the new field. Also, make sure to update your implementation of the
-  `MlsTransport` protocol/interface to include this field in the payload sent to the Delivery Service.
+  Migration: update any pattern-matching or other code that depends on the structure of `MlsCommitBundle` to include the
+  new field. Also, make sure to update your implementation of the `MlsTransport` protocol/interface to include this
+  field in the payload sent to the Delivery Service.
 
 - `ClientId` is a newtype, not a bare byte array.
 
@@ -552,21 +603,25 @@ for the core crypto database.
 
   Affected platforms: all
 
-  Migration: call `.copyBytes()` on the newtype to get access to the raw byte vector. To construct the newtype from a byte array, just use the appropriate constructor.
+  Migration: call `.copyBytes()` on the newtype to get access to the raw byte vector. To construct the newtype from a
+  byte array, just use the appropriate constructor.
 
-  In the past, Android (but only Android) had newtypes in these instances; other clients needed to work with a raw byte vector.
-  We've decided to expand the use of newtypes around byte vectors in the FFI interface. This has several benefits:
+  In the past, Android (but only Android) had newtypes in these instances; other clients needed to work with a raw byte
+  vector. We've decided to expand the use of newtypes around byte vectors in the FFI interface. This has several
+  benefits:
 
   - Increased consistency between client FFI libraries
   - Reduced thickness of the high-level FFI wrappers
-  - In some cases, we can avoid bidirectional data transfers across the FFI boundary, and just move pointers around instead.
+  - In some cases, we can avoid bidirectional data transfers across the FFI boundary, and just move pointers around
+    instead.
 
 - Removed `PlaintextMessage`, `MlsMessage` and `SignaturePublicKey` newtypes in favor of `ByteArray`
 
   Affected platforms: Android
 
   The Message newtypes were only used in `CoreCryptoContext.encryptMessage` and `CoreCryptoContext.decryptMessage`.
-  `SignaturePublicKey` was used only for the return value of `fun getPublicKey`. The only usage we found was an immediate access of the byte vector.
+  `SignaturePublicKey` was used only for the return value of `fun getPublicKey`. The only usage we found was an
+  immediate access of the byte vector.
 
   These types appear to provide no type safety benefits, instead only adding a bit of friction.
 
@@ -574,94 +629,165 @@ for the core crypto database.
 
 - Support Android environments with 16k page size
 - Added a module-level function `updateDatabaseKey`, to update the key of an existing CoreCrypto database
-- Support for history sharing which can be enabled by calling `enableHistorySharing()` and disabled again by calling `disableHistorySharing()`.
+- Support for history sharing which can be enabled by calling `enableHistorySharing()` and disabled again by calling
+  `disableHistorySharing()`.
 
 ______________________________________________________________________
 
 ### Features
 
-- crypto-ffi: add updateDatabaseKey to JS bindings [WPB-18538] ([e35f1a5](https://github.com/wireapp/core-crypto/commit/e35f1a5ec5d3de80bd1523b694ec28f8b3365d20))
-- crypto-ffi: add updateDatabaseKey to Kotlin bindings [WPB-18538] ([373fc4e](https://github.com/wireapp/core-crypto/commit/373fc4e82df85542df5625f1944dc0eb4f899b8a))
-- crypto-ffi: add updateDatabaseKey to bindings [WPB-18538] ([f682a15](https://github.com/wireapp/core-crypto/commit/f682a15ff79380b38dc71757c83cf3959548eef0))
-- keystore: add a way to rekey the db on Wasm [WPB-18538] ([a62cfb5](https://github.com/wireapp/core-crypto/commit/a62cfb549dc6fdfe1242cf478b7c290c6b40a4c5))
-- keystore: add a way to rekey the db on non-Wasm platforms [WPB-18538] ([54d5fd1](https://github.com/wireapp/core-crypto/commit/54d5fd19951eb4cb4e41b2d7ac445d643cf8eb58))
-- \[**breaking**\] remove `can_close()` and `isLocked()` [WPB-17633] ([58b4aa2](https://github.com/wireapp/core-crypto/commit/58b4aa2ff94cc2c3e9289121100df476ad733314))
-- update history client on member remove [WPB-17096] ([714ff73](https://github.com/wireapp/core-crypto/commit/714ff739ebe8ae3acbb643fd6a0ddde1be58d3e1))
-- update Android NDK to 28.1 [WPB-18293] ([6101eb8](https://github.com/wireapp/core-crypto/commit/6101eb80187a5384eb48e9e94342fc8607abeebf))
-- implement enabling and disabling history sharing [WPB-17106] ([b036967](https://github.com/wireapp/core-crypto/commit/b036967208be65444c5dfd6ba93017d63106912f))
-- add `is_history_sharing_enabled()` [WPB-17106] ([0b9eedf](https://github.com/wireapp/core-crypto/commit/0b9eedff3228fb2bbc703f3db025a94df6535742))
-- \[**breaking**\] add field to `MlsCommitBundle` [WPB-17106] ([eb30ab6](https://github.com/wireapp/core-crypto/commit/eb30ab651b63b606b1fdb9b962c9180b42703f48))
-- \[**breaking**\] crypto-ffi: remove deleteKeypackages ([4c5def3](https://github.com/wireapp/core-crypto/commit/4c5def3f23f3c2e8d9961108ab0827aa7634e2f2))
-- introduce HistoryObserver ([43ceb73](https://github.com/wireapp/core-crypto/commit/43ceb7371dfc5f2d46f48c9413dd9f00d2d78e60))
-- \[**breaking**\] crypto: remove e2ei_dump_pki_env and related code ([7927ebb](https://github.com/wireapp/core-crypto/commit/7927ebbed5670be4db316d641bf79a1cfc0611b1))
-- \[**breaking**\] crypto-ffi: remove e2eiDumpPKIEnv and related functions ([b444f13](https://github.com/wireapp/core-crypto/commit/b444f1301982c9dd0aaa44c36c8c3008dd2e7c8b))
-- introduce `Metabuilder` ([f556fc7](https://github.com/wireapp/core-crypto/commit/f556fc7001b141323a54203e0695d9e3db2f2fd1))
-- support instantiating sessions with mixed credential types ([c8471b2](https://github.com/wireapp/core-crypto/commit/c8471b221eb2c4d6b402bd91569be8ec91ef4290))
-- allow session instantiation with test chain and basic credentials ([c700f04](https://github.com/wireapp/core-crypto/commit/c700f042c406d1cdffbbfb1f7824d0c464436468))
-- add all required abstactions ([a59c587](https://github.com/wireapp/core-crypto/commit/a59c5876c2d5038151cebbe7212e949a19aa076a))
-- \[**breaking**\] crypto-ffi: remove wasmFilePath ([92e6dad](https://github.com/wireapp/core-crypto/commit/92e6dada9357494b1786e79667e1ab84715bdadc))
-- \[**breaking**\] crypto-ffi: bindings: remove getCredentialInUse ([81a75a8](https://github.com/wireapp/core-crypto/commit/81a75a8b9d270aafaea3441d9c965d2c1f265430))
-- crypto: remove generate_raw_keypairs ([1ea2b76](https://github.com/wireapp/core-crypto/commit/1ea2b76825b9799c17a4670d57067e3ef8744552))
-- \[**breaking**\] crypto-ffi: remove mls_generate_keypairs ([5d5cdc1](https://github.com/wireapp/core-crypto/commit/5d5cdc1b3272706ee4ca6556fe1c338ab8ecd142))
-- \[**breaking**\] crypto-ffi: bindings: remove mlsGenerateKeypairs ([ad9a6b8](https://github.com/wireapp/core-crypto/commit/ad9a6b861723f9fe534bcb622013f27df3d53cbd))
-- \[**breaking**\] crypto: remove init_with_external_client_id ([625cbec](https://github.com/wireapp/core-crypto/commit/625cbec18002fc85e72ddbd29848c49a5ca6aabd))
-- \[**breaking**\] crypto-ffi: remove mls_init_with_client_id ([40bbbeb](https://github.com/wireapp/core-crypto/commit/40bbbeb480d68cc154870e6869eb92e52e3911a1))
-- \[**breaking**\] crypto-ffi: bindings: remove mlsInitWithClientId ([10a80ca](https://github.com/wireapp/core-crypto/commit/10a80ca58e2149d60d648ddaeb1db3e8c96009fe))
-- add `remove_guarded()` ([6733dad](https://github.com/wireapp/core-crypto/commit/6733dad03219a0b4635db7ec918ef760167317d6))
-- add `update_guarded_with()` ([8d98ef2](https://github.com/wireapp/core-crypto/commit/8d98ef20fa89c4b7400f99ac1a20e9a7ac59eaf1))
-- add `advance_epoch()` API ([f2c2592](https://github.com/wireapp/core-crypto/commit/f2c2592c5779aa9fbf3bea0b72f8e3f02cc3ffb7))
+- crypto-ffi: add updateDatabaseKey to JS bindings [WPB-18538]
+  ([e35f1a5](https://github.com/wireapp/core-crypto/commit/e35f1a5ec5d3de80bd1523b694ec28f8b3365d20))
+- crypto-ffi: add updateDatabaseKey to Kotlin bindings [WPB-18538]
+  ([373fc4e](https://github.com/wireapp/core-crypto/commit/373fc4e82df85542df5625f1944dc0eb4f899b8a))
+- crypto-ffi: add updateDatabaseKey to bindings [WPB-18538]
+  ([f682a15](https://github.com/wireapp/core-crypto/commit/f682a15ff79380b38dc71757c83cf3959548eef0))
+- keystore: add a way to rekey the db on Wasm [WPB-18538]
+  ([a62cfb5](https://github.com/wireapp/core-crypto/commit/a62cfb549dc6fdfe1242cf478b7c290c6b40a4c5))
+- keystore: add a way to rekey the db on non-Wasm platforms [WPB-18538]
+  ([54d5fd1](https://github.com/wireapp/core-crypto/commit/54d5fd19951eb4cb4e41b2d7ac445d643cf8eb58))
+- \[**breaking**\] remove `can_close()` and `isLocked()` [WPB-17633]
+  ([58b4aa2](https://github.com/wireapp/core-crypto/commit/58b4aa2ff94cc2c3e9289121100df476ad733314))
+- update history client on member remove [WPB-17096]
+  ([714ff73](https://github.com/wireapp/core-crypto/commit/714ff739ebe8ae3acbb643fd6a0ddde1be58d3e1))
+- update Android NDK to 28.1 [WPB-18293]
+  ([6101eb8](https://github.com/wireapp/core-crypto/commit/6101eb80187a5384eb48e9e94342fc8607abeebf))
+- implement enabling and disabling history sharing [WPB-17106]
+  ([b036967](https://github.com/wireapp/core-crypto/commit/b036967208be65444c5dfd6ba93017d63106912f))
+- add `is_history_sharing_enabled()` [WPB-17106]
+  ([0b9eedf](https://github.com/wireapp/core-crypto/commit/0b9eedff3228fb2bbc703f3db025a94df6535742))
+- \[**breaking**\] add field to `MlsCommitBundle` [WPB-17106]
+  ([eb30ab6](https://github.com/wireapp/core-crypto/commit/eb30ab651b63b606b1fdb9b962c9180b42703f48))
+- \[**breaking**\] crypto-ffi: remove deleteKeypackages
+  ([4c5def3](https://github.com/wireapp/core-crypto/commit/4c5def3f23f3c2e8d9961108ab0827aa7634e2f2))
+- introduce HistoryObserver
+  ([43ceb73](https://github.com/wireapp/core-crypto/commit/43ceb7371dfc5f2d46f48c9413dd9f00d2d78e60))
+- \[**breaking**\] crypto: remove e2ei_dump_pki_env and related code
+  ([7927ebb](https://github.com/wireapp/core-crypto/commit/7927ebbed5670be4db316d641bf79a1cfc0611b1))
+- \[**breaking**\] crypto-ffi: remove e2eiDumpPKIEnv and related functions
+  ([b444f13](https://github.com/wireapp/core-crypto/commit/b444f1301982c9dd0aaa44c36c8c3008dd2e7c8b))
+- introduce `Metabuilder`
+  ([f556fc7](https://github.com/wireapp/core-crypto/commit/f556fc7001b141323a54203e0695d9e3db2f2fd1))
+- support instantiating sessions with mixed credential types
+  ([c8471b2](https://github.com/wireapp/core-crypto/commit/c8471b221eb2c4d6b402bd91569be8ec91ef4290))
+- allow session instantiation with test chain and basic credentials
+  ([c700f04](https://github.com/wireapp/core-crypto/commit/c700f042c406d1cdffbbfb1f7824d0c464436468))
+- add all required abstactions
+  ([a59c587](https://github.com/wireapp/core-crypto/commit/a59c5876c2d5038151cebbe7212e949a19aa076a))
+- \[**breaking**\] crypto-ffi: remove wasmFilePath
+  ([92e6dad](https://github.com/wireapp/core-crypto/commit/92e6dada9357494b1786e79667e1ab84715bdadc))
+- \[**breaking**\] crypto-ffi: bindings: remove getCredentialInUse
+  ([81a75a8](https://github.com/wireapp/core-crypto/commit/81a75a8b9d270aafaea3441d9c965d2c1f265430))
+- crypto: remove generate_raw_keypairs
+  ([1ea2b76](https://github.com/wireapp/core-crypto/commit/1ea2b76825b9799c17a4670d57067e3ef8744552))
+- \[**breaking**\] crypto-ffi: remove mls_generate_keypairs
+  ([5d5cdc1](https://github.com/wireapp/core-crypto/commit/5d5cdc1b3272706ee4ca6556fe1c338ab8ecd142))
+- \[**breaking**\] crypto-ffi: bindings: remove mlsGenerateKeypairs
+  ([ad9a6b8](https://github.com/wireapp/core-crypto/commit/ad9a6b861723f9fe534bcb622013f27df3d53cbd))
+- \[**breaking**\] crypto: remove init_with_external_client_id
+  ([625cbec](https://github.com/wireapp/core-crypto/commit/625cbec18002fc85e72ddbd29848c49a5ca6aabd))
+- \[**breaking**\] crypto-ffi: remove mls_init_with_client_id
+  ([40bbbeb](https://github.com/wireapp/core-crypto/commit/40bbbeb480d68cc154870e6869eb92e52e3911a1))
+- \[**breaking**\] crypto-ffi: bindings: remove mlsInitWithClientId
+  ([10a80ca](https://github.com/wireapp/core-crypto/commit/10a80ca58e2149d60d648ddaeb1db3e8c96009fe))
+- add `remove_guarded()`
+  ([6733dad](https://github.com/wireapp/core-crypto/commit/6733dad03219a0b4635db7ec918ef760167317d6))
+- add `update_guarded_with()`
+  ([8d98ef2](https://github.com/wireapp/core-crypto/commit/8d98ef20fa89c4b7400f99ac1a20e9a7ac59eaf1))
+- add `advance_epoch()` API
+  ([f2c2592](https://github.com/wireapp/core-crypto/commit/f2c2592c5779aa9fbf3bea0b72f8e3f02cc3ffb7))
 
 ### Bug Fixes
 
-- no emitted warning on `wasm_bindgen` errors [WPB-15468] ([124356d](https://github.com/wireapp/core-crypto/commit/124356df18dd1153be1c30c40ad2d6943fef2660))
-- proteus error type mapping ([2ec2fa9](https://github.com/wireapp/core-crypto/commit/2ec2fa9fe2051801660a10332a8a8c5d60aab383))
-- add missing API to `CoreCryptoProtocol` [WPB-18634] ([a816979](https://github.com/wireapp/core-crypto/commit/a81697941e29b79e60f721511a23957de64fc1c4))
-- `Error::ConversationAlreadyExists` has a byte vector not handle ([1660757](https://github.com/wireapp/core-crypto/commit/1660757ea2fc66945b6e0d776bbc2b9f15c0537f))
-- use new types where appropriate ([19b1ffa](https://github.com/wireapp/core-crypto/commit/19b1ffa4b6b509a59f20ee07ae845f94b2a5b3ec))
-- use appropriate types in observer indirectors ([a04259f](https://github.com/wireapp/core-crypto/commit/a04259fd03865856ad96d2771f4ec44562eafc88))
-- document `SecretKey` ([366a1e9](https://github.com/wireapp/core-crypto/commit/366a1e93d875101db6e034cbde0d0ab7056c04f3))
-- `ciphersuite` not `cipherSuite` ([6594972](https://github.com/wireapp/core-crypto/commit/6594972b0ecb3133e5155b3bd50ade2c53292387))
-- epoch observer observes a proper `ConversationId` type ([77036e1](https://github.com/wireapp/core-crypto/commit/77036e1906d133318d1ad8b67c6d0e2702e3ed06))
-- use proper `ClientId` in bun test utils ([59db6f8](https://github.com/wireapp/core-crypto/commit/59db6f8a8913c95a1ce9668aacced2a17566e88e))
-- use proper `ConversationId` type in web bench ([ba264f5](https://github.com/wireapp/core-crypto/commit/ba264f5c8e06db1ba9d7f68443105e90055ad32e))
-- history observers observe `ConversationId` ([102359e](https://github.com/wireapp/core-crypto/commit/102359e9268eefd7664dd43f33cc59741d770b47))
-- do not store the signature key when instantiating a history client ([b3f7720](https://github.com/wireapp/core-crypto/commit/b3f772049a7e902291f529d4a8bdc2815e999b55))
-- invalid API Docs link in README.md ([500c36f](https://github.com/wireapp/core-crypto/commit/500c36f11d20d673802a8f32556653209fab9a91))
-- building android bindings on a mac ([67125cd](https://github.com/wireapp/core-crypto/commit/67125cd257e5f4ca960f8be81e3e15f467011a9a))
-- unreleased changes generation had an extra token ([bc56760](https://github.com/wireapp/core-crypto/commit/bc567602ae772302562073e2fb93969ba29ab433))
-- crypto-ffi: fix field names in X509Identity on wasm ([6481d8c](https://github.com/wireapp/core-crypto/commit/6481d8c9e4b32611096cbed4f3281b0127ca3070))
-- initWasm was being called with the wrong property field. ([ca52dbf](https://github.com/wireapp/core-crypto/commit/ca52dbf659c88ec02c078fdf3e36420bff5d5c3d))
-- allow registering epoch observer before calling mls_init ([0cad9a3](https://github.com/wireapp/core-crypto/commit/0cad9a35c5e27dffbaeced066b1e61105400a09e))
+- no emitted warning on `wasm_bindgen` errors [WPB-15468]
+  ([124356d](https://github.com/wireapp/core-crypto/commit/124356df18dd1153be1c30c40ad2d6943fef2660))
+- proteus error type mapping
+  ([2ec2fa9](https://github.com/wireapp/core-crypto/commit/2ec2fa9fe2051801660a10332a8a8c5d60aab383))
+- add missing API to `CoreCryptoProtocol` [WPB-18634]
+  ([a816979](https://github.com/wireapp/core-crypto/commit/a81697941e29b79e60f721511a23957de64fc1c4))
+- `Error::ConversationAlreadyExists` has a byte vector not handle
+  ([1660757](https://github.com/wireapp/core-crypto/commit/1660757ea2fc66945b6e0d776bbc2b9f15c0537f))
+- use new types where appropriate
+  ([19b1ffa](https://github.com/wireapp/core-crypto/commit/19b1ffa4b6b509a59f20ee07ae845f94b2a5b3ec))
+- use appropriate types in observer indirectors
+  ([a04259f](https://github.com/wireapp/core-crypto/commit/a04259fd03865856ad96d2771f4ec44562eafc88))
+- document `SecretKey`
+  ([366a1e9](https://github.com/wireapp/core-crypto/commit/366a1e93d875101db6e034cbde0d0ab7056c04f3))
+- `ciphersuite` not `cipherSuite`
+  ([6594972](https://github.com/wireapp/core-crypto/commit/6594972b0ecb3133e5155b3bd50ade2c53292387))
+- epoch observer observes a proper `ConversationId` type
+  ([77036e1](https://github.com/wireapp/core-crypto/commit/77036e1906d133318d1ad8b67c6d0e2702e3ed06))
+- use proper `ClientId` in bun test utils
+  ([59db6f8](https://github.com/wireapp/core-crypto/commit/59db6f8a8913c95a1ce9668aacced2a17566e88e))
+- use proper `ConversationId` type in web bench
+  ([ba264f5](https://github.com/wireapp/core-crypto/commit/ba264f5c8e06db1ba9d7f68443105e90055ad32e))
+- history observers observe `ConversationId`
+  ([102359e](https://github.com/wireapp/core-crypto/commit/102359e9268eefd7664dd43f33cc59741d770b47))
+- do not store the signature key when instantiating a history client
+  ([b3f7720](https://github.com/wireapp/core-crypto/commit/b3f772049a7e902291f529d4a8bdc2815e999b55))
+- invalid API Docs link in README.md
+  ([500c36f](https://github.com/wireapp/core-crypto/commit/500c36f11d20d673802a8f32556653209fab9a91))
+- building android bindings on a mac
+  ([67125cd](https://github.com/wireapp/core-crypto/commit/67125cd257e5f4ca960f8be81e3e15f467011a9a))
+- unreleased changes generation had an extra token
+  ([bc56760](https://github.com/wireapp/core-crypto/commit/bc567602ae772302562073e2fb93969ba29ab433))
+- crypto-ffi: fix field names in X509Identity on wasm
+  ([6481d8c](https://github.com/wireapp/core-crypto/commit/6481d8c9e4b32611096cbed4f3281b0127ca3070))
+- initWasm was being called with the wrong property field.
+  ([ca52dbf](https://github.com/wireapp/core-crypto/commit/ca52dbf659c88ec02c078fdf3e36420bff5d5c3d))
+- allow registering epoch observer before calling mls_init
+  ([0cad9a3](https://github.com/wireapp/core-crypto/commit/0cad9a35c5e27dffbaeced066b1e61105400a09e))
 
 ### Documentation
 
-- upload swift docs into the right folder ([902d8f2](https://github.com/wireapp/core-crypto/commit/902d8f2ac08dcaa4dccfb2e5fd00a42faa383fd8))
-- build swift documentation in CI ([a2f910f](https://github.com/wireapp/core-crypto/commit/a2f910fe413ec76873622498f37d8745b3c15069))
-- update changelog: info about new field in `MLsCommitBundle` ([d1431a3](https://github.com/wireapp/core-crypto/commit/d1431a3262e6d56a2f336b23f12acc6a38142065))
-- include hyperlink to commit in git cliff output ([6e209f5](https://github.com/wireapp/core-crypto/commit/6e209f512679acb68fad8f3b932b02b5b93ee7e7))
-- publish unreleased changes to github pages ([6c33a70](https://github.com/wireapp/core-crypto/commit/6c33a709b2ed5f1b45c7291f5bbb6cc13ed9abf2))
-- add internal links to high-level documents ([0ca52eb](https://github.com/wireapp/core-crypto/commit/0ca52ebe5f2fb0c459bb7594cc6c7b8eb741f6df))
-- simplify docs directory structure ([e9a7c2f](https://github.com/wireapp/core-crypto/commit/e9a7c2f5faa848d07392d29b1538aaa27ea76104))
-- eliminate fake docs module / submodules ([a459167](https://github.com/wireapp/core-crypto/commit/a459167bd52a4b19cbe982a7bb78a1a0704e65f4))
+- upload swift docs into the right folder
+  ([902d8f2](https://github.com/wireapp/core-crypto/commit/902d8f2ac08dcaa4dccfb2e5fd00a42faa383fd8))
+- build swift documentation in CI
+  ([a2f910f](https://github.com/wireapp/core-crypto/commit/a2f910fe413ec76873622498f37d8745b3c15069))
+- update changelog: info about new field in `MLsCommitBundle`
+  ([d1431a3](https://github.com/wireapp/core-crypto/commit/d1431a3262e6d56a2f336b23f12acc6a38142065))
+- include hyperlink to commit in git cliff output
+  ([6e209f5](https://github.com/wireapp/core-crypto/commit/6e209f512679acb68fad8f3b932b02b5b93ee7e7))
+- publish unreleased changes to github pages
+  ([6c33a70](https://github.com/wireapp/core-crypto/commit/6c33a709b2ed5f1b45c7291f5bbb6cc13ed9abf2))
+- add internal links to high-level documents
+  ([0ca52eb](https://github.com/wireapp/core-crypto/commit/0ca52ebe5f2fb0c459bb7594cc6c7b8eb741f6df))
+- simplify docs directory structure
+  ([e9a7c2f](https://github.com/wireapp/core-crypto/commit/e9a7c2f5faa848d07392d29b1538aaa27ea76104))
+- eliminate fake docs module / submodules
+  ([a459167](https://github.com/wireapp/core-crypto/commit/a459167bd52a4b19cbe982a7bb78a1a0704e65f4))
 
 ### Testing
 
-- crypto-ffi: add a test for updateDatabaseKey in Swift bindings [WPB-18538] ([a2160d8](https://github.com/wireapp/core-crypto/commit/a2160d8ab029f370e0adaca1e4667e530065d049))
-- crypto-ffi: add a test for updateDatabaseKey in JS bindings [WPB-18538] ([7528b2a](https://github.com/wireapp/core-crypto/commit/7528b2a46de04d0f9a80c2a4650ff2fc27d2eaaf))
-- crypto-ffi: add a test for updateDatabaseKey in Kotlin bindings [WPB-18538] ([9111a32](https://github.com/wireapp/core-crypto/commit/9111a32bd470590d177c1c770cc5e1537400768f))
-- error builds correctly when coming from cc or `wasm_bindgen` ([aab8d60](https://github.com/wireapp/core-crypto/commit/aab8d6005f98d2684203423bd5a9034590dcb7e8))
-- proteus session not found maps to correct error type ([0a481ef](https://github.com/wireapp/core-crypto/commit/0a481ef33b9f5606f31ae7b776118dacbcbe4798))
-- re-add database tests which were accidentally omitted ([185e90f](https://github.com/wireapp/core-crypto/commit/185e90f0bf749266478854c85ac620e432569fb8))
-- test history client update on remove ([f2aa941](https://github.com/wireapp/core-crypto/commit/f2aa94193171a3638b764b22642ee02bc5c4459e))
-- test history sharing [WPB-17106] ([79025cd](https://github.com/wireapp/core-crypto/commit/79025cd56c9fdde0950db742cdbb14db3eaa69ed))
-- remove leaf node validation tests [WPB-18083] ([c2ae76d](https://github.com/wireapp/core-crypto/commit/c2ae76d67ef4878d099fb11b27a4987bf3ace687))
-- fix: `TestContext::sessions_x509()` should always create x509 sessions ([49ee4e6](https://github.com/wireapp/core-crypto/commit/49ee4e64210ede5054e5cd9ebd86d6ca6c6ac406))
-- add test handling self-commit after failed transaction [WPB-17464] ([01a6d46](https://github.com/wireapp/core-crypto/commit/01a6d4638c2b88d5b09e80171075cc37688437b4))
+- crypto-ffi: add a test for updateDatabaseKey in Swift bindings [WPB-18538]
+  ([a2160d8](https://github.com/wireapp/core-crypto/commit/a2160d8ab029f370e0adaca1e4667e530065d049))
+- crypto-ffi: add a test for updateDatabaseKey in JS bindings [WPB-18538]
+  ([7528b2a](https://github.com/wireapp/core-crypto/commit/7528b2a46de04d0f9a80c2a4650ff2fc27d2eaaf))
+- crypto-ffi: add a test for updateDatabaseKey in Kotlin bindings [WPB-18538]
+  ([9111a32](https://github.com/wireapp/core-crypto/commit/9111a32bd470590d177c1c770cc5e1537400768f))
+- error builds correctly when coming from cc or `wasm_bindgen`
+  ([aab8d60](https://github.com/wireapp/core-crypto/commit/aab8d6005f98d2684203423bd5a9034590dcb7e8))
+- proteus session not found maps to correct error type
+  ([0a481ef](https://github.com/wireapp/core-crypto/commit/0a481ef33b9f5606f31ae7b776118dacbcbe4798))
+- re-add database tests which were accidentally omitted
+  ([185e90f](https://github.com/wireapp/core-crypto/commit/185e90f0bf749266478854c85ac620e432569fb8))
+- test history client update on remove
+  ([f2aa941](https://github.com/wireapp/core-crypto/commit/f2aa94193171a3638b764b22642ee02bc5c4459e))
+- test history sharing [WPB-17106]
+  ([79025cd](https://github.com/wireapp/core-crypto/commit/79025cd56c9fdde0950db742cdbb14db3eaa69ed))
+- remove leaf node validation tests [WPB-18083]
+  ([c2ae76d](https://github.com/wireapp/core-crypto/commit/c2ae76d67ef4878d099fb11b27a4987bf3ace687))
+- fix: `TestContext::sessions_x509()` should always create x509 sessions
+  ([49ee4e6](https://github.com/wireapp/core-crypto/commit/49ee4e64210ede5054e5cd9ebd86d6ca6c6ac406))
+- add test handling self-commit after failed transaction [WPB-17464]
+  ([01a6d46](https://github.com/wireapp/core-crypto/commit/01a6d4638c2b88d5b09e80171075cc37688437b4))
 
 ### Other Breaking Changes
 
-- \[**breaking**\] crypto-ffi: tell wasm-bindgen to output files into a separate dir ([e34b944](https://github.com/wireapp/core-crypto/commit/e34b944694813234dd72cd4a6ed5bcbfa2bf4a70))
-- \[**breaking**\] eliminate certain wasm-specific discrepancies from core-crypto-ffi ([1143d11](https://github.com/wireapp/core-crypto/commit/1143d1105e93fb440c7d89f90598cabd3ee3f4be))
+- \[**breaking**\] crypto-ffi: tell wasm-bindgen to output files into a separate dir
+  ([e34b944](https://github.com/wireapp/core-crypto/commit/e34b944694813234dd72cd4a6ed5bcbfa2bf4a70))
+- \[**breaking**\] eliminate certain wasm-specific discrepancies from core-crypto-ffi
+  ([1143d11](https://github.com/wireapp/core-crypto/commit/1143d1105e93fb440c7d89f90598cabd3ee3f4be))
 
 ## v7.0.2 - 2025-07-07
 
@@ -684,8 +810,8 @@ Upgrade OpenMLS to fix a bug where the ratchet tree would sometimes become corru
 
 ### Breaking changes
 
-The typescript bindings no longer implicitly load the wasm module when importing the core crypto module. To replace
-this behaviour the `async initWasmModule()` function has been added, which must be called before any other core crypto
+The typescript bindings no longer implicitly load the wasm module when importing the core crypto module. To replace this
+behaviour the `async initWasmModule()` function has been added, which must be called before any other core crypto
 function.
 
 ### Features
@@ -736,8 +862,8 @@ function.
   Affected platforms: Web, Android, iOS
 
   Migration: before instantiating this version of core crypto for the first time, call `migrateDatabaseKeyTypeToBytes()`
-  with the appropiate arguments (old key and your new key) _exactly once_.
-  Then, instantiate core crypto with the new key.
+  with the appropiate arguments (old key and your new key) _exactly once_. Then, instantiate core crypto with the new
+  key.
 
   Note: Make sure the new key is not based on a string, and provide full 256 bits of entropy.
 
@@ -793,9 +919,10 @@ function.
 
 ### Highlights
 
-Kotlin bindings only: transactions are now [`NonCancellable`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/),
-as [required by Uniffi](https://mozilla.github.io/uniffi-rs/latest/futures.html#cancelling-async-code). This prevents a category of bug where Kotlin thinks a transaction
-has been cancelled, while Rust thinks it is still running.
+Kotlin bindings only: transactions are now
+[`NonCancellable`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/),
+as [required by Uniffi](https://mozilla.github.io/uniffi-rs/latest/futures.html#cancelling-async-code). This prevents a
+category of bug where Kotlin thinks a transaction has been cancelled, while Rust thinks it is still running.
 
 ### Bug Fixes
 
@@ -828,11 +955,11 @@ has been cancelled, while Rust thinks it is still running.
 
 ### Highlights
 
-New Swift bindings which are more ergonomic and allows for better testing by exposing the transaction
-context as a protocol.
+New Swift bindings which are more ergonomic and allows for better testing by exposing the transaction context as a
+protocol.
 
-New API for observing epoch changes through a callback API: `registerEpochObserver`. After adopting
-this API clients can remove their own epoch observers.
+New API for observing epoch changes through a callback API: `registerEpochObserver`. After adopting this API clients can
+remove their own epoch observers.
 
 ### Breaking changes
 
@@ -923,8 +1050,7 @@ this API clients can remove their own epoch observers.
 
 ### Highlights
 
-- Add the capability to handle the case where a proposal-referencing commit arrives before the proposals
-  it references.
+- Add the capability to handle the case where a proposal-referencing commit arrives before the proposals it references.
 
 ### (Semi-) Breaking changes
 
@@ -950,91 +1076,75 @@ this API clients can remove their own epoch observers.
 ### Highlights
 
 - All errors crossing the FFI boundary are now logged.
-- An iOS client has been added to internal interop tests, which means we now
-  test the entire FFI stack on iOS.
-- A new interface for MLS transport has been added, allowing for a much simpler
-  and more robust CoreCrypto API.
+- An iOS client has been added to internal interop tests, which means we now test the entire FFI stack on iOS.
+- A new interface for MLS transport has been added, allowing for a much simpler and more robust CoreCrypto API.
 - Removal of a number of deprecated and unnecessary functions and types.
-- Completely reworked internal error handling, to allow for more precise
-  errors.
-- A number of improvements to Kotlin and Javascript bindings, making the
-  bindings more consistent.
+- Completely reworked internal error handling, to allow for more precise errors.
+- A number of improvements to Kotlin and Javascript bindings, making the bindings more consistent.
 - The `decode` tool gained support for decoding MLS messages.
 
 ### Breaking changes
 
-- Deprecated functions on the `CoreCrypto` type that were automatically
-  creating transactions have been removed.
+- Deprecated functions on the `CoreCrypto` type that were automatically creating transactions have been removed.
 
   Affected platforms: Web, Android, iOS
 
-  Migration: replace calls to functions on `CoreCrypto` with calls to
-  corresponding functions on `CoreCryptoContext`, which is created when you
-  explicitly create a transaction. Transactions have to be explicitly created
-  now.
+  Migration: replace calls to functions on `CoreCrypto` with calls to corresponding functions on `CoreCryptoContext`,
+  which is created when you explicitly create a transaction. Transactions have to be explicitly created now.
 
-- The low-level uniffi-generated Kotlin bindings code is no longer publicly
-  available. It should never have been used in application code directly.
+- The low-level uniffi-generated Kotlin bindings code is no longer publicly available. It should never have been used in
+  application code directly.
 
   Affected platforms: Android
 
   Migration: make sure to use the Kotlin high-level API only.
 
-- The Wasm bytecode generated by `wasm-bindgen` is now imported directly when
-  importing the `corecrypto` module. This makes sure that the Wasm module is
-  immediately initialised, without any additional steps. There is no need for
-  the client app to know or handle the path to Wasm bytecode file.
+- The Wasm bytecode generated by `wasm-bindgen` is now imported directly when importing the `corecrypto` module. This
+  makes sure that the Wasm module is immediately initialised, without any additional steps. There is no need for the
+  client app to know or handle the path to Wasm bytecode file.
 
-  Additionally, it is now possible to use the same CoreCrypto module in both
-  browser and non-browser contexts.
+  Additionally, it is now possible to use the same CoreCrypto module in both browser and non-browser contexts.
 
   Affected platforms: Web
 
-  Migration: drop any references to `core-crypto-ffi_bg.wasm` and do not set
-  the `wasmFilePath` argument to the `CoreCrypto.init` function -- it is no
-  longer used. Additionally, make sure there is no special handling or separate
-  hosting of the Wasm bytecode file. CoreCrypto release artifacts should be
-  used without any changes.
+  Migration: drop any references to `core-crypto-ffi_bg.wasm` and do not set the `wasmFilePath` argument to the
+  `CoreCrypto.init` function -- it is no longer used. Additionally, make sure there is no special handling or separate
+  hosting of the Wasm bytecode file. CoreCrypto release artifacts should be used without any changes.
 
 - Validation callbacks, as well as related error variants, have been removed.
 
   Affected platforms: Web, Android, iOS
 
-  Migration: remove all implementations of `authorize`, `userAuthorize` and
-  `clientIsExistingGroupUser`, as well as calls to `CoreCrypto.setCallbacks`.
+  Migration: remove all implementations of `authorize`, `userAuthorize` and `clientIsExistingGroupUser`, as well as
+  calls to `CoreCrypto.setCallbacks`.
 
-- The `MlsTransport` interface has been added. This is another milestone in
-  the effort to simplify the public API and make it more robust.
+- The `MlsTransport` interface has been added. This is another milestone in the effort to simplify the public API and
+  make it more robust.
 
-  All client applications have to provide an implementation of the new
-  interface, which comprises only two functions, `sendMessage` and
-  `sendCommitBundle`.
-
-  Affected platforms: Web, Android, iOS
-
-  Migration: implement the `MlsTransport` interface and call
-  `CoreCrypto.provideTransport` to make CoreCrypto use your implementation.
-
-- Functions `CoreCrypto.wipe` and `CoreCrypto.unload` have been removed. They
-  were not providing any value.
+  All client applications have to provide an implementation of the new interface, which comprises only two functions,
+  `sendMessage` and `sendCommitBundle`.
 
   Affected platforms: Web, Android, iOS
 
-  Migration: drop calls to `wipe` and `unload`. Client applications wishing to
-  make their keys and conversations inaccessible should remove the CoreCrypto
-  database explicitly.
+  Migration: implement the `MlsTransport` interface and call `CoreCrypto.provideTransport` to make CoreCrypto use your
+  implementation.
 
-- The function `CoreCrypto.proteusLastErrorCode` has been removed. We now have
-  Proteus error codes attached to errors that are emitted by CoreCrypto.
+- Functions `CoreCrypto.wipe` and `CoreCrypto.unload` have been removed. They were not providing any value.
 
   Affected platforms: Web, Android, iOS
 
-  Migration: drop calls to `proteusLastErrorCode` and instead check the returned
-  error object.
+  Migration: drop calls to `wipe` and `unload`. Client applications wishing to make their keys and conversations
+  inaccessible should remove the CoreCrypto database explicitly.
 
-- The functions `CoreCrypto.buildMetadata` and `CoreCrypto.version` have been
-  moved to the module level. It is no longer required to create a `CoreCrypto`
-  instance to call them.
+- The function `CoreCrypto.proteusLastErrorCode` has been removed. We now have Proteus error codes attached to errors
+  that are emitted by CoreCrypto.
+
+  Affected platforms: Web, Android, iOS
+
+  Migration: drop calls to `proteusLastErrorCode` and instead check the returned error object.
+
+- The functions `CoreCrypto.buildMetadata` and `CoreCrypto.version` have been moved to the module level. It is no longer
+  required to create a `CoreCrypto` instance to call them.
 
   Affected platforms: Web
 
@@ -1042,31 +1152,25 @@ this API clients can remove their own epoch observers.
 
 - Several changes have been made to the E2EI API.
 
-  The function `CoreCrypto.e2eiRotateAll` has been removed. Client applications
-  should instead go over each conversation individually and call
-  `CoreCrypto.e2eiRotate`.
+  The function `CoreCrypto.e2eiRotateAll` has been removed. Client applications should instead go over each conversation
+  individually and call `CoreCrypto.e2eiRotate`.
 
-  Two new functions have been added, `CoreCrypto.saveX509Credential` and
-  `CoreCrypto.deleteStaleKeyPackages`. The former should be used after getting
-  a new X509 credential, while the latter should be called after generating
-  keypackages for the new credential and replacing the stale ones in the
-  backend.
+  Two new functions have been added, `CoreCrypto.saveX509Credential` and `CoreCrypto.deleteStaleKeyPackages`. The former
+  should be used after getting a new X509 credential, while the latter should be called after generating keypackages for
+  the new credential and replacing the stale ones in the backend.
 
   Affected platforms: Web, Android, iOS
 
-  Migration: replace calls to `e2eiRotateAll` with iterations over
-  conversations, calling `e2eiRotate` on every conversation and checking for
-  errors. Use `saveX509Credential` and `deleteStaleKeyPackages` as appropriate
-  (more details in API documentation).
+  Migration: replace calls to `e2eiRotateAll` with iterations over conversations, calling `e2eiRotate` on every
+  conversation and checking for errors. Use `saveX509Credential` and `deleteStaleKeyPackages` as appropriate (more
+  details in API documentation).
 
-- The proposal API has been removed, simplifying the public API a great deal.
-  This includes functions like `newProposal`, `newExternalProposal`,
-  `clearPendingProposal`, `joinConversation` etc.
+- The proposal API has been removed, simplifying the public API a great deal. This includes functions like
+  `newProposal`, `newExternalProposal`, `clearPendingProposal`, `joinConversation` etc.
 
   Affected platforms: Web, Android, iOS
 
-  Migration: drop all calls to removed functions as they are no longer
-  necessary with the new MLS transport interface.
+  Migration: drop all calls to removed functions as they are no longer necessary with the new MLS transport interface.
 
 ### Features
 
@@ -1139,27 +1243,29 @@ this API clients can remove their own epoch observers.
 
 ## v3.1.1 - 2025-04-15
 
-- This release bumps the version of rusty-jwt-tools to 0.13.0, which includes
-  additional end-to-end identity tests and test markers relevant to Bund.
+- This release bumps the version of rusty-jwt-tools to 0.13.0, which includes additional end-to-end identity tests and
+  test markers relevant to Bund.
 
 ## v3.1.0 - 2025-02-12
 
 ### Highlights
 
-- Add a test case mimicking a real life bug ([WPB-15810]), demonstrating that in some cases it was possible to generate errors by swapping the ordering of two messages.
+- Add a test case mimicking a real life bug ([WPB-15810]), demonstrating that in some cases it was possible to generate
+  errors by swapping the ordering of two messages.
 
 - Add a new layer of buffering to handle that situation.
 
   > [!NOTE]
   > Decrypting a message can now potentially return a `MlsError::Other` variant with the message
   >
-  > > Incoming message is a commit for which we have not yet received all the proposals.
-  > > Buffering until all proposals have arrived.
+  > > Incoming message is a commit for which we have not yet received all the proposals. Buffering until all proposals
+  > > have arrived.
   >
-  > Clients do not need to take any action in response to this message.
-  > This error simply indicates that the commit has been buffered, and will be automatically unbuffered when possible.
+  > Clients do not need to take any action in response to this message. This error simply indicates that the commit has
+  > been buffered, and will be automatically unbuffered when possible.
 
-  If the required proposal is never delivered, however, the client will eventually desync as the commit will never be processed. Clients should be on the lookout for this case and trigger their rejoin protocol in that event.
+  If the required proposal is never delivered, however, the client will eventually desync as the commit will never be
+  processed. Clients should be on the lookout for this case and trigger their rejoin protocol in that event.
 
 ### Features
 
@@ -1177,7 +1283,8 @@ this API clients can remove their own epoch observers.
 
 - Fix a bug which could cause certain errors to generate spurious log lines of the form
 
-  > Cannot build CoreCryptoError, falling back to standard Error! ctx: Incoming message is from an epoch too far in the future to buffer.
+  > Cannot build CoreCryptoError, falling back to standard Error! ctx: Incoming message is from an epoch too far in the
+  > future to buffer.
 
 ## v3.0.1 - 2025-01-27
 
@@ -1189,9 +1296,8 @@ this API clients can remove their own epoch observers.
 
 ### Highlights
 
-- Fix the 'transaction in progress' error when there was an attempt to perform multiple transactions
-  in parallel. This will no longer throw an error, instead the transactions will be queued and performed
-  serially one after another.
+- Fix the 'transaction in progress' error when there was an attempt to perform multiple transactions in parallel. This
+  will no longer throw an error, instead the transactions will be queued and performed serially one after another.
 
 ### Breaking changes
 
@@ -1214,16 +1320,16 @@ this API clients can remove their own epoch observers.
 
 - The number of public errors has been reduced and simplified. It's no longer necessary to use the
   `proteus_last_error_code` function, since thrown error should contain all the information.
-- The logger callback now includes an additional context parameter which contains additional context
-  for a log event in the form of a JSON Object string.
+- The logger callback now includes an additional context parameter which contains additional context for a log event in
+  the form of a JSON Object string.
 - It's now possible to change the logger and log level at runtime (see `setLogLevel` and `setLogger`).
 
 ### Breaking changes
 
 - Dropped support for `i686-linux-android` target.
 - `CoreCryptoLogger` takes an additional `context` parameter.
-- `CoreCryptoError` and its child errors have been refactored to reduce the amount of error we expose and provide explicit
-  errors for Proteus errors. The errors we have removed will appear under the `Other` case.
+- `CoreCryptoError` and its child errors have been refactored to reduce the amount of error we expose and provide
+  explicit errors for Proteus errors. The errors we have removed will appear under the `Other` case.
   ```
   enum ProteusError {
       SessionNotFound,
@@ -1307,7 +1413,8 @@ this API clients can remove their own epoch observers.
 
 ### Highlights
 
-- Transactions are now exposed on `CoreCrypto`, opening the door to substantially improve performance by batching operations.
+- Transactions are now exposed on `CoreCrypto`, opening the door to substantially improve performance by batching
+  operations.
 
 ### Features
 
@@ -1441,7 +1548,8 @@ this API clients can remove their own epoch observers.
 - \[**breaking**\] borrow enrollment instead of requiring ownership (e700ac5)
 - MLS thumbprint has hash algorithm agility (8d5d282)
 - \[**breaking**\] WireIdentity now also wraps Basic credentials (55b75fe)
-- \[**breaking**\] introduce `e2ei_verify_group_state` to preemptively check a group state through its GroupInfo before joining it (09f8bbd)
+- \[**breaking**\] introduce `e2ei_verify_group_state` to preemptively check a group state through its GroupInfo before
+  joining it (09f8bbd)
 
 ## v1.0.0-rc.54 - 2024-03-20
 
@@ -1708,7 +1816,8 @@ this API clients can remove their own epoch observers.
 
 ### Features
 
-- \[**breaking**\] remove 'clientId' from activation & rotate enrollment now that we expect a specific ClientId format (9f1a6dc)
+- \[**breaking**\] remove 'clientId' from activation & rotate enrollment now that we expect a specific ClientId format
+  (9f1a6dc)
 - \[**breaking**\] add `get_credential_in_use()` to check the e2ei state from a GroupInfo (5508dc5)
 - \[**breaking**\] rename `E2eiConversationState::Degraded` in to `E2eiConversationState::NotVerified` (151c5c4)
 - \[**breaking**\] managed OIDC refreshToken (wpb-5012) (62ed3a3)
@@ -1726,14 +1835,18 @@ this API clients can remove their own epoch observers.
 
 ### Features
 
-- \[**breaking**\] canonicalize ClientId keeping only the regular version where the UserId portion is the hyphenated string representation of the UUID. Also apply this to 'getUserIdentities()' (4ea3a1c)
+- \[**breaking**\] canonicalize ClientId keeping only the regular version where the UserId portion is the hyphenated
+  string representation of the UUID. Also apply this to 'getUserIdentities()' (4ea3a1c)
 
 ## v1.0.0-rc.20 - 2023-12-04
 
 ### Features
 
-- better errors: 'ImplementationError' was way too often used as a fallback when the developer was too lazy to create a new error. This tries to cure that, especially with e2ei errors. It also tries to distinguish client errors from internal errors (e16624f)
-- \[**breaking**\] simplify API of 'add_clients_to_conversation' by not requiring to repeat the ClientId of the new members alongside their KeyPackage when the former can now be extracted from the latter (3c85678)
+- better errors: 'ImplementationError' was way too often used as a fallback when the developer was too lazy to create a
+  new error. This tries to cure that, especially with e2ei errors. It also tries to distinguish client errors from
+  internal errors (e16624f)
+- \[**breaking**\] simplify API of 'add_clients_to_conversation' by not requiring to repeat the ClientId of the new
+  members alongside their KeyPackage when the former can now be extracted from the latter (3c85678)
 - \[**breaking**\] introduce handle & team in the client dpop token (ac6b87e)
 
 ### Testing
@@ -1784,13 +1897,15 @@ this API clients can remove their own epoch observers.
 
 ### Bug Fixes
 
-- add '-latomic' flag when building for Android to dynamically link atomic lib which is supposedly causing issues with openssl (4a100ab)
+- add '-latomic' flag when building for Android to dynamically link atomic lib which is supposedly causing issues with
+  openssl (4a100ab)
 
 ## v1.0.0-rc.14 - 2023-10-09
 
 ### Bug Fixes
 
-- backward incompatible database schemas. It only preserves Proteus compatibility when migrating from CC 0.11.0 -> 1.0.0. For anything MLS-related it is recommended to wipe all the groups (4c95713)
+- backward incompatible database schemas. It only preserves Proteus compatibility when migrating from CC 0.11.0 ->
+  1.0.0. For anything MLS-related it is recommended to wipe all the groups (4c95713)
 
 ## v1.0.0-rc.13 - 2023-09-27
 
@@ -1849,7 +1964,8 @@ this API clients can remove their own epoch observers.
 
 - expose `getUserIdentities` through the FFI (6eeb571)
 - \[**breaking**\] also restore buffered messages on the receiver side (a552197)
-- increase max past epoch to 3 since backend inordering of messages requires client's config to backend's one + 1 (1d35364)
+- increase max past epoch to 3 since backend inordering of messages requires client's config to backend's one + 1
+  (1d35364)
 
 ### Bug Fixes
 
@@ -1876,13 +1992,15 @@ this API clients can remove their own epoch observers.
 
 ### Features
 
-- \[**breaking**\] handle the case when a client tries to decrypt a Welcome referring to a KeyPackage he already has deleted locally (ce6e71e)
+- \[**breaking**\] handle the case when a client tries to decrypt a Welcome referring to a KeyPackage he already has
+  deleted locally (ce6e71e)
 - Add keystore dump exporter CLI tool (fb0f65d)
 
 ### Bug Fixes
 
 - `e2eiRotateAll` return type was not wrapped (7d77b7e)
-- Signature KeyPair was rotated when credentials were which was zealous. Also fixes an important bug caused by inverted private & public keypair part when rotating credentials (f607138)
+- Signature KeyPair was rotated when credentials were which was zealous. Also fixes an important bug caused by inverted
+  private & public keypair part when rotating credentials (f607138)
 
 ### Testing
 
@@ -1892,13 +2010,15 @@ this API clients can remove their own epoch observers.
 
 ### Bug Fixes
 
-- e2ei enum for conversation state was unused and failing the Typescript publication. Now CI will have the same compiler flags when checking bindings in order to prevent this again (3744e93)
+- e2ei enum for conversation state was unused and failing the Typescript publication. Now CI will have the same compiler
+  flags when checking bindings in order to prevent this again (3744e93)
 
 ## v1.0.0-rc.3 - 2023-07-31
 
 ### Features
 
-- \[**breaking**\] rename `e2eiIsDegraded` by `e2eiConversationState` and change return type to an enumeration instead of a boolean to match all the e2ei states a conversation could have. (e7404d8)
+- \[**breaking**\] rename `e2eiIsDegraded` by `e2eiConversationState` and change return type to an enumeration instead
+  of a boolean to match all the e2ei states a conversation could have. (e7404d8)
 - add `e2ei_is_enabled` for clients to spot if their MLS client is enrolled for end-to-end identity (1521ad7)
 
 ### Bug Fixes
@@ -1908,13 +2028,15 @@ this API clients can remove their own epoch observers.
 - Interop runner now uses wasm-browser-run to install chromedriver (07e6bcc)
 - Support chromedriver 115 delivery method (1e2939f)
 - `e2ei_rotate_all` was returning 'undefined' on WASM (fdee4c0)
-- \[**breaking**\] entities leaked. Some methods handling the lifecycle of a MLS group were not cleaning created entities correctly. This avoids required storage space to grow linearly. (51a7e13)
+- \[**breaking**\] entities leaked. Some methods handling the lifecycle of a MLS group were not cleaning created
+  entities correctly. This avoids required storage space to grow linearly. (51a7e13)
 
 ## v1.0.0-rc.2 - 2023-07-25
 
 ### Features
 
-- \[**breaking**\] expose 'ClientId' in e2ei methods for credential rotation since the e2ei client identifier differs from the one used in MLS (d687ae3)
+- \[**breaking**\] expose 'ClientId' in e2ei methods for credential rotation since the e2ei client identifier differs
+  from the one used in MLS (d687ae3)
 - Include certificate roots and certificate policy in GroupContext - WPB-1188 (2ef9892)
 
 ## v1.0.0-rc.1 - 2023-07-21
@@ -2008,19 +2130,24 @@ this API clients can remove their own epoch observers.
 
 ### Features
 
-- add `e2ei_is_degraded` to flag a conversation as degraded when at least 1 member is not using a e2ei certificate (f39a868)
+- add `e2ei_is_degraded` to flag a conversation as degraded when at least 1 member is not using a e2ei certificate
+  (f39a868)
 
 ## v0.10.0 - 2023-05-25
 
 ### Features
 
-- \[**breaking**\] hide everywhere `Vec<Ciphersuite>` appears in the public API since it seems to fail for obscure reasons on aarch64 Android devices. Undo when we have a better understanding of the root cause of this (08584e8)
+- \[**breaking**\] hide everywhere `Vec<Ciphersuite>` appears in the public API since it seems to fail for obscure
+  reasons on aarch64 Android devices. Undo when we have a better understanding of the root cause of this (08584e8)
 
 ### Bug Fixes
 
-- usize to u64 conversion error on Android in `client_valid_keypackages_count`. Whatever the reason this applies a default meaningful value (2d90576)
-- \[**breaking**\] creating a MLS group does not consume an existing KeyPackage anymore, instead it always generates a new local one. Also, explicitly ask for the credential type of the creator before creating a new MLS group. (254e336)
-- mobile FFI was failing when initializing MLS client due to a Arc being incremented one too many times. Also add the E2EI API in the Kotlin wrapper and a test for it (e0a5dcb)
+- usize to u64 conversion error on Android in `client_valid_keypackages_count`. Whatever the reason this applies a
+  default meaningful value (2d90576)
+- \[**breaking**\] creating a MLS group does not consume an existing KeyPackage anymore, instead it always generates a
+  new local one. Also, explicitly ask for the credential type of the creator before creating a new MLS group. (254e336)
+- mobile FFI was failing when initializing MLS client due to a Arc being incremented one too many times. Also add the
+  E2EI API in the Kotlin wrapper and a test for it (e0a5dcb)
 
 ## v0.9.2 - 2023-05-22
 
@@ -2062,7 +2189,8 @@ this API clients can remove their own epoch observers.
 
 ### Features
 
-- verify x509 credential identity and return identity (client_id, handle, display_name, domain) once message is decrypted (45787f4)
+- verify x509 credential identity and return identity (client_id, handle, display_name, domain) once message is
+  decrypted (45787f4)
 
 ### Bug Fixes
 
@@ -2092,7 +2220,8 @@ this API clients can remove their own epoch observers.
 
 ### Features
 
-- \[**breaking**\] latest e2e identity iteration. ClientId (from MLS) is used instead of requiring just parts of it (fba4323)
+- \[**breaking**\] latest e2e identity iteration. ClientId (from MLS) is used instead of requiring just parts of it
+  (fba4323)
 - Added API to check the `Arc` strongref counter (d25a569)
 - \[**breaking**\] Add ability to mark subconversations (e7ed3e0)
 - \[**breaking**\] Change proteus auto prekey return type to include prekey id (f99c458)
@@ -2197,8 +2326,10 @@ this API clients can remove their own epoch observers.
 - expose a 'WrongEpoch' error whenever one attempts to decrypt a message in the wrong epoch (fc87a6f)
 - add 'restore_from_disk' to enable using multiple MlsCentral instances in iOS extensions (541674a)
 - add specialized error when trying to break forward secrecy (b638a0e)
-- add 'out_of_order_tolerance' & 'maximum_forward_distance' to configuration without exposing them and verify they are actually applied (838fb62)
-- \[**breaking**\] change 'client_id' in CoreCrypto constructor from a String to a byte array to remain consistent across the API (e89cbf9)
+- add 'out_of_order_tolerance' & 'maximum_forward_distance' to configuration without exposing them and verify they are
+  actually applied (838fb62)
+- \[**breaking**\] change 'client_id' in CoreCrypto constructor from a String to a byte array to remain consistent
+  across the API (e89cbf9)
 - Expose proteus prekey fingerprint - CL-107 (09e685d)
 
 ### Bug Fixes
@@ -2240,7 +2371,8 @@ this API clients can remove their own epoch observers.
 
 ### Bug Fixes
 
-- Change the internal type of the public group info to Vec<u8> so we don't have extra bytes in the serialized message - FS-1127 (2ee4e18)
+- Change the internal type of the public group info to Vec<u8> so we don't have extra bytes in the serialized message -
+  FS-1127 (2ee4e18)
 
 ## v0.6.0-pre.1 - 2022-10-21
 
@@ -2255,11 +2387,15 @@ this API clients can remove their own epoch observers.
 - Added support for migrating Cryptobox data (f6a3da8)
 - Added FFI for CoreCrypto-Proteus (01b0ee5)
 - Added support for Proteus (9743949)
-- validate received external commits making sure the sender's user already belongs to the MLS group and has the right role (f70ff30)
+- validate received external commits making sure the sender's user already belongs to the MLS group and has the right
+  role (f70ff30)
 - \[**breaking**\] rename callback\~~`client_id_belongs_to_one_of`\~~ into `client_is_existing_group_user` (36e34ca)
 - \[**breaking**\] external commit returns a bundle containing the PGS (54ba6f5)
-- \[**breaking**\] add `clear_pending_group_from_external_commit` to cleanly abort an external commit. Also renamed `group_state` argument into `public_group_state` wherever found which can be considered a breaking change in some languages (b5db441)
-- \[**breaking**\] rename `MlsConversationInitMessage#group` into `MlsConversationInitMessage#conversation_id` because it was misleading about the actual returned value (9ed7025)
+- \[**breaking**\] add `clear_pending_group_from_external_commit` to cleanly abort an external commit. Also renamed
+  `group_state` argument into `public_group_state` wherever found which can be considered a breaking change in some
+  languages (b5db441)
+- \[**breaking**\] rename `MlsConversationInitMessage#group` into `MlsConversationInitMessage#conversation_id` because
+  it was misleading about the actual returned value (9ed7025)
 
 ### Bug Fixes
 
@@ -2278,7 +2414,8 @@ this API clients can remove their own epoch observers.
 
 ### Bug Fixes
 
-- wire-server sends a base64 encoded ed25519 key afterall. Consumers are in charge of base64 decoding it and pass it to core-crypto (5d8c480)
+- wire-server sends a base64 encoded ed25519 key afterall. Consumers are in charge of base64 decoding it and pass it to
+  core-crypto (5d8c480)
 - TS Ciphersuite enum not correctly exported (dcbbea6)
 
 ### Documentation
@@ -2300,7 +2437,8 @@ this API clients can remove their own epoch observers.
 
 ### Features
 
-- \[**breaking**\] 'commit_pending_proposals' now returns an optional CommitBundle when there is no pending proposals to commit (9a7fd84)
+- \[**breaking**\] 'commit_pending_proposals' now returns an optional CommitBundle when there is no pending proposals to
+  commit (9a7fd84)
 
 ### Bug Fixes
 
@@ -2313,7 +2451,8 @@ this API clients can remove their own epoch observers.
 - Fixed iOS SQLCipher salt handling within keychain (5e32ad9)
 - \[**breaking**\] Changed misleading callback API and docs (bd25518)
 - \[**breaking**\] Added missing TS API to set CoreCrypto callbacks (74c429d)
-- force software implementation for sha2 on target architectures not supporting hardware implementation (i686 & armv7 in our case) (baca163)
+- force software implementation for sha2 on target architectures not supporting hardware implementation (i686 & armv7 in
+  our case) (baca163)
 
 ### Documentation
 
@@ -2329,7 +2468,8 @@ this API clients can remove their own epoch observers.
 
 ### Features
 
-- commits and group creation return a TLS serialized CommitBundle. The latter also contains a PublicGroupStateBundle to prepare future evolutions (9215f3d)
+- commits and group creation return a TLS serialized CommitBundle. The latter also contains a PublicGroupStateBundle to
+  prepare future evolutions (9215f3d)
 - \[**breaking**\] 'decrypt_message' returns the sender client id (7665f9d)
 - use 128 bytes of padding when encrypting messages instead of 16 previously (4a1f3d5)
 - Add function to return current epoch of a group [CL-80] (#96) (fde8804)
@@ -2361,7 +2501,8 @@ this API clients can remove their own epoch observers.
 - Adding validation to external proposal [CL-51] (#71) (4fc74d0)
 - decrypting a commit now also return a delay when there are pending proposals (983dce8)
 - decrypting a commit now also return a delay when there are pending proposals (ae129ee)
-- 'commit_delay' now uses openmls provided leaf index instead of computing it ourselves. It is also now infallible. (81913a0)
+- 'commit_delay' now uses openmls provided leaf index instead of computing it ourselves. It is also now infallible.
+  (81913a0)
 - ensure consistent state (a657d38)
 - \[**breaking**\] add commit delay when a message with prending proposals is processed [CL-52] (#67) (2ee2827)
 - Added KeyPackage Pruning (8ae3ab0)
@@ -2384,7 +2525,8 @@ this API clients can remove their own epoch observers.
 - Cleaned up FFI names for clearer intent (de67752)
 - Caught up WASM api with the internal API changes (76eeaac)
 - doctests were failing because included markdown snippets were parsed and compiled (808446c)
-- defer validation that a callback has to be set for validating external add proposal after incoming proposal identified as such (57edb3f)
+- defer validation that a callback has to be set for validating external add proposal after incoming proposal identified
+  as such (57edb3f)
 - Updated RustCrypto dependencies to match hpke-rs requirements (5f7c08f)
 - group was not persisted after decrypting an application message (d46d95d)
 - UniFFI wrong type defs (1c033db)
