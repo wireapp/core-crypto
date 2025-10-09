@@ -46,7 +46,7 @@ describe("logger", () => {
                 });
                 setMaxLogLevel(CoreCryptoLogLevel.Debug);
                 const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId)
+                    new TextEncoder().encode(conversationId).buffer
                 );
                 await cc.transaction(async (ctx) => {
                     await ctx.createConversation(
@@ -86,7 +86,7 @@ describe("logger", () => {
                 });
                 setMaxLogLevel(CoreCryptoLogLevel.Debug);
                 const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId)
+                    new TextEncoder().encode(conversationId).buffer
                 );
                 await cc.transaction(async (ctx) => {
                     await ctx.createConversation(
@@ -121,7 +121,7 @@ describe("logger", () => {
                 });
                 setMaxLogLevel(CoreCryptoLogLevel.Warn);
                 const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId)
+                    new TextEncoder().encode(conversationId).buffer
                 );
                 await cc.transaction(async (ctx) => {
                     await ctx.createConversation(
@@ -156,7 +156,7 @@ describe("logger", () => {
                 });
                 setMaxLogLevel(CoreCryptoLogLevel.Debug);
                 const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId)
+                    new TextEncoder().encode(conversationId).buffer
                 );
                 await cc.transaction(async (ctx) => {
                     await ctx.createConversation(
@@ -215,12 +215,13 @@ describe("logger", () => {
                 const encoder = new TextEncoder();
                 const messageText = "Hello world!";
                 const cid = new window.ccModule.ConversationId(
-                    encoder.encode(conversationId)
+                    encoder.encode(conversationId).buffer
                 );
                 const messageBytes = encoder.encode(messageText);
 
                 const encryptedMessage = await alice.transaction(
-                    async (ctx) => await ctx.encryptMessage(cid, messageBytes)
+                    async (ctx) =>
+                        await ctx.encryptMessage(cid, messageBytes.buffer)
                 );
 
                 await bob.transaction(
