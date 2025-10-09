@@ -57,6 +57,10 @@ impl CredentialRef {
     /// Due to database limitations we currently cannot efficiently retrieve only those keypairs of interest;
     /// if you are going to be loading several references in a row, it is more efficient to first fetch all
     /// stored keypairs with [`Self::load_cache`] and then call [`Self::load_first_with_cache`].
+    //
+    // We should evaluate later if this method is worth retaining, but for now let's keep the impl
+    // in case we want it in the future.
+    #[expect(dead_code)]
     pub(crate) async fn load_first(&self, database: &Database) -> Result<Credential> {
         let cache = Self::load_cache(database).await?;
         self.load_first_with_cache(&cache).await
