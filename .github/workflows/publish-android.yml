@@ -32,9 +32,9 @@ jobs:
           java-version: "17"
           distribution: "adopt"
       - name: gradle setup
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
       - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v4
+        uses: gradle/actions/wrapper-validation@v5
       - name: setup android sdk
         uses: android-actions/setup-android@v3
       - uses: ./.github/actions/make/android/package
