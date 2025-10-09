@@ -14,5 +14,5 @@ jobs:
       - uses: wireapp/setup-fd@v0.1.0
       - name: install mdformat
         run: |
-          pip3 install mdformat mdformat-gfm mdformat-frontmatter mdformat-footnote mdformat-gfm-alerts
+          pip3 install mdformat mdformat-gfm mdformat-frontmatter mdformat-footnote mdformat-gfm-alerts mdformat-toc
       - run: fd --glob '*.md' -X mdformat --check
