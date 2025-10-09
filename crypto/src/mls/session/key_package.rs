@@ -13,7 +13,7 @@ use tls_codec::{Deserialize, Serialize};
 
 use super::{Error, Result};
 use crate::{
-    Ciphersuite, Credential, KeystoreError, MlsConversationConfiguration, CredentialType, MlsError, Session,
+    Ciphersuite, Credential, CredentialType, KeystoreError, MlsConversationConfiguration, MlsError, Session,
     mls::session::SessionInner,
 };
 
@@ -441,8 +441,10 @@ mod tests {
 
             // Verify that the key packages are X509
             assert!(
-                x509_key_packages.iter().all(|kp| CredentialType::X509
-                    == CredentialType::from(kp.leaf_node().credential().credential_type()))
+                x509_key_packages
+                    .iter()
+                    .all(|kp| CredentialType::X509
+                        == CredentialType::from(kp.leaf_node().credential().credential_type()))
             );
         })
         .await

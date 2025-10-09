@@ -1,32 +1,32 @@
 use super::Result;
-use crate::{Credential, RecursiveError, Session, mls::credential::FindFilters};
+use crate::{CredentialRef, FindFilters, RecursiveError, Session};
 
 impl Session {
     /// Find all credentials which match the specified conditions.
     ///
     /// If no filters are set, this is equivalent to [`get_credentials`][Self::get_credentials].
     ///
-    /// This is a convenience method entirely equivaleent to [Credential::find];
+    /// This is a convenience method entirely equivalent to [CredentialRef::find];
     /// the only difference is that it automatically includes the appropriate
-    /// [`Database`][core_crypto_keystore::Databsae] reference.
-    pub async fn find_credentials(&self, find_filters: FindFilters<'_>) -> Result<Vec<Credential>> {
+    /// [`Database`][core_crypto_keystore::Database] reference.
+    pub async fn find_credentials(&self, find_filters: FindFilters<'_>) -> Result<Vec<CredentialRef>> {
         let database = self.crypto_provider.keystore();
-        Credential::find(&database, find_filters)
+        CredentialRef::find(&database, find_filters)
             .await
-            .map_err(RecursiveError::mls_credential("finding credentials"))
+            .map_err(RecursiveError::mls_credential_ref("finding credentials"))
             .map_err(Into::into)
     }
 
     /// Get all credentials
     ///
-    /// This is a convenience method entirely equivaleent to [Credential::get_all];
+    /// This is a convenience method entirely equivalent to [CredentialRef::get_all];
     /// the only difference is that it automatically includes the appropriate
-    /// [`Database`][core_crypto_keystore::Databsae] reference.
-    pub async fn get_credentials(&self) -> Result<Vec<Credential>> {
+    /// [`Database`][core_crypto_keystore::Database] reference.
+    pub async fn get_credentials(&self) -> Result<Vec<CredentialRef>> {
         let database = self.crypto_provider.keystore();
-        Credential::get_all(&database)
+        CredentialRef::get_all(&database)
             .await
-            .map_err(RecursiveError::mls_credential("getting all credentials"))
+            .map_err(RecursiveError::mls_credential_ref("getting all credentials"))
             .map_err(Into::into)
     }
 }

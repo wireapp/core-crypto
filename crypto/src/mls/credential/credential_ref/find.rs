@@ -6,8 +6,8 @@ use mls_crypto_provider::Database;
 use openmls::prelude::{Credential as MlsCredential, CredentialType, SignatureScheme};
 use tls_codec::Deserialize as _;
 
-use super::{Error, Result, keypairs};
-use crate::{ClientId, Credential, KeystoreError, RecursiveError, mls::session::id::ClientIdRef};
+use super::{super::keypairs, Error, Result};
+use crate::{ClientId, Credential, CredentialRef, KeystoreError, RecursiveError, mls::session::id::ClientIdRef};
 
 /// Filters to narrow down the set of credentials returned from [`Credential::find`][super::Credential::find].
 ///
@@ -43,12 +43,11 @@ pub struct FindFilters<'a> {
     pub credential_type: Option<CredentialType>,
 }
 
-impl Credential {
+impl CredentialRef {
     /// Find all credentials in the database matching the provided filters.
     ///
-    /// If you have all the components of a filter, it is more efficient to use those to construct a
-    /// [`CredentialRef`][crate::CredentialRef] and then call [`Credential::load`] or [`Credential::load_with_caches`]
-    /// to load the appropriate credentials.
+    /// If you have all the components of a filter, it is more efficient to use those to directly
+    /// [construct a `CredentialRef`][CredentialRef::new].
     //
     // Our database does not currently support indices or even in-db searching, so this moves all data
     // from the DB to the runtime, decodes everything, and then filters. This is obviously suboptimal,
@@ -60,7 +59,11 @@ impl Credential {
             credential_type,
         } = find_filters;
 
-        let mut stored_keypairs = keypairs::load_all(database).await?;
+        let mut stored_keypairs = keypairs::load_all(database)
+            .await
+            .map_err(RecursiveError::mls_credential(
+                "loading all keypairs while finding credentials",
+            ))?;
         if let Some(signature_scheme) = signature_scheme {
             stored_keypairs.retain(|keypair| keypair.signature_scheme == signature_scheme as u16);
         }
@@ -69,11 +72,14 @@ impl Credential {
         }
         let stored_keypairs = stored_keypairs
             .iter()
-            .map(keypairs::deserialize)
-            .collect::<Result<Vec<_>>>()
-            .map_err(RecursiveError::mls_credential(
-                "deserializing keypairs when finding credentials",
-            ))?;
+            .map(|stored_keypair| {
+                keypairs::deserialize(stored_keypair)
+                    .map_err(RecursiveError::mls_credential(
+                        "deserializing keypair while finding credentials",
+                    ))
+                    .map_err(Into::into)
+            })
+            .collect::<Result<Vec<_>>>()?;
 
         let partial_credentials = database
             .find_all::<StoredCredential>(EntityFindParams::default())
@@ -88,14 +94,12 @@ impl Credential {
             .map(|stored| -> Result<_> {
                 let mls_credential = MlsCredential::tls_deserialize_exact(&stored.credential)
                     .map_err(Error::tls_deserialize("Credential"))?;
-                // What a perfect example of a place where a `ClientIdRef` would be very helpful
-                let client_id = ClientId::from(stored.id.to_owned());
-                Ok((mls_credential, client_id, stored.created_at))
+                Ok((mls_credential, stored))
             });
 
         let mut out = Vec::new();
         for partial in partial_credentials {
-            let (ref mls_credential, client_id, created_at) = partial?;
+            let (ref mls_credential, ref stored_credential) = partial?;
 
             if !credential_type
                 .map(|credential_type| credential_type == mls_credential.credential_type())
@@ -106,16 +110,22 @@ impl Credential {
             }
 
             for signature_key_pair in &stored_keypairs {
-                if Self::validate_mls_credential(mls_credential, &client_id, signature_key_pair).is_err() {
+                if Credential::validate_mls_credential(
+                    mls_credential,
+                    <&ClientIdRef>::from(&stored_credential.id),
+                    signature_key_pair,
+                )
+                .is_err()
+                {
                     // this probably doesn't happen often, but no point getting weird about it if it does;
                     // just indicates it's not a match
                     continue;
                 }
 
                 out.push(Self {
-                    mls_credential: mls_credential.to_owned(),
-                    signature_key_pair: signature_key_pair.to_owned(),
-                    earliest_validity: created_at,
+                    client_id: ClientId(stored_credential.id.clone()),
+                    r#type: mls_credential.credential_type(),
+                    signature_scheme: signature_key_pair.signature_scheme(),
                 })
             }
         }

@@ -10,7 +10,7 @@ use core_crypto_keystore::{connection::FetchFromDatabase as _, entities::Persist
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    KeystoreError, LeafError, MlsConversation, MlsConversationConfiguration, CredentialType, RecursiveError,
+    CredentialType, KeystoreError, LeafError, MlsConversation, MlsConversationConfiguration, RecursiveError,
     mls::conversation::{ConversationGuard, ConversationIdRef, pending_conversation::PendingConversation},
 };
 

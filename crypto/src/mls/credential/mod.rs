@@ -2,26 +2,25 @@
 //!
 //! Credentials can be basic, or based on an x509 certificate chain.
 
+pub(crate) mod credential_ref;
 pub(crate) mod crl;
 mod error;
 pub(crate) mod ext;
-mod find;
 mod keypairs;
 mod persistence;
 pub(crate) mod x509;
 
-use std::{
-    cmp::Ordering,
-    hash::{Hash, Hasher},
-};
+use std::hash::{Hash, Hasher};
 
-pub use error::Error;
-pub(crate) use error::Result;
-pub use find::FindFilters;
 use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, MlsCredentialType, SignatureScheme};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::crypto::OpenMlsCrypto;
 
+pub(crate) use self::error::Result;
+pub use self::{
+    credential_ref::{CredentialRef, FindFilters, FindFiltersBuilder},
+    error::Error,
+};
 use crate::{
     ClientId, ClientIdRef, MlsError, RecursiveError,
     mls::credential::{error::CredentialValidationError, ext::CredentialExt as _},
@@ -175,18 +174,6 @@ impl Hash for Credential {
             }
             MlsCredentialType::Basic(_) => {}
         };
-    }
-}
-
-impl Ord for Credential {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.earliest_validity.cmp(&other.earliest_validity)
-    }
-}
-
-impl PartialOrd for Credential {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
     }
 }
 
