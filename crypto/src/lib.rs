@@ -64,7 +64,7 @@ pub use crate::{
             proposal::MlsProposalBundle,
             welcome::WelcomeBundle,
         },
-        credential::{Credential, CredentialRef, FindFilters, x509::CertificateBundle},
+        credential::{Credential, CredentialRef, FindFilters as CredentialFindFilters, x509::CertificateBundle},
         proposal::{MlsProposal, MlsProposalRef},
         session::{
             EpochObserver, HistoryObserver, Session,
