@@ -4,7 +4,7 @@ use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
 use super::{Error, Result};
 use crate::{
-    Ciphersuite, ConversationId, LeafError, MlsCommitBundle, MlsConversationConfiguration, CredentialType,
+    Ciphersuite, ConversationId, CredentialType, LeafError, MlsCommitBundle, MlsConversationConfiguration,
     MlsCustomConfiguration, MlsError, MlsGroupInfoBundle, RecursiveError, WelcomeBundle, mls,
     mls::{
         conversation::{ConversationIdRef, pending_conversation::PendingConversation},

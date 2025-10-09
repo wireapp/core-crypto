@@ -5,7 +5,6 @@ use crate::{ClientId, MlsConversation, Session};
 pub(crate) mod ciphersuite;
 pub mod conversation;
 pub mod credential;
-pub mod credential_ref;
 mod error;
 pub(crate) mod proposal;
 pub(crate) mod session;
