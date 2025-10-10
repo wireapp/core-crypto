@@ -2,14 +2,8 @@ pub(crate) mod core_crypto;
 pub(crate) mod mls;
 #[cfg(feature = "proteus")]
 pub(crate) mod proteus;
-#[cfg(target_family = "wasm")]
-pub(crate) mod wasm;
 
 /// The primary error type for CoreCrypto
-#[cfg(target_family = "wasm")]
-pub type CoreCryptoError = wasm::CoreCryptoError;
-/// The primary error type for CoreCrypto
-#[cfg(not(target_family = "wasm"))]
 pub type CoreCryptoError = core_crypto::CoreCryptoError;
 
 /// A result which produces a [`CoreCryptoError`] by default.
@@ -46,8 +40,7 @@ fn log_error(error: &dyn std::error::Error) {
 
 #[cfg(test)]
 mod tests {
-    use ::core_crypto::{LeafError, RecursiveError};
-    use core_crypto::{ConversationId, ProteusError};
+    use core_crypto::{ConversationId, LeafError, ProteusError, RecursiveError};
 
     use crate::{CoreCryptoError, MlsError, ProteusError as ProteusErrorFfi};
 
