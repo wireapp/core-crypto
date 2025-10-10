@@ -35,4 +35,36 @@ pub enum Error {
     Mls(#[from] crate::MlsError),
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
+    #[error("TLS serializing {item}")]
+    TlsSerialize {
+        #[source]
+        source: tls_codec::Error,
+        item: &'static str,
+    },
+    #[error("TLS deserializing {item}")]
+    TlsDeserialize {
+        #[source]
+        source: tls_codec::Error,
+        item: &'static str,
+    },
+}
+
+impl Error {
+    pub fn tls_serialize(item: &'static str) -> impl FnOnce(tls_codec::Error) -> Self {
+        move |source| Self::TlsSerialize { source, item }
+    }
+
+    pub fn tls_deserialize(item: &'static str) -> impl FnOnce(tls_codec::Error) -> Self {
+        move |source| Self::TlsDeserialize { source, item }
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum CredentialValidationError {
+    #[error("identity or public key did not match")]
+    WrongCredential,
+    #[error("public key not extractable from certificate")]
+    NoPublicKey,
+    #[error(transparent)]
+    Recursive(#[from] crate::RecursiveError),
 }

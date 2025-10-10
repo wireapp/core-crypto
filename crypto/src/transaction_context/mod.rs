@@ -14,8 +14,8 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    ClientId, ClientIdentifier, CoreCrypto, KeystoreError, MlsCiphersuite, MlsConversation, MlsCredentialType,
-    MlsError, MlsTransport, RecursiveError, Session, group_store::GroupStore, mls::HasSessionAndCrypto,
+    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, CredentialType, KeystoreError, MlsConversation, MlsError,
+    MlsTransport, RecursiveError, Session, group_store::GroupStore, mls::HasSessionAndCrypto,
 };
 pub mod conversation;
 pub mod e2e_identity;
@@ -215,10 +215,16 @@ impl TransactionContext {
     }
 
     /// Initializes the MLS client of [super::CoreCrypto].
-    pub async fn mls_init(&self, identifier: ClientIdentifier, ciphersuites: &[MlsCiphersuite]) -> Result<()> {
+    pub async fn mls_init(&self, identifier: ClientIdentifier, ciphersuites: &[Ciphersuite]) -> Result<()> {
         let mls_client = self.session().await?;
         mls_client
-            .init(identifier, ciphersuites, &self.mls_provider().await?)
+            .init(
+                identifier,
+                &ciphersuites
+                    .iter()
+                    .map(|ciphersuite| ciphersuite.signature_algorithm())
+                    .collect::<Vec<_>>(),
+            )
             .await
             .map_err(RecursiveError::mls_client("initializing mls client"))?;
 
@@ -237,16 +243,16 @@ impl TransactionContext {
     /// Returns the client's public key.
     pub async fn client_public_key(
         &self,
-        ciphersuite: MlsCiphersuite,
-        credential_type: MlsCredentialType,
+        ciphersuite: Ciphersuite,
+        credential_type: CredentialType,
     ) -> Result<Vec<u8>> {
         let cb = self
             .session()
             .await?
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+            .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
             .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
-        Ok(cb.signature_key.to_public_vec())
+            .map_err(RecursiveError::mls_client("finding most recent credential"))?;
+        Ok(cb.signature_key_pair.to_public_vec())
     }
 
     /// see [Session::id]

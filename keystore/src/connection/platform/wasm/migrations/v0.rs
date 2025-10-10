@@ -5,22 +5,23 @@ use idb::{
 
 use super::{DB_VERSION_0, Metabuilder};
 use crate::entities::{
-    E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityBase as _, MlsCredential,
-    MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage, MlsPskBundle,
-    MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
+    E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, E2eiRefreshToken, EntityBase as _, MlsPendingMessage, PersistedMlsGroup,
+    PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential, StoredE2eiEnrollment,
+    StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+    StoredSignatureKeypair,
 };
 
 pub(super) fn get_builder(name: &str) -> Metabuilder {
     let idb_builder = Metabuilder::new(name)
         .version(DB_VERSION_0)
         .add_object_store(
-            ObjectStoreBuilder::new(MlsCredential::COLLECTION_NAME)
+            ObjectStoreBuilder::new(StoredCredential::COLLECTION_NAME)
                 .auto_increment(false)
                 .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")))
                 .add_index(IndexBuilder::new("credential".into(), KeyPath::new_single("credential")).unique(true)),
         )
         .add_object_store(
-            ObjectStoreBuilder::new(MlsSignatureKeyPair::COLLECTION_NAME)
+            ObjectStoreBuilder::new(StoredSignatureKeypair::COLLECTION_NAME)
                 .auto_increment(false)
                 .add_index(IndexBuilder::new(
                     "signature_scheme".into(),
@@ -29,27 +30,27 @@ pub(super) fn get_builder(name: &str) -> Metabuilder {
                 .add_index(IndexBuilder::new("signature_pk".into(), KeyPath::new_single("pk"))),
         )
         .add_object_store(
-            ObjectStoreBuilder::new(MlsHpkePrivateKey::COLLECTION_NAME)
+            ObjectStoreBuilder::new(StoredHpkePrivateKey::COLLECTION_NAME)
                 .auto_increment(false)
                 .add_index(IndexBuilder::new("pk".into(), KeyPath::new_single("pk")).unique(true)),
         )
         .add_object_store(
-            ObjectStoreBuilder::new(MlsEncryptionKeyPair::COLLECTION_NAME)
+            ObjectStoreBuilder::new(StoredEncryptionKeyPair::COLLECTION_NAME)
                 .auto_increment(false)
                 .add_index(IndexBuilder::new("pk".into(), KeyPath::new_single("pk")).unique(true)),
         )
         .add_object_store(
-            ObjectStoreBuilder::new(MlsEpochEncryptionKeyPair::COLLECTION_NAME)
+            ObjectStoreBuilder::new(StoredEpochEncryptionKeypair::COLLECTION_NAME)
                 .auto_increment(false)
                 .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
         )
         .add_object_store(
-            ObjectStoreBuilder::new(MlsPskBundle::COLLECTION_NAME)
+            ObjectStoreBuilder::new(StoredPskBundle::COLLECTION_NAME)
                 .auto_increment(false)
                 .add_index(IndexBuilder::new("psk_id".into(), KeyPath::new_single("psk_id")).unique(true)),
         )
         .add_object_store(
-            ObjectStoreBuilder::new(MlsKeyPackage::COLLECTION_NAME)
+            ObjectStoreBuilder::new(StoredKeypackage::COLLECTION_NAME)
                 .auto_increment(false)
                 .add_index(
                     IndexBuilder::new("keypackage_ref".into(), KeyPath::new_single("keypackage_ref")).unique(true),
@@ -71,7 +72,7 @@ pub(super) fn get_builder(name: &str) -> Metabuilder {
                 .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id"))),
         )
         .add_object_store(
-            ObjectStoreBuilder::new(E2eiEnrollment::COLLECTION_NAME)
+            ObjectStoreBuilder::new(StoredE2eiEnrollment::COLLECTION_NAME)
                 .auto_increment(false)
                 .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
         )

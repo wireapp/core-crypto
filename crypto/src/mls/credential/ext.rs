@@ -4,15 +4,15 @@ use wire_e2e_identity::prelude::{HashAlgorithm, JwsAlgorithm, compute_raw_key_th
 use x509_cert::{Certificate, der::Decode};
 
 use super::{Error, Result};
-use crate::{DeviceStatus, MlsCiphersuite, MlsCredentialType, RecursiveError, WireIdentity};
+use crate::{Ciphersuite, DeviceStatus, RecursiveError, WireIdentity};
 
 #[allow(dead_code)]
 pub(crate) trait CredentialExt {
     fn parse_leaf_cert(&self) -> Result<Option<Certificate>>;
-    fn get_type(&self) -> Result<MlsCredentialType>;
+    fn get_type(&self) -> Result<CredentialType>;
     fn extract_identity(
         &self,
-        cs: MlsCiphersuite,
+        cs: Ciphersuite,
         env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
     ) -> Result<WireIdentity>;
     fn extract_public_key(&self) -> Result<Option<Vec<u8>>>;
@@ -24,13 +24,13 @@ impl CredentialExt for CredentialWithKey {
         self.credential.parse_leaf_cert()
     }
 
-    fn get_type(&self) -> Result<MlsCredentialType> {
+    fn get_type(&self) -> Result<CredentialType> {
         self.credential.get_type()
     }
 
     fn extract_identity(
         &self,
-        cs: MlsCiphersuite,
+        cs: Ciphersuite,
         env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
     ) -> Result<WireIdentity> {
         match self.credential.mls_credential() {
@@ -46,7 +46,7 @@ impl CredentialExt for CredentialWithKey {
 
                 Ok(WireIdentity {
                     client_id,
-                    credential_type: MlsCredentialType::Basic,
+                    credential_type: CredentialType::Basic,
                     thumbprint,
                     status: DeviceStatus::Valid,
                     x509_identity: None,
@@ -72,17 +72,17 @@ impl CredentialExt for Credential {
         }
     }
 
-    fn get_type(&self) -> Result<MlsCredentialType> {
+    fn get_type(&self) -> Result<CredentialType> {
         match self.credential_type() {
-            CredentialType::Basic => Ok(MlsCredentialType::Basic),
-            CredentialType::X509 => Ok(MlsCredentialType::X509),
+            CredentialType::Basic => Ok(CredentialType::Basic),
+            CredentialType::X509 => Ok(CredentialType::X509),
             CredentialType::Unknown(_) => Err(Error::UnsupportedCredentialType),
         }
     }
 
     fn extract_identity(
         &self,
-        _cs: MlsCiphersuite,
+        _cs: Ciphersuite,
         _env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
     ) -> Result<WireIdentity> {
         // This should not be called directly because one does not have the signature public key and hence
@@ -110,13 +110,13 @@ impl CredentialExt for openmls::prelude::Certificate {
         Ok(Some(leaf))
     }
 
-    fn get_type(&self) -> Result<MlsCredentialType> {
-        Ok(MlsCredentialType::X509)
+    fn get_type(&self) -> Result<CredentialType> {
+        Ok(CredentialType::X509)
     }
 
     fn extract_identity(
         &self,
-        cs: MlsCiphersuite,
+        cs: Ciphersuite,
         env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
     ) -> Result<WireIdentity> {
         let leaf = self.certificates.first().ok_or(Error::InvalidIdentity)?;
@@ -145,7 +145,7 @@ impl CredentialExt for openmls::prelude::Certificate {
     }
 }
 
-fn compute_thumbprint(cs: MlsCiphersuite, raw_key: &[u8]) -> Result<String> {
+fn compute_thumbprint(cs: Ciphersuite, raw_key: &[u8]) -> Result<String> {
     let sign_alg = match cs.signature_algorithm() {
         SignatureScheme::ED25519 => JwsAlgorithm::Ed25519,
         SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::P256,

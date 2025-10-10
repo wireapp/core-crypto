@@ -853,6 +853,7 @@ dependencies = [
  "log",
  "log-reload",
  "macro_rules_attribute 0.2.2",
+ "mls-crypto-provider",
  "obfuscate",
  "paste",
  "proteus-wasm",
@@ -2898,6 +2899,7 @@ dependencies = [
  "hex",
  "log",
  "openmls",
+ "openmls_basic_credential",
  "rand",
  "sha2",
 ]

@@ -10,15 +10,14 @@ use openmls::prelude::{
     RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy,
 };
 use openmls_traits::{
-    OpenMlsCryptoProvider,
     crypto::OpenMlsCrypto,
-    types::{Ciphersuite, SignatureScheme},
+    types::{Ciphersuite as MlsCiphersuite, SignatureScheme},
 };
 use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
 use super::Result;
-use crate::{MlsCiphersuite, MlsError, RecursiveError};
+use crate::{Ciphersuite, MlsError, RecursiveError};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -34,7 +33,7 @@ pub(crate) const MAXIMUM_FORWARD_DISTANCE: u32 = 1000;
 #[derive(Debug, Clone, Default)]
 pub struct MlsConversationConfiguration {
     /// The `OpenMls` Ciphersuite used in the group
-    pub ciphersuite: MlsCiphersuite,
+    pub ciphersuite: Ciphersuite,
     /// Delivery service public signature key and credential
     pub external_senders: Vec<ExternalSender>,
     /// Implementation specific configuration
@@ -54,12 +53,12 @@ impl MlsConversationConfiguration {
         &[CredentialType::Basic, CredentialType::X509];
 
     /// Conservative sensible defaults
-    pub(crate) const DEFAULT_SUPPORTED_CIPHERSUITES: &'static [Ciphersuite] = &[
-        Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-        Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
-        Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
-        Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
-        Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+    pub(crate) const DEFAULT_SUPPORTED_CIPHERSUITES: &'static [MlsCiphersuite] = &[
+        MlsCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+        MlsCiphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
+        MlsCiphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
+        MlsCiphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
+        MlsCiphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
     ];
 
     /// Not used at the moment
@@ -125,7 +124,6 @@ impl MlsConversationConfiguration {
         backend: &MlsCryptoProvider,
     ) -> Result<ExternalSender> {
         backend
-            .crypto()
             .validate_signature_key(signature_scheme, &key[..])
             .map_err(MlsError::wrap("validating signature key"))?;
         let key = OpenMlsSignaturePublicKey::new(key.into(), signature_scheme)

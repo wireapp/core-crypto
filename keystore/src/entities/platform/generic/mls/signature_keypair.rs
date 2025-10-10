@@ -1,13 +1,62 @@
 use std::io::{Read, Write};
 
+use rusqlite::Transaction;
+
 use crate::{
     CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
-    entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsSignatureKeyPair, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StoredSignatureKeypair, StringEntityId},
 };
 
+impl StoredSignatureKeypair {
+    fn load(transaction: &Transaction<'_>, rowid: i64, signature_scheme: u16) -> crate::CryptoKeystoreResult<Self> {
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "mls_signature_keypairs",
+            "keypair",
+            rowid,
+            true,
+        )?;
+
+        let mut keypair = vec![];
+        blob.read_to_end(&mut keypair)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "mls_signature_keypairs",
+            "pk",
+            rowid,
+            true,
+        )?;
+
+        let mut pk = vec![];
+        blob.read_to_end(&mut pk)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "mls_signature_keypairs",
+            "credential_id",
+            rowid,
+            true,
+        )?;
+
+        let mut credential_id = vec![];
+        blob.read_to_end(&mut credential_id)?;
+        blob.close()?;
+
+        Ok(Self {
+            signature_scheme,
+            keypair,
+            pk,
+            credential_id,
+        })
+    }
+}
+
 #[async_trait::async_trait]
-impl Entity for MlsSignatureKeyPair {
+impl Entity for StoredSignatureKeypair {
     fn id_raw(&self) -> &[u8] {
         self.pk.as_slice()
     }
@@ -23,59 +72,18 @@ impl Entity for MlsSignatureKeyPair {
             params.to_sql()
         );
 
-        let mut stmt = transaction.prepare_cached(&query)?;
-        let mut rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
-        let entities = rows.try_fold(Vec::new(), |mut acc, rowid_result| {
-            use std::io::Read as _;
-            let (rowid, signature_scheme) = rowid_result?;
-
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_signature_keypairs",
-                "keypair",
-                rowid,
-                true,
-            )?;
-
-            let mut keypair = vec![];
-            blob.read_to_end(&mut keypair)?;
-            blob.close()?;
-
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_signature_keypairs",
-                "pk",
-                rowid,
-                true,
-            )?;
-
-            let mut pk = vec![];
-            blob.read_to_end(&mut pk)?;
-            blob.close()?;
-
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_signature_keypairs",
-                "credential_id",
-                rowid,
-                true,
-            )?;
-
-            let mut credential_id = vec![];
-            blob.read_to_end(&mut credential_id)?;
-            blob.close()?;
-
-            acc.push(Self {
-                signature_scheme,
-                keypair,
-                pk,
-                credential_id,
-            });
-
-            crate::CryptoKeystoreResult::Ok(acc)
-        })?;
-
-        Ok(entities)
+        transaction
+            .prepare_cached(&query)?
+            .query_map([], |row| {
+                let rowid = row.get(0)?;
+                let signature_scheme = row.get(1)?;
+                Ok((rowid, signature_scheme))
+            })?
+            .map(|rowid_result| -> crate::CryptoKeystoreResult<_> {
+                let (rowid, signature_scheme) = rowid_result?;
+                Self::load(&transaction, rowid, signature_scheme)
+            })
+            .collect()
     }
 
     async fn find_one(
@@ -85,60 +93,15 @@ impl Entity for MlsSignatureKeyPair {
         let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         use rusqlite::OptionalExtension as _;
-        let maybe_rowid = transaction
+        transaction
             .query_row(
                 "SELECT rowid, signature_scheme FROM mls_signature_keypairs WHERE pk = ?",
                 [id.as_slice()],
                 |r| Ok((r.get::<_, i64>(0)?, r.get(1)?)),
             )
-            .optional()?;
-
-        if let Some((rowid, signature_scheme)) = maybe_rowid {
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_signature_keypairs",
-                "pk",
-                rowid,
-                true,
-            )?;
-
-            let mut pk = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut pk)?;
-            blob.close()?;
-
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_signature_keypairs",
-                "keypair",
-                rowid,
-                true,
-            )?;
-
-            let mut keypair = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut keypair)?;
-            blob.close()?;
-
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_signature_keypairs",
-                "credential_id",
-                rowid,
-                true,
-            )?;
-
-            let mut credential_id = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut credential_id)?;
-            blob.close()?;
-
-            Ok(Some(Self {
-                signature_scheme,
-                pk,
-                keypair,
-                credential_id,
-            }))
-        } else {
-            Ok(None)
-        }
+            .optional()?
+            .map(|(rowid, signature_scheme)| Self::load(&transaction, rowid, signature_scheme))
+            .transpose()
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
@@ -149,13 +112,13 @@ impl Entity for MlsSignatureKeyPair {
 }
 
 #[async_trait::async_trait]
-impl EntityBase for MlsSignatureKeyPair {
+impl EntityBase for StoredSignatureKeypair {
     type ConnectionType = KeystoreDatabaseConnection;
     type AutoGeneratedFields = ();
     const COLLECTION_NAME: &'static str = "mls_signature_keypairs";
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
-        MissingKeyErrorKind::MlsSignatureKeyPair
+        MissingKeyErrorKind::StoredSignatureKeypair
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
@@ -164,7 +127,7 @@ impl EntityBase for MlsSignatureKeyPair {
 }
 
 #[async_trait::async_trait]
-impl EntityTransactionExt for MlsSignatureKeyPair {
+impl EntityTransactionExt for StoredSignatureKeypair {
     async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         Self::ConnectionType::check_buffer_size(self.keypair.len())?;
         Self::ConnectionType::check_buffer_size(self.pk.len())?;

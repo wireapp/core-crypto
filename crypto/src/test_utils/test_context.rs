@@ -9,64 +9,62 @@ use super::{
     init_x509_test_chain, tmp_db_file,
     x509::{CertificateParams, X509TestChain},
 };
+pub use crate::{Ciphersuite, CredentialType, MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy};
 use crate::{
     ClientId, ConnectionType, Database, DatabaseKey,
     e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId},
     test_utils::SessionContext,
-};
-pub use crate::{
-    MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsWirePolicy,
 };
 
 #[template]
 #[rstest(
     case,
     case::basic_cs1(TestContext::new(
-        crate::MlsCredentialType::Basic,
+        crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
     case::cert_cs1(TestContext::new(
-        crate::MlsCredentialType::X509,
+        crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs2(TestContext::new(
-        crate::MlsCredentialType::Basic,
+        crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     )),
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs2(TestContext::new(
-        crate::MlsCredentialType::X509,
+        crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs3(TestContext::new(
-        crate::MlsCredentialType::Basic,
+        crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs3(TestContext::new(
-        crate::MlsCredentialType::X509,
+        crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs5(TestContext::new(
-        crate::MlsCredentialType::Basic,
+        crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521
     )),
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs5(TestContext::new(
-        crate::MlsCredentialType::X509,
+        crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs7(TestContext::new(
-        crate::MlsCredentialType::Basic,
+        crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs7(TestContext::new(
-        crate::MlsCredentialType::X509,
+        crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
     case::pure_ciphertext(TestContext::default_cipher()),
@@ -77,14 +75,14 @@ pub fn all_cred_cipher(case: TestContext) {}
 
 #[derive(Debug, Clone)]
 pub struct TestContext {
-    pub credential_type: MlsCredentialType,
+    pub credential_type: CredentialType,
     pub cfg: MlsConversationConfiguration,
     pub transport: Arc<dyn MlsTransportTestExt>,
     pub db: Option<(Database, Option<Arc<tempfile::TempDir>>)>,
 }
 
 impl TestContext {
-    pub fn new(credential_type: MlsCredentialType, cs: openmls::prelude::Ciphersuite) -> Self {
+    pub fn new(credential_type: CredentialType, cs: openmls::prelude::Ciphersuite) -> Self {
         Self {
             credential_type,
             cfg: MlsConversationConfiguration {
@@ -95,7 +93,7 @@ impl TestContext {
         }
     }
 
-    pub fn ciphersuite(&self) -> MlsCiphersuite {
+    pub fn ciphersuite(&self) -> Ciphersuite {
         self.cfg.ciphersuite
     }
 
@@ -118,7 +116,7 @@ impl TestContext {
 
     pub fn default_x509() -> Self {
         Self {
-            credential_type: MlsCredentialType::X509,
+            credential_type: CredentialType::X509,
             cfg: MlsConversationConfiguration::default(),
             transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
             db: None,
@@ -132,11 +130,11 @@ impl TestContext {
     }
 
     pub fn is_x509(&self) -> bool {
-        matches!(self.credential_type, MlsCredentialType::X509)
+        matches!(self.credential_type, CredentialType::X509)
     }
 
     pub fn is_basic(&self) -> bool {
-        matches!(self.credential_type, MlsCredentialType::Basic)
+        matches!(self.credential_type, CredentialType::Basic)
     }
 
     pub fn is_pure_ciphertext(&self) -> bool {
@@ -233,14 +231,14 @@ impl TestContext {
 
     pub async fn sessions_basic<const N: usize>(&self) -> [SessionContext; N] {
         let client_ids = self.basic_client_ids::<N>();
-        return self.sessions_inner(client_ids, None, MlsCredentialType::Basic).await;
+        return self.sessions_inner(client_ids, None, CredentialType::Basic).await;
     }
 
     pub async fn sessions_basic_with_pki_env<const N: usize>(&self) -> [SessionContext; N] {
         let client_ids = self.basic_client_ids::<N>();
         let test_chain = X509TestChain::init_empty(self.signature_scheme());
         return self
-            .sessions_inner(client_ids, Some(&test_chain), MlsCredentialType::Basic)
+            .sessions_inner(client_ids, Some(&test_chain), CredentialType::Basic)
             .await;
     }
 
@@ -252,9 +250,7 @@ impl TestContext {
         let x509_sessions = self.sessions_x509().await;
         let chain = x509_sessions[0].x509_chain_unchecked();
         let basic_ids = self.basic_client_ids();
-        let basic_sessions = self
-            .sessions_inner(basic_ids, Some(chain), MlsCredentialType::Basic)
-            .await;
+        let basic_sessions = self.sessions_inner(basic_ids, Some(chain), CredentialType::Basic).await;
         (x509_sessions, basic_sessions)
     }
 
@@ -263,7 +259,7 @@ impl TestContext {
         client_ids: [ClientId; N],
     ) -> [SessionContext; N] {
         let test_chain = self.test_chain(&client_ids, &[], None).await;
-        self.sessions_inner(client_ids, Some(&test_chain), MlsCredentialType::X509)
+        self.sessions_inner(client_ids, Some(&test_chain), CredentialType::X509)
             .await
     }
 
@@ -273,7 +269,7 @@ impl TestContext {
         revoked_display_names: &[String],
     ) -> [SessionContext; N] {
         let test_chain = self.test_chain(&client_ids, revoked_display_names, None).await;
-        self.sessions_inner(client_ids, Some(&test_chain), MlsCredentialType::X509)
+        self.sessions_inner(client_ids, Some(&test_chain), CredentialType::X509)
             .await
     }
 
@@ -286,9 +282,9 @@ impl TestContext {
         &self,
         client_ids: [ClientId; N],
         chain: Option<&X509TestChain>,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> [SessionContext; N] {
-        let identifiers = if credential_type == MlsCredentialType::X509 {
+        let identifiers = if credential_type == CredentialType::X509 {
             self.x509_identifiers(client_ids, chain.expect("must instantiate an x509 chain in x509 tests"))
                 .await
         } else {
@@ -341,11 +337,11 @@ impl TestContext {
             };
             let mut chain2 = self.test_chain(&client_ids2, revoked_display_names, Some(params)).await;
             chain1.cross_sign(&mut chain2);
-            self.sessions_inner(client_ids2, Some(&chain2), MlsCredentialType::X509)
+            self.sessions_inner(client_ids2, Some(&chain2), CredentialType::X509)
                 .await
         };
         let sessions1 = self
-            .sessions_inner(client_ids1, Some(&chain1), MlsCredentialType::X509)
+            .sessions_inner(client_ids1, Some(&chain1), CredentialType::X509)
             .await;
         (sessions1, sessions2)
     }
@@ -386,7 +382,7 @@ impl TestContext {
     /// The first member is required, and is the conversation's creator.
     pub async fn create_conversation_with_credential_type<'a>(
         &'a self,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
         members: impl IntoIterator<Item = &'a SessionContext>,
     ) -> TestConversation<'a> {
         self.create_heterogeneous_conversation(credential_type, credential_type, members)
@@ -398,8 +394,8 @@ impl TestContext {
     /// The first member is required, and is the conversation's creator.
     pub async fn create_heterogeneous_conversation<'a>(
         &'a self,
-        creator_credential_type: MlsCredentialType,
-        member_credential_type: MlsCredentialType,
+        creator_credential_type: CredentialType,
+        member_credential_type: CredentialType,
         members: impl IntoIterator<Item = &'a SessionContext>,
     ) -> TestConversation<'a> {
         let mut members = members.into_iter();
@@ -424,7 +420,7 @@ impl TestContext {
 impl Default for TestContext {
     fn default() -> Self {
         Self {
-            credential_type: MlsCredentialType::Basic,
+            credential_type: CredentialType::Basic,
             cfg: MlsConversationConfiguration::default(),
             transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
             db: None,

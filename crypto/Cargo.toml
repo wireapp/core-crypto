@@ -36,7 +36,7 @@ hex.workspace = true
 futures-util.workspace = true
 
 openmls = { workspace = true, features = ["crypto-subtle"] }
-openmls_basic_credential.workspace = true
+openmls_basic_credential = { workspace = true, features = ["clonable"] }
 openmls_x509_credential.workspace = true
 openmls_traits.workspace = true
 mls-crypto-provider.workspace = true

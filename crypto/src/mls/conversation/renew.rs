@@ -1,4 +1,4 @@
-use core_crypto_keystore::entities::MlsEncryptionKeyPair;
+use core_crypto_keystore::entities::StoredEncryptionKeyPair;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{LeafNode, LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
@@ -131,7 +131,7 @@ impl MlsConversation {
             // encryption key from the keystore otherwise we would have a leak
             backend
                 .key_store()
-                .remove::<MlsEncryptionKeyPair, _>(leaf_node.encryption_key().as_slice())
+                .remove::<StoredEncryptionKeyPair, _>(leaf_node.encryption_key().as_slice())
                 .await
                 .map_err(KeystoreError::wrap("removing mls encryption keypair"))?;
         }
@@ -144,9 +144,9 @@ impl MlsConversation {
         let sc = self.signature_scheme();
         let ct = self.own_credential_type()?;
         let cb = client
-            .find_most_recent_credential_bundle(sc, ct)
+            .find_most_recent_credential(sc, ct)
             .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
+            .map_err(RecursiveError::mls_client("finding most recent credential"))?;
 
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
 

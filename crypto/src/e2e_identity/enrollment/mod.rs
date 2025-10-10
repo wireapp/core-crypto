@@ -9,7 +9,7 @@ use wire_e2e_identity::{RustyE2eIdentity, prelude::E2eiAcmeAuthorization};
 use zeroize::Zeroize as _;
 
 use super::{EnrollmentHandle, Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
-use crate::{ClientId, KeystoreError, MlsCiphersuite, MlsError};
+use crate::{Ciphersuite, ClientId, KeystoreError, MlsError};
 
 /// Wire end to end identity solution for fetching a x509 certificate which identifies a client.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -27,7 +27,7 @@ pub struct E2eiEnrollment {
     device_authz: Option<E2eiAcmeAuthorization>,
     valid_order: Option<wire_e2e_identity::prelude::E2eiAcmeOrder>,
     finalize: Option<wire_e2e_identity::prelude::E2eiAcmeFinalize>,
-    pub(super) ciphersuite: MlsCiphersuite,
+    pub(super) ciphersuite: Ciphersuite,
     has_called_new_oidc_challenge_request: bool,
 }
 
@@ -56,7 +56,7 @@ impl E2eiEnrollment {
         team: Option<String>,
         expiry_sec: u32,
         backend: &MlsCryptoProvider,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
         sign_keypair: Option<E2eiSignatureKeypair>,
         has_called_new_oidc_challenge_request: bool,
     ) -> Result<Self> {
@@ -88,7 +88,7 @@ impl E2eiEnrollment {
         })
     }
 
-    pub(crate) fn ciphersuite(&self) -> &MlsCiphersuite {
+    pub(crate) fn ciphersuite(&self) -> &Ciphersuite {
         &self.ciphersuite
     }
 

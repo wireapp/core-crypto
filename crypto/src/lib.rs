@@ -33,8 +33,8 @@ pub use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed};
 pub use openmls::{
     group::{MlsGroup, MlsGroupConfig},
     prelude::{
-        Ciphersuite as CiphersuiteName, Credential, GroupEpoch, KeyPackage, KeyPackageIn, KeyPackageRef, MlsMessageIn,
-        Node, group_info::VerifiableGroupInfo,
+        Ciphersuite as MlsCiphersuite, CredentialType, GroupEpoch, KeyPackage, KeyPackageIn, KeyPackageRef,
+        MlsMessageIn, Node, group_info::VerifiableGroupInfo,
     },
 };
 #[cfg(feature = "proteus")]
@@ -54,7 +54,7 @@ pub use crate::{
         RecursiveError, Result, ToRecursiveError,
     },
     mls::{
-        ciphersuite::MlsCiphersuite,
+        ciphersuite::Ciphersuite,
         conversation::{
             ConversationId, MlsConversation,
             commit::MlsCommitBundle,
@@ -64,12 +64,12 @@ pub use crate::{
             proposal::MlsProposalBundle,
             welcome::WelcomeBundle,
         },
-        credential::{typ::MlsCredentialType, x509::CertificateBundle},
+        credential::{Credential, CredentialRef, FindFilters as CredentialFindFilters, x509::CertificateBundle},
         proposal::{MlsProposal, MlsProposalRef},
         session::{
             EpochObserver, HistoryObserver, Session,
             config::{SessionConfig, ValidatedSessionConfig},
-            id::ClientId,
+            id::{ClientId, ClientIdRef},
             identifier::ClientIdentifier,
             key_package::INITIAL_KEYING_MATERIAL_COUNT,
             user_id::UserId,

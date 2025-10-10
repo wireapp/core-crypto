@@ -38,8 +38,8 @@ pub fn compute_hash(bytes: &[u8]) -> [u8; 10] {
 /// This wrapper lets us log a partial hash of the sensitive item, so we have deterministic loggable non-sensitive
 /// aliases for all our sensitive values.
 #[derive(From)]
-pub struct Obfuscated<'a, T: Obfuscate>(&'a T);
-impl<'a, T: Obfuscate> core::fmt::Debug for Obfuscated<'a, T> {
+pub struct Obfuscated<'a, T: Obfuscate + ?Sized>(&'a T);
+impl<'a, T: Obfuscate + ?Sized> core::fmt::Debug for Obfuscated<'a, T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.0.obfuscate(f)
     }

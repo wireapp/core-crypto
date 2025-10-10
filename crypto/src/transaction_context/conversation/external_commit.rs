@@ -4,7 +4,7 @@ use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
 use super::{Error, Result};
 use crate::{
-    ConversationId, LeafError, MlsCiphersuite, MlsCommitBundle, MlsConversationConfiguration, MlsCredentialType,
+    Ciphersuite, ConversationId, CredentialType, LeafError, MlsCommitBundle, MlsConversationConfiguration,
     MlsCustomConfiguration, MlsError, MlsGroupInfoBundle, RecursiveError, WelcomeBundle, mls,
     mls::{
         conversation::{ConversationIdRef, pending_conversation::PendingConversation},
@@ -27,8 +27,8 @@ impl TransactionContext {
     /// * `group_info` - a GroupInfo wrapped in a MLS message. it can be obtained by deserializing a TLS serialized `GroupInfo` object
     /// * `custom_cfg` - configuration of the MLS conversation fetched from the Delivery Service
     /// * `credential_type` - kind of [openmls::prelude::Credential] to use for joining this group.
-    ///   If [MlsCredentialType::Basic] is chosen and no Credential has been created yet for it,
-    ///   a new one will be generated. When [MlsCredentialType::X509] is chosen, it fails when no
+    ///   If [CredentialType::Basic] is chosen and no Credential has been created yet for it,
+    ///   a new one will be generated. When [CredentialType::X509] is chosen, it fails when no
     ///   [openmls::prelude::Credential] has been created for the given Ciphersuite.
     ///
     /// # Returns [WelcomeBundle]
@@ -39,7 +39,7 @@ impl TransactionContext {
         &self,
         group_info: VerifiableGroupInfo,
         custom_cfg: MlsCustomConfiguration,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> Result<WelcomeBundle> {
         let (commit_bundle, welcome_bundle, mut pending_conversation) = self
             .create_external_join_commit(group_info, custom_cfg, credential_type)
@@ -67,16 +67,16 @@ impl TransactionContext {
         &self,
         group_info: VerifiableGroupInfo,
         custom_cfg: MlsCustomConfiguration,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> Result<(MlsCommitBundle, WelcomeBundle, PendingConversation)> {
         let client = &self.session().await?;
 
-        let cs: MlsCiphersuite = group_info.ciphersuite().into();
+        let cs: Ciphersuite = group_info.ciphersuite().into();
         let mls_provider = self.mls_provider().await?;
         let cb = client
-            .get_most_recent_or_create_credential_bundle(&mls_provider, cs.signature_algorithm(), credential_type)
+            .get_most_recent_or_create_credential(&mls_provider, cs.signature_algorithm(), credential_type)
             .await
-            .map_err(RecursiveError::mls_client("getting or creating credential bundle"))?;
+            .map_err(RecursiveError::mls_client("getting or creating credential"))?;
 
         let configuration = MlsConversationConfiguration {
             ciphersuite: cs,
@@ -86,7 +86,7 @@ impl TransactionContext {
 
         let (group, commit, group_info) = MlsGroup::join_by_external_commit(
             &mls_provider,
-            &cb.signature_key,
+            &cb.signature_key_pair,
             None,
             group_info,
             &configuration
@@ -400,15 +400,12 @@ mod tests {
             let ct = group.credential().unwrap().credential_type();
             let cs = group.ciphersuite();
             let client = alice.session().await;
-            let cb = client
-                .find_most_recent_credential_bundle(cs.into(), ct.into())
-                .await
-                .unwrap();
+            let cb = client.find_most_recent_credential(cs.into(), ct.into()).await.unwrap();
 
             let gi = group
                 .export_group_info(
                     &alice.transaction.mls_provider().await.unwrap(),
-                    &cb.signature_key,
+                    &cb.signature_key_pair,
                     // joining by external commit assumes we include a ratchet tree, but this `false`
                     // says to leave it out
                     false,

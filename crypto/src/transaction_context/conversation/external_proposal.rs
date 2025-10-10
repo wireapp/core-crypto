@@ -2,8 +2,7 @@ use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, MlsMessageOut};
 
 use super::Result;
 use crate::{
-    ConversationId, LeafError, MlsCiphersuite, MlsError, RecursiveError,
-    mls::{self, credential::typ::MlsCredentialType},
+    Ciphersuite, ConversationId, CredentialType, LeafError, MlsError, RecursiveError, mls,
     transaction_context::TransactionContext,
 };
 
@@ -22,15 +21,15 @@ impl TransactionContext {
     ///
     /// # Errors
     /// Errors resulting from the creation of the proposal within OpenMls.
-    /// Fails when `credential_type` is [MlsCredentialType::X509] and no Credential has been created
+    /// Fails when `credential_type` is [CredentialType::X509] and no Credential has been created
     /// for it beforehand with [TransactionContext::e2ei_mls_init_only] or variants.
     #[cfg_attr(test, crate::dispotent)]
     pub async fn new_external_add_proposal(
         &self,
         conversation_id: ConversationId,
         epoch: GroupEpoch,
-        ciphersuite: MlsCiphersuite,
-        credential_type: MlsCredentialType,
+        ciphersuite: Ciphersuite,
+        credential_type: CredentialType,
     ) -> Result<MlsMessageOut> {
         let group_id = GroupId::from_slice(conversation_id.as_ref());
         let mls_provider = self
@@ -43,39 +42,35 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
         let cb = client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+            .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
             .await;
         let cb = match (cb, credential_type) {
             (Ok(cb), _) => cb,
-            (Err(mls::session::Error::CredentialNotFound(_)), MlsCredentialType::Basic) => {
-                // If a Basic CredentialBundle does not exist, just create one instead of failing
+            (Err(mls::session::Error::CredentialNotFound(_)), CredentialType::Basic) => {
+                // If a Basic Credential does not exist, just create one instead of failing
                 client
-                    .init_basic_credential_bundle_if_missing(&mls_provider, ciphersuite.signature_algorithm())
+                    .init_basic_credential_if_missing(&mls_provider, ciphersuite.signature_algorithm())
                     .await
-                    .map_err(RecursiveError::mls_client(
-                        "initializing basic credential bundle if missing",
-                    ))?;
+                    .map_err(RecursiveError::mls_client("initializing basic credential if missing"))?;
 
                 client
-                    .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+                    .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
                     .await
                     .map_err(RecursiveError::mls_client(
-                        "finding most recent credential bundle (which we just created)",
+                        "finding most recent credential (which we just created)",
                     ))?
             }
-            (Err(mls::session::Error::CredentialNotFound(_)), MlsCredentialType::X509) => {
+            (Err(mls::session::Error::CredentialNotFound(_)), CredentialType::X509) => {
                 return Err(LeafError::E2eiEnrollmentNotDone.into());
             }
-            (Err(e), _) => return Err(RecursiveError::mls_client("finding most recent credential bundle")(e).into()),
+            (Err(e), _) => return Err(RecursiveError::mls_client("finding most recent credential")(e).into()),
         };
         let kp = client
-            .generate_one_keypackage_from_credential_bundle(&mls_provider, ciphersuite, &cb)
+            .generate_one_keypackage_from_credential(&mls_provider, ciphersuite, &cb)
             .await
-            .map_err(RecursiveError::mls_client(
-                "generating one keypackage from credential bundle",
-            ))?;
+            .map_err(RecursiveError::mls_client("generating one keypackage from credential"))?;
 
-        JoinProposal::new(kp, group_id, epoch, &cb.signature_key)
+        JoinProposal::new(kp, group_id, epoch, &cb.signature_key_pair)
             .map_err(MlsError::wrap("creating join proposal"))
             .map_err(Into::into)
     }

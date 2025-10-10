@@ -1,10 +1,10 @@
-use core_crypto_keystore::{CryptoKeystoreMls, connection::FetchFromDatabase, entities::MlsKeyPackage};
+use core_crypto_keystore::{CryptoKeystoreMls, connection::FetchFromDatabase, entities::StoredKeypackage};
 use openmls::prelude::KeyPackage;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use super::error::{Error, Result};
 use crate::{
-    CertificateBundle, E2eiEnrollment, KeystoreError, MlsCiphersuite, MlsCredentialType, MlsError, RecursiveError,
+    CertificateBundle, Ciphersuite, CredentialType, E2eiEnrollment, KeystoreError, MlsError, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     transaction_context::TransactionContext,
@@ -22,7 +22,7 @@ impl TransactionContext {
         handle: String,
         team: Option<String>,
         expiry_sec: u32,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
     ) -> Result<E2eiEnrollment> {
         let mls_provider = self
             .mls_provider()
@@ -33,10 +33,10 @@ impl TransactionContext {
             .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
+            .find_most_recent_credential(ciphersuite.signature_algorithm(), CredentialType::Basic)
             .await
-            .map_err(|_| Error::MissingExistingClient(MlsCredentialType::Basic))?;
-        let client_id = cb.credential().identity().into();
+            .map_err(|_| Error::MissingExistingClient(CredentialType::Basic))?;
+        let client_id = cb.mls_credential().identity().to_owned().into();
 
         let sign_keypair = Some(
             cb.signature_key()
@@ -70,7 +70,7 @@ impl TransactionContext {
         handle: Option<String>,
         team: Option<String>,
         expiry_sec: u32,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
     ) -> Result<E2eiEnrollment> {
         let mls_provider = self
             .mls_provider()
@@ -81,10 +81,10 @@ impl TransactionContext {
             .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
+            .find_most_recent_credential(ciphersuite.signature_algorithm(), CredentialType::X509)
             .await
-            .map_err(|_| Error::MissingExistingClient(MlsCredentialType::X509))?;
-        let client_id = cb.credential().identity().into();
+            .map_err(|_| Error::MissingExistingClient(CredentialType::X509))?;
+        let client_id = cb.mls_credential().identity().to_owned().into();
         let sign_keypair = Some(
             cb.signature_key()
                 .try_into()
@@ -167,7 +167,7 @@ impl TransactionContext {
             .map_err(RecursiveError::transaction("getting mls provider"))?;
 
         client
-            .save_new_x509_credential_bundle(
+            .save_new_x509_credential(
                 &self
                     .mls_provider()
                     .await
@@ -177,21 +177,21 @@ impl TransactionContext {
                 cert_bundle,
             )
             .await
-            .map_err(RecursiveError::mls_client("saving new x509 credential bundle"))?;
+            .map_err(RecursiveError::mls_client("saving new x509 credential"))?;
 
         Ok(crl_new_distribution_points)
     }
 
     /// Deletes all key packages whose leaf node's credential does not match the most recently
     /// saved x509 credential with the provided signature scheme.
-    pub async fn delete_stale_key_packages(&self, cipher_suite: MlsCiphersuite) -> Result<()> {
+    pub async fn delete_stale_key_packages(&self, cipher_suite: Ciphersuite) -> Result<()> {
         let signature_scheme = cipher_suite.signature_algorithm();
         let keystore = self
             .keystore()
             .await
             .map_err(RecursiveError::transaction("getting keystore"))?;
         let nb_kp = keystore
-            .count::<MlsKeyPackage>()
+            .count::<StoredKeypackage>()
             .await
             .map_err(KeystoreError::wrap("counting key packages"))?;
         let kps: Vec<KeyPackage> = keystore
@@ -204,9 +204,9 @@ impl TransactionContext {
             .map_err(RecursiveError::transaction("getting mls client"))?;
 
         let cb = client
-            .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509)
+            .find_most_recent_credential(signature_scheme, CredentialType::X509)
             .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
+            .map_err(RecursiveError::mls_client("finding most recent credential"))?;
 
         let mut kp_refs = vec![];
 
@@ -216,7 +216,7 @@ impl TransactionContext {
             .map_err(RecursiveError::transaction("getting mls provider"))?;
         for kp in kps {
             let kp_cred = kp.leaf_node().credential().mls_credential();
-            let local_cred = cb.credential().mls_credential();
+            let local_cred = cb.mls_credential().mls_credential();
             if kp_cred != local_cred {
                 let kpr = kp
                     .hash_ref(provider.crypto())
@@ -235,7 +235,7 @@ impl TransactionContext {
 mod tests {
     use std::collections::HashSet;
 
-    use core_crypto_keystore::entities::{EntityFindParams, MlsCredential};
+    use core_crypto_keystore::entities::{EntityFindParams, StoredCredential};
     use openmls::prelude::SignaturePublicKey;
     use tls_codec::Deserialize;
 
@@ -288,12 +288,12 @@ mod tests {
 
                 assert_eq!(before_rotate.credential, 1);
                 let old_credential = alice
-                    .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+                    .find_most_recent_credential(case.signature_scheme(), case.credential_type)
                     .await
                     .unwrap()
                     .clone();
 
-                let is_renewal = case.credential_type == MlsCredentialType::X509;
+                let is_renewal = case.credential_type == CredentialType::X509;
 
                 let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
                     &alice,
@@ -314,7 +314,7 @@ mod tests {
                     .unwrap();
 
                 let cb = alice
-                    .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
+                    .find_most_recent_credential(case.signature_scheme(), CredentialType::X509)
                     .await
                     .unwrap();
 
@@ -366,10 +366,10 @@ mod tests {
                 // But first let's verify the previous credential material is present
                 assert!(
                     alice
-                        .find_credential_bundle(
+                        .find_credential(
                             case.signature_scheme(),
                             case.credential_type,
-                            &old_credential.signature_key.public().into()
+                            &old_credential.signature_key_pair.public().into()
                         )
                         .await
                         .is_some()
@@ -388,7 +388,7 @@ mod tests {
                 // and the signature keypair is still present
                 assert!(
                     alice
-                        .find_signature_keypair_from_keystore(old_credential.signature_key.public())
+                        .find_signature_keypair_from_keystore(old_credential.signature_key_pair.public())
                         .await
                         .is_some()
                 );
@@ -403,12 +403,12 @@ mod tests {
 
                 // Alice should just have the number of X509 KeyPackages she requested
                 let nb_x509_kp = alice
-                    .count_key_package(case.ciphersuite(), Some(MlsCredentialType::X509))
+                    .count_key_package(case.ciphersuite(), Some(CredentialType::X509))
                     .await;
                 assert_eq!(nb_x509_kp, NB_KEY_PACKAGE);
                 // in both cases, Alice should not anymore have any Basic KeyPackage
                 let nb_basic_kp = alice
-                    .count_key_package(case.ciphersuite(), Some(MlsCredentialType::Basic))
+                    .count_key_package(case.ciphersuite(), Some(CredentialType::Basic))
                     .await;
                 assert_eq!(nb_basic_kp, 0);
 
@@ -432,7 +432,7 @@ mod tests {
                 let conversation = case
                     .create_conversation([&charlie])
                     .await
-                    .invite_with_credential_type_notify(MlsCredentialType::X509, [&alice])
+                    .invite_with_credential_type_notify(CredentialType::X509, [&alice])
                     .await;
                 assert!(conversation.is_functional_and_contains([&alice, &charlie]).await);
             })
@@ -448,7 +448,7 @@ mod tests {
                 case.create_conversation([&alice]).await;
 
                 let old_cb = alice
-                    .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+                    .find_most_recent_credential(case.signature_scheme(), case.credential_type)
                     .await
                     .unwrap()
                     .clone();
@@ -457,7 +457,7 @@ mod tests {
                 // we only have a precision of 1 second for the `created_at` field of the Credential
                 smol::Timer::after(core::time::Duration::from_secs(1)).await;
 
-                let is_renewal = case.credential_type == MlsCredentialType::X509;
+                let is_renewal = case.credential_type == CredentialType::X509;
 
                 let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
                     &alice,
@@ -479,7 +479,7 @@ mod tests {
 
                 // So alice has a new Credential as expected
                 let cb = alice
-                    .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
+                    .find_most_recent_credential(case.signature_scheme(), CredentialType::X509)
                     .await
                     .unwrap();
                 let identity = cb
@@ -496,25 +496,24 @@ mod tests {
                 );
 
                 // but keeps her old one since it's referenced from some KeyPackages
-                let old_spk = SignaturePublicKey::from(old_cb.signature_key.public());
+                let old_spk = SignaturePublicKey::from(old_cb.signature_key_pair.public());
                 let old_cb_found = alice
-                    .find_credential_bundle(case.signature_scheme(), case.credential_type, &old_spk)
+                    .find_credential(case.signature_scheme(), case.credential_type, &old_spk)
                     .await
                     .unwrap();
                 assert_eq!(old_cb, old_cb_found);
-                let (cid, all_credentials, scs, old_nb_identities) = {
+                let (scs, old_nb_identities) = {
                     let alice_client = alice.session().await;
                     let old_nb_identities = alice_client.identities_count().await.unwrap();
 
                     // Let's simulate an app crash, client gets deleted and restored from keystore
-                    let cid = alice_client.id().await.unwrap();
                     let scs = HashSet::from([case.signature_scheme()]);
                     let all_credentials = alice
                         .transaction
                         .keystore()
                         .await
                         .unwrap()
-                        .find_all::<MlsCredential>(EntityFindParams::default())
+                        .find_all::<StoredCredential>(EntityFindParams::default())
                         .await
                         .unwrap()
                         .into_iter()
@@ -525,7 +524,8 @@ mod tests {
                         })
                         .collect::<Vec<_>>();
                     assert_eq!(all_credentials.len(), 2);
-                    (cid, all_credentials, scs, old_nb_identities)
+
+                    (scs, old_nb_identities)
                 };
                 let backend = &alice.transaction.mls_provider().await.unwrap();
                 backend.keystore().commit_transaction().await.unwrap();
@@ -534,11 +534,14 @@ mod tests {
                 let new_client = alice.session.clone();
                 new_client.reset().await;
 
-                new_client.load(backend, &cid, all_credentials, scs).await.unwrap();
+                new_client
+                    .init(alice.identifier.clone(), &scs.iter().copied().collect::<Vec<_>>())
+                    .await
+                    .unwrap();
 
                 // Verify that Alice has the same credentials
                 let cb = new_client
-                    .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
+                    .find_most_recent_credential(case.signature_scheme(), CredentialType::X509)
                     .await
                     .unwrap();
                 let identity = cb
@@ -576,7 +579,7 @@ mod tests {
                         let e2ei_utils::E2eiInitWrapper { context: cc, case } = wrapper;
                         let cs = case.ciphersuite();
                         match case.credential_type {
-                            MlsCredentialType::Basic => {
+                            CredentialType::Basic => {
                                 cc.e2ei_new_activation_enrollment(
                                     ALICE_NEW_DISPLAY_NAME.to_string(),
                                     ALICE_NEW_HANDLE.to_string(),
@@ -586,7 +589,7 @@ mod tests {
                                 )
                                 .await
                             }
-                            MlsCredentialType::X509 => {
+                            CredentialType::X509 => {
                                 cc.e2ei_new_rotate_enrollment(
                                     Some(ALICE_NEW_DISPLAY_NAME.to_string()),
                                     Some(ALICE_NEW_HANDLE.to_string()),
@@ -596,13 +599,14 @@ mod tests {
                                 )
                                 .await
                             }
+                            CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
                         }
                         .map_err(RecursiveError::transaction("creating new enrollment"))
                         .map_err(Into::into)
                     })
                 }
 
-                let is_renewal = case.credential_type == MlsCredentialType::X509;
+                let is_renewal = case.credential_type == CredentialType::X509;
 
                 let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
                     &alice,
@@ -636,7 +640,7 @@ mod tests {
                         let e2ei_utils::E2eiInitWrapper { context: cc, case } = wrapper;
                         let cs = case.ciphersuite();
                         match case.credential_type {
-                            MlsCredentialType::Basic => {
+                            CredentialType::Basic => {
                                 cc.e2ei_new_activation_enrollment(
                                     BOB_NEW_DISPLAY_NAME.to_string(),
                                     BOB_NEW_HANDLE.to_string(),
@@ -646,7 +650,7 @@ mod tests {
                                 )
                                 .await
                             }
-                            MlsCredentialType::X509 => {
+                            CredentialType::X509 => {
                                 cc.e2ei_new_rotate_enrollment(
                                     Some(BOB_NEW_DISPLAY_NAME.to_string()),
                                     Some(BOB_NEW_HANDLE.to_string()),
@@ -656,12 +660,13 @@ mod tests {
                                 )
                                 .await
                             }
+                            CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
                         }
                         .map_err(RecursiveError::transaction("creating new enrollment"))
                         .map_err(Into::into)
                     })
                 }
-                let is_renewal = case.credential_type == MlsCredentialType::X509;
+                let is_renewal = case.credential_type == CredentialType::X509;
 
                 let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
                     &bob,
@@ -836,7 +841,7 @@ mod tests {
             let [alice, bob] = case.sessions_basic_with_pki_env().await;
             Box::pin(async move {
                 let conversation = case
-                    .create_conversation_with_credential_type(MlsCredentialType::Basic, [&alice, &bob])
+                    .create_conversation_with_credential_type(CredentialType::Basic, [&alice, &bob])
                     .await;
                 let id = conversation.id().clone();
 
@@ -860,7 +865,7 @@ mod tests {
                     .await
                     .unwrap();
                 let alice_old_identity = alice_old_identities.first().unwrap();
-                assert_eq!(alice_old_identity.credential_type, MlsCredentialType::Basic);
+                assert_eq!(alice_old_identity.credential_type, CredentialType::Basic);
                 assert_eq!(alice_old_identity.x509_identity, None);
 
                 // Alice issues an Update commit to replace her current identity

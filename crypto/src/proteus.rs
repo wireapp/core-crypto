@@ -589,7 +589,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        CertificateBundle, ClientIdentifier, MlsCredentialType, Session, SessionConfig,
+        CertificateBundle, ClientIdentifier, CredentialType, Session, SessionConfig,
         test_utils::{proteus_utils::*, x509::X509TestChain, *},
     };
 
@@ -622,6 +622,8 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn cc_can_2_phase_init(case: TestContext) {
+        use crate::ClientId;
+
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
         #[cfg(target_family = "wasm")]
@@ -645,12 +647,13 @@ mod tests {
         // proteus is initialized, prekeys can be generated
         assert!(transaction.proteus_new_prekey(1).await.is_ok());
         // 👇 and so a unique 'client_id' can be fetched from wire-server
-        let client_id = "alice";
+        let client_id = ClientId::from("alice");
         let identifier = match case.credential_type {
-            MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
-            MlsCredentialType::X509 => {
-                CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
+            CredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
+            CredentialType::X509 => {
+                CertificateBundle::rand_identifier(&client_id, &[x509_test_chain.find_local_intermediate_ca()])
             }
+            CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
         };
         transaction.mls_init(identifier, &[case.ciphersuite()]).await.unwrap();
         // expect MLS to work
