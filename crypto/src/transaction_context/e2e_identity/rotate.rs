@@ -502,12 +502,11 @@ mod tests {
                     .await
                     .unwrap();
                 assert_eq!(old_cb, old_cb_found);
-                let (cid, all_credentials, scs, old_nb_identities) = {
+                let (scs, old_nb_identities) = {
                     let alice_client = alice.session().await;
                     let old_nb_identities = alice_client.identities_count().await.unwrap();
 
                     // Let's simulate an app crash, client gets deleted and restored from keystore
-                    let cid = alice_client.id().await.unwrap();
                     let scs = HashSet::from([case.signature_scheme()]);
                     let all_credentials = alice
                         .transaction
@@ -525,7 +524,8 @@ mod tests {
                         })
                         .collect::<Vec<_>>();
                     assert_eq!(all_credentials.len(), 2);
-                    (cid, all_credentials, scs, old_nb_identities)
+
+                    (scs, old_nb_identities)
                 };
                 let backend = &alice.transaction.mls_provider().await.unwrap();
                 backend.keystore().commit_transaction().await.unwrap();
@@ -534,7 +534,10 @@ mod tests {
                 let new_client = alice.session.clone();
                 new_client.reset().await;
 
-                new_client.load(backend, &cid, all_credentials, scs).await.unwrap();
+                new_client
+                    .init(alice.identifier.clone(), &scs.iter().copied().collect::<Vec<_>>())
+                    .await
+                    .unwrap();
 
                 // Verify that Alice has the same credentials
                 let cb = new_client

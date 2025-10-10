@@ -218,7 +218,13 @@ impl TransactionContext {
     pub async fn mls_init(&self, identifier: ClientIdentifier, ciphersuites: &[Ciphersuite]) -> Result<()> {
         let mls_client = self.session().await?;
         mls_client
-            .init(identifier, ciphersuites, &self.mls_provider().await?)
+            .init(
+                identifier,
+                &ciphersuites
+                    .iter()
+                    .map(|ciphersuite| ciphersuite.signature_algorithm())
+                    .collect::<Vec<_>>(),
+            )
             .await
             .map_err(RecursiveError::mls_client("initializing mls client"))?;
 

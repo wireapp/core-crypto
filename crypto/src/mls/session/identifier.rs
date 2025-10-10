@@ -1,17 +1,14 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-use mls_crypto_provider::MlsCryptoProvider;
+use openmls::prelude::CredentialType;
 use openmls_traits::types::SignatureScheme;
 
-use super::{
-    Credential,
-    error::{Error, Result},
-};
+use super::error::{Error, Result};
 use crate::{CertificateBundle, ClientId, RecursiveError, mls::session::id::ClientIdRef};
 
 /// Used by consumers to initializes a MLS client. Encompasses all the client types available.
 /// Could be enriched later with Verifiable Presentations.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_more::From)]
 pub enum ClientIdentifier {
     /// Basic keypair
     Basic(ClientId),
@@ -38,35 +35,11 @@ impl ClientIdentifier {
         }
     }
 
-    /// Generate a new Credential (Credential + KeyPair) for each ciphersuite.
-    /// This method does not persist them in the keystore !
-    pub fn generate_credentials(
-        self,
-        backend: &MlsCryptoProvider,
-        signature_schemes: HashSet<SignatureScheme>,
-    ) -> Result<Vec<(SignatureScheme, ClientId, Credential)>> {
+    /// The credential type for this identifier
+    pub fn credential_type(&self) -> CredentialType {
         match self {
-            ClientIdentifier::Basic(client_id) => signature_schemes
-                .into_iter()
-                .map(|signature_scheme| {
-                    let credential = Credential::basic(signature_scheme, client_id.clone(), backend)
-                        .map_err(RecursiveError::mls_credential("generating basic credential"))?;
-                    Ok((signature_scheme, client_id.clone(), credential))
-                })
-                .collect(),
-            ClientIdentifier::X509(certs) => certs
-                .into_iter()
-                .map(|(signature_scheme, certificate_bundle)| {
-                    let id = certificate_bundle
-                        .get_client_id()
-                        .map_err(RecursiveError::mls_credential(
-                            "getting client id from certificate bundle",
-                        ))?;
-                    let credential = Credential::x509(certificate_bundle)
-                        .map_err(RecursiveError::mls_credential("generating x509 credential"))?;
-                    Ok((signature_scheme, id, credential))
-                })
-                .collect(),
+            ClientIdentifier::Basic(_) => CredentialType::Basic,
+            ClientIdentifier::X509(_) => CredentialType::X509,
         }
     }
 }
