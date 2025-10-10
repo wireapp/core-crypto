@@ -96,7 +96,7 @@ impl Session {
             .into_iter()
             // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
             .filter(|kp|
-                kp.ciphersuite() == ciphersuite.0 && CredentialType::from(kp.leaf_node().credential().credential_type()) == credential_type)
+                kp.ciphersuite() == ciphersuite.0 && kp.leaf_node().credential().credential_type() == credential_type)
             .collect::<Vec<_>>();
 
         let kpb_count = existing_kps.len();
@@ -156,7 +156,7 @@ impl Session {
             // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
             .filter(|kp| {
                 kp.as_ref()
-                    .map(|b| b.ciphersuite() == ciphersuite.0 && CredentialType::from(b.leaf_node().credential().credential_type()) == credential_type)
+                    .map(|b| b.ciphersuite() == ciphersuite.0 && b.leaf_node().credential().credential_type() == credential_type)
                     .unwrap_or_default()
             })
         {
@@ -218,10 +218,7 @@ impl Session {
             let kp_ref = kp
                 .hash_ref(backend.crypto())
                 .map_err(MlsError::wrap("computing keypackage hashref"))?;
-            grouped_kps
-                .entry(cred)
-                .and_modify(|kprfs| kprfs.push(kp_ref.clone()))
-                .or_insert(vec![kp_ref]);
+            grouped_kps.entry(cred).or_default().push(kp_ref);
         }
 
         for (credential, kps) in &grouped_kps {
@@ -294,7 +291,10 @@ impl Session {
         Ok(kp_to_delete.map(|(_, kpref)| kpref.as_slice()).collect())
     }
 
-    async fn find_all_keypackages(&self, keystore: &Database) -> Result<Vec<(StoredKeypackage, KeyPackage)>> {
+    pub(super) async fn find_all_keypackages(
+        &self,
+        keystore: &Database,
+    ) -> Result<Vec<(StoredKeypackage, KeyPackage)>> {
         let kps: Vec<StoredKeypackage> = keystore
             .find_all(EntityFindParams::default())
             .await

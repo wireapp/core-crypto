@@ -123,13 +123,7 @@ pub trait CryptoKeystoreMls: Sized {
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl CryptoKeystoreMls for crate::Database {
     async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
-        cfg_if::cfg_if! {
-            if #[cfg(not(target_family = "wasm"))] {
-                let reverse = true;
-            } else {
-                let reverse = false;
-            }
-        }
+        let reverse = !cfg!(target_family = "wasm");
         let keypackages = self
             .find_all::<StoredKeypackage>(EntityFindParams {
                 limit: Some(count),
