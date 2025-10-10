@@ -35,7 +35,8 @@ impl CredentialRef {
     /// Note that this does not attach the credential to any Session; it just does the data manipulation.
     ///
     /// The database schema currently permits multiple credentials to exist simultaneously which match a given credential ref.
-    /// Therefore, this function returns all of them, ordered by `earliest_validity`. If you only need
+    /// Therefore, this function returns all of them, ordered by `earliest_validity`. If you only need the first,
+    /// consider using [`Self::load_first`] or [`Self::load_first_with_cache`].
     ///
     /// Due to database limitations we currently cannot efficiently retrieve only those keypairs of interest;
     /// if you are going to be loading several references in a row, it is more efficient to first fetch all
