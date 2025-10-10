@@ -1,6 +1,8 @@
 #[cfg(test)]
 use mls_crypto_provider::PkiKeypair;
+use openmls::prelude::Credential as MlsCredential;
 use openmls_traits::types::SignatureScheme;
+use openmls_x509_credential::CertificateKeyPair;
 use wire_e2e_identity::prelude::{HashAlgorithm, WireIdentityReader};
 #[cfg(test)]
 use x509_cert::der::Encode;
@@ -9,7 +11,7 @@ use zeroize::Zeroize;
 use super::{Error, Result};
 #[cfg(test)]
 use crate::test_utils::x509::X509Certificate;
-use crate::{ClientId, RecursiveError, e2e_identity::id::WireQualifiedClientId};
+use crate::{ClientId, Credential, MlsError, RecursiveError, e2e_identity::id::WireQualifiedClientId};
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize)]
 #[zeroize(drop)]
@@ -63,6 +65,28 @@ impl CertificateBundle {
     pub fn get_created_at(&self) -> Result<u64> {
         let leaf = self.certificate_chain.first().ok_or(Error::InvalidIdentity)?;
         leaf.extract_created_at().map_err(|_| Error::InvalidIdentity)
+    }
+}
+
+impl Credential {
+    /// Create a new x509 credential from a certificate bundle.
+    pub fn x509(cert: CertificateBundle) -> Result<Self> {
+        let created_at = cert
+            .get_created_at()
+            .map_err(RecursiveError::mls_credential("getting credetntial created at"))?;
+        let (sk, ..) = cert.private_key.into_parts();
+        let chain = cert.certificate_chain;
+
+        let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::wrap("creating certificate key pair"))?;
+
+        let credential = MlsCredential::new_x509(chain).map_err(MlsError::wrap("creating x509 credential"))?;
+
+        let cb = Credential {
+            mls_credential: credential,
+            signature_key_pair: kp.0,
+            earliest_validity: created_at,
+        };
+        Ok(cb)
     }
 }
 

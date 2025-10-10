@@ -28,7 +28,6 @@ use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 use openmls::prelude::Credential as MlsCredential;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
-use openmls_x509_credential::CertificateKeyPair;
 use tls_codec::{Deserialize, Serialize};
 
 use crate::{
@@ -258,25 +257,6 @@ impl Session {
             .await
             .map_err(RecursiveError::mls_client("finding most recent credential"))?;
         Ok(cb.signature_key_pair.to_public_vec())
-    }
-
-    pub(crate) fn new_x509_credential(cert: CertificateBundle) -> Result<Credential> {
-        let created_at = cert
-            .get_created_at()
-            .map_err(RecursiveError::mls_credential("getting credetntial created at"))?;
-        let (sk, ..) = cert.private_key.into_parts();
-        let chain = cert.certificate_chain;
-
-        let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::wrap("creating certificate key pair"))?;
-
-        let credential = MlsCredential::new_x509(chain).map_err(MlsError::wrap("creating x509 credential"))?;
-
-        let cb = Credential {
-            mls_credential: credential,
-            signature_key_pair: kp.0,
-            earliest_validity: created_at,
-        };
-        Ok(cb)
     }
 
     /// Checks if a given conversation id exists locally
@@ -568,7 +548,8 @@ impl Session {
         let id = cb
             .get_client_id()
             .map_err(RecursiveError::mls_credential("getting client id"))?;
-        let cb = Self::new_x509_credential(cb)?;
+        let cb =
+            Credential::x509(cb).map_err(RecursiveError::mls_credential("generating new x509 credential to save"))?;
         self.save_identity(keystore, Some(&id), sc, cb).await
     }
 }

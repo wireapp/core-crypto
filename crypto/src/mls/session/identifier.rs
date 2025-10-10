@@ -7,7 +7,7 @@ use super::{
     Credential,
     error::{Error, Result},
 };
-use crate::{CertificateBundle, ClientId, RecursiveError, Session, mls::session::id::ClientIdRef};
+use crate::{CertificateBundle, ClientId, RecursiveError, mls::session::id::ClientIdRef};
 
 /// Used by consumers to initializes a MLS client. Encompasses all the client types available.
 /// Could be enriched later with Verifiable Presentations.
@@ -59,8 +59,11 @@ impl ClientIdentifier {
                 .map(|(signature_scheme, certificate_bundle)| {
                     let id = certificate_bundle
                         .get_client_id()
-                        .map_err(RecursiveError::mls_credential("getting client id"))?;
-                    let credential = Session::new_x509_credential(certificate_bundle)?;
+                        .map_err(RecursiveError::mls_credential(
+                            "getting client id from certificate bundle",
+                        ))?;
+                    let credential = Credential::x509(certificate_bundle)
+                        .map_err(RecursiveError::mls_credential("generating x509 credential"))?;
                     Ok((signature_scheme, id, credential))
                 })
                 .collect(),
