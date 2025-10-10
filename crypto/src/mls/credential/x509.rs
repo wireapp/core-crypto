@@ -1,4 +1,7 @@
 #[cfg(test)]
+use std::collections::HashMap;
+
+#[cfg(test)]
 use mls_crypto_provider::PkiKeypair;
 use openmls::prelude::Credential as MlsCredential;
 use openmls_traits::types::SignatureScheme;
@@ -187,15 +190,20 @@ impl CertificateBundle {
         }
     }
 
+    pub fn rand_identifier_certs(
+        client_id: &ClientId,
+        signers: &[&crate::test_utils::x509::X509Certificate],
+    ) -> HashMap<SignatureScheme, CertificateBundle> {
+        signers
+            .iter()
+            .map(|signer| (signer.signature_scheme, Self::rand(client_id, signer)))
+            .collect()
+    }
+
     pub fn rand_identifier(
-        name: &str,
+        client_id: &ClientId,
         signers: &[&crate::test_utils::x509::X509Certificate],
     ) -> crate::ClientIdentifier {
-        crate::ClientIdentifier::X509(
-            signers
-                .iter()
-                .map(|signer| (signer.signature_scheme, Self::rand(&name.into(), signer)))
-                .collect::<std::collections::HashMap<_, _>>(),
-        )
+        crate::ClientIdentifier::X509(Self::rand_identifier_certs(client_id, signers))
     }
 }

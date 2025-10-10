@@ -148,6 +148,8 @@ mod tests {
     async fn can_2_phase_init_central(mut case: TestContext) {
         let db = case.create_persistent_db().await;
         Box::pin(async move {
+            use crate::ClientId;
+
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
             let configuration = SessionConfig::builder()
                 .database(db)
@@ -164,11 +166,11 @@ mod tests {
 
             assert!(!context.session().await.unwrap().is_ready().await);
             // phase 2: init mls_client
-            let client_id = "alice";
+            let client_id = ClientId::from("alice");
             let identifier = match case.credential_type {
                 CredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
                 CredentialType::X509 => {
-                    CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
+                    CertificateBundle::rand_identifier(&client_id, &[x509_test_chain.find_local_intermediate_ca()])
                 }
                 CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
             };
