@@ -90,6 +90,7 @@ use crate::{RecursiveError::Test, ephemeral::HistorySecret, test_utils::TestErro
 pub struct SessionContext {
     pub transaction: TransactionContext,
     pub session: Session,
+    pub identifier: ClientIdentifier,
     mls_transport: Arc<RwLock<Arc<dyn MlsTransportTestExt + 'static>>>,
     x509_test_chain: Arc<Option<X509TestChain>>,
     history_observer: Arc<RwLock<Option<Arc<TestHistoryObserver>>>>,
@@ -139,7 +140,7 @@ impl SessionContext {
         }
 
         transaction
-            .mls_init(identifier, &[context.cfg.ciphersuite])
+            .mls_init(identifier.clone(), &[context.cfg.ciphersuite])
             .await
             .map_err(RecursiveError::transaction("mls init"))?;
         session.provide_transport(transport.clone()).await;
@@ -147,6 +148,7 @@ impl SessionContext {
         let result = Self {
             transaction,
             session,
+            identifier,
             mls_transport: Arc::new(RwLock::new(transport)),
             x509_test_chain: Arc::new(chain.cloned()),
             history_observer: Default::default(),
@@ -170,6 +172,7 @@ impl SessionContext {
         Self {
             transaction,
             session,
+            identifier: todo!("how can we extract an x509 ClientIdentifier from a CC session?"),
             mls_transport: Arc::new(RwLock::new(transport)),
             x509_test_chain: Arc::new(chain.cloned()),
             history_observer: Default::default(),
@@ -197,6 +200,7 @@ impl SessionContext {
         Self {
             transaction: context.clone(),
             session: cc.mls,
+            identifier: todo!("should client id even be part of validated session config?"),
             mls_transport: Arc::new(RwLock::new(transport.clone())),
             x509_test_chain: None.into(),
             history_observer: Default::default(),

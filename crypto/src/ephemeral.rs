@@ -99,7 +99,7 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
         .new_transaction()
         .await
         .map_err(RecursiveError::transaction("creating new transaction"))?;
-    cc.init(identifier, &[ciphersuite], &cc.crypto_provider)
+    cc.init(identifier, &[ciphersuite.signature_algorithm()])
         .await
         .map_err(RecursiveError::mls_client("initializing ephemeral cc"))?;
 
