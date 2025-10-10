@@ -89,7 +89,7 @@ impl TransactionContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CertificateBundle, CredentialType, Session, test_utils::*};
+    use crate::{CertificateBundle, Credential, CredentialType, test_utils::*};
 
     // testing the case where both Bob & Alice have the same Credential type
     #[apply(all_cred_cipher)]
@@ -167,7 +167,7 @@ mod tests {
 
             let intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
             let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
-            let cb = Session::new_x509_credential(cert.clone()).unwrap();
+            let cb = Credential::x509(cert.clone()).unwrap();
             let conversation = conversation.e2ei_rotate_notify(Some(&cb)).await;
 
             let alice_client = alice.transaction.session().await.unwrap();
@@ -228,7 +228,7 @@ mod tests {
 
             let cert_bundle =
                 CertificateBundle::from_certificate_and_issuer(&alice_cert.certificate, alice_intermediate_ca);
-            let cb = Session::new_x509_credential(cert_bundle.clone()).unwrap();
+            let cb = Credential::x509(cert_bundle.clone()).unwrap();
             let conversation = conversation.e2ei_rotate_notify(Some(&cb)).await;
 
             let alice_client = alice.session().await;
