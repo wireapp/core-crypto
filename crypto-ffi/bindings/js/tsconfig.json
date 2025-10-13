@@ -29,6 +29,9 @@
         "alwaysStrict": true,
         "noImplicitReturns": true,
         "forceConsistentCasingInFileNames": true,
+        "paths": {
+            "uniffi-bindgen-react-native": ["./src/ubrn/index.ts"]
+        },
         // Custom types
         "types": ["node", "bun", "@wdio/globals/types", "@types/mocha"]
     }
