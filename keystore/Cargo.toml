@@ -57,7 +57,7 @@ async-fs = "2.2"
 blocking = "1.6"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.rusqlite]
-version = "0.33"
+version = "0.37"
 default-features = false
 features = [
   "bundled-sqlcipher-vendored-openssl",
