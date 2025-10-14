@@ -310,7 +310,7 @@ impl ConversationIdRef {
     where
         Bytes: AsRef<[u8]> + ?Sized,
     {
-        // safety: because of `repr(transparent)` we know that `ConversationIdRef` has a memory layout
+        // SAFETY: because of `repr(transparent)` we know that `ConversationIdRef` has a memory layout
         // identical to `[u8]`, so we can perform this cast
         unsafe { &*(bytes.as_ref() as *const [u8] as *const ConversationIdRef) }
     }
