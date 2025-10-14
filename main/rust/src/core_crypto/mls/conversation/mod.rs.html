@@ -310,7 +310,7 @@
 <a href=#310 id=310 data-nosnippet>310</a>    <span class="kw">where
 <a href=#311 id=311 data-nosnippet>311</a>        </span>Bytes: AsRef&lt;[u8]&gt; + <span class="question-mark">?</span>Sized,
 <a href=#312 id=312 data-nosnippet>312</a>    {
-<a href=#313 id=313 data-nosnippet>313</a>        <span class="comment">// safety: because of `repr(transparent)` we know that `ConversationIdRef` has a memory layout
+<a href=#313 id=313 data-nosnippet>313</a>        <span class="comment">// SAFETY: because of `repr(transparent)` we know that `ConversationIdRef` has a memory layout
 <a href=#314 id=314 data-nosnippet>314</a>        // identical to `[u8]`, so we can perform this cast
 <a href=#315 id=315 data-nosnippet>315</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>(bytes.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>[u8] <span class="kw">as </span><span class="kw-2">*const </span>ConversationIdRef) }
 <a href=#316 id=316 data-nosnippet>316</a>    }
