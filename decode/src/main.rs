@@ -4,7 +4,7 @@ use base64::Engine;
 use clap::{Parser, Subcommand};
 use clap_stdin::FileOrStdin;
 use mls_rs::{
-    MlsMessage,
+    KeyPackage, MlsMessage,
     extension::{ExtensionType, MlsExtension, built_in::RatchetTreeExt},
     group::GroupInfo,
     mls_rs_codec::MlsDecode,
@@ -130,6 +130,8 @@ enum Command {
         /// File containing a base64 encoded proteus message, or `-` to read from stdin.
         message: FileOrStdin<String>,
     },
+    /// MLS key package
+    MlsKeypackage { package: FileOrStdin<String> },
     /// Decode and display an MLS message
     MlsMessage {
         /// File containing a base64 encoded mls message, or `-` to read from stdin.
@@ -163,6 +165,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("{:#?}", ProteusEnvelope::from(message));
             Ok(())
         }
+        Command::MlsKeypackage { package } => {
+            let input: String = package.contents()?;
+            let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;
+            let key_package = KeyPackage::mls_decode(&mut bytes.as_slice())?;
+            println!("{key_package:#?}");
+            Ok(())
+        }
+
         Command::MlsMessage {
             message,
             raw_message,
