@@ -9,7 +9,7 @@ rust-version = "1.90"
 workspace = true
 
 [dependencies]
-clap = { version = "4.5.48", features = ["derive"] }
+clap = { version = "4.5.49", features = ["derive"] }
 clap-stdin = "0.7.0"
 mls-rs = "0.51.0"
 proteus-wasm = { workspace = true, features = ["serde"] }
