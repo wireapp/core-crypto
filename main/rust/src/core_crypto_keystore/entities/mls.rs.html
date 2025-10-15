@@ -372,95 +372,89 @@
 <a href=#372 id=372 data-nosnippet>372</a>        )<span class="question-mark">?</span>;
 <a href=#373 id=373 data-nosnippet>373</a>        <span class="kw">let </span>row_id = transaction.last_insert_rowid();
 <a href=#374 id=374 data-nosnippet>374</a>
-<a href=#375 id=375 data-nosnippet>375</a>        <span class="kw">let </span><span class="kw-2">mut </span>blob = transaction.blob_open(
-<a href=#376 id=376 data-nosnippet>376</a>            rusqlite::DatabaseName::Main,
-<a href=#377 id=377 data-nosnippet>377</a>            <span class="self">Self</span>::COLLECTION_NAME,
-<a href=#378 id=378 data-nosnippet>378</a>            <span class="string">"content"</span>,
-<a href=#379 id=379 data-nosnippet>379</a>            row_id,
-<a href=#380 id=380 data-nosnippet>380</a>            <span class="bool-val">false</span>,
-<a href=#381 id=381 data-nosnippet>381</a>        )<span class="question-mark">?</span>;
-<a href=#382 id=382 data-nosnippet>382</a>        <span class="kw">use </span>std::io::Write;
-<a href=#383 id=383 data-nosnippet>383</a>        blob.write_all(<span class="self">self</span>.content())<span class="question-mark">?</span>;
-<a href=#384 id=384 data-nosnippet>384</a>        blob.close()<span class="question-mark">?</span>;
-<a href=#385 id=385 data-nosnippet>385</a>
-<a href=#386 id=386 data-nosnippet>386</a>        <span class="prelude-val">Ok</span>(())
-<a href=#387 id=387 data-nosnippet>387</a>    }
-<a href=#388 id=388 data-nosnippet>388</a>}
-<a href=#389 id=389 data-nosnippet>389</a>
-<a href=#390 id=390 data-nosnippet>390</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#391 id=391 data-nosnippet>391</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
-<a href=#392 id=392 data-nosnippet>392</a></span><span class="kw">impl</span>&lt;T: UniqueEntity + Send + Sync&gt; EntityTransactionExt <span class="kw">for </span>T {
-<a href=#393 id=393 data-nosnippet>393</a>    <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-<a href=#394 id=394 data-nosnippet>394</a>    </span><span class="kw">async fn </span>save(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>TransactionWrapper&lt;<span class="lifetime">'_</span>&gt;) -&gt; CryptoKeystoreResult&lt;()&gt; {
-<a href=#395 id=395 data-nosnippet>395</a>        <span class="self">self</span>.replace(tx).<span class="kw">await
-<a href=#396 id=396 data-nosnippet>396</a>    </span>}
-<a href=#397 id=397 data-nosnippet>397</a>
-<a href=#398 id=398 data-nosnippet>398</a>    <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
-<a href=#399 id=399 data-nosnippet>399</a>    </span><span class="kw">async fn </span>save&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>TransactionWrapper&lt;<span class="lifetime">'a</span>&gt;) -&gt; CryptoKeystoreResult&lt;()&gt; {
-<a href=#400 id=400 data-nosnippet>400</a>        <span class="self">self</span>.replace(tx).<span class="kw">await
-<a href=#401 id=401 data-nosnippet>401</a>    </span>}
-<a href=#402 id=402 data-nosnippet>402</a>
-<a href=#403 id=403 data-nosnippet>403</a>    <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-<a href=#404 id=404 data-nosnippet>404</a>    </span><span class="kw">async fn </span>delete_fail_on_missing_id(
-<a href=#405 id=405 data-nosnippet>405</a>        <span class="kw">_</span>: <span class="kw-2">&amp;</span>TransactionWrapper&lt;<span class="lifetime">'_</span>&gt;,
-<a href=#406 id=406 data-nosnippet>406</a>        _id: StringEntityId&lt;<span class="lifetime">'_</span>&gt;,
-<a href=#407 id=407 data-nosnippet>407</a>    ) -&gt; CryptoKeystoreResult&lt;()&gt; {
-<a href=#408 id=408 data-nosnippet>408</a>        <span class="prelude-val">Err</span>(CryptoKeystoreError::NotImplemented)
-<a href=#409 id=409 data-nosnippet>409</a>    }
-<a href=#410 id=410 data-nosnippet>410</a>
-<a href=#411 id=411 data-nosnippet>411</a>    <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
-<a href=#412 id=412 data-nosnippet>412</a>    </span><span class="kw">async fn </span>delete_fail_on_missing_id&lt;<span class="lifetime">'a</span>&gt;(
-<a href=#413 id=413 data-nosnippet>413</a>        <span class="kw">_</span>: <span class="kw-2">&amp;</span>TransactionWrapper&lt;<span class="lifetime">'a</span>&gt;,
-<a href=#414 id=414 data-nosnippet>414</a>        _id: StringEntityId&lt;<span class="lifetime">'a</span>&gt;,
-<a href=#415 id=415 data-nosnippet>415</a>    ) -&gt; CryptoKeystoreResult&lt;()&gt; {
-<a href=#416 id=416 data-nosnippet>416</a>        <span class="prelude-val">Err</span>(CryptoKeystoreError::NotImplemented)
-<a href=#417 id=417 data-nosnippet>417</a>    }
-<a href=#418 id=418 data-nosnippet>418</a>}
-<a href=#419 id=419 data-nosnippet>419</a>
-<a href=#420 id=420 data-nosnippet>420</a><span class="doccomment">/// OIDC refresh token used in E2EI
-<a href=#421 id=421 data-nosnippet>421</a></span><span class="attr">#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+<a href=#375 id=375 data-nosnippet>375</a>        <span class="kw">let </span><span class="kw-2">mut </span>blob = transaction.blob_open(rusqlite::MAIN_DB, <span class="self">Self</span>::COLLECTION_NAME, <span class="string">"content"</span>, row_id, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
+<a href=#376 id=376 data-nosnippet>376</a>        <span class="kw">use </span>std::io::Write;
+<a href=#377 id=377 data-nosnippet>377</a>        blob.write_all(<span class="self">self</span>.content())<span class="question-mark">?</span>;
+<a href=#378 id=378 data-nosnippet>378</a>        blob.close()<span class="question-mark">?</span>;
+<a href=#379 id=379 data-nosnippet>379</a>
+<a href=#380 id=380 data-nosnippet>380</a>        <span class="prelude-val">Ok</span>(())
+<a href=#381 id=381 data-nosnippet>381</a>    }
+<a href=#382 id=382 data-nosnippet>382</a>}
+<a href=#383 id=383 data-nosnippet>383</a>
+<a href=#384 id=384 data-nosnippet>384</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#385 id=385 data-nosnippet>385</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+<a href=#386 id=386 data-nosnippet>386</a></span><span class="kw">impl</span>&lt;T: UniqueEntity + Send + Sync&gt; EntityTransactionExt <span class="kw">for </span>T {
+<a href=#387 id=387 data-nosnippet>387</a>    <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
+<a href=#388 id=388 data-nosnippet>388</a>    </span><span class="kw">async fn </span>save(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>TransactionWrapper&lt;<span class="lifetime">'_</span>&gt;) -&gt; CryptoKeystoreResult&lt;()&gt; {
+<a href=#389 id=389 data-nosnippet>389</a>        <span class="self">self</span>.replace(tx).<span class="kw">await
+<a href=#390 id=390 data-nosnippet>390</a>    </span>}
+<a href=#391 id=391 data-nosnippet>391</a>
+<a href=#392 id=392 data-nosnippet>392</a>    <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
+<a href=#393 id=393 data-nosnippet>393</a>    </span><span class="kw">async fn </span>save&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>TransactionWrapper&lt;<span class="lifetime">'a</span>&gt;) -&gt; CryptoKeystoreResult&lt;()&gt; {
+<a href=#394 id=394 data-nosnippet>394</a>        <span class="self">self</span>.replace(tx).<span class="kw">await
+<a href=#395 id=395 data-nosnippet>395</a>    </span>}
+<a href=#396 id=396 data-nosnippet>396</a>
+<a href=#397 id=397 data-nosnippet>397</a>    <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
+<a href=#398 id=398 data-nosnippet>398</a>    </span><span class="kw">async fn </span>delete_fail_on_missing_id(
+<a href=#399 id=399 data-nosnippet>399</a>        <span class="kw">_</span>: <span class="kw-2">&amp;</span>TransactionWrapper&lt;<span class="lifetime">'_</span>&gt;,
+<a href=#400 id=400 data-nosnippet>400</a>        _id: StringEntityId&lt;<span class="lifetime">'_</span>&gt;,
+<a href=#401 id=401 data-nosnippet>401</a>    ) -&gt; CryptoKeystoreResult&lt;()&gt; {
+<a href=#402 id=402 data-nosnippet>402</a>        <span class="prelude-val">Err</span>(CryptoKeystoreError::NotImplemented)
+<a href=#403 id=403 data-nosnippet>403</a>    }
+<a href=#404 id=404 data-nosnippet>404</a>
+<a href=#405 id=405 data-nosnippet>405</a>    <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
+<a href=#406 id=406 data-nosnippet>406</a>    </span><span class="kw">async fn </span>delete_fail_on_missing_id&lt;<span class="lifetime">'a</span>&gt;(
+<a href=#407 id=407 data-nosnippet>407</a>        <span class="kw">_</span>: <span class="kw-2">&amp;</span>TransactionWrapper&lt;<span class="lifetime">'a</span>&gt;,
+<a href=#408 id=408 data-nosnippet>408</a>        _id: StringEntityId&lt;<span class="lifetime">'a</span>&gt;,
+<a href=#409 id=409 data-nosnippet>409</a>    ) -&gt; CryptoKeystoreResult&lt;()&gt; {
+<a href=#410 id=410 data-nosnippet>410</a>        <span class="prelude-val">Err</span>(CryptoKeystoreError::NotImplemented)
+<a href=#411 id=411 data-nosnippet>411</a>    }
+<a href=#412 id=412 data-nosnippet>412</a>}
+<a href=#413 id=413 data-nosnippet>413</a>
+<a href=#414 id=414 data-nosnippet>414</a><span class="doccomment">/// OIDC refresh token used in E2EI
+<a href=#415 id=415 data-nosnippet>415</a></span><span class="attr">#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+<a href=#416 id=416 data-nosnippet>416</a>#[zeroize(drop)]
+<a href=#417 id=417 data-nosnippet>417</a></span><span class="kw">pub struct </span>E2eiRefreshToken {
+<a href=#418 id=418 data-nosnippet>418</a>    <span class="kw">pub </span>content: Vec&lt;u8&gt;,
+<a href=#419 id=419 data-nosnippet>419</a>}
+<a href=#420 id=420 data-nosnippet>420</a>
+<a href=#421 id=421 data-nosnippet>421</a><span class="attr">#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 <a href=#422 id=422 data-nosnippet>422</a>#[zeroize(drop)]
-<a href=#423 id=423 data-nosnippet>423</a></span><span class="kw">pub struct </span>E2eiRefreshToken {
+<a href=#423 id=423 data-nosnippet>423</a></span><span class="kw">pub struct </span>E2eiAcmeCA {
 <a href=#424 id=424 data-nosnippet>424</a>    <span class="kw">pub </span>content: Vec&lt;u8&gt;,
 <a href=#425 id=425 data-nosnippet>425</a>}
 <a href=#426 id=426 data-nosnippet>426</a>
-<a href=#427 id=427 data-nosnippet>427</a><span class="attr">#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
-<a href=#428 id=428 data-nosnippet>428</a>#[zeroize(drop)]
-<a href=#429 id=429 data-nosnippet>429</a></span><span class="kw">pub struct </span>E2eiAcmeCA {
-<a href=#430 id=430 data-nosnippet>430</a>    <span class="kw">pub </span>content: Vec&lt;u8&gt;,
-<a href=#431 id=431 data-nosnippet>431</a>}
-<a href=#432 id=432 data-nosnippet>432</a>
-<a href=#433 id=433 data-nosnippet>433</a><span class="attr">#[derive(
-<a href=#434 id=434 data-nosnippet>434</a>    core_crypto_macros::Debug,
-<a href=#435 id=435 data-nosnippet>435</a>    Clone,
-<a href=#436 id=436 data-nosnippet>436</a>    PartialEq,
-<a href=#437 id=437 data-nosnippet>437</a>    Eq,
-<a href=#438 id=438 data-nosnippet>438</a>    Zeroize,
-<a href=#439 id=439 data-nosnippet>439</a>    core_crypto_macros::Entity,
-<a href=#440 id=440 data-nosnippet>440</a>    serde::Serialize,
-<a href=#441 id=441 data-nosnippet>441</a>    serde::Deserialize,
-<a href=#442 id=442 data-nosnippet>442</a>)]
-<a href=#443 id=443 data-nosnippet>443</a>#[zeroize(drop)]
-<a href=#444 id=444 data-nosnippet>444</a></span><span class="kw">pub struct </span>E2eiIntermediateCert {
-<a href=#445 id=445 data-nosnippet>445</a>    <span class="comment">// key to identify the CA cert; Using a combination of SKI &amp; AKI extensions concatenated like so is suitable: `SKI[+AKI]`
-<a href=#446 id=446 data-nosnippet>446</a>    </span><span class="attr">#[id]
-<a href=#447 id=447 data-nosnippet>447</a>    </span><span class="kw">pub </span>ski_aki_pair: String,
-<a href=#448 id=448 data-nosnippet>448</a>    <span class="kw">pub </span>content: Vec&lt;u8&gt;,
-<a href=#449 id=449 data-nosnippet>449</a>}
-<a href=#450 id=450 data-nosnippet>450</a>
-<a href=#451 id=451 data-nosnippet>451</a><span class="attr">#[derive(
-<a href=#452 id=452 data-nosnippet>452</a>    core_crypto_macros::Debug,
-<a href=#453 id=453 data-nosnippet>453</a>    Clone,
-<a href=#454 id=454 data-nosnippet>454</a>    PartialEq,
-<a href=#455 id=455 data-nosnippet>455</a>    Eq,
-<a href=#456 id=456 data-nosnippet>456</a>    Zeroize,
-<a href=#457 id=457 data-nosnippet>457</a>    core_crypto_macros::Entity,
-<a href=#458 id=458 data-nosnippet>458</a>    serde::Serialize,
-<a href=#459 id=459 data-nosnippet>459</a>    serde::Deserialize,
-<a href=#460 id=460 data-nosnippet>460</a>)]
-<a href=#461 id=461 data-nosnippet>461</a>#[zeroize(drop)]
-<a href=#462 id=462 data-nosnippet>462</a></span><span class="kw">pub struct </span>E2eiCrl {
-<a href=#463 id=463 data-nosnippet>463</a>    <span class="attr">#[id]
-<a href=#464 id=464 data-nosnippet>464</a>    </span><span class="kw">pub </span>distribution_point: String,
-<a href=#465 id=465 data-nosnippet>465</a>    <span class="kw">pub </span>content: Vec&lt;u8&gt;,
-<a href=#466 id=466 data-nosnippet>466</a>}</code></pre></div></section></main></body></html>
+<a href=#427 id=427 data-nosnippet>427</a><span class="attr">#[derive(
+<a href=#428 id=428 data-nosnippet>428</a>    core_crypto_macros::Debug,
+<a href=#429 id=429 data-nosnippet>429</a>    Clone,
+<a href=#430 id=430 data-nosnippet>430</a>    PartialEq,
+<a href=#431 id=431 data-nosnippet>431</a>    Eq,
+<a href=#432 id=432 data-nosnippet>432</a>    Zeroize,
+<a href=#433 id=433 data-nosnippet>433</a>    core_crypto_macros::Entity,
+<a href=#434 id=434 data-nosnippet>434</a>    serde::Serialize,
+<a href=#435 id=435 data-nosnippet>435</a>    serde::Deserialize,
+<a href=#436 id=436 data-nosnippet>436</a>)]
+<a href=#437 id=437 data-nosnippet>437</a>#[zeroize(drop)]
+<a href=#438 id=438 data-nosnippet>438</a></span><span class="kw">pub struct </span>E2eiIntermediateCert {
+<a href=#439 id=439 data-nosnippet>439</a>    <span class="comment">// key to identify the CA cert; Using a combination of SKI &amp; AKI extensions concatenated like so is suitable: `SKI[+AKI]`
+<a href=#440 id=440 data-nosnippet>440</a>    </span><span class="attr">#[id]
+<a href=#441 id=441 data-nosnippet>441</a>    </span><span class="kw">pub </span>ski_aki_pair: String,
+<a href=#442 id=442 data-nosnippet>442</a>    <span class="kw">pub </span>content: Vec&lt;u8&gt;,
+<a href=#443 id=443 data-nosnippet>443</a>}
+<a href=#444 id=444 data-nosnippet>444</a>
+<a href=#445 id=445 data-nosnippet>445</a><span class="attr">#[derive(
+<a href=#446 id=446 data-nosnippet>446</a>    core_crypto_macros::Debug,
+<a href=#447 id=447 data-nosnippet>447</a>    Clone,
+<a href=#448 id=448 data-nosnippet>448</a>    PartialEq,
+<a href=#449 id=449 data-nosnippet>449</a>    Eq,
+<a href=#450 id=450 data-nosnippet>450</a>    Zeroize,
+<a href=#451 id=451 data-nosnippet>451</a>    core_crypto_macros::Entity,
+<a href=#452 id=452 data-nosnippet>452</a>    serde::Serialize,
+<a href=#453 id=453 data-nosnippet>453</a>    serde::Deserialize,
+<a href=#454 id=454 data-nosnippet>454</a>)]
+<a href=#455 id=455 data-nosnippet>455</a>#[zeroize(drop)]
+<a href=#456 id=456 data-nosnippet>456</a></span><span class="kw">pub struct </span>E2eiCrl {
+<a href=#457 id=457 data-nosnippet>457</a>    <span class="attr">#[id]
+<a href=#458 id=458 data-nosnippet>458</a>    </span><span class="kw">pub </span>distribution_point: String,
+<a href=#459 id=459 data-nosnippet>459</a>    <span class="kw">pub </span>content: Vec&lt;u8&gt;,
+<a href=#460 id=460 data-nosnippet>460</a>}</code></pre></div></section></main></body></html>

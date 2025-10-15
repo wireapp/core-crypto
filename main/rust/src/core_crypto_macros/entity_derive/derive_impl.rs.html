@@ -129,7 +129,7 @@
 <a href=#129 id=129 data-nosnippet>129</a>                        #id_from_transformed
 <a href=#130 id=130 data-nosnippet>130</a>
 <a href=#131 id=131 data-nosnippet>131</a>                        #(
-<a href=#132 id=132 data-nosnippet>132</a>                            <span class="kw">let </span><span class="kw-2">mut </span>blob = transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #blob_column_names, rowid, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+<a href=#132 id=132 data-nosnippet>132</a>                            <span class="kw">let </span><span class="kw-2">mut </span>blob = transaction.blob_open(rusqlite::MAIN_DB, #collection_name, #blob_column_names, rowid, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
 <a href=#133 id=133 data-nosnippet>133</a>                            <span class="kw">let </span><span class="kw-2">mut </span>#blob_columns = Vec::with_capacity(blob.len());
 <a href=#134 id=134 data-nosnippet>134</a>                            blob.read_to_end(<span class="kw-2">&amp;mut </span>#blob_columns)<span class="question-mark">?</span>;
 <a href=#135 id=135 data-nosnippet>135</a>                            blob.close()<span class="question-mark">?</span>;
@@ -138,7 +138,7 @@
 <a href=#138 id=138 data-nosnippet>138</a>                        #(
 <a href=#139 id=139 data-nosnippet>139</a>                            <span class="kw">let </span><span class="kw-2">mut </span>#optional_blob_columns = <span class="prelude-val">None</span>;
 <a href=#140 id=140 data-nosnippet>140</a>                            <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>blob) =
-<a href=#141 id=141 data-nosnippet>141</a>                                transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #optional_blob_column_names, rowid, <span class="bool-val">true</span>)
+<a href=#141 id=141 data-nosnippet>141</a>                                transaction.blob_open(rusqlite::MAIN_DB, #collection_name, #optional_blob_column_names, rowid, <span class="bool-val">true</span>)
 <a href=#142 id=142 data-nosnippet>142</a>                            {
 <a href=#143 id=143 data-nosnippet>143</a>                                <span class="kw">if </span>!blob.is_empty() {
 <a href=#144 id=144 data-nosnippet>144</a>                                    <span class="kw">let </span><span class="kw-2">mut </span>blob_data = Vec::with_capacity(blob.len());
@@ -176,7 +176,7 @@
 <a href=#176 id=176 data-nosnippet>176</a>                    <span class="kw">use </span>std::io::Read <span class="kw">as _</span>;
 <a href=#177 id=177 data-nosnippet>177</a>                    <span class="kw">if let </span><span class="prelude-val">Some</span>(rowid) = rowid.take() {
 <a href=#178 id=178 data-nosnippet>178</a>                        #(
-<a href=#179 id=179 data-nosnippet>179</a>                            <span class="kw">let </span><span class="kw-2">mut </span>blob = transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #blob_column_names, rowid, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+<a href=#179 id=179 data-nosnippet>179</a>                            <span class="kw">let </span><span class="kw-2">mut </span>blob = transaction.blob_open(rusqlite::MAIN_DB, #collection_name, #blob_column_names, rowid, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
 <a href=#180 id=180 data-nosnippet>180</a>                            <span class="kw">let </span><span class="kw-2">mut </span>#blob_columns = Vec::with_capacity(blob.len());
 <a href=#181 id=181 data-nosnippet>181</a>                            blob.read_to_end(<span class="kw-2">&amp;mut </span>#blob_columns)<span class="question-mark">?</span>;
 <a href=#182 id=182 data-nosnippet>182</a>                            blob.close()<span class="question-mark">?</span>;
@@ -185,7 +185,7 @@
 <a href=#185 id=185 data-nosnippet>185</a>                        #(
 <a href=#186 id=186 data-nosnippet>186</a>                            <span class="kw">let </span><span class="kw-2">mut </span>#optional_blob_columns = <span class="prelude-val">None</span>;
 <a href=#187 id=187 data-nosnippet>187</a>                            <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>blob) =
-<a href=#188 id=188 data-nosnippet>188</a>                                transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #optional_blob_column_names, rowid, <span class="bool-val">true</span>)
+<a href=#188 id=188 data-nosnippet>188</a>                                transaction.blob_open(rusqlite::MAIN_DB, #collection_name, #optional_blob_column_names, rowid, <span class="bool-val">true</span>)
 <a href=#189 id=189 data-nosnippet>189</a>                            {
 <a href=#190 id=190 data-nosnippet>190</a>                                <span class="kw">if </span>!blob.is_empty() {
 <a href=#191 id=191 data-nosnippet>191</a>                                    <span class="kw">let </span><span class="kw-2">mut </span>blob_data = Vec::with_capacity(blob.len());
@@ -382,7 +382,7 @@
 <a href=#382 id=382 data-nosnippet>382</a>                        <span class="prelude-val">Ok</span>(rowid) =&gt; {
 <a href=#383 id=383 data-nosnippet>383</a>                            #(
 <a href=#384 id=384 data-nosnippet>384</a>                                <span class="kw">let </span><span class="kw-2">mut </span>blob = transaction.blob_open(
-<a href=#385 id=385 data-nosnippet>385</a>                                    rusqlite::DatabaseName::Main,
+<a href=#385 id=385 data-nosnippet>385</a>                                    rusqlite::MAIN_DB,
 <a href=#386 id=386 data-nosnippet>386</a>                                    #collection_name,
 <a href=#387 id=387 data-nosnippet>387</a>                                    #blob_column_names,
 <a href=#388 id=388 data-nosnippet>388</a>                                    rowid,
@@ -394,7 +394,7 @@
 <a href=#394 id=394 data-nosnippet>394</a>                            )*
 <a href=#395 id=395 data-nosnippet>395</a>
 <a href=#396 id=396 data-nosnippet>396</a>                            #(
-<a href=#397 id=397 data-nosnippet>397</a>                                <span class="kw">let </span><span class="kw-2">mut </span>blob = transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #optional_blob_column_names, rowid, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
+<a href=#397 id=397 data-nosnippet>397</a>                                <span class="kw">let </span><span class="kw-2">mut </span>blob = transaction.blob_open(rusqlite::MAIN_DB, #collection_name, #optional_blob_column_names, rowid, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
 <a href=#398 id=398 data-nosnippet>398</a>                                <span class="kw">if let </span><span class="prelude-val">Some</span>(#optional_blob_columns) = <span class="self">self</span>.#optional_blob_columns.as_ref() {
 <a href=#399 id=399 data-nosnippet>399</a>                                    blob.write_all(#optional_blob_columns)<span class="question-mark">?</span>;
 <a href=#400 id=400 data-nosnippet>400</a>                                }
