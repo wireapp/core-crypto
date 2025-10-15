@@ -79,7 +79,7 @@ jobs:
 
           # run tests
           xcodebuild test -scheme TestHost -configuration Release -sdk iphonesimulator \
-                          -destination 'platform=iOS Simulator,name=iPhone 16 test-ios'
+                          -destination 'id=${{ env.SIMULATOR }}'
       - name: Delete simulator
         if: always()
         run: |
