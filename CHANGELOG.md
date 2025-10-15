@@ -4,6 +4,8 @@
 
 ### Features
 
+- Decode: support decoding and displaying mls key packages
+
 - Allow in-memory database instantiation and usage with core crypto. Just call `inMemoryDatabase()` (Android, Web) or
   the `Database` constructor without a path (iOS).
 
