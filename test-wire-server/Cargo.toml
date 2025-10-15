@@ -2,6 +2,7 @@
 name = "test-wire-server"
 version = "0.13.0"
 edition = "2024"
+rust-version = "1.90"
 
 [dependencies]
 base64 = { workspace = true }
