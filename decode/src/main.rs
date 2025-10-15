@@ -2,9 +2,9 @@ use std::ops::Deref;
 
 use base64::Engine;
 use clap::{Parser, Subcommand};
-use clap_stdin::FileOrStdin;
+use clap_stdin::{FileOrStdin, MaybeStdin};
 use mls_rs::{
-    KeyPackage, MlsMessage,
+    CipherSuite, KeyPackage, MlsMessage,
     extension::{ExtensionType, MlsExtension, built_in::RatchetTreeExt},
     group::GroupInfo,
     mls_rs_codec::MlsDecode,
@@ -14,6 +14,7 @@ use proteus_wasm::{
     keys::{PreKeyBundle, Signature},
     message::{CipherMessage, Envelope, Message, PreKeyMessage},
 };
+use wire_e2e_identity::prelude::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint};
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -123,6 +124,14 @@ pub struct App {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    /// Display the thumbprint for a MLS signature key
+    Thumbprint {
+        /// Public part of the signature key encoded as base64
+        public_key: MaybeStdin<String>,
+        /// Cipher suite associated with the signature key
+        #[arg(short, long)]
+        ciphersuite: u16,
+    },
     /// Decode and display a proteus prekey bundle
     PrekeyBundle { bundle: FileOrStdin<String> },
     /// Decode and display a proteus message
@@ -151,6 +160,40 @@ enum Command {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = App::parse();
     match app.command {
+        Command::Thumbprint {
+            public_key,
+            ciphersuite,
+        } => {
+            let bytes = base64::prelude::BASE64_STANDARD.decode(public_key.to_string())?;
+            let cs = CipherSuite::from(ciphersuite);
+
+            // Mapping comes from mls_rs::CipherSuite
+            let jws_alg = match cs {
+                CipherSuite::CURVE25519_AES128 | CipherSuite::CURVE25519_CHACHA => JwsAlgorithm::Ed25519,
+                CipherSuite::P256_AES128 => JwsAlgorithm::P256,
+                CipherSuite::P384_AES256 => JwsAlgorithm::P384,
+                CipherSuite::P521_AES256 => JwsAlgorithm::P521,
+                _ => {
+                    panic!("unsupported cipher suite")
+                }
+            };
+
+            // Mapping comes from mls_rs::CipherSuite
+            let hash_alg = match cs {
+                CipherSuite::CURVE25519_AES128 | CipherSuite::CURVE25519_CHACHA => HashAlgorithm::SHA256,
+                CipherSuite::P256_AES128 => HashAlgorithm::SHA256,
+                CipherSuite::P384_AES256 => HashAlgorithm::SHA384,
+                CipherSuite::P521_AES256 => HashAlgorithm::SHA512,
+                _ => {
+                    panic!("unsupported cipher suite")
+                }
+            };
+
+            let thumbprint = compute_raw_key_thumbprint(jws_alg, hash_alg, bytes.as_slice())?;
+            println!("{}", thumbprint);
+            Ok(())
+        }
+
         Command::PrekeyBundle { bundle } => {
             let input: String = bundle.contents()?;
             let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;

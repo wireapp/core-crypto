@@ -1173,6 +1173,7 @@ dependencies = [
  "clap-stdin",
  "mls-rs",
  "proteus-wasm",
+ "wire-e2e-identity",
 ]
 
 [[package]]

@@ -14,3 +14,4 @@ clap-stdin = "0.7.0"
 mls-rs = "0.51.0"
 proteus-wasm = { workspace = true, features = ["serde"] }
 base64 = { workspace = true }
+wire-e2e-identity = { workspace = true, features = ["builder"] }
