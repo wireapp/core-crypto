@@ -39,19 +39,13 @@ impl Entity for MlsCredential {
             use std::io::Read as _;
             let (rowid, created_at) = rowid_result?;
 
-            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_credentials", "id", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "id", rowid, true)?;
 
             let mut id = vec![];
             blob.read_to_end(&mut id)?;
             blob.close()?;
 
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_credentials",
-                "credential",
-                rowid,
-                true,
-            )?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "credential", rowid, true)?;
 
             let mut credential = vec![];
             blob.read_to_end(&mut credential)?;
@@ -85,13 +79,7 @@ impl Entity for MlsCredential {
             .optional()?;
 
         if let Some((rowid, created_at)) = maybe_rowid {
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_credentials",
-                "credential",
-                rowid,
-                true,
-            )?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "credential", rowid, true)?;
 
             let mut credential = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut credential)?;
@@ -145,18 +133,12 @@ impl EntityTransactionExt for MlsCredential {
         transaction.execute(sql, params)?;
         let row_id = transaction.last_insert_rowid();
 
-        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_credentials", "id", row_id, false)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "id", row_id, false)?;
 
         blob.write_all(&self.id)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_credentials",
-            "credential",
-            row_id,
-            false,
-        )?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "credential", row_id, false)?;
 
         blob.write_all(&self.credential)?;
         blob.close()?;

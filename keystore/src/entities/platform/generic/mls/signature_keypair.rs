@@ -29,32 +29,21 @@ impl Entity for MlsSignatureKeyPair {
             use std::io::Read as _;
             let (rowid, signature_scheme) = rowid_result?;
 
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_signature_keypairs",
-                "keypair",
-                rowid,
-                true,
-            )?;
+            let mut blob =
+                transaction.blob_open(rusqlite::MAIN_DB, "mls_signature_keypairs", "keypair", rowid, true)?;
 
             let mut keypair = vec![];
             blob.read_to_end(&mut keypair)?;
             blob.close()?;
 
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_signature_keypairs",
-                "pk",
-                rowid,
-                true,
-            )?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_signature_keypairs", "pk", rowid, true)?;
 
             let mut pk = vec![];
             blob.read_to_end(&mut pk)?;
             blob.close()?;
 
             let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
+                rusqlite::MAIN_DB,
                 "mls_signature_keypairs",
                 "credential_id",
                 rowid,
@@ -94,32 +83,21 @@ impl Entity for MlsSignatureKeyPair {
             .optional()?;
 
         if let Some((rowid, signature_scheme)) = maybe_rowid {
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_signature_keypairs",
-                "pk",
-                rowid,
-                true,
-            )?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_signature_keypairs", "pk", rowid, true)?;
 
             let mut pk = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut pk)?;
             blob.close()?;
 
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_signature_keypairs",
-                "keypair",
-                rowid,
-                true,
-            )?;
+            let mut blob =
+                transaction.blob_open(rusqlite::MAIN_DB, "mls_signature_keypairs", "keypair", rowid, true)?;
 
             let mut keypair = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut keypair)?;
             blob.close()?;
 
             let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
+                rusqlite::MAIN_DB,
                 "mls_signature_keypairs",
                 "credential_id",
                 rowid,
@@ -187,30 +165,18 @@ impl EntityTransactionExt for MlsSignatureKeyPair {
         transaction.execute(sql, params)?;
         let row_id = transaction.last_insert_rowid();
 
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_signature_keypairs",
-            "pk",
-            row_id,
-            false,
-        )?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_signature_keypairs", "pk", row_id, false)?;
 
         blob.write_all(&self.pk)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_signature_keypairs",
-            "keypair",
-            row_id,
-            false,
-        )?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_signature_keypairs", "keypair", row_id, false)?;
 
         blob.write_all(&self.keypair)?;
         blob.close()?;
 
         let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
+            rusqlite::MAIN_DB,
             "mls_signature_keypairs",
             "credential_id",
             row_id,

@@ -28,15 +28,13 @@ impl Entity for MlsPskBundle {
             use std::io::Read as _;
             let rowid = row_result?;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_psk_bundles", "psk_id", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_psk_bundles", "psk_id", rowid, true)?;
 
             let mut psk_id = vec![];
             blob.read_to_end(&mut psk_id)?;
             blob.close()?;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_psk_bundles", "psk", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_psk_bundles", "psk", rowid, true)?;
 
             let mut psk = vec![];
             blob.read_to_end(&mut psk)?;
@@ -68,8 +66,7 @@ impl Entity for MlsPskBundle {
         if let Some(rowid) = maybe_rowid {
             let psk_id = id.as_slice().to_vec();
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_psk_bundles", "psk", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_psk_bundles", "psk", rowid, true)?;
 
             let mut psk = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut psk)?;
@@ -126,12 +123,11 @@ impl EntityTransactionExt for MlsPskBundle {
             |r| r.get(0),
         )?;
 
-        let mut blob =
-            transaction.blob_open(rusqlite::DatabaseName::Main, "mls_psk_bundles", "psk_id", row_id, false)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_psk_bundles", "psk_id", row_id, false)?;
         blob.write_all(&self.psk_id)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_psk_bundles", "psk", row_id, false)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_psk_bundles", "psk", row_id, false)?;
         blob.write_all(&self.psk)?;
         blob.close()?;
 

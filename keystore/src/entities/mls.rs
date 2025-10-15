@@ -372,13 +372,7 @@ pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreD
         )?;
         let row_id = transaction.last_insert_rowid();
 
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            Self::COLLECTION_NAME,
-            "content",
-            row_id,
-            false,
-        )?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "content", row_id, false)?;
         use std::io::Write;
         blob.write_all(self.content())?;
         blob.close()?;

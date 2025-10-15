@@ -20,21 +20,19 @@ impl PersistedMlsGroupExt for PersistedMlsGroup {
             use std::io::Read as _;
             let rowid = rowid_result?;
 
-            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "id", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_groups", "id", rowid, true)?;
             let mut id = vec![];
             blob.read_to_end(&mut id)?;
             blob.close()?;
 
-            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_groups", "state", rowid, true)?;
             let mut state = vec![];
             blob.read_to_end(&mut state)?;
             blob.close()?;
 
             let mut parent_id = None;
             // Ignore errors because null blobs cause errors on open
-            if let Ok(mut blob) =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "parent_id", rowid, true)
-            {
+            if let Ok(mut blob) = transaction.blob_open(rusqlite::MAIN_DB, "mls_groups", "parent_id", rowid, true) {
                 if !blob.is_empty() {
                     let mut tmp = Vec::with_capacity(blob.len());
                     blob.read_to_end(&mut tmp)?;

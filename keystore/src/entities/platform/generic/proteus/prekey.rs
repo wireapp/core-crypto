@@ -24,8 +24,7 @@ impl Entity for ProteusPrekey {
             use std::io::Read as _;
             let (rowid, id) = query_result?;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "proteus_prekeys", "key", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "proteus_prekeys", "key", rowid, true)?;
 
             let mut buf = vec![];
             blob.read_to_end(&mut buf)?;
@@ -55,8 +54,7 @@ impl Entity for ProteusPrekey {
             .optional()?;
 
         if let Some(row_id) = maybe_row_id {
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "proteus_prekeys", "key", row_id, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "proteus_prekeys", "key", row_id, true)?;
 
             use std::io::Read as _;
             let mut buf = Vec::with_capacity(blob.len());
@@ -109,7 +107,7 @@ impl EntityTransactionExt for ProteusPrekey {
         let row_id: i64 = transaction.query_row(sql, [self.id.to_sql()?, zb_key.to_sql()?], |r| r.get(0))?;
 
         // Write the actual prekey data into the blob
-        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "proteus_prekeys", "key", row_id, false)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "proteus_prekeys", "key", row_id, false)?;
 
         use std::io::Write as _;
         blob.write_all(&self.prekey)?;

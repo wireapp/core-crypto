@@ -23,19 +23,12 @@ impl MlsPendingMessage {
             let rowid = rowid_result?;
             use std::io::Read as _;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_messages", "id", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_messages", "id", rowid, true)?;
             let mut conversation_id = vec![];
             blob.read_to_end(&mut conversation_id)?;
             blob.close()?;
 
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_pending_messages",
-                "message",
-                rowid,
-                true,
-            )?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_messages", "message", rowid, true)?;
             let mut message = vec![];
             blob.read_to_end(&mut message)?;
             blob.close()?;
@@ -79,19 +72,12 @@ impl Entity for MlsPendingMessage {
             use std::io::Read as _;
             let rowid = rowid_result?;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_messages", "id", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_messages", "id", rowid, true)?;
             let mut id = vec![];
             blob.read_to_end(&mut id)?;
             blob.close()?;
 
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_pending_messages",
-                "message",
-                rowid,
-                true,
-            )?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_messages", "message", rowid, true)?;
             let mut message = vec![];
             blob.read_to_end(&mut message)?;
             blob.close()?;
@@ -153,19 +139,12 @@ impl EntityTransactionExt for MlsPendingMessage {
         )?;
         let rowid = transaction.last_insert_rowid();
 
-        let mut blob =
-            transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_messages", "id", rowid, false)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_messages", "id", rowid, false)?;
         use std::io::Write as _;
         blob.write_all(id_bytes)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_pending_messages",
-            "message",
-            rowid,
-            false,
-        )?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_messages", "message", rowid, false)?;
         blob.write_all(&self.message)?;
         blob.close()?;
 

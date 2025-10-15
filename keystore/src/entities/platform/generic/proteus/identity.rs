@@ -46,7 +46,7 @@ impl Entity for ProteusIdentity {
         };
 
         use std::io::Read as _;
-        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "proteus_identities", "pk", row_id, true)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "proteus_identities", "pk", row_id, true)?;
         if blob.len() != Self::PK_KEY_SIZE {
             return Err(CryptoKeystoreError::InvalidKeySize {
                 expected: Self::PK_KEY_SIZE,
@@ -58,7 +58,7 @@ impl Entity for ProteusIdentity {
         blob.read_to_end(&mut pk)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "proteus_identities", "sk", row_id, true)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "proteus_identities", "sk", row_id, true)?;
         if blob.len() != Self::SK_KEY_SIZE {
             return Err(CryptoKeystoreError::InvalidKeySize {
                 expected: Self::SK_KEY_SIZE,
@@ -112,13 +112,11 @@ impl EntityTransactionExt for ProteusIdentity {
         let row_id = transaction.last_insert_rowid();
 
         use std::io::Write as _;
-        let mut blob =
-            transaction.blob_open(rusqlite::DatabaseName::Main, "proteus_identities", "sk", row_id, false)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "proteus_identities", "sk", row_id, false)?;
         blob.write_all(&self.sk)?;
         blob.close()?;
 
-        let mut blob =
-            transaction.blob_open(rusqlite::DatabaseName::Main, "proteus_identities", "pk", row_id, false)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "proteus_identities", "pk", row_id, false)?;
         blob.write_all(&self.pk)?;
         blob.close()?;
 

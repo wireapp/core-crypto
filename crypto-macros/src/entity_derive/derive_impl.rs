@@ -129,7 +129,7 @@ impl KeyStoreEntityFlattened {
                         #id_from_transformed
 
                         #(
-                            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #blob_column_names, rowid, true)?;
+                            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, #collection_name, #blob_column_names, rowid, true)?;
                             let mut #blob_columns = Vec::with_capacity(blob.len());
                             blob.read_to_end(&mut #blob_columns)?;
                             blob.close()?;
@@ -138,7 +138,7 @@ impl KeyStoreEntityFlattened {
                         #(
                             let mut #optional_blob_columns = None;
                             if let Ok(mut blob) =
-                                transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #optional_blob_column_names, rowid, true)
+                                transaction.blob_open(rusqlite::MAIN_DB, #collection_name, #optional_blob_column_names, rowid, true)
                             {
                                 if !blob.is_empty() {
                                     let mut blob_data = Vec::with_capacity(blob.len());
@@ -176,7 +176,7 @@ impl KeyStoreEntityFlattened {
                     use std::io::Read as _;
                     if let Some(rowid) = rowid.take() {
                         #(
-                            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #blob_column_names, rowid, true)?;
+                            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, #collection_name, #blob_column_names, rowid, true)?;
                             let mut #blob_columns = Vec::with_capacity(blob.len());
                             blob.read_to_end(&mut #blob_columns)?;
                             blob.close()?;
@@ -185,7 +185,7 @@ impl KeyStoreEntityFlattened {
                         #(
                             let mut #optional_blob_columns = None;
                             if let Ok(mut blob) =
-                                transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #optional_blob_column_names, rowid, true)
+                                transaction.blob_open(rusqlite::MAIN_DB, #collection_name, #optional_blob_column_names, rowid, true)
                             {
                                 if !blob.is_empty() {
                                     let mut blob_data = Vec::with_capacity(blob.len());
@@ -382,7 +382,7 @@ impl KeyStoreEntityFlattened {
                         Ok(rowid) => {
                             #(
                                 let mut blob = transaction.blob_open(
-                                    rusqlite::DatabaseName::Main,
+                                    rusqlite::MAIN_DB,
                                     #collection_name,
                                     #blob_column_names,
                                     rowid,
@@ -394,7 +394,7 @@ impl KeyStoreEntityFlattened {
                             )*
 
                             #(
-                                let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #optional_blob_column_names, rowid, false)?;
+                                let mut blob = transaction.blob_open(rusqlite::MAIN_DB, #collection_name, #optional_blob_column_names, rowid, false)?;
                                 if let Some(#optional_blob_columns) = self.#optional_blob_columns.as_ref() {
                                     blob.write_all(#optional_blob_columns)?;
                                 }

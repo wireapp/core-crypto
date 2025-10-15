@@ -31,15 +31,13 @@ impl Entity for MlsHpkePrivateKey {
             use std::io::Read as _;
             let rowid = rowid_result?;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_hpke_private_keys", "sk", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_hpke_private_keys", "sk", rowid, true)?;
 
             let mut sk = vec![];
             blob.read_to_end(&mut sk)?;
             blob.close()?;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_hpke_private_keys", "pk", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_hpke_private_keys", "pk", rowid, true)?;
 
             let mut pk = vec![];
             blob.read_to_end(&mut pk)?;
@@ -69,15 +67,13 @@ impl Entity for MlsHpkePrivateKey {
             .optional()?;
 
         if let Some(rowid) = maybe_rowid {
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_hpke_private_keys", "pk", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_hpke_private_keys", "pk", rowid, true)?;
 
             let mut pk = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut pk)?;
             blob.close()?;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_hpke_private_keys", "sk", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_hpke_private_keys", "sk", rowid, true)?;
 
             let mut sk = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut sk)?;
@@ -133,24 +129,12 @@ impl EntityTransactionExt for MlsHpkePrivateKey {
             |r| r.get(0),
         )?;
 
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_hpke_private_keys",
-            "pk",
-            row_id,
-            false,
-        )?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_hpke_private_keys", "pk", row_id, false)?;
 
         blob.write_all(&self.pk)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_hpke_private_keys",
-            "sk",
-            row_id,
-            false,
-        )?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_hpke_private_keys", "sk", row_id, false)?;
 
         blob.write_all(&self.sk)?;
         blob.close()?;

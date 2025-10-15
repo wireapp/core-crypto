@@ -29,32 +29,24 @@ impl Entity for PersistedMlsPendingGroup {
             .optional()?;
         match rowid {
             Some(rowid) => {
-                let mut blob =
-                    transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "id", rowid, true)?;
+                let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "id", rowid, true)?;
                 let mut id = vec![];
                 blob.read_to_end(&mut id)?;
                 blob.close()?;
 
-                let mut blob =
-                    transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "state", rowid, true)?;
+                let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "state", rowid, true)?;
                 let mut state = vec![];
                 blob.read_to_end(&mut state)?;
                 blob.close()?;
 
-                let mut blob =
-                    transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "cfg", rowid, true)?;
+                let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "cfg", rowid, true)?;
                 let mut custom_configuration = vec![];
                 blob.read_to_end(&mut custom_configuration)?;
                 blob.close()?;
 
                 let mut parent_id = None;
-                let mut blob = transaction.blob_open(
-                    rusqlite::DatabaseName::Main,
-                    "mls_pending_groups",
-                    "parent_id",
-                    rowid,
-                    true,
-                )?;
+                let mut blob =
+                    transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "parent_id", rowid, true)?;
                 if !blob.is_empty() {
                     let tmp = Vec::with_capacity(blob.len());
                     blob.read_to_end(&mut state)?;
@@ -87,32 +79,23 @@ impl Entity for PersistedMlsPendingGroup {
             use std::io::Read as _;
             let rowid = rowid_result?;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "id", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "id", rowid, true)?;
             let mut id = vec![];
             blob.read_to_end(&mut id)?;
             blob.close()?;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "state", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "state", rowid, true)?;
             let mut state = vec![];
             blob.read_to_end(&mut state)?;
             blob.close()?;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "cfg", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "cfg", rowid, true)?;
             let mut custom_configuration = vec![];
             blob.read_to_end(&mut custom_configuration)?;
             blob.close()?;
 
             let mut parent_id = None;
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_pending_groups",
-                "parent_id",
-                rowid,
-                true,
-            )?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "parent_id", rowid, true)?;
             if !blob.is_empty() {
                 let mut tmp = Vec::with_capacity(blob.len());
                 blob.read_to_end(&mut tmp)?;
@@ -157,32 +140,23 @@ impl Entity for PersistedMlsPendingGroup {
         for rowid in rowids.into_iter() {
             use std::io::Read as _;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "id", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "id", rowid, true)?;
             let mut id = vec![];
             blob.read_to_end(&mut id)?;
             blob.close()?;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "state", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "state", rowid, true)?;
             let mut state = vec![];
             blob.read_to_end(&mut state)?;
             blob.close()?;
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "cfg", rowid, true)?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "cfg", rowid, true)?;
             let mut custom_configuration = vec![];
             blob.read_to_end(&mut custom_configuration)?;
             blob.close()?;
 
             let mut parent_id = None;
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_pending_groups",
-                "parent_id",
-                rowid,
-                true,
-            )?;
+            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "parent_id", rowid, true)?;
             if !blob.is_empty() {
                 let mut tmp = Vec::with_capacity(blob.len());
                 blob.read_to_end(&mut tmp)?;
@@ -267,8 +241,7 @@ impl EntityTransactionExt for PersistedMlsPendingGroup {
                 )?;
                 let rowid = transaction.last_insert_rowid();
 
-                let mut blob =
-                    transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "id", rowid, false)?;
+                let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "id", rowid, false)?;
                 use std::io::Write as _;
                 blob.write_all(id_bytes)?;
                 blob.close()?;
@@ -277,29 +250,16 @@ impl EntityTransactionExt for PersistedMlsPendingGroup {
             }
         };
 
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_pending_groups",
-            "state",
-            rowid,
-            false,
-        )?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "state", rowid, false)?;
         use std::io::Write as _;
         blob.write_all(&self.state)?;
         blob.close()?;
 
-        let mut blob =
-            transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "cfg", rowid, false)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "cfg", rowid, false)?;
         blob.write_all(&self.custom_configuration)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_pending_groups",
-            "parent_id",
-            rowid,
-            false,
-        )?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_groups", "parent_id", rowid, false)?;
         if let Some(parent_id) = self.parent_id.as_ref() {
             blob.write_all(parent_id)?;
         }
