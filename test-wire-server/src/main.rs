@@ -57,9 +57,16 @@ async fn wire_api(nonces: &Mutex<Nonces>, req: Request<Incoming>) -> http::Resul
             let received_device_id = u64::from_str_radix(device_id, 16).unwrap();
             assert_eq!(received_device_id, client_id.device_id);
 
-            let body = generate_access_token(&context, &dpop, client_id, backend_nonce);
-            let body = serde_json::to_vec(&body).unwrap().into();
-            Response::builder().status(StatusCode::OK).body(body).unwrap()
+            match generate_access_token(&context, &dpop, client_id, backend_nonce) {
+                Ok(body) => {
+                    let body = serde_json::to_vec(&body).unwrap().into();
+                    Response::builder().status(StatusCode::OK).body(body).unwrap()
+                }
+                Err(_) => Response::builder()
+                    .status(StatusCode::UNAUTHORIZED)
+                    .body("".into())
+                    .unwrap(),
+            }
         }
         (Method::GET, ["callback"]) => handle_callback(parts.uri).await?,
         _ => not_found()?,
@@ -87,7 +94,7 @@ fn generate_access_token(
     dpop: &str,
     client_id: ClientId,
     nonce: BackendNonce,
-) -> serde_json::Value {
+) -> RustyJwtResult<serde_json::Value> {
     let backend_kp: Pem = ctx["backend-kp"].as_str().into();
     let hash_alg: HashAlgorithm = ctx["hash-alg"].parse().unwrap();
     let htu: Htu = ctx["wire-server-uri"].as_str().try_into().unwrap();
@@ -112,13 +119,13 @@ fn generate_access_token(
         hash_alg,
         5,
         core::time::Duration::from_secs(360),
-    )
-    .unwrap();
-    serde_json::json!({
+    )?;
+
+    Ok(serde_json::json!({
         "expires_in": 2082008461,
         "token": access_token,
         "type": "DPoP"
-    })
+    }))
 }
 
 fn not_found() -> http::Result<Response<Full<Bytes>>> {
