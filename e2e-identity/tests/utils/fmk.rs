@@ -401,10 +401,13 @@ impl E2eTest {
         );
 
         self.display_step("get a Dpop access token from wire-server");
-        let mut resp = self.client.execute(req).await.map_err(|_| TestError::WireServerError)?;
+        let resp = self.client.execute(req).await.map_err(|_| TestError::WireServerError)?;
         // .expect("wire-server failed to generate an access token");
         self.display_resp(Actor::WireServer, Actor::WireClient, Some(&resp));
-        resp.expect_status(StatusCode::OK);
+        if !resp.status().is_success() {
+            return Err(TestError::WireServerError);
+        }
+
         let resp = resp.json::<Value>().await?;
         self.display_body(&resp);
         let access_token = resp
