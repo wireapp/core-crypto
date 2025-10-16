@@ -76,7 +76,10 @@ fn setup_test_environment() -> TestEnvironment {
                 let file = std::fs::File::open(&path).unwrap();
                 let idp_server: IdpServer = match serde_json::from_reader(file) {
                     Ok(env) => env,
-                    Err(_) => continue,
+                    Err(_) => {
+                        std::thread::sleep(std::time::Duration::from_secs(1));
+                        continue;
+                    }
                 };
                 return TestEnvironment {
                     wire_server,
