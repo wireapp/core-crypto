@@ -44,9 +44,6 @@ runs:
         --token ${{ inputs.bencher-api-token }} \
         --project ${{ inputs.bencher-project }} \
         --branch '${{ github.head_ref }}' \
-        --branch-start-point '${{ github.base_ref }}' \
-        --branch-start-point-hash '${{ github.event.pull_request.base.sha }}' \
-        --start-point-clone-thresholds \
         --testbed ubuntu-latest \
         --err \
         ${FILE_COMMAND:+$FILE_COMMAND} \
