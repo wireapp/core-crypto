@@ -1,8 +1,7 @@
 use rusty_acme::prelude::AcmeChallenge;
 
-use crate::prelude::{E2eIdentityError, E2eIdentityResult};
-
 use super::Json;
+use crate::prelude::{E2eIdentityError, E2eIdentityResult};
 
 #[derive(
     Debug, Clone, derive_more::From, derive_more::Into, derive_more::Deref, serde::Serialize, serde::Deserialize,

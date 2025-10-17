@@ -1,9 +1,14 @@
+use std::collections::{HashMap, hash_map::RandomState};
+
 use base64::Engine;
-use const_oid::db::{
-    rfc5912::{ID_EC_PUBLIC_KEY, SECP_256_R_1, SECP_384_R_1, SECP_521_R_1},
-    rfc8410::ID_ED_25519,
+use const_oid::{
+    AssociatedOid as _, ObjectIdentifier,
+    db::{
+        rfc5912::{ID_EC_PUBLIC_KEY, SECP_256_R_1, SECP_384_R_1, SECP_521_R_1},
+        rfc8410::ID_ED_25519,
+    },
 };
-use const_oid::{AssociatedOid as _, ObjectIdentifier};
+use http::header;
 use itertools::Itertools;
 use jwt_simple::prelude::*;
 use oauth2::{CsrfToken, PkceCodeChallenge, RedirectUrl, RefreshToken, Scope};
@@ -12,22 +17,17 @@ use openidconnect::{
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
 };
 use reqwest::StatusCode;
-use serde_json::{Value, json};
-use std::collections::{HashMap, hash_map::RandomState};
-use url::Url;
-use x509_cert::Certificate;
-use x509_cert::der::asn1::Ia5String;
-use x509_cert::der::{Decode as _, DecodePem, Encode as _};
-use x509_cert::ext::pkix::constraints::name::GeneralSubtree;
-use x509_cert::ext::pkix::name::GeneralName;
-use x509_cert::ext::pkix::{KeyUsage, KeyUsages, NameConstraints};
-
-use http::header;
-use rusty_acme::prelude::x509::revocation::PkiEnvironment;
-use rusty_acme::prelude::*;
+use rusty_acme::prelude::{x509::revocation::PkiEnvironment, *};
 use rusty_jwt_tools::{
     jwk::{TryFromJwk, TryIntoJwk},
     prelude::*,
+};
+use serde_json::{Value, json};
+use url::Url;
+use x509_cert::{
+    Certificate,
+    der::{Decode as _, DecodePem, Encode as _, asn1::Ia5String},
+    ext::pkix::{KeyUsage, KeyUsages, NameConstraints, constraints::name::GeneralSubtree, name::GeneralName},
 };
 
 use crate::utils::{

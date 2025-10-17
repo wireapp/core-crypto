@@ -1,17 +1,14 @@
-use std::borrow::Cow;
-use std::process::Command;
-use std::sync::OnceLock;
-use std::{collections::HashMap, env, net::SocketAddr};
+use std::{borrow::Cow, collections::HashMap, env, net::SocketAddr, process::Command, sync::OnceLock};
 
 use keycloak::{
     KeycloakAdmin, KeycloakAdminToken,
-    types::ProtocolMapperRepresentation,
-    types::{ClientRepresentation, CredentialRepresentation, UserRepresentation},
+    types::{ClientRepresentation, CredentialRepresentation, ProtocolMapperRepresentation, UserRepresentation},
 };
-
-use testcontainers::core::{ContainerPort, IntoContainerPort, Mount};
-use testcontainers::runners::AsyncRunner;
-use testcontainers::{ContainerAsync, Image, ImageExt, ReuseDirective, core::WaitFor};
+use testcontainers::{
+    ContainerAsync, Image, ImageExt, ReuseDirective,
+    core::{ContainerPort, IntoContainerPort, Mount, WaitFor},
+    runners::AsyncRunner,
+};
 
 use crate::utils::docker::SHM;
 

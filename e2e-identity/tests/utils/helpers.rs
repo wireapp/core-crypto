@@ -1,7 +1,7 @@
-use crate::utils::TestResult;
-use http::header::AsHeaderName;
-use http::{HeaderName, HeaderValue, header};
+use http::{HeaderName, HeaderValue, header, header::AsHeaderName};
 use itertools::Itertools;
+
+use crate::utils::TestResult;
 
 pub trait ClientHelper {
     fn acme_req<T: serde::Serialize>(&self, url: &url::Url, body: &T) -> TestResult<reqwest::Request>;

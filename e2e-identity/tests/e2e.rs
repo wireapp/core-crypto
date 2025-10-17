@@ -6,7 +6,6 @@
 
 use jwt_simple::prelude::*;
 use rstest::rstest;
-
 use rusty_acme::prelude::*;
 use rusty_jwt_tools::prelude::*;
 use utils::{
@@ -174,12 +173,14 @@ mod alg {
 
 /// Since the acme server is a fork, verify its invariants are respected
 mod acme_server {
-    use super::*;
-    use rusty_acme::prelude::x509::RustyX509CheckError;
-    use rusty_acme::prelude::x509::reexports::certval;
-    use rusty_acme::prelude::x509::reexports::certval::PathValidationStatus;
-    use rusty_acme::prelude::x509::revocation::{PkiEnvironment, PkiEnvironmentParams};
+    use rusty_acme::prelude::x509::{
+        RustyX509CheckError,
+        reexports::{certval, certval::PathValidationStatus},
+        revocation::{PkiEnvironment, PkiEnvironmentParams},
+    };
     use x509_cert::der::Decode;
+
+    use super::*;
 
     #[rstest]
     #[tokio::test]

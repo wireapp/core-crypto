@@ -1,9 +1,9 @@
 //! Test helper for sharing data between the resource server (wire-server) and the client which
 //! is responsible for displaying them.
 
-use std::net::SocketAddr;
 use std::{
     collections::{HashMap, hash_map::RandomState},
+    net::SocketAddr,
     str::FromStr,
 };
 

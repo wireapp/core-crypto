@@ -3,7 +3,6 @@ use std::{path::PathBuf, process::Command};
 use base64::Engine;
 use itertools::Itertools;
 use jwt_simple::prelude::*;
-
 use rusty_jwt_tools::prelude::*;
 
 use crate::utils::rand_base64_str;

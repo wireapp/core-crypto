@@ -1,9 +1,8 @@
 use jwt_simple::prelude::*;
-use serde_json::json;
-use wasm_bindgen_test::*;
-
 use rusty_jwt_tools::prelude::*;
+use serde_json::json;
 use utils::keys::enrollments;
+use wasm_bindgen_test::*;
 use wire_e2e_identity::prelude::E2eiAcmeAuthorization;
 
 wasm_bindgen_test_configure!(run_in_browser);

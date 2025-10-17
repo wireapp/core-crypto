@@ -1,10 +1,12 @@
-use base64::prelude::*;
-use std::net::SocketAddr;
-use std::path::Path;
+use std::{net::SocketAddr, path::Path};
 
+use base64::prelude::*;
 use serde_json::json;
-use testcontainers::core::{CmdWaitFor, ContainerPort, ExecCommand, Mount};
-use testcontainers::{ContainerAsync, GenericImage, ImageExt, runners::AsyncRunner};
+use testcontainers::{
+    ContainerAsync, GenericImage, ImageExt,
+    core::{CmdWaitFor, ContainerPort, ExecCommand, Mount},
+    runners::AsyncRunner,
+};
 
 use crate::utils::docker::{NETWORK, SHM, rand_str};
 

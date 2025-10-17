@@ -1,8 +1,5 @@
-use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair, Jwk};
-use zeroize::Zeroize;
-
-use crate::prelude::x509::revocation::PkiEnvironment;
 use error::*;
+use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair, Jwk};
 use prelude::*;
 use rusty_acme::prelude::{AcmeChallenge, AcmeIdentifier};
 use rusty_jwt_tools::{
@@ -10,27 +7,31 @@ use rusty_jwt_tools::{
     jwk_thumbprint::JwkThumbprint,
     prelude::{ClientId, Dpop, Handle, Htm, Pem, RustyJwtTools},
 };
+use zeroize::Zeroize;
+
+use crate::prelude::x509::revocation::PkiEnvironment;
 
 mod error;
 mod types;
 
 pub mod prelude {
-    pub use rusty_acme::prelude::x509;
     pub use rusty_acme::prelude::{
-        AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader, compute_raw_key_thumbprint,
+        AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader, compute_raw_key_thumbprint, x509,
         x509::IdentityStatus,
     };
+    #[cfg(feature = "builder")]
+    pub use rusty_jwt_tools::prelude::generate_jwk;
     pub use rusty_jwt_tools::prelude::{
         ClientId as E2eiClientId, Handle, HashAlgorithm, JwsAlgorithm, RustyJwtError, parse_json_jwk,
     };
 
-    #[cfg(feature = "builder")]
-    pub use rusty_jwt_tools::prelude::generate_jwk;
-
-    pub use super::RustyE2eIdentity;
-    pub use super::error::{E2eIdentityError, E2eIdentityResult};
-    pub use super::types::{
-        E2eiAcmeAccount, E2eiAcmeAuthorization, E2eiAcmeChallenge, E2eiAcmeFinalize, E2eiAcmeOrder, E2eiNewAcmeOrder,
+    pub use super::{
+        RustyE2eIdentity,
+        error::{E2eIdentityError, E2eIdentityResult},
+        types::{
+            E2eiAcmeAccount, E2eiAcmeAuthorization, E2eiAcmeChallenge, E2eiAcmeFinalize, E2eiAcmeOrder,
+            E2eiNewAcmeOrder,
+        },
     };
 }
 

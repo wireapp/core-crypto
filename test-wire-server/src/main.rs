@@ -1,17 +1,20 @@
-use std::collections::HashMap;
-use std::net::{Ipv4Addr, SocketAddrV4};
-use std::str::FromStr as _;
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    net::{Ipv4Addr, SocketAddrV4},
+    str::FromStr as _,
+    sync::{Arc, Mutex},
+};
 
 use base64::Engine as _;
 use http_body_util::{BodyExt as _, Full};
-use hyper::body::{Bytes, Incoming};
-use hyper::server::conn::http1;
-use hyper::{Method, Request, Response, StatusCode};
+use hyper::{
+    Method, Request, Response, StatusCode,
+    body::{Bytes, Incoming},
+    server::conn::http1,
+};
 use hyper_util::rt::TokioIo;
-use tokio::net::TcpListener;
-
 use rusty_jwt_tools::prelude::*;
+use tokio::net::TcpListener;
 
 fn generate_nonce() -> String {
     let nonce = uuid::Uuid::new_v4();

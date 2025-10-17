@@ -3,10 +3,9 @@ use std::{collections::HashMap, net::SocketAddr};
 use jwt_simple::prelude::*;
 use oauth2::RefreshToken;
 use rand::random;
-use scraper::Html;
-
 use rusty_acme::prelude::{AcmeAccount, AcmeAuthz, AcmeChallenge, AcmeDirectory, AcmeFinalize, AcmeOrder};
 use rusty_jwt_tools::{jwk::TryIntoJwk, prelude::*};
+use scraper::Html;
 
 use crate::utils::{
     TestResult,
