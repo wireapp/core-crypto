@@ -838,7 +838,6 @@ dependencies = [
 name = "core-crypto-ffi"
 version = "9.0.1"
 dependencies = [
- "async-channel",
  "async-lock",
  "async-trait",
  "cfg-if",
@@ -848,6 +847,7 @@ dependencies = [
  "core-crypto-macros",
  "derive_more",
  "futures-util",
+ "getrandom 0.3.2",
  "hex",
  "js-sys",
  "log",
@@ -857,19 +857,13 @@ dependencies = [
  "paste",
  "proteus-wasm",
  "rmp-serde",
- "serde",
- "serde-wasm-bindgen",
  "serde_json",
  "sha2",
  "smol-macros",
- "strum",
  "testing_logger",
  "thiserror 2.0.17",
  "tls_codec",
  "uniffi",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-bindgen-test",
  "web-sys",
 ]
 
@@ -1743,9 +1737,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73fea8450eea4bac3940448fb7ae50d91f034f941199fcd9d909a5a07aa455f0"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "r-efi",
  "wasi 0.14.2+wasi-0.2.4",
+ "wasm-bindgen",
 ]
 
 [[package]]
