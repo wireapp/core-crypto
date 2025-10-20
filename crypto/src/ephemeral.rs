@@ -85,7 +85,7 @@ async fn in_memory_cc_with_ciphersuite(ciphersuite: impl Into<Ciphersuite>) -> R
 /// The generated secret is cryptographically unrelated to the current CoreCrypto client.
 ///
 /// Note that this is a crate-private function; the public interface for this feature is
-/// [`Conversation::generate_history_secret`][core_crypto::mls::conversation::Conversation::generate_history_secret].
+/// [`Conversation::generate_history_secret`][crate::mls::conversation::Conversation::generate_history_secret].
 /// This implementation lives here instead of there for organizational reasons.
 pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<HistorySecret> {
     // generate a new completely arbitrary client id

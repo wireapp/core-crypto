@@ -163,7 +163,7 @@ impl Default for MlsCustomConfiguration {
     }
 }
 
-/// Wrapper over [WireFormatPolicy](openmls::prelude::WireFormatPolicy)
+/// Wrapper over [WireFormatPolicy]
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum MlsWirePolicy {
