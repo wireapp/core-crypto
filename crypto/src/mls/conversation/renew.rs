@@ -18,7 +18,7 @@ impl Renew {
     /// NB: we do not deal with partial commit (commit which do not contain all pending proposals)
     /// because they cannot be created at the moment by core-crypto
     ///
-    /// * `self_index` - own client [KeyPackageRef] in current MLS group
+    /// * `self_index` - own client [LeafNodeIndex] in current MLS group
     /// * `pending_proposals` - local pending proposals in group's proposal store
     /// * `pending_commit` - local pending commit which is now invalid
     /// * `valid_commit` - commit accepted by the backend which will now supersede our local pending commit
@@ -89,7 +89,7 @@ impl Renew {
 }
 
 impl MlsConversation {
-    /// Given the proposals to renew, actually restore them by using associated methods in [MlsGroup].
+    /// Given the proposals to renew, actually restore them by using associated methods in [MlsConversation].
     /// This will also add them to the local proposal store
     pub(crate) async fn renew_proposals_for_current_epoch(
         &mut self,

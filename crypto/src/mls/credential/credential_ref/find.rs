@@ -9,7 +9,7 @@ use tls_codec::Deserialize as _;
 use super::{super::keypairs, Error, Result};
 use crate::{ClientId, Credential, CredentialRef, KeystoreError, RecursiveError, mls::session::id::ClientIdRef};
 
-/// Filters to narrow down the set of credentials returned from [`Credential::find`][super::Credential::find].
+/// Filters to narrow down the set of credentials returned from [`CredentialRef::find`].
 ///
 /// Filters which are unset allow any value.
 ///
@@ -47,7 +47,7 @@ impl CredentialRef {
     /// Find all credentials in the database matching the provided filters.
     ///
     /// If you have all the components of a filter, it is more efficient to use those to directly
-    /// [construct a `CredentialRef`][CredentialRef::new].
+    /// construct a [`CredentialRef`].
     //
     // Our database does not currently support indices or even in-db searching, so this moves all data
     // from the DB to the runtime, decodes everything, and then filters. This is obviously suboptimal,

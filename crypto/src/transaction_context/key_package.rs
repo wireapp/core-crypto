@@ -6,7 +6,7 @@ use super::{Result, TransactionContext};
 use crate::{Ciphersuite, CredentialType, RecursiveError};
 
 impl TransactionContext {
-    /// Returns `amount_requested` OpenMLS [openmls::key_packages::KeyPackage]s.
+    /// Returns `amount_requested` OpenMLS [KeyPackage]s.
     /// Will always return the requested amount as it will generate the necessary (lacking) amount on-the-fly
     ///
     /// Note: Keypackage pruning is performed as a first step
@@ -38,7 +38,7 @@ impl TransactionContext {
             .map_err(Into::into)
     }
 
-    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [MlsCiphersuite] and [CredentialType]
+    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [Ciphersuite] and [CredentialType]
     pub async fn client_valid_key_packages_count(
         &self,
         ciphersuite: Ciphersuite,

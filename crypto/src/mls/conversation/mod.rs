@@ -67,7 +67,7 @@ use crate::{
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub(crate) trait ConversationWithMls<'a> {
-    /// [Session] or [TransactionContext] both implement [HasSessionAndCrypto].
+    /// [`Session`] and [`TransactionContext`][crate::transaction_context::TransactionContext] both implement [`HasSessionAndCrypto`].
     type Context: HasSessionAndCrypto;
 
     type Conversation: Deref<Target = MlsConversation> + Send;

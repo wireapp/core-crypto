@@ -15,7 +15,7 @@ pub struct MlsGroupInfoBundle {
 }
 
 impl MlsGroupInfoBundle {
-    /// Creates a new [GroupInfoBundle] with complete and unencrypted [GroupInfo]
+    /// Creates a new instance with complete and unencrypted [GroupInfo]
     pub(crate) fn try_new_full_plaintext(gi: GroupInfo) -> Result<Self> {
         use tls_codec::Serialize as _;
 

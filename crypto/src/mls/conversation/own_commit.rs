@@ -80,7 +80,7 @@ impl MlsConversation {
     }
 
     /// When the incoming commit is sent by ourselves and it's the same as the local pending commit.
-    /// This adapts [Self::commit_accepted] to return the same as [MlsConversation::decrypt_message]
+    /// This adapts [Self::commit_accepted] to return the same as [crate::mls::conversation::ConversationGuard::decrypt_message]
     pub(crate) async fn merge_pending_commit(
         &mut self,
         client: &Session,
