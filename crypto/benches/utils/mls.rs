@@ -7,7 +7,7 @@ use async_lock::RwLock;
 use core_crypto::{
     CertificateBundle, Ciphersuite, ClientId, ConnectionType, ConversationId, CoreCrypto, CredentialType, Database,
     DatabaseKey, HistorySecret, MlsCommitBundle, MlsConversationConfiguration, MlsCustomConfiguration,
-    MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse, Session, SessionConfig,
+    MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse, Session,
 };
 use criterion::BenchmarkId;
 use mls_crypto_provider::MlsCryptoProvider;
@@ -161,18 +161,12 @@ pub async fn new_central(
     } else {
         ConnectionType::Persistent(&path)
     };
-    let client_id = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
+    let client_id = ClientId::from(Alphanumeric.sample_string(&mut rand::thread_rng(), 10).into_bytes()).into();
     let db = Database::open(connection_type, &DatabaseKey::generate()).await.unwrap();
-    let cfg = SessionConfig::builder()
-        .database(db)
-        .client_id(client_id.as_bytes().to_owned().into())
-        .ciphersuites([ciphersuite])
-        .build()
-        .validate()
-        .unwrap();
 
-    let central = Session::try_new(cfg).await.unwrap();
-    let cc = CoreCrypto::from(central);
+    let session = Session::try_new(db).await.unwrap();
+    let cc = CoreCrypto::from(session);
+    cc.init(client_id, &[ciphersuite.signature_algorithm()]).await.unwrap();
     let delivery_service = Arc::<CoreCryptoTransportSuccessProvider>::default();
     cc.provide_transport(delivery_service.clone()).await;
     (cc, tmp_file, delivery_service.clone())

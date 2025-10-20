@@ -68,7 +68,6 @@ pub use crate::{
         proposal::{MlsProposal, MlsProposalRef},
         session::{
             EpochObserver, HistoryObserver, Session,
-            config::{SessionConfig, ValidatedSessionConfig},
             id::{ClientId, ClientIdRef},
             identifier::ClientIdentifier,
             key_package::INITIAL_KEYING_MATERIAL_COUNT,

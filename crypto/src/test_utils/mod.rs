@@ -24,9 +24,8 @@ use self::error::Result;
 pub(crate) use self::{epoch_observer::TestEpochObserver, history_observer::TestHistoryObserver};
 pub use self::{error::Error as TestError, message::*, test_context::*, test_conversation::TestConversation};
 use crate::{
-    CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Database, DatabaseKey, Error,
+    CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Credential, Database, DatabaseKey, Error,
     MlsCommitBundle, MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse, RecursiveError, Session,
-    SessionConfig,
     e2e_identity::id::QualifiedE2eiClientId,
     mls::HistoryObserver,
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
@@ -119,18 +118,11 @@ impl SessionContext {
         // We need to store the `TempDir` struct for the duration of the test session,
         // because its drop implementation takes care of the directory deletion.
         let (db_path, db_dir) = tmp_db_file();
-        let transport = context.transport.clone();
         let db = Database::open(ConnectionType::Persistent(&db_path), &DatabaseKey::generate())
             .await
             .unwrap();
-        let configuration = SessionConfig::builder()
-            .database(db.clone())
-            .ciphersuites([context.cfg.ciphersuite])
-            .build()
-            .validate()
-            .unwrap();
 
-        let session = Session::try_new(configuration).await.unwrap();
+        let session = Session::try_new(db.clone()).await.unwrap();
         let cc = CoreCrypto::from(session);
         let transaction = cc.new_transaction().await.unwrap();
         let session = cc.mls;
@@ -143,18 +135,44 @@ impl SessionContext {
             .mls_init(identifier.clone(), &[context.cfg.ciphersuite])
             .await
             .map_err(RecursiveError::transaction("mls init"))?;
-        session.provide_transport(transport.clone()).await;
 
-        let result = Self {
+        session.provide_transport(context.transport.clone()).await;
+
+        let client_id = identifier.get_id().unwrap().into_owned();
+
+        let mut credential = match context.credential_type {
+            CredentialType::Basic => {
+                Credential::basic(context.signature_scheme(), client_id, &session.crypto_provider).unwrap()
+            }
+            CredentialType::X509 => {
+                let ca = chain
+                    .expect("x509 cases provide a test chain")
+                    .find_local_intermediate_ca();
+                debug_assert_eq!(
+                    ca.signature_scheme,
+                    context.signature_scheme(),
+                    "ca signature scheme must match case signature scheme for testing purposes"
+                );
+                let cert = CertificateBundle::rand_identifier_certs(&client_id, &[ca])
+                    .remove(&context.signature_scheme())
+                    .unwrap();
+                Credential::x509(cert).unwrap()
+            }
+            CredentialType::Unknown(_) => unreachable!("all cases have a known credential type"),
+        };
+        let credential_ref = credential.save(&db).await.unwrap();
+        session.add_credential(&credential_ref).await.unwrap();
+
+        let session_context = Self {
             transaction,
             session,
             identifier,
-            mls_transport: Arc::new(RwLock::new(transport)),
+            mls_transport: Arc::new(RwLock::new(context.transport.clone())),
             x509_test_chain: Arc::new(chain.cloned()),
             history_observer: Default::default(),
             _db: Some((db, db_dir.into())),
         };
-        Ok(result)
+        Ok(session_context)
     }
 
     pub(crate) async fn new_from_cc(context: &TestContext, cc: CoreCrypto, chain: Option<&X509TestChain>) -> Self {
@@ -169,10 +187,12 @@ impl SessionContext {
 
         session.provide_transport(transport.clone()).await;
 
+        let identifier = context.generate_identifier(chain).await;
+
         Self {
             transaction,
             session,
-            identifier: todo!("how can we extract an x509 ClientIdentifier from a CC session?"),
+            identifier,
             mls_transport: Arc::new(RwLock::new(transport)),
             x509_test_chain: Arc::new(chain.cloned()),
             history_observer: Default::default(),
@@ -185,22 +205,17 @@ impl SessionContext {
         let db = Database::open(ConnectionType::Persistent(&db_path), &DatabaseKey::generate())
             .await
             .unwrap();
-        let configuration = SessionConfig::builder()
-            .database(db.clone())
-            .ciphersuites([context.cfg.ciphersuite])
-            .build()
-            .validate()
-            .unwrap();
 
-        let client = Session::try_new(configuration).await.unwrap();
+        let client = Session::try_new(db.clone()).await.unwrap();
         let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
         client.provide_transport(transport.clone()).await;
         let cc = CoreCrypto::from(client);
+        let identifier = context.generate_identifier(None).await;
         let context = cc.new_transaction().await.unwrap();
         Self {
             transaction: context.clone(),
             session: cc.mls,
-            identifier: todo!("should client id even be part of validated session config?"),
+            identifier,
             mls_transport: Arc::new(RwLock::new(transport.clone())),
             x509_test_chain: None.into(),
             history_observer: Default::default(),

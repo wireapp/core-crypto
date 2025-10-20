@@ -29,8 +29,8 @@ use obfuscate::{Obfuscate, Obfuscated};
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
-    Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, CredentialType, Error, MlsError, RecursiveError,
-    Result, Session, SessionConfig,
+    Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, Credential, CredentialType, Error, MlsError,
+    RecursiveError, Result, Session,
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -58,20 +58,12 @@ impl Obfuscate for HistorySecret {
 /// Create a new [`CoreCrypto`] with an **uninitialized** mls session.
 ///
 /// You must initialize the session yourself before using this!
-async fn in_memory_cc_with_ciphersuite(ciphersuite: impl Into<Ciphersuite>) -> Result<CoreCrypto> {
+async fn in_memory_cc() -> Result<CoreCrypto> {
     let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
         .await
         .unwrap();
-    let config = SessionConfig::builder()
-        .ciphersuites([ciphersuite.into()])
-        .database(db)
-        .build()
-        .validate()
-        .map_err(RecursiveError::mls("validating ephemeral session configuration"))?;
 
-    // Construct the MLS session, but don't initialize it. The implementation when `client_id` is `None` just
-    // does construction, which is what we need.
-    let session = Session::try_new(config)
+    let session = Session::try_new(db)
         .await
         .map_err(RecursiveError::mls("creating ephemeral session"))?;
 
@@ -94,7 +86,7 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
     let client_id = ClientId::from(client_id.into_bytes());
     let identifier = ClientIdentifier::Basic(client_id.clone());
 
-    let cc = in_memory_cc_with_ciphersuite(ciphersuite).await?;
+    let cc = in_memory_cc().await?;
     let tx = cc
         .new_transaction()
         .await
@@ -102,6 +94,27 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
     cc.init(identifier, &[ciphersuite.signature_algorithm()])
         .await
         .map_err(RecursiveError::mls_client("initializing ephemeral cc"))?;
+
+    let mut credential = Credential::basic(
+        ciphersuite.signature_algorithm(),
+        client_id.clone(),
+        &cc.mls.crypto_provider,
+    )
+    .map_err(RecursiveError::mls_credential(
+        "generating basic credential for ephemeral client",
+    ))?;
+    let credential_ref =
+        credential
+            .save(&cc.mls.crypto_provider.keystore())
+            .await
+            .map_err(RecursiveError::mls_credential(
+                "saving basic credential for ephemeral client",
+            ))?;
+    cc.add_credential(&credential_ref)
+        .await
+        .map_err(RecursiveError::mls_client(
+            "adding basic credential to ephemeral client",
+        ))?;
 
     // we can generate a key package from the ephemeral cc and ciphersutite
     let [key_package] = tx
@@ -136,7 +149,7 @@ impl CoreCrypto {
             return Err(Error::InvalidHistorySecret("client id has invalid format"));
         }
 
-        let session = in_memory_cc_with_ciphersuite(history_secret.key_package.ciphersuite()).await?;
+        let session = in_memory_cc().await?;
         let tx = session
             .new_transaction()
             .await
@@ -167,17 +180,18 @@ mod tests {
     /// Create a history secret, and restore it into a CoreCrypto instance
     #[apply(all_cred_cipher)]
     async fn can_create_ephemeral_client(case: TestContext) {
+        eprintln!("test start");
         let [alice] = case.sessions().await;
-        let conversation = case
-            .create_conversation([&alice])
-            .await
-            .enable_history_sharing_notify()
-            .await;
+        eprintln!("created alice");
+        let conversation = case.create_conversation([&alice]).await;
+        eprintln!("created conversation");
+        let conversation = conversation.enable_history_sharing_notify().await;
+        eprintln!("enabled conversation history");
 
         assert_eq!(
             conversation.member_count().await,
             2,
-            "the convesation should now magically have a second member"
+            "the conversation should now magically have a second member"
         );
 
         let ephemeral_client = conversation.members().nth(1).unwrap();

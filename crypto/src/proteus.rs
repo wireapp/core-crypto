@@ -589,7 +589,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        CertificateBundle, ClientIdentifier, CredentialType, Session, SessionConfig,
+        CertificateBundle, ClientId, ClientIdentifier, CredentialType, Session,
         test_utils::{proteus_utils::*, x509::X509TestChain, *},
     };
 
@@ -599,19 +599,15 @@ mod tests {
         let (path, db_file) = tmp_db_file();
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
-        let client_id = "alice".into();
+        let client_id = ClientId::from("alice").into();
         let db = Database::open(ConnectionType::Persistent(&path), &DatabaseKey::generate())
             .await
             .unwrap();
-        let cfg = SessionConfig::builder()
-            .database(db)
-            .client_id(client_id)
-            .ciphersuites([case.ciphersuite()])
-            .build()
-            .validate()
-            .unwrap();
 
-        let cc: CoreCrypto = Session::try_new(cfg).await.unwrap().into();
+        let cc: CoreCrypto = Session::try_new(db).await.unwrap().into();
+        cc.init(client_id, &[case.ciphersuite().signature_algorithm()])
+            .await
+            .unwrap();
         let context = cc.new_transaction().await.unwrap();
         assert!(context.proteus_init().await.is_ok());
         assert!(context.proteus_new_prekey(1).await.is_ok());
@@ -631,15 +627,8 @@ mod tests {
         let db = Database::open(ConnectionType::Persistent(&path), &DatabaseKey::generate())
             .await
             .unwrap();
-        // we are deferring MLS initialization here, not passing a MLS 'client_id' yet
-        let cfg = SessionConfig::builder()
-            .database(db)
-            .ciphersuites([case.ciphersuite()])
-            .build()
-            .validate()
-            .unwrap();
 
-        let cc: CoreCrypto = Session::try_new(cfg).await.unwrap().into();
+        let cc: CoreCrypto = Session::try_new(db).await.unwrap().into();
         let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(&transaction).await;
