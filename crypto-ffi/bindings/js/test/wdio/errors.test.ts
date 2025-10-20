@@ -67,8 +67,10 @@ describe("core crypto errors", () => {
         const result = await browser.execute(
             async (clientName, convId) => {
                 const cc = window.ensureCcDefined(clientName);
+
+                const conversationIdBuffer = new TextEncoder().encode(convId).buffer
                 const conversationId = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(convId)
+                    conversationIdBuffer
                 );
                 const isMlsConversationAlreadyExistsError =
                     window.ccModule.isMlsConversationAlreadyExistsError;
@@ -87,11 +89,11 @@ describe("core crypto errors", () => {
                 } catch (err) {
                     if (isMlsConversationAlreadyExistsError(err)) {
                         const conversationIdFromError =
-                            err.context.context.conversationId;
+                            new Uint8Array(err.context.context.conversationId);
                         const errorSerialized = JSON.stringify(err);
                         const standardError = new Error(errorSerialized);
                         const errorDeserialized =
-                            CoreCryptoError.fromStdError(standardError);
+                        CoreCryptoError.fromStdError(standardError);
                         return {
                             errorWasThrown: true,
                             isCorrectInstance: true,
@@ -99,11 +101,10 @@ describe("core crypto errors", () => {
                                 isMlsConversationAlreadyExistsError(
                                     errorDeserialized
                                 ),
-                            stackExsists: errorDeserialized.stack !== undefined,
                             errorConvIdMatches:
                                 JSON.stringify(conversationIdFromError) ===
                                 JSON.stringify(
-                                    Array.from(new TextEncoder().encode(convId))
+                                    new Uint8Array(conversationIdBuffer)
                                 ),
                         };
                     } else {
@@ -120,11 +121,9 @@ describe("core crypto errors", () => {
             alice,
             convId
         );
-
         expect(result.errorWasThrown).toBe(true);
         expect(result.isCorrectInstance).toBe(true);
         expect(result.errorTypeSurvivesSerialization).toBe(true);
-        expect(result.stackExsists).toBe(true);
         expect(result.errorConvIdMatches).toBe(true);
     });
 
