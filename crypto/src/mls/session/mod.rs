@@ -1,4 +1,3 @@
-pub(crate) mod config;
 mod credential;
 pub(crate) mod e2e_identity;
 mod epoch_observer;
@@ -29,7 +28,7 @@ use tls_codec::Serialize;
 
 use crate::{
     CertificateBundle, Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, CredentialRef, CredentialType,
-    HistorySecret, KeystoreError, LeafError, MlsError, MlsTransport, RecursiveError, ValidatedSessionConfig,
+    HistorySecret, KeystoreError, LeafError, MlsError, MlsTransport, RecursiveError,
     group_store::GroupStore,
     mls::{
         self, HasSessionAndCrypto,
@@ -79,26 +78,14 @@ pub(crate) struct SessionInner {
 }
 
 impl Session {
-    /// Creates a new [Session].
+    /// Creates a new [Session]. Does not initialize MLS or Proteus.
     ///
     /// ## Errors
     ///
     /// Failures in the initialization of the KeyStore can cause errors, such as IO, the same kind
     /// of errors can happen when the groups are being restored from the KeyStore or even during
     /// the client initialization (to fetch the identity signature).
-    ///
-    /// Other than that, `MlsError` can be caused by group deserialization or during the initialization of the credentials:
-    ///
-    /// * for x509 Credentials if the certificate chain length is lower than 2
-    /// * for Basic Credentials if the signature key cannot be generated, if the scheme is unsupported
-    ///   or the key generation fails
-    pub async fn try_new(
-        ValidatedSessionConfig {
-            database,
-            client_id,
-            ciphersuites,
-        }: ValidatedSessionConfig,
-    ) -> crate::mls::Result<Self> {
+    pub async fn try_new(database: Database) -> crate::mls::Result<Self> {
         // Init backend (crypto + rand + keystore)
         let mls_backend = MlsCryptoProvider::new(database);
 
@@ -118,19 +105,6 @@ impl Session {
             .new_transaction()
             .await
             .map_err(RecursiveError::transaction("starting new transaction"))?;
-
-        if let Some(id) = client_id {
-            cc.mls
-                .init(
-                    ClientIdentifier::Basic(id),
-                    &ciphersuites
-                        .iter()
-                        .map(|ciphersuite| ciphersuite.signature_algorithm())
-                        .collect::<Vec<_>>(),
-                )
-                .await
-                .map_err(RecursiveError::mls_client("initializing mls client"))?
-        }
 
         context
             .init_pki_env()
@@ -181,7 +155,7 @@ impl Session {
             );
 
             match credential_ref.load_with_cache(&cache).await {
-                Err(credential_ref::Error::CredentialNotFound) => {
+                Err(credential_ref::Error::KeypairNotFound | credential_ref::Error::CredentialNotFound) => {
                     // no worries, do nothing, it's fine
                 }
                 Err(err) => {

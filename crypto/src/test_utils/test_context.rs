@@ -215,6 +215,35 @@ impl TestContext {
             .expect("Vector should be of length N")
     }
 
+    /// Generate a single client identifier of a type matching the credential type.
+    ///
+    /// This operation is _not_ idempotent; it generates a new identifier each time.
+    ///
+    /// If a test chain is provided, it is used only in the x509 case. If the credential type
+    /// is x509 and no chain is provided, a default chain is instantiated.
+    pub(crate) async fn generate_identifier(&self, chain: Option<&X509TestChain>) -> ClientIdentifier {
+        let [identifier] = match self.credential_type {
+            CredentialType::Basic => {
+                let client_ids = self.basic_client_ids::<1>();
+                Self::basic_identifiers(client_ids)
+            }
+            CredentialType::X509 => {
+                let client_ids = self.x509_client_ids::<1>();
+                let owned_chain;
+                let chain = match chain {
+                    Some(chain) => chain,
+                    None => {
+                        owned_chain = self.test_chain(&client_ids, &[], None).await;
+                        &owned_chain
+                    }
+                };
+                self.x509_identifiers(client_ids, chain).await
+            }
+            CredentialType::Unknown(_) => unreachable!("all test contexts are of a known credential type"),
+        };
+        identifier
+    }
+
     pub async fn sessions<const N: usize>(&self) -> [SessionContext; N] {
         if self.is_basic() {
             return self.sessions_basic().await;
