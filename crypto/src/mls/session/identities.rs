@@ -1,4 +1,8 @@
-use std::{collections::HashMap, ops::Deref, sync::Arc};
+use std::{
+    collections::{BTreeSet, HashMap},
+    ops::Deref,
+    sync::Arc,
+};
 
 use openmls::prelude::{Credential as MlsCredential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
@@ -11,13 +15,18 @@ use crate::{
     },
 };
 
-/// In memory Map of a Session's identities: one per SignatureScheme.
-/// We need `indexmap::IndexSet` because each `Credential` has to be unique at insertion
-/// order matters in order to keep values sorted by time `created_at` so that we can identify most recent ones.
+/// Each session has a set of credentials per signature scheme: they can have various properties, but typically
+/// we want to find the most recent of a particular type.
+///
+/// We use this data structure to make that easy. The outer map filters by signature scheme. The inner set lets us
+/// quickly find the most recent.
+///
+/// This depends on the fact that in `Credential`'s `Ord` impl, the first comparison is by the credential's `earliest_validity`.
+/// However, by structuring things like this, we do not need to care about insertion order.
 ///
 /// We keep each credential inside an arc to avoid cloning them, as X509 credentials can get quite large.
 #[derive(Debug, Clone)]
-pub(crate) struct Identities(HashMap<SignatureScheme, indexmap::IndexSet<Arc<Credential>>>);
+pub(crate) struct Identities(HashMap<SignatureScheme, BTreeSet<Arc<Credential>>>);
 
 impl Identities {
     pub(crate) fn new(capacity: usize) -> Self {
@@ -53,35 +62,62 @@ impl Identities {
             .cloned()
     }
 
-    /// Having `cb` requiring ownership kinda forces the caller to first persist it in the keystore and
-    /// only then store it in this in-memory map
-    pub(crate) async fn push_credential(&mut self, sc: SignatureScheme, cb: Credential) -> Result<()> {
-        // this would mean we have messed something up and that we do no init this Credential from a keypair just inserted in the keystore
-        debug_assert_ne!(cb.earliest_validity, 0);
-
-        match self.0.get_mut(&sc) {
-            Some(cbs) => {
-                let already_exists = !cbs.insert(Arc::new(cb));
-                if already_exists {
+    /// Raise an error if the database cannot handle adding a credential with these details.
+    pub(crate) fn ensure_distinct(
+        &self,
+        signature_scheme: SignatureScheme,
+        credential_type: CredentialType,
+        earliest_validity: u64,
+    ) -> Result<()> {
+        if self.0.values().flat_map(|set| set.iter()).any(|existing_credential| {
+            existing_credential.signature_scheme() == signature_scheme
+                && existing_credential.credential_type() == credential_type
+                && existing_credential.earliest_validity == earliest_validity
+        }) {
                     return Err(Error::CredentialConflict);
                 }
-            }
-            None => {
-                self.0.insert(sc, indexmap::IndexSet::from([Arc::new(cb)]));
-            }
+        Ok(())
+    }
+
+    /// Add this credential to the identities.
+    ///
+    /// If there already exists a credential whose signature scheme, credential type, and timestamp of creation
+    /// match those of an existing credential, this will return a `CredentialConflict`. This is because our code
+    /// relies on `find_most_recent_credential` which can only distinguish credentials by those factors.
+    pub(crate) async fn push_credential(&mut self, credential: Credential) -> Result<()> {
+        debug_assert_ne!(
+            credential.earliest_validity, 0,
+            "this credential must have been persisted/updated in the keystore, which sets this to the current timestamp"
+        );
+
+        self.ensure_distinct(
+            credential.signature_scheme(),
+            credential.credential_type(),
+            credential.earliest_validity,
+        )?;
+
+        let _already_existed = !self
+            .0
+            .entry(credential.signature_scheme())
+            .or_default()
+            .insert(Arc::new(credential));
+
+        debug_assert!(
+            !_already_existed,
+            "we've alredy deconflicted by signature scheme, type, and timestamp, so there can't be a matching credential present"
+        );
+
+        Ok(())
+    }
+
+    pub(crate) fn remove(&mut self, mls_credential: &MlsCredential) {
+        for credential_set in self.0.values_mut() {
+            credential_set.retain(|credential| credential.mls_credential() != mls_credential);
         }
-        Ok(())
     }
 
-    pub(crate) async fn remove(&mut self, credential: &MlsCredential) -> Result<()> {
-        self.0.iter_mut().for_each(|(_, cbs)| {
-            cbs.retain(|c| c.mls_credential() != credential);
-        });
-        Ok(())
-    }
-
-    pub(crate) fn iter(&self) -> impl Iterator<Item = (SignatureScheme, Arc<Credential>)> + '_ {
-        self.0.iter().flat_map(|(sc, cb)| cb.iter().map(|c| (*sc, c.clone())))
+    pub(crate) fn iter(&self) -> impl '_ + Iterator<Item = Arc<Credential>> {
+        self.0.values().flatten().cloned()
     }
 }
 

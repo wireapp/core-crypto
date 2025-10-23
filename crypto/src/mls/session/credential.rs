@@ -42,29 +42,42 @@ impl Session {
             return Err(Error::WrongCredential);
         }
 
+        let guard = self.inner.upgradable_read().await;
+        let inner = guard.as_ref().ok_or(Error::MlsNotInitialized)?;
+
+        // failfast before loading the cache if we know already that this credential ref can't be added to the identity set
+        inner.identities.ensure_distinct(
+            credential_ref.signature_scheme(),
+            credential_ref.r#type(),
+            credential_ref.earliest_validity(),
+        )?;
+
+        let cache = CredentialRef::load_cache(&self.crypto_provider.keystore())
+            .await
+            .map_err(RecursiveError::mls_credential_ref("loading credential cache"))?;
+
+        // only upgrade to a write guard here in order to minimize the amount of time the unique lock is held
+        let mut guard = async_lock::RwLockUpgradableReadGuard::upgrade(guard).await;
+        let inner = guard.as_mut().ok_or(Error::MlsNotInitialized)?;
+
         // The primary key situation of `Credential` is a bad joke.
         // We have no idea how many credentials might be attached to a particular ref, or even
         // how they may be related.
         //
         // Happily, our identities structure has set semantics, so let's lean (heavily) on that.
 
-        // `.load` allocates, but also sorts by `earliest_validity`, which we want
-        let credentials =
+        for credential_result in
             credential_ref
-                .load(&self.crypto_provider.keystore())
+                .load_with_cache(&cache)
                 .await
                 .map_err(RecursiveError::mls_credential_ref(
                     "loading all matching credentials in `add_credential`",
-                ))?;
-
-        let mut inner = self.inner.write().await;
-        let inner = inner.as_mut().ok_or(Error::MlsNotInitialized)?;
-
-        for credential in credentials {
-            inner
-                .identities
-                .push_credential(credential.signature_key_pair.signature_scheme(), credential)
-                .await?;
+                ))?
+        {
+            let credential = credential_result.map_err(RecursiveError::mls_credential_ref(
+                "failed to load credential in `add_credential`",
+            ))?;
+            inner.identities.push_credential(credential).await?;
         }
 
         Ok(())
@@ -130,11 +143,7 @@ impl Session {
         let mut inner = self.inner.write().await;
         let inner = inner.as_mut().ok_or(Error::MlsNotInitialized)?;
         for credential in credentials {
-            inner
-                .identities
-                .remove(credential.mls_credential())
-                .await
-                .map_err(RecursiveError::mls_client("removing credential"))?;
+            inner.identities.remove(credential.mls_credential());
         }
 
         Ok(())
