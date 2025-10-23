@@ -12,10 +12,6 @@ jobs:
   package-android:
     if: github.event_name == 'pull_request' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
-
-    env:
-      ANDROID_NDK_VERSION: 28.1.13356709
-
     steps:
       - uses: actions/checkout@v5
       - name: set up jdk 17
@@ -29,8 +25,11 @@ jobs:
         uses: gradle/actions/wrapper-validation@v4
       - name: setup android sdk
         uses: android-actions/setup-android@v3
-      - name: install ndk
-        run: echo "y" | sdkmanager --install "ndk;$ANDROID_NDK_VERSION"
+      - name: install ndk and set up environment
+        run: |
+          ndk_version=$(cat crypto-ffi/bindings/android/ndk.version)
+          echo "y" | sdkmanager --install "ndk;$ndk_version"
+          echo ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ndk_version >> $GITHUB_ENV
       - uses: ./.github/actions/make/android/package
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}

@@ -30,6 +30,19 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
+      - name: setup android sdk
+        uses: android-actions/setup-android@v3
+        with:
+          # Don't download unnecessary packages.
+          # We only need sdkmanager for the next step.
+          packages: ''
+
+      - name: install ndk and set up environment
+        run: |
+          ndk_version=$(cat crypto-ffi/bindings/android/ndk.version)
+          echo "y" | sdkmanager --install "ndk;$ndk_version"
+          echo ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ndk_version >> $GITHUB_ENV
+
       - name: build android lib
         uses: ./.github/actions/make/android/lib
         with:
