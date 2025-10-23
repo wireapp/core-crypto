@@ -45,9 +45,6 @@ pub struct FindFilters<'a> {
 
 impl CredentialRef {
     /// Find all credentials in the database matching the provided filters.
-    ///
-    /// If you have all the components of a filter, it is more efficient to use those to directly
-    /// construct a [`CredentialRef`].
     //
     // Our database does not currently support indices or even in-db searching, so this moves all data
     // from the DB to the runtime, decodes everything, and then filters. This is obviously suboptimal,
@@ -126,6 +123,7 @@ impl CredentialRef {
                     client_id: ClientId(stored_credential.id.clone()),
                     r#type: mls_credential.credential_type(),
                     signature_scheme: signature_key_pair.signature_scheme(),
+                    earliest_validity: stored_credential.created_at,
                 })
             }
         }

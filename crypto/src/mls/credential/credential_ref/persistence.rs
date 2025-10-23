@@ -4,8 +4,6 @@
 //! useful to end users. Clients building on the CC API can't do anything useful with a full [`Credential`],
 //! and it's wasteful to transfer one across the FFI boundary.
 
-use std::cmp::Ordering;
-
 use core_crypto_keystore::{
     connection::FetchFromDatabase as _,
     entities::{EntityFindParams, StoredCredential, StoredSignatureKeypair},
@@ -30,6 +28,21 @@ pub(crate) struct Cache {
 }
 
 impl CredentialRef {
+    /// Helper to prefetch relevant keypairs when loading multiple credentials at a time.
+    ///
+    /// Only useful when preparing to call [`Self::load_with_cache`] multiple times.
+    /// For loading a single credential, prefer [`Self::load`].
+    pub(crate) async fn load_cache(database: &Database) -> Result<Cache> {
+        let keypairs = keypairs::load_all(database)
+            .await
+            .map_err(RecursiveError::mls_credential("loading all keypairs for cache"))?;
+        let credentials = database
+            .find_all::<StoredCredential>(EntityFindParams::default())
+            .await
+            .map_err(KeystoreError::wrap("finding all mls credentials"))?;
+        Ok(Cache { keypairs, credentials })
+    }
+
     /// Load all credentials which match this ref from the database.
     ///
     /// Note that this does not attach the credential to any Session; it just does the data manipulation.
@@ -43,69 +56,8 @@ impl CredentialRef {
     /// stored keypairs with [`Self::load_cache`] and then call [`Self::load_with_cache`].
     pub(crate) async fn load(&self, database: &Database) -> Result<Vec<Credential>> {
         let cache = Self::load_cache(database).await?;
-        let mut credentials = self.load_with_cache(&cache).await?.collect::<Result<Vec<_>>>()?;
-        credentials.sort_by_key(|credential| credential.earliest_validity);
+        let credentials = self.load_with_cache(&cache).await?.collect::<Result<Vec<_>>>()?;
         Ok(credentials)
-    }
-
-    /// Load the first credential which matches this ref from the database.
-    ///
-    /// Note that this does not attach the credential to any Session; it just does the data manipulation.
-    ///
-    /// The database schema currently permits multiple credentials to exist simultaneously which match a given credential ref.
-    /// If you need any of them beyond the first when ordered by `earliest_validity`, use [`Self::load`].
-    ///
-    /// Due to database limitations we currently cannot efficiently retrieve only those keypairs of interest;
-    /// if you are going to be loading several references in a row, it is more efficient to first fetch all
-    /// stored keypairs with [`Self::load_cache`] and then call [`Self::load_first_with_cache`].
-    //
-    // We should evaluate later if this method is worth retaining, but for now let's keep the impl
-    // in case we want it in the future.
-    #[expect(dead_code)]
-    pub(crate) async fn load_first(&self, database: &Database) -> Result<Credential> {
-        let cache = Self::load_cache(database).await?;
-        self.load_first_with_cache(&cache).await
-    }
-
-    /// Helper to prefetch relevant keypairs when loading multiple credentials at a time.
-    ///
-    /// Only useful when preparing to call [`Self::load_with_cache`] multiple times.
-    /// For loading a single credential, prefer [`Self::load`].
-    pub(crate) async fn load_cache(database: &Database) -> Result<Cache> {
-        let keypairs = keypairs::load_all(database)
-            .await
-            .map_err(RecursiveError::mls_credential("loading all keypairs for cache"))?;
-        let mut credentials = database
-            .find_all::<StoredCredential>(EntityFindParams::default())
-            .await
-            .map_err(KeystoreError::wrap("finding all mls credentials"))?;
-        credentials.sort_by_key(|credential| credential.created_at);
-        Ok(Cache { keypairs, credentials })
-    }
-
-    /// Load the first credential which matches this ref from the database.
-    ///
-    /// Note that this does not attach the credential to any Session; it just does the data manipulation.
-    ///
-    /// The database schema currently permits multiple credentials to exist simultaneously which match a given credential ref.
-    /// If you need any of them beyond the first when ordered by `earliest_validity`, use [`Self::load_with_cache`].
-    ///
-    /// If you are only loading a single credential ref, it may be simpler to call [`Self::load_first`].
-    pub(crate) async fn load_first_with_cache(&self, cache: &Cache) -> Result<Credential> {
-        self.load_with_cache(cache)
-            .await?
-            .min_by(|a, b| {
-                // errors are the min value so they are propagated
-                // otherwise we return the min by `earliest_validity`
-                match (a, b) {
-                    (Err(_), Err(_)) => Ordering::Equal,
-                    (Err(_), Ok(_)) => Ordering::Less,
-                    (Ok(_), Err(_)) => Ordering::Greater,
-                    (Ok(a), Ok(b)) => a.earliest_validity.cmp(&b.earliest_validity),
-                }
-            })
-            .ok_or(Error::CredentialNotFound)
-            .flatten()
     }
 
     /// Load this credential from the database.
@@ -132,8 +84,8 @@ impl CredentialRef {
 
         let iter = credentials
             .iter()
-            // this is the only check we can currently do at the DB level: match the client id
-            .filter(|stored_credential| stored_credential.id == self.client_id().as_slice())
+            // this is the only check we can currently do at the DB level: match the client id and creation timestamp
+            .filter(|stored_credential| stored_credential.id == self.client_id().as_slice() && stored_credential.created_at == self.earliest_validity)
             // from here we can at least deserialize the credential
             .map(move |stored_credential| {
                 let mls_credential = MlsCredential::tls_deserialize(&mut stored_credential.credential.as_slice())
