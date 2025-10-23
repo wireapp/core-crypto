@@ -42,40 +42,8 @@ else
   $(error Unsupported host platform $(UNAME_S))
 endif
 
-# Setup Android toolchain
-# Preferred NDK version
-ANDROID_NDK_PREFER_VERSION ?= 28.1
-
-# Autodetect or use existing NDK_HOME/NDK_HOME
-ANDROID_NDK_ROOT = $(strip \
-  $(or \
-    $(ANDROID_NDK_HOME), \
-    $(NDK_HOME), \
-    $(shell [ -d "$(HOME)/Android/Sdk/ndk" ] && \
-               find "$(HOME)/Android/Sdk/ndk" -maxdepth 1 -type d \
-                    -name "$(ANDROID_NDK_PREFER_VERSION)*" \
-               | head -n1) \
-  ) \
-)
-
-
-# Build paths
-NDK_TOOLCHAIN := $(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(HOST_DIR)
-NDK_BIN       := $(NDK_TOOLCHAIN)$(PLATFORM_DIR)/bin
-CLANG_RT_DIR = $(strip \
-  $(shell \
-    [ -n "$(ANDROID_NDK_ROOT)" ] && \
-    "$(NDK_BIN)/clang" --print-runtime-dir \
-      | xargs dirname | xargs dirname | xargs -I{} echo {}/linux \
-  ) \
-)
-
-
-# Export to sub‐recipes
-export PATH          := $(PATH):$(NDK_BIN)
-export ANDROID_NDK_HOME := $(ANDROID_NDK_ROOT)
-export NDK_HOME         := $(ANDROID_NDK_ROOT)
-export CLANG_RT_DIR
+# Make platform-specific LLVM toolchain available to Android builds.
+export PATH := $(PATH):$(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(PLATFORM_DIR)/bin
 
 # Default goal
 .DEFAULT_GOAL := local
@@ -330,12 +298,11 @@ ios-create-xcframework: $(STAMPS)/ios-create-xcframework ## Build the XCode fram
 # Check NDK env
 .PHONY: android-env
 android-env:
-	@if [ -z "$(ANDROID_NDK_HOME)" -a -z "$(NDK_HOME)" ]; then \
-	  echo "ERROR: set ANDROID_NDK_HOME or NDK_HOME"; exit 1; \
+	@if [ -z "$(ANDROID_NDK_HOME)" ]; then \
+	  echo "ERROR: set ANDROID_NDK_HOME"; exit 1; \
 	fi
-	@echo "NDK configured at $(ANDROID_NDK_ROOT)"
-	@echo "  toolchain: $(NDK_TOOLCHAIN)"
-	@echo "  clang-rt:  $(CLANG_RT_DIR)"
+	@ndk_version=$$(sed -n 's/Pkg.Revision = //p' $(ANDROID_NDK_HOME)/source.properties) && \
+		echo "Using Android NDK $${ndk_version} at $(ANDROID_NDK_HOME)"; \
 
 ANDROID_ARMv7 := target/armv7-linux-androideabi/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 android-armv7-deps := $(RUST_SOURCES)
@@ -372,7 +339,7 @@ $(ANDROID_X86): $(android-x86-deps) | android-env
 	  $(CARGO_BUILD_ARGS) -- \
 	  -C strip=symbols \
 	  -l static=clang_rt.builtins-x86_64-android \
-	  -L $$(dirname $$($(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(PLATFORM_DIR)/bin/clang --print-runtime-dir))/linux
+	  -L $$($(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(PLATFORM_DIR)/bin/clang --print-runtime-dir)
 
 .PHONY: android-x86
 android-x86: $(ANDROID_X86) ## Build core-crypto-ffi for x86_64-linux-android
