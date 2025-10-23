@@ -134,13 +134,16 @@ impl TransactionContext {
         let sk = enrollment
             .get_sign_key_for_mls()
             .map_err(RecursiveError::e2e_identity("getting sign key for mls"))?;
-        let cs = *enrollment.ciphersuite();
+        let signature_scheme = enrollment.ciphersuite().signature_algorithm();
+
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
         let certificate_chain = enrollment
             .certificate_response(
                 certificate_chain,
-                self.mls_provider()
-                    .await
-                    .map_err(RecursiveError::transaction("getting provider"))?
+                mls_provider
                     .authentication_service()
                     .borrow()
                     .await
@@ -152,7 +155,7 @@ impl TransactionContext {
 
         let private_key = CertificatePrivateKey {
             value: sk,
-            signature_scheme: cs.signature_algorithm(),
+            signature_scheme,
         };
 
         let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
@@ -164,18 +167,10 @@ impl TransactionContext {
         let client = &self
             .session()
             .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
+            .map_err(RecursiveError::transaction("getting session"))?;
 
         client
-            .save_new_x509_credential(
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::transaction("getting mls provider"))?
-                    .keystore(),
-                cs.signature_algorithm(),
-                cert_bundle,
-            )
+            .save_new_x509_credential(&mls_provider.keystore(), signature_scheme, cert_bundle)
             .await
             .map_err(RecursiveError::mls_client("saving new x509 credential"))?;
 
