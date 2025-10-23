@@ -173,14 +173,21 @@ mod tests {
 
         let session = SessionContext::new_uninitialized(&case).await;
         Box::pin(async move {
-            let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+            let owned_x509_test_chain;
+            let x509_test_chain = match session.x509_chain() {
+                Some(chain) => chain,
+                None => {
+                    owned_x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+                    &owned_x509_test_chain
+                }
+            };
 
             let is_renewal = false;
 
             let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
                 &session,
                 &case,
-                &x509_test_chain,
+                x509_test_chain,
                 Some(E2EI_CLIENT_ID_URI),
                 is_renewal,
                 e2ei_utils::init_enrollment,

@@ -618,7 +618,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn cc_can_2_phase_init(case: TestContext) {
-        use crate::ClientId;
+        use crate::{ClientId, Credential};
 
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
@@ -638,13 +638,22 @@ mod tests {
         // 👇 and so a unique 'client_id' can be fetched from wire-server
         let client_id = ClientId::from("alice");
         let identifier = match case.credential_type {
-            CredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
+            CredentialType::Basic => ClientIdentifier::Basic(client_id),
             CredentialType::X509 => {
                 CertificateBundle::rand_identifier(&client_id, &[x509_test_chain.find_local_intermediate_ca()])
             }
             CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
         };
-        transaction.mls_init(identifier, &[case.ciphersuite()]).await.unwrap();
+        transaction
+            .mls_init(identifier.clone(), &[case.ciphersuite()])
+            .await
+            .unwrap();
+
+        let mut credential =
+            Credential::from_identifier(&identifier, case.signature_scheme(), &cc.mls.crypto_provider).unwrap();
+        let credential_ref = credential.save(&cc.crypto_provider.keystore()).await.unwrap();
+        cc.add_credential(&credential_ref).await.unwrap();
+
         // expect MLS to work
         assert_eq!(
             transaction

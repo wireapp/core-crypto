@@ -324,7 +324,8 @@ impl<'a> TestConversation<'a> {
 
         let ephemeral_client = crate::CoreCrypto::history_client(history_secret).await.unwrap();
 
-        SessionContext::new_from_cc(self.case, ephemeral_client, None).await
+        let chain = self.case.chain.read_arc().await;
+        SessionContext::new_from_cc(self.case, ephemeral_client, chain.as_ref()).await
     }
 
     async fn notify_about_enabled_history_sharing(self) -> Self {

@@ -341,15 +341,12 @@ impl X509TestChain {
         }
 
         for intermediate in &self.intermediates {
-            context
-                .e2ei_register_intermediate_ca_pem(
-                    intermediate
-                        .certificate
-                        .to_pem(x509_cert::der::pem::LineEnding::LF)
-                        .unwrap(),
-                )
-                .await
+            let pem = intermediate
+                .certificate
+                .to_pem(x509_cert::der::pem::LineEnding::LF)
                 .unwrap();
+
+            context.e2ei_register_intermediate_ca_pem(pem).await.unwrap();
         }
 
         for (crl_dp, crl) in &self.crls {
@@ -438,10 +435,11 @@ pub enum X509CertificateType {
     EndIdentity,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, derive_more::Debug)]
 pub struct X509Certificate {
     pub pki_keypair: PkiKeypair,
     pub signature_scheme: SignatureScheme,
+    #[debug("<elided>")]
     pub certificate: x509_cert::Certificate,
     pub cert_type: X509CertificateType,
     pub is_federated: bool,

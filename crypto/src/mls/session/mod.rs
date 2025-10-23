@@ -176,13 +176,13 @@ impl Session {
                         // no harm done though; no need to propagate this error
                     }
                     Ok(()) => {}
-                Err(err) => {
+                    Err(err) => {
                         return Err(RecursiveError::MlsClient {
                             context: "adding credential to identities in init",
                             source: Box::new(err),
                         }
-                    .into());
-                }
+                        .into());
+                    }
                 }
             }
         }
@@ -315,6 +315,7 @@ impl Session {
         Ok(())
     }
 
+    // TODO: audit, determine what's different from add_credential, rm this
     pub(crate) async fn save_identity(
         &self,
         keystore: &Database,
@@ -452,6 +453,7 @@ mod tests {
         // test functions are not held to the same documentation standard as proper functions
         #![allow(missing_docs)]
 
+        /// Replace any existing credentials, identities, client_id, and similar with newly generated ones.
         pub async fn random_generate(
             &self,
             case: &crate::test_utils::TestContext,
@@ -464,18 +466,22 @@ mod tests {
             let client_id = ClientId(client_id.into_bytes());
 
             let mut credential;
+            let identifier;
             match case.credential_type {
                 CredentialType::Basic => {
+                    identifier = ClientIdentifier::Basic(client_id.clone());
                     credential = Credential::basic(case.signature_scheme(), client_id, &self.crypto_provider).unwrap();
                 }
                 CredentialType::X509 => {
-                    let signer = signer.expect("Missing intermediate CA");
-                    let certs = CertificateBundle::rand_identifier_certs(&client_id, &[signer]);
-                    let cert = certs.get(&signer.signature_scheme).unwrap();
-                    credential = Credential::x509(cert.to_owned()).unwrap();
+                    let signer = signer.expect("Missing intermediate CA").to_owned();
+                    let cert = CertificateBundle::rand(&client_id, &signer);
+                    identifier = ClientIdentifier::X509([(case.signature_scheme(), cert.clone())].into());
+                    credential = Credential::x509(cert).unwrap();
                 }
                 CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
             };
+
+            self.init(identifier, &[case.signature_scheme()]).await.unwrap();
 
             let credential_ref = credential.save(&self.crypto_provider.keystore()).await.unwrap();
             self.add_credential(&credential_ref).await.unwrap();

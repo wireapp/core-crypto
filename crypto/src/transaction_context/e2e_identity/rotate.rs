@@ -230,9 +230,7 @@ impl TransactionContext {
 mod tests {
     use std::collections::HashSet;
 
-    use core_crypto_keystore::entities::{EntityFindParams, StoredCredential};
     use openmls::prelude::SignaturePublicKey;
-    use tls_codec::Deserialize;
 
     use super::*;
     use crate::{
@@ -244,7 +242,7 @@ mod tests {
         use e2ei_utils::E2EI_EXPIRY;
 
         use super::*;
-        use crate::test_utils::context::TEAM;
+        use crate::{CredentialRef, test_utils::context::TEAM};
 
         #[apply(all_cred_cipher)]
         async fn enrollment_should_rotate_all(case: TestContext) {
@@ -503,21 +501,10 @@ mod tests {
 
                     // Let's simulate an app crash, client gets deleted and restored from keystore
                     let scs = HashSet::from([case.signature_scheme()]);
-                    let all_credentials = alice
-                        .transaction
-                        .keystore()
+                    let all_credentials = CredentialRef::get_all(&alice.transaction.keystore().await.unwrap())
                         .await
-                        .unwrap()
-                        .find_all::<StoredCredential>(EntityFindParams::default())
-                        .await
-                        .unwrap()
-                        .into_iter()
-                        .map(|c| {
-                            let credential =
-                                openmls::prelude::Credential::tls_deserialize(&mut c.credential.as_slice()).unwrap();
-                            (credential, c.created_at)
-                        })
-                        .collect::<Vec<_>>();
+                        .unwrap();
+
                     assert_eq!(all_credentials.len(), 2);
 
                     (scs, old_nb_identities)
@@ -579,7 +566,7 @@ mod tests {
                                     ALICE_NEW_DISPLAY_NAME.to_string(),
                                     ALICE_NEW_HANDLE.to_string(),
                                     Some(TEAM.to_string()),
-                                    e2ei_utils::E2EI_EXPIRY,
+                                    E2EI_EXPIRY,
                                     cs,
                                 )
                                 .await
@@ -614,6 +601,11 @@ mod tests {
                 )
                 .await
                 .unwrap();
+
+                // all credentials need to be distinguishable by type, scheme, and timestamp
+                // we need to wait a second so the new credential has a distinct timestamp
+                // (our DB has a timestamp resolution of 1s)
+                smol::Timer::after(std::time::Duration::from_secs(1)).await;
 
                 alice
                     .transaction
@@ -713,6 +705,11 @@ mod tests {
 
                     let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
 
+                    // all credentials need to be distinguishable by type, scheme, and timestamp
+                    // we need to wait a second so the new credential has a distinct timestamp
+                    // (our DB has a timestamp resolution of 1s)
+                    smol::Timer::after(std::time::Duration::from_secs(1)).await;
+
                     // Alice creates a new Credential, updating her handle/display_name
                     let alice_cid = alice.get_client_id().await;
                     let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
@@ -777,6 +774,11 @@ mod tests {
 
                 // In this case Alice will try to rotate her credential but her commit will be denied
                 // by the backend (because another commit from Bob had precedence)
+
+                // all credentials need to be distinguishable by type, scheme, and timestamp
+                // we need to wait a second so the new credential has a distinct timestamp
+                // (our DB has a timestamp resolution of 1s)
+                smol::Timer::after(std::time::Duration::from_secs(1)).await;
 
                 // Alice creates a new Credential, updating her handle/display_name
                 let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");

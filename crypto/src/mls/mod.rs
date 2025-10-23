@@ -113,7 +113,7 @@ mod tests {
     async fn can_2_phase_init_central(mut case: TestContext) {
         let db = case.create_persistent_db().await;
         Box::pin(async move {
-            use crate::ClientId;
+            use crate::{ClientId, Credential};
 
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
@@ -127,13 +127,22 @@ mod tests {
             // phase 2: init mls_client
             let client_id = ClientId::from("alice");
             let identifier = match case.credential_type {
-                CredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
+                CredentialType::Basic => ClientIdentifier::Basic(client_id.clone()),
                 CredentialType::X509 => {
                     CertificateBundle::rand_identifier(&client_id, &[x509_test_chain.find_local_intermediate_ca()])
                 }
                 CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
             };
-            context.mls_init(identifier, &[case.ciphersuite()]).await.unwrap();
+            context
+                .mls_init(identifier.clone(), &[case.ciphersuite()])
+                .await
+                .unwrap();
+
+            let mut credential =
+                Credential::from_identifier(&identifier, case.signature_scheme(), &cc.mls.crypto_provider).unwrap();
+            let credential_ref = credential.save(&cc.crypto_provider.keystore()).await.unwrap();
+            cc.add_credential(&credential_ref).await.unwrap();
+
             assert!(context.session().await.unwrap().is_ready().await);
             // expect mls_client to work
             assert_eq!(

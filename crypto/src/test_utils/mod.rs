@@ -138,28 +138,9 @@ impl SessionContext {
 
         session.provide_transport(context.transport.clone()).await;
 
-        let client_id = identifier.get_id().unwrap().into_owned();
-
-        let mut credential = match context.credential_type {
-            CredentialType::Basic => {
-                Credential::basic(context.signature_scheme(), client_id, &session.crypto_provider).unwrap()
-            }
-            CredentialType::X509 => {
-                let ca = chain
-                    .expect("x509 cases provide a test chain")
-                    .find_local_intermediate_ca();
-                debug_assert_eq!(
-                    ca.signature_scheme,
-                    context.signature_scheme(),
-                    "ca signature scheme must match case signature scheme for testing purposes"
-                );
-                let cert = CertificateBundle::rand_identifier_certs(&client_id, &[ca])
-                    .remove(&context.signature_scheme())
-                    .unwrap();
-                Credential::x509(cert).unwrap()
-            }
-            CredentialType::Unknown(_) => unreachable!("all cases have a known credential type"),
-        };
+        let mut credential =
+            Credential::from_identifier(&identifier, context.signature_scheme(), &session.crypto_provider)
+                .map_err(RecursiveError::mls_credential("creating credential from identifier"))?;
         let credential_ref = credential.save(&db).await.unwrap();
         session.add_credential(&credential_ref).await.unwrap();
 
@@ -201,26 +182,9 @@ impl SessionContext {
     }
 
     pub(crate) async fn new_uninitialized(context: &TestContext) -> Self {
-        let (db_path, db_dir) = tmp_db_file();
-        let db = Database::open(ConnectionType::Persistent(&db_path), &DatabaseKey::generate())
-            .await
-            .unwrap();
-
-        let client = Session::try_new(db.clone()).await.unwrap();
-        let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
-        client.provide_transport(transport.clone()).await;
-        let cc = CoreCrypto::from(client);
-        let identifier = context.generate_identifier(None).await;
-        let context = cc.new_transaction().await.unwrap();
-        Self {
-            transaction: context.clone(),
-            session: cc.mls,
-            identifier,
-            mls_transport: Arc::new(RwLock::new(transport.clone())),
-            x509_test_chain: None.into(),
-            history_observer: Default::default(),
-            _db: Some((db, db_dir.into())),
-        }
+        let [session_context] = context.sessions().await;
+        session_context.session.reset().await;
+        session_context
     }
 
     fn x509_client_id(
@@ -254,11 +218,12 @@ impl SessionContext {
         ClientIdentifier::X509(HashMap::from([(signature_scheme, bundle)]))
     }
 
+    pub fn x509_chain(&self) -> Option<&X509TestChain> {
+        self.x509_test_chain.as_ref().as_ref()
+    }
+
     pub fn x509_chain_unchecked(&self) -> &X509TestChain {
-        self.x509_test_chain
-            .as_ref()
-            .as_ref()
-            .expect("No x509 test chain setup")
+        self.x509_chain().expect("No x509 test chain setup")
     }
 
     pub fn replace_x509_chain(&mut self, new_chain: std::sync::Arc<Option<X509TestChain>>) {

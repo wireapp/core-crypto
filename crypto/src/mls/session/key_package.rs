@@ -345,7 +345,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn can_assess_keypackage_expiration(case: TestContext) {
-        let [session] = case.sessions().await;
+        let [session_context] = case.sessions().await;
         let (cs, ct) = (case.ciphersuite(), case.credential_type);
         let key = DatabaseKey::generate();
         let database = Database::open(ConnectionType::InMemory, &key).await.unwrap();
@@ -359,7 +359,7 @@ mod tests {
         };
 
         backend.new_transaction().await.unwrap();
-        let session = session.session;
+        let session = session_context.session;
         session
             .random_generate(
                 &case,
@@ -532,7 +532,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn automatically_prunes_lifetime_expired_keypackages(case: TestContext) {
-        let [session] = case.sessions().await;
+        let [session_context] = case.sessions().await;
         const UNEXPIRED_COUNT: usize = 125;
         const EXPIRED_COUNT: usize = 200;
         let key = DatabaseKey::generate();
@@ -546,7 +546,7 @@ mod tests {
             None
         };
         backend.new_transaction().await.unwrap();
-        let session = session.session().await;
+        let session = session_context.session().await;
         session
             .random_generate(
                 &case,
