@@ -13,7 +13,7 @@ use std::{ops::Deref, sync::Arc};
 
 use async_lock::RwLock;
 use core_crypto_keystore::{
-    CryptoKeystoreError, Database,
+    Database,
     entities::{StoredCredential, StoredSignatureKeypair},
 };
 pub use epoch_observer::EpochObserver;
@@ -27,13 +27,13 @@ use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 use tls_codec::Serialize;
 
 use crate::{
-    CertificateBundle, Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, CredentialRef, CredentialType,
-    HistorySecret, KeystoreError, LeafError, MlsError, MlsTransport, RecursiveError,
+    CertificateBundle, Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, CredentialFindFilters,
+    CredentialRef, CredentialType, HistorySecret, KeystoreError, LeafError, MlsError, MlsTransport, RecursiveError,
     group_store::GroupStore,
     mls::{
         self, HasSessionAndCrypto,
         conversation::{ConversationIdRef, ImmutableConversation},
-        credential::{Credential, credential_ref, ext::CredentialExt},
+        credential::{Credential, ext::CredentialExt},
     },
 };
 
@@ -133,49 +133,56 @@ impl Session {
         self.ensure_unready().await?;
         let client_id = identifier.get_id()?.into_owned();
 
-        let mut identities = Identities::new(signature_schemes.len());
+        // we want to find all credentials matching this identifier, having a valid signature scheme.
+        // the `CredentialRef::find` API doesn't allow us to easily find those credentials having
+        // one of a set of signature schemes, meaning we have two paths here:
+        // we could either search unbound by signature schemes and then filter for valid ones here,
+        // or we could iterate over the list of signature schemes and build up a set of credential refs.
+        // as there are only a few signature schemes possible and the cost of a find operation is non-trivial,
+        // we choose the first option.
+        // we might revisit this choice after WPB-20844.
+        let mut credential_refs = CredentialRef::find(
+            &self.crypto_provider.keystore(),
+            CredentialFindFilters::builder().client_id(&client_id).build(),
+        )
+        .await
+        .map_err(RecursiveError::mls_credential_ref(
+            "loading matching credential refs while initializing a client",
+        ))?;
+        credential_refs.retain(|credential_ref| signature_schemes.contains(&credential_ref.signature_scheme()));
+
+        let mut identities = Identities::new(credential_refs.len());
         let cache = CredentialRef::load_cache(&self.crypto_provider.keystore())
             .await
             .map_err(RecursiveError::mls_credential_ref(
                 "loading credential ref cache while initializing session",
             ))?;
-        for signature_scheme in signature_schemes {
-            // This is a _speculative_ credential ref. If it doesn't exist in the DB,
-            // that's not a problem, it just means the user has not created / stored the credential
-            // prior to initializing this session.
-            let credential_ref = CredentialRef::new(
-                identifier
-                    .get_id()
-                    .map_err(RecursiveError::mls_client(
-                        "getting id from identifier to make credential ref",
-                    ))?
-                    .into_owned(),
-                identifier.credential_type(),
-                *signature_scheme,
-            );
 
-            match credential_ref.load_with_cache(&cache).await {
-                Err(credential_ref::Error::KeypairNotFound | credential_ref::Error::CredentialNotFound) => {
-                    // no worries, do nothing, it's fine
-                }
+        for credential_ref in credential_refs {
+            for credential_result in
+                credential_ref
+                    .load_with_cache(&cache)
+                    .await
+                    .map_err(RecursiveError::mls_credential_ref(
+                        "loading credential list in session init",
+                    ))?
+            {
+                let credential = credential_result
+                    .map_err(RecursiveError::mls_credential_ref("loading credential in session init"))?;
+
+                match identities.push_credential(credential).await {
+                    Err(Error::CredentialConflict) => {
+                        // this is what we get for not having real primary keys in our DB
+                        // no harm done though; no need to propagate this error
+                    }
+                    Ok(()) => {}
                 Err(err) => {
-                    return Err(RecursiveError::mls_credential_ref(
-                        "attempting to load credential refs in session init",
-                    )(err)
+                        return Err(RecursiveError::MlsClient {
+                            context: "adding credential to identities in init",
+                            source: Box::new(err),
+                        }
                     .into());
                 }
-                Ok(credential_result_iter) => {
-                    for credential_result in credential_result_iter {
-                        // if the credential _exists_ but we couldn't load it, that's worth failing for
-                        let credential = credential_result
-                            .map_err(RecursiveError::mls_credential_ref("loading credential in session init"))?;
-                        identities
-                            .push_credential(credential.signature_key_pair.signature_scheme(), credential)
-                            .await
-                            .map_err(RecursiveError::mls_client(
-                                "pushing credential to identities when initializing session",
-                            ))?;
-                    }
                 }
             }
         }
@@ -348,15 +355,18 @@ impl Session {
                 .map_err(Error::tls_serialize("signature keypair"))?,
             id.as_slice().to_owned(),
         );
-        keystore.save(sign_kp).await.map_err(|e| match e {
-            CryptoKeystoreError::AlreadyExists(_) => Error::CredentialConflict,
-            _ => KeystoreError::wrap("saving mls signature key pair")(e).into(),
-        })?;
+        keystore
+            .save(sign_kp)
+            .await
+            .map_err(KeystoreError::wrap("saving mls signature key pair"))?;
 
         // set the creation date of the signature keypair which is the same for the Credential
         credential.earliest_validity = stored_credential.created_at;
 
-        identities.push_credential(signature_scheme, credential.clone()).await?;
+        identities
+            .push_credential(credential.clone())
+            .await
+            .map_err(RecursiveError::mls_client("pushing new credential in save_identity"))?;
 
         Ok(credential)
     }
@@ -375,7 +385,7 @@ impl Session {
             None => false,
             Some(SessionInner { identities, .. }) => identities
                 .iter()
-                .any(|(_, cred)| cred.mls_credential().credential_type() == CredentialType::X509),
+                .any(|cred| cred.credential_type() == CredentialType::X509),
         }
     }
 
