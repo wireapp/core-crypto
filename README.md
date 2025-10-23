@@ -52,7 +52,8 @@ and add aliases to your shell configuration file: `alias sed=gsed`, `aliase make
 > export ANDROID_SDK_ROOT=~/Android/Sdk
 > ```
 
-[Install the Android NDK](https://developer.android.com/studio/projects/install-ndk)
+[Install the Android NDK](https://developer.android.com/studio/projects/install-ndk). Make sure to set the
+`ANDROID_NDK_HOME` variable to point to the NDK installation.
 
 Install android rust targets:
 
