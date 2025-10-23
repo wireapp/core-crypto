@@ -1,5 +1,6 @@
 #[cfg(test)]
 use std::collections::HashMap;
+use std::fmt;
 
 #[cfg(test)]
 use mls_crypto_provider::PkiKeypair;
@@ -34,13 +35,35 @@ impl CertificatePrivateKey {
 /// Represents a x509 certificate chain supplied by the client
 /// It can fetch it after an end-to-end identity process where it can get back a certificate
 /// from the Authentication Service
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct CertificateBundle {
     /// x509 certificate chain
     /// First entry is the leaf certificate and each subsequent is its issuer
     pub certificate_chain: Vec<Vec<u8>>,
     /// Leaf certificate private key
     pub private_key: CertificatePrivateKey,
+}
+
+impl fmt::Debug for CertificateBundle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use base64::prelude::*;
+
+        #[derive(derive_more::Debug)]
+        #[debug("{}", BASE64_STANDARD.encode(_0))]
+        // this only exists for the debug impl, which is ignored by the dead code check
+        #[expect(dead_code)]
+        struct CertificateDebugHelper<'a>(&'a Vec<u8>);
+
+        let certificates = self
+            .certificate_chain
+            .iter()
+            .map(CertificateDebugHelper)
+            .collect::<Vec<_>>();
+        f.debug_struct("CertificateBundle")
+            .field("certificate_chain", &certificates)
+            .field("private_key", &self.private_key)
+            .finish()
+    }
 }
 
 impl CertificateBundle {
