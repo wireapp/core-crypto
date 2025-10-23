@@ -37,18 +37,26 @@ pub struct CredentialRef {
     client_id: ClientId,
     r#type: CredentialType,
     signature_scheme: SignatureScheme,
+    // first unix timestamp at which the credential is valid
+    earliest_validity: u64,
 }
 
 impl CredentialRef {
     /// Construct an instance from its parts.
     ///
-    /// This _must_ remain crate-private so that we can use this type
-    /// as proof of persistence!
-    pub(crate) const fn new(client_id: ClientId, r#type: CredentialType, signature_scheme: SignatureScheme) -> Self {
+    /// This _must_ remain crate-private at most so that we can use this type
+    /// as proof of persistence! Use caution when calling this method to retain this property.
+    pub(super) const fn new(
+        client_id: ClientId,
+        r#type: CredentialType,
+        signature_scheme: SignatureScheme,
+        earliest_validity: u64,
+    ) -> Self {
         Self {
             client_id,
             r#type,
             signature_scheme,
+            earliest_validity,
         }
     }
 
@@ -65,5 +73,10 @@ impl CredentialRef {
     /// Get the signature scheme associated with this credential
     pub fn signature_scheme(&self) -> SignatureScheme {
         self.signature_scheme
+    }
+
+    /// Get the unix timestamp of the earliest validity of this credential.
+    pub fn earliest_validity(&self) -> u64 {
+        self.earliest_validity
     }
 }

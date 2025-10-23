@@ -7,6 +7,7 @@ use crate::{Credential, CredentialRef, KeystoreError, mls::credential::keypairs}
 
 impl Credential {
     /// Update all the fields that were updated by the DB during the save.
+    ///
     /// [`<StoredCredential as EntityTransactionExt>::pre_save`][core_crypto_keystore::entities::EntityTransactionExt::pre_save].
     fn update_from(&mut self, stored: StoredCredential) {
         self.earliest_validity = stored.created_at;
@@ -38,6 +39,7 @@ impl Credential {
             self.client_id().to_owned(),
             self.mls_credential.credential_type(),
             self.signature_key_pair.signature_scheme(),
+            self.earliest_validity,
         ))
     }
 }
