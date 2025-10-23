@@ -233,7 +233,7 @@ impl Session {
                     .map_err(KeystoreError::wrap("deleting credential"))?;
                 let credential = MlsCredential::tls_deserialize(&mut credential.as_slice())
                     .map_err(Error::tls_deserialize("credential"))?;
-                identities.remove(&credential).await?;
+                identities.remove(&credential);
             }
         }
 

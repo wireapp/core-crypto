@@ -50,7 +50,6 @@ async-lock.workspace = true
 schnellru.workspace = true
 zeroize.workspace = true
 wire-e2e-identity.workspace = true
-indexmap.workspace = true
 x509-cert.workspace = true
 pem.workspace = true
 async-recursion.workspace = true

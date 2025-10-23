@@ -791,7 +791,6 @@ dependencies = [
  "futures-lite",
  "futures-util",
  "hex",
- "indexmap",
  "itertools 0.14.0",
  "js-sys",
  "log",

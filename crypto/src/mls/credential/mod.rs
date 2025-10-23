@@ -152,7 +152,8 @@ impl PartialEq for Credential {
         self.mls_credential == other.mls_credential && self.earliest_validity == other.earliest_validity && {
             let sk = &self.signature_key_pair;
             let ok = &other.signature_key_pair;
-            sk.signature_scheme() == ok.signature_scheme() && sk.public() == ok.public() && sk.private() == ok.private()
+            sk.signature_scheme() == ok.signature_scheme() && sk.public() == ok.public()
+            // public key equality implies private key equality
         }
     }
 }
@@ -162,14 +163,37 @@ impl Hash for Credential {
         self.earliest_validity.hash(state);
         self.signature_key_pair.signature_scheme().hash(state);
         self.signature_key_pair.public().hash(state);
-        // self.mls_credential.credential_type().hash(state); // not implemented for Reasons, idk
+        // self.signature_key_pair.private().hash(state); // no two distinct public keys will share a private key so omitting this is ok
+        u16::from(self.credential_type()).hash(state);
         self.mls_credential.identity().hash(state);
+        // non-hashed fields here are apparently transient
+        // but really, this should be an impl on the openmls type
         match self.mls_credential().mls_credential() {
             MlsCredentialType::X509(cert) => {
                 cert.certificates.hash(state);
             }
             MlsCredentialType::Basic(_) => {}
         };
+    }
+}
+
+impl Ord for Credential {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // earliest validity matters most, but then we define a reasonable total ordering
+        // credentials of the same type and identity should be considered equal
+        // credentials with different signature schemes are unequal
+        // public key equality implies private key equality
+        self.earliest_validity
+            .cmp(&other.earliest_validity)
+            .then(self.credential_type().cmp(&other.credential_type()))
+            .then_with(|| self.mls_credential.identity().cmp(other.mls_credential.identity()))
+            .then((self.signature_scheme() as u16).cmp(&(other.signature_scheme() as u16)))
+            .then_with(|| self.signature_key_pair.public().cmp(other.signature_key_pair.public()))
+    }
+}
+impl PartialOrd for Credential {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
