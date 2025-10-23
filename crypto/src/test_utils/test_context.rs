@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use async_lock::RwLock;
 pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
@@ -79,6 +80,7 @@ pub struct TestContext {
     pub cfg: MlsConversationConfiguration,
     pub transport: Arc<dyn MlsTransportTestExt>,
     pub db: Option<(Database, Option<Arc<tempfile::TempDir>>)>,
+    pub chain: Arc<RwLock<Option<X509TestChain>>>,
 }
 
 impl TestContext {
@@ -119,7 +121,7 @@ impl TestContext {
             credential_type: CredentialType::X509,
             cfg: MlsConversationConfiguration::default(),
             transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
-            db: None,
+            ..Default::default()
         }
     }
 
@@ -180,12 +182,15 @@ impl TestContext {
             .iter()
             .map(|name| name.as_str())
             .collect::<Vec<&str>>();
-        init_x509_test_chain(
+        let chain = init_x509_test_chain(
             self,
             &str_triples,
             &revoked_display_names,
             cert_params.unwrap_or_default(),
-        )
+        );
+        let mut guard = self.chain.write_arc().await;
+        *guard = Some(chain.clone());
+        chain
     }
 
     async fn x509_identifiers<const N: usize>(
@@ -219,8 +224,8 @@ impl TestContext {
     ///
     /// This operation is _not_ idempotent; it generates a new identifier each time.
     ///
-    /// If a test chain is provided, it is used only in the x509 case. If the credential type
-    /// is x509 and no chain is provided, a default chain is instantiated.
+    /// If a test chain is provided, it is used only in the x509 case. If the case is x509,
+    /// a test chain must be provided.
     pub(crate) async fn generate_identifier(&self, chain: Option<&X509TestChain>) -> ClientIdentifier {
         let [identifier] = match self.credential_type {
             CredentialType::Basic => {
@@ -229,14 +234,7 @@ impl TestContext {
             }
             CredentialType::X509 => {
                 let client_ids = self.x509_client_ids::<1>();
-                let owned_chain;
-                let chain = match chain {
-                    Some(chain) => chain,
-                    None => {
-                        owned_chain = self.test_chain(&client_ids, &[], None).await;
-                        &owned_chain
-                    }
-                };
+                let chain = chain.expect("a test chain must be provided in the x509 case");
                 self.x509_identifiers(client_ids, chain).await
             }
             CredentialType::Unknown(_) => unreachable!("all test contexts are of a known credential type"),
@@ -453,6 +451,7 @@ impl Default for TestContext {
             cfg: MlsConversationConfiguration::default(),
             transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
             db: None,
+            chain: Arc::default(),
         }
     }
 }

@@ -86,7 +86,7 @@ impl SessionContext {
             .map(|kp| core_crypto_keystore::deser::<KeyPackage>(&kp.keypackage).unwrap())
             .filter(|kp| kp.ciphersuite() == *cs)
             .filter(|kp| {
-                ct.map(|ct| kp.leaf_node().credential().credential_type() == ct.into())
+                ct.map(|ct| kp.leaf_node().credential().credential_type() == ct)
                     .unwrap_or(true)
             })
             .count()

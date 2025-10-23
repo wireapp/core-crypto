@@ -234,6 +234,11 @@ mod tests {
             let alice_client = alice.session().await;
             let alice_provider = alice.transaction.mls_provider().await.unwrap();
 
+            // all credentials need to be distinguishable by type, scheme, and timestamp
+            // we need to wait a second so the new credential has a distinct timestamp
+            // (our DB has a timestamp resolution of 1s)
+            smol::Timer::after(std::time::Duration::from_secs(1)).await;
+
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
             alice_client
                 .save_new_x509_credential(&alice_provider.keystore(), case.signature_scheme(), cert_bundle)

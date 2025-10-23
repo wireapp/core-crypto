@@ -44,6 +44,12 @@ mod tests {
     #[apply(all_cred_cipher)]
     async fn should_fail_when_no_client(case: TestContext) {
         let cc = SessionContext::new_uninitialized(&case).await;
+        let err = cc
+            .transaction
+            .e2ei_is_enabled(case.signature_scheme())
+            .await
+            .unwrap_err();
+        assert!(innermost_source_matches!(err, mls::session::Error::MlsNotInitialized));
         Box::pin(async move {
             assert!(matches!(
                 cc.transaction.e2ei_is_enabled(case.signature_scheme()).await.unwrap_err(),

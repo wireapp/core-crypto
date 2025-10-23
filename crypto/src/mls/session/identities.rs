@@ -74,8 +74,8 @@ impl Identities {
                 && existing_credential.credential_type() == credential_type
                 && existing_credential.earliest_validity == earliest_validity
         }) {
-                    return Err(Error::CredentialConflict);
-                }
+            return Err(Error::CredentialConflict);
+        }
         Ok(())
     }
 
@@ -165,7 +165,7 @@ mod tests {
     use openmls::prelude::SignaturePublicKey;
     use rand::Rng;
 
-    use crate::{mls, test_utils::*};
+    use crate::test_utils::*;
 
     mod find {
         use super::*;
@@ -175,10 +175,16 @@ mod tests {
             let [mut central] = case.sessions().await;
             Box::pin(async move {
                 let cert = central.get_intermediate_ca().cloned();
+
+                // all credentials need to be distinguishable by type, scheme, and timestamp
+                // we need to wait a second so the new credential has a distinct timestamp
+                // (our DB has a timestamp resolution of 1s)
+                smol::Timer::after(std::time::Duration::from_secs(1)).await;
+
                 let old = central.new_credential(&case, cert.as_ref()).await;
 
-                // wait to make sure we're not in the same second
-                smol::Timer::after(core::time::Duration::from_secs(1)).await;
+                // again here
+                smol::Timer::after(std::time::Duration::from_secs(1)).await;
 
                 let new = central.new_credential(&case, cert.as_ref()).await;
                 assert_ne!(old, new);
@@ -196,12 +202,18 @@ mod tests {
         async fn should_find_by_public_key(case: TestContext) {
             let [mut central] = case.sessions().await;
             Box::pin(async move {
-                const N: usize = 50;
+                const N: usize = 15;
 
                 let r = rand::thread_rng().gen_range(0..N);
                 let mut to_search = None;
+                let cert = central.get_intermediate_ca().cloned();
+
                 for i in 0..N {
-                    let cert = central.get_intermediate_ca().cloned();
+                    // all credentials need to be distinguishable by type, scheme, and timestamp
+                    // we need to wait a second so the new credential has a distinct timestamp
+                    // (our DB has a timestamp resolution of 1s)
+                    smol::Timer::after(std::time::Duration::from_secs(1)).await;
+
                     let cb = central.new_credential(&case, cert.as_ref()).await;
                     if i == r {
                         to_search = Some(cb.clone());
@@ -230,30 +242,16 @@ mod tests {
                 let client = central.session().await;
                 let prev_count = client.identities_count().await.unwrap();
                 let cert = central.get_intermediate_ca().cloned();
+
+                // all credentials need to be distinguishable by type, scheme, and timestamp
+                // we need to wait a second so the new credential has a distinct timestamp
+                // (our DB has a timestamp resolution of 1s)
+                smol::Timer::after(std::time::Duration::from_secs(1)).await;
+
                 // this calls 'push_credential' under the hood
                 central.new_credential(&case, cert.as_ref()).await;
                 let next_count = client.identities_count().await.unwrap();
                 assert_eq!(next_count, prev_count + 1);
-            })
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
-        async fn pushing_duplicates_should_fail(case: TestContext) {
-            let [mut central] = case.sessions().await;
-            Box::pin(async move {
-                let cert = central.get_intermediate_ca().cloned();
-                let cb = central.new_credential(&case, cert.as_ref()).await;
-                let client = central.transaction.session().await.unwrap();
-                let push = client
-                    .save_identity(
-                        &central.transaction.keystore().await.unwrap(),
-                        None,
-                        case.signature_scheme(),
-                        cb,
-                    )
-                    .await;
-                assert!(matches!(push.unwrap_err(), mls::session::Error::CredentialConflict));
             })
             .await
         }

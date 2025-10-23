@@ -190,6 +190,12 @@ impl PartialEq<&'_ [u8]> for ClientIdRef {
     }
 }
 
+impl std::fmt::Display for ClientIdRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", hex::encode(&self.0))
+    }
+}
+
 macro_rules! impl_eq {
     ($( $t:ty => |$self:ident, $other:ident| $impl:expr ; )+) => {
         $(
