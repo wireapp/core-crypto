@@ -12,7 +12,9 @@ pub(crate) mod x509;
 
 use std::hash::{Hash, Hasher};
 
-use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, MlsCredentialType, SignatureScheme};
+use openmls::prelude::{
+    Credential as MlsCredential, CredentialType, CredentialWithKey, MlsCredentialType, SignatureScheme,
+};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::crypto::OpenMlsCrypto;
 
@@ -22,7 +24,7 @@ pub use self::{
     error::Error,
 };
 use crate::{
-    ClientId, ClientIdRef, RecursiveError,
+    ClientId, ClientIdRef, ClientIdentifier, RecursiveError,
     mls::credential::{error::CredentialValidationError, ext::CredentialExt as _},
 };
 
@@ -107,9 +109,19 @@ impl Credential {
         &self.mls_credential
     }
 
+    /// Get the credential type
+    pub fn credential_type(&self) -> CredentialType {
+        self.mls_credential.credential_type()
+    }
+
     /// Get a reference to the `SignatureKeyPair`.
     pub(crate) fn signature_key(&self) -> &SignatureKeyPair {
         &self.signature_key_pair
+    }
+
+    /// Get the signature scheme
+    pub fn signature_scheme(&self) -> SignatureScheme {
+        self.signature_key_pair.signature_scheme()
     }
 
     /// Generate a `CredentialWithKey`, which combines the credential type with the public portion of the keypair.
@@ -134,6 +146,27 @@ impl Credential {
     /// Get the client ID associated with this credential
     pub fn client_id(&self) -> &ClientIdRef {
         self.mls_credential.identity().into()
+    }
+}
+
+impl Credential {
+    /// Create a credential from an identifier
+    // currently only used in test code, but generally applicable
+    #[cfg_attr(not(test), expect(dead_code))]
+    pub(crate) fn from_identifier(
+        identifier: &ClientIdentifier,
+        signature_scheme: SignatureScheme,
+        crypto: impl OpenMlsCrypto,
+    ) -> Result<Self> {
+        match identifier {
+            ClientIdentifier::Basic(client_id) => Self::basic(signature_scheme, client_id.clone(), crypto),
+            ClientIdentifier::X509(certs) => {
+                let cert = certs
+                    .get(&signature_scheme)
+                    .ok_or(Error::SignatureSchemeNotPresentInX509Identity(signature_scheme))?;
+                Self::x509(cert.clone())
+            }
+        }
     }
 }
 
