@@ -16,7 +16,6 @@ mod clients;
 #[cfg(not(target_family = "wasm"))]
 mod util;
 
-const MLS_MAIN_CLIENTID: &[u8] = b"test_main";
 const MLS_CONVERSATION_ID: &[u8] = b"test_conversation";
 const ROUNDTRIP_MSG_AMOUNT: usize = 100;
 
@@ -149,13 +148,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
         .unwrap();
 
     let mut clients = create_mls_clients(chrome_driver_addr, web_server).await;
-    let configuration = SessionConfig::builder()
-        .database(db)
-        .client_id(MLS_MAIN_CLIENTID.to_owned().into())
-        .ciphersuites([CIPHERSUITE_IN_USE.into()])
-        .build()
-        .validate()?;
-    let master_client = Session::try_new(configuration).await?;
+    let master_client = Session::try_new(db).await?;
 
     let conversation_id: ConversationId = MLS_CONVERSATION_ID.into();
     let config = MlsConversationConfiguration {
@@ -305,13 +298,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
         .await
         .unwrap();
 
-    let configuration = SessionConfig::builder()
-        .database(db)
-        .client_id(MLS_MAIN_CLIENTID.to_owned().into())
-        .ciphersuites([CIPHERSUITE_IN_USE.into()])
-        .build()
-        .validate()?;
-    let master_client = CoreCrypto::from(Session::try_new(configuration).await?);
+    let master_client = CoreCrypto::from(Session::try_new(db).await?);
     let transaction = master_client.new_transaction().await?;
     transaction.proteus_init().await?;
 

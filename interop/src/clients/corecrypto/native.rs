@@ -22,25 +22,13 @@ pub(crate) struct CoreCryptoNativeClient {
 
 impl CoreCryptoNativeClient {
     pub(crate) async fn new() -> Result<Self> {
-        Self::internal_new(false).await
-    }
-
-    async fn internal_new(deferred: bool) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
-        let cid = (!deferred).then(|| client_id.as_hyphenated().to_string().into_bytes().into());
 
         let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
             .await
             .unwrap();
 
-        let configuration = SessionConfig::builder()
-            .database(db)
-            .client_id_opt(cid)
-            .ciphersuites([CIPHERSUITE_IN_USE.into()])
-            .build()
-            .validate()?;
-
-        let cc = CoreCrypto::from(Session::try_new(configuration).await?);
+        let cc = CoreCrypto::from(Session::try_new(db).await?);
 
         cc.provide_transport(Arc::new(MlsTransportSuccessProvider::default()))
             .await;
