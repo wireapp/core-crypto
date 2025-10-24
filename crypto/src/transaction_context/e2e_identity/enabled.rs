@@ -25,7 +25,7 @@ mod tests {
     use openmls_traits::types::SignatureScheme;
 
     use super::super::Error;
-    use crate::{MlsCredentialType, RecursiveError, mls, test_utils::*};
+    use crate::{CredentialType, RecursiveError, mls, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn should_be_false_when_basic_and_true_when_x509(case: TestContext) {
@@ -33,8 +33,9 @@ mod tests {
         Box::pin(async move {
             let e2ei_is_enabled = cc.transaction.e2ei_is_enabled(case.signature_scheme()).await.unwrap();
             match case.credential_type {
-                MlsCredentialType::Basic => assert!(!e2ei_is_enabled),
-                MlsCredentialType::X509 => assert!(e2ei_is_enabled),
+                CredentialType::Basic => assert!(!e2ei_is_enabled),
+                CredentialType::X509 => assert!(e2ei_is_enabled),
+                CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
             };
         })
         .await
@@ -43,6 +44,12 @@ mod tests {
     #[apply(all_cred_cipher)]
     async fn should_fail_when_no_client(case: TestContext) {
         let cc = SessionContext::new_uninitialized(&case).await;
+        let err = cc
+            .transaction
+            .e2ei_is_enabled(case.signature_scheme())
+            .await
+            .unwrap_err();
+        assert!(innermost_source_matches!(err, mls::session::Error::MlsNotInitialized));
         Box::pin(async move {
             assert!(matches!(
                 cc.transaction.e2ei_is_enabled(case.signature_scheme()).await.unwrap_err(),

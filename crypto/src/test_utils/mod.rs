@@ -14,7 +14,7 @@ pub mod x509;
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
 
-use std::{collections::HashMap, ops::Deref, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use async_lock::RwLock;
 use openmls::framing::MlsMessageOut;
@@ -24,15 +24,14 @@ use self::error::Result;
 pub(crate) use self::{epoch_observer::TestEpochObserver, history_observer::TestHistoryObserver};
 pub use self::{error::Error as TestError, message::*, test_context::*, test_conversation::TestConversation};
 use crate::{
-    CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Database, DatabaseKey, Error,
+    CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Credential, Database, DatabaseKey, Error,
     MlsCommitBundle, MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse, RecursiveError, Session,
-    SessionConfig,
     e2e_identity::id::QualifiedE2eiClientId,
     mls::HistoryObserver,
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     transaction_context::TransactionContext,
 };
-pub use crate::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
+pub use crate::{ClientIdentifier, CredentialType, INITIAL_KEYING_MATERIAL_COUNT};
 
 pub const GROUP_SAMPLE_SIZE: usize = 9;
 
@@ -90,6 +89,7 @@ use crate::{RecursiveError::Test, ephemeral::HistorySecret, test_utils::TestErro
 pub struct SessionContext {
     pub transaction: TransactionContext,
     pub session: Session,
+    pub identifier: ClientIdentifier,
     mls_transport: Arc<RwLock<Arc<dyn MlsTransportTestExt + 'static>>>,
     x509_test_chain: Arc<Option<X509TestChain>>,
     history_observer: Arc<RwLock<Option<Arc<TestHistoryObserver>>>>,
@@ -118,18 +118,11 @@ impl SessionContext {
         // We need to store the `TempDir` struct for the duration of the test session,
         // because its drop implementation takes care of the directory deletion.
         let (db_path, db_dir) = tmp_db_file();
-        let transport = context.transport.clone();
         let db = Database::open(ConnectionType::Persistent(&db_path), &DatabaseKey::generate())
             .await
             .unwrap();
-        let configuration = SessionConfig::builder()
-            .database(db.clone())
-            .ciphersuites([context.cfg.ciphersuite])
-            .build()
-            .validate()
-            .unwrap();
 
-        let session = Session::try_new(configuration).await.unwrap();
+        let session = Session::try_new(db.clone()).await.unwrap();
         let cc = CoreCrypto::from(session);
         let transaction = cc.new_transaction().await.unwrap();
         let session = cc.mls;
@@ -139,20 +132,28 @@ impl SessionContext {
         }
 
         transaction
-            .mls_init(identifier, &[context.cfg.ciphersuite])
+            .mls_init(identifier.clone(), &[context.cfg.ciphersuite])
             .await
             .map_err(RecursiveError::transaction("mls init"))?;
-        session.provide_transport(transport.clone()).await;
 
-        let result = Self {
+        session.provide_transport(context.transport.clone()).await;
+
+        let mut credential =
+            Credential::from_identifier(&identifier, context.signature_scheme(), &session.crypto_provider)
+                .map_err(RecursiveError::mls_credential("creating credential from identifier"))?;
+        let credential_ref = credential.save(&db).await.unwrap();
+        session.add_credential(&credential_ref).await.unwrap();
+
+        let session_context = Self {
             transaction,
             session,
-            mls_transport: Arc::new(RwLock::new(transport)),
+            identifier,
+            mls_transport: Arc::new(RwLock::new(context.transport.clone())),
             x509_test_chain: Arc::new(chain.cloned()),
             history_observer: Default::default(),
             _db: Some((db, db_dir.into())),
         };
-        Ok(result)
+        Ok(session_context)
     }
 
     pub(crate) async fn new_from_cc(context: &TestContext, cc: CoreCrypto, chain: Option<&X509TestChain>) -> Self {
@@ -167,9 +168,12 @@ impl SessionContext {
 
         session.provide_transport(transport.clone()).await;
 
+        let identifier = context.generate_identifier(chain).await;
+
         Self {
             transaction,
             session,
+            identifier,
             mls_transport: Arc::new(RwLock::new(transport)),
             x509_test_chain: Arc::new(chain.cloned()),
             history_observer: Default::default(),
@@ -178,30 +182,9 @@ impl SessionContext {
     }
 
     pub(crate) async fn new_uninitialized(context: &TestContext) -> Self {
-        let (db_path, db_dir) = tmp_db_file();
-        let db = Database::open(ConnectionType::Persistent(&db_path), &DatabaseKey::generate())
-            .await
-            .unwrap();
-        let configuration = SessionConfig::builder()
-            .database(db.clone())
-            .ciphersuites([context.cfg.ciphersuite])
-            .build()
-            .validate()
-            .unwrap();
-
-        let client = Session::try_new(configuration).await.unwrap();
-        let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
-        client.provide_transport(transport.clone()).await;
-        let cc = CoreCrypto::from(client);
-        let context = cc.new_transaction().await.unwrap();
-        Self {
-            transaction: context.clone(),
-            session: cc.mls,
-            mls_transport: Arc::new(RwLock::new(transport.clone())),
-            x509_test_chain: None.into(),
-            history_observer: Default::default(),
-            _db: Some((db, db_dir.into())),
-        }
+        let [session_context] = context.sessions().await;
+        session_context.session.reset().await;
+        session_context
     }
 
     fn x509_client_id(
@@ -235,11 +218,12 @@ impl SessionContext {
         ClientIdentifier::X509(HashMap::from([(signature_scheme, bundle)]))
     }
 
+    pub fn x509_chain(&self) -> Option<&X509TestChain> {
+        self.x509_test_chain.as_ref().as_ref()
+    }
+
     pub fn x509_chain_unchecked(&self) -> &X509TestChain {
-        self.x509_test_chain
-            .as_ref()
-            .as_ref()
-            .expect("No x509 test chain setup")
+        self.x509_chain().expect("No x509 test chain setup")
     }
 
     pub fn replace_x509_chain(&mut self, new_chain: std::sync::Arc<Option<X509TestChain>>) {
@@ -510,7 +494,7 @@ impl MlsTransport for CoreCryptoTransportRetrySuccessProvider {
                 receiver,
                 conversation_id,
                 commits,
-            }) = intermediate_commits.deref()
+            }) = &*intermediate_commits
             else {
                 return Ok(MlsTransportResponse::Retry);
             };

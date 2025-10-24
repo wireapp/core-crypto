@@ -1,4 +1,4 @@
-use core_crypto_keystore::{connection::FetchFromDatabase as _, entities::MlsBufferedCommit};
+use core_crypto_keystore::{connection::FetchFromDatabase as _, entities::StoredBufferedCommit};
 use log::info;
 use openmls::framing::MlsMessageIn;
 use openmls_traits::OpenMlsCryptoProvider as _;
@@ -16,7 +16,7 @@ impl ConversationGuard {
         let conversation = self.conversation().await;
         info!(group_id = conversation.id(); "buffering commit");
 
-        let buffered_commit = MlsBufferedCommit::new(conversation.id().to_bytes(), commit.as_ref().to_owned());
+        let buffered_commit = StoredBufferedCommit::new(conversation.id().to_bytes(), commit.as_ref().to_owned());
 
         self.crypto_provider()
             .await?
@@ -34,9 +34,9 @@ impl ConversationGuard {
         self.crypto_provider()
             .await?
             .keystore()
-            .find::<MlsBufferedCommit>(conversation.id())
+            .find::<StoredBufferedCommit>(conversation.id())
             .await
-            .map(|option| option.map(MlsBufferedCommit::into_commit_data))
+            .map(|option| option.map(StoredBufferedCommit::into_commit_data))
             .map_err(KeystoreError::wrap("attempting to retrieve buffered commit"))
             .map_err(Into::into)
     }
@@ -69,7 +69,7 @@ impl ConversationGuard {
         self.crypto_provider()
             .await?
             .keystore()
-            .remove::<MlsBufferedCommit, _>(conversation.id())
+            .remove::<StoredBufferedCommit, _>(conversation.id())
             .await
             .map_err(KeystoreError::wrap("attempting to clear buffered commit"))
             .map_err(Into::into)

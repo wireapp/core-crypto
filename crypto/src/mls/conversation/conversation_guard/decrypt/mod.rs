@@ -223,7 +223,7 @@ impl ConversationGuard {
             )
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
-        let sender_client_id: ClientId = credential.credential.identity().into();
+        let sender_client_id: ClientId = credential.credential.identity().to_owned().into();
 
         let decrypted = match message.into_content() {
             ProcessedMessageContent::ApplicationMessage(app_msg) => {
@@ -564,7 +564,7 @@ impl ConversationGuard {
             let state = Session::compute_conversation_state(
                 self.ciphersuite().await,
                 credentials.iter(),
-                crate::MlsCredentialType::X509,
+                crate::CredentialType::X509,
                 backend.authentication_service().borrow().await.as_ref(),
             )
             .await;

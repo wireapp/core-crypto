@@ -2,17 +2,19 @@ use std::collections::{HashMap, HashSet};
 
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
-    entities::{EntityFindParams, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage},
+    entities::{EntityFindParams, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
 };
 use mls_crypto_provider::{Database, MlsCryptoProvider};
-use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
+use openmls::prelude::{
+    Credential as MlsCredential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime,
+};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize, Serialize};
 
 use super::{Error, Result};
 use crate::{
-    KeystoreError, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsError, Session,
-    mls::{credential::CredentialBundle, session::SessionInner},
+    Ciphersuite, Credential, CredentialType, KeystoreError, MlsConversationConfiguration, MlsError, Session,
+    mls::session::SessionInner,
 };
 
 /// Default number of KeyPackages a client generates the first time it's created
@@ -34,11 +36,11 @@ impl Session {
     ///
     /// # Errors
     /// KeyStore and OpenMls errors
-    pub async fn generate_one_keypackage_from_credential_bundle(
+    pub async fn generate_one_keypackage_from_credential(
         &self,
         backend: &MlsCryptoProvider,
-        cs: MlsCiphersuite,
-        cb: &CredentialBundle,
+        cs: Ciphersuite,
+        cb: &Credential,
     ) -> Result<KeyPackage> {
         let guard = self.inner.read().await;
         let SessionInner {
@@ -54,10 +56,10 @@ impl Session {
                     version: openmls::versions::ProtocolVersion::default(),
                 },
                 backend,
-                &cb.signature_key,
+                &cb.signature_key_pair,
                 CredentialWithKey {
-                    credential: cb.credential.clone(),
-                    signature_key: cb.signature_key.public().into(),
+                    credential: cb.mls_credential.clone(),
+                    signature_key: cb.signature_key_pair.public().into(),
                 },
             )
             .await
@@ -79,8 +81,8 @@ impl Session {
     pub async fn request_key_packages(
         &self,
         count: usize,
-        ciphersuite: MlsCiphersuite,
-        credential_type: MlsCredentialType,
+        ciphersuite: Ciphersuite,
+        credential_type: CredentialType,
         backend: &MlsCryptoProvider,
     ) -> Result<Vec<KeyPackage>> {
         // Auto-prune expired keypackages on request
@@ -94,14 +96,14 @@ impl Session {
             .into_iter()
             // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
             .filter(|kp|
-                kp.ciphersuite() == ciphersuite.0 && MlsCredentialType::from(kp.leaf_node().credential().credential_type()) == credential_type)
+                kp.ciphersuite() == ciphersuite.0 && kp.leaf_node().credential().credential_type() == credential_type)
             .collect::<Vec<_>>();
 
         let kpb_count = existing_kps.len();
         let mut kps = if count > kpb_count {
             let to_generate = count - kpb_count;
             let cb = self
-                .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+                .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
                 .await?;
             self.generate_new_keypackages(backend, ciphersuite, &cb, to_generate)
                 .await?
@@ -118,15 +120,15 @@ impl Session {
     pub(crate) async fn generate_new_keypackages(
         &self,
         backend: &MlsCryptoProvider,
-        ciphersuite: MlsCiphersuite,
-        cb: &CredentialBundle,
+        ciphersuite: Ciphersuite,
+        cb: &Credential,
         count: usize,
     ) -> Result<Vec<KeyPackage>> {
         let mut kps = Vec::with_capacity(count);
 
         for _ in 0..count {
             let kp = self
-                .generate_one_keypackage_from_credential_bundle(backend, ciphersuite, cb)
+                .generate_one_keypackage_from_credential(backend, ciphersuite, cb)
                 .await?;
             kps.push(kp);
         }
@@ -138,10 +140,10 @@ impl Session {
     pub async fn valid_keypackages_count(
         &self,
         backend: &MlsCryptoProvider,
-        ciphersuite: MlsCiphersuite,
-        credential_type: MlsCredentialType,
+        ciphersuite: Ciphersuite,
+        credential_type: CredentialType,
     ) -> Result<usize> {
-        let kps: Vec<MlsKeyPackage> = backend
+        let kps: Vec<StoredKeypackage> = backend
             .key_store()
             .find_all(EntityFindParams::default())
             .await
@@ -154,7 +156,7 @@ impl Session {
             // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
             .filter(|kp| {
                 kp.as_ref()
-                    .map(|b| b.ciphersuite() == ciphersuite.0 && MlsCredentialType::from(b.leaf_node().credential().credential_type()) == credential_type)
+                    .map(|b| b.ciphersuite() == ciphersuite.0 && b.leaf_node().credential().credential_type() == credential_type)
                     .unwrap_or_default()
             })
         {
@@ -216,10 +218,7 @@ impl Session {
             let kp_ref = kp
                 .hash_ref(backend.crypto())
                 .map_err(MlsError::wrap("computing keypackage hashref"))?;
-            grouped_kps
-                .entry(cred)
-                .and_modify(|kprfs| kprfs.push(kp_ref.clone()))
-                .or_insert(vec![kp_ref]);
+            grouped_kps.entry(cred).or_default().push(kp_ref);
         }
 
         for (credential, kps) in &grouped_kps {
@@ -232,9 +231,9 @@ impl Session {
                     .cred_delete_by_credential(credential.clone())
                     .await
                     .map_err(KeystoreError::wrap("deleting credential"))?;
-                let credential = Credential::tls_deserialize(&mut credential.as_slice())
+                let credential = MlsCredential::tls_deserialize(&mut credential.as_slice())
                     .map_err(Error::tls_deserialize("credential"))?;
-                identities.remove(&credential).await?;
+                identities.remove(&credential);
             }
         }
 
@@ -247,7 +246,7 @@ impl Session {
     /// * Signature KeyPairs & Credentials (use [Self::prune_keypackages_and_credential])
     async fn _prune_keypackages<'a>(
         &self,
-        kps: &'a [(MlsKeyPackage, KeyPackage)],
+        kps: &'a [(StoredKeypackage, KeyPackage)],
         keystore: &Database,
         refs: impl IntoIterator<Item = KeyPackageRef>,
     ) -> Result<HashSet<&'a [u8]>, Error> {
@@ -276,15 +275,15 @@ impl Session {
         // note: we're cloning the iterator here, not the data
         for (kp, kp_ref) in kp_to_delete.clone() {
             keystore
-                .remove::<MlsKeyPackage, &[u8]>(kp_ref.as_slice())
+                .remove::<StoredKeypackage, &[u8]>(kp_ref.as_slice())
                 .await
                 .map_err(KeystoreError::wrap("removing key package from keystore"))?;
             keystore
-                .remove::<MlsHpkePrivateKey, &[u8]>(kp.hpke_init_key().as_slice())
+                .remove::<StoredHpkePrivateKey, &[u8]>(kp.hpke_init_key().as_slice())
                 .await
                 .map_err(KeystoreError::wrap("removing private key from keystore"))?;
             keystore
-                .remove::<MlsEncryptionKeyPair, &[u8]>(kp.leaf_node().encryption_key().as_slice())
+                .remove::<StoredEncryptionKeyPair, &[u8]>(kp.leaf_node().encryption_key().as_slice())
                 .await
                 .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
         }
@@ -292,8 +291,11 @@ impl Session {
         Ok(kp_to_delete.map(|(_, kpref)| kpref.as_slice()).collect())
     }
 
-    async fn find_all_keypackages(&self, keystore: &Database) -> Result<Vec<(MlsKeyPackage, KeyPackage)>> {
-        let kps: Vec<MlsKeyPackage> = keystore
+    pub(super) async fn find_all_keypackages(
+        &self,
+        keystore: &Database,
+    ) -> Result<Vec<(StoredKeypackage, KeyPackage)>> {
+        let kps: Vec<StoredKeypackage> = keystore
             .find_all(EntityFindParams::default())
             .await
             .map_err(KeystoreError::wrap("finding all keypackages"))?;
@@ -314,8 +316,7 @@ impl Session {
     /// It will be embedded in the [openmls::key_packages::KeyPackage]'s [openmls::extensions::LifetimeExtension]
     #[cfg(test)]
     pub async fn set_keypackage_lifetime(&self, duration: std::time::Duration) -> Result<()> {
-        use std::ops::DerefMut;
-        match self.inner.write().await.deref_mut() {
+        match &mut *self.inner.write().await {
             None => Err(Error::MlsNotInitialized),
             Some(SessionInner {
                 keypackage_lifetime, ..
@@ -343,7 +344,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn can_assess_keypackage_expiration(case: TestContext) {
-        let [session] = case.sessions().await;
+        let [session_context] = case.sessions().await;
         let (cs, ct) = (case.ciphersuite(), case.credential_type);
         let key = DatabaseKey::generate();
         let database = Database::open(ConnectionType::InMemory, &key).await.unwrap();
@@ -357,7 +358,7 @@ mod tests {
         };
 
         backend.new_transaction().await.unwrap();
-        let session = session.session;
+        let session = session_context.session;
         session
             .random_generate(
                 &case,
@@ -396,7 +397,7 @@ mod tests {
             // Generate 5 Basic key packages first
             let _basic_key_packages = session_context
                 .transaction
-                .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::Basic, 5)
+                .get_or_create_client_keypackages(cipher_suite, CredentialType::Basic, 5)
                 .await
                 .unwrap();
 
@@ -433,14 +434,15 @@ mod tests {
             // Request X509 key packages
             let x509_key_packages = session_context
                 .transaction
-                .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::X509, 5)
+                .get_or_create_client_keypackages(cipher_suite, CredentialType::X509, 5)
                 .await
                 .unwrap();
 
             // Verify that the key packages are X509
             assert!(
-                x509_key_packages.iter().all(|kp| MlsCredentialType::X509
-                    == MlsCredentialType::from(kp.leaf_node().credential().credential_type()))
+                x509_key_packages
+                    .iter()
+                    .all(|kp| kp.leaf_node().credential().credential_type() == CredentialType::X509)
             );
         })
         .await
@@ -528,7 +530,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn automatically_prunes_lifetime_expired_keypackages(case: TestContext) {
-        let [session] = case.sessions().await;
+        let [session_context] = case.sessions().await;
         const UNEXPIRED_COUNT: usize = 125;
         const EXPIRED_COUNT: usize = 200;
         let key = DatabaseKey::generate();
@@ -542,7 +544,7 @@ mod tests {
             None
         };
         backend.new_transaction().await.unwrap();
-        let session = session.session().await;
+        let session = session_context.session().await;
         session
             .random_generate(
                 &case,

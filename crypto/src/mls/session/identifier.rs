@@ -1,17 +1,14 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-use mls_crypto_provider::MlsCryptoProvider;
+use openmls::prelude::CredentialType;
 use openmls_traits::types::SignatureScheme;
 
-use super::{
-    CredentialBundle,
-    error::{Error, Result},
-};
-use crate::{CertificateBundle, ClientId, RecursiveError, Session};
+use super::error::{Error, Result};
+use crate::{CertificateBundle, ClientId, RecursiveError, mls::session::id::ClientIdRef};
 
 /// Used by consumers to initializes a MLS client. Encompasses all the client types available.
 /// Could be enriched later with Verifiable Presentations.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_more::From)]
 pub enum ClientIdentifier {
     /// Basic keypair
     Basic(ClientId),
@@ -22,7 +19,7 @@ pub enum ClientIdentifier {
 impl ClientIdentifier {
     /// Extract the unique [ClientId] from an identifier. Use with parsimony as, in case of a x509
     /// certificate this leads to parsing the certificate
-    pub fn get_id(&self) -> Result<std::borrow::Cow<'_, ClientId>> {
+    pub fn get_id(&self) -> Result<std::borrow::Cow<'_, ClientIdRef>> {
         match self {
             ClientIdentifier::Basic(id) => Ok(std::borrow::Cow::Borrowed(id)),
             ClientIdentifier::X509(certs) => {
@@ -38,35 +35,11 @@ impl ClientIdentifier {
         }
     }
 
-    /// Generate a new CredentialBundle (Credential + KeyPair) for each ciphersuite.
-    /// This method does not persist them in the keystore !
-    pub fn generate_credential_bundles(
-        self,
-        backend: &MlsCryptoProvider,
-        signature_schemes: HashSet<SignatureScheme>,
-    ) -> Result<Vec<(SignatureScheme, ClientId, CredentialBundle)>> {
+    /// The credential type for this identifier
+    pub fn credential_type(&self) -> CredentialType {
         match self {
-            ClientIdentifier::Basic(id) => signature_schemes.iter().try_fold(
-                Vec::with_capacity(signature_schemes.len()),
-                |mut acc, &sc| -> Result<_> {
-                    let cb = Session::new_basic_credential_bundle(&id, sc, backend)?;
-                    acc.push((sc, id.clone(), cb));
-                    Ok(acc)
-                },
-            ),
-            ClientIdentifier::X509(certs) => {
-                let cap = certs.len();
-                certs
-                    .into_iter()
-                    .try_fold(Vec::with_capacity(cap), |mut acc, (sc, cert)| -> Result<_> {
-                        let id = cert
-                            .get_client_id()
-                            .map_err(RecursiveError::mls_credential("getting client id"))?;
-                        let cb = Session::new_x509_credential_bundle(cert)?;
-                        acc.push((sc, id, cb));
-                        Ok(acc)
-                    })
-            }
+            ClientIdentifier::Basic(_) => CredentialType::Basic,
+            ClientIdentifier::X509(_) => CredentialType::X509,
         }
     }
 }

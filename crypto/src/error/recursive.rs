@@ -34,6 +34,10 @@ pub enum RecursiveError {
         context: &'static str,
         source: Box<crate::mls::credential::Error>,
     },
+    MlsCredentialRef {
+        context: &'static str,
+        source: Box<crate::mls::credential::credential_ref::Error>,
+    },
     #[cfg(test)]
     Test(Box<crate::test_utils::TestError>),
 }
@@ -87,13 +91,19 @@ impl RecursiveError {
             source: Box::new(into_source.into()),
         }
     }
+
+    pub fn mls_credential_ref<E: Into<crate::mls::credential::credential_ref::Error>>(
+        context: &'static str,
+    ) -> impl FnOnce(E) -> Self {
+        move |into_source| Self::MlsCredentialRef {
+            context,
+            source: Box::new(into_source.into()),
+        }
+    }
 }
 
 impl std::fmt::Display for RecursiveError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        #[cfg(test)]
-        use std::ops::Deref;
-
         let context = match self {
             RecursiveError::Root { context, .. } => context,
             RecursiveError::E2e { context, .. } => context,
@@ -101,9 +111,10 @@ impl std::fmt::Display for RecursiveError {
             RecursiveError::MlsClient { context, .. } => context,
             RecursiveError::MlsConversation { context, .. } => context,
             RecursiveError::MlsCredential { context, .. } => context,
+            RecursiveError::MlsCredentialRef { context, .. } => context,
             RecursiveError::TransactionContext { context, .. } => context,
             #[cfg(test)]
-            RecursiveError::Test(e) => return e.deref().fmt(f),
+            RecursiveError::Test(e) => return (*e).fmt(f),
         };
         write!(f, "{context}")
     }
@@ -118,6 +129,7 @@ impl std::error::Error for RecursiveError {
             RecursiveError::MlsClient { source, .. } => Some(source.as_ref()),
             RecursiveError::MlsConversation { source, .. } => Some(source.as_ref()),
             RecursiveError::MlsCredential { source, .. } => Some(source.as_ref()),
+            RecursiveError::MlsCredentialRef { source, .. } => Some(source.as_ref()),
             RecursiveError::TransactionContext { source, .. } => Some(source.as_ref()),
             #[cfg(test)]
             RecursiveError::Test(source) => Some(source.as_ref()),
@@ -127,7 +139,9 @@ impl std::error::Error for RecursiveError {
 
 /// Like [`Into`], but different, because we don't actually want to implement `Into` for our subordinate error types.
 ///
-/// By forcing ourselves to map errors everywhere in order for question mark operators to work, we ensure that
+/// By forcing ourselves to map errors everywhere in order for question mark operators to work, we ensure that we can
+/// take the opportunity to include a little bit of manual context. Pervasively done, this means that our errors have
+/// quite a lot of contextual information about the call stack and what precisely has gone wrong.
 pub trait ToRecursiveError {
     /// Construct a recursive error given the current context
     fn construct_recursive(self, context: &'static str) -> RecursiveError;
@@ -155,5 +169,6 @@ impl_to_recursive_error_for!(
     crate::mls::session::Error => MlsClient,
     crate::mls::conversation::Error => MlsConversation,
     crate::mls::credential::Error => MlsCredential,
+    crate::mls::credential::credential_ref::Error => MlsCredentialRef,
     crate::transaction_context::Error => TransactionContext,
 );

@@ -22,25 +22,13 @@ pub(crate) struct CoreCryptoNativeClient {
 
 impl CoreCryptoNativeClient {
     pub(crate) async fn new() -> Result<Self> {
-        Self::internal_new(false).await
-    }
-
-    async fn internal_new(deferred: bool) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
-        let cid = (!deferred).then(|| client_id.as_hyphenated().to_string().as_bytes().into());
 
         let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
             .await
             .unwrap();
 
-        let configuration = SessionConfig::builder()
-            .database(db)
-            .client_id_opt(cid)
-            .ciphersuites([CIPHERSUITE_IN_USE.into()])
-            .build()
-            .validate()?;
-
-        let cc = CoreCrypto::from(Session::try_new(configuration).await?);
+        let cc = CoreCrypto::from(Session::try_new(db).await?);
 
         cc.provide_transport(Arc::new(MlsTransportSuccessProvider::default()))
             .await;
@@ -83,7 +71,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         let transaction = self.cc.new_transaction().await?;
         let start = std::time::Instant::now();
         let kp = transaction
-            .get_or_create_client_keypackages(CIPHERSUITE_IN_USE.into(), MlsCredentialType::Basic, 1)
+            .get_or_create_client_keypackages(CIPHERSUITE_IN_USE.into(), CredentialType::Basic, 1)
             .await?
             .pop()
             .unwrap();
@@ -109,7 +97,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
                 ..Default::default()
             };
             transaction
-                .new_conversation(&conversation_id, MlsCredentialType::Basic, config)
+                .new_conversation(&conversation_id, CredentialType::Basic, config)
                 .await?;
         }
 
@@ -132,7 +120,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         transaction
             .conversation(&conversation_id)
             .await?
-            .remove_members(&[client_id.to_owned().into()])
+            .remove_members(&[ClientIdRef::new(client_id)])
             .await?;
         transaction.finish().await?;
 

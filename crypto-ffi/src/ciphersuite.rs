@@ -4,7 +4,7 @@
 //! it doesn't work on newtypes around external enums. We therefore redefine the ciphersuites enum
 //! here with appropriate annotations such that it gets exported to all relevant bindings.
 
-use core_crypto::{CiphersuiteName, MlsCiphersuite};
+use core_crypto::{Ciphersuite as CryptoCiphersuite, MlsCiphersuite};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -42,7 +42,7 @@ pub enum Ciphersuite {
     MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
 }
 
-impl From<Ciphersuite> for CiphersuiteName {
+impl From<Ciphersuite> for MlsCiphersuite {
     #[inline]
     fn from(value: Ciphersuite) -> Self {
         (value as u16)
@@ -51,26 +51,26 @@ impl From<Ciphersuite> for CiphersuiteName {
     }
 }
 
-impl From<CiphersuiteName> for Ciphersuite {
+impl From<MlsCiphersuite> for Ciphersuite {
     #[inline]
-    fn from(value: CiphersuiteName) -> Self {
+    fn from(value: MlsCiphersuite) -> Self {
         (value as u16)
             .try_into()
             .expect("mls Ciphersuite is a subset of ffi Ciphersuite")
     }
 }
 
-impl From<Ciphersuite> for MlsCiphersuite {
+impl From<Ciphersuite> for CryptoCiphersuite {
     #[inline]
     fn from(value: Ciphersuite) -> Self {
-        CiphersuiteName::from(value).into()
+        MlsCiphersuite::from(value).into()
     }
 }
 
-impl From<MlsCiphersuite> for Ciphersuite {
+impl From<CryptoCiphersuite> for Ciphersuite {
     #[inline]
-    fn from(value: MlsCiphersuite) -> Self {
-        CiphersuiteName::from(value).into()
+    fn from(value: CryptoCiphersuite) -> Self {
+        MlsCiphersuite::from(value).into()
     }
 }
 

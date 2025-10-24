@@ -4,7 +4,7 @@ use crate::{ClientId, MlsConversation, Session};
 
 pub(crate) mod ciphersuite;
 pub mod conversation;
-pub(crate) mod credential;
+pub mod credential;
 mod error;
 pub(crate) mod proposal;
 pub(crate) mod session;
@@ -23,7 +23,7 @@ pub(crate) trait HasSessionAndCrypto: Send {
 mod tests {
 
     use crate::{
-        CertificateBundle, ClientIdentifier, CoreCrypto, MlsCredentialType, SessionConfig,
+        CertificateBundle, ClientIdentifier, CoreCrypto, CredentialType,
         mls::Session,
         test_utils::{x509::X509TestChain, *},
         transaction_context::Error as TransactionError,
@@ -67,40 +67,13 @@ mod tests {
 
     mod invariants {
         use super::*;
-        use crate::{MlsCiphersuite, mls};
 
         #[apply(all_cred_cipher)]
         async fn can_create_from_valid_configuration(mut case: TestContext) {
             let db = case.create_persistent_db().await;
             Box::pin(async move {
-                let configuration = SessionConfig::builder()
-                    .database(db)
-                    .client_id("alice".into())
-                    .ciphersuites([case.ciphersuite()])
-                    .build()
-                    .validate()
-                    .unwrap();
-
-                let new_client_result = Session::try_new(configuration).await;
+                let new_client_result = Session::try_new(db).await;
                 assert!(new_client_result.is_ok())
-            })
-            .await
-        }
-
-        #[macro_rules_attribute::apply(smol_macros::test)]
-        async fn client_id_should_not_be_empty() {
-            let mut case = TestContext::default();
-            let db = case.create_persistent_db().await;
-            Box::pin(async move {
-                let config_err = SessionConfig::builder()
-                    .database(db)
-                    .client_id("".into())
-                    .ciphersuites([MlsCiphersuite::default()])
-                    .build()
-                    .validate()
-                    .unwrap_err();
-
-                assert!(matches!(config_err, mls::Error::MalformedIdentifier("client_id")));
             })
             .await
         }
@@ -129,15 +102,7 @@ mod tests {
     async fn can_fetch_client_public_key(mut case: TestContext) {
         let db = case.create_persistent_db().await;
         Box::pin(async move {
-            let configuration = SessionConfig::builder()
-                .database(db)
-                .client_id("potato".into())
-                .ciphersuites([case.ciphersuite()])
-                .build()
-                .validate()
-                .unwrap();
-
-            let result = Session::try_new(configuration).await;
+            let result = Session::try_new(db).await;
             println!("{result:?}");
             assert!(result.is_ok());
         })
@@ -148,30 +113,36 @@ mod tests {
     async fn can_2_phase_init_central(mut case: TestContext) {
         let db = case.create_persistent_db().await;
         Box::pin(async move {
+            use crate::{ClientId, Credential};
+
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-            let configuration = SessionConfig::builder()
-                .database(db)
-                .ciphersuites([case.ciphersuite()])
-                .build()
-                .validate()
-                .unwrap();
 
             // phase 1: init without initialized mls_client
-            let client = Session::try_new(configuration).await.unwrap();
+            let client = Session::try_new(db).await.unwrap();
             let cc = CoreCrypto::from(client);
             let context = cc.new_transaction().await.unwrap();
             x509_test_chain.register_with_central(&context).await;
 
             assert!(!context.session().await.unwrap().is_ready().await);
             // phase 2: init mls_client
-            let client_id = "alice";
+            let client_id = ClientId::from("alice");
             let identifier = match case.credential_type {
-                MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
-                MlsCredentialType::X509 => {
-                    CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
+                CredentialType::Basic => ClientIdentifier::Basic(client_id.clone()),
+                CredentialType::X509 => {
+                    CertificateBundle::rand_identifier(&client_id, &[x509_test_chain.find_local_intermediate_ca()])
                 }
+                CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
             };
-            context.mls_init(identifier, &[case.ciphersuite()]).await.unwrap();
+            context
+                .mls_init(identifier.clone(), &[case.ciphersuite()])
+                .await
+                .unwrap();
+
+            let mut credential =
+                Credential::from_identifier(&identifier, case.signature_scheme(), &cc.mls.crypto_provider).unwrap();
+            let credential_ref = credential.save(&cc.crypto_provider.keystore()).await.unwrap();
+            cc.add_credential(&credential_ref).await.unwrap();
+
             assert!(context.session().await.unwrap().is_ready().await);
             // expect mls_client to work
             assert_eq!(

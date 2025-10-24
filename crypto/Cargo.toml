@@ -36,7 +36,7 @@ hex.workspace = true
 futures-util.workspace = true
 
 openmls = { workspace = true, features = ["crypto-subtle"] }
-openmls_basic_credential.workspace = true
+openmls_basic_credential = { workspace = true, features = ["clonable"] }
 openmls_x509_credential.workspace = true
 openmls_traits.workspace = true
 mls-crypto-provider.workspace = true
@@ -50,7 +50,6 @@ async-lock.workspace = true
 schnellru.workspace = true
 zeroize.workspace = true
 wire-e2e-identity.workspace = true
-indexmap.workspace = true
 x509-cert.workspace = true
 pem.workspace = true
 async-recursion.workspace = true

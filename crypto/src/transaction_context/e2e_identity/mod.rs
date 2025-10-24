@@ -15,7 +15,7 @@ use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
 use super::TransactionContext;
 use crate::{
-    CertificateBundle, ClientId, ClientIdentifier, E2eiEnrollment, MlsCiphersuite, RecursiveError,
+    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, Credential, E2eiEnrollment, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{crl::get_new_crl_distribution_points, x509::CertificatePrivateKey},
 };
@@ -36,7 +36,7 @@ impl TransactionContext {
         handle: String,
         team: Option<String>,
         expiry_sec: u32,
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
     ) -> Result<E2eiEnrollment> {
         let signature_keypair = None; // fresh install without a Basic client. Supplying None will generate a new keypair
         E2eiEnrollment::try_new(
@@ -64,6 +64,11 @@ impl TransactionContext {
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
     ) -> Result<NewCrlDistributionPoints> {
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
+
         let sk = enrollment
             .get_sign_key_for_mls()
             .map_err(RecursiveError::e2e_identity("creating new enrollment"))?;
@@ -71,9 +76,7 @@ impl TransactionContext {
         let certificate_chain = enrollment
             .certificate_response(
                 certificate_chain,
-                self.mls_provider()
-                    .await
-                    .map_err(RecursiveError::transaction("getting mls provider"))?
+                mls_provider
                     .authentication_service()
                     .borrow()
                     .await
@@ -94,6 +97,18 @@ impl TransactionContext {
             certificate_chain,
             private_key,
         };
+
+        let mut credential = Credential::x509(cert_bundle.clone()).map_err(RecursiveError::mls_credential(
+            "creating credential from certificate bundle in e2ei_mls_init_only",
+        ))?;
+        // we don't need to keep the credential ref; this credential will be loaded in mls_init later on
+        credential
+            .save(&mls_provider.keystore())
+            .await
+            .map_err(RecursiveError::mls_credential(
+                "saving credential in e2ei_mls_init_only",
+            ))?;
+
         let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
         self.mls_init(identifier, &[cs])
             .await
@@ -158,14 +173,21 @@ mod tests {
 
         let session = SessionContext::new_uninitialized(&case).await;
         Box::pin(async move {
-            let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+            let owned_x509_test_chain;
+            let x509_test_chain = match session.x509_chain() {
+                Some(chain) => chain,
+                None => {
+                    owned_x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+                    &owned_x509_test_chain
+                }
+            };
 
             let is_renewal = false;
 
             let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
                 &session,
                 &case,
-                &x509_test_chain,
+                x509_test_chain,
                 Some(E2EI_CLIENT_ID_URI),
                 is_renewal,
                 e2ei_utils::init_enrollment,
@@ -182,7 +204,7 @@ mod tests {
 
             // verify the created client can create a conversation
             let conversation = case
-                .create_conversation_with_credential_type(MlsCredentialType::X509, [&session])
+                .create_conversation_with_credential_type(CredentialType::X509, [&session])
                 .await;
             conversation
                 .guard()

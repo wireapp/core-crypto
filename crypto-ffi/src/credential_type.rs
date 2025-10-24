@@ -1,6 +1,8 @@
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
+use crate::CoreCryptoError;
+
 /// Type of Credential
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
@@ -14,20 +16,22 @@ pub enum CredentialType {
     X509 = 0x02,
 }
 
-impl From<core_crypto::MlsCredentialType> for CredentialType {
-    fn from(value: core_crypto::MlsCredentialType) -> Self {
+impl TryFrom<core_crypto::CredentialType> for CredentialType {
+    type Error = CoreCryptoError;
+    fn try_from(value: core_crypto::CredentialType) -> Result<CredentialType, CoreCryptoError> {
         match value {
-            core_crypto::MlsCredentialType::Basic => Self::Basic,
-            core_crypto::MlsCredentialType::X509 => Self::X509,
+            core_crypto::CredentialType::Basic => Ok(Self::Basic),
+            core_crypto::CredentialType::X509 => Ok(Self::X509),
+            core_crypto::CredentialType::Unknown(_) => Err(CoreCryptoError::ad_hoc("unknown credential type")),
         }
     }
 }
 
-impl From<CredentialType> for core_crypto::MlsCredentialType {
-    fn from(value: CredentialType) -> core_crypto::MlsCredentialType {
+impl From<CredentialType> for core_crypto::CredentialType {
+    fn from(value: CredentialType) -> core_crypto::CredentialType {
         match value {
-            CredentialType::Basic => core_crypto::MlsCredentialType::Basic,
-            CredentialType::X509 => core_crypto::MlsCredentialType::X509,
+            CredentialType::Basic => core_crypto::CredentialType::Basic,
+            CredentialType::X509 => core_crypto::CredentialType::X509,
         }
     }
 }

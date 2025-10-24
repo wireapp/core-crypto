@@ -3,6 +3,8 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
+use crate::ConversationId;
+
 pub(crate) type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
@@ -11,12 +13,12 @@ pub enum Error {
     InvalidUserId,
     #[error("X509 certificate bundle set was empty")]
     NoX509CertificateBundle,
-    #[error("Tried to insert an already existing CredentialBundle")]
-    CredentialBundleConflict,
+    #[error("credentials must be distinct in signature scheme, credential type, and earliest validity timestamp")]
+    CredentialConflict,
     #[error("A MLS operation was requested but MLS hasn't been initialized on this instance")]
     MlsNotInitialized,
     #[error("A Credential of type {0:?} was not found locally which is very likely an implementation error")]
-    CredentialNotFound(crate::MlsCredentialType),
+    CredentialNotFound(crate::CredentialType),
     #[error("supplied signature scheme was not valid")]
     InvalidSignatureScheme,
     /// The keystore has no knowledge of such client; this shouldn't happen as Client::init is failsafe (find-else-create)
@@ -31,6 +33,10 @@ pub enum Error {
     IdentityAlreadyPresent,
     #[error("The supplied credential does not match the id or signature schemes provided")]
     WrongCredential,
+    #[error("Credentials of type {0} are unknown")]
+    UnknownCredential(u16),
+    #[error("this credential is still in use by the conversation with id \"{}\"", hex::encode(.0))]
+    CredentialStillInUse(ConversationId),
     #[error("An EpochObserver has already been registered; reregistration is not possible")]
     EpochObserverAlreadyExists,
     #[error("An HistoryHandler has already been registered; reregistration is not possible")]

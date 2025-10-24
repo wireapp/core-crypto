@@ -80,7 +80,7 @@ impl MlsConversation {
     }
 
     /// When the incoming commit is sent by ourselves and it's the same as the local pending commit.
-    /// This adapts [Self::commit_accepted] to return the same as [MlsConversation::decrypt_message]
+    /// This adapts [Self::commit_accepted] to return the same as [crate::mls::conversation::ConversationGuard::decrypt_message]
     pub(crate) async fn merge_pending_commit(
         &mut self,
         client: &Session,
@@ -152,6 +152,11 @@ mod tests {
 
             // In this case Alice will try to rotate her credential but her commit will be denied
             // by the backend (because another commit from Bob had precedence)
+
+            // all credentials need to be distinguishable by type, scheme, and timestamp
+            // we need to wait a second so the new credential has a distinct timestamp
+            // (our DB has a timestamp resolution of 1s)
+            smol::Timer::after(std::time::Duration::from_secs(1)).await;
 
             // Alice creates a new Credential, updating her handle/display_name
             let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");

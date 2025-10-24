@@ -475,4 +475,14 @@ class MLSTest : HasMockDeliveryService() {
             )
         }
     }
+
+    @Test
+    fun can_construct_basic_credential(): TestResult {
+        val scope = TestScope()
+        return scope.runTest {
+            val credential = Credential.basic(CIPHERSUITE_DEFAULT, genClientId())
+            assertEquals(credential.type(), CredentialType.BASIC)
+            assertEquals<ULong>(credential.earliestValidity(), 0u)
+        }
+    }
 }

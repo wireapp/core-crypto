@@ -1,4 +1,4 @@
-pub(crate) mod config;
+mod credential;
 pub(crate) mod e2e_identity;
 mod epoch_observer;
 mod error;
@@ -9,14 +9,10 @@ pub(crate) mod identities;
 pub(crate) mod key_package;
 pub(crate) mod user_id;
 
-use std::{collections::HashSet, ops::Deref, sync::Arc};
+use std::sync::Arc;
 
 use async_lock::RwLock;
-use core_crypto_keystore::{
-    CryptoKeystoreError, Database,
-    connection::FetchFromDatabase,
-    entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair},
-};
+use core_crypto_keystore::Database;
 pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
@@ -24,20 +20,15 @@ use identities::Identities;
 use key_package::KEYPACKAGE_DEFAULT_LIFETIME;
 use log::debug;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
-use openmls::prelude::{Credential, CredentialType};
-use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
-use openmls_x509_credential::CertificateKeyPair;
-use tls_codec::{Deserialize, Serialize};
+use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 
 use crate::{
-    CertificateBundle, ClientId, ClientIdentifier, CoreCrypto, HistorySecret, KeystoreError, LeafError, MlsCiphersuite,
-    MlsCredentialType, MlsError, MlsTransport, RecursiveError, ValidatedSessionConfig,
+    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, CredentialFindFilters, CredentialRef, CredentialType,
+    HistorySecret, LeafError, MlsError, MlsTransport, RecursiveError,
     group_store::GroupStore,
     mls::{
         self, HasSessionAndCrypto,
         conversation::{ConversationIdRef, ImmutableConversation},
-        credential::{CredentialBundle, ext::CredentialExt},
     },
 };
 
@@ -82,26 +73,14 @@ pub(crate) struct SessionInner {
 }
 
 impl Session {
-    /// Creates a new [Session].
+    /// Creates a new [Session]. Does not initialize MLS or Proteus.
     ///
     /// ## Errors
     ///
     /// Failures in the initialization of the KeyStore can cause errors, such as IO, the same kind
     /// of errors can happen when the groups are being restored from the KeyStore or even during
     /// the client initialization (to fetch the identity signature).
-    ///
-    /// Other than that, `MlsError` can be caused by group deserialization or during the initialization of the credentials:
-    ///
-    /// * for x509 Credentials if the certificate chain length is lower than 2
-    /// * for Basic Credentials if the signature key cannot be generated, if the scheme is unsupported
-    ///   or the key generation fails
-    pub async fn try_new(
-        ValidatedSessionConfig {
-            database,
-            client_id,
-            ciphersuites,
-        }: ValidatedSessionConfig,
-    ) -> crate::mls::Result<Self> {
+    pub async fn try_new(database: Database) -> crate::mls::Result<Self> {
         // Init backend (crypto + rand + keystore)
         let mls_backend = MlsCryptoProvider::new(database);
 
@@ -109,7 +88,7 @@ impl Session {
         // doing all subsequent actions inside a single transaction, though it forces us to clone
         // a few Arcs and locks.
         let session = Self {
-            crypto_provider: mls_backend.clone(),
+            crypto_provider: mls_backend,
             inner: Default::default(),
             transport: Arc::new(None.into()),
             epoch_observer: Arc::new(None.into()),
@@ -121,13 +100,6 @@ impl Session {
             .new_transaction()
             .await
             .map_err(RecursiveError::transaction("starting new transaction"))?;
-
-        if let Some(id) = client_id {
-            cc.mls
-                .init(ClientIdentifier::Basic(id), ciphersuites.as_slice(), &mls_backend)
-                .await
-                .map_err(RecursiveError::mls_client("initializing mls client"))?
-        }
 
         context
             .init_pki_env()
@@ -148,57 +120,74 @@ impl Session {
     }
 
     /// Initializes the client.
-    /// If the client's cryptographic material is already stored in the keystore, it loads it
-    /// Otherwise, it is being created.
     ///
-    /// # Arguments
-    /// * `identifier` - client identifier ; either a [ClientId] or a x509 certificate chain
-    /// * `ciphersuites` - all ciphersuites this client is supposed to support
-    /// * `backend` - the KeyStore and crypto provider to read identities from
-    ///
-    /// # Errors
-    /// KeyStore and OpenMls errors can happen
-    pub async fn init(
-        &self,
-        identifier: ClientIdentifier,
-        ciphersuites: &[MlsCiphersuite],
-        backend: &MlsCryptoProvider,
-    ) -> Result<()> {
+    /// Loads any cryptographic material already present in the keystore, but does not create any.
+    /// If no credentials are present in the keystore, then one _must_ be created and added to the
+    /// session before it can be used.
+    pub async fn init(&self, identifier: ClientIdentifier, signature_schemes: &[SignatureScheme]) -> Result<()> {
         self.ensure_unready().await?;
-        let id = identifier.get_id()?;
+        let client_id = identifier.get_id()?.into_owned();
 
-        let credentials = backend
-            .key_store()
-            .find_all::<MlsCredential>(EntityFindParams::default())
+        // we want to find all credentials matching this identifier, having a valid signature scheme.
+        // the `CredentialRef::find` API doesn't allow us to easily find those credentials having
+        // one of a set of signature schemes, meaning we have two paths here:
+        // we could either search unbound by signature schemes and then filter for valid ones here,
+        // or we could iterate over the list of signature schemes and build up a set of credential refs.
+        // as there are only a few signature schemes possible and the cost of a find operation is non-trivial,
+        // we choose the first option.
+        // we might revisit this choice after WPB-20844.
+        let mut credential_refs = CredentialRef::find(
+            &self.crypto_provider.keystore(),
+            CredentialFindFilters::builder().client_id(&client_id).build(),
+        )
+        .await
+        .map_err(RecursiveError::mls_credential_ref(
+            "loading matching credential refs while initializing a client",
+        ))?;
+        credential_refs.retain(|credential_ref| signature_schemes.contains(&credential_ref.signature_scheme()));
+
+        let mut identities = Identities::new(credential_refs.len());
+        let cache = CredentialRef::load_cache(&self.crypto_provider.keystore())
             .await
-            .map_err(KeystoreError::wrap("finding all mls credentials"))?;
+            .map_err(RecursiveError::mls_credential_ref(
+                "loading credential ref cache while initializing session",
+            ))?;
 
-        let credentials = credentials
-            .into_iter()
-            .filter(|mls_credential| mls_credential.id.as_slice() == id.as_slice())
-            .map(|mls_credential| -> Result<_> {
-                let credential = Credential::tls_deserialize(&mut mls_credential.credential.as_slice())
-                    .map_err(Error::tls_deserialize("mls credential"))?;
-                Ok((credential, mls_credential.created_at))
-            })
-            .collect::<Result<Vec<_>>>()?;
+        for credential_ref in credential_refs {
+            for credential_result in
+                credential_ref
+                    .load_with_cache(&cache)
+                    .await
+                    .map_err(RecursiveError::mls_credential_ref(
+                        "loading credential list in session init",
+                    ))?
+            {
+                let credential = credential_result
+                    .map_err(RecursiveError::mls_credential_ref("loading credential in session init"))?;
 
-        if credentials.is_empty() {
-            debug!(ciphersuites:? = ciphersuites; "Generating client");
-            self.generate(identifier, backend, ciphersuites).await?;
-        } else {
-            let signature_schemes = ciphersuites
-                .iter()
-                .map(|cs| cs.signature_algorithm())
-                .collect::<HashSet<_>>();
-            let load_result = self.load(backend, id.as_ref(), credentials, signature_schemes).await;
-            if let Err(Error::ClientSignatureNotFound) = load_result {
-                debug!(ciphersuites:? = ciphersuites; "Client signature not found. Generating client");
-                self.generate(identifier, backend, ciphersuites).await?;
-            } else {
-                load_result?;
+                match identities.push_credential(credential).await {
+                    Err(Error::CredentialConflict) => {
+                        // this is what we get for not having real primary keys in our DB
+                        // no harm done though; no need to propagate this error
+                    }
+                    Ok(_) => {}
+                    Err(err) => {
+                        return Err(RecursiveError::MlsClient {
+                            context: "adding credential to identities in init",
+                            source: Box::new(err),
+                        }
+                        .into());
+                    }
+                }
             }
-        };
+        }
+
+        self.replace_inner(SessionInner {
+            id: client_id,
+            identities,
+            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
+        })
+        .await;
 
         Ok(())
     }
@@ -249,54 +238,14 @@ impl Session {
     /// * `credential_type` - of the credential to look for
     pub async fn public_key(
         &self,
-        ciphersuite: MlsCiphersuite,
-        credential_type: MlsCredentialType,
+        ciphersuite: Ciphersuite,
+        credential_type: CredentialType,
     ) -> crate::mls::Result<Vec<u8>> {
         let cb = self
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+            .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
             .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
-        Ok(cb.signature_key.to_public_vec())
-    }
-
-    pub(crate) fn new_basic_credential_bundle(
-        id: &ClientId,
-        sc: SignatureScheme,
-        backend: &MlsCryptoProvider,
-    ) -> Result<CredentialBundle> {
-        let (sk, pk) = backend
-            .crypto()
-            .signature_key_gen(sc)
-            .map_err(MlsError::wrap("generating a signature key"))?;
-
-        let signature_key = SignatureKeyPair::from_raw(sc, sk, pk);
-        let credential = Credential::new_basic(id.to_vec());
-        let cb = CredentialBundle {
-            credential,
-            signature_key,
-            created_at: 0,
-        };
-
-        Ok(cb)
-    }
-
-    pub(crate) fn new_x509_credential_bundle(cert: CertificateBundle) -> Result<CredentialBundle> {
-        let created_at = cert
-            .get_created_at()
-            .map_err(RecursiveError::mls_credential("getting credetntial created at"))?;
-        let (sk, ..) = cert.private_key.into_parts();
-        let chain = cert.certificate_chain;
-
-        let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::wrap("creating certificate key pair"))?;
-
-        let credential = Credential::new_x509(chain).map_err(MlsError::wrap("creating x509 credential"))?;
-
-        let cb = CredentialBundle {
-            credential,
-            signature_key: kp.0,
-            created_at,
-        };
-        Ok(cb)
+            .map_err(RecursiveError::mls_client("finding most recent credential"))?;
+        Ok(cb.signature_key_pair.to_public_vec())
     }
 
     /// Checks if a given conversation id exists locally
@@ -339,117 +288,6 @@ impl Session {
             .map_err(Into::into)
     }
 
-    /// Generates a brand new client from scratch
-    pub(crate) async fn generate(
-        &self,
-        identifier: ClientIdentifier,
-        backend: &MlsCryptoProvider,
-        ciphersuites: &[MlsCiphersuite],
-    ) -> Result<()> {
-        self.ensure_unready().await?;
-        let id = identifier.get_id()?;
-        let signature_schemes = ciphersuites
-            .iter()
-            .map(|cs| cs.signature_algorithm())
-            .collect::<HashSet<_>>();
-        self.replace_inner(SessionInner {
-            id: id.into_owned(),
-            identities: Identities::new(signature_schemes.len()),
-            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
-        })
-        .await;
-
-        let identities = identifier.generate_credential_bundles(backend, signature_schemes)?;
-
-        for (sc, id, cb) in identities {
-            self.save_identity(&backend.keystore(), Some(&id), sc, cb).await?;
-        }
-
-        Ok(())
-    }
-
-    /// Loads the client from the keystore.
-    pub(crate) async fn load(
-        &self,
-        backend: &MlsCryptoProvider,
-        id: &ClientId,
-        mut credentials: Vec<(Credential, u64)>,
-        signature_schemes: HashSet<SignatureScheme>,
-    ) -> Result<()> {
-        self.ensure_unready().await?;
-        let mut identities = Identities::new(signature_schemes.len());
-
-        // ensures we load credentials in chronological order
-        credentials.sort_by_key(|(_, timestamp)| *timestamp);
-
-        let stored_signature_keypairs = backend
-            .key_store()
-            .find_all::<MlsSignatureKeyPair>(EntityFindParams::default())
-            .await
-            .map_err(KeystoreError::wrap("finding all mls signature keypairs"))?;
-
-        for signature_scheme in signature_schemes {
-            let signature_keypair = stored_signature_keypairs
-                .iter()
-                .find(|skp| skp.signature_scheme == (signature_scheme as u16));
-
-            let signature_key = if let Some(kp) = signature_keypair {
-                SignatureKeyPair::tls_deserialize(&mut kp.keypair.as_slice())
-                    .map_err(Error::tls_deserialize("signature keypair"))?
-            } else {
-                let (private_key, public_key) = backend
-                    .crypto()
-                    .signature_key_gen(signature_scheme)
-                    .map_err(MlsError::wrap("generating signature key"))?;
-                let keypair = SignatureKeyPair::from_raw(signature_scheme, private_key, public_key.clone());
-                let raw_keypair = keypair
-                    .tls_serialize_detached()
-                    .map_err(Error::tls_serialize("raw keypair"))?;
-                let store_keypair =
-                    MlsSignatureKeyPair::new(signature_scheme, public_key, raw_keypair, id.as_slice().into());
-                backend
-                    .key_store()
-                    .save(store_keypair.clone())
-                    .await
-                    .map_err(KeystoreError::wrap("storing keypairs in keystore"))?;
-                SignatureKeyPair::tls_deserialize(&mut store_keypair.keypair.as_slice())
-                    .map_err(Error::tls_deserialize("signature keypair"))?
-            };
-
-            for (credential, created_at) in &credentials {
-                match credential.mls_credential() {
-                    openmls::prelude::MlsCredentialType::Basic(_) => {
-                        if id.as_slice() != credential.identity() {
-                            return Err(Error::WrongCredential);
-                        }
-                    }
-                    openmls::prelude::MlsCredentialType::X509(cert) => {
-                        let spk = cert
-                            .extract_public_key()
-                            .map_err(RecursiveError::mls_credential("extracting public key"))?
-                            .ok_or(LeafError::InternalMlsError)?;
-                        if signature_key.public() != spk {
-                            return Err(Error::WrongCredential);
-                        }
-                    }
-                };
-                let cb = CredentialBundle {
-                    credential: credential.clone(),
-                    signature_key: signature_key.clone(),
-                    created_at: *created_at,
-                };
-                identities.push_credential_bundle(signature_scheme, cb).await?;
-            }
-        }
-        self.replace_inner(SessionInner {
-            id: id.clone(),
-            identities,
-            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
-        })
-        .await;
-        Ok(())
-    }
-
     /// Restore from an external [`HistorySecret`].
     pub(crate) async fn restore_from_history_secret(&self, history_secret: HistorySecret) -> Result<()> {
         self.ensure_unready().await?;
@@ -472,64 +310,9 @@ impl Session {
         Ok(())
     }
 
-    pub(crate) async fn save_identity(
-        &self,
-        keystore: &Database,
-        id: Option<&ClientId>,
-        signature_scheme: SignatureScheme,
-        mut credential_bundle: CredentialBundle,
-    ) -> Result<CredentialBundle> {
-        let mut guard = self.inner.write().await;
-        let SessionInner {
-            id: existing_id,
-            identities,
-            ..
-        } = guard.as_mut().ok_or(Error::MlsNotInitialized)?;
-
-        let id = id.unwrap_or(existing_id);
-
-        let credential = credential_bundle
-            .credential
-            .tls_serialize_detached()
-            .map_err(Error::tls_serialize("credential bundle"))?;
-        let credential = MlsCredential {
-            id: id.clone().into(),
-            credential,
-            created_at: 0,
-        };
-
-        let credential = keystore
-            .save(credential)
-            .await
-            .map_err(KeystoreError::wrap("saving credential"))?;
-
-        let sign_kp = MlsSignatureKeyPair::new(
-            signature_scheme,
-            credential_bundle.signature_key.to_public_vec(),
-            credential_bundle
-                .signature_key
-                .tls_serialize_detached()
-                .map_err(Error::tls_serialize("signature keypair"))?,
-            id.clone().into(),
-        );
-        keystore.save(sign_kp).await.map_err(|e| match e {
-            CryptoKeystoreError::AlreadyExists(_) => Error::CredentialBundleConflict,
-            _ => KeystoreError::wrap("saving mls signature key pair")(e).into(),
-        })?;
-
-        // set the creation date of the signature keypair which is the same for the CredentialBundle
-        credential_bundle.created_at = credential.created_at;
-
-        identities
-            .push_credential_bundle(signature_scheme, credential_bundle.clone())
-            .await?;
-
-        Ok(credential_bundle)
-    }
-
     /// Retrieves the client's client id. This is free-form and not inspected.
     pub async fn id(&self) -> Result<ClientId> {
-        match self.inner.read().await.deref() {
+        match &*self.inner.read().await {
             None => Err(Error::MlsNotInitialized),
             Some(SessionInner { id, .. }) => Ok(id.clone()),
         }
@@ -537,63 +320,12 @@ impl Session {
 
     /// Returns whether this client is E2EI capable
     pub async fn is_e2ei_capable(&self) -> bool {
-        match self.inner.read().await.deref() {
+        match &*self.inner.read().await {
             None => false,
             Some(SessionInner { identities, .. }) => identities
                 .iter()
-                .any(|(_, cred)| cred.credential().credential_type() == CredentialType::X509),
+                .any(|cred| cred.credential_type() == CredentialType::X509),
         }
-    }
-
-    pub(crate) async fn get_most_recent_or_create_credential_bundle(
-        &self,
-        backend: &MlsCryptoProvider,
-        sc: SignatureScheme,
-        ct: MlsCredentialType,
-    ) -> Result<Arc<CredentialBundle>> {
-        match ct {
-            MlsCredentialType::Basic => {
-                self.init_basic_credential_bundle_if_missing(backend, sc).await?;
-                self.find_most_recent_credential_bundle(sc, ct).await
-            }
-            MlsCredentialType::X509 => self
-                .find_most_recent_credential_bundle(sc, ct)
-                .await
-                .map_err(|e| match e {
-                    Error::CredentialNotFound(_) => LeafError::E2eiEnrollmentNotDone.into(),
-                    _ => e,
-                }),
-        }
-    }
-
-    pub(crate) async fn init_basic_credential_bundle_if_missing(
-        &self,
-        backend: &MlsCryptoProvider,
-        sc: SignatureScheme,
-    ) -> Result<()> {
-        let existing_cb = self
-            .find_most_recent_credential_bundle(sc, MlsCredentialType::Basic)
-            .await;
-        if matches!(existing_cb, Err(Error::CredentialNotFound(_))) {
-            let id = self.id().await?;
-            debug!(id:% = &id; "Initializing basic credential bundle");
-            let cb = Self::new_basic_credential_bundle(&id, sc, backend)?;
-            self.save_identity(&backend.keystore(), None, sc, cb).await?;
-        }
-        Ok(())
-    }
-
-    pub(crate) async fn save_new_x509_credential_bundle(
-        &self,
-        keystore: &Database,
-        sc: SignatureScheme,
-        cb: CertificateBundle,
-    ) -> Result<CredentialBundle> {
-        let id = cb
-            .get_client_id()
-            .map_err(RecursiveError::mls_credential("getting client id"))?;
-        let cb = Self::new_x509_credential_bundle(cb)?;
-        self.save_identity(keystore, Some(&id), sc, cb).await
     }
 }
 
@@ -603,12 +335,15 @@ mod tests {
     use mls_crypto_provider::MlsCryptoProvider;
 
     use super::*;
-    use crate::{test_utils::*, transaction_context::test_utils::EntitiesCount};
+    use crate::{
+        CertificateBundle, Credential, KeystoreError, test_utils::*, transaction_context::test_utils::EntitiesCount,
+    };
 
     impl Session {
         // test functions are not held to the same documentation standard as proper functions
         #![allow(missing_docs)]
 
+        /// Replace any existing credentials, identities, client_id, and similar with newly generated ones.
         pub async fn random_generate(
             &self,
             case: &crate::test_utils::TestContext,
@@ -618,15 +353,29 @@ mod tests {
             let user_uuid = uuid::Uuid::new_v4();
             let rnd_id = rand::random::<usize>();
             let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated());
-            let identity = match case.credential_type {
-                MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.as_str().into()),
-                MlsCredentialType::X509 => {
-                    let signer = signer.expect("Missing intermediate CA");
-                    CertificateBundle::rand_identifier(&client_id, &[signer])
+            let client_id = ClientId(client_id.into_bytes());
+
+            let mut credential;
+            let identifier;
+            match case.credential_type {
+                CredentialType::Basic => {
+                    identifier = ClientIdentifier::Basic(client_id.clone());
+                    credential = Credential::basic(case.signature_scheme(), client_id, &self.crypto_provider).unwrap();
                 }
+                CredentialType::X509 => {
+                    let signer = signer.expect("Missing intermediate CA").to_owned();
+                    let cert = CertificateBundle::rand(&client_id, &signer);
+                    identifier = ClientIdentifier::X509([(case.signature_scheme(), cert.clone())].into());
+                    credential = Credential::x509(cert).unwrap();
+                }
+                CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
             };
-            let backend = self.crypto_provider.clone();
-            self.generate(identity, &backend, &[case.ciphersuite()]).await?;
+
+            self.init(identifier, &[case.signature_scheme()]).await.unwrap();
+
+            let credential_ref = credential.save(&self.crypto_provider.keystore()).await.unwrap();
+            self.add_credential(&credential_ref).await.unwrap();
+
             Ok(())
         }
 
@@ -643,30 +392,27 @@ mod tests {
         pub(crate) async fn generate_one_keypackage(
             &self,
             backend: &MlsCryptoProvider,
-            cs: MlsCiphersuite,
-            ct: MlsCredentialType,
+            cs: Ciphersuite,
+            ct: CredentialType,
         ) -> Result<openmls::prelude::KeyPackage> {
-            let cb = self
-                .find_most_recent_credential_bundle(cs.signature_algorithm(), ct)
-                .await?;
-            self.generate_one_keypackage_from_credential_bundle(backend, cs, &cb)
-                .await
+            let cb = self.find_most_recent_credential(cs.signature_algorithm(), ct).await?;
+            self.generate_one_keypackage_from_credential(backend, cs, &cb).await
         }
 
         /// Count the entities
         pub async fn count_entities(&self) -> EntitiesCount {
             let keystore = self.crypto_provider.keystore();
-            let credential = keystore.count::<MlsCredential>().await.unwrap();
-            let encryption_keypair = keystore.count::<MlsEncryptionKeyPair>().await.unwrap();
-            let epoch_encryption_keypair = keystore.count::<MlsEpochEncryptionKeyPair>().await.unwrap();
-            let enrollment = keystore.count::<E2eiEnrollment>().await.unwrap();
+            let credential = keystore.count::<StoredCredential>().await.unwrap();
+            let encryption_keypair = keystore.count::<StoredEncryptionKeyPair>().await.unwrap();
+            let epoch_encryption_keypair = keystore.count::<StoredEpochEncryptionKeypair>().await.unwrap();
+            let enrollment = keystore.count::<StoredE2eiEnrollment>().await.unwrap();
             let group = keystore.count::<PersistedMlsGroup>().await.unwrap();
-            let hpke_private_key = keystore.count::<MlsHpkePrivateKey>().await.unwrap();
-            let key_package = keystore.count::<MlsKeyPackage>().await.unwrap();
+            let hpke_private_key = keystore.count::<StoredHpkePrivateKey>().await.unwrap();
+            let key_package = keystore.count::<StoredKeypackage>().await.unwrap();
             let pending_group = keystore.count::<PersistedMlsPendingGroup>().await.unwrap();
             let pending_messages = keystore.count::<MlsPendingMessage>().await.unwrap();
-            let psk_bundle = keystore.count::<MlsPskBundle>().await.unwrap();
-            let signature_keypair = keystore.count::<MlsSignatureKeyPair>().await.unwrap();
+            let psk_bundle = keystore.count::<StoredPskBundle>().await.unwrap();
+            let signature_keypair = keystore.count::<StoredSignatureKeypair>().await.unwrap();
             EntitiesCount {
                 credential,
                 encryption_keypair,
