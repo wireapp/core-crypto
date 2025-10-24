@@ -33,15 +33,6 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - rust: <https://rustup.rs/>
 - GNU make: <https://www.gnu.org/software/make/> (min version: 4.3)
 
-If you're using macOS, you'll also need to install GNU sed:
-
-```sh,ignore
-brew install gnu-sed make
-```
-
-and add aliases to your shell configuration file: `alias sed=gsed`, `aliase make=gmake` (e.g. to `~/.zshenv` if you're
-using zsh).
-
 #### Pre-commit
 
 - Install the [`pre-commit` framework](https://pre-commit.com/)
