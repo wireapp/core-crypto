@@ -58,6 +58,11 @@ impl super::ToCc for DatabaseKeyMaybeArc {
     fn to_cc(self) -> core_crypto_keystore::DatabaseKey {
         self.0
     }
+
+    #[inline]
+    fn as_cc(&self) -> &core_crypto_keystore::DatabaseKey {
+        &self.0
+    }
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -70,6 +75,11 @@ impl super::ToCc for DatabaseKeyMaybeArc {
     #[inline]
     fn to_cc(self) -> core_crypto_keystore::DatabaseKey {
         std::sync::Arc::unwrap_or_clone(self).0
+    }
+
+    #[inline]
+    fn as_cc(&self) -> &core_crypto_keystore::DatabaseKey {
+        &self.as_ref().0
     }
 }
 

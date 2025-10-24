@@ -17,6 +17,7 @@ mod configuration;
 mod core_crypto;
 mod core_crypto_context;
 mod credential;
+mod credential_ref;
 mod credential_type;
 mod crl;
 mod database;
@@ -53,6 +54,7 @@ pub use core_crypto_context::CoreCryptoContext;
 pub use credential::Credential;
 #[cfg(not(target_family = "wasm"))]
 pub use credential::credential_basic;
+pub use credential_ref::CredentialRef;
 pub use credential_type::CredentialType;
 pub use crl::CrlRegistration;
 pub use database::{
