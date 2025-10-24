@@ -87,7 +87,8 @@ where
     }
 }
 
-#[async_trait::async_trait]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl<T, F, Fut> CoreCryptoCommand for TransactionHelper<T, F>
 where
     F: FnOnce(Arc<CoreCryptoContext>) -> Fut + Send + Sync,

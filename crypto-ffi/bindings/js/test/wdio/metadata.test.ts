@@ -14,9 +14,11 @@ describe("metadata", () => {
     it("metadata can be retrieved and contains key 'gitDescribe'", async () => {
         await expect(
             browser.execute(async () =>
-                window.ccModule.buildMetadata().toJSON()
+                window.ccModule.buildMetadata()
             )
-        ).resolves.toMatchObject({ gitDescribe: expect.anything() });
+        ).resolves.toHaveProperty(
+            "gitDescribe"
+        );;
     });
 
     it("version can be retrieved and is a semantic version number", async () => {
