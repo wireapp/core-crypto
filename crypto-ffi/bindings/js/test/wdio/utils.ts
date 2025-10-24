@@ -104,9 +104,7 @@ export async function setup() {
             async prepareForTransport(
                 secret: HistorySecret
             ): Promise<MlsTransportData> {
-                return Promise.resolve(
-                    secret.clientId.copyBytes()
-                );
+                return Promise.resolve(secret.clientId.copyBytes());
             },
             async getLatestCommitBundle() {
                 return window._latestCommitBundle;
@@ -439,13 +437,14 @@ export async function roundTripMessage(
                 return await ctx.decryptMessage(cid, encryptedByClient2);
             });
 
+            const decoder = new TextDecoder();
             const result1 =
                 decryptedByClient1.message !== undefined
-                    ? decryptedByClient1.message
+                    ? decoder.decode(decryptedByClient1.message)
                     : null;
             const result2 =
                 decryptedByClient2.message !== undefined
-                    ? decryptedByClient2.message
+                    ? decoder.decode(decryptedByClient2.message)
                     : null;
 
             return [result1, result2];
@@ -455,13 +454,7 @@ export async function roundTripMessage(
         conversationId,
         message
     );
-    const decoder = new TextDecoder();
-    const decryptedMessage1 =
-        decrypted1 !== null ? decoder.decode(decrypted1) : null;
-    const decryptedMessage2 =
-        decrypted2 !== null ? decoder.decode(decrypted2) : null;
-
-    return [decryptedMessage1, decryptedMessage2];
+    return [decrypted1, decrypted2];
 }
 
 /**
@@ -555,7 +548,7 @@ export async function newProteusSessionFromMessage(
     sessionId: string,
     message: string
 ): Promise<string | null> {
-    const decrypted = await browser.execute(
+    const decrypted = (await browser.execute(
         async (client1, client2, sessionId, message) => {
             const cc1 = window.ensureCcDefined(client1);
             const cc2 = window.ensureCcDefined(client2);
@@ -573,15 +566,13 @@ export async function newProteusSessionFromMessage(
                 );
             });
 
-            return decrypted;
+            const decoder = new TextDecoder();
+            return decrypted !== null ? decoder.decode(decrypted) : null;
         },
         client1,
         client2,
         sessionId,
         message
-    );
-    const decoder = new TextDecoder();
-    return decrypted !== null
-        ? decoder.decode(decrypted)
-        : null;
+    )) as string | null;
+    return decrypted;
 }
