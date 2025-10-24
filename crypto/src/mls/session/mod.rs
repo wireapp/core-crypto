@@ -9,13 +9,10 @@ pub(crate) mod identities;
 pub(crate) mod key_package;
 pub(crate) mod user_id;
 
-use std::{ops::Deref, sync::Arc};
+use std::sync::Arc;
 
 use async_lock::RwLock;
-use core_crypto_keystore::{
-    Database,
-    entities::{StoredCredential, StoredSignatureKeypair},
-};
+use core_crypto_keystore::Database;
 pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
@@ -24,16 +21,14 @@ use key_package::KEYPACKAGE_DEFAULT_LIFETIME;
 use log::debug;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
-use tls_codec::Serialize;
 
 use crate::{
-    CertificateBundle, Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, CredentialFindFilters,
-    CredentialRef, CredentialType, HistorySecret, KeystoreError, LeafError, MlsError, MlsTransport, RecursiveError,
+    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, CredentialFindFilters, CredentialRef, CredentialType,
+    HistorySecret, LeafError, MlsError, MlsTransport, RecursiveError,
     group_store::GroupStore,
     mls::{
         self, HasSessionAndCrypto,
         conversation::{ConversationIdRef, ImmutableConversation},
-        credential::{Credential, ext::CredentialExt},
     },
 };
 
@@ -175,7 +170,7 @@ impl Session {
                         // this is what we get for not having real primary keys in our DB
                         // no harm done though; no need to propagate this error
                     }
-                    Ok(()) => {}
+                    Ok(_) => {}
                     Err(err) => {
                         return Err(RecursiveError::MlsClient {
                             context: "adding credential to identities in init",
@@ -315,66 +310,9 @@ impl Session {
         Ok(())
     }
 
-    // TODO: audit, determine what's different from add_credential, rm this
-    pub(crate) async fn save_identity(
-        &self,
-        keystore: &Database,
-        id: Option<&ClientIdRef>,
-        signature_scheme: SignatureScheme,
-        mut credential: Credential,
-    ) -> Result<Credential> {
-        let mut guard = self.inner.write().await;
-        let SessionInner {
-            id: existing_id,
-            identities,
-            ..
-        } = guard.as_mut().ok_or(Error::MlsNotInitialized)?;
-
-        let id = id.unwrap_or(existing_id.as_ref());
-
-        let credential_data = credential
-            .mls_credential
-            .tls_serialize_detached()
-            .map_err(Error::tls_serialize("credential"))?;
-        let stored_credential = StoredCredential {
-            id: id.as_slice().to_owned(),
-            credential: credential_data,
-            created_at: 0,
-        };
-
-        let stored_credential = keystore
-            .save(stored_credential)
-            .await
-            .map_err(KeystoreError::wrap("saving credential"))?;
-
-        let sign_kp = StoredSignatureKeypair::new(
-            signature_scheme,
-            credential.signature_key_pair.to_public_vec(),
-            credential
-                .signature_key_pair
-                .tls_serialize_detached()
-                .map_err(Error::tls_serialize("signature keypair"))?,
-            id.as_slice().to_owned(),
-        );
-        keystore
-            .save(sign_kp)
-            .await
-            .map_err(KeystoreError::wrap("saving mls signature key pair"))?;
-
-        // set the creation date of the signature keypair which is the same for the Credential
-        credential.earliest_validity = stored_credential.created_at;
-
-        identities
-            .push_credential(credential.clone())
-            .await
-            .map_err(RecursiveError::mls_client("pushing new credential in save_identity"))?;
-
-        Ok(credential)
-    }
-
     /// Retrieves the client's client id. This is free-form and not inspected.
     pub async fn id(&self) -> Result<ClientId> {
-        match self.inner.read().await.deref() {
+        match &*self.inner.read().await {
             None => Err(Error::MlsNotInitialized),
             Some(SessionInner { id, .. }) => Ok(id.clone()),
         }
@@ -382,62 +320,12 @@ impl Session {
 
     /// Returns whether this client is E2EI capable
     pub async fn is_e2ei_capable(&self) -> bool {
-        match self.inner.read().await.deref() {
+        match &*self.inner.read().await {
             None => false,
             Some(SessionInner { identities, .. }) => identities
                 .iter()
                 .any(|cred| cred.credential_type() == CredentialType::X509),
         }
-    }
-
-    pub(crate) async fn get_most_recent_or_create_credential(
-        &self,
-        backend: &MlsCryptoProvider,
-        sc: SignatureScheme,
-        ct: CredentialType,
-    ) -> Result<Arc<Credential>> {
-        match ct {
-            CredentialType::Basic => {
-                self.init_basic_credential_if_missing(backend, sc).await?;
-                self.find_most_recent_credential(sc, ct).await
-            }
-            CredentialType::X509 => self.find_most_recent_credential(sc, ct).await.map_err(|e| match e {
-                Error::CredentialNotFound(_) => LeafError::E2eiEnrollmentNotDone.into(),
-                _ => e,
-            }),
-            CredentialType::Unknown(n) => Err(Error::UnknownCredential(n)),
-        }
-    }
-
-    pub(crate) async fn init_basic_credential_if_missing(
-        &self,
-        backend: &MlsCryptoProvider,
-        sc: SignatureScheme,
-    ) -> Result<()> {
-        let existing_cb = self.find_most_recent_credential(sc, CredentialType::Basic).await;
-        if matches!(existing_cb, Err(Error::CredentialNotFound(_))) {
-            let id = self.id().await?;
-            debug!(id:% = &id; "Initializing basic credential");
-            let cb = Credential::basic(sc, id, backend).map_err(RecursiveError::mls_credential(
-                "generating credential to replace missing",
-            ))?;
-            self.save_identity(&backend.keystore(), None, sc, cb).await?;
-        }
-        Ok(())
-    }
-
-    pub(crate) async fn save_new_x509_credential(
-        &self,
-        keystore: &Database,
-        sc: SignatureScheme,
-        cb: CertificateBundle,
-    ) -> Result<Credential> {
-        let id = cb
-            .get_client_id()
-            .map_err(RecursiveError::mls_credential("getting client id"))?;
-        let cb =
-            Credential::x509(cb).map_err(RecursiveError::mls_credential("generating new x509 credential to save"))?;
-        self.save_identity(keystore, Some(&id), sc, cb).await
     }
 }
 
@@ -447,7 +335,9 @@ mod tests {
     use mls_crypto_provider::MlsCryptoProvider;
 
     use super::*;
-    use crate::{test_utils::*, transaction_context::test_utils::EntitiesCount};
+    use crate::{
+        CertificateBundle, Credential, KeystoreError, test_utils::*, transaction_context::test_utils::EntitiesCount,
+    };
 
     impl Session {
         // test functions are not held to the same documentation standard as proper functions

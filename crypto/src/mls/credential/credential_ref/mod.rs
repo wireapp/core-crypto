@@ -35,6 +35,7 @@ use crate::{ClientId, ClientIdRef};
 )]
 pub struct CredentialRef {
     client_id: ClientId,
+    public_key: Vec<u8>,
     r#type: CredentialType,
     signature_scheme: SignatureScheme,
     // first unix timestamp at which the credential is valid
@@ -48,12 +49,14 @@ impl CredentialRef {
     /// as proof of persistence! Use caution when calling this method to retain this property.
     pub(super) const fn new(
         client_id: ClientId,
+        public_key: Vec<u8>,
         r#type: CredentialType,
         signature_scheme: SignatureScheme,
         earliest_validity: u64,
     ) -> Self {
         Self {
             client_id,
+            public_key,
             r#type,
             signature_scheme,
             earliest_validity,
@@ -63,6 +66,11 @@ impl CredentialRef {
     /// Get the client ID associated with this credential
     pub fn client_id(&self) -> &ClientIdRef {
         self.client_id.as_ref()
+    }
+
+    /// Get the public key associated with this credential
+    pub fn public_key(&self) -> &[u8] {
+        &self.public_key
     }
 
     /// Get the credential type associated with this credential

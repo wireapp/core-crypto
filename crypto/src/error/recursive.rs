@@ -104,9 +104,6 @@ impl RecursiveError {
 
 impl std::fmt::Display for RecursiveError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        #[cfg(test)]
-        use std::ops::Deref;
-
         let context = match self {
             RecursiveError::Root { context, .. } => context,
             RecursiveError::E2e { context, .. } => context,
@@ -117,7 +114,7 @@ impl std::fmt::Display for RecursiveError {
             RecursiveError::MlsCredentialRef { context, .. } => context,
             RecursiveError::TransactionContext { context, .. } => context,
             #[cfg(test)]
-            RecursiveError::Test(e) => return e.deref().fmt(f),
+            RecursiveError::Test(e) => return (*e).fmt(f),
         };
         write!(f, "{context}")
     }

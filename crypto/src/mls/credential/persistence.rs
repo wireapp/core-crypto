@@ -37,6 +37,7 @@ impl Credential {
 
         Ok(CredentialRef::new(
             self.client_id().to_owned(),
+            self.signature_key_pair.public().to_owned(),
             self.mls_credential.credential_type(),
             self.signature_key_pair.signature_scheme(),
             self.earliest_validity,

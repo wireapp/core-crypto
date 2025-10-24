@@ -299,7 +299,7 @@ impl MlsConversation {
     ) -> Result<Self> {
         let (cs, ct) = (configuration.ciphersuite, creator_credential_type);
         let cb = author_client
-            .get_most_recent_or_create_credential(backend, cs.signature_algorithm(), ct)
+            .find_most_recent_or_create_basic_credential(cs.signature_algorithm(), ct)
             .await
             .map_err(RecursiveError::mls_client("getting or creating credential"))?;
 

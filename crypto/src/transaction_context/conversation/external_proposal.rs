@@ -2,8 +2,7 @@ use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, MlsMessageOut};
 
 use super::Result;
 use crate::{
-    Ciphersuite, ConversationId, CredentialType, LeafError, MlsError, RecursiveError, mls,
-    transaction_context::TransactionContext,
+    Ciphersuite, ConversationId, CredentialType, MlsError, RecursiveError, transaction_context::TransactionContext,
 };
 
 impl TransactionContext {
@@ -42,29 +41,9 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
         let cb = client
-            .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
-            .await;
-        let cb = match (cb, credential_type) {
-            (Ok(cb), _) => cb,
-            (Err(mls::session::Error::CredentialNotFound(_)), CredentialType::Basic) => {
-                // If a Basic Credential does not exist, just create one instead of failing
-                client
-                    .init_basic_credential_if_missing(&mls_provider, ciphersuite.signature_algorithm())
-                    .await
-                    .map_err(RecursiveError::mls_client("initializing basic credential if missing"))?;
-
-                client
-                    .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
-                    .await
-                    .map_err(RecursiveError::mls_client(
-                        "finding most recent credential (which we just created)",
-                    ))?
-            }
-            (Err(mls::session::Error::CredentialNotFound(_)), CredentialType::X509) => {
-                return Err(LeafError::E2eiEnrollmentNotDone.into());
-            }
-            (Err(e), _) => return Err(RecursiveError::mls_client("finding most recent credential")(e).into()),
-        };
+            .find_most_recent_or_create_basic_credential(ciphersuite.signature_algorithm(), credential_type)
+            .await
+            .map_err(RecursiveError::mls_client("initializing basic credential if missing"))?;
         let kp = client
             .generate_one_keypackage_from_credential(&mls_provider, ciphersuite, &cb)
             .await

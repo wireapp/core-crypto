@@ -6,7 +6,7 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::prelude::WireIdentityReader as _;
 
 use super::{Error, Result, Session};
-use crate::{Ciphersuite, CredentialType, E2eiConversationState, MlsError, mls::session::CredentialExt as _};
+use crate::{Ciphersuite, CredentialType, E2eiConversationState, MlsError, mls::credential::ext::CredentialExt as _};
 
 impl Session {
     /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)

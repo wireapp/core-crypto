@@ -48,8 +48,7 @@ impl CredentialRef {
     /// Note that this does not attach the credential to any Session; it just does the data manipulation.
     ///
     /// The database schema currently permits multiple credentials to exist simultaneously which match a given credential ref.
-    /// Therefore, this function returns all of them, ordered by `earliest_validity`. If you only need the first,
-    /// consider using [`Self::load_first`] or [`Self::load_first_with_cache`].
+    /// Therefore, this function returns all of them, ordered by `earliest_validity`.
     ///
     /// Due to database limitations we currently cannot efficiently retrieve only those keypairs of interest;
     /// if you are going to be loading several references in a row, it is more efficient to first fetch all
@@ -75,12 +74,13 @@ impl CredentialRef {
     where
         'cref: 'cache,
     {
-        let signature_key_pair = keypairs::find_matching(keypairs, self.client_id(), self.signature_scheme())
-            .await
-            .map_err(RecursiveError::mls_credential(
-                "finding matching key pairs while loading credential",
-            ))?
-            .ok_or(Error::KeypairNotFound)?;
+        let signature_key_pair =
+            keypairs::find_matching(keypairs, self.client_id(), self.signature_scheme(), self.public_key())
+                .await
+                .map_err(RecursiveError::mls_credential(
+                    "finding matching key pairs while loading credential",
+                ))?
+                .ok_or(Error::KeypairNotFound)?;
 
         let iter = credentials
             .iter()

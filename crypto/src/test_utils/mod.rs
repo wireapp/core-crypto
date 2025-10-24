@@ -14,7 +14,7 @@ pub mod x509;
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
 
-use std::{collections::HashMap, ops::Deref, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use async_lock::RwLock;
 use openmls::framing::MlsMessageOut;
@@ -494,7 +494,7 @@ impl MlsTransport for CoreCryptoTransportRetrySuccessProvider {
                 receiver,
                 conversation_id,
                 commits,
-            }) = intermediate_commits.deref()
+            }) = &*intermediate_commits
             else {
                 return Ok(MlsTransportResponse::Retry);
             };
