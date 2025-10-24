@@ -137,6 +137,7 @@ export async function teardown() {
         // Delete all core crypto instances.
         for (const ccKey of window.cc?.keys() ?? []) {
             const cc = window.ensureCcDefined(ccKey);
+            console.log(`closing cc for cckey: ${ccKey}`)
             cc.close();
             await promiseForIDBRequest(window.indexedDB.deleteDatabase(ccKey));
             window.cc.delete(ccKey);
@@ -560,15 +561,15 @@ export async function newProteusSessionFromMessage(
                 );
             });
 
-            return decrypted;
+            const decoder = new TextDecoder();
+            return decrypted !== null
+                ? decoder.decode(decrypted)
+                : null;
         },
         client1,
         client2,
         sessionId,
         message
-    );
-    const decoder = new TextDecoder();
-    return decrypted !== null
-        ? decoder.decode(decrypted)
-        : null;
+    ) as string | null;
+    return decrypted
 }
