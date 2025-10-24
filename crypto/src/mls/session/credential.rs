@@ -1,7 +1,13 @@
+use std::sync::Arc;
+
+use openmls::prelude::{CredentialType, SignaturePublicKey, SignatureScheme};
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{Error, Result};
-use crate::{CredentialFindFilters, CredentialRef, MlsConversation, RecursiveError, Session};
+use crate::{
+    Credential, CredentialFindFilters, CredentialRef, LeafError, MlsConversation, RecursiveError, Session,
+    mls::session::SessionInner,
+};
 
 impl Session {
     /// Find all credentials which match the specified conditions.
@@ -34,14 +40,30 @@ impl Session {
 
     /// Add a credential to the identities of this session.
     ///
-    /// Note that this accepts a [`CredentialRef`], _not_ a raw [`Credential`][crate::Credential].
+    /// Note that this accepts a [`CredentialRef`], _not_ a raw [`Credential`].
     /// This is because a `CredentialRef` serves as proof of persistence. Only credentials
     /// which have been persisted are eligible to be included in a session.
-    pub async fn add_credential(&self, credential_ref: &CredentialRef) -> Result<()> {
+    ///
+    /// Returns the actual credential instance which was loaded from the DB.
+    /// This is a convenience for internal use and should _not_ be propagated across
+    /// the FFI boundary.
+    pub async fn add_credential(&self, credential_ref: &CredentialRef) -> Result<Arc<Credential>> {
         if *credential_ref.client_id() != self.id().await? {
             return Err(Error::WrongCredential);
         }
 
+        self.add_credential_without_clientid_check(credential_ref).await
+    }
+
+    /// Add a credential to the identities of this session without validating that its client ID matches the session client id.
+    ///
+    /// This is rarely useful and should only be used when absolutely necessary. You'll know it if you need it.
+    ///
+    /// Prefer [`Self::add_credential`].
+    pub(crate) async fn add_credential_without_clientid_check(
+        &self,
+        credential_ref: &CredentialRef,
+    ) -> Result<Arc<Credential>> {
         let guard = self.inner.upgradable_read().await;
         let inner = guard.as_ref().ok_or(Error::MlsNotInitialized)?;
 
@@ -66,6 +88,10 @@ impl Session {
         //
         // Happily, our identities structure has set semantics, so let's lean (heavily) on that.
 
+        // the credential being added here might not be the most recent, so we need to manually
+        // keep track of the first one that we insert in response to this add operation
+        let mut first_inserted_credential = None;
+
         for credential_result in
             credential_ref
                 .load_with_cache(&cache)
@@ -77,10 +103,14 @@ impl Session {
             let credential = credential_result.map_err(RecursiveError::mls_credential_ref(
                 "failed to load credential in `add_credential`",
             ))?;
-            inner.identities.push_credential(credential).await?;
+            let credential = inner.identities.push_credential(credential).await?;
+            if first_inserted_credential.is_none() {
+                first_inserted_credential = Some(credential);
+            }
         }
 
-        Ok(())
+        // maybe the credentialref was invalid or something
+        first_inserted_credential.ok_or(Error::CredentialNotFound(credential_ref.r#type()))
     }
 
     /// Remove a credential from the identities of this session.
@@ -147,5 +177,80 @@ impl Session {
         }
 
         Ok(())
+    }
+
+    /// convenience function deferring to the implementation on the inner type
+    pub(crate) async fn find_most_recent_credential(
+        &self,
+        signature_scheme: SignatureScheme,
+        credential_type: CredentialType,
+    ) -> Result<Arc<Credential>> {
+        match &*self.inner.read().await {
+            None => Err(Error::MlsNotInitialized),
+            Some(SessionInner { identities, .. }) => identities
+                .find_most_recent_credential(signature_scheme, credential_type)
+                .await
+                .ok_or(Error::CredentialNotFound(credential_type)),
+        }
+    }
+
+    /// convenience function deferring to the implementation on the inner type
+    pub(crate) async fn find_credential_by_public_key(
+        &self,
+        sc: SignatureScheme,
+        ct: CredentialType,
+        pk: &SignaturePublicKey,
+    ) -> Result<Arc<Credential>> {
+        match &*self.inner.read().await {
+            None => Err(Error::MlsNotInitialized),
+            Some(SessionInner { identities, .. }) => identities
+                .find_credential_by_public_key(sc, ct, pk)
+                .await
+                .ok_or(Error::CredentialNotFound(ct)),
+        }
+    }
+
+    /// Convenience function to save a credential and add it to the session's identities
+    ///
+    /// If you want to keep access to your original credential, do this manually. This function
+    /// intentionally takes ownership as a reminder that we're moving the credential into the identities.
+    ///
+    /// Returns a smart pointer to where the credential is stored within its ultimate data structure.
+    pub(crate) async fn save_and_add_credential(&self, mut credential: Credential) -> Result<Arc<Credential>> {
+        let credential_ref = credential
+            .save(&self.crypto_provider.keystore())
+            .await
+            .map_err(RecursiveError::mls_credential("saving new x509 credential"))?;
+        self.add_credential(&credential_ref).await
+    }
+
+    /// Convenience function to get the most recent credential, creating it if the credential type is basic.
+    ///
+    /// If the credential type is X509, a missing credential returns `LeafError::E2eiEnrollmentNotDone`
+    pub(crate) async fn find_most_recent_or_create_basic_credential(
+        &self,
+        signature_scheme: SignatureScheme,
+        credential_type: CredentialType,
+    ) -> Result<Arc<Credential>> {
+        let credential = match self
+            .find_most_recent_credential(signature_scheme, credential_type)
+            .await
+        {
+            Ok(credential) => credential,
+            Err(Error::CredentialNotFound(_)) if credential_type == CredentialType::Basic => {
+                let client_id = self.id().await?;
+                let credential = Credential::basic(signature_scheme, client_id, &self.crypto_provider).map_err(
+                    RecursiveError::mls_credential(
+                        "creating basic credential in find_most_recent_or_create_basic_credential",
+                    ),
+                )?;
+                self.save_and_add_credential(credential).await?
+            }
+            Err(Error::CredentialNotFound(_)) if credential_type == CredentialType::X509 => {
+                return Err(LeafError::E2eiEnrollmentNotDone.into());
+            }
+            Err(err) => return Err(err),
+        };
+        Ok(credential)
     }
 }

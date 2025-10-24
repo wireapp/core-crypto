@@ -97,9 +97,9 @@ impl CertificateBundle {
 impl Credential {
     /// Create a new x509 credential from a certificate bundle.
     pub fn x509(cert: CertificateBundle) -> Result<Self> {
-        let created_at = cert
-            .get_created_at()
-            .map_err(RecursiveError::mls_credential("getting credetntial created at"))?;
+        let created_at = cert.get_created_at().map_err(RecursiveError::mls_credential(
+            "getting credential 'not before' claim from leaf cert in Credential::x509",
+        ))?;
         let (sk, ..) = cert.private_key.into_parts();
         let chain = cert.certificate_chain;
 
@@ -135,7 +135,9 @@ impl CertificateBundle {
     // test functions are not held to the same standard as real functions
     #![allow(missing_docs)]
 
-    /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
+    /// Generates a certificate that is later turned into a [Credential]
+    ///
+    /// `name` is not known to be a qualified e2ei client id so we invent a new one
     pub fn rand(name: &ClientId, signer: &crate::test_utils::x509::X509Certificate) -> Self {
         // here in our tests client_id is generally just "alice" or "bob"
         // so we will use it to augment handle & display_name
@@ -145,7 +147,7 @@ impl CertificateBundle {
         Self::new(&handle, &display_name, None, None, signer)
     }
 
-    /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
+    /// Generates a certificate that is later turned into a [Credential]
     pub fn new(
         handle: &str,
         display_name: &str,

@@ -35,12 +35,18 @@ pub struct FindFilters<'a> {
     /// Client ID to search for
     #[builder(default, setter(strip_option))]
     pub client_id: Option<&'a ClientIdRef>,
-    /// Signature scheme / ciphersuite to build for
+    /// Public key to search for
+    #[builder(default, setter(strip_option))]
+    pub public_key: Option<&'a [u8]>,
+    /// Signature scheme / ciphersuite to search for
     #[builder(default, setter(strip_option))]
     pub signature_scheme: Option<SignatureScheme>,
-    /// Credential type to build for
+    /// Credential type to search for
     #[builder(default, setter(strip_option))]
     pub credential_type: Option<CredentialType>,
+    /// unix timestamp (seconds) of point of earliest validity to search for
+    #[builder(default, setter(strip_option))]
+    pub earliest_validity: Option<u64>,
 }
 
 impl CredentialRef {
@@ -54,6 +60,8 @@ impl CredentialRef {
             client_id,
             signature_scheme,
             credential_type,
+            public_key,
+            earliest_validity,
         } = find_filters;
 
         let mut stored_keypairs = keypairs::load_all(database)
@@ -76,6 +84,11 @@ impl CredentialRef {
                     ))
                     .map_err(Into::into)
             })
+            .filter(|stored_keypair_result| {
+                stored_keypair_result.as_ref().ok().is_none_or(|stored_keypair| {
+                    public_key.is_none_or(|public_key| stored_keypair.public() == public_key)
+                })
+            })
             .collect::<Result<Vec<_>>>()?;
 
         let partial_credentials = database
@@ -84,9 +97,8 @@ impl CredentialRef {
             .map_err(KeystoreError::wrap("finding all credentials"))?
             .into_iter()
             .filter(|stored| {
-                client_id
-                    .map(|client_id| client_id.as_ref() == stored.id)
-                    .unwrap_or(true)
+                client_id.is_none_or(|client_id| client_id.as_ref() == stored.id)
+                    && earliest_validity.is_none_or(|earliest_validity| earliest_validity == stored.created_at)
             })
             .map(|stored| -> Result<_> {
                 let mls_credential = MlsCredential::tls_deserialize_exact(&stored.credential)
@@ -124,6 +136,7 @@ impl CredentialRef {
                     r#type: mls_credential.credential_type(),
                     signature_scheme: signature_key_pair.signature_scheme(),
                     earliest_validity: stored_credential.created_at,
+                    public_key: signature_key_pair.public().to_owned(),
                 })
             }
         }

@@ -180,13 +180,9 @@ mod tests {
     /// Create a history secret, and restore it into a CoreCrypto instance
     #[apply(all_cred_cipher)]
     async fn can_create_ephemeral_client(case: TestContext) {
-        eprintln!("test start");
         let [alice] = case.sessions().await;
-        eprintln!("created alice");
         let conversation = case.create_conversation([&alice]).await;
-        eprintln!("created conversation");
         let conversation = conversation.enable_history_sharing_notify().await;
-        eprintln!("enabled conversation history");
 
         assert_eq!(
             conversation.member_count().await,

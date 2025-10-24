@@ -67,15 +67,24 @@ pub(super) fn deserialize(stored: &StoredSignatureKeypair) -> Result<SignatureKe
         .map_err(Into::into)
 }
 
-/// Retrieve the first keypair from the list which matches the provided signature scheme and client id
+/// Retrieve the first keypair from the list which matches the provided signature scheme, client id, and public key
 pub(super) async fn find_matching(
     keypairs: &[StoredSignatureKeypair],
     client_id: impl AsRef<[u8]>,
     signature_scheme: SignatureScheme,
+    public_key: impl AsRef<[u8]>,
 ) -> Result<Option<SignatureKeyPair>> {
     keypairs
         .iter()
-        .find(|stored| stored.credential_id == client_id.as_ref() && stored.signature_scheme == signature_scheme as u16)
+        .filter(|stored| {
+            stored.credential_id == client_id.as_ref() && stored.signature_scheme == signature_scheme as u16
+        })
         .map(deserialize)
+        .find(|key_pair_result| {
+            key_pair_result
+                .as_ref()
+                .ok()
+                .is_none_or(|key_pair| key_pair.public() == public_key.as_ref())
+        })
         .transpose()
 }

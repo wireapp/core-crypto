@@ -316,8 +316,7 @@ impl Session {
     /// It will be embedded in the [openmls::key_packages::KeyPackage]'s [openmls::extensions::LifetimeExtension]
     #[cfg(test)]
     pub async fn set_keypackage_lifetime(&self, duration: std::time::Duration) -> Result<()> {
-        use std::ops::DerefMut;
-        match self.inner.write().await.deref_mut() {
+        match &mut *self.inner.write().await {
             None => Err(Error::MlsNotInitialized),
             Some(SessionInner {
                 keypackage_lifetime, ..
@@ -443,8 +442,7 @@ mod tests {
             assert!(
                 x509_key_packages
                     .iter()
-                    .all(|kp| CredentialType::X509
-                        == CredentialType::from(kp.leaf_node().credential().credential_type()))
+                    .all(|kp| kp.leaf_node().credential().credential_type() == CredentialType::X509)
             );
         })
         .await

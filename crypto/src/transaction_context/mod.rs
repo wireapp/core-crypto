@@ -1,7 +1,7 @@
 //! This module contains the primitives to enable transactional support on a higher level within the
 //! [Session]. All mutating operations need to be done through a [TransactionContext].
 
-use std::{ops::Deref, sync::Arc};
+use std::sync::Arc;
 
 #[cfg(feature = "proteus")]
 use async_lock::Mutex;
@@ -114,14 +114,14 @@ impl TransactionContext {
     }
 
     pub(crate) async fn session(&self) -> Result<Session> {
-        match self.inner.read().await.deref() {
+        match &*self.inner.read().await {
             TransactionContextInner::Valid { mls_client, .. } => Ok(mls_client.clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
 
     pub(crate) async fn mls_transport(&self) -> Result<RwLockReadGuardArc<Option<Arc<dyn MlsTransport + 'static>>>> {
-        match self.inner.read().await.deref() {
+        match &*self.inner.read().await {
             TransactionContextInner::Valid {
                 transport: callbacks, ..
             } => Ok(callbacks.read_arc().await),
@@ -134,7 +134,7 @@ impl TransactionContext {
         &self,
         callbacks: Option<Arc<dyn MlsTransport + 'static>>,
     ) -> Result<()> {
-        match self.inner.read().await.deref() {
+        match &*self.inner.read().await {
             TransactionContextInner::Valid { transport: cbs, .. } => {
                 *cbs.write_arc().await = callbacks;
                 Ok(())
@@ -145,21 +145,21 @@ impl TransactionContext {
 
     /// Clones all references that the [MlsCryptoProvider] comprises.
     pub async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
-        match self.inner.read().await.deref() {
+        match &*self.inner.read().await {
             TransactionContextInner::Valid { provider, .. } => Ok(provider.clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
 
     pub(crate) async fn keystore(&self) -> Result<Database> {
-        match self.inner.read().await.deref() {
+        match &*self.inner.read().await {
             TransactionContextInner::Valid { provider, .. } => Ok(provider.keystore()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
 
     pub(crate) async fn mls_groups(&self) -> Result<RwLockWriteGuardArc<GroupStore<MlsConversation>>> {
-        match self.inner.read().await.deref() {
+        match &*self.inner.read().await {
             TransactionContextInner::Valid { mls_groups, .. } => Ok(mls_groups.write_arc().await),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
@@ -167,7 +167,7 @@ impl TransactionContext {
 
     #[cfg(feature = "proteus")]
     pub(crate) async fn proteus_central(&self) -> Result<Arc<Mutex<Option<ProteusCentral>>>> {
-        match self.inner.read().await.deref() {
+        match &*self.inner.read().await {
             TransactionContextInner::Valid { proteus_central, .. } => Ok(proteus_central.clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
@@ -178,7 +178,7 @@ impl TransactionContext {
     /// something is called from this object.
     pub async fn finish(&self) -> Result<()> {
         let mut guard = self.inner.write().await;
-        let TransactionContextInner::Valid { provider, .. } = guard.deref() else {
+        let TransactionContextInner::Valid { provider, .. } = &*guard else {
             return Err(Error::InvalidTransactionContext);
         };
 
@@ -199,7 +199,7 @@ impl TransactionContext {
     pub async fn abort(&self) -> Result<()> {
         let mut guard = self.inner.write().await;
 
-        let TransactionContextInner::Valid { provider, .. } = guard.deref() else {
+        let TransactionContextInner::Valid { provider, .. } = &*guard else {
             return Err(Error::InvalidTransactionContext);
         };
 

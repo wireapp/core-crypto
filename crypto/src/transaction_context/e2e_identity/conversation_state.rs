@@ -165,16 +165,21 @@ mod tests {
             let expiration_time = core::time::Duration::from_secs(14);
             let start = web_time::Instant::now();
 
+            // delay a bit so we don't get a credential conflict when adding this credential to alice
+            smol::Timer::after(std::time::Duration::from_secs(1)).await;
+
             let intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
+            // this completely invents a new client id for alice, which gets propagated into the credential
             let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
             let cb = Credential::x509(cert.clone()).unwrap();
             let conversation = conversation.e2ei_rotate_notify(Some(&cb)).await;
 
             let alice_client = alice.transaction.session().await.unwrap();
-            let alice_provider = alice.transaction.mls_provider().await.unwrap();
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
+            let mut credential = Credential::x509(cert).unwrap();
+            let credential_ref = credential.save(&alice_client.crypto_provider.keystore()).await.unwrap();
             alice_client
-                .save_new_x509_credential(&alice_provider.keystore(), case.signature_scheme(), cert)
+                .add_credential_without_clientid_check(&credential_ref)
                 .await
                 .unwrap();
 
@@ -232,7 +237,6 @@ mod tests {
             let conversation = conversation.e2ei_rotate_notify(Some(&cb)).await;
 
             let alice_client = alice.session().await;
-            let alice_provider = alice.transaction.mls_provider().await.unwrap();
 
             // all credentials need to be distinguishable by type, scheme, and timestamp
             // we need to wait a second so the new credential has a distinct timestamp
@@ -240,10 +244,8 @@ mod tests {
             smol::Timer::after(std::time::Duration::from_secs(1)).await;
 
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
-            alice_client
-                .save_new_x509_credential(&alice_provider.keystore(), case.signature_scheme(), cert_bundle)
-                .await
-                .unwrap();
+            let credential = Credential::x509(cert_bundle).unwrap();
+            alice_client.save_and_add_credential(credential).await.unwrap();
 
             let elapsed = start.elapsed();
             // Give time to the certificate to expire

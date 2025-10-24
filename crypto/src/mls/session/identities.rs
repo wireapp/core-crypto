@@ -1,6 +1,5 @@
 use std::{
     collections::{BTreeSet, HashMap},
-    ops::Deref,
     sync::Arc,
 };
 
@@ -8,11 +7,8 @@ use openmls::prelude::{Credential as MlsCredential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
 
 use crate::{
-    Credential, CredentialType, Session,
-    mls::session::{
-        SessionInner,
-        error::{Error, Result},
-    },
+    Credential, CredentialFindFilters, CredentialType, Session,
+    mls::session::error::{Error, Result},
 };
 
 /// Each session has a set of credentials per signature scheme: they can have various properties, but typically
@@ -33,21 +29,50 @@ impl Identities {
         Self(HashMap::with_capacity(capacity))
     }
 
+    /// Return an iterator over all credentials matching the given filters.
+    pub(crate) fn find_credential(&self, filters: CredentialFindFilters<'_>) -> impl Iterator<Item = Arc<Credential>> {
+        let CredentialFindFilters {
+            client_id,
+            public_key,
+            signature_scheme,
+            credential_type,
+            earliest_validity,
+        } = filters;
+
+        // we have an easy way to filter out a bunch of credentials if the signature scheme filter is set,
+        // but we have to search through all of them if it is not.
+        let values: Box<dyn Iterator<Item = Arc<Credential>>> = match signature_scheme {
+            Some(signature_scheme) => match self.0.get(&signature_scheme) {
+                Some(set) => Box::new(set.iter().cloned()),
+                None => Box::new(std::iter::empty()),
+            },
+            None => Box::new(self.0.values().flatten().cloned()),
+        };
+
+        values.filter(move |credential| {
+            signature_scheme.is_none_or(|signature_scheme| credential.signature_scheme() == signature_scheme)
+                && credential_type.is_none_or(|credential_type| credential.credential_type() == credential_type)
+                && earliest_validity.is_none_or(|earliest_validity| credential.earliest_validity == earliest_validity)
+                && client_id.is_none_or(|client_id| credential.client_id() == client_id)
+                && public_key.is_none_or(|public_key| credential.signature_key_pair.public() == public_key)
+        })
+    }
+
+    /// Return the first credential matching the supplied fields
     pub(crate) async fn find_credential_by_public_key(
         &self,
-        sc: SignatureScheme,
-        ct: CredentialType,
-        pk: &SignaturePublicKey,
+        signature_scheme: SignatureScheme,
+        credential_type: CredentialType,
+        public_key: &SignaturePublicKey,
     ) -> Option<Arc<Credential>> {
-        self.0
-            .get(&sc)?
-            .iter()
-            .find(|c| {
-                let ct_match = ct == c.mls_credential.credential_type();
-                let pk_match = c.signature_key_pair.public() == pk.as_slice();
-                ct_match && pk_match
-            })
-            .cloned()
+        self.find_credential(
+            CredentialFindFilters::builder()
+                .signature_scheme(signature_scheme)
+                .credential_type(credential_type)
+                .public_key(public_key.as_slice())
+                .build(),
+        )
+        .next()
     }
 
     pub(crate) async fn find_most_recent_credential(
@@ -84,7 +109,9 @@ impl Identities {
     /// If there already exists a credential whose signature scheme, credential type, and timestamp of creation
     /// match those of an existing credential, this will return a `CredentialConflict`. This is because our code
     /// relies on `find_most_recent_credential` which can only distinguish credentials by those factors.
-    pub(crate) async fn push_credential(&mut self, credential: Credential) -> Result<()> {
+    ///
+    /// Returns an `Arc<Credential>` which is a smart pointer to the credential within this data structure.
+    pub(crate) async fn push_credential(&mut self, credential: Credential) -> Result<Arc<Credential>> {
         debug_assert_ne!(
             credential.earliest_validity, 0,
             "this credential must have been persisted/updated in the keystore, which sets this to the current timestamp"
@@ -96,18 +123,20 @@ impl Identities {
             credential.earliest_validity,
         )?;
 
+        let credential = Arc::new(credential);
+
         let _already_existed = !self
             .0
             .entry(credential.signature_scheme())
             .or_default()
-            .insert(Arc::new(credential));
+            .insert(credential.clone());
 
         debug_assert!(
             !_already_existed,
             "we've alredy deconflicted by signature scheme, type, and timestamp, so there can't be a matching credential present"
         );
 
-        Ok(())
+        Ok(credential)
     }
 
     pub(crate) fn remove(&mut self, mls_credential: &MlsCredential) {
@@ -122,40 +151,11 @@ impl Identities {
 }
 
 impl Session {
-    pub(crate) async fn find_most_recent_credential(
-        &self,
-        sc: SignatureScheme,
-        ct: CredentialType,
-    ) -> Result<Arc<Credential>> {
-        match self.inner.read().await.deref() {
-            None => Err(Error::MlsNotInitialized),
-            Some(SessionInner { identities, .. }) => identities
-                .find_most_recent_credential(sc, ct)
-                .await
-                .ok_or(Error::CredentialNotFound(ct)),
-        }
-    }
-
-    pub(crate) async fn find_credential_by_public_key(
-        &self,
-        sc: SignatureScheme,
-        ct: CredentialType,
-        pk: &SignaturePublicKey,
-    ) -> Result<Arc<Credential>> {
-        match self.inner.read().await.deref() {
-            None => Err(Error::MlsNotInitialized),
-            Some(SessionInner { identities, .. }) => identities
-                .find_credential_by_public_key(sc, ct, pk)
-                .await
-                .ok_or(Error::CredentialNotFound(ct)),
-        }
-    }
-
     #[cfg(test)]
     pub(crate) async fn identities_count(&self) -> Result<usize> {
-        match self.inner.read().await.deref() {
+        match &*self.inner.read().await {
             None => Err(Error::MlsNotInitialized),
-            Some(SessionInner { identities, .. }) => Ok(identities.iter().count()),
+            Some(super::SessionInner { identities, .. }) => Ok(identities.iter().count()),
         }
     }
 }
@@ -193,7 +193,7 @@ mod tests {
                     .find_most_recent_credential(case.signature_scheme(), case.credential_type)
                     .await
                     .unwrap();
-                assert_eq!(found.as_ref(), &new);
+                assert_eq!(found, new);
             })
             .await
         }
@@ -222,11 +222,13 @@ mod tests {
                 let to_search = to_search.unwrap();
                 let pk = SignaturePublicKey::from(to_search.signature_key_pair.public());
                 let client = central.transaction.session().await.unwrap();
+
                 let found = client
                     .find_credential_by_public_key(case.signature_scheme(), case.credential_type, &pk)
                     .await
                     .unwrap();
-                assert_eq!(&to_search, found.as_ref());
+
+                assert_eq!(to_search, found);
             })
             .await
         }

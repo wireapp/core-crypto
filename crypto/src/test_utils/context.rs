@@ -131,29 +131,29 @@ impl SessionContext {
         WireQualifiedClientId::from(self.get_client_id().await).get_user_id()
     }
 
-    pub async fn new_credential(&mut self, case: &TestContext, signer: Option<&X509Certificate>) -> Credential {
+    /// Create, save, and add a new credential of the type relevant to this test
+    pub async fn new_credential(&mut self, case: &TestContext, signer: Option<&X509Certificate>) -> Arc<Credential> {
         let backend = &self.transaction.mls_provider().await.unwrap();
-        let transaction = &self.transaction.keystore().await.unwrap();
         let client = self.session().await;
         let client_id = client.id().await.unwrap();
 
-        match case.credential_type {
-            CredentialType::Basic => {
-                let cb = Credential::basic(case.signature_scheme(), client_id, backend).unwrap();
-                client
-                    .save_identity(&backend.keystore(), None, case.signature_scheme(), cb)
-                    .await
-                    .unwrap()
-            }
+        let mut credential = match case.credential_type {
+            CredentialType::Basic => Credential::basic(case.signature_scheme(), client_id, backend).unwrap(),
             CredentialType::X509 => {
                 let cert_bundle = CertificateBundle::rand(&client_id, signer.unwrap());
-                client
-                    .save_new_x509_credential(transaction, case.signature_scheme(), cert_bundle)
-                    .await
-                    .unwrap()
+                Credential::x509(cert_bundle).unwrap()
             }
             CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
-        }
+        };
+
+        let credential_ref = credential.save(&self.session.crypto_provider.keystore()).await.unwrap();
+        // in the x509 case, `CertificateBundle::rand` just completely invents a new client id in the format that e2ei
+        // apparently prefers. We still need to add that credential even so, because this test util code is (meant to be) part of setup,
+        // not part of the code under test.
+        self.session
+            .add_credential_without_clientid_check(&credential_ref)
+            .await
+            .unwrap()
     }
 
     pub async fn find_most_recent_credential(
@@ -242,22 +242,16 @@ impl SessionContext {
 
     pub async fn save_new_credential(
         &self,
-        case: &TestContext,
+        _case: &TestContext,
         handle: &str,
         display_name: &str,
         signer: &X509Certificate,
-    ) -> Credential {
+    ) -> Arc<Credential> {
         let cid = QualifiedE2eiClientId::try_from(self.get_client_id().await.as_slice()).unwrap();
         let new_cert = CertificateBundle::new(handle, display_name, Some(&cid), None, signer);
+        let credential = Credential::x509(new_cert).unwrap();
         let client = self.session().await;
-        client
-            .save_new_x509_credential(
-                &self.transaction.keystore().await.unwrap(),
-                case.signature_scheme(),
-                new_cert,
-            )
-            .await
-            .unwrap()
+        client.save_and_add_credential(credential).await.unwrap()
     }
 
     pub(crate) async fn create_key_packages_and_update_credential_in_all_conversations<'a>(

@@ -4,7 +4,8 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use super::error::{Error, Result};
 use crate::{
-    CertificateBundle, Ciphersuite, CredentialType, E2eiEnrollment, KeystoreError, MlsError, RecursiveError,
+    CertificateBundle, Ciphersuite, Credential, CredentialType, E2eiEnrollment, KeystoreError, MlsError,
+    RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     transaction_context::TransactionContext,
@@ -169,10 +170,15 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting session"))?;
 
+        let credential = Credential::x509(cert_bundle).map_err(RecursiveError::mls_credential(
+            "creating new x509 credential from certificate bundle in save_x509_credential",
+        ))?;
         client
-            .save_new_x509_credential(&mls_provider.keystore(), signature_scheme, cert_bundle)
+            .save_and_add_credential(credential)
             .await
-            .map_err(RecursiveError::mls_client("saving new x509 credential"))?;
+            .map_err(RecursiveError::mls_client(
+                "saving and adding credential in save_x509_credential",
+            ))?;
 
         Ok(crl_new_distribution_points)
     }
