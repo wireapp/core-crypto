@@ -21,7 +21,7 @@ impl Credential {
         let crypto = RustCrypto::default();
         CryptoCredential::basic(
             CryptoCiphersuite::from(ciphersuite).signature_algorithm(),
-            &client_id.as_cc(),
+            client_id.as_cc(),
             crypto,
         )
         .map(Into::into)

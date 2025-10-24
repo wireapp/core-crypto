@@ -9,7 +9,7 @@ pub(crate) mod mls_transport;
 mod proteus;
 mod randomness;
 
-use core_crypto::{Session, SessionConfig, ValidatedSessionConfig};
+use core_crypto::Session;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -63,15 +63,10 @@ pub async fn core_crypto_new(database: DatabaseMaybeArc) -> CoreCryptoResult<Cor
 impl CoreCryptoFfi {
     /// Instantiate CC
     pub async fn new(database: DatabaseMaybeArc) -> CoreCryptoResult<Self> {
-        let configuration = SessionConfig::builder().database(database.to_cc()).build().validate()?;
-        CoreCryptoFfi::from_config(configuration).await
-    }
-
-    async fn from_config(configuration: ValidatedSessionConfig) -> CoreCryptoResult<Self> {
         #[cfg(target_family = "wasm")]
         console_error_panic_hook::set_once();
 
-        let client = Session::try_new(configuration).await?;
+        let client = Session::try_new(database.to_cc()).await?;
         let inner = core_crypto::CoreCrypto::from(client);
 
         Ok(Self { inner })
