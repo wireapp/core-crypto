@@ -18,14 +18,14 @@ describe("epoch observer", () => {
         const { length, first_id_hex } = await browser.execute(
             async (clientName, conv_id_str) => {
                 const conv_id = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conv_id_str)
+                    new TextEncoder().encode(conv_id_str).buffer
                 );
 
                 // set up the observer. this just keeps a list of all observations.
                 type ObservedEpoch = {
                     // @ts-expect-error `window` is not present when ts is checking, but is present in the browser
                     conversationId: window.ccModule.ConversationId;
-                    epoch: number;
+                    epoch: bigint;
                 };
                 class Observer {
                     observations: ObservedEpoch[];
@@ -35,7 +35,7 @@ describe("epoch observer", () => {
                     async epochChanged(
                         // @ts-expect-error `window` is not present when ts is checking, but is present in the browser
                         conversationId: window.ccModule.ConversationId,
-                        epoch: number
+                        epoch: bigint
                     ): Promise<void> {
                         this.observations.push({ conversationId, epoch });
                     }
@@ -64,29 +64,17 @@ describe("epoch observer", () => {
                 // not awaited, makes it to us
                 await new Promise((resolve) => setTimeout(resolve, 200)); // 200ms should be plenty
 
-                // we have to explicitly return non-primitives, as anything passed by reference won't make it out of the browser context
-                const first_id_hex = Array.from(
-                    observer.observations[0]?.conversationId.copyBytes() ??
-                        new Uint8Array(),
-                    (byte: number) => {
-                        return ("0" + (byte & 0xff).toString(16)).slice(-2);
-                    }
-                ).join("");
+                // pass a serializable
+                const first_id_hex = new TextDecoder().decode(
+                    observer.observations[0]?.conversationId.copyBytes()
+                );
                 return { length: observer.observations.length, first_id_hex };
             },
             alice,
             convId
         );
 
-        const expect_conversation_id = new TextEncoder().encode(convId);
-        const expect_conversation_id_hex = Array.from(
-            expect_conversation_id,
-            (byte) => {
-                return ("0" + (byte & 0xff).toString(16)).slice(-2);
-            }
-        ).join("");
-
         expect(length).toEqual(1);
-        expect(first_id_hex).toEqual(expect_conversation_id_hex);
+        expect(first_id_hex).toEqual(convId);
     });
 });
