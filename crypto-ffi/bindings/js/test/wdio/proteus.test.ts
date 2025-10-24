@@ -97,7 +97,7 @@ describe("proteus", () => {
             // wdio wraps the error and prepends the original message with
             // the error type as prefix
             new Error(
-                "ProteusErrorOther: Another Proteus error occurred but the details are probably irrelevant to clients (101)"
+                "Error: ProteusError.Other"
             )
         );
     });
