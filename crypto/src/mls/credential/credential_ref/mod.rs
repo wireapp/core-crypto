@@ -6,14 +6,11 @@ mod persistence;
 
 use openmls::prelude::{CredentialType, SignatureScheme};
 
-pub(crate) use self::error::Result;
-pub use self::{
-    error::Error,
-    find::{FindFilters, FindFiltersBuilder},
-};
+pub(crate) use self::error::{Error, Result};
+pub use self::find::{FindFilters, FindFiltersBuilder};
 use crate::{ClientId, ClientIdRef};
 
-/// A reference to a credential which has been stored in the database.
+/// A reference to a credential which has been stored in a database.
 ///
 /// This serves two purposes:
 ///
