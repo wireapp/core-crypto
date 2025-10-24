@@ -39,7 +39,8 @@ using zsh).</p>
 <blockquote>
 <p>If you are building on macOS you’ll need to setup <code>$ANDROID_SDK_ROOT</code> path variable manually:</p>
 <div class="example-wrap"><pre class="language-text"><code>export ANDROID_SDK_ROOT=~/Android/Sdk</code></pre></div></blockquote>
-<p><a href="https://developer.android.com/studio/projects/install-ndk">Install the Android NDK</a></p>
+<p><a href="https://developer.android.com/studio/projects/install-ndk">Install the Android NDK</a>. Make sure to set the
+<code>ANDROID_NDK_HOME</code> variable to point to the NDK installation.</p>
 <p>Install android rust targets:</p>
 <div class="example-wrap"><pre class="language-text"><code>rustup target add x86_64-linux-android aarch64-linux-android armv7-linux-androideabi</code></pre></div>
 <p>Build:</p>
