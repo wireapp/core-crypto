@@ -21,8 +21,6 @@ describe("proteus", () => {
         const alice = crypto.randomUUID();
         await proteusInit(alice);
         const result = await browser.execute(async (clientName) => {
-            const lastResortPrekeyId =
-                window.ccModule.CoreCrypto.proteusLastResortPrekeyId();
             const cc = window.ensureCcDefined(clientName);
             const lastResortPrekeyId =
                 window.ccModule.CoreCrypto.proteusLastResortPrekeyId();
@@ -34,8 +32,8 @@ describe("proteus", () => {
 
             return {
                 lastResortPrekeyId: lastResortPrekeyId,
-                lastResortPrekey1: Array.from(prekey1),
-                lastResortPrekey2: Array.from(prekey2),
+                lastResortPrekey1: new Uint8Array(prekey1),
+                lastResortPrekey2: new Uint8Array(prekey2),
             };
         }, alice);
 
@@ -98,9 +96,7 @@ describe("proteus", () => {
         ).rejects.toThrow(
             // wdio wraps the error and prepends the original message with
             // the error type as prefix
-            new Error(
-                "ProteusErrorOther: Another Proteus error occurred but the details are probably irrelevant to clients (101)"
-            )
+            new Error("Error: ProteusError.Other")
         );
     });
 });
