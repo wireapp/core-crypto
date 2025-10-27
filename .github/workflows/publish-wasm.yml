@@ -5,9 +5,6 @@ concurrency:
 
 on:
   workflow_call:
-    secrets:
-      NPM_TOKEN:
-        required: true
 
 env:
   RELEASE: 1
@@ -22,6 +19,9 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      - name: Setup Node for npm publish
+        uses: actions/setup-node@v6
 
       - name: download ts artifacts
         uses: ./.github/actions/make/web/ts
@@ -38,15 +38,13 @@ jobs:
       - name: upload artifacts
         uses: softprops/action-gh-release@v2
         with:
-            files: "${{ steps.package.outputs.path }}"
-            fail_on_unmatched_files: true
+          files: "${{ steps.package.outputs.path }}"
+          fail_on_unmatched_files: true
 
-      - name: publishes package to npm
-        env:
-          NPM_CONFIG_TOKEN: "${{ secrets.NPM_TOKEN }}"
+      - name: publish package to npm (Trusted Publishers)
         run: |
           cd crypto-ffi/bindings/js
-          bun publish ./"${{ steps.package.outputs.filename }}"
+          npm publish "./${{ steps.package.outputs.filename }}"
 
       - name: delete package from gh release
         run: gh release delete-asset $GITHUB_REF_NAME "${{ steps.package.outputs.filename }}" --yes

@@ -294,5 +294,5 @@ jobs:
   publish-web:
     needs: prepare-publish
     uses: ./.github/workflows/publish-wasm.yml
-    secrets:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    permissions:
+      id-token: write
