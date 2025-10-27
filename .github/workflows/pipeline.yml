@@ -9,7 +9,7 @@ on:
     branches:
       - main
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
 
 env:
@@ -19,7 +19,6 @@ env:
   RELEASE: 1
 
 jobs:
-
   #################
   # Shared between JVM Linux and Android
 
@@ -114,8 +113,8 @@ jobs:
 
   docs-jvm:
     needs:
-       - bindings-jvm
-       - build-jvm-linux
+      - bindings-jvm
+      - build-jvm-linux
     uses: ./.github/workflows/docs-jvm.yml
 
   #################
@@ -208,22 +207,22 @@ jobs:
       RUSTDOCFLAGS: "-D warnings"
 
     steps:
-    - name: checkout repository
-      uses: actions/checkout@v5
+      - name: checkout repository
+        uses: actions/checkout@v5
 
-    - uses: ./.github/actions/setup-and-cache-rust
-      with:
-        rustflags: '-D warnings -W unreachable-pub'
-    - run: cargo doc --all --no-deps --locked
+      - uses: ./.github/actions/setup-and-cache-rust
+        with:
+          rustflags: "-D warnings -W unreachable-pub"
+      - run: cargo doc --all --no-deps --locked
 
-    - uses: actions/upload-artifact@v4.6.2
-      with:
-        name: rust
-        path: target/doc
-        retention-days: 1
-        overwrite: true
-        include-hidden-files: true
-        if-no-files-found: error
+      - uses: actions/upload-artifact@v4.6.2
+        with:
+          name: rust
+          path: target/doc
+          retention-days: 1
+          overwrite: true
+          include-hidden-files: true
+          if-no-files-found: error
 
   #################
   # Cross-platform jobs
@@ -242,7 +241,6 @@ jobs:
       - docs-jvm
       - docs-swift
     uses: ./.github/workflows/deploy-docs.yml
-
 
   #################
   # Publish
@@ -275,7 +273,6 @@ jobs:
       PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-
 
   publish-android:
     needs: prepare-publish
