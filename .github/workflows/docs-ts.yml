@@ -29,7 +29,7 @@ jobs:
     - name: make ts docs
       run: make docs-ts
 
-    - uses: actions/upload-artifact@v4.6.2
+    - uses: actions/upload-artifact@v5.0.0
       with:
         name: typescript
         path: target/typescript/doc

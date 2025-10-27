@@ -215,7 +215,7 @@ jobs:
           rustflags: "-D warnings -W unreachable-pub"
       - run: cargo doc --all --no-deps --locked
 
-      - uses: actions/upload-artifact@v4.6.2
+      - uses: actions/upload-artifact@v5.0.0
         with:
           name: rust
           path: target/doc
