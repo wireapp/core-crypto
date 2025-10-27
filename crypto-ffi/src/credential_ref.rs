@@ -27,10 +27,10 @@ use crate::{ClientId, CoreCryptoResult, CredentialType};
 pub struct CredentialRef(pub(crate) CryptoCredentialRef);
 
 #[cfg(target_family = "wasm")]
-pub type CredentialRefMaybeArc = CredentialRef;
+pub(crate) type CredentialRefMaybeArc = CredentialRef;
 
 #[cfg(not(target_family = "wasm"))]
-pub type CredentialRefMaybeArc = std::sync::Arc<CredentialRef>;
+pub(crate) type CredentialRefMaybeArc = std::sync::Arc<CredentialRef>;
 
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
