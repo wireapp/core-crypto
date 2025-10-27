@@ -19,7 +19,7 @@ describe("history sharing", () => {
         const result = await browser.execute(
             async (clientName, convIdStr) => {
                 const convId = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(convIdStr)
+                    new TextEncoder().encode(convIdStr).buffer
                 );
 
                 // set up the observer. this just keeps a list of all observations.
