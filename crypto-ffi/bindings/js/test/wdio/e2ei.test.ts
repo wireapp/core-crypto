@@ -19,8 +19,8 @@ describe("end to end identity", () => {
             const cc = window.ensureCcDefined(clientName);
             const ciphersuite = window.defaultCipherSuite;
             const encoder = new TextEncoder();
-            const jsonToByteArray = (json: object) =>
-                encoder.encode(JSON.stringify(json, null, 0));
+            const jsonToByteArrayBuffer = (json: object) =>
+                encoder.encode(JSON.stringify(json, null, 0)).buffer;
             const clientId =
                 "b7ac11a4-8f01-4527-af88-1c30885a7931:4959bc6ab12f2846@wire.com";
             const displayName = "Alice Smith";
@@ -43,7 +43,7 @@ describe("end to end identity", () => {
                     revokeCert: "https://example.com/acme/revoke-cert",
                 };
                 await enrollment.directoryResponse(
-                    jsonToByteArray(directoryResp)
+                    jsonToByteArrayBuffer(directoryResp)
                 );
 
                 const previousNonce =
@@ -55,7 +55,7 @@ describe("end to end identity", () => {
                     orders: "https://example.com/acme/acct/evOfKhNU60wg/orders",
                 };
                 await enrollment.newAccountResponse(
-                    jsonToByteArray(accountResp)
+                    jsonToByteArrayBuffer(accountResp)
                 );
 
                 await enrollment.newOrderRequest(previousNonce);
@@ -83,7 +83,7 @@ describe("end to end identity", () => {
                         "https://example.com/acme/order/TOlocE8rfgo/finalize",
                 };
                 await enrollment.newOrderResponse(
-                    jsonToByteArray(newOrderResp)
+                    jsonToByteArrayBuffer(newOrderResp)
                 );
 
                 const userAuthzUrl =
@@ -108,13 +108,12 @@ describe("end to end identity", () => {
                     ],
                 };
                 await enrollment.newAuthzResponse(
-                    jsonToByteArray(userAuthzResp)
+                    jsonToByteArrayBuffer(userAuthzResp)
                 );
 
                 const deviceAuthzUrl =
                     "https://example.com/acme/wire-acme/authz/d2sJyM0MaV6wTX4ClP8eUQ8TF4ZKk7jz";
                 await enrollment.newAuthzRequest(deviceAuthzUrl, previousNonce);
-
                 const deviceAuthzResp = {
                     status: "pending",
                     expires: "2037-01-02T14:09:30Z",
@@ -133,7 +132,7 @@ describe("end to end identity", () => {
                     ],
                 };
                 await enrollment.newAuthzResponse(
-                    jsonToByteArray(deviceAuthzResp)
+                    jsonToByteArrayBuffer(deviceAuthzResp)
                 );
 
                 const backendNonce =
@@ -158,13 +157,12 @@ describe("end to end identity", () => {
                     target: "http://example.com/target",
                 };
                 await enrollment.newDpopChallengeResponse(
-                    jsonToByteArray(dpopChallengeResp)
+                    jsonToByteArrayBuffer(dpopChallengeResp)
                 );
 
                 // simulate the OAuth redirect
                 const storeHandle = await ctx.e2eiEnrollmentStash(enrollment);
                 enrollment = await ctx.e2eiEnrollmentStashPop(storeHandle);
-
                 const idToken =
                     "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ";
                 await enrollment.newOidcChallengeRequest(
@@ -180,9 +178,8 @@ describe("end to end identity", () => {
                     target: "http://example.com/target",
                 };
                 await enrollment.newOidcChallengeResponse(
-                    jsonToByteArray(oidcChallengeResp)
+                    jsonToByteArrayBuffer(oidcChallengeResp)
                 );
-
                 const orderUrl =
                     "https://example.com/acme/wire-acme/order/C7uOXEgg5KPMPtbdE3aVMzv7cJjwUVth";
                 await enrollment.checkOrderRequest(orderUrl, previousNonce);
@@ -210,7 +207,7 @@ describe("end to end identity", () => {
                     notAfter: "2032-02-09T15:59:20.442908Z",
                 };
                 await enrollment.checkOrderResponse(
-                    jsonToByteArray(checkOrderResp)
+                    jsonToByteArrayBuffer(checkOrderResp)
                 );
 
                 await enrollment.finalizeRequest(previousNonce);
@@ -239,7 +236,7 @@ describe("end to end identity", () => {
                     notAfter: "2032-02-09T15:59:20.442908Z",
                 };
                 await enrollment.finalizeResponse(
-                    jsonToByteArray(finalizeResp)
+                    jsonToByteArrayBuffer(finalizeResp)
                 );
 
                 await enrollment.certificateRequest(previousNonce);
@@ -256,7 +253,7 @@ describe("end to end identity", () => {
             async (clientName, conversationId) => {
                 const cc = window.ensureCcDefined(clientName);
                 const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId)
+                    new TextEncoder().encode(conversationId).buffer
                 );
                 return await cc.transaction(async (ctx) => {
                     return await ctx.e2eiConversationState(cid);
@@ -278,12 +275,12 @@ describe("end to end identity", () => {
                 const cc = window.ensureCcDefined(clientName);
                 const encoder = new TextEncoder();
                 const cid = new window.ccModule.ConversationId(
-                    encoder.encode(conversationId)
+                    encoder.encode(conversationId).buffer
                 );
                 const identities = await cc.transaction(async (ctx) => {
                     return await ctx.getDeviceIdentities(cid, [
                         new window.ccModule.ClientId(
-                            encoder.encode(clientName)
+                            encoder.encode(clientName).buffer
                         ),
                     ]);
                 });
@@ -305,7 +302,7 @@ describe("end to end identity", () => {
             async (clientName, conversationId) => {
                 const cc = window.ensureCcDefined(clientName);
                 const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId)
+                    new TextEncoder().encode(conversationId).buffer
                 );
                 const identities = await cc.transaction(async (ctx) => {
                     return await ctx.getUserIdentities(cid, [
