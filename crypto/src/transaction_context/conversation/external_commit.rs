@@ -402,7 +402,7 @@ mod tests {
             let ct = group.credential().unwrap().credential_type();
             let cs = group.ciphersuite();
             let client = alice.session().await;
-            let cb = client.find_most_recent_credential(cs.into(), ct.into()).await.unwrap();
+            let cb = client.find_most_recent_credential(cs.into(), ct).await.unwrap();
 
             let gi = group
                 .export_group_info(
