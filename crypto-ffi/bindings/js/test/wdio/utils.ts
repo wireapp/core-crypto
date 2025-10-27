@@ -427,13 +427,14 @@ export async function roundTripMessage(
                 return await ctx.decryptMessage(cid, encryptedByClient2);
             });
 
+            const decoder = new TextDecoder();
             const result1 =
                 decryptedByClient1.message !== undefined
-                    ? decryptedByClient1.message
+                    ? decoder.decode(decryptedByClient1.message)
                     : null;
             const result2 =
                 decryptedByClient2.message !== undefined
-                    ? decryptedByClient2.message
+                    ? decoder.decode(decryptedByClient2.message)
                     : null;
 
             return [result1, result2];
@@ -443,13 +444,7 @@ export async function roundTripMessage(
         conversationId,
         message
     );
-    const decoder = new TextDecoder();
-    const decryptedMessage1 =
-        decrypted1 !== null ? decoder.decode(decrypted1) : null;
-    const decryptedMessage2 =
-        decrypted2 !== null ? decoder.decode(decrypted2) : null;
-
-    return [decryptedMessage1, decryptedMessage2];
+ return [decrypted1, decrypted2];
 }
 
 /**
