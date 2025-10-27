@@ -35,11 +35,14 @@ describe("external entropy", () => {
                 const cc = window.ensureCcDefined(clientName);
                 // Null byte seed
                 const seed = new Uint8Array(32);
-                await cc.reseedRng(seed);
+                await cc.reseedRng(seed.buffer);
 
                 const produced1 = await cc.randomBytes(length1);
                 const produced2 = await cc.randomBytes(length2);
-                return [Array.from(produced1), Array.from(produced2)];
+                return [
+                    Array.from(new Uint8Array(produced1)),
+                    Array.from(new Uint8Array(produced2)),
+                ];
             },
             alice,
             vector1.length * vector1.BYTES_PER_ELEMENT,
