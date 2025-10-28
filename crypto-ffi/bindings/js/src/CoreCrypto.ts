@@ -20,7 +20,6 @@ export {
     ErrorType,
     MlsErrorType,
     ProteusErrorType,
-    type CoreCryptoRichError,
     type ErrorContext,
     type ErrorTypeWithContext,
     type MlsErrorContext,
