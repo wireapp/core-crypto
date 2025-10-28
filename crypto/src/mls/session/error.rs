@@ -31,7 +31,7 @@ pub enum Error {
     UnexpectedlyReady,
     #[error("The keystore already contains a stored identity. Cannot create a new one!")]
     IdentityAlreadyPresent,
-    #[error("The supplied credential does not match the id or signature schemes provided")]
+    #[error("The supplied credential does not match the id this CC instance was initialized with")]
     WrongCredential,
     #[error("Credentials of type {0} are unknown")]
     UnknownCredential(u16),

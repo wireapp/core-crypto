@@ -41,7 +41,7 @@ impl CoreCryptoFfiClient {
             .into();
         let cc = CoreCryptoFfi::new(&db).await?;
         cc.transaction(TransactionHelper::new(async move |context| {
-            context.mls_init(client_id, vec![CIPHERSUITE_IN_USE.into()]).await
+            context.mls_init(&client_id, vec![CIPHERSUITE_IN_USE.into()]).await
         }))
         .await?;
 
