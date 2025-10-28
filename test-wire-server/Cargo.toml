@@ -1,7 +1,10 @@
 [package]
 name = "test-wire-server"
+description = "A program that imitates a Wire server for testing purposes"
 version = "0.13.0"
 edition = "2024"
+license = "MPL-2.0"
+publish = false
 rust-version = "1.90"
 
 [dependencies]
