@@ -72,7 +72,7 @@ mod tests {
         async fn can_create_from_valid_configuration(mut case: TestContext) {
             let db = case.create_persistent_db().await;
             Box::pin(async move {
-                let new_client_result = Session::try_new(db).await;
+                let new_client_result = Session::try_new(&db).await;
                 assert!(new_client_result.is_ok())
             })
             .await
@@ -102,7 +102,7 @@ mod tests {
     async fn can_fetch_client_public_key(mut case: TestContext) {
         let db = case.create_persistent_db().await;
         Box::pin(async move {
-            let result = Session::try_new(db).await;
+            let result = Session::try_new(&db).await;
             println!("{result:?}");
             assert!(result.is_ok());
         })
@@ -118,7 +118,7 @@ mod tests {
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
             // phase 1: init without initialized mls_client
-            let client = Session::try_new(db).await.unwrap();
+            let client = Session::try_new(&db).await.unwrap();
             let cc = CoreCrypto::from(client);
             let context = cc.new_transaction().await.unwrap();
             x509_test_chain.register_with_central(&context).await;

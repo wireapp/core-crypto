@@ -164,7 +164,7 @@ pub async fn new_central(
     let client_id = ClientId::from(Alphanumeric.sample_string(&mut rand::thread_rng(), 10).into_bytes()).into();
     let db = Database::open(connection_type, &DatabaseKey::generate()).await.unwrap();
 
-    let session = Session::try_new(db).await.unwrap();
+    let session = Session::try_new(&db).await.unwrap();
     let cc = CoreCrypto::from(session);
     cc.init(client_id, &[ciphersuite.signature_algorithm()]).await.unwrap();
     let delivery_service = Arc::<CoreCryptoTransportSuccessProvider>::default();

@@ -604,7 +604,7 @@ mod tests {
             .await
             .unwrap();
 
-        let cc: CoreCrypto = Session::try_new(db).await.unwrap().into();
+        let cc: CoreCrypto = Session::try_new(&db).await.unwrap().into();
         cc.init(client_id, &[case.ciphersuite().signature_algorithm()])
             .await
             .unwrap();
@@ -628,7 +628,7 @@ mod tests {
             .await
             .unwrap();
 
-        let cc: CoreCrypto = Session::try_new(db).await.unwrap().into();
+        let cc: CoreCrypto = Session::try_new(&db).await.unwrap().into();
         let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(&transaction).await;
