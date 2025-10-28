@@ -43,7 +43,8 @@ describe("transaction context", () => {
         const alice = crypto.randomUUID();
         await ccInit(alice);
 
-        const error = await browser.execute(async (clientName) => {
+        const result = await browser.execute(async (clientName) => {
+            const isMlsOtherError = window.ccModule.isMlsOtherError;
             const cc = window.ensureCcDefined(clientName);
 
             let context: CoreCryptoContext | null = null;
@@ -58,16 +59,24 @@ describe("transaction context", () => {
                     1
                 );
             } catch (err) {
-                const error = err as CoreCryptoError<ErrorType>;
-                return { name: error.name, message: error.message };
+                const e = err as { context?: { context?: { msg?: string } } };
+                return {
+                    errorWasThrown: true,
+                    isCorrectInstance: isMlsOtherError(e),
+                    contextMatches:
+                        e.context?.context?.msg ===
+                        "This transaction context has already been finished and can no longer be used.",
+                };
             }
-            return null;
+            return {
+                errorWasThrown: false,
+                isCorrectInstance: false,
+                contextMatches: false,
+            };
         }, alice);
-        expect(error).not.toBeNull();
-        expect(error?.name).toEqual("MlsErrorOther");
-        expect(error?.message).toEqual(
-            "This transaction context has already been finished and can no longer be used."
-        );
+        expect(result.errorWasThrown).toBe(true);
+        expect(result.isCorrectInstance).toBe(true);
+        expect(result.contextMatches).toBe(true);
     });
 
     it("should roll back transaction after error", async () => {
@@ -78,7 +87,7 @@ describe("transaction context", () => {
             const cc = window.ensureCcDefined(clientName);
             const basicCredentialType = window.ccModule.CredentialType.Basic;
             const conversationId = new window.ccModule.ConversationId(
-                new TextEncoder().encode("testConversation")
+                new TextEncoder().encode("testConversation").buffer
             );
 
             const expectedError = new Error("Message of expected error", {
@@ -120,6 +129,6 @@ describe("transaction context", () => {
             }
             throw new Error("Expected 'Conversation already exists' error");
         }, alice);
-        expect(error.message).toBe("Conversation already exists");
+        expect(error.message).toBe("MlsError.ConversationAlreadyExists");
     });
 });
