@@ -15,7 +15,9 @@ updates:
         patterns:
           - "*"
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories: # actions have to be listed explicitly
+      - "/" # workflows
+      - "/.github/actions/**"
     schedule:
       interval: "weekly"
   - package-ecosystem: "rust-toolchain"
