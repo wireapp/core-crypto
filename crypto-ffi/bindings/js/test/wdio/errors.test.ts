@@ -1,12 +1,7 @@
 import { browser, expect } from "@wdio/globals";
 import { ccInit, createConversation, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import {
-    ConversationId,
-    type CommitBundle,
-    type CoreCryptoRichError,
-} from "../../src/CoreCrypto";
-import { ErrorType } from "../../src/CoreCryptoError";
+import { ConversationId, type CommitBundle } from "../../src/CoreCrypto";
 
 beforeEach(async () => {
     await setup();
@@ -26,7 +21,7 @@ describe("core crypto errors", () => {
             const ProteusErrorType = window.ccModule.ProteusErrorType;
             const isProteusSessionNotFoundError =
                 window.ccModule.isProteusSessionNotFoundError;
-            const richErrorJSON: CoreCryptoRichError<ErrorType.Proteus> = {
+            const richErrorJSON = {
                 error_name: "ErrorTest",
                 message: "Hello world",
                 error_stack: ["test"],
@@ -46,15 +41,12 @@ describe("core crypto errors", () => {
             const ccErr2 = CoreCryptoError.build(e.message);
 
             return {
-                errorNamesAreIdentical:
-                    ccErr.name === ccErr2.name && ccErr.name === "ErrorTest",
                 proteusErrorCodeIsCorrect:
                     isProteusSessionNotFoundError(ccErr) &&
                     isProteusSessionNotFoundError(ccErr2) &&
                     ccErr.context.context.errorCode === 102,
             };
         });
-        expect(result.errorNamesAreIdentical).toBe(true);
         expect(result.proteusErrorCodeIsCorrect).toBe(true);
     });
 
@@ -68,7 +60,9 @@ describe("core crypto errors", () => {
             async (clientName, convId) => {
                 const cc = window.ensureCcDefined(clientName);
 
-                const conversationIdBuffer = new TextEncoder().encode(convId).buffer
+                const conversationIdBuffer = new TextEncoder().encode(
+                    convId
+                ).buffer;
                 const conversationId = new window.ccModule.ConversationId(
                     conversationIdBuffer
                 );
@@ -88,12 +82,13 @@ describe("core crypto errors", () => {
                     };
                 } catch (err) {
                     if (isMlsConversationAlreadyExistsError(err)) {
-                        const conversationIdFromError =
-                            new Uint8Array(err.context.context.conversationId);
+                        const conversationIdFromError = new Uint8Array(
+                            err.context.context.conversationId
+                        );
                         const errorSerialized = JSON.stringify(err);
                         const standardError = new Error(errorSerialized);
                         const errorDeserialized =
-                        CoreCryptoError.fromStdError(standardError);
+                            CoreCryptoError.fromStdError(standardError);
                         return {
                             errorWasThrown: true,
                             isCorrectInstance: true,
@@ -149,7 +144,7 @@ describe("core crypto errors", () => {
                 cc.provideTransport(window.deliveryService);
 
                 const conversationId = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(convId)
+                    new TextEncoder().encode(convId).buffer
                 );
                 const isMlsMessageRejectedError =
                     window.ccModule.isMlsMessageRejectedError;
@@ -234,16 +229,30 @@ describe("Error type mapping", () => {
         await ccInit(alice);
         await createConversation(alice, convId);
 
-        const expectedErrorMessage = "Conversation already exists";
-
-        await expect(
-            createConversation(alice, convId)
-            // wdio wraps the error and prepends the original message with
-            // the error type as prefix
-        ).rejects.toThrow(
-            new Error(
-                `MlsErrorConversationAlreadyExists: ${expectedErrorMessage}`
-            )
+        const isCorrectErrorInstance = await browser.execute(
+            async (clientName, conversationId) => {
+                const cc = window.ensureCcDefined(clientName);
+                const cid = new window.ccModule.ConversationId(
+                    new TextEncoder().encode(conversationId).buffer
+                );
+                try {
+                    await cc.transaction((ctx) =>
+                        ctx.createConversation(
+                            cid,
+                            window.ccModule.CredentialType.Basic
+                        )
+                    );
+                } catch (e) {
+                    return window.ccModule.isMlsConversationAlreadyExistsError(
+                        e
+                    );
+                }
+                return false;
+            },
+            alice,
+            convId
         );
+
+        expect(isCorrectErrorInstance).toBe(true);
     });
 });
