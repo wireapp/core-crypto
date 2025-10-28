@@ -24,7 +24,7 @@ use crate::{
 pub struct Credential(CryptoCredential);
 
 impl Credential {
-    fn basic_impl(ciphersuite: Ciphersuite, client_id: ClientIdMaybeArc) -> CoreCryptoResult<Self> {
+    fn basic_impl(ciphersuite: Ciphersuite, client_id: &ClientIdMaybeArc) -> CoreCryptoResult<Self> {
         let crypto = RustCrypto::default();
         CryptoCredential::basic(
             CryptoCiphersuite::from(ciphersuite).signature_algorithm(),
@@ -41,7 +41,7 @@ impl Credential {
 /// The result is independent of any client instance and the database; it lives in memory only.
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
-pub fn credential_basic(ciphersuite: Ciphersuite, client_id: ClientIdMaybeArc) -> CoreCryptoResult<Credential> {
+pub fn credential_basic(ciphersuite: Ciphersuite, client_id: &ClientIdMaybeArc) -> CoreCryptoResult<Credential> {
     Credential::basic_impl(ciphersuite, client_id)
 }
 
@@ -51,7 +51,7 @@ impl Credential {
     /// Generate a basic credential.
     ///
     /// The result is independent of any client instance and the database; it lives in memory only.
-    pub fn basic(ciphersuite: Ciphersuite, client_id: ClientIdMaybeArc) -> CoreCryptoResult<Self> {
+    pub fn basic(ciphersuite: Ciphersuite, client_id: &ClientIdMaybeArc) -> CoreCryptoResult<Self> {
         Credential::basic_impl(ciphersuite, client_id)
     }
 }
