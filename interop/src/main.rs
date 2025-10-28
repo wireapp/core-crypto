@@ -148,7 +148,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
         .unwrap();
 
     let mut clients = create_mls_clients(chrome_driver_addr, web_server).await;
-    let master_client = Session::try_new(db).await?;
+    let master_client = Session::try_new(&db).await?;
 
     let conversation_id: ConversationId = MLS_CONVERSATION_ID.into();
     let config = MlsConversationConfiguration {
@@ -298,7 +298,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
         .await
         .unwrap();
 
-    let master_client = CoreCrypto::from(Session::try_new(db).await?);
+    let master_client = CoreCrypto::from(Session::try_new(&db).await?);
     let transaction = master_client.new_transaction().await?;
     transaction.proteus_init().await?;
 

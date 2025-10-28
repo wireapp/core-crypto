@@ -63,7 +63,7 @@ async fn in_memory_cc() -> Result<CoreCrypto> {
         .await
         .unwrap();
 
-    let session = Session::try_new(db)
+    let session = Session::try_new(&db)
         .await
         .map_err(RecursiveError::mls("creating ephemeral session"))?;
 

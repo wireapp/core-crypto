@@ -80,7 +80,9 @@ impl Session {
     /// Failures in the initialization of the KeyStore can cause errors, such as IO, the same kind
     /// of errors can happen when the groups are being restored from the KeyStore or even during
     /// the client initialization (to fetch the identity signature).
-    pub async fn try_new(database: Database) -> crate::mls::Result<Self> {
+    pub async fn try_new(database: &Database) -> crate::mls::Result<Self> {
+        // cloning a database is relatively cheap; it's all arcs inside
+        let database = database.to_owned();
         // Init backend (crypto + rand + keystore)
         let mls_backend = MlsCryptoProvider::new(database);
 

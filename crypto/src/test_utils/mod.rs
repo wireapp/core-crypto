@@ -122,7 +122,7 @@ impl SessionContext {
             .await
             .unwrap();
 
-        let session = Session::try_new(db.clone()).await.unwrap();
+        let session = Session::try_new(&db).await.unwrap();
         let cc = CoreCrypto::from(session);
         let transaction = cc.new_transaction().await.unwrap();
         let session = cc.mls;

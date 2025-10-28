@@ -28,7 +28,7 @@ impl CoreCryptoNativeClient {
             .await
             .unwrap();
 
-        let cc = CoreCrypto::from(Session::try_new(db).await?);
+        let cc = CoreCrypto::from(Session::try_new(&db).await?);
 
         cc.provide_transport(Arc::new(MlsTransportSuccessProvider::default()))
             .await;
