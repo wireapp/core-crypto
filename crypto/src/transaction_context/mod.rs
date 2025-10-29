@@ -14,8 +14,9 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, CredentialType, KeystoreError, MlsConversation, MlsError,
-    MlsTransport, RecursiveError, Session, group_store::GroupStore, mls::HasSessionAndCrypto,
+    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialRef, CredentialType, KeystoreError,
+    MlsConversation, MlsError, MlsTransport, RecursiveError, Session, group_store::GroupStore,
+    mls::HasSessionAndCrypto,
 };
 pub mod conversation;
 pub mod e2e_identity;
@@ -296,5 +297,17 @@ impl TransactionContext {
             Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
             Err(err) => Err(KeystoreError::wrap("finding unique consumer data")(err).into()),
         }
+    }
+
+    /// Add a credential to the identities of this session.
+    ///
+    /// As a side effect, stores the credential in the keystore.
+    pub async fn add_credential(&self, credential: Credential) -> Result<CredentialRef> {
+        self.session()
+            .await?
+            .add_credential(credential)
+            .await
+            .map_err(RecursiveError::mls_client("adding credential to session"))
+            .map_err(Into::into)
     }
 }

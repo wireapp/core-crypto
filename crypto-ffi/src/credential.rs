@@ -6,22 +6,24 @@ use mls_crypto_provider::RustCrypto;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    Ciphersuite, CoreCryptoResult, CredentialRef, CredentialType,
-    client_id::ClientIdMaybeArc,
-    database::{DatabaseMaybeArc, ToCc as _},
-};
+use crate::{Ciphersuite, CoreCryptoResult, CredentialType, client_id::ClientIdMaybeArc};
 
 /// A cryptographic credential.
 ///
 /// This is tied to a particular client via either its client id or certificate bundle,
 /// depending on its credential type, but is independent of any client instance or storage.
 ///
-/// To attach to a particular client instance and store, see [`CoreCryptoFfi::add_credential`][crate::CoreCryptoFfi::add_credential].
+/// To attach to a particular client instance and store, see [`CoreCryptoContext::add_credential`][crate::CoreCryptoContext::add_credential].
 #[derive(Debug, Clone, derive_more::From, derive_more::Into)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
-pub struct Credential(CryptoCredential);
+pub struct Credential(pub(crate) CryptoCredential);
+
+#[cfg(target_family = "wasm")]
+pub(crate) type CredentialMaybeArc = Credential;
+
+#[cfg(not(target_family = "wasm"))]
+pub(crate) type CredentialMaybeArc = Arc<Credential>;
 
 impl Credential {
     fn basic_impl(ciphersuite: Ciphersuite, client_id: &ClientIdMaybeArc) -> CoreCryptoResult<Self> {
@@ -61,7 +63,7 @@ impl Credential {
 impl Credential {
     /// Get the type of this credential.
     pub fn r#type(&self) -> CoreCryptoResult<CredentialType> {
-        self.0.mls_credential().credential_type().try_into()
+        self.0.credential_type().try_into()
     }
 
     /// Get the earliest possible validity of this credential, expressed as seconds after the unix epoch.
@@ -69,36 +71,5 @@ impl Credential {
     /// Basic credentials have no defined earliest validity and will always return 0.
     pub fn earliest_validity(&self) -> u64 {
         self.0.earliest_validity()
-    }
-}
-
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen]
-impl Credential {
-    /// Save this credential in a [`Database`][crate::Database].
-    ///
-    /// Of course, in order to use this credential in a particular [`CoreCryptoFfi`][crate::CoreCryptoFfi] instance,
-    /// the database provided must be the same that the instance was instantiated with.
-    ///
-    /// Produces a [`CredentialRef`], which can later be used to add this credential to a [`CoreCryptoFfi`][crate::CoreCryptoFfi] instance.
-    pub async fn save(&mut self, database: &DatabaseMaybeArc) -> CoreCryptoResult<CredentialRef> {
-        let database = database.as_cc();
-        self.0.save(database).await.map(Into::into).map_err(Into::into)
-    }
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[uniffi::export]
-impl Credential {
-    /// Save this credential in a [`Database`][crate::Database].
-    ///
-    /// Of course, in order to use this credential in a particular [`CoreCryptoFfi`][crate::CoreCryptoFfi] instance,
-    /// the database provided must be the same that the instance was instantiated with.
-    ///
-    /// Produces a [`CredentialRef`], which can later be used to add this credential to a [`CoreCryptoFfi`][crate::CoreCryptoFfi] instance.
-    pub async fn save(self: Arc<Self>, database: &DatabaseMaybeArc) -> CoreCryptoResult<CredentialRef> {
-        let database = database.as_cc();
-        let mut this = Arc::unwrap_or_clone(self);
-        this.0.save(database).await.map(Into::into).map_err(Into::into)
     }
 }

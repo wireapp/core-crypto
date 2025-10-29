@@ -31,7 +31,7 @@ impl Session {
     /// Add a credential to the identities of this session.
     ///
     /// As a side effect, stores the credential in the keystore.
-    pub async fn add_credential(&self, credential: Credential) -> Result<CredentialRef> {
+    pub(crate) async fn add_credential(&self, credential: Credential) -> Result<CredentialRef> {
         let credential = self.add_credential_producing_arc(credential).await?;
         Ok(CredentialRef::from_credential(&credential))
     }
