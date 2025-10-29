@@ -357,7 +357,7 @@ mod tests {
             let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated());
             let client_id = ClientId(client_id.into_bytes());
 
-            let mut credential;
+            let credential;
             let identifier;
             match case.credential_type {
                 CredentialType::Basic => {
@@ -375,8 +375,7 @@ mod tests {
 
             self.init(identifier, &[case.signature_scheme()]).await.unwrap();
 
-            let credential_ref = credential.save(&self.crypto_provider.keystore()).await.unwrap();
-            self.add_credential(&credential_ref).await.unwrap();
+            self.add_credential(credential).await.unwrap();
 
             Ok(())
         }

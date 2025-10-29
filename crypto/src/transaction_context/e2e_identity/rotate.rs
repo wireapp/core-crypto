@@ -174,7 +174,7 @@ impl TransactionContext {
             "creating new x509 credential from certificate bundle in save_x509_credential",
         ))?;
         client
-            .save_and_add_credential(credential)
+            .add_credential(credential)
             .await
             .map_err(RecursiveError::mls_client(
                 "saving and adding credential in save_x509_credential",

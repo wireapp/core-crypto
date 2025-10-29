@@ -57,7 +57,7 @@ impl CredentialRef {
     // Our database does not currently support indices or even in-db searching, so this moves all data
     // from the DB to the runtime, decodes everything, and then filters. This is obviously suboptimal,
     // but that's only going to be improved with WPB-20839.
-    pub async fn find(database: &Database, find_filters: FindFilters<'_>) -> Result<Vec<Self>> {
+    pub(crate) async fn find(database: &Database, find_filters: FindFilters<'_>) -> Result<Vec<Self>> {
         let FindFilters {
             client_id,
             signature_scheme,

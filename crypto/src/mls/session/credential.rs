@@ -10,49 +10,45 @@ use crate::{
 };
 
 impl Session {
-    /// Find all credentials which match the specified conditions.
+    /// Find all credentials known by this session which match the specified conditions.
     ///
-    /// If no filters are set, this is equivalent to [`get_credentials`][Self::get_credentials].
-    ///
-    /// This is a convenience method entirely equivalent to [CredentialRef::find];
-    /// the only difference is that it automatically includes the appropriate
-    /// [`Database`][core_crypto_keystore::Database] reference.
+    /// If no filters are set, this is equivalent to [`Self::get_credentials`].
     pub async fn find_credentials(&self, find_filters: CredentialFindFilters<'_>) -> Result<Vec<CredentialRef>> {
-        let database = self.crypto_provider.keystore();
-        CredentialRef::find(&database, find_filters)
-            .await
-            .map_err(RecursiveError::mls_credential_ref("finding credentials"))
-            .map_err(Into::into)
+        let guard = self.inner.read().await;
+        let inner = guard.as_ref().ok_or(Error::MlsNotInitialized)?;
+        Ok(inner
+            .identities
+            .find_credential(find_filters)
+            .map(|credential| CredentialRef::from_credential(&credential))
+            .collect())
     }
 
-    /// Get all credentials
-    ///
-    /// This is a convenience method entirely equivalent to [CredentialRef::get_all];
-    /// the only difference is that it automatically includes the appropriate
-    /// [`Database`][core_crypto_keystore::Database] reference.
+    /// Get all credentials known by this session.
     pub async fn get_credentials(&self) -> Result<Vec<CredentialRef>> {
-        let database = self.crypto_provider.keystore();
-        CredentialRef::get_all(&database)
-            .await
-            .map_err(RecursiveError::mls_credential_ref("getting all credentials"))
-            .map_err(Into::into)
+        self.find_credentials(Default::default()).await
     }
 
     /// Add a credential to the identities of this session.
     ///
-    /// Note that this accepts a [`CredentialRef`], _not_ a raw [`Credential`].
-    /// This is because a `CredentialRef` serves as proof of persistence. Only credentials
-    /// which have been persisted are eligible to be included in a session.
+    /// As a side effect, stores the credential in the keystore.
+    pub async fn add_credential(&self, credential: Credential) -> Result<CredentialRef> {
+        let credential = self.add_credential_producing_arc(credential).await?;
+        Ok(CredentialRef::from_credential(&credential))
+    }
+
+    /// Add a credential to the identities of this session.
+    ///
+    /// As a side effect, stores the credential in the keystore.
     ///
     /// Returns the actual credential instance which was loaded from the DB.
     /// This is a convenience for internal use and should _not_ be propagated across
-    /// the FFI boundary.
-    pub async fn add_credential(&self, credential_ref: &CredentialRef) -> Result<Arc<Credential>> {
-        if *credential_ref.client_id() != self.id().await? {
+    /// the FFI boundary. Instead, use [`Self::add_credential`] to produce a [`CredentialRef`].
+    pub(crate) async fn add_credential_producing_arc(&self, credential: Credential) -> Result<Arc<Credential>> {
+        if *credential.client_id() != self.id().await? {
             return Err(Error::WrongCredential);
         }
 
-        self.add_credential_without_clientid_check(credential_ref).await
+        self.add_credential_without_clientid_check(credential).await
     }
 
     /// Add a credential to the identities of this session without validating that its client ID matches the session client id.
@@ -62,55 +58,46 @@ impl Session {
     /// Prefer [`Self::add_credential`].
     pub(crate) async fn add_credential_without_clientid_check(
         &self,
-        credential_ref: &CredentialRef,
+        mut credential: Credential,
     ) -> Result<Arc<Credential>> {
+        let credential_ref = credential
+            .save(&self.crypto_provider.keystore())
+            .await
+            .map_err(RecursiveError::mls_credential("saving credential"))?;
+
         let guard = self.inner.upgradable_read().await;
         let inner = guard.as_ref().ok_or(Error::MlsNotInitialized)?;
 
         // failfast before loading the cache if we know already that this credential ref can't be added to the identity set
-        inner.identities.ensure_distinct(
+        let distinct_result = inner.identities.ensure_distinct(
             credential_ref.signature_scheme(),
             credential_ref.r#type(),
             credential_ref.earliest_validity(),
-        )?;
-
-        let cache = CredentialRef::load_cache(&self.crypto_provider.keystore())
-            .await
-            .map_err(RecursiveError::mls_credential_ref("loading credential cache"))?;
+        );
+        if let Err(err) = distinct_result {
+            // first clean up by removing the credential we just saved
+            // otherwise, we'll have nondeterministic results when we load
+            //
+            // TODO this depends for correctness that no two added credentials have the same keypair;
+            // if this happens for a keypair which was removed, we'll remove the (old, used) keypair
+            // and forever after be unable to mls_init on that DB due to a missing keypair for the given credential
+            // this is pointlessly difficult to check right now, but we should do a uniqueness check
+            // after WPB-20844
+            credential
+                .delete(&self.crypto_provider.keystore())
+                .await
+                .map_err(RecursiveError::mls_credential(
+                    "deleting nondistinct credential from keystore",
+                ))?;
+            return Err(err);
+        }
 
         // only upgrade to a write guard here in order to minimize the amount of time the unique lock is held
         let mut guard = async_lock::RwLockUpgradableReadGuard::upgrade(guard).await;
         let inner = guard.as_mut().ok_or(Error::MlsNotInitialized)?;
+        let credential = inner.identities.push_credential(credential).await?;
 
-        // The primary key situation of `Credential` is a bad joke.
-        // We have no idea how many credentials might be attached to a particular ref, or even
-        // how they may be related.
-        //
-        // Happily, our identities structure has set semantics, so let's lean (heavily) on that.
-
-        // the credential being added here might not be the most recent, so we need to manually
-        // keep track of the first one that we insert in response to this add operation
-        let mut first_inserted_credential = None;
-
-        for credential_result in
-            credential_ref
-                .load_with_cache(&cache)
-                .await
-                .map_err(RecursiveError::mls_credential_ref(
-                    "loading all matching credentials in `add_credential`",
-                ))?
-        {
-            let credential = credential_result.map_err(RecursiveError::mls_credential_ref(
-                "failed to load credential in `add_credential`",
-            ))?;
-            let credential = inner.identities.push_credential(credential).await?;
-            if first_inserted_credential.is_none() {
-                first_inserted_credential = Some(credential);
-            }
-        }
-
-        // maybe the credentialref was invalid or something
-        first_inserted_credential.ok_or(Error::CredentialNotFound(credential_ref.r#type()))
+        Ok(credential)
     }
 
     /// Remove a credential from the identities of this session.
@@ -210,20 +197,6 @@ impl Session {
         }
     }
 
-    /// Convenience function to save a credential and add it to the session's identities
-    ///
-    /// If you want to keep access to your original credential, do this manually. This function
-    /// intentionally takes ownership as a reminder that we're moving the credential into the identities.
-    ///
-    /// Returns a smart pointer to where the credential is stored within its ultimate data structure.
-    pub(crate) async fn save_and_add_credential(&self, mut credential: Credential) -> Result<Arc<Credential>> {
-        let credential_ref = credential
-            .save(&self.crypto_provider.keystore())
-            .await
-            .map_err(RecursiveError::mls_credential("saving new x509 credential"))?;
-        self.add_credential(&credential_ref).await
-    }
-
     /// Convenience function to get the most recent credential, creating it if the credential type is basic.
     ///
     /// If the credential type is X509, a missing credential returns `LeafError::E2eiEnrollmentNotDone`
@@ -244,7 +217,7 @@ impl Session {
                         "creating basic credential in find_most_recent_or_create_basic_credential",
                     ),
                 )?;
-                self.save_and_add_credential(credential).await?
+                self.add_credential_producing_arc(credential).await?
             }
             Err(Error::CredentialNotFound(_)) if credential_type == CredentialType::X509 => {
                 return Err(LeafError::E2eiEnrollmentNotDone.into());

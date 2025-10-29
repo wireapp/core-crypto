@@ -176,10 +176,9 @@ mod tests {
 
             let alice_client = alice.transaction.session().await.unwrap();
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
-            let mut credential = Credential::x509(cert).unwrap();
-            let credential_ref = credential.save(&alice_client.crypto_provider.keystore()).await.unwrap();
+            let credential = Credential::x509(cert).unwrap();
             alice_client
-                .add_credential_without_clientid_check(&credential_ref)
+                .add_credential_without_clientid_check(credential)
                 .await
                 .unwrap();
 
@@ -245,7 +244,7 @@ mod tests {
 
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
             let credential = Credential::x509(cert_bundle).unwrap();
-            alice_client.save_and_add_credential(credential).await.unwrap();
+            alice_client.add_credential(credential).await.unwrap();
 
             let elapsed = start.elapsed();
             // Give time to the certificate to expire

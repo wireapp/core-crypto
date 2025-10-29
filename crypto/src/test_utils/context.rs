@@ -137,7 +137,7 @@ impl SessionContext {
         let client = self.session().await;
         let client_id = client.id().await.unwrap();
 
-        let mut credential = match case.credential_type {
+        let credential = match case.credential_type {
             CredentialType::Basic => Credential::basic(case.signature_scheme(), client_id, backend).unwrap(),
             CredentialType::X509 => {
                 let cert_bundle = CertificateBundle::rand(&client_id, signer.unwrap());
@@ -146,12 +146,11 @@ impl SessionContext {
             CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
         };
 
-        let credential_ref = credential.save(&self.session.crypto_provider.keystore()).await.unwrap();
         // in the x509 case, `CertificateBundle::rand` just completely invents a new client id in the format that e2ei
         // apparently prefers. We still need to add that credential even so, because this test util code is (meant to be) part of setup,
         // not part of the code under test.
         self.session
-            .add_credential_without_clientid_check(&credential_ref)
+            .add_credential_without_clientid_check(credential)
             .await
             .unwrap()
     }
@@ -251,7 +250,7 @@ impl SessionContext {
         let new_cert = CertificateBundle::new(handle, display_name, Some(&cid), None, signer);
         let credential = Credential::x509(new_cert).unwrap();
         let client = self.session().await;
-        client.save_and_add_credential(credential).await.unwrap()
+        client.add_credential_producing_arc(credential).await.unwrap()
     }
 
     pub(crate) async fn create_key_packages_and_update_credential_in_all_conversations<'a>(

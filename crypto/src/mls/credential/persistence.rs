@@ -16,7 +16,10 @@ impl Credential {
     /// Persist this credential into the database.
     ///
     /// Returns a reference which is stable over time and across the FFI boundary.
-    pub async fn save(&mut self, database: &Database) -> Result<CredentialRef> {
+    ///
+    /// Normally this is called internally by [`Session::add_credential`][crate::Session::add_credential];
+    /// use caution if calling it from elsewhere.
+    pub(crate) async fn save(&mut self, database: &Database) -> Result<CredentialRef> {
         keypairs::store(database, self.client_id(), &self.signature_key_pair).await?;
 
         let credential_data = self
@@ -35,12 +38,25 @@ impl Credential {
 
         self.update_from(stored_credential);
 
-        Ok(CredentialRef::new(
-            self.client_id().to_owned(),
-            self.signature_key_pair.public().to_owned(),
-            self.mls_credential.credential_type(),
-            self.signature_key_pair.signature_scheme(),
-            self.earliest_validity,
-        ))
+        Ok(CredentialRef::from_credential(self))
+    }
+
+    /// Delete this credential from the database
+    pub(crate) async fn delete(self, database: &Database) -> Result<()> {
+        let keypair = self.signature_key_pair;
+
+        let credential_data = self
+            .mls_credential
+            .tls_serialize_detached()
+            .map_err(Error::tls_serialize("credential"))?;
+
+        database
+            .cred_delete_by_credential(credential_data)
+            .await
+            .map_err(KeystoreError::wrap("deleting credential"))?;
+
+        keypairs::delete(&database, keypair).await?;
+
+        Ok(())
     }
 }
