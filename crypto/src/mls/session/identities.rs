@@ -31,6 +31,7 @@ impl Identities {
         }
     }
 
+    // not the real trait because we don't want to make the method public
     fn index(
         &self,
         signature_scheme: SignatureScheme,
@@ -175,7 +176,7 @@ impl Identities {
         Ok(credential)
     }
 
-    pub(crate) fn remove(&mut self, mls_credential: &MlsCredential) {
+    pub(crate) fn remove_by_mls_credential(&mut self, mls_credential: &MlsCredential) {
         for credential_set in self.credentials.values_mut() {
             credential_set.retain(|credential| credential.mls_credential() != mls_credential);
         }

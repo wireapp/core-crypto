@@ -310,4 +310,16 @@ impl TransactionContext {
             .map_err(RecursiveError::mls_client("adding credential to session"))
             .map_err(Into::into)
     }
+
+    /// Remove a credential from the identities of this session.
+    ///
+    /// As a side effect, delete the credential from the keystore.
+    pub async fn remove_credential(&self, credential_ref: &CredentialRef) -> Result<()> {
+        self.session()
+            .await?
+            .remove_credential(credential_ref)
+            .await
+            .map_err(RecursiveError::mls_client("removing credential from session"))
+            .map_err(Into::into)
+    }
 }
