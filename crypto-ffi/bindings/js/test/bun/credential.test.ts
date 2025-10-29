@@ -27,7 +27,6 @@ describe("credentials", () => {
 
     test("credential can be added", async () => {
         const clientId = new ClientId(Buffer.from("any random client id here"));
-
         const credential = Credential.basic(
             ciphersuiteDefault(),
             new ClientId(Buffer.from("any random client id here"))
@@ -43,5 +42,25 @@ describe("credentials", () => {
         expect(ref.type()).toEqual(CredentialType.Basic);
         // saving causes the earliest validity to be updated
         expect(ref.earliest_validity()).not.toEqual(0n);
+    });
+
+    test("credential can be removed", async () => {
+        const clientId = new ClientId(Buffer.from("any random client id here"));
+        const credential = Credential.basic(
+            ciphersuiteDefault(),
+            new ClientId(Buffer.from("any random client id here"))
+        );
+
+        let cc = await ccInit(clientId);
+
+        const ref = await cc.transaction(async (ctx) => {
+            return await ctx.addCredential(credential);
+        });
+
+        await cc.transaction(async (ctx) => {
+            return await ctx.removeCredential(ref);
+        });
+
+        // TODO: find all credentials, assert length is 0
     });
 });
