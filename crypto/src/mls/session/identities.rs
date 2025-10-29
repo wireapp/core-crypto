@@ -1,7 +1,4 @@
-use std::{
-    collections::{BTreeSet, HashMap},
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use openmls::prelude::{Credential as MlsCredential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
@@ -22,11 +19,24 @@ use crate::{
 ///
 /// We keep each credential inside an arc to avoid cloning them, as X509 credentials can get quite large.
 #[derive(Debug, Clone)]
-pub(crate) struct Identities(HashMap<SignatureScheme, BTreeSet<Arc<Credential>>>);
+pub(crate) struct Identities {
+    // u16 because `CredentialType: !Hash` for Reasons
+    credentials: HashMap<(SignatureScheme, u16), Vec<Arc<Credential>>>,
+}
 
 impl Identities {
     pub(crate) fn new(capacity: usize) -> Self {
-        Self(HashMap::with_capacity(capacity))
+        Self {
+            credentials: HashMap::with_capacity(capacity),
+        }
+    }
+
+    fn index(
+        &self,
+        signature_scheme: SignatureScheme,
+        credential_type: CredentialType,
+    ) -> Option<&Vec<Arc<Credential>>> {
+        self.credentials.get(&(signature_scheme, credential_type.into()))
     }
 
     /// Return an iterator over all credentials matching the given filters.
@@ -39,14 +49,14 @@ impl Identities {
             earliest_validity,
         } = filters;
 
-        // we have an easy way to filter out a bunch of credentials if the signature scheme filter is set,
+        // we have an easy way to filter out a bunch of credentials if the right filters are set,
         // but we have to search through all of them if it is not.
-        let values: Box<dyn Iterator<Item = Arc<Credential>>> = match signature_scheme {
-            Some(signature_scheme) => match self.0.get(&signature_scheme) {
+        let values: Box<dyn Iterator<Item = Arc<Credential>>> = match signature_scheme.zip(credential_type) {
+            Some((signature_scheme, credential_type)) => match self.index(signature_scheme, credential_type) {
                 Some(set) => Box::new(set.iter().cloned()),
                 None => Box::new(std::iter::empty()),
             },
-            None => Box::new(self.0.values().flatten().cloned()),
+            None => Box::new(self.credentials.values().flatten().cloned()),
         };
 
         values.filter(move |credential| {
@@ -59,32 +69,26 @@ impl Identities {
     }
 
     /// Return the first credential matching the supplied fields
+    ///
+    /// Note that other credentials could in theory also match if they share the same public key.
     pub(crate) async fn find_credential_by_public_key(
         &self,
         signature_scheme: SignatureScheme,
         credential_type: CredentialType,
         public_key: &SignaturePublicKey,
     ) -> Option<Arc<Credential>> {
-        self.find_credential(
-            CredentialFindFilters::builder()
-                .signature_scheme(signature_scheme)
-                .credential_type(credential_type)
-                .public_key(public_key.as_slice())
-                .build(),
-        )
-        .next()
+        self.index(signature_scheme, credential_type)?
+            .iter()
+            .find(|credential| credential.signature_key_pair.public() == public_key.as_slice())
+            .cloned()
     }
 
     pub(crate) async fn find_most_recent_credential(
         &self,
-        sc: SignatureScheme,
-        ct: CredentialType,
+        signature_scheme: SignatureScheme,
+        credential_type: CredentialType,
     ) -> Option<Arc<Credential>> {
-        self.0
-            .get(&sc)?
-            .iter()
-            .rfind(|c| ct == c.mls_credential.credential_type())
-            .cloned()
+        self.index(signature_scheme, credential_type)?.last().cloned()
     }
 
     /// Raise an error if the database cannot handle adding a credential with these details.
@@ -94,14 +98,30 @@ impl Identities {
         credential_type: CredentialType,
         earliest_validity: u64,
     ) -> Result<()> {
-        if self.0.values().flat_map(|set| set.iter()).any(|existing_credential| {
-            existing_credential.signature_scheme() == signature_scheme
-                && existing_credential.credential_type() == credential_type
-                && existing_credential.earliest_validity == earliest_validity
-        }) {
-            return Err(Error::CredentialConflict);
+        let Some(credentials) = self.index(signature_scheme, credential_type) else {
+            return Ok(());
+        };
+
+        debug_assert!(
+            credentials.is_sorted_by_key(|credential| credential.earliest_validity),
+            "can't binary search if credentials are not sorted by validity"
+        );
+        debug_assert_eq!(
+            credentials
+                .iter()
+                .map(|credential| credential.earliest_validity)
+                .collect::<std::collections::HashSet<_>>()
+                .len(),
+            credentials.len(),
+            "credentials must be distinct by earliest validity"
+        );
+
+        match credentials.binary_search_by_key(&earliest_validity, |credential| credential.earliest_validity) {
+            // found a matching key i.e. not distinct
+            Ok(_) => Err(Error::CredentialConflict),
+            // no match i.e. distinct
+            Err(_) => Ok(()),
         }
-        Ok(())
     }
 
     /// Add this credential to the identities.
@@ -117,36 +137,52 @@ impl Identities {
             "this credential must have been persisted/updated in the keystore, which sets this to the current timestamp"
         );
 
-        self.ensure_distinct(
-            credential.signature_scheme(),
-            credential.credential_type(),
-            credential.earliest_validity,
-        )?;
-
         let credential = Arc::new(credential);
 
-        let _already_existed = !self
-            .0
-            .entry(credential.signature_scheme())
-            .or_default()
-            .insert(credential.clone());
+        let credentials = self
+            .credentials
+            .entry((credential.signature_scheme(), credential.credential_type().into()))
+            .or_default();
 
         debug_assert!(
-            !_already_existed,
-            "we've alredy deconflicted by signature scheme, type, and timestamp, so there can't be a matching credential present"
+            credentials.is_sorted_by_key(|credential| credential.earliest_validity),
+            "can't binary search if credentials are not sorted by validity"
+        );
+        // if binary search returns ok, it was not distinct by earliest validity, therefore we have a conflict
+        // normally we expect that the new credential has the most recent earliest_validity therefore adding the credential is
+        // as cheap as pushing to the end of the vector, but just in case of random insertion order, do the right thing
+        let Err(insertion_point) =
+            credentials.binary_search_by_key(&credential.earliest_validity, |credential| credential.earliest_validity)
+        else {
+            return Err(Error::CredentialConflict);
+        };
+        credentials.insert(insertion_point, credential.clone());
+
+        debug_assert!(
+            credentials.is_sorted_by_key(|credential| credential.earliest_validity),
+            "we must have inserted at the proper insertion point"
+        );
+        debug_assert_eq!(
+            credentials
+                .iter()
+                .map(|credential| credential.earliest_validity)
+                .collect::<std::collections::HashSet<_>>()
+                .len(),
+            credentials.len(),
+            "credentials must still be distinct by earliest validity"
         );
 
         Ok(credential)
     }
 
     pub(crate) fn remove(&mut self, mls_credential: &MlsCredential) {
-        for credential_set in self.0.values_mut() {
+        for credential_set in self.credentials.values_mut() {
             credential_set.retain(|credential| credential.mls_credential() != mls_credential);
         }
     }
 
     pub(crate) fn iter(&self) -> impl '_ + Iterator<Item = Arc<Credential>> {
-        self.0.values().flatten().cloned()
+        self.credentials.values().flatten().cloned()
     }
 }
 
