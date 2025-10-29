@@ -23,4 +23,4 @@ updates:
   - package-ecosystem: "rust-toolchain"
     directory: /
     schedule:
-      interval: "daily"
+      interval: "monthly"
