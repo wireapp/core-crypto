@@ -10,22 +10,16 @@ pub(crate) use self::error::{Error, Result};
 pub use self::find::{FindFilters, FindFiltersBuilder};
 use crate::{ClientId, ClientIdRef};
 
-/// A reference to a credential which has been stored in a database.
+/// A reference to a credential which has been stored in a session.
 ///
-/// This serves two purposes:
+/// Credentials can be quite large; we'd really like to avoid passing them
+/// back and forth across the FFI boundary more than is strictly required.
+/// Therefore, we use this type which is substantially more compact.
 ///
-/// 1. Credentials can be quite large; we'd really like to avoid passing them
-///    back and forth across the FFI boundary more than is strictly required.
-///    Therefore, we use this type which is substantially more compact.
-/// 2. It serves as proof of persistence. If you have a `CredentialRef`, you know
-///    that the credential it refers to has been saved in the database.
-///    This gives us a typesafe way to require that credentials are saved before
-///    they are added to a [`Session`][crate::Session].
-///
-/// Created with [`Credential::save`][crate::Credential::save].
+/// Created with [`Session::add_credential`][crate::Session::add_credential].
 ///
 /// This reference is _not_ a literal reference in memory.
-/// It is instead the key from which a credential can be retrieved.
+/// It is instead a key with which a credential can be retrieved.
 /// This means that it is stable over time and across the FFI boundary.
 #[derive(
     core_crypto_macros::Debug, Clone, derive_more::From, derive_more::Into, serde::Serialize, serde::Deserialize,
@@ -40,23 +34,15 @@ pub struct CredentialRef {
 }
 
 impl CredentialRef {
-    /// Construct an instance from its parts.
-    ///
-    /// This _must_ remain crate-private at most so that we can use this type
-    /// as proof of persistence! Use caution when calling this method to retain this property.
-    pub(super) const fn new(
-        client_id: ClientId,
-        public_key: Vec<u8>,
-        r#type: CredentialType,
-        signature_scheme: SignatureScheme,
-        earliest_validity: u64,
-    ) -> Self {
+    /// Construct an instance from a credential.
+    // not an actual `From` impl in order to keep it crate-private
+    pub(crate) fn from_credential(credential: &super::Credential) -> Self {
         Self {
-            client_id,
-            public_key,
-            r#type,
-            signature_scheme,
-            earliest_validity,
+            client_id: credential.client_id().to_owned(),
+            public_key: credential.signature_key_pair.public().to_owned(),
+            r#type: credential.credential_type(),
+            signature_scheme: credential.signature_scheme(),
+            earliest_validity: credential.earliest_validity,
         }
     }
 

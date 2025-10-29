@@ -649,10 +649,9 @@ mod tests {
             .await
             .unwrap();
 
-        let mut credential =
+        let credential =
             Credential::from_identifier(&identifier, case.signature_scheme(), &cc.mls.crypto_provider).unwrap();
-        let credential_ref = credential.save(&cc.crypto_provider.keystore()).await.unwrap();
-        cc.add_credential(&credential_ref).await.unwrap();
+        cc.add_credential(credential).await.unwrap();
 
         // expect MLS to work
         assert_eq!(

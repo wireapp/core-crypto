@@ -88,3 +88,12 @@ pub(super) async fn find_matching(
         })
         .transpose()
 }
+
+pub(super) async fn delete(database: &Database, keypair: SignatureKeyPair) -> Result<()> {
+    // guessing on the public key based on the `Entity::id_raw` impl
+    database
+        .remove::<StoredSignatureKeypair, _>(keypair.public())
+        .await
+        .map_err(KeystoreError::wrap("removing keypair by public key"))?;
+    Ok(())
+}

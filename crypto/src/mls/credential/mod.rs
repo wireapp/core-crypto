@@ -94,11 +94,15 @@ impl Credential {
     /// The result is independent of any client instance and the database; it lives in memory only.
     pub fn basic(signature_scheme: SignatureScheme, client_id: ClientId, crypto: impl OpenMlsCrypto) -> Result<Self> {
         let signature_key_pair = keypairs::generate(crypto, signature_scheme)?;
+        let earliest_validity = std::time::SystemTime::now()
+            .duration_since(std::time::SystemTime::UNIX_EPOCH)
+            .expect("current system time is after the unix epoch")
+            .as_secs();
 
         Ok(Self {
             mls_credential: MlsCredential::new_basic(client_id.into_inner()),
             signature_key_pair,
-            earliest_validity: 0,
+            earliest_validity,
         })
     }
 
