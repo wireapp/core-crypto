@@ -1,4 +1,4 @@
-import { ccInit, randomConversationId, setup, teardown } from "./utils";
+import { ccInit, setup, teardown } from "./utils";
 import { afterEach, test, beforeEach, describe, expect } from "bun:test";
 import {
     ciphersuiteDefault,
@@ -25,53 +25,23 @@ describe("credentials", () => {
         expect(credential.earliest_validity()).toEqual(0n);
     });
 
-    test("credential can be saved", async () => {
+    test("credential can be added", async () => {
+        const clientId = new ClientId(Buffer.from("any random client id here"));
+
         const credential = Credential.basic(
             ciphersuiteDefault(),
             new ClientId(Buffer.from("any random client id here"))
         );
 
-        // create a CC instance and init so that we get access to the transaction interface
-        // only necessary until WPB-21396
-        let { cc, db } = await ccInit();
+        let cc = await ccInit(clientId);
 
-        const ref = await cc.transaction(async (_ctx) => {
-            return await credential.save(db);
+        const ref = await cc.transaction(async (ctx) => {
+            return await ctx.addCredential(credential);
         });
 
         expect(ref).toBeDefined();
         expect(ref.type()).toEqual(CredentialType.Basic);
         // saving causes the earliest validity to be updated
         expect(ref.earliest_validity()).not.toEqual(0n);
-    });
-
-    // can't have a test for adding before initializing cc instance, because it is (currently)
-    // a logical error which produces an actual error to add a credential before `mlsInit` has been called
-    test("credential can be added after initializing cc instance", async () => {
-        const clientId = new ClientId(Buffer.from("any random client id here"));
-
-        const credential = Credential.basic(
-            ciphersuiteDefault(),
-            clientId,
-        );
-
-        let { cc, db } = await ccInit();
-
-        const ref = await cc.transaction(async (_ctx) => {
-            return await credential.save(db);
-        });
-
-        await cc.transaction(async (ctx) => {
-            console.log("doing mlsInit");
-            await ctx.mlsInit(clientId, [ciphersuiteDefault()])
-            console.log("adding credential");
-            await cc.addCredential(ref);
-        });
-
-        // now that a credential has been created, we can create conversations etc
-        const conversationId = randomConversationId();
-        await cc.transaction(async (ctx) => {
-            await ctx.createConversation(conversationId, CredentialType.Basic);
-        });
     });
 });
