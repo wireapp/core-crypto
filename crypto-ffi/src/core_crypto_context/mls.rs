@@ -8,8 +8,8 @@ use wasm_bindgen::prelude::*;
 
 use crate::{
     Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoResult,
-    CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle, bytes_wrapper::bytes_wrapper,
-    client_id::ClientIdMaybeArc, crl::NewCrlDistributionPoints,
+    CredentialRef, CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle, bytes_wrapper::bytes_wrapper,
+    client_id::ClientIdMaybeArc, credential::CredentialMaybeArc, crl::NewCrlDistributionPoints,
 };
 
 bytes_wrapper!(
@@ -344,5 +344,19 @@ impl CoreCryptoContext {
     pub async fn disable_history_sharing(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         conversation.disable_history_sharing().await.map_err(Into::into)
+    }
+
+    /// Add a [`Credential`][crate::Credential] to this client.
+    ///
+    /// Note that while an arbitrary number of credentials can be generated,
+    /// those which are added to a CC instance must be distinct in credential type,
+    /// signature scheme, and the timestamp of creation. This timestamp has only
+    /// 1 second of resolution, limiting the number of credentials which
+    /// can be added. This is a known limitation and will be relaxed in the future.
+    pub async fn add_credential(&self, credential: CredentialMaybeArc) -> CoreCryptoResult<CredentialRef> {
+        #[cfg(not(target_family = "wasm"))]
+        let credential = std::sync::Arc::unwrap_or_clone(credential);
+        let credential_ref = self.inner.add_credential(credential.0).await?;
+        Ok(credential_ref.into())
     }
 }
