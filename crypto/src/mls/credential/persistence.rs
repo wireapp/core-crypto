@@ -55,7 +55,7 @@ impl Credential {
             .await
             .map_err(KeystoreError::wrap("deleting credential"))?;
 
-        keypairs::delete(&database, keypair).await?;
+        keypairs::delete(database, keypair).await?;
 
         Ok(())
     }

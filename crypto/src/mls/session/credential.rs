@@ -155,12 +155,22 @@ impl Session {
             .await?;
 
         // remove all credentials associated with this ref
-        // do this last so we only remove the actual credential after the keypackages are all gone,
+        // only remove the actual credential after the keypackages are all gone,
         // and keep the lock open as briefly as possible
-        let mut inner = self.inner.write().await;
-        let inner = inner.as_mut().ok_or(Error::MlsNotInitialized)?;
+        {
+            let mut inner = self.inner.write().await;
+            let inner = inner.as_mut().ok_or(Error::MlsNotInitialized)?;
+            for credential in &credentials {
+                inner.identities.remove_by_mls_credential(credential.mls_credential());
+            }
+        }
+
+        // finally remove the credentials from the keystore so they won't be loaded on next mls_init
         for credential in credentials {
-            inner.identities.remove(credential.mls_credential());
+            credential
+                .delete(&database)
+                .await
+                .map_err(RecursiveError::mls_credential("deleting credential from keystore"))?;
         }
 
         Ok(())
