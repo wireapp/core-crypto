@@ -9,7 +9,8 @@ use wasm_bindgen::prelude::*;
 use crate::{
     Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoResult,
     CredentialRef, CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle, bytes_wrapper::bytes_wrapper,
-    client_id::ClientIdMaybeArc, credential::CredentialMaybeArc, crl::NewCrlDistributionPoints,
+    client_id::ClientIdMaybeArc, credential::CredentialMaybeArc, credential_ref::CredentialRefMaybeArc,
+    crl::NewCrlDistributionPoints,
 };
 
 bytes_wrapper!(
@@ -358,5 +359,13 @@ impl CoreCryptoContext {
         let credential = std::sync::Arc::unwrap_or_clone(credential);
         let credential_ref = self.inner.add_credential(credential.0).await?;
         Ok(credential_ref.into())
+    }
+
+    /// Remove a [`Credential`][crate::Credential] from this client.
+    pub async fn remove_credential(&self, credential_ref: &CredentialRefMaybeArc) -> CoreCryptoResult<()> {
+        #[cfg(not(target_family = "wasm"))]
+        let credential_ref = credential_ref.as_ref();
+        self.inner.remove_credential(&credential_ref.0).await?;
+        Ok(())
     }
 }

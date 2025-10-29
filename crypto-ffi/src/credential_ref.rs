@@ -1,3 +1,6 @@
+#[cfg(not(target_family = "wasm"))]
+use std::sync::Arc;
+
 use core_crypto::CredentialRef as CryptoCredentialRef;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
@@ -19,6 +22,12 @@ use crate::{ClientId, CoreCryptoResult, CredentialType};
 #[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
 pub struct CredentialRef(pub(crate) CryptoCredentialRef);
+
+#[cfg(target_family = "wasm")]
+pub(crate) type CredentialRefMaybeArc = CredentialRef;
+
+#[cfg(not(target_family = "wasm"))]
+pub(crate) type CredentialRefMaybeArc = Arc<CredentialRef>;
 
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
