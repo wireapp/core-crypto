@@ -1033,4 +1033,13 @@ export class CoreCryptoContext {
             this.#ctx.add_credential(credential)
         )
     }
+
+    /**
+     * Remove a credential from this instance.
+     */
+    async removeCredential(credentialRef: CredentialRef): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.remove_credential(credentialRef)
+        )
+    }
 }
