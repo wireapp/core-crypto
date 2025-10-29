@@ -33,6 +33,8 @@ signature = { workspace = true, optional = true }
 log.workspace = true
 
 [dev-dependencies]
+argon2 = "0.5"
+password-hash = { version = "0.5", features = ["getrandom"] }
 env_logger.workspace = true
 wire-e2e-identity = { version = "0.13.0", path = ".", features = ["builder"] }
 rusty-jwt-tools = { version = "0.13.0", path = "../jwt", features = [
