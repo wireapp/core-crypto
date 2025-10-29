@@ -14,9 +14,9 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialRef, CredentialType, KeystoreError,
-    MlsConversation, MlsError, MlsTransport, RecursiveError, Session, group_store::GroupStore,
-    mls::HasSessionAndCrypto,
+    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef,
+    CredentialType, KeystoreError, MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
+    group_store::GroupStore, mls::HasSessionAndCrypto,
 };
 pub mod conversation;
 pub mod e2e_identity;
@@ -320,6 +320,30 @@ impl TransactionContext {
             .remove_credential(credential_ref)
             .await
             .map_err(RecursiveError::mls_client("removing credential from session"))
+            .map_err(Into::into)
+    }
+
+    /// Find credentials matching the find filters among the identities of this session
+    ///
+    /// Note that finding credentials with no filters set is equivalent to [`Self::get_credentials`].
+    pub async fn find_credentials(&self, find_filters: CredentialFindFilters<'_>) -> Result<Vec<CredentialRef>> {
+        self.session()
+            .await?
+            .find_credentials(find_filters)
+            .await
+            .map_err(RecursiveError::mls_client("finding credentials by filter"))
+            .map_err(Into::into)
+    }
+
+    /// Get all credentials from the identities of this session.
+    ///
+    /// To get specific credentials, it can be more efficient to use [`Self::find_credentials`].
+    pub async fn get_credentials(&self) -> Result<Vec<CredentialRef>> {
+        self.session()
+            .await?
+            .get_credentials()
+            .await
+            .map_err(RecursiveError::mls_client("getting all credentials"))
             .map_err(Into::into)
     }
 }
