@@ -126,12 +126,4 @@ class CoreCrypto(private val cc: CoreCryptoFfi) {
      */
     suspend fun isHistorySharingEnabled(conversationId: ConversationId): Boolean = cc.isHistorySharingEnabled(conversationId)
 
-    /**
-     * Closes this [CoreCrypto] instance and deallocates all loaded resources.
-     *
-     * **CAUTION**: This {@link CoreCrypto} instance won't be usable after a call to this method, but there's no way to express this requirement in Kotlin, so you'll get errors instead!
-     */
-    fun close() {
-        cc.close()
-    }
 }

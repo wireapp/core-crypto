@@ -58,6 +58,5 @@ pub async fn update_database_key(name: &str, old_key: &DatabaseKey, new_key: &Da
         .await
         .map_err(CoreCryptoError::generic())?;
     db.update_key(&new_key.0).await.map_err(CoreCryptoError::generic())?;
-    db.close().await.map_err(CoreCryptoError::generic())?;
     Ok(())
 }

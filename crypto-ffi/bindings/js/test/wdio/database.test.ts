@@ -69,7 +69,6 @@ describe("database", () => {
                     window.ccModule.CredentialType.Basic
                 )
             );
-            cc.close();
 
             const newKey = new Uint8Array(32);
             window.crypto.getRandomValues(newKey);
@@ -93,7 +92,6 @@ describe("database", () => {
                     window.ccModule.CredentialType.Basic
                 );
             });
-            cc.close();
 
             return [JSON.stringify(pubkey1), JSON.stringify(pubkey2)];
         });
@@ -147,7 +145,7 @@ describe("database", () => {
 
             // It is important to close the database here since otherwise the migration process
             // will be stuck because we'd be holding a connection to the same database open.
-            db.close();
+            // db.close();
 
             // Migrate the whole database to use the new key type.
             const old_key = clientName;

@@ -107,12 +107,8 @@ pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
 
     async fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()>;
 
-    async fn close(self) -> CryptoKeystoreResult<()>;
-
     /// Default implementation of wipe
-    async fn wipe(self) -> CryptoKeystoreResult<()> {
-        self.close().await
-    }
+    async fn wipe(self) -> CryptoKeystoreResult<()>;
 
     fn check_buffer_size(size: usize) -> CryptoKeystoreResult<()> {
         #[cfg(not(target_family = "wasm"))]
@@ -216,19 +212,6 @@ impl Database {
         }
         let conn: KeystoreDatabaseConnection = Arc::into_inner(self.conn).unwrap().into_inner();
         conn.wipe().await?;
-        Ok(())
-    }
-
-    /// Wait for any running transaction to finish, then close the database connection.
-    pub async fn close(self) -> CryptoKeystoreResult<()> {
-        // Wait for any running transaction to finish
-        let _semaphore = self.transaction_semaphore.acquire_arc().await;
-        // Ensure that there's only one reference to the connection
-        let Some(conn) = Arc::into_inner(self.conn) else {
-            return Err(CryptoKeystoreError::CannotClose);
-        };
-        let conn = conn.into_inner();
-        conn.close().await?;
         Ok(())
     }
 

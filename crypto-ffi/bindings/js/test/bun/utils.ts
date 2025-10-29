@@ -82,7 +82,6 @@ export async function teardown() {
         if (cc === undefined) {
             continue;
         }
-        cc.close();
     }
 }
 
