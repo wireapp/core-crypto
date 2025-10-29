@@ -29,6 +29,20 @@ pub(crate) type CredentialRefMaybeArc = CredentialRef;
 #[cfg(not(target_family = "wasm"))]
 pub(crate) type CredentialRefMaybeArc = Arc<CredentialRef>;
 
+impl CredentialRef {
+    #[cfg(target_family = "wasm")]
+    #[inline]
+    pub(crate) fn into_maybe_arc(self) -> CredentialRefMaybeArc {
+        self
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    #[inline]
+    pub(crate) fn into_maybe_arc(self) -> CredentialRefMaybeArc {
+        Arc::new(self)
+    }
+}
+
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl CredentialRef {

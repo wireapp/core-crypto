@@ -1,6 +1,7 @@
 use core_crypto::{
-    Ciphersuite as CryptoCiphersuite, ClientIdentifier, KeyPackageIn, MlsConversationConfiguration, RecursiveError,
-    VerifiableGroupInfo, mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
+    Ciphersuite as CryptoCiphersuite, ClientIdentifier, CredentialFindFilters, KeyPackageIn,
+    MlsConversationConfiguration, RecursiveError, VerifiableGroupInfo, mls::conversation::Conversation as _,
+    transaction_context::Error as TransactionError,
 };
 use tls_codec::{Deserialize as _, Serialize as _};
 #[cfg(target_family = "wasm")]
@@ -367,5 +368,61 @@ impl CoreCryptoContext {
         let credential_ref = credential_ref.as_ref();
         self.inner.remove_credential(&credential_ref.0).await?;
         Ok(())
+    }
+
+    /// Get all credentials from this client.
+    pub async fn get_credentials(&self) -> CoreCryptoResult<Vec<CredentialRefMaybeArc>> {
+        self.inner
+            .get_credentials()
+            .await
+            .map(|credentials| {
+                credentials
+                    .into_iter()
+                    .map(CredentialRef::from)
+                    .map(CredentialRef::into_maybe_arc)
+                    .collect()
+            })
+            .map_err(Into::into)
+    }
+
+    /// Get all credentials from this client which match the provided parameters.
+    ///
+    /// Parameters which are unset or `None` match anything. Those with a particular value find only credentials matching that value.
+    pub async fn find_credentials(
+        &self,
+        client_id: Option<ClientIdMaybeArc>,
+        public_key: Option<Vec<u8>>,
+        ciphersuite: Option<Ciphersuite>,
+        credential_type: Option<CredentialType>,
+        earliest_validity: Option<u64>,
+    ) -> CoreCryptoResult<Vec<CredentialRefMaybeArc>> {
+        let client_id = client_id.as_ref().map(|client_id| client_id.as_cc());
+        let client_id = client_id.as_ref().map(|client_id| client_id.as_ref());
+
+        let signature_scheme = ciphersuite
+            .map(CryptoCiphersuite::from)
+            .map(|ciphersuite| ciphersuite.signature_algorithm());
+
+        let credential_type = credential_type.map(core_crypto::CredentialType::from);
+
+        let find_filters = CredentialFindFilters {
+            client_id,
+            public_key: public_key.as_deref(),
+            signature_scheme,
+            credential_type,
+            earliest_validity,
+        };
+
+        self.inner
+            .find_credentials(find_filters)
+            .await
+            .map(|credentials| {
+                credentials
+                    .into_iter()
+                    .map(CredentialRef::from)
+                    .map(CredentialRef::into_maybe_arc)
+                    .collect()
+            })
+            .map_err(Into::into)
     }
 }
