@@ -112,6 +112,7 @@ Make sure you have all prerequisites:
 - Install the `wasm32-unknown-unknown` toolchain: `rustup target add wasm32-unknown-unknown`
 - Install node.js (recommended way is via [Volta](https://volta.sh/))
 - Install Bun (follow the instructions on [Bun's website](https://bun.sh/))
+- Install wasm-bindgen-cli
 
 Build:
 
