@@ -116,8 +116,9 @@ impl MlsCryptoProvider {
     /// Wait for any keystore transaction to finish, then close the database connection.
     ///
     /// Note: This does **not** destroy the data on-disk in case of persistent backing store
-    pub async fn close(self) -> MlsProviderResult<()> {
-        self.key_store.close().await.map_err(Into::into)
+    pub async fn close(&self) -> MlsProviderResult<()> {
+        self.key_store.close().await?;
+        Ok(())
     }
 
     /// Clone keystore (its an `Arc` internnaly)
