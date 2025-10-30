@@ -106,10 +106,9 @@ impl CoreCryptoContext {
         enrollment: EnrollmentParameter,
         certificate_chain: String,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        let mut guard = enrollment.0.write().await;
-        let enrollment = guard.as_mut().ok_or_else(E2eiEnrollment::write_err)?;
+        let mut enrollment = enrollment.write().await?;
         self.inner
-            .e2ei_mls_init_only(enrollment, certificate_chain)
+            .e2ei_mls_init_only(&mut enrollment, certificate_chain)
             .await
             .map(Into::into)
             .map_err(Into::<TransactionError>::into)
@@ -128,10 +127,9 @@ impl CoreCryptoContext {
         enrollment: EnrollmentParameter,
         certificate_chain: String,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        let mut guard = enrollment.0.write().await;
-        let enrollment = guard.as_mut().ok_or_else(E2eiEnrollment::write_err)?;
+        let mut enrollment = enrollment.write().await?;
         self.inner
-            .save_x509_credential(enrollment, certificate_chain)
+            .save_x509_credential(&mut enrollment, certificate_chain)
             .await
             .map(Into::into)
             .map_err(Into::<TransactionError>::into)
