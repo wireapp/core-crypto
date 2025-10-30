@@ -4,6 +4,18 @@
 
 ### Features
 
+- We now generate the ts bindings from the same uniffi code that swift and kotlin use.
+
+  - Arrays are now passed as ArrayBuffer between client and the FFI layer, changing parameter and return types.
+
+    Use `.buffer()` to get `ArrayBuffer` from `Uint8Array`.
+
+    Use `new Uint8Array(buffer)` to get a Uint8Array from an `ArrayBuffer`.
+
+  - `CustomConfiguration.keyRotationSpan` now defines milliseconds instead of seconds
+
+  Affected platforms: web
+
 #### New Credential API
 
 - `Credential` is a first-class type representing a cryptographic identity.
