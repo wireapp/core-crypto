@@ -4,6 +4,12 @@
 
 ### Features
 
+- We now generate the ts bindings from the same uniffi code that swift and kotlin use.
+
+  Therefore, Arrays are now passed as ArrayBuffer between client and the FFI layer, changing parameter and return types.
+
+  Affected platforms: web
+
 - Allow in-memory database instantiation and usage with core crypto. Just call `inMemoryDatabase()` (Android, Web)
   or the `Database` constructor without a path (iOS).
 
