@@ -269,7 +269,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     });
     let oidc_chall_resp = serde_json::to_vec(&oidc_chall_resp)?;
 
-    enrollment.new_oidc_challenge_response(oidc_chall_resp).await?;
+    enrollment.new_oidc_challenge_response(oidc_chall_resp)?;
 
     let mut enrollment = restore(enrollment, &ctx.transaction).await;
 
