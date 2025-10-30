@@ -20,12 +20,12 @@ describe("database", () => {
 
                 await window.ccModule.openDatabase(
                     databaseName,
-                    new window.ccModule.DatabaseKey(key)
+                    new window.ccModule.DatabaseKey(key.buffer)
                 );
 
                 const db = await window.ccModule.openDatabase(
                     databaseName,
-                    new window.ccModule.DatabaseKey(key)
+                    new window.ccModule.DatabaseKey(key.buffer)
                 );
 
                 return { dbIsDefined: db !== undefined };
@@ -36,7 +36,7 @@ describe("database", () => {
     it("key must have correct length", async () => {
         expect(() =>
             browser.execute(async () => {
-                new window.ccModule.DatabaseKey(new Uint8Array(11));
+                new window.ccModule.DatabaseKey(new Uint8Array(11).buffer);
             })
         ).rejects.toThrow();
     });
@@ -48,7 +48,7 @@ describe("database", () => {
 
             const makeClientId = () => {
                 const array = new Uint8Array([1, 2]);
-                return new window.ccModule.ClientId(array);
+                return new window.ccModule.ClientId(array.buffer);
             };
 
             const key = new Uint8Array(32);
@@ -56,7 +56,7 @@ describe("database", () => {
 
             const database = await window.ccModule.openDatabase(
                 databaseName,
-                new window.ccModule.DatabaseKey(key)
+                new window.ccModule.DatabaseKey(key.buffer)
             );
 
             let cc = await window.ccModule.CoreCrypto.init(database);
@@ -80,13 +80,13 @@ describe("database", () => {
 
             await window.ccModule.updateDatabaseKey(
                 databaseName,
-                new window.ccModule.DatabaseKey(key),
-                new window.ccModule.DatabaseKey(newKey)
+                new window.ccModule.DatabaseKey(key.buffer),
+                new window.ccModule.DatabaseKey(newKey.buffer)
             );
 
             const newDatabase = await window.ccModule.openDatabase(
                 databaseName,
-                new window.ccModule.DatabaseKey(newKey)
+                new window.ccModule.DatabaseKey(newKey.buffer)
             );
 
             cc = await window.ccModule.CoreCrypto.init(newDatabase);
@@ -149,18 +149,22 @@ describe("database", () => {
                 }
             }
 
+            console.log("before close");
             // It is important to close the database here since otherwise the migration process
             // will be stuck because we'd be holding a connection to the same database open.
             db.close();
 
             // Migrate the whole database to use the new key type.
             const old_key = clientName;
-            const new_key = new window.ccModule.DatabaseKey(new Uint8Array(32));
+            const new_key = new window.ccModule.DatabaseKey(
+                new Uint8Array(32).buffer
+            );
             await window.ccModule.migrateDatabaseKeyTypeToBytes(
                 clientName,
                 old_key,
                 new_key
             );
+            console.log("before open db");
 
             // Reconstruct the client based on the migrated database and fetch the epoch.
             const encoder = new TextEncoder();
@@ -171,7 +175,9 @@ describe("database", () => {
 
             const instance = await window.ccModule.CoreCrypto.init(database);
             const epoch = await instance.conversationEpoch(
-                new window.ccModule.ConversationId(encoder.encode("convId"))
+                new window.ccModule.ConversationId(
+                    encoder.encode("convId").buffer
+                )
             );
             return epoch;
         }, JSON.stringify(stores));
