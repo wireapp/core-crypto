@@ -106,9 +106,10 @@ impl CoreCryptoContext {
         enrollment: EnrollmentParameter,
         certificate_chain: String,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        let mut enrollment = enrollment.write().await;
+        let mut guard = enrollment.0.write().await;
+        let enrollment = guard.as_mut().ok_or_else(E2eiEnrollment::write_err)?;
         self.inner
-            .e2ei_mls_init_only(&mut enrollment, certificate_chain)
+            .e2ei_mls_init_only(enrollment, certificate_chain)
             .await
             .map(Into::into)
             .map_err(Into::<TransactionError>::into)
@@ -127,9 +128,10 @@ impl CoreCryptoContext {
         enrollment: EnrollmentParameter,
         certificate_chain: String,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        let mut enrollment = enrollment.write().await;
+        let mut guard = enrollment.0.write().await;
+        let enrollment = guard.as_mut().ok_or_else(E2eiEnrollment::write_err)?;
         self.inner
-            .save_x509_credential(&mut enrollment, certificate_chain)
+            .save_x509_credential(enrollment, certificate_chain)
             .await
             .map(Into::into)
             .map_err(Into::<TransactionError>::into)
@@ -149,12 +151,9 @@ impl CoreCryptoContext {
     ///
     /// Note that this can only succeed if the enrollment is unique and there are no other hard refs to it.
     pub async fn e2ei_enrollment_stash(&self, enrollment: EnrollmentParameter) -> CoreCryptoResult<Vec<u8>> {
-        let enrollment = Arc::into_inner(enrollment).ok_or_else(|| {
-            CoreCryptoError::ad_hoc("outer enrollment had multiple strong refs and could not be unpacked")
-        })?;
-        let enrollment = enrollment.into_inner().ok_or_else(|| {
-            CoreCryptoError::ad_hoc("inner enrollment had multiple strong refs and could not be unpacked")
-        })?;
+        let enrollment = enrollment.take().await.ok_or(CoreCryptoError::ad_hoc(
+            "attempted to take enrollment from already moved value",
+        ))?;
 
         self.inner
             .e2ei_enrollment_stash(enrollment)

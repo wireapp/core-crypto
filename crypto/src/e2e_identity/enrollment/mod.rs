@@ -317,7 +317,7 @@ impl E2eiEnrollment {
     ///
     /// # Parameters
     /// * `challenge` - http response body
-    pub async fn new_oidc_challenge_response(&mut self, challenge: Json) -> Result<()> {
+    pub fn new_oidc_challenge_response(&mut self, challenge: Json) -> Result<()> {
         let challenge = serde_json::from_slice(&challenge[..])?;
         self.acme_new_challenge_response(challenge)?;
 
