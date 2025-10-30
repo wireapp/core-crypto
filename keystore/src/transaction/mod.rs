@@ -347,7 +347,7 @@ macro_rules! commit_transaction {
 
              let ( $( $( $records, )* )* ) = cached_collections;
 
-            let conn = $db.borrow_conn().await?;
+            let conn = $db.conn().await?;
             let mut conn = conn.conn().await;
             let deleted_ids = $keystore_transaction.deleted.read().await;
 

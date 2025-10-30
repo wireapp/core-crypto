@@ -182,17 +182,9 @@ impl SqlCipherConnection {
         if self.path.is_empty() {
             return Ok(());
         }
+        async_fs::remove_file(&self.path).await?;
 
-        let path = self.path.clone();
-
-        unblock(|| self.close()).await?;
-        async_fs::remove_file(&path).await?;
         Ok(())
-    }
-
-    fn close(self) -> CryptoKeystoreResult<()> {
-        let conn = self.conn.into_inner();
-        conn.close().map_err(|(_, e)| e.into())
     }
 
     fn run_migrations(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
@@ -230,10 +222,6 @@ impl<'a> DatabaseConnection<'a> for SqlCipherConnection {
     async fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
         let mut conn = self.conn().await;
         Self::rekey(&mut conn, new_key)
-    }
-
-    async fn close(self) -> CryptoKeystoreResult<()> {
-        unblock(|| self.close()).await
     }
 
     async fn wipe(self) -> CryptoKeystoreResult<()> {

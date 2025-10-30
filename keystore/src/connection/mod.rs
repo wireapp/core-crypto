@@ -107,12 +107,7 @@ pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
 
     async fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()>;
 
-    async fn close(self) -> CryptoKeystoreResult<()>;
-
-    /// Default implementation of wipe
-    async fn wipe(self) -> CryptoKeystoreResult<()> {
-        self.close().await
-    }
+    async fn wipe(self) -> CryptoKeystoreResult<()>;
 
     fn check_buffer_size(size: usize) -> CryptoKeystoreResult<()> {
         #[cfg(not(target_family = "wasm"))]
@@ -130,7 +125,7 @@ pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
 
 #[derive(Debug, Clone)]
 pub struct Database {
-    pub(crate) conn: Arc<Mutex<KeystoreDatabaseConnection>>,
+    pub(crate) conn: Arc<Mutex<Option<KeystoreDatabaseConnection>>>,
     pub(crate) transaction: Arc<Mutex<Option<KeystoreTransaction>>>,
     transaction_semaphore: Arc<Semaphore>,
 }
@@ -177,12 +172,51 @@ pub enum ConnectionType<'a> {
     InMemory,
 }
 
+/// Exclusive access to the database connection
+///
+/// Note that this is only ever constructed when we already hold exclusive access,
+/// and the connection has already been tested to ensure that it is non-empty.
+pub struct ConnectionGuard<'a> {
+    guard: MutexGuard<'a, Option<KeystoreDatabaseConnection>>,
+}
+
+impl<'a> TryFrom<MutexGuard<'a, Option<KeystoreDatabaseConnection>>> for ConnectionGuard<'a> {
+    type Error = CryptoKeystoreError;
+
+    fn try_from(guard: MutexGuard<'a, Option<KeystoreDatabaseConnection>>) -> Result<Self, Self::Error> {
+        guard
+            .is_some()
+            .then_some(Self { guard })
+            .ok_or(CryptoKeystoreError::Closed)
+    }
+}
+
+impl Deref for ConnectionGuard<'_> {
+    type Target = KeystoreDatabaseConnection;
+
+    fn deref(&self) -> &Self::Target {
+        self.guard
+            .as_ref()
+            .expect("we have exclusive access and already checked that the connection exists")
+    }
+}
+
+impl DerefMut for ConnectionGuard<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.guard
+            .as_mut()
+            .expect("we have exclusive access and already checked that the connection exists")
+    }
+}
+
+// Only the functions in this impl block directly mess with `self.conn`
 impl Database {
     pub async fn open(location: ConnectionType<'_>, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let conn = match location {
-            ConnectionType::Persistent(name) => KeystoreDatabaseConnection::open(name, key).await?.into(),
-            ConnectionType::InMemory => KeystoreDatabaseConnection::open_in_memory(key).await?.into(),
+            ConnectionType::Persistent(name) => KeystoreDatabaseConnection::open(name, key).await?,
+            ConnectionType::InMemory => KeystoreDatabaseConnection::open_in_memory(key).await?,
         };
+        let conn = Mutex::new(Some(conn));
         #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
         let conn = Arc::new(conn);
         Ok(Self {
@@ -192,8 +226,27 @@ impl Database {
         })
     }
 
-    pub async fn borrow_conn(&self) -> CryptoKeystoreResult<MutexGuard<'_, KeystoreDatabaseConnection>> {
-        Ok(self.conn.lock().await)
+    /// Get direct exclusive access to the connection.
+    pub async fn conn(&self) -> CryptoKeystoreResult<ConnectionGuard<'_>> {
+        self.conn.lock().await.try_into()
+    }
+
+    /// Wait for any running transaction to finish, then take the connection out of this database,
+    /// preventing this database from being used again.
+    ///
+    /// Cannot be called while a transaction is in progress.
+    pub async fn close(&self) -> CryptoKeystoreResult<KeystoreDatabaseConnection> {
+        // Wait for any running transaction to finish
+        let _semaphore = self.transaction_semaphore.acquire_arc().await;
+        let mut guard = self.conn.lock().await;
+        guard.take().ok_or(CryptoKeystoreError::Closed)
+    }
+}
+
+impl Database {
+    /// Close this database and delete its contents.
+    pub async fn wipe(&self) -> CryptoKeystoreResult<()> {
+        self.close().await?.wipe().await
     }
 
     pub async fn migrate_db_key_type_to_bytes(
@@ -205,31 +258,7 @@ impl Database {
     }
 
     pub async fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
-        self.conn.lock().await.update_key(new_key).await
-    }
-
-    pub async fn wipe(self) -> CryptoKeystoreResult<()> {
-        if self.transaction.lock().await.is_some() {
-            return Err(CryptoKeystoreError::TransactionInProgress {
-                attempted_operation: "wipe()".to_string(),
-            });
-        }
-        let conn: KeystoreDatabaseConnection = Arc::into_inner(self.conn).unwrap().into_inner();
-        conn.wipe().await?;
-        Ok(())
-    }
-
-    /// Wait for any running transaction to finish, then close the database connection.
-    pub async fn close(self) -> CryptoKeystoreResult<()> {
-        // Wait for any running transaction to finish
-        let _semaphore = self.transaction_semaphore.acquire_arc().await;
-        // Ensure that there's only one reference to the connection
-        let Some(conn) = Arc::into_inner(self.conn) else {
-            return Err(CryptoKeystoreError::CannotClose);
-        };
-        let conn = conn.into_inner();
-        conn.close().await?;
-        Ok(())
+        self.conn().await?.update_key(new_key).await
     }
 
     /// Waits for the current transaction to be committed or rolled back, then starts a new one.
@@ -265,7 +294,7 @@ impl Database {
         &self,
         entity: E,
     ) -> CryptoKeystoreResult<Vec<E>> {
-        let mut conn = self.conn.lock().await;
+        let mut conn = self.conn().await?;
         let persisted_records = entity.child_groups(conn.deref_mut()).await?;
 
         let transaction_guard = self.transaction.lock().await;
@@ -304,7 +333,7 @@ impl Database {
         &self,
         conversation_id: &[u8],
     ) -> CryptoKeystoreResult<Vec<MlsPendingMessage>> {
-        let mut conn = self.conn.lock().await;
+        let mut conn = self.conn().await?;
         let persisted_records =
             MlsPendingMessage::find_all_by_conversation_id(&mut conn, conversation_id, Default::default()).await?;
 
@@ -356,7 +385,7 @@ impl FetchFromDatabase for Database {
         }
 
         // Otherwise get it from the database
-        let mut conn = self.conn.lock().await;
+        let mut conn = self.conn().await?;
         E::find_one(&mut conn, &id.as_ref().into()).await
     }
 
@@ -370,7 +399,7 @@ impl FetchFromDatabase for Database {
             return Ok(cached_record);
         }
         // Otherwise get it from the database
-        let mut conn = self.conn.lock().await;
+        let mut conn = self.conn().await?;
         U::find_unique(&mut conn).await
     }
 
@@ -378,7 +407,7 @@ impl FetchFromDatabase for Database {
         &self,
         params: EntityFindParams,
     ) -> CryptoKeystoreResult<Vec<E>> {
-        let mut conn = self.conn.lock().await;
+        let mut conn = self.conn().await?;
         let persisted_records = E::find_all(&mut conn, params.clone()).await?;
 
         let transaction_guard = self.transaction.lock().await;
@@ -393,7 +422,7 @@ impl FetchFromDatabase for Database {
         ids: &[Vec<u8>],
     ) -> CryptoKeystoreResult<Vec<E>> {
         let entity_ids: Vec<StringEntityId> = ids.iter().map(|id| id.as_slice().into()).collect();
-        let mut conn = self.conn.lock().await;
+        let mut conn = self.conn().await?;
         let persisted_records = E::find_many(&mut conn, &entity_ids).await?;
 
         let transaction_guard = self.transaction.lock().await;
@@ -409,7 +438,7 @@ impl FetchFromDatabase for Database {
             // between cache and db.
             return Ok(self.find_all::<E>(Default::default()).await?.len());
         };
-        let mut conn = self.conn.lock().await;
+        let mut conn = self.conn().await?;
         E::count(&mut conn).await
     }
 }

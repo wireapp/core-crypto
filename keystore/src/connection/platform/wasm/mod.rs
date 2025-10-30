@@ -113,17 +113,8 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
         Ok(())
     }
 
-    async fn close(self) -> CryptoKeystoreResult<()> {
-        self.conn.close()?;
-
-        Ok(())
-    }
-
     async fn wipe(self) -> CryptoKeystoreResult<()> {
-        let is_persistent = self.conn.is_persistent();
-        self.conn.close()?;
-
-        if is_persistent {
+        if self.conn.is_persistent() {
             let factory = Factory::new()?;
             factory
                 .delete(&self.name.expect("name is always set for a persistent connection"))?
