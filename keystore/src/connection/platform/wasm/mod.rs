@@ -113,15 +113,9 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
         Ok(())
     }
 
-    async fn close(self) -> CryptoKeystoreResult<()> {
-        self.conn.close()?;
-
-        Ok(())
-    }
-
     async fn wipe(self) -> CryptoKeystoreResult<()> {
         let is_persistent = self.conn.is_persistent();
-        self.conn.close()?;
+        drop(self.conn);
 
         if is_persistent {
             let factory = Factory::new()?;

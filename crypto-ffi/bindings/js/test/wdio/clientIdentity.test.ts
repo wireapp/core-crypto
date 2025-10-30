@@ -21,7 +21,7 @@ describe("client identity", () => {
                     window.defaultCipherSuite,
                     window.ccModule.CredentialType.Basic
                 )
-            ).length;
+            ).byteLength;
         }, alice);
         expect(result).toBe(32);
     });

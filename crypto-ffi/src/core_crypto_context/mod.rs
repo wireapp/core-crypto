@@ -5,8 +5,6 @@ mod proteus;
 use std::{ops::Deref, sync::Arc};
 
 use core_crypto::transaction_context::TransactionContext;
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
 
 use crate::CoreCryptoResult;
 
@@ -17,9 +15,7 @@ use crate::CoreCryptoResult;
 /// Every mutable operation is done through this struct. This struct will buffer all
 /// operations in memory and when [TransactionContext::finish] is called, it will persist the data into
 /// the keystore.
-#[derive(Debug)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
+#[derive(Debug, uniffi::Object)]
 pub struct CoreCryptoContext {
     pub(crate) inner: Arc<TransactionContext>,
 }
@@ -32,8 +28,7 @@ impl Deref for CoreCryptoContext {
     }
 }
 
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+#[uniffi::export]
 impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::set_data]
     pub async fn set_data(&self, data: Vec<u8>) -> CoreCryptoResult<()> {

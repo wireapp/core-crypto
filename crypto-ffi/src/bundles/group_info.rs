@@ -1,12 +1,8 @@
 use core_crypto::MlsGroupInfoBundle;
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
 
 use crate::core_crypto_context::mls::{GroupInfoMaybeArc, group_info_coerce_maybe_arc};
 
-#[derive(Debug, Clone, Copy)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
+#[derive(Debug, Clone, Copy, uniffi::Enum)]
 #[repr(u8)]
 pub enum MlsGroupInfoEncryptionType {
     /// Unencrypted `GroupInfo`
@@ -33,9 +29,7 @@ impl From<MlsGroupInfoEncryptionType> for core_crypto::MlsGroupInfoEncryptionTyp
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
+#[derive(Debug, Clone, Copy, uniffi::Enum)]
 #[repr(u8)]
 pub enum MlsRatchetTreeType {
     /// Plain old and complete `GroupInfo`
@@ -67,13 +61,7 @@ impl From<MlsRatchetTreeType> for core_crypto::MlsRatchetTreeType {
 }
 
 /// A `GroupInfo` with some metadata
-#[derive(Debug, Clone)]
-#[cfg_attr(
-    target_family = "wasm",
-    wasm_bindgen(getter_with_clone),
-    derive(serde::Serialize, serde::Deserialize)
-)]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
+#[derive(Debug, Clone, uniffi::Record)]
 pub struct GroupInfoBundle {
     /// How the group info is encrypetd
     pub encryption_type: MlsGroupInfoEncryptionType,

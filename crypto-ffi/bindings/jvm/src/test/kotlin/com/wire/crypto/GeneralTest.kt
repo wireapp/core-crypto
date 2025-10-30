@@ -35,7 +35,6 @@ class DatabaseTest {
         val path = tmpdir / "keystore"
         val key = genDatabaseKey()
         val db = openDatabase(path.absolutePathString(), key)
-        db.close()
 
         openDatabase(path.toString(), key)
 
@@ -97,7 +96,6 @@ class DatabaseKeyTest {
             it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT)
             it.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
         }
-        cc.close()
 
         val newKey = genDatabaseKey()
         assertNotEquals(oldKey, newKey)
@@ -109,7 +107,6 @@ class DatabaseKeyTest {
             it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT)
             it.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
         }
-        cc.close()
         assertContentEquals(pubkey1, pubkey2)
 
         tmpdir.toFile().deleteRecursively()

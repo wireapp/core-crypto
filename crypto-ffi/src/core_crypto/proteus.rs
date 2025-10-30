@@ -1,10 +1,6 @@
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
-
 use crate::{CoreCryptoFfi, CoreCryptoResult, proteus_impl};
 
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+#[uniffi::export]
 impl CoreCryptoFfi {
     /// See [core_crypto::proteus::ProteusCentral::session_exists]
     pub async fn proteus_session_exists(&self, session_id: String) -> CoreCryptoResult<bool> {
@@ -49,21 +45,6 @@ fn fingerprint_prekeybundle_inner(prekey: Vec<u8>) -> CoreCryptoResult<String> {
     proteus_impl!({ core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(&prekey).map_err(Into::into) })
 }
 
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen]
-impl CoreCryptoFfi {
-    /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey_id]
-    pub fn proteus_last_resort_prekey_id() -> CoreCryptoResult<u16> {
-        last_resort_prekey_id_inner()
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle]
-    pub fn proteus_fingerprint_prekeybundle(prekey: Vec<u8>) -> CoreCryptoResult<String> {
-        fingerprint_prekeybundle_inner(prekey)
-    }
-}
-
-#[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
 impl CoreCryptoFfi {
     /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey_id]

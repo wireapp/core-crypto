@@ -1,10 +1,6 @@
-use std::collections::HashMap;
-#[cfg(not(target_family = "wasm"))]
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use core_crypto::{mls::conversation::Conversation as _, transaction_context::Error as TransactionError};
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
 
 use crate::{
     Ciphersuite, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CrlRegistration,
@@ -12,14 +8,9 @@ use crate::{
     crl::NewCrlDistributionPoints,
 };
 
-#[cfg(not(target_family = "wasm"))]
 type EnrollmentParameter = Arc<E2eiEnrollment>;
 
-#[cfg(target_family = "wasm")]
-type EnrollmentParameter = E2eiEnrollment;
-
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+#[uniffi::export]
 impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::e2ei_new_enrollment]
     pub async fn e2ei_new_enrollment(
@@ -115,9 +106,10 @@ impl CoreCryptoContext {
         enrollment: EnrollmentParameter,
         certificate_chain: String,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        let mut enrollment = enrollment.write().await;
+        let mut guard = enrollment.0.write().await;
+        let enrollment = guard.as_mut().ok_or_else(E2eiEnrollment::write_err)?;
         self.inner
-            .e2ei_mls_init_only(&mut enrollment, certificate_chain)
+            .e2ei_mls_init_only(enrollment, certificate_chain)
             .await
             .map(Into::into)
             .map_err(Into::<TransactionError>::into)
@@ -136,9 +128,10 @@ impl CoreCryptoContext {
         enrollment: EnrollmentParameter,
         certificate_chain: String,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        let mut enrollment = enrollment.write().await;
+        let mut guard = enrollment.0.write().await;
+        let enrollment = guard.as_mut().ok_or_else(E2eiEnrollment::write_err)?;
         self.inner
-            .save_x509_credential(&mut enrollment, certificate_chain)
+            .save_x509_credential(enrollment, certificate_chain)
             .await
             .map(Into::into)
             .map_err(Into::<TransactionError>::into)
@@ -158,13 +151,9 @@ impl CoreCryptoContext {
     ///
     /// Note that this can only succeed if the enrollment is unique and there are no other hard refs to it.
     pub async fn e2ei_enrollment_stash(&self, enrollment: EnrollmentParameter) -> CoreCryptoResult<Vec<u8>> {
-        #[cfg(not(target_family = "wasm"))]
-        let enrollment = Arc::into_inner(enrollment).ok_or_else(|| {
-            CoreCryptoError::ad_hoc("outer enrollment had multiple strong refs and could not be unpacked")
-        })?;
-        let enrollment = enrollment.into_inner().ok_or_else(|| {
-            CoreCryptoError::ad_hoc("inner enrollment had multiple strong refs and could not be unpacked")
-        })?;
+        let enrollment = enrollment.take().await.ok_or(CoreCryptoError::ad_hoc(
+            "attempted to take enrollment from already moved value",
+        ))?;
 
         self.inner
             .e2ei_enrollment_stash(enrollment)
@@ -220,10 +209,6 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_user_identities]
-    #[cfg_attr(
-        target_family = "wasm",
-        wasm_bindgen(unchecked_return_type = "Map<string, WireIdentity[]>")
-    )]
     pub async fn get_user_identities(
         &self,
         conversation_id: &ConversationId,
@@ -235,8 +220,6 @@ impl CoreCryptoContext {
             .into_iter()
             .map(|(k, v)| (k, v.into_iter().map(WireIdentity::from).collect()))
             .collect::<HashMap<_, Vec<_>>>();
-        #[cfg(target_family = "wasm")]
-        let user_ids = serde_wasm_bindgen::to_value(&user_ids)?;
         Ok(user_ids)
     }
 
