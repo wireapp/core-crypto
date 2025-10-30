@@ -145,7 +145,7 @@ describe("database", () => {
 
             // It is important to close the database here since otherwise the migration process
             // will be stuck because we'd be holding a connection to the same database open.
-            // db.close();
+            db.close();
 
             // Migrate the whole database to use the new key type.
             const old_key = clientName;
