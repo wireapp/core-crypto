@@ -152,11 +152,12 @@ export async function teardown() {
  * browser context via {@link Window.ensureCcDefined}.
  *
  * @param clientName The client name used to initialize.
+ * @param withCredential When set (default), adds a basic credential to the CC instance
  *
  * @returns {Promise<void>}
  */
-export async function ccInit(clientName: string): Promise<void> {
-    return await browser.execute(async (clientName) => {
+export async function ccInit(clientName: string, withCredential: boolean = true): Promise<void> {
+    return await browser.execute(async (clientName, withCredential) => {
         const cipherSuite = window.defaultCipherSuite;
         const encoder = new TextEncoder();
         const clientId = new window.ccModule.ClientId(
@@ -174,6 +175,9 @@ export async function ccInit(clientName: string): Promise<void> {
         const instance = await window.ccModule.CoreCrypto.init(database);
         await instance.transaction(async (ctx) => {
             await ctx.mlsInit(clientId, [cipherSuite]);
+            if (withCredential) {
+                await ctx.addCredential(window.ccModule.Credential.basic(cipherSuite, clientId));
+            }
         });
 
         await instance.provideTransport(window.deliveryService);
@@ -182,7 +186,7 @@ export async function ccInit(clientName: string): Promise<void> {
             window.cc = new Map();
         }
         window.cc.set(clientName, instance);
-    }, clientName);
+    }, clientName, withCredential);
 }
 
 /**
