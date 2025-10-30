@@ -1,8 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
 use async_lock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
 
 use crate::{AcmeDirectory, CoreCryptoError, CoreCryptoResult, NewAcmeAuthz, NewAcmeOrder};
 
