@@ -423,8 +423,9 @@ WASM_GEN := $(GEN_DIR)/wasm-bindgen/index_bg.wasm
 # find all .ts source files under src/ except `*.d.ts`
 TS_SRCS := $(shell find $(JS_SRC_DIR) -type f -name '*.ts' -not -name '*.d.ts' 2>/dev/null | LC_ALL=C sort)
 
-JS_OUT := $(JS_DIR)/out/corecrypto.js
-DTS_OUT := $(JS_DIR)/out/corecrypto.d.ts
+TS_OUT_DIR:= $(JS_DIR)/out
+JS_OUT := $(TS_OUT_DIR)/corecrypto.js
+DTS_OUT := $(TS_OUT_DIR)/corecrypto.d.ts
 
 # In release mode, fail if the lockfile does not match
 BUN_FROZEN_LOCKFILE := $(if $(RELEASE),--frozen-lockfile)
@@ -458,8 +459,10 @@ bun-deps: $(BUN_LOCK) $(NODE_MODULES) ## Install JS dependencies using bun
 # always remove old outputs
 .PHONY: ts-clean
 ts-clean: ## Cleanup old TypeScript build outputs
-	@rm -f $(JS_OUT) $(DTS_OUT) \
-	&& rm -rf $(GEN_DIR)
+	@rm -rf $(TS_OUT_DIR) \
+	&& rm -rf $(GEN_DIR) \
+	&& rm -f $(JS_DIR)/src/index.web.ts \
+	&& rm -rf $(JS_DIR)/rust_modules
 
 # build corecrypto.js
 js-deps := $(BUN_LOCK) $(NODE_MODULES) $(JS_GEN) $(WASM_GEN) $(TS_SRCS) $(PACKAGE_JSON) $(BUNFIG)
