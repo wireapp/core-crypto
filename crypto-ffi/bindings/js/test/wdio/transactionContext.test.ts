@@ -125,6 +125,6 @@ describe("transaction context", () => {
             }
             throw new Error("Expected 'Conversation already exists' error");
         }, alice);
-        expect(error.message).toBe("Conversation already exists");
+        expect(error.message).toBe("MlsError.ConversationAlreadyExists");
     });
 });
