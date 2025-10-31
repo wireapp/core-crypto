@@ -1033,7 +1033,10 @@ export class CoreCryptoContext {
     }
 
     /**
-     * Add a credential to this instance.
+     * Add a credential to this instance, persisting it.
+     *
+     * @param credential the credential to add
+     * @returns a reference to the added credential
      */
     async addCredential(credential: Credential): Promise<CredentialRef> {
         return await CoreCryptoError.asyncMapErr(
@@ -1043,6 +1046,8 @@ export class CoreCryptoContext {
 
     /**
      * Remove a credential from this instance.
+     *
+     * @param credentialRef a reference to the credential to be removed
      */
     async removeCredential(credentialRef: CredentialRef): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
@@ -1055,7 +1060,11 @@ export class CoreCryptoContext {
         return await CoreCryptoError.asyncMapErr(this.#ctx.get_credentials());
     }
 
-    /** Get those credentials known to this instance which match the provided filters */
+    /**
+     * Get those credentials known to this instance which match the provided filters
+     *
+     * @param findFilters a set of filters defining which credentials are of interest.
+     */
     async findCredentials(
         findFilters: CredentialFindFilters
     ): Promise<CredentialRef[]> {
