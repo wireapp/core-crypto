@@ -670,11 +670,18 @@ final class WireCoreCryptoTests: XCTestCase {
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
         var clients: [CoreCrypto] = []
         for clientId in clientIds {
+            var clientId = ClientId(bytes: clientId.data(using: .utf8)!)
             let coreCrypto = try await createCoreCrypto()
             try await coreCrypto.transaction({
                 try await $0.mlsInit(
-                    clientId: ClientId(bytes: clientId.data(using: .utf8)!),
+                    clientId: clientId,
                     ciphersuites: [ciphersuite])
+                try await $0.addCredential(
+                    credential: basicCredential(
+                        ciphersuite: ciphersuite,
+                        clientId: clientId,
+                    )
+                )
             }
             )
             clients.append(coreCrypto)
