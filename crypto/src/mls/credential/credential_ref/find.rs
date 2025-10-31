@@ -9,7 +9,7 @@ use tls_codec::Deserialize as _;
 use super::{super::keypairs, Error, Result};
 use crate::{ClientId, Credential, CredentialRef, KeystoreError, RecursiveError, mls::session::id::ClientIdRef};
 
-/// Filters to narrow down the set of credentials returned from [`CredentialRef::find`].
+/// Filters to narrow down the set of credentials returned from various credential-finding methods.
 ///
 /// Filters which are unset allow any value.
 ///
