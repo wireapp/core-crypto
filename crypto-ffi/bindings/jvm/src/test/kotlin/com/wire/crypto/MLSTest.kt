@@ -485,4 +485,91 @@ class MLSTest : HasMockDeliveryService() {
             assertEquals<ULong>(credential.earliestValidity(), 0u)
         }
     }
+
+    @Test
+    fun can_add_basic_credential(): TestResult {
+        val scope = TestScope()
+        return scope.runTest {
+            val clientId = genClientId()
+            val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
+
+            val cc = initCc(this@MLSTest)
+            val ref = cc.transaction { ctx ->
+                ctx.mlsInitShort(clientId)
+                ctx.addCredential(credential)
+            }
+
+            assertEquals(ref.type(), CredentialType.BASIC)
+            assertNotEquals(ref.earliestValidity(), 0uL)
+
+            val allCredentials = cc.transaction { ctx -> ctx.getCredentials() }
+            assertThat(allCredentials).hasSize(1)
+        }
+    }
+
+    @Test
+    fun can_remove_basic_credential(): TestResult {
+        val scope = TestScope()
+        return scope.runTest {
+            val clientId = genClientId()
+            val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
+
+            val cc = initCc(this@MLSTest)
+            val ref = cc.transaction { ctx ->
+                ctx.mlsInitShort(clientId)
+                ctx.addCredential(credential)
+            }
+
+            cc.transaction { ctx ->
+                ctx.removeCredential(ref)
+            }
+
+            val allCredentials = cc.transaction { ctx -> ctx.getCredentials() }
+            assertThat(allCredentials).hasSize(0)
+        }
+    }
+
+    @Test
+    fun can_search_credentials_by_ciphersuite(): TestResult {
+        val scope = TestScope()
+        return scope.runTest {
+            val clientId = genClientId()
+            val ciphersuite1 = Ciphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+            val credential1 = Credential.basic(ciphersuite1, clientId)
+
+            val ciphersuite2 =
+                Ciphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519
+            val credential2 = Credential.basic(ciphersuite2, clientId)
+
+            val cc = initCc(this@MLSTest)
+            cc.transaction { ctx ->
+                ctx.mlsInitShort(clientId)
+                ctx.addCredential(credential1)
+                ctx.addCredential(credential2)
+            }
+
+            val results1 = cc.transaction { ctx ->
+                ctx.findCredentials(
+                    clientId = null,
+                    publicKey = null,
+                    ciphersuite = ciphersuite1,
+                    credentialType = null,
+                    earliestValidity = null
+                )
+            }
+            val results2 = cc.transaction { ctx ->
+                ctx.findCredentials(
+                    clientId = null,
+                    publicKey = null,
+                    ciphersuite = ciphersuite2,
+                    credentialType = null,
+                    earliestValidity = null
+                )
+            }
+
+            assertThat(results1).hasSize(1)
+            assertThat(results2).hasSize(1)
+            assertNotEquals(results1[0], results2[0])
+        }
+    }
 }
