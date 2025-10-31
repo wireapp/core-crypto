@@ -54,7 +54,7 @@ mod tests {
         .await
         .unwrap();
 
-        let mut conn = store.borrow_conn().await.unwrap();
+        let mut conn = store.conn().await.unwrap();
         use core_crypto_keystore::connection::storage::WasmStorageWrapper;
         let WasmStorageWrapper::Persistent(db) = conn.storage_mut().wrapper() else {
             panic!("Storage isn't persistent");

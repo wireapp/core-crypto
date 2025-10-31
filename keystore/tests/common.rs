@@ -59,7 +59,7 @@ impl KeystoreTestContext {
 impl Drop for KeystoreTestContext {
     fn drop(&mut self) {
         if let Some(store) = self.store.take() {
-            let commit_and_wipe = async {
+            let commit_and_wipe = async move {
                 store.commit_transaction().await.expect("Could not commit transaction");
                 store.wipe().await.expect("Could not wipe store");
             };
