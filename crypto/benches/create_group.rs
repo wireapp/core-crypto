@@ -1,6 +1,6 @@
 use std::hint::black_box;
 
-use core_crypto::{MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration};
+use core_crypto::{CredentialType, MlsConversationConfiguration, MlsCustomConfiguration};
 use criterion::{
     BatchSize, BenchmarkId, Criterion, async_executor::SmolExecutor as FuturesExecutor, criterion_group, criterion_main,
 };
@@ -21,7 +21,7 @@ fn create_group_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         smol::block_on(async {
-                            let (central, ..) = new_central(*ciphersuite, credential.as_ref(), in_memory).await;
+                            let (central, ..) = new_central(*ciphersuite, credential.as_ref(), in_memory, true).await;
                             let id = conversation_id();
                             let cfg = MlsConversationConfiguration {
                                 ciphersuite: *ciphersuite,
@@ -32,10 +32,7 @@ fn create_group_bench(c: &mut Criterion) {
                     },
                     |(central, id, cfg)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        context
-                            .new_conversation(&id, MlsCredentialType::Basic, cfg)
-                            .await
-                            .unwrap();
+                        context.new_conversation(&id, CredentialType::Basic, cfg).await.unwrap();
                         context.finish().await.unwrap();
                         black_box(());
                     },
@@ -59,10 +56,11 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                             let (alice_central, id, _, _, delivery_service) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
 
-                            let (bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
+                            let (bob_central, ..) =
+                                new_central(ciphersuite, credential.as_ref(), in_memory, true).await;
                             let bob_context = bob_central.new_transaction().await.unwrap();
                             let bob_kpbs = bob_context
-                                .get_or_create_client_keypackages(ciphersuite, MlsCredentialType::Basic, 1)
+                                .get_or_create_client_keypackages(ciphersuite, CredentialType::Basic, 1)
                                 .await
                                 .unwrap();
                             let bob_kp = bob_kpbs.first().unwrap().clone();
@@ -109,7 +107,8 @@ fn join_from_group_info_bench(c: &mut Criterion) {
                         smol::block_on(async {
                             let (_, _, _, group_info, ..) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
-                            let (bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
+                            let (bob_central, ..) =
+                                new_central(ciphersuite, credential.as_ref(), in_memory, true).await;
                             (bob_central, group_info)
                         })
                     },
@@ -120,7 +119,7 @@ fn join_from_group_info_bench(c: &mut Criterion) {
                                 .join_by_external_commit(
                                     group_info,
                                     MlsCustomConfiguration::default(),
-                                    MlsCredentialType::Basic,
+                                    CredentialType::Basic,
                                 )
                                 .await
                                 .unwrap(),

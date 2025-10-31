@@ -589,7 +589,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        CertificateBundle, ClientIdentifier, MlsCredentialType, Session, SessionConfig,
+        CertificateBundle, ClientId, ClientIdentifier, CredentialType, Session,
         test_utils::{proteus_utils::*, x509::X509TestChain, *},
     };
 
@@ -599,19 +599,15 @@ mod tests {
         let (path, db_file) = tmp_db_file();
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
-        let client_id = "alice".into();
+        let client_id = ClientId::from("alice").into();
         let db = Database::open(ConnectionType::Persistent(&path), &DatabaseKey::generate())
             .await
             .unwrap();
-        let cfg = SessionConfig::builder()
-            .database(db)
-            .client_id(client_id)
-            .ciphersuites([case.ciphersuite()])
-            .build()
-            .validate()
-            .unwrap();
 
-        let cc: CoreCrypto = Session::try_new(cfg).await.unwrap().into();
+        let cc: CoreCrypto = Session::try_new(&db).await.unwrap().into();
+        cc.init(client_id, &[case.ciphersuite().signature_algorithm()])
+            .await
+            .unwrap();
         let context = cc.new_transaction().await.unwrap();
         assert!(context.proteus_init().await.is_ok());
         assert!(context.proteus_new_prekey(1).await.is_ok());
@@ -622,6 +618,8 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn cc_can_2_phase_init(case: TestContext) {
+        use crate::{ClientId, Credential};
+
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
         #[cfg(target_family = "wasm")]
@@ -629,15 +627,8 @@ mod tests {
         let db = Database::open(ConnectionType::Persistent(&path), &DatabaseKey::generate())
             .await
             .unwrap();
-        // we are deferring MLS initialization here, not passing a MLS 'client_id' yet
-        let cfg = SessionConfig::builder()
-            .database(db)
-            .ciphersuites([case.ciphersuite()])
-            .build()
-            .validate()
-            .unwrap();
 
-        let cc: CoreCrypto = Session::try_new(cfg).await.unwrap().into();
+        let cc: CoreCrypto = Session::try_new(&db).await.unwrap().into();
         let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(&transaction).await;
@@ -645,14 +636,23 @@ mod tests {
         // proteus is initialized, prekeys can be generated
         assert!(transaction.proteus_new_prekey(1).await.is_ok());
         // 👇 and so a unique 'client_id' can be fetched from wire-server
-        let client_id = "alice";
+        let client_id = ClientId::from("alice");
         let identifier = match case.credential_type {
-            MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
-            MlsCredentialType::X509 => {
-                CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
+            CredentialType::Basic => ClientIdentifier::Basic(client_id),
+            CredentialType::X509 => {
+                CertificateBundle::rand_identifier(&client_id, &[x509_test_chain.find_local_intermediate_ca()])
             }
+            CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
         };
-        transaction.mls_init(identifier, &[case.ciphersuite()]).await.unwrap();
+        transaction
+            .mls_init(identifier.clone(), &[case.ciphersuite()])
+            .await
+            .unwrap();
+
+        let credential =
+            Credential::from_identifier(&identifier, case.signature_scheme(), &cc.mls.crypto_provider).unwrap();
+        cc.add_credential(credential).await.unwrap();
+
         // expect MLS to work
         assert_eq!(
             transaction

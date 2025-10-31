@@ -1,6 +1,6 @@
 use std::hint::black_box;
 
-use core_crypto::MlsCredentialType;
+use core_crypto::CredentialType;
 use criterion::{
     BatchSize, Criterion, async_executor::SmolExecutor as FuturesExecutor, criterion_group, criterion_main,
 };
@@ -15,12 +15,12 @@ fn generate_key_package_bench(c: &mut Criterion) {
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
         let credential_type = credential
             .as_ref()
-            .map(|_| MlsCredentialType::X509)
-            .unwrap_or(MlsCredentialType::Basic);
+            .map(|_| CredentialType::X509)
+            .unwrap_or(CredentialType::Basic);
         for i in (GROUP_RANGE).step_by(GROUP_STEP) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
-                    || smol::block_on(setup_mls(ciphersuite, credential.as_ref(), in_memory)),
+                    || smol::block_on(setup_mls(ciphersuite, credential.as_ref(), in_memory, true)),
                     |(central, ..)| async move {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
@@ -44,14 +44,14 @@ fn count_key_packages_bench(c: &mut Criterion) {
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
         let credential_type = credential
             .as_ref()
-            .map(|_| MlsCredentialType::X509)
-            .unwrap_or(MlsCredentialType::Basic);
+            .map(|_| CredentialType::X509)
+            .unwrap_or(CredentialType::Basic);
         for i in (GROUP_RANGE).step_by(GROUP_STEP) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         smol::block_on(async {
-                            let (central, ..) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            let (central, ..) = setup_mls(ciphersuite, credential.as_ref(), in_memory, true).await;
 
                             let context = central.new_transaction().await.unwrap();
                             context

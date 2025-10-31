@@ -3,6 +3,10 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
+use openmls::prelude::SignatureScheme;
+
+use crate::ConversationId;
+
 pub(crate) type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
@@ -11,12 +15,12 @@ pub enum Error {
     InvalidUserId,
     #[error("X509 certificate bundle set was empty")]
     NoX509CertificateBundle,
-    #[error("Tried to insert an already existing CredentialBundle")]
-    CredentialBundleConflict,
+    #[error("credentials must be distinct in signature scheme, credential type, and earliest validity timestamp")]
+    CredentialConflict,
     #[error("A MLS operation was requested but MLS hasn't been initialized on this instance")]
     MlsNotInitialized,
-    #[error("A Credential of type {0:?} was not found locally which is very likely an implementation error")]
-    CredentialNotFound(crate::MlsCredentialType),
+    #[error("No Credential of type ({0:?}, {1:?}) was found in this session")]
+    CredentialNotFound(crate::CredentialType, SignatureScheme),
     #[error("supplied signature scheme was not valid")]
     InvalidSignatureScheme,
     /// The keystore has no knowledge of such client; this shouldn't happen as Client::init is failsafe (find-else-create)
@@ -29,8 +33,12 @@ pub enum Error {
     UnexpectedlyReady,
     #[error("The keystore already contains a stored identity. Cannot create a new one!")]
     IdentityAlreadyPresent,
-    #[error("The supplied credential does not match the id or signature schemes provided")]
+    #[error("The supplied credential does not match the id this CC instance was initialized with")]
     WrongCredential,
+    #[error("Credentials of type {0} are unknown")]
+    UnknownCredential(u16),
+    #[error("this credential is still in use by the conversation with id \"{}\"", hex::encode(.0))]
+    CredentialStillInUse(ConversationId),
     #[error("An EpochObserver has already been registered; reregistration is not possible")]
     EpochObserverAlreadyExists,
     #[error("An HistoryHandler has already been registered; reregistration is not possible")]

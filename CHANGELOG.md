@@ -4,6 +4,55 @@
 
 ### Features
 
+#### New Credential API
+
+- `Credential` is a first-class type representing a cryptographic identity.
+  - It can be created at any time and lives in memory.
+  - There are two variants of credential: basic and x509. They are created with `Credential.basic` and `Credential.x509`
+    respectively (web) or the `credentialBasic` and `credentialX509` functions (ios/android).
+- Initializing a MLS client no longer automatically generates any credentials. Any stored credentials will be
+  automatically loaded on MLS init.
+- To add a credential to the set MLS knows about, after initializing MLS, call `addCredential` on a transaction context.
+  - This adds it to the working set, and stores it to the database.
+  - Due to limitations inherent in the current implementation, credentials added to a client must currently be distinct
+    on the `(credential type / signature scheme / unix timestamp of creation)` tuple.
+    - The time resolution is limited to 1 second
+    - If you have need of multiple credentials for a given signature scheme and credential type, just wait 1 full second
+      between adding each of them
+    - We expect this limitation to be relaxed in the future
+  - This also returns a more lightweight `CredentialRef` which can be used elsewhere in the credential API, uniquely
+    referring to a single credential which has already been added to that client.
+- `CredentialRef` type is a means of uniquely referring to a single credential without transferring the actual
+  credential data back and forth across FFI all the time.
+  - Each credential ref is aware of basic information about the credential it references:
+    - client id
+    - public key
+    - credential type
+    - signature scheme
+    - earliest validity
+- To remove a credential from the set MLS knows about, call `removeCredential` on a transaction context, handing it the
+  appropriate `CredentialRef`.
+  - Ensures the credential is not currently in use by any conversation.
+  - Removes all key packages generated from this credential.
+  - Removes the credential from the current working set and also from the keystore.
+- Added a new method to transaction context: `getCredentials` which produces a `CredentialRef` for each credential known
+  by this client
+- Added a new method to transaction context: `findCredentials` which produces a `CredentialRef` for each credential
+  known by this client, efficiently filtering them by the specified criteria.
+
+#### Simplified Session initialization
+
+- Removed the `SessionConfig` and `ValidatedSessionConfig` types
+- A `Session` now needs only a `Database` for initialization
+
+#### Other
+
+- It is now safer to close a `Database`: instead of depending on a unique reference to the instance, it will just
+  invalidate all other references to that instance.
+
+- It is now safer to stash an E2EI enrollment: instead of depending on a unique reference to the instance, it will just
+  invalidate all other references to that instance.
+
 - Decode: support displaying the thumbprints of signature keys.
 
 - Decode: support decoding and displaying mls key packages

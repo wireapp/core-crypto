@@ -32,3 +32,10 @@ fun ByteArray.toAvsSecret() = SecretKey(this)
 
 /** Construct a GroupInfo from bytes */
 fun ByteArray.toGroupInfo() = GroupInfo(this)
+
+/** Construct a new Credential from ciphersuite and client id */
+@Throws(CoreCryptoException::class)
+fun Credential.Companion.basic(
+    ciphersuite: Ciphersuite,
+    clientId: ClientId
+): Credential = credentialBasic(ciphersuite, clientId)

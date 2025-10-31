@@ -22,32 +22,31 @@ pub(crate) struct CoreCryptoNativeClient {
 
 impl CoreCryptoNativeClient {
     pub(crate) async fn new() -> Result<Self> {
-        Self::internal_new(false).await
-    }
-
-    async fn internal_new(deferred: bool) -> Result<Self> {
-        let client_id = uuid::Uuid::new_v4();
-        let cid = (!deferred).then(|| client_id.as_hyphenated().to_string().as_bytes().into());
+        let client_id = ClientId::from(uuid::Uuid::new_v4().into_bytes());
 
         let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
             .await
             .unwrap();
 
-        let configuration = SessionConfig::builder()
-            .database(db)
-            .client_id_opt(cid)
-            .ciphersuites([CIPHERSUITE_IN_USE.into()])
-            .build()
-            .validate()?;
-
-        let cc = CoreCrypto::from(Session::try_new(configuration).await?);
+        let cc = CoreCrypto::from(Session::try_new(&db).await?);
 
         cc.provide_transport(Arc::new(MlsTransportSuccessProvider::default()))
             .await;
 
+        let ctx = cc.new_transaction().await?;
+        ctx.mls_init(client_id.clone().into(), &[CIPHERSUITE_IN_USE.into()])
+            .await?;
+        ctx.add_credential(Credential::basic(
+            CIPHERSUITE_IN_USE.signature_algorithm(),
+            client_id.clone(),
+            mls_crypto_provider::RustCrypto::default(),
+        )?)
+        .await?;
+        ctx.finish().await?;
+
         Ok(Self {
             cc,
-            client_id: client_id.into_bytes().into(),
+            client_id: client_id.into(),
             #[cfg(feature = "proteus")]
             prekey_last_id: Cell::new(0),
         })
@@ -83,7 +82,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         let transaction = self.cc.new_transaction().await?;
         let start = std::time::Instant::now();
         let kp = transaction
-            .get_or_create_client_keypackages(CIPHERSUITE_IN_USE.into(), MlsCredentialType::Basic, 1)
+            .get_or_create_client_keypackages(CIPHERSUITE_IN_USE.into(), CredentialType::Basic, 1)
             .await?
             .pop()
             .unwrap();
@@ -109,7 +108,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
                 ..Default::default()
             };
             transaction
-                .new_conversation(&conversation_id, MlsCredentialType::Basic, config)
+                .new_conversation(&conversation_id, CredentialType::Basic, config)
                 .await?;
         }
 
@@ -132,7 +131,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         transaction
             .conversation(&conversation_id)
             .await?
-            .remove_members(&[client_id.to_owned().into()])
+            .remove_members(&[ClientIdRef::new(client_id)])
             .await?;
         transaction.finish().await?;
 

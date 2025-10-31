@@ -1,17 +1,13 @@
 use mls_crypto_provider::{MlsCryptoProvider, RustCrypto};
 use openmls::prelude::SignatureScheme;
-use openmls_traits::{OpenMlsCryptoProvider as _, crypto::OpenMlsCrypto as _};
+use openmls_traits::crypto::OpenMlsCrypto as _;
 
 use super::{Error, Result};
-use crate::{MlsCiphersuite, MlsError, e2e_identity::crypto::E2eiSignatureKeypair};
+use crate::{Ciphersuite, MlsError, e2e_identity::crypto::E2eiSignatureKeypair};
 
 impl super::E2eiEnrollment {
-    pub(crate) fn new_sign_key(
-        ciphersuite: MlsCiphersuite,
-        backend: &MlsCryptoProvider,
-    ) -> Result<E2eiSignatureKeypair> {
+    pub(crate) fn new_sign_key(ciphersuite: Ciphersuite, backend: &MlsCryptoProvider) -> Result<E2eiSignatureKeypair> {
         let (sk, _) = backend
-            .crypto()
             .signature_key_gen(ciphersuite.signature_algorithm())
             .map_err(MlsError::wrap("performing signature keygen"))?;
         E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), sk)

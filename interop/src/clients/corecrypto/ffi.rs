@@ -5,6 +5,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use core_crypto_ffi::{
     ClientId, CoreCryptoFfi, CredentialType, CustomConfiguration, Database, DatabaseKey, TransactionHelper,
+    credential_basic,
 };
 use tempfile::NamedTempFile;
 
@@ -31,17 +32,21 @@ pub(crate) struct CoreCryptoFfiClient {
 impl CoreCryptoFfiClient {
     pub(crate) async fn new() -> Result<CoreCryptoFfiClient> {
         let client_id = uuid::Uuid::new_v4();
-        let client_id_bytes: Vec<u8> = client_id.as_hyphenated().to_string().as_bytes().into();
-        let client_id = Arc::new(ClientId::from(core_crypto::ClientId::from(&client_id_bytes[..])));
+        let client_id_bytes: Vec<u8> = client_id.as_hyphenated().to_string().into_bytes();
+        let client_id = Arc::new(ClientId::from(core_crypto::ClientId::from(client_id_bytes.clone())));
         let temp_file = NamedTempFile::with_prefix("interop-ffi-keystore-")?;
         let key = DatabaseKey::from_cc(core_crypto::DatabaseKey::generate());
         let db = Database::open(&temp_file.path().to_string_lossy(), key)
             .await
             .unwrap()
             .into();
-        let cc = CoreCryptoFfi::new(db).await?;
+        let cc = CoreCryptoFfi::new(&db).await?;
         cc.transaction(TransactionHelper::new(async move |context| {
-            context.mls_init(client_id, vec![CIPHERSUITE_IN_USE.into()]).await
+            context.mls_init(&client_id, vec![CIPHERSUITE_IN_USE.into()]).await?;
+            context
+                .add_credential(credential_basic(CIPHERSUITE_IN_USE.into(), &client_id)?.into())
+                .await?;
+            Ok(())
         }))
         .await?;
 
@@ -129,7 +134,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
     }
 
     async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
-        let client_id = Arc::new(ClientId::from(core_crypto::ClientId::from(client_id)));
+        let client_id = Arc::new(ClientId::from(core_crypto::ClientId::from(client_id.to_owned())));
         let conversation_id = conversation_id.into();
         let extractor = TransactionHelper::new(move |context| async move {
             context

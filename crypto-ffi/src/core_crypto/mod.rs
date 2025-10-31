@@ -9,7 +9,7 @@ pub(crate) mod mls_transport;
 mod proteus;
 mod randomness;
 
-use core_crypto::{Session, SessionConfig, ValidatedSessionConfig};
+use core_crypto::Session;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -56,22 +56,17 @@ pub struct CoreCryptoFfi {
 /// [core_crypto::transaction_context::TransactionContext::proteus_init], respectively.
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
-pub async fn core_crypto_new(database: DatabaseMaybeArc) -> CoreCryptoResult<CoreCryptoFfi> {
+pub async fn core_crypto_new(database: &DatabaseMaybeArc) -> CoreCryptoResult<CoreCryptoFfi> {
     CoreCryptoFfi::new(database).await
 }
 
 impl CoreCryptoFfi {
     /// Instantiate CC
-    pub async fn new(database: DatabaseMaybeArc) -> CoreCryptoResult<Self> {
-        let configuration = SessionConfig::builder().database(database.to_cc()).build().validate()?;
-        CoreCryptoFfi::from_config(configuration).await
-    }
-
-    async fn from_config(configuration: ValidatedSessionConfig) -> CoreCryptoResult<Self> {
+    pub async fn new(database: &DatabaseMaybeArc) -> CoreCryptoResult<Self> {
         #[cfg(target_family = "wasm")]
         console_error_panic_hook::set_once();
 
-        let client = Session::try_new(configuration).await?;
+        let client = Session::try_new(database.as_cc()).await?;
         let inner = core_crypto::CoreCrypto::from(client);
 
         Ok(Self { inner })
@@ -85,7 +80,7 @@ impl CoreCryptoFfi {
     ///
     /// MLS or proteus can be initialized  with [core_crypto::transaction_context::TransactionContext::mls_init] or
     /// [core_crypto::transaction_context::TransactionContext::proteus_init], respectively.
-    pub async fn async_new(database: DatabaseMaybeArc) -> CoreCryptoResult<CoreCryptoFfi> {
+    pub async fn async_new(database: &DatabaseMaybeArc) -> CoreCryptoResult<CoreCryptoFfi> {
         CoreCryptoFfi::new(database).await
     }
 

@@ -1,4 +1,4 @@
-use core_crypto_keystore::entities::MlsEncryptionKeyPair;
+use core_crypto_keystore::entities::StoredEncryptionKeyPair;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{LeafNode, LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
@@ -18,7 +18,7 @@ impl Renew {
     /// NB: we do not deal with partial commit (commit which do not contain all pending proposals)
     /// because they cannot be created at the moment by core-crypto
     ///
-    /// * `self_index` - own client [KeyPackageRef] in current MLS group
+    /// * `self_index` - own client [LeafNodeIndex] in current MLS group
     /// * `pending_proposals` - local pending proposals in group's proposal store
     /// * `pending_commit` - local pending commit which is now invalid
     /// * `valid_commit` - commit accepted by the backend which will now supersede our local pending commit
@@ -89,7 +89,7 @@ impl Renew {
 }
 
 impl MlsConversation {
-    /// Given the proposals to renew, actually restore them by using associated methods in [MlsGroup].
+    /// Given the proposals to renew, actually restore them by using associated methods in [MlsConversation].
     /// This will also add them to the local proposal store
     pub(crate) async fn renew_proposals_for_current_epoch(
         &mut self,
@@ -131,7 +131,7 @@ impl MlsConversation {
             // encryption key from the keystore otherwise we would have a leak
             backend
                 .key_store()
-                .remove::<MlsEncryptionKeyPair, _>(leaf_node.encryption_key().as_slice())
+                .remove::<StoredEncryptionKeyPair, _>(leaf_node.encryption_key().as_slice())
                 .await
                 .map_err(KeystoreError::wrap("removing mls encryption keypair"))?;
         }
@@ -144,9 +144,9 @@ impl MlsConversation {
         let sc = self.signature_scheme();
         let ct = self.own_credential_type()?;
         let cb = client
-            .find_most_recent_credential_bundle(sc, ct)
+            .find_most_recent_credential(sc, ct)
             .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
+            .map_err(RecursiveError::mls_client("finding most recent credential"))?;
 
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
 

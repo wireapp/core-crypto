@@ -1,7 +1,7 @@
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{CredentialType, X509Identity};
+use crate::{CoreCryptoError, CredentialType, X509Identity};
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
@@ -31,15 +31,17 @@ pub struct WireIdentity {
     pub x509_identity: Option<X509Identity>,
 }
 
-impl From<core_crypto::WireIdentity> for WireIdentity {
-    fn from(i: core_crypto::WireIdentity) -> Self {
-        Self {
+impl TryFrom<core_crypto::WireIdentity> for WireIdentity {
+    type Error = CoreCryptoError;
+    fn try_from(i: core_crypto::WireIdentity) -> Result<Self, CoreCryptoError> {
+        let identity = Self {
             client_id: i.client_id,
             status: i.status.into(),
             thumbprint: i.thumbprint,
-            credential_type: i.credential_type.into(),
+            credential_type: i.credential_type.try_into()?,
             x509_identity: i.x509_identity.map(Into::into),
-        }
+        };
+        Ok(identity)
     }
 }
 

@@ -115,7 +115,7 @@ impl CoreCryptoContext {
         enrollment: EnrollmentParameter,
         certificate_chain: String,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        let mut enrollment = enrollment.write().await;
+        let mut enrollment = enrollment.write().await?;
         self.inner
             .e2ei_mls_init_only(&mut enrollment, certificate_chain)
             .await
@@ -136,7 +136,7 @@ impl CoreCryptoContext {
         enrollment: EnrollmentParameter,
         certificate_chain: String,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        let mut enrollment = enrollment.write().await;
+        let mut enrollment = enrollment.write().await?;
         self.inner
             .save_x509_credential(&mut enrollment, certificate_chain)
             .await
@@ -158,13 +158,9 @@ impl CoreCryptoContext {
     ///
     /// Note that this can only succeed if the enrollment is unique and there are no other hard refs to it.
     pub async fn e2ei_enrollment_stash(&self, enrollment: EnrollmentParameter) -> CoreCryptoResult<Vec<u8>> {
-        #[cfg(not(target_family = "wasm"))]
-        let enrollment = Arc::into_inner(enrollment).ok_or_else(|| {
-            CoreCryptoError::ad_hoc("outer enrollment had multiple strong refs and could not be unpacked")
-        })?;
-        let enrollment = enrollment.into_inner().ok_or_else(|| {
-            CoreCryptoError::ad_hoc("inner enrollment had multiple strong refs and could not be unpacked")
-        })?;
+        let enrollment = enrollment.take().await.ok_or(CoreCryptoError::ad_hoc(
+            "attempted to take enrollment from already moved value",
+        ))?;
 
         self.inner
             .e2ei_enrollment_stash(enrollment)
@@ -198,7 +194,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::Session::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
-        let sc = core_crypto::MlsCiphersuite::from(ciphersuite).signature_algorithm();
+        let sc = core_crypto::Ciphersuite::from(ciphersuite).signature_algorithm();
         self.inner
             .e2ei_is_enabled(sc)
             .await
@@ -216,7 +212,7 @@ impl CoreCryptoContext {
 
         let conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         let wire_ids = conversation.get_device_identities(device_ids.as_slice()).await?;
-        Ok(wire_ids.into_iter().map(Into::into).collect())
+        wire_ids.into_iter().map(TryInto::try_into).collect()
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_user_identities]
@@ -233,8 +229,14 @@ impl CoreCryptoContext {
         let user_ids = conversation.get_user_identities(user_ids.as_slice()).await?;
         let user_ids = user_ids
             .into_iter()
-            .map(|(k, v)| (k, v.into_iter().map(WireIdentity::from).collect()))
-            .collect::<HashMap<_, Vec<_>>>();
+            .map(|(k, v)| -> CoreCryptoResult<_> {
+                let identities = v
+                    .into_iter()
+                    .map(WireIdentity::try_from)
+                    .collect::<CoreCryptoResult<Vec<_>>>()?;
+                Ok((k, identities))
+            })
+            .collect::<CoreCryptoResult<HashMap<_, _>>>()?;
         #[cfg(target_family = "wasm")]
         let user_ids = serde_wasm_bindgen::to_value(&user_ids)?;
         Ok(user_ids)

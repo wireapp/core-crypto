@@ -13,6 +13,8 @@ pub(crate) trait ToCc {
     type Target;
 
     fn to_cc(self) -> Self::Target;
+
+    fn as_cc(&self) -> &Self::Target;
 }
 
 /// The database acting as a core crypto keystore.
@@ -69,6 +71,16 @@ impl ToCc for DatabaseMaybeArc {
 
         #[cfg(target_family = "wasm")]
         let target = self.0;
+
+        target
+    }
+
+    fn as_cc(&self) -> &Self::Target {
+        #[cfg(not(target_family = "wasm"))]
+        let target = &self.as_ref().0;
+
+        #[cfg(target_family = "wasm")]
+        let target = &self.0;
 
         target
     }

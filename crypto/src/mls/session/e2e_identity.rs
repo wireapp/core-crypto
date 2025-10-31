@@ -6,7 +6,7 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::prelude::WireIdentityReader as _;
 
 use super::{Error, Result, Session};
-use crate::{E2eiConversationState, MlsCiphersuite, MlsCredentialType, MlsError, mls::session::CredentialExt as _};
+use crate::{Ciphersuite, CredentialType, E2eiConversationState, MlsError, mls::credential::ext::CredentialExt as _};
 
 impl Session {
     /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
@@ -17,11 +17,11 @@ impl Session {
     /// Returns true when end-to-end-identity is enabled for the given SignatureScheme
     pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
         let x509_result = self
-            .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509)
+            .find_most_recent_credential(signature_scheme, CredentialType::X509)
             .await;
         match x509_result {
-            Err(Error::CredentialNotFound(MlsCredentialType::X509)) => {
-                self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic)
+            Err(Error::CredentialNotFound(CredentialType::X509, _)) => {
+                self.find_most_recent_credential(signature_scheme, CredentialType::Basic)
                     .await?;
                 Ok(false)
             }
@@ -52,7 +52,7 @@ impl Session {
         Ok(Self::compute_conversation_state(
             cs,
             credentials,
-            MlsCredentialType::X509,
+            CredentialType::X509,
             self.crypto_provider.authentication_service().borrow().await.as_ref(),
         )
         .await)
@@ -63,7 +63,7 @@ impl Session {
     pub async fn get_credential_in_use(
         &self,
         group_info: VerifiableGroupInfo,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> Result<E2eiConversationState> {
         let cs = group_info.ciphersuite().into();
         // Not verifying the supplied the GroupInfo here could let attackers lure the clients about
@@ -83,9 +83,9 @@ impl Session {
         .await
     }
     pub(crate) async fn get_credential_in_use_in_ratchet_tree(
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
         ratchet_tree: RatchetTree,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
         env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
     ) -> Result<E2eiConversationState> {
         let credentials = ratchet_tree.iter().filter_map(|n| match n {
@@ -98,9 +98,9 @@ impl Session {
     /// _credential_type will be used in the future to get the usage of VC Credentials, even Basics one.
     /// Right now though, we do not need anything other than X509 so let's keep things simple.
     pub(crate) async fn compute_conversation_state<'a>(
-        ciphersuite: MlsCiphersuite,
+        ciphersuite: Ciphersuite,
         credentials: impl Iterator<Item = &'a Credential>,
-        _credential_type: MlsCredentialType,
+        _credential_type: CredentialType,
         env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
     ) -> E2eiConversationState {
         let mut is_e2ei = false;

@@ -1,6 +1,7 @@
 use core_crypto::{
-    ClientIdentifier, KeyPackageIn, MlsCiphersuite, MlsConversationConfiguration, RecursiveError, VerifiableGroupInfo,
-    mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
+    Ciphersuite as CryptoCiphersuite, ClientIdentifier, CredentialFindFilters, KeyPackageIn,
+    MlsConversationConfiguration, RecursiveError, VerifiableGroupInfo, mls::conversation::Conversation as _,
+    transaction_context::Error as TransactionError,
 };
 use tls_codec::{Deserialize as _, Serialize as _};
 #[cfg(target_family = "wasm")]
@@ -8,8 +9,9 @@ use wasm_bindgen::prelude::*;
 
 use crate::{
     Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoResult,
-    CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle, bytes_wrapper::bytes_wrapper,
-    client_id::ClientIdMaybeArc, crl::NewCrlDistributionPoints,
+    CredentialRef, CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle, bytes_wrapper::bytes_wrapper,
+    client_id::ClientIdMaybeArc, credential::CredentialMaybeArc, credential_ref::CredentialRefMaybeArc,
+    crl::NewCrlDistributionPoints,
 };
 
 bytes_wrapper!(
@@ -56,11 +58,14 @@ bytes_wrapper!(
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::mls_init]
-    pub async fn mls_init(&self, client_id: ClientIdMaybeArc, ciphersuites: Vec<Ciphersuite>) -> CoreCryptoResult<()> {
+    pub async fn mls_init(&self, client_id: &ClientIdMaybeArc, ciphersuites: Vec<Ciphersuite>) -> CoreCryptoResult<()> {
         self.inner
             .mls_init(
                 ClientIdentifier::Basic(client_id.as_cc()),
-                &ciphersuites.into_iter().map(MlsCiphersuite::from).collect::<Vec<_>>(),
+                &ciphersuites
+                    .into_iter()
+                    .map(CryptoCiphersuite::from)
+                    .collect::<Vec<_>>(),
             )
             .await?;
         Ok(())
@@ -341,5 +346,83 @@ impl CoreCryptoContext {
     pub async fn disable_history_sharing(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         conversation.disable_history_sharing().await.map_err(Into::into)
+    }
+
+    /// Add a [`Credential`][crate::Credential] to this client.
+    ///
+    /// Note that while an arbitrary number of credentials can be generated,
+    /// those which are added to a CC instance must be distinct in credential type,
+    /// signature scheme, and the timestamp of creation. This timestamp has only
+    /// 1 second of resolution, limiting the number of credentials which
+    /// can be added. This is a known limitation and will be relaxed in the future.
+    pub async fn add_credential(&self, credential: CredentialMaybeArc) -> CoreCryptoResult<CredentialRef> {
+        #[cfg(not(target_family = "wasm"))]
+        let credential = std::sync::Arc::unwrap_or_clone(credential);
+        let credential_ref = self.inner.add_credential(credential.0).await?;
+        Ok(credential_ref.into())
+    }
+
+    /// Remove a [`Credential`][crate::Credential] from this client.
+    pub async fn remove_credential(&self, credential_ref: &CredentialRefMaybeArc) -> CoreCryptoResult<()> {
+        #[cfg(not(target_family = "wasm"))]
+        let credential_ref = credential_ref.as_ref();
+        self.inner.remove_credential(&credential_ref.0).await?;
+        Ok(())
+    }
+
+    /// Get all credentials from this client.
+    pub async fn get_credentials(&self) -> CoreCryptoResult<Vec<CredentialRefMaybeArc>> {
+        self.inner
+            .get_credentials()
+            .await
+            .map(|credentials| {
+                credentials
+                    .into_iter()
+                    .map(CredentialRef::from)
+                    .map(CredentialRef::into_maybe_arc)
+                    .collect()
+            })
+            .map_err(Into::into)
+    }
+
+    /// Get all credentials from this client which match the provided parameters.
+    ///
+    /// Parameters which are unset or `None` match anything. Those with a particular value find only credentials matching that value.
+    pub async fn find_credentials(
+        &self,
+        client_id: Option<ClientIdMaybeArc>,
+        public_key: Option<Vec<u8>>,
+        ciphersuite: Option<Ciphersuite>,
+        credential_type: Option<CredentialType>,
+        earliest_validity: Option<u64>,
+    ) -> CoreCryptoResult<Vec<CredentialRefMaybeArc>> {
+        let client_id = client_id.as_ref().map(|client_id| client_id.as_cc());
+        let client_id = client_id.as_ref().map(|client_id| client_id.as_ref());
+
+        let signature_scheme = ciphersuite
+            .map(CryptoCiphersuite::from)
+            .map(|ciphersuite| ciphersuite.signature_algorithm());
+
+        let credential_type = credential_type.map(core_crypto::CredentialType::from);
+
+        let find_filters = CredentialFindFilters {
+            client_id,
+            public_key: public_key.as_deref(),
+            signature_scheme,
+            credential_type,
+            earliest_validity,
+        };
+
+        self.inner
+            .find_credentials(find_filters)
+            .await
+            .map(|credentials| {
+                credentials
+                    .into_iter()
+                    .map(CredentialRef::from)
+                    .map(CredentialRef::into_maybe_arc)
+                    .collect()
+            })
+            .map_err(Into::into)
     }
 }

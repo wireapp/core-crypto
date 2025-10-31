@@ -8,10 +8,10 @@ use crate::{
         DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey, platform::wasm::migrations::open_and_migrate,
     },
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, Entity as _, EntityBase as _, MlsCredential,
-        MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage,
-        MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey,
-        ProteusSession,
+        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, Entity as _, EntityBase as _, MlsPendingMessage, PersistedMlsGroup,
+        PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential,
+        StoredE2eiEnrollment, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
+        StoredKeypackage, StoredPskBundle, StoredSignatureKeypair,
     },
 };
 
@@ -87,17 +87,17 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
                     old_cipher,
                     new_cipher,
                     [
-                        MlsCredential,
-                        MlsSignatureKeyPair,
-                        MlsHpkePrivateKey,
-                        MlsEncryptionKeyPair,
-                        MlsEpochEncryptionKeyPair,
-                        MlsPskBundle,
-                        MlsKeyPackage,
+                        StoredCredential,
+                        StoredSignatureKeypair,
+                        StoredHpkePrivateKey,
+                        StoredEncryptionKeyPair,
+                        StoredEpochEncryptionKeypair,
+                        StoredPskBundle,
+                        StoredKeypackage,
                         PersistedMlsGroup,
                         PersistedMlsPendingGroup,
                         MlsPendingMessage,
-                        E2eiEnrollment,
+                        StoredE2eiEnrollment,
                         E2eiAcmeCA,
                         E2eiIntermediateCert,
                         E2eiCrl,
@@ -113,17 +113,8 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
         Ok(())
     }
 
-    async fn close(self) -> CryptoKeystoreResult<()> {
-        self.conn.close()?;
-
-        Ok(())
-    }
-
     async fn wipe(self) -> CryptoKeystoreResult<()> {
-        let is_persistent = self.conn.is_persistent();
-        self.conn.close()?;
-
-        if is_persistent {
+        if self.conn.is_persistent() {
             let factory = Factory::new()?;
             factory
                 .delete(&self.name.expect("name is always set for a persistent connection"))?

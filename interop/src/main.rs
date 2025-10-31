@@ -3,9 +3,9 @@
 use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
-use core_crypto::CiphersuiteName;
 #[cfg(target_family = "wasm")]
 use core_crypto::DatabaseKey;
+use core_crypto::MlsCiphersuite;
 use tls_codec::Serialize;
 
 #[cfg(not(target_family = "wasm"))]
@@ -16,11 +16,10 @@ mod clients;
 #[cfg(not(target_family = "wasm"))]
 mod util;
 
-const MLS_MAIN_CLIENTID: &[u8] = b"test_main";
 const MLS_CONVERSATION_ID: &[u8] = b"test_conversation";
 const ROUNDTRIP_MSG_AMOUNT: usize = 100;
 
-const CIPHERSUITE_IN_USE: CiphersuiteName = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+const CIPHERSUITE_IN_USE: MlsCiphersuite = MlsCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 
 // TODO: Add support for Android emulator. Tracking issue: WPB-9646
 // TODO: Add support for iOS emulator when on macOS. Tracking issue: WPB-9646
@@ -143,19 +142,13 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
 
     log::info!("Using ciphersuite {CIPHERSUITE_IN_USE}");
 
-    let spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
+    let mut spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
     let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
         .await
         .unwrap();
 
     let mut clients = create_mls_clients(chrome_driver_addr, web_server).await;
-    let configuration = SessionConfig::builder()
-        .database(db)
-        .client_id(MLS_MAIN_CLIENTID.into())
-        .ciphersuites([CIPHERSUITE_IN_USE.into()])
-        .build()
-        .validate()?;
-    let master_client = Session::try_new(configuration).await?;
+    let master_client = Session::try_new(&db).await?;
 
     let conversation_id: ConversationId = MLS_CONVERSATION_ID.into();
     let config = MlsConversationConfiguration {
@@ -163,13 +156,27 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
         ..Default::default()
     };
     let cc = CoreCrypto::from(master_client.clone());
+    spinner.update("initialized cc...");
 
     let success_provider = Arc::new(MlsTransportSuccessProvider::default());
-
     cc.provide_transport(success_provider.clone()).await;
+    spinner.update("provided transport...");
+
+    let master_client_id = ClientId::from(b"interop master client".as_slice());
+    let credential = Credential::basic(
+        CIPHERSUITE_IN_USE.signature_algorithm(),
+        master_client_id.clone(),
+        mls_crypto_provider::RustCrypto::default(),
+    )?;
+    spinner.update("created credential...");
+
     let transaction = cc.new_transaction().await?;
     transaction
-        .new_conversation(&conversation_id, MlsCredentialType::Basic, config)
+        .mls_init(master_client_id.into(), &[CIPHERSUITE_IN_USE.into()])
+        .await?;
+    transaction.add_credential(credential).await?;
+    transaction
+        .new_conversation(&conversation_id, CredentialType::Basic, config)
         .await?;
 
     spinner.success("[MLS] Step 0: Initializing clients [OK]");
@@ -305,13 +312,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
         .await
         .unwrap();
 
-    let configuration = SessionConfig::builder()
-        .database(db)
-        .client_id(MLS_MAIN_CLIENTID.into())
-        .ciphersuites([CIPHERSUITE_IN_USE.into()])
-        .build()
-        .validate()?;
-    let master_client = CoreCrypto::from(Session::try_new(configuration).await?);
+    let master_client = CoreCrypto::from(Session::try_new(&db).await?);
     let transaction = master_client.new_transaction().await?;
     transaction.proteus_init().await?;
 

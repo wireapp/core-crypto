@@ -46,7 +46,7 @@ macro_rules! test_for_entity {
 mod tests_impl {
     use core_crypto_keystore::{
         connection::{FetchFromDatabase, KeystoreDatabaseConnection},
-        entities::{Entity, EntityFindParams, EntityTransactionExt, MlsCredential, MlsPendingMessage},
+        entities::{Entity, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StoredCredential},
     };
 
     use super::common::*;
@@ -76,8 +76,12 @@ mod tests_impl {
                 .pop()
                 .unwrap();
             assert_eq!(*pending_message, pending_message_from_store);
-        } else if let Some(credential) = entity.downcast::<MlsCredential>() {
-            let mut credential_from_store = store.find::<MlsCredential>(&entity.merge_key()).await.unwrap().unwrap();
+        } else if let Some(credential) = entity.downcast::<StoredCredential>() {
+            let mut credential_from_store = store
+                .find::<StoredCredential>(&entity.merge_key())
+                .await
+                .unwrap()
+                .unwrap();
             credential_from_store.equalize();
             assert_eq!(*credential, credential_from_store);
         } else {
@@ -162,16 +166,16 @@ mod tests {
     test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
     test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
     test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_update:true ignore_find_many:true);
-    test_for_entity!(test_mls_credential, MlsCredential ignore_update:true);
-    test_for_entity!(test_mls_keypackage, MlsKeyPackage);
-    test_for_entity!(test_mls_signature_keypair, MlsSignatureKeyPair ignore_update:true);
-    test_for_entity!(test_mls_psk_bundle, MlsPskBundle);
-    test_for_entity!(test_mls_encryption_keypair, MlsEncryptionKeyPair);
-    test_for_entity!(test_mls_epoch_encryption_keypair, MlsEpochEncryptionKeyPair);
-    test_for_entity!(test_mls_hpke_private_key, MlsHpkePrivateKey);
+    test_for_entity!(test_mls_credential, StoredCredential ignore_update:true);
+    test_for_entity!(test_mls_keypackage, StoredKeypackage);
+    test_for_entity!(test_mls_signature_keypair, StoredSignatureKeypair ignore_update:true);
+    test_for_entity!(test_mls_psk_bundle, StoredPskBundle);
+    test_for_entity!(test_mls_encryption_keypair, StoredEncryptionKeyPair);
+    test_for_entity!(test_mls_epoch_encryption_keypair, StoredEpochEncryptionKeypair);
+    test_for_entity!(test_mls_hpke_private_key, StoredHpkePrivateKey);
     test_for_entity!(test_e2ei_intermediate_cert, E2eiIntermediateCert);
     test_for_entity!(test_e2ei_crl, E2eiCrl);
-    test_for_entity!(test_e2ei_enrollment, E2eiEnrollment ignore_update:true);
+    test_for_entity!(test_e2ei_enrollment, StoredE2eiEnrollment ignore_update:true);
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "proteus-keystore")] {
@@ -189,7 +193,7 @@ mod tests {
     pub async fn update_e2ei_enrollment_emits_error(context: KeystoreTestContext) {
         let store = context.store();
 
-        let mut entity = E2eiEnrollment::random();
+        let mut entity = StoredE2eiEnrollment::random();
         store.save(entity.clone()).await.unwrap();
         store.commit_transaction().await.unwrap();
 
@@ -202,7 +206,7 @@ mod tests {
 
         assert!(matches!(
             error,
-            CryptoKeystoreError::AlreadyExists(E2eiEnrollment::COLLECTION_NAME)
+            CryptoKeystoreError::AlreadyExists(StoredE2eiEnrollment::COLLECTION_NAME)
         ));
 
         // It's required by cleanup to have a running transaction before finishing the test
@@ -214,9 +218,9 @@ mod tests {
 #[cfg(test)]
 pub mod utils {
     use core_crypto_keystore::entities::{
-        E2eiEnrollment, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
-        MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
-        PersistedMlsPendingGroup, ProteusSession,
+        MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession, StoredCredential,
+        StoredE2eiEnrollment, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
+        StoredKeypackage, StoredPskBundle, StoredSignatureKeypair,
     };
     use rand::Rng as _;
 
@@ -324,17 +328,17 @@ pub mod utils {
                 };
             }
 
-    impl_entity_random_update_ext!(MlsKeyPackage, blob_fields=[keypackage,], additional_fields=[(keypackage_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
-    impl_entity_random_update_ext!(MlsCredential, blob_fields=[credential,], additional_fields=[(id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),]);
-    impl_entity_random_update_ext!(MlsSignatureKeyPair, blob_fields=[pk,keypair,credential_id,], additional_fields=[(signature_scheme: rand::random()),]);
-    impl_entity_random_update_ext!(MlsHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
-    impl_entity_random_update_ext!(MlsEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
-    impl_entity_random_update_ext!(MlsPskBundle, blob_fields=[psk,psk_id id_like:true,]);
+    impl_entity_random_update_ext!(StoredKeypackage, blob_fields=[keypackage,], additional_fields=[(keypackage_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
+    impl_entity_random_update_ext!(StoredCredential, blob_fields=[credential,], additional_fields=[(id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),]);
+    impl_entity_random_update_ext!(StoredSignatureKeypair, blob_fields=[pk,keypair,credential_id,], additional_fields=[(signature_scheme: rand::random()),]);
+    impl_entity_random_update_ext!(StoredHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
+    impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
+    impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);
     impl_entity_random_update_ext!(PersistedMlsGroup, id_field=id, blob_fields=[state,], additional_fields=[(parent_id: None),]);
     impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
     impl_entity_random_update_ext!(MlsPendingMessage, id_field = foreign_id, blob_fields = [message,]);
-    impl_entity_random_update_ext!(E2eiEnrollment, id_field = id, blob_fields = [content,]);
-    impl_entity_random_update_ext!(MlsEpochEncryptionKeyPair, id_field = id, blob_fields = [keypairs,]);
+    impl_entity_random_update_ext!(StoredE2eiEnrollment, id_field = id, blob_fields = [content,]);
+    impl_entity_random_update_ext!(StoredEpochEncryptionKeypair, id_field = id, blob_fields = [keypairs,]);
 
     impl EntityRandomExt for core_crypto_keystore::entities::E2eiIntermediateCert {
         fn random() -> Self {

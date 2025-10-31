@@ -11,56 +11,55 @@
 //! | merge     | ❌           | ❌            | ✅           | ✅            |
 //! | decrypt   | ✅           | ✅            | ✅           | ✅            |
 
-use std::{
-    borrow::{Borrow, Cow},
-    collections::{HashMap, HashSet},
-    ops::Deref,
-    sync::Arc,
-};
-
-use config::MlsConversationConfiguration;
-use core_crypto_keystore::CryptoKeystoreMls;
-use itertools::Itertools as _;
-use log::trace;
-use mls_crypto_provider::{Database, MlsCryptoProvider};
-use openmls::{
-    group::MlsGroup,
-    prelude::{Credential, CredentialWithKey, LeafNodeIndex, Proposal, SignaturePublicKey},
-};
-use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
-
-use crate::{
-    ClientId, E2eiConversationState, KeystoreError, LeafError, MlsCiphersuite, MlsCredentialType, MlsError,
-    RecursiveError, WireIdentity, mls::Session,
-};
-
 pub(crate) mod commit;
 mod commit_delay;
 pub(crate) mod config;
 pub(crate) mod conversation_guard;
+mod credential;
 mod duplicate;
 #[cfg(test)]
 mod durability;
 mod error;
 pub(crate) mod group_info;
+mod id;
 mod immutable_conversation;
 pub(crate) mod merge;
 mod orphan_welcome;
 mod own_commit;
 pub(crate) mod pending_conversation;
+mod persistence;
 pub(crate) mod proposal;
 mod renew;
 pub(crate) mod welcome;
 mod wipe;
 
-pub use conversation_guard::ConversationGuard;
-pub use error::{Error, Result};
-pub use immutable_conversation::ImmutableConversation;
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Deref,
+    sync::Arc,
+};
 
-use super::credential::CredentialBundle;
+use itertools::Itertools as _;
+use log::trace;
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls::{
+    group::MlsGroup,
+    prelude::{LeafNodeIndex, Proposal},
+};
+use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
+
+use self::config::MlsConversationConfiguration;
+pub use self::{
+    conversation_guard::ConversationGuard,
+    error::{Error, Result},
+    id::{ConversationId, ConversationIdRef},
+    immutable_conversation::ImmutableConversation,
+};
+use super::credential::Credential;
 use crate::{
-    UserId,
-    mls::{HasSessionAndCrypto, credential::ext::CredentialExt as _},
+    Ciphersuite, ClientId, CredentialType, E2eiConversationState, LeafError, MlsError, RecursiveError, UserId,
+    WireIdentity,
+    mls::{HasSessionAndCrypto, Session, credential::ext::CredentialExt as _},
 };
 
 /// The base layer for [Conversation].
@@ -68,7 +67,7 @@ use crate::{
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub(crate) trait ConversationWithMls<'a> {
-    /// [Session] or [TransactionContext] both implement [HasSessionAndCrypto].
+    /// [`Session`] and [`TransactionContext`][crate::transaction_context::TransactionContext] both implement [`HasSessionAndCrypto`].
     type Context: HasSessionAndCrypto;
 
     type Conversation: Deref<Target = MlsConversation> + Send;
@@ -110,7 +109,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
     }
 
     /// Returns the ciphersuite of a given conversation
-    async fn ciphersuite(&'a self) -> MlsCiphersuite {
+    async fn ciphersuite(&'a self) -> Ciphersuite {
         self.conversation().await.ciphersuite()
     }
 
@@ -143,7 +142,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         inner
             .group()
             .members()
-            .map(|kp| ClientId::from(kp.credential.identity()))
+            .map(|kp| ClientId::from(kp.credential.identity().to_owned()))
             .collect()
     }
 
@@ -171,7 +170,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         let state = Session::compute_conversation_state(
             inner.ciphersuite(),
             inner.group.members_credentials(),
-            MlsCredentialType::X509,
+            CredentialType::X509,
             authentication_service.borrow().await.as_ref(),
         )
         .await;
@@ -196,7 +195,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         conversation
             .members_with_key()
             .into_iter()
-            .filter(|(id, _)| device_ids.contains(&ClientId::from(id.as_slice())))
+            .filter(|(id, _)| device_ids.iter().any(|client_id| *client_id == id.as_slice()))
             .map(|(_, c)| {
                 c.extract_identity(conversation.ciphersuite(), env)
                     .map_err(RecursiveError::mls_credential("extracting identity"))
@@ -265,97 +264,6 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
 
 impl<'a, T: ConversationWithMls<'a>> Conversation<'a> for T {}
 
-/// A unique identifier for a group/conversation. The identifier must be unique within a client.
-#[derive(
-    core_crypto_macros::Debug,
-    derive_more::AsRef,
-    derive_more::From,
-    derive_more::Into,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Clone,
-)]
-#[sensitive]
-#[as_ref([u8])]
-#[from(&[u8], Vec<u8>)]
-pub struct ConversationId(Vec<u8>);
-
-impl From<ConversationId> for Cow<'_, [u8]> {
-    fn from(value: ConversationId) -> Self {
-        Cow::Owned(value.0)
-    }
-}
-
-impl<'a> From<&'a ConversationId> for Cow<'a, [u8]> {
-    fn from(value: &'a ConversationId) -> Self {
-        Cow::Borrowed(value.as_ref())
-    }
-}
-
-/// Reference to a ConversationId.
-///
-/// This type is `!Sized` and is only ever seen as a reference, like `str` or `[u8]`.
-//
-// pattern from https://stackoverflow.com/a/64990850
-#[repr(transparent)]
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ConversationIdRef([u8]);
-
-impl ConversationIdRef {
-    /// Creates a `ConversationId` Ref, needed to implement `Borrow<ConversationIdRef>` for `T`
-    pub fn new<Bytes>(bytes: &Bytes) -> &ConversationIdRef
-    where
-        Bytes: AsRef<[u8]> + ?Sized,
-    {
-        // SAFETY: because of `repr(transparent)` we know that `ConversationIdRef` has a memory layout
-        // identical to `[u8]`, so we can perform this cast
-        unsafe { &*(bytes.as_ref() as *const [u8] as *const ConversationIdRef) }
-    }
-}
-
-impl ConversationIdRef {
-    fn to_bytes(&self) -> Vec<u8> {
-        self.as_ref().to_owned()
-    }
-}
-
-impl Borrow<ConversationIdRef> for ConversationId {
-    fn borrow(&self) -> &ConversationIdRef {
-        ConversationIdRef::new(&self.0)
-    }
-}
-
-impl Deref for ConversationId {
-    type Target = ConversationIdRef;
-
-    fn deref(&self) -> &Self::Target {
-        ConversationIdRef::new(&self.0)
-    }
-}
-
-impl ToOwned for ConversationIdRef {
-    type Owned = ConversationId;
-
-    fn to_owned(&self) -> Self::Owned {
-        ConversationId(self.0.to_owned())
-    }
-}
-
-impl AsRef<[u8]> for ConversationIdRef {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl<'a> From<&'a ConversationIdRef> for Cow<'a, [u8]> {
-    fn from(value: &'a ConversationIdRef) -> Self {
-        Cow::Borrowed(value.as_ref())
-    }
-}
-
 /// This is a wrapper on top of the OpenMls's [MlsGroup], that provides Core Crypto specific functionality
 ///
 /// This type will store the state of a group. With the [MlsGroup] it holds, it provides all
@@ -385,19 +293,19 @@ impl MlsConversation {
     pub async fn create(
         id: ConversationId,
         author_client: &Session,
-        creator_credential_type: MlsCredentialType,
+        creator_credential_type: CredentialType,
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> Result<Self> {
         let (cs, ct) = (configuration.ciphersuite, creator_credential_type);
         let cb = author_client
-            .get_most_recent_or_create_credential_bundle(backend, cs.signature_algorithm(), ct)
+            .find_most_recent_or_create_basic_credential(cs.signature_algorithm(), ct)
             .await
-            .map_err(RecursiveError::mls_client("getting or creating credential bundle"))?;
+            .map_err(RecursiveError::mls_client("getting or creating credential"))?;
 
         let group = MlsGroup::new_with_group_id(
             backend,
-            &cb.signature_key,
+            &cb.signature_key_pair,
             &configuration.as_openmls_default_configuration()?,
             openmls::prelude::GroupId::from_slice(id.as_ref()),
             cb.to_mls_credential_with_key(),
@@ -441,24 +349,6 @@ impl MlsConversation {
         Ok(conversation)
     }
 
-    /// Internal API: restore the conversation from a persistence-saved serialized Group State.
-    pub(crate) fn from_serialized_state(buf: Vec<u8>, parent_id: Option<ConversationId>) -> Result<Self> {
-        let group: MlsGroup =
-            core_crypto_keystore::deser(&buf).map_err(KeystoreError::wrap("deserializing group state"))?;
-        let id = ConversationId::from(group.group_id().as_slice());
-        let configuration = MlsConversationConfiguration {
-            ciphersuite: group.ciphersuite().into(),
-            ..Default::default()
-        };
-
-        Ok(Self {
-            id,
-            group,
-            parent_id,
-            configuration,
-        })
-    }
-
     /// Group/conversation id
     pub fn id(&self) -> &ConversationId {
         &self.id
@@ -466,16 +356,6 @@ impl MlsConversation {
 
     pub(crate) fn group(&self) -> &MlsGroup {
         &self.group
-    }
-
-    /// Returns all members credentials from the group/conversation
-    pub fn members(&self) -> HashMap<Vec<u8>, Credential> {
-        self.group.members().fold(HashMap::new(), |mut acc, kp| {
-            let credential = kp.credential;
-            let id = credential.identity().to_vec();
-            acc.entry(id).or_insert(credential);
-            acc
-        })
     }
 
     /// Get actual group members and subtract pending remove proposals
@@ -486,7 +366,7 @@ impl MlsConversation {
             .members()
             .filter_map(|kp| {
                 if !pending_removals.contains(&kp.index) {
-                    Some(kp.credential.identity().into())
+                    Some(kp.credential.identity().to_owned().into())
                 } else {
                     trace!(client_index:% = kp.index; "Client is pending removal");
                     None
@@ -507,49 +387,7 @@ impl MlsConversation {
             .collect::<Vec<_>>()
     }
 
-    /// Returns all members credentials with their signature public key from the group/conversation
-    pub fn members_with_key(&self) -> HashMap<Vec<u8>, CredentialWithKey> {
-        self.group.members().fold(HashMap::new(), |mut acc, kp| {
-            let credential = kp.credential;
-            let id = credential.identity().to_vec();
-            let signature_key = SignaturePublicKey::from(kp.signature_key);
-            let credential = CredentialWithKey {
-                credential,
-                signature_key,
-            };
-            acc.entry(id).or_insert(credential);
-            acc
-        })
-    }
-
-    pub(crate) async fn persist_group_when_changed(&mut self, keystore: &Database, force: bool) -> Result<()> {
-        if force || self.group.state_changed() == openmls::group::InnerState::Changed {
-            keystore
-                .mls_group_persist(
-                    &self.id,
-                    &core_crypto_keystore::ser(&self.group).map_err(KeystoreError::wrap("serializing group state"))?,
-                    self.parent_id.as_ref().map(|id| id.as_ref()),
-                )
-                .await
-                .map_err(KeystoreError::wrap("persisting mls group"))?;
-
-            self.group.set_state(openmls::group::InnerState::Persisted);
-        }
-
-        Ok(())
-    }
-
-    pub(crate) fn own_credential_type(&self) -> Result<MlsCredentialType> {
-        Ok(self
-            .group
-            .own_leaf_node()
-            .ok_or(Error::MlsGroupInvalidState("own_leaf_node not present in group"))?
-            .credential()
-            .credential_type()
-            .into())
-    }
-
-    pub(crate) fn ciphersuite(&self) -> MlsCiphersuite {
+    pub(crate) fn ciphersuite(&self) -> Ciphersuite {
         self.configuration.ciphersuite
     }
 
@@ -557,7 +395,7 @@ impl MlsConversation {
         self.ciphersuite().signature_algorithm()
     }
 
-    pub(crate) async fn find_current_credential_bundle(&self, client: &Session) -> Result<Arc<CredentialBundle>> {
+    pub(crate) async fn find_current_credential(&self, client: &Session) -> Result<Arc<Credential>> {
         let own_leaf = self.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self
@@ -565,28 +403,30 @@ impl MlsConversation {
             .map_err(RecursiveError::mls_conversation("getting own credential type"))?;
 
         client
-            .find_credential_bundle_by_public_key(sc, ct, own_leaf.signature_key())
+            .find_credential_by_public_key(sc, ct, own_leaf.signature_key())
             .await
-            .map_err(RecursiveError::mls_client("finding current credential bundle"))
+            .map_err(RecursiveError::mls_client("finding current credential"))
             .map_err(Into::into)
     }
 
-    pub(crate) async fn find_most_recent_credential_bundle(&self, client: &Session) -> Result<Arc<CredentialBundle>> {
+    pub(crate) async fn find_most_recent_credential(&self, client: &Session) -> Result<Arc<Credential>> {
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self
             .own_credential_type()
             .map_err(RecursiveError::mls_conversation("getting own credential type"))?;
 
         client
-            .find_most_recent_credential_bundle(sc, ct)
+            .find_most_recent_credential(sc, ct)
             .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))
+            .map_err(RecursiveError::mls_client("finding most recent credential"))
             .map_err(Into::into)
     }
 }
 
 #[cfg(test)]
 pub mod test_utils {
+    use openmls::prelude::SignaturePublicKey;
+
     use super::*;
 
     impl MlsConversation {
@@ -655,7 +495,7 @@ mod tests {
     mod wire_identity_getters {
         use super::Error;
         use crate::{
-            ClientId, DeviceStatus, E2eiConversationState, MlsCredentialType, mls::conversation::Conversation,
+            ClientId, CredentialType, DeviceStatus, E2eiConversationState, mls::conversation::Conversation,
             test_utils::*,
         };
 
@@ -900,7 +740,7 @@ mod tests {
                 assert_eq!(ios_ids, android_ids);
 
                 assert!(ios_ids.iter().all(|i| {
-                    matches!(i.credential_type, MlsCredentialType::Basic)
+                    matches!(i.credential_type, CredentialType::Basic)
                         && matches!(i.status, DeviceStatus::Valid)
                         && i.x509_identity.is_none()
                         && !i.thumbprint.is_empty()

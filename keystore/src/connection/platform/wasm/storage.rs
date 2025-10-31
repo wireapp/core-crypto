@@ -122,6 +122,19 @@ impl std::fmt::Debug for WasmEncryptedStorage {
     }
 }
 
+impl Drop for WasmEncryptedStorage {
+    fn drop(&mut self) {
+        match &self.storage {
+            WasmStorageWrapper::Persistent(idb) => {
+                idb.close();
+            }
+            WasmStorageWrapper::InMemory(map) => {
+                map.borrow_mut().clear();
+            }
+        }
+    }
+}
+
 impl WasmEncryptedStorage {
     pub fn new(key: &DatabaseKey, storage: WasmStorageWrapper) -> Self {
         let cipher = aes_gcm::Aes256Gcm::new(key.as_ref().into());
@@ -142,18 +155,6 @@ impl WasmEncryptedStorage {
 
     pub fn wrapper(&self) -> &WasmStorageWrapper {
         &self.storage
-    }
-
-    pub fn close(self) -> CryptoKeystoreResult<()> {
-        match self.storage {
-            WasmStorageWrapper::Persistent(idb) => {
-                idb.close();
-            }
-            WasmStorageWrapper::InMemory(map) => {
-                map.borrow_mut().clear();
-            }
-        }
-        Ok(())
     }
 
     pub async fn get<R: Entity<ConnectionType = WasmConnection> + 'static>(

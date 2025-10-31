@@ -1,6 +1,12 @@
 #[cfg(test)]
+use std::collections::HashMap;
+use std::fmt;
+
+#[cfg(test)]
 use mls_crypto_provider::PkiKeypair;
+use openmls::prelude::Credential as MlsCredential;
 use openmls_traits::types::SignatureScheme;
+use openmls_x509_credential::CertificateKeyPair;
 use wire_e2e_identity::prelude::{HashAlgorithm, WireIdentityReader};
 #[cfg(test)]
 use x509_cert::der::Encode;
@@ -9,7 +15,7 @@ use zeroize::Zeroize;
 use super::{Error, Result};
 #[cfg(test)]
 use crate::test_utils::x509::X509Certificate;
-use crate::{ClientId, RecursiveError, e2e_identity::id::WireQualifiedClientId};
+use crate::{ClientId, Credential, MlsError, RecursiveError, e2e_identity::id::WireQualifiedClientId};
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize)]
 #[zeroize(drop)]
@@ -29,13 +35,35 @@ impl CertificatePrivateKey {
 /// Represents a x509 certificate chain supplied by the client
 /// It can fetch it after an end-to-end identity process where it can get back a certificate
 /// from the Authentication Service
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct CertificateBundle {
     /// x509 certificate chain
     /// First entry is the leaf certificate and each subsequent is its issuer
     pub certificate_chain: Vec<Vec<u8>>,
     /// Leaf certificate private key
     pub private_key: CertificatePrivateKey,
+}
+
+impl fmt::Debug for CertificateBundle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use base64::prelude::*;
+
+        #[derive(derive_more::Debug)]
+        #[debug("{}", BASE64_STANDARD.encode(_0))]
+        // this only exists for the debug impl, which is ignored by the dead code check
+        #[expect(dead_code)]
+        struct CertificateDebugHelper<'a>(&'a Vec<u8>);
+
+        let certificates = self
+            .certificate_chain
+            .iter()
+            .map(CertificateDebugHelper)
+            .collect::<Vec<_>>();
+        f.debug_struct("CertificateBundle")
+            .field("certificate_chain", &certificates)
+            .field("private_key", &self.private_key)
+            .finish()
+    }
 }
 
 impl CertificateBundle {
@@ -66,6 +94,28 @@ impl CertificateBundle {
     }
 }
 
+impl Credential {
+    /// Create a new x509 credential from a certificate bundle.
+    pub fn x509(cert: CertificateBundle) -> Result<Self> {
+        let earliest_validity = cert.get_created_at().map_err(RecursiveError::mls_credential(
+            "getting credential 'not before' claim from leaf cert in Credential::x509",
+        ))?;
+        let (sk, ..) = cert.private_key.into_parts();
+        let chain = cert.certificate_chain;
+
+        let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::wrap("creating certificate key pair"))?;
+
+        let credential = MlsCredential::new_x509(chain).map_err(MlsError::wrap("creating x509 credential"))?;
+
+        let cb = Credential {
+            mls_credential: credential,
+            signature_key_pair: kp.0,
+            earliest_validity,
+        };
+        Ok(cb)
+    }
+}
+
 #[cfg(test)]
 fn new_rand_client(domain: Option<String>) -> (String, String) {
     let rand_str = |n: usize| {
@@ -85,7 +135,9 @@ impl CertificateBundle {
     // test functions are not held to the same standard as real functions
     #![allow(missing_docs)]
 
-    /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
+    /// Generates a certificate that is later turned into a [Credential]
+    ///
+    /// `name` is not known to be a qualified e2ei client id so we invent a new one
     pub fn rand(name: &ClientId, signer: &crate::test_utils::x509::X509Certificate) -> Self {
         // here in our tests client_id is generally just "alice" or "bob"
         // so we will use it to augment handle & display_name
@@ -95,7 +147,7 @@ impl CertificateBundle {
         Self::new(&handle, &display_name, None, None, signer)
     }
 
-    /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
+    /// Generates a certificate that is later turned into a [Credential]
     pub fn new(
         handle: &str,
         display_name: &str,
@@ -163,15 +215,20 @@ impl CertificateBundle {
         }
     }
 
+    pub fn rand_identifier_certs(
+        client_id: &ClientId,
+        signers: &[&crate::test_utils::x509::X509Certificate],
+    ) -> HashMap<SignatureScheme, CertificateBundle> {
+        signers
+            .iter()
+            .map(|signer| (signer.signature_scheme, Self::rand(client_id, signer)))
+            .collect()
+    }
+
     pub fn rand_identifier(
-        name: &str,
+        client_id: &ClientId,
         signers: &[&crate::test_utils::x509::X509Certificate],
     ) -> crate::ClientIdentifier {
-        crate::ClientIdentifier::X509(
-            signers
-                .iter()
-                .map(|signer| (signer.signature_scheme, Self::rand(&name.into(), signer)))
-                .collect::<std::collections::HashMap<_, _>>(),
-        )
+        crate::ClientIdentifier::X509(Self::rand_identifier_certs(client_id, signers))
     }
 }
