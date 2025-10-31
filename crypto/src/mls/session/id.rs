@@ -38,6 +38,18 @@ impl From<Box<[u8]>> for ClientId {
     }
 }
 
+impl<const N: usize> From<[u8; N]> for ClientId {
+    fn from(value: [u8; N]) -> Self {
+        Self(value.into())
+    }
+}
+
+impl<'a> From<&'a [u8]> for ClientId {
+    fn from(value: &'a [u8]) -> Self {
+        Self(value.into())
+    }
+}
+
 impl From<ClientId> for Box<[u8]> {
     fn from(value: ClientId) -> Self {
         value.0.into_boxed_slice()

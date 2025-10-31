@@ -5,6 +5,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use core_crypto_ffi::{
     ClientId, CoreCryptoFfi, CredentialType, CustomConfiguration, Database, DatabaseKey, TransactionHelper,
+    credential_basic,
 };
 use tempfile::NamedTempFile;
 
@@ -41,7 +42,11 @@ impl CoreCryptoFfiClient {
             .into();
         let cc = CoreCryptoFfi::new(&db).await?;
         cc.transaction(TransactionHelper::new(async move |context| {
-            context.mls_init(&client_id, vec![CIPHERSUITE_IN_USE.into()]).await
+            context.mls_init(&client_id, vec![CIPHERSUITE_IN_USE.into()]).await?;
+            context
+                .add_credential(credential_basic(CIPHERSUITE_IN_USE.into(), &client_id)?.into())
+                .await?;
+            Ok(())
         }))
         .await?;
 
