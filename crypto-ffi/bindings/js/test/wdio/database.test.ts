@@ -61,7 +61,9 @@ describe("database", () => {
 
             let cc = await window.ccModule.CoreCrypto.init(database);
             cc.transaction(async (ctx) => {
+                let clientId = makeClientId();
                 await ctx.mlsInit(makeClientId(), [cipherSuite]);
+                await ctx.addCredential(window.ccModule.Credential.basic(cipherSuite, clientId));
             });
             const pubkey1 = await cc.transaction((ctx) =>
                 ctx.clientPublicKey(
