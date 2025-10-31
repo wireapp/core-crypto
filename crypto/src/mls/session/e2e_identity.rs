@@ -20,7 +20,7 @@ impl Session {
             .find_most_recent_credential(signature_scheme, CredentialType::X509)
             .await;
         match x509_result {
-            Err(Error::CredentialNotFound(CredentialType::X509)) => {
+            Err(Error::CredentialNotFound(CredentialType::X509, _)) => {
                 self.find_most_recent_credential(signature_scheme, CredentialType::Basic)
                     .await?;
                 Ok(false)

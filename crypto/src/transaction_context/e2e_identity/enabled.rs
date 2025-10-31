@@ -72,7 +72,7 @@ mod tests {
             assert!(matches!(
                 cc.transaction.e2ei_is_enabled(other_sc).await.unwrap_err(),
                 Error::Recursive(RecursiveError::MlsClient {  source, .. })
-                if matches!(*source, mls::session::Error::CredentialNotFound(_))
+                if matches!(*source, mls::session::Error::CredentialNotFound(..))
             ));
         })
         .await
