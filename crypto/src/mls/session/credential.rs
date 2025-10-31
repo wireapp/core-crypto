@@ -187,23 +187,23 @@ impl Session {
             Some(SessionInner { identities, .. }) => identities
                 .find_most_recent_credential(signature_scheme, credential_type)
                 .await
-                .ok_or(Error::CredentialNotFound(credential_type)),
+                .ok_or(Error::CredentialNotFound(credential_type, signature_scheme)),
         }
     }
 
     /// convenience function deferring to the implementation on the inner type
     pub(crate) async fn find_credential_by_public_key(
         &self,
-        sc: SignatureScheme,
-        ct: CredentialType,
-        pk: &SignaturePublicKey,
+        signature_scheme: SignatureScheme,
+        credential_type: CredentialType,
+        public_key: &SignaturePublicKey,
     ) -> Result<Arc<Credential>> {
         match &*self.inner.read().await {
             None => Err(Error::MlsNotInitialized),
             Some(SessionInner { identities, .. }) => identities
-                .find_credential_by_public_key(sc, ct, pk)
+                .find_credential_by_public_key(signature_scheme, credential_type, public_key)
                 .await
-                .ok_or(Error::CredentialNotFound(ct)),
+                .ok_or(Error::CredentialNotFound(credential_type, signature_scheme)),
         }
     }
 
@@ -220,7 +220,7 @@ impl Session {
             .await
         {
             Ok(credential) => credential,
-            Err(Error::CredentialNotFound(_)) if credential_type == CredentialType::Basic => {
+            Err(Error::CredentialNotFound(..)) if credential_type == CredentialType::Basic => {
                 let client_id = self.id().await?;
                 let credential = Credential::basic(signature_scheme, client_id, &self.crypto_provider).map_err(
                     RecursiveError::mls_credential(
@@ -229,7 +229,7 @@ impl Session {
                 )?;
                 self.add_credential_producing_arc(credential).await?
             }
-            Err(Error::CredentialNotFound(_)) if credential_type == CredentialType::X509 => {
+            Err(Error::CredentialNotFound(..)) if credential_type == CredentialType::X509 => {
                 return Err(LeafError::E2eiEnrollmentNotDone.into());
             }
             Err(err) => return Err(err),
