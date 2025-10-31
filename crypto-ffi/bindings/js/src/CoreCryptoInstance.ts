@@ -605,5 +605,4 @@ export class CoreCrypto {
             this.#cc.register_history_observer(ffi)
         );
     }
-
 }

@@ -28,12 +28,9 @@ describe("credentials", () => {
 
     test("credential can be added", async () => {
         const clientId = new ClientId(Buffer.from("any random client id here"));
-        const credential = Credential.basic(
-            ciphersuiteDefault(),
-            clientId
-        );
+        const credential = Credential.basic(ciphersuiteDefault(), clientId);
 
-        let cc = await ccInit(clientId);
+        const cc = await ccInit(clientId);
 
         const ref = await cc.transaction(async (ctx) => {
             return await ctx.addCredential(credential);
@@ -52,12 +49,9 @@ describe("credentials", () => {
 
     test("credential can be removed", async () => {
         const clientId = new ClientId(Buffer.from("any random client id here"));
-        const credential = Credential.basic(
-            ciphersuiteDefault(),
-            clientId
-        );
+        const credential = Credential.basic(ciphersuiteDefault(), clientId);
 
-        let cc = await ccInit(clientId);
+        const cc = await ccInit(clientId);
 
         const ref = await cc.transaction(async (ctx) => {
             return await ctx.addCredential(credential);
@@ -75,19 +69,15 @@ describe("credentials", () => {
 
     test("credentials can be searched", async () => {
         const clientId = new ClientId(Buffer.from("any random client id here"));
-        const ciphersuite1 = Ciphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256;
-        const credential1 = Credential.basic(
-            ciphersuite1,
-            clientId
-        );
+        const ciphersuite1 =
+            Ciphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256;
+        const credential1 = Credential.basic(ciphersuite1, clientId);
 
-        const ciphersuite2 = Ciphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519;
-        const credential2 = Credential.basic(
-            ciphersuite2,
-            clientId
-        );
+        const ciphersuite2 =
+            Ciphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519;
+        const credential2 = Credential.basic(ciphersuite2, clientId);
 
-        let cc = await ccInit(clientId);
+        const cc = await ccInit(clientId);
 
         await cc.transaction(async (ctx) => {
             await ctx.addCredential(credential1);
@@ -99,7 +89,7 @@ describe("credentials", () => {
         });
         const results2 = await cc.transaction(async (ctx) => {
             return await ctx.findCredentials({ ciphersuite: ciphersuite2 });
-        })
+        });
 
         expect(results1.length).toBe(1);
         expect(results2.length).toBe(1);
