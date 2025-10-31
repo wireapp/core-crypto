@@ -1032,14 +1032,13 @@ export class CoreCryptoContext {
         );
     }
 
-
     /**
      * Add a credential to this instance.
      */
     async addCredential(credential: Credential): Promise<CredentialRef> {
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.add_credential(credential)
-        )
+        );
     }
 
     /**
@@ -1048,20 +1047,26 @@ export class CoreCryptoContext {
     async removeCredential(credentialRef: CredentialRef): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.remove_credential(credentialRef)
-        )
+        );
     }
 
     /** Get all credentials known to this instance */
     async getCredentials(): Promise<CredentialRef[]> {
-        return await CoreCryptoError.asyncMapErr(
-            this.#ctx.get_credentials()
-        )
+        return await CoreCryptoError.asyncMapErr(this.#ctx.get_credentials());
     }
 
     /** Get those credentials known to this instance which match the provided filters */
-    async findCredentials(findFilters: CredentialFindFilters): Promise<CredentialRef[]> {
+    async findCredentials(
+        findFilters: CredentialFindFilters
+    ): Promise<CredentialRef[]> {
         return await CoreCryptoError.asyncMapErr(
-            this.#ctx.find_credentials(findFilters.clientId, findFilters.publicKey, findFilters.ciphersuite, findFilters.credentialType, findFilters.earliestValidity)
-        )
+            this.#ctx.find_credentials(
+                findFilters.clientId,
+                findFilters.publicKey,
+                findFilters.ciphersuite,
+                findFilters.credentialType,
+                findFilters.earliestValidity
+            )
+        );
     }
 }

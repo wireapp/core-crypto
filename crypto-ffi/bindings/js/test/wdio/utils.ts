@@ -156,37 +156,46 @@ export async function teardown() {
  *
  * @returns {Promise<void>}
  */
-export async function ccInit(clientName: string, withCredential: boolean = true): Promise<void> {
-    return await browser.execute(async (clientName, withCredential) => {
-        const cipherSuite = window.defaultCipherSuite;
-        const encoder = new TextEncoder();
-        const clientId = new window.ccModule.ClientId(
-            encoder.encode(clientName)
-        );
+export async function ccInit(
+    clientName: string,
+    withCredential: boolean = true
+): Promise<void> {
+    return await browser.execute(
+        async (clientName, withCredential) => {
+            const cipherSuite = window.defaultCipherSuite;
+            const encoder = new TextEncoder();
+            const clientId = new window.ccModule.ClientId(
+                encoder.encode(clientName)
+            );
 
-        const key = new Uint8Array(32);
-        window.crypto.getRandomValues(key);
+            const key = new Uint8Array(32);
+            window.crypto.getRandomValues(key);
 
-        const database = await window.ccModule.openDatabase(
-            clientName,
-            new window.ccModule.DatabaseKey(key)
-        );
+            const database = await window.ccModule.openDatabase(
+                clientName,
+                new window.ccModule.DatabaseKey(key)
+            );
 
-        const instance = await window.ccModule.CoreCrypto.init(database);
-        await instance.transaction(async (ctx) => {
-            await ctx.mlsInit(clientId, [cipherSuite]);
-            if (withCredential) {
-                await ctx.addCredential(window.ccModule.Credential.basic(cipherSuite, clientId));
+            const instance = await window.ccModule.CoreCrypto.init(database);
+            await instance.transaction(async (ctx) => {
+                await ctx.mlsInit(clientId, [cipherSuite]);
+                if (withCredential) {
+                    await ctx.addCredential(
+                        window.ccModule.Credential.basic(cipherSuite, clientId)
+                    );
+                }
+            });
+
+            await instance.provideTransport(window.deliveryService);
+
+            if (window.cc === undefined) {
+                window.cc = new Map();
             }
-        });
-
-        await instance.provideTransport(window.deliveryService);
-
-        if (window.cc === undefined) {
-            window.cc = new Map();
-        }
-        window.cc.set(clientName, instance);
-    }, clientName, withCredential);
+            window.cc.set(clientName, instance);
+        },
+        clientName,
+        withCredential
+    );
 }
 
 /**

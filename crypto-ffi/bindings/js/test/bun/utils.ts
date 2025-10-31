@@ -18,7 +18,6 @@ import {
     initWasmModule,
     ClientId,
     openDatabase,
-    Database,
 } from "../../src/CoreCrypto";
 
 const CC_INSTANCES: CoreCrypto[] = [];
@@ -89,7 +88,6 @@ export async function teardown() {
     }
 }
 
-
 /**
  * Initialize a {@link CoreCrypto} with an in-memory database
  * @param clientName The client name used to initialize.
@@ -116,7 +114,7 @@ export async function ccInit(clientId?: ClientId): Promise<CoreCrypto> {
 
 export function randomConversationId(): ConversationId {
     const uuid = crypto.randomUUID();
-    return new ConversationId(Uint8Array.from(uuid))
+    return new ConversationId(Uint8Array.from(uuid));
 }
 
 /**
