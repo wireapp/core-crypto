@@ -20,7 +20,7 @@ fn generate_key_package_bench(c: &mut Criterion) {
         for i in (GROUP_RANGE).step_by(GROUP_STEP) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
-                    || smol::block_on(setup_mls(ciphersuite, credential.as_ref(), in_memory)),
+                    || smol::block_on(setup_mls(ciphersuite, credential.as_ref(), in_memory, true)),
                     |(central, ..)| async move {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
@@ -51,7 +51,7 @@ fn count_key_packages_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         smol::block_on(async {
-                            let (central, ..) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            let (central, ..) = setup_mls(ciphersuite, credential.as_ref(), in_memory, true).await;
 
                             let context = central.new_transaction().await.unwrap();
                             context
