@@ -49,6 +49,7 @@ proteus-wasm = { workspace = true, optional = true }
 which = "8.0.0"
 tree-sitter = "0.25.10"
 tree-sitter-typescript = "0.23.2"
+mls-crypto-provider.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.build-dependencies]
 cc = "1.2.44"

@@ -142,7 +142,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
 
     log::info!("Using ciphersuite {CIPHERSUITE_IN_USE}");
 
-    let spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
+    let mut spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
     let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
         .await
         .unwrap();
@@ -156,11 +156,25 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
         ..Default::default()
     };
     let cc = CoreCrypto::from(master_client.clone());
+    spinner.update("initialized cc...");
 
     let success_provider = Arc::new(MlsTransportSuccessProvider::default());
-
     cc.provide_transport(success_provider.clone()).await;
+    spinner.update("provided transport...");
+
+    let master_client_id = ClientId::from(b"interop master client".as_slice());
+    let credential = Credential::basic(
+        CIPHERSUITE_IN_USE.signature_algorithm(),
+        master_client_id.clone(),
+        mls_crypto_provider::RustCrypto::default(),
+    )?;
+    spinner.update("created credential...");
+
     let transaction = cc.new_transaction().await?;
+    transaction
+        .mls_init(master_client_id.into(), &[CIPHERSUITE_IN_USE.into()])
+        .await?;
+    transaction.add_credential(credential).await?;
     transaction
         .new_conversation(&conversation_id, CredentialType::Basic, config)
         .await?;

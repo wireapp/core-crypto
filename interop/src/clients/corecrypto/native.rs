@@ -22,7 +22,7 @@ pub(crate) struct CoreCryptoNativeClient {
 
 impl CoreCryptoNativeClient {
     pub(crate) async fn new() -> Result<Self> {
-        let client_id = uuid::Uuid::new_v4();
+        let client_id = ClientId::from(uuid::Uuid::new_v4().into_bytes());
 
         let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
             .await
@@ -33,9 +33,20 @@ impl CoreCryptoNativeClient {
         cc.provide_transport(Arc::new(MlsTransportSuccessProvider::default()))
             .await;
 
+        let ctx = cc.new_transaction().await?;
+        ctx.mls_init(client_id.clone().into(), &[CIPHERSUITE_IN_USE.into()])
+            .await?;
+        ctx.add_credential(Credential::basic(
+            CIPHERSUITE_IN_USE.signature_algorithm(),
+            client_id.clone(),
+            mls_crypto_provider::RustCrypto::default(),
+        )?)
+        .await?;
+        ctx.finish().await?;
+
         Ok(Self {
             cc,
-            client_id: client_id.into_bytes().into(),
+            client_id: client_id.into(),
             #[cfg(feature = "proteus")]
             prekey_last_id: Cell::new(0),
         })

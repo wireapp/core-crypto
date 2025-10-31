@@ -2306,6 +2306,7 @@ dependencies = [
  "fantoccini",
  "hex",
  "log",
+ "mls-crypto-provider",
  "openmls",
  "proteus-wasm",
  "rand",

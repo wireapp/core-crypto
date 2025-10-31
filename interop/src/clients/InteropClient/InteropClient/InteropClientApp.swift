@@ -110,10 +110,13 @@ struct InteropClientApp: App {
                 transport: TransportProvider())
 
             let ciphersuite = try ciphersuiteFromU16(discriminant: ciphersuite)
+            let clientId = ClientId(bytes: clientId)
             try await self.coreCrypto?.transaction({ context in
                 try await context.mlsInit(
-                    clientId: ClientId(bytes: clientId),
+                    clientId: clientId,
                     ciphersuites: [ciphersuite])
+                try await context.addCredential(
+                    credential: credentialBasic(ciphersuite: ciphersuite, clientId: clientId))
             })
 
             return "Initialised MLS with ciphersuite: \(ciphersuite)"
