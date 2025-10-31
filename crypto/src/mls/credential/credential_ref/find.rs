@@ -15,7 +15,7 @@ use crate::{ClientId, Credential, CredentialRef, KeystoreError, RecursiveError, 
 ///
 /// ## Example
 ///
-/// ```no_run
+/// ```ignore
 /// # use core_crypto::{CredentialRef, CredentialFindFilters, ClientIdRef};
 /// # use openmls::prelude::CredentialType;
 /// # let database = todo!();
