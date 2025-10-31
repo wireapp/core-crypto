@@ -5,12 +5,13 @@ use std::{
 
 use async_lock::RwLock;
 use core_crypto::{
-    CertificateBundle, Ciphersuite, ClientId, ConnectionType, ConversationId, CoreCrypto, CredentialType, Database,
-    DatabaseKey, HistorySecret, MlsCommitBundle, MlsConversationConfiguration, MlsCustomConfiguration,
-    MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse, Session,
+    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, ConnectionType, ConversationId, CoreCrypto,
+    Credential as CcCredential, CredentialType, Database, DatabaseKey, HistorySecret, MlsCommitBundle,
+    MlsConversationConfiguration, MlsCustomConfiguration, MlsGroupInfoBundle, MlsTransport, MlsTransportData,
+    MlsTransportResponse, Session,
 };
 use criterion::BenchmarkId;
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::{MlsCryptoProvider, RustCrypto};
 use openmls::{
     framing::{MlsMessageInBody, MlsMessageOut},
     prelude::{
@@ -128,8 +129,9 @@ pub async fn setup_mls(
     ciphersuite: Ciphersuite,
     credential: Option<&CertificateBundle>,
     in_memory: bool,
+    with_basic_credential: bool,
 ) -> (CoreCrypto, ConversationId, Arc<dyn MlsTransportTestExt>) {
-    let (central, _, delivery_service) = new_central(ciphersuite, credential, in_memory).await;
+    let (central, _, delivery_service) = new_central(ciphersuite, credential, in_memory, with_basic_credential).await;
     let core_crypto = central;
     let context = core_crypto.new_transaction().await.unwrap();
     let id = conversation_id();
@@ -154,6 +156,7 @@ pub async fn new_central(
     // TODO: always None for the moment. Need to update the benches with some realistic certificates. Tracking issue: WPB-9589
     _credential: Option<&CertificateBundle>,
     in_memory: bool,
+    with_basic_credential: bool,
 ) -> (CoreCrypto, tempfile::TempDir, Arc<dyn MlsTransportTestExt>) {
     let (path, tmp_file) = tmp_db_file();
     let connection_type = if in_memory {
@@ -161,14 +164,27 @@ pub async fn new_central(
     } else {
         ConnectionType::Persistent(&path)
     };
-    let client_id = ClientId::from(Alphanumeric.sample_string(&mut rand::thread_rng(), 10).into_bytes()).into();
+    let client_id = ClientId::from(Alphanumeric.sample_string(&mut rand::thread_rng(), 10).into_bytes());
+    let client_identifier = ClientIdentifier::from(client_id.clone());
     let db = Database::open(connection_type, &DatabaseKey::generate()).await.unwrap();
 
     let session = Session::try_new(&db).await.unwrap();
     let cc = CoreCrypto::from(session);
-    cc.init(client_id, &[ciphersuite.signature_algorithm()]).await.unwrap();
+    cc.init(client_identifier, &[ciphersuite.signature_algorithm()])
+        .await
+        .unwrap();
     let delivery_service = Arc::<CoreCryptoTransportSuccessProvider>::default();
     cc.provide_transport(delivery_service.clone()).await;
+
+    if with_basic_credential {
+        let ctx = cc.new_transaction().await.unwrap();
+        ctx.add_credential(
+            CcCredential::basic(ciphersuite.signature_algorithm(), client_id, RustCrypto::default()).unwrap(),
+        )
+        .await
+        .unwrap();
+        ctx.finish().await.unwrap();
+    }
     (cc, tmp_file, delivery_service.clone())
 }
 
@@ -234,7 +250,7 @@ pub async fn setup_mls_and_add_clients(
     VerifiableGroupInfo,
     Arc<dyn MlsTransportTestExt>,
 ) {
-    let (core_crypto, id, delivery_service) = setup_mls(cipher_suite, credential, in_memory).await;
+    let (core_crypto, id, delivery_service) = setup_mls(cipher_suite, credential, in_memory, true).await;
     let (client_ids, group_info) = add_clients(
         &mut core_crypto.clone(),
         &id,

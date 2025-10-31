@@ -21,7 +21,7 @@ fn create_group_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         smol::block_on(async {
-                            let (central, ..) = new_central(*ciphersuite, credential.as_ref(), in_memory).await;
+                            let (central, ..) = new_central(*ciphersuite, credential.as_ref(), in_memory, true).await;
                             let id = conversation_id();
                             let cfg = MlsConversationConfiguration {
                                 ciphersuite: *ciphersuite,
@@ -56,7 +56,8 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                             let (alice_central, id, _, _, delivery_service) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
 
-                            let (bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
+                            let (bob_central, ..) =
+                                new_central(ciphersuite, credential.as_ref(), in_memory, true).await;
                             let bob_context = bob_central.new_transaction().await.unwrap();
                             let bob_kpbs = bob_context
                                 .get_or_create_client_keypackages(ciphersuite, CredentialType::Basic, 1)
@@ -106,7 +107,8 @@ fn join_from_group_info_bench(c: &mut Criterion) {
                         smol::block_on(async {
                             let (_, _, _, group_info, ..) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
-                            let (bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
+                            let (bob_central, ..) =
+                                new_central(ciphersuite, credential.as_ref(), in_memory, true).await;
                             (bob_central, group_info)
                         })
                     },
