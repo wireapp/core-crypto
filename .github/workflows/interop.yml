@@ -66,6 +66,8 @@ jobs:
                      -destination 'platform=iOS Simulator,name=iPhone 16 e2e-interop-test' clean build install DSTROOT=./Products
           ./install-interop-client.sh ${{ env.SIMULATOR }}
       - name: run e2e interop test
+        env:
+          RUST_LOG: interop=info
         run: cargo run --bin interop
         # we separate shutdown from deletion to make sure the device is always removed, even when shutdown failed
       - name: delete simulator
