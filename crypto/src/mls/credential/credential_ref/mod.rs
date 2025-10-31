@@ -16,7 +16,7 @@ use crate::{ClientId, ClientIdRef};
 /// back and forth across the FFI boundary more than is strictly required.
 /// Therefore, we use this type which is substantially more compact.
 ///
-/// Created with [`Session::add_credential`][crate::Session::add_credential].
+/// Created with [`TransactionContext::add_credential`][crate::transaction_context::TransactionContext::add_credential].
 ///
 /// This reference is _not_ a literal reference in memory.
 /// It is instead a key with which a credential can be retrieved.

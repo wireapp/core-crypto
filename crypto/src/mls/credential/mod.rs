@@ -33,7 +33,8 @@ use crate::{
 /// This is tied to a particular client via either its client id or certificate bundle,
 /// depending on its credential type, but is independent of any client instance or storage.
 ///
-/// To attach to a particular client instance and store, see [`Session::add_credential`][crate::Session::add_credential].
+/// To attach to a particular client instance and store, see
+/// [`TransactionContext::add_credential`][crate::transaction_context::TransactionContext::add_credential].
 ///
 /// Note: the current database design makes some questionable assumptions:
 ///
