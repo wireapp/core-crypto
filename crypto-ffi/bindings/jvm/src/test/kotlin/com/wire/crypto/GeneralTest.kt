@@ -95,6 +95,7 @@ class DatabaseKeyTest {
         var cc = CoreCrypto(db)
         val pubkey1 = cc.transaction {
             it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT)
+            it.addCredential(Credential.basic(CIPHERSUITE_DEFAULT, clientId))
             it.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
         }
         cc.close()

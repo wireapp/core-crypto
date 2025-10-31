@@ -72,7 +72,10 @@ abstract class HasMockDeliveryService {
 fun newClients(instance: HasMockDeliveryService, vararg clientIds: ClientId) = runBlocking {
     clientIds.map { clientID ->
         val cc = initCc(instance)
-        cc.transaction { ctx -> ctx.mlsInitShort(clientID) }
+        cc.transaction { ctx ->
+            ctx.mlsInitShort(clientID)
+            ctx.addCredential(credentialBasic(CIPHERSUITE_DEFAULT, clientID))
+        }
         cc
     }
 }
