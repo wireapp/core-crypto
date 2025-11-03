@@ -677,7 +677,7 @@ final class WireCoreCryptoTests: XCTestCase {
                     clientId: clientId,
                     ciphersuites: [ciphersuite])
                 try await $0.addCredential(
-                    credential: basicCredential(
+                    credential: credentialBasic(
                         ciphersuite: ciphersuite,
                         clientId: clientId,
                     )
