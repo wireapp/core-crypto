@@ -171,8 +171,12 @@ describe("logger", () => {
         );
 
         const logs = (await browser.getLogs("browser")) as BrowserLog[];
+        console.log(JSON.stringify(logs));
         const errorLogs = logs.filter((log) => {
-            return log.level === "SEVERE" && log.source === "console-api";
+            return (
+                log.message.includes(expectedErrorMessage) &&
+                log.source === "console-api"
+            );
         });
 
         expect(errorLogs.length).toBeGreaterThan(0);
