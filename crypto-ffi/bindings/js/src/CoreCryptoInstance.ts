@@ -161,6 +161,7 @@ export class CoreCrypto {
      */
     close() {
         if (CoreCryptoFfi.instanceOf(this.#cc)) {
+            this.#cc.close()
             this.#cc.uniffiDestroy();
         } else {
             throw new Error(

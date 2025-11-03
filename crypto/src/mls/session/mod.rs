@@ -273,7 +273,7 @@ impl Session {
     /// # Errors
     /// KeyStore errors, such as IO, and if there is more than one strong reference
     /// to the connection.
-    pub async fn close(self) -> crate::mls::Result<()> {
+    pub async fn close(&self) -> crate::mls::Result<()> {
         self.crypto_provider
             .close()
             .await

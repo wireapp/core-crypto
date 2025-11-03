@@ -107,6 +107,9 @@ pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
 
     async fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()>;
 
+    async fn close(self) -> CryptoKeystoreResult<()>;
+
+    /// Default implementation of wipe
     async fn wipe(self) -> CryptoKeystoreResult<()>;
 
     fn check_buffer_size(size: usize) -> CryptoKeystoreResult<()> {
@@ -270,20 +273,30 @@ impl Database {
 
     /// Wait for any running transaction to finish, then take the connection out of this database,
     /// preventing this database from being used again.
-    ///
-    /// Cannot be called while a transaction is in progress.
-    pub async fn close(&self) -> CryptoKeystoreResult<KeystoreDatabaseConnection> {
-        // Wait for any running transaction to finish
+    async fn take(&self) -> CryptoKeystoreResult<KeystoreDatabaseConnection> {
         let _semaphore = self.transaction_semaphore.acquire_arc().await;
+
         let mut guard = self.conn.lock().await;
         guard.take().ok_or(CryptoKeystoreError::Closed)
     }
-}
+
+    // Close this database connection
+    pub async fn close(&self) -> CryptoKeystoreResult<()> {
+        #[cfg(not(target_family = "wasm"))]
+        self.take().await?;
+
+        #[cfg(target_family = "wasm")]
+        {
+            let conn = self.take().await?;
+            conn.close().await?;
+        }
+        Ok(())
+    }
 
 impl Database {
     /// Close this database and delete its contents.
     pub async fn wipe(&self) -> CryptoKeystoreResult<()> {
-        self.close().await?.wipe().await
+        self.take().await?.wipe().await
     }
 
     pub async fn migrate_db_key_type_to_bytes(

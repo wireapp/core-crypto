@@ -54,3 +54,12 @@ impl CoreCryptoFfi {
         Ok(Self { inner })
     }
 }
+
+#[uniffi::export]
+impl CoreCryptoFfi {
+    /// See [Session::close]
+    // indexdb connections must be closed explicitly while rusqlite implements drop which suffices.
+    pub async fn close(&self) -> CoreCryptoResult<()> {
+        self.inner.close().await.map_err(Into::into)
+    }
+}
