@@ -127,10 +127,16 @@ impl log::Log for LogShim {
         let message = format!("{}", record.args());
         let context = serde_json::to_string(&visitor.0).ok();
 
-        // uniffi-style
+        // adjust the loglevel for sqlite migrations
+        #[cfg(not(target_family = "wasm"))]
+        let loglevel = CoreCryptoLogLevel::from(self.adjusted_log_level(record.metadata()))
+
+        // no adjustment needed for wasm/idb
+        #[cfg(target_family = "wasm")]
+        let loglevel = record.metadata().level()
 
         let log_result = self.logger.log(
-            CoreCryptoLogLevel::from(self.adjusted_log_level(record.metadata())),
+            loglevel,
             message.clone(),
             context,
         );
