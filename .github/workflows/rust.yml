@@ -36,6 +36,7 @@ jobs:
           toolchain: ${{ env.NIGHTLY_RUST_VERSION }}
           components: rustfmt, clippy
           target: wasm32-unknown-unknown
+          rustflags: ${{ contains(matrix.command, 'wasm32-unknown-unknown') && '--cfg getrandom_backend="wasm_js" -D warnings' || '-D warnings' }}
       - run: ${{ matrix.command }}
 
   test:
