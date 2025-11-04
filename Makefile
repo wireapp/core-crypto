@@ -71,6 +71,12 @@ CRATE_MANIFESTS := $(addsuffix /Cargo.toml,$(CRATES))
 # Enumerate all .rs files in relevant crates
 RUST_RS_FILES := $(shell find $(CRATES) -type f -name '*.rs' 2>/dev/null | LC_ALL=C sort)
 
+# Files relevant to build interop
+INTEROP_RS_FILES := $(shell find interop -type f -name '*.rs' 2>/dev/null | LC_ALL=C sort)
+INTEROP_TS_FILES := $(shell find interop -type f -name '*.ts' -not -path "*/node_modules/*" 2>/dev/null | LC_ALL=C sort)
+INTEROP_MANIFEST := interop/Cargo.toml
+INTEROP_SOURCES := $(INTEROP_RS_FILES) $(INTEROP_TS_FILES) $(INTEROP_MANIFEST)
+
 # Complete dependency set for FFI-related Cargo builds
 RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
 
@@ -523,6 +529,21 @@ ts-bench: $(DTS_OUT) ## Run TypeScript wrapper benches in Chrome via wdio
 web-package: $(DTS_OUT)  ## Package the ready-to-release tarball
 	@cd $(JS_DIR) && \
 	bun pm pack --quiet
+
+#-------------------------------------------------------------------------------
+# interop test
+#-------------------------------------------------------------------------------
+
+# We're not building the interop binary in release mode, so it's in `target/debug`.
+INTEROP_OUT := target/debug/interop
+
+.PHONY: interop-build
+interop-build: $(INTEROP_OUT)  ## Build the interop test binary (in debug mode, ignores any `RELEASE` value)
+
+interop-build-deps := $(INTEROP_SOURCES)
+
+$(INTEROP_OUT): $(interop-build-deps)
+	cargo build --bin interop
 
 #-------------------------------------------------------------------------------
 # Documentation targets
