@@ -38,3 +38,6 @@ rustflags = ["-C", "link-args=-latomic"]
 
 [build]
 rustdoc = ".cargo/rustdoc-wrapper.sh"
+
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg", 'getrandom_backend="wasm_js"']
