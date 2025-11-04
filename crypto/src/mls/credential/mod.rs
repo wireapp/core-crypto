@@ -211,26 +211,6 @@ impl Hash for Credential {
     }
 }
 
-impl Ord for Credential {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        // earliest validity matters most, but then we define a reasonable total ordering
-        // credentials of the same type and identity should be considered equal
-        // credentials with different signature schemes are unequal
-        // public key equality implies private key equality
-        self.earliest_validity
-            .cmp(&other.earliest_validity)
-            .then(self.credential_type().cmp(&other.credential_type()))
-            .then_with(|| self.mls_credential.identity().cmp(other.mls_credential.identity()))
-            .then((self.signature_scheme() as u16).cmp(&(other.signature_scheme() as u16)))
-            .then_with(|| self.signature_key_pair.public().cmp(other.signature_key_pair.public()))
-    }
-}
-impl PartialOrd for Credential {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
 // TODO: ensure certificate signature must match the group's ciphersuite ; fails otherwise. Tracking issue: WPB-9632
 // Requires more than 1 ciphersuite supported at the moment.
 #[cfg(test)]
