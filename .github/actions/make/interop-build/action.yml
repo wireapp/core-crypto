@@ -1,0 +1,16 @@
+name: Fetch or make interop test binary
+inputs:
+  gh-token:
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+    - uses: ./.github/actions/make
+      with:
+        key: interop-build
+        make-rule: interop-build
+        # We're not building the interop binary in release mode, so it's in `target/debug`.
+        target-path: target/debug/interop
+        gh-token: ${{ inputs.gh-token }}

@@ -39,6 +39,7 @@ jobs:
         uses: ./.github/actions/make/web/ts
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: download artifacts for ios device
         uses: ./.github/actions/make/ios
         with:
@@ -56,6 +57,11 @@ jobs:
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: download interop test binary
+        uses: ./.github/actions/make/interop-build
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: create simulator
         run: |
           echo "SIMULATOR=$(./scripts/create-ios-sim-device.sh "iPhone 16 e2e-interop-test")" >> $GITHUB_ENV
@@ -66,7 +72,8 @@ jobs:
                      -destination 'platform=iOS Simulator,name=iPhone 16 e2e-interop-test' clean build install DSTROOT=./Products
           ./install-interop-client.sh ${{ env.SIMULATOR }}
       - name: run e2e interop test
-        run: cargo run --bin interop
+        # We're not building the interop binary in release mode, so it's in `target/debug`.
+        run: ./target/debug/interop
         # we separate shutdown from deletion to make sure the device is always removed, even when shutdown failed
       - name: delete simulator
         if: always()

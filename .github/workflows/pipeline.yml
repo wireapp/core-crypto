@@ -227,11 +227,24 @@ jobs:
   #################
   # Cross-platform jobs
 
+  build-interop:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: macos-latest
+    steps:
+      # Needed for parity between github and self-hosted runner
+      - run: brew install make
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+      - uses: ./.github/actions/make/interop-build
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
   e2e-interop-test:
     needs:
       - build-ios
       - bindings-swift
       - bindings-ts
+      - build-interop
     uses: ./.github/workflows/interop.yml
 
   deploy-docs:
