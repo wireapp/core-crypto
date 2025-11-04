@@ -64,18 +64,10 @@ jobs:
       - name: "test corecrypto's proteus implementation"
         run: cargo nextest run --locked --verbose --features proteus,proteus-keystore proteus
 
-  wasm-test:
+  keystore-wasm-test:
     runs-on: ubuntu-latest
     env:
       WASM_BINDGEN_TEST_TIMEOUT: "1200" # if our test takes over 20m, it probably _should_ fail
-    strategy:
-      matrix:
-        config:
-          - crate: keystore
-          - crate: mls-provider
-          - crate: keystore
-            feature: --features proteus-keystore
-            module: -- proteus
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-and-cache-rust
@@ -90,7 +82,27 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack
-      - run: wasm-pack test --headless --chrome ./${{ matrix.config.crate }} ${{ matrix.config.feature }} ${{ matrix.config.module }}
+      - run: wasm-pack test --headless --chrome ./keystore
+
+  keystore-proteus-wasm-test:
+    runs-on: ubuntu-latest
+    env:
+      WASM_BINDGEN_TEST_TIMEOUT: "1200" # if our test takes over 20m, it probably _should_ fail
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-and-cache-rust
+        with:
+          target: wasm32-unknown-unknown
+      - uses: wireapp/setup-chrome@master
+        id: setup-chrome
+        with:
+          chrome-version: stable
+      - run: echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
+      - name: install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      - run: wasm-pack test --headless --chrome ./keystore --features proteus-keystore -- proteus
 
   hack:
     runs-on: ubuntu-latest
