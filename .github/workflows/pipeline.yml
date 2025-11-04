@@ -154,37 +154,15 @@ jobs:
   #################
   # Web
 
-  build-wasm:
-    runs-on: ubuntu-latest
-    env:
-      # ensures we have same flags as when publishing
-      RUSTFLAGS: "-D warnings -W unreachable-pub"
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-and-cache-rust
-        with:
-          target: wasm32-unknown-unknown
-      - name: install wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack
-      - name: build wasm
-        uses: ./.github/actions/make/web/wasm
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-
   bindings-ts:
-    needs: build-wasm
+    needs:
+      - ffi-library-linux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: install wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack
       - name: build ts
         uses: ./.github/actions/make/web/ts
         with:
