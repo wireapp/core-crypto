@@ -39,7 +39,7 @@ proteus-wasm = { workspace = true, optional = true }
 core-crypto-keystore.workspace = true
 core-crypto-macros.workspace = true
 core-crypto.workspace = true
-obfuscate.workspace = true
+obfuscate = { workspace = true, features = ["openmls"] }
 rmp-serde.workspace = true
 paste = "1.0.15"
 hex.workspace = true

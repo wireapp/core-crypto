@@ -7,10 +7,13 @@ rust-version = "1.90"
 [dependencies]
 hex.workspace = true
 sha2.workspace = true
-openmls.workspace = true
+openmls = { workspace = true, optional = true }
 derive_more.workspace = true
 rand.workspace = true
 log.workspace = true
 
 [lints]
 workspace = true
+
+[features]
+default = []
