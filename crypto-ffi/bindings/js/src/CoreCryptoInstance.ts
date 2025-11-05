@@ -27,7 +27,6 @@ import {
     HistorySecret,
     WireIdentity,
     ConversationId,
-    Database,
     openDatabase as _openDatabase,
     CoreCryptoFfi,
     proteusFingerprintPrekeybundleFfi,
