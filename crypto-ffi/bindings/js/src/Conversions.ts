@@ -9,3 +9,12 @@ export function safeBigintToNumber(x: bigint): number {
     }
     return new Number(x).valueOf();
 }
+
+export function safeBigIntOrUndefinedToNumberOrUndefined(
+    x: bigint | undefined | null
+): number | undefined {
+    if (x === undefined || x === null) {
+        return undefined;
+    }
+    return safeBigintToNumber(x);
+}

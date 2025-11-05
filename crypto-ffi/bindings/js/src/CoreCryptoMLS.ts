@@ -1,4 +1,4 @@
-import { safeBigintToNumber } from "./Conversions";
+import { safeBigIntOrUndefinedToNumberOrUndefined } from "./Conversions";
 import {
     BufferedDecryptedMessage as BufferedDecryptedMessageFfi,
     CommitBundle as CommitBundleFfi,
@@ -198,9 +198,7 @@ export function bufferedDecryptedMessageFromFfi(
     return {
         message: m.message,
         isActive: m.isActive,
-        commitDelay: m.commitDelay
-            ? safeBigintToNumber(m.commitDelay)
-            : undefined,
+        commitDelay: safeBigIntOrUndefinedToNumberOrUndefined(m.commitDelay),
         senderClientId: m.senderClientId,
         hasEpochChanged: m.hasEpochChanged,
         identity: m.identity,
