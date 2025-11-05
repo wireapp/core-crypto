@@ -21,7 +21,7 @@ pub(super) async fn load_all(database: &Database) -> Result<Vec<StoredSignatureK
         .map_err(Into::into)
 }
 
-/// Generate a new keypair in-memory with the specificed signature scheme
+/// Generate a new keypair in-memory with the specified signature scheme
 pub(super) fn generate(crypto: impl OpenMlsCrypto, signature_scheme: SignatureScheme) -> Result<SignatureKeyPair> {
     let (private_key, public_key) = crypto
         .signature_key_gen(signature_scheme)
