@@ -11,8 +11,6 @@ mod keypairs;
 mod persistence;
 pub(crate) mod x509;
 
-use std::hash::{Hash, Hasher};
-
 use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, MlsCredentialType, SignatureScheme};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::crypto::OpenMlsCrypto;
@@ -192,25 +190,6 @@ impl PartialEq for Credential {
             sk.signature_scheme() == ok.signature_scheme() && sk.public() == ok.public()
             // public key equality implies private key equality
         }
-    }
-}
-
-impl Hash for Credential {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.earliest_validity.hash(state);
-        self.signature_key_pair.signature_scheme().hash(state);
-        self.signature_key_pair.public().hash(state);
-        // self.signature_key_pair.private().hash(state); // no two distinct public keys will share a private key so omitting this is ok
-        u16::from(self.credential_type()).hash(state);
-        self.mls_credential.identity().hash(state);
-        // non-hashed fields here are apparently transient
-        // but really, this should be an impl on the openmls type
-        match self.mls_credential().mls_credential() {
-            MlsCredentialType::X509(cert) => {
-                cert.certificates.hash(state);
-            }
-            MlsCredentialType::Basic(_) => {}
-        };
     }
 }
 
