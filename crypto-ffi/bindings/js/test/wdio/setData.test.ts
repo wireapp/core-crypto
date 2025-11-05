@@ -22,10 +22,10 @@ describe("set_data()", () => {
                 const cc = window.ensureCcDefined(clientName);
                 const encoder = new TextEncoder();
                 const data = encoder.encode(text);
-                let dbResultBeforeSet = null;
+                let dbResultBeforeSet: ArrayBuffer | undefined;
                 await cc.transaction(async (ctx) => {
                     dbResultBeforeSet = await ctx.getData();
-                    await ctx.setData(data);
+                    await ctx.setData(data.buffer);
                 });
                 const dbResultAfterSet = await cc.transaction(async (ctx) => {
                     return await ctx.getData();

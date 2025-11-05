@@ -44,7 +44,7 @@ describe("core crypto errors", () => {
                 proteusErrorCodeIsCorrect:
                     isProteusSessionNotFoundError(ccErr) &&
                     isProteusSessionNotFoundError(ccErr2) &&
-                    ccErr.context.context.errorCode === 102,
+                    ccErr.context.context["errorCode"] === 102,
             };
         });
         expect(result.proteusErrorCodeIsCorrect).toBe(true);

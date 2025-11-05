@@ -9,6 +9,7 @@ import {
     type GroupInfoBundle,
     type HistorySecret,
     type MlsTransportData,
+    CoreCryptoLogLevel,
 } from "../../src/CoreCrypto";
 
 type ccModuleType = typeof import("../../src/CoreCrypto");
@@ -80,7 +81,11 @@ export async function setup() {
 
             if (logLevel >= 2) {
                 window.ccModule.setLogger({
-                    log: (_level, message: string, context) => {
+                    log: (
+                        _level: CoreCryptoLogLevel,
+                        message: string,
+                        context: string | undefined
+                    ) => {
                         console.log(message, context);
                     },
                 });
@@ -308,7 +313,11 @@ export async function invite(
             const commitBundle =
                 await window.deliveryService.getLatestCommitBundle();
             await cc2.transaction((ctx) =>
-                ctx.processWelcomeMessage(commitBundle.welcome!)
+                ctx.processWelcomeMessage(
+                    new window.ccModule.Welcome(
+                        commitBundle.welcome!.copyBytes()
+                    )
+                )
             );
 
             return commitBundle.groupInfo;
