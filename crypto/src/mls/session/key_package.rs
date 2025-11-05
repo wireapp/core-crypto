@@ -96,7 +96,7 @@ impl Session {
             .into_iter()
             // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
             .filter(|kp|
-                kp.ciphersuite() == ciphersuite.0 && kp.leaf_node().credential().credential_type() == credential_type)
+                ciphersuite == kp.ciphersuite()  && credential_type == kp.leaf_node().credential().credential_type() )
             .collect::<Vec<_>>();
 
         let kpb_count = existing_kps.len();
@@ -154,10 +154,8 @@ impl Session {
             .into_iter()
             .map(|kp| core_crypto_keystore::deser::<KeyPackage>(&kp.keypackage))
             // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
-            .filter(|kp| {
-                kp.as_ref()
-                    .map(|b| b.ciphersuite() == ciphersuite.0 && b.leaf_node().credential().credential_type() == credential_type)
-                    .unwrap_or_default()
+            .filter(|kp_result| {
+                 kp_result.as_ref().ok().is_none_or(|key_package| ciphersuite == key_package.ciphersuite() && credential_type == key_package.leaf_node().credential().credential_type())
             })
         {
             let kp = kp.map_err(KeystoreError::wrap("counting valid keypackages"))?;
@@ -442,7 +440,7 @@ mod tests {
             assert!(
                 x509_key_packages
                     .iter()
-                    .all(|kp| kp.leaf_node().credential().credential_type() == CredentialType::X509)
+                    .all(|kp| CredentialType::X509 == kp.leaf_node().credential().credential_type())
             );
         })
         .await

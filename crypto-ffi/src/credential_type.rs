@@ -22,7 +22,6 @@ impl TryFrom<core_crypto::CredentialType> for CredentialType {
         match value {
             core_crypto::CredentialType::Basic => Ok(Self::Basic),
             core_crypto::CredentialType::X509 => Ok(Self::X509),
-            core_crypto::CredentialType::Unknown(_) => Err(CoreCryptoError::ad_hoc("unknown credential type")),
         }
     }
 }

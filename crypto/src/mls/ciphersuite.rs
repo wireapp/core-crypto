@@ -55,3 +55,9 @@ impl TryFrom<u16> for Ciphersuite {
             .into())
     }
 }
+
+impl PartialEq<MlsCiphersuite> for Ciphersuite {
+    fn eq(&self, other: &MlsCiphersuite) -> bool {
+        self.0 == *other
+    }
+}

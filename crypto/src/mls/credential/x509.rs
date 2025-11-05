@@ -15,7 +15,7 @@ use zeroize::Zeroize;
 use super::{Error, Result};
 #[cfg(test)]
 use crate::test_utils::x509::X509Certificate;
-use crate::{ClientId, Credential, MlsError, RecursiveError, e2e_identity::id::WireQualifiedClientId};
+use crate::{ClientId, Credential, CredentialType, MlsError, RecursiveError, e2e_identity::id::WireQualifiedClientId};
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize)]
 #[zeroize(drop)]
@@ -108,6 +108,7 @@ impl Credential {
         let credential = MlsCredential::new_x509(chain).map_err(MlsError::wrap("creating x509 credential"))?;
 
         let cb = Credential {
+            credential_type: CredentialType::X509,
             mls_credential: credential,
             signature_key_pair: kp.0,
             earliest_validity,

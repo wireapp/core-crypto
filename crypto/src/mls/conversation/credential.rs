@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use openmls::prelude::{Credential as MlsCredential, CredentialType, CredentialWithKey, SignaturePublicKey};
+use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, SignaturePublicKey};
 
 use super::{Error, Result};
-use crate::MlsConversation;
+use crate::{CredentialType, MlsConversation, RecursiveError};
 
 impl MlsConversation {
     /// Returns all members credentials from the group/conversation
@@ -41,6 +41,14 @@ impl MlsConversation {
     }
 
     pub(crate) fn own_credential_type(&self) -> Result<CredentialType> {
-        self.own_mls_credential().map(|credential| credential.credential_type())
+        self.own_mls_credential().and_then(|credential| {
+            credential
+                .credential_type()
+                .try_into()
+                .map_err(RecursiveError::mls_credential(
+                    "getting credential type from conversation",
+                ))
+                .map_err(Into::into)
+        })
     }
 }

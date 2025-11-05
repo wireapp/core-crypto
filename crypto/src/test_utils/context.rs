@@ -86,7 +86,7 @@ impl SessionContext {
             .map(|kp| core_crypto_keystore::deser::<KeyPackage>(&kp.keypackage).unwrap())
             .filter(|kp| kp.ciphersuite() == *cs)
             .filter(|kp| {
-                ct.map(|ct| kp.leaf_node().credential().credential_type() == ct)
+                ct.map(|ct| ct == kp.leaf_node().credential().credential_type())
                     .unwrap_or(true)
             })
             .count()
@@ -143,7 +143,6 @@ impl SessionContext {
                 let cert_bundle = CertificateBundle::rand(&client_id, signer.unwrap());
                 Credential::x509(cert_bundle).unwrap()
             }
-            CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
         };
 
         // in the x509 case, `CertificateBundle::rand` just completely invents a new client id in the format that e2ei

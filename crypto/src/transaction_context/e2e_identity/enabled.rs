@@ -32,11 +32,11 @@ mod tests {
         let [cc] = case.sessions().await;
         Box::pin(async move {
             let e2ei_is_enabled = cc.transaction.e2ei_is_enabled(case.signature_scheme()).await.unwrap();
-            match case.credential_type {
-                CredentialType::Basic => assert!(!e2ei_is_enabled),
-                CredentialType::X509 => assert!(e2ei_is_enabled),
-                CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
+            let expect_enabled = match case.credential_type {
+                CredentialType::Basic => false,
+                CredentialType::X509 => true,
             };
+            assert_eq!(e2ei_is_enabled, expect_enabled);
         })
         .await
     }

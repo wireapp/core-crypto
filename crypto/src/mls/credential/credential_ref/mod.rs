@@ -4,11 +4,11 @@ mod error;
 mod find;
 mod persistence;
 
-use openmls::prelude::{CredentialType, SignatureScheme};
+use openmls::prelude::SignatureScheme;
 
 pub(crate) use self::error::{Error, Result};
 pub use self::find::{FindFilters, FindFiltersBuilder};
-use crate::{ClientId, ClientIdRef};
+use crate::{ClientId, ClientIdRef, CredentialType};
 
 /// A reference to a credential which has been stored in a session.
 ///

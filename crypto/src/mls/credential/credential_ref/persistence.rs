@@ -90,9 +90,11 @@ impl CredentialRef {
             .map(move |stored_credential| {
                 let mls_credential = MlsCredential::tls_deserialize(&mut stored_credential.credential.as_slice())
                     .map_err(Error::tls_deserialize("mls credential"))?;
+                let credential_type = mls_credential.credential_type().try_into().map_err(RecursiveError::mls_credential("loading credential from db"))?;
                 let earliest_validity = stored_credential.created_at;
                 Ok(Credential {
                     signature_key_pair: signature_key_pair.clone(),
+                    credential_type,
                     mls_credential,
                     earliest_validity,
                 })
@@ -100,13 +102,10 @@ impl CredentialRef {
             // after deserialization, we can filter out any results which do not match the conditions in the credential ref
             // but pass through any errors
             .filter(|credential_result| {
-                credential_result
-                    .as_ref()
-                    .map(|credential| {
-                        credential.signature_key_pair.signature_scheme() == self.signature_scheme()
-                            && credential.mls_credential.credential_type() == self.r#type()
-                    })
-                    .unwrap_or(true)
+                credential_result.as_ref().ok().is_none_or(|credential| {
+                    self.signature_scheme == credential.signature_key_pair.signature_scheme()
+                            && self.r#type == credential.mls_credential.credential_type()
+                })
             })
             // we also need to ensure that the credential validates
             .map(|credential_result| {

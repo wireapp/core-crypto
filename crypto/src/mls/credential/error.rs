@@ -17,8 +17,8 @@ pub enum Error {
     ///
     /// - basic
     /// - x509
-    #[error("unsupported credential type")]
-    UnsupportedCredentialType,
+    #[error("unsupported credential type (variant {0}")]
+    UnsupportedCredentialType(u16),
     #[error("the signature scheme {0:?} was not present in the provided x509 identity")]
     SignatureSchemeNotPresentInX509Identity(openmls::prelude::SignatureScheme),
     /// This operation is not supported.

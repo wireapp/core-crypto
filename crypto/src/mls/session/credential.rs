@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use openmls::prelude::{CredentialType, SignaturePublicKey, SignatureScheme};
+use openmls::prelude::{SignaturePublicKey, SignatureScheme};
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{Error, Result};
 use crate::{
-    Credential, CredentialFindFilters, CredentialRef, LeafError, MlsConversation, RecursiveError, Session,
-    mls::session::SessionInner,
+    Credential, CredentialFindFilters, CredentialRef, CredentialType, LeafError, MlsConversation, RecursiveError,
+    Session, mls::session::SessionInner,
 };
 
 impl Session {

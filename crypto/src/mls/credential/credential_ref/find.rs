@@ -3,11 +3,13 @@ use core_crypto_keystore::{
     entities::{EntityFindParams, StoredCredential},
 };
 use mls_crypto_provider::Database;
-use openmls::prelude::{Credential as MlsCredential, CredentialType, SignatureScheme};
+use openmls::prelude::{Credential as MlsCredential, SignatureScheme};
 use tls_codec::Deserialize as _;
 
 use super::{super::keypairs, Error, Result};
-use crate::{ClientId, Credential, CredentialRef, KeystoreError, RecursiveError, mls::session::id::ClientIdRef};
+use crate::{
+    ClientId, Credential, CredentialRef, CredentialType, KeystoreError, RecursiveError, mls::session::id::ClientIdRef,
+};
 
 /// Filters to narrow down the set of credentials returned from various credential-finding methods.
 ///
@@ -112,10 +114,7 @@ impl CredentialRef {
         for partial in partial_credentials {
             let (ref mls_credential, ref stored_credential) = partial?;
 
-            if !credential_type
-                .map(|credential_type| credential_type == mls_credential.credential_type())
-                .unwrap_or(true)
-            {
+            if credential_type.is_some_and(|credential_type| credential_type != mls_credential.credential_type()) {
                 // credential type did not match
                 continue;
             }
@@ -133,9 +132,15 @@ impl CredentialRef {
                     continue;
                 }
 
+                let Ok(r#type) = mls_credential.credential_type().try_into() else {
+                    // if we stored this in the first place, we really should be able to read it
+                    // but maybe the DB is corrupted or something; this is just not a findable result
+                    continue;
+                };
+
                 out.push(Self {
                     client_id: ClientId(stored_credential.id.clone()),
-                    r#type: mls_credential.credential_type(),
+                    r#type,
                     signature_scheme: signature_key_pair.signature_scheme(),
                     earliest_validity: stored_credential.created_at,
                     public_key: signature_key_pair.public().to_owned(),

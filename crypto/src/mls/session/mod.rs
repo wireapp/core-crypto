@@ -370,7 +370,6 @@ mod tests {
                     identifier = ClientIdentifier::X509([(case.signature_scheme(), cert.clone())].into());
                     credential = Credential::x509(cert).unwrap();
                 }
-                CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
             };
 
             self.init(identifier, &[case.signature_scheme()]).await.unwrap();

@@ -1,10 +1,10 @@
-use openmls::prelude::{Credential, CredentialType, CredentialWithKey};
+use openmls::prelude::{Credential, CredentialWithKey};
 use openmls_traits::types::{HashType, SignatureScheme};
 use wire_e2e_identity::prelude::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint};
 use x509_cert::{Certificate, der::Decode};
 
 use super::{Error, Result};
-use crate::{Ciphersuite, DeviceStatus, RecursiveError, WireIdentity};
+use crate::{Ciphersuite, CredentialType, DeviceStatus, RecursiveError, WireIdentity};
 
 #[allow(dead_code)]
 pub(crate) trait CredentialExt {
@@ -73,11 +73,7 @@ impl CredentialExt for Credential {
     }
 
     fn get_type(&self) -> Result<CredentialType> {
-        match self.credential_type() {
-            CredentialType::Basic => Ok(CredentialType::Basic),
-            CredentialType::X509 => Ok(CredentialType::X509),
-            CredentialType::Unknown(_) => Err(Error::UnsupportedCredentialType),
-        }
+        self.credential_type().try_into()
     }
 
     fn extract_identity(

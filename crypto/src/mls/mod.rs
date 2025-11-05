@@ -131,7 +131,6 @@ mod tests {
                 CredentialType::X509 => {
                     CertificateBundle::rand_identifier(&client_id, &[x509_test_chain.find_local_intermediate_ca()])
                 }
-                CredentialType::Unknown(_) => panic!("unknown credential types are unsupported"),
             };
             context
                 .mls_init(identifier.clone(), &[case.ciphersuite()])

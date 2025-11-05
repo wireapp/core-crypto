@@ -237,7 +237,6 @@ impl TestContext {
                 let chain = chain.expect("a test chain must be provided in the x509 case");
                 self.x509_identifiers(client_ids, chain).await
             }
-            CredentialType::Unknown(_) => unreachable!("all test contexts are of a known credential type"),
         };
         identifier
     }

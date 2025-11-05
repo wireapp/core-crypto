@@ -399,7 +399,12 @@ mod tests {
             let mut conversation = conversation.guard().await;
             let mut conversation = conversation.conversation_mut().await;
             let group = &mut conversation.group;
-            let ct = group.credential().unwrap().credential_type();
+            let ct = group
+                .credential()
+                .unwrap()
+                .credential_type()
+                .try_into()
+                .expect("case conversation has a known credential type");
             let cs = group.ciphersuite();
             let client = alice.session().await;
             let cb = client.find_most_recent_credential(cs.into(), ct).await.unwrap();

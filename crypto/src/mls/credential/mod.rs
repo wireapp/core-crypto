@@ -3,6 +3,7 @@
 //! Credentials can be basic, or based on an x509 certificate chain.
 
 pub(crate) mod credential_ref;
+pub(crate) mod credential_type;
 pub(crate) mod crl;
 mod error;
 pub(crate) mod ext;
@@ -12,15 +13,14 @@ pub(crate) mod x509;
 
 use std::hash::{Hash, Hasher};
 
-use openmls::prelude::{
-    Credential as MlsCredential, CredentialType, CredentialWithKey, MlsCredentialType, SignatureScheme,
-};
+use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, MlsCredentialType, SignatureScheme};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::crypto::OpenMlsCrypto;
 
 pub(crate) use self::error::Result;
 pub use self::{
     credential_ref::{CredentialRef, FindFilters, FindFiltersBuilder},
+    credential_type::CredentialType,
     error::Error,
 };
 use crate::{
@@ -48,7 +48,9 @@ use crate::{
 /// raising errors as required to preserve DB integrity.
 #[derive(core_crypto_macros::Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Credential {
-    /// MLS internal credential. Stores the credential type.
+    /// Credential type
+    pub(crate) credential_type: CredentialType,
+    /// MLS internal credential. Stores the MLS credential
     pub(crate) mls_credential: MlsCredential,
     /// Public and private keys, and the signature scheme.
     #[sensitive]
@@ -97,6 +99,7 @@ impl Credential {
         let signature_key_pair = keypairs::generate(crypto, signature_scheme)?;
 
         Ok(Self {
+            credential_type: CredentialType::Basic,
             mls_credential: MlsCredential::new_basic(client_id.into_inner()),
             signature_key_pair,
             earliest_validity: 0,
@@ -112,7 +115,7 @@ impl Credential {
 
     /// Get the credential type
     pub fn credential_type(&self) -> CredentialType {
-        self.mls_credential.credential_type()
+        self.credential_type
     }
 
     /// Get a reference to the `SignatureKeyPair`.
@@ -257,7 +260,6 @@ mod tests {
         let (alice, bob, alice_credential_type) = match case.credential_type {
             CredentialType::Basic => (x509_session, basic_session, CredentialType::X509),
             CredentialType::X509 => (basic_session, x509_session, CredentialType::Basic),
-            _ => panic!("only basic and x509 credential types supported"),
         };
 
         let conversation = case
