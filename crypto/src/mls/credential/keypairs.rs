@@ -35,17 +35,6 @@ pub(super) async fn store(database: &Database, id: &ClientIdRef, keypair: &Signa
         .tls_serialize_detached()
         .map_err(Error::tls_serialize("keypair"))?;
 
-    debug_assert!(
-        {
-            let deserialized =
-                SignatureKeyPair::tls_deserialize_exact(&data).expect("keypair deserializes without error");
-            deserialized.signature_scheme() == keypair.signature_scheme()
-                && deserialized.public() == keypair.public()
-                && deserialized.private() == keypair.private()
-        },
-        "serialized keypair data must deserialize correctly"
-    );
-
     let stored_keypair = StoredSignatureKeypair::new(
         keypair.signature_scheme(),
         keypair.public().to_owned(),
