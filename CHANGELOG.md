@@ -95,6 +95,16 @@
 
   Affected platforms: all
 
+## v9.1.2 - 2025-11-05
+
+This release fixes a bug in the TypeScript bindings where the commit delay could in some situations be undefined when
+receiving a proposal.
+
+### Bug Fixes
+
+- in js 0 is falsy, which messes with ternary logic
+  ([e7b73c0](https://github.com/wireapp/core-crypto/commit/e7b73c034d7492bc728c50d3c287a2a5272d3b71))
+
 ## v9.1.1 - 2025-10-24
 
 This release fixes the issue where `libcore_crypto_ffi.so` had segments aligned on 4k instead of 16k on Android
