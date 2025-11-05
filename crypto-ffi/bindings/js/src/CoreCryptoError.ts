@@ -26,7 +26,7 @@ export class CoreCryptoError<T extends ErrorType> extends Error {
         this.context = context;
     }
 
-    static build<E extends ErrorType>(message: any): CoreCryptoError<E> {
+    static build<E extends ErrorType>(message: string): CoreCryptoError<E> {
         try {
             const parsed = JSON.parse(message);
             return new this(parsed.message, parsed.type, parsed.context);
