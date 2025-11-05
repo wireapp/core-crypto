@@ -6,8 +6,7 @@ import XCTest
 // swiftlint:disable file_length
 // swiftlint:disable:next type_body_length
 final class WireCoreCryptoTests: XCTestCase {
-
-    var mockMlsTransport: MockMlsTransport = MockMlsTransport()
+    var mockMlsTransport: MockMlsTransport = .init()
 
     override func setUpWithError() throws {
         mockMlsTransport = MockMlsTransport()
@@ -84,7 +83,8 @@ final class WireCoreCryptoTests: XCTestCase {
             try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite])
             try await $0.addCredential(credential: credential)
             return try await $0.clientPublicKey(
-                ciphersuite: ciphersuite, credentialType: CredentialType.basic)
+                ciphersuite: ciphersuite, credentialType: CredentialType.basic
+            )
         }
 
         let key2 = genDatabaseKey()
@@ -97,7 +97,8 @@ final class WireCoreCryptoTests: XCTestCase {
         let pubkey2 = try await coreCrypto.transaction {
             try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite])
             return try await $0.clientPublicKey(
-                ciphersuite: ciphersuite, credentialType: CredentialType.basic)
+                ciphersuite: ciphersuite, credentialType: CredentialType.basic
+            )
         }
         XCTAssertEqual(pubkey1, pubkey2)
     }
@@ -143,7 +144,8 @@ final class WireCoreCryptoTests: XCTestCase {
         let oldKey = "secret"
         let newKey = genDatabaseKey()
         try await migrateDatabaseKeyTypeToBytes(
-            path: targetPath.lastPathComponent, oldKey: oldKey, newKey: newKey)
+            path: targetPath.lastPathComponent, oldKey: oldKey, newKey: newKey
+        )
 
         let database = try await Database(keystorePath: targetPath.lastPathComponent, key: newKey)
 
@@ -188,7 +190,8 @@ final class WireCoreCryptoTests: XCTestCase {
                 try await coreCrypto.transaction { _ in
                     throw expectedError
                 }
-            })
+            }
+        )
     }
 
     func testTransactionRollsBackOnError() async throws {
@@ -226,7 +229,8 @@ final class WireCoreCryptoTests: XCTestCase {
                     )
                     throw expectedError
                 }
-            })
+            }
+        )
 
         // This would fail with a "Conversation already exists" exception, if the above
         // transaction hadn't been rolled back.
@@ -275,7 +279,8 @@ final class WireCoreCryptoTests: XCTestCase {
 
         XCTAssertEqual(
             String(repeating: token, count: transactionCount), result,
-            "Expected all transactions to complete")
+            "Expected all transactions to complete"
+        )
     }
 
     func testParallelTransactionsArePerformedSeriallyAcrossMultipleCoreCryptoInstances()
@@ -289,9 +294,9 @@ final class WireCoreCryptoTests: XCTestCase {
         let transactionCount = 3
         var coreCryptoInstances: [CoreCrypto] = []
 
-        for _ in (0..<transactionCount) {
-            coreCryptoInstances.append(
-                try await CoreCrypto(
+        for _ in 0..<transactionCount {
+            try coreCryptoInstances.append(
+                await CoreCrypto(
                     database: Database(keystorePath: keystore.path, key: keystoreKey)
                 )
             )
@@ -328,7 +333,8 @@ final class WireCoreCryptoTests: XCTestCase {
 
         XCTAssertEqual(
             String(repeating: token, count: transactionCount), result,
-            "Expected all transactions to complete")
+            "Expected all transactions to complete"
+        )
     }
 
     func testErrorTypeMappingShouldWork() async throws {
@@ -379,6 +385,92 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertNotNil(publicKey)
     }
 
+    func testCanConstructBasicCredential() async throws {
+        let credential = try credentialBasic(
+            ciphersuite: ciphersuiteDefault(), clientId: genClientId()
+        )
+        XCTAssertEqual(try credential.type(), CredentialType.basic)
+        XCTAssertEqual(credential.earliestValidity(), 0)
+    }
+
+    func testCanAddBasicCredential() async throws {
+        let clientId = genClientId()
+        let credential = try credentialBasic(ciphersuite: ciphersuiteDefault(), clientId: clientId)
+
+        let alice = try await createCoreCrypto()
+        let ref = try await alice.transaction {
+            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            return try await $0.addCredential(credential: credential)
+        }
+
+        XCTAssertEqual(try ref.type(), CredentialType.basic)
+        XCTAssertNotEqual(ref.earliestValidity(), 0)
+
+        let allCredentials = try await alice.transaction { ctx in
+            try await ctx.getCredentials()
+        }
+        XCTAssertEqual(allCredentials.count, 1)
+    }
+
+    func testCanRemoveBasicCredential() async throws {
+        let clientId = genClientId()
+        let credential = try credentialBasic(ciphersuite: ciphersuiteDefault(), clientId: clientId)
+
+        let alice = try await createCoreCrypto()
+        let ref = try await alice.transaction {
+            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            return try await $0.addCredential(credential: credential)
+        }
+
+        try await alice.transaction {
+            try await $0.removeCredential(credentialRef: ref)
+        }
+
+        let allCredentials = try await alice.transaction {
+            try await $0.getCredentials()
+        }
+        XCTAssertEqual(allCredentials.count, 0)
+    }
+
+    func testCanSearchCredentialsByCiphersuite() async throws {
+        let clientId = genClientId()
+        let ciphersuite1 = Ciphersuite.mls128Dhkemp256Aes128gcmSha256P256
+        let credential1 = try credentialBasic(ciphersuite: ciphersuite1, clientId: clientId)
+
+        let ciphersuite2 = Ciphersuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
+        let credential2 = try credentialBasic(ciphersuite: ciphersuite2, clientId: clientId)
+
+        let alice = try await createCoreCrypto()
+        try await alice.transaction {
+            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            try await $0.addCredential(credential: credential1)
+            try await $0.addCredential(credential: credential2)
+        }
+
+        let results1 = try await alice.transaction {
+            try await $0.findCredentials(
+                clientId: nil,
+                publicKey: nil,
+                ciphersuite: ciphersuite1,
+                credentialType: nil,
+                earliestValidity: nil
+            )
+        }
+        let results2 = try await alice.transaction {
+            try await $0.findCredentials(
+                clientId: nil,
+                publicKey: nil,
+                ciphersuite: ciphersuite2,
+                credentialType: nil,
+                earliestValidity: nil
+            )
+        }
+
+        XCTAssertEqual(results1.count, 1)
+        XCTAssertEqual(results2.count, 1)
+        XCTAssertNotEqual(results1[0].publicKey(), results2[0].publicKey())
+    }
+
     func testConversationExistsShouldReturnTrue() async throws {
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
@@ -397,7 +489,8 @@ final class WireCoreCryptoTests: XCTestCase {
         let resultAfter = try await alice.transaction {
             try await $0.createConversation(
                 conversationId: conversationId, creatorCredentialType: .basic,
-                config: configuration)
+                config: configuration
+            )
             return try await $0.conversationExists(conversationId: conversationId)
         }
         XCTAssertFalse(resultBefore)
@@ -435,7 +528,8 @@ final class WireCoreCryptoTests: XCTestCase {
         }
         try await bob.transaction {
             _ = try await $0.addClientsToConversation(
-                conversationId: conversationId, keyPackages: [aliceKp])
+                conversationId: conversationId, keyPackages: [aliceKp]
+            )
         }
         let welcome = await mockMlsTransport.lastCommitBundle?.welcome
         _ = try await alice.transaction {
@@ -490,7 +584,8 @@ final class WireCoreCryptoTests: XCTestCase {
         }
         try await bob.transaction {
             _ = try await $0.addClientsToConversation(
-                conversationId: conversationId, keyPackages: [aliceKp])
+                conversationId: conversationId, keyPackages: [aliceKp]
+            )
         }
         let welcome = await mockMlsTransport.lastCommitBundle?.welcome
         _ = try await alice.transaction {
@@ -516,7 +611,8 @@ final class WireCoreCryptoTests: XCTestCase {
         try await bob.transaction { context in
             await self.XCTAssertThrowsErrorAsync(CoreCryptoError.Mls(mlsError: .DuplicateMessage)) {
                 _ = try await context.decryptMessage(
-                    conversationId: conversationId, payload: ciphertext)
+                    conversationId: conversationId, payload: ciphertext
+                )
             }
         }
     }
@@ -633,7 +729,6 @@ final class WireCoreCryptoTests: XCTestCase {
     // MARK: - helpers
 
     final actor MockMlsTransport: MlsTransport {
-
         var lastCommitBundle: CommitBundle?
         var lastMlsMessage: Data?
         var lastHistorySecret: HistorySecret?
@@ -654,7 +749,6 @@ final class WireCoreCryptoTests: XCTestCase {
             lastHistorySecret = historySecret
             return Data("secret".utf8)
         }
-
     }
 
     private func createCoreCrypto() async throws -> CoreCrypto {
@@ -678,11 +772,12 @@ final class WireCoreCryptoTests: XCTestCase {
             try await coreCrypto.transaction({
                 try await $0.mlsInit(
                     clientId: clientId,
-                    ciphersuites: [ciphersuite])
+                    ciphersuites: [ciphersuite]
+                )
                 try await $0.addCredential(
                     credential: credentialBasic(
                         ciphersuite: ciphersuite,
-                        clientId: clientId,
+                        clientId: clientId
                     )
                 )
             }
@@ -698,6 +793,10 @@ final class WireCoreCryptoTests: XCTestCase {
         // constructor only fails if we have other than 32 bytes
         // swiftlint:disable:next force_try
         return try! DatabaseKey(key: Data(bytes))
+    }
+
+    func genClientId() -> ClientId {
+        ClientId(bytes: withUnsafeBytes(of: UUID().uuid) { Data($0) })
     }
 
     // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -766,7 +865,6 @@ final class WireCoreCryptoTests: XCTestCase {
             errorHandler(error)
         }
     }
-
 }
 
 // Extension to convert hex string to Data
