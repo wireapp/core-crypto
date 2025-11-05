@@ -26,9 +26,7 @@ export class CoreCryptoError<T extends ErrorType> extends Error {
         this.context = context;
     }
 
-    static build<E extends ErrorType>(
-        message: any,
-    ): CoreCryptoError<E> {
+    static build<E extends ErrorType>(message: any): CoreCryptoError<E> {
         try {
             const parsed = JSON.parse(message);
             return new this(parsed.message, parsed.type, parsed.context);
@@ -39,7 +37,8 @@ export class CoreCryptoError<T extends ErrorType> extends Error {
     }
 
     static fromStdError(error: unknown): CoreCryptoError<ErrorType> {
-        if (CoreCryptoErrorFfi.instanceOf(error)) { // an FFI Error was passed
+        if (CoreCryptoErrorFfi.instanceOf(error)) {
+            // an FFI Error was passed
             switch (error.tag) {
                 case CoreCryptoError_Tags.E2ei:
                     return new CoreCryptoError(error.message, ErrorType.E2ei, {
@@ -62,16 +61,16 @@ export class CoreCryptoError<T extends ErrorType> extends Error {
                         { error: error.inner.error }
                     );
             }
-        } else { // a standard error was passed, it should contain a serialized CoreCryptoError
+        } else {
+            // a standard error was passed, it should contain a serialized CoreCryptoError
             if (error instanceof Error) {
-               return this.build(error.message);
+                return this.build(error.message);
             }
             throw Error(
                 `Unexpected error instance. Context: constructing CoreCryptoError. Error: ${JSON.stringify(error)}`
             );
         }
     }
-
 
     private static fromMlsError(
         error: MlsErrorFfi

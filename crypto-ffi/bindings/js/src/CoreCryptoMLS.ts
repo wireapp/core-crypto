@@ -35,11 +35,11 @@ export type MlsTransportResponse =
     | "success"
     | "retry"
     | {
-        /**
-         * The message was rejected by the delivery service and there's no recovery.
-         */
-        abort: { reason: string };
-    };
+          /**
+           * The message was rejected by the delivery service and there's no recovery.
+           */
+          abort: { reason: string };
+      };
 
 function mapTransportResponseToFfi(
     response: MlsTransportResponse
@@ -51,7 +51,9 @@ function mapTransportResponseToFfi(
         return MlsTransportResponseFfi.Retry.new();
     }
     if (response?.abort?.reason !== undefined) {
-        return MlsTransportResponseFfi.Abort.new({ reason: response.abort.reason });
+        return MlsTransportResponseFfi.Abort.new({
+            reason: response.abort.reason,
+        });
     }
     throw new Error(
         `Invalid MlsTransportResponse returned from callback: ${response}
