@@ -223,7 +223,7 @@
 <a href=#223 id=223 data-nosnippet>223</a>            )
 <a href=#224 id=224 data-nosnippet>224</a>            .map_err(RecursiveError::mls_credential(<span class="string">"extracting identity"</span>))<span class="question-mark">?</span>;
 <a href=#225 id=225 data-nosnippet>225</a>
-<a href=#226 id=226 data-nosnippet>226</a>        <span class="kw">let </span>sender_client_id: ClientId = credential.credential.identity().into();
+<a href=#226 id=226 data-nosnippet>226</a>        <span class="kw">let </span>sender_client_id: ClientId = credential.credential.identity().to_owned().into();
 <a href=#227 id=227 data-nosnippet>227</a>
 <a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">let </span>decrypted = <span class="kw">match </span>message.into_content() {
 <a href=#229 id=229 data-nosnippet>229</a>            ProcessedMessageContent::ApplicationMessage(app_msg) =&gt; {
@@ -564,7 +564,7 @@
 <a href=#564 id=564 data-nosnippet>564</a>            <span class="kw">let </span>state = Session::compute_conversation_state(
 <a href=#565 id=565 data-nosnippet>565</a>                <span class="self">self</span>.ciphersuite().<span class="kw">await</span>,
 <a href=#566 id=566 data-nosnippet>566</a>                credentials.iter(),
-<a href=#567 id=567 data-nosnippet>567</a>                <span class="kw">crate</span>::MlsCredentialType::X509,
+<a href=#567 id=567 data-nosnippet>567</a>                <span class="kw">crate</span>::CredentialType::X509,
 <a href=#568 id=568 data-nosnippet>568</a>                backend.authentication_service().borrow().<span class="kw">await</span>.as_ref(),
 <a href=#569 id=569 data-nosnippet>569</a>            )
 <a href=#570 id=570 data-nosnippet>570</a>            .<span class="kw">await</span>;

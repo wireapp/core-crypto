@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a>//! it doesn't work on newtypes around external enums. We therefore redefine the ciphersuites enum
 <a href=#5 id=5 data-nosnippet>5</a>//! here with appropriate annotations such that it gets exported to all relevant bindings.
 <a href=#6 id=6 data-nosnippet>6</a>
-<a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">use </span>core_crypto::{CiphersuiteName, MlsCiphersuite};
+<a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">use </span>core_crypto::{Ciphersuite <span class="kw">as </span>CryptoCiphersuite, MlsCiphersuite};
 <a href=#8 id=8 data-nosnippet>8</a><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
 <a href=#9 id=9 data-nosnippet>9</a></span><span class="kw">use </span>wasm_bindgen::prelude::<span class="kw-2">*</span>;
 <a href=#10 id=10 data-nosnippet>10</a>
@@ -42,7 +42,7 @@
 <a href=#42 id=42 data-nosnippet>42</a>    </span>MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = <span class="number">0x0007</span>,
 <a href=#43 id=43 data-nosnippet>43</a>}
 <a href=#44 id=44 data-nosnippet>44</a>
-<a href=#45 id=45 data-nosnippet>45</a><span class="kw">impl </span>From&lt;Ciphersuite&gt; <span class="kw">for </span>CiphersuiteName {
+<a href=#45 id=45 data-nosnippet>45</a><span class="kw">impl </span>From&lt;Ciphersuite&gt; <span class="kw">for </span>MlsCiphersuite {
 <a href=#46 id=46 data-nosnippet>46</a>    <span class="attr">#[inline]
 <a href=#47 id=47 data-nosnippet>47</a>    </span><span class="kw">fn </span>from(value: Ciphersuite) -&gt; <span class="self">Self </span>{
 <a href=#48 id=48 data-nosnippet>48</a>        (value <span class="kw">as </span>u16)
@@ -51,26 +51,26 @@
 <a href=#51 id=51 data-nosnippet>51</a>    }
 <a href=#52 id=52 data-nosnippet>52</a>}
 <a href=#53 id=53 data-nosnippet>53</a>
-<a href=#54 id=54 data-nosnippet>54</a><span class="kw">impl </span>From&lt;CiphersuiteName&gt; <span class="kw">for </span>Ciphersuite {
+<a href=#54 id=54 data-nosnippet>54</a><span class="kw">impl </span>From&lt;MlsCiphersuite&gt; <span class="kw">for </span>Ciphersuite {
 <a href=#55 id=55 data-nosnippet>55</a>    <span class="attr">#[inline]
-<a href=#56 id=56 data-nosnippet>56</a>    </span><span class="kw">fn </span>from(value: CiphersuiteName) -&gt; <span class="self">Self </span>{
+<a href=#56 id=56 data-nosnippet>56</a>    </span><span class="kw">fn </span>from(value: MlsCiphersuite) -&gt; <span class="self">Self </span>{
 <a href=#57 id=57 data-nosnippet>57</a>        (value <span class="kw">as </span>u16)
 <a href=#58 id=58 data-nosnippet>58</a>            .try_into()
 <a href=#59 id=59 data-nosnippet>59</a>            .expect(<span class="string">"mls Ciphersuite is a subset of ffi Ciphersuite"</span>)
 <a href=#60 id=60 data-nosnippet>60</a>    }
 <a href=#61 id=61 data-nosnippet>61</a>}
 <a href=#62 id=62 data-nosnippet>62</a>
-<a href=#63 id=63 data-nosnippet>63</a><span class="kw">impl </span>From&lt;Ciphersuite&gt; <span class="kw">for </span>MlsCiphersuite {
+<a href=#63 id=63 data-nosnippet>63</a><span class="kw">impl </span>From&lt;Ciphersuite&gt; <span class="kw">for </span>CryptoCiphersuite {
 <a href=#64 id=64 data-nosnippet>64</a>    <span class="attr">#[inline]
 <a href=#65 id=65 data-nosnippet>65</a>    </span><span class="kw">fn </span>from(value: Ciphersuite) -&gt; <span class="self">Self </span>{
-<a href=#66 id=66 data-nosnippet>66</a>        CiphersuiteName::from(value).into()
+<a href=#66 id=66 data-nosnippet>66</a>        MlsCiphersuite::from(value).into()
 <a href=#67 id=67 data-nosnippet>67</a>    }
 <a href=#68 id=68 data-nosnippet>68</a>}
 <a href=#69 id=69 data-nosnippet>69</a>
-<a href=#70 id=70 data-nosnippet>70</a><span class="kw">impl </span>From&lt;MlsCiphersuite&gt; <span class="kw">for </span>Ciphersuite {
+<a href=#70 id=70 data-nosnippet>70</a><span class="kw">impl </span>From&lt;CryptoCiphersuite&gt; <span class="kw">for </span>Ciphersuite {
 <a href=#71 id=71 data-nosnippet>71</a>    <span class="attr">#[inline]
-<a href=#72 id=72 data-nosnippet>72</a>    </span><span class="kw">fn </span>from(value: MlsCiphersuite) -&gt; <span class="self">Self </span>{
-<a href=#73 id=73 data-nosnippet>73</a>        CiphersuiteName::from(value).into()
+<a href=#72 id=72 data-nosnippet>72</a>    </span><span class="kw">fn </span>from(value: CryptoCiphersuite) -&gt; <span class="self">Self </span>{
+<a href=#73 id=73 data-nosnippet>73</a>        MlsCiphersuite::from(value).into()
 <a href=#74 id=74 data-nosnippet>74</a>    }
 <a href=#75 id=75 data-nosnippet>75</a>}
 <a href=#76 id=76 data-nosnippet>76</a>

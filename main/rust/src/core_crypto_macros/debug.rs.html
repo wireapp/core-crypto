@@ -49,7 +49,7 @@
 <a href=#49 id=49 data-nosnippet>49</a>    type_string.retain(|c| !c.is_whitespace());
 <a href=#50 id=50 data-nosnippet>50</a>    <span class="kw">match </span>type_string.as_str() {
 <a href=#51 id=51 data-nosnippet>51</a>        <span class="string">"Option&lt;Vec&lt;u8&gt;&gt;" </span>=&gt; BytesType::OptionalBytes,
-<a href=#52 id=52 data-nosnippet>52</a>        <span class="string">"Vec&lt;u8&gt;" </span>=&gt; BytesType::Bytes,
+<a href=#52 id=52 data-nosnippet>52</a>        <span class="string">"Vec&lt;u8&gt;" </span>| <span class="string">"[u8]" </span>=&gt; BytesType::Bytes,
 <a href=#53 id=53 data-nosnippet>53</a>        <span class="kw">_ </span>=&gt; BytesType::Other,
 <a href=#54 id=54 data-nosnippet>54</a>    }
 <a href=#55 id=55 data-nosnippet>55</a>}

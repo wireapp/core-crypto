@@ -6,7 +6,7 @@
     team: <a class="enum" href="https://doc.rust-lang.org/1.91.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.91.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;,
     expiry_sec: <a class="primitive" href="https://doc.rust-lang.org/1.91.0/std/primitive.u32.html">u32</a>,
     backend: &amp;<a class="struct" href="../struct.MlsCryptoProvider.html" title="struct core_crypto::MlsCryptoProvider">MlsCryptoProvider</a>,
-    ciphersuite: <a class="struct" href="../struct.MlsCiphersuite.html" title="struct core_crypto::MlsCiphersuite">MlsCiphersuite</a>,
+    ciphersuite: <a class="struct" href="../struct.Ciphersuite.html" title="struct core_crypto::Ciphersuite">Ciphersuite</a>,
     sign_keypair: <a class="enum" href="https://doc.rust-lang.org/1.91.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;E2eiSignatureKeypair&gt;,
     has_called_new_oidc_challenge_request: <a class="primitive" href="https://doc.rust-lang.org/1.91.0/std/primitive.bool.html">bool</a>,
 ) -&gt; <a class="type" href="type.Result.html" title="type core_crypto::e2e_identity::Result">Result</a>&lt;Self&gt;</h4></section></summary><div class="docblock"><p>Builds an instance holding private key material. This instance has to be used in the whole
@@ -123,10 +123,7 @@ See endpoint <a href="https://staging-nginz-https.zinfra.io/api/swagger-ui/#/def
 <li><code>account</code> - you got from <a href="struct.E2eiEnrollment.html#method.new_account_response" title="method core_crypto::e2e_identity::E2eiEnrollment::new_account_response">Self::new_account_response</a></li>
 <li><code>previous_nonce</code> - <code>replay-nonce</code> response header from <code>POST /acme/{provisioner-name}/authz/{authz-id}</code></li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.new_oidc_challenge_response" class="method"><a class="src rightside" href="../../src/core_crypto/e2e_identity/enrollment/mod.rs.html#320-331">Source</a><h4 class="code-header">pub async fn <a href="#method.new_oidc_challenge_response" class="fn">new_oidc_challenge_response</a>(
-    &amp;mut self,
-    challenge: <a class="struct" href="https://doc.rust-lang.org/1.91.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.91.0/std/primitive.u8.html">u8</a>&gt;,
-) -&gt; <a class="type" href="type.Result.html" title="type core_crypto::e2e_identity::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.91.0/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/challenge/{challenge-id}</code> for the OIDC challenge</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.new_oidc_challenge_response" class="method"><a class="src rightside" href="../../src/core_crypto/e2e_identity/enrollment/mod.rs.html#320-331">Source</a><h4 class="code-header">pub fn <a href="#method.new_oidc_challenge_response" class="fn">new_oidc_challenge_response</a>(&amp;mut self, challenge: <a class="struct" href="https://doc.rust-lang.org/1.91.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.91.0/std/primitive.u8.html">u8</a>&gt;) -&gt; <a class="type" href="type.Result.html" title="type core_crypto::e2e_identity::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.91.0/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/challenge/{challenge-id}</code> for the OIDC challenge</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1">RFC 8555 Section 7.5.1</a>.</p>
 <h5 id="parameters-12"><a class="doc-anchor" href="#parameters-12">§</a>Parameters</h5>
 <ul>

@@ -108,7 +108,7 @@
   <div class="breadcrumbs"><a href="../../../index.html">CoreCrypto</a><span class="delimiter">/</span><a href="../index.html">com.wire.crypto</a><span class="delimiter">/</span><span class="current">CoreCryptoContext</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Core</span><wbr></wbr><span>Crypto</span><wbr></wbr><span><span>Context</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="index.html">CoreCryptoContext</a> : <a href="../-disposable/index.html">Disposable</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/AutoCloseable.html">AutoCloseable</a>, <a href="../-core-crypto-context-interface/index.html">CoreCryptoContextInterface</a><span class="clearfix"><span class="floating-right">(<a href="https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt#L3957">source</a>)</span></span></div><p class="paragraph">The <code class="lang-kotlin">CoreCryptoContext</code> holds the primary <code class="lang-kotlin">CoreCrypto</code> APIs.</p><p class="paragraph">An instance of this struct is provided to the function handed to <code class="lang-kotlin">CoreCrypto::transaction</code>.</p><p class="paragraph">Every mutable operation is done through this struct. This struct will buffer all operations in memory and when TransactionContext::finish is called, it will persist the data into the keystore.</p></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="index.html">CoreCryptoContext</a> : <a href="../-disposable/index.html">Disposable</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/AutoCloseable.html">AutoCloseable</a>, <a href="../-core-crypto-context-interface/index.html">CoreCryptoContextInterface</a><span class="clearfix"><span class="floating-right">(<a href="https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt#L4077">source</a>)</span></span></div><p class="paragraph">The <code class="lang-kotlin">CoreCryptoContext</code> holds the primary <code class="lang-kotlin">CoreCrypto</code> APIs.</p><p class="paragraph">An instance of this struct is provided to the function handed to <code class="lang-kotlin">CoreCrypto::transaction</code>.</p><p class="paragraph">Every mutable operation is done through this struct. This struct will buffer all operations in memory and when TransactionContext::finish is called, it will persist the data into the keystore.</p></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
@@ -126,6 +126,21 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="add-clients-to-conversation.html"><span class="token function">addClientsToConversation</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">keyPackages<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-key-package/index.html">KeyPackage</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">&gt;</span><span class="token operator">?</span></div><div class="brief "><p class="paragraph">See core_crypto::mls::conversation::ConversationGuard::add_members</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="113035023%2FFunctions%2F1144021071" anchor-label="addCredential" id="113035023%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="add-credential.html"><span>add</span><wbr></wbr><span><span>Credential</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="113035023%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="add-credential.html"><span class="token function">addCredential</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">credential<span class="token operator">: </span><a href="../-credential/index.html">Credential</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-credential-ref/index.html">CredentialRef</a></div><div class="brief "><p class="paragraph">Add a crate::Credential to this client.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -565,6 +580,21 @@
               </div>
             </div>
           </div>
+<a data-name="-1021370092%2FFunctions%2F1144021071" anchor-label="findCredentials" id="-1021370092%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="find-credentials.html"><span>find</span><wbr></wbr><span><span>Credentials</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1021370092%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="find-credentials.html"><span class="token function">findCredentials</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">clientId<span class="token operator">: </span><a href="../-client-id/index.html">ClientId</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">publicKey<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">ciphersuite<span class="token operator">: </span><a href="../-ciphersuite/index.html">Ciphersuite</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">credentialType<span class="token operator">: </span><a href="../-credential-type/index.html">CredentialType</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">earliestValidity<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-u-long/index.html">ULong</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-credential-ref/index.html">CredentialRef</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Get all credentials from this client which match the provided parameters.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
 <a data-name="-697772827%2FFunctions%2F1144021071" anchor-label="getClientIds" id="-697772827%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
           <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
@@ -576,6 +606,21 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-client-ids.html"><span class="token function">getClientIds</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-conversation-id/index.html">ConversationId</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-client-id/index.html">ClientId</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">See core_crypto::mls::conversation::Conversation::get_client_ids</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="329082021%2FFunctions%2F1144021071" anchor-label="getCredentials" id="329082021%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-credentials.html"><span>get</span><wbr></wbr><span><span>Credentials</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="329082021%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-credentials.html"><span class="token function">getCredentials</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-credential-ref/index.html">CredentialRef</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Get all credentials from this client.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -1011,6 +1056,21 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="remove-clients-from-conversation.html"><span class="token function">removeClientsFromConversation</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">clients<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-client-id/index.html">ClientId</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">See core_crypto::mls::conversation::ConversationGuard::remove_members</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-90650169%2FFunctions%2F1144021071" anchor-label="removeCredential" id="-90650169%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="remove-credential.html"><span>remove</span><wbr></wbr><span><span>Credential</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-90650169%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="remove-credential.html"><span class="token function">removeCredential</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">credentialRef<span class="token operator">: </span><a href="../-credential-ref/index.html">CredentialRef</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Remove a crate::Credential from this client.</p></div></div></div>
                 </div>
               </div>
             </div>

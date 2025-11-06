@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["MAX_BLOB_LEN"],"enum":["ConnectionType"],"mod":["platform"],"struct":["Database","DatabaseKey"],"trait":["DatabaseConnection","DatabaseConnectionRequirements","FetchFromDatabase"]};
+window.SIDEBAR_ITEMS = {"constant":["MAX_BLOB_LEN"],"enum":["ConnectionType"],"mod":["platform"],"struct":["ConnectionGuard","Database","DatabaseKey"],"trait":["DatabaseConnection","DatabaseConnectionRequirements","FetchFromDatabase"]};

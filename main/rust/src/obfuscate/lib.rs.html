@@ -38,8 +38,8 @@
 <a href=#38 id=38 data-nosnippet>38</a>/// This wrapper lets us log a partial hash of the sensitive item, so we have deterministic loggable non-sensitive
 <a href=#39 id=39 data-nosnippet>39</a>/// aliases for all our sensitive values.
 <a href=#40 id=40 data-nosnippet>40</a></span><span class="attr">#[derive(From)]
-<a href=#41 id=41 data-nosnippet>41</a></span><span class="kw">pub struct </span>Obfuscated&lt;<span class="lifetime">'a</span>, T: Obfuscate&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>T);
-<a href=#42 id=42 data-nosnippet>42</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: Obfuscate&gt; core::fmt::Debug <span class="kw">for </span>Obfuscated&lt;<span class="lifetime">'a</span>, T&gt; {
+<a href=#41 id=41 data-nosnippet>41</a></span><span class="kw">pub struct </span>Obfuscated&lt;<span class="lifetime">'a</span>, T: Obfuscate + <span class="question-mark">?</span>Sized&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>T);
+<a href=#42 id=42 data-nosnippet>42</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: Obfuscate + <span class="question-mark">?</span>Sized&gt; core::fmt::Debug <span class="kw">for </span>Obfuscated&lt;<span class="lifetime">'a</span>, T&gt; {
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
 <a href=#44 id=44 data-nosnippet>44</a>        <span class="self">self</span>.<span class="number">0</span>.obfuscate(f)
 <a href=#45 id=45 data-nosnippet>45</a>    }

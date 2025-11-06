@@ -9,7 +9,7 @@
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">mod </span>proteus;
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">mod </span>randomness;
 <a href=#11 id=11 data-nosnippet>11</a>
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>core_crypto::{Session, SessionConfig, ValidatedSessionConfig};
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>core_crypto::Session;
 <a href=#13 id=13 data-nosnippet>13</a><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
 <a href=#14 id=14 data-nosnippet>14</a></span><span class="kw">use </span>wasm_bindgen::prelude::<span class="kw-2">*</span>;
 <a href=#15 id=15 data-nosnippet>15</a>
@@ -56,42 +56,37 @@
 <a href=#56 id=56 data-nosnippet>56</a>/// [core_crypto::transaction_context::TransactionContext::proteus_init], respectively.
 <a href=#57 id=57 data-nosnippet>57</a></span><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
 <a href=#58 id=58 data-nosnippet>58</a>#[uniffi::export]
-<a href=#59 id=59 data-nosnippet>59</a></span><span class="kw">pub async fn </span>core_crypto_new(database: DatabaseMaybeArc) -&gt; CoreCryptoResult&lt;CoreCryptoFfi&gt; {
+<a href=#59 id=59 data-nosnippet>59</a></span><span class="kw">pub async fn </span>core_crypto_new(database: <span class="kw-2">&amp;</span>DatabaseMaybeArc) -&gt; CoreCryptoResult&lt;CoreCryptoFfi&gt; {
 <a href=#60 id=60 data-nosnippet>60</a>    CoreCryptoFfi::new(database).<span class="kw">await
 <a href=#61 id=61 data-nosnippet>61</a></span>}
 <a href=#62 id=62 data-nosnippet>62</a>
 <a href=#63 id=63 data-nosnippet>63</a><span class="kw">impl </span>CoreCryptoFfi {
 <a href=#64 id=64 data-nosnippet>64</a>    <span class="doccomment">/// Instantiate CC
-<a href=#65 id=65 data-nosnippet>65</a>    </span><span class="kw">pub async fn </span>new(database: DatabaseMaybeArc) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
-<a href=#66 id=66 data-nosnippet>66</a>        <span class="kw">let </span>configuration = SessionConfig::builder().database(database.to_cc()).build().validate()<span class="question-mark">?</span>;
-<a href=#67 id=67 data-nosnippet>67</a>        CoreCryptoFfi::from_config(configuration).<span class="kw">await
-<a href=#68 id=68 data-nosnippet>68</a>    </span>}
-<a href=#69 id=69 data-nosnippet>69</a>
-<a href=#70 id=70 data-nosnippet>70</a>    <span class="kw">async fn </span>from_config(configuration: ValidatedSessionConfig) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
-<a href=#71 id=71 data-nosnippet>71</a>        <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
-<a href=#72 id=72 data-nosnippet>72</a>        </span>console_error_panic_hook::set_once();
-<a href=#73 id=73 data-nosnippet>73</a>
-<a href=#74 id=74 data-nosnippet>74</a>        <span class="kw">let </span>client = Session::try_new(configuration).<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#75 id=75 data-nosnippet>75</a>        <span class="kw">let </span>inner = core_crypto::CoreCrypto::from(client);
-<a href=#76 id=76 data-nosnippet>76</a>
-<a href=#77 id=77 data-nosnippet>77</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ inner })
-<a href=#78 id=78 data-nosnippet>78</a>    }
-<a href=#79 id=79 data-nosnippet>79</a>}
-<a href=#80 id=80 data-nosnippet>80</a>
-<a href=#81 id=81 data-nosnippet>81</a><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
-<a href=#82 id=82 data-nosnippet>82</a>#[wasm_bindgen]
-<a href=#83 id=83 data-nosnippet>83</a></span><span class="kw">impl </span>CoreCryptoFfi {
-<a href=#84 id=84 data-nosnippet>84</a>    <span class="doccomment">/// Asynchronously instantiate CC.
-<a href=#85 id=85 data-nosnippet>85</a>    ///
-<a href=#86 id=86 data-nosnippet>86</a>    /// MLS or proteus can be initialized  with [core_crypto::transaction_context::TransactionContext::mls_init] or
-<a href=#87 id=87 data-nosnippet>87</a>    /// [core_crypto::transaction_context::TransactionContext::proteus_init], respectively.
-<a href=#88 id=88 data-nosnippet>88</a>    </span><span class="kw">pub async fn </span>async_new(database: DatabaseMaybeArc) -&gt; CoreCryptoResult&lt;CoreCryptoFfi&gt; {
-<a href=#89 id=89 data-nosnippet>89</a>        CoreCryptoFfi::new(database).<span class="kw">await
-<a href=#90 id=90 data-nosnippet>90</a>    </span>}
-<a href=#91 id=91 data-nosnippet>91</a>
-<a href=#92 id=92 data-nosnippet>92</a>    <span class="doccomment">/// See [Session::close]
-<a href=#93 id=93 data-nosnippet>93</a>    </span><span class="comment">// Note that this is implemented only for Wasm; Uniffi already generates a `close` method which suffices.
-<a href=#94 id=94 data-nosnippet>94</a>    </span><span class="kw">pub async fn </span>close(<span class="self">self</span>) -&gt; CoreCryptoResult&lt;()&gt; {
-<a href=#95 id=95 data-nosnippet>95</a>        <span class="self">self</span>.inner.take().close().<span class="kw">await</span>.map_err(Into::into)
-<a href=#96 id=96 data-nosnippet>96</a>    }
-<a href=#97 id=97 data-nosnippet>97</a>}</code></pre></div></section></main></body></html>
+<a href=#65 id=65 data-nosnippet>65</a>    </span><span class="kw">pub async fn </span>new(database: <span class="kw-2">&amp;</span>DatabaseMaybeArc) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
+<a href=#66 id=66 data-nosnippet>66</a>        <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
+<a href=#67 id=67 data-nosnippet>67</a>        </span>console_error_panic_hook::set_once();
+<a href=#68 id=68 data-nosnippet>68</a>
+<a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">let </span>client = Session::try_new(database.as_cc()).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#70 id=70 data-nosnippet>70</a>        <span class="kw">let </span>inner = core_crypto::CoreCrypto::from(client);
+<a href=#71 id=71 data-nosnippet>71</a>
+<a href=#72 id=72 data-nosnippet>72</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ inner })
+<a href=#73 id=73 data-nosnippet>73</a>    }
+<a href=#74 id=74 data-nosnippet>74</a>}
+<a href=#75 id=75 data-nosnippet>75</a>
+<a href=#76 id=76 data-nosnippet>76</a><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
+<a href=#77 id=77 data-nosnippet>77</a>#[wasm_bindgen]
+<a href=#78 id=78 data-nosnippet>78</a></span><span class="kw">impl </span>CoreCryptoFfi {
+<a href=#79 id=79 data-nosnippet>79</a>    <span class="doccomment">/// Asynchronously instantiate CC.
+<a href=#80 id=80 data-nosnippet>80</a>    ///
+<a href=#81 id=81 data-nosnippet>81</a>    /// MLS or proteus can be initialized  with [core_crypto::transaction_context::TransactionContext::mls_init] or
+<a href=#82 id=82 data-nosnippet>82</a>    /// [core_crypto::transaction_context::TransactionContext::proteus_init], respectively.
+<a href=#83 id=83 data-nosnippet>83</a>    </span><span class="kw">pub async fn </span>async_new(database: <span class="kw-2">&amp;</span>DatabaseMaybeArc) -&gt; CoreCryptoResult&lt;CoreCryptoFfi&gt; {
+<a href=#84 id=84 data-nosnippet>84</a>        CoreCryptoFfi::new(database).<span class="kw">await
+<a href=#85 id=85 data-nosnippet>85</a>    </span>}
+<a href=#86 id=86 data-nosnippet>86</a>
+<a href=#87 id=87 data-nosnippet>87</a>    <span class="doccomment">/// See [Session::close]
+<a href=#88 id=88 data-nosnippet>88</a>    </span><span class="comment">// Note that this is implemented only for Wasm; Uniffi already generates a `close` method which suffices.
+<a href=#89 id=89 data-nosnippet>89</a>    </span><span class="kw">pub async fn </span>close(<span class="self">self</span>) -&gt; CoreCryptoResult&lt;()&gt; {
+<a href=#90 id=90 data-nosnippet>90</a>        <span class="self">self</span>.inner.take().close().<span class="kw">await</span>.map_err(Into::into)
+<a href=#91 id=91 data-nosnippet>91</a>    }
+<a href=#92 id=92 data-nosnippet>92</a>}</code></pre></div></section></main></body></html>

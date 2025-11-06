@@ -17,7 +17,7 @@
     <a title="Classes  Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="index.html">WireCoreCrypto Docs</a> (89% documented)</p>
         <div class="header-right">
           <form role="search" action="search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -58,6 +58,12 @@
               </li>
               <li class="nav-group-task">
                 <a href="WireCoreCryptoUniffi/Classes/CoreCryptoLoggerImpl.html">CoreCryptoLoggerImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Classes/Credential.html">Credential</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a>
               </li>
               <li class="nav-group-task">
                 <a href="WireCoreCrypto/Classes/Database.html">Database</a>
@@ -166,6 +172,9 @@
                 <a href="Functions.html#/s:20WireCoreCryptoUniffi04coreC3New8databaseAA0bC3FfiCAA8DatabaseC_tYaKF">coreCryptoNew(database:)</a>
               </li>
               <li class="nav-group-task">
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi15credentialBasic11ciphersuite8clientIdAA10CredentialCAA11CiphersuiteO_AA06ClientI0CtKF">credentialBasic(ciphersuite:clientId:)</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="Functions.html#/s:20WireCoreCryptoUniffi16inMemoryDatabase3keyAA0G0CAA0G3KeyC_tYaKF">inMemoryDatabase(key:)</a>
               </li>
               <li class="nav-group-task">
@@ -217,6 +226,12 @@
               </li>
               <li class="nav-group-task">
                 <a href="WireCoreCrypto/Protocols/CoreCryptoProtocol.html">CoreCryptoProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Protocols/CredentialProtocol.html">CredentialProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Protocols/CredentialRefProtocol.html">CredentialRefProtocol</a>
               </li>
               <li class="nav-group-task">
                 <a href="Protocols.html#/s:20WireCoreCryptoUniffi19DatabaseKeyProtocolP">DatabaseKeyProtocol</a>
@@ -379,6 +394,39 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">CoreCrypto</span> <span class="p">:</span> <span class="kt"><a href="WireCoreCrypto/Protocols/CoreCryptoProtocol.html">CoreCryptoProtocol</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi10CredentialC"></a>
+                    <a name="//apple_ref/swift/Class/Credential" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi10CredentialC">Credential</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A cryptographic credential.</p>
+
+<p>This is tied to a particular client via either its client id or certificate bundle,
+ depending on its credential type, but is independent of any client instance or storage.</p>
+
+<p>To attach to a particular client instance and store, see [<code>CoreCryptoContext::add_credential</code>][crate::CoreCryptoContext::add_credential].</p>
+
+                        <a href="WireCoreCryptoUniffi/Classes/Credential.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">Credential</span> <span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Protocols/CredentialProtocol.html">CredentialProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
 
                         </div>
                       </div>
@@ -562,6 +610,44 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">CoreCryptoLoggerImpl</span> <span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Protocols/CoreCryptoLogger.html">CoreCryptoLogger</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi13CredentialRefC"></a>
+                    <a name="//apple_ref/swift/Class/CredentialRef" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi13CredentialRefC">CredentialRef</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A reference to a credential which has been persisted in CC.</p>
+
+<p>This is because credentials can be quite large; we&rsquo;d really like to avoid passing them
+ back and forth across the FFI boundary more than is strictly required.
+ Therefore, we use this type which is substantially more compact.</p>
+
+<p>Created with [<code>CoreCryptoContext::add_credential</code>][crate::CoreCryptoContext::add_credential].</p>
+
+<p>This reference is <em>not</em> a literal reference in memory.
+ It is instead the key from which a credential can be retrieved.
+ This means that it is stable over time and across the FFI boundary.</p>
+
+                        <a href="WireCoreCryptoUniffi/Classes/CredentialRef.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">CredentialRef</span> <span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Protocols/CredentialRefProtocol.html">CredentialRefProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
 
                         </div>
                       </div>

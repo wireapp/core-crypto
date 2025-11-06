@@ -3,10 +3,10 @@
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span>openmls::prelude::{KeyPackage, KeyPackageRef};
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use super</span>::{<span class="prelude-ty">Result</span>, TransactionContext};
-<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use crate</span>::{MlsCiphersuite, MlsCredentialType, RecursiveError};
+<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use crate</span>::{Ciphersuite, CredentialType, RecursiveError};
 <a href=#7 id=7 data-nosnippet>7</a>
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">impl </span>TransactionContext {
-<a href=#9 id=9 data-nosnippet>9</a>    <span class="doccomment">/// Returns `amount_requested` OpenMLS [openmls::key_packages::KeyPackage]s.
+<a href=#9 id=9 data-nosnippet>9</a>    <span class="doccomment">/// Returns `amount_requested` OpenMLS [KeyPackage]s.
 <a href=#10 id=10 data-nosnippet>10</a>    /// Will always return the requested amount as it will generate the necessary (lacking) amount on-the-fly
 <a href=#11 id=11 data-nosnippet>11</a>    ///
 <a href=#12 id=12 data-nosnippet>12</a>    /// Note: Keypackage pruning is performed as a first step
@@ -21,8 +21,8 @@
 <a href=#21 id=21 data-nosnippet>21</a>    /// Errors can happen when accessing the KeyStore
 <a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">pub async fn </span>get_or_create_client_keypackages(
 <a href=#23 id=23 data-nosnippet>23</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#24 id=24 data-nosnippet>24</a>        ciphersuite: MlsCiphersuite,
-<a href=#25 id=25 data-nosnippet>25</a>        credential_type: MlsCredentialType,
+<a href=#24 id=24 data-nosnippet>24</a>        ciphersuite: Ciphersuite,
+<a href=#25 id=25 data-nosnippet>25</a>        credential_type: CredentialType,
 <a href=#26 id=26 data-nosnippet>26</a>        amount_requested: usize,
 <a href=#27 id=27 data-nosnippet>27</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;KeyPackage&gt;&gt; {
 <a href=#28 id=28 data-nosnippet>28</a>        <span class="kw">let </span>session = <span class="self">self</span>.session().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -38,11 +38,11 @@
 <a href=#38 id=38 data-nosnippet>38</a>            .map_err(Into::into)
 <a href=#39 id=39 data-nosnippet>39</a>    }
 <a href=#40 id=40 data-nosnippet>40</a>
-<a href=#41 id=41 data-nosnippet>41</a>    <span class="doccomment">/// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [MlsCiphersuite] and [MlsCredentialType]
+<a href=#41 id=41 data-nosnippet>41</a>    <span class="doccomment">/// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [Ciphersuite] and [CredentialType]
 <a href=#42 id=42 data-nosnippet>42</a>    </span><span class="kw">pub async fn </span>client_valid_key_packages_count(
 <a href=#43 id=43 data-nosnippet>43</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#44 id=44 data-nosnippet>44</a>        ciphersuite: MlsCiphersuite,
-<a href=#45 id=45 data-nosnippet>45</a>        credential_type: MlsCredentialType,
+<a href=#44 id=44 data-nosnippet>44</a>        ciphersuite: Ciphersuite,
+<a href=#45 id=45 data-nosnippet>45</a>        credential_type: CredentialType,
 <a href=#46 id=46 data-nosnippet>46</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
 <a href=#47 id=47 data-nosnippet>47</a>        <span class="kw">let </span>session = <span class="self">self</span>.session().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#48 id=48 data-nosnippet>48</a>        session

@@ -158,13 +158,16 @@
 <a href=#158 id=158 data-nosnippet>158</a>                <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>;
 <a href=#159 id=159 data-nosnippet>159</a>                <span class="kw">let </span>id = conversation.id().clone();
 <a href=#160 id=160 data-nosnippet>160</a>
-<a href=#161 id=161 data-nosnippet>161</a>                <span class="kw">let </span>remove_proposal = alice.transaction.new_remove_proposal(<span class="kw-2">&amp;</span>id, <span class="string">b"unknown"</span>[..].into()).<span class="kw">await</span>;
-<a href=#162 id=162 data-nosnippet>162</a>                <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-<a href=#163 id=163 data-nosnippet>163</a>                    remove_proposal.unwrap_err(),
-<a href=#164 id=164 data-nosnippet>164</a>                    Error::ClientNotFound(client_id) <span class="kw">if </span>client_id == <span class="string">b"unknown"</span>[..].into()
-<a href=#165 id=165 data-nosnippet>165</a>                ));
-<a href=#166 id=166 data-nosnippet>166</a>            })
-<a href=#167 id=167 data-nosnippet>167</a>            .<span class="kw">await
-<a href=#168 id=168 data-nosnippet>168</a>        </span>}
-<a href=#169 id=169 data-nosnippet>169</a>    }
-<a href=#170 id=170 data-nosnippet>170</a>}</code></pre></div></section></main></body></html>
+<a href=#161 id=161 data-nosnippet>161</a>                <span class="kw">let </span>remove_proposal = alice
+<a href=#162 id=162 data-nosnippet>162</a>                    .transaction
+<a href=#163 id=163 data-nosnippet>163</a>                    .new_remove_proposal(<span class="kw-2">&amp;</span>id, <span class="string">b"unknown"</span>.as_slice().to_owned().into())
+<a href=#164 id=164 data-nosnippet>164</a>                    .<span class="kw">await</span>;
+<a href=#165 id=165 data-nosnippet>165</a>                <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+<a href=#166 id=166 data-nosnippet>166</a>                    remove_proposal.unwrap_err(),
+<a href=#167 id=167 data-nosnippet>167</a>                    Error::ClientNotFound(client_id) <span class="kw">if </span>client_id == <span class="string">b"unknown"</span>.as_slice()
+<a href=#168 id=168 data-nosnippet>168</a>                ));
+<a href=#169 id=169 data-nosnippet>169</a>            })
+<a href=#170 id=170 data-nosnippet>170</a>            .<span class="kw">await
+<a href=#171 id=171 data-nosnippet>171</a>        </span>}
+<a href=#172 id=172 data-nosnippet>172</a>    }
+<a href=#173 id=173 data-nosnippet>173</a>}</code></pre></div></section></main></body></html>

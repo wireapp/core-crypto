@@ -38,8 +38,8 @@
 <a href=#38 id=38 data-nosnippet>38</a>            .get_device_identities(<span class="kw-2">&amp;</span>device_ids)
 <a href=#39 id=39 data-nosnippet>39</a>            .<span class="kw">await</span><span class="question-mark">?
 <a href=#40 id=40 data-nosnippet>40</a>            </span>.into_iter()
-<a href=#41 id=41 data-nosnippet>41</a>            .map(WireIdentity::from)
-<a href=#42 id=42 data-nosnippet>42</a>            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+<a href=#41 id=41 data-nosnippet>41</a>            .map(WireIdentity::try_from)
+<a href=#42 id=42 data-nosnippet>42</a>            .collect::&lt;CoreCryptoResult&lt;Vec&lt;WireIdentity&gt;&gt;&gt;()<span class="question-mark">?</span>;
 <a href=#43 id=43 data-nosnippet>43</a>        <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
 <a href=#44 id=44 data-nosnippet>44</a>        </span><span class="kw">let </span>wire_identities =
 <a href=#45 id=45 data-nosnippet>45</a>            serde_wasm_bindgen::to_value(<span class="kw-2">&amp;</span>wire_identities).expect(<span class="string">"device identities can always be serialized"</span>);
@@ -64,10 +64,16 @@
 <a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">let </span>identities = conversation.get_user_identities(user_ids.as_slice()).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">let </span>identities = identities
 <a href=#66 id=66 data-nosnippet>66</a>            .into_iter()
-<a href=#67 id=67 data-nosnippet>67</a>            .map(|(k, v)| (k, v.into_iter().map(WireIdentity::from).collect()))
-<a href=#68 id=68 data-nosnippet>68</a>            .collect::&lt;HashMap&lt;<span class="kw">_</span>, Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;();
-<a href=#69 id=69 data-nosnippet>69</a>        <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
-<a href=#70 id=70 data-nosnippet>70</a>        </span><span class="kw">let </span>identities = serde_wasm_bindgen::to_value(<span class="kw-2">&amp;</span>identities).expect(<span class="string">"user identities can always be serialized"</span>);
-<a href=#71 id=71 data-nosnippet>71</a>        <span class="prelude-val">Ok</span>(identities)
-<a href=#72 id=72 data-nosnippet>72</a>    }
-<a href=#73 id=73 data-nosnippet>73</a>}</code></pre></div></section></main></body></html>
+<a href=#67 id=67 data-nosnippet>67</a>            .map(|(k, v)| -&gt; CoreCryptoResult&lt;<span class="kw">_</span>&gt; {
+<a href=#68 id=68 data-nosnippet>68</a>                <span class="kw">let </span>identities = v
+<a href=#69 id=69 data-nosnippet>69</a>                    .into_iter()
+<a href=#70 id=70 data-nosnippet>70</a>                    .map(WireIdentity::try_from)
+<a href=#71 id=71 data-nosnippet>71</a>                    .collect::&lt;CoreCryptoResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+<a href=#72 id=72 data-nosnippet>72</a>                <span class="prelude-val">Ok</span>((k, identities))
+<a href=#73 id=73 data-nosnippet>73</a>            })
+<a href=#74 id=74 data-nosnippet>74</a>            .collect::&lt;CoreCryptoResult&lt;HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+<a href=#75 id=75 data-nosnippet>75</a>        <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
+<a href=#76 id=76 data-nosnippet>76</a>        </span><span class="kw">let </span>identities = serde_wasm_bindgen::to_value(<span class="kw-2">&amp;</span>identities).expect(<span class="string">"user identities can always be serialized"</span>);
+<a href=#77 id=77 data-nosnippet>77</a>        <span class="prelude-val">Ok</span>(identities)
+<a href=#78 id=78 data-nosnippet>78</a>    }
+<a href=#79 id=79 data-nosnippet>79</a>}</code></pre></div></section></main></body></html>

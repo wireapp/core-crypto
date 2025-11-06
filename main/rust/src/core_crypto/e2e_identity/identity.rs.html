@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use crate</span>::{
-<a href=#7 id=7 data-nosnippet>7</a>    MlsCredentialType,
+<a href=#7 id=7 data-nosnippet>7</a>    CredentialType,
 <a href=#8 id=8 data-nosnippet>8</a>    e2e_identity::{device_status::DeviceStatus, id::WireQualifiedClientId},
 <a href=#9 id=9 data-nosnippet>9</a>};
 <a href=#10 id=10 data-nosnippet>10</a>
@@ -19,8 +19,8 @@
 <a href=#19 id=19 data-nosnippet>19</a>    <span class="doccomment">/// Status of the Credential at the moment T when this object is created
 <a href=#20 id=20 data-nosnippet>20</a>    </span><span class="kw">pub </span>status: DeviceStatus,
 <a href=#21 id=21 data-nosnippet>21</a>    <span class="doccomment">/// Indicates whether the credential is Basic or X509
-<a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">pub </span>credential_type: MlsCredentialType,
-<a href=#23 id=23 data-nosnippet>23</a>    <span class="doccomment">/// In case 'credential_type' is [MlsCredentialType::X509] this is populated
+<a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">pub </span>credential_type: CredentialType,
+<a href=#23 id=23 data-nosnippet>23</a>    <span class="doccomment">/// In case 'credential_type' is [CredentialType::X509] this is populated
 <a href=#24 id=24 data-nosnippet>24</a>    </span><span class="kw">pub </span>x509_identity: <span class="prelude-ty">Option</span>&lt;X509Identity&gt;,
 <a href=#25 id=25 data-nosnippet>25</a>}
 <a href=#26 id=26 data-nosnippet>26</a>
@@ -60,7 +60,7 @@
 <a href=#60 id=60 data-nosnippet>60</a>            client_id: client_id.try_into()<span class="question-mark">?</span>,
 <a href=#61 id=61 data-nosnippet>61</a>            status: i.status.into(),
 <a href=#62 id=62 data-nosnippet>62</a>            thumbprint: i.thumbprint,
-<a href=#63 id=63 data-nosnippet>63</a>            credential_type: MlsCredentialType::X509,
+<a href=#63 id=63 data-nosnippet>63</a>            credential_type: CredentialType::X509,
 <a href=#64 id=64 data-nosnippet>64</a>            x509_identity: <span class="prelude-val">Some</span>(X509Identity {
 <a href=#65 id=65 data-nosnippet>65</a>                handle: i.handle.to_string(),
 <a href=#66 id=66 data-nosnippet>66</a>                display_name: i.display_name,

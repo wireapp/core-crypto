@@ -58,43 +58,53 @@
 <a href=#58 id=58 data-nosnippet>58</a>    </span><span class="kw">fn </span>to_cc(<span class="self">self</span>) -&gt; core_crypto_keystore::DatabaseKey {
 <a href=#59 id=59 data-nosnippet>59</a>        <span class="self">self</span>.<span class="number">0
 <a href=#60 id=60 data-nosnippet>60</a>    </span>}
-<a href=#61 id=61 data-nosnippet>61</a>}
-<a href=#62 id=62 data-nosnippet>62</a>
-<a href=#63 id=63 data-nosnippet>63</a><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-<a href=#64 id=64 data-nosnippet>64</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>DatabaseKeyMaybeArc = std::sync::Arc&lt;DatabaseKey&gt;;
-<a href=#65 id=65 data-nosnippet>65</a>
-<a href=#66 id=66 data-nosnippet>66</a><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-<a href=#67 id=67 data-nosnippet>67</a></span><span class="kw">impl </span><span class="kw">super</span>::ToCc <span class="kw">for </span>DatabaseKeyMaybeArc {
-<a href=#68 id=68 data-nosnippet>68</a>    <span class="kw">type </span>Target = core_crypto_keystore::DatabaseKey;
-<a href=#69 id=69 data-nosnippet>69</a>
-<a href=#70 id=70 data-nosnippet>70</a>    <span class="attr">#[inline]
-<a href=#71 id=71 data-nosnippet>71</a>    </span><span class="kw">fn </span>to_cc(<span class="self">self</span>) -&gt; core_crypto_keystore::DatabaseKey {
-<a href=#72 id=72 data-nosnippet>72</a>        std::sync::Arc::unwrap_or_clone(<span class="self">self</span>).<span class="number">0
-<a href=#73 id=73 data-nosnippet>73</a>    </span>}
-<a href=#74 id=74 data-nosnippet>74</a>}
-<a href=#75 id=75 data-nosnippet>75</a>
-<a href=#76 id=76 data-nosnippet>76</a><span class="doccomment">/// Updates the key of the CoreCrypto database.
-<a href=#77 id=77 data-nosnippet>77</a>/// To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.
-<a href=#78 id=78 data-nosnippet>78</a></span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(js_name = <span class="string">"migrateDatabaseKeyTypeToBytes"</span>))]
-<a href=#79 id=79 data-nosnippet>79</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
-<a href=#80 id=80 data-nosnippet>80</a></span><span class="kw">pub async fn </span>migrate_database_key_type_to_bytes(
-<a href=#81 id=81 data-nosnippet>81</a>    path: <span class="kw-2">&amp;</span>str,
-<a href=#82 id=82 data-nosnippet>82</a>    old_key: <span class="kw-2">&amp;</span>str,
-<a href=#83 id=83 data-nosnippet>83</a>    new_key: <span class="kw-2">&amp;</span>DatabaseKey,
-<a href=#84 id=84 data-nosnippet>84</a>) -&gt; CoreCryptoResult&lt;()&gt; {
-<a href=#85 id=85 data-nosnippet>85</a>    Database::migrate_db_key_type_to_bytes(path, old_key, <span class="kw-2">&amp;</span>new_key.<span class="number">0</span>)
-<a href=#86 id=86 data-nosnippet>86</a>        .<span class="kw">await
-<a href=#87 id=87 data-nosnippet>87</a>        </span>.map_err(CoreCryptoError::generic())
-<a href=#88 id=88 data-nosnippet>88</a>}
-<a href=#89 id=89 data-nosnippet>89</a>
-<a href=#90 id=90 data-nosnippet>90</a><span class="doccomment">/// Updates the key of the CoreCrypto database.
-<a href=#91 id=91 data-nosnippet>91</a></span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(js_name = <span class="string">"updateDatabaseKey"</span>))]
-<a href=#92 id=92 data-nosnippet>92</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
-<a href=#93 id=93 data-nosnippet>93</a></span><span class="kw">pub async fn </span>update_database_key(name: <span class="kw-2">&amp;</span>str, old_key: <span class="kw-2">&amp;</span>DatabaseKey, new_key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; CoreCryptoResult&lt;()&gt; {
-<a href=#94 id=94 data-nosnippet>94</a>    <span class="kw">let </span><span class="kw-2">mut </span>db = Database::open(ConnectionType::Persistent(name), <span class="kw-2">&amp;</span>old_key.<span class="number">0</span>)
-<a href=#95 id=95 data-nosnippet>95</a>        .<span class="kw">await
-<a href=#96 id=96 data-nosnippet>96</a>        </span>.map_err(CoreCryptoError::generic())<span class="question-mark">?</span>;
-<a href=#97 id=97 data-nosnippet>97</a>    db.update_key(<span class="kw-2">&amp;</span>new_key.<span class="number">0</span>).<span class="kw">await</span>.map_err(CoreCryptoError::generic())<span class="question-mark">?</span>;
-<a href=#98 id=98 data-nosnippet>98</a>    db.close().<span class="kw">await</span>.map_err(CoreCryptoError::generic())<span class="question-mark">?</span>;
-<a href=#99 id=99 data-nosnippet>99</a>    <span class="prelude-val">Ok</span>(())
-<a href=#100 id=100 data-nosnippet>100</a>}</code></pre></div></section></main></body></html>
+<a href=#61 id=61 data-nosnippet>61</a>
+<a href=#62 id=62 data-nosnippet>62</a>    <span class="attr">#[inline]
+<a href=#63 id=63 data-nosnippet>63</a>    </span><span class="kw">fn </span>as_cc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>core_crypto_keystore::DatabaseKey {
+<a href=#64 id=64 data-nosnippet>64</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
+<a href=#65 id=65 data-nosnippet>65</a>    </span>}
+<a href=#66 id=66 data-nosnippet>66</a>}
+<a href=#67 id=67 data-nosnippet>67</a>
+<a href=#68 id=68 data-nosnippet>68</a><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
+<a href=#69 id=69 data-nosnippet>69</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>DatabaseKeyMaybeArc = std::sync::Arc&lt;DatabaseKey&gt;;
+<a href=#70 id=70 data-nosnippet>70</a>
+<a href=#71 id=71 data-nosnippet>71</a><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
+<a href=#72 id=72 data-nosnippet>72</a></span><span class="kw">impl </span><span class="kw">super</span>::ToCc <span class="kw">for </span>DatabaseKeyMaybeArc {
+<a href=#73 id=73 data-nosnippet>73</a>    <span class="kw">type </span>Target = core_crypto_keystore::DatabaseKey;
+<a href=#74 id=74 data-nosnippet>74</a>
+<a href=#75 id=75 data-nosnippet>75</a>    <span class="attr">#[inline]
+<a href=#76 id=76 data-nosnippet>76</a>    </span><span class="kw">fn </span>to_cc(<span class="self">self</span>) -&gt; core_crypto_keystore::DatabaseKey {
+<a href=#77 id=77 data-nosnippet>77</a>        std::sync::Arc::unwrap_or_clone(<span class="self">self</span>).<span class="number">0
+<a href=#78 id=78 data-nosnippet>78</a>    </span>}
+<a href=#79 id=79 data-nosnippet>79</a>
+<a href=#80 id=80 data-nosnippet>80</a>    <span class="attr">#[inline]
+<a href=#81 id=81 data-nosnippet>81</a>    </span><span class="kw">fn </span>as_cc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>core_crypto_keystore::DatabaseKey {
+<a href=#82 id=82 data-nosnippet>82</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.as_ref().<span class="number">0
+<a href=#83 id=83 data-nosnippet>83</a>    </span>}
+<a href=#84 id=84 data-nosnippet>84</a>}
+<a href=#85 id=85 data-nosnippet>85</a>
+<a href=#86 id=86 data-nosnippet>86</a><span class="doccomment">/// Updates the key of the CoreCrypto database.
+<a href=#87 id=87 data-nosnippet>87</a>/// To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.
+<a href=#88 id=88 data-nosnippet>88</a></span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(js_name = <span class="string">"migrateDatabaseKeyTypeToBytes"</span>))]
+<a href=#89 id=89 data-nosnippet>89</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
+<a href=#90 id=90 data-nosnippet>90</a></span><span class="kw">pub async fn </span>migrate_database_key_type_to_bytes(
+<a href=#91 id=91 data-nosnippet>91</a>    path: <span class="kw-2">&amp;</span>str,
+<a href=#92 id=92 data-nosnippet>92</a>    old_key: <span class="kw-2">&amp;</span>str,
+<a href=#93 id=93 data-nosnippet>93</a>    new_key: <span class="kw-2">&amp;</span>DatabaseKey,
+<a href=#94 id=94 data-nosnippet>94</a>) -&gt; CoreCryptoResult&lt;()&gt; {
+<a href=#95 id=95 data-nosnippet>95</a>    Database::migrate_db_key_type_to_bytes(path, old_key, <span class="kw-2">&amp;</span>new_key.<span class="number">0</span>)
+<a href=#96 id=96 data-nosnippet>96</a>        .<span class="kw">await
+<a href=#97 id=97 data-nosnippet>97</a>        </span>.map_err(CoreCryptoError::generic())
+<a href=#98 id=98 data-nosnippet>98</a>}
+<a href=#99 id=99 data-nosnippet>99</a>
+<a href=#100 id=100 data-nosnippet>100</a><span class="doccomment">/// Updates the key of the CoreCrypto database.
+<a href=#101 id=101 data-nosnippet>101</a></span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(js_name = <span class="string">"updateDatabaseKey"</span>))]
+<a href=#102 id=102 data-nosnippet>102</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
+<a href=#103 id=103 data-nosnippet>103</a></span><span class="kw">pub async fn </span>update_database_key(name: <span class="kw-2">&amp;</span>str, old_key: <span class="kw-2">&amp;</span>DatabaseKey, new_key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; CoreCryptoResult&lt;()&gt; {
+<a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">let </span><span class="kw-2">mut </span>db = Database::open(ConnectionType::Persistent(name), <span class="kw-2">&amp;</span>old_key.<span class="number">0</span>)
+<a href=#105 id=105 data-nosnippet>105</a>        .<span class="kw">await
+<a href=#106 id=106 data-nosnippet>106</a>        </span>.map_err(CoreCryptoError::generic())<span class="question-mark">?</span>;
+<a href=#107 id=107 data-nosnippet>107</a>    db.update_key(<span class="kw-2">&amp;</span>new_key.<span class="number">0</span>).<span class="kw">await</span>.map_err(CoreCryptoError::generic())<span class="question-mark">?</span>;
+<a href=#108 id=108 data-nosnippet>108</a>    db.close().<span class="kw">await</span>.map_err(CoreCryptoError::generic())<span class="question-mark">?</span>;
+<a href=#109 id=109 data-nosnippet>109</a>    <span class="prelude-val">Ok</span>(())
+<a href=#110 id=110 data-nosnippet>110</a>}</code></pre></div></section></main></body></html>

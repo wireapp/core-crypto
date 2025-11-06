@@ -56,7 +56,7 @@
 <a href=#56 id=56 data-nosnippet>56</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting raw conversation by id"</span>))<span class="question-mark">?
 <a href=#57 id=57 data-nosnippet>57</a>            </span>.ciphersuite()
 <a href=#58 id=58 data-nosnippet>58</a>            .<span class="kw">await</span>;
-<a href=#59 id=59 data-nosnippet>59</a>        <span class="prelude-val">Ok</span>(Ciphersuite::from(core_crypto::CiphersuiteName::from(cs)))
+<a href=#59 id=59 data-nosnippet>59</a>        <span class="prelude-val">Ok</span>(Ciphersuite::from(core_crypto::MlsCiphersuite::from(cs)))
 <a href=#60 id=60 data-nosnippet>60</a>    }
 <a href=#61 id=61 data-nosnippet>61</a>
 <a href=#62 id=62 data-nosnippet>62</a>    <span class="doccomment">/// See [core_crypto::Session::conversation_exists]

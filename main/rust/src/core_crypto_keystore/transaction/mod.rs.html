@@ -54,7 +54,7 @@
 <a href=#54 id=54 data-nosnippet>54</a>        <span class="kw">let </span>table = cache_guard.entry(E::COLLECTION_NAME.to_string()).or_default();
 <a href=#55 id=55 data-nosnippet>55</a>        <span class="kw">let </span>serialized = postcard::to_stdvec(<span class="kw-2">&amp;</span>entity)<span class="question-mark">?</span>;
 <a href=#56 id=56 data-nosnippet>56</a>        <span class="comment">// Use merge_key() because `id_raw()` is not always unique for records.
-<a href=#57 id=57 data-nosnippet>57</a>        // For `MlsCredential`, `id_raw()` is the `CLientId`.
+<a href=#57 id=57 data-nosnippet>57</a>        // For `StoredCredential`, `id_raw()` is the `CLientId`.
 <a href=#58 id=58 data-nosnippet>58</a>        // For `MlsPendingMessage` it's the id of the group it belongs to.
 <a href=#59 id=59 data-nosnippet>59</a>        </span>table.insert(entity.merge_key(), Zeroizing::new(serialized));
 <a href=#60 id=60 data-nosnippet>60</a>        <span class="prelude-val">Ok</span>(entity)
@@ -104,7 +104,7 @@
 <a href=#104 id=104 data-nosnippet>104</a>
 <a href=#105 id=105 data-nosnippet>105</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>cred_delete_by_credential(<span class="kw-2">&amp;</span><span class="self">self</span>, cred: Vec&lt;u8&gt;) -&gt; CryptoKeystoreResult&lt;()&gt; {
 <a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span><span class="kw-2">mut </span>cache_guard = <span class="self">self</span>.cache.write().<span class="kw">await</span>;
-<a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">if let </span>Entry::Occupied(<span class="kw-2">mut </span>table) = cache_guard.entry(MlsCredential::COLLECTION_NAME.to_string()) {
+<a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">if let </span>Entry::Occupied(<span class="kw-2">mut </span>table) = cache_guard.entry(StoredCredential::COLLECTION_NAME.to_string()) {
 <a href=#108 id=108 data-nosnippet>108</a>            table.get_mut().retain(|<span class="kw">_</span>, value| <span class="kw-2">**</span>value != cred);
 <a href=#109 id=109 data-nosnippet>109</a>        }
 <a href=#110 id=110 data-nosnippet>110</a>
@@ -292,7 +292,7 @@
 <a href=#292 id=292 data-nosnippet>292</a>        maybe_credential: <span class="kw-2">&amp;</span>E,
 <a href=#293 id=293 data-nosnippet>293</a>        deleted_credentials: <span class="kw-2">&amp;</span>[Vec&lt;u8&gt;],
 <a href=#294 id=294 data-nosnippet>294</a>    ) -&gt; bool {
-<a href=#295 id=295 data-nosnippet>295</a>        <span class="kw">let </span><span class="prelude-val">Some</span>(credential) = maybe_credential.downcast::&lt;MlsCredential&gt;() <span class="kw">else </span>{
+<a href=#295 id=295 data-nosnippet>295</a>        <span class="kw">let </span><span class="prelude-val">Some</span>(credential) = maybe_credential.downcast::&lt;StoredCredential&gt;() <span class="kw">else </span>{
 <a href=#296 id=296 data-nosnippet>296</a>            <span class="kw">return </span><span class="bool-val">false</span>;
 <a href=#297 id=297 data-nosnippet>297</a>        };
 <a href=#298 id=298 data-nosnippet>298</a>        deleted_credentials.contains(<span class="kw-2">&amp;</span>credential.credential)
@@ -312,8 +312,8 @@
 <a href=#312 id=312 data-nosnippet>312</a>/// commit_transaction!(
 <a href=#313 id=313 data-nosnippet>313</a>///     transaction, db,
 <a href=#314 id=314 data-nosnippet>314</a>///     [
-<a href=#315 id=315 data-nosnippet>315</a>///         (identifier_01, MlsCredential),
-<a href=#316 id=316 data-nosnippet>316</a>///         (identifier_02, MlsSignatureKeyPair),
+<a href=#315 id=315 data-nosnippet>315</a>///         (identifier_01, StoredCredential),
+<a href=#316 id=316 data-nosnippet>316</a>///         (identifier_02, StoredSignatureKeypair),
 <a href=#317 id=317 data-nosnippet>317</a>///     ],
 <a href=#318 id=318 data-nosnippet>318</a>/// );
 <a href=#319 id=319 data-nosnippet>319</a>///
@@ -322,8 +322,8 @@
 <a href=#322 id=322 data-nosnippet>322</a>/// commit_transaction!(
 <a href=#323 id=323 data-nosnippet>323</a>///     transaction, db,
 <a href=#324 id=324 data-nosnippet>324</a>///     [
-<a href=#325 id=325 data-nosnippet>325</a>///         (identifier_01, MlsCredential),
-<a href=#326 id=326 data-nosnippet>326</a>///         (identifier_02, MlsSignatureKeyPair),
+<a href=#325 id=325 data-nosnippet>325</a>///         (identifier_01, StoredCredential),
+<a href=#326 id=326 data-nosnippet>326</a>///         (identifier_02, StoredSignatureKeypair),
 <a href=#327 id=327 data-nosnippet>327</a>///     ],
 <a href=#328 id=328 data-nosnippet>328</a>///     proteus_types: [
 <a href=#329 id=329 data-nosnippet>329</a>///         (identifier_03, ProteusPrekey),
@@ -347,7 +347,7 @@
 <a href=#347 id=347 data-nosnippet>347</a>
 <a href=#348 id=348 data-nosnippet>348</a>             <span class="kw">let </span>( $( $( <span class="macro-nonterminal">$records</span>, )* )* ) = cached_collections;
 <a href=#349 id=349 data-nosnippet>349</a>
-<a href=#350 id=350 data-nosnippet>350</a>            <span class="kw">let </span>conn = <span class="macro-nonterminal">$db</span>.borrow_conn().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#350 id=350 data-nosnippet>350</a>            <span class="kw">let </span>conn = <span class="macro-nonterminal">$db</span>.conn().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#351 id=351 data-nosnippet>351</a>            <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
 <a href=#352 id=352 data-nosnippet>352</a>            <span class="kw">let </span>deleted_ids = <span class="macro-nonterminal">$keystore_transaction</span>.deleted.read().<span class="kw">await</span>;
 <a href=#353 id=353 data-nosnippet>353</a>
@@ -386,7 +386,7 @@
 <a href=#386 id=386 data-nosnippet>386</a>        </span>}
 <a href=#387 id=387 data-nosnippet>387</a>
 <a href=#388 id=388 data-nosnippet>388</a>        <span class="kw">for </span>deleted_credential <span class="kw">in </span><span class="macro-nonterminal">$keystore_transaction</span>.deleted_credentials.read().<span class="kw">await</span>.iter() {
-<a href=#389 id=389 data-nosnippet>389</a>            MlsCredential::delete_by_credential(<span class="kw-2">&amp;</span>tx, deleted_credential.to_owned()).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#389 id=389 data-nosnippet>389</a>            StoredCredential::delete_by_credential(<span class="kw-2">&amp;</span>tx, deleted_credential.to_owned()).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#390 id=390 data-nosnippet>390</a>        }
 <a href=#391 id=391 data-nosnippet>391</a>
 <a href=#392 id=392 data-nosnippet>392</a>         tx.commit_tx().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -400,17 +400,17 @@
 <a href=#400 id=400 data-nosnippet>400</a>        <span class="macro">commit_transaction!</span>(
 <a href=#401 id=401 data-nosnippet>401</a>            <span class="self">self</span>, db,
 <a href=#402 id=402 data-nosnippet>402</a>            [
-<a href=#403 id=403 data-nosnippet>403</a>                (identifier_01, MlsCredential),
-<a href=#404 id=404 data-nosnippet>404</a>                (identifier_02, MlsSignatureKeyPair),
-<a href=#405 id=405 data-nosnippet>405</a>                (identifier_03, MlsHpkePrivateKey),
-<a href=#406 id=406 data-nosnippet>406</a>                (identifier_04, MlsEncryptionKeyPair),
-<a href=#407 id=407 data-nosnippet>407</a>                (identifier_05, MlsEpochEncryptionKeyPair),
-<a href=#408 id=408 data-nosnippet>408</a>                (identifier_06, MlsPskBundle),
-<a href=#409 id=409 data-nosnippet>409</a>                (identifier_07, MlsKeyPackage),
+<a href=#403 id=403 data-nosnippet>403</a>                (identifier_01, StoredCredential),
+<a href=#404 id=404 data-nosnippet>404</a>                (identifier_02, StoredSignatureKeypair),
+<a href=#405 id=405 data-nosnippet>405</a>                (identifier_03, StoredHpkePrivateKey),
+<a href=#406 id=406 data-nosnippet>406</a>                (identifier_04, StoredEncryptionKeyPair),
+<a href=#407 id=407 data-nosnippet>407</a>                (identifier_05, StoredEpochEncryptionKeypair),
+<a href=#408 id=408 data-nosnippet>408</a>                (identifier_06, StoredPskBundle),
+<a href=#409 id=409 data-nosnippet>409</a>                (identifier_07, StoredKeypackage),
 <a href=#410 id=410 data-nosnippet>410</a>                (identifier_08, PersistedMlsGroup),
 <a href=#411 id=411 data-nosnippet>411</a>                (identifier_09, PersistedMlsPendingGroup),
 <a href=#412 id=412 data-nosnippet>412</a>                (identifier_10, MlsPendingMessage),
-<a href=#413 id=413 data-nosnippet>413</a>                (identifier_11, E2eiEnrollment),
+<a href=#413 id=413 data-nosnippet>413</a>                (identifier_11, StoredE2eiEnrollment),
 <a href=#414 id=414 data-nosnippet>414</a>                <span class="comment">// (identifier_12, E2eiRefreshToken),
 <a href=#415 id=415 data-nosnippet>415</a>                </span>(identifier_13, E2eiAcmeCA),
 <a href=#416 id=416 data-nosnippet>416</a>                (identifier_14, E2eiIntermediateCert),

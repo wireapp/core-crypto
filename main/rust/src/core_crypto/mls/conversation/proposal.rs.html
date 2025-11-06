@@ -26,10 +26,10 @@
 <a href=#26 id=26 data-nosnippet>26</a>        key_package: KeyPackageIn,
 <a href=#27 id=27 data-nosnippet>27</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsProposalBundle&gt; {
 <a href=#28 id=28 data-nosnippet>28</a>        <span class="kw">let </span>signer = <span class="kw-2">&amp;</span><span class="self">self
-<a href=#29 id=29 data-nosnippet>29</a>            </span>.find_current_credential_bundle(client)
+<a href=#29 id=29 data-nosnippet>29</a>            </span>.find_current_credential(client)
 <a href=#30 id=30 data-nosnippet>30</a>            .<span class="kw">await
 <a href=#31 id=31 data-nosnippet>31</a>            </span>.map_err(|<span class="kw">_</span>| Error::IdentityInitializationError)<span class="question-mark">?
-<a href=#32 id=32 data-nosnippet>32</a>            </span>.signature_key;
+<a href=#32 id=32 data-nosnippet>32</a>            </span>.signature_key_pair;
 <a href=#33 id=33 data-nosnippet>33</a>
 <a href=#34 id=34 data-nosnippet>34</a>        <span class="kw">let </span>crl_new_distribution_points = get_new_crl_distribution_points(
 <a href=#35 id=35 data-nosnippet>35</a>            backend,
@@ -62,10 +62,10 @@
 <a href=#62 id=62 data-nosnippet>62</a>        member: LeafNodeIndex,
 <a href=#63 id=63 data-nosnippet>63</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsProposalBundle&gt; {
 <a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">let </span>signer = <span class="kw-2">&amp;</span><span class="self">self
-<a href=#65 id=65 data-nosnippet>65</a>            </span>.find_current_credential_bundle(client)
+<a href=#65 id=65 data-nosnippet>65</a>            </span>.find_current_credential(client)
 <a href=#66 id=66 data-nosnippet>66</a>            .<span class="kw">await
 <a href=#67 id=67 data-nosnippet>67</a>            </span>.map_err(|<span class="kw">_</span>| Error::IdentityInitializationError)<span class="question-mark">?
-<a href=#68 id=68 data-nosnippet>68</a>            </span>.signature_key;
+<a href=#68 id=68 data-nosnippet>68</a>            </span>.signature_key_pair;
 <a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">let </span>proposal = <span class="self">self
 <a href=#70 id=70 data-nosnippet>70</a>            </span>.group
 <a href=#71 id=71 data-nosnippet>71</a>            .propose_remove_member(backend, signer, member)
@@ -94,13 +94,13 @@
 <a href=#94 id=94 data-nosnippet>94</a>        leaf_node: <span class="prelude-ty">Option</span>&lt;LeafNode&gt;,
 <a href=#95 id=95 data-nosnippet>95</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsProposalBundle&gt; {
 <a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">let </span>msg_signer = <span class="kw-2">&amp;</span><span class="self">self
-<a href=#97 id=97 data-nosnippet>97</a>            </span>.find_current_credential_bundle(client)
+<a href=#97 id=97 data-nosnippet>97</a>            </span>.find_current_credential(client)
 <a href=#98 id=98 data-nosnippet>98</a>            .<span class="kw">await
 <a href=#99 id=99 data-nosnippet>99</a>            </span>.map_err(|<span class="kw">_</span>| Error::IdentityInitializationError)<span class="question-mark">?
-<a href=#100 id=100 data-nosnippet>100</a>            </span>.signature_key;
+<a href=#100 id=100 data-nosnippet>100</a>            </span>.signature_key_pair;
 <a href=#101 id=101 data-nosnippet>101</a>
 <a href=#102 id=102 data-nosnippet>102</a>        <span class="kw">let </span>proposal = <span class="kw">if let </span><span class="prelude-val">Some</span>(leaf_node) = leaf_node {
-<a href=#103 id=103 data-nosnippet>103</a>            <span class="kw">let </span>leaf_node_signer = <span class="kw-2">&amp;</span><span class="self">self</span>.find_most_recent_credential_bundle(client).<span class="kw">await</span><span class="question-mark">?</span>.signature_key;
+<a href=#103 id=103 data-nosnippet>103</a>            <span class="kw">let </span>leaf_node_signer = <span class="kw-2">&amp;</span><span class="self">self</span>.find_most_recent_credential(client).<span class="kw">await</span><span class="question-mark">?</span>.signature_key_pair;
 <a href=#104 id=104 data-nosnippet>104</a>
 <a href=#105 id=105 data-nosnippet>105</a>            <span class="self">self</span>.group
 <a href=#106 id=106 data-nosnippet>106</a>                .propose_explicit_self_update(backend, msg_signer, leaf_node, leaf_node_signer)

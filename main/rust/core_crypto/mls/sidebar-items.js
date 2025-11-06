@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error"],"mod":["conversation"],"trait":["EpochObserver","HistoryObserver"],"type":["Result"]};
+window.SIDEBAR_ITEMS = {"enum":["Error"],"mod":["conversation","credential"],"trait":["EpochObserver","HistoryObserver"],"type":["Result"]};
