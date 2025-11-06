@@ -95,6 +95,31 @@
 
   Affected platforms: all
 
+## v9.1.2 - 2025-11-05
+
+This release fixes a bug in the TypeScript bindings where the commit delay could in some situations be undefined when
+receiving a proposal.
+
+### Bug Fixes
+
+- in js 0 is falsy, which messes with ternary logic
+  ([e7b73c0](https://github.com/wireapp/core-crypto/commit/e7b73c034d7492bc728c50d3c287a2a5272d3b71))
+
+## v9.1.1 - 2025-10-24
+
+This release fixes the issue where `libcore_crypto_ffi.so` had segments aligned on 4k instead of 16k on Android
+platforms.
+
+### Bug Fixes
+
+- ci: use the correct NDK when building and packaging for Android [WPB-21347]
+  ([ce433fe](https://github.com/wireapp/core-crypto/commit/ce433fec36d1382c364a729cd523f18e444cf6c2))
+
+### Documentation
+
+- README: add a note about ANDROID_NDK_HOME
+  ([5c98d7f](https://github.com/wireapp/core-crypto/commit/5c98d7fc2a9dada5a53da1126a10fcb7a7d536b5))
+
 ## v9.1.0 - 2025-09-29
 
 Note: even though this is a minor version bump, it contains a breaking change. See below for more information.
