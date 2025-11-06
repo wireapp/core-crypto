@@ -9,7 +9,7 @@
 - `Credential` is a first-class type representing a cryptographic identity.
   - It can be created at any time and lives in memory.
   - There are two variants of credential: basic and x509. They are created with `Credential.basic` and `Credential.x509`
-    respectively (web) or the `credentialBasic` and `credentialX509` functions (ios/android).
+    static methods.
 - Initializing a MLS client no longer automatically generates any credentials. Any stored credentials will be
   automatically loaded on MLS init.
 - To add a credential to the set MLS knows about, after initializing MLS, call `addCredential` on a transaction context.
@@ -39,11 +39,6 @@
   by this client
 - Added a new method to transaction context: `findCredentials` which produces a `CredentialRef` for each credential
   known by this client, efficiently filtering them by the specified criteria.
-
-#### Simplified Session initialization
-
-- Removed the `SessionConfig` and `ValidatedSessionConfig` types
-- A `Session` now needs only a `Database` for initialization
 
 #### Other
 
