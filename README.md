@@ -38,6 +38,16 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Install the [`pre-commit` framework](https://pre-commit.com/)
 - Run `pre-commit install` to initialize the pre-commit hooks
 
+#### `mdformat`
+
+We're using `mdformat` for consistent formatting of our markdown files. Install it with the following extensions
+
+- `mdformat-gfm`
+- `mdformat-frontmatter`
+- `mdformat-footnote`
+- `mdformat-gfm-alerts`
+- `mdformat-toc`
+
 ### Android
 
 [Install Android SDK](https://developer.android.com/studio) and Build-Tools for API level 30+
