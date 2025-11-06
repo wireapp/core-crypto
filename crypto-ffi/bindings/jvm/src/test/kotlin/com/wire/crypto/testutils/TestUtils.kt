@@ -74,7 +74,7 @@ fun newClients(instance: HasMockDeliveryService, vararg clientIds: ClientId) = r
         val cc = initCc(instance)
         cc.transaction { ctx ->
             ctx.mlsInitShort(clientID)
-            ctx.addCredential(credentialBasic(CIPHERSUITE_DEFAULT, clientID))
+            ctx.addCredential(Credential.basic(CIPHERSUITE_DEFAULT, clientID))
         }
         cc
     }
