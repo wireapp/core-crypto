@@ -19,7 +19,7 @@ pub enum Error {
     CredentialConflict,
     #[error("A MLS operation was requested but MLS hasn't been initialized on this instance")]
     MlsNotInitialized,
-    #[error("No Credential of type ({0:?}, {1:?}) was found in this session")]
+    #[error("No credential of type ({0:?}, {1:?}) was found in this session")]
     CredentialNotFound(crate::CredentialType, SignatureScheme),
     #[error("supplied signature scheme was not valid")]
     InvalidSignatureScheme,
