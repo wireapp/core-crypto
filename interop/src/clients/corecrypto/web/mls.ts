@@ -64,7 +64,8 @@ export async function getKeypackage() {
     const [kp] = await window.cc.transaction((ctx) =>
         ctx.clientKeypackages(window.ciphersuite, window.credentialType, 1)
     );
-    return kp;
+
+    return new Uint8Array(kp);
 }
 
 export async function addClient() {
@@ -94,11 +95,11 @@ export async function kickClient() {
 export async function processWelcome() {
     const { Welcome } = await import("./corecrypto.js");
     const [welcome] = arguments;
-    const welcomeMessage = new Welcome(Uint8Array.from(Object.values(welcome)));
+    const welcomeMessage = new Welcome(Uint8Array.from(Object.values(welcome)).buffer);
 
     const { id } = await window.cc.transaction((ctx) =>
         ctx.processWelcomeMessage(welcomeMessage));
-    return id.copyBytes();
+    return new Uint8Array(id.copyBytes());
 }
 
 export async function encryptMessage() {
@@ -107,8 +108,8 @@ export async function encryptMessage() {
     const conversationId = new ConversationId(Uint8Array.from(Object.values(cId)));
     const message = Uint8Array.from(Object.values(cleartext));
 
-    return await window.cc.transaction((ctx) =>
-        ctx.encryptMessage(conversationId, message));
+    return new Uint8Array(await window.cc.transaction((ctx) =>
+        ctx.encryptMessage(conversationId, message)));
 }
 
 export async function decryptMessage() {
@@ -120,5 +121,5 @@ export async function decryptMessage() {
     const { message } = await window.cc.transaction((ctx) =>
         ctx.decryptMessage(conversationId, encryptedMessage)
     );
-    return message;
+    return new Uint8Array(message);
 }
