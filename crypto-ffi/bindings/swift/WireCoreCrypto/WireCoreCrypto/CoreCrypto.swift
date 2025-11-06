@@ -252,9 +252,9 @@ final actor TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand 
 
 }
 
-extension Credential {
+public extension Credential {
     // Construct a new Credential from ciphersuite and client id
-    static func basic(
+    public static func basic(
         ciphersuite: Ciphersuite,
         clientId: ClientId
     ) throws -> Credential {
