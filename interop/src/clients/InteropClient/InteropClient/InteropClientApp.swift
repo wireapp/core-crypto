@@ -116,7 +116,7 @@ struct InteropClientApp: App {
                     clientId: clientId,
                     ciphersuites: [ciphersuite])
                 try await context.addCredential(
-                    credential: credentialBasic(ciphersuite: ciphersuite, clientId: clientId))
+                    credential: Credential.basic(ciphersuite: ciphersuite, clientId: clientId))
             })
 
             return "Initialised MLS with ciphersuite: \(ciphersuite)"
