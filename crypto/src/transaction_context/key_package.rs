@@ -84,4 +84,16 @@ impl TransactionContext {
             .map_err(RecursiveError::mls_client("generating keypackages for transaction"))
             .map_err(Into::into)
     }
+
+    /// Get all [`KeyPackageRef`]s known to the keystore.
+    pub async fn get_keypackages(&self) -> Result<Vec<KeyPackageRef>> {
+        let session = self.session().await?;
+        session
+            .get_keypackages()
+            .await
+            .map_err(RecursiveError::mls_client(
+                "getting all key package refs for transaction",
+            ))
+            .map_err(Into::into)
+    }
 }
