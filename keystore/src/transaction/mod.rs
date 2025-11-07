@@ -401,7 +401,7 @@ impl KeystoreTransaction {
             self, db,
             [
                 (identifier_01, StoredCredential),
-                (identifier_02, StoredSignatureKeypair),
+                // (identifier_02, StoredSignatureKeypair),
                 (identifier_03, StoredHpkePrivateKey),
                 (identifier_04, StoredEncryptionKeyPair),
                 (identifier_05, StoredEpochEncryptionKeypair),

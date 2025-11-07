@@ -14,23 +14,39 @@ use crate::{
 };
 
 impl StoredCredential {
-    fn load(transaction: &Transaction<'_>, rowid: i64, created_at: u64) -> CryptoKeystoreResult<Self> {
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "id", rowid, true)?;
-
+    fn load(
+        transaction: &Transaction<'_>,
+        rowid: i64,
+        created_at: u64,
+        signature_scheme: u16,
+    ) -> CryptoKeystoreResult<Self> {
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "id", rowid, true)?;
         let mut id = vec![];
         blob.read_to_end(&mut id)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "credential", rowid, true)?;
-
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "credential", rowid, true)?;
         let mut credential = vec![];
         blob.read_to_end(&mut credential)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "secret_key", rowid, true)?;
+        let mut secret_key = vec![];
+        blob.read_to_end(&mut secret_key)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "public_key", rowid, true)?;
+        let mut public_key = vec![];
+        blob.read_to_end(&mut public_key)?;
         blob.close()?;
 
         Ok(Self {
             id,
             credential,
+            signature_scheme,
             created_at,
+            public_key,
+            secret_key,
         })
     }
 }
@@ -53,7 +69,7 @@ impl Entity for StoredCredential {
         let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         let query: String = format!(
-            "SELECT rowid, unixepoch(created_at) FROM mls_credentials {}",
+            "SELECT rowid, unixepoch(created_at), signature_scheme FROM mls_credentials {}",
             params.to_sql()
         );
 
@@ -62,11 +78,12 @@ impl Entity for StoredCredential {
             .query_map([], |row| {
                 let rowid = row.get(0)?;
                 let created_at = row.get(1)?;
-                Ok((rowid, created_at))
+                let signature_scheme = row.get(2)?;
+                Ok((rowid, created_at, signature_scheme))
             })?
             .map(|rowid_result| -> CryptoKeystoreResult<_> {
-                let (rowid, created_at) = rowid_result?;
-                Self::load(&transaction, rowid, created_at)
+                let (rowid, created_at, signature_scheme) = rowid_result?;
+                Self::load(&transaction, rowid, created_at, signature_scheme)
             })
             .collect()
     }
@@ -80,12 +97,12 @@ impl Entity for StoredCredential {
         use rusqlite::OptionalExtension as _;
         transaction
             .query_row(
-                "SELECT rowid, unixepoch(created_at) FROM mls_credentials WHERE id = ?",
+                "SELECT rowid, unixepoch(created_at), signature_scheme FROM mls_credentials WHERE id = ?",
                 [id.as_slice()],
-                |r| Ok((r.get::<_, i64>(0)?, r.get(1)?)),
+                |r| Ok((r.get::<_, i64>(0)?, r.get(1)?, r.get(2)?)),
             )
             .optional()?
-            .map(|(rowid, created_at)| Self::load(&transaction, rowid, created_at))
+            .map(|(rowid, created_at, signature_scheme)| Self::load(&transaction, rowid, created_at, signature_scheme))
             .transpose()
     }
 
@@ -116,25 +133,46 @@ impl EntityTransactionExt for StoredCredential {
     async fn save(&self, transaction: &TransactionWrapper<'_>) -> crate::CryptoKeystoreResult<()> {
         Self::ConnectionType::check_buffer_size(self.id.len())?;
         Self::ConnectionType::check_buffer_size(self.credential.len())?;
+        Self::ConnectionType::check_buffer_size(self.secret_key.len())?;
+        Self::ConnectionType::check_buffer_size(self.public_key.len())?;
 
         let zb_id = rusqlite::blob::ZeroBlob(self.id.len() as i32);
         let zb_cred = rusqlite::blob::ZeroBlob(self.credential.len() as i32);
+        let zb_pk = rusqlite::blob::ZeroBlob(self.public_key.len() as i32);
+        let zb_sk = rusqlite::blob::ZeroBlob(self.secret_key.len() as i32);
 
         use rusqlite::ToSql as _;
-        let params: [rusqlite::types::ToSqlOutput; 3] = [zb_id.to_sql()?, zb_cred.to_sql()?, self.created_at.to_sql()?];
+        let params: [rusqlite::types::ToSqlOutput; 6] = [
+            zb_id.to_sql()?,
+            zb_cred.to_sql()?,
+            self.created_at.to_sql()?,
+            self.signature_scheme.to_sql()?,
+            zb_pk.to_sql()?,
+            zb_sk.to_sql()?,
+        ];
 
-        let sql = "INSERT INTO mls_credentials (id, credential, created_at) VALUES (?, ?, datetime(?, 'unixepoch'))";
+        let sql = "INSERT INTO mls_credentials (id, credential, created_at, signature_scheme, public_key, secret_key) VALUES (?, ?, datetime(?, 'unixepoch'), ?, ?, ?)";
         transaction.execute(sql, params)?;
         let row_id = transaction.last_insert_rowid();
 
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "id", row_id, false)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "id", row_id, false)?;
 
         blob.write_all(&self.id)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_credentials", "credential", row_id, false)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "credential", row_id, false)?;
 
         blob.write_all(&self.credential)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "public_key", row_id, false)?;
+
+        blob.write_all(&self.public_key)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "secret_key", row_id, false)?;
+
+        blob.write_all(&self.secret_key)?;
         blob.close()?;
 
         Ok(())

@@ -4,10 +4,7 @@ pub use rstest_reuse::{self, *};
 mod common;
 
 mod tests {
-    use openmls::{
-        credentials::Credential,
-        prelude::{Ciphersuite, TlsDeserializeTrait},
-    };
+    use openmls::{credentials::Credential, prelude::Ciphersuite};
     use openmls_traits::random::OpenMlsRand;
     use wasm_bindgen_test::*;
 
@@ -19,7 +16,7 @@ mod tests {
         MissingKeyErrorKind,
         entities::{
             EntityBase, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredHpkePrivateKey,
-            StoredKeypackage, StoredPskBundle, StoredSignatureKeypair,
+            StoredKeypackage, StoredPskBundle,
         },
     };
     use mls_crypto_provider::MlsCryptoProvider;
@@ -55,11 +52,6 @@ mod tests {
         );
 
         assert_eq!(
-            StoredSignatureKeypair::to_missing_key_err_kind(),
-            MissingKeyErrorKind::StoredSignatureKeypair
-        );
-
-        assert_eq!(
             StoredPskBundle::to_missing_key_err_kind(),
             MissingKeyErrorKind::StoredPskBundle
         );
@@ -81,29 +73,22 @@ mod tests {
         let credential = Credential::new_basic(identity_id.as_bytes().as_slice().into());
 
         let credential_id: Vec<u8> = credential.identity().into();
-
-        let store_credential = StoredCredential {
-            id: credential_id.clone(),
-            credential: credential.tls_serialize_detached().unwrap(),
-            created_at: 0,
-        };
-
-        backend.key_store().save(store_credential).await.unwrap();
-
         let keypair = SignatureKeyPair::new(
             ciphersuite.signature_algorithm(),
             &mut *backend.rand().borrow_rand().unwrap(),
         )
         .unwrap();
 
-        let store_keypair = StoredSignatureKeypair::new(
-            keypair.signature_scheme(),
-            keypair.to_public_vec(),
-            keypair.tls_serialize_detached().unwrap(),
-            credential_id.clone(),
-        );
+        let store_credential = StoredCredential {
+            id: credential_id.clone(),
+            credential: credential.tls_serialize_detached().unwrap(),
+            created_at: 0,
+            signature_scheme: ciphersuite.signature_algorithm() as u16,
+            secret_key: keypair.private().to_owned(),
+            public_key: keypair.to_public_vec(),
+        };
 
-        backend.key_store().save(store_keypair).await.unwrap();
+        backend.key_store().save(store_credential).await.unwrap();
 
         let (credential_from_store,) = backend
             .key_store()
@@ -114,25 +99,10 @@ mod tests {
             .filter(|cred| cred.id == credential_id)
             .collect_tuple()
             .expect("credentials should be exactly one");
-        let keypair2: StoredSignatureKeypair = backend.key_store().find(keypair.public()).await.unwrap().unwrap();
-
-        assert_eq!(keypair2.credential_id, credential_from_store.id);
-
-        let keypair2 = SignatureKeyPair::tls_deserialize(&mut keypair2.keypair.as_slice()).unwrap();
-
-        let (b1_kp, b1_sk) = (keypair.to_public_vec(), keypair.private().to_vec());
-        let (b2_kp, b2_sk) = (keypair2.to_public_vec(), keypair.private().to_vec());
-        assert_eq!(b1_kp, b2_kp);
-        assert_eq!(b1_sk.as_slice(), b2_sk.as_slice());
 
         backend
             .key_store()
             .cred_delete_by_credential(credential_from_store.credential.clone())
-            .await
-            .unwrap();
-        backend
-            .key_store()
-            .remove::<StoredSignatureKeypair, _>(keypair.public())
             .await
             .unwrap();
     }

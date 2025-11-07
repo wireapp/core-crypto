@@ -168,7 +168,6 @@ mod tests {
     test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_update:true ignore_find_many:true);
     test_for_entity!(test_mls_credential, StoredCredential ignore_update:true);
     test_for_entity!(test_mls_keypackage, StoredKeypackage);
-    test_for_entity!(test_mls_signature_keypair, StoredSignatureKeypair ignore_update:true);
     test_for_entity!(test_mls_psk_bundle, StoredPskBundle);
     test_for_entity!(test_mls_encryption_keypair, StoredEncryptionKeyPair);
     test_for_entity!(test_mls_epoch_encryption_keypair, StoredEpochEncryptionKeypair);
@@ -220,7 +219,7 @@ pub mod utils {
     use core_crypto_keystore::entities::{
         MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession, StoredCredential,
         StoredE2eiEnrollment, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeypackage, StoredPskBundle, StoredSignatureKeypair,
+        StoredKeypackage, StoredPskBundle,
     };
     use rand::Rng as _;
 
@@ -329,8 +328,7 @@ pub mod utils {
             }
 
     impl_entity_random_update_ext!(StoredKeypackage, blob_fields=[keypackage,], additional_fields=[(keypackage_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
-    impl_entity_random_update_ext!(StoredCredential, blob_fields=[credential,], additional_fields=[(id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),]);
-    impl_entity_random_update_ext!(StoredSignatureKeypair, blob_fields=[pk,keypair,credential_id,], additional_fields=[(signature_scheme: rand::random()),]);
+    impl_entity_random_update_ext!(StoredCredential, blob_fields=[credential,public_key,secret_key,], additional_fields=[(id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),(signature_scheme: rand::random()),]);
     impl_entity_random_update_ext!(StoredHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);

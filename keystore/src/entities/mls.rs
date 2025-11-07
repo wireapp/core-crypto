@@ -1,4 +1,3 @@
-use openmls_traits::types::SignatureScheme;
 use zeroize::Zeroize;
 
 use super::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId};
@@ -131,41 +130,23 @@ impl StoredBufferedCommit {
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct StoredCredential {
+    /// Note: this is not a unique identifier, but the session id this credential belongs to.
     #[sensitive]
     pub id: Vec<u8>,
     #[sensitive]
     pub credential: Vec<u8>,
     pub created_at: u64,
+    pub signature_scheme: u16,
+    #[sensitive]
+    pub public_key: Vec<u8>,
+    #[sensitive]
+    pub secret_key: Vec<u8>,
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait MlsCredentialExt: Entity {
     async fn delete_by_credential(tx: &TransactionWrapper<'_>, credential: Vec<u8>) -> CryptoKeystoreResult<()>;
-}
-
-/// Entity representing a persisted `SignatureKeyPair`
-#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
-#[zeroize(drop)]
-pub struct StoredSignatureKeypair {
-    pub signature_scheme: u16,
-    #[sensitive]
-    pub pk: Vec<u8>,
-    #[sensitive]
-    pub keypair: Vec<u8>,
-    #[sensitive]
-    pub credential_id: Vec<u8>,
-}
-
-impl StoredSignatureKeypair {
-    pub fn new(signature_scheme: SignatureScheme, pk: Vec<u8>, keypair: Vec<u8>, credential_id: Vec<u8>) -> Self {
-        Self {
-            signature_scheme: signature_scheme as u16,
-            pk,
-            keypair,
-            credential_id,
-        }
-    }
 }
 
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)

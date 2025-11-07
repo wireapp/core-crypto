@@ -49,6 +49,11 @@ async fn main() -> anyhow::Result<()> {
         .into_iter()
     {
         let mls_credential = openmls::prelude::Credential::tls_deserialize(&mut cred.credential.as_slice())?;
+        let mls_keypair = openmls_basic_credential::SignatureKeyPair::from_raw(
+            cred.signature_scheme.try_into().expect("signature scheme from db"),
+            cred.secret_key.to_owned(),
+            cred.public_key.to_owned(),
+        );
         let date = chrono::Utc
             .timestamp_opt(cred.created_at as i64, 0)
             .single()
@@ -57,25 +62,13 @@ async fn main() -> anyhow::Result<()> {
         credentials.push(serde_json::json!({
             "id": cred.id,
             "credential": mls_credential,
-            "created_at": date
+            "created_at": date,
+            "mls_keypair": mls_keypair,
+            "secret_key": cred.secret_key,
+            "public_key": cred.public_key,
         }));
     }
     json_map.serialize_entry("mls_credentials", &credentials)?;
-
-    let mut signature_keypairs: Vec<serde_json::Value> = vec![];
-    for kp in keystore
-        .find_all::<StoredSignatureKeypair>(Default::default())
-        .await?
-        .into_iter()
-    {
-        let mls_keypair = openmls_basic_credential::SignatureKeyPair::tls_deserialize(&mut kp.keypair.as_slice())?;
-        signature_keypairs.push(serde_json::json!({
-            "signature_scheme": kp.signature_scheme,
-            "mls_keypair": mls_keypair,
-            "credential_id": kp.credential_id,
-        }));
-    }
-    json_map.serialize_entry("mls_signature_keypairs", &signature_keypairs)?;
 
     let hpke_sks: Vec<openmls_traits::types::HpkePrivateKey> = keystore
         .find_all::<StoredHpkePrivateKey>(Default::default())

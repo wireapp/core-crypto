@@ -12,14 +12,13 @@ use crate::{
         ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, EntityBase, EntityTransactionExt, MlsPendingMessage,
         PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
         StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
-        StoredSignatureKeypair, StringEntityId, UniqueEntity,
+        StringEntityId, UniqueEntity,
     },
 };
 
 #[derive(Debug)]
 pub enum Entity {
     ConsumerData(ConsumerData),
-    SignatureKeyPair(StoredSignatureKeypair),
     HpkePrivateKey(StoredHpkePrivateKey),
     StoredKeypackage(StoredKeypackage),
     PskBundle(StoredPskBundle),
@@ -46,7 +45,6 @@ pub enum Entity {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum EntityId {
-    SignatureKeyPair(Vec<u8>),
     HpkePrivateKey(Vec<u8>),
     KeyPackage(Vec<u8>),
     PskBundle(Vec<u8>),
@@ -74,7 +72,6 @@ pub enum EntityId {
 impl EntityId {
     fn as_id(&self) -> StringEntityId<'_> {
         match self {
-            EntityId::SignatureKeyPair(vec) => vec.as_slice().into(),
             EntityId::HpkePrivateKey(vec) => vec.as_slice().into(),
             EntityId::KeyPackage(vec) => vec.as_slice().into(),
             EntityId::PskBundle(vec) => vec.as_slice().into(),
@@ -102,7 +99,6 @@ impl EntityId {
 
     pub(crate) fn from_collection_name(entity_id: &'static str, id: &[u8]) -> CryptoKeystoreResult<Self> {
         match entity_id {
-            StoredSignatureKeypair::COLLECTION_NAME => Ok(Self::SignatureKeyPair(id.into())),
             StoredHpkePrivateKey::COLLECTION_NAME => Ok(Self::HpkePrivateKey(id.into())),
             StoredKeypackage::COLLECTION_NAME => Ok(Self::KeyPackage(id.into())),
             StoredPskBundle::COLLECTION_NAME => Ok(Self::PskBundle(id.into())),
@@ -131,7 +127,6 @@ impl EntityId {
 
     pub(crate) fn collection_name(&self) -> &'static str {
         match self {
-            EntityId::SignatureKeyPair(_) => StoredSignatureKeypair::COLLECTION_NAME,
             EntityId::KeyPackage(_) => StoredKeypackage::COLLECTION_NAME,
             EntityId::PskBundle(_) => StoredPskBundle::COLLECTION_NAME,
             EntityId::EncryptionKeyPair(_) => StoredEncryptionKeyPair::COLLECTION_NAME,
@@ -161,7 +156,6 @@ impl EntityId {
 pub async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> CryptoKeystoreResult<()> {
     match entity {
         Entity::ConsumerData(consumer_data) => consumer_data.replace(tx).await,
-        Entity::SignatureKeyPair(mls_signature_key_pair) => mls_signature_key_pair.save(tx).await,
         Entity::HpkePrivateKey(mls_hpke_private_key) => mls_hpke_private_key.save(tx).await,
         Entity::StoredKeypackage(mls_key_package) => mls_key_package.save(tx).await,
         Entity::PskBundle(mls_psk_bundle) => mls_psk_bundle.save(tx).await,
@@ -191,7 +185,6 @@ pub async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> Crypt
 
 pub async fn execute_delete(tx: &TransactionWrapper<'_>, entity_id: &EntityId) -> CryptoKeystoreResult<()> {
     match entity_id {
-        id @ EntityId::SignatureKeyPair(_) => StoredSignatureKeypair::delete(tx, id.as_id()).await,
         id @ EntityId::HpkePrivateKey(_) => StoredHpkePrivateKey::delete(tx, id.as_id()).await,
         id @ EntityId::KeyPackage(_) => StoredKeypackage::delete(tx, id.as_id()).await,
         id @ EntityId::PskBundle(_) => StoredPskBundle::delete(tx, id.as_id()).await,
