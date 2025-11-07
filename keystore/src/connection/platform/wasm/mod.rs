@@ -48,6 +48,12 @@ impl WasmConnection {
     ) -> CryptoKeystoreResult<()> {
         migrations::migrate_db_key_type_to_bytes(name, old_key, new_key).await
     }
+
+    pub async fn close(self) -> CryptoKeystoreResult<()> {
+        self.conn.close()?;
+
+        Ok(())
+    }
 }
 
 impl DatabaseConnectionRequirements for WasmConnection {}

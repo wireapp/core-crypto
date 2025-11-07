@@ -157,6 +157,18 @@ impl WasmEncryptedStorage {
         &self.storage
     }
 
+    pub fn close(self) -> CryptoKeystoreResult<()> {
+        match &self.storage {
+            WasmStorageWrapper::Persistent(idb) => {
+                idb.close();
+            }
+            WasmStorageWrapper::InMemory(map) => {
+                map.borrow_mut().clear();
+            }
+        }
+        Ok(())
+    }
+
     pub async fn get<R: Entity<ConnectionType = WasmConnection> + 'static>(
         &self,
         collection: &str,
