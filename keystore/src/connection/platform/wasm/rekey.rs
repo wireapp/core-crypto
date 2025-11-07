@@ -18,7 +18,7 @@ macro_rules! rekey_entities {
 
         let result = transaction.await?;
         if !result.is_committed() {
-            return Err(CryptoKeystoreError::MigrationFailed);
+            return Err(CryptoKeystoreError::MigrationFailed("comitting rekey idb transaction".into()));
         }
     }
 }

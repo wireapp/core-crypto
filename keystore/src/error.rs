@@ -152,9 +152,8 @@ pub enum CryptoKeystoreError {
     #[cfg(target_family = "wasm")]
     #[error("Migration from version {0} is not supported")]
     MigrationNotSupported(u32),
-    #[cfg(target_family = "wasm")]
-    #[error("The migration failed.")]
-    MigrationFailed,
+    #[error("The migration failed: {0}")]
+    MigrationFailed(String),
 }
 
 #[cfg(target_family = "wasm")]
