@@ -39,6 +39,8 @@ core-crypto-macros.workspace = true
 rand = { workspace = true, features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
 obfuscate = { workspace = true, features = ["openmls"] }
+openmls = { workspace = true }
+x509-cert = { workspace = true }
 openmls_traits = { workspace = true }
 openmls_basic_credential = { workspace = true }
 openmls_x509_credential = { workspace = true }
