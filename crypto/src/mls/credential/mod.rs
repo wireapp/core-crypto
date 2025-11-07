@@ -21,7 +21,7 @@ pub use self::{
     error::Error,
 };
 use crate::{
-    ClientId, ClientIdRef, ClientIdentifier, MlsError, RecursiveError,
+    Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, MlsError, RecursiveError,
     mls::credential::{error::CredentialValidationError, ext::CredentialExt as _},
 };
 
@@ -45,6 +45,8 @@ use crate::{
 /// raising errors as required to preserve DB integrity.
 #[derive(core_crypto_macros::Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Credential {
+    /// Ciphersuite used by this credential
+    pub(crate) ciphersuite: Ciphersuite,
     /// Credential type
     pub(crate) credential_type: CredentialType,
     /// MLS internal credential. Stores the MLS credential
@@ -92,13 +94,17 @@ impl Credential {
     /// Generate a basic credential.
     ///
     /// The result is independent of any client instance and the database; it lives in memory only.
-    pub fn basic(signature_scheme: SignatureScheme, client_id: ClientId, crypto: impl OpenMlsCrypto) -> Result<Self> {
+    ///
+    /// The earliest validity of this credential is always 0. It will be updated once the credential is added to a session.
+    pub fn basic(ciphersuite: Ciphersuite, client_id: ClientId, crypto: impl OpenMlsCrypto) -> Result<Self> {
+        let signature_scheme = ciphersuite.signature_algorithm();
         let (private_key, public_key) = crypto
             .signature_key_gen(signature_scheme)
             .map_err(MlsError::wrap("generating signature key"))?;
         let signature_key_pair = SignatureKeyPair::from_raw(signature_scheme, private_key, public_key);
 
         Ok(Self {
+            ciphersuite,
             credential_type: CredentialType::Basic,
             mls_credential: MlsCredential::new_basic(client_id.into_inner()),
             signature_key_pair,
@@ -126,6 +132,11 @@ impl Credential {
     /// Get the signature scheme
     pub fn signature_scheme(&self) -> SignatureScheme {
         self.signature_key_pair.signature_scheme()
+    }
+
+    /// Get the ciphersuite
+    pub fn ciphersuite(&self) -> Ciphersuite {
+        self.ciphersuite
     }
 
     /// Generate a `CredentialWithKey`, which combines the credential type with the public portion of the keypair.
@@ -159,16 +170,17 @@ impl Credential {
     #[cfg_attr(not(test), expect(dead_code))]
     pub(crate) fn from_identifier(
         identifier: &ClientIdentifier,
-        signature_scheme: SignatureScheme,
+        ciphersuite: Ciphersuite,
         crypto: impl OpenMlsCrypto,
     ) -> Result<Self> {
         match identifier {
-            ClientIdentifier::Basic(client_id) => Self::basic(signature_scheme, client_id.clone(), crypto),
+            ClientIdentifier::Basic(client_id) => Self::basic(ciphersuite, client_id.clone(), crypto),
             ClientIdentifier::X509(certs) => {
+                let signature_scheme = ciphersuite.signature_algorithm();
                 let cert = certs
                     .get(&signature_scheme)
                     .ok_or(Error::SignatureSchemeNotPresentInX509Identity(signature_scheme))?;
-                Self::x509(cert.clone())
+                Self::x509(ciphersuite, cert.clone())
             }
         }
     }
