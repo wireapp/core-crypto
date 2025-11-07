@@ -6,6 +6,7 @@ pub(crate) mod ciphersuite;
 pub mod conversation;
 pub mod credential;
 mod error;
+pub mod key_package;
 pub(crate) mod proposal;
 pub(crate) mod session;
 
