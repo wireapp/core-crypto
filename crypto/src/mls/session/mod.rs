@@ -360,13 +360,13 @@ mod tests {
             match case.credential_type {
                 CredentialType::Basic => {
                     identifier = ClientIdentifier::Basic(client_id.clone());
-                    credential = Credential::basic(case.signature_scheme(), client_id, &self.crypto_provider).unwrap();
+                    credential = Credential::basic(case.ciphersuite(), client_id, &self.crypto_provider).unwrap();
                 }
                 CredentialType::X509 => {
                     let signer = signer.expect("Missing intermediate CA").to_owned();
                     let cert = CertificateBundle::rand(&client_id, &signer);
                     identifier = ClientIdentifier::X509([(case.signature_scheme(), cert.clone())].into());
-                    credential = Credential::x509(cert).unwrap();
+                    credential = Credential::x509(case.ciphersuite(), cert).unwrap();
                 }
             };
 

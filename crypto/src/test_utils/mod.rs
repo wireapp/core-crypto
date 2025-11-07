@@ -137,7 +137,7 @@ impl SessionContext {
 
         session.provide_transport(context.transport.clone()).await;
 
-        let credential = Credential::from_identifier(&identifier, context.signature_scheme(), &session.crypto_provider)
+        let credential = Credential::from_identifier(&identifier, context.ciphersuite(), &session.crypto_provider)
             .map_err(RecursiveError::mls_credential("creating credential from identifier"))?;
         session.add_credential(credential).await.unwrap();
 
