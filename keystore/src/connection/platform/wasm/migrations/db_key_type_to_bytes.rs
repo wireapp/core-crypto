@@ -9,10 +9,11 @@ use crate::{
     connection::platform::wasm::rekey::rekey_entities,
     entities::{
         E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, E2eiRefreshToken, Entity as _, EntityBase as _, MlsPendingMessage,
-        PersistedMlsGroup, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential,
+        PersistedMlsGroup, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
         StoredE2eiEnrollment, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeypackage, StoredPskBundle, StoredSignatureKeypair,
+        StoredKeypackage, StoredPskBundle,
     },
+    migrations::{StoredSignatureKeypair, V5Credential},
 };
 
 pub(crate) async fn migrate_db_key_type_to_bytes(
@@ -35,7 +36,7 @@ pub(crate) async fn migrate_db_key_type_to_bytes(
         old_cipher,
         new_cipher,
         [
-            StoredCredential,
+            V5Credential,
             StoredSignatureKeypair,
             StoredHpkePrivateKey,
             StoredEncryptionKeyPair,

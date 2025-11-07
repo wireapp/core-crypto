@@ -4,18 +4,21 @@ use idb::{
 };
 
 use super::{DB_VERSION_0, Metabuilder};
-use crate::entities::{
-    E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, E2eiRefreshToken, EntityBase as _, MlsPendingMessage, PersistedMlsGroup,
-    PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential, StoredE2eiEnrollment,
-    StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
-    StoredSignatureKeypair,
+use crate::{
+    entities::{
+        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, E2eiRefreshToken, EntityBase as _, MlsPendingMessage,
+        PersistedMlsGroup, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
+        StoredE2eiEnrollment, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
+        StoredKeypackage, StoredPskBundle,
+    },
+    migrations::{StoredSignatureKeypair, V5Credential},
 };
 
 pub(super) fn get_builder(name: &str) -> Metabuilder {
     let idb_builder = Metabuilder::new(name)
         .version(DB_VERSION_0)
         .add_object_store(
-            ObjectStoreBuilder::new(StoredCredential::COLLECTION_NAME)
+            ObjectStoreBuilder::new(V5Credential::COLLECTION_NAME)
                 .auto_increment(false)
                 .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")))
                 .add_index(IndexBuilder::new("credential".into(), KeyPath::new_single("credential")).unique(true)),

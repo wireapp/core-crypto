@@ -11,7 +11,7 @@ use crate::{
         E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, Entity as _, EntityBase as _, MlsPendingMessage, PersistedMlsGroup,
         PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential,
         StoredE2eiEnrollment, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeypackage, StoredPskBundle, StoredSignatureKeypair,
+        StoredKeypackage, StoredPskBundle,
     },
 };
 
@@ -88,7 +88,6 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
                     new_cipher,
                     [
                         StoredCredential,
-                        StoredSignatureKeypair,
                         StoredHpkePrivateKey,
                         StoredEncryptionKeyPair,
                         StoredEpochEncryptionKeypair,

@@ -6,6 +6,7 @@ mod v2;
 mod v3;
 mod v4;
 mod v5;
+mod v6;
 
 pub(super) use db_key_type_to_bytes::migrate_db_key_type_to_bytes;
 use idb::{Database, Factory};
@@ -28,6 +29,7 @@ const DB_VERSION_2: u32 = db_version_number(2);
 const DB_VERSION_3: u32 = db_version_number(3);
 const DB_VERSION_4: u32 = db_version_number(4);
 const DB_VERSION_5: u32 = db_version_number(5);
+const DB_VERSION_6: u32 = db_version_number(6);
 
 /// Open an existing idb database with the given name, and migrate it if needed.
 pub(crate) async fn open_and_migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Database> {
@@ -64,12 +66,13 @@ pub(crate) async fn open_and_migrate(name: &str, key: &DatabaseKey) -> CryptoKey
 ///
 /// However, do not use the constant but hardcode the value into the function.
 /// This way it will keep working once a new migration is added after it.
-async fn do_migration_step(from: u32, name: &str, _key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
+async fn do_migration_step(from: u32, name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
     match from {
         // idb returns version 1 for freshly opened databases so here we just
         // need to initialize object stores.
         1 => v4::migrate(name).await,
         DB_VERSION_4 => v5::migrate(name).await,
+        DB_VERSION_5 => v6::migrate(name, key).await,
         _ => Err(CryptoKeystoreError::MigrationNotSupported(from)),
     }
 }
