@@ -1,4 +1,3 @@
-use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
 use crate::{
@@ -263,19 +262,10 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
                 ));
             }
             MlsEntityId::SignatureKeyPair => {
-                let concrete_signature_keypair: &SignatureKeyPair = v
-                    .downcast()
-                    .expect("There's an implementation issue in OpenMLS. This shouln't be happening.");
-
-                // Having an empty credential id seems tolerable, since the SignatureKeyPair type is retrieved from the key store via its public key.
-                let credential_id = vec![];
-                let kp = StoredSignatureKeypair::new(
-                    concrete_signature_keypair.signature_scheme(),
-                    k.into(),
-                    data,
-                    credential_id,
-                );
-                self.save(kp).await?;
+                return Err(CryptoKeystoreError::IncorrectApiUsage(
+                    "Signature keys must not be saved using OpenMLS's APIs. Save a credential via the keystore API
+                    instead.",
+                ));
             }
             MlsEntityId::KeyPackage => {
                 let kp = StoredKeypackage {
