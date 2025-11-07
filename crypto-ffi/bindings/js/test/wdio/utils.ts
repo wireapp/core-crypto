@@ -182,7 +182,7 @@ export async function ccInit(
                 await ctx.mlsInit(clientId, [cipherSuite]);
                 if (withCredential) {
                     await ctx.addCredential(
-                        window.ccModule.Credential.basic(cipherSuite, clientId)
+                        window.ccModule.credentialBasic(cipherSuite, clientId)
                     );
                 }
             });

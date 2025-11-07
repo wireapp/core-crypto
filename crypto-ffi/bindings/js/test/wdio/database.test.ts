@@ -64,7 +64,7 @@ describe("database", () => {
                 const clientId = makeClientId();
                 await ctx.mlsInit(makeClientId(), [cipherSuite]);
                 await ctx.addCredential(
-                    window.ccModule.Credential.basic(cipherSuite, clientId)
+                    window.ccModule.credentialBasic(cipherSuite, clientId)
                 );
             });
             const pubkey1 = await cc.transaction((ctx) =>

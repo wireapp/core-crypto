@@ -18,7 +18,7 @@ afterEach(async () => {
 
 describe("credentials", () => {
     test("basic credential can be created", async () => {
-        const credential = Credential.basic(
+        const credential = credentialBasic(
             ciphersuiteDefault(),
             new ClientId(Buffer.from("any random client id here"))
         );
@@ -28,7 +28,7 @@ describe("credentials", () => {
 
     test("credential can be added", async () => {
         const clientId = new ClientId(Buffer.from("any random client id here"));
-        const credential = Credential.basic(ciphersuiteDefault(), clientId);
+        const credential = credentialBasic(ciphersuiteDefault(), clientId);
 
         const cc = await ccInit(clientId);
 
@@ -49,7 +49,7 @@ describe("credentials", () => {
 
     test("credential can be removed", async () => {
         const clientId = new ClientId(Buffer.from("any random client id here"));
-        const credential = Credential.basic(ciphersuiteDefault(), clientId);
+        const credential = credentialBasic(ciphersuiteDefault(), clientId);
 
         const cc = await ccInit(clientId);
 
