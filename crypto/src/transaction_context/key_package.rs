@@ -65,20 +65,23 @@ impl TransactionContext {
             .map_err(Into::into)
     }
 
-    /// Generate some [KeyPackage]s from the referenced credential.
+    /// Generate a [KeyPackage] from the referenced credential.
     ///
     /// Makes no attempt to look up or prune existing keypackges.
     ///
     /// If `lifetime` is set, the keypackages will expire that span into the future.
     /// If it is unset, [`KEYPACKAGE_DEFAULT_LIFETIME`][crate::mls::session::key_package::KEYPACKAGE_DEFAULT_LIFETIME]
     /// is used.
-    pub async fn generate_keypackages(
+    pub async fn generate_keypackage(
         &self,
         credential_ref: &CredentialRef,
-        count: u32,
         lifetime: Option<Duration>,
-    ) -> Result<Vec<KeyPackage>> {
-        let mut session = self.session().await?;
-        todo!()
+    ) -> Result<KeyPackage> {
+        let session = self.session().await?;
+        session
+            .generate_keypackage(credential_ref, lifetime)
+            .await
+            .map_err(RecursiveError::mls_client("generating keypackages for transaction"))
+            .map_err(Into::into)
     }
 }

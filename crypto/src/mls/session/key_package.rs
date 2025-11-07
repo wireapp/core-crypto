@@ -17,7 +17,7 @@ use tls_codec::{Deserialize, Serialize};
 use super::{Error, Result};
 use crate::{
     Ciphersuite, Credential, CredentialRef, CredentialType, KeystoreError, MlsConversationConfiguration, MlsError,
-    Session, mls::session::SessionInner,
+    RecursiveError, Session, mls::session::SessionInner,
 };
 
 /// Default number of KeyPackages a client generates the first time it's created
@@ -28,9 +28,56 @@ pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 10;
 
 /// Default lifetime of all generated KeyPackages. Matches the limit defined in openmls
-pub(crate) const KEYPACKAGE_DEFAULT_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
+pub const KEYPACKAGE_DEFAULT_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
 
 impl Session {
+    /// Generate a [KeyPackage] from the referenced credential.
+    ///
+    /// Makes no attempt to look up or prune existing keypackges.
+    ///
+    /// If `lifetime` is set, the keypackages will expire that span into the future.
+    /// If it is unset, [`KEYPACKAGE_DEFAULT_LIFETIME`] is used.
+    ///
+    /// As a side effect, stores the keypackages and some related data in the keystore.
+    ///
+    /// Must not be fully public, only crate-public, because as it mutates the keystore it must only ever happen within a transaction.
+    pub(crate) async fn generate_keypackage(
+        &self,
+        credential_ref: &CredentialRef,
+        lifetime: Option<Duration>,
+    ) -> Result<KeyPackage> {
+        let lifetime = Lifetime::new(lifetime.unwrap_or(KEYPACKAGE_DEFAULT_LIFETIME).as_secs());
+
+        let mut credentials = credential_ref
+            .load(&self.crypto_provider.keystore())
+            .await
+            .map_err(RecursiveError::mls_credential_ref("loading credential from reference"))?;
+        let credential = credentials.pop().ok_or(Error::CredentialNotFound(
+            credential_ref.r#type(),
+            credential_ref.signature_scheme(),
+        ))?;
+        if !credentials.is_empty() {
+            return Err(Error::AmbiguousCredentialRef);
+        }
+
+        let config = CryptoConfig {
+            ciphersuite: credential.ciphersuite.into(),
+            version: openmls::versions::ProtocolVersion::default(),
+        };
+
+        KeyPackage::builder()
+            .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
+            .key_package_lifetime(lifetime)
+            .build(
+                config,
+                &self.crypto_provider,
+                &credential.signature_key_pair,
+                credential.to_mls_credential_with_key(),
+            )
+            .await
+            .map_err(Error::keypackage_new())
+    }
+
     /// Generates a single new keypackage
     ///
     /// # Arguments
