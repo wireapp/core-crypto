@@ -114,7 +114,7 @@ export async function ccInit(clientId?: ClientId): Promise<CoreCrypto> {
 
 export function randomConversationId(): ConversationId {
     const uuid = crypto.randomUUID();
-    return new ConversationId(Uint8Array.from(uuid));
+    return new ConversationId(Uint8Array.from(uuid).buffer);
 }
 
 /**
