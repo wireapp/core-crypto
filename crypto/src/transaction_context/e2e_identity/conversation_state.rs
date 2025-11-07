@@ -168,12 +168,12 @@ mod tests {
             let intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
             // this completely invents a new client id for alice, which gets propagated into the credential
             let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
-            let cb = Credential::x509(cert.clone()).unwrap();
+            let cb = Credential::x509(case.ciphersuite(), cert.clone()).unwrap();
             let conversation = conversation.e2ei_rotate_notify(Some(&cb)).await;
 
             let alice_client = alice.transaction.session().await.unwrap();
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
-            let credential = Credential::x509(cert).unwrap();
+            let credential = Credential::x509(case.ciphersuite(), cert).unwrap();
             alice_client
                 .add_credential_without_clientid_check(credential)
                 .await
@@ -229,7 +229,7 @@ mod tests {
 
             let cert_bundle =
                 CertificateBundle::from_certificate_and_issuer(&alice_cert.certificate, alice_intermediate_ca);
-            let cb = Credential::x509(cert_bundle.clone()).unwrap();
+            let cb = Credential::x509(case.ciphersuite(), cert_bundle.clone()).unwrap();
             let conversation = conversation.e2ei_rotate_notify(Some(&cb)).await;
 
             let alice_client = alice.session().await;
@@ -240,7 +240,7 @@ mod tests {
             smol::Timer::after(std::time::Duration::from_secs(1)).await;
 
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
-            let credential = Credential::x509(cert_bundle).unwrap();
+            let credential = Credential::x509(case.ciphersuite(), cert_bundle).unwrap();
             alice_client.add_credential(credential).await.unwrap();
 
             let elapsed = start.elapsed();
