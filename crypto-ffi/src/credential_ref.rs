@@ -1,9 +1,6 @@
-#[cfg(not(target_family = "wasm"))]
 use std::sync::Arc;
 
 use core_crypto::CredentialRef as CryptoCredentialRef;
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
 
 use crate::{ClientId, CoreCryptoResult, CredentialType};
 
@@ -18,33 +15,19 @@ use crate::{ClientId, CoreCryptoResult, CredentialType};
 /// This reference is _not_ a literal reference in memory.
 /// It is instead the key from which a credential can be retrieved.
 /// This means that it is stable over time and across the FFI boundary.
-#[derive(Debug, Clone, derive_more::From, derive_more::Into)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
+#[derive(Debug, Clone, derive_more::From, derive_more::Into, uniffi::Object)]
 pub struct CredentialRef(pub(crate) CryptoCredentialRef);
 
-#[cfg(target_family = "wasm")]
-pub(crate) type CredentialRefMaybeArc = CredentialRef;
-
-#[cfg(not(target_family = "wasm"))]
 pub(crate) type CredentialRefMaybeArc = Arc<CredentialRef>;
 
 impl CredentialRef {
-    #[cfg(target_family = "wasm")]
-    #[inline]
-    pub(crate) fn into_maybe_arc(self) -> CredentialRefMaybeArc {
-        self
-    }
-
-    #[cfg(not(target_family = "wasm"))]
     #[inline]
     pub(crate) fn into_maybe_arc(self) -> CredentialRefMaybeArc {
         Arc::new(self)
     }
 }
 
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+#[uniffi::export]
 impl CredentialRef {
     /// Get the client id associated with this credential ref
     pub fn client_id(&self) -> ClientId {

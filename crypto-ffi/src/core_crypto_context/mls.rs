@@ -350,7 +350,6 @@ impl CoreCryptoContext {
     /// 1 second of resolution, limiting the number of credentials which
     /// can be added. This is a known limitation and will be relaxed in the future.
     pub async fn add_credential(&self, credential: CredentialMaybeArc) -> CoreCryptoResult<CredentialRef> {
-        #[cfg(not(target_family = "wasm"))]
         let credential = std::sync::Arc::unwrap_or_clone(credential);
         let credential_ref = self.inner.add_credential(credential.0).await?;
         Ok(credential_ref.into())
@@ -358,7 +357,6 @@ impl CoreCryptoContext {
 
     /// Remove a [`Credential`][crate::Credential] from this client.
     pub async fn remove_credential(&self, credential_ref: &CredentialRefMaybeArc) -> CoreCryptoResult<()> {
-        #[cfg(not(target_family = "wasm"))]
         let credential_ref = credential_ref.as_ref();
         self.inner.remove_credential(&credential_ref.0).await?;
         Ok(())

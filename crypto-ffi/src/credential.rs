@@ -1,10 +1,7 @@
-#[cfg(not(target_family = "wasm"))]
 use std::sync::Arc;
 
 use core_crypto::{Ciphersuite as CryptoCiphersuite, Credential as CryptoCredential};
 use mls_crypto_provider::RustCrypto;
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
 
 use crate::{Ciphersuite, CoreCryptoResult, CredentialType, client_id::ClientIdMaybeArc};
 
@@ -14,15 +11,9 @@ use crate::{Ciphersuite, CoreCryptoResult, CredentialType, client_id::ClientIdMa
 /// depending on its credential type, but is independent of any client instance or storage.
 ///
 /// To attach to a particular client instance and store, see [`CoreCryptoContext::add_credential`][crate::CoreCryptoContext::add_credential].
-#[derive(Debug, Clone, derive_more::From, derive_more::Into)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
+#[derive(Debug, Clone, derive_more::From, derive_more::Into, uniffi::Object)]
 pub struct Credential(pub(crate) CryptoCredential);
 
-#[cfg(target_family = "wasm")]
-pub(crate) type CredentialMaybeArc = Credential;
-
-#[cfg(not(target_family = "wasm"))]
 pub(crate) type CredentialMaybeArc = Arc<Credential>;
 
 impl Credential {
@@ -41,25 +32,12 @@ impl Credential {
 /// Generate a basic credential.
 ///
 /// The result is independent of any client instance and the database; it lives in memory only.
-#[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
 pub fn credential_basic(ciphersuite: Ciphersuite, client_id: &ClientIdMaybeArc) -> CoreCryptoResult<Credential> {
     Credential::basic_impl(ciphersuite, client_id)
 }
 
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen]
-impl Credential {
-    /// Generate a basic credential.
-    ///
-    /// The result is independent of any client instance and the database; it lives in memory only.
-    pub fn basic(ciphersuite: Ciphersuite, client_id: &ClientIdMaybeArc) -> CoreCryptoResult<Self> {
-        Credential::basic_impl(ciphersuite, client_id)
-    }
-}
-
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+#[uniffi::export]
 impl Credential {
     /// Get the type of this credential.
     pub fn r#type(&self) -> CoreCryptoResult<CredentialType> {
