@@ -41,7 +41,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
         let cb = client
-            .find_most_recent_or_create_basic_credential(ciphersuite.signature_algorithm(), credential_type)
+            .find_most_recent_or_create_basic_credential(ciphersuite, credential_type)
             .await
             .map_err(RecursiveError::mls_client("initializing basic credential if missing"))?;
         let kp = client

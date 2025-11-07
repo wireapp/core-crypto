@@ -13,7 +13,7 @@ use openmls::prelude::Credential as MlsCredential;
 use tls_codec::Deserialize as _;
 
 use super::{Error, Result};
-use crate::{Credential, CredentialRef, KeystoreError, RecursiveError};
+use crate::{Ciphersuite, Credential, CredentialRef, KeystoreError, RecursiveError};
 
 impl CredentialRef {
     /// Helper to prefetch relevant keypairs when loading multiple credentials at a time.
@@ -66,17 +66,19 @@ impl CredentialRef {
                         stored_credential.id == self.client_id().as_slice()
                         && stored_credential.created_at == self.earliest_validity
                         && stored_credential.public_key == self.public_key
-                        && stored_credential.signature_scheme == self.signature_scheme as u16
+                        && stored_credential.ciphersuite == u16::from(self.ciphersuite)
             )
             // from here we can at least deserialize the credential
             .map(move |stored_credential| {
                 let mls_credential = MlsCredential::tls_deserialize(&mut stored_credential.credential.as_slice())
                     .map_err(Error::tls_deserialize("mls credential"))?;
-                let signature_key_pair = openmls_basic_credential::SignatureKeyPair::from_raw(self.signature_scheme, stored_credential.secret_key.to_owned(), stored_credential.public_key.to_owned());
+                let ciphersuite = Ciphersuite::try_from(stored_credential.ciphersuite).map_err(RecursiveError::mls("loading ciphersuite from db"))?;
+                let signature_key_pair = openmls_basic_credential::SignatureKeyPair::from_raw(ciphersuite.signature_algorithm(), stored_credential.secret_key.to_owned(), stored_credential.public_key.to_owned());
                 let credential_type = mls_credential.credential_type().try_into().map_err(RecursiveError::mls_credential("loading credential from db"))?;
                 let earliest_validity = stored_credential.created_at;
                 Ok(Credential {
-                    signature_key_pair ,
+                    ciphersuite,
+                    signature_key_pair,
                     credential_type,
                     mls_credential,
                     earliest_validity,

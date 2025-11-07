@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    time::Duration,
+};
 
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
@@ -13,8 +16,8 @@ use tls_codec::{Deserialize, Serialize};
 
 use super::{Error, Result};
 use crate::{
-    Ciphersuite, Credential, CredentialType, KeystoreError, MlsConversationConfiguration, MlsError, Session,
-    mls::session::SessionInner,
+    Ciphersuite, Credential, CredentialRef, CredentialType, KeystoreError, MlsConversationConfiguration, MlsError,
+    Session, mls::session::SessionInner,
 };
 
 /// Default number of KeyPackages a client generates the first time it's created
@@ -25,8 +28,7 @@ pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 10;
 
 /// Default lifetime of all generated KeyPackages. Matches the limit defined in openmls
-pub(crate) const KEYPACKAGE_DEFAULT_LIFETIME: std::time::Duration =
-    std::time::Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
+pub(crate) const KEYPACKAGE_DEFAULT_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
 
 impl Session {
     /// Generates a single new keypackage
@@ -39,8 +41,8 @@ impl Session {
     pub async fn generate_one_keypackage_from_credential(
         &self,
         backend: &MlsCryptoProvider,
-        cs: Ciphersuite,
-        cb: &Credential,
+        ciphersuite: Ciphersuite,
+        credential: &Credential,
     ) -> Result<KeyPackage> {
         let guard = self.inner.read().await;
         let SessionInner {
@@ -52,14 +54,14 @@ impl Session {
             .key_package_lifetime(Lifetime::new(keypackage_lifetime.as_secs()))
             .build(
                 CryptoConfig {
-                    ciphersuite: cs.into(),
+                    ciphersuite: ciphersuite.into(),
                     version: openmls::versions::ProtocolVersion::default(),
                 },
                 backend,
-                &cb.signature_key_pair,
+                &credential.signature_key_pair,
                 CredentialWithKey {
-                    credential: cb.mls_credential.clone(),
-                    signature_key: cb.signature_key_pair.public().into(),
+                    credential: credential.mls_credential.clone(),
+                    signature_key: credential.signature_key_pair.public().into(),
                 },
             )
             .await
@@ -313,7 +315,7 @@ impl Session {
     /// Allows to set the current default keypackage lifetime extension duration.
     /// It will be embedded in the [openmls::key_packages::KeyPackage]'s [openmls::extensions::LifetimeExtension]
     #[cfg(test)]
-    pub async fn set_keypackage_lifetime(&self, duration: std::time::Duration) -> Result<()> {
+    pub async fn set_keypackage_lifetime(&self, duration: Duration) -> Result<()> {
         match &mut *self.inner.write().await {
             None => Err(Error::MlsNotInitialized),
             Some(SessionInner {

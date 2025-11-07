@@ -1,9 +1,11 @@
 //! This module contains all transactional behavior related to key packages
 
+use std::time::Duration;
+
 use openmls::prelude::{KeyPackage, KeyPackageRef};
 
 use super::{Result, TransactionContext};
-use crate::{Ciphersuite, CredentialType, RecursiveError};
+use crate::{Ciphersuite, CredentialRef, CredentialType, RecursiveError};
 
 impl TransactionContext {
     /// Returns `amount_requested` OpenMLS [KeyPackage]s.
@@ -61,5 +63,22 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::mls_client("pruning key packages and credential"))
             .map_err(Into::into)
+    }
+
+    /// Generate some [KeyPackage]s from the referenced credential.
+    ///
+    /// Makes no attempt to look up or prune existing keypackges.
+    ///
+    /// If `lifetime` is set, the keypackages will expire that span into the future.
+    /// If it is unset, [`KEYPACKAGE_DEFAULT_LIFETIME`][crate::mls::session::key_package::KEYPACKAGE_DEFAULT_LIFETIME]
+    /// is used.
+    pub async fn generate_keypackages(
+        &self,
+        credential_ref: &CredentialRef,
+        count: u32,
+        lifetime: Option<Duration>,
+    ) -> Result<Vec<KeyPackage>> {
+        let mut session = self.session().await?;
+        todo!()
     }
 }

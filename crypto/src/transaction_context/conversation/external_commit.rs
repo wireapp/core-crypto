@@ -4,8 +4,8 @@ use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
 use super::{Error, Result};
 use crate::{
-    Ciphersuite, ConversationId, CredentialType, LeafError, MlsCommitBundle, MlsConversationConfiguration,
-    MlsCustomConfiguration, MlsError, MlsGroupInfoBundle, RecursiveError, WelcomeBundle,
+    ConversationId, CredentialType, LeafError, MlsCommitBundle, MlsConversationConfiguration, MlsCustomConfiguration,
+    MlsError, MlsGroupInfoBundle, RecursiveError, WelcomeBundle,
     mls::{
         self,
         conversation::{ConversationIdRef, pending_conversation::PendingConversation},
@@ -72,16 +72,15 @@ impl TransactionContext {
     ) -> Result<(MlsCommitBundle, WelcomeBundle, PendingConversation)> {
         let client = &self.session().await?;
 
-        let cs: Ciphersuite = group_info.ciphersuite().into();
-        let signature_scheme = cs.signature_algorithm();
+        let ciphersuite = group_info.ciphersuite().into();
         let mls_provider = self.mls_provider().await?;
         let cb = client
-            .find_most_recent_or_create_basic_credential(signature_scheme, credential_type)
+            .find_most_recent_or_create_basic_credential(ciphersuite, credential_type)
             .await
             .map_err(RecursiveError::mls_client("getting or creating credential"))?;
 
         let configuration = MlsConversationConfiguration {
-            ciphersuite: cs,
+            ciphersuite,
             custom: custom_cfg.clone(),
             ..Default::default()
         };

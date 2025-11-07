@@ -297,18 +297,18 @@ impl MlsConversation {
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> Result<Self> {
-        let (cs, ct) = (configuration.ciphersuite, creator_credential_type);
-        let cb = author_client
-            .find_most_recent_or_create_basic_credential(cs.signature_algorithm(), ct)
+        let (ciphersuite, credential_type) = (configuration.ciphersuite, creator_credential_type);
+        let credential = author_client
+            .find_most_recent_or_create_basic_credential(ciphersuite, credential_type)
             .await
             .map_err(RecursiveError::mls_client("getting or creating credential"))?;
 
         let group = MlsGroup::new_with_group_id(
             backend,
-            &cb.signature_key_pair,
+            &credential.signature_key_pair,
             &configuration.as_openmls_default_configuration()?,
             openmls::prelude::GroupId::from_slice(id.as_ref()),
-            cb.to_mls_credential_with_key(),
+            credential.to_mls_credential_with_key(),
         )
         .await
         .map_err(MlsError::wrap("creating group with id"))?;

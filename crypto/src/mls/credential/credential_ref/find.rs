@@ -3,11 +3,11 @@ use core_crypto_keystore::{
     entities::{EntityFindParams, StoredCredential},
 };
 use mls_crypto_provider::Database;
-use openmls::prelude::{Credential as MlsCredential, SignatureScheme};
+use openmls::prelude::{Credential as MlsCredential};
 use tls_codec::Deserialize as _;
 
 use super::{Error, Result};
-use crate::{ClientId, CredentialRef, CredentialType, KeystoreError, mls::session::id::ClientIdRef};
+use crate::{ClientId, Ciphersuite, CredentialRef, CredentialType, KeystoreError, mls::session::id::ClientIdRef};
 
 /// Filters to narrow down the set of credentials returned from various credential-finding methods.
 ///
@@ -40,9 +40,9 @@ pub struct FindFilters<'a> {
     /// Public key to search for
     #[builder(default, setter(strip_option))]
     pub public_key: Option<&'a [u8]>,
-    /// Signature scheme / ciphersuite to search for
+    /// Ciphersuite to search for
     #[builder(default, setter(strip_option))]
-    pub signature_scheme: Option<SignatureScheme>,
+    pub ciphersuite: Option<Ciphersuite>,
     /// Credential type to search for
     #[builder(default, setter(strip_option))]
     pub credential_type: Option<CredentialType>,
@@ -60,7 +60,7 @@ impl CredentialRef {
     pub(crate) async fn find(database: &Database, find_filters: FindFilters<'_>) -> Result<Vec<Self>> {
         let FindFilters {
             client_id,
-            signature_scheme,
+            ciphersuite,
             credential_type,
             public_key,
             earliest_validity,
@@ -74,8 +74,7 @@ impl CredentialRef {
             .filter(|stored| {
                 client_id.is_none_or(|client_id| client_id.as_ref() == stored.id)
                     && earliest_validity.is_none_or(|earliest_validity| earliest_validity == stored.created_at)
-                    && signature_scheme
-                        .is_none_or(|signature_scheme| signature_scheme as u16 == stored.signature_scheme)
+                    && ciphersuite.is_none_or(|ciphersuite| u16::from(ciphersuite) == stored.ciphersuite)
                     && public_key.is_none_or(|public_key| public_key == stored.public_key)
             })
             .map(|stored| -> Result<_> {
@@ -94,12 +93,12 @@ impl CredentialRef {
             }
 
             if let Ok(r#type) = mls_credential.credential_type().try_into()
-                && let Ok(signature_scheme) = stored_credential.signature_scheme.try_into()
+                && let Ok(ciphersuite) = stored_credential.ciphersuite.try_into()
             {
                 out.push(Self {
                     client_id: ClientId(stored_credential.id.clone()),
                     r#type,
-                    signature_scheme,
+                    ciphersuite,
                     earliest_validity: stored_credential.created_at,
                     public_key: stored_credential.public_key.to_owned(),
                 })

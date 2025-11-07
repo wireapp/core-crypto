@@ -5,8 +5,8 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{Error, Result};
 use crate::{
-    Credential, CredentialFindFilters, CredentialRef, CredentialType, LeafError, MlsConversation, RecursiveError,
-    Session, mls::session::SessionInner,
+    Ciphersuite, Credential, CredentialFindFilters, CredentialRef, CredentialType, LeafError, MlsConversation,
+    RecursiveError, Session, mls::session::SessionInner,
 };
 
 impl Session {
@@ -212,17 +212,17 @@ impl Session {
     /// If the credential type is X509, a missing credential returns `LeafError::E2eiEnrollmentNotDone`
     pub(crate) async fn find_most_recent_or_create_basic_credential(
         &self,
-        signature_scheme: SignatureScheme,
+        ciphersuite: Ciphersuite,
         credential_type: CredentialType,
     ) -> Result<Arc<Credential>> {
         let credential = match self
-            .find_most_recent_credential(signature_scheme, credential_type)
+            .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
             .await
         {
             Ok(credential) => credential,
             Err(Error::CredentialNotFound(..)) if credential_type == CredentialType::Basic => {
                 let client_id = self.id().await?;
-                let credential = Credential::basic(signature_scheme, client_id, &self.crypto_provider).map_err(
+                let credential = Credential::basic(ciphersuite, client_id, &self.crypto_provider).map_err(
                     RecursiveError::mls_credential(
                         "creating basic credential in find_most_recent_or_create_basic_credential",
                     ),

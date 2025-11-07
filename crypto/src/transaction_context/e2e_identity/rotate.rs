@@ -135,7 +135,8 @@ impl TransactionContext {
         let sk = enrollment
             .get_sign_key_for_mls()
             .map_err(RecursiveError::e2e_identity("getting sign key for mls"))?;
-        let signature_scheme = enrollment.ciphersuite().signature_algorithm();
+        let ciphersuite = *enrollment.ciphersuite();
+        let signature_scheme = ciphersuite.signature_algorithm();
 
         let mls_provider = self
             .mls_provider()
@@ -170,7 +171,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting session"))?;
 
-        let credential = Credential::x509(cert_bundle).map_err(RecursiveError::mls_credential(
+        let credential = Credential::x509(ciphersuite, cert_bundle).map_err(RecursiveError::mls_credential(
             "creating new x509 credential from certificate bundle in save_x509_credential",
         ))?;
         client
