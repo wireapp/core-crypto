@@ -107,8 +107,6 @@ pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
 
     async fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()>;
 
-    async fn close(self) -> CryptoKeystoreResult<()>;
-
     /// Default implementation of wipe
     async fn wipe(self) -> CryptoKeystoreResult<()>;
 
@@ -212,43 +210,6 @@ impl DerefMut for ConnectionGuard<'_> {
     }
 }
 
-/// Exclusive access to the database connection
-///
-/// Note that this is only ever constructed when we already hold exclusive access,
-/// and the connection has already been tested to ensure that it is non-empty.
-pub struct ConnectionGuard<'a> {
-    guard: MutexGuard<'a, Option<KeystoreDatabaseConnection>>,
-}
-
-impl<'a> TryFrom<MutexGuard<'a, Option<KeystoreDatabaseConnection>>> for ConnectionGuard<'a> {
-    type Error = CryptoKeystoreError;
-
-    fn try_from(guard: MutexGuard<'a, Option<KeystoreDatabaseConnection>>) -> Result<Self, Self::Error> {
-        guard
-            .is_some()
-            .then_some(Self { guard })
-            .ok_or(CryptoKeystoreError::Closed)
-    }
-}
-
-impl Deref for ConnectionGuard<'_> {
-    type Target = KeystoreDatabaseConnection;
-
-    fn deref(&self) -> &Self::Target {
-        self.guard
-            .as_ref()
-            .expect("we have exclusive access and already checked that the connection exists")
-    }
-}
-
-impl DerefMut for ConnectionGuard<'_> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.guard
-            .as_mut()
-            .expect("we have exclusive access and already checked that the connection exists")
-    }
-}
-
 // Only the functions in this impl block directly mess with `self.conn`
 impl Database {
     pub async fn open(location: ConnectionType<'_>, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
@@ -292,6 +253,7 @@ impl Database {
         }
         Ok(())
     }
+}
 
 impl Database {
     /// Close this database and delete its contents.
