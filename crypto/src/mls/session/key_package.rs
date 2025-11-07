@@ -78,6 +78,23 @@ impl Session {
             .map_err(Error::keypackage_new())
     }
 
+    /// Get all [`KeyPackageRef`]s in the database.
+    pub async fn get_keypackages(&self) -> Result<Vec<KeyPackageRef>> {
+        let stored_keypackages: Vec<StoredKeypackage> = self
+            .crypto_provider
+            .keystore()
+            .find_all(EntityFindParams::default())
+            .await
+            .map_err(KeystoreError::wrap("finding all keypackages"))?;
+
+        let refs = stored_keypackages
+            .into_iter()
+            .map(|mut stored| std::mem::take(&mut stored.keypackage_ref).into())
+            .collect();
+
+        Ok(refs)
+    }
+
     /// Generates a single new keypackage
     ///
     /// # Arguments
