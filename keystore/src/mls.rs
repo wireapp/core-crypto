@@ -1,11 +1,12 @@
+use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
     connection::FetchFromDatabase,
     entities::{
-        EntityFindParams, PersistedMlsGroup, PersistedMlsPendingGroup, StoredE2eiEnrollment, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle, StoredSignatureKeypair,
+        EntityFindParams, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredE2eiEnrollment,
+        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
 };
 
@@ -315,8 +316,18 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
                 deser(&group.state).ok()
             }
             MlsEntityId::SignatureKeyPair => {
-                let sig: StoredSignatureKeypair = self.find(k).await.ok().flatten()?;
-                deser(&sig.keypair).ok()
+                let stored_credential: StoredCredential = self.find(k).await.ok().flatten()?;
+                let signature_scheme = stored_credential.signature_scheme.try_into().ok()?;
+                let mls_keypair = SignatureKeyPair::from_raw(
+                    signature_scheme,
+                    stored_credential.secret_key.to_vec(),
+                    stored_credential.public_key.to_vec(),
+                );
+
+                // In a well designed interface, something like this should not be necessary. However, we don't have
+                // a well-designed interface.
+                let mls_keypair_serialized = ser(&mls_keypair).ok()?;
+                deser(&mls_keypair_serialized).ok()
             }
             MlsEntityId::KeyPackage => {
                 let kp: StoredKeypackage = self.find(k).await.ok().flatten()?;
@@ -344,7 +355,10 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
     async fn delete<V: MlsEntity>(&self, k: &[u8]) -> Result<(), Self::Error> {
         match V::ID {
             MlsEntityId::GroupState => self.remove::<PersistedMlsGroup, _>(k).await?,
-            MlsEntityId::SignatureKeyPair => self.remove::<StoredSignatureKeypair, _>(k).await?,
+            MlsEntityId::SignatureKeyPair => unimplemented!(
+                "Deleting a signature key pair should not be done through this API, any keypair should be deleted via
+                deleting a credential."
+            ),
             MlsEntityId::HpkePrivateKey => self.remove::<StoredHpkePrivateKey, _>(k).await?,
             MlsEntityId::KeyPackage => self.remove::<StoredKeypackage, _>(k).await?,
             MlsEntityId::PskBundle => self.remove::<StoredPskBundle, _>(k).await?,
