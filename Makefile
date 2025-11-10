@@ -573,8 +573,9 @@ $(STAMPS)/docs-ts: $(DTS_OUT)
 	  --tsconfig tsconfig.json \
 	  --out ../../../target/typescript/doc \
 	  --readme none \
-	  --treatWarningsAsErrors
-	$(TOUCH_STAMP)
+	  --treatWarningsAsErrors \
+	  --plugin ./typedoc-ignore-warnings.cjs
+	  $(TOUCH_STAMP)
 
 .PHONY: docs-ts
 docs-ts: $(STAMPS)/docs-ts ## Generate TypeScript docs
