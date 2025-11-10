@@ -137,7 +137,7 @@ impl Session {
         // or we could iterate over the list of signature schemes and build up a set of credential refs.
         // as there are only a few signature schemes possible and the cost of a find operation is non-trivial,
         // we choose the first option.
-        // we might revisit this choice after WPB-20844.
+        // we might revisit this choice after WPB-20844 and WPB-21819.
         let mut credential_refs = CredentialRef::find(
             &self.crypto_provider.keystore(),
             CredentialFindFilters::builder().client_id(&client_id).build(),
@@ -149,7 +149,7 @@ impl Session {
         credential_refs.retain(|credential_ref| signature_schemes.contains(&credential_ref.signature_scheme()));
 
         let mut identities = Identities::new(credential_refs.len());
-        let cache = CredentialRef::load_cache(&self.crypto_provider.keystore())
+        let credentials_cache = CredentialRef::load_stored_credentials(&self.crypto_provider.keystore())
             .await
             .map_err(RecursiveError::mls_credential_ref(
                 "loading credential ref cache while initializing session",
@@ -158,8 +158,7 @@ impl Session {
         for credential_ref in credential_refs {
             for credential_result in
                 credential_ref
-                    .load_with_cache(&cache)
-                    .await
+                    .load_from_cache(&credentials_cache)
                     .map_err(RecursiveError::mls_credential_ref(
                         "loading credential list in session init",
                     ))?
@@ -412,7 +411,6 @@ mod tests {
             let pending_group = keystore.count::<PersistedMlsPendingGroup>().await.unwrap();
             let pending_messages = keystore.count::<MlsPendingMessage>().await.unwrap();
             let psk_bundle = keystore.count::<StoredPskBundle>().await.unwrap();
-            let signature_keypair = keystore.count::<StoredSignatureKeypair>().await.unwrap();
             EntitiesCount {
                 credential,
                 encryption_keypair,
@@ -424,7 +422,6 @@ mod tests {
                 pending_group,
                 pending_messages,
                 psk_bundle,
-                signature_keypair,
             }
         }
     }

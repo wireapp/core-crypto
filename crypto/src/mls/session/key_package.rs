@@ -458,7 +458,6 @@ mod tests {
             assert_eq!(init.encryption_keypair, 0);
             assert_eq!(init.hpke_private_key, 0);
             assert_eq!(init.credential, 1);
-            assert_eq!(init.signature_keypair, 1);
 
             // since 'delete_keypackages' will evict all Credentials unlinked to a KeyPackage, each iteration
             // generates 1 extra KeyPackage in order for this Credential no to be evicted and next iteration sto succeed.

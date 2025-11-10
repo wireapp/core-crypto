@@ -6,10 +6,8 @@ use mls_crypto_provider::Database;
 use openmls::prelude::{Credential as MlsCredential, SignatureScheme};
 use tls_codec::Deserialize as _;
 
-use super::{super::keypairs, Error, Result};
-use crate::{
-    ClientId, Credential, CredentialRef, CredentialType, KeystoreError, RecursiveError, mls::session::id::ClientIdRef,
-};
+use super::{Error, Result};
+use crate::{ClientId, CredentialRef, CredentialType, KeystoreError, mls::session::id::ClientIdRef};
 
 /// Filters to narrow down the set of credentials returned from various credential-finding methods.
 ///
@@ -68,33 +66,6 @@ impl CredentialRef {
             earliest_validity,
         } = find_filters;
 
-        let mut stored_keypairs = keypairs::load_all(database)
-            .await
-            .map_err(RecursiveError::mls_credential(
-                "loading all keypairs while finding credentials",
-            ))?;
-        if let Some(signature_scheme) = signature_scheme {
-            stored_keypairs.retain(|keypair| keypair.signature_scheme == signature_scheme as u16);
-        }
-        if stored_keypairs.is_empty() {
-            return Ok(Vec::new());
-        }
-        let stored_keypairs = stored_keypairs
-            .iter()
-            .map(|stored_keypair| {
-                keypairs::deserialize(stored_keypair)
-                    .map_err(RecursiveError::mls_credential(
-                        "deserializing keypair while finding credentials",
-                    ))
-                    .map_err(Into::into)
-            })
-            .filter(|stored_keypair_result| {
-                stored_keypair_result.as_ref().ok().is_none_or(|stored_keypair| {
-                    public_key.is_none_or(|public_key| stored_keypair.public() == public_key)
-                })
-            })
-            .collect::<Result<Vec<_>>>()?;
-
         let partial_credentials = database
             .find_all::<StoredCredential>(EntityFindParams::default())
             .await
@@ -103,6 +74,9 @@ impl CredentialRef {
             .filter(|stored| {
                 client_id.is_none_or(|client_id| client_id.as_ref() == stored.id)
                     && earliest_validity.is_none_or(|earliest_validity| earliest_validity == stored.created_at)
+                    && signature_scheme
+                        .is_none_or(|signature_scheme| signature_scheme as u16 == stored.signature_scheme)
+                    && public_key.is_none_or(|public_key| public_key == stored.public_key)
             })
             .map(|stored| -> Result<_> {
                 let mls_credential = MlsCredential::tls_deserialize_exact(&stored.credential)
@@ -119,31 +93,15 @@ impl CredentialRef {
                 continue;
             }
 
-            for signature_key_pair in &stored_keypairs {
-                if Credential::validate_mls_credential(
-                    mls_credential,
-                    <&ClientIdRef>::from(&stored_credential.id),
-                    signature_key_pair,
-                )
-                .is_err()
-                {
-                    // this probably doesn't happen often, but no point getting weird about it if it does;
-                    // just indicates it's not a match
-                    continue;
-                }
-
-                let Ok(r#type) = mls_credential.credential_type().try_into() else {
-                    // if we stored this in the first place, we really should be able to read it
-                    // but maybe the DB is corrupted or something; this is just not a findable result
-                    continue;
-                };
-
+            if let Ok(r#type) = mls_credential.credential_type().try_into()
+                && let Ok(signature_scheme) = stored_credential.signature_scheme.try_into()
+            {
                 out.push(Self {
                     client_id: ClientId(stored_credential.id.clone()),
                     r#type,
-                    signature_scheme: signature_key_pair.signature_scheme(),
+                    signature_scheme,
                     earliest_validity: stored_credential.created_at,
-                    public_key: signature_key_pair.public().to_owned(),
+                    public_key: stored_credential.public_key.to_owned(),
                 })
             }
         }

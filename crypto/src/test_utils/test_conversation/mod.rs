@@ -391,14 +391,8 @@ impl<'a> TestConversation<'a> {
         assert_eq!(local_identity.status, crate::DeviceStatus::Valid);
         assert!(!local_identity.thumbprint.is_empty());
 
-        // the keystore
-        let signature_key = self
-            .actor()
-            .find_signature_keypair_from_keystore(cb.signature_key_pair.public())
-            .await
-            .unwrap();
-        let signature_key = openmls::prelude::SignaturePublicKey::from(signature_key.pk.as_slice());
         let credential = self.actor().find_credential_from_keystore(&cb).await.unwrap();
+        let signature_key = openmls::prelude::SignaturePublicKey::from(credential.public_key.to_owned());
         let credential = <openmls::prelude::Credential as tls_codec::Deserialize>::tls_deserialize(
             &mut credential.credential.as_slice(),
         )

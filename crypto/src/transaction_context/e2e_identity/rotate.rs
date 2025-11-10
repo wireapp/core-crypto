@@ -384,14 +384,6 @@ mod tests {
                 // 1 has been created per new KeyPackage created in the rotation
                 assert_eq!(before_delete.key_package - before_rotate.key_package, NB_KEY_PACKAGE);
 
-                // and the signature keypair is still present
-                assert!(
-                    alice
-                        .find_signature_keypair_from_keystore(old_credential.signature_key_pair.public())
-                        .await
-                        .is_some()
-                );
-
                 // Checks are done, now let's delete ALL the deprecated KeyPackages.
                 // This should have the consequence to purge the previous credential material as well.
                 alice

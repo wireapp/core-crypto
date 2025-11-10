@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
-    entities::{
-        EntityFindParams, StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage,
-        StoredSignatureKeypair,
-    },
+    entities::{EntityFindParams, StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
 };
 use openmls::prelude::{
     Credential as MlsCredential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey, KeyPackage,
@@ -173,16 +170,6 @@ impl SessionContext {
             .find_credential_by_public_key(sc, ct, pk)
             .await
             .ok()
-    }
-
-    pub async fn find_signature_keypair_from_keystore(&self, id: &[u8]) -> Option<StoredSignatureKeypair> {
-        self.transaction
-            .keystore()
-            .await
-            .unwrap()
-            .find::<StoredSignatureKeypair>(id)
-            .await
-            .unwrap()
     }
 
     pub async fn find_hpke_private_key_from_keystore(&self, skp: &HpkePublicKey) -> Option<StoredHpkePrivateKey> {

@@ -3,7 +3,7 @@ use mls_crypto_provider::Database;
 use tls_codec::Serialize as _;
 
 use super::{Error, Result};
-use crate::{Credential, CredentialRef, KeystoreError, mls::credential::keypairs};
+use crate::{Credential, CredentialRef, KeystoreError};
 
 impl Credential {
     /// Update all the fields that were updated by the DB during the save.
@@ -20,8 +20,6 @@ impl Credential {
     /// Normally this is called internally by [`Session::add_credential`][crate::Session::add_credential];
     /// use caution if calling it from elsewhere.
     pub(crate) async fn save(&mut self, database: &Database) -> Result<CredentialRef> {
-        keypairs::store(database, self.client_id(), &self.signature_key_pair).await?;
-
         let credential_data = self
             .mls_credential
             .tls_serialize_detached()
@@ -32,6 +30,9 @@ impl Credential {
                 id: self.client_id().to_owned().into_inner(),
                 credential: credential_data,
                 created_at: Default::default(), // updated by the `.save` impl
+                signature_scheme: self.signature_scheme() as u16,
+                secret_key: self.signature_key_pair.private().to_owned(),
+                public_key: self.signature_key().public().to_owned(),
             })
             .await
             .map_err(KeystoreError::wrap("saving credential"))?;
@@ -43,8 +44,6 @@ impl Credential {
 
     /// Delete this credential from the database
     pub(crate) async fn delete(self, database: &Database) -> Result<()> {
-        let keypair = self.signature_key_pair;
-
         let credential_data = self
             .mls_credential
             .tls_serialize_detached()
@@ -54,8 +53,6 @@ impl Credential {
             .cred_delete_by_credential(credential_data)
             .await
             .map_err(KeystoreError::wrap("deleting credential"))?;
-
-        keypairs::delete(database, keypair).await?;
 
         Ok(())
     }

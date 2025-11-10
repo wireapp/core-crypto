@@ -3,7 +3,6 @@ use core_crypto_keystore::{
     entities::{
         MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredE2eiEnrollment,
         StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
-        StoredSignatureKeypair,
     },
 };
 
@@ -21,7 +20,6 @@ pub struct EntitiesCount {
     pub pending_group: usize,
     pub pending_messages: usize,
     pub psk_bundle: usize,
-    pub signature_keypair: usize,
 }
 
 impl TransactionContext {
@@ -38,7 +36,6 @@ impl TransactionContext {
         let pending_group = keystore.count::<PersistedMlsPendingGroup>().await.unwrap();
         let pending_messages = keystore.count::<MlsPendingMessage>().await.unwrap();
         let psk_bundle = keystore.count::<StoredPskBundle>().await.unwrap();
-        let signature_keypair = keystore.count::<StoredSignatureKeypair>().await.unwrap();
         EntitiesCount {
             credential,
             encryption_keypair,
@@ -50,7 +47,6 @@ impl TransactionContext {
             pending_group,
             pending_messages,
             psk_bundle,
-            signature_keypair,
         }
     }
 }

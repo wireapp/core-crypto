@@ -7,7 +7,6 @@ pub(crate) mod credential_type;
 pub(crate) mod crl;
 mod error;
 pub(crate) mod ext;
-mod keypairs;
 mod persistence;
 pub(crate) mod x509;
 
@@ -22,7 +21,7 @@ pub use self::{
     error::Error,
 };
 use crate::{
-    ClientId, ClientIdRef, ClientIdentifier, RecursiveError,
+    ClientId, ClientIdRef, ClientIdentifier, MlsError, RecursiveError,
     mls::credential::{error::CredentialValidationError, ext::CredentialExt as _},
 };
 
@@ -94,7 +93,10 @@ impl Credential {
     ///
     /// The result is independent of any client instance and the database; it lives in memory only.
     pub fn basic(signature_scheme: SignatureScheme, client_id: ClientId, crypto: impl OpenMlsCrypto) -> Result<Self> {
-        let signature_key_pair = keypairs::generate(crypto, signature_scheme)?;
+        let (private_key, public_key) = crypto
+            .signature_key_gen(signature_scheme)
+            .map_err(MlsError::wrap("generating signature key"))?;
+        let signature_key_pair = SignatureKeyPair::from_raw(signature_scheme, private_key, public_key);
 
         Ok(Self {
             credential_type: CredentialType::Basic,
