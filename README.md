@@ -31,10 +31,10 @@ express prior written consent of Wire Swiss GmbH.
     - [Rust Unit/Integration Tests](#rust-unitintegration-tests)
       - [All Ciphersuites](#all-ciphersuites)
       - [Keystore Wasm tests](#keystore-wasm-tests)
+    - [Platform-specific tests for WASM/Web](#platform-specific-tests-for-wasmweb)
     - [Platform-specific tests for Kotlin/JVM](#platform-specific-tests-for-kotlinjvm)
     - [Platform-specific tests for Android](#platform-specific-tests-for-android)
     - [Swift/iOS](#swiftios)
-    - [Platform-specific tests for WASM/Web](#platform-specific-tests-for-wasmweb)
   - [Benchmarks](#benchmarks)
     - [Executing Benches](#executing-benches)
   - [Git workflow](#git-workflow)
@@ -213,6 +213,15 @@ Then, to run tests for a crate in the workspace do
 wasm-pack test --headless --chrome ./keystore
 ```
 
+### Platform-specific tests for WASM/Web<a name="platform-specific-tests-for-wasmweb"></a>
+
+```sh
+make ts-test
+```
+
+Note the `CC_TEST_LOG_LEVEL` environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto
+logs.
+
 ### Platform-specific tests for Kotlin/JVM<a name="platform-specific-tests-for-kotlinjvm"></a>
 
 ```sh
@@ -228,15 +237,6 @@ make android-test
 ### Swift/iOS<a name="swiftios"></a>
 
 *No E2E testing is available as of now on Swift.*
-
-### Platform-specific tests for WASM/Web<a name="platform-specific-tests-for-wasmweb"></a>
-
-```sh
-make ts-test
-```
-
-Note the `CC_TEST_LOG_LEVEL` environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto
-logs.
 
 ## Benchmarks<a name="benchmarks"></a>
 
