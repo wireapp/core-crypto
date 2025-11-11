@@ -58,6 +58,8 @@ express prior written consent of Wire Swiss GmbH.
 - rust: <https://rustup.rs/>
 - GNU make: <https://www.gnu.org/software/make/> (min version: 4.3)
 - nextest: <https://nexte.st/>: `cargo install --locked cargo-nextest`
+- Ensure your git is configured to
+  [sign commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)
 
 #### Pre-commit<a name="pre-commit"></a>
 
