@@ -152,7 +152,7 @@ rustup target add x86_64-unknown-linux-gnu
 
 Make sure you have all prerequisites:
 
-- Install [wasm-pack](https://rustwasm.github.io/wasm-pack/)
+- Install [wasm-pack](https://github.com/drager/wasm-pack): `cargo install --locked wasm-pack`
 - Install the `wasm32-unknown-unknown` toolchain: `rustup target add wasm32-unknown-unknown`
 - Install node.js (recommended way is via [Volta](https://volta.sh/))
 - Install Bun (follow the instructions on [Bun's website](https://bun.sh/))
@@ -160,7 +160,8 @@ Make sure you have all prerequisites:
 Build:
 
 ```sh
-make ts
+make ts       # make the typescript target
+make ts-test  # make the typescript target and run tests
 ```
 
 ### Bindings<a name="bindings"></a>
