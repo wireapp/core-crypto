@@ -2,6 +2,7 @@ use std::{ops::Deref, path::Path};
 
 use async_lock::{Mutex, MutexGuard};
 use blocking::unblock;
+use refinery::Target;
 #[cfg(feature = "log-queries")]
 use rusqlite::trace::{TraceEvent, TraceEventCodes};
 use rusqlite::{Transaction, functions::FunctionFlags};
@@ -11,6 +12,8 @@ use crate::{
     CryptoKeystoreResult,
     connection::{DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey},
 };
+
+mod meta_migrations;
 
 #[cfg(target_os = "ios")]
 mod ios_wal_compat;
@@ -192,6 +195,19 @@ impl SqlCipherConnection {
             let input_blob = ctx.get::<Vec<u8>>(0)?;
             Ok(crate::sha256(&input_blob))
         })?;
+
+        // Run all migrations including V16, then its meta-migration.
+        let report = migrations::runner()
+            .set_target(Target::Version(meta_migrations::v16::VERSION))
+            .run(&mut *conn)
+            .map_err(Box::new)?;
+        if let Some(version) = report.applied_migrations().iter().map(|m| m.version()).max() {
+            debug_assert_eq!(version, meta_migrations::v16::VERSION);
+            conn.pragma_update(None, "schema_version", version)?;
+            meta_migrations::v16::meta_migration(&mut *conn)?;
+        }
+
+        // Run all remaining migrations.
         let report = migrations::runner().run(&mut *conn).map_err(Box::new)?;
         if let Some(version) = report.applied_migrations().iter().map(|m| m.version()).max() {
             conn.pragma_update(None, "schema_version", version)?;
