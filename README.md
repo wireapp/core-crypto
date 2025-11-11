@@ -15,9 +15,7 @@ express prior written consent of Wire Swiss GmbH.
 <!-- mdformat-toc start --slug=github --maxlevel=6 --minlevel=1 -->
 
 - [Wire CoreCrypto](#wire-corecrypto)
-  - [Parts](#parts)
-  - [Usage](#usage)
-    - [API Docs](#api-docs)
+  - [Documentation](#documentation)
   - [Building](#building)
     - [General Requirements](#general-requirements)
       - [Pre-commit](#pre-commit)
@@ -43,24 +41,14 @@ express prior written consent of Wire Swiss GmbH.
     - [Versioning](#versioning)
     - [Making a new release](#making-a-new-release)
       - [Consider when making a release from a release branch](#consider-when-making-a-release-from-a-release-branch)
-    - [Publishing Android / JVM bindings](#publishing-android--jvm-bindings)
-    - [Publishing JS / WASM bindings](#publishing-js--wasm-bindings)
 
 <!-- mdformat-toc end -->
 
-## Parts<a name="parts"></a>
+## Documentation<a name="documentation"></a>
 
-- CoreCrypto: Abstracts MLS & Proteus in a unified API
-- CoreCryptoFFI: FFI bindings for iOS, Android and WASM
-- Keystore: Encrypted Keystore powered by SQLCipher on all platforms except WASM. WASM uses an IndexedDB-backed,
-  encrypted store with AES256-GCM
-- MlsProvider: RustCrypto + Keystore MLS provider
-
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
-
-## Usage<a name="usage"></a>
-
-### [API Docs](https://wireapp.github.io/core-crypto/)<a name="api-docs"></a>
+- [Docs home](https://wireapp.github.io/core-crypto/)
+- [Architecture](https://wireapp.github.io/core-crypto/ARCHITECTURE.html)
+- [Publish Manually](https://wireapp.github.io/core-crypto/MANUAL_PUBLISH.html)
 
 ## Building<a name="building"></a>
 
@@ -332,21 +320,3 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
    1. On GitHub, go to the [docs workflow](https://github.com/wireapp/core-crypto/actions/workflows/docs.yml)
    1. Click the `Run workflow` button
    1. In the `Use workflow from` dropdown, choose `release/5.x`, in `Tag to checkout` provide your release tag
-
-### Publishing Android / JVM bindings<a name="publishing-android--jvm-bindings"></a>
-
-Publishing Android / JVM bindings happens automatically by a github workflow when a release tag is pushed.
-
-If you would like to publish the bindings to a local Maven cache, run:
-
-```ignore
-cd crypto-ffi/bindings
-./gradlew :jvm:publishToMavenLocal
-./gradlew :android:publishToMavenLocal
-```
-
-### Publishing JS / WASM bindings<a name="publishing-js--wasm-bindings"></a>
-
-Publishing JS / WASM bindings happens automatically by a github workflow when a release tag is pushed.
-
-If you would like to publish to `@wireapp/core-crypto` manually, log into NPM and just run `bun publish`.
