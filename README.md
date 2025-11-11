@@ -1,4 +1,4 @@
-# Wire CoreCrypto
+# Wire CoreCrypto<a name="wire-corecrypto"></a>
 
 This repository is part of the source code of Wire. You can find more information at [wire.com](https://wire.com) or by
 contacting opensource@wire.com.
@@ -12,7 +12,43 @@ No license is granted to the Wire trademark and its associated logos, all of whi
 by Wire Swiss GmbH. Any use of the Wire trademark and/or its associated logos is expressly prohibited without the
 express prior written consent of Wire Swiss GmbH.
 
-## Parts
+<!-- mdformat-toc start --slug=github --maxlevel=6 --minlevel=1 -->
+
+- [Wire CoreCrypto](#wire-corecrypto)
+  - [Parts](#parts)
+  - [Usage](#usage)
+    - [API Docs](#api-docs)
+  - [Building](#building)
+    - [General Requirements](#general-requirements)
+      - [Pre-commit](#pre-commit)
+      - [`mdformat`](#mdformat)
+    - [Android](#android)
+    - [iOS](#ios)
+    - [MacOS](#macos)
+    - [Linux](#linux)
+    - [WASM](#wasm)
+    - [Bindings](#bindings)
+  - [Testing](#testing)
+    - [General testing](#general-testing)
+    - [Run core crypto internal tests on WASM target](#run-core-crypto-internal-tests-on-wasm-target)
+      - [Addendum: testing all ciphersuites](#addendum-testing-all-ciphersuites)
+    - [Platform-specific tests for Kotlin/JVM](#platform-specific-tests-for-kotlinjvm)
+    - [Platform-specific tests for Android](#platform-specific-tests-for-android)
+    - [Swift/iOS](#swiftios)
+    - [Platform-specific tests for WASM/Web](#platform-specific-tests-for-wasmweb)
+  - [Benchmarks](#benchmarks)
+    - [Executing Benches](#executing-benches)
+  - [Git workflow](#git-workflow)
+  - [Publishing](#publishing)
+    - [Versioning](#versioning)
+    - [Making a new release](#making-a-new-release)
+      - [Consider when making a release from a release branch](#consider-when-making-a-release-from-a-release-branch)
+    - [Publishing Android / JVM bindings](#publishing-android--jvm-bindings)
+    - [Publishing JS / WASM bindings](#publishing-js--wasm-bindings)
+
+<!-- mdformat-toc end -->
+
+## Parts<a name="parts"></a>
 
 - CoreCrypto: Abstracts MLS & Proteus in a unified API
 - CoreCryptoFFI: FFI bindings for iOS, Android and WASM
@@ -22,23 +58,23 @@ express prior written consent of Wire Swiss GmbH.
 
 See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-## Usage
+## Usage<a name="usage"></a>
 
-### [API Docs](https://wireapp.github.io/core-crypto/)
+### [API Docs](https://wireapp.github.io/core-crypto/)<a name="api-docs"></a>
 
-## Building
+## Building<a name="building"></a>
 
-### General Requirements
+### General Requirements<a name="general-requirements"></a>
 
 - rust: <https://rustup.rs/>
 - GNU make: <https://www.gnu.org/software/make/> (min version: 4.3)
 
-#### Pre-commit
+#### Pre-commit<a name="pre-commit"></a>
 
 - Install the [`pre-commit` framework](https://pre-commit.com/)
 - Run `pre-commit install` to initialize the pre-commit hooks
 
-#### `mdformat`
+#### `mdformat`<a name="mdformat"></a>
 
 We're using `mdformat` for consistent formatting of our markdown files. Install it with the following extensions
 
@@ -48,7 +84,7 @@ We're using `mdformat` for consistent formatting of our markdown files. Install 
 - `mdformat-gfm-alerts`
 - `mdformat-toc`
 
-### Android
+### Android<a name="android"></a>
 
 [Install Android SDK](https://developer.android.com/studio) and Build-Tools for API level 30+
 
@@ -74,7 +110,7 @@ Build:
 make android
 ```
 
-### iOS
+### iOS<a name="ios"></a>
 
 Install Xcode & its command-line tools: [https://developer.apple.com/xcode/](https://developer.apple.com/xcode/).
 
@@ -92,7 +128,7 @@ make ios
 make ios-create-xcframework
 ```
 
-### MacOS
+### MacOS<a name="macos"></a>
 
 Install macOS rust targets:
 
@@ -100,7 +136,7 @@ Install macOS rust targets:
 rustup target add aarch64-apple-darwin
 ```
 
-### Linux
+### Linux<a name="linux"></a>
 
 > [!NOTE]
 > If cross-compiling from macOS, you'll need to install
@@ -112,7 +148,7 @@ Install Linux targets:
 rustup target add x86_64-unknown-linux-gnu
 ```
 
-### WASM
+### WASM<a name="wasm"></a>
 
 Make sure you have all prerequisites:
 
@@ -127,7 +163,7 @@ Build:
 make ts
 ```
 
-### Bindings
+### Bindings<a name="bindings"></a>
 
 Build bindings for Android, JVM, iOS and WASM
 
@@ -145,9 +181,9 @@ make ios-create-xcframework
 make ts
 ```
 
-## Testing
+## Testing<a name="testing"></a>
 
-### General testing
+### General testing<a name="general-testing"></a>
 
 ```ignore
 # Install cargo-nextest if you haven't done so, it yields some substantial speedup
@@ -155,7 +191,7 @@ cargo install cargo-nextest
 cargo nextest run
 ```
 
-### Run core crypto internal tests on WASM target
+### Run core crypto internal tests on WASM target<a name="run-core-crypto-internal-tests-on-wasm-target"></a>
 
 If you haven't already, install the target and wasm-pack:
 
@@ -173,7 +209,7 @@ Then, to run tests for a crate in the workspace do
 wasm-pack test --headless --chrome ./<crate-folder-to-test>
 ```
 
-#### Addendum: testing all ciphersuites
+#### Addendum: testing all ciphersuites<a name="addendum-testing-all-ciphersuites"></a>
 
 > [!WARNING]
 > This takes quite a while.
@@ -182,23 +218,23 @@ wasm-pack test --headless --chrome ./<crate-folder-to-test>
 cargo nextest run --features test-all-cipher
 ```
 
-### Platform-specific tests for Kotlin/JVM
+### Platform-specific tests for Kotlin/JVM<a name="platform-specific-tests-for-kotlinjvm"></a>
 
 ```sh
 make jvm-test
 ```
 
-### Platform-specific tests for Android
+### Platform-specific tests for Android<a name="platform-specific-tests-for-android"></a>
 
 ```sh
 make android-test
 ```
 
-### Swift/iOS
+### Swift/iOS<a name="swiftios"></a>
 
 *No E2E testing is available as of now on Swift.*
 
-### Platform-specific tests for WASM/Web
+### Platform-specific tests for WASM/Web<a name="platform-specific-tests-for-wasmweb"></a>
 
 ```sh
 make ts-test
@@ -207,13 +243,13 @@ make ts-test
 Note the `CC_TEST_LOG_LEVEL` environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto
 logs.
 
-## Benchmarks
+## Benchmarks<a name="benchmarks"></a>
 
 There are benches implemented in [`crypto/benches`](crypto/benches/) for several operations on mls groups with varying
 sizes or proteus. Parameters like minimum or maximum group sizes and step sizes are defined in
 [`crypto/benches/utils/mod.rs`](crypto/benches/utils/mod.rs).
 
-### Executing Benches
+### Executing Benches<a name="executing-benches"></a>
 
 To execute the benches, e.g. for creating commits, run
 
@@ -227,7 +263,7 @@ execution speed, omit the `--quick` flag. If you need reporting plots, remove th
 [`crypto/benches/utils/mod.rs`](crypto/benches/utils/mod.rs). The reports generated by criterion will be located in
 `target/criterion`.
 
-## Git workflow
+## Git workflow<a name="git-workflow"></a>
 
 - The `main` branch is used as the everyday development branch.
 - No merge commits. Always rebase on top of `main`.
@@ -245,13 +281,13 @@ execution speed, omit the `--quick` flag. If you need reporting plots, remove th
   and [tags](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-tags).
 - Remove branches from the remote once you don't need them anymore.
 
-## Publishing
+## Publishing<a name="publishing"></a>
 
-### Versioning
+### Versioning<a name="versioning"></a>
 
 The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.org).
 
-### Making a new release
+### Making a new release<a name="making-a-new-release"></a>
 
 1. Make a branch based on `main` to prepare for release (`git checkout -b prepare-release/X.Y.Z`)
 1. Run `sh scripts/update-versions.sh X.Y.Z` to update the versions of
@@ -286,7 +322,7 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
 1. Create a new release on github, copying the relevant section from `CHANGELOG.md`
 1. Voilà!
 
-#### Consider when making a release from a release branch
+#### Consider when making a release from a release branch<a name="consider-when-making-a-release-from-a-release-branch"></a>
 
 1. Isolate the changes to [index.md](docs/index.md) and `CHANGELOG.md` from the release commit itself
 1. After the release is finished, cherry-pick the changes to [index.md](docs/index.md) and `CHANGELOG.md` and get them
@@ -297,7 +333,7 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
    1. Click the `Run workflow` button
    1. In the `Use workflow from` dropdown, choose `release/5.x`, in `Tag to checkout` provide your release tag
 
-### Publishing Android / JVM bindings
+### Publishing Android / JVM bindings<a name="publishing-android--jvm-bindings"></a>
 
 Publishing Android / JVM bindings happens automatically by a github workflow when a release tag is pushed.
 
@@ -309,7 +345,7 @@ cd crypto-ffi/bindings
 ./gradlew :android:publishToMavenLocal
 ```
 
-### Publishing JS / WASM bindings
+### Publishing JS / WASM bindings<a name="publishing-js--wasm-bindings"></a>
 
 Publishing JS / WASM bindings happens automatically by a github workflow when a release tag is pushed.
 
