@@ -28,9 +28,9 @@ express prior written consent of Wire Swiss GmbH.
     - [WASM](#wasm)
     - [Bindings](#bindings)
   - [Testing](#testing)
-    - [General testing](#general-testing)
-    - [Run core crypto internal tests on WASM target](#run-core-crypto-internal-tests-on-wasm-target)
-      - [Addendum: testing all ciphersuites](#addendum-testing-all-ciphersuites)
+    - [Rust Unit/Integration Tests](#rust-unitintegration-tests)
+      - [All Ciphersuites](#all-ciphersuites)
+      - [Keystore Wasm tests](#keystore-wasm-tests)
     - [Platform-specific tests for Kotlin/JVM](#platform-specific-tests-for-kotlinjvm)
     - [Platform-specific tests for Android](#platform-specific-tests-for-android)
     - [Swift/iOS](#swiftios)
@@ -57,6 +57,7 @@ express prior written consent of Wire Swiss GmbH.
 
 - rust: <https://rustup.rs/>
 - GNU make: <https://www.gnu.org/software/make/> (min version: 4.3)
+- nextest: <https://nexte.st/>: `cargo install --locked cargo-nextest`
 
 #### Pre-commit<a name="pre-commit"></a>
 
@@ -156,6 +157,7 @@ Make sure you have all prerequisites:
 - Install the `wasm32-unknown-unknown` toolchain: `rustup target add wasm32-unknown-unknown`
 - Install node.js (recommended way is via [Volta](https://volta.sh/))
 - Install Bun (follow the instructions on [Bun's website](https://bun.sh/))
+- Install [chromdriver](https://getwebdriver.com/chromedriver) (often via system package manager)
 
 Build:
 
@@ -184,39 +186,31 @@ make ts
 
 ## Testing<a name="testing"></a>
 
-### General testing<a name="general-testing"></a>
+### Rust Unit/Integration Tests<a name="rust-unitintegration-tests"></a>
 
 ```sh
-# Install cargo-nextest if you haven't done so, it yields some substantial speedup
-cargo install cargo-nextest
 cargo nextest run
 ```
 
-### Run core crypto internal tests on WASM target<a name="run-core-crypto-internal-tests-on-wasm-target"></a>
-
-If you haven't already, install the target and wasm-pack:
-
-```sh
-rustup target add wasm32-unknown-unknown
-cargo install wasm-pack
-```
-
-If you want to test for chrome, [get chromedriver](https://getwebdriver.com/chromedriver) or the webdriver for the
-browser you want to test for, respectively.
-
-Then, to run tests for a crate in the workspace do
-
-```sh
-wasm-pack test --headless --chrome ./<crate-folder-to-test>
-```
-
-#### Addendum: testing all ciphersuites<a name="addendum-testing-all-ciphersuites"></a>
+#### All Ciphersuites<a name="all-ciphersuites"></a>
 
 > [!WARNING]
 > This takes quite a while.
 
 ```sh
 cargo nextest run --features test-all-cipher
+```
+
+#### Keystore Wasm tests<a name="keystore-wasm-tests"></a>
+
+Sometimes for the Keystore it is valuable to run Rust unit/integration tests on the WASM target.
+
+- Ensure you are set up to [build wasm](#wasm)
+
+Then, to run tests for a crate in the workspace do
+
+```sh
+wasm-pack test --headless --chrome ./keystore
 ```
 
 ### Platform-specific tests for Kotlin/JVM<a name="platform-specific-tests-for-kotlinjvm"></a>
