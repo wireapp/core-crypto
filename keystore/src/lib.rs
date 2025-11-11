@@ -7,6 +7,7 @@ pub use error::*;
 pub mod connection;
 pub use connection::{ConnectionType, Database, DatabaseKey};
 pub mod entities;
+pub(crate) mod migrations;
 pub mod transaction;
 
 pub(crate) mod mls;
