@@ -157,7 +157,11 @@ Make sure you have all prerequisites:
 - Install the `wasm32-unknown-unknown` toolchain: `rustup target add wasm32-unknown-unknown`
 - Install node.js (recommended way is via [Volta](https://volta.sh/))
 - Install Bun (follow the instructions on [Bun's website](https://bun.sh/))
-- Install [chromdriver](https://getwebdriver.com/chromedriver) (often via system package manager)
+- Install [chromedriver](https://getwebdriver.com/chromedriver)
+  ```sh
+  bunx @puppeteer/browsers install --path ~/bin chrome-headless-shell
+  bunx @puppeteer/browsers install --path ~/bin chromedriver
+  ```
 
 Build:
 
