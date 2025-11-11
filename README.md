@@ -20,6 +20,7 @@ express prior written consent of Wire Swiss GmbH.
     - [General Requirements](#general-requirements)
       - [Pre-commit](#pre-commit)
       - [`mdformat`](#mdformat)
+    - [JVM](#jvm)
     - [Android](#android)
     - [iOS](#ios)
     - [MacOS](#macos)
@@ -71,6 +72,17 @@ We're using `mdformat` for consistent formatting of our markdown files. Install 
 - `mdformat-footnote`
 - `mdformat-gfm-alerts`
 - `mdformat-toc`
+
+### JVM<a name="jvm"></a>
+
+- Install [SDKMAN!](https://sdkman.io/): `curl -s "https://get.sdkman.io" | bash`
+- Install Java 17: `sdk install java 17.0.17-tem`
+- Install Kotlin: `sdk install kotlin`
+
+```sh
+make jvm       # make the JVM target
+make jvm-test  # make and test the JVM target
+```
 
 ### Android<a name="android"></a>
 
