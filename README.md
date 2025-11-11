@@ -91,7 +91,7 @@ make jvm-test  # make and test the JVM target
 > [!IMPORTANT]
 > If you are building on macOS you'll need to setup `$ANDROID_SDK_ROOT` path variable manually:
 >
-> ```ignore
+> ```sh
 > export ANDROID_SDK_ROOT=~/Android/Sdk
 > ```
 
@@ -100,13 +100,13 @@ make jvm-test  # make and test the JVM target
 
 Install android rust targets:
 
-```ignore
+```sh
 rustup target add x86_64-linux-android aarch64-linux-android armv7-linux-androideabi
 ```
 
 Build:
 
-```ignore
+```sh
 make android
 ```
 
@@ -116,13 +116,13 @@ Install Xcode & its command-line tools: [https://developer.apple.com/xcode/](htt
 
 Install iOS rust targets:
 
-```ignore
+```sh
 rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 ```
 
 Build:
 
-```ignore
+```sh
 make ios
 # Additionally, if you want to export a .XCFramework:
 make ios-create-xcframework
@@ -132,7 +132,7 @@ make ios-create-xcframework
 
 Install macOS rust targets:
 
-```ignore
+```sh
 rustup target add aarch64-apple-darwin
 ```
 
@@ -144,7 +144,7 @@ rustup target add aarch64-apple-darwin
 
 Install Linux targets:
 
-```ignore
+```sh
 rustup target add x86_64-unknown-linux-gnu
 ```
 
@@ -159,7 +159,7 @@ Make sure you have all prerequisites:
 
 Build:
 
-```ignore
+```sh
 make ts
 ```
 
@@ -167,7 +167,7 @@ make ts
 
 Build bindings for Android, JVM, iOS and WASM
 
-```ignore
+```sh
 # builds bindings and targets for the JVM (macOS / Linux)
 make jvm
 
@@ -185,7 +185,7 @@ make ts
 
 ### General testing<a name="general-testing"></a>
 
-```ignore
+```sh
 # Install cargo-nextest if you haven't done so, it yields some substantial speedup
 cargo install cargo-nextest
 cargo nextest run
@@ -205,7 +205,7 @@ browser you want to test for, respectively.
 
 Then, to run tests for a crate in the workspace do
 
-```ignore
+```sh
 wasm-pack test --headless --chrome ./<crate-folder-to-test>
 ```
 
@@ -214,7 +214,7 @@ wasm-pack test --headless --chrome ./<crate-folder-to-test>
 > [!WARNING]
 > This takes quite a while.
 
-```ignore
+```sh
 cargo nextest run --features test-all-cipher
 ```
 
