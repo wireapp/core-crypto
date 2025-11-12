@@ -218,6 +218,10 @@ impl OpenMlsCrypto for &MlsCryptoProvider {
         self.crypto.signature_public_key_len(alg)
     }
 
+    fn validate_signature_key(&self, alg: SignatureScheme, key: &[u8]) -> Result<(), CryptoError> {
+        self.crypto.validate_signature_key(alg, key)
+    }
+
     fn verify_signature(
         &self,
         alg: SignatureScheme,
