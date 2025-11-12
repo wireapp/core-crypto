@@ -466,7 +466,6 @@ wasm-build: $(WASM_GEN)
 # generate TypeScript defs only when corecrypto.js changed
 ts-deps :=  $(BUN_LOCK) $(NODE_MODULES) $(TS_SRCS) $(PACKAGE_JSON) $(BUNFIG) $(WASM_GEN)
 $(DTS_OUT): $(ts-deps)
-	rm -rf $(TS_OUT_DIR)
 	cd $(JS_DIR) && \
 	bun build src/CoreCrypto.ts \
 	  --target browser \
