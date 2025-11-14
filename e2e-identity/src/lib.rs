@@ -46,7 +46,7 @@ pub struct RustyE2eIdentity {
     pub acme_jwk: Jwk,
 }
 
-// enrollment/refresh flow
+/// Enrollment flow.
 impl RustyE2eIdentity {
     /// Builds an instance holding private key material. This instance has to be used in the whole
     /// enrollment process then dropped to clear secret key material.
