@@ -1,5 +1,5 @@
 # Keep keycloak versions in sync (search for this comment to find all places to update)
-FROM quay.io/keycloak/keycloak:26.0.1  
+FROM quay.io/keycloak/keycloak:26.0.1
 ARG kc_port
 
 WORKDIR /opt/keycloak
@@ -14,8 +14,6 @@ RUN keytool -genkeypair \
      -alias server \
      -ext "SAN:c=DNS:localhost,IP:127.0.0.1" \
      -keystore conf/server.keystore
-
-COPY tests/utils/docker/keycloak/e2ei-keycloak-oidc-mapper-0.1.1.jar /opt/keycloak/providers/e2ei-keycloak-oidc-mapper.jar
 
 ENV KC_HTTP_PORT="${kc_port}"
 
