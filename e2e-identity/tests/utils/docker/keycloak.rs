@@ -201,48 +201,6 @@ impl KeycloakImage {
             )
             .await
             .unwrap();
-
-        // Create the client profile to attach the executor
-        const EXECUTOR_NAME: &str = "wire-e2ei-claims-refresh";
-        const CLIENT_PROFILE_NAME: &str = "wire-e2ei-claims-refresh-client-profile";
-        let executor = keycloak::types::ClientPolicyExecutorRepresentation {
-            configuration: Some(Default::default()),
-            executor: Some(EXECUTOR_NAME.to_string()),
-        };
-        let client_profile = keycloak::types::ClientProfileRepresentation {
-            name: Some(CLIENT_PROFILE_NAME.to_string()),
-            description: Some("TODO".to_string()),
-            executors: Some(vec![executor]),
-        };
-        let client_profiles = keycloak::types::ClientProfilesRepresentation {
-            global_profiles: None,
-            profiles: Some(vec![client_profile]),
-        };
-        admin
-            .realm_client_policies_profiles_put(Self::REALM, client_profiles)
-            .await
-            .unwrap();
-
-        let condition = keycloak::types::ClientPolicyConditionRepresentation {
-            condition: Some("any-client".to_string()),
-            configuration: Some(Default::default()),
-        };
-
-        let client_policy = keycloak::types::ClientPolicyRepresentation {
-            name: Some(format!("{EXECUTOR_NAME}-client-profile")),
-            conditions: Some(vec![condition]),
-            description: Some("TODO".to_string()),
-            enabled: Some(true),
-            profiles: Some(vec![CLIENT_PROFILE_NAME.to_string()]),
-        };
-        let client_policies = keycloak::types::ClientPoliciesRepresentation {
-            policies: Some(vec![client_policy]),
-            global_policies: None,
-        };
-        admin
-            .realm_client_policies_policies_put(Self::REALM, client_policies)
-            .await
-            .unwrap();
     }
 }
 

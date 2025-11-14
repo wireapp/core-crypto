@@ -95,34 +95,6 @@ fn test_env() -> TestEnvironment {
     setup_test_environment()
 }
 
-/// Tests using the custom SPI Provider to be able to use the refreshToken to get a new idToken with the current ACME challenges
-#[rstest]
-#[tokio::test]
-async fn refresh_token_can_be_used_to_renew(test_env: TestEnvironment) {
-    let test = E2eTest::new(test_env).start().await;
-
-    // first enrollment
-    let test = test.nominal_enrollment().await.unwrap();
-
-    let refresh_token = test.refresh_token.clone().unwrap().secret().to_string();
-    assert!(!refresh_token.is_empty());
-    let refresh_token = oauth2::RefreshToken::new(refresh_token);
-
-    // second enrollment
-    let flow = EnrollmentFlow {
-        fetch_id_token: Box::new(|mut test, (oidc_chall, keyauth)| {
-            Box::pin(async move {
-                let id_token = test
-                    .fetch_id_token_from_refresh_token(&oidc_chall, keyauth, refresh_token)
-                    .await?;
-                Ok((test, id_token))
-            })
-        }),
-        ..Default::default()
-    };
-    test.enrollment(flow).await.unwrap();
-}
-
 /// Verify that it works for all MLS ciphersuites
 mod alg {
     use super::*;

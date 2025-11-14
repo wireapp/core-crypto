@@ -11,7 +11,7 @@ use const_oid::{
 use http::header;
 use itertools::Itertools;
 use jwt_simple::prelude::*;
-use oauth2::{CsrfToken, PkceCodeChallenge, RedirectUrl, RefreshToken, Scope};
+use oauth2::{CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
 use openidconnect::{
     IssuerUrl, Nonce,
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
@@ -650,75 +650,9 @@ impl E2eTest {
         let access_token = oauth_token_response.access_token().secret();
         self.display_token("OAuth Access token", access_token, None, &idp_pubkey);
 
-        if let Some(refresh_token) = oauth_token_response.refresh_token() {
-            // Note that this refresh token will always be shown as having an invalid signature
-            // because Keycloak generates a HS512 refresh token, which we can't verify due to the
-            // fact that verification requires possession of a secret key that only Keycloak has
-            // access to.
-            self.display_token("OAuth Refresh token", refresh_token.secret(), None, &idp_pubkey);
-            self.refresh_token = Some(refresh_token.clone());
-        }
-
         use openidconnect::TokenResponse as _;
         let id_token = oauth_token_response.id_token().unwrap().to_string();
 
-        Ok(id_token)
-    }
-
-    pub async fn fetch_id_token_from_refresh_token(
-        &mut self,
-        oidc_chall: &AcmeChallenge,
-        keyauth: String,
-        refresh_token: RefreshToken,
-    ) -> TestResult<String> {
-        match self.oidc_provider {
-            OidcProvider::Keycloak => {
-                self.fetch_id_token_from_refresh_token_from_keycloak(oidc_chall, keyauth, refresh_token)
-                    .await
-            }
-        }
-    }
-
-    pub async fn fetch_id_token_from_refresh_token_from_keycloak(
-        &mut self,
-        oidc_chall: &AcmeChallenge,
-        keyauth: String,
-        refresh_token: RefreshToken,
-    ) -> TestResult<String> {
-        self.display_chapter("Use refreshToken to retrieve idToken");
-        let oidc_target = oidc_chall.target.to_string();
-        let issuer_url = IssuerUrl::new(oidc_target).unwrap();
-        let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), &async |r| {
-            custom_oauth_client("discovery", ctx_get_http_client(), r).await
-        })
-        .await
-        .unwrap();
-
-        let client_id = openidconnect::ClientId::new(self.oauth_cfg.client_id.clone());
-        let redirect_url = RedirectUrl::new(self.oauth_cfg.redirect_uri.clone()).unwrap();
-        let client =
-            CoreClient::from_provider_metadata(provider_metadata, client_id, None).set_redirect_uri(redirect_url);
-
-        let acme_audience = oidc_chall.url.clone();
-        let extra = json!({
-            "id_token": {
-                "keyauth": { "essential": true, "value": keyauth },
-                "acme_aud": { "essential": true, "value": acme_audience }
-            }
-        })
-        .to_string();
-
-        let refresh_token_request = client
-            .exchange_refresh_token(&refresh_token)
-            .unwrap()
-            .add_extra_param("claims", extra);
-
-        let refresh_token_response = refresh_token_request
-            .request_async(&async |r| custom_oauth_client("refresh-token", ctx_get_http_client(), r).await)
-            .await
-            .unwrap();
-        use openidconnect::TokenResponse as _;
-        let id_token = refresh_token_response.id_token().unwrap().to_string();
         Ok(id_token)
     }
 

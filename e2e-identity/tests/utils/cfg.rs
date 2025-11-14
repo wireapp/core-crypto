@@ -1,7 +1,6 @@
 use std::{collections::HashMap, net::SocketAddr};
 
 use jwt_simple::prelude::*;
-use oauth2::RefreshToken;
 use rand::random;
 use rusty_acme::prelude::{AcmeAccount, AcmeAuthz, AcmeChallenge, AcmeDirectory, AcmeFinalize, AcmeOrder};
 use rusty_jwt_tools::{jwk::TryIntoJwk, prelude::*};
@@ -72,7 +71,6 @@ pub struct E2eTest {
     pub oidc_cfg: Option<OidcCfg>,
     pub client: reqwest::Client,
     pub oidc_provider: OidcProvider,
-    pub refresh_token: Option<RefreshToken>,
 }
 
 #[derive(Debug, Clone)]
@@ -227,7 +225,6 @@ impl E2eTest {
             is_demo,
             client: reqwest::Client::new(),
             oidc_provider,
-            refresh_token: None,
         }
     }
 
