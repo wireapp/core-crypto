@@ -781,39 +781,6 @@ export class CoreCryptoContext {
     }
 
     /**
-     * Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)
-     * having to change/rotate their credential, either because the former one is expired or it
-     * has been revoked. It lets you change the DisplayName or the handle
-     * if you need to. Once the enrollment is finished, use {@link CoreCryptoContext.e2eiRotate}
-     * to do key rotation.
-     *
-     * @param expirySec - generated x509 certificate expiry
-     * @param ciphersuite - for generating signing key material
-     * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
-     * @param handle - user handle e.g. `alice.smith.qa@example.com`
-     * @param team - name of the Wire team a user belongs to
-     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCryptoContext.e2eiRotate}
-     */
-    async e2eiNewRotateEnrollment(
-        expirySec: number,
-        ciphersuite: Ciphersuite,
-        displayName?: string,
-        handle?: string,
-        team?: string
-    ): Promise<E2eiEnrollment> {
-        const e2ei = await CoreCryptoError.asyncMapErr(
-            this.#ctx.e2ei_new_rotate_enrollment(
-                displayName,
-                handle,
-                team,
-                expirySec,
-                ciphersuite
-            )
-        );
-        return new E2eiEnrollment(e2ei);
-    }
-
-    /**
      * Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ;
      * that means he cannot initialize with a Basic credential
      *
@@ -902,8 +869,7 @@ export class CoreCryptoContext {
 
     /**
      * Saves a new X509 credential. Requires first
-     * having enrolled a new X509 certificate with either {@link CoreCryptoContext.e2eiNewActivationEnrollment}
-     * or {@link CoreCryptoContext.e2eiNewRotateEnrollment}
+     * having enrolled a new X509 certificate with {@link CoreCryptoContext.e2eiNewActivationEnrollment}.
      *
      * # Expected actions to perform after this function (in this order)
      * 1. Rotate credentials for each conversation using {@link CoreCryptoContext.e2eiRotate}

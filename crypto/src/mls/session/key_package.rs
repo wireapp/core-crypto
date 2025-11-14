@@ -336,7 +336,7 @@ mod tests {
     use super::Session;
     use crate::{
         MlsConversationConfiguration,
-        e2e_identity::enrollment::test_utils::{e2ei_enrollment, init_activation_or_rotation, noop_restore},
+        e2e_identity::enrollment::test_utils::{e2ei_enrollment, init_activation, noop_restore},
         test_utils::*,
     };
 
@@ -408,7 +408,7 @@ mod tests {
                 test_chain,
                 None,
                 false,
-                init_activation_or_rotation,
+                init_activation,
                 noop_restore,
             )
             .await

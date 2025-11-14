@@ -63,23 +63,6 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::e2ei_new_rotate_enrollment]
-    pub async fn e2ei_new_rotate_enrollment(
-        &self,
-        display_name: Option<String>,
-        handle: Option<String>,
-        team: Option<String>,
-        expiry_sec: u32,
-        ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<E2eiEnrollment> {
-        self.inner
-            .e2ei_new_rotate_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
-            .await
-            .map(E2eiEnrollment::new)
-            .map_err(Into::<TransactionError>::into)
-            .map_err(Into::into)
-    }
-
     /// See [core_crypto::transaction_context::TransactionContext::e2ei_register_acme_ca]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CoreCryptoResult<()> {
         self.inner

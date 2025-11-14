@@ -5,9 +5,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 use super::error::{Error, Result};
 use crate::{
     CertificateBundle, Ciphersuite, Credential, CredentialType, E2eiEnrollment, KeystoreError, MlsError,
-    RecursiveError,
-    e2e_identity::NewCrlDistributionPoints,
-    mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
+    RecursiveError, e2e_identity::NewCrlDistributionPoints, mls::credential::x509::CertificatePrivateKey,
     transaction_context::TransactionContext,
 };
 
@@ -60,65 +58,8 @@ impl TransactionContext {
         .map_err(Into::into)
     }
 
-    /// Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)
-    /// having to change/rotate their credential, either because the former one is expired or it
-    /// has been revoked. As a consequence, this method does not support changing neither ClientId which
-    /// should remain the same as the previous one. It lets you change the DisplayName or the handle
-    /// if you need to. Once the enrollment is finished, use the instance in [TransactionContext::save_x509_credential] to do the rotation.
-    pub async fn e2ei_new_rotate_enrollment(
-        &self,
-        display_name: Option<String>,
-        handle: Option<String>,
-        team: Option<String>,
-        expiry_sec: u32,
-        ciphersuite: Ciphersuite,
-    ) -> Result<E2eiEnrollment> {
-        let mls_provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
-        // look for existing credential of type x509. If there isn't, then this method has been misused
-        let cb = self
-            .session()
-            .await
-            .map_err(RecursiveError::transaction("getting mls client"))?
-            .find_most_recent_credential(ciphersuite.signature_algorithm(), CredentialType::X509)
-            .await
-            .map_err(|_| Error::MissingExistingClient(CredentialType::X509))?;
-        let client_id = cb.mls_credential().identity().to_owned().into();
-        let sign_keypair = Some(
-            cb.signature_key()
-                .try_into()
-                .map_err(RecursiveError::e2e_identity("creating E2eiSignatureKeypair"))?,
-        );
-        let existing_identity = cb
-            .to_mls_credential_with_key()
-            .extract_identity(ciphersuite, None)
-            .map_err(RecursiveError::mls_credential("extracting identity"))?
-            .x509_identity
-            .ok_or(Error::ImplementationError)?;
-
-        let display_name = display_name.unwrap_or(existing_identity.display_name);
-        let handle = handle.unwrap_or(existing_identity.handle);
-
-        E2eiEnrollment::try_new(
-            client_id,
-            display_name,
-            handle,
-            team,
-            expiry_sec,
-            &mls_provider,
-            ciphersuite,
-            sign_keypair,
-            true, // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it
-        )
-        .map_err(RecursiveError::e2e_identity("creating new enrollment"))
-        .map_err(Into::into)
-    }
-
     /// Saves a new X509 credential. Requires first
-    /// having enrolled a new X509 certificate with either [TransactionContext::e2ei_new_activation_enrollment]
-    /// or [TransactionContext::e2ei_new_rotate_enrollment].
+    /// having enrolled a new X509 certificate with [TransactionContext::e2ei_new_activation_enrollment].
     ///
     /// # Expected actions to perform after this function (in this order)
     /// 1. Rotate credentials for each conversation in [crate::mls::conversation::ConversationGuard::e2ei_rotate]
@@ -238,17 +179,14 @@ mod tests {
 
     use openmls::prelude::SignaturePublicKey;
 
-    use super::*;
     use crate::{
         INITIAL_KEYING_MATERIAL_COUNT, e2e_identity::enrollment::test_utils as e2ei_utils,
         mls::credential::ext::CredentialExt, test_utils::*,
     };
 
     pub(crate) mod all {
-        use e2ei_utils::E2EI_EXPIRY;
-
         use super::*;
-        use crate::{CredentialRef, test_utils::context::TEAM};
+        use crate::CredentialRef;
 
         #[apply(all_cred_cipher)]
         async fn enrollment_should_rotate_all(case: TestContext) {
@@ -300,7 +238,7 @@ mod tests {
                     x509_test_chain,
                     None,
                     is_renewal,
-                    e2ei_utils::init_activation_or_rotation,
+                    e2ei_utils::init_activation,
                     e2ei_utils::noop_restore,
                 )
                 .await
@@ -464,7 +402,7 @@ mod tests {
                     x509_test_chain,
                     None,
                     is_renewal,
-                    e2ei_utils::init_activation_or_rotation,
+                    e2ei_utils::init_activation,
                     e2ei_utils::noop_restore,
                 )
                 .await
@@ -547,146 +485,6 @@ mod tests {
                 );
 
                 assert_eq!(new_client.identities_count().await.unwrap(), old_nb_identities);
-            })
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
-        async fn rotate_should_roundtrip(case: TestContext) {
-            let [alice, bob] = case.sessions_with_pki_env().await;
-            Box::pin(async move {
-                let x509_test_chain = alice.x509_chain_unchecked();
-
-                let conversation = case.create_conversation([&alice, &bob]).await;
-                // Alice's turn
-                const ALICE_NEW_HANDLE: &str = "new_alice_wire";
-                const ALICE_NEW_DISPLAY_NAME: &str = "New Alice Smith";
-
-                fn init_alice(wrapper: e2ei_utils::E2eiInitWrapper<'_>) -> e2ei_utils::InitFnReturn<'_> {
-                    Box::pin(async move {
-                        let e2ei_utils::E2eiInitWrapper { context: cc, case } = wrapper;
-                        let cs = case.ciphersuite();
-                        match case.credential_type {
-                            CredentialType::Basic => {
-                                cc.e2ei_new_activation_enrollment(
-                                    ALICE_NEW_DISPLAY_NAME.to_string(),
-                                    ALICE_NEW_HANDLE.to_string(),
-                                    Some(TEAM.to_string()),
-                                    E2EI_EXPIRY,
-                                    cs,
-                                )
-                                .await
-                            }
-                            CredentialType::X509 => {
-                                cc.e2ei_new_rotate_enrollment(
-                                    Some(ALICE_NEW_DISPLAY_NAME.to_string()),
-                                    Some(ALICE_NEW_HANDLE.to_string()),
-                                    Some(TEAM.to_string()),
-                                    E2EI_EXPIRY,
-                                    cs,
-                                )
-                                .await
-                            }
-                        }
-                        .map_err(RecursiveError::transaction("creating new enrollment"))
-                        .map_err(Into::into)
-                    })
-                }
-
-                let is_renewal = case.credential_type == CredentialType::X509;
-
-                let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
-                    &alice,
-                    &case,
-                    x509_test_chain,
-                    None,
-                    is_renewal,
-                    init_alice,
-                    e2ei_utils::noop_restore,
-                )
-                .await
-                .unwrap();
-
-                // all credentials need to be distinguishable by type, scheme, and timestamp
-                // we need to wait a second so the new credential has a distinct timestamp
-                // (our DB has a timestamp resolution of 1s)
-                smol::Timer::after(std::time::Duration::from_secs(1)).await;
-
-                alice
-                    .transaction
-                    .save_x509_credential(&mut enrollment, cert)
-                    .await
-                    .unwrap();
-                let conversation = conversation.e2ei_rotate_notify_and_verify_sender(None).await;
-
-                conversation
-                    .verify_credential_handle_and_name(ALICE_NEW_HANDLE, ALICE_NEW_DISPLAY_NAME)
-                    .await;
-
-                // Bob's turn
-                const BOB_NEW_HANDLE: &str = "new_bob_wire";
-                const BOB_NEW_DISPLAY_NAME: &str = "New Bob Smith";
-
-                fn init_bob(wrapper: e2ei_utils::E2eiInitWrapper<'_>) -> e2ei_utils::InitFnReturn<'_> {
-                    Box::pin(async move {
-                        let e2ei_utils::E2eiInitWrapper { context: cc, case } = wrapper;
-                        let cs = case.ciphersuite();
-                        match case.credential_type {
-                            CredentialType::Basic => {
-                                cc.e2ei_new_activation_enrollment(
-                                    BOB_NEW_DISPLAY_NAME.to_string(),
-                                    BOB_NEW_HANDLE.to_string(),
-                                    Some(TEAM.to_string()),
-                                    E2EI_EXPIRY,
-                                    cs,
-                                )
-                                .await
-                            }
-                            CredentialType::X509 => {
-                                cc.e2ei_new_rotate_enrollment(
-                                    Some(BOB_NEW_DISPLAY_NAME.to_string()),
-                                    Some(BOB_NEW_HANDLE.to_string()),
-                                    Some(TEAM.to_string()),
-                                    E2EI_EXPIRY,
-                                    cs,
-                                )
-                                .await
-                            }
-                        }
-                        .map_err(RecursiveError::transaction("creating new enrollment"))
-                        .map_err(Into::into)
-                    })
-                }
-                let is_renewal = case.credential_type == CredentialType::X509;
-
-                let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
-                    &bob,
-                    &case,
-                    x509_test_chain,
-                    None,
-                    is_renewal,
-                    init_bob,
-                    e2ei_utils::noop_restore,
-                )
-                .await
-                .unwrap();
-
-                bob.transaction
-                    .save_x509_credential(&mut enrollment, cert)
-                    .await
-                    .unwrap();
-
-                let conversation = conversation
-                    .acting_as(&bob)
-                    .await
-                    .e2ei_rotate_notify_and_verify_sender(None)
-                    .await;
-
-                conversation
-                    .acting_as(&bob)
-                    .await
-                    .verify_credential_handle_and_name(BOB_NEW_HANDLE, BOB_NEW_DISPLAY_NAME)
-                    .await;
             })
             .await
         }

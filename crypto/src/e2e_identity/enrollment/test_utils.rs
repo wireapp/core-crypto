@@ -3,7 +3,7 @@ use mls_crypto_provider::PkiKeypair;
 use serde_json::json;
 
 use crate::{
-    CertificateBundle, CredentialType, RecursiveError,
+    CertificateBundle, RecursiveError,
     e2e_identity::{E2eiEnrollment, Result, id::QualifiedE2eiClientId},
     test_utils::{SessionContext, TestContext, context::TEAM, x509::X509TestChain},
     transaction_context::TransactionContext,
@@ -53,32 +53,17 @@ pub(crate) fn init_enrollment(wrapper: E2eiInitWrapper<'_>) -> InitFnReturn<'_> 
     })
 }
 
-pub(crate) fn init_activation_or_rotation(wrapper: E2eiInitWrapper<'_>) -> InitFnReturn<'_> {
+pub(crate) fn init_activation(wrapper: E2eiInitWrapper<'_>) -> InitFnReturn<'_> {
     Box::pin(async move {
         let E2eiInitWrapper { context: cc, case } = wrapper;
-        let cs = case.ciphersuite();
-        match case.credential_type {
-            CredentialType::Basic => {
-                cc.e2ei_new_activation_enrollment(
-                    NEW_DISPLAY_NAME.to_string(),
-                    NEW_HANDLE.to_string(),
-                    Some(TEAM.to_string()),
-                    E2EI_EXPIRY,
-                    cs,
-                )
-                .await
-            }
-            CredentialType::X509 => {
-                cc.e2ei_new_rotate_enrollment(
-                    Some(NEW_DISPLAY_NAME.to_string()),
-                    Some(NEW_HANDLE.to_string()),
-                    Some(TEAM.to_string()),
-                    E2EI_EXPIRY,
-                    cs,
-                )
-                .await
-            }
-        }
+        cc.e2ei_new_activation_enrollment(
+            NEW_DISPLAY_NAME.to_string(),
+            NEW_HANDLE.to_string(),
+            Some(TEAM.to_string()),
+            E2EI_EXPIRY,
+            case.ciphersuite(),
+        )
+        .await
         .map_err(RecursiveError::transaction("creating new enrollment"))
         .map_err(Into::into)
     })
