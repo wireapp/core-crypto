@@ -158,47 +158,30 @@ impl KeycloakImage {
             .await
             .unwrap();
 
-        // Now enable the mapper for the scope "profile"
-        // First find the scope "profile"
+        // Configure Keycloak to include extra claims, 'keyauth' and 'acme_aud',
+        // in the returned ID token.
         let scopes = admin.realm_client_scopes_get(Self::REALM).await.unwrap();
         let profile_scope = scopes.iter().find(|s| s.name == Some("profile".to_string())).unwrap();
-
-        // Then register this protocol mapper for this scope
         let scope_id = profile_scope.id.clone().unwrap();
-        let keyauth_protocol_mapper = ProtocolMapperRepresentation {
+
+        Self::configure_extra_claim(&admin, &scope_id, "keyauth").await;
+        Self::configure_extra_claim(&admin, &scope_id, "acme_aud").await;
+    }
+
+    async fn configure_extra_claim(admin: &KeycloakAdmin, scope_id: &str, claim_name: &str) {
+        let mapper = ProtocolMapperRepresentation {
             config: Some(HashMap::from_iter([
-                ("claim.name".to_string(), "keyauth".to_string()),
+                ("claim.name".to_string(), claim_name.to_string()),
                 ("id.token.claim".to_string(), "true".to_string()),
             ])),
-            name: Some("wire-keyauth-id-token-mapper".to_string()),
+            name: Some(format!("wire-{claim_name}-id-token-mapper")),
             protocol: Some("openid-connect".to_string()),
             protocol_mapper: Some("oidc-claims-param-value-idtoken-mapper".to_string()),
             ..Default::default()
         };
+
         admin
-            .realm_client_scopes_with_client_scope_id_protocol_mappers_models_post(
-                Self::REALM,
-                &scope_id,
-                keyauth_protocol_mapper,
-            )
-            .await
-            .unwrap();
-        let audience_protocol_mapper = ProtocolMapperRepresentation {
-            config: Some(HashMap::from_iter([
-                ("claim.name".to_string(), "acme_aud".to_string()),
-                ("id.token.claim".to_string(), "true".to_string()),
-            ])),
-            name: Some("wire-acme-audience-id-token-mapper".to_string()),
-            protocol: Some("openid-connect".to_string()),
-            protocol_mapper: Some("oidc-claims-param-value-idtoken-mapper".to_string()),
-            ..Default::default()
-        };
-        admin
-            .realm_client_scopes_with_client_scope_id_protocol_mappers_models_post(
-                Self::REALM,
-                &scope_id,
-                audience_protocol_mapper,
-            )
+            .realm_client_scopes_with_client_scope_id_protocol_mappers_models_post(Self::REALM, &scope_id, mapper)
             .await
             .unwrap();
     }
