@@ -2,14 +2,14 @@ use std::{ops::Deref, path::Path};
 
 use async_lock::{Mutex, MutexGuard};
 use blocking::unblock;
-use refinery::Target;
+use refinery::{Report, Target};
 #[cfg(feature = "log-queries")]
 use rusqlite::trace::{TraceEvent, TraceEventCodes};
 use rusqlite::{Transaction, functions::FunctionFlags};
 use zeroize::Zeroize as _;
 
 use crate::{
-    CryptoKeystoreResult,
+    CryptoKeystoreError, CryptoKeystoreResult,
     connection::{DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey},
 };
 
@@ -78,6 +78,13 @@ unsafe impl Send for SqlCipherConnection {}
 // internally which ensures unique access.
 unsafe impl Sync for SqlCipherConnection {}
 
+#[derive(Default)]
+enum MigrationTarget {
+    #[default]
+    Latest,
+    Version(u16),
+}
+
 impl SqlCipherConnection {
     fn init_with_key(path: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let mut conn = rusqlite::Connection::open(path)?;
@@ -97,7 +104,7 @@ impl SqlCipherConnection {
         // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
         conn.pragma_update(None, "foreign_keys", "OFF")?;
 
-        Self::run_migrations(&mut conn)?;
+        Self::run_migrations(&mut conn, Default::default())?;
 
         let conn = Self {
             path: path.into(),
@@ -135,7 +142,7 @@ impl SqlCipherConnection {
         conn.pragma_update(None, "foreign_keys", "OFF")?;
 
         // Need to run migrations also in memory to make sure expected tables exist.
-        Self::run_migrations(&mut conn)?;
+        Self::run_migrations(&mut conn, Default::default())?;
 
         let conn = Self {
             path: "".into(),
@@ -158,13 +165,27 @@ impl SqlCipherConnection {
         #[cfg(target_os = "ios")]
         ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
 
+        /// This is the latest schema version our test db dump is compatible with.
+        const MAX_SUPPORTED_SCHEMA_VERSION: u8 = 15;
+
+        let version = conn.query_row("PRAGMA schema_version;", [], |row| row.get::<_, i32>(0))?;
+        if version >= MAX_SUPPORTED_SCHEMA_VERSION as i32 {
+            return Err(CryptoKeystoreError::MigrationFailed(
+                "key type migration from string to bytes can and should only be done once and on database versions
+                    corresponding to a core crypto version <= 9."
+                    .to_string(),
+            ));
+        }
+
         // Enable WAL journaling mode
         conn.pragma_update(None, "journal_mode", "wal")?;
 
         // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
         conn.pragma_update(None, "foreign_keys", "OFF")?;
 
-        Self::run_migrations(&mut conn)?;
+        // Now update the database to the latest compatible schema version. The other, following migrations
+        // will be run when the database is opened regularly.
+        Self::run_migrations(&mut conn, MigrationTarget::Version(MAX_SUPPORTED_SCHEMA_VERSION as u16))?;
 
         // Rekey the database.
         Self::rekey(&mut conn, new_key)
@@ -190,30 +211,53 @@ impl SqlCipherConnection {
         Ok(())
     }
 
-    fn run_migrations(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
+    fn update_version(report: Report, conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
+        if let Some(version) = report.applied_migrations().iter().map(|m| m.version()).max() {
+            conn.pragma_update(None, "schema_version", version)?;
+        }
+        Ok(())
+    }
+
+    fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationTarget) -> CryptoKeystoreResult<()> {
         conn.create_scalar_function("sha256_blob", 1, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
             let input_blob = ctx.get::<Vec<u8>>(0)?;
             Ok(crate::sha256(&input_blob))
         })?;
 
+        let runner = migrations::runner();
+
+        if let MigrationTarget::Version(target_version) = target
+            && target_version < meta_migrations::v16::VERSION
+        {
+            let report = runner
+                .set_target(Target::Version(target_version as i32))
+                .run(&mut *conn)
+                .map_err(Box::new)?;
+            return Self::update_version(report, conn);
+        }
+
         // Run all migrations including V16, then its meta-migration.
-        let report = migrations::runner()
-            .set_target(Target::Version(meta_migrations::v16::VERSION))
+        let report = runner
+            .set_target(Target::Version(meta_migrations::v16::VERSION as i32))
             .run(&mut *conn)
             .map_err(Box::new)?;
+        // Only if the db version was below 16 will the report have applied migrations.
         if let Some(version) = report.applied_migrations().iter().map(|m| m.version()).max() {
-            debug_assert_eq!(version, meta_migrations::v16::VERSION);
+            debug_assert_eq!(version, meta_migrations::v16::VERSION as i32);
             conn.pragma_update(None, "schema_version", version)?;
             meta_migrations::v16::meta_migration(&mut *conn)?;
         }
 
         // Run all remaining migrations.
-        let report = migrations::runner().run(&mut *conn).map_err(Box::new)?;
-        if let Some(version) = report.applied_migrations().iter().map(|m| m.version()).max() {
-            conn.pragma_update(None, "schema_version", version)?;
-        }
+        let report = migrations::runner()
+            .set_target(match target {
+                MigrationTarget::Version(version) => Target::Version(version as i32),
+                MigrationTarget::Latest => Target::Latest,
+            })
+            .run(conn)
+            .map_err(Box::new)?;
 
-        Ok(())
+        Self::update_version(report, &mut *conn)
     }
 }
 
