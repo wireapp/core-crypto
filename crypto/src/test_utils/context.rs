@@ -16,13 +16,9 @@ use tls_codec::Serialize;
 use wire_e2e_identity::prelude::WireIdentityReader;
 use x509_cert::der::Encode;
 
-use super::{
-    Result, TestConversation,
-    test_conversation::operation_guard::{Commit, OperationGuard},
-};
 use crate::{
     CertificateBundle, Ciphersuite, CoreCrypto, CredentialType, MlsConversationConfiguration,
-    MlsConversationDecryptMessage, RecursiveError, WireIdentity,
+    MlsConversationDecryptMessage, WireIdentity,
     e2e_identity::{
         device_status::DeviceStatus,
         id::{QualifiedE2eiClientId, WireQualifiedClientId},
@@ -33,11 +29,6 @@ use crate::{
 
 #[allow(clippy::redundant_static_lifetimes)]
 pub const TEAM: &'static str = "world";
-
-pub struct RotateAllResult<'a> {
-    pub(crate) commits: Vec<OperationGuard<'a, Commit>>,
-    pub(crate) new_key_packages: Vec<KeyPackage>,
-}
 
 impl SessionContext {
     pub async fn get_one_key_package(&self, case: &TestContext) -> KeyPackage {
@@ -250,30 +241,6 @@ impl SessionContext {
         let credential = Credential::x509(new_cert).unwrap();
         let client = self.session().await;
         client.add_credential_producing_arc(credential).await.unwrap()
-    }
-
-    pub(crate) async fn create_key_packages_and_update_credential_in_all_conversations<'a>(
-        &self,
-        all_conversations: Vec<TestConversation<'a>>,
-        cb: &Credential,
-        cipher_suite: Ciphersuite,
-        key_package_count: usize,
-    ) -> Result<RotateAllResult<'a>> {
-        let mut commits = Vec::with_capacity(all_conversations.len());
-        for conv in all_conversations {
-            let commit_guard = conv.acting_as(self).await.e2ei_rotate(None).await;
-            commits.push(commit_guard);
-        }
-        let new_key_packages = self
-            .session()
-            .await
-            .generate_new_keypackages(&self.session.crypto_provider, cipher_suite, cb, key_package_count)
-            .await
-            .map_err(RecursiveError::mls_client("generating new key packages"))?;
-        Ok(RotateAllResult {
-            commits,
-            new_key_packages,
-        })
     }
 
     pub async fn get_e2ei_client_id(&self) -> wire_e2e_identity::prelude::E2eiClientId {
