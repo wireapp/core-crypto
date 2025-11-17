@@ -85,7 +85,7 @@ openmls_x509_credential = { git = "https://github.com/wireapp/openmls", rev = "c
 proteus-traits = { git = "https://github.com/wireapp/proteus", tag = "v2.1.1" }
 proteus-wasm = { git = "https://github.com/wireapp/proteus", tag = "v2.1.1" }
 
-wire-e2e-identity = { git = "https://github.com/wireapp/rusty-jwt-tools", tag = "v0.13.0" }
+wire-e2e-identity = { git = "https://github.com/wireapp/rusty-jwt-tools", rev = "20409740ffd3423ee13879dc88b8e3a0874ceba4" }
 
 [profile.release]
 codegen-units = 1
