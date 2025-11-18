@@ -10,11 +10,6 @@ runs:
       - name: Set MAKE
         uses: ./.github/actions/make/set-make-executable
 
-      - name: download ffi-library-linux
-        uses: ./.github/actions/make/ffi-library
-        with:
-          gh-token: ${{ inputs.gh-token }}
-
       - name: Install wasm-bindgen-cli
         uses: jetli/wasm-bindgen-action@v0.2.0
 

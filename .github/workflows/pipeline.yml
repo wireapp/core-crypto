@@ -155,8 +155,6 @@ jobs:
   # Web
 
   bindings-ts:
-    needs:
-      - ffi-library-linux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
