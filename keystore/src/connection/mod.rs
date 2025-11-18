@@ -107,7 +107,7 @@ pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
 
     async fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()>;
 
-    /// Default implementation of wipe
+    /// Clear all data from the database and close it.
     async fn wipe(self) -> CryptoKeystoreResult<()>;
 
     fn check_buffer_size(size: usize) -> CryptoKeystoreResult<()> {
