@@ -9,7 +9,7 @@ use crate::{
     migrations::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
 };
 
-pub(crate) const VERSION: u16 = 16;
+pub(crate) const VERSION: i32 = 16;
 
 pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
     let tx = conn.transaction()?;

@@ -2,7 +2,7 @@ use std::{ops::Deref, path::Path};
 
 use async_lock::{Mutex, MutexGuard};
 use blocking::unblock;
-use refinery::{Report, Target};
+use refinery::Target;
 #[cfg(feature = "log-queries")]
 use rusqlite::trace::{TraceEvent, TraceEventCodes};
 use rusqlite::{Transaction, functions::FunctionFlags};
@@ -211,53 +211,52 @@ impl SqlCipherConnection {
         Ok(())
     }
 
-    fn update_version(report: Report, conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
-        if let Some(version) = report.applied_migrations().iter().map(|m| m.version()).max() {
-            conn.pragma_update(None, "schema_version", version)?;
-        }
-        Ok(())
-    }
-
     fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationTarget) -> CryptoKeystoreResult<()> {
         conn.create_scalar_function("sha256_blob", 1, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
             let input_blob = ctx.get::<Vec<u8>>(0)?;
             Ok(crate::sha256(&input_blob))
         })?;
 
-        let runner = migrations::runner();
+        let mut runner = migrations::runner();
+        let Some(latest_migration_version) = runner
+            .get_migrations()
+            .iter()
+            .map(|migration| migration.version())
+            .max()
+        else {
+            // No migrations means nothing to do.
+            return Ok(());
+        };
 
-        if let MigrationTarget::Version(target_version) = target
-            && target_version < meta_migrations::v16::VERSION
-        {
-            let report = runner
-                .set_target(Target::Version(target_version as i32))
-                .run(&mut *conn)
-                .map_err(Box::new)?;
-            return Self::update_version(report, conn);
+        let target_version = match target {
+            MigrationTarget::Latest => latest_migration_version,
+            MigrationTarget::Version(target_argument) => (latest_migration_version).min(target_argument as i32),
+        };
+
+        for version in 1..=target_version {
+            runner = runner.set_target(Target::Version(version));
+            let report = runner.run(conn).map_err(Box::new)?;
+
+            let Some(updated_version) = report.applied_migrations().iter().map(|m| m.version()).max() else {
+                continue;
+            };
+
+            // If the version has been updated by the runner, first run the meta migration, then update the schema
+            // version.
+            Self::run_meta_migration(updated_version, conn)?;
+            conn.pragma_update(None, "schema_version", updated_version)?;
         }
 
-        // Run all migrations including V16, then its meta-migration.
-        let report = runner
-            .set_target(Target::Version(meta_migrations::v16::VERSION as i32))
-            .run(&mut *conn)
-            .map_err(Box::new)?;
-        // Only if the db version was below 16 will the report have applied migrations.
-        if let Some(version) = report.applied_migrations().iter().map(|m| m.version()).max() {
-            debug_assert_eq!(version, meta_migrations::v16::VERSION as i32);
-            conn.pragma_update(None, "schema_version", version)?;
-            meta_migrations::v16::meta_migration(&mut *conn)?;
+        Ok(())
+    }
+
+    /// Add a new match arm here if you want to run a meta migration (i.e., addtional work implemented in rust)
+    /// after a regular SQL migration.
+    fn run_meta_migration(sql_migration_version: i32, conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
+        match sql_migration_version {
+            meta_migrations::v16::VERSION => meta_migrations::v16::meta_migration(conn),
+            _ => Ok(()),
         }
-
-        // Run all remaining migrations.
-        let report = migrations::runner()
-            .set_target(match target {
-                MigrationTarget::Version(version) => Target::Version(version as i32),
-                MigrationTarget::Latest => Target::Latest,
-            })
-            .run(conn)
-            .map_err(Box::new)?;
-
-        Self::update_version(report, &mut *conn)
     }
 }
 
