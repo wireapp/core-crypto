@@ -69,7 +69,8 @@ WORKSPACE_CARGO_FILES := Cargo.toml Cargo.lock
 CRATE_MANIFESTS := $(addsuffix /Cargo.toml,$(CRATES))
 
 # Enumerate all .rs files in relevant crates
-RUST_RS_FILES := $(shell find $(CRATES) -type f -name '*.rs' 2>/dev/null | LC_ALL=C sort)
+RUST_RS_FILES := $(shell find $(CRATES) \( -type d -name rust_modules -o -type d -name node_modules \) -prune -o \
+    -type f -name '*.rs' -print 2>/dev/null | LC_ALL=C sort)
 
 # Files relevant to build interop
 INTEROP_RS_FILES := $(shell find interop -type f -name '*.rs' 2>/dev/null | LC_ALL=C sort)
