@@ -1,3 +1,4 @@
+use openmls::prelude::Ciphersuite;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
@@ -316,8 +317,10 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
                 deser(&group.state).ok()
             }
             MlsEntityId::SignatureKeyPair => {
-                let stored_credential: StoredCredential = self.find(k).await.ok().flatten()?;
-                let signature_scheme = stored_credential.signature_scheme.try_into().ok()?;
+                let stored_credential = self.find::<StoredCredential>(k).await.ok().flatten()?;
+                let ciphersuite = Ciphersuite::try_from(stored_credential.ciphersuite).ok()?;
+                let signature_scheme = ciphersuite.signature_algorithm();
+
                 let mls_keypair = SignatureKeyPair::from_raw(
                     signature_scheme,
                     stored_credential.secret_key.to_vec(),

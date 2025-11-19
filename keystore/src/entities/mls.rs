@@ -136,7 +136,7 @@ pub struct StoredCredential {
     #[sensitive]
     pub credential: Vec<u8>,
     pub created_at: u64,
-    pub signature_scheme: u16,
+    pub ciphersuite: u16,
     #[sensitive]
     pub public_key: Vec<u8>,
     #[sensitive]
