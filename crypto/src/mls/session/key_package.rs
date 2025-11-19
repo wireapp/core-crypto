@@ -95,6 +95,19 @@ impl Session {
         Ok(refs)
     }
 
+    /// Load one [`KeyPackage`] from its [`KeyPackageRef`]
+    pub(crate) async fn load_keypackage(&self, kp_ref: &KeyPackageRef) -> Result<Option<KeyPackage>> {
+        self.crypto_provider
+            .keystore()
+            .find::<StoredKeypackage>(kp_ref.as_slice())
+            .await
+            .map_err(KeystoreError::wrap("loading keypackage from database"))?
+            .map(|stored_keypackage| core_crypto_keystore::deser::<KeyPackage>(&stored_keypackage.keypackage))
+            .transpose()
+            .map_err(KeystoreError::wrap("deserializing keypackage"))
+            .map_err(Into::into)
+    }
+
     /// Generates a single new keypackage
     ///
     /// # Arguments
