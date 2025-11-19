@@ -8,10 +8,7 @@ use testcontainers::{
     runners::AsyncRunner,
 };
 
-use crate::utils::{
-    docker::{NETWORK, SHM},
-    rand_str,
-};
+use crate::utils::{NETWORK, SHM, rand_str};
 
 pub struct AcmeServer {
     pub uri: String,

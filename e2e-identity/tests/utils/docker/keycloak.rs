@@ -10,7 +10,7 @@ use testcontainers::{
     runners::AsyncRunner,
 };
 
-use crate::utils::docker::SHM;
+use crate::utils::{NETWORK, SHM};
 
 pub struct KeycloakServer {
     pub http_uri: String,
@@ -44,7 +44,7 @@ impl KeycloakImage {
         let instance = Self::new(cfg.http_host_port.tcp());
         let image = instance
             .with_container_name(&cfg.host)
-            .with_network(super::NETWORK)
+            .with_network(NETWORK)
             .with_mapped_port(cfg.http_host_port, cfg.http_host_port.tcp())
             .with_privileged(true)
             .with_reuse(ReuseDirective::Always)
