@@ -156,6 +156,19 @@ public final class CoreCrypto: CoreCryptoProtocol {
     public func isHistorySharingEnabled(conversationId: ConversationId) async throws -> Bool {
         try await coreCrypto.isHistorySharingEnabled(conversationId: conversationId)
     }
+
+    /// Returns the last resort PreKey id
+    public static func proteusLastResortPrekeyId() throws -> UInt16 {
+        return try WireCoreCryptoUniffi.proteusLastResortPrekeyIdFfi()
+    }
+
+    /// Proteus public key fingerprint
+    /// It's basically the public key encoded as an hex string
+    ///
+    /// Returns Hex-encoded public key string
+    public static func proteusFingerprintPrekeybundle(prekey: Data) throws -> String {
+        return try WireCoreCryptoUniffi.proteusFingerprintPrekeybundleFfi(prekey: prekey)
+    }
 }
 
 final class EpochObserverIndirector: EpochObserver {
