@@ -101,8 +101,6 @@ impl std::fmt::Debug for E2eTest {
 }
 
 impl E2eTest {
-    const STEPCA_HOST: &'static str = "stepca";
-
     pub fn new(env: TestEnvironment) -> Self {
         Self::new_internal(false, JwsAlgorithm::Ed25519, env)
     }
@@ -112,12 +110,7 @@ impl E2eTest {
     }
 
     pub fn new_internal(is_demo: bool, alg: JwsAlgorithm, env: TestEnvironment) -> Self {
-        let oidc_provider = OidcProvider::Keycloak;
-        let ca_host = if is_demo {
-            Self::STEPCA_HOST.to_string()
-        } else {
-            format!("{}.{}", rand_str(6).to_lowercase(), Self::STEPCA_HOST)
-        };
+        let ca_host = format!("{}.stepca", rand_str(6).to_lowercase());
         let domain = env.wire_server.hostname.clone();
         let (firstname, lastname) = ("Alice", "Smith");
         let display_name = format!("{firstname} {lastname}");
