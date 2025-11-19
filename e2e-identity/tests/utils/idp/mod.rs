@@ -2,7 +2,10 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener};
 
 use serde::{Deserialize, Serialize};
 
-use crate::utils::docker::keycloak::{KeycloakCfg, KeycloakImage};
+mod keycloak;
+
+const OAUTH_CLIENT_ID: &str = "wireapp";
+const OAUTH_CLIENT_NAME: &str = "Wire";
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 pub enum OidcProvider {
@@ -10,14 +13,29 @@ pub enum OidcProvider {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct IdpServer {
-    pub hostname: String,
-    pub addr: SocketAddr,
+pub struct User {
     pub username: String,
     pub password: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IdpServer {
+    pub provider: OidcProvider,
+    pub hostname: String,
+    pub addr: SocketAddr,
     pub issuer: String,
     pub discovery_base_url: String,
-    pub realm: String,
+    pub user: User,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct IdpServerConfig {
+    pub hostname: String,
+    pub user: User,
+    pub redirect_uri: String,
 }
 
 /// Get a free port from the OS
@@ -27,37 +45,29 @@ fn free_tcp_port() -> Option<u16> {
     Some(port)
 }
 
-pub async fn start_idp_server(wire_server_hostname: &str, redirect_uri: &str) -> IdpServer {
-    let hostname = "keycloak".to_string();
-    let port = free_tcp_port().unwrap();
-    let username = format!("alice_wire@{wire_server_hostname}");
-    let email = format!("alicesmith@{wire_server_hostname}");
-    let password = "foo".to_string();
-    let keycloak_cfg = KeycloakCfg {
-        oauth_client_id: "wireapp".to_string(),
-        http_host_port: port,
-        host: hostname.clone(),
-        firstname: "Alice".to_string(),
-        lastname: "Smith".to_string(),
-        username: username.clone(),
-        email,
-        password: password.clone(),
+pub async fn start_idp_server(provider: OidcProvider, wire_server_hostname: &str, redirect_uri: &str) -> IdpServer {
+    let user = User {
+        username: format!("alice_wire@{wire_server_hostname}"),
+        password: "foo".to_string(),
+        first_name: "Alice".to_string(),
+        last_name: "Smith".to_string(),
+        email: "alice.smith@some.provider".to_string(),
     };
 
-    let keycloak_server = KeycloakImage::run(keycloak_cfg, redirect_uri.to_string()).await;
-    let addr = keycloak_server.socket;
+    let hostname = match provider {
+        OidcProvider::Keycloak => "keycloak".to_string(),
+    };
 
-    let realm = KeycloakImage::REALM.to_string();
-    let issuer = format!("http://{hostname}:{port}/realms/{realm}");
-    let discovery_base_url = issuer.clone();
-
-    IdpServer {
+    let config = IdpServerConfig {
         hostname,
-        addr,
-        username,
-        password,
-        issuer,
-        discovery_base_url,
-        realm,
-    }
+        user,
+        redirect_uri: redirect_uri.to_string(),
+    };
+
+    let port = free_tcp_port().unwrap();
+    let server = match provider {
+        OidcProvider::Keycloak => keycloak::start_server(&config, port).await,
+    };
+    log::debug!("Started IdP server: {server:?}");
+    server
 }
