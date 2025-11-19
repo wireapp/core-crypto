@@ -1,7 +1,7 @@
 import org.gradle.api.tasks.bundling.Jar
 
 plugins {
-    id("com.android.library")
+    alias(libs.plugins.android.library)
     kotlin("android")
     id("com.vanniktech.maven.publish.base")
 }

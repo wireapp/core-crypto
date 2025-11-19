@@ -1,5 +1,5 @@
 [versions]
-kotlin = "1.9.25"
+kotlin = "2.0.21"
 coroutines = "1.7.3"
 kotlinx-datetime = "0.6.1"
 jna = "5.17.0"
@@ -14,8 +14,10 @@ vanniktech-publish = "0.34.0"
 kotlin-gradle = "1.9.21"
 dokka = "2.0.0"
 detekt = "1.23.8"
+agp = "8.12.3"
 
 [plugins]
+android-library = { id = "com.android.library", version.ref = "agp" }
 vanniktech-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech-publish" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
