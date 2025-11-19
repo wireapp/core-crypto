@@ -49,14 +49,22 @@ fn setup_test_environment() -> TestEnvironment {
     let mut path = std::env::temp_dir();
     path.push(run_id);
 
+    let provider = std::env::var("TEST_IDP").expect("TEST_IDP must be defined");
+    let provider = match provider.as_ref() {
+        "authelia" => OidcProvider::Authelia,
+        "keycloak" => OidcProvider::Keycloak,
+        _ => panic!("unexpected OIDC provider: {provider}"),
+    };
+
     let wire_server = get_wire_server();
     match std::fs::File::create_new(&path) {
         Ok(file) => {
             // We're the first, so it's up to us to start all servers.
-            let env = std::thread::spawn(|| {
+            let env = std::thread::spawn(move || {
                 let runtime = tokio::runtime::Runtime::new().unwrap();
                 runtime.block_on(async {
-                    let idp_server = start_idp_server(&wire_server.hostname, &wire_server.oauth_redirect_uri()).await;
+                    let idp_server =
+                        start_idp_server(provider, &wire_server.hostname, &wire_server.oauth_redirect_uri()).await;
                     TestEnvironment {
                         wire_server,
                         idp_server,
