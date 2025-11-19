@@ -8,7 +8,10 @@ use testcontainers::{
     runners::AsyncRunner,
 };
 
-use crate::utils::docker::{NETWORK, SHM, rand_str};
+use crate::utils::{
+    docker::{NETWORK, SHM},
+    rand_str,
+};
 
 pub struct AcmeServer {
     pub uri: String,
@@ -168,7 +171,7 @@ async fn run_command_with_ready_conditions(
 }
 
 pub async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
-    let host_volume = std::env::temp_dir().join(rand_str());
+    let host_volume = std::env::temp_dir().join(rand_str(12));
     std::fs::create_dir(&host_volume).unwrap();
 
     #[cfg(unix)]
