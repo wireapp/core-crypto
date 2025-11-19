@@ -33,27 +33,16 @@ impl CoreCryptoFfi {
     }
 }
 
-// here are some static members, except that Uniffi doesn't do that, so we insert a pointless `self` param in that context
+// some static members, that we define as free functions for uniffi and define as static members in the wrappers
 
 /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey_id]
-fn last_resort_prekey_id_inner() -> CoreCryptoResult<u16> {
+#[uniffi::export]
+fn proteus_last_resort_prekey_id_ffi() -> CoreCryptoResult<u16> {
     proteus_impl!({ Ok(core_crypto::CoreCrypto::proteus_last_resort_prekey_id()) })
 }
 
 /// See [core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle]
-fn fingerprint_prekeybundle_inner(prekey: Vec<u8>) -> CoreCryptoResult<String> {
-    proteus_impl!({ core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(&prekey).map_err(Into::into) })
-}
-
 #[uniffi::export]
-impl CoreCryptoFfi {
-    /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey_id]
-    pub fn proteus_last_resort_prekey_id(&self) -> CoreCryptoResult<u16> {
-        last_resort_prekey_id_inner()
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle]
-    pub fn proteus_fingerprint_prekeybundle(&self, prekey: Vec<u8>) -> CoreCryptoResult<String> {
-        fingerprint_prekeybundle_inner(prekey)
-    }
+fn proteus_fingerprint_prekeybundle_ffi(prekey: Vec<u8>) -> CoreCryptoResult<String> {
+    proteus_impl!({ core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(&prekey).map_err(Into::into) })
 }
