@@ -35,9 +35,8 @@ use crate::utils::{
     cfg::{E2eTest, EnrollmentFlow, OidcProvider, scrap_login},
     ctx::*,
     display::Actor,
-    docker::stepca,
     helpers::{AcmeAsserter, ClientHelper, RespHelper},
-    rand_base64_str,
+    rand_base64_str, stepca,
 };
 
 fn keypair_to_pubkey(alg: JwsAlgorithm, keypair: &Pem) -> Pem {

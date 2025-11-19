@@ -10,12 +10,9 @@ use crate::utils::{
     TestResult,
     ctx::ctx_store_http_client,
     display::TestDisplay,
-    docker::{
-        stepca,
-        stepca::{AcmeServer, CaCfg},
-    },
     idp::IdpServer,
-    rand_str,
+    rand_str, stepca,
+    stepca::{AcmeServer, CaCfg},
 };
 
 pub fn scrap_login(html: String) -> String {

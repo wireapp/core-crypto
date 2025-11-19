@@ -17,6 +17,8 @@ pub mod helpers;
 #[cfg(not(target_family = "wasm"))]
 pub mod idp;
 pub mod keys;
+#[cfg(not(target_family = "wasm"))]
+pub mod stepca;
 
 /// Container network name.
 pub const NETWORK: &str = "wire";

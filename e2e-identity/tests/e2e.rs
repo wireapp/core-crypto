@@ -11,9 +11,9 @@ use rusty_jwt_tools::prelude::*;
 use utils::{
     TestError,
     cfg::{E2eTest, EnrollmentFlow, TestEnvironment, WireServer},
-    docker::stepca::CaCfg,
     idp::{IdpServer, start_idp_server},
     rand_base64_str, rand_client_id,
+    stepca::CaCfg,
 };
 
 #[path = "utils/mod.rs"]
