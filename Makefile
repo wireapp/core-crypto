@@ -447,7 +447,6 @@ bun-deps: $(BUN_LOCK) $(NODE_MODULES) ## Install JS dependencies using bun
 ts-clean: ## Cleanup old TypeScript build outputs
 	@rm -rf $(TS_OUT_DIR) \
 	&& rm -rf $(GEN_DIR) \
-	&& rm -f $(JS_DIR)/src/index.web.ts \
 	&& rm -rf $(JS_DIR)/rust_modules
 
 
@@ -457,7 +456,8 @@ WASM_GEN := $(wildcard $(GEN_DIR)/wasm-bindgen/*) $(GEN_DIR)/core_crypto_ffi.ts
 wasm-build-deps := $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES) $(PACKAGE_JSON) $(BUNFIG)
 $(WASM_GEN): $(wasm-build-deps)
 	cd $(JS_DIR) && \
-	bun ubrn build web $(CARGO_BUILD_ARGS)
+	bun ubrn build web $(CARGO_BUILD_ARGS) && \
+	rm src/index.web.ts # This file is generated but we don't use it
 wasm-build: $(WASM_GEN)
 
 # generate TypeScript defs only when corecrypto.js changed
