@@ -257,9 +257,11 @@ impl E2eTest {
 
     pub async fn fetch_oidc_cfg(&self) -> OidcCfg {
         let hostname = &self.env.idp_server.hostname;
-        let realm = &self.env.idp_server.realm;
-        let port = self.env.idp_server.addr.port();
-        let uri = format!("http://{hostname}:{port}/realms/{realm}/.well-known/openid-configuration");
+
+        let uri = format!(
+            "{}/.well-known/openid-configuration",
+            self.env.idp_server.discovery_base_url
+        );
         let response = self.client.get(&uri).send().await.unwrap();
         let status = response.status();
         let response_text = response.text().await.unwrap();
