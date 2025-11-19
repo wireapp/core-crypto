@@ -42,7 +42,10 @@ fn get_wire_server() -> WireServer {
 }
 
 fn setup_test_environment() -> TestEnvironment {
-    let run_id = std::env::var("NEXTEST_RUN_ID").unwrap();
+    // It's fine if the logger was already initialized.
+    let _ = env_logger::try_init();
+
+    let run_id = std::env::var("NEXTEST_RUN_ID").expect("NEXTEST_RUN_ID must be defined");
     let mut path = std::env::temp_dir();
     path.push(run_id);
 
