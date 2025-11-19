@@ -454,15 +454,14 @@ ts-clean: ## Cleanup old TypeScript build outputs
 WASM_GEN := $(wildcard $(GEN_DIR)/wasm-bindgen/*) $(GEN_DIR)/core_crypto_ffi.ts
 
 # As soon as ubrn allows reusage of an existing ffi lib, we need to depend on it here.
-wasm-build-deps := $(RUST_SOURCES)
-
+wasm-build-deps := $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES) $(PACKAGE_JSON) $(BUNFIG)
 $(WASM_GEN): $(wasm-build-deps)
 	cd $(JS_DIR) && \
 	bun ubrn build web $(CARGO_BUILD_ARGS)
 wasm-build: $(WASM_GEN)
 
 # generate TypeScript defs only when corecrypto.js changed
-ts-deps :=  $(BUN_LOCK) $(NODE_MODULES) $(TS_SRCS) $(PACKAGE_JSON) $(BUNFIG) $(WASM_GEN)
+ts-deps := $(TS_SRCS) $(WASM_GEN)
 $(TS_OUT): $(ts-deps)
 	cd $(JS_DIR) && \
 	bun build src/CoreCrypto.ts \
