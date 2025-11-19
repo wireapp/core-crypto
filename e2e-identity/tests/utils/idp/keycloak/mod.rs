@@ -72,7 +72,7 @@ impl KeycloakImage {
         let build_args = &[
             "build",
             "--file",
-            &format!("{cwd}/tests/utils/docker/keycloak/Dockerfile"),
+            &format!("{cwd}/tests/utils/idp/keycloak/Dockerfile"),
             "--force-rm=true",
             "--build-arg",
             &format!("kc_port={port}"),
