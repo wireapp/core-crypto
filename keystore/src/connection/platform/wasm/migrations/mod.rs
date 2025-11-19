@@ -7,6 +7,7 @@ mod v3;
 mod v4;
 mod v5;
 mod v6;
+mod v7;
 
 pub(super) use db_key_type_to_bytes::migrate_db_key_type_to_bytes;
 use idb::{Database, Factory};
@@ -30,6 +31,7 @@ const DB_VERSION_3: u32 = db_version_number(3);
 const DB_VERSION_4: u32 = db_version_number(4);
 const DB_VERSION_5: u32 = db_version_number(5);
 const DB_VERSION_6: u32 = db_version_number(6);
+const DB_VERSION_7: u32 = db_version_number(7);
 
 /// Open an existing idb database with the given name, and migrate it if needed.
 pub(crate) async fn open_and_migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Database> {
@@ -73,6 +75,7 @@ async fn do_migration_step(from: u32, name: &str, key: &DatabaseKey) -> CryptoKe
         1 => v4::migrate(name).await,
         DB_VERSION_4 => v5::migrate(name).await,
         DB_VERSION_5 => v6::migrate(name, key).await,
+        DB_VERSION_6 => v7::migrate(name, key).await,
         _ => Err(CryptoKeystoreError::MigrationNotSupported(from)),
     }
 }
