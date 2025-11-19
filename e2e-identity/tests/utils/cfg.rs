@@ -100,11 +100,6 @@ impl std::fmt::Debug for E2eTest {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum OidcProvider {
-    Keycloak,
-}
-
 impl E2eTest {
     const STEPCA_HOST: &'static str = "stepca";
 

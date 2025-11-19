@@ -11,7 +11,7 @@ use rusty_jwt_tools::prelude::*;
 use utils::{
     TestError,
     cfg::{E2eTest, EnrollmentFlow, TestEnvironment, WireServer},
-    idp::{IdpServer, start_idp_server},
+    idp::{IdpServer, OidcProvider, start_idp_server},
     rand_base64_str, rand_client_id,
     stepca::CaCfg,
 };

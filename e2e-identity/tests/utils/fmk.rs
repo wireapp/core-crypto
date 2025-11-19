@@ -32,10 +32,11 @@ use x509_cert::{
 
 use crate::utils::{
     TestError, TestResult,
-    cfg::{E2eTest, EnrollmentFlow, OidcProvider, scrap_login},
+    cfg::{E2eTest, EnrollmentFlow, scrap_login},
     ctx::*,
     display::Actor,
     helpers::{AcmeAsserter, ClientHelper, RespHelper},
+    idp::OidcProvider,
     rand_base64_str, stepca,
 };
 

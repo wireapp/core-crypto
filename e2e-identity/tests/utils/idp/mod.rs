@@ -4,6 +4,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::utils::docker::keycloak::{KeycloakCfg, KeycloakImage};
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
+pub enum OidcProvider {
+    Keycloak,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IdpServer {
     pub hostname: String,
