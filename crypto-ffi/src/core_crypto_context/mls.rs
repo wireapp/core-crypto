@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use core_crypto::{
     Ciphersuite as CryptoCiphersuite, ClientIdentifier, CredentialFindFilters, KeyPackageIn,
     MlsConversationConfiguration, RecursiveError, VerifiableGroupInfo, mls::conversation::Conversation as _,
@@ -40,6 +42,28 @@ bytes_wrapper!(
     /// Other clients can use a client's KeyPackage to introduce that client to a new group.
     KeyPackage
 );
+
+impl KeyPackage {
+    pub(crate) fn from_cc(kp: &core_crypto::KeyPackage) -> CoreCryptoResult<KeyPackageMaybeArc> {
+        kp.tls_serialize_detached()
+            .map(key_package_coerce_maybe_arc)
+            .map_err(core_crypto::mls::conversation::Error::tls_serialize("keypackage"))
+            .map_err(RecursiveError::mls_conversation("serializing keypackage"))
+            .map_err(Into::into)
+    }
+}
+
+bytes_wrapper!(
+    /// A lightweight distinct reference to a `KeyPackage` sufficient to uniquely identify it
+    KeyPackageRef
+);
+
+impl KeyPackageRef {
+    pub(crate) fn from_cc(kp_ref: &core_crypto::KeyPackageRef) -> KeyPackageRefMaybeArc {
+        key_package_ref_coerce_maybe_arc(kp_ref.as_slice())
+    }
+}
+
 bytes_wrapper!(
     /// A TLS-serialized Welcome message.
     ///
@@ -413,6 +437,48 @@ impl CoreCryptoContext {
                     .map(CredentialRef::into_maybe_arc)
                     .collect()
             })
+            .map_err(Into::into)
+    }
+
+    /// Generate a `KeyPackage` from the referenced credential.
+    ///
+    /// Makes no attempt to look up or prune existing keypackges.
+    ///
+    /// If `lifetime` is set, the keypackages will expire that span into the future.
+    /// If it is unset, a default lifetime of approximately 3 months is used.
+    pub async fn generate_keypackage(
+        &self,
+        credential_ref: &CredentialRefMaybeArc,
+        lifetime: Option<Duration>,
+    ) -> CoreCryptoResult<KeyPackageMaybeArc> {
+        let credential_ref = &credential_ref.0;
+        self.inner
+            .generate_keypackage(credential_ref, lifetime)
+            .await
+            .map_err(Into::into)
+            .and_then(|kp| KeyPackage::from_cc(&kp))
+    }
+
+    /// Get a reference to each `KeyPackage` in the database.
+    pub async fn get_keypackages(&self) -> CoreCryptoResult<Vec<KeyPackageRefMaybeArc>> {
+        self.inner
+            .get_keypackage_refs()
+            .await
+            .map(|kp_refs| kp_refs.iter().map(KeyPackageRef::from_cc).collect())
+            .map_err(Into::into)
+    }
+
+    /// Remove a [`KeyPackage`] from the database.
+    pub async fn remove_keypackage(&self, kp_ref: &KeyPackageRefMaybeArc) -> CoreCryptoResult<()> {
+        let kp_ref = core_crypto::KeyPackageRef::from(kp_ref.0.as_slice());
+        self.inner.remove_keypackage(&kp_ref).await.map_err(Into::into)
+    }
+
+    /// Remove all [`KeyPackage`]s associated with this ref.
+    pub async fn remove_keypackages_for(&self, credential_ref: &CredentialRefMaybeArc) -> CoreCryptoResult<()> {
+        self.inner
+            .remove_keypackages_for(&credential_ref.0)
+            .await
             .map_err(Into::into)
     }
 }
