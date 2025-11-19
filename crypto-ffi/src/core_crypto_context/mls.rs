@@ -391,16 +391,14 @@ impl CoreCryptoContext {
         let client_id = client_id.as_ref().map(|client_id| client_id.as_cc());
         let client_id = client_id.as_ref().map(|client_id| client_id.as_ref());
 
-        let signature_scheme = ciphersuite
-            .map(CryptoCiphersuite::from)
-            .map(|ciphersuite| ciphersuite.signature_algorithm());
+        let ciphersuite = ciphersuite.map(CryptoCiphersuite::from);
 
         let credential_type = credential_type.map(core_crypto::CredentialType::from);
 
         let find_filters = CredentialFindFilters {
             client_id,
             public_key: public_key.as_deref(),
-            signature_scheme,
+            ciphersuite,
             credential_type,
             earliest_validity,
         };

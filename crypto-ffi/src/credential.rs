@@ -19,13 +19,9 @@ pub(crate) type CredentialMaybeArc = Arc<Credential>;
 impl Credential {
     fn basic_impl(ciphersuite: Ciphersuite, client_id: &ClientIdMaybeArc) -> CoreCryptoResult<Self> {
         let crypto = RustCrypto::default();
-        CryptoCredential::basic(
-            CryptoCiphersuite::from(ciphersuite).signature_algorithm(),
-            client_id.as_cc(),
-            crypto,
-        )
-        .map(Into::into)
-        .map_err(Into::into)
+        CryptoCredential::basic(CryptoCiphersuite::from(ciphersuite), client_id.as_cc(), crypto)
+            .map(Into::into)
+            .map_err(Into::into)
     }
 }
 
