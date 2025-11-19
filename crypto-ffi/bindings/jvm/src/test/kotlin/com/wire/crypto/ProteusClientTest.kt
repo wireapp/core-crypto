@@ -62,8 +62,7 @@ internal class ProteusClientTest {
 
     @Test
     fun givenProteusClient_whenCallingNewLastKey_thenItReturnsALastPreKey() = runTest {
-        val aliceClient = newProteusClient(alice)
-        val prekeyId = aliceClient.transaction { ctx -> ctx.proteusLastResortPrekeyId() }
+        val prekeyId = CoreCrypto.proteusLastResortPrekeyId()
         assertEquals(65535u, prekeyId)
     }
 
