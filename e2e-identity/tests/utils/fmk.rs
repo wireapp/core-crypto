@@ -521,9 +521,162 @@ impl E2eTest {
     }
 
     pub async fn fetch_id_token(&mut self, oidc_chall: &AcmeChallenge, keyauth: String) -> TestResult<String> {
-        match self.oidc_provider {
+        match self.env.idp_server.provider {
+            OidcProvider::Authelia => self.fetch_id_token_from_authelia(oidc_chall, keyauth).await,
             OidcProvider::Keycloak => self.fetch_id_token_from_keycloak(oidc_chall, keyauth).await,
         }
+    }
+
+    pub async fn fetch_id_token_from_authelia(
+        &mut self,
+        oidc_chall: &AcmeChallenge,
+        keyauth: String,
+    ) -> TestResult<String> {
+        self.display_chapter("Authenticate end user using OIDC Authorization Code with PKCE flow");
+        // Create HTTP client with cookie store enabled
+        let client = ctx_get_http_client_builder().cookie_store(true).build()?;
+
+        let cookie = {
+            use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
+            use serde_json::json;
+
+            let host = &self.env.idp_server.hostname;
+            let port = self.env.idp_server.addr.port();
+            let authelia_url = format!("http://{host}:{port}/api/firstfactor");
+
+            // Prepare login payload
+            let payload = json!({
+                "username": self.env.idp_server.user.username.clone(),
+                "password": self.env.idp_server.user.password.clone(),
+            });
+
+            // Set headers
+            let mut headers = HeaderMap::new();
+            headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+
+            // Send login request
+            let response = client.post(authelia_url).headers(headers).json(&payload).send().await?;
+
+            assert!(response.status().is_success());
+            let cookie = response
+                .cookies()
+                .find(|cookie| cookie.name() == "authelia_session")
+                .unwrap();
+            format!("{}={}", cookie.name(), cookie.value())
+        };
+
+        let oidc_target = oidc_chall.target.to_string();
+        let mut oidc_target = url::Url::parse(&oidc_target).unwrap();
+        oidc_target.set_port(Some(self.env.idp_server.addr.port())).unwrap();
+
+        // We cannot use oidc_target as-is, because it contains '/' as the last character,
+        // causing an issuer URL mismatch. So remove the `/` before constructing an IssuerUrl.
+        let mut url = oidc_target.to_string();
+        url.pop();
+        let issuer_url = IssuerUrl::new(url).unwrap();
+
+        let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), &async |r| {
+            custom_oauth_client("discovery", ctx_get_http_client(), r).await
+        })
+        .await
+        .unwrap();
+
+        let client_id = openidconnect::ClientId::new(self.oauth_cfg.client_id.clone());
+        let redirect_url = RedirectUrl::new(self.oauth_cfg.redirect_uri.clone()).unwrap();
+        let client =
+            CoreClient::from_provider_metadata(provider_metadata, client_id, None).set_redirect_uri(redirect_url);
+
+        self.display_step("OAUTH authorization request");
+        self.display_operation(Actor::WireClient, "OAUTH authorization request");
+        let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
+        let (code_verifier, code_challenge) = (pkce_verifier.secret(), pkce_challenge.as_str());
+        let cv_cc_msg = format!("code_verifier={code_verifier}&code_challenge={code_challenge}");
+        self.display_str(&cv_cc_msg, false);
+
+        // A variant of https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter
+        let acme_audience = oidc_chall.url.clone();
+        let extra = json!({
+            "id_token": {
+                "keyauth": { "essential": true, "value": keyauth },
+                "acme_aud": { "essential": true, "value": acme_audience },
+            }
+        })
+        .to_string();
+
+        let (authz_url, ..) = client
+            .authorize_url(
+                CoreAuthenticationFlow::AuthorizationCode,
+                CsrfToken::new_random,
+                Nonce::new_random,
+            )
+            .add_scopes([
+                Scope::new("profile".to_string()),
+                Scope::new("email".to_string()),
+                Scope::new("wire".to_string()),
+            ])
+            .add_extra_param("claims", extra)
+            .set_pkce_challenge(pkce_challenge)
+            .url();
+
+        self.display_step("OAUTH authorization request (auth code endpoint)");
+        let authz_req = self
+            .client
+            .get(authz_url.as_str())
+            .header(header::COOKIE, cookie)
+            .build()
+            .unwrap();
+        self.display_req(
+            Actor::WireClient,
+            Actor::IdentityProvider,
+            Some(&authz_req),
+            None::<&str>,
+        );
+
+        // Perform an authorization request. The server will not redirect to the login prompt since
+        // we're using an pre-authenticated session, indicated by the cookie.
+        let resp = self.client.execute(authz_req).await.unwrap();
+        let authz_code = resp.text().await.unwrap();
+        self.display_resp(Actor::IdentityProvider, Actor::WireClient, None);
+
+        self.display_step("OAUTH authorization code + verifier (token endpoint)");
+        let token_request = client
+            .exchange_code(openidconnect::AuthorizationCode::new(authz_code))
+            .unwrap()
+            .set_pkce_verifier(pkce_verifier);
+
+        let oauth_token_response = token_request
+            .request_async(&async |r| custom_oauth_client("exchange-code", ctx_get_http_client(), r).await)
+            .await;
+
+        let oauth_token_response = oauth_token_response.unwrap();
+        let exchange_code_req = ctx_get_request("exchange-code");
+        self.display_req(
+            Actor::WireClient,
+            Actor::IdentityProvider,
+            Some(&exchange_code_req),
+            None::<&str>,
+        );
+        self.display_str(Self::req_body_str(&exchange_code_req)?.unwrap(), false);
+
+        // Authorization server validates Verifier & Challenge Codes
+
+        // Get OAuth access token
+        self.display_step("OAUTH access token");
+        let exchange_code_resp = ctx_get_resp("exchange-code", false);
+        self.display_resp(Actor::IdentityProvider, Actor::WireClient, None);
+        let exchange_code_resp = serde_json::from_str::<Value>(&exchange_code_resp).unwrap();
+        let exchange_code_resp = serde_json::to_string_pretty(&exchange_code_resp).unwrap();
+        self.display_str(&exchange_code_resp, false);
+
+        use oauth2::TokenResponse as _;
+        let idp_pubkey = self.fetch_idp_public_key().await;
+        let access_token = oauth_token_response.access_token().secret();
+        self.display_token("OAuth Access token", access_token, None, &idp_pubkey);
+
+        use openidconnect::TokenResponse as _;
+        let id_token = oauth_token_response.id_token().unwrap().to_string();
+
+        Ok(id_token)
     }
 
     pub async fn fetch_id_token_from_keycloak(
