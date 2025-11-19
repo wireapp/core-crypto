@@ -600,8 +600,8 @@ impl E2eTest {
         let mut form_uri = Url::parse(&action).unwrap();
         form_uri.set_host(Some("127.0.0.1")).unwrap();
         let form_body = HashMap::<&str, String, RandomState>::from_iter(vec![
-            ("username", self.env.idp_server.username.clone()),
-            ("password", self.env.idp_server.password.clone()),
+            ("username", self.env.idp_server.user.username.clone()),
+            ("password", self.env.idp_server.user.password.clone()),
             ("credentialId", "".to_string()),
         ]);
 
