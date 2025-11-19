@@ -212,7 +212,7 @@ pub fn ctx_store_http_client(mappings: &HashMap<String, SocketAddr>) {
     }
 }
 
-pub fn ctx_get_http_client() -> reqwest::Client {
+pub fn ctx_get_http_client_builder() -> reqwest::ClientBuilder {
     let ctx = CONTEXT.lock().unwrap();
     let mappings = ctx
         .iter()
@@ -230,5 +230,9 @@ pub fn ctx_get_http_client() -> reqwest::Client {
         let host = host.strip_prefix(DNS_MAPPING_PREFIX).unwrap();
         builder = builder.resolve_to_addrs(host, &vec![socket][..]);
     }
-    builder.build().unwrap()
+    builder
+}
+
+pub fn ctx_get_http_client() -> reqwest::Client {
+    ctx_get_http_client_builder().build().unwrap()
 }
