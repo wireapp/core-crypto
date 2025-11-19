@@ -6,6 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.ByteArray
 
 /** Wrap a `CoreCrypto` instance in a `CoreCryptoClient` instance. Should largely be invisible to end-users. */
 fun CoreCryptoFfi.lift() = CoreCrypto(this)
@@ -31,6 +32,23 @@ class CoreCrypto(private val cc: CoreCryptoFfi) {
          * Other use is a logic error.
          */
         suspend fun historyClient(historySecret: HistorySecret) = CoreCrypto(coreCryptoHistoryClient(historySecret))
+
+        /**
+         * @returns The last resort PreKey id
+         */
+        @Throws(CoreCryptoException::class)
+        fun proteusLastResortPrekeyId() = proteusLastResortPrekeyIdFfi()
+
+        /**
+         * Hex-encoded fingerprint of the given prekey
+         *
+         * @param prekey - the prekey bundle to get the fingerprint from
+         * @returns Hex-encoded public key string
+         **/
+        @Throws(CoreCryptoException::class)
+        fun proteusFingerprintPrekeybundle(
+            prekey: kotlin.ByteArray
+        ) = proteusFingerprintPrekeybundleFfi(prekey)
     }
 
     /**
