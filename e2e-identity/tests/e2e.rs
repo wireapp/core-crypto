@@ -36,7 +36,7 @@ fn get_wire_server() -> WireServer {
         .parse()
         .unwrap();
     WireServer {
-        hostname: "wire.com".to_string(),
+        hostname: "wire.localhost".to_string(),
         addr,
     }
 }

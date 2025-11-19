@@ -993,7 +993,7 @@ impl E2eTest {
                         maximum: None,
                     },
                     GeneralSubtree {
-                        base: GeneralName::UniformResourceIdentifier(Ia5String::new("wire.com").unwrap()),
+                        base: GeneralName::UniformResourceIdentifier(Ia5String::new("wire.localhost").unwrap()),
                         minimum: 0,
                         maximum: None,
                     },

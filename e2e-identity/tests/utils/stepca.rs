@@ -114,7 +114,7 @@ const INTERMEDIATE_CERT_TEMPLATE: &str = r#"
         "nameConstraints": {
             "critical": true,
             "permittedDNSDomains": ["localhost", "stepca"],
-            "permittedURIDomains": ["wire.com"]
+            "permittedURIDomains": ["wire.localhost"]
         }
     }
 "#;
