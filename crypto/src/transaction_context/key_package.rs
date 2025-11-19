@@ -96,4 +96,14 @@ impl TransactionContext {
             ))
             .map_err(Into::into)
     }
+
+    /// Remove a [`KeyPackage`] from the keystore.
+    pub async fn remove_keypackage(&self, kp_ref: &KeyPackageRef) -> Result<()> {
+        let session = self.session().await?;
+        session
+            .remove_keypackage(kp_ref)
+            .await
+            .map_err(RecursiveError::mls_client("removing a keypackage for transaction"))
+            .map_err(Into::into)
+    }
 }

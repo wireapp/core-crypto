@@ -108,6 +108,31 @@ impl Session {
             .map_err(Into::into)
     }
 
+    /// Remove one [`KeyPackage`] from the database.
+    ///
+    /// Succeeds silently if the keypackage does not exist in the database.
+    ///
+    /// Implementation note: this must first load and deserialize the keypackage,
+    /// then remove items from three distinct tables.
+    pub async fn remove_keypackage(&self, kp_ref: &KeyPackageRef) -> Result<()> {
+        let Some(kp) = self.load_keypackage(kp_ref).await? else {
+            return Ok(());
+        };
+
+        let db = self.crypto_provider.keystore();
+        db.remove::<StoredKeypackage, _>(kp_ref.as_slice())
+            .await
+            .map_err(KeystoreError::wrap("removing key package from keystore"))?;
+        db.remove::<StoredHpkePrivateKey, _>(kp.hpke_init_key().as_slice())
+            .await
+            .map_err(KeystoreError::wrap("removing private key from keystore"))?;
+        db.remove::<StoredEncryptionKeyPair, _>(kp.leaf_node().encryption_key().as_slice())
+            .await
+            .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
+
+        Ok(())
+    }
+
     /// Generates a single new keypackage
     ///
     /// # Arguments
