@@ -67,7 +67,6 @@ pub struct E2eTest {
     pub acme_server: Option<AcmeServer>,
     pub oidc_cfg: Option<OidcCfg>,
     pub client: reqwest::Client,
-    pub oidc_provider: OidcProvider,
 }
 
 #[derive(Debug, Clone)]
@@ -209,7 +208,6 @@ impl E2eTest {
             oidc_cfg: None,
             is_demo,
             client: reqwest::Client::new(),
-            oidc_provider,
         }
     }
 
