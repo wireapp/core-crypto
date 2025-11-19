@@ -312,10 +312,16 @@ impl Event {
                 let link = format!("See it on [jwt.io](https://jwt.io/#id_token={token})");
                 let parts = token.split('.').collect::<Vec<&str>>();
 
+                // Access tokens are often JWTs, but according to the spec they don't have to be.
+                // And in the case of Authelia they are not; they look like
+                //
+                //    authelia_at_6O1MUQfoA9Zzwnrn...
                 let json_pretty = |token: &str| {
                     let jwt = base64::prelude::BASE64_URL_SAFE_NO_PAD.decode(token).unwrap();
-                    let jwt = serde_json::from_slice::<serde_json::Value>(&jwt[..]).unwrap();
-                    serde_json::to_string_pretty(&jwt).unwrap()
+                    match serde_json::from_slice::<serde_json::Value>(&jwt[..]) {
+                        Ok(jwt) => serde_json::to_string_pretty(&jwt).unwrap(),
+                        Err(_) => token.to_string(),
+                    }
                 };
 
                 const WIDTH: usize = 64;
