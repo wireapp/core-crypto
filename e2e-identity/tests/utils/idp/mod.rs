@@ -2,6 +2,7 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener};
 
 use serde::{Deserialize, Serialize};
 
+mod authelia;
 mod keycloak;
 
 const OAUTH_CLIENT_ID: &str = "wireapp";
@@ -9,6 +10,7 @@ const OAUTH_CLIENT_NAME: &str = "Wire";
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 pub enum OidcProvider {
+    Authelia,
     Keycloak,
 }
 
@@ -55,6 +57,7 @@ pub async fn start_idp_server(provider: OidcProvider, wire_server_hostname: &str
     };
 
     let hostname = match provider {
+        OidcProvider::Authelia => "authelia.local".to_string(),
         OidcProvider::Keycloak => "keycloak".to_string(),
     };
 
@@ -66,6 +69,7 @@ pub async fn start_idp_server(provider: OidcProvider, wire_server_hostname: &str
 
     let port = free_tcp_port().unwrap();
     let server = match provider {
+        OidcProvider::Authelia => authelia::start_server(&config, port).await,
         OidcProvider::Keycloak => keycloak::start_server(&config, port).await,
     };
     log::debug!("Started IdP server: {server:?}");
