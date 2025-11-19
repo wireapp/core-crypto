@@ -5,21 +5,18 @@ use keycloak::{
     types::{ClientRepresentation, CredentialRepresentation, ProtocolMapperRepresentation, UserRepresentation},
 };
 use testcontainers::{
-    ContainerAsync, Image, ImageExt, ReuseDirective,
+    Image, ImageExt, ReuseDirective,
     core::{ContainerPort, IntoContainerPort, Mount, WaitFor},
     runners::AsyncRunner,
 };
 
-use crate::utils::{NETWORK, SHM};
-
-pub struct KeycloakServer {
-    pub http_uri: String,
-    pub node: ContainerAsync<KeycloakImage>,
-    pub socket: SocketAddr,
-}
+use crate::utils::{
+    NETWORK, SHM,
+    idp::{IdpServer, IdpServerConfig, OAUTH_CLIENT_ID, OAUTH_CLIENT_NAME, OidcProvider, User},
+};
 
 #[derive(Debug)]
-pub struct KeycloakImage {
+struct KeycloakImage {
     pub volumes: Vec<Mount>,
     pub env_vars: HashMap<String, String>,
     tag: String,
@@ -34,35 +31,12 @@ impl KeycloakImage {
     // Keep keycloak versions in sync (search for this comment to find all places to update)
     const VERSION: &'static str = "26.0.1";
 
-    pub const USER: &'static str = "admin";
-    pub const PASSWORD: &'static str = "changeme";
-    pub const REALM: &'static str = "master";
-    pub const LOG_LEVEL: &'static str = "info";
+    const USER: &'static str = "admin";
+    const PASSWORD: &'static str = "changeme";
+    const REALM: &'static str = "master";
+    const LOG_LEVEL: &'static str = "info";
 
-    pub async fn run(cfg: KeycloakCfg, redirect_uri: String) -> KeycloakServer {
-        Self::build(cfg.http_host_port.to_string());
-        let instance = Self::new(cfg.http_host_port.tcp());
-        let image = instance
-            .with_container_name(&cfg.host)
-            .with_network(NETWORK)
-            .with_mapped_port(cfg.http_host_port, cfg.http_host_port.tcp())
-            .with_privileged(true)
-            .with_reuse(ReuseDirective::Always)
-            .with_shm_size(SHM);
-        let node = image.start().await.unwrap();
-
-        let http_port = node.get_host_port_ipv4(cfg.http_host_port).await.unwrap();
-        let http_uri = format!("http://{}:{http_port}", cfg.host);
-
-        let ip = std::net::IpAddr::V4("127.0.0.1".parse().unwrap());
-        let socket = SocketAddr::new(ip, http_port);
-
-        Self::configure(http_port, &cfg, &redirect_uri).await;
-
-        KeycloakServer { http_uri, socket, node }
-    }
-
-    fn build(port: String) {
+    fn build(port: u16) {
         let cwd = env::var("CARGO_MANIFEST_DIR").unwrap();
         Command::new("docker")
             .args(["image", "rm", &format!("{}:{}", Self::NAME, Self::TAG)])
@@ -85,7 +59,7 @@ impl KeycloakImage {
         }
     }
 
-    pub fn new(host_port: ContainerPort) -> Self {
+    fn new(host_port: ContainerPort) -> Self {
         Self {
             volumes: vec![],
             env_vars: HashMap::from_iter(vec![
@@ -98,7 +72,7 @@ impl KeycloakImage {
         }
     }
 
-    async fn configure(external_port: u16, cfg: &KeycloakCfg, redirect_uri: &str) {
+    async fn configure(config: &IdpServerConfig, external_port: u16) {
         let url = format!("http://localhost:{external_port}");
         let user = Self::USER.to_string();
         let password = Self::PASSWORD.to_string();
@@ -109,19 +83,19 @@ impl KeycloakImage {
         let admin = KeycloakAdmin::new(&url, admin_token, client);
 
         // Create a User for the test
-        let user = cfg.into();
+        let user = (&config.user).into();
         admin.realm_users_post(Self::REALM, user).await.unwrap();
 
         // Then create an OAuth public Client (w/o client-secret)
         let client = ClientRepresentation {
-            client_id: Some(cfg.oauth_client_id.clone()),
-            name: Some("wireapp-oauth-client".to_string()),
+            client_id: Some(OAUTH_CLIENT_ID.to_string()),
+            name: Some(OAUTH_CLIENT_NAME.to_string()),
             consent_required: Some(false),
             always_display_in_console: Some(true),
             enabled: Some(true),
             implicit_flow_enabled: Some(false),
             standard_flow_enabled: Some(true),
-            redirect_uris: Some(vec![redirect_uri.to_string()]),
+            redirect_uris: Some(vec![config.redirect_uri.clone()]),
             public_client: Some(true),
             ..Default::default()
         };
@@ -187,27 +161,15 @@ impl KeycloakImage {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct KeycloakCfg {
-    pub oauth_client_id: String,
-    pub firstname: String,
-    pub lastname: String,
-    pub username: String,
-    pub email: String,
-    pub password: String,
-    pub host: String,
-    pub http_host_port: u16,
-}
-
-impl From<&KeycloakCfg> for UserRepresentation {
-    fn from(cfg: &KeycloakCfg) -> Self {
+impl From<&User> for UserRepresentation {
+    fn from(user: &User) -> Self {
         Self {
-            username: Some(cfg.username.clone()),
-            email: Some(cfg.email.clone()),
+            username: Some(user.username.clone()),
+            email: Some(user.email.clone()),
             enabled: Some(true),
             email_verified: Some(true),
-            first_name: Some(cfg.firstname.clone()),
-            last_name: Some(cfg.lastname.clone()),
+            first_name: Some(user.first_name.clone()),
+            last_name: Some(user.last_name.clone()),
             credentials: Some(vec![CredentialRepresentation {
                 temporary: Some(false),
                 value: Some("foo".to_string()),
@@ -248,5 +210,37 @@ impl Image for KeycloakImage {
 
     fn expose_ports(&self) -> &[ContainerPort] {
         KEYCLOAK_PORTS.get_or_init(|| [self.host_port])
+    }
+}
+
+pub async fn start_server(config: &IdpServerConfig, port: u16) -> IdpServer {
+    KeycloakImage::build(port);
+
+    let instance = KeycloakImage::new(port.tcp());
+    let image = instance
+        .with_container_name(&config.hostname)
+        .with_network(NETWORK)
+        .with_mapped_port(port, port.tcp())
+        .with_privileged(true)
+        .with_reuse(ReuseDirective::Always)
+        .with_shm_size(SHM);
+
+    image.start().await.expect("starting Keycloak will succeed");
+    KeycloakImage::configure(config, port).await;
+
+    let hostname = config.hostname.clone();
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+
+    let realm = KeycloakImage::REALM;
+    let issuer = format!("http://{hostname}:{port}/realms/{realm}");
+    let discovery_base_url = issuer.clone();
+
+    IdpServer {
+        provider: OidcProvider::Keycloak,
+        hostname,
+        addr,
+        issuer,
+        discovery_base_url,
+        user: config.user.clone(),
     }
 }
