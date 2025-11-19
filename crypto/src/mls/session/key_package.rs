@@ -7,6 +7,7 @@ use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{EntityFindParams, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
 };
+use futures_util::{StreamExt, TryStreamExt, stream::FuturesUnordered};
 use mls_crypto_provider::{Database, MlsCryptoProvider};
 use openmls::prelude::{
     Credential as MlsCredential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime,
@@ -31,6 +32,23 @@ pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 10;
 pub const KEYPACKAGE_DEFAULT_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
 
 impl Session {
+    /// Get an unambiguous credential from the provided ref.
+    async fn credential_from_ref(&self, credential_ref: &CredentialRef) -> Result<Credential> {
+        let mut credentials = credential_ref
+            .load(&self.crypto_provider.keystore())
+            .await
+            .map_err(RecursiveError::mls_credential_ref("loading credential from reference"))?;
+        let credential = credentials.pop().ok_or(Error::CredentialNotFound(
+            credential_ref.r#type(),
+            credential_ref.signature_scheme(),
+        ))?;
+        if !credentials.is_empty() {
+            return Err(Error::AmbiguousCredentialRef);
+        }
+
+        Ok(credential)
+    }
+
     /// Generate a [KeyPackage] from the referenced credential.
     ///
     /// Makes no attempt to look up or prune existing keypackges.
@@ -47,18 +65,7 @@ impl Session {
         lifetime: Option<Duration>,
     ) -> Result<KeyPackage> {
         let lifetime = Lifetime::new(lifetime.unwrap_or(KEYPACKAGE_DEFAULT_LIFETIME).as_secs());
-
-        let mut credentials = credential_ref
-            .load(&self.crypto_provider.keystore())
-            .await
-            .map_err(RecursiveError::mls_credential_ref("loading credential from reference"))?;
-        let credential = credentials.pop().ok_or(Error::CredentialNotFound(
-            credential_ref.r#type(),
-            credential_ref.signature_scheme(),
-        ))?;
-        if !credentials.is_empty() {
-            return Err(Error::AmbiguousCredentialRef);
-        }
+        let credential = self.credential_from_ref(credential_ref).await?;
 
         let config = CryptoConfig {
             ciphersuite: credential.ciphersuite.into(),
@@ -79,7 +86,7 @@ impl Session {
     }
 
     /// Get all [`KeyPackageRef`]s in the database.
-    pub async fn get_keypackages(&self) -> Result<Vec<KeyPackageRef>> {
+    pub async fn get_keypackage_refs(&self) -> Result<Vec<KeyPackageRef>> {
         let stored_keypackages: Vec<StoredKeypackage> = self
             .crypto_provider
             .keystore()
@@ -108,6 +115,29 @@ impl Session {
             .map_err(Into::into)
     }
 
+    /// Get all [`KeyPackage`]s in the database.
+    ///
+    /// This is moderately complicated because mapping with an asynchronous function is intrinsically
+    /// a bit complicated, unfortunately.
+    pub(crate) async fn get_keypackages(&self) -> Result<Vec<KeyPackage>> {
+        let keypackage_refs = self.get_keypackage_refs().await?;
+        let keypackages = keypackage_refs
+            .iter()
+            .map(|kp_ref| self.load_keypackage(kp_ref))
+            .collect::<FuturesUnordered<_>>()
+            // if any ref from loading all fails to load now, skip it
+            // strictly we could panic, but this is safer--maybe someone removed it concurrently
+            .filter_map(async |kp| kp.transpose())
+            // it is weirdly difficult to get the "collect into a result" behavior we're accustomed to in sync-land
+            // when what we have is a bunch of futures, but this seems to accomplish that
+            .try_fold(Vec::new(), async |mut acc, keypackage| {
+                acc.push(keypackage);
+                Ok(acc)
+            })
+            .await?;
+        Ok(keypackages)
+    }
+
     /// Remove one [`KeyPackage`] from the database.
     ///
     /// Succeeds silently if the keypackage does not exist in the database.
@@ -131,6 +161,52 @@ impl Session {
             .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
 
         Ok(())
+    }
+
+    /// Remove all keypackages associated with this credential.
+    ///
+    /// This is fairly expensive as it must first load all keypackages, then delete those matching the credential.
+    ///
+    /// Implementation note: once it makes it as far as having a list of keypackages, does _not_ short-circuit
+    /// if removing one returns an error. In that case, only the first produced error is returned.
+    /// This helps ensure that as many keypackages for the given credential ref are removed as possible.
+    pub async fn remove_keypackages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
+        let credential = self.credential_from_ref(credential_ref).await?;
+        let mls_credential = credential.mls_credential();
+
+        let mut first_err = None;
+        macro_rules! try_retain_err {
+            ($e:expr) => {
+                match $e {
+                    Err(err) => {
+                        if first_err.is_none() {
+                            first_err = Some(Error::from(err));
+                        }
+                        continue;
+                    }
+                    Ok(val) => val,
+                }
+            };
+        }
+
+        for keypackage in self
+            .get_keypackages()
+            .await?
+            .into_iter()
+            .filter(|keypackage| keypackage.leaf_node().credential() == mls_credential)
+        {
+            let kp_ref = try_retain_err!(
+                keypackage
+                    .hash_ref(self.crypto_provider.crypto())
+                    .map_err(MlsError::wrap("getting keypackage ref in remove_keypackages_for"))
+            );
+            try_retain_err!(self.remove_keypackage(&kp_ref).await);
+        }
+
+        match first_err {
+            None => Ok(()),
+            Some(err) => Err(err),
+        }
     }
 
     /// Generates a single new keypackage

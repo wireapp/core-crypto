@@ -3,11 +3,11 @@ use core_crypto_keystore::{
     entities::{EntityFindParams, StoredCredential},
 };
 use mls_crypto_provider::Database;
-use openmls::prelude::{Credential as MlsCredential};
+use openmls::prelude::Credential as MlsCredential;
 use tls_codec::Deserialize as _;
 
 use super::{Error, Result};
-use crate::{ClientId, Ciphersuite, CredentialRef, CredentialType, KeystoreError, mls::session::id::ClientIdRef};
+use crate::{Ciphersuite, ClientId, CredentialRef, CredentialType, KeystoreError, mls::session::id::ClientIdRef};
 
 /// Filters to narrow down the set of credentials returned from various credential-finding methods.
 ///

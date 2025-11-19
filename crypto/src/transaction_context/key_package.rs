@@ -86,10 +86,10 @@ impl TransactionContext {
     }
 
     /// Get all [`KeyPackageRef`]s known to the keystore.
-    pub async fn get_keypackages(&self) -> Result<Vec<KeyPackageRef>> {
+    pub async fn get_keypackage_refs(&self) -> Result<Vec<KeyPackageRef>> {
         let session = self.session().await?;
         session
-            .get_keypackages()
+            .get_keypackage_refs()
             .await
             .map_err(RecursiveError::mls_client(
                 "getting all key package refs for transaction",
@@ -104,6 +104,18 @@ impl TransactionContext {
             .remove_keypackage(kp_ref)
             .await
             .map_err(RecursiveError::mls_client("removing a keypackage for transaction"))
+            .map_err(Into::into)
+    }
+
+    /// Remove all [`KeyPackage`]s associated with this ref.
+    pub async fn remove_keypackages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
+        let session = self.session().await?;
+        session
+            .remove_keypackages_for(credential_ref)
+            .await
+            .map_err(RecursiveError::mls_client(
+                "removing all keypackages for credential ref for transaction",
+            ))
             .map_err(Into::into)
     }
 }
