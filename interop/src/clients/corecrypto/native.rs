@@ -37,7 +37,7 @@ impl CoreCryptoNativeClient {
         ctx.mls_init(client_id.clone().into(), &[CIPHERSUITE_IN_USE.into()])
             .await?;
         ctx.add_credential(Credential::basic(
-            CIPHERSUITE_IN_USE.signature_algorithm(),
+            CIPHERSUITE_IN_USE.into(),
             client_id.clone(),
             mls_crypto_provider::RustCrypto::default(),
         )?)

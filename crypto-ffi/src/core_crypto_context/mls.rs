@@ -440,25 +440,6 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// Generate a `KeyPackage` from the referenced credential.
-    ///
-    /// Makes no attempt to look up or prune existing keypackges.
-    ///
-    /// If `lifetime` is set, the keypackages will expire that span into the future.
-    /// If it is unset, a default lifetime of approximately 3 months is used.
-    pub async fn generate_keypackage(
-        &self,
-        credential_ref: &CredentialRefMaybeArc,
-        lifetime: Option<Duration>,
-    ) -> CoreCryptoResult<KeyPackageMaybeArc> {
-        let credential_ref = &credential_ref.0;
-        self.inner
-            .generate_keypackage(credential_ref, lifetime)
-            .await
-            .map_err(Into::into)
-            .and_then(|kp| KeyPackage::from_cc(&kp))
-    }
-
     /// Get a reference to each `KeyPackage` in the database.
     pub async fn get_keypackages(&self) -> CoreCryptoResult<Vec<KeyPackageRefMaybeArc>> {
         self.inner
@@ -480,5 +461,59 @@ impl CoreCryptoContext {
             .remove_keypackages_for(&credential_ref.0)
             .await
             .map_err(Into::into)
+    }
+}
+
+impl CoreCryptoContext {
+    async fn generate_keypackage_inner(
+        &self,
+        credential_ref: &CredentialRefMaybeArc,
+        lifetime: Option<Duration>,
+    ) -> CoreCryptoResult<KeyPackageMaybeArc> {
+        let credential_ref = &credential_ref.0;
+        self.inner
+            .generate_keypackage(credential_ref, lifetime)
+            .await
+            .map_err(Into::into)
+            .and_then(|kp| KeyPackage::from_cc(&kp))
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[uniffi::export]
+impl CoreCryptoContext {
+    /// Generate a `KeyPackage` from the referenced credential.
+    ///
+    /// Makes no attempt to look up or prune existing keypackges.
+    ///
+    /// If `lifetime` is set, the keypackages will expire that span into the future.
+    /// If it is unset, a default lifetime of approximately 3 months is used.
+    pub async fn generate_keypackage(
+        &self,
+        credential_ref: &CredentialRefMaybeArc,
+        lifetime: Option<Duration>,
+    ) -> CoreCryptoResult<KeyPackageMaybeArc> {
+        self.generate_keypackage_inner(credential_ref, lifetime).await
+    }
+}
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+impl CoreCryptoContext {
+    /// Generate a `KeyPackage` from the referenced credential.
+    ///
+    /// Makes no attempt to look up or prune existing keypackges.
+    ///
+    /// If `lifetime` is set, the keypackages will expire that span into the future.
+    /// If it is unset, a default lifetime of approximately 3 months is used.
+    ///
+    /// `lifetime` is interpreted as a quantity of milliseconds
+    pub async fn generate_keypackage(
+        &self,
+        credential_ref: &CredentialRefMaybeArc,
+        lifetime: Option<u32>,
+    ) -> CoreCryptoResult<KeyPackageMaybeArc> {
+        let lifetime = lifetime.map(|millis| Duration::from_millis(millis.into()));
+        self.generate_keypackage_inner(credential_ref, lifetime).await
     }
 }

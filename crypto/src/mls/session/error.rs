@@ -43,11 +43,8 @@ pub enum Error {
     EpochObserverAlreadyExists,
     #[error("An HistoryHandler has already been registered; reregistration is not possible")]
     HistoryObserverAlreadyExists,
-    #[error("generating and storing a keypackage")]
-    KeypackageNew {
-        #[source]
-        source: Box<dyn std::error::Error + Send + Sync>,
-    },
+    #[error("something went wrong when generating and storing a new keypackage: {0}")]
+    KeypackageNew(String),
     #[error("This credential ref matched more than a single credential in the keystore")]
     AmbiguousCredentialRef,
     #[error("Serializing {item} for TLS")]
@@ -81,13 +78,7 @@ impl Error {
         move |source| Self::TlsDeserialize { item, source }
     }
 
-    pub fn keypackage_new<E>() -> impl FnOnce(E) -> Self
-    where
-        E: 'static + std::error::Error + Send + Sync,
-    {
-        move |source| {
-            let source = source.into();
-            Self::KeypackageNew { source }
-        }
+    pub fn keypackage_new<E: std::error::Error>() -> impl FnOnce(E) -> Self {
+        move |source| Self::KeypackageNew(source.to_string())
     }
 }
