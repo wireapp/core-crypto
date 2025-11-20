@@ -4,6 +4,12 @@
 
 ### Features
 
+- removed `.proteusFingerprintPrekeybundle()` and `.proteusLastResortPrekeyId()` from `CoreCryptoContext`.
+
+  Both are available as static methods on `CoreCrypto`.
+
+  Affected platforms: android, ios, web
+
 - We now generate the ts bindings from the same uniffi code that swift and kotlin use.
 
   - Arrays are now passed as ArrayBuffer between client and the FFI layer, changing parameter and return types.
