@@ -72,7 +72,7 @@ pub use crate::{
             EpochObserver, HistoryObserver, Session,
             id::{ClientId, ClientIdRef},
             identifier::ClientIdentifier,
-            key_package::INITIAL_KEYING_MATERIAL_COUNT,
+            key_package::{INITIAL_KEYING_MATERIAL_COUNT, KEYPACKAGE_DEFAULT_LIFETIME},
             user_id::UserId,
         },
     },
