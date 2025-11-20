@@ -53,7 +53,7 @@ impl Keypackage {
 impl Keypackage {
     /// Construct a new `Keypackage` from a byte array
     #[uniffi::constructor]
-    pub fn new(bytes: Vec<u8>) -> CoreCryptoResult<Self> {
+    pub fn new(bytes: &[u8]) -> CoreCryptoResult<Self> {
         KeyPackageIn::tls_deserialize_exact(bytes)
             .map(|kp_in| Self(Inner::In(kp_in)))
             .map_err(core_crypto::mls::conversation::Error::tls_deserialize("keypackagein"))

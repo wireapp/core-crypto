@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use core_crypto_ffi::{
-    ClientId, CoreCryptoFfi, CredentialType, CustomConfiguration, Database, DatabaseKey, TransactionHelper,
+    ClientId, CoreCryptoFfi, CredentialType, CustomConfiguration, Database, DatabaseKey, Keypackage, TransactionHelper,
     credential_basic,
 };
 use tempfile::NamedTempFile;
@@ -100,7 +100,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         });
         self.cc.transaction(extractor.clone()).await?;
         let kp = extractor.into_return_value();
-        Ok(kp.copy_bytes())
+        kp.serialize().map_err(Into::into)
     }
 
     async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
@@ -123,7 +123,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
                 .await?;
         }
 
-        let key_packages = vec![Arc::new(kp.into())];
+        let key_packages = vec![Arc::new(Keypackage::new(kp)?)];
         let extractor = TransactionHelper::new(async move |context| {
             context
                 .add_clients_to_conversation(&conversation_id, key_packages)
