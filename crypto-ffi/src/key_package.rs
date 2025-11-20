@@ -30,7 +30,7 @@ enum Inner {
 #[derive(Clone, uniffi::Object)]
 pub struct Keypackage(Inner);
 
-pub type KeypackageMaybeArc = std::sync::Arc<Keypackage>;
+pub(crate) type KeypackageMaybeArc = std::sync::Arc<Keypackage>;
 
 impl From<Keypackage> for KeyPackageIn {
     fn from(value: Keypackage) -> Self {
