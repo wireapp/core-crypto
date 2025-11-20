@@ -23,7 +23,7 @@ pub(crate) struct V5Credential {
 /// Entity representing a persisted `Credential` prior to replacing signature scheme with ciphersuite
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-pub struct V6Credential {
+pub(crate) struct V6Credential {
     /// Note: this is not a unique identifier, but the session id this credential belongs to.
     #[sensitive]
     pub id: Vec<u8>,
