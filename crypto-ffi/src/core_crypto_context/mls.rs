@@ -427,13 +427,13 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// Remove a [`KeyPackage`] from the database.
+    /// Remove a `KeyPackage` from the database.
     pub async fn remove_keypackage(&self, kp_ref: &KeypackageRefMaybeArc) -> CoreCryptoResult<()> {
         let kp_ref = core_crypto::KeyPackageRef::from(kp_ref.0.as_slice());
         self.inner.remove_keypackage(&kp_ref).await.map_err(Into::into)
     }
 
-    /// Remove all [`KeyPackage`]s associated with this ref.
+    /// Remove all `KeyPackage`s associated with this credential ref.
     pub async fn remove_keypackages_for(&self, credential_ref: &CredentialRefMaybeArc) -> CoreCryptoResult<()> {
         self.inner
             .remove_keypackages_for(&credential_ref.0)
