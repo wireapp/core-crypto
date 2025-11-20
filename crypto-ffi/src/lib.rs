@@ -25,6 +25,7 @@ mod e2ei;
 mod ephemeral;
 mod error;
 mod identity;
+mod key_package;
 mod metadata;
 mod proteus;
 
@@ -72,4 +73,6 @@ pub use identity::{
     wire::{DeviceStatus, WireIdentity},
     x509::X509Identity,
 };
+pub use key_package::{Keypackage, KeypackageRef};
+pub(crate) use key_package::{KeypackageMaybeArc, KeypackageRefMaybeArc};
 pub use metadata::{BuildMetadata, build_metadata, version};
