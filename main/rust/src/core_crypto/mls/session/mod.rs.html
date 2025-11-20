@@ -273,7 +273,7 @@
 <a href=#273 id=273 data-nosnippet>273</a>    /// # Errors
 <a href=#274 id=274 data-nosnippet>274</a>    /// KeyStore errors, such as IO, and if there is more than one strong reference
 <a href=#275 id=275 data-nosnippet>275</a>    /// to the connection.
-<a href=#276 id=276 data-nosnippet>276</a>    </span><span class="kw">pub async fn </span>close(<span class="self">self</span>) -&gt; <span class="kw">crate</span>::mls::Result&lt;()&gt; {
+<a href=#276 id=276 data-nosnippet>276</a>    </span><span class="kw">pub async fn </span>close(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">crate</span>::mls::Result&lt;()&gt; {
 <a href=#277 id=277 data-nosnippet>277</a>        <span class="self">self</span>.crypto_provider
 <a href=#278 id=278 data-nosnippet>278</a>            .close()
 <a href=#279 id=279 data-nosnippet>279</a>            .<span class="kw">await

@@ -108,11 +108,49 @@
   <div class="breadcrumbs"><a href="../../../index.html">CoreCrypto</a><span class="delimiter">/</span><a href="../index.html">com.wire.crypto</a><span class="delimiter">/</span><span class="current">Credential</span></div>
   <div class="cover ">
     <h1 class="cover"><span><span>Credential</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="index.html">Credential</a> : <a href="../-disposable/index.html">Disposable</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/AutoCloseable.html">AutoCloseable</a>, <a href="../-credential-interface/index.html">CredentialInterface</a><span class="clearfix"><span class="floating-right">(<a href="https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt#L7262">source</a>)</span></span></div><p class="paragraph">A cryptographic credential.</p><p class="paragraph">This is tied to a particular client via either its client id or certificate bundle, depending on its credential type, but is independent of any client instance or storage.</p><p class="paragraph">To attach to a particular client instance and store, see crate::CoreCryptoContext::add_credential.</p></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="index.html">Credential</a> : <a href="../-disposable/index.html">Disposable</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/AutoCloseable.html">AutoCloseable</a>, <a href="../-credential-interface/index.html">CredentialInterface</a><span class="clearfix"><span class="floating-right">(<a href="https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt#L7495">source</a>)</span></span></div><p class="paragraph">A cryptographic credential.</p><p class="paragraph">This is tied to a particular client via either its client id or certificate bundle, depending on its credential type, but is independent of any client instance or storage.</p><p class="paragraph">To attach to a particular client instance and store, see crate::CoreCryptoContext::add_credential.</p></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="-960462050%2FConstructors%2F1144021071" anchor-label="Credential" id="-960462050%2FConstructors%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-credential.html"><span><span>Credential</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-960462050%2FConstructors%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">pointer<span class="token operator">: </span><span data-unresolved-link="com.sun.jna/Pointer///PointingToDeclaration/">Pointer</span></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">noPointer<span class="token operator">: </span><span data-unresolved-link="com.wire.crypto/NoPointer///PointingToDeclaration/">NoPointer</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">This constructor can be used to instantiate a fake object. Only used for tests. Any attempt to actually use an object constructed this way will fail as there is no connected Rust object.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="41612394%2FClasslikes%2F1144021071" anchor-label="Companion" id="41612394%2FClasslikes%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="41612394%2FClasslikes%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div data-togglable="FUNCTION">
         <h2 class="">Functions</h2>
         <div class="table"><a data-name="1871122219%2FFunctions%2F1144021071" anchor-label="close" id="1871122219%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
@@ -171,6 +209,21 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="type.html"><span class="token function">type</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-credential-type/index.html">CredentialType</a></div><div class="brief "><p class="paragraph">Get the type of this credential.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="420869054%2FFunctions%2F1144021071" anchor-label="uniffiClonePointer" id="420869054%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="uniffi-clone-pointer.html"><span>uniffi</span><wbr></wbr><span>Clone</span><wbr></wbr><span><span>Pointer</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="420869054%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="uniffi-clone-pointer.html"><span class="token function">uniffiClonePointer</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.sun.jna/Pointer///PointingToDeclaration/">Pointer</span></div></div></div>
                 </div>
               </div>
             </div>
