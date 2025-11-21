@@ -606,6 +606,25 @@ clean: ts-clean ## Run cargo clean and the ts-clean target, remove all stamps
 # Formatting and linting
 #-------------------------------------------------------------------------------
 
+# Rust
+
+$(STAMPS)/rust-fmt: $(RUST_SOURCES)
+	cargo fmt
+	$(TOUCH_STAMP)
+
+.PHONY: rust-fmt
+rust-fmt: $(STAMPS)/rust-fmt ## Format Rust files via cargo fmt
+
+$(STAMPS)/rust-check: $(RUST_SOURCES)
+	cargo fmt --all -- --check && \
+	cargo check --locked --all-targets && \
+	cargo check --locked --target wasm32-unknown-unknown && \
+    cargo clippy --locked --all-targets && \
+    cargo clippy --locked --target wasm32-unknown-unknown
+	$(TOUCH_STAMP)
+
+.PHONY: rust-check
+rust-check: $(STAMPS)/rust-check ## Lint Rust files via cargo clippy and cargo check
 
 # Swift
 
