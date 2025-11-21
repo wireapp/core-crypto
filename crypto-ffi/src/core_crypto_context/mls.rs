@@ -281,7 +281,7 @@ impl CoreCryptoContext {
             Err(e) => Err(e)?,
         };
 
-        decrypted_message.try_into()
+        Ok(decrypted_message.into())
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::encrypt_message]

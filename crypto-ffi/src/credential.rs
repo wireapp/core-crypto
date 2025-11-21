@@ -36,8 +36,8 @@ pub fn credential_basic(ciphersuite: Ciphersuite, client_id: &ClientIdMaybeArc) 
 #[uniffi::export]
 impl Credential {
     /// Get the type of this credential.
-    pub fn r#type(&self) -> CoreCryptoResult<CredentialType> {
-        self.0.credential_type().try_into()
+    pub fn r#type(&self) -> CredentialType {
+        self.0.credential_type().into()
     }
 
     /// Get the signature scheme of this credential.

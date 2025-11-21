@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use core_crypto::CredentialRef as CryptoCredentialRef;
 
-use crate::{Ciphersuite, ClientId, CoreCryptoResult, CredentialType, SignatureScheme};
+use crate::{Ciphersuite, ClientId, CredentialType, SignatureScheme};
 
 /// A reference to a credential which has been persisted in CC.
 ///
@@ -41,8 +41,8 @@ impl CredentialRef {
     }
 
     /// Get the type of this credential ref.
-    pub fn r#type(&self) -> CoreCryptoResult<CredentialType> {
-        self.0.r#type().try_into()
+    pub fn r#type(&self) -> CredentialType {
+        self.0.r#type().into()
     }
 
     /// Get the signature scheme of this credential ref.
