@@ -607,6 +607,8 @@ clean: ts-clean ## Run cargo clean and the ts-clean target, remove all stamps
 #-------------------------------------------------------------------------------
 
 
+# Swift
+
 SWIFT_INTEROP = ./interop/src/clients/InteropClient
 SWIFT_WRAPPER = ./crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto
 SWIFT_TESTS = ./crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCryptoTests

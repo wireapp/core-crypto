@@ -61,14 +61,9 @@ jobs:
           HOMEBREW_NO_INSTALL_UPGRADE: 1
         run: |
           brew install swiftlint
-      - name: Format-check and lint swift bindings
+      - name: Format-check and lint
         run: |
-          swift format lint -r -s ./crypto-ffi/bindings/swift/WireCoreCrypto
-          swiftlint --strict ./crypto-ffi/bindings/swift/WireCoreCrypto
-      - name: Format-check and lint swift interop client
-        run: |
-          swift format lint -r -s ./interop/src/clients/InteropClient
-          swiftlint --strict ./interop/src/clients/InteropClient
+          make swift-check
       - name: Create simulator
         run: |
           echo "SIMULATOR=$(sh ./scripts/create-ios-sim-device.sh "iPhone 16 test-ios")" >> $GITHUB_ENV
