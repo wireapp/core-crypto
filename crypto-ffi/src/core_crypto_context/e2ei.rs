@@ -203,7 +203,7 @@ impl CoreCryptoContext {
 
         let conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         let wire_ids = conversation.get_device_identities(device_ids.as_slice()).await?;
-        wire_ids.into_iter().map(TryInto::try_into).collect()
+        Ok(wire_ids.into_iter().map(Into::into).collect())
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_user_identities]
@@ -217,10 +217,7 @@ impl CoreCryptoContext {
         let user_ids = user_ids
             .into_iter()
             .map(|(k, v)| -> CoreCryptoResult<_> {
-                let identities = v
-                    .into_iter()
-                    .map(WireIdentity::try_from)
-                    .collect::<CoreCryptoResult<Vec<_>>>()?;
+                let identities = v.into_iter().map(WireIdentity::from).collect::<Vec<_>>();
                 Ok((k, identities))
             })
             .collect::<CoreCryptoResult<HashMap<_, _>>>()?;

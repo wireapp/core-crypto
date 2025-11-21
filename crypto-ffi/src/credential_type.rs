@@ -1,5 +1,3 @@
-use crate::CoreCryptoError;
-
 /// Type of Credential
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, uniffi::Enum)]
 #[repr(u8)]
@@ -11,12 +9,11 @@ pub enum CredentialType {
     X509 = 0x02,
 }
 
-impl TryFrom<core_crypto::CredentialType> for CredentialType {
-    type Error = CoreCryptoError;
-    fn try_from(value: core_crypto::CredentialType) -> Result<CredentialType, CoreCryptoError> {
+impl From<core_crypto::CredentialType> for CredentialType {
+    fn from(value: core_crypto::CredentialType) -> CredentialType {
         match value {
-            core_crypto::CredentialType::Basic => Ok(Self::Basic),
-            core_crypto::CredentialType::X509 => Ok(Self::X509),
+            core_crypto::CredentialType::Basic => Self::Basic,
+            core_crypto::CredentialType::X509 => Self::X509,
         }
     }
 }
