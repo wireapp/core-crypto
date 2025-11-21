@@ -606,6 +606,27 @@ clean: ts-clean ## Run cargo clean and the ts-clean target, remove all stamps
 # Formatting and linting
 #-------------------------------------------------------------------------------
 
+
+SWIFT_INTEROP = ./interop/src/clients/InteropClient
+SWIFT_WRAPPER = ./crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto
+SWIFT_TESTS = ./crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCryptoTests
+SWIFT_FILES := $(shell find $(SWIFT_WRAPPER) $(SWIFT_TESTS) $(SWIFT_INTEROP) -type f -name '*.swift')
+
+$(STAMPS)/swift-fmt: $(SWIFT_FILES)
+	swift format -r -i $(SWIFT_INTEROP) $(SWIFT_TESTS) $(SWIFT_WRAPPER) && \
+	$(TOUCH_STAMP)
+
+.PHONY: swift-fmt
+swift-fmt: $(STAMPS)/swift-fmt ## Format Swift files via swift-format
+
+$(STAMPS)/swift-check: $(SWIFT_FILES)
+	swift format lint -r -s $(SWIFT_INTEROP) $(SWIFT_TESTS) $(SWIFT_WRAPPER) && \
+	swiftlint --strict  $(SWIFT_INTEROP) $(SWIFT_TESTS) $(SWIFT_WRAPPER)
+	$(TOUCH_STAMP)
+
+.PHONY: swift-check
+swift-check: $(STAMPS)/swift-check ## Lint Swift files via swift-format and swift-lint
+
 KT_WRAPPER = ./crypto-ffi/bindings/jvm/src/main/kotlin
 KT_TESTS = ./crypto-ffi/bindings/jvm/src/test
 KT_FILES := $(shell find $(KT_WRAPPER) $(KT_TESTS) -type f -name '*.kt')
