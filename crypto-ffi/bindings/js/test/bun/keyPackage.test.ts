@@ -137,40 +137,30 @@ describe("key package", () => {
         );
         const cc = await ccInit(clientId);
 
-        try {
-            await cc.transaction(async (ctx) => {
-                console.log("adding credentials...");
-                const cref1 = await ctx.addCredential(credential1);
-                const cref2 = await ctx.addCredential(credential2);
+        await cc.transaction(async (ctx) => {
+            const cref1 = await ctx.addCredential(credential1);
+            const cref2 = await ctx.addCredential(credential2);
 
-                // we're going to generate keypackages for both credentials,
-                // then remove those packages for credential 2, leaving behind those for credential 1
-                console.log("generating keypackages...");
-                const KEYPACKAGES_PER_CREDENTIAL = 2;
-                for (const cref of [cref1, cref2]) {
-                    for (let i = 0; i < KEYPACKAGES_PER_CREDENTIAL; i++) {
-                        await ctx.generateKeypackage(cref);
-                    }
+            // we're going to generate keypackages for both credentials,
+            // then remove those packages for credential 2, leaving behind those for credential 1
+            const KEYPACKAGES_PER_CREDENTIAL = 2;
+            for (const cref of [cref1, cref2]) {
+                for (let i = 0; i < KEYPACKAGES_PER_CREDENTIAL; i++) {
+                    await ctx.generateKeypackage(cref);
                 }
+            }
 
-                console.log("checking before removal...");
-                const kpsBeforeRemoval = await ctx.getKeypackages();
-                expect(kpsBeforeRemoval).toBeArray();
-                expect(kpsBeforeRemoval.length).not.toBe(
-                    KEYPACKAGES_PER_CREDENTIAL
-                );
+            const kpsBeforeRemoval = await ctx.getKeypackages();
+            // 2 credentials with the same n keypackages each
+            expect(kpsBeforeRemoval).toBeArrayOfSize(
+                KEYPACKAGES_PER_CREDENTIAL * 2
+            );
 
-                // now remove all keypackages for one of the credentials
-                console.log("removing...");
-                await ctx.removeKeypackagesFor(cref1);
+            // now remove all keypackages for one of the credentials
+            await ctx.removeKeypackagesFor(cref1);
 
-                console.log("checking after removal...");
-                const kps = await ctx.getKeypackages();
-                expect(kps).toBeArrayOfSize(KEYPACKAGES_PER_CREDENTIAL);
-            });
-        } catch (e) {
-            console.error(JSON.stringify(e));
-            throw e;
-        }
+            const kps = await ctx.getKeypackages();
+            expect(kps).toBeArrayOfSize(KEYPACKAGES_PER_CREDENTIAL);
+        });
     });
 });
