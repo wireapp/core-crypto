@@ -34,7 +34,7 @@ pub use openmls::{
     group::{MlsGroup, MlsGroupConfig},
     prelude::{
         Ciphersuite as MlsCiphersuite, GroupEpoch, KeyPackage, KeyPackageIn, KeyPackageRef, MlsMessageIn, Node,
-        group_info::VerifiableGroupInfo,
+        SignatureScheme, group_info::VerifiableGroupInfo,
     },
 };
 #[cfg(feature = "proteus")]

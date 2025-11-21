@@ -3,7 +3,7 @@ use std::sync::Arc;
 use core_crypto::{Ciphersuite as CryptoCiphersuite, Credential as CryptoCredential};
 use mls_crypto_provider::RustCrypto;
 
-use crate::{Ciphersuite, CoreCryptoResult, CredentialType, client_id::ClientIdMaybeArc};
+use crate::{Ciphersuite, CoreCryptoResult, CredentialType, SignatureScheme, client_id::ClientIdMaybeArc};
 
 /// A cryptographic credential.
 ///
@@ -38,6 +38,11 @@ impl Credential {
     /// Get the type of this credential.
     pub fn r#type(&self) -> CoreCryptoResult<CredentialType> {
         self.0.credential_type().try_into()
+    }
+
+    /// Get the signature scheme of this credential.
+    pub fn signature_scheme(&self) -> SignatureScheme {
+        self.0.signature_scheme().into()
     }
 
     /// Get the earliest possible validity of this credential, expressed as seconds after the unix epoch.

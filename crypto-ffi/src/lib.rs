@@ -28,6 +28,7 @@ mod identity;
 mod key_package;
 mod metadata;
 mod proteus;
+mod signature_scheme;
 
 pub use bundles::{
     commit::CommitBundle, group_info::GroupInfoBundle, proteus_auto_prekey::ProteusAutoPrekeyBundle,
@@ -76,3 +77,4 @@ pub use identity::{
 pub use key_package::{Keypackage, KeypackageRef};
 pub(crate) use key_package::{KeypackageMaybeArc, KeypackageRefMaybeArc};
 pub use metadata::{BuildMetadata, build_metadata, version};
+pub use signature_scheme::SignatureScheme;
