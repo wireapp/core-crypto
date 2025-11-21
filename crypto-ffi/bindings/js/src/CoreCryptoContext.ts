@@ -1058,10 +1058,8 @@ export class CoreCryptoContext {
      *
      * Makes no attempt to look up or prune existing keypackges.
      *
-     * If `lifetime` is set, the keypackages will expire that span into the future.
-     * If it is unset, a default lifetime of approximately 3 months is used.
-     *
-     * `lifetime` is interpreted as a quantity of milliseconds
+     * @param credentialRef references the credential to be used as the foundation for this keypackage
+     * @param lifetime how long this keypackage is valid for. If unset, approx 3 months. Expressed in milliseconds.
      */
     async generateKeypackage(
         credentialRef: CredentialRefInterface,
@@ -1082,6 +1080,8 @@ export class CoreCryptoContext {
 
     /**
      * Remove a `KeyPackage` from the database.
+     *
+     * @param kpRef references the keypackage to be removed.
      */
     async removeKeypackage(kpRef: KeypackageRefInterface): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
@@ -1091,6 +1091,8 @@ export class CoreCryptoContext {
 
     /**
      * Remove all `KeyPackage`s associated with this credential ref.
+     *
+     * @param credentialRef references the credential for which all keypackages should be removed.
      */
     async removeKeypackagesFor(
         credentialRef: CredentialRefInterface
