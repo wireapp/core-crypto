@@ -685,5 +685,8 @@ $(STAMPS)/ts-check: $(TS_SRCS)
 .PHONY: ts-check
 ts-check: $(STAMPS)/ts-check ## Lint TypeScript files via eslint and tsc
 
+.PHONY: fmt
+fmt: rust-fmt swift-fmt kotlin-fmt ts-fmt ## Format all files
 
-
+.PHONY: check
+check: rust-check swift-check kotlin-check ts-check ## Run all linters
