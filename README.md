@@ -1,3 +1,5 @@
+[![scheduled](https://github.com/wireapp/core-crypto/actions/workflows/scheduled.yml/badge.svg)](https://github.com/wireapp/core-crypto/actions/workflows/scheduled.yml)
+
 # Wire CoreCrypto<a name="wire-corecrypto"></a>
 
 This repository is part of the source code of Wire. You can find more information at [wire.com](https://wire.com) or by

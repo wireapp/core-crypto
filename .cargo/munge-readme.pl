@@ -7,8 +7,12 @@ $_ = <>;            # read whole input (files on command line, fallback to stdin
 
 # replace "ignore" code blocks with "text"
 s/```ignore/```text/g;
+
 # remove lines with admonition markers
 s/^.*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\].*\n//mg;
+
+# remove GitHub Actions badges (markdown image links to *.svg)
+s/^\[!\[.*?github\.com.*?badge\.svg.*?\n//mg;
 
 # handle TOC markers
 my $start = "<!-- mdformat-toc start";
