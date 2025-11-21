@@ -669,15 +669,16 @@ $(STAMPS)/kotlin-check: $(KT_FILES)
 kotlin-check: $(STAMPS)/kotlin-check ## Lint Kotlin files via ktlint
 
 # TypeScript
+TS_TEST_FILES := $(shell find $(JS_DIR)/test -type f -name '*.ts' 2>/dev/null | LC_ALL=C sort)
 
-$(STAMPS)/ts-fmt: $(TS_SRCS)
+$(STAMPS)/ts-fmt: $(TS_SRCS) $(TS_TEST_FILES)
 	cd $(JS_DIR) && bun eslint --max-warnings=0 --fix
 	$(TOUCH_STAMP)
 
 .PHONY: ts-fmt
 ts-fmt: $(STAMPS)/ts-fmt ## Format TypeScript files via eslint
 
-$(STAMPS)/ts-check: $(TS_SRCS)
+$(STAMPS)/ts-check: $(TS_SRCS) $(TS_TEST_FILES)
 	cd $(JS_DIR) && bun eslint --max-warnings=0 && \
 	tsc --noEmit
 	$(TOUCH_STAMP)
