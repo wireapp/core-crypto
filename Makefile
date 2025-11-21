@@ -627,6 +627,8 @@ $(STAMPS)/swift-check: $(SWIFT_FILES)
 .PHONY: swift-check
 swift-check: $(STAMPS)/swift-check ## Lint Swift files via swift-format and swift-lint
 
+# Kotlin
+
 KT_WRAPPER = ./crypto-ffi/bindings/jvm/src/main/kotlin
 KT_TESTS = ./crypto-ffi/bindings/jvm/src/test
 KT_FILES := $(shell find $(KT_WRAPPER) $(KT_TESTS) -type f -name '*.kt')
