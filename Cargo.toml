@@ -69,7 +69,7 @@ strum = { version = "0.27", features = ["derive"] }
 thiserror = "2.0"
 tls_codec = "0.4.2"
 typed-builder = "0.23.2"
-uniffi = "0.29.4"
+uniffi = "0.30.0"
 url = "2.5"
 uuid = "1.18"
 x509-cert = "0.2"
