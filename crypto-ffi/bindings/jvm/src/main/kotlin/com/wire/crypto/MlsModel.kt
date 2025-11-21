@@ -25,7 +25,7 @@ fun ByteArray.toExternalSenderKey() = ExternalSenderKey(this)
 fun ByteArray.toWelcome() = Welcome(this)
 
 /** Construct a KeyPackage from bytes */
-fun ByteArray.toMLSKeyPackage() = KeyPackage(this)
+fun ByteArray.toMLSKeyPackage() = Keypackage(this)
 
 /** Construct an AVS secret */
 fun ByteArray.toAvsSecret() = SecretKey(this)
