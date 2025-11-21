@@ -485,13 +485,6 @@ $(TS_OUT): $(ts-deps)
 .PHONY: ts
 ts: $(TS_OUT) ## Build the TypeScript wrapper
 
-$(STAMPS)/ts-fmt: $(TS_SRCS)
-	cd $(JS_DIR) && bun eslint --max-warnings=0 --fix
-	$(TOUCH_STAMP)
-
-.PHONY: ts-fmt
-ts-fmt: $(STAMPS)/ts-fmt ## Format TypeScript files via eslint
-
 # run WebDriver tests + bun’s built-in tests
 .PHONY: ts-test
 ts-test: $(TS_OUT) ## Run TypeScript wrapper tests via wdio and bun. Optionally pass TEST=<test> to filter by test name.
@@ -608,3 +601,25 @@ all: android wasm jvm $(if $(filter Darwin,$(UNAME_S)),ios) docs ## Generate bin
 clean: ts-clean ## Run cargo clean and the ts-clean target, remove all stamps
 	cargo clean
 	rm -rf $(STAMPS)
+
+#-------------------------------------------------------------------------------
+# Formatting and linting
+#-------------------------------------------------------------------------------
+
+$(STAMPS)/ts-fmt: $(TS_SRCS)
+	cd $(JS_DIR) && bun eslint --max-warnings=0 --fix
+	$(TOUCH_STAMP)
+
+.PHONY: ts-fmt
+ts-fmt: $(STAMPS)/ts-fmt ## Format TypeScript files via eslint
+
+$(STAMPS)/ts-check: $(TS_SRCS)
+	cd $(JS_DIR) && bun eslint --max-warnings=0 && \
+	tsc --noEmit
+	$(TOUCH_STAMP)
+
+.PHONY: ts-check
+ts-check: $(STAMPS)/ts-check ## Lint TypeScript files via eslint and tsc
+
+
+
