@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Core Crypto is a wrapper on top of OpenMLS aimed to provide an ergonomic API for usage in web through Web Assembly and in mobile devices through FFI."><title>core_crypto - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="core_crypto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.1 (ed61e7d7e 2025-11-07)" data-channel="1.91.1" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../static.files/storage-e2aeef58.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate core_crypto</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../core_crypto/index.html">core_<wbr>crypto</a><span class="version">9.0.1</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#wire-corecrypto" title="Wire CoreCrypto">Wire CoreCrypto</a><ul><li><a href="#documentation" title="Documentation">Documentation</a></li><li><a href="#building" title="Building">Building</a></li><li><a href="#testing" title="Testing">Testing</a></li><li><a href="#benchmarks" title="Benchmarks">Benchmarks</a></li><li><a href="#git-workflow" title="Git workflow">Git workflow</a></li><li><a href="#publishing" title="Publishing">Publishing</a></li></ul></li></ul><h3><a href="#reexports">Crate Items</a></h3><ul class="block"><li><a href="#reexports" title="Re-exports">Re-exports</a></li><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#enums" title="Enums">Enums</a></li><li><a href="#constants" title="Constants">Constants</a></li><li><a href="#traits" title="Traits">Traits</a></li><li><a href="#types" title="Type Aliases">Type Aliases</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>core_<wbr>crypto</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/core_crypto/lib.rs.html#1-163">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Core Crypto is a wrapper on top of OpenMLS aimed to provide an ergonomic API for usage in web
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Core Crypto is a wrapper on top of OpenMLS aimed to provide an ergonomic API for usage in web through Web Assembly and in mobile devices through FFI."><title>core_crypto - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="core_crypto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.1 (ed61e7d7e 2025-11-07)" data-channel="1.91.1" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../static.files/storage-e2aeef58.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate core_crypto</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../core_crypto/index.html">core_<wbr>crypto</a><span class="version">9.0.1</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#wire-corecrypto" title="Wire CoreCrypto">Wire CoreCrypto</a><ul><li><a href="#documentation" title="Documentation">Documentation</a></li><li><a href="#building" title="Building">Building</a></li><li><a href="#testing" title="Testing">Testing</a></li><li><a href="#formatting-and-linting" title="Formatting and Linting">Formatting and Linting</a></li><li><a href="#benchmarks" title="Benchmarks">Benchmarks</a></li><li><a href="#git-workflow" title="Git workflow">Git workflow</a></li><li><a href="#publishing" title="Publishing">Publishing</a></li></ul></li></ul><h3><a href="#reexports">Crate Items</a></h3><ul class="block"><li><a href="#reexports" title="Re-exports">Re-exports</a></li><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#enums" title="Enums">Enums</a></li><li><a href="#constants" title="Constants">Constants</a></li><li><a href="#traits" title="Traits">Traits</a></li><li><a href="#types" title="Type Aliases">Type Aliases</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>core_<wbr>crypto</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/core_crypto/lib.rs.html#1-163">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Core Crypto is a wrapper on top of OpenMLS aimed to provide an ergonomic API for usage in web
 through Web Assembly and in mobile devices through FFI.</p>
 <p>The goal is provide a easier and less verbose API to create, manage and interact with MLS
 groups.</p>
@@ -29,15 +29,6 @@ express prior written consent of Wire Swiss GmbH.</p>
 <ul>
 <li>Install the <a href="https://pre-commit.com/"><code>pre-commit</code> framework</a></li>
 <li>Run <code>pre-commit install</code> to initialize the pre-commit hooks</li>
-</ul>
-<h5 id="mdformat"><a class="doc-anchor" href="#mdformat">§</a><code>mdformat</code><a name="mdformat"></a></h5>
-<p>We’re using <code>mdformat</code> for consistent formatting of our markdown files. Install it with the following extensions</p>
-<ul>
-<li><code>mdformat-gfm</code></li>
-<li><code>mdformat-frontmatter</code></li>
-<li><code>mdformat-footnote</code></li>
-<li><code>mdformat-gfm-alerts</code></li>
-<li><code>mdformat-toc</code></li>
 </ul>
 <h4 id="jvm"><a class="doc-anchor" href="#jvm">§</a>JVM<a name="jvm"></a></h4>
 <ul>
@@ -111,6 +102,42 @@ make ts</code></pre></div><h3 id="testing"><a class="doc-anchor" href="#testing"
 logs.</p>
 <h4 id="platform-specific-tests-for-kotlinjvm"><a class="doc-anchor" href="#platform-specific-tests-for-kotlinjvm">§</a>Platform-specific tests for Kotlin/JVM<a name="platform-specific-tests-for-kotlinjvm"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make jvm-test</code></pre></div><h4 id="platform-specific-tests-for-android"><a class="doc-anchor" href="#platform-specific-tests-for-android">§</a>Platform-specific tests for Android<a name="platform-specific-tests-for-android"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make android-test</code></pre></div><h4 id="swiftios"><a class="doc-anchor" href="#swiftios">§</a>Swift/iOS<a name="swiftios"></a></h4>
 <p><em>No E2E testing is available as of now on Swift.</em></p>
+<h3 id="formatting-and-linting"><a class="doc-anchor" href="#formatting-and-linting">§</a>Formatting and Linting<a name="formatting-and-linting"></a></h3>
+<p>For all languages we provide make rules for formatting and checking.</p>
+<ul>
+<li><code>make fmt</code>
+<ul>
+<li><code>make rust-fmt</code></li>
+<li><code>make swift-fmt</code></li>
+<li><code>make kotlin-fmt</code></li>
+<li><code>make ts-fmt</code></li>
+</ul>
+</li>
+<li><code>make check</code>
+<ul>
+<li><code>make rust-check</code></li>
+<li><code>make swift-check</code></li>
+<li><code>make kotlin-check</code></li>
+<li><code>make ts-check</code></li>
+</ul>
+</li>
+</ul>
+<h4 id="requirements"><a class="doc-anchor" href="#requirements">§</a>Requirements<a name="requirements"></a></h4><h5 id="swift"><a class="doc-anchor" href="#swift">§</a>Swift<a name="swift"></a></h5>
+<p>We’re using <a href="https://github.com/swiftlang/swift-format">swift-format</a> to format swift files and use
+<a href="https://github.com/realm/SwiftLint">swiftlint</a> for linting.</p>
+<h5 id="kotlin"><a class="doc-anchor" href="#kotlin">§</a>Kotlin<a name="kotlin"></a></h5>
+<p>We’re using <a href="https://github.com/pinterest/ktlint">ktlint</a> to format and lint kotlin files.</p>
+<h5 id="markdown"><a class="doc-anchor" href="#markdown">§</a>Markdown<a name="markdown"></a></h5>
+<p>We’re using <code>mdformat</code> for consistent formatting of our markdown files. Install it with the following extensions</p>
+<ul>
+<li><code>mdformat-gfm</code></li>
+<li><code>mdformat-frontmatter</code></li>
+<li><code>mdformat-footnote</code></li>
+<li><code>mdformat-gfm-alerts</code></li>
+<li><code>mdformat-toc</code></li>
+</ul>
+<h5 id="toml"><a class="doc-anchor" href="#toml">§</a>Toml<a name="toml"></a></h5>
+<p>We’re using <a href="https://taplo.tamasfe.dev/">taplo</a> to format .toml files.</p>
 <h3 id="benchmarks"><a class="doc-anchor" href="#benchmarks">§</a>Benchmarks<a name="benchmarks"></a></h3>
 <p>There are benches implemented in <a href="crypto/benches/"><code>crypto/benches</code></a> for several operations on mls groups with varying
 sizes or proteus. Parameters like minimum or maximum group sizes and step sizes are defined in
