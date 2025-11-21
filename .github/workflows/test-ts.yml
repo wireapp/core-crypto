@@ -27,12 +27,6 @@ jobs:
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
       - name: lint
-        run: |
-          cd crypto-ffi/bindings/js
-          bun eslint . --max-warnings=0
-      - name: check all ts files
-        run: |
-          cd crypto-ffi/bindings/js
-          bun tsc --noEmit
+        run: make ts-check
       - name: test
         run: make ts-test

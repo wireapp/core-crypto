@@ -645,6 +645,8 @@ $(STAMPS)/kotlin-check: $(KT_FILES)
 .PHONY: kotlin-check
 kotlin-check: $(STAMPS)/kotlin-check ## Lint Kotlin files via ktlint
 
+# TypeScript
+
 $(STAMPS)/ts-fmt: $(TS_SRCS)
 	cd $(JS_DIR) && bun eslint --max-warnings=0 --fix
 	$(TOUCH_STAMP)
