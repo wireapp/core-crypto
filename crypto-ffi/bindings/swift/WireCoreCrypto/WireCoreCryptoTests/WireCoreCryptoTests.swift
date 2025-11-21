@@ -726,6 +726,142 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertEqual(recordedSecrets.first!.conversationId, conversationId)
     }
 
+    func testCanCreateKeypackage() async throws {
+        let clientId = genClientId()
+        let credential = try Credential.basic(ciphersuite: ciphersuiteDefault(), clientId: clientId)
+
+        let alice = try await createCoreCrypto()
+        let credentialRef = try await alice.transaction {
+            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            return try await $0.addCredential(credential: credential)
+        }
+
+        let keyPackage = try await alice.transaction {
+            try await $0.generateKeypackage(credentialRef: credentialRef, lifetime: nil)
+        }
+
+        XCTAssertNotNil(keyPackage)
+    }
+
+    func testCanSerializeKeypackage() async throws {
+        let clientId = genClientId()
+        let credential = try Credential.basic(ciphersuite: ciphersuiteDefault(), clientId: clientId)
+
+        let alice = try await createCoreCrypto()
+        let credentialRef = try await alice.transaction {
+            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            return try await $0.addCredential(credential: credential)
+        }
+
+        let keyPackage = try await alice.transaction {
+            try await $0.generateKeypackage(credentialRef: credentialRef, lifetime: nil)
+        }
+
+        let bytes = try keyPackage.serialize()
+        XCTAssertFalse(bytes.isEmpty)
+
+        // roundtrip
+        let kp2 = try Keypackage(bytes: bytes)
+        let bytes2 = try kp2.serialize()
+
+        XCTAssertEqual(bytes, bytes2)
+    }
+
+    func testCanRetrieveKeypackagesInBulk() async throws {
+        let clientId = genClientId()
+        let credential = try Credential.basic(ciphersuite: ciphersuiteDefault(), clientId: clientId)
+
+        let alice = try await createCoreCrypto()
+        let credentialRef = try await alice.transaction {
+            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            return try await $0.addCredential(credential: credential)
+        }
+
+        _ = try await alice.transaction {
+            try await $0.generateKeypackage(credentialRef: credentialRef, lifetime: nil)
+        }
+
+        let keyPackages = try await alice.transaction { ctx in
+            try await ctx.getKeypackages()
+        }
+
+        XCTAssertEqual(keyPackages.count, 1)
+        XCTAssertNotNil(keyPackages.first)
+    }
+
+    func testCanRemoveKeypackage() async throws {
+        let clientId = genClientId()
+        let credential = try Credential.basic(ciphersuite: ciphersuiteDefault(), clientId: clientId)
+
+        let alice = try await createCoreCrypto()
+        let credentialRef = try await alice.transaction {
+            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            return try await $0.addCredential(credential: credential)
+        }
+
+        // add a kp which will not be removed
+        _ = try await alice.transaction {
+            try await $0.generateKeypackage(credentialRef: credentialRef, lifetime: nil)
+        }
+
+        // add a kp which will be removed
+        let keyPackage = try await alice.transaction {
+            try await $0.generateKeypackage(credentialRef: credentialRef, lifetime: nil)
+        }
+
+        // remove the keypackage
+        try await alice.transaction {
+            try await $0.removeKeypackage(kpRef: try keyPackage.ref())
+        }
+
+        let keyPackages = try await alice.transaction { ctx in
+            try await ctx.getKeypackages()
+        }
+
+        XCTAssertEqual(keyPackages.count, 1)
+    }
+
+    func testCanRemoveKeypackagesByCredentialRef() async throws {
+        let clientId = genClientId()
+        let credential1 = try Credential.basic(
+            ciphersuite: .mls128Dhkemx25519Aes128gcmSha256Ed25519,
+            clientId: clientId
+        )
+        let credential2 = try Credential.basic(
+            ciphersuite: .mls128Dhkemp256Aes128gcmSha256P256,
+            clientId: clientId
+        )
+
+        let alice = try await createCoreCrypto()
+
+        try await alice.transaction { ctx in
+            try await ctx.mlsInit(
+                clientId: clientId,
+                ciphersuites: [
+                    .mls128Dhkemx25519Aes128gcmSha256Ed25519,
+                    .mls128Dhkemp256Aes128gcmSha256P256,
+                ])
+            let cref1 = try await ctx.addCredential(credential: credential1)
+            let cref2 = try await ctx.addCredential(credential: credential2)
+
+            let keypackagesPerCredential = 2
+            for cref in [cref1, cref2] {
+                for _ in 0..<keypackagesPerCredential {
+                    _ = try await ctx.generateKeypackage(credentialRef: cref, lifetime: nil)
+                }
+            }
+
+            let kpsBeforeRemoval = try await ctx.getKeypackages()
+            XCTAssertEqual(kpsBeforeRemoval.count, keypackagesPerCredential * 2)
+
+            // remove all keypackages for one of the credentials
+            try await ctx.removeKeypackagesFor(credentialRef: cref1)
+
+            let kps = try await ctx.getKeypackages()
+            XCTAssertEqual(kps.count, keypackagesPerCredential)
+        }
+    }
+
     // MARK: - helpers
 
     final actor MockMlsTransport: MlsTransport {
