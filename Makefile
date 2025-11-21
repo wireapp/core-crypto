@@ -606,6 +606,24 @@ clean: ts-clean ## Run cargo clean and the ts-clean target, remove all stamps
 # Formatting and linting
 #-------------------------------------------------------------------------------
 
+KT_WRAPPER = ./crypto-ffi/bindings/jvm/src/main/kotlin
+KT_TESTS = ./crypto-ffi/bindings/jvm/src/test
+KT_FILES := $(shell find $(KT_WRAPPER) $(KT_TESTS) -type f -name '*.kt')
+
+$(STAMPS)/kotlin-fmt: $(KT_FILES)
+	ktlint --format $(KT_WRAPPER) $(KT_TESTS)
+	$(TOUCH_STAMP)
+
+.PHONY: kotlin-fmt
+kotlin-fmt: $(STAMPS)/kotlin-fmt ## Format Kotlin files via ktlint
+
+$(STAMPS)/kotlin-check: $(KT_FILES)
+	ktlint $(KT_WRAPPER) $(KT_TESTS)
+	$(TOUCH_STAMP)
+
+.PHONY: kotlin-check
+kotlin-check: $(STAMPS)/kotlin-check ## Lint Kotlin files via ktlint
+
 $(STAMPS)/ts-fmt: $(TS_SRCS)
 	cd $(JS_DIR) && bun eslint --max-warnings=0 --fix
 	$(TOUCH_STAMP)
