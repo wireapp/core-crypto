@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use core_crypto::CredentialRef as CryptoCredentialRef;
 
-use crate::{ClientId, CoreCryptoResult, CredentialType};
+use crate::{Ciphersuite, ClientId, CoreCryptoResult, CredentialType, SignatureScheme};
 
 /// A reference to a credential which has been persisted in CC.
 ///
@@ -16,6 +16,7 @@ use crate::{ClientId, CoreCryptoResult, CredentialType};
 /// It is instead the key from which a credential can be retrieved.
 /// This means that it is stable over time and across the FFI boundary.
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, uniffi::Object)]
+#[uniffi::export(Debug)]
 pub struct CredentialRef(pub(crate) CryptoCredentialRef);
 
 pub(crate) type CredentialRefMaybeArc = Arc<CredentialRef>;
@@ -45,8 +46,13 @@ impl CredentialRef {
     }
 
     /// Get the signature scheme of this credential ref.
-    pub fn signature_scheme(&self) -> u16 {
-        self.0.signature_scheme() as _
+    pub fn signature_scheme(&self) -> SignatureScheme {
+        self.0.signature_scheme().into()
+    }
+
+    /// Get the ciphersuite of this credential ref.
+    pub fn ciphersuite(&self) -> Ciphersuite {
+        self.0.ciphersuite().into()
     }
 
     /// Get the earliest possible validity of this credential, expressed as seconds after the unix epoch.
