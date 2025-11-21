@@ -181,7 +181,7 @@ impl KeycloakImage {
         };
 
         admin
-            .realm_client_scopes_with_client_scope_id_protocol_mappers_models_post(Self::REALM, &scope_id, mapper)
+            .realm_client_scopes_with_client_scope_id_protocol_mappers_models_post(Self::REALM, scope_id, mapper)
             .await
             .unwrap();
     }
