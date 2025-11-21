@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
+    sync::Arc,
     time::Duration,
 };
 
@@ -18,7 +19,7 @@ use tls_codec::{Deserialize, Serialize};
 use super::{Error, Result};
 use crate::{
     Ciphersuite, Credential, CredentialRef, CredentialType, KeystoreError, MlsConversationConfiguration, MlsError,
-    RecursiveError, Session, mls::session::SessionInner,
+    Session, mls::session::SessionInner,
 };
 
 /// Default number of KeyPackages a client generates the first time it's created
@@ -32,21 +33,21 @@ pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 10;
 pub const KEYPACKAGE_DEFAULT_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
 
 impl Session {
-    /// Get an unambiguous credential from the provided ref.
-    async fn credential_from_ref(&self, credential_ref: &CredentialRef) -> Result<Credential> {
-        let mut credentials = credential_ref
-            .load(&self.crypto_provider.keystore())
+    /// Get an unambiguous credential for the provided ref from the currently-loaded set.
+    async fn credential_from_ref(&self, credential_ref: &CredentialRef) -> Result<Arc<Credential>> {
+        let guard = self.inner.read().await;
+        let identities = &guard.as_ref().ok_or(Error::MlsNotInitialized)?.identities;
+        identities
+            .find_credential_by_public_key(
+                credential_ref.signature_scheme(),
+                credential_ref.r#type(),
+                &credential_ref.public_key().into(),
+            )
             .await
-            .map_err(RecursiveError::mls_credential_ref("loading credential from reference"))?;
-        let credential = credentials.pop().ok_or(Error::CredentialNotFound(
-            credential_ref.r#type(),
-            credential_ref.signature_scheme(),
-        ))?;
-        if !credentials.is_empty() {
-            return Err(Error::AmbiguousCredentialRef);
-        }
-
-        Ok(credential)
+            .ok_or(Error::CredentialNotFound(
+                credential_ref.r#type(),
+                credential_ref.signature_scheme(),
+            ))
     }
 
     /// Generate a [KeyPackage] from the referenced credential.
@@ -172,7 +173,7 @@ impl Session {
     /// This helps ensure that as many keypackages for the given credential ref are removed as possible.
     pub async fn remove_keypackages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
         let credential = self.credential_from_ref(credential_ref).await?;
-        let mls_credential = credential.mls_credential();
+        let signature_public_key = credential.signature_key_pair.public();
 
         let mut first_err = None;
         macro_rules! try_retain_err {
@@ -193,7 +194,7 @@ impl Session {
             .get_keypackages()
             .await?
             .into_iter()
-            .filter(|keypackage| keypackage.leaf_node().credential() == mls_credential)
+            .filter(|keypackage| keypackage.leaf_node().signature_key().as_slice() == signature_public_key)
         {
             let kp_ref = try_retain_err!(
                 keypackage
