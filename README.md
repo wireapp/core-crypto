@@ -19,7 +19,6 @@ express prior written consent of Wire Swiss GmbH.
   - [Building](#building)
     - [General Requirements](#general-requirements)
       - [Pre-commit](#pre-commit)
-      - [`mdformat`](#mdformat)
     - [JVM](#jvm)
     - [Android](#android)
     - [iOS](#ios)
@@ -35,6 +34,12 @@ express prior written consent of Wire Swiss GmbH.
     - [Platform-specific tests for Kotlin/JVM](#platform-specific-tests-for-kotlinjvm)
     - [Platform-specific tests for Android](#platform-specific-tests-for-android)
     - [Swift/iOS](#swiftios)
+  - [Formatting and Linting](#formatting-and-linting)
+    - [Requirements](#requirements)
+      - [Swift](#swift)
+      - [Kotlin](#kotlin)
+      - [Markdown](#markdown)
+      - [Toml](#toml)
   - [Benchmarks](#benchmarks)
     - [Executing Benches](#executing-benches)
   - [Git workflow](#git-workflow)
@@ -65,16 +70,6 @@ express prior written consent of Wire Swiss GmbH.
 
 - Install the [`pre-commit` framework](https://pre-commit.com/)
 - Run `pre-commit install` to initialize the pre-commit hooks
-
-#### `mdformat`<a name="mdformat"></a>
-
-We're using `mdformat` for consistent formatting of our markdown files. Install it with the following extensions
-
-- `mdformat-gfm`
-- `mdformat-frontmatter`
-- `mdformat-footnote`
-- `mdformat-gfm-alerts`
-- `mdformat-toc`
 
 ### JVM<a name="jvm"></a>
 
@@ -244,6 +239,46 @@ make android-test
 ### Swift/iOS<a name="swiftios"></a>
 
 *No E2E testing is available as of now on Swift.*
+
+## Formatting and Linting<a name="formatting-and-linting"></a>
+
+For all languages we provide make rules for formatting and checking.
+
+- `make fmt`
+  - `make rust-fmt`
+  - `make swift-fmt`
+  - `make kotlin-fmt`
+  - `make ts-fmt`
+- `make check`
+  - `make rust-check`
+  - `make swift-check`
+  - `make kotlin-check`
+  - `make ts-check`
+
+### Requirements<a name="requirements"></a>
+
+#### Swift<a name="swift"></a>
+
+We're using [swift-format](https://github.com/swiftlang/swift-format) to format swift files and use
+[swiftlint](https://github.com/realm/SwiftLint) for linting.
+
+#### Kotlin<a name="kotlin"></a>
+
+We're using [ktlint](https://github.com/pinterest/ktlint) to format and lint kotlin files.
+
+#### Markdown<a name="markdown"></a>
+
+We're using `mdformat` for consistent formatting of our markdown files. Install it with the following extensions
+
+- `mdformat-gfm`
+- `mdformat-frontmatter`
+- `mdformat-footnote`
+- `mdformat-gfm-alerts`
+- `mdformat-toc`
+
+#### Toml<a name="toml"></a>
+
+We're using [taplo](https://taplo.tamasfe.dev/) to format .toml files.
 
 ## Benchmarks<a name="benchmarks"></a>
 
