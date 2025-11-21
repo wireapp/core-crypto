@@ -6,6 +6,7 @@ pub(crate) mod ciphersuite;
 pub mod conversation;
 pub mod credential;
 mod error;
+pub mod key_package;
 pub(crate) mod proposal;
 pub(crate) mod session;
 
@@ -138,7 +139,7 @@ mod tests {
                 .unwrap();
 
             let credential =
-                Credential::from_identifier(&identifier, case.signature_scheme(), &cc.mls.crypto_provider).unwrap();
+                Credential::from_identifier(&identifier, case.ciphersuite(), &cc.mls.crypto_provider).unwrap();
             cc.add_credential(credential).await.unwrap();
 
             assert!(context.session().await.unwrap().is_ready().await);

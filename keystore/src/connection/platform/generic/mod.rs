@@ -255,6 +255,7 @@ impl SqlCipherConnection {
     fn run_meta_migration(sql_migration_version: i32, conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
         match sql_migration_version {
             meta_migrations::v16::VERSION => meta_migrations::v16::meta_migration(conn),
+            meta_migrations::v18::VERSION => meta_migrations::v18::meta_migration(conn),
             _ => Ok(()),
         }
     }

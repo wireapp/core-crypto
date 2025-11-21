@@ -135,10 +135,10 @@ impl SessionContext {
         let client_id = client.id().await.unwrap();
 
         let credential = match case.credential_type {
-            CredentialType::Basic => Credential::basic(case.signature_scheme(), client_id, backend).unwrap(),
+            CredentialType::Basic => Credential::basic(case.ciphersuite(), client_id, backend).unwrap(),
             CredentialType::X509 => {
                 let cert_bundle = CertificateBundle::rand(&client_id, signer.unwrap());
-                Credential::x509(cert_bundle).unwrap()
+                Credential::x509(case.ciphersuite(), cert_bundle).unwrap()
             }
         };
 
@@ -227,14 +227,14 @@ impl SessionContext {
 
     pub async fn save_new_credential(
         &self,
-        _case: &TestContext,
+        case: &TestContext,
         handle: &str,
         display_name: &str,
         signer: &X509Certificate,
     ) -> Arc<Credential> {
         let cid = QualifiedE2eiClientId::try_from(self.get_client_id().await.as_slice()).unwrap();
         let new_cert = CertificateBundle::new(handle, display_name, Some(&cid), None, signer);
-        let credential = Credential::x509(new_cert).unwrap();
+        let credential = Credential::x509(case.ciphersuite(), new_cert).unwrap();
         let client = self.session().await;
         client.add_credential_producing_arc(credential).await.unwrap()
     }

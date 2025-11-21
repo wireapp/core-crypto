@@ -648,8 +648,7 @@ mod tests {
             .await
             .unwrap();
 
-        let credential =
-            Credential::from_identifier(&identifier, case.signature_scheme(), &cc.mls.crypto_provider).unwrap();
+        let credential = Credential::from_identifier(&identifier, case.ciphersuite(), &cc.mls.crypto_provider).unwrap();
         cc.add_credential(credential).await.unwrap();
 
         // expect MLS to work

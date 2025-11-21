@@ -1,9 +1,14 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+    time::Duration,
+};
 
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{EntityFindParams, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
 };
+use futures_util::{StreamExt, TryStreamExt, stream::FuturesUnordered};
 use mls_crypto_provider::{Database, MlsCryptoProvider};
 use openmls::prelude::{
     Credential as MlsCredential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime,
@@ -13,8 +18,8 @@ use tls_codec::{Deserialize, Serialize};
 
 use super::{Error, Result};
 use crate::{
-    Ciphersuite, Credential, CredentialType, KeystoreError, MlsConversationConfiguration, MlsError, Session,
-    mls::session::SessionInner,
+    Ciphersuite, Credential, CredentialRef, CredentialType, KeystoreError, MlsConversationConfiguration, MlsError,
+    Session, mls::session::SessionInner,
 };
 
 /// Default number of KeyPackages a client generates the first time it's created
@@ -25,10 +30,186 @@ pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 10;
 
 /// Default lifetime of all generated KeyPackages. Matches the limit defined in openmls
-pub(crate) const KEYPACKAGE_DEFAULT_LIFETIME: std::time::Duration =
-    std::time::Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
+pub const KEYPACKAGE_DEFAULT_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
 
 impl Session {
+    /// Get an unambiguous credential for the provided ref from the currently-loaded set.
+    async fn credential_from_ref(&self, credential_ref: &CredentialRef) -> Result<Arc<Credential>> {
+        let guard = self.inner.read().await;
+        let identities = &guard.as_ref().ok_or(Error::MlsNotInitialized)?.identities;
+        identities
+            .find_credential_by_public_key(
+                credential_ref.signature_scheme(),
+                credential_ref.r#type(),
+                &credential_ref.public_key().into(),
+            )
+            .await
+            .ok_or(Error::CredentialNotFound(
+                credential_ref.r#type(),
+                credential_ref.signature_scheme(),
+            ))
+    }
+
+    /// Generate a [KeyPackage] from the referenced credential.
+    ///
+    /// Makes no attempt to look up or prune existing keypackges.
+    ///
+    /// If `lifetime` is set, the keypackages will expire that span into the future.
+    /// If it is unset, [`KEYPACKAGE_DEFAULT_LIFETIME`] is used.
+    ///
+    /// As a side effect, stores the keypackages and some related data in the keystore.
+    ///
+    /// Must not be fully public, only crate-public, because as it mutates the keystore it must only ever happen within a transaction.
+    pub(crate) async fn generate_keypackage(
+        &self,
+        credential_ref: &CredentialRef,
+        lifetime: Option<Duration>,
+    ) -> Result<KeyPackage> {
+        let lifetime = Lifetime::new(lifetime.unwrap_or(KEYPACKAGE_DEFAULT_LIFETIME).as_secs());
+        let credential = self.credential_from_ref(credential_ref).await?;
+
+        let config = CryptoConfig {
+            ciphersuite: credential.ciphersuite.into(),
+            version: openmls::versions::ProtocolVersion::default(),
+        };
+
+        KeyPackage::builder()
+            .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
+            .key_package_lifetime(lifetime)
+            .build(
+                config,
+                &self.crypto_provider,
+                &credential.signature_key_pair,
+                credential.to_mls_credential_with_key(),
+            )
+            .await
+            .map_err(Error::keypackage_new())
+    }
+
+    /// Get all [`KeyPackageRef`]s in the database.
+    pub async fn get_keypackage_refs(&self) -> Result<Vec<KeyPackageRef>> {
+        let stored_keypackages: Vec<StoredKeypackage> = self
+            .crypto_provider
+            .keystore()
+            .find_all(EntityFindParams::default())
+            .await
+            .map_err(KeystoreError::wrap("finding all keypackages"))?;
+
+        let refs = stored_keypackages
+            .into_iter()
+            .map(|mut stored| std::mem::take(&mut stored.keypackage_ref).into())
+            .collect();
+
+        Ok(refs)
+    }
+
+    /// Load one [`KeyPackage`] from its [`KeyPackageRef`]
+    pub(crate) async fn load_keypackage(&self, kp_ref: &KeyPackageRef) -> Result<Option<KeyPackage>> {
+        self.crypto_provider
+            .keystore()
+            .find::<StoredKeypackage>(kp_ref.as_slice())
+            .await
+            .map_err(KeystoreError::wrap("loading keypackage from database"))?
+            .map(|stored_keypackage| core_crypto_keystore::deser::<KeyPackage>(&stored_keypackage.keypackage))
+            .transpose()
+            .map_err(KeystoreError::wrap("deserializing keypackage"))
+            .map_err(Into::into)
+    }
+
+    /// Get all [`KeyPackage`]s in the database.
+    ///
+    /// This is moderately complicated because mapping with an asynchronous function is intrinsically
+    /// a bit complicated, unfortunately.
+    pub(crate) async fn get_keypackages(&self) -> Result<Vec<KeyPackage>> {
+        let keypackage_refs = self.get_keypackage_refs().await?;
+        let keypackages = keypackage_refs
+            .iter()
+            .map(|kp_ref| self.load_keypackage(kp_ref))
+            .collect::<FuturesUnordered<_>>()
+            // if any ref from loading all fails to load now, skip it
+            // strictly we could panic, but this is safer--maybe someone removed it concurrently
+            .filter_map(async |kp| kp.transpose())
+            // it is weirdly difficult to get the "collect into a result" behavior we're accustomed to in sync-land
+            // when what we have is a bunch of futures, but this seems to accomplish that
+            .try_fold(Vec::new(), async |mut acc, keypackage| {
+                acc.push(keypackage);
+                Ok(acc)
+            })
+            .await?;
+        Ok(keypackages)
+    }
+
+    /// Remove one [`KeyPackage`] from the database.
+    ///
+    /// Succeeds silently if the keypackage does not exist in the database.
+    ///
+    /// Implementation note: this must first load and deserialize the keypackage,
+    /// then remove items from three distinct tables.
+    pub async fn remove_keypackage(&self, kp_ref: &KeyPackageRef) -> Result<()> {
+        let Some(kp) = self.load_keypackage(kp_ref).await? else {
+            return Ok(());
+        };
+
+        let db = self.crypto_provider.keystore();
+        db.remove::<StoredKeypackage, _>(kp_ref.as_slice())
+            .await
+            .map_err(KeystoreError::wrap("removing key package from keystore"))?;
+        db.remove::<StoredHpkePrivateKey, _>(kp.hpke_init_key().as_slice())
+            .await
+            .map_err(KeystoreError::wrap("removing private key from keystore"))?;
+        db.remove::<StoredEncryptionKeyPair, _>(kp.leaf_node().encryption_key().as_slice())
+            .await
+            .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
+
+        Ok(())
+    }
+
+    /// Remove all keypackages associated with this credential.
+    ///
+    /// This is fairly expensive as it must first load all keypackages, then delete those matching the credential.
+    ///
+    /// Implementation note: once it makes it as far as having a list of keypackages, does _not_ short-circuit
+    /// if removing one returns an error. In that case, only the first produced error is returned.
+    /// This helps ensure that as many keypackages for the given credential ref are removed as possible.
+    pub async fn remove_keypackages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
+        let credential = self.credential_from_ref(credential_ref).await?;
+        let signature_public_key = credential.signature_key_pair.public();
+
+        let mut first_err = None;
+        macro_rules! try_retain_err {
+            ($e:expr) => {
+                match $e {
+                    Err(err) => {
+                        if first_err.is_none() {
+                            first_err = Some(Error::from(err));
+                        }
+                        continue;
+                    }
+                    Ok(val) => val,
+                }
+            };
+        }
+
+        for keypackage in self
+            .get_keypackages()
+            .await?
+            .into_iter()
+            .filter(|keypackage| keypackage.leaf_node().signature_key().as_slice() == signature_public_key)
+        {
+            let kp_ref = try_retain_err!(
+                keypackage
+                    .hash_ref(self.crypto_provider.crypto())
+                    .map_err(MlsError::wrap("getting keypackage ref in remove_keypackages_for"))
+            );
+            try_retain_err!(self.remove_keypackage(&kp_ref).await);
+        }
+
+        match first_err {
+            None => Ok(()),
+            Some(err) => Err(err),
+        }
+    }
+
     /// Generates a single new keypackage
     ///
     /// # Arguments
@@ -39,8 +220,8 @@ impl Session {
     pub async fn generate_one_keypackage_from_credential(
         &self,
         backend: &MlsCryptoProvider,
-        cs: Ciphersuite,
-        cb: &Credential,
+        ciphersuite: Ciphersuite,
+        credential: &Credential,
     ) -> Result<KeyPackage> {
         let guard = self.inner.read().await;
         let SessionInner {
@@ -52,14 +233,14 @@ impl Session {
             .key_package_lifetime(Lifetime::new(keypackage_lifetime.as_secs()))
             .build(
                 CryptoConfig {
-                    ciphersuite: cs.into(),
+                    ciphersuite: ciphersuite.into(),
                     version: openmls::versions::ProtocolVersion::default(),
                 },
                 backend,
-                &cb.signature_key_pair,
+                &credential.signature_key_pair,
                 CredentialWithKey {
-                    credential: cb.mls_credential.clone(),
-                    signature_key: cb.signature_key_pair.public().into(),
+                    credential: credential.mls_credential.clone(),
+                    signature_key: credential.signature_key_pair.public().into(),
                 },
             )
             .await
@@ -313,7 +494,7 @@ impl Session {
     /// Allows to set the current default keypackage lifetime extension duration.
     /// It will be embedded in the [openmls::key_packages::KeyPackage]'s [openmls::extensions::LifetimeExtension]
     #[cfg(test)]
-    pub async fn set_keypackage_lifetime(&self, duration: std::time::Duration) -> Result<()> {
+    pub async fn set_keypackage_lifetime(&self, duration: Duration) -> Result<()> {
         match &mut *self.inner.write().await {
             None => Err(Error::MlsNotInitialized),
             Some(SessionInner {

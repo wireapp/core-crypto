@@ -164,7 +164,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
 
     let master_client_id = ClientId::from(b"interop master client".as_slice());
     let credential = Credential::basic(
-        CIPHERSUITE_IN_USE.signature_algorithm(),
+        CIPHERSUITE_IN_USE.into(),
         master_client_id.clone(),
         mls_crypto_provider::RustCrypto::default(),
     )?;

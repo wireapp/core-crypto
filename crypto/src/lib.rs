@@ -34,7 +34,7 @@ pub use openmls::{
     group::{MlsGroup, MlsGroupConfig},
     prelude::{
         Ciphersuite as MlsCiphersuite, GroupEpoch, KeyPackage, KeyPackageIn, KeyPackageRef, MlsMessageIn, Node,
-        group_info::VerifiableGroupInfo,
+        SignatureScheme, group_info::VerifiableGroupInfo,
     },
 };
 #[cfg(feature = "proteus")]
@@ -72,7 +72,7 @@ pub use crate::{
             EpochObserver, HistoryObserver, Session,
             id::{ClientId, ClientIdRef},
             identifier::ClientIdentifier,
-            key_package::INITIAL_KEYING_MATERIAL_COUNT,
+            key_package::{INITIAL_KEYING_MATERIAL_COUNT, KEYPACKAGE_DEFAULT_LIFETIME},
             user_id::UserId,
         },
     },

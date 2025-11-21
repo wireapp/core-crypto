@@ -178,11 +178,9 @@ pub async fn new_central(
 
     if with_basic_credential {
         let ctx = cc.new_transaction().await.unwrap();
-        ctx.add_credential(
-            CcCredential::basic(ciphersuite.signature_algorithm(), client_id, RustCrypto::default()).unwrap(),
-        )
-        .await
-        .unwrap();
+        ctx.add_credential(CcCredential::basic(ciphersuite, client_id, RustCrypto::default()).unwrap())
+            .await
+            .unwrap();
         ctx.finish().await.unwrap();
     }
     (cc, tmp_file, delivery_service.clone())

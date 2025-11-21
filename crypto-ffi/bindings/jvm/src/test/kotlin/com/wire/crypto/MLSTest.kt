@@ -572,4 +572,158 @@ class MLSTest : HasMockDeliveryService() {
             assertNotEquals(results1[0], results2[0])
         }
     }
+
+    @Test
+    fun can_create_keypackage(): TestResult {
+        val scope = TestScope()
+        return scope.runTest {
+            val clientId = genClientId()
+            val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
+
+            val cc = initCc(this@MLSTest)
+            val credentialRef = cc.transaction { ctx ->
+                ctx.mlsInitShort(clientId)
+                ctx.addCredential(credential)
+            }
+
+            val keyPackage = cc.transaction { ctx ->
+                ctx.generateKeypackage(credentialRef)
+            }
+
+            assertNotNull(keyPackage)
+        }
+    }
+
+    @Test
+    fun can_serialize_keypackage(): TestResult {
+        val scope = TestScope()
+        return scope.runTest {
+            val clientId = genClientId()
+            val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
+
+            val cc = initCc(this@MLSTest)
+            val credentialRef = cc.transaction { ctx ->
+                ctx.mlsInitShort(clientId)
+                ctx.addCredential(credential)
+            }
+
+            val keyPackage = cc.transaction { ctx ->
+                ctx.generateKeypackage(credentialRef)
+            }
+
+            val bytes = keyPackage.serialize()
+            assertNotNull(bytes)
+            assertTrue(bytes.isNotEmpty())
+
+            // roundtrip
+            val kp2 = Keypackage(bytes)
+            val bytes2 = kp2.serialize()
+
+            assertEquals(bytes.toList(), bytes2.toList())
+        }
+    }
+
+    @Test
+    fun can_retrieve_keypackages_in_bulk(): TestResult {
+        val scope = TestScope()
+        return scope.runTest {
+            val clientId = genClientId()
+            val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
+
+            val cc = initCc(this@MLSTest)
+            val credentialRef = cc.transaction { ctx ->
+                ctx.mlsInitShort(clientId)
+                ctx.addCredential(credential)
+            }
+
+            cc.transaction { ctx ->
+                ctx.generateKeypackage(credentialRef)
+            }
+
+            val keyPackages = cc.transaction { ctx ->
+                ctx.getKeypackages()
+            }
+
+            assertNotNull(keyPackages)
+            assertThat(keyPackages).hasSize(1)
+            assertNotNull(keyPackages[0])
+        }
+    }
+
+    @Test
+    fun can_remove_keypackage(): TestResult {
+        val scope = TestScope()
+        return scope.runTest {
+            val clientId = genClientId()
+            val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
+
+            val cc = initCc(this@MLSTest)
+            val credentialRef = cc.transaction { ctx ->
+                ctx.mlsInitShort(clientId)
+                ctx.addCredential(credential)
+            }
+
+            // add a kp which will not be removed
+            cc.transaction { ctx ->
+                ctx.generateKeypackage(credentialRef)
+            }
+
+            // add a kp which will be removed
+            val keyPackage = cc.transaction { ctx ->
+                ctx.generateKeypackage(credentialRef)
+            }
+
+            // remove the keypackage
+            cc.transaction { ctx ->
+                ctx.removeKeypackage(keyPackage.ref())
+            }
+
+            val keyPackages = cc.transaction { ctx ->
+                ctx.getKeypackages()
+            }
+
+            assertNotNull(keyPackages)
+            assertThat(keyPackages).hasSize(1)
+        }
+    }
+
+    @Test
+    fun can_remove_keypackages_by_credentialref(): TestResult {
+        val scope = TestScope()
+        return scope.runTest {
+            val clientId = genClientId()
+            val credential1 = Credential.basic(
+                Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
+                clientId
+            )
+            val credential2 = Credential.basic(
+                Ciphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
+                clientId
+            )
+
+            val cc = initCc(this@MLSTest)
+
+            cc.transaction { ctx ->
+                ctx.mlsInitShort(clientId)
+                val cref1 = ctx.addCredential(credential1)
+                val cref2 = ctx.addCredential(credential2)
+
+                val keypackagesPerCredential = 2
+                for (cref in listOf(cref1, cref2)) {
+                    repeat(keypackagesPerCredential) {
+                        ctx.generateKeypackage(cref)
+                    }
+                }
+
+                val kpsBeforeRemoval = ctx.getKeypackages()
+                assertThat(kpsBeforeRemoval).hasSize(keypackagesPerCredential * 2)
+
+                // remove all keypackages for one of the credentials
+                ctx.removeKeypackagesFor(cref1)
+
+                val kps = ctx.getKeypackages()
+                assertThat(kps).hasSize(keypackagesPerCredential)
+            }
+        }
+    }
 }
