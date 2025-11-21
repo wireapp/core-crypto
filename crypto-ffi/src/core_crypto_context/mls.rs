@@ -405,6 +405,7 @@ impl CoreCryptoContext {
     ///
     /// If `lifetime` is set, the keypackages will expire that span into the future.
     /// If it is unset, a default lifetime of approximately 3 months is used.
+    #[uniffi::method(default(lifetime = None))]
     pub async fn generate_keypackage(
         &self,
         credential_ref: &CredentialRefMaybeArc,
