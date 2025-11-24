@@ -1,11 +1,11 @@
-use std::{collections::HashSet, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{EntityFindParams, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
 };
 use futures_util::{StreamExt, TryStreamExt, stream::FuturesUnordered};
-use mls_crypto_provider::{Database, MlsCryptoProvider};
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -240,95 +240,6 @@ impl Session {
             .map_err(KeystoreError::wrap("building keypackage"))?;
 
         Ok(keypackage)
-    }
-
-    /// Prune the provided KeyPackageRefs from the keystore
-    ///
-    /// Warning: Despite this API being public, the caller should know what they're doing.
-    /// Provided KeypackageRefs **will** be purged regardless of their expiration state, so please be wary of what you
-    /// are doing if you directly call this API. This could result in still valid, uploaded keypackages being pruned
-    /// from the system and thus being impossible to find when referenced in a future Welcome message.
-    pub async fn prune_keypackages(
-        &self,
-        backend: &MlsCryptoProvider,
-        refs: impl IntoIterator<Item = KeyPackageRef>,
-    ) -> Result<()> {
-        let keystore = backend.keystore();
-        let kps = self.find_all_keypackages(&keystore).await?;
-        let _ = self._prune_keypackages(&kps, &keystore, refs).await?;
-        Ok(())
-    }
-
-    /// Deletes all expired KeyPackages plus the ones in `refs`. It also deletes all associated:
-    /// * HPKE private keys
-    /// * HPKE Encryption KeyPairs
-    /// * Signature KeyPairs & Credentials (use [Self::prune_keypackages_and_credential])
-    async fn _prune_keypackages<'a>(
-        &self,
-        kps: &'a [(StoredKeypackage, KeyPackage)],
-        keystore: &Database,
-        refs: impl IntoIterator<Item = KeyPackageRef>,
-    ) -> Result<HashSet<&'a [u8]>, Error> {
-        let refs = refs
-            .into_iter()
-            .map(|kp| {
-                // If `KeyPackageRef` implemented `Hash + PartialEq<Rhs=[u8]> + Eq`, then we could just check whether
-                // an arbitrary reference existed in the hashset without moving data here at all; the type could just
-                // be `HashSet<KeyPackageRef>`.
-                //
-                // If `KeyPackageRef` implemented `fn into_inner(self) -> Vec<u8>` then we could at least extract the
-                // data without copying.
-                //
-                // As things stand, we're stuck with some pointless copying of (usually short) data around.
-                // Hopefully LLVM is smart enough to optimize some of it away!
-                kp.as_slice().to_owned()
-            })
-            .collect::<HashSet<_>>();
-
-        let kp_to_delete = kps.iter().filter_map(|(store_kp, kp)| {
-            let is_expired = false;
-            let to_delete = is_expired || refs.contains(store_kp.keypackage_ref.as_slice());
-            to_delete.then_some((kp, &store_kp.keypackage_ref))
-        });
-
-        // note: we're cloning the iterator here, not the data
-        for (kp, kp_ref) in kp_to_delete.clone() {
-            keystore
-                .remove::<StoredKeypackage, &[u8]>(kp_ref.as_slice())
-                .await
-                .map_err(KeystoreError::wrap("removing key package from keystore"))?;
-            keystore
-                .remove::<StoredHpkePrivateKey, &[u8]>(kp.hpke_init_key().as_slice())
-                .await
-                .map_err(KeystoreError::wrap("removing private key from keystore"))?;
-            keystore
-                .remove::<StoredEncryptionKeyPair, &[u8]>(kp.leaf_node().encryption_key().as_slice())
-                .await
-                .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
-        }
-
-        Ok(kp_to_delete.map(|(_, kpref)| kpref.as_slice()).collect())
-    }
-
-    pub(super) async fn find_all_keypackages(
-        &self,
-        keystore: &Database,
-    ) -> Result<Vec<(StoredKeypackage, KeyPackage)>> {
-        let kps: Vec<StoredKeypackage> = keystore
-            .find_all(EntityFindParams::default())
-            .await
-            .map_err(KeystoreError::wrap("finding all keypackages"))?;
-
-        let kps = kps
-            .into_iter()
-            .map(|raw_kp| -> Result<_> {
-                let kp = core_crypto_keystore::deser::<KeyPackage>(&raw_kp.keypackage)
-                    .map_err(KeystoreError::wrap("deserializing keypackage"))?;
-                Ok((raw_kp, kp))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        Ok(kps)
     }
 
     /// Allows to set the current default keypackage lifetime extension duration.
