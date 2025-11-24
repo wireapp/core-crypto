@@ -1,8 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-    time::Duration,
-};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
@@ -10,11 +6,8 @@ use core_crypto_keystore::{
 };
 use futures_util::{StreamExt, TryStreamExt, stream::FuturesUnordered};
 use mls_crypto_provider::{Database, MlsCryptoProvider};
-use openmls::prelude::{
-    Credential as MlsCredential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime,
-};
+use openmls::prelude::{CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
 use openmls_traits::OpenMlsCryptoProvider;
-use tls_codec::{Deserialize, Serialize};
 
 use super::{Error, Result};
 use crate::{
@@ -304,51 +297,6 @@ impl Session {
         let keystore = backend.keystore();
         let kps = self.find_all_keypackages(&keystore).await?;
         let _ = self._prune_keypackages(&kps, &keystore, refs).await?;
-        Ok(())
-    }
-
-    pub(crate) async fn prune_keypackages_and_credential(
-        &mut self,
-        backend: &MlsCryptoProvider,
-        refs: impl IntoIterator<Item = KeyPackageRef>,
-    ) -> Result<()> {
-        let mut guard = self.inner.write().await;
-        let SessionInner { identities, .. } = guard.as_mut().ok_or(Error::MlsNotInitialized)?;
-
-        let keystore = backend.key_store();
-        let kps = self.find_all_keypackages(keystore).await?;
-        let kp_to_delete = self._prune_keypackages(&kps, keystore, refs).await?;
-
-        // Let's group KeyPackages by Credential
-        let mut grouped_kps = HashMap::<Vec<u8>, Vec<KeyPackageRef>>::new();
-        for (_, kp) in &kps {
-            let cred = kp
-                .leaf_node()
-                .credential()
-                .tls_serialize_detached()
-                .map_err(Error::tls_serialize("keypackage"))?;
-            let kp_ref = kp
-                .hash_ref(backend.crypto())
-                .map_err(MlsError::wrap("computing keypackage hashref"))?;
-            grouped_kps.entry(cred).or_default().push(kp_ref);
-        }
-
-        for (credential, kps) in &grouped_kps {
-            // If all KeyPackages are to be deleted for this given Credential
-            let all_to_delete = kps.iter().all(|kpr| kp_to_delete.contains(&kpr.as_slice()));
-            if all_to_delete {
-                // then delete this Credential
-                backend
-                    .keystore()
-                    .cred_delete_by_credential(credential.clone())
-                    .await
-                    .map_err(KeystoreError::wrap("deleting credential"))?;
-                let credential = MlsCredential::tls_deserialize(&mut credential.as_slice())
-                    .map_err(Error::tls_deserialize("credential"))?;
-                identities.remove_by_mls_credential(&credential);
-            }
-        }
-
         Ok(())
     }
 

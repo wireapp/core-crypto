@@ -136,15 +136,6 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::delete_stale_key_packages]
-    pub async fn delete_stale_key_packages(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<()> {
-        self.inner
-            .delete_stale_key_packages(ciphersuite.into())
-            .await
-            .map_err(Into::<TransactionError>::into)
-            .map_err(Into::into)
-    }
-
     /// See [core_crypto::transaction_context::TransactionContext::e2ei_enrollment_stash]
     ///
     /// Note that this can only succeed if the enrollment is unique and there are no other hard refs to it.

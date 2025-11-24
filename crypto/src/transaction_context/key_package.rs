@@ -22,17 +22,6 @@ impl TransactionContext {
             .map_err(Into::into)
     }
 
-    /// Prunes local KeyPackages after making sure they also have been deleted on the backend side
-    /// You should only use this after [TransactionContext::save_x509_credential]
-    pub async fn delete_keypackages(&self, refs: impl IntoIterator<Item = KeyPackageRef>) -> Result<()> {
-        let mut session = self.session().await?;
-        session
-            .prune_keypackages_and_credential(&self.mls_provider().await?, refs)
-            .await
-            .map_err(RecursiveError::mls_client("pruning key packages and credential"))
-            .map_err(Into::into)
-    }
-
     /// Generate a [KeyPackage] from the referenced credential.
     ///
     /// Makes no attempt to look up or prune existing keypackges.

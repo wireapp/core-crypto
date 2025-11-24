@@ -1,11 +1,8 @@
-use core_crypto_keystore::{CryptoKeystoreMls, connection::FetchFromDatabase, entities::StoredKeypackage};
-use openmls::prelude::KeyPackage;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use super::error::{Error, Result};
 use crate::{
-    CertificateBundle, Ciphersuite, Credential, CredentialType, E2eiEnrollment, KeystoreError, MlsError,
-    RecursiveError,
+    CertificateBundle, Ciphersuite, Credential, CredentialType, E2eiEnrollment, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     transaction_context::TransactionContext,
@@ -183,54 +180,6 @@ impl TransactionContext {
             ))?;
 
         Ok(crl_new_distribution_points)
-    }
-
-    /// Deletes all key packages whose leaf node's credential does not match the most recently
-    /// saved x509 credential with the provided signature scheme.
-    pub async fn delete_stale_key_packages(&self, cipher_suite: Ciphersuite) -> Result<()> {
-        let signature_scheme = cipher_suite.signature_algorithm();
-        let keystore = self
-            .keystore()
-            .await
-            .map_err(RecursiveError::transaction("getting keystore"))?;
-        let nb_kp = keystore
-            .count::<StoredKeypackage>()
-            .await
-            .map_err(KeystoreError::wrap("counting key packages"))?;
-        let kps: Vec<KeyPackage> = keystore
-            .mls_fetch_keypackages(nb_kp as u32)
-            .await
-            .map_err(KeystoreError::wrap("fetching key packages"))?;
-        let client = self
-            .session()
-            .await
-            .map_err(RecursiveError::transaction("getting mls client"))?;
-
-        let cb = client
-            .find_most_recent_credential(signature_scheme, CredentialType::X509)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential"))?;
-
-        let mut kp_refs = vec![];
-
-        let provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
-        for kp in kps {
-            let kp_cred = kp.leaf_node().credential().mls_credential();
-            let local_cred = cb.mls_credential().mls_credential();
-            if kp_cred != local_cred {
-                let kpr = kp
-                    .hash_ref(provider.crypto())
-                    .map_err(MlsError::wrap("computing keypackage hashref"))?;
-                kp_refs.push(kpr);
-            };
-        }
-        self.delete_keypackages(kp_refs)
-            .await
-            .map_err(RecursiveError::transaction("deleting keypackages"))?;
-        Ok(())
     }
 }
 
