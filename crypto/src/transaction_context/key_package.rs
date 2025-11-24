@@ -2,10 +2,8 @@
 
 use std::time::Duration;
 
-use openmls::prelude::{KeyPackage, KeyPackageRef};
-
 use super::{Result, TransactionContext};
-use crate::{CredentialRef, RecursiveError};
+use crate::{CredentialRef, Keypackage, KeypackageRef, RecursiveError};
 
 impl TransactionContext {
     /// Generate a [KeyPackage] from the referenced credential.
@@ -19,7 +17,7 @@ impl TransactionContext {
         &self,
         credential_ref: &CredentialRef,
         lifetime: Option<Duration>,
-    ) -> Result<KeyPackage> {
+    ) -> Result<Keypackage> {
         let session = self.session().await?;
         session
             .generate_keypackage(credential_ref, lifetime)
@@ -29,7 +27,7 @@ impl TransactionContext {
     }
 
     /// Get all [`KeyPackageRef`]s known to the keystore.
-    pub async fn get_keypackage_refs(&self) -> Result<Vec<KeyPackageRef>> {
+    pub async fn get_keypackage_refs(&self) -> Result<Vec<KeypackageRef>> {
         let session = self.session().await?;
         session
             .get_keypackage_refs()
@@ -41,7 +39,7 @@ impl TransactionContext {
     }
 
     /// Remove a [`KeyPackage`] from the keystore.
-    pub async fn remove_keypackage(&self, kp_ref: &KeyPackageRef) -> Result<()> {
+    pub async fn remove_keypackage(&self, kp_ref: &KeypackageRef) -> Result<()> {
         let session = self.session().await?;
         session
             .remove_keypackage(kp_ref)
