@@ -25,7 +25,7 @@ jobs:
           - task: ios-device
           - task: ios-simulator-arm
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: build ${{ matrix.task }}
         uses: ./.github/actions/make/ios

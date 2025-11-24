@@ -18,7 +18,7 @@ jobs:
   all-features:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-and-cache-rust
       - uses: taiki-e/install-action@nextest
       - run: cargo nextest run --locked --all-features --no-fail-fast --retries 5

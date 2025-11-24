@@ -22,7 +22,7 @@ jobs:
         with:
             post: |
               sh ./scripts/clean.sh
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: fetch uniffi bindgen artifact
         uses: ./.github/actions/make/uniffi-bindgen

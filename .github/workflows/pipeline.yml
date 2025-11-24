@@ -25,7 +25,7 @@ jobs:
   uniffi-bindgen-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: x86_64-unknown-linux-gnu
@@ -36,7 +36,7 @@ jobs:
   ffi-library-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: x86_64-unknown-linux-gnu
@@ -68,7 +68,7 @@ jobs:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: aarch64-apple-darwin
@@ -82,7 +82,7 @@ jobs:
   build-jvm-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: x86_64-unknown-linux-gnu
@@ -96,7 +96,7 @@ jobs:
       - ffi-library-linux
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: x86_64-unknown-linux-gnu
@@ -127,7 +127,7 @@ jobs:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-and-cache-rust
       - uses: ./.github/actions/make/bindings-swift
         with:
@@ -157,7 +157,7 @@ jobs:
   bindings-ts:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: wasm32-unknown-unknown
@@ -187,7 +187,7 @@ jobs:
 
     steps:
       - name: checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-and-cache-rust
         with:
@@ -212,7 +212,7 @@ jobs:
     steps:
       # Needed for parity between github and self-hosted runner
       - run: brew install make
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-and-cache-rust
       - uses: ./.github/actions/make/interop-build
         with:
@@ -248,7 +248,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: force-fetch the tag to work around actions/checkout#290
         run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}

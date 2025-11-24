@@ -10,7 +10,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: uncenter/setup-taplo@v1
       - uses: wireapp/setup-fd@v0.1.0
       - run: fd --glob --hidden '*.toml' -X taplo fmt --check

@@ -15,9 +15,9 @@ jobs:
       matrix:
         rust_bench: [ "commit", "encryption", "key_package", "create_group", "transaction" ]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-and-cache-rust
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: run bencher cli
         uses: ./.github/actions/run-bencher
         with:
@@ -32,7 +32,7 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: "wasm32-unknown-unknown"
@@ -44,7 +44,7 @@ jobs:
       - name: bench wasm/js
         run: |
           make ts-bench RELEASE=1
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           # Keep result file
           clean: 'false'

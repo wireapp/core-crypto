@@ -17,7 +17,7 @@ jobs:
     if: github.repository == 'wireapp/core-crypto' && (github.event_name == 'pull_request' || github.ref_type == 'tag')
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: download artifacts for ios device
         uses: ./.github/actions/make/ios
