@@ -29,8 +29,8 @@ use obfuscate::{Obfuscate, Obfuscated};
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
-    Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, Credential, CredentialType, Error, MlsError,
-    RecursiveError, Result, Session,
+    Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, Credential, Error, MlsError, RecursiveError,
+    Result, Session,
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -98,23 +98,21 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
     let credential = Credential::basic(ciphersuite, client_id.clone(), &cc.mls.crypto_provider).map_err(
         RecursiveError::mls_credential("generating basic credential for ephemeral client"),
     )?;
-    cc.add_credential(credential).await.map_err(RecursiveError::mls_client(
+    let credential_ref = cc.add_credential(credential).await.map_err(RecursiveError::mls_client(
         "adding basic credential to ephemeral client",
     ))?;
 
     // we can generate a key package from the ephemeral cc and ciphersutite
-    let [key_package] = tx
-        .get_or_create_client_keypackages(ciphersuite, CredentialType::Basic, 1)
+    let key_package = tx
+        .generate_keypackage(&credential_ref, None)
         .await
-        .map_err(RecursiveError::transaction("generating keypackages"))?
-        .try_into()
-        .expect("generating 1 keypackage returns 1 keypackage");
+        .map_err(RecursiveError::transaction("generating keypackage"))?;
     let key_package = KeyPackageSecretEncapsulation::load(&cc.crypto_provider, key_package)
         .await
         .map_err(MlsError::wrap("encapsulating key package"))?;
 
-    // we don't need to finish the transaction here--the point of the ephemeral CC was that no mutations would be saved
-    // there
+    // we don't need to finish the transaction here--the point of the ephemeral CC was that no mutations would be saved there
+    let _ = tx.abort();
 
     Ok(HistorySecret { client_id, key_package })
 }

@@ -133,22 +133,6 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::get_or_create_client_keypackages]
-    pub async fn client_keypackages(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-        amount_requested: u32,
-    ) -> CoreCryptoResult<Vec<KeypackageMaybeArc>> {
-        let kps = self
-            .inner
-            .get_or_create_client_keypackages(ciphersuite.into(), credential_type.into(), amount_requested as usize)
-            .await
-            .map_err(RecursiveError::transaction("getting or creating client keypackages"))?;
-
-        Ok(kps.into_iter().map(Keypackage::coerce_arc).collect())
-    }
-
     /// See [core_crypto::transaction_context::TransactionContext::client_valid_key_packages_count]
     pub async fn client_valid_keypackages_count(
         &self,

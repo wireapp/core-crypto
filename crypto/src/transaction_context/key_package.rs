@@ -8,40 +8,7 @@ use super::{Result, TransactionContext};
 use crate::{Ciphersuite, CredentialRef, CredentialType, RecursiveError};
 
 impl TransactionContext {
-    /// Returns `amount_requested` OpenMLS [KeyPackage]s.
-    /// Will always return the requested amount as it will generate the necessary (lacking) amount on-the-fly
-    ///
-    /// Note: Keypackage pruning is performed as a first step
-    ///
-    /// # Arguments
-    /// * `amount_requested` - number of KeyPackages to request and fill the `KeyPackageBundle`
-    ///
-    /// # Return type
-    /// A vector of `KeyPackageBundle`
-    ///
-    /// # Errors
-    /// Errors can happen when accessing the KeyStore
-    pub async fn get_or_create_client_keypackages(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-        amount_requested: usize,
-    ) -> Result<Vec<KeyPackage>> {
-        let session = self.session().await?;
-        session
-            .request_key_packages(
-                amount_requested,
-                ciphersuite,
-                credential_type,
-                &self.mls_provider().await?,
-            )
-            .await
-            .map_err(RecursiveError::mls_client("requesting key packages"))
-            .map_err(Into::into)
-    }
-
-    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [Ciphersuite] and
-    /// [CredentialType]
+    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [Ciphersuite] and [CredentialType]
     pub async fn client_valid_key_packages_count(
         &self,
         ciphersuite: Ciphersuite,
