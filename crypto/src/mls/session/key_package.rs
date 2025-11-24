@@ -5,15 +5,11 @@ use core_crypto_keystore::{
     entities::{EntityFindParams, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
 };
 use futures_util::{StreamExt, TryStreamExt, stream::FuturesUnordered};
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::{CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
+use openmls::prelude::{CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use super::{Error, Result};
-use crate::{
-    Ciphersuite, Credential, CredentialRef, KeystoreError, MlsConversationConfiguration, MlsError, Session,
-    mls::session::SessionInner,
-};
+use crate::{Credential, CredentialRef, KeystoreError, MlsConversationConfiguration, MlsError, Session};
 
 /// Default number of KeyPackages a client generates the first time it's created
 #[cfg(not(test))]
@@ -200,60 +196,6 @@ impl Session {
         match first_err {
             None => Ok(()),
             Some(err) => Err(err),
-        }
-    }
-
-    /// Generates a single new keypackage
-    ///
-    /// # Arguments
-    /// * `backend` - the KeyStorage to load the keypackages from
-    ///
-    /// # Errors
-    /// KeyStore and OpenMls errors
-    pub async fn generate_one_keypackage_from_credential(
-        &self,
-        backend: &MlsCryptoProvider,
-        ciphersuite: Ciphersuite,
-        credential: &Credential,
-    ) -> Result<KeyPackage> {
-        let guard = self.inner.read().await;
-        let SessionInner {
-            keypackage_lifetime, ..
-        } = guard.as_ref().ok_or(Error::MlsNotInitialized)?;
-
-        let keypackage = KeyPackage::builder()
-            .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
-            .key_package_lifetime(Lifetime::new(keypackage_lifetime.as_secs()))
-            .build(
-                CryptoConfig {
-                    ciphersuite: ciphersuite.into(),
-                    version: openmls::versions::ProtocolVersion::default(),
-                },
-                backend,
-                &credential.signature_key_pair,
-                CredentialWithKey {
-                    credential: credential.mls_credential.clone(),
-                    signature_key: credential.signature_key_pair.public().into(),
-                },
-            )
-            .await
-            .map_err(KeystoreError::wrap("building keypackage"))?;
-
-        Ok(keypackage)
-    }
-
-    /// Allows to set the current default keypackage lifetime extension duration.
-    /// It will be embedded in the [openmls::key_packages::KeyPackage]'s [openmls::extensions::LifetimeExtension]
-    #[cfg(test)]
-    pub async fn set_keypackage_lifetime(&self, duration: Duration) -> Result<()> {
-        match &mut *self.inner.write().await {
-            None => Err(Error::MlsNotInitialized),
-            Some(SessionInner {
-                keypackage_lifetime, ..
-            }) => {
-                *keypackage_lifetime = duration;
-                Ok(())
-            }
         }
     }
 }
