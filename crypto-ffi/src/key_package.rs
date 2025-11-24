@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use core_crypto::{KeyPackageIn, RecursiveError, mls::key_package::KeyPackageExt};
+use core_crypto::{KeyPackageIn, RecursiveError, mls::key_package::KeypackageExt};
 use tls_codec::{Deserialize as _, Serialize as _};
 
 use crate::{CoreCryptoError, CoreCryptoResult, bytes_wrapper::bytes_wrapper};
