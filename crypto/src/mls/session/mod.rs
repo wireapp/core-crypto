@@ -17,8 +17,8 @@ pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
 use identities::Identities;
-use key_package::KEYPACKAGE_DEFAULT_LIFETIME;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
+use openmls::prelude::OpenMlsCrypto;
 use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 
 use crate::{
@@ -68,7 +68,6 @@ impl HasSessionAndCrypto for Session {
 pub(crate) struct SessionInner {
     id: ClientId,
     pub(crate) identities: Identities,
-    keypackage_lifetime: std::time::Duration,
 }
 
 impl Session {
@@ -185,7 +184,6 @@ impl Session {
         self.replace_inner(SessionInner {
             id: client_id,
             identities,
-            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
         })
         .await;
 
@@ -288,6 +286,16 @@ impl Session {
             .map_err(Into::into)
     }
 
+    /// Get an implementation of `OpenMlsCrypto` from this instance.
+    ///
+    /// This is most obviously relevant for items such as [`Credential::basic`][crate::Credential::basic]
+    /// which needs an `OpenMlsCrypto` instance but doesn't have direct access to one.
+    ///
+    /// Should not appear in `crypto-ffi`; find other workarounds there.
+    pub fn openmls_crypto(&self) -> impl OpenMlsCrypto {
+        self.crypto_provider.crypto().to_owned()
+    }
+
     /// Restore from an external [`HistorySecret`].
     pub(crate) async fn restore_from_history_secret(&self, history_secret: HistorySecret) -> Result<()> {
         self.ensure_unready().await?;
@@ -296,7 +304,6 @@ impl Session {
         self.replace_inner(SessionInner {
             id: history_secret.client_id.clone(),
             identities: Identities::new(0),
-            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
         })
         .await;
 
@@ -385,16 +392,6 @@ mod tests {
                 .await
                 .map_err(KeystoreError::wrap("fetching mls keypackages"))?;
             Ok(kps)
-        }
-
-        pub(crate) async fn generate_one_keypackage(
-            &self,
-            backend: &MlsCryptoProvider,
-            cs: Ciphersuite,
-            ct: CredentialType,
-        ) -> Result<openmls::prelude::KeyPackage> {
-            let cb = self.find_most_recent_credential(cs.signature_algorithm(), ct).await?;
-            self.generate_one_keypackage_from_credential(backend, cs, &cb).await
         }
 
         /// Count the entities

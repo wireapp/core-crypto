@@ -6,9 +6,9 @@ use std::{
 use async_lock::RwLock;
 use core_crypto::{
     CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, ConnectionType, ConversationId, CoreCrypto,
-    Credential as CcCredential, CredentialType, Database, DatabaseKey, HistorySecret, MlsCommitBundle,
-    MlsConversationConfiguration, MlsCustomConfiguration, MlsGroupInfoBundle, MlsTransport, MlsTransportData,
-    MlsTransportResponse, Session,
+    Credential as CcCredential, CredentialFindFilters, CredentialType, Database, DatabaseKey, HistorySecret,
+    MlsCommitBundle, MlsConversationConfiguration, MlsCustomConfiguration, MlsGroupInfoBundle, MlsTransport,
+    MlsTransportData, MlsTransportResponse, Session,
 };
 use criterion::BenchmarkId;
 use mls_crypto_provider::{MlsCryptoProvider, RustCrypto};
@@ -306,11 +306,17 @@ pub async fn invite(
     let from_context = core_crypto.new_transaction().await.unwrap();
     let core_crypto = CoreCrypto::from(other.clone());
     let other_context = core_crypto.new_transaction().await.unwrap();
-    let other_kps = other_context
-        .get_or_create_client_keypackages(ciphersuite, CredentialType::Basic, 1)
+    let credential_refs = other_context
+        .find_credentials(
+            CredentialFindFilters::builder()
+                .credential_type(CredentialType::Basic)
+                .ciphersuite(ciphersuite)
+                .build(),
+        )
         .await
         .unwrap();
-    let other_kp = other_kps.first().unwrap().clone();
+    let credential_ref = credential_refs.last().unwrap();
+    let other_kp = other_context.generate_keypackage(credential_ref, None).await.unwrap();
     from_context
         .conversation(id)
         .await

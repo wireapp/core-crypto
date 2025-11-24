@@ -217,15 +217,19 @@ mod tests {
                     conversations.push(conversation)
                 }
 
-                alice
-                    .transaction
-                    .get_or_create_client_keypackages(
-                        case.ciphersuite(),
-                        case.credential_type,
-                        INITIAL_KEYING_MATERIAL_COUNT,
-                    )
+                let alice_credential = alice
+                    .find_most_recent_credential(case.signature_scheme(), case.credential_type)
                     .await
                     .unwrap();
+                let alice_credential_ref = CredentialRef::from_credential(&alice_credential);
+
+                for _ in 0..INITIAL_KEYING_MATERIAL_COUNT {
+                    alice
+                        .transaction
+                        .generate_keypackage(&alice_credential_ref, None)
+                        .await
+                        .unwrap();
+                }
 
                 // Count the key material before the rotation to compare it later
                 let before_rotate = alice.transaction.count_entities().await;
@@ -335,11 +339,11 @@ mod tests {
                 // 1 has been created per new KeyPackage created in the rotation
                 assert_eq!(before_delete.key_package - before_rotate.key_package, NB_KEY_PACKAGE);
 
-                // Checks are done, now let's delete ALL the deprecated KeyPackages.
-                // This should have the consequence to purge the previous credential material as well.
+                // Checks are done, now let's delete the old credential.
+                // This should have the consequence to purge the all the stale keypackages as well.
                 alice
                     .transaction
-                    .delete_stale_key_packages(case.ciphersuite())
+                    .remove_credential(&alice_credential_ref)
                     .await
                     .unwrap();
 

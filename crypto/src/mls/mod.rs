@@ -140,18 +140,11 @@ mod tests {
 
             let credential =
                 Credential::from_identifier(&identifier, case.ciphersuite(), &cc.mls.crypto_provider).unwrap();
-            cc.add_credential(credential).await.unwrap();
+            let credential_ref = cc.add_credential(credential).await.unwrap();
 
             assert!(context.session().await.unwrap().is_ready().await);
             // expect mls_client to work
-            assert_eq!(
-                context
-                    .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 2)
-                    .await
-                    .unwrap()
-                    .len(),
-                2
-            );
+            assert!(context.generate_keypackage(&credential_ref, None).await.is_ok());
         })
         .await
     }

@@ -4,22 +4,29 @@ use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{EntityFindParams, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
 };
-use futures_util::{StreamExt, TryStreamExt, stream::FuturesUnordered};
-use openmls::prelude::{CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
-use openmls_traits::OpenMlsCryptoProvider;
+use openmls::prelude::{CryptoConfig, Lifetime};
 
 use super::{Error, Result};
-use crate::{Credential, CredentialRef, KeystoreError, MlsConversationConfiguration, MlsError, Session};
+use crate::{
+    Credential, CredentialRef, Keypackage, KeypackageRef, KeystoreError, MlsConversationConfiguration, Session,
+    mls::key_package::KeypackageExt,
+};
 
-/// Default number of KeyPackages a client generates the first time it's created
+/// Default number of Keypackages a client generates the first time it's created
 #[cfg(not(test))]
 pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
-/// Default number of KeyPackages a client generates the first time it's created
+/// Default number of Keypackages a client generates the first time it's created
 #[cfg(test)]
 pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 10;
 
-/// Default lifetime of all generated KeyPackages. Matches the limit defined in openmls
+/// Default lifetime of all generated Keypackages. Matches the limit defined in openmls
 pub const KEYPACKAGE_DEFAULT_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
+
+fn from_stored(stored_keypackage: &StoredKeypackage) -> Result<Keypackage> {
+    core_crypto_keystore::deser::<Keypackage>(&stored_keypackage.keypackage)
+        .map_err(KeystoreError::wrap("deserializing keypackage"))
+        .map_err(Into::into)
+}
 
 impl Session {
     /// Get an unambiguous credential for the provided ref from the currently-loaded set.
@@ -39,7 +46,7 @@ impl Session {
             ))
     }
 
-    /// Generate a [KeyPackage] from the referenced credential.
+    /// Generate a [Keypackage] from the referenced credential.
     ///
     /// Makes no attempt to look up or prune existing keypackges.
     ///
@@ -53,7 +60,7 @@ impl Session {
         &self,
         credential_ref: &CredentialRef,
         lifetime: Option<Duration>,
-    ) -> Result<KeyPackage> {
+    ) -> Result<Keypackage> {
         let lifetime = Lifetime::new(lifetime.unwrap_or(KEYPACKAGE_DEFAULT_LIFETIME).as_secs());
         let credential = self.credential_from_ref(credential_ref).await?;
 
@@ -62,7 +69,7 @@ impl Session {
             version: openmls::versions::ProtocolVersion::default(),
         };
 
-        KeyPackage::builder()
+        Keypackage::builder()
             .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
             .key_package_lifetime(lifetime)
             .build(
@@ -75,8 +82,8 @@ impl Session {
             .map_err(Error::keypackage_new())
     }
 
-    /// Get all [`KeyPackageRef`]s in the database.
-    pub async fn get_keypackage_refs(&self) -> Result<Vec<KeyPackageRef>> {
+    /// Get all [`Keypackage`]s in the database.
+    pub(crate) async fn get_keypackages(&self) -> Result<Vec<Keypackage>> {
         let stored_keypackages: Vec<StoredKeypackage> = self
             .crypto_provider
             .keystore()
@@ -84,63 +91,50 @@ impl Session {
             .await
             .map_err(KeystoreError::wrap("finding all keypackages"))?;
 
-        let refs = stored_keypackages
-            .into_iter()
-            .map(|mut stored| std::mem::take(&mut stored.keypackage_ref).into())
-            .collect();
-
-        Ok(refs)
-    }
-
-    /// Load one [`KeyPackage`] from its [`KeyPackageRef`]
-    pub(crate) async fn load_keypackage(&self, kp_ref: &KeyPackageRef) -> Result<Option<KeyPackage>> {
-        self.crypto_provider
-            .keystore()
-            .find::<StoredKeypackage>(kp_ref.as_slice())
-            .await
-            .map_err(KeystoreError::wrap("loading keypackage from database"))?
-            .map(|stored_keypackage| core_crypto_keystore::deser::<KeyPackage>(&stored_keypackage.keypackage))
-            .transpose()
-            .map_err(KeystoreError::wrap("deserializing keypackage"))
-            .map_err(Into::into)
-    }
-
-    /// Get all [`KeyPackage`]s in the database.
-    ///
-    /// This is moderately complicated because mapping with an asynchronous function is intrinsically
-    /// a bit complicated, unfortunately.
-    pub(crate) async fn get_keypackages(&self) -> Result<Vec<KeyPackage>> {
-        let keypackage_refs = self.get_keypackage_refs().await?;
-        let keypackages = keypackage_refs
+        let keypackages = stored_keypackages
             .iter()
-            .map(|kp_ref| self.load_keypackage(kp_ref))
-            .collect::<FuturesUnordered<_>>()
+            .map(|stored_keypackage| from_stored(stored_keypackage))
             // if any ref from loading all fails to load now, skip it
             // strictly we could panic, but this is safer--maybe someone removed it concurrently
-            .filter_map(async |kp| kp.transpose())
-            // it is weirdly difficult to get the "collect into a result" behavior we're accustomed to in sync-land
-            // when what we have is a bunch of futures, but this seems to accomplish that
-            .try_fold(Vec::new(), async |mut acc, keypackage| {
-                acc.push(keypackage);
-                Ok(acc)
-            })
-            .await?;
+            .filter_map(|kp| kp.ok())
+            .collect();
+
         Ok(keypackages)
     }
 
-    /// Remove one [`KeyPackage`] from the database.
+    /// Get all [`KeypackageRef`]s in the database.
+    pub async fn get_keypackage_refs(&self) -> Result<Vec<KeypackageRef>> {
+        self.get_keypackages()
+            .await?
+            .iter()
+            .map(|keypackage| keypackage.make_ref().map_err(Into::into))
+            .collect()
+    }
+
+    /// Load one [`Keypackage`] from its [`KeypackageRef`]
+    pub(crate) async fn load_keypackage(&self, kp_ref: &KeypackageRef) -> Result<Option<Keypackage>> {
+        self.crypto_provider
+            .keystore()
+            .find::<StoredKeypackage>(kp_ref.hash_ref())
+            .await
+            .map_err(KeystoreError::wrap("loading keypackage from database"))?
+            .map(|stored_keypackage| from_stored(&stored_keypackage))
+            .transpose()
+    }
+
+    /// Remove one [`Keypackage`] from the database.
     ///
     /// Succeeds silently if the keypackage does not exist in the database.
     ///
     /// Implementation note: this must first load and deserialize the keypackage,
     /// then remove items from three distinct tables.
-    pub(crate) async fn remove_keypackage(&self, kp_ref: &KeyPackageRef) -> Result<()> {
+    pub(crate) async fn remove_keypackage(&self, kp_ref: &KeypackageRef) -> Result<()> {
         let Some(kp) = self.load_keypackage(kp_ref).await? else {
             return Ok(());
         };
 
         let db = self.crypto_provider.keystore();
-        db.remove::<StoredKeypackage, _>(kp_ref.as_slice())
+        db.remove::<StoredKeypackage, _>(kp_ref.hash_ref())
             .await
             .map_err(KeystoreError::wrap("removing key package from keystore"))?;
         db.remove::<StoredHpkePrivateKey, _>(kp.hpke_init_key().as_slice())
@@ -185,11 +179,7 @@ impl Session {
             .into_iter()
             .filter(|keypackage| keypackage.leaf_node().signature_key().as_slice() == signature_public_key)
         {
-            let kp_ref = try_retain_err!(
-                keypackage
-                    .hash_ref(self.crypto_provider.crypto())
-                    .map_err(MlsError::wrap("getting keypackage ref in remove_keypackages_for"))
-            );
+            let kp_ref = try_retain_err!(keypackage.make_ref());
             try_retain_err!(self.remove_keypackage(&kp_ref).await);
         }
 
@@ -202,22 +192,23 @@ impl Session {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use core_crypto_keystore::{ConnectionType, DatabaseKey};
     use mls_crypto_provider::{Database, MlsCryptoProvider};
-    use openmls::prelude::{KeyPackage, KeyPackageIn, KeyPackageRef, ProtocolVersion};
-    use openmls_traits::{OpenMlsCryptoProvider, types::VerifiableCiphersuite};
+    use openmls::prelude::{KeyPackageIn, ProtocolVersion};
+    use openmls_traits::types::VerifiableCiphersuite;
 
-    use super::Session;
     use crate::{
         MlsConversationConfiguration,
         e2e_identity::enrollment::test_utils::{e2ei_enrollment, init_activation_or_rotation, noop_restore},
+        mls::key_package::KeypackageExt as _,
         test_utils::*,
     };
 
     #[apply(all_cred_cipher)]
     async fn can_assess_keypackage_expiration(case: TestContext) {
         let [session_context] = case.sessions().await;
-        let (cs, ct) = (case.ciphersuite(), case.credential_type);
         let key = DatabaseKey::generate();
         let database = Database::open(ConnectionType::InMemory, &key).await.unwrap();
         let backend = MlsCryptoProvider::new(database);
@@ -230,8 +221,8 @@ mod tests {
         };
 
         backend.new_transaction().await.unwrap();
-        let session = session_context.session;
-        session
+        session_context
+            .session
             .random_generate(
                 &case,
                 x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
@@ -240,18 +231,17 @@ mod tests {
             .unwrap();
 
         // 90-day standard expiration
-        let kp_std_exp = session.generate_one_keypackage(&backend, cs, ct).await.unwrap();
-        assert!(!Session::is_mls_keypackage_expired(&kp_std_exp));
+        let kp_std_exp = session_context.new_keypackage(&case).await;
+        assert!(kp_std_exp.is_valid());
 
         // 1-second expiration
-        session
-            .set_keypackage_lifetime(std::time::Duration::from_secs(1))
-            .await
-            .unwrap();
-        let kp_1s_exp = session.generate_one_keypackage(&backend, cs, ct).await.unwrap();
+        let kp_1s_exp = session_context
+            .new_keypackage_with_lifetime(&case, Some(Duration::from_secs(1)))
+            .await;
+
         // Sleep 2 seconds to make sure we make the kp expire
         smol::Timer::after(std::time::Duration::from_secs(2)).await;
-        assert!(Session::is_mls_keypackage_expired(&kp_1s_exp));
+        assert!(!kp_1s_exp.is_valid());
     }
 
     #[apply(all_cred_cipher)]
@@ -264,14 +254,11 @@ mod tests {
         let [session_context] = case.sessions_basic_with_pki_env().await;
         Box::pin(async move {
             let signature_scheme = case.signature_scheme();
-            let cipher_suite = case.ciphersuite();
 
             // Generate 5 Basic key packages first
-            let _basic_key_packages = session_context
-                .transaction
-                .get_or_create_client_keypackages(cipher_suite, CredentialType::Basic, 5)
-                .await
-                .unwrap();
+            for _ in 0..5 {
+                let _kp = session_context.new_keypackage(&case).await;
+            }
 
             // Set up E2E identity
             let test_chain = session_context.x509_chain_unchecked();
@@ -304,198 +291,23 @@ mod tests {
             );
 
             // Request X509 key packages
-            let x509_key_packages = session_context
-                .transaction
-                .get_or_create_client_keypackages(cipher_suite, CredentialType::X509, 5)
-                .await
-                .unwrap();
+            let x509_key_packages = session_context.transaction.get_keypackage_refs().await.unwrap();
 
             // Verify that the key packages are X509
             assert!(
                 x509_key_packages
                     .iter()
-                    .all(|kp| CredentialType::X509 == kp.leaf_node().credential().credential_type())
+                    .all(|kp| CredentialType::X509 == kp.credential_type())
             );
         })
         .await
     }
 
     #[apply(all_cred_cipher)]
-    async fn generates_correct_number_of_kpbs(case: TestContext) {
-        let [cc] = case.sessions().await;
-        Box::pin(async move {
-            const N: usize = 2;
-            const COUNT: usize = 109;
-
-            let init = cc.transaction.count_entities().await;
-            assert_eq!(init.key_package, 0);
-            assert_eq!(init.encryption_keypair, 0);
-            assert_eq!(init.hpke_private_key, 0);
-            assert_eq!(init.credential, 1);
-
-            // since 'delete_keypackages' will evict all Credentials unlinked to a KeyPackage, each iteration
-            // generates 1 extra KeyPackage in order for this Credential no to be evicted and next iteration sto
-            // succeed.
-            let transactional_provider = cc.transaction.mls_provider().await.unwrap();
-            let crypto_provider = transactional_provider.crypto();
-            let mut pinned_kp = None;
-
-            let mut prev_kps: Option<Vec<KeyPackage>> = None;
-            for _ in 0..N {
-                let mut kps = cc
-                    .transaction
-                    .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, COUNT + 1)
-                    .await
-                    .unwrap();
-
-                // this will always be the same, first KeyPackage
-                pinned_kp = Some(kps.pop().unwrap());
-
-                assert_eq!(kps.len(), COUNT);
-                let after_creation = cc.transaction.count_entities().await;
-                assert_eq!(after_creation.key_package, COUNT + 1);
-                assert_eq!(after_creation.encryption_keypair, COUNT + 1);
-                assert_eq!(after_creation.hpke_private_key, COUNT + 1);
-                assert_eq!(after_creation.credential, 1);
-
-                let kpbs_refs = kps
-                    .iter()
-                    .map(|kp| kp.hash_ref(crypto_provider).unwrap())
-                    .collect::<Vec<KeyPackageRef>>();
-
-                if let Some(pkpbs) = prev_kps.replace(kps) {
-                    let pkpbs_refs = pkpbs
-                        .into_iter()
-                        .map(|kpb| kpb.hash_ref(crypto_provider).unwrap())
-                        .collect::<Vec<KeyPackageRef>>();
-
-                    let has_duplicates = kpbs_refs.iter().any(|href| pkpbs_refs.contains(href));
-                    // Make sure we have no previous keypackages found (that were pruned) in our new batch of KPs
-                    assert!(!has_duplicates);
-                }
-                cc.transaction.delete_keypackages(kpbs_refs).await.unwrap();
-            }
-
-            let count = cc
-                .transaction
-                .client_valid_key_packages_count(case.ciphersuite(), case.credential_type)
-                .await
-                .unwrap();
-            assert_eq!(count, 1);
-
-            let pinned_kpr = pinned_kp.unwrap().hash_ref(crypto_provider).unwrap();
-            cc.transaction.delete_keypackages([pinned_kpr]).await.unwrap();
-            let count = cc
-                .transaction
-                .client_valid_key_packages_count(case.ciphersuite(), case.credential_type)
-                .await
-                .unwrap();
-            assert_eq!(count, 0);
-            let after_delete = cc.transaction.count_entities().await;
-            assert_eq!(after_delete.key_package, 0);
-            assert_eq!(after_delete.encryption_keypair, 0);
-            assert_eq!(after_delete.hpke_private_key, 0);
-            assert_eq!(after_delete.credential, 0);
-        })
-        .await
-    }
-
-    #[apply(all_cred_cipher)]
-    async fn automatically_prunes_lifetime_expired_keypackages(case: TestContext) {
-        let [session_context] = case.sessions().await;
-        const UNEXPIRED_COUNT: usize = 125;
-        const EXPIRED_COUNT: usize = 200;
-        let key = DatabaseKey::generate();
-        let key_store = Database::open(ConnectionType::InMemory, &key).await.unwrap();
-        let backend = MlsCryptoProvider::new(key_store);
-        let x509_test_chain = if case.is_x509() {
-            let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
-            x509_test_chain.register_with_provider(&backend).await;
-            Some(x509_test_chain)
-        } else {
-            None
-        };
-        backend.new_transaction().await.unwrap();
-        let session = session_context.session().await;
-        session
-            .random_generate(
-                &case,
-                x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
-            )
-            .await
-            .unwrap();
-
-        // Generate `UNEXPIRED_COUNT` kpbs that are with default 3 months expiration. We *should* keep them for the
-        // duration of the test
-        let unexpired_kpbs = session
-            .request_key_packages(UNEXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
-            .await
-            .unwrap();
-        let len = session
-            .valid_keypackages_count(&backend, case.ciphersuite(), case.credential_type)
-            .await
-            .unwrap();
-        assert_eq!(len, unexpired_kpbs.len());
-        assert_eq!(len, UNEXPIRED_COUNT);
-
-        // Set the keypackage expiration to be in 2 seconds
-        session
-            .set_keypackage_lifetime(std::time::Duration::from_secs(10))
-            .await
-            .unwrap();
-
-        // Generate new keypackages that are normally partially expired 2s after they're requested
-        let partially_expired_kpbs = session
-            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
-            .await
-            .unwrap();
-        assert_eq!(partially_expired_kpbs.len(), EXPIRED_COUNT);
-
-        // Sleep to trigger the expiration
-        smol::Timer::after(std::time::Duration::from_secs(10)).await;
-
-        // Request the same number of keypackages. The automatic lifetime-based expiration should take
-        // place and remove old expired keypackages and generate fresh ones instead
-        let fresh_kpbs = session
-            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
-            .await
-            .unwrap();
-        let len = session
-            .valid_keypackages_count(&backend, case.ciphersuite(), case.credential_type)
-            .await
-            .unwrap();
-        assert_eq!(len, fresh_kpbs.len());
-        assert_eq!(len, EXPIRED_COUNT);
-
-        // Try to deep compare and find kps matching expired and non-expired ones
-        let (unexpired_match, expired_match) =
-            fresh_kpbs
-                .iter()
-                .fold((0usize, 0usize), |(mut unexpired_match, mut expired_match), fresh| {
-                    if unexpired_kpbs.iter().any(|kp| kp == fresh) {
-                        unexpired_match += 1;
-                    } else if partially_expired_kpbs.iter().any(|kpb| kpb == fresh) {
-                        expired_match += 1;
-                    }
-
-                    (unexpired_match, expired_match)
-                });
-
-        // TADA!
-        assert_eq!(unexpired_match, UNEXPIRED_COUNT);
-        assert_eq!(expired_match, 0);
-    }
-
-    #[apply(all_cred_cipher)]
     async fn new_keypackage_has_correct_extensions(case: TestContext) {
         let [cc] = case.sessions().await;
         Box::pin(async move {
-            let kps = cc
-                .transaction
-                .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 1)
-                .await
-                .unwrap();
-            let kp = kps.first().unwrap();
+            let kp = cc.new_keypackage(&case).await;
 
             // make sure it's valid
             let _ = KeyPackageIn::from(kp.clone())

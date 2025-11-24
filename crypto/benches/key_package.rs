@@ -1,6 +1,6 @@
 use std::hint::black_box;
 
-use core_crypto::CredentialType;
+use core_crypto::Credential;
 use criterion::{
     BatchSize, Criterion, async_executor::SmolExecutor as FuturesExecutor, criterion_group, criterion_main,
 };
@@ -12,23 +12,27 @@ mod utils;
 
 fn generate_key_package_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Generate KeyPackage f(group size)");
-    for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
-        let credential_type = credential
-            .as_ref()
-            .map(|_| CredentialType::X509)
-            .unwrap_or(CredentialType::Basic);
+    for (case, ciphersuite, certificate_bundle, in_memory) in MlsTestCase::values() {
         for i in (GROUP_RANGE).step_by(GROUP_STEP) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
-                    || smol::block_on(setup_mls(ciphersuite, credential.as_ref(), in_memory, true)),
-                    |(central, ..)| async move {
+                    || {
+                        let (client, ..) =
+                            smol::block_on(setup_mls(ciphersuite, certificate_bundle.as_ref(), in_memory, true));
+                        let client_id = smol::block_on(client.id()).unwrap();
+                        let credential = match certificate_bundle.clone() {
+                            Some(certificate_bundle) => Credential::x509(ciphersuite, certificate_bundle).unwrap(),
+                            None => Credential::basic(ciphersuite, client_id, client.openmls_crypto()).unwrap(),
+                        };
+                        (client, credential)
+                    },
+                    |(central, credential)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(
-                            context
-                                .get_or_create_client_keypackages(ciphersuite, credential_type, *i)
-                                .await
-                                .unwrap(),
-                        );
+                        let credential_ref = context.add_credential(credential).await.unwrap();
+
+                        black_box(for _ in 0..*i {
+                            let _kp = context.generate_keypackage(&credential_ref, None).await.unwrap();
+                        });
                         context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
@@ -39,37 +43,36 @@ fn generate_key_package_bench(c: &mut Criterion) {
     group.finish();
 }
 
-fn count_key_packages_bench(c: &mut Criterion) {
+fn get_key_packages_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Count KeyPackage");
-    for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
-        let credential_type = credential
-            .as_ref()
-            .map(|_| CredentialType::X509)
-            .unwrap_or(CredentialType::Basic);
+    for (case, ciphersuite, certificate_bundle, in_memory) in MlsTestCase::values() {
         for i in (GROUP_RANGE).step_by(GROUP_STEP) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         smol::block_on(async {
-                            let (central, ..) = setup_mls(ciphersuite, credential.as_ref(), in_memory, true).await;
+                            let (client, ..) =
+                                setup_mls(ciphersuite, certificate_bundle.as_ref(), in_memory, true).await;
+                            let client_id = client.id().await.unwrap();
+                            let credential = match certificate_bundle.clone() {
+                                Some(certificate_bundle) => Credential::x509(ciphersuite, certificate_bundle).unwrap(),
+                                None => Credential::basic(ciphersuite, client_id, client.openmls_crypto()).unwrap(),
+                            };
 
-                            let context = central.new_transaction().await.unwrap();
-                            context
-                                .get_or_create_client_keypackages(ciphersuite, credential_type, *i)
-                                .await
-                                .unwrap();
+                            let context = client.new_transaction().await.unwrap();
+                            let credential_ref = context.add_credential(credential).await.unwrap();
+
+                            for _ in 0..*i {
+                                let _kp = context.generate_keypackage(&credential_ref, None).await.unwrap();
+                            }
+
                             context.finish().await.unwrap();
-                            central
+                            client
                         })
                     },
                     |central| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(
-                            context
-                                .client_valid_key_packages_count(ciphersuite, credential_type)
-                                .await
-                                .unwrap(),
-                        );
+                        black_box(context.get_keypackage_refs().await.unwrap());
                         context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
@@ -85,6 +88,6 @@ criterion_group!(
     config = criterion();
     targets =
     generate_key_package_bench,
-    count_key_packages_bench,
+    get_key_packages_bench,
 );
 criterion_main!(key_package);

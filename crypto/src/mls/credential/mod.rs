@@ -301,12 +301,12 @@ mod tests {
             .await
             .unwrap();
         let [bob] = case.sessions_x509().await;
-        let bob_key_package = bob.rand_key_package(&case).await;
+        let bob_key_package = bob.new_keypackage(&case).await;
         let conversation = case.create_conversation([&alice]).await;
         let err = conversation
             .guard()
             .await
-            .add_members([bob_key_package].into())
+            .add_members([bob_key_package.into()].into())
             .await
             .unwrap_err();
         assert!(innermost_source_matches!(err, MlsErrorKind::MlsAddMembersError(_)));

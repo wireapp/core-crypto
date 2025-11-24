@@ -6,10 +6,9 @@
 mod tests {
 
     use openmls::prelude::KeyPackage;
-    use openmls_traits::OpenMlsCryptoProvider;
 
     use super::super::error::Error;
-    use crate::test_utils::*;
+    use crate::{mls::key_package::KeypackageExt as _, test_utils::*};
 
     #[apply(all_cred_cipher)]
     pub async fn orphan_welcome_should_generate_external_commit(case: TestContext) {
@@ -17,19 +16,19 @@ mod tests {
         Box::pin(async move {
             let conversation = case.create_conversation([&alice]).await;
 
-                let bob_kp = bob.rand_key_package(&case).await;
+                let bob_kp = bob.new_keypackage(&case).await;
                 let bob_kp_ref = KeyPackage::from(bob_kp.clone())
-                    .hash_ref(bob.transaction.mls_provider().await.unwrap().crypto())
+                    .make_ref()
                     .unwrap();
 
                 // Alice invites Bob with a KeyPackage...
                 conversation.guard().await
-                    .add_members(vec![bob_kp])
+                    .add_members(vec![bob_kp.into()])
                     .await
                     .unwrap();
 
                 // ...Bob deletes locally (with the associated private key) before processing the Welcome
-                bob.transaction.delete_keypackages([bob_kp_ref]).await.unwrap();
+                bob.transaction.remove_keypackage(&bob_kp_ref).await.unwrap();
 
                 let welcome = alice.mls_transport().await.latest_welcome_message().await;
 

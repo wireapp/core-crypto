@@ -15,7 +15,7 @@ impl<'a> TestConversation<'a> {
     /// Propose inviting a member.
     pub async fn invite_proposal(self, new_member: &'a SessionContext) -> OperationGuard<'a, Proposal> {
         let proposer = self.actor();
-        let key_package = new_member.rand_key_package(self.case).await;
+        let key_package = new_member.new_keypackage(self.case).await;
         let proposal = proposer
             .transaction
             .new_add_proposal(self.id(), key_package.into())
