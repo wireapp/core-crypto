@@ -5,23 +5,9 @@ use std::time::Duration;
 use openmls::prelude::{KeyPackage, KeyPackageRef};
 
 use super::{Result, TransactionContext};
-use crate::{Ciphersuite, CredentialRef, CredentialType, RecursiveError};
+use crate::{CredentialRef, RecursiveError};
 
 impl TransactionContext {
-    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [Ciphersuite] and [CredentialType]
-    pub async fn client_valid_key_packages_count(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-    ) -> Result<usize> {
-        let session = self.session().await?;
-        session
-            .valid_keypackages_count(&self.mls_provider().await?, ciphersuite, credential_type)
-            .await
-            .map_err(RecursiveError::mls_client("counting valid key packages"))
-            .map_err(Into::into)
-    }
-
     /// Generate a [KeyPackage] from the referenced credential.
     ///
     /// Makes no attempt to look up or prune existing keypackges.

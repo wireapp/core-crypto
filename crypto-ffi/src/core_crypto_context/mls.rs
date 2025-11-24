@@ -133,21 +133,6 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::client_valid_key_packages_count]
-    pub async fn client_valid_keypackages_count(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-    ) -> CoreCryptoResult<u64> {
-        let count = self
-            .inner
-            .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
-            .await
-            .map_err(RecursiveError::transaction("counting client valid keypackages"))?;
-
-        Ok(count.try_into().unwrap_or(0))
-    }
-
     /// See [core_crypto::transaction_context::TransactionContext::new_conversation]
     pub async fn create_conversation(
         &self,

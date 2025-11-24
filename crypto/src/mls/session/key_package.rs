@@ -11,8 +11,8 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use super::{Error, Result};
 use crate::{
-    Ciphersuite, Credential, CredentialRef, CredentialType, KeystoreError, MlsConversationConfiguration, MlsError,
-    Session, mls::session::SessionInner,
+    Ciphersuite, Credential, CredentialRef, KeystoreError, MlsConversationConfiguration, MlsError, Session,
+    mls::session::SessionInner,
 };
 
 /// Default number of KeyPackages a client generates the first time it's created
@@ -242,47 +242,6 @@ impl Session {
         Ok(keypackage)
     }
 
-    /// Returns the count of valid, non-expired, unclaimed keypackages in store
-    pub async fn valid_keypackages_count(
-        &self,
-        backend: &MlsCryptoProvider,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-    ) -> Result<usize> {
-        let kps: Vec<StoredKeypackage> = backend
-            .key_store()
-            .find_all(EntityFindParams::default())
-            .await
-            .map_err(KeystoreError::wrap("finding all key packages"))?;
-
-        let mut valid_count = 0;
-        for kp in kps
-            .into_iter()
-            .map(|kp| core_crypto_keystore::deser::<KeyPackage>(&kp.keypackage))
-            // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
-            .filter(|kp_result| {
-                 kp_result.as_ref().ok().is_none_or(|key_package| ciphersuite == key_package.ciphersuite() && credential_type == key_package.leaf_node().credential().credential_type())
-            })
-        {
-            let kp = kp.map_err(KeystoreError::wrap("counting valid keypackages"))?;
-            if !Self::is_mls_keypackage_expired(&kp) {
-                valid_count += 1;
-            }
-        }
-
-        Ok(valid_count)
-    }
-
-    /// Checks if a given OpenMLS [`KeyPackage`] is expired by looking through its extensions,
-    /// finding a lifetime extension and checking if it's valid.
-    fn is_mls_keypackage_expired(kp: &KeyPackage) -> bool {
-        let Some(lifetime) = kp.leaf_node().life_time() else {
-            return false;
-        };
-
-        !(lifetime.has_acceptable_range() && lifetime.is_valid())
-    }
-
     /// Prune the provided KeyPackageRefs from the keystore
     ///
     /// Warning: Despite this API being public, the caller should know what they're doing.
@@ -327,7 +286,7 @@ impl Session {
             .collect::<HashSet<_>>();
 
         let kp_to_delete = kps.iter().filter_map(|(store_kp, kp)| {
-            let is_expired = Self::is_mls_keypackage_expired(kp);
+            let is_expired = false;
             let to_delete = is_expired || refs.contains(store_kp.keypackage_ref.as_slice());
             to_delete.then_some((kp, &store_kp.keypackage_ref))
         });
