@@ -4,6 +4,14 @@
 
 ### Features
 
+- renamed `CoreCrypto.reseedRng()` to `CoreCrypto.reseed()`
+
+  Affected platforms: web
+
+- removed `CoreCryptoFfi.reseedRng()` and `CoreCryptoFfi.randomBytes()`
+
+  Affected platforms: android, ios
+
 - removed `.proteusFingerprintPrekeybundle()` and `.proteusLastResortPrekeyId()` from `CoreCryptoContext`.
 
   Both are available as static methods on `CoreCrypto`.
