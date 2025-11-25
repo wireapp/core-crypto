@@ -841,9 +841,9 @@ export class CoreCryptoContext {
      *
      * # Expected actions to perform after this function (in this order)
      * 1. Rotate credentials for each conversation using {@link CoreCryptoContext.e2eiRotate}
-     * 2. Generate new key packages with {@link CoreCryptoContext.clientKeypackages}
+     * 2. Generate new key packages with {@link CoreCryptoContext.generateKeypackage}
      * 3. Use these to replace the stale ones the in the backend
-     * 4. Delete the stale ones locally using {@link CoreCryptoContext.deleteStaleKeyPackages}
+     * 4. Delete the stale ones locally.
      *      * This is the last step because you might still need the old key packages to avoid
      *        an orphan welcome message
      *
