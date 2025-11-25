@@ -256,9 +256,12 @@ mod tests {
             let signature_scheme = case.signature_scheme();
 
             // Generate 5 Basic key packages first
+            let mut initial_kp_refs = Vec::new();
             for _ in 0..5 {
-                let _kp = session_context.new_keypackage(&case).await;
+                let kp = session_context.new_keypackage(&case).await;
+                initial_kp_refs.push(kp.make_ref().unwrap());
             }
+            initial_kp_refs.sort_by_key(|kp_ref| kp_ref.hash_ref().to_owned());
 
             // Set up E2E identity
             let test_chain = session_context.x509_chain_unchecked();
@@ -291,7 +294,13 @@ mod tests {
             );
 
             // Request X509 key packages
-            let x509_key_packages = session_context.transaction.get_keypackage_refs().await.unwrap();
+            let key_packages = session_context.transaction.get_keypackage_refs().await.unwrap();
+            let (mut from_initial_set, x509_key_packages) = key_packages
+                .into_iter()
+                .partition::<Vec<_>, _>(|kp_ref| initial_kp_refs.contains(kp_ref));
+
+            from_initial_set.sort_by_key(|kp_ref| kp_ref.hash_ref().to_owned());
+            assert_eq!(initial_kp_refs, from_initial_set);
 
             // Verify that the key packages are X509
             assert!(
