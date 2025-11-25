@@ -23,3 +23,5 @@ runs:
         make-rule: bindings-kotlin-jvm
         target-path: crypto-ffi/bindings
         gh-token: ${{ inputs.gh-token }}
+        uses-rust: true
+        rust-target: x86_64-unknown-linux-gnu
