@@ -314,6 +314,8 @@ impl TransactionContext {
     /// Remove a credential from the identities of this session.
     ///
     /// As a side effect, delete the credential from the keystore.
+    ///
+    /// Removes both the credential itself and also any key packages which were generated from it.
     pub async fn remove_credential(&self, credential_ref: &CredentialRef) -> Result<()> {
         self.session()
             .await?

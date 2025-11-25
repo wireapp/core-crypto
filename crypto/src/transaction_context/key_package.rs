@@ -6,7 +6,7 @@ use super::{Result, TransactionContext};
 use crate::{CredentialRef, Keypackage, KeypackageRef, RecursiveError};
 
 impl TransactionContext {
-    /// Generate a [KeyPackage] from the referenced credential.
+    /// Generate a [Keypackage] from the referenced credential.
     ///
     /// Makes no attempt to look up or prune existing keypackges.
     ///
@@ -26,7 +26,7 @@ impl TransactionContext {
             .map_err(Into::into)
     }
 
-    /// Get all [`KeyPackageRef`]s known to the keystore.
+    /// Get all [`KeypackageRef`]s known to the keystore.
     pub async fn get_keypackage_refs(&self) -> Result<Vec<KeypackageRef>> {
         let session = self.session().await?;
         session
@@ -38,7 +38,7 @@ impl TransactionContext {
             .map_err(Into::into)
     }
 
-    /// Remove a [`KeyPackage`] from the keystore.
+    /// Remove a [`Keypackage`] from the keystore.
     pub async fn remove_keypackage(&self, kp_ref: &KeypackageRef) -> Result<()> {
         let session = self.session().await?;
         session
@@ -48,7 +48,7 @@ impl TransactionContext {
             .map_err(Into::into)
     }
 
-    /// Remove all [`KeyPackage`]s associated with this ref.
+    /// Remove all [`Keypackage`]s associated with this ref.
     pub async fn remove_keypackages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
         let session = self.session().await?;
         session

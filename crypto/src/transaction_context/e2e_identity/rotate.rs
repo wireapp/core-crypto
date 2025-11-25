@@ -121,10 +121,9 @@ impl TransactionContext {
     ///
     /// # Expected actions to perform after this function (in this order)
     /// 1. Rotate credentials for each conversation in [crate::mls::conversation::ConversationGuard::e2ei_rotate]
-    /// 2. Generate new key packages with [crate::mls::session::Session::request_key_packages]
+    /// 2. Generate new key packages with [Self::generate_keypackage]
     /// 3. Use these to replace the stale ones the in the backend
-    /// 4. Delete the stale ones locally using [Self::delete_stale_key_packages]
-    ///     * This is the last step because you might still need the old key packages to avoid an orphan welcome message
+    /// 4. Delete the old credentials and keypackages locally using [Self::remove_credential]
     pub async fn save_x509_credential(
         &self,
         enrollment: &mut E2eiEnrollment,
