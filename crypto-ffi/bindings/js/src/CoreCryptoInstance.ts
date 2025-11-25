@@ -316,14 +316,14 @@ export class CoreCrypto {
      *
      * @param seed - **exactly 32** bytes buffer seed
      */
-    async reseedRng(seed: ArrayBuffer): Promise<void> {
+    async reseed(seed: ArrayBuffer): Promise<void> {
         if (seed.byteLength !== 32) {
             throw new Error(
                 `The seed length needs to be exactly 32 bytes. ${seed.byteLength} bytes provided.`
             );
         }
 
-        return await CoreCryptoError.asyncMapErr(this.#cc.reseedRng(seed));
+        return await CoreCryptoError.asyncMapErr(this.#cc.reseed(seed));
     }
 
     /**

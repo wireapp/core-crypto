@@ -10,7 +10,7 @@ impl CoreCryptoFfi {
     }
 
     /// see [core_crypto::Session::reseed]
-    pub async fn reseed_rng(&self, seed: EntropySeed) -> CoreCryptoResult<()> {
+    pub async fn reseed(&self, seed: EntropySeed) -> CoreCryptoResult<()> {
         let seed = core_crypto::EntropySeed::try_from_slice(&seed).map_err(CoreCryptoError::generic())?;
         self.inner.reseed(Some(seed)).await?;
 

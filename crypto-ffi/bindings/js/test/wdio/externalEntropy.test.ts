@@ -35,7 +35,7 @@ describe("external entropy", () => {
                 const cc = window.ensureCcDefined(clientName);
                 // Null byte seed
                 const seed = new Uint8Array(32);
-                await cc.reseedRng(seed.buffer);
+                await cc.reseed(seed.buffer);
 
                 const produced1 = await cc.randomBytes(length1);
                 const produced2 = await cc.randomBytes(length2);
