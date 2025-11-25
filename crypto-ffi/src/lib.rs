@@ -75,6 +75,5 @@ pub use identity::{
     x509::X509Identity,
 };
 pub use key_package::{Keypackage, KeypackageRef};
-pub(crate) use key_package::{KeypackageMaybeArc, KeypackageRefMaybeArc};
 pub use metadata::{BuildMetadata, build_metadata, version};
 pub use signature_scheme::SignatureScheme;

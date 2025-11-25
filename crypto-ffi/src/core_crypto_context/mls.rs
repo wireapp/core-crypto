@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use core_crypto::{
     Ciphersuite as CryptoCiphersuite, ClientIdentifier, CredentialFindFilters, MlsConversationConfiguration,
@@ -9,9 +9,9 @@ use tls_codec::Deserialize as _;
 
 use crate::{
     Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoResult,
-    CredentialRef, CredentialType, CustomConfiguration, DecryptedMessage, Keypackage, KeypackageMaybeArc,
-    KeypackageRef, KeypackageRefMaybeArc, WelcomeBundle, bytes_wrapper::bytes_wrapper, client_id::ClientIdMaybeArc,
-    credential::CredentialMaybeArc, credential_ref::CredentialRefMaybeArc, crl::NewCrlDistributionPoints,
+    CredentialRef, CredentialType, CustomConfiguration, DecryptedMessage, Keypackage, KeypackageRef, WelcomeBundle,
+    bytes_wrapper::bytes_wrapper, client_id::ClientIdMaybeArc, credential::CredentialMaybeArc,
+    credential_ref::CredentialRefMaybeArc, crl::NewCrlDistributionPoints,
 };
 
 bytes_wrapper!(
@@ -180,7 +180,7 @@ impl CoreCryptoContext {
     pub async fn add_clients_to_conversation(
         &self,
         conversation_id: &ConversationId,
-        key_packages: Vec<KeypackageMaybeArc>,
+        key_packages: Vec<Arc<Keypackage>>,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
         let keypackages = key_packages
             .into_iter()
@@ -380,7 +380,7 @@ impl CoreCryptoContext {
         &self,
         credential_ref: &CredentialRefMaybeArc,
         lifetime: Option<Duration>,
-    ) -> CoreCryptoResult<KeypackageMaybeArc> {
+    ) -> CoreCryptoResult<Arc<Keypackage>> {
         let credential_ref = &credential_ref.0;
         self.inner
             .generate_keypackage(credential_ref, lifetime)
@@ -390,18 +390,17 @@ impl CoreCryptoContext {
     }
 
     /// Get a reference to each `KeyPackage` in the database.
-    pub async fn get_keypackages(&self) -> CoreCryptoResult<Vec<KeypackageRefMaybeArc>> {
+    pub async fn get_keypackages(&self) -> CoreCryptoResult<Vec<Arc<KeypackageRef>>> {
         self.inner
             .get_keypackage_refs()
             .await
-            .map(|kp_refs| kp_refs.iter().map(KeypackageRef::from_cc).collect())
+            .map(|kp_refs| kp_refs.into_iter().map(KeypackageRef::coerce_arc).collect())
             .map_err(Into::into)
     }
 
     /// Remove a `KeyPackage` from the database.
-    pub async fn remove_keypackage(&self, kp_ref: &KeypackageRefMaybeArc) -> CoreCryptoResult<()> {
-        let kp_ref = core_crypto::KeyPackageRef::from(kp_ref.0.as_slice());
-        self.inner.remove_keypackage(&kp_ref).await.map_err(Into::into)
+    pub async fn remove_keypackage(&self, kp_ref: &Arc<KeypackageRef>) -> CoreCryptoResult<()> {
+        self.inner.remove_keypackage(kp_ref.as_cc()).await.map_err(Into::into)
     }
 
     /// Remove all `KeyPackage`s associated with this credential ref.
