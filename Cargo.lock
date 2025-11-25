@@ -2895,6 +2895,7 @@ dependencies = [
  "openmls_basic_credential",
  "rand",
  "sha2",
+ "zeroize",
 ]
 
 [[package]]

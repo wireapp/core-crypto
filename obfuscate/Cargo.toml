@@ -12,6 +12,7 @@ openmls = { workspace = true, optional = true }
 openmls_basic_credential = { workspace = true, optional = true }
 rand.workspace = true
 sha2.workspace = true
+zeroize.workspace = true
 
 [lints]
 workspace = true
