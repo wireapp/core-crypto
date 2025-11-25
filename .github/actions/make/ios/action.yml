@@ -27,10 +27,6 @@ runs:
         esac
         echo "IOS_TARGET=$target" >> $GITHUB_ENV
 
-    - uses: ./.github/actions/setup-and-cache-rust
-      with:
-        target: ${{ env.IOS_TARGET }}
-
     - uses: ./.github/actions/make
       with:
         key: lib-${{ inputs.task }}
@@ -39,3 +35,5 @@ runs:
           target/${{ env.IOS_TARGET }}/release/libcore_crypto_ffi.a
           target/${{ env.IOS_TARGET }}/release/libcore_crypto_ffi.dylib
         gh-token: ${{ inputs.gh-token }}
+        uses-rust: true
+        rust-target: ${{ env.IOS_TARGET }}
