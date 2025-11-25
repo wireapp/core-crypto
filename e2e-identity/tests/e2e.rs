@@ -1,3 +1,24 @@
+//! This module contains end-to-end tests that exercise different interactions in the
+//! process of getting an X.509 certificate.
+//!
+//! Prerequisites:
+//! - Docker
+//! - a running test-wire-server instance, pointed at by the TEST_WIRE_SERVER_ADDR environment
+//!   variable
+//! - a configured IdP to use, via the TEST_IDP environment variable
+//!   (currently supported: `keycloak`, `authelia`)
+//!
+//! An instance of the chosen IdP will be started automatically, but it will not be shut down
+//! automatically.
+//!
+//! While test-wire-server runs as a regular process, the IdP instances and the ACME server
+//! implementation, step-ca, run inside their own containers.
+//!
+//! During tests, containers are reachable via hostnames such as `keycloak`, `authelia.local` etc.,
+//! however this does not actually rely or any OS or container networking facilities, but rather on
+//! the manual mapping of host names to addresses (see `E2eTest::start` and the `utils/ctx.rs`
+//! module).
+
 // This file contains test mappings to automatically generate various reports for Zulu.
 // They are marked with @SF and similar.
 // DO NOT REMOVE OR CHANGE THESE OR THE TESTS WITHOUT TALKING TO SECURITY FIRST!
