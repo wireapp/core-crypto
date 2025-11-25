@@ -89,7 +89,7 @@
 <a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">let </span>crl_new_distribution_points = <span class="self">self</span>.extract_dp_on_init(<span class="kw-2">&amp;</span>certificate_chain[..]).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#90 id=90 data-nosnippet>90</a>
 <a href=#91 id=91 data-nosnippet>91</a>        <span class="kw">let </span>private_key = CertificatePrivateKey {
-<a href=#92 id=92 data-nosnippet>92</a>            value: sk,
+<a href=#92 id=92 data-nosnippet>92</a>            value: sk.into(),
 <a href=#93 id=93 data-nosnippet>93</a>            signature_scheme: cs.signature_algorithm(),
 <a href=#94 id=94 data-nosnippet>94</a>        };
 <a href=#95 id=95 data-nosnippet>95</a>
