@@ -3,7 +3,7 @@ name = "interop"
 version = "9.0.1"
 edition = "2024"
 license = "GPL-3.0-only"
-rust-version = "1.90"
+rust-version = "1.91.1"
 
 [features]
 default = ["proteus"]
