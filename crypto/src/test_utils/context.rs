@@ -16,7 +16,7 @@ use super::{
 };
 use crate::{
     CertificateBundle, Ciphersuite, CoreCrypto, CredentialRef, CredentialType, MlsConversationDecryptMessage,
-    RecursiveError, WireIdentity,
+    WireIdentity,
     e2e_identity::{
         device_status::DeviceStatus,
         id::{QualifiedE2eiClientId, WireQualifiedClientId},
@@ -30,7 +30,6 @@ pub const TEAM: &'static str = "world";
 
 pub struct RotateAllResult<'a> {
     pub(crate) commits: Vec<OperationGuard<'a, Commit>>,
-    pub(crate) new_key_packages: Vec<KeyPackage>,
 }
 
 impl SessionContext {
@@ -210,12 +209,11 @@ impl SessionContext {
         client.add_credential_producing_arc(credential).await.unwrap()
     }
 
-    pub(crate) async fn create_key_packages_and_update_credential_in_all_conversations<'a>(
+    pub(crate) async fn update_credential_in_all_conversations<'a>(
         &self,
         all_conversations: Vec<TestConversation<'a>>,
         cb: &Credential,
         cipher_suite: Ciphersuite,
-        key_package_count: usize,
     ) -> Result<RotateAllResult<'a>> {
         assert_eq!(cipher_suite, cb.ciphersuite);
 
@@ -225,20 +223,7 @@ impl SessionContext {
             commits.push(commit_guard);
         }
 
-        let credential_ref = &CredentialRef::from_credential(cb);
-        let mut new_key_packages = Vec::with_capacity(key_package_count);
-        for _ in 0..key_package_count {
-            new_key_packages.push(
-                self.session
-                    .generate_keypackage(credential_ref, None)
-                    .await
-                    .map_err(RecursiveError::mls_client("generating keypackage"))?,
-            );
-        }
-        Ok(RotateAllResult {
-            commits,
-            new_key_packages,
-        })
+        Ok(RotateAllResult { commits })
     }
 
     pub async fn get_e2ei_client_id(&self) -> wire_e2e_identity::prelude::E2eiClientId {
