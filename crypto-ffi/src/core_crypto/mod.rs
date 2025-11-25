@@ -18,9 +18,6 @@ use crate::{
     database::{DatabaseMaybeArc, ToCc as _},
 };
 
-/// In uniffi, a vector is the natural way to communicate a byte slice
-pub(crate) type EntropySeed = Vec<u8>;
-
 /// CoreCrypto wraps around MLS and Proteus implementations and provides a transactional interface for each.
 #[derive(Debug, uniffi::Object)]
 pub struct CoreCryptoFfi {

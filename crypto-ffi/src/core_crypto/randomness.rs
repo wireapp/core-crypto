@@ -1,4 +1,3 @@
-use super::EntropySeed;
 use crate::{CoreCryptoError, CoreCryptoFfi, CoreCryptoResult};
 
 #[uniffi::export]
@@ -10,7 +9,7 @@ impl CoreCryptoFfi {
     }
 
     /// see [core_crypto::Session::reseed]
-    pub async fn reseed(&self, seed: EntropySeed) -> CoreCryptoResult<()> {
+    pub async fn reseed(&self, seed: Vec<u8>) -> CoreCryptoResult<()> {
         let seed = core_crypto::EntropySeed::try_from_slice(&seed).map_err(CoreCryptoError::generic())?;
         self.inner.reseed(Some(seed)).await?;
 
