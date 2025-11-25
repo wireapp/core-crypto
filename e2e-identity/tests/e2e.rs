@@ -56,6 +56,9 @@ fn get_wire_server() -> WireServer {
         .expect("TEST_WIRE_SERVER_ADDR must be set and point to a running test-wire-server")
         .parse()
         .unwrap();
+
+    // We place the Wire server under the `.localhost` domain so that Authelia
+    // doesn't complain about us using HTTP for the OAUTH redirect URL.
     WireServer {
         hostname: "wire.localhost".to_string(),
         addr,
