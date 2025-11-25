@@ -98,7 +98,7 @@ RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
 #
 # We need to build this binary if it does not exist, or if the uniffi version
 # has changed (see https://github.com/mozilla/uniffi-rs/issues/2622).
-GET_UNIFFI_VERSION = cargo metadata --format-version 1 | jq -r '.packages[] | select(.name == "uniffi") | .version'
+GET_UNIFFI_VERSION = perl -ne 'print "$1\n" if /^uniffi\s=\s"([^"]+)"/' Cargo.toml
 UNIFFI_VERSION_FILE := $(STAMPS)/uniffi-version
 
 # Version file: only rewrite if version changed
