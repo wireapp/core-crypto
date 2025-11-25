@@ -283,45 +283,6 @@ export class CoreCryptoContext {
     }
 
     /**
-     *
-     * @param ciphersuite - of the KeyPackages to count
-     * @param credentialType - of the KeyPackages to count
-     * @returns The amount of valid, non-expired KeyPackages that are persisted in the backing storage
-     */
-    async clientValidKeypackagesCount(
-        ciphersuite: Ciphersuite,
-        credentialType: CredentialType
-    ): Promise<number> {
-        const kpCount = await CoreCryptoError.asyncMapErr(
-            this.#ctx.clientValidKeypackagesCount(ciphersuite, credentialType)
-        );
-        return safeBigintToNumber(kpCount);
-    }
-
-    /**
-     * Fetches a requested amount of keypackages
-     *
-     * @param ciphersuite - of the KeyPackages to generate
-     * @param credentialType - of the KeyPackages to generate
-     * @param amountRequested - The amount of keypackages requested
-     * @returns An array of length `amountRequested` containing TLS-serialized KeyPackages
-     */
-    async clientKeypackages(
-        ciphersuite: Ciphersuite,
-        credentialType: CredentialType,
-        amountRequested: number
-    ): Promise<Array<ArrayBuffer>> {
-        const kps = await CoreCryptoError.asyncMapErr(
-            this.#ctx.clientKeypackages(
-                ciphersuite,
-                credentialType,
-                amountRequested
-            )
-        );
-        return kps.map((kp) => kp.serialize());
-    }
-
-    /**
      * Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation.
      *
      * Sends the corresponding commit via {@link MlsTransport.sendCommitBundle} and merges it if the call is successful.
@@ -896,17 +857,6 @@ export class CoreCryptoContext {
     ): Promise<NewCrlDistributionPoints> {
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.saveX509Credential(enrollment.inner(), certificateChain)
-        );
-    }
-
-    /**
-     * Deletes all key packages whose credential does not match the most recently
-     * saved x509 credential and the provided signature scheme.
-     * @param ciphersuite
-     */
-    async deleteStaleKeyPackages(ciphersuite: Ciphersuite): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(
-            this.#ctx.deleteStaleKeyPackages(ciphersuite)
         );
     }
 
