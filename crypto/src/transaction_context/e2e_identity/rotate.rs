@@ -155,7 +155,7 @@ impl TransactionContext {
             .map_err(RecursiveError::e2e_identity("getting certificate response"))?;
 
         let private_key = CertificatePrivateKey {
-            value: sk,
+            value: sk.into(),
             signature_scheme,
         };
 

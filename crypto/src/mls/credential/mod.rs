@@ -312,7 +312,7 @@ mod tests {
         let new_pki_kp = PkiKeypair::rand_unchecked(case.signature_scheme());
 
         let eve_key = CertificatePrivateKey {
-            value: new_pki_kp.signing_key_bytes(),
+            value: new_pki_kp.signing_key_bytes().into(),
             signature_scheme: case.ciphersuite().signature_algorithm(),
         };
         let cb = CertificateBundle {

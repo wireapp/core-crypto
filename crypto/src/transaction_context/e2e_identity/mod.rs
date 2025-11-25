@@ -89,7 +89,7 @@ impl TransactionContext {
         let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
 
         let private_key = CertificatePrivateKey {
-            value: sk,
+            value: sk.into(),
             signature_scheme: cs.signature_algorithm(),
         };
 
