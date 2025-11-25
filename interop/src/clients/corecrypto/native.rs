@@ -81,11 +81,19 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
     async fn get_keypackage(&self) -> Result<Vec<u8>> {
         let transaction = self.cc.new_transaction().await?;
         let start = std::time::Instant::now();
-        let kp = transaction
-            .get_or_create_client_keypackages(CIPHERSUITE_IN_USE.into(), CredentialType::Basic, 1)
-            .await?
-            .pop()
-            .unwrap();
+
+        let credentials = transaction
+            .find_credentials(
+                CredentialFindFilters::builder()
+                    .credential_type(CredentialType::Basic)
+                    .ciphersuite(CIPHERSUITE_IN_USE.into())
+                    .build(),
+            )
+            .await?;
+        let credential = credentials
+            .last()
+            .expect("at least 1 credential already exists of the requested type and ciphersuite");
+        let kp = transaction.generate_keypackage(credential, None).await?;
 
         log::info!(
             "KP Init Key [took {}ms]: Client {} [{}] - {}",

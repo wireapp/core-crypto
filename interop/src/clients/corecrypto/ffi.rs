@@ -89,14 +89,18 @@ impl EmulatedClient for CoreCryptoFfiClient {
 #[async_trait::async_trait(?Send)]
 impl EmulatedMlsClient for CoreCryptoFfiClient {
     async fn get_keypackage(&self) -> Result<Vec<u8>> {
-        let ciphersuite = CIPHERSUITE_IN_USE.into();
-        let credential_type = CredentialType::Basic;
-        let extractor = TransactionHelper::new(move |context| async move {
-            Ok(context
-                .client_keypackages(ciphersuite, credential_type, 1)
-                .await?
-                .pop()
-                .unwrap())
+        let ciphersuite = Some(CIPHERSUITE_IN_USE.into());
+        let credential_type = Some(CredentialType::Basic);
+
+        let extractor = TransactionHelper::new(async move |context| {
+            let credentials = context
+                .find_credentials(None, None, ciphersuite, credential_type, None)
+                .await?;
+            let credential = credentials
+                .last()
+                .expect("at least 1 credential already exists for this client");
+            let keypackage = context.generate_keypackage(credential, None).await?;
+            Ok(keypackage)
         });
         self.cc.transaction(extractor.clone()).await?;
         let kp = extractor.into_return_value();

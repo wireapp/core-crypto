@@ -5,7 +5,7 @@ use std::{collections::HashMap, net::SocketAddr, sync::LazyLock};
 #[cfg(feature = "proteus")]
 use anyhow::anyhow;
 use anyhow::{Context as _, Result};
-use core_crypto::{KeyPackage, KeyPackageIn};
+use core_crypto::{KeyPackageIn, Keypackage};
 use tls_codec::Deserialize;
 use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator as _};
 
@@ -154,7 +154,8 @@ impl EmulatedMlsClient for CoreCryptoWebClient {
         let kp_raw = self.browser.execute(js, vec![]).await?;
         let kp_raw = serde_json::from_value::<Vec<u8>>(kp_raw)?;
 
-        let kp: KeyPackage = KeyPackageIn::tls_deserialize(&mut kp_raw.as_slice())?.into();
+        let kp = KeyPackageIn::tls_deserialize(&mut kp_raw.as_slice())?;
+        let kp = Keypackage::from(kp);
 
         log::info!(
             "KP Init Key [took {}ms]: Client {} [{}] - {}",
