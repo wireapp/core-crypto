@@ -23,3 +23,4 @@ runs:
           make-rule: bindings-swift
           target-path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
           gh-token: ${{ inputs.gh-token }}
+          uses-rust: true
