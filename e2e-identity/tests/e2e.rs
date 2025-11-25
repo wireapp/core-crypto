@@ -761,14 +761,12 @@ mod dpop_challenge {
                 |mut test, (mut dpop_chall, backend_nonce, handle, team, display_name, expiry)| {
                     Box::pin(async move {
                         // change the url in the DPoP challenge to alter what's in the DPoP token, then restore it at the end
-                        let dpop_challenge_url = dpop_chall.url.clone();
                         dpop_chall.url = "http://unknown.com".parse().unwrap();
 
                         let client_dpop_token = test
                             .create_dpop_token(&dpop_chall, backend_nonce, handle, team, display_name, expiry)
                             .await?;
 
-                        dpop_chall.url = dpop_challenge_url;
                         Ok((test, client_dpop_token))
                     })
                 },
@@ -882,11 +880,10 @@ mod oidc_challenge {
             fetch_id_token: Box::new(|mut test, (mut oidc_chall, keyauth)| {
                 Box::pin(async move {
                     // alter the challenge url to alter the idToken audience, then restore the challenge url
-                    let backup_oidc_challenge_url = oidc_chall.url.clone();
                     oidc_chall.url = "http://unknown.com".parse().unwrap();
 
                     let id_token = test.fetch_id_token(&oidc_chall, keyauth).await?;
-                    oidc_chall.url = backup_oidc_challenge_url;
+
                     Ok((test, id_token))
                 })
             }),
