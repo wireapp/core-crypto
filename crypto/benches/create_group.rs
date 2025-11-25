@@ -1,6 +1,6 @@
 use std::hint::black_box;
 
-use core_crypto::{Credential, CredentialType, MlsConversationConfiguration, MlsCustomConfiguration};
+use core_crypto::{CredentialType, MlsConversationConfiguration, MlsCustomConfiguration};
 use criterion::{
     BatchSize, BenchmarkId, Criterion, async_executor::SmolExecutor as FuturesExecutor, criterion_group, criterion_main,
 };
@@ -53,19 +53,15 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         smol::block_on(async {
-                            let (alice_central, id, _, _, delivery_service) =
+                            let (alice_central, id, _, _, delivery_service, _) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
 
-                            let (bob_central, ..) =
+                            let (bob_central, _, _, bob_credential_ref) =
                                 new_central(ciphersuite, credential.as_ref(), in_memory, true).await;
+                            let bob_credential_ref =
+                                bob_credential_ref.expect("new_central definitely created a credential for bob");
                             let bob_context = bob_central.new_transaction().await.unwrap();
-                            let bob_credential = Credential::basic(
-                                ciphersuite,
-                                bob_context.client_id().await.unwrap(),
-                                bob_central.openmls_crypto(),
-                            )
-                            .unwrap();
-                            let bob_credential_ref = bob_context.add_credential(bob_credential).await.unwrap();
+
                             let bob_kp = bob_context
                                 .generate_keypackage(&bob_credential_ref, None)
                                 .await

@@ -18,7 +18,6 @@ pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
 use identities::Identities;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
-use openmls::prelude::OpenMlsCrypto;
 use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 
 use crate::{
@@ -284,16 +283,6 @@ impl Session {
             .reseed(seed)
             .map_err(MlsError::wrap("reseeding mls backend"))
             .map_err(Into::into)
-    }
-
-    /// Get an implementation of `OpenMlsCrypto` from this instance.
-    ///
-    /// This is most obviously relevant for items such as [`Credential::basic`][crate::Credential::basic]
-    /// which needs an `OpenMlsCrypto` instance but doesn't have direct access to one.
-    ///
-    /// Should not appear in `crypto-ffi`; find other workarounds there.
-    pub fn openmls_crypto(&self) -> impl OpenMlsCrypto {
-        self.crypto_provider.crypto().to_owned()
     }
 
     /// Restore from an external [`HistorySecret`].

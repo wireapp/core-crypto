@@ -6,9 +6,9 @@ use std::{
 use async_lock::RwLock;
 use core_crypto::{
     CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, ConnectionType, ConversationId, CoreCrypto,
-    Credential as CcCredential, CredentialFindFilters, CredentialType, Database, DatabaseKey, HistorySecret,
-    MlsCommitBundle, MlsConversationConfiguration, MlsCustomConfiguration, MlsGroupInfoBundle, MlsTransport,
-    MlsTransportData, MlsTransportResponse, Session,
+    Credential as CcCredential, CredentialFindFilters, CredentialRef, CredentialType, Database, DatabaseKey,
+    HistorySecret, MlsCommitBundle, MlsConversationConfiguration, MlsCustomConfiguration, MlsGroupInfoBundle,
+    MlsTransport, MlsTransportData, MlsTransportResponse, Session,
 };
 use criterion::BenchmarkId;
 use mls_crypto_provider::{MlsCryptoProvider, RustCrypto};
@@ -127,11 +127,17 @@ impl Display for MlsTestCase {
 
 pub async fn setup_mls(
     ciphersuite: Ciphersuite,
-    credential: Option<&CertificateBundle>,
+    certificate_bundle: Option<&CertificateBundle>,
     in_memory: bool,
-    with_basic_credential: bool,
-) -> (CoreCrypto, ConversationId, Arc<dyn MlsTransportTestExt>) {
-    let (central, _, delivery_service) = new_central(ciphersuite, credential, in_memory, with_basic_credential).await;
+    with_credential: bool,
+) -> (
+    CoreCrypto,
+    ConversationId,
+    Arc<dyn MlsTransportTestExt>,
+    Option<CredentialRef>,
+) {
+    let (central, _, delivery_service, credential_ref) =
+        new_central(ciphersuite, certificate_bundle, in_memory, with_credential).await;
     let core_crypto = central;
     let context = core_crypto.new_transaction().await.unwrap();
     let id = conversation_id();
@@ -148,17 +154,20 @@ pub async fn setup_mls(
         .unwrap();
 
     context.finish().await.unwrap();
-    (core_crypto, id, delivery_service)
+    (core_crypto, id, delivery_service, credential_ref)
 }
 
 pub async fn new_central(
     ciphersuite: Ciphersuite,
-    // TODO: always None for the moment. Need to update the benches with some realistic certificates. Tracking issue:
-    // WPB-9589
-    _credential: Option<&CertificateBundle>,
+    certificate_bundle: Option<&CertificateBundle>,
     in_memory: bool,
-    with_basic_credential: bool,
-) -> (CoreCrypto, tempfile::TempDir, Arc<dyn MlsTransportTestExt>) {
+    with_credential: bool,
+) -> (
+    CoreCrypto,
+    tempfile::TempDir,
+    Arc<dyn MlsTransportTestExt>,
+    Option<CredentialRef>,
+) {
     let (path, tmp_file) = tmp_db_file();
     let connection_type = if in_memory {
         ConnectionType::InMemory
@@ -177,14 +186,19 @@ pub async fn new_central(
     let delivery_service = Arc::<CoreCryptoTransportSuccessProvider>::default();
     cc.provide_transport(delivery_service.clone()).await;
 
-    if with_basic_credential {
+    let mut credential_ref = None;
+    if with_credential {
         let ctx = cc.new_transaction().await.unwrap();
-        ctx.add_credential(CcCredential::basic(ciphersuite, client_id, RustCrypto::default()).unwrap())
-            .await
-            .unwrap();
+
+        let credential = match certificate_bundle {
+            Some(certificate_bundle) => CcCredential::x509(ciphersuite, certificate_bundle.to_owned()).unwrap(),
+            None => CcCredential::basic(ciphersuite, client_id, RustCrypto::default()).unwrap(),
+        };
+        credential_ref = Some(ctx.add_credential(credential).await.unwrap());
+
         ctx.finish().await.unwrap();
     }
-    (cc, tmp_file, delivery_service.clone())
+    (cc, tmp_file, delivery_service.clone(), credential_ref)
 }
 
 pub(crate) fn tmp_db_file() -> (String, tempfile::TempDir) {
@@ -248,8 +262,10 @@ pub async fn setup_mls_and_add_clients(
     Vec<ClientId>,
     VerifiableGroupInfo,
     Arc<dyn MlsTransportTestExt>,
+    CredentialRef,
 ) {
-    let (core_crypto, id, delivery_service) = setup_mls(cipher_suite, credential, in_memory, true).await;
+    let (core_crypto, id, delivery_service, credential_ref) =
+        setup_mls(cipher_suite, credential, in_memory, true).await;
     let (client_ids, group_info) = add_clients(
         &mut core_crypto.clone(),
         &id,
@@ -258,7 +274,14 @@ pub async fn setup_mls_and_add_clients(
         delivery_service.clone(),
     )
     .await;
-    (core_crypto, id, client_ids, group_info, delivery_service)
+    (
+        core_crypto,
+        id,
+        client_ids,
+        group_info,
+        delivery_service,
+        credential_ref.expect("always created in setup_mls"),
+    )
 }
 
 fn create_signature_keypair(backend: &MlsCryptoProvider, ciphersuite: MlsCiphersuite) -> SignatureKeyPair {

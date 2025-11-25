@@ -88,7 +88,7 @@ fn decryption_bench_var_msg_size(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         smol::block_on(async {
-                            let (mut alice_central, id, delivery_service) =
+                            let (mut alice_central, id, delivery_service, _) =
                                 setup_mls(ciphersuite, credential.as_ref(), in_memory, true).await;
                             let (mut bob_central, ..) =
                                 new_central(ciphersuite, credential.as_ref(), in_memory, true).await;
