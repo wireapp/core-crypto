@@ -18,7 +18,6 @@ pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
 use identities::Identities;
 use key_package::KEYPACKAGE_DEFAULT_LIFETIME;
-use log::debug;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 

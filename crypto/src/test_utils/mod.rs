@@ -81,7 +81,6 @@ macro_rules! innermost_source_matches {
         outcome
     }};
 }
-pub(crate) use innermost_source_matches;
 
 use crate::{RecursiveError::Test, ephemeral::HistorySecret, test_utils::TestError::ImplementationError};
 
