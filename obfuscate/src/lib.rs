@@ -1,4 +1,4 @@
-use std::{fmt::Formatter, sync::LazyLock};
+use std::{fmt::Formatter, ops::Deref, sync::LazyLock};
 
 use derive_more::From;
 use log::kv::{ToValue, Value};
@@ -48,5 +48,14 @@ impl<'a, T: Obfuscate + ?Sized> core::fmt::Debug for Obfuscated<'a, T> {
 impl<'a, T: Obfuscate> ToValue for Obfuscated<'a, T> {
     fn to_value(&self) -> Value<'_> {
         Value::from_debug(self)
+    }
+}
+
+impl<T> Obfuscate for zeroize::Zeroizing<T>
+where
+    T: Obfuscate + zeroize::Zeroize,
+{
+    fn obfuscate(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.deref().obfuscate(f)
     }
 }
