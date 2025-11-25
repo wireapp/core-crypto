@@ -12,7 +12,17 @@ inputs:
     description: The relative path of the final artifact(s)
     required: true
   gh-token:
+    description: The github token
     required: true
+  uses-rust:
+    description: Whether to run setup-and-cache-rust if no artifact was found
+    required: false
+  rust-target:
+    description: Additional target support to install via setup-and-cache-rust
+    required: false
+  rust-rustflags:
+    description: Set the value of RUSTFLAGS via setup-and-cache-rust
+    required: false
 
 runs:
   using: composite
@@ -93,6 +103,13 @@ runs:
           fi
         done
       shell: bash -euo pipefail {0}
+
+    - name: setup-and-cache-rust
+      if: env.found != 'true' && inputs.uses-rust == 'true'
+      uses: ./.github/actions/setup-and-cache-rust
+      with:
+        target: ${{ inputs.rust-target }}
+        rustflags: ${{ inputs.rust-rustflags }}
 
     - name: Run make ${{ inputs.make-rule }} if needed
       if: env.found != 'true'
