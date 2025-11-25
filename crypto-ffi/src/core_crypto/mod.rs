@@ -7,6 +7,8 @@ pub(crate) mod history_observer;
 pub(crate) mod logger;
 pub(crate) mod mls_transport;
 mod proteus;
+
+#[cfg(feature = "wasm")]
 mod randomness;
 
 use core_crypto::Session;
