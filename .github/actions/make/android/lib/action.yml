@@ -5,6 +5,7 @@ inputs:
     description: The make task
     required: true
   gh-token:
+    description: The github token
     required: true
 
 runs:
@@ -38,3 +39,5 @@ runs:
           target/${{ env.ANDROID_TARGET }}/release/libcore_crypto_ffi.a
           target/${{ env.ANDROID_TARGET }}/release/libcore_crypto_ffi.so
         gh-token: ${{ inputs.gh-token }}
+        uses-rust: true
+        rust-target: ${{ env.ANDROID_TARGET }}
