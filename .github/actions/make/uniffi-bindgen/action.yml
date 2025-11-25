@@ -27,6 +27,8 @@ runs:
         make-rule: uniffi-bindgen
         target-path: target/release/uniffi-bindgen
         gh-token: ${{ inputs.gh-token }}
+        uses-rust: true
+        rust-target: x86_64-unknown-linux-gnu
 
     - run: chmod +x target/release/uniffi-bindgen
       shell: bash -euo pipefail {0}
