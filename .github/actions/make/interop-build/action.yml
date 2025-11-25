@@ -14,3 +14,4 @@ runs:
         # We're not building the interop binary in release mode, so it's in `target/debug`.
         target-path: target/debug/interop
         gh-token: ${{ inputs.gh-token }}
+        uses-rust: true
