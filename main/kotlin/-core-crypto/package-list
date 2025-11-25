@@ -328,10 +328,8 @@ $dokka.location:com.wire.crypto/CoreCryptoFfi/proteusFingerprintLocal/#kotlin.St
 $dokka.location:com.wire.crypto/CoreCryptoFfi/proteusFingerprintRemote/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/proteus-fingerprint-remote.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/proteusSessionExists/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/proteus-session-exists.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/provideTransport/#com.wire.crypto.MlsTransport/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/provide-transport.html
-$dokka.location:com.wire.crypto/CoreCryptoFfi/randomBytes/#kotlin.UInt/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/random-bytes.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/registerEpochObserver/#com.wire.crypto.EpochObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/register-epoch-observer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/registerHistoryObserver/#com.wire.crypto.HistoryObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/register-history-observer.html
-$dokka.location:com.wire.crypto/CoreCryptoFfi/reseedRng/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/reseed-rng.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/transaction/#com.wire.crypto.CoreCryptoCommand/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/transaction.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/-companion/index.html
@@ -353,10 +351,8 @@ $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/proteusFingerprintLocal/#
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/proteusFingerprintRemote/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/proteus-fingerprint-remote.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/proteusSessionExists/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/proteus-session-exists.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/provideTransport/#com.wire.crypto.MlsTransport/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/provide-transport.html
-$dokka.location:com.wire.crypto/CoreCryptoFfiInterface/randomBytes/#kotlin.UInt/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/random-bytes.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/registerEpochObserver/#com.wire.crypto.EpochObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/register-epoch-observer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/registerHistoryObserver/#com.wire.crypto.HistoryObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/register-history-observer.html
-$dokka.location:com.wire.crypto/CoreCryptoFfiInterface/reseedRng/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/reseed-rng.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/transaction/#com.wire.crypto.CoreCryptoCommand/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/transaction.html
 $dokka.location:com.wire.crypto/CoreCryptoLogLevel.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-log-level/-companion/index.html
 $dokka.location:com.wire.crypto/CoreCryptoLogLevel.DEBUG///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto/-core-crypto-log-level/-d-e-b-u-g/index.html
