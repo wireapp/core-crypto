@@ -53,11 +53,10 @@ describe("transaction context", () => {
             });
 
             try {
-                await context!.clientKeypackages(
-                    window.defaultCipherSuite,
-                    window.ccModule.CredentialType.Basic,
-                    1
-                );
+                await context!.findCredentials({
+                    ciphersuite: window.defaultCipherSuite,
+                    credentialType: window.ccModule.CredentialType.Basic,
+                });
             } catch (err) {
                 const e = err as { context?: { context?: { msg?: string } } };
                 return {

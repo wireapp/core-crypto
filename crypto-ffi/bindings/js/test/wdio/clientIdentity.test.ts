@@ -26,21 +26,26 @@ describe("client identity", () => {
         expect(result).toBe(32);
     });
 
-    it("requesting client key packages should work", async () => {
+    it("requesting client key package should work", async () => {
         const alice = crypto.randomUUID();
         await ccInit(alice);
-        const result = await browser.execute(async (clientName) => {
+        const threwError = await browser.execute(async (clientName) => {
             const cc = window.ensureCcDefined(clientName);
-            return (
-                await cc.transaction(async (ctx) => {
-                    return await ctx.clientKeypackages(
-                        window.defaultCipherSuite,
-                        window.ccModule.CredentialType.Basic,
-                        20 // Count of requested key packages
-                    );
-                })
-            ).length;
+            let threwError = false;
+            try {
+                const keypackage = await cc.transaction(async (ctx) => {
+                    const [credentialRef] = await ctx.findCredentials({
+                        ciphersuite: window.defaultCipherSuite,
+                        credentialType: window.ccModule.CredentialType.Basic,
+                    });
+                    return await ctx.generateKeypackage(credentialRef!);
+                });
+                keypackage.serialize();
+            } catch {
+                threwError = true;
+            }
+            return threwError;
         }, alice);
-        expect(result).toBe(20);
+        expect(threwError).toBe(false);
     });
 });

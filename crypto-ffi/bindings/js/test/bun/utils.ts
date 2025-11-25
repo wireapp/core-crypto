@@ -153,11 +153,15 @@ export async function invite(
     cc2: CoreCrypto,
     conversationId: ConversationId
 ): Promise<GroupInfoBundle> {
-    const [kp] = await cc2.transaction((ctx) =>
-        ctx.clientKeypackages(DEFAULT_CIPHERSUITE, CredentialType.Basic, 1)
-    );
+    const kp = await cc2.transaction(async (ctx) => {
+        const [credentialRef] = await ctx.findCredentials({
+            ciphersuite: DEFAULT_CIPHERSUITE,
+            credentialType: CredentialType.Basic,
+        });
+        return await ctx.generateKeypackage(credentialRef!);
+    });
     await cc1.transaction((ctx) =>
-        ctx.addClientsToConversation(conversationId, [kp!])
+        ctx.addClientsToConversation(conversationId, [kp.serialize()])
     );
     const { groupInfo, welcome } =
         await DELIVERY_SERVICE.getLatestCommitBundle();

@@ -296,19 +296,19 @@ export async function invite(
             const cc1 = window.ensureCcDefined(client1);
             const cc2 = window.ensureCcDefined(client2);
 
-            const [kp] = await cc2.transaction((ctx) =>
-                ctx.clientKeypackages(
-                    window.defaultCipherSuite,
-                    window.ccModule.CredentialType.Basic,
-                    1
-                )
-            );
+            const kp = await cc2.transaction(async (ctx) => {
+                const [credentialRef] = await ctx.findCredentials({
+                    ciphersuite: window.defaultCipherSuite,
+                    credentialType: window.ccModule.CredentialType.Basic,
+                });
+                return await ctx.generateKeypackage(credentialRef!);
+            });
 
             const cid = new window.ccModule.ConversationId(
                 new TextEncoder().encode(conversationId).buffer
             );
             await cc1.transaction((ctx) =>
-                ctx.addClientsToConversation(cid, [kp!])
+                ctx.addClientsToConversation(cid, [kp.serialize()])
             );
             const commitBundle =
                 await window.deliveryService.getLatestCommitBundle();
