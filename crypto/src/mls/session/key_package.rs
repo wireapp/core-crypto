@@ -93,7 +93,7 @@ impl Session {
 
         let keypackages = stored_keypackages
             .iter()
-            .map(|stored_keypackage| from_stored(stored_keypackage))
+            .map(from_stored)
             // if any ref from loading all fails to load now, skip it
             // strictly we could panic, but this is safer--maybe someone removed it concurrently
             .filter_map(|kp| kp.ok())

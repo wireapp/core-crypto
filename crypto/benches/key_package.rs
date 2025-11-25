@@ -30,9 +30,9 @@ fn generate_key_package_bench(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         let credential_ref = context.add_credential(credential).await.unwrap();
 
-                        black_box(for _ in 0..*i {
-                            let _kp = context.generate_keypackage(&credential_ref, None).await.unwrap();
-                        });
+                        for _ in 0..*i {
+                            let _kp = black_box(context.generate_keypackage(&credential_ref, None).await.unwrap());
+                        }
                         context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,

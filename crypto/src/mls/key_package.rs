@@ -53,7 +53,7 @@ impl KeypackageExt for Keypackage {
     }
 
     fn ciphersuite(&self) -> Ciphersuite {
-        <Keypackage>::ciphersuite(&self).into()
+        <Keypackage>::ciphersuite(self).into()
     }
 
     fn credential_type(&self) -> CredentialType {

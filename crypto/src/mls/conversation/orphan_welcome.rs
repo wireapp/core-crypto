@@ -4,9 +4,6 @@
 
 #[cfg(test)]
 mod tests {
-
-    use openmls::prelude::KeyPackage;
-
     use super::super::error::Error;
     use crate::{mls::key_package::KeypackageExt as _, test_utils::*};
 
@@ -17,7 +14,7 @@ mod tests {
             let conversation = case.create_conversation([&alice]).await;
 
                 let bob_kp = bob.new_keypackage(&case).await;
-                let bob_kp_ref = KeyPackage::from(bob_kp.clone())
+                let bob_kp_ref = bob_kp.clone()
                     .make_ref()
                     .unwrap();
 

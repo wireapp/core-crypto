@@ -18,7 +18,7 @@ impl<'a> TestConversation<'a> {
         let key_package = new_member.new_keypackage(self.case).await;
         let proposal = proposer
             .transaction
-            .new_add_proposal(self.id(), key_package.into())
+            .new_add_proposal(self.id(), key_package)
             .await
             .unwrap()
             .proposal;
