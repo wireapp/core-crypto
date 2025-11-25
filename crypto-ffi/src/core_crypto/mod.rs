@@ -55,7 +55,7 @@ impl CoreCryptoFfi {
     }
 }
 
-#[cfg(feature = "idb")]
+#[cfg(feature = "wasm")]
 #[uniffi::export]
 impl CoreCryptoFfi {
     /// See [Session::close]
