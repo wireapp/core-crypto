@@ -21,12 +21,6 @@ use crate::{
 /// In uniffi, a vector is the natural way to communicate a byte slice
 pub(crate) type EntropySeed = Vec<u8>;
 
-#[expect(dead_code)]
-// Will be needed when implementing WPB-19570
-pub(crate) fn entropy_seed_map(e: EntropySeed) -> Vec<u8> {
-    e
-}
-
 /// CoreCrypto wraps around MLS and Proteus implementations and provides a transactional interface for each.
 #[derive(Debug, uniffi::Object)]
 pub struct CoreCryptoFfi {
