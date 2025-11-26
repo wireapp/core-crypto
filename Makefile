@@ -609,7 +609,7 @@ clean: ts-clean ## Run cargo clean and the ts-clean target, remove all stamps
 # Rust
 
 $(STAMPS)/rust-fmt: $(RUST_SOURCES)
-	cargo fmt
+	cargo +nightly fmt --all
 	$(TOUCH_STAMP)
 
 .PHONY: rust-fmt
