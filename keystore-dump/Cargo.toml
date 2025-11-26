@@ -4,7 +4,6 @@ description = "Dumps a keystore to JSON on stdout"
 version = "9.0.1"
 edition = "2024"
 license = "GPL-3.0-only"
-rust-version = "1.91.1"
 
 [lints]
 workspace = true
