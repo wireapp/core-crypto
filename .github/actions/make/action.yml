@@ -23,6 +23,7 @@ inputs:
   rust-rustflags:
     description: Set the value of RUSTFLAGS via setup-and-cache-rust
     required: false
+    default: -D warnings
 
 runs:
   using: composite
