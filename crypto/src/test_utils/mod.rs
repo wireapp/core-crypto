@@ -207,7 +207,7 @@ impl SessionContext {
                     certificate_chain: vec![cert_der],
                     private_key: crate::mls::credential::x509::CertificatePrivateKey {
                         signature_scheme,
-                        value: actor_cert.pki_keypair.signing_key_bytes().into(),
+                        value: actor_cert.pki_keypair.signing_key_bytes(),
                     },
                 }
             }

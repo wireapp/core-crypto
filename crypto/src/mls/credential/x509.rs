@@ -10,17 +10,19 @@ use openmls_x509_credential::CertificateKeyPair;
 use wire_e2e_identity::prelude::{HashAlgorithm, WireIdentityReader};
 #[cfg(test)]
 use x509_cert::der::Encode;
-use zeroize::Zeroizing;
+use zeroize::Zeroize;
 
 use super::{Error, Result};
 #[cfg(test)]
 use crate::test_utils::x509::X509Certificate;
 use crate::{ClientId, Credential, CredentialType, MlsError, RecursiveError, e2e_identity::id::WireQualifiedClientId};
 
-#[derive(core_crypto_macros::Debug, Clone)]
+#[derive(core_crypto_macros::Debug, Clone, Zeroize)]
+#[zeroize(drop)]
 pub struct CertificatePrivateKey {
     #[sensitive]
-    pub(crate) value: Zeroizing<Vec<u8>>,
+    pub(crate) value: Vec<u8>,
+    #[zeroize(skip)]
     pub(crate) signature_scheme: SignatureScheme,
 }
 
@@ -208,7 +210,7 @@ impl CertificateBundle {
         Self {
             certificate_chain: vec![cert.certificate.to_der().unwrap(), issuer.certificate.to_der().unwrap()],
             private_key: CertificatePrivateKey {
-                value: cert.pki_keypair.signing_key_bytes().into(),
+                value: cert.pki_keypair.signing_key_bytes(),
                 signature_scheme: cert.signature_scheme,
             },
         }
