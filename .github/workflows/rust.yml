@@ -23,21 +23,28 @@ jobs:
       fail-fast: false
       matrix:
         command:
-          - cargo fmt --all -- --check
           - cargo check --locked --all-targets
           - cargo check --locked --target wasm32-unknown-unknown
           - cargo clippy --locked --all-targets
           - cargo clippy --locked --target wasm32-unknown-unknown
     steps:
       - uses: actions/checkout@v6
-      - run: echo "NIGHTLY_RUST_VERSION=$(grep '^channel =' rust-toolchain.toml | grep -o '".*"' | tr -d '"')" >> $GITHUB_ENV
       - uses: ./.github/actions/setup-and-cache-rust
         with:
-          toolchain: ${{ env.NIGHTLY_RUST_VERSION }}
-          components: rustfmt, clippy
+          components: clippy
           target: wasm32-unknown-unknown
           rustflags: ${{ contains(matrix.command, 'wasm32-unknown-unknown') && '--cfg getrandom_backend="wasm_js" -D warnings' || '-D warnings' }}
       - run: ${{ matrix.command }}
+
+  fmt-check:
+     runs-on: ubuntu-latest
+     steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-and-cache-rust
+        with:
+          components: rustfmt
+          toolchain: nightly
+      - run: cargo +nightly fmt --all -- --check
 
   test:
     runs-on: ubuntu-latest
