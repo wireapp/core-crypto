@@ -4,6 +4,7 @@ mod error;
 pub(crate) mod id;
 pub(crate) mod identity;
 mod pki_env;
+pub mod pki_env_hooks;
 pub(crate) use crypto::E2eiSignatureKeypair;
 pub use pki_env::NewCrlDistributionPoints;
 pub(crate) use pki_env::restore_pki_env;
