@@ -77,7 +77,7 @@ pub async fn start_server(config: &IdpServerConfig, port: u16) -> IdpServer {
     let keypair = jwt_simple::prelude::RS256KeyPair::generate(2048).unwrap();
     let keypair_pem = keypair.to_pem().unwrap().as_bytes().to_owned();
 
-    let image = GenericImage::new("authelia/authelia", "refactor-claims-value-expression")
+    let image = GenericImage::new("authelia/authelia", "master")
         .with_container_name("authelia.local")
         .with_network(NETWORK)
         .with_hostname("authelia.local")
