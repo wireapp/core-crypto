@@ -6,7 +6,6 @@ edition = "2024"
 repository = "https://github.com/wireapp/rusty-jwt-tools"
 license = "MPL-2.0"
 publish = false
-rust-version = "1.90"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
