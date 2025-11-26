@@ -220,7 +220,7 @@ internal class E2EITest : HasMockDeliveryService() {
 
             bob.transaction { ctx -> ctx.createConversation(id, CREDENTIAL_TYPE_DEFAULT, CONVERSATION_CONFIGURATION_DEFAULT) }
 
-            val aliceKp = alice.transaction { ctx -> ctx.clientKeypackages(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT, 1U).first() }
+            val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1u).first() }
             bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
             val welcome = HasMockDeliveryService.mockDeliveryService.getLatestWelcome()
             val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome, CUSTOM_CONFIGURATION_DEFAULT).id }
