@@ -497,6 +497,7 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertTrue(resultAfter)
     }
 
+    // swiftlint:disable:next function_body_length
     func testUpdateKeyingMaterialShouldProcessTheCommitMessage() async throws {
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
@@ -520,11 +521,18 @@ final class WireCoreCryptoTests: XCTestCase {
             )
         }
         let aliceKp = try await alice.transaction {
-            try await $0.clientKeypackages(
+            let credential = try await $0.findCredentials(
+                clientId: nil,
+                publicKey: nil,
                 ciphersuite: ciphersuite,
                 credentialType: .basic,
-                amountRequested: 1
+                earliestValidity: nil
             ).first!
+
+            return try await $0.generateKeypackage(
+                credentialRef: credential,
+                lifetime: nil
+            )
         }
         try await bob.transaction {
             _ = try await $0.addClientsToConversation(
@@ -576,11 +584,18 @@ final class WireCoreCryptoTests: XCTestCase {
         }
 
         let aliceKp = try await alice.transaction {
-            try await $0.clientKeypackages(
+            let credential = try await $0.findCredentials(
+                clientId: nil,
+                publicKey: nil,
                 ciphersuite: ciphersuite,
                 credentialType: .basic,
-                amountRequested: 1
+                earliestValidity: nil
             ).first!
+
+            return try await $0.generateKeypackage(
+                credentialRef: credential,
+                lifetime: nil
+            )
         }
         try await bob.transaction {
             _ = try await $0.addClientsToConversation(

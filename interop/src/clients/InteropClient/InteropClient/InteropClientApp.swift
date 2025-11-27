@@ -125,25 +125,27 @@ struct InteropClientApp: App {
             guard let coreCrypto else { throw InteropError.notInitialised }
 
             let keyPackage = try await coreCrypto.transaction {
-                try await $0.clientKeypackages(
+                let credential = try await $0.findCredentials(
+                    clientId: nil,
+                    publicKey: nil,
                     ciphersuite: ciphersuiteFromU16(discriminant: ciphersuite),
                     credentialType: .basic,
-                    amountRequested: 1)
+                    earliestValidity: nil
+                ).first!
+
+                return try await $0.generateKeypackage(
+                    credentialRef: credential,
+                    lifetime: nil
+                )
             }
 
-            if let encodedKeyPackage = keyPackage.first.map({
-                $0.copyBytes().base64EncodedString()
-            }) {
-                return encodedKeyPackage
-            } else {
-                throw InteropError.encodingError
-            }
+            return try keyPackage.serialize().base64EncodedString()
 
         case .addClient(let conversationId, let ciphersuite, let keyPackage):
             guard let coreCrypto else { throw InteropError.notInitialised }
             let conversationId = ConversationId(bytes: conversationId)
             let ciphersuite = try ciphersuiteFromU16(discriminant: ciphersuite)
-            let keyPackage = KeyPackage(bytes: keyPackage)
+            let keyPackage = try Keypackage(bytes: keyPackage)
 
             try await coreCrypto.transaction { context in
                 if try await context.conversationExists(
