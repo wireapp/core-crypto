@@ -33,6 +33,11 @@ async fn create_mls_clients<'a>(
     web_server: &'a std::net::SocketAddr,
 ) -> Vec<Box<dyn clients::EmulatedMlsClient>> {
     vec![
+        Box::new(
+            clients::corecrypto::android::CoreCryptoAndroidClient::new()
+                .await
+                .unwrap(),
+        ),
         #[cfg(target_os = "ios")]
         Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
         Box::new(
@@ -55,6 +60,11 @@ async fn create_proteus_clients<'a>(
     web_server: &'a std::net::SocketAddr,
 ) -> Vec<Box<dyn clients::EmulatedProteusClient>> {
     vec![
+        Box::new(
+            clients::corecrypto::android::CoreCryptoAndroidClient::new()
+                .await
+                .unwrap(),
+        ),
         #[cfg(target_os = "ios")]
         Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
         Box::new(
