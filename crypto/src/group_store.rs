@@ -236,7 +236,7 @@ impl<K, V> schnellru::Limiter<K, V> for HybridMemoryLimiter {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::dummy_entity::{DummyStoreValue, DummyValue};
+    use core_crypto_keystore::{DummyStoreValue, DummyValue};
 
     use super::*;
 

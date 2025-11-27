@@ -1,6 +1,10 @@
+#[cfg(feature = "dummy-entity")]
+mod dummy_entity;
 pub(crate) mod general;
 pub(crate) mod mls;
 
+#[cfg(feature = "dummy-entity")]
+pub use self::dummy_entity::*;
 pub use self::{general::*, mls::*};
 
 cfg_if::cfg_if! {
