@@ -77,6 +77,16 @@ pub async fn start_server(config: &IdpServerConfig, port: u16) -> IdpServer {
     let keypair = jwt_simple::prelude::RS256KeyPair::generate(2048).unwrap();
     let keypair_pem = keypair.to_pem().unwrap().as_bytes().to_owned();
 
+    #[cfg(unix)]
+    {
+        // Set permissions so that the container can be used on macOS
+        use std::os::unix::fs::PermissionsExt;
+        let permissions = std::fs::Permissions::from_mode(0o777);
+        std::fs::set_permissions(host_volume.join("config"), permissions).unwrap();
+    }
+
+    std::fs::write(host_volume.join("config/private.pem"), &keypair_pem).unwrap();
+
     let image = GenericImage::new("authelia/authelia", "master")
         .with_container_name("authelia.local")
         .with_network(NETWORK)
@@ -87,7 +97,6 @@ pub async fn start_server(config: &IdpServerConfig, port: u16) -> IdpServer {
             "/config",
         ))
         .with_log_consumer(LoggingConsumer::new())
-        .with_copy_to("/config/private.pem", keypair_pem)
         .with_reuse(ReuseDirective::Always)
         .with_cmd(vec![
             "authelia",
