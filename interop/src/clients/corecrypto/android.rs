@@ -1,16 +1,16 @@
+#[cfg(feature = "proteus")]
+use std::cell::Cell;
 use std::{
-    cell::{Cell, RefCell},
-    fs,
-    io::{BufRead, BufReader, Read},
-    process::{Child, ChildStdout, Command, Output, Stdio},
+    cell::RefCell,
+    io::{BufRead as _, BufReader, Read as _},
+    process::{Child, ChildStdout, Command, Stdio},
     time::Duration,
 };
 
 use anyhow::Result;
 use base64::{Engine as _, engine::general_purpose};
-use core_crypto::{KeyPackage, KeyPackageIn};
-use thiserror::Error;
-use tls_codec::Deserialize;
+use core_crypto::{KeyPackageIn, Keypackage};
+use tls_codec::Deserialize as _;
 
 use crate::{
     CIPHERSUITE_IN_USE,
@@ -25,6 +25,7 @@ struct SimulatorDriver {
 }
 
 #[derive(Debug, serde::Deserialize)]
+#[serde(tag = "type")]
 enum InteropResult {
     #[serde(rename = "success")]
     Success { value: String },
@@ -32,7 +33,7 @@ enum InteropResult {
     Failure { message: String },
 }
 
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 #[error("simulator driver error: {msg}")]
 struct SimulatorDriverError {
     msg: String,
@@ -40,7 +41,7 @@ struct SimulatorDriverError {
 
 impl SimulatorDriver {
     fn new(device: String, application: String) -> Self {
-        let application = Self::launch_application(&device, &application, true).expect("Failed ot launch application");
+        let application = Self::launch_application(&device, &application).expect("Failed to launch application");
 
         Self {
             device,
@@ -49,25 +50,51 @@ impl SimulatorDriver {
         }
     }
 
-    fn boot_device(device: &str) -> std::io::Result<Output> {
-        Command::new("xcrun").args(["simctl", "boot", device]).output()
-    }
-
-    fn launch_application(
-        device: &str,
-        application: &str,
-        boot_device: bool,
-    ) -> Result<(Child, BufReader<ChildStdout>)> {
+    fn launch_application(device: &str, application: &str) -> Result<(Child, BufReader<ChildStdout>)> {
         log::info!("launching application: {} on {}", application, device);
 
-        let mut process = Command::new("xcrun")
+        let activity = format!("{}/.MainActivity", application);
+
+        log::info!("killing any existing activity of {}", application);
+        // Kill any existing activity to be in a clean state
+        Command::new("adb")
+            .args(["-s", device, "shell", "am", "force-stop", application])
+            .output()
+            .expect("Failed to launch application");
+
+        log::info!("starting {}", application);
+        // Start the interop application
+        Command::new("adb")
+            .args(["-s", device, "shell", "am", "start", "-W", "-n", activity.as_str()])
+            .output()
+            .expect("Failed to launch application");
+
+        // Retrieve the current process id of our application
+        let pidof = Command::new("adb")
+            .args(["-s", device, "shell", "pidof", "-s", application])
+            .output()
+            .expect("Failed to launch application");
+
+        let pid = String::from_utf8(pidof.stdout)
+            .expect("pidof output is not valid utf8")
+            .trim()
+            .to_string();
+        log::info!("retrieved {} pid", pid);
+
+        // Start monitoring the system output of our application
+        //
+        // without formatting (raw)
+        // only include system out and silence all other logs (System.out:I *:S)
+        let mut process = Command::new("adb")
             .args([
-                "simctl",
-                "launch",
-                "--console-pty",
-                "--terminate-running-process",
+                "-s",
                 device,
-                application,
+                "logcat",
+                "--pid",
+                pid.as_str(),
+                "-v",
+                "raw",
+                "System.out:I *:S",
             ])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -81,17 +108,11 @@ impl SimulatorDriver {
                 .expect("Expected stdout to be available on child process"),
         );
 
-        // Wait for child process to launch or fail
+        // Wait for the child process to launch or fail
         std::thread::sleep(Duration::from_secs(3));
         match process.try_wait() {
             Ok(None) => {}
             Ok(Some(exit_status)) => {
-                if boot_device && exit_status.code() == Some(149) {
-                    log::info!("device is shutdown, booting...");
-                    Self::boot_device(device)?;
-                    return Self::launch_application(device, application, false);
-                }
-
                 let mut error_message = String::new();
                 process
                     .stderr
@@ -102,6 +123,8 @@ impl SimulatorDriver {
                 panic!("Failed to launch application: {}", error)
             }
         }
+
+        log::info!("waiting for ready signal on system.out");
 
         // Waiting for confirmation that the application has launched.
         let mut line = String::new();
@@ -117,15 +140,22 @@ impl SimulatorDriver {
     }
 
     async fn execute(&self, action: String) -> Result<String> {
-        log::info!("interop://{}", action);
+        let args = [
+            "-s",
+            self.device.as_str(),
+            "shell",
+            "am",
+            "start",
+            "-W",
+            "-a",
+            "android.intent.action.RUN",
+            action.as_str(),
+        ];
 
-        Command::new("xcrun")
-            .args([
-                "simctl",
-                "openurl",
-                &self.device,
-                format!("interop://{}", action).as_str(),
-            ])
+        log::info!("adb {}", args.join(" "));
+
+        Command::new("adb")
+            .args(args)
             .output()
             .expect("Failed to execute action");
 
@@ -152,27 +182,34 @@ impl Drop for SimulatorDriver {
 }
 
 #[derive(Debug)]
-pub(crate) struct CoreCryptoIosClient {
+pub(crate) struct CoreCryptoAndroidClient {
     driver: SimulatorDriver,
     client_id: Vec<u8>,
     #[cfg(feature = "proteus")]
     prekey_last_id: Cell<u16>,
 }
 
-impl CoreCryptoIosClient {
+impl CoreCryptoAndroidClient {
     pub(crate) async fn new() -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
         let client_id_str = client_id.as_hyphenated().to_string();
         let client_id_base64 = general_purpose::STANDARD.encode(client_id_str.as_str());
         let ciphersuite = CIPHERSUITE_IN_USE as u16;
-        let device = std::env::var("INTEROP_SIMULATOR_DEVICE").unwrap_or("booted".into());
 
-        let driver = SimulatorDriver::new(device, "com.wire.InteropClient".into());
-        log::info!("initialising core crypto with ciphersuite {}", ciphersuite);
+        let output = Command::new("adb")
+            .args(["get-serialno"])
+            .output()
+            .expect("Failed to get connected android device");
+
+        let device = String::from_utf8(output.stdout)
+            .expect("output is not valid utf8")
+            .trim()
+            .to_string();
+        let driver = SimulatorDriver::new(device, "com.wire.androidinterop".into());
+        log::info!("initialising core crypto with ciphersuite {ciphersuite}");
         driver
             .execute(format!(
-                "init-mls?client={}&ciphersuite={}",
-                client_id_base64, ciphersuite
+                "--es action init-mls --es client_id {client_id_base64} --ei ciphersuite {ciphersuite}"
             ))
             .await?;
 
@@ -186,13 +223,13 @@ impl CoreCryptoIosClient {
 }
 
 #[async_trait::async_trait(?Send)]
-impl EmulatedClient for CoreCryptoIosClient {
+impl EmulatedClient for CoreCryptoAndroidClient {
     fn client_name(&self) -> &str {
-        "CoreCrypto::ios"
+        "CoreCrypto::android"
     }
 
     fn client_type(&self) -> EmulatedClientType {
-        EmulatedClientType::AppleiOS
+        EmulatedClientType::Android
     }
 
     fn client_id(&self) -> &[u8] {
@@ -209,16 +246,16 @@ impl EmulatedClient for CoreCryptoIosClient {
 }
 
 #[async_trait::async_trait(?Send)]
-impl EmulatedMlsClient for CoreCryptoIosClient {
+impl EmulatedMlsClient for CoreCryptoAndroidClient {
     async fn get_keypackage(&self) -> Result<Vec<u8>> {
         let ciphersuite = CIPHERSUITE_IN_USE as u16;
         let start = std::time::Instant::now();
         let kp_base64 = self
             .driver
-            .execute(format!("get-key-package?ciphersuite={}", ciphersuite))
+            .execute(format!("--es action get-key-package --ei ciphersuite {ciphersuite}"))
             .await?;
         let kp_raw = general_purpose::STANDARD.decode(kp_base64)?;
-        let kp: KeyPackage = KeyPackageIn::tls_deserialize(&mut kp_raw.as_slice())?.into();
+        let kp: Keypackage = KeyPackageIn::tls_deserialize(&mut kp_raw.as_slice())?.into();
 
         log::info!(
             "KP Init Key [took {}ms]: Client {} [{}] - {}",
@@ -235,21 +272,19 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
         let cid_base64 = general_purpose::STANDARD.encode(conversation_id);
         let client_id_base64 = general_purpose::STANDARD.encode(client_id);
         self.driver
-            .execute(format!("remove-client?cid={}&client={}", cid_base64, client_id_base64))
+            .execute(format!(
+                "--es action remove-client --es cid {cid_base64} --es client {client_id_base64}"
+            ))
             .await?;
 
         Ok(())
     }
 
     async fn process_welcome(&self, welcome: &[u8]) -> Result<Vec<u8>> {
-        let welcome_path = std::env::temp_dir().join(format!("welcome-{}", uuid::Uuid::new_v4().as_hyphenated()));
-        fs::write(&welcome_path, welcome)?;
+        let welcome_base64 = general_purpose::STANDARD.encode(welcome);
         let conversation_id_base64 = self
             .driver
-            .execute(format!(
-                "process-welcome?welcome_path={}",
-                welcome_path.to_str().unwrap()
-            ))
+            .execute(format!("--es action process-welcome --es welcome {welcome_base64}"))
             .await?;
         let conversation_id = general_purpose::STANDARD.decode(conversation_id_base64)?;
 
@@ -261,7 +296,9 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
         let message_base64 = general_purpose::STANDARD.encode(message);
         let encrypted_message_base64 = self
             .driver
-            .execute(format!("encrypt-message?cid={}&message={}", cid_base64, message_base64))
+            .execute(format!(
+                "--es action encrypt-message --es cid {cid_base64} --es message {message_base64}"
+            ))
             .await?;
         let encrypted_message = general_purpose::STANDARD.decode(encrypted_message_base64)?;
 
@@ -273,7 +310,9 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
         let message_base64 = general_purpose::STANDARD.encode(message);
         let result = self
             .driver
-            .execute(format!("decrypt-message?cid={}&message={}", cid_base64, message_base64))
+            .execute(format!(
+                "--es action decrypt-message --es cid {cid_base64} --es message {message_base64}"
+            ))
             .await?;
 
         if result == "decrypted protocol message" {
@@ -287,9 +326,9 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
 
 #[cfg(feature = "proteus")]
 #[async_trait::async_trait(?Send)]
-impl crate::clients::EmulatedProteusClient for CoreCryptoIosClient {
+impl crate::clients::EmulatedProteusClient for CoreCryptoAndroidClient {
     async fn init(&mut self) -> Result<()> {
-        self.driver.execute("init-proteus".into()).await?;
+        self.driver.execute("--es action init-proteus".into()).await?;
         Ok(())
     }
 
@@ -297,7 +336,10 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoIosClient {
         let prekey_last_id = self.prekey_last_id.get() + 1;
         self.prekey_last_id.replace(prekey_last_id);
 
-        let prekey_base64 = self.driver.execute(format!("get-prekey?id={}", prekey_last_id)).await?;
+        let prekey_base64 = self
+            .driver
+            .execute(format!("--es action get-prekey --es id {prekey_last_id}"))
+            .await?;
         let prekey = general_purpose::STANDARD.decode(prekey_base64)?;
 
         Ok(prekey)
@@ -307,8 +349,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoIosClient {
         let prekey_base64 = general_purpose::STANDARD.encode(prekey);
         self.driver
             .execute(format!(
-                "session-from-prekey?session_id={}&prekey={}",
-                session_id, prekey_base64
+                "--es action session-from-prekey --es session_id {session_id} --es prekey {prekey_base64}"
             ))
             .await?;
 
@@ -320,8 +361,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoIosClient {
         let decrypted_message_base64 = self
             .driver
             .execute(format!(
-                "session-from-message?session_id={}&message={}",
-                session_id, message_base64
+                "--es action session-from-message --es session_id {session_id} --es message {message_base64}"
             ))
             .await?;
         let decrypted_message = general_purpose::STANDARD.decode(decrypted_message_base64)?;
@@ -333,8 +373,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoIosClient {
         let encrypted_message_base64 = self
             .driver
             .execute(format!(
-                "encrypt-proteus?session_id={}&message={}",
-                session_id, plaintext_base64
+                "--es action encrypt-proteus --es session_id {session_id} --es message {plaintext_base64}"
             ))
             .await?;
         let encrypted_message = general_purpose::STANDARD.decode(encrypted_message_base64)?;
@@ -347,8 +386,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoIosClient {
         let decrypted_message_base64 = self
             .driver
             .execute(format!(
-                "decrypt-proteus?session_id={}&message={}",
-                session_id, ciphertext_base64
+                "--es action decrypt-proteus --es session_id {session_id} --es message {ciphertext_base64}"
             ))
             .await?;
         let decrypted_message = general_purpose::STANDARD.decode(decrypted_message_base64)?;
@@ -357,7 +395,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoIosClient {
     }
 
     async fn fingerprint(&self) -> Result<String> {
-        let fingerprint = self.driver.execute("get-fingerprint".into()).await?;
+        let fingerprint = self.driver.execute("--es action get-fingerprint".into()).await?;
 
         Ok(fingerprint)
     }
