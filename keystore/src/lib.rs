@@ -1,26 +1,23 @@
 #![doc = include_str!("../README.md")]
 #![doc = include_str!("../../docs/KEYSTORE_IMPLEMENTATION.md")]
 
-mod error;
-pub use error::*;
-
 pub mod connection;
-pub use connection::{ConnectionType, Database, DatabaseKey};
 pub mod entities;
+mod error;
 pub(crate) mod migrations;
+pub(crate) mod mls;
+#[cfg(feature = "proteus-keystore")]
+pub(crate) mod proteus;
+mod traits;
 pub mod transaction;
 
-pub(crate) mod mls;
-pub use self::mls::{CryptoKeystoreMls, deser, ser};
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "proteus-keystore")] {
-        pub(crate) mod proteus;
-        pub use self::proteus::CryptoKeystoreProteus;
-    }
-}
+pub use self::connection::{Database, DatabaseKey};
 #[cfg(feature = "dummy-entity")]
 pub use self::entities::{DummyStoreValue, DummyValue};
+pub use self::error::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind};
+pub use self::mls::{CryptoKeystoreMls, deser, ser};
+#[cfg(feature = "proteus-keystore")]
+pub use self::proteus::CryptoKeystoreProteus;
 
 #[cfg(not(target_family = "wasm"))]
 use sha2::{Digest, Sha256};
