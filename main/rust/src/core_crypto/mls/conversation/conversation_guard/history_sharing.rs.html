@@ -80,10 +80,10 @@
 <a href=#80 id=80 data-nosnippet>80</a>    <span class="doccomment">/// Disable history sharing by removing history clients from the conversation.
 <a href=#81 id=81 data-nosnippet>81</a>    </span><span class="kw">pub async fn </span>disable_history_sharing(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#82 id=82 data-nosnippet>82</a>        <span class="kw">let </span><span class="kw-2">mut </span>history_client_ids = <span class="self">self</span>.get_client_ids().<span class="kw">await</span>;
-<a href=#83 id=83 data-nosnippet>83</a>        <span class="comment">// We're facing a trade-off situation here: do we want to avoid unnecessary iteration and assume that there is always
-<a href=#84 id=84 data-nosnippet>84</a>        // at most one history client in a conversation?
-<a href=#85 id=85 data-nosnippet>85</a>        // Then we could use something like `into_iter().find_map()` to lazily evaluate client ids, but this way we're making sure to
-<a href=#86 id=86 data-nosnippet>86</a>        // remove any history client, and not just the first one we find.
+<a href=#83 id=83 data-nosnippet>83</a>        <span class="comment">// We're facing a trade-off situation here: do we want to avoid unnecessary iteration and assume that there is
+<a href=#84 id=84 data-nosnippet>84</a>        // always at most one history client in a conversation?
+<a href=#85 id=85 data-nosnippet>85</a>        // Then we could use something like `into_iter().find_map()` to lazily evaluate client ids, but this way we're
+<a href=#86 id=86 data-nosnippet>86</a>        // making sure to remove any history client, and not just the first one we find.
 <a href=#87 id=87 data-nosnippet>87</a>        </span>history_client_ids.retain(|client_id| <span class="kw">crate</span>::ephemeral::is_history_client(client_id));
 <a href=#88 id=88 data-nosnippet>88</a>
 <a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">if </span>history_client_ids.is_empty() {
@@ -310,8 +310,8 @@
 <a href=#310 id=310 data-nosnippet>310</a>    </span>}
 <a href=#311 id=311 data-nosnippet>311</a>
 <a href=#312 id=312 data-nosnippet>312</a>    <span class="attr">#[apply(all_cred_cipher)]
-<a href=#313 id=313 data-nosnippet>313</a>    </span><span class="doccomment">/// In this test, we're testing our mls library. However, our current mls fork doesn't have this test, and we require this behavior
-<a href=#314 id=314 data-nosnippet>314</a>    /// for history sharing, that's why this test lives here, for now.
+<a href=#313 id=313 data-nosnippet>313</a>    </span><span class="doccomment">/// In this test, we're testing our mls library. However, our current mls fork doesn't have this test, and we
+<a href=#314 id=314 data-nosnippet>314</a>    /// require this behavior for history sharing, that's why this test lives here, for now.
 <a href=#315 id=315 data-nosnippet>315</a>    </span><span class="kw">async fn </span>can_remove_two_and_add_one_member_in_commit(case: TestContext) {
 <a href=#316 id=316 data-nosnippet>316</a>        <span class="comment">// This many members are initially in the conversation.
 <a href=#317 id=317 data-nosnippet>317</a>        </span><span class="kw">const </span>INITIAL_MEMBERS_COUNT: usize = <span class="number">6</span>;

@@ -383,7 +383,8 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Contains raw JSON data of this challenge. This is parsed by the underlying Rust library hence should not be accessed</p>
+                        <p>Contains raw JSON data of this challenge. This is parsed by the underlying Rust library hence should not be
+accessed</p>
 
                       </div>
                       <div class="declaration">
@@ -438,7 +439,8 @@
                       <div class="pointer"></div>
                       <div class="abstract">
                         <p>Non-standard, Wire specific claim. Indicates the consumer from where it should get the challenge proof.
-Either from wire-server &ldquo;/access-token&rdquo; endpoint in case of a DPoP challenge, or from an OAuth token endpoint for an OIDC challenge</p>
+Either from wire-server &ldquo;/access-token&rdquo; endpoint in case of a DPoP challenge, or from an OAuth token endpoint
+for an OIDC challenge</p>
 
                       </div>
                       <div class="declaration">
@@ -474,14 +476,16 @@ Either from wire-server &ldquo;/access-token&rdquo; endpoint in case of a DPoP c
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">public</span> <span class="nf">init</span><span class="p">(</span>
     <span class="cm">/**
-     * Contains raw JSON data of this challenge. This is parsed by the underlying Rust library hence should not be accessed
+     * Contains raw JSON data of this challenge. This is parsed by the underlying Rust library hence should not be
+     * accessed
      */</span><span class="nv">delegate</span><span class="p">:</span> <span class="kt">Data</span><span class="p">,</span> 
     <span class="cm">/**
      * URL of this challenge
      */</span><span class="nv">url</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> 
     <span class="cm">/**
      * Non-standard, Wire specific claim. Indicates the consumer from where it should get the challenge proof.
-     * Either from wire-server "/access-token" endpoint in case of a DPoP challenge, or from an OAuth token endpoint for an OIDC challenge
+     * Either from wire-server "/access-token" endpoint in case of a DPoP challenge, or from an OAuth token endpoint
+     * for an OIDC challenge
      */</span><span class="nv">target</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span></code></pre>
 
                         </div>

@@ -214,8 +214,8 @@
 <a href=#214 id=214 data-nosnippet>214</a>
 <a href=#215 id=215 data-nosnippet>215</a>                <span class="comment">// Charlie joins through a Welcome and should get external_senders from Welcome
 <a href=#216 id=216 data-nosnippet>216</a>                // message and not from configuration
-<a href=#217 id=217 data-nosnippet>217</a>                // charlie can only get it from there, because the `MlsCustomgConfiguration` that they receive when processing
-<a href=#218 id=218 data-nosnippet>218</a>                // the welcome, doesn't contain any info about an external sender.
+<a href=#217 id=217 data-nosnippet>217</a>                // charlie can only get it from there, because the `MlsCustomgConfiguration` that they receive when
+<a href=#218 id=218 data-nosnippet>218</a>                // processing the welcome, doesn't contain any info about an external sender.
 <a href=#219 id=219 data-nosnippet>219</a>                </span><span class="kw">let </span>conversation = conversation.invite_notify([<span class="kw-2">&amp;</span>charlie]).<span class="kw">await</span>;
 <a href=#220 id=220 data-nosnippet>220</a>                <span class="macro">assert_eq!</span>(conversation.member_count().<span class="kw">await</span>, <span class="number">3</span>);
 <a href=#221 id=221 data-nosnippet>221</a>                <span class="macro">assert!</span>(conversation.is_functional_and_contains([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob, <span class="kw-2">&amp;</span>charlie]).<span class="kw">await</span>);

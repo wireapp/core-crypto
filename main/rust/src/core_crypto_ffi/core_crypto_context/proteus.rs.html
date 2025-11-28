@@ -105,50 +105,51 @@
 <a href=#105 id=105 data-nosnippet>105</a>        <span class="macro">proteus_impl!</span>({ <span class="self">self</span>.inner.proteus_new_prekey(prekey_id).<span class="kw">await</span>.map_err(Into::into) })
 <a href=#106 id=106 data-nosnippet>106</a>    }
 <a href=#107 id=107 data-nosnippet>107</a>
-<a href=#108 id=108 data-nosnippet>108</a>    <span class="doccomment">/// Creates a new Proteus prekey with an automatically incremented ID and returns the CBOR-serialized version of the prekey bundle
-<a href=#109 id=109 data-nosnippet>109</a>    ///
-<a href=#110 id=110 data-nosnippet>110</a>    /// Warning: The Proteus client **MUST** be initialized with `proteus_init` first or an error will be returned
-<a href=#111 id=111 data-nosnippet>111</a>    ///
-<a href=#112 id=112 data-nosnippet>112</a>    /// See [core_crypto::transaction_context::TransactionContext::proteus_new_prekey_auto]
-<a href=#113 id=113 data-nosnippet>113</a>    </span><span class="kw">pub async fn </span>proteus_new_prekey_auto(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;ProteusAutoPrekeyBundle&gt; {
-<a href=#114 id=114 data-nosnippet>114</a>        <span class="macro">proteus_impl!</span>({
-<a href=#115 id=115 data-nosnippet>115</a>            <span class="kw">let </span>(id, pkb) = <span class="self">self</span>.inner.proteus_new_prekey_auto().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#116 id=116 data-nosnippet>116</a>            <span class="prelude-val">Ok</span>(ProteusAutoPrekeyBundle { id, pkb })
-<a href=#117 id=117 data-nosnippet>117</a>        })
-<a href=#118 id=118 data-nosnippet>118</a>    }
-<a href=#119 id=119 data-nosnippet>119</a>
-<a href=#120 id=120 data-nosnippet>120</a>    <span class="doccomment">/// See [core_crypto::transaction_context::TransactionContext::proteus_last_resort_prekey]
-<a href=#121 id=121 data-nosnippet>121</a>    </span><span class="kw">pub async fn </span>proteus_last_resort_prekey(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
-<a href=#122 id=122 data-nosnippet>122</a>        <span class="macro">proteus_impl!</span>({ <span class="self">self</span>.inner.proteus_last_resort_prekey().<span class="kw">await</span>.map_err(Into::into) })
-<a href=#123 id=123 data-nosnippet>123</a>    }
-<a href=#124 id=124 data-nosnippet>124</a>
-<a href=#125 id=125 data-nosnippet>125</a>    <span class="doccomment">/// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint]
-<a href=#126 id=126 data-nosnippet>126</a>    </span><span class="kw">pub async fn </span>proteus_fingerprint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;String&gt; {
-<a href=#127 id=127 data-nosnippet>127</a>        <span class="macro">proteus_impl!</span>({ <span class="self">self</span>.inner.proteus_fingerprint().<span class="kw">await</span>.map_err(Into::into) })
-<a href=#128 id=128 data-nosnippet>128</a>    }
-<a href=#129 id=129 data-nosnippet>129</a>
-<a href=#130 id=130 data-nosnippet>130</a>    <span class="doccomment">/// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint_local]
-<a href=#131 id=131 data-nosnippet>131</a>    </span><span class="kw">pub async fn </span>proteus_fingerprint_local(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: String) -&gt; CoreCryptoResult&lt;String&gt; {
-<a href=#132 id=132 data-nosnippet>132</a>        <span class="macro">proteus_impl!</span>({
-<a href=#133 id=133 data-nosnippet>133</a>            <span class="self">self</span>.inner
-<a href=#134 id=134 data-nosnippet>134</a>                .proteus_fingerprint_local(<span class="kw-2">&amp;</span>session_id)
-<a href=#135 id=135 data-nosnippet>135</a>                .<span class="kw">await
-<a href=#136 id=136 data-nosnippet>136</a>                </span>.map_err(Into::into)
-<a href=#137 id=137 data-nosnippet>137</a>        })
-<a href=#138 id=138 data-nosnippet>138</a>    }
-<a href=#139 id=139 data-nosnippet>139</a>
-<a href=#140 id=140 data-nosnippet>140</a>    <span class="doccomment">/// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint_remote]
-<a href=#141 id=141 data-nosnippet>141</a>    </span><span class="kw">pub async fn </span>proteus_fingerprint_remote(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: String) -&gt; CoreCryptoResult&lt;String&gt; {
-<a href=#142 id=142 data-nosnippet>142</a>        <span class="macro">proteus_impl!</span>({
-<a href=#143 id=143 data-nosnippet>143</a>            <span class="self">self</span>.inner
-<a href=#144 id=144 data-nosnippet>144</a>                .proteus_fingerprint_remote(<span class="kw-2">&amp;</span>session_id)
-<a href=#145 id=145 data-nosnippet>145</a>                .<span class="kw">await
-<a href=#146 id=146 data-nosnippet>146</a>                </span>.map_err(Into::into)
-<a href=#147 id=147 data-nosnippet>147</a>        })
-<a href=#148 id=148 data-nosnippet>148</a>    }
-<a href=#149 id=149 data-nosnippet>149</a>
-<a href=#150 id=150 data-nosnippet>150</a>    <span class="doccomment">/// See [core_crypto::transaction_context::TransactionContext::proteus_reload_sessions]
-<a href=#151 id=151 data-nosnippet>151</a>    </span><span class="kw">pub async fn </span>proteus_reload_sessions(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;()&gt; {
-<a href=#152 id=152 data-nosnippet>152</a>        <span class="macro">proteus_impl!</span>({ <span class="self">self</span>.inner.proteus_reload_sessions().<span class="kw">await</span>.map_err(Into::into) })
-<a href=#153 id=153 data-nosnippet>153</a>    }
-<a href=#154 id=154 data-nosnippet>154</a>}</code></pre></div></section></main></body></html>
+<a href=#108 id=108 data-nosnippet>108</a>    <span class="doccomment">/// Creates a new Proteus prekey with an automatically incremented ID and returns the CBOR-serialized version of the
+<a href=#109 id=109 data-nosnippet>109</a>    /// prekey bundle
+<a href=#110 id=110 data-nosnippet>110</a>    ///
+<a href=#111 id=111 data-nosnippet>111</a>    /// Warning: The Proteus client **MUST** be initialized with `proteus_init` first or an error will be returned
+<a href=#112 id=112 data-nosnippet>112</a>    ///
+<a href=#113 id=113 data-nosnippet>113</a>    /// See [core_crypto::transaction_context::TransactionContext::proteus_new_prekey_auto]
+<a href=#114 id=114 data-nosnippet>114</a>    </span><span class="kw">pub async fn </span>proteus_new_prekey_auto(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;ProteusAutoPrekeyBundle&gt; {
+<a href=#115 id=115 data-nosnippet>115</a>        <span class="macro">proteus_impl!</span>({
+<a href=#116 id=116 data-nosnippet>116</a>            <span class="kw">let </span>(id, pkb) = <span class="self">self</span>.inner.proteus_new_prekey_auto().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#117 id=117 data-nosnippet>117</a>            <span class="prelude-val">Ok</span>(ProteusAutoPrekeyBundle { id, pkb })
+<a href=#118 id=118 data-nosnippet>118</a>        })
+<a href=#119 id=119 data-nosnippet>119</a>    }
+<a href=#120 id=120 data-nosnippet>120</a>
+<a href=#121 id=121 data-nosnippet>121</a>    <span class="doccomment">/// See [core_crypto::transaction_context::TransactionContext::proteus_last_resort_prekey]
+<a href=#122 id=122 data-nosnippet>122</a>    </span><span class="kw">pub async fn </span>proteus_last_resort_prekey(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
+<a href=#123 id=123 data-nosnippet>123</a>        <span class="macro">proteus_impl!</span>({ <span class="self">self</span>.inner.proteus_last_resort_prekey().<span class="kw">await</span>.map_err(Into::into) })
+<a href=#124 id=124 data-nosnippet>124</a>    }
+<a href=#125 id=125 data-nosnippet>125</a>
+<a href=#126 id=126 data-nosnippet>126</a>    <span class="doccomment">/// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint]
+<a href=#127 id=127 data-nosnippet>127</a>    </span><span class="kw">pub async fn </span>proteus_fingerprint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;String&gt; {
+<a href=#128 id=128 data-nosnippet>128</a>        <span class="macro">proteus_impl!</span>({ <span class="self">self</span>.inner.proteus_fingerprint().<span class="kw">await</span>.map_err(Into::into) })
+<a href=#129 id=129 data-nosnippet>129</a>    }
+<a href=#130 id=130 data-nosnippet>130</a>
+<a href=#131 id=131 data-nosnippet>131</a>    <span class="doccomment">/// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint_local]
+<a href=#132 id=132 data-nosnippet>132</a>    </span><span class="kw">pub async fn </span>proteus_fingerprint_local(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: String) -&gt; CoreCryptoResult&lt;String&gt; {
+<a href=#133 id=133 data-nosnippet>133</a>        <span class="macro">proteus_impl!</span>({
+<a href=#134 id=134 data-nosnippet>134</a>            <span class="self">self</span>.inner
+<a href=#135 id=135 data-nosnippet>135</a>                .proteus_fingerprint_local(<span class="kw-2">&amp;</span>session_id)
+<a href=#136 id=136 data-nosnippet>136</a>                .<span class="kw">await
+<a href=#137 id=137 data-nosnippet>137</a>                </span>.map_err(Into::into)
+<a href=#138 id=138 data-nosnippet>138</a>        })
+<a href=#139 id=139 data-nosnippet>139</a>    }
+<a href=#140 id=140 data-nosnippet>140</a>
+<a href=#141 id=141 data-nosnippet>141</a>    <span class="doccomment">/// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint_remote]
+<a href=#142 id=142 data-nosnippet>142</a>    </span><span class="kw">pub async fn </span>proteus_fingerprint_remote(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: String) -&gt; CoreCryptoResult&lt;String&gt; {
+<a href=#143 id=143 data-nosnippet>143</a>        <span class="macro">proteus_impl!</span>({
+<a href=#144 id=144 data-nosnippet>144</a>            <span class="self">self</span>.inner
+<a href=#145 id=145 data-nosnippet>145</a>                .proteus_fingerprint_remote(<span class="kw-2">&amp;</span>session_id)
+<a href=#146 id=146 data-nosnippet>146</a>                .<span class="kw">await
+<a href=#147 id=147 data-nosnippet>147</a>                </span>.map_err(Into::into)
+<a href=#148 id=148 data-nosnippet>148</a>        })
+<a href=#149 id=149 data-nosnippet>149</a>    }
+<a href=#150 id=150 data-nosnippet>150</a>
+<a href=#151 id=151 data-nosnippet>151</a>    <span class="doccomment">/// See [core_crypto::transaction_context::TransactionContext::proteus_reload_sessions]
+<a href=#152 id=152 data-nosnippet>152</a>    </span><span class="kw">pub async fn </span>proteus_reload_sessions(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;()&gt; {
+<a href=#153 id=153 data-nosnippet>153</a>        <span class="macro">proteus_impl!</span>({ <span class="self">self</span>.inner.proteus_reload_sessions().<span class="kw">await</span>.map_err(Into::into) })
+<a href=#154 id=154 data-nosnippet>154</a>    }
+<a href=#155 id=155 data-nosnippet>155</a>}</code></pre></div></section></main></body></html>

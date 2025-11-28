@@ -22,8 +22,8 @@
 <a href=#22 id=22 data-nosnippet>22</a><span class="doccomment">/// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 <a href=#23 id=23 data-nosnippet>23</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>MAX_PAST_EPOCHS: usize = <span class="number">3</span>;
 <a href=#24 id=24 data-nosnippet>24</a>
-<a href=#25 id=25 data-nosnippet>25</a><span class="doccomment">/// Window for which decryption secrets are kept within an epoch. Use this with caution since this affects forward secrecy within an epoch.
-<a href=#26 id=26 data-nosnippet>26</a>/// Use this when the Delivery Service cannot guarantee application messages order
+<a href=#25 id=25 data-nosnippet>25</a><span class="doccomment">/// Window for which decryption secrets are kept within an epoch. Use this with caution since this affects forward
+<a href=#26 id=26 data-nosnippet>26</a>/// secrecy within an epoch. Use this when the Delivery Service cannot guarantee application messages order
 <a href=#27 id=27 data-nosnippet>27</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>OUT_OF_ORDER_TOLERANCE: u32 = <span class="number">2</span>;
 <a href=#28 id=28 data-nosnippet>28</a>
 <a href=#29 id=29 data-nosnippet>29</a><span class="doccomment">/// How many application messages can be skipped. Use this when the Delivery Service can drop application messages

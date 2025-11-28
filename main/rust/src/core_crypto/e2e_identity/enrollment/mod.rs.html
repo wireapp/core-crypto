@@ -183,8 +183,8 @@
 <a href=#183 id=183 data-nosnippet>183</a>    /// # Parameters
 <a href=#184 id=184 data-nosnippet>184</a>    /// * `url` - one of the URL in new order's authorizations (from [Self::new_order_response])
 <a href=#185 id=185 data-nosnippet>185</a>    /// * `account` - you got from [Self::new_account_response]
-<a href=#186 id=186 data-nosnippet>186</a>    /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-order`
-<a href=#187 id=187 data-nosnippet>187</a>    ///   (or from the previous to this method if you are creating the second authorization)
+<a href=#186 id=186 data-nosnippet>186</a>    /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-order` (or from the
+<a href=#187 id=187 data-nosnippet>187</a>    ///   previous to this method if you are creating the second authorization)
 <a href=#188 id=188 data-nosnippet>188</a>    </span><span class="kw">pub fn </span>new_authz_request(<span class="kw-2">&amp;</span><span class="self">self</span>, url: String, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
 <a href=#189 id=189 data-nosnippet>189</a>        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
 <a href=#190 id=190 data-nosnippet>190</a>            <span class="string">"You must first call 'newAccountResponse()'"</span>,
@@ -220,124 +220,124 @@
 <a href=#220 id=220 data-nosnippet>220</a>    ///
 <a href=#221 id=221 data-nosnippet>221</a>    /// # Parameters
 <a href=#222 id=222 data-nosnippet>222</a>    /// * `expiry_secs` - of the client Dpop JWT. This should be equal to the grace period set in Team Management
-<a href=#223 id=223 data-nosnippet>223</a>    /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server.
-<a href=#224 id=224 data-nosnippet>224</a>    ///   See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
-<a href=#225 id=225 data-nosnippet>225</a>    /// * `expiry` - token expiry
-<a href=#226 id=226 data-nosnippet>226</a>    </span><span class="attr">#[allow(clippy::too_many_arguments)]
-<a href=#227 id=227 data-nosnippet>227</a>    </span><span class="kw">pub fn </span>create_dpop_token(<span class="kw-2">&amp;</span><span class="self">self</span>, expiry_secs: u32, backend_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-<a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">let </span>expiry = core::time::Duration::from_secs(expiry_secs <span class="kw">as </span>u64);
-<a href=#229 id=229 data-nosnippet>229</a>        <span class="kw">let </span>authz = <span class="self">self
-<a href=#230 id=230 data-nosnippet>230</a>            </span>.device_authz
-<a href=#231 id=231 data-nosnippet>231</a>            .as_ref()
-<a href=#232 id=232 data-nosnippet>232</a>            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'newAuthzResponse()'"</span>))<span class="question-mark">?</span>;
-<a href=#233 id=233 data-nosnippet>233</a>        <span class="kw">let </span>challenge = <span class="kw">match </span>authz {
-<a href=#234 id=234 data-nosnippet>234</a>            E2eiAcmeAuthorization::Device { challenge, .. } =&gt; challenge,
-<a href=#235 id=235 data-nosnippet>235</a>            E2eiAcmeAuthorization::User { .. } =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ImplementationError),
-<a href=#236 id=236 data-nosnippet>236</a>        };
-<a href=#237 id=237 data-nosnippet>237</a>        <span class="prelude-val">Ok</span>(<span class="self">self</span>.new_dpop_token(
-<a href=#238 id=238 data-nosnippet>238</a>            <span class="kw-2">&amp;</span><span class="self">self</span>.client_id,
-<a href=#239 id=239 data-nosnippet>239</a>            <span class="self">self</span>.display_name.as_str(),
-<a href=#240 id=240 data-nosnippet>240</a>            challenge,
-<a href=#241 id=241 data-nosnippet>241</a>            backend_nonce,
-<a href=#242 id=242 data-nosnippet>242</a>            <span class="self">self</span>.handle.as_str(),
-<a href=#243 id=243 data-nosnippet>243</a>            <span class="self">self</span>.team.clone(),
-<a href=#244 id=244 data-nosnippet>244</a>            expiry,
-<a href=#245 id=245 data-nosnippet>245</a>        )<span class="question-mark">?</span>)
-<a href=#246 id=246 data-nosnippet>246</a>    }
-<a href=#247 id=247 data-nosnippet>247</a>
-<a href=#248 id=248 data-nosnippet>248</a>    <span class="doccomment">/// Creates a new challenge request.
-<a href=#249 id=249 data-nosnippet>249</a>    ///
-<a href=#250 id=250 data-nosnippet>250</a>    /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
-<a href=#251 id=251 data-nosnippet>251</a>    ///
-<a href=#252 id=252 data-nosnippet>252</a>    /// # Parameters
-<a href=#253 id=253 data-nosnippet>253</a>    /// * `access_token` - returned by wire-server from [this endpoint](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token)
-<a href=#254 id=254 data-nosnippet>254</a>    /// * `dpop_challenge` - you found after [Self::new_authz_response]
-<a href=#255 id=255 data-nosnippet>255</a>    /// * `account` - you got from [Self::new_account_response]
-<a href=#256 id=256 data-nosnippet>256</a>    /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
-<a href=#257 id=257 data-nosnippet>257</a>    </span><span class="kw">pub fn </span>new_dpop_challenge_request(<span class="kw-2">&amp;</span><span class="self">self</span>, access_token: String, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
-<a href=#258 id=258 data-nosnippet>258</a>        <span class="kw">let </span>authz = <span class="self">self
-<a href=#259 id=259 data-nosnippet>259</a>            </span>.device_authz
-<a href=#260 id=260 data-nosnippet>260</a>            .as_ref()
-<a href=#261 id=261 data-nosnippet>261</a>            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'newAuthzResponse()'"</span>))<span class="question-mark">?</span>;
-<a href=#262 id=262 data-nosnippet>262</a>        <span class="kw">let </span>challenge = <span class="kw">match </span>authz {
-<a href=#263 id=263 data-nosnippet>263</a>            E2eiAcmeAuthorization::Device { challenge, .. } =&gt; challenge,
-<a href=#264 id=264 data-nosnippet>264</a>            E2eiAcmeAuthorization::User { .. } =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ImplementationError),
-<a href=#265 id=265 data-nosnippet>265</a>        };
-<a href=#266 id=266 data-nosnippet>266</a>        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
-<a href=#267 id=267 data-nosnippet>267</a>            <span class="string">"You must first call 'newAccountResponse()'"</span>,
-<a href=#268 id=268 data-nosnippet>268</a>        ))<span class="question-mark">?</span>;
-<a href=#269 id=269 data-nosnippet>269</a>        <span class="kw">let </span>challenge = <span class="self">self</span>.acme_dpop_challenge_request(access_token, challenge, account, previous_nonce)<span class="question-mark">?</span>;
-<a href=#270 id=270 data-nosnippet>270</a>        <span class="kw">let </span>challenge = serde_json::to_vec(<span class="kw-2">&amp;</span>challenge)<span class="question-mark">?</span>;
-<a href=#271 id=271 data-nosnippet>271</a>        <span class="prelude-val">Ok</span>(challenge)
-<a href=#272 id=272 data-nosnippet>272</a>    }
-<a href=#273 id=273 data-nosnippet>273</a>
-<a href=#274 id=274 data-nosnippet>274</a>    <span class="doccomment">/// Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for the DPoP challenge
-<a href=#275 id=275 data-nosnippet>275</a>    ///
-<a href=#276 id=276 data-nosnippet>276</a>    /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
-<a href=#277 id=277 data-nosnippet>277</a>    ///
-<a href=#278 id=278 data-nosnippet>278</a>    /// # Parameters
-<a href=#279 id=279 data-nosnippet>279</a>    /// * `challenge` - http response body
-<a href=#280 id=280 data-nosnippet>280</a>    </span><span class="kw">pub fn </span>new_dpop_challenge_response(<span class="kw-2">&amp;</span><span class="self">self</span>, challenge: Json) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#281 id=281 data-nosnippet>281</a>        <span class="kw">let </span>challenge = serde_json::from_slice(<span class="kw-2">&amp;</span>challenge[..])<span class="question-mark">?</span>;
-<a href=#282 id=282 data-nosnippet>282</a>        <span class="prelude-val">Ok</span>(<span class="self">self</span>.acme_new_challenge_response(challenge)<span class="question-mark">?</span>)
-<a href=#283 id=283 data-nosnippet>283</a>    }
-<a href=#284 id=284 data-nosnippet>284</a>
-<a href=#285 id=285 data-nosnippet>285</a>    <span class="doccomment">/// Creates a new challenge request.
-<a href=#286 id=286 data-nosnippet>286</a>    ///
-<a href=#287 id=287 data-nosnippet>287</a>    /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
-<a href=#288 id=288 data-nosnippet>288</a>    ///
-<a href=#289 id=289 data-nosnippet>289</a>    /// # Parameters
-<a href=#290 id=290 data-nosnippet>290</a>    /// * `id_token` - you get back from Identity Provider
-<a href=#291 id=291 data-nosnippet>291</a>    /// * `oidc_challenge` - you found after [Self::new_authz_response]
-<a href=#292 id=292 data-nosnippet>292</a>    /// * `account` - you got from [Self::new_account_response]
-<a href=#293 id=293 data-nosnippet>293</a>    /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
-<a href=#294 id=294 data-nosnippet>294</a>    </span><span class="kw">pub fn </span>new_oidc_challenge_request(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id_token: String, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
-<a href=#295 id=295 data-nosnippet>295</a>        <span class="kw">let </span>authz = <span class="self">self
-<a href=#296 id=296 data-nosnippet>296</a>            </span>.user_authz
-<a href=#297 id=297 data-nosnippet>297</a>            .as_ref()
-<a href=#298 id=298 data-nosnippet>298</a>            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'newAuthzResponse()'"</span>))<span class="question-mark">?</span>;
-<a href=#299 id=299 data-nosnippet>299</a>        <span class="kw">let </span>challenge = <span class="kw">match </span>authz {
-<a href=#300 id=300 data-nosnippet>300</a>            E2eiAcmeAuthorization::User { challenge, .. } =&gt; challenge,
-<a href=#301 id=301 data-nosnippet>301</a>            E2eiAcmeAuthorization::Device { .. } =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ImplementationError),
-<a href=#302 id=302 data-nosnippet>302</a>        };
-<a href=#303 id=303 data-nosnippet>303</a>        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
-<a href=#304 id=304 data-nosnippet>304</a>            <span class="string">"You must first call 'newAccountResponse()'"</span>,
-<a href=#305 id=305 data-nosnippet>305</a>        ))<span class="question-mark">?</span>;
-<a href=#306 id=306 data-nosnippet>306</a>        <span class="kw">let </span>challenge = <span class="self">self</span>.acme_oidc_challenge_request(id_token, challenge, account, previous_nonce)<span class="question-mark">?</span>;
-<a href=#307 id=307 data-nosnippet>307</a>        <span class="kw">let </span>challenge = serde_json::to_vec(<span class="kw-2">&amp;</span>challenge)<span class="question-mark">?</span>;
-<a href=#308 id=308 data-nosnippet>308</a>
-<a href=#309 id=309 data-nosnippet>309</a>        <span class="self">self</span>.has_called_new_oidc_challenge_request = <span class="bool-val">true</span>;
-<a href=#310 id=310 data-nosnippet>310</a>
-<a href=#311 id=311 data-nosnippet>311</a>        <span class="prelude-val">Ok</span>(challenge)
-<a href=#312 id=312 data-nosnippet>312</a>    }
-<a href=#313 id=313 data-nosnippet>313</a>
-<a href=#314 id=314 data-nosnippet>314</a>    <span class="doccomment">/// Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for the OIDC challenge
-<a href=#315 id=315 data-nosnippet>315</a>    ///
-<a href=#316 id=316 data-nosnippet>316</a>    /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
-<a href=#317 id=317 data-nosnippet>317</a>    ///
-<a href=#318 id=318 data-nosnippet>318</a>    /// # Parameters
-<a href=#319 id=319 data-nosnippet>319</a>    /// * `challenge` - http response body
-<a href=#320 id=320 data-nosnippet>320</a>    </span><span class="kw">pub fn </span>new_oidc_challenge_response(<span class="kw-2">&amp;mut </span><span class="self">self</span>, challenge: Json) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#321 id=321 data-nosnippet>321</a>        <span class="kw">let </span>challenge = serde_json::from_slice(<span class="kw-2">&amp;</span>challenge[..])<span class="question-mark">?</span>;
-<a href=#322 id=322 data-nosnippet>322</a>        <span class="self">self</span>.acme_new_challenge_response(challenge)<span class="question-mark">?</span>;
-<a href=#323 id=323 data-nosnippet>323</a>
-<a href=#324 id=324 data-nosnippet>324</a>        <span class="kw">if </span>!<span class="self">self</span>.has_called_new_oidc_challenge_request {
-<a href=#325 id=325 data-nosnippet>325</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::OutOfOrderEnrollment(
-<a href=#326 id=326 data-nosnippet>326</a>                <span class="string">"You must first call 'new_oidc_challenge_request()'"</span>,
-<a href=#327 id=327 data-nosnippet>327</a>            ));
-<a href=#328 id=328 data-nosnippet>328</a>        }
-<a href=#329 id=329 data-nosnippet>329</a>
-<a href=#330 id=330 data-nosnippet>330</a>        <span class="prelude-val">Ok</span>(())
-<a href=#331 id=331 data-nosnippet>331</a>    }
-<a href=#332 id=332 data-nosnippet>332</a>
-<a href=#333 id=333 data-nosnippet>333</a>    <span class="doccomment">/// Verifies that the previous challenge has been completed.
-<a href=#334 id=334 data-nosnippet>334</a>    ///
-<a href=#335 id=335 data-nosnippet>335</a>    /// See [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
-<a href=#336 id=336 data-nosnippet>336</a>    ///
-<a href=#337 id=337 data-nosnippet>337</a>    /// # Parameters
-<a href=#338 id=338 data-nosnippet>338</a>    /// * `order_url` - `location` header from http response you got from [Self::new_order_response]
-<a href=#339 id=339 data-nosnippet>339</a>    /// * `account` - you got from [Self::new_account_response]
-<a href=#340 id=340 data-nosnippet>340</a>    /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
+<a href=#223 id=223 data-nosnippet>223</a>    /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server. See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
+<a href=#224 id=224 data-nosnippet>224</a>    /// * `expiry` - token expiry
+<a href=#225 id=225 data-nosnippet>225</a>    </span><span class="attr">#[allow(clippy::too_many_arguments)]
+<a href=#226 id=226 data-nosnippet>226</a>    </span><span class="kw">pub fn </span>create_dpop_token(<span class="kw-2">&amp;</span><span class="self">self</span>, expiry_secs: u32, backend_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+<a href=#227 id=227 data-nosnippet>227</a>        <span class="kw">let </span>expiry = core::time::Duration::from_secs(expiry_secs <span class="kw">as </span>u64);
+<a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">let </span>authz = <span class="self">self
+<a href=#229 id=229 data-nosnippet>229</a>            </span>.device_authz
+<a href=#230 id=230 data-nosnippet>230</a>            .as_ref()
+<a href=#231 id=231 data-nosnippet>231</a>            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'newAuthzResponse()'"</span>))<span class="question-mark">?</span>;
+<a href=#232 id=232 data-nosnippet>232</a>        <span class="kw">let </span>challenge = <span class="kw">match </span>authz {
+<a href=#233 id=233 data-nosnippet>233</a>            E2eiAcmeAuthorization::Device { challenge, .. } =&gt; challenge,
+<a href=#234 id=234 data-nosnippet>234</a>            E2eiAcmeAuthorization::User { .. } =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ImplementationError),
+<a href=#235 id=235 data-nosnippet>235</a>        };
+<a href=#236 id=236 data-nosnippet>236</a>        <span class="prelude-val">Ok</span>(<span class="self">self</span>.new_dpop_token(
+<a href=#237 id=237 data-nosnippet>237</a>            <span class="kw-2">&amp;</span><span class="self">self</span>.client_id,
+<a href=#238 id=238 data-nosnippet>238</a>            <span class="self">self</span>.display_name.as_str(),
+<a href=#239 id=239 data-nosnippet>239</a>            challenge,
+<a href=#240 id=240 data-nosnippet>240</a>            backend_nonce,
+<a href=#241 id=241 data-nosnippet>241</a>            <span class="self">self</span>.handle.as_str(),
+<a href=#242 id=242 data-nosnippet>242</a>            <span class="self">self</span>.team.clone(),
+<a href=#243 id=243 data-nosnippet>243</a>            expiry,
+<a href=#244 id=244 data-nosnippet>244</a>        )<span class="question-mark">?</span>)
+<a href=#245 id=245 data-nosnippet>245</a>    }
+<a href=#246 id=246 data-nosnippet>246</a>
+<a href=#247 id=247 data-nosnippet>247</a>    <span class="doccomment">/// Creates a new challenge request.
+<a href=#248 id=248 data-nosnippet>248</a>    ///
+<a href=#249 id=249 data-nosnippet>249</a>    /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
+<a href=#250 id=250 data-nosnippet>250</a>    ///
+<a href=#251 id=251 data-nosnippet>251</a>    /// # Parameters
+<a href=#252 id=252 data-nosnippet>252</a>    /// * `access_token` - returned by wire-server from [this endpoint](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token)
+<a href=#253 id=253 data-nosnippet>253</a>    /// * `dpop_challenge` - you found after [Self::new_authz_response]
+<a href=#254 id=254 data-nosnippet>254</a>    /// * `account` - you got from [Self::new_account_response]
+<a href=#255 id=255 data-nosnippet>255</a>    /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
+<a href=#256 id=256 data-nosnippet>256</a>    </span><span class="kw">pub fn </span>new_dpop_challenge_request(<span class="kw-2">&amp;</span><span class="self">self</span>, access_token: String, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
+<a href=#257 id=257 data-nosnippet>257</a>        <span class="kw">let </span>authz = <span class="self">self
+<a href=#258 id=258 data-nosnippet>258</a>            </span>.device_authz
+<a href=#259 id=259 data-nosnippet>259</a>            .as_ref()
+<a href=#260 id=260 data-nosnippet>260</a>            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'newAuthzResponse()'"</span>))<span class="question-mark">?</span>;
+<a href=#261 id=261 data-nosnippet>261</a>        <span class="kw">let </span>challenge = <span class="kw">match </span>authz {
+<a href=#262 id=262 data-nosnippet>262</a>            E2eiAcmeAuthorization::Device { challenge, .. } =&gt; challenge,
+<a href=#263 id=263 data-nosnippet>263</a>            E2eiAcmeAuthorization::User { .. } =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ImplementationError),
+<a href=#264 id=264 data-nosnippet>264</a>        };
+<a href=#265 id=265 data-nosnippet>265</a>        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
+<a href=#266 id=266 data-nosnippet>266</a>            <span class="string">"You must first call 'newAccountResponse()'"</span>,
+<a href=#267 id=267 data-nosnippet>267</a>        ))<span class="question-mark">?</span>;
+<a href=#268 id=268 data-nosnippet>268</a>        <span class="kw">let </span>challenge = <span class="self">self</span>.acme_dpop_challenge_request(access_token, challenge, account, previous_nonce)<span class="question-mark">?</span>;
+<a href=#269 id=269 data-nosnippet>269</a>        <span class="kw">let </span>challenge = serde_json::to_vec(<span class="kw-2">&amp;</span>challenge)<span class="question-mark">?</span>;
+<a href=#270 id=270 data-nosnippet>270</a>        <span class="prelude-val">Ok</span>(challenge)
+<a href=#271 id=271 data-nosnippet>271</a>    }
+<a href=#272 id=272 data-nosnippet>272</a>
+<a href=#273 id=273 data-nosnippet>273</a>    <span class="doccomment">/// Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for the DPoP challenge
+<a href=#274 id=274 data-nosnippet>274</a>    ///
+<a href=#275 id=275 data-nosnippet>275</a>    /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
+<a href=#276 id=276 data-nosnippet>276</a>    ///
+<a href=#277 id=277 data-nosnippet>277</a>    /// # Parameters
+<a href=#278 id=278 data-nosnippet>278</a>    /// * `challenge` - http response body
+<a href=#279 id=279 data-nosnippet>279</a>    </span><span class="kw">pub fn </span>new_dpop_challenge_response(<span class="kw-2">&amp;</span><span class="self">self</span>, challenge: Json) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#280 id=280 data-nosnippet>280</a>        <span class="kw">let </span>challenge = serde_json::from_slice(<span class="kw-2">&amp;</span>challenge[..])<span class="question-mark">?</span>;
+<a href=#281 id=281 data-nosnippet>281</a>        <span class="prelude-val">Ok</span>(<span class="self">self</span>.acme_new_challenge_response(challenge)<span class="question-mark">?</span>)
+<a href=#282 id=282 data-nosnippet>282</a>    }
+<a href=#283 id=283 data-nosnippet>283</a>
+<a href=#284 id=284 data-nosnippet>284</a>    <span class="doccomment">/// Creates a new challenge request.
+<a href=#285 id=285 data-nosnippet>285</a>    ///
+<a href=#286 id=286 data-nosnippet>286</a>    /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
+<a href=#287 id=287 data-nosnippet>287</a>    ///
+<a href=#288 id=288 data-nosnippet>288</a>    /// # Parameters
+<a href=#289 id=289 data-nosnippet>289</a>    /// * `id_token` - you get back from Identity Provider
+<a href=#290 id=290 data-nosnippet>290</a>    /// * `oidc_challenge` - you found after [Self::new_authz_response]
+<a href=#291 id=291 data-nosnippet>291</a>    /// * `account` - you got from [Self::new_account_response]
+<a href=#292 id=292 data-nosnippet>292</a>    /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
+<a href=#293 id=293 data-nosnippet>293</a>    </span><span class="kw">pub fn </span>new_oidc_challenge_request(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id_token: String, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
+<a href=#294 id=294 data-nosnippet>294</a>        <span class="kw">let </span>authz = <span class="self">self
+<a href=#295 id=295 data-nosnippet>295</a>            </span>.user_authz
+<a href=#296 id=296 data-nosnippet>296</a>            .as_ref()
+<a href=#297 id=297 data-nosnippet>297</a>            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'newAuthzResponse()'"</span>))<span class="question-mark">?</span>;
+<a href=#298 id=298 data-nosnippet>298</a>        <span class="kw">let </span>challenge = <span class="kw">match </span>authz {
+<a href=#299 id=299 data-nosnippet>299</a>            E2eiAcmeAuthorization::User { challenge, .. } =&gt; challenge,
+<a href=#300 id=300 data-nosnippet>300</a>            E2eiAcmeAuthorization::Device { .. } =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ImplementationError),
+<a href=#301 id=301 data-nosnippet>301</a>        };
+<a href=#302 id=302 data-nosnippet>302</a>        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
+<a href=#303 id=303 data-nosnippet>303</a>            <span class="string">"You must first call 'newAccountResponse()'"</span>,
+<a href=#304 id=304 data-nosnippet>304</a>        ))<span class="question-mark">?</span>;
+<a href=#305 id=305 data-nosnippet>305</a>        <span class="kw">let </span>challenge = <span class="self">self</span>.acme_oidc_challenge_request(id_token, challenge, account, previous_nonce)<span class="question-mark">?</span>;
+<a href=#306 id=306 data-nosnippet>306</a>        <span class="kw">let </span>challenge = serde_json::to_vec(<span class="kw-2">&amp;</span>challenge)<span class="question-mark">?</span>;
+<a href=#307 id=307 data-nosnippet>307</a>
+<a href=#308 id=308 data-nosnippet>308</a>        <span class="self">self</span>.has_called_new_oidc_challenge_request = <span class="bool-val">true</span>;
+<a href=#309 id=309 data-nosnippet>309</a>
+<a href=#310 id=310 data-nosnippet>310</a>        <span class="prelude-val">Ok</span>(challenge)
+<a href=#311 id=311 data-nosnippet>311</a>    }
+<a href=#312 id=312 data-nosnippet>312</a>
+<a href=#313 id=313 data-nosnippet>313</a>    <span class="doccomment">/// Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for the OIDC challenge
+<a href=#314 id=314 data-nosnippet>314</a>    ///
+<a href=#315 id=315 data-nosnippet>315</a>    /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
+<a href=#316 id=316 data-nosnippet>316</a>    ///
+<a href=#317 id=317 data-nosnippet>317</a>    /// # Parameters
+<a href=#318 id=318 data-nosnippet>318</a>    /// * `challenge` - http response body
+<a href=#319 id=319 data-nosnippet>319</a>    </span><span class="kw">pub fn </span>new_oidc_challenge_response(<span class="kw-2">&amp;mut </span><span class="self">self</span>, challenge: Json) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#320 id=320 data-nosnippet>320</a>        <span class="kw">let </span>challenge = serde_json::from_slice(<span class="kw-2">&amp;</span>challenge[..])<span class="question-mark">?</span>;
+<a href=#321 id=321 data-nosnippet>321</a>        <span class="self">self</span>.acme_new_challenge_response(challenge)<span class="question-mark">?</span>;
+<a href=#322 id=322 data-nosnippet>322</a>
+<a href=#323 id=323 data-nosnippet>323</a>        <span class="kw">if </span>!<span class="self">self</span>.has_called_new_oidc_challenge_request {
+<a href=#324 id=324 data-nosnippet>324</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::OutOfOrderEnrollment(
+<a href=#325 id=325 data-nosnippet>325</a>                <span class="string">"You must first call 'new_oidc_challenge_request()'"</span>,
+<a href=#326 id=326 data-nosnippet>326</a>            ));
+<a href=#327 id=327 data-nosnippet>327</a>        }
+<a href=#328 id=328 data-nosnippet>328</a>
+<a href=#329 id=329 data-nosnippet>329</a>        <span class="prelude-val">Ok</span>(())
+<a href=#330 id=330 data-nosnippet>330</a>    }
+<a href=#331 id=331 data-nosnippet>331</a>
+<a href=#332 id=332 data-nosnippet>332</a>    <span class="doccomment">/// Verifies that the previous challenge has been completed.
+<a href=#333 id=333 data-nosnippet>333</a>    ///
+<a href=#334 id=334 data-nosnippet>334</a>    /// See [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
+<a href=#335 id=335 data-nosnippet>335</a>    ///
+<a href=#336 id=336 data-nosnippet>336</a>    /// # Parameters
+<a href=#337 id=337 data-nosnippet>337</a>    /// * `order_url` - `location` header from http response you got from [Self::new_order_response]
+<a href=#338 id=338 data-nosnippet>338</a>    /// * `account` - you got from [Self::new_account_response]
+<a href=#339 id=339 data-nosnippet>339</a>    /// * `previous_nonce` - `replay-nonce` response header from `POST
+<a href=#340 id=340 data-nosnippet>340</a>    ///   /acme/{provisioner-name}/challenge/{challenge-id}`
 <a href=#341 id=341 data-nosnippet>341</a>    </span><span class="kw">pub fn </span>check_order_request(<span class="kw-2">&amp;</span><span class="self">self</span>, order_url: String, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
 <a href=#342 id=342 data-nosnippet>342</a>        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
 <a href=#343 id=343 data-nosnippet>343</a>            <span class="string">"You must first call 'newAccountResponse()'"</span>,
@@ -409,61 +409,62 @@
 <a href=#409 id=409 data-nosnippet>409</a>    /// # Parameters
 <a href=#410 id=410 data-nosnippet>410</a>    /// * `finalize` - you got from [Self::finalize_response]
 <a href=#411 id=411 data-nosnippet>411</a>    /// * `account` - you got from [Self::new_account_response]
-<a href=#412 id=412 data-nosnippet>412</a>    /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}/finalize`
-<a href=#413 id=413 data-nosnippet>413</a>    </span><span class="kw">pub fn </span>certificate_request(<span class="kw-2">&amp;mut </span><span class="self">self</span>, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
-<a href=#414 id=414 data-nosnippet>414</a>        <span class="kw">let </span>account = <span class="self">self</span>.account.take().ok_or(Error::OutOfOrderEnrollment(
-<a href=#415 id=415 data-nosnippet>415</a>            <span class="string">"You must first call 'newAccountResponse()'"</span>,
-<a href=#416 id=416 data-nosnippet>416</a>        ))<span class="question-mark">?</span>;
-<a href=#417 id=417 data-nosnippet>417</a>        <span class="kw">let </span>finalize = <span class="self">self
-<a href=#418 id=418 data-nosnippet>418</a>            </span>.finalize
-<a href=#419 id=419 data-nosnippet>419</a>            .take()
-<a href=#420 id=420 data-nosnippet>420</a>            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'finalizeResponse()'"</span>))<span class="question-mark">?</span>;
-<a href=#421 id=421 data-nosnippet>421</a>        <span class="kw">let </span>certificate = <span class="self">self</span>.acme_x509_certificate_request(finalize, account, previous_nonce)<span class="question-mark">?</span>;
-<a href=#422 id=422 data-nosnippet>422</a>        <span class="kw">let </span>certificate = serde_json::to_vec(<span class="kw-2">&amp;</span>certificate)<span class="question-mark">?</span>;
-<a href=#423 id=423 data-nosnippet>423</a>        <span class="prelude-val">Ok</span>(certificate)
-<a href=#424 id=424 data-nosnippet>424</a>    }
-<a href=#425 id=425 data-nosnippet>425</a>
-<a href=#426 id=426 data-nosnippet>426</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>certificate_response(
-<a href=#427 id=427 data-nosnippet>427</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#428 id=428 data-nosnippet>428</a>        certificate_chain: String,
-<a href=#429 id=429 data-nosnippet>429</a>        env: <span class="kw-2">&amp;</span>wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
-<a href=#430 id=430 data-nosnippet>430</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Vec&lt;u8&gt;&gt;&gt; {
-<a href=#431 id=431 data-nosnippet>431</a>        <span class="kw">let </span>order = <span class="self">self</span>.valid_order.take().ok_or(Error::OutOfOrderEnrollment(
-<a href=#432 id=432 data-nosnippet>432</a>            <span class="string">"You must first call 'checkOrderResponse()'"</span>,
-<a href=#433 id=433 data-nosnippet>433</a>        ))<span class="question-mark">?</span>;
-<a href=#434 id=434 data-nosnippet>434</a>        <span class="kw">let </span>certificates = <span class="self">self</span>.acme_x509_certificate_response(certificate_chain, order, <span class="prelude-val">Some</span>(env))<span class="question-mark">?</span>;
-<a href=#435 id=435 data-nosnippet>435</a>
-<a href=#436 id=436 data-nosnippet>436</a>        <span class="comment">// zeroize the private material
-<a href=#437 id=437 data-nosnippet>437</a>        </span><span class="self">self</span>.sign_sk.zeroize();
-<a href=#438 id=438 data-nosnippet>438</a>        <span class="self">self</span>.delegate.sign_kp.zeroize();
-<a href=#439 id=439 data-nosnippet>439</a>        <span class="self">self</span>.delegate.acme_kp.zeroize();
-<a href=#440 id=440 data-nosnippet>440</a>
-<a href=#441 id=441 data-nosnippet>441</a>        <span class="prelude-val">Ok</span>(certificates)
-<a href=#442 id=442 data-nosnippet>442</a>    }
-<a href=#443 id=443 data-nosnippet>443</a>
-<a href=#444 id=444 data-nosnippet>444</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>stash(<span class="self">self</span>, backend: <span class="kw-2">&amp;</span>MlsCryptoProvider) -&gt; <span class="prelude-ty">Result</span>&lt;EnrollmentHandle&gt; {
-<a href=#445 id=445 data-nosnippet>445</a>        <span class="comment">// should be enough to prevent collisions
-<a href=#446 id=446 data-nosnippet>446</a>        </span><span class="kw">const </span>HANDLE_SIZE: usize = <span class="number">32</span>;
-<a href=#447 id=447 data-nosnippet>447</a>
-<a href=#448 id=448 data-nosnippet>448</a>        <span class="kw">let </span>content = serde_json::to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>)<span class="question-mark">?</span>;
-<a href=#449 id=449 data-nosnippet>449</a>        <span class="kw">let </span>handle = backend
-<a href=#450 id=450 data-nosnippet>450</a>            .crypto()
-<a href=#451 id=451 data-nosnippet>451</a>            .random_vec(HANDLE_SIZE)
-<a href=#452 id=452 data-nosnippet>452</a>            .map_err(MlsError::wrap(<span class="string">"generating random vector of bytes"</span>))<span class="question-mark">?</span>;
-<a href=#453 id=453 data-nosnippet>453</a>        backend
-<a href=#454 id=454 data-nosnippet>454</a>            .key_store()
-<a href=#455 id=455 data-nosnippet>455</a>            .save_e2ei_enrollment(<span class="kw-2">&amp;</span>handle, <span class="kw-2">&amp;</span>content)
-<a href=#456 id=456 data-nosnippet>456</a>            .<span class="kw">await
-<a href=#457 id=457 data-nosnippet>457</a>            </span>.map_err(KeystoreError::wrap(<span class="string">"saving e2ei enrollment"</span>))<span class="question-mark">?</span>;
-<a href=#458 id=458 data-nosnippet>458</a>        <span class="prelude-val">Ok</span>(handle)
-<a href=#459 id=459 data-nosnippet>459</a>    }
-<a href=#460 id=460 data-nosnippet>460</a>
-<a href=#461 id=461 data-nosnippet>461</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>stash_pop(backend: <span class="kw-2">&amp;</span>MlsCryptoProvider, handle: EnrollmentHandle) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-<a href=#462 id=462 data-nosnippet>462</a>        <span class="kw">let </span>content = backend
-<a href=#463 id=463 data-nosnippet>463</a>            .key_store()
-<a href=#464 id=464 data-nosnippet>464</a>            .pop_e2ei_enrollment(<span class="kw-2">&amp;</span>handle)
-<a href=#465 id=465 data-nosnippet>465</a>            .<span class="kw">await
-<a href=#466 id=466 data-nosnippet>466</a>            </span>.map_err(KeystoreError::wrap(<span class="string">"popping e2ei enrollment"</span>))<span class="question-mark">?</span>;
-<a href=#467 id=467 data-nosnippet>467</a>        <span class="prelude-val">Ok</span>(serde_json::from_slice(<span class="kw-2">&amp;</span>content)<span class="question-mark">?</span>)
-<a href=#468 id=468 data-nosnippet>468</a>    }
-<a href=#469 id=469 data-nosnippet>469</a>}</code></pre></div></section></main></body></html>
+<a href=#412 id=412 data-nosnippet>412</a>    /// * `previous_nonce` - `replay-nonce` response header from `POST
+<a href=#413 id=413 data-nosnippet>413</a>    ///   /acme/{provisioner-name}/order/{order-id}/finalize`
+<a href=#414 id=414 data-nosnippet>414</a>    </span><span class="kw">pub fn </span>certificate_request(<span class="kw-2">&amp;mut </span><span class="self">self</span>, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
+<a href=#415 id=415 data-nosnippet>415</a>        <span class="kw">let </span>account = <span class="self">self</span>.account.take().ok_or(Error::OutOfOrderEnrollment(
+<a href=#416 id=416 data-nosnippet>416</a>            <span class="string">"You must first call 'newAccountResponse()'"</span>,
+<a href=#417 id=417 data-nosnippet>417</a>        ))<span class="question-mark">?</span>;
+<a href=#418 id=418 data-nosnippet>418</a>        <span class="kw">let </span>finalize = <span class="self">self
+<a href=#419 id=419 data-nosnippet>419</a>            </span>.finalize
+<a href=#420 id=420 data-nosnippet>420</a>            .take()
+<a href=#421 id=421 data-nosnippet>421</a>            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'finalizeResponse()'"</span>))<span class="question-mark">?</span>;
+<a href=#422 id=422 data-nosnippet>422</a>        <span class="kw">let </span>certificate = <span class="self">self</span>.acme_x509_certificate_request(finalize, account, previous_nonce)<span class="question-mark">?</span>;
+<a href=#423 id=423 data-nosnippet>423</a>        <span class="kw">let </span>certificate = serde_json::to_vec(<span class="kw-2">&amp;</span>certificate)<span class="question-mark">?</span>;
+<a href=#424 id=424 data-nosnippet>424</a>        <span class="prelude-val">Ok</span>(certificate)
+<a href=#425 id=425 data-nosnippet>425</a>    }
+<a href=#426 id=426 data-nosnippet>426</a>
+<a href=#427 id=427 data-nosnippet>427</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>certificate_response(
+<a href=#428 id=428 data-nosnippet>428</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#429 id=429 data-nosnippet>429</a>        certificate_chain: String,
+<a href=#430 id=430 data-nosnippet>430</a>        env: <span class="kw-2">&amp;</span>wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
+<a href=#431 id=431 data-nosnippet>431</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Vec&lt;u8&gt;&gt;&gt; {
+<a href=#432 id=432 data-nosnippet>432</a>        <span class="kw">let </span>order = <span class="self">self</span>.valid_order.take().ok_or(Error::OutOfOrderEnrollment(
+<a href=#433 id=433 data-nosnippet>433</a>            <span class="string">"You must first call 'checkOrderResponse()'"</span>,
+<a href=#434 id=434 data-nosnippet>434</a>        ))<span class="question-mark">?</span>;
+<a href=#435 id=435 data-nosnippet>435</a>        <span class="kw">let </span>certificates = <span class="self">self</span>.acme_x509_certificate_response(certificate_chain, order, <span class="prelude-val">Some</span>(env))<span class="question-mark">?</span>;
+<a href=#436 id=436 data-nosnippet>436</a>
+<a href=#437 id=437 data-nosnippet>437</a>        <span class="comment">// zeroize the private material
+<a href=#438 id=438 data-nosnippet>438</a>        </span><span class="self">self</span>.sign_sk.zeroize();
+<a href=#439 id=439 data-nosnippet>439</a>        <span class="self">self</span>.delegate.sign_kp.zeroize();
+<a href=#440 id=440 data-nosnippet>440</a>        <span class="self">self</span>.delegate.acme_kp.zeroize();
+<a href=#441 id=441 data-nosnippet>441</a>
+<a href=#442 id=442 data-nosnippet>442</a>        <span class="prelude-val">Ok</span>(certificates)
+<a href=#443 id=443 data-nosnippet>443</a>    }
+<a href=#444 id=444 data-nosnippet>444</a>
+<a href=#445 id=445 data-nosnippet>445</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>stash(<span class="self">self</span>, backend: <span class="kw-2">&amp;</span>MlsCryptoProvider) -&gt; <span class="prelude-ty">Result</span>&lt;EnrollmentHandle&gt; {
+<a href=#446 id=446 data-nosnippet>446</a>        <span class="comment">// should be enough to prevent collisions
+<a href=#447 id=447 data-nosnippet>447</a>        </span><span class="kw">const </span>HANDLE_SIZE: usize = <span class="number">32</span>;
+<a href=#448 id=448 data-nosnippet>448</a>
+<a href=#449 id=449 data-nosnippet>449</a>        <span class="kw">let </span>content = serde_json::to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>)<span class="question-mark">?</span>;
+<a href=#450 id=450 data-nosnippet>450</a>        <span class="kw">let </span>handle = backend
+<a href=#451 id=451 data-nosnippet>451</a>            .crypto()
+<a href=#452 id=452 data-nosnippet>452</a>            .random_vec(HANDLE_SIZE)
+<a href=#453 id=453 data-nosnippet>453</a>            .map_err(MlsError::wrap(<span class="string">"generating random vector of bytes"</span>))<span class="question-mark">?</span>;
+<a href=#454 id=454 data-nosnippet>454</a>        backend
+<a href=#455 id=455 data-nosnippet>455</a>            .key_store()
+<a href=#456 id=456 data-nosnippet>456</a>            .save_e2ei_enrollment(<span class="kw-2">&amp;</span>handle, <span class="kw-2">&amp;</span>content)
+<a href=#457 id=457 data-nosnippet>457</a>            .<span class="kw">await
+<a href=#458 id=458 data-nosnippet>458</a>            </span>.map_err(KeystoreError::wrap(<span class="string">"saving e2ei enrollment"</span>))<span class="question-mark">?</span>;
+<a href=#459 id=459 data-nosnippet>459</a>        <span class="prelude-val">Ok</span>(handle)
+<a href=#460 id=460 data-nosnippet>460</a>    }
+<a href=#461 id=461 data-nosnippet>461</a>
+<a href=#462 id=462 data-nosnippet>462</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>stash_pop(backend: <span class="kw-2">&amp;</span>MlsCryptoProvider, handle: EnrollmentHandle) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+<a href=#463 id=463 data-nosnippet>463</a>        <span class="kw">let </span>content = backend
+<a href=#464 id=464 data-nosnippet>464</a>            .key_store()
+<a href=#465 id=465 data-nosnippet>465</a>            .pop_e2ei_enrollment(<span class="kw-2">&amp;</span>handle)
+<a href=#466 id=466 data-nosnippet>466</a>            .<span class="kw">await
+<a href=#467 id=467 data-nosnippet>467</a>            </span>.map_err(KeystoreError::wrap(<span class="string">"popping e2ei enrollment"</span>))<span class="question-mark">?</span>;
+<a href=#468 id=468 data-nosnippet>468</a>        <span class="prelude-val">Ok</span>(serde_json::from_slice(<span class="kw-2">&amp;</span>content)<span class="question-mark">?</span>)
+<a href=#469 id=469 data-nosnippet>469</a>    }
+<a href=#470 id=470 data-nosnippet>470</a>}</code></pre></div></section></main></body></html>
