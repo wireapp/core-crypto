@@ -204,7 +204,7 @@ bindings-kotlin: bindings-kotlin-android bindings-kotlin-jvm ## Generate all Kot
 ios-device-deps := $(RUST_SOURCES)
 IOS_DEVICE := target/aarch64-apple-ios/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 $(IOS_DEVICE): $(ios-device-deps)
-	IPHONEOS_DEPLOYMENT_TARGET=16.0 \
+	IPHONEOS_DEPLOYMENT_TARGET=16.4 \
 	cargo rustc --locked \
 	  --target aarch64-apple-ios \
 	  --crate-type=cdylib \
@@ -213,14 +213,14 @@ $(IOS_DEVICE): $(ios-device-deps)
 	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
 
 .PHONY: ios-device
-ios-device: $(IOS_DEVICE) ## Build core-crypto-ffi for aarch64-apple-ios for iOS 16.0 (macOS only)
+ios-device: $(IOS_DEVICE) ## Build core-crypto-ffi for aarch64-apple-ios for iOS 16.4 (macOS only)
 
 IOS_SIMULATOR_ARM := target/aarch64-apple-ios-sim/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 ios-simulator-arm-deps := $(RUST_SOURCES)
 $(IOS_SIMULATOR_ARM): $(ios-simulator-arm-deps)
 	CRATE_CC_NO_DEFAULTS=1 \
-	TARGET_CFLAGS="--target=arm64-apple-ios14.0.0-simulator \
-	-mios-simulator-version-min=14.0 \
+	TARGET_CFLAGS="--target=arm64-apple-ios16.0.0-simulator \
+	-mios-simulator-version-min=16.4 \
 	-isysroot $$(xcrun --show-sdk-path --sdk iphonesimulator)" \
 	cargo rustc --locked \
 	  --target aarch64-apple-ios-sim \
@@ -230,7 +230,7 @@ $(IOS_SIMULATOR_ARM): $(ios-simulator-arm-deps)
 	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
 
 .PHONY: ios-simulator-arm
-ios-simulator-arm: $(IOS_SIMULATOR_ARM) ## Build core-crypto-ffi for aarch64-apple-ios-sim, iOS 14.0.0 (macOS only)
+ios-simulator-arm: $(IOS_SIMULATOR_ARM) ## Build core-crypto-ffi for aarch64-apple-ios-sim, iOS 16.4 (macOS only)
 
 .PHONY: ios
 ios: ios-device ios-simulator-arm
