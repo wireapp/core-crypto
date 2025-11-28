@@ -3,9 +3,9 @@ use async_trait::async_trait;
 use crate::{CryptoKeystoreResult, Entity, EntityBase, traits::entity_transaction_ext::EntityTransactionExt};
 
 /// A unique entity can appear either 0 or 1 times in the database.
-pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection> {
+pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection> + Entity {
     /// The id used as they key when storing this entity in a KV store.
-    const KEY: &[u8] = &[0];
+    const KEY: <Self as Entity>::PrimaryKey;
 }
 
 /// Unique entities get some convenience methods implemented automatically.
@@ -34,7 +34,7 @@ pub trait UniqueEntityExt<'a>: UniqueEntity + EntityTransactionExt<'a> {
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
 impl<'a, E> UniqueEntityExt<'a> for E
 where
-    E: Entity<PrimaryKey = &'static [u8]> + UniqueEntity + EntityTransactionExt<'a> + Sync,
+    E: UniqueEntity + EntityTransactionExt<'a> + Sync,
     <E as EntityTransactionExt<'a>>::Transaction: Sync,
 {
     /// Get this unique entity from the database.
@@ -66,6 +66,6 @@ where
 
     /// Returns whether or not the database contains an instance of this unique entity.
     async fn exists(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<bool> {
-        Self::count(conn).await.map(|count| count > 0)
+        <Self as Entity>::count(conn).await.map(|count| count > 0)
     }
 }
