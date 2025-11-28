@@ -115,7 +115,8 @@ impl ConversationGuard {
         let signer = credential.signature_key();
         let mut conversation = self.conversation_mut().await;
 
-        // No need to also check pending proposals since they should already have been scanned while decrypting the proposal message
+        // No need to also check pending proposals since they should already have been scanned while decrypting the
+        // proposal message
         let crl_dps = extract_crl_uris_from_credentials(key_packages.iter().filter_map(|kp| {
             let mls_credential = kp.credential().mls_credential();
             matches!(mls_credential, openmls::prelude::MlsCredentialType::X509(_)).then_some(mls_credential)

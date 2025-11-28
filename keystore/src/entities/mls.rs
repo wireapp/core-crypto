@@ -418,7 +418,8 @@ pub struct E2eiAcmeCA {
 )]
 #[zeroize(drop)]
 pub struct E2eiIntermediateCert {
-    // key to identify the CA cert; Using a combination of SKI & AKI extensions concatenated like so is suitable: `SKI[+AKI]`
+    // key to identify the CA cert; Using a combination of SKI & AKI extensions concatenated like so is suitable:
+    // `SKI[+AKI]`
     #[id]
     pub ski_aki_pair: String,
     pub content: Vec<u8>,

@@ -15,7 +15,8 @@ pub enum E2eiConversationState {
     Verified = 1,
     /// Some clients are either still Basic or their certificate is expired
     NotVerified,
-    /// All clients are still Basic. If all client have expired certificates, [E2eiConversationState::NotVerified] is returned.
+    /// All clients are still Basic. If all client have expired certificates, [E2eiConversationState::NotVerified] is
+    /// returned.
     NotEnabled,
 }
 

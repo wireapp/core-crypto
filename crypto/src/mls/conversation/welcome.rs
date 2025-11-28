@@ -19,7 +19,8 @@ pub struct WelcomeBundle {
 }
 
 impl MlsConversation {
-    // ? Do we need to provide the ratchet_tree to the MlsGroup? Does everything crumble down if we can't actually get it?
+    // ? Do we need to provide the ratchet_tree to the MlsGroup? Does everything crumble down if we can't actually get
+    // it?
     /// Create the MLS conversation from an MLS Welcome message
     ///
     /// # Arguments

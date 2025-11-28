@@ -180,8 +180,9 @@ impl Session {
     /// Prune the provided KeyPackageRefs from the keystore
     ///
     /// Warning: Despite this API being public, the caller should know what they're doing.
-    /// Provided KeypackageRefs **will** be purged regardless of their expiration state, so please be wary of what you are doing if you directly call this API.
-    /// This could result in still valid, uploaded keypackages being pruned from the system and thus being impossible to find when referenced in a future Welcome message.
+    /// Provided KeypackageRefs **will** be purged regardless of their expiration state, so please be wary of what you
+    /// are doing if you directly call this API. This could result in still valid, uploaded keypackages being pruned
+    /// from the system and thus being impossible to find when referenced in a future Welcome message.
     pub async fn prune_keypackages(
         &self,
         backend: &MlsCryptoProvider,
@@ -460,7 +461,8 @@ mod tests {
             assert_eq!(init.credential, 1);
 
             // since 'delete_keypackages' will evict all Credentials unlinked to a KeyPackage, each iteration
-            // generates 1 extra KeyPackage in order for this Credential no to be evicted and next iteration sto succeed.
+            // generates 1 extra KeyPackage in order for this Credential no to be evicted and next iteration sto
+            // succeed.
             let transactional_provider = cc.transaction.mls_provider().await.unwrap();
             let crypto_provider = transactional_provider.crypto();
             let mut pinned_kp = None;
@@ -550,7 +552,8 @@ mod tests {
             .await
             .unwrap();
 
-        // Generate `UNEXPIRED_COUNT` kpbs that are with default 3 months expiration. We *should* keep them for the duration of the test
+        // Generate `UNEXPIRED_COUNT` kpbs that are with default 3 months expiration. We *should* keep them for the
+        // duration of the test
         let unexpired_kpbs = session
             .request_key_packages(UNEXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
             .await

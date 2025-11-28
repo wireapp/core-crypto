@@ -17,7 +17,8 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 /// Errors produced by the root module group
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// Invalid [crate::transaction_context::TransactionContext]. This context has been finished and can no longer be used.
+    /// Invalid [crate::transaction_context::TransactionContext]. This context has been finished and can no longer be
+    /// used.
     #[error("This transaction context has already been finished and can no longer be used.")]
     InvalidTransactionContext,
     /// The proteus client has been called but has not been initialized yet

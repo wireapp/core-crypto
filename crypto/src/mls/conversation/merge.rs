@@ -9,7 +9,6 @@
 //! |-------------------|----------------|----------------|
 //! | 0 pend. Proposal  | ❌              | ✅              |
 //! | 1+ pend. Proposal | ❌              | ✅              |
-//!
 
 use core_crypto_keystore::entities::StoredEncryptionKeyPair;
 use mls_crypto_provider::MlsCryptoProvider;

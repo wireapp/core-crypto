@@ -118,7 +118,8 @@ impl PendingConversation {
         &mut self,
         message: impl AsRef<[u8]>,
     ) -> Result<MlsConversationDecryptMessage> {
-        // If the confirmation tag of the pending group and this incoming message are identical, we can merge the pending group.
+        // If the confirmation tag of the pending group and this incoming message are identical, we can merge the
+        // pending group.
         if self.incoming_message_is_own_join_commit(message.as_ref()).await? {
             return self.merge_and_restore_messages().await;
         }

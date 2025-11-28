@@ -214,8 +214,8 @@ mod tests {
 
                 // Charlie joins through a Welcome and should get external_senders from Welcome
                 // message and not from configuration
-                // charlie can only get it from there, because the `MlsCustomgConfiguration` that they receive when processing
-                // the welcome, doesn't contain any info about an external sender.
+                // charlie can only get it from there, because the `MlsCustomgConfiguration` that they receive when
+                // processing the welcome, doesn't contain any info about an external sender.
                 let conversation = conversation.invite_notify([&charlie]).await;
                 assert_eq!(conversation.member_count().await, 3);
                 assert!(conversation.is_functional_and_contains([&alice, &bob, &charlie]).await);

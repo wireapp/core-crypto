@@ -28,8 +28,8 @@ impl ConversationGuard {
     ///
     /// # Arguments
     /// * `conversation_id` - the group/conversation id
-    /// * `proposal_ref` - unique proposal identifier which is present in [crate::MlsProposalBundle]
-    ///   and returned from all operation creating a proposal
+    /// * `proposal_ref` - unique proposal identifier which is present in [crate::MlsProposalBundle] and returned from
+    ///   all operation creating a proposal
     ///
     /// # Errors
     /// When the conversation is not found or the proposal reference does not identify a proposal

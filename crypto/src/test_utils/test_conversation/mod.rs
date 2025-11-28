@@ -57,7 +57,8 @@ impl<'a> TestConversation<'a> {
         }
     }
 
-    /// Use this if you have created a conversation before and want to create a `TestConversation` instance of that conversation.
+    /// Use this if you have created a conversation before and want to create a `TestConversation` instance of that
+    /// conversation.
     pub async fn new_from_existing(
         case: &'a TestContext,
         id: ConversationId,

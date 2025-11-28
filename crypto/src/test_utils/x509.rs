@@ -22,7 +22,8 @@ pub struct CertificateParams {
     pub cert_keypair: Option<PkiKeypair>,
     /// When the certificate becomes valid - UNIX timestamp
     pub validity_start: Option<Duration>,
-    /// Expiration of the certificate; It is relative to either now (when `validity_start` is not provided) or `validity_start`
+    /// Expiration of the certificate; It is relative to either now (when `validity_start` is not provided) or
+    /// `validity_start`
     pub expiration: Duration,
 }
 

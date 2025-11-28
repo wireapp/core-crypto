@@ -154,7 +154,8 @@ mod tests {
         Box::pin(async move {
             let conversation = case.create_conversation([&alice, &bob]).await;
 
-            // Bob creates a commit but won't merge it immediately (e.g, because his app crashes before he receives the success response from the ds)
+            // Bob creates a commit but won't merge it immediately (e.g, because his app crashes before he receives the
+            // success response from the ds)
             let unmerged_commit_guard = conversation.acting_as(&bob).await.update_unmerged().await;
             let unmerged_commit = unmerged_commit_guard.message();
 

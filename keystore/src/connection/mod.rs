@@ -32,7 +32,8 @@ use crate::{
 /// Limit on the length of a blob to be stored in the database.
 ///
 /// This limit applies to both SQLCipher-backed stores and WASM.
-/// This limit is conservative on purpose when targeting WASM, as the lower bound that exists is Safari with a limit of 1GB per origin.
+/// This limit is conservative on purpose when targeting WASM, as the lower bound that exists is Safari with a limit of
+/// 1GB per origin.
 ///
 /// See: [SQLite limits](https://www.sqlite.org/limits.html)
 /// See: [IndexedDB limits](https://stackoverflow.com/a/63019999/1934177)
@@ -42,7 +43,8 @@ pub const MAX_BLOB_LEN: usize = 1_000_000_000;
 // ? Because of UniFFI async requirements, we need our keystore to be Send as well now
 pub trait DatabaseConnectionRequirements: Sized + Send {}
 #[cfg(target_family = "wasm")]
-// ? On the other hand, things cannot be Send on WASM because of platform restrictions (all things are copied across the FFI)
+// ? On the other hand, things cannot be Send on WASM because of platform restrictions (all things are copied across the
+// FFI)
 pub trait DatabaseConnectionRequirements: Sized {}
 
 /// The key used to encrypt the database.

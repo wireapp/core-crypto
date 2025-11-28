@@ -71,7 +71,8 @@ fn commit_add_n_clients_bench(c: &mut Criterion) {
 }
 
 /// Benchmark to measure the impact of group size on the runtime of creating and merging a remove commit.
-/// Number of removed clients is equal to group size (→ all clients except the initial client from [setup_mls] are removed).
+/// Number of removed clients is equal to group size (→ all clients except the initial client from [setup_mls] are
+/// removed).
 fn commit_remove_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Commit remove f(group size)");
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {

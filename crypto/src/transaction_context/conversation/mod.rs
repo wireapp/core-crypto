@@ -51,8 +51,7 @@ impl TransactionContext {
     /// Create a new empty conversation
     ///
     /// # Arguments
-    /// * `id` - identifier of the group/conversation (must be unique otherwise the existing group
-    ///   will be overridden)
+    /// * `id` - identifier of the group/conversation (must be unique otherwise the existing group will be overridden)
     /// * `creator_credential_type` - kind of credential the creator wants to create the group with
     /// * `config` - configuration of the group/conversation
     ///

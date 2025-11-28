@@ -18,7 +18,8 @@ pub struct DecryptedMessage {
     /// Commit delay in seconds.
     ///
     /// When set, clients must delay this long before processing a commit.
-    /// This reduces load on the backend, which otherwise would receive epoch change notifications from all clients simultaneously.
+    /// This reduces load on the backend, which otherwise would receive epoch change notifications from all clients
+    /// simultaneously.
     pub commit_delay: Option<u64>,
     /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
     pub sender_client_id: Option<ClientIdMaybeArc>,
@@ -76,7 +77,8 @@ pub struct BufferedDecryptedMessage {
     /// Commit delay in seconds.
     ///
     /// When set, clients must delay this long before processing a commit.
-    /// This reduces load on the backend, which otherwise would receive epoch change notifications from all clients simultaneously.
+    /// This reduces load on the backend, which otherwise would receive epoch change notifications from all clients
+    /// simultaneously.
     pub commit_delay: Option<u64>,
     /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
     pub sender_client_id: Option<ClientIdMaybeArc>,

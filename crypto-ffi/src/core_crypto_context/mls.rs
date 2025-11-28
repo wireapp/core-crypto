@@ -379,7 +379,8 @@ impl CoreCryptoContext {
 
     /// Get all credentials from this client which match the provided parameters.
     ///
-    /// Parameters which are unset or `None` match anything. Those with a particular value find only credentials matching that value.
+    /// Parameters which are unset or `None` match anything. Those with a particular value find only credentials
+    /// matching that value.
     pub async fn find_credentials(
         &self,
         client_id: Option<ClientIdMaybeArc>,

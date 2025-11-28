@@ -50,7 +50,8 @@ impl MlsConversation {
         let epoch = self.group.epoch().as_u64();
         let mut own_index = self.group.own_leaf_index().u32() as u64;
 
-        // Look for members that were removed at the left of our tree in order to shift our own leaf index (post-commit tree visualization)
+        // Look for members that were removed at the left of our tree in order to shift our own leaf index (post-commit
+        // tree visualization)
         let left_tree_diff = self
             .group
             .members()
@@ -66,7 +67,8 @@ impl MlsConversation {
 
         // Post-commit visualization of the number of members after remove proposals
         let nb_members = (self.group.members().count() as u64).saturating_sub(removed_index.len() as u64);
-        // This shifts our own leaf index to the left (tree-wise) from as many as there was removed members that have a smaller leaf index than us (older members)
+        // This shifts our own leaf index to the left (tree-wise) from as many as there was removed members that have a
+        // smaller leaf index than us (older members)
         own_index = own_index.saturating_sub(left_tree_diff as u64);
 
         Some(Self::calculate_delay(own_index, epoch, nb_members))

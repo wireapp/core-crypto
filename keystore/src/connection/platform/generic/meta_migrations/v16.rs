@@ -43,7 +43,8 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
             credential_id: row.get("credential_id")?,
         };
 
-        // Insert the new credential into temporary mls_credentials_new table, that will be renamed in the next migration
+        // Insert the new credential into temporary mls_credentials_new table, that will be renamed in the next
+        // migration
         if let Some(c) = migrate_to_new_credential(&v5, &kp)? {
             tx.execute(
                 "INSERT INTO mls_credentials_new (

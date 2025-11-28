@@ -143,8 +143,8 @@ impl SessionContext {
         };
 
         // in the x509 case, `CertificateBundle::rand` just completely invents a new client id in the format that e2ei
-        // apparently prefers. We still need to add that credential even so, because this test util code is (meant to be) part of setup,
-        // not part of the code under test.
+        // apparently prefers. We still need to add that credential even so, because this test util code is (meant to
+        // be) part of setup, not part of the code under test.
         self.session
             .add_credential_without_clientid_check(credential)
             .await

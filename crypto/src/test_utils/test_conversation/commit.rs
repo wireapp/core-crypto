@@ -117,7 +117,8 @@ impl<'a> TestConversation<'a> {
         OperationGuard::new(TestOperation::Update, commit, self, [])
     }
 
-    /// Like [Self::e2ei_rotate_notify], but also when notifying other members, call [SessionContext::verify_sender_identity].
+    /// Like [Self::e2ei_rotate_notify], but also when notifying other members, call
+    /// [SessionContext::verify_sender_identity].
     pub async fn e2ei_rotate_notify_and_verify_sender(self, credential: Option<&Credential>) -> TestConversation<'a> {
         self.e2ei_rotate(credential)
             .await
@@ -249,7 +250,8 @@ impl<'a> TestConversation<'a> {
         )
     }
 
-    /// Like [Self::external_join_notify], but with "unmerged" state on the joiners session. To merge, call [PendingConversation::merge].
+    /// Like [Self::external_join_notify], but with "unmerged" state on the joiners session. To merge, call
+    /// [PendingConversation::merge].
     pub async fn external_join_unmerged_notify(
         self,
         joiner: &'a SessionContext,
@@ -259,7 +261,8 @@ impl<'a> TestConversation<'a> {
         (commit_guard.notify_members().await, pending_conversation)
     }
 
-    /// Like [Self::external_join], but with "unmerged" state on the joiners session. To merge, call [PendingConversation::merge].
+    /// Like [Self::external_join], but with "unmerged" state on the joiners session. To merge, call
+    /// [PendingConversation::merge].
     pub async fn external_join_unmerged(
         self,
         joiner: &'a SessionContext,

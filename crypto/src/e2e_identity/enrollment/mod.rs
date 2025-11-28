@@ -183,8 +183,8 @@ impl E2eiEnrollment {
     /// # Parameters
     /// * `url` - one of the URL in new order's authorizations (from [Self::new_order_response])
     /// * `account` - you got from [Self::new_account_response]
-    /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-order`
-    ///   (or from the previous to this method if you are creating the second authorization)
+    /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-order` (or from the
+    ///   previous to this method if you are creating the second authorization)
     pub fn new_authz_request(&self, url: String, previous_nonce: String) -> Result<Json> {
         let account = self.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
             "You must first call 'newAccountResponse()'",
@@ -220,8 +220,7 @@ impl E2eiEnrollment {
     ///
     /// # Parameters
     /// * `expiry_secs` - of the client Dpop JWT. This should be equal to the grace period set in Team Management
-    /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server.
-    ///   See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
+    /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server. See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
     /// * `expiry` - token expiry
     #[allow(clippy::too_many_arguments)]
     pub fn create_dpop_token(&self, expiry_secs: u32, backend_nonce: String) -> Result<String> {
@@ -337,7 +336,8 @@ impl E2eiEnrollment {
     /// # Parameters
     /// * `order_url` - `location` header from http response you got from [Self::new_order_response]
     /// * `account` - you got from [Self::new_account_response]
-    /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
+    /// * `previous_nonce` - `replay-nonce` response header from `POST
+    ///   /acme/{provisioner-name}/challenge/{challenge-id}`
     pub fn check_order_request(&self, order_url: String, previous_nonce: String) -> Result<Json> {
         let account = self.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
             "You must first call 'newAccountResponse()'",
@@ -409,7 +409,8 @@ impl E2eiEnrollment {
     /// # Parameters
     /// * `finalize` - you got from [Self::finalize_response]
     /// * `account` - you got from [Self::new_account_response]
-    /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}/finalize`
+    /// * `previous_nonce` - `replay-nonce` response header from `POST
+    ///   /acme/{provisioner-name}/order/{order-id}/finalize`
     pub fn certificate_request(&mut self, previous_nonce: String) -> Result<Json> {
         let account = self.account.take().ok_or(Error::OutOfOrderEnrollment(
             "You must first call 'newAccountResponse()'",

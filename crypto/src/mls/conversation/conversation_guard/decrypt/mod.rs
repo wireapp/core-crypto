@@ -48,8 +48,8 @@ use crate::{
 pub struct MlsConversationDecryptMessage {
     /// Decrypted text message
     pub app_msg: Option<Vec<u8>>,
-    /// Only when decrypted message is a commit, CoreCrypto will renew local proposal which could not make it in the commit.
-    /// This will contain either:
+    /// Only when decrypted message is a commit, CoreCrypto will renew local proposal which could not make it in the
+    /// commit. This will contain either:
     /// * local pending proposal not in the accepted commit
     /// * If there is a pending commit, its proposals which are not in the accepted commit
     pub proposals: Vec<MlsProposalBundle>,
@@ -569,7 +569,8 @@ impl ConversationGuard {
             )
             .await;
             if state != E2eiConversationState::Verified {
-                // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations. Tracking issue: WPB-9665
+                // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and
+                // impact of the validations. Tracking issue: WPB-9665
                 // return Err(Error::InvalidCertificateChain);
             }
         }

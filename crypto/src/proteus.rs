@@ -167,7 +167,8 @@ impl CoreCrypto {
 /// Proteus counterpart of [crate::mls::session::Session]
 ///
 /// The big difference is that [ProteusCentral] doesn't *own* its own keystore but must borrow it from the outside.
-/// Whether it's exclusively for this struct's purposes or it's shared with our main struct, [crate::mls::session::Session]
+/// Whether it's exclusively for this struct's purposes or it's shared with our main struct,
+/// [crate::mls::session::Session]
 #[derive(Debug)]
 pub struct ProteusCentral {
     proteus_identity: Arc<IdentityKeyPair>,
@@ -193,7 +194,8 @@ impl ProteusCentral {
     }
 
     /// This function will try to load a proteus Identity from our keystore; If it cannot, it will create a new one
-    /// This means this function doesn't fail except in cases of deeper errors (such as in the Keystore and other crypto errors)
+    /// This means this function doesn't fail except in cases of deeper errors (such as in the Keystore and other crypto
+    /// errors)
     async fn load_or_create_identity(keystore: &CryptoKeystore) -> Result<IdentityKeyPair> {
         let Some(identity) = keystore
             .find::<ProteusIdentity>(ProteusIdentity::ID)
@@ -280,15 +282,14 @@ impl ProteusCentral {
         //
         // We can derive two general rules about error-handling in Rust from this example:
         //
-        // 1. It's better to make smaller error types where possible, encapsulating fallible operations
-        //    with their own error variants, and then wrapping those errors where required, as opposed to
-        //    creating giant catch-all errors. Doing so also has knock-on benefits with regard to tracing
-        //    the precise origin of the error.
-        // 2. One should never make an error wrapper parametric. If you need to wrap an unknown error,
-        //    it's always better to wrap a `Box<dyn std::error::Error>` than to make your error type parametric.
-        //    The allocation cost of creating the `Box` is utterly trivial in an error-handling path, and
-        //    it avoids parametric virality. (`init_from_prekey` is itself only generic because it returns
-        //    this error type with a type-parametric variant, which the function never returns.)
+        // 1. It's better to make smaller error types where possible, encapsulating fallible operations with their own
+        //    error variants, and then wrapping those errors where required, as opposed to creating giant catch-all
+        //    errors. Doing so also has knock-on benefits with regard to tracing the precise origin of the error.
+        // 2. One should never make an error wrapper parametric. If you need to wrap an unknown error, it's always
+        //    better to wrap a `Box<dyn std::error::Error>` than to make your error type parametric. The allocation cost
+        //    of creating the `Box` is utterly trivial in an error-handling path, and it avoids parametric virality.
+        //    (`init_from_prekey` is itself only generic because it returns this error type with a type-parametric
+        //    variant, which the function never returns.)
         //
         // In this case, we have the out of band knowledge that `ProteusErrorKind` has a `#[from]` implementation
         // for `proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>` and for no other kinds
@@ -345,7 +346,8 @@ impl ProteusCentral {
 
     /// Persists a session in store
     ///
-    /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
+    /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting
+    /// messages and initializing Sessions
     pub(crate) async fn session_save(&mut self, keystore: &CryptoKeystore, session_id: &str) -> Result<()> {
         if let Some(session) = self
             .proteus_sessions
@@ -462,7 +464,8 @@ impl ProteusCentral {
         Ok(acc)
     }
 
-    /// Generates a new Proteus PreKey, stores it in the keystore and returns a serialized PreKeyBundle to be consumed externally
+    /// Generates a new Proteus PreKey, stores it in the keystore and returns a serialized PreKeyBundle to be consumed
+    /// externally
     pub(crate) async fn new_prekey(&self, id: u16, keystore: &CryptoKeystore) -> Result<Vec<u8>> {
         use proteus_wasm::keys::{PreKey, PreKeyId};
 

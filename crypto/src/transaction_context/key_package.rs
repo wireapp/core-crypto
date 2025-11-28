@@ -38,7 +38,8 @@ impl TransactionContext {
             .map_err(Into::into)
     }
 
-    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [Ciphersuite] and [CredentialType]
+    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [Ciphersuite] and
+    /// [CredentialType]
     pub async fn client_valid_key_packages_count(
         &self,
         ciphersuite: Ciphersuite,

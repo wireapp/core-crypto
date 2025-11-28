@@ -10,7 +10,8 @@ use crate::{Ciphersuite, CoreCryptoResult, CredentialType, client_id::ClientIdMa
 /// This is tied to a particular client via either its client id or certificate bundle,
 /// depending on its credential type, but is independent of any client instance or storage.
 ///
-/// To attach to a particular client instance and store, see [`CoreCryptoContext::add_credential`][crate::CoreCryptoContext::add_credential].
+/// To attach to a particular client instance and store, see
+/// [`CoreCryptoContext::add_credential`][crate::CoreCryptoContext::add_credential].
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, uniffi::Object)]
 pub struct Credential(pub(crate) CryptoCredential);
 

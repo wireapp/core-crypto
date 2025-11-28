@@ -22,8 +22,8 @@ use crate::{Ciphersuite, MlsError, RecursiveError};
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
 
-/// Window for which decryption secrets are kept within an epoch. Use this with caution since this affects forward secrecy within an epoch.
-/// Use this when the Delivery Service cannot guarantee application messages order
+/// Window for which decryption secrets are kept within an epoch. Use this with caution since this affects forward
+/// secrecy within an epoch. Use this when the Delivery Service cannot guarantee application messages order
 pub(crate) const OUT_OF_ORDER_TOLERANCE: u32 = 2;
 
 /// How many application messages can be skipped. Use this when the Delivery Service can drop application messages

@@ -80,7 +80,8 @@ impl MlsConversation {
     }
 
     /// When the incoming commit is sent by ourselves and it's the same as the local pending commit.
-    /// This adapts [Self::commit_accepted] to return the same as [crate::mls::conversation::ConversationGuard::decrypt_message]
+    /// This adapts [Self::commit_accepted] to return the same as
+    /// [crate::mls::conversation::ConversationGuard::decrypt_message]
     pub(crate) async fn merge_pending_commit(
         &mut self,
         client: &Session,
@@ -221,7 +222,8 @@ mod tests {
         .await
     }
 
-    // if there’s no pending commit & and the incoming commit originates from self: succeed by ignoring the incoming commit
+    // if there’s no pending commit & and the incoming commit originates from self: succeed by ignoring the incoming
+    // commit
     #[apply(all_cred_cipher)]
     pub async fn should_ignore_self_incoming_commit_when_no_pending_commit(case: TestContext) {
         if case.is_pure_ciphertext() {

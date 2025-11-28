@@ -25,12 +25,13 @@ impl TransactionContext {
     /// calling [Self::join_by_external_commit] again.
     ///
     /// # Arguments
-    /// * `group_info` - a GroupInfo wrapped in a MLS message. it can be obtained by deserializing a TLS serialized `GroupInfo` object
+    /// * `group_info` - a GroupInfo wrapped in a MLS message. it can be obtained by deserializing a TLS serialized
+    ///   `GroupInfo` object
     /// * `custom_cfg` - configuration of the MLS conversation fetched from the Delivery Service
-    /// * `credential_type` - kind of [openmls::prelude::Credential] to use for joining this group.
-    ///   If [CredentialType::Basic] is chosen and no Credential has been created yet for it,
-    ///   a new one will be generated. When [CredentialType::X509] is chosen, it fails when no
-    ///   [openmls::prelude::Credential] has been created for the given Ciphersuite.
+    /// * `credential_type` - kind of [openmls::prelude::Credential] to use for joining this group. If
+    ///   [CredentialType::Basic] is chosen and no Credential has been created yet for it, a new one will be generated.
+    ///   When [CredentialType::X509] is chosen, it fails when no [openmls::prelude::Credential] has been created for
+    ///   the given Ciphersuite.
     ///
     /// # Returns [WelcomeBundle]
     ///

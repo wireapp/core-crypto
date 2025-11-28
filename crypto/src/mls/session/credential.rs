@@ -51,7 +51,8 @@ impl Session {
         self.add_credential_without_clientid_check(credential).await
     }
 
-    /// Add a credential to the identities of this session without validating that its client ID matches the session client id.
+    /// Add a credential to the identities of this session without validating that its client ID matches the session
+    /// client id.
     ///
     /// This is rarely useful and should only be used when absolutely necessary. You'll know it if you need it.
     ///
@@ -68,7 +69,8 @@ impl Session {
         let guard = self.inner.upgradable_read().await;
         let inner = guard.as_ref().ok_or(Error::MlsNotInitialized)?;
 
-        // failfast before loading the cache if we know already that this credential ref can't be added to the identity set
+        // failfast before loading the cache if we know already that this credential ref can't be added to the identity
+        // set
         let distinct_result = inner.identities.ensure_distinct(
             credential_ref.signature_scheme(),
             credential_ref.r#type(),

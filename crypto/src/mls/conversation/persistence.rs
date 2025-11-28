@@ -56,8 +56,9 @@ impl MlsConversation {
         groups
             .into_iter()
             .map(|group| {
-                // we can't just destructure the fields straight out of the group, because we derive `Zeroize`, which zeroizes on drop,
-                // which means we are forced to clone all the group's fields, because otherwise the drop impl couldn't run.
+                // we can't just destructure the fields straight out of the group, because we derive `Zeroize`, which
+                // zeroizes on drop, which means we are forced to clone all the group's fields, because
+                // otherwise the drop impl couldn't run.
                 let conversation =
                     Self::from_serialized_state(group.state.clone(), group.parent_id.clone().map(Into::into))?;
                 Ok((group.id.clone().into(), conversation))

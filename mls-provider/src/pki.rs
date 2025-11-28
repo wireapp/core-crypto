@@ -80,8 +80,9 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for P
 
                 let binding = self.0.read().await;
                 let Some(pki_env) = binding.as_ref() else {
-                    // This implies that we have a Basic client without a PKI environment setup. Hence they cannot validate X509 credentials they see.
-                    // So we consider it as always valid as we have no way to assert the validity
+                    // This implies that we have a Basic client without a PKI environment setup. Hence they cannot
+                    // validate X509 credentials they see. So we consider it as always valid as we
+                    // have no way to assert the validity
                     return CredentialAuthenticationStatus::Valid;
                 };
 

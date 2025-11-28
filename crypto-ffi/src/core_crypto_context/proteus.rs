@@ -105,7 +105,8 @@ impl CoreCryptoContext {
         proteus_impl!({ self.inner.proteus_new_prekey(prekey_id).await.map_err(Into::into) })
     }
 
-    /// Creates a new Proteus prekey with an automatically incremented ID and returns the CBOR-serialized version of the prekey bundle
+    /// Creates a new Proteus prekey with an automatically incremented ID and returns the CBOR-serialized version of the
+    /// prekey bundle
     ///
     /// Warning: The Proteus client **MUST** be initialized with `proteus_init` first or an error will be returned
     ///

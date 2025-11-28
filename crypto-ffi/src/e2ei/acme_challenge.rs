@@ -4,12 +4,14 @@
 /// - See [core_crypto::e2e_identity::types::E2eiAcmeChallenge]
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct AcmeChallenge {
-    /// Contains raw JSON data of this challenge. This is parsed by the underlying Rust library hence should not be accessed
+    /// Contains raw JSON data of this challenge. This is parsed by the underlying Rust library hence should not be
+    /// accessed
     pub delegate: Vec<u8>,
     /// URL of this challenge
     pub url: String,
     /// Non-standard, Wire specific claim. Indicates the consumer from where it should get the challenge proof.
-    /// Either from wire-server "/access-token" endpoint in case of a DPoP challenge, or from an OAuth token endpoint for an OIDC challenge
+    /// Either from wire-server "/access-token" endpoint in case of a DPoP challenge, or from an OAuth token endpoint
+    /// for an OIDC challenge
     pub target: String,
 }
 

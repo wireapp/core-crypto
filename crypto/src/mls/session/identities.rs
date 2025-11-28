@@ -14,8 +14,8 @@ use crate::{
 /// We use this data structure to make that easy. The outer map filters by signature scheme. The inner set lets us
 /// quickly find the most recent.
 ///
-/// This depends on the fact that in `Credential`'s `Ord` impl, the first comparison is by the credential's `earliest_validity`.
-/// However, by structuring things like this, we do not need to care about insertion order.
+/// This depends on the fact that in `Credential`'s `Ord` impl, the first comparison is by the credential's
+/// `earliest_validity`. However, by structuring things like this, we do not need to care about insertion order.
 ///
 /// We keep each credential inside an arc to avoid cloning them, as X509 credentials can get quite large.
 #[derive(Debug, Clone)]
@@ -150,8 +150,9 @@ impl Identities {
             "can't binary search if credentials are not sorted by validity"
         );
         // if binary search returns ok, it was not distinct by earliest validity, therefore we have a conflict
-        // normally we expect that the new credential has the most recent earliest_validity therefore adding the credential is
-        // as cheap as pushing to the end of the vector, but just in case of random insertion order, do the right thing
+        // normally we expect that the new credential has the most recent earliest_validity therefore adding the
+        // credential is as cheap as pushing to the end of the vector, but just in case of random insertion
+        // order, do the right thing
         let Err(insertion_point) =
             credentials.binary_search_by_key(&credential.earliest_validity, |credential| credential.earliest_validity)
         else {

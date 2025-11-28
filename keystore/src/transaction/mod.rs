@@ -252,7 +252,8 @@ impl KeystoreTransaction {
 
     /// Build a single list of unique records from two potentially overlapping lists.
     /// In case of overlap, records in `records_a` are prioritized.
-    /// Identity from the perspective of this function is determined by the output of [crate::entities::Entity::merge_key].
+    /// Identity from the perspective of this function is determined by the output of
+    /// [crate::entities::Entity::merge_key].
     ///
     /// Further, the output list of records is built with respect to the provided [EntityFindParams]
     /// and the deleted records cached in this [Self] instance.
@@ -331,7 +332,7 @@ impl KeystoreTransaction {
 ///         (identifier_05, ProteusSession)
 ///     ]
 /// );
-///```
+/// ```
 macro_rules! commit_transaction {
     ($keystore_transaction:expr_2021, $db:expr_2021, [ $( ($records:ident, $entity:ty) ),*], proteus_types: [ $( ($conditional_records:ident, $conditional_entity:ty) ),*]) => {
         #[cfg(feature = "proteus-keystore")]

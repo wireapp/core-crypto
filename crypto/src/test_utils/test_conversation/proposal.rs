@@ -99,7 +99,8 @@ impl<'a> TestConversation<'a> {
         )
     }
 
-    /// Like [Self::remove_proposal_notify], but by an external actor, the so-called external sender. We're using the sender index 0.
+    /// Like [Self::remove_proposal_notify], but by an external actor, the so-called external sender. We're using the
+    /// sender index 0.
     pub async fn external_remove_proposal_notify(
         self,
         external_actor: &'a SessionContext,
@@ -111,7 +112,8 @@ impl<'a> TestConversation<'a> {
             .await
     }
 
-    /// Like [Self::remove_proposal], but by an external actor, the so-called external sender. We're using the sender index 0.
+    /// Like [Self::remove_proposal], but by an external actor, the so-called external sender. We're using the sender
+    /// index 0.
     pub async fn external_remove_proposal(
         self,
         external_actor: &'a SessionContext,

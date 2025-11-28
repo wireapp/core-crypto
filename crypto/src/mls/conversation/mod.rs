@@ -67,7 +67,8 @@ use crate::{
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub(crate) trait ConversationWithMls<'a> {
-    /// [`Session`] and [`TransactionContext`][crate::transaction_context::TransactionContext] both implement [`HasSessionAndCrypto`].
+    /// [`Session`] and [`TransactionContext`][crate::transaction_context::TransactionContext] both implement
+    /// [`HasSessionAndCrypto`].
     type Context: HasSessionAndCrypto;
 
     type Conversation: Deref<Target = MlsConversation> + Send;
@@ -116,8 +117,8 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
     /// Derives a new key from the one in the group, to be used elsewhere.
     ///
     /// # Arguments
-    /// * `key_length` - the length of the key to be derived. If the value is higher than the
-    ///     bounds of `u16` or the context hash * 255, an error will be returned
+    /// * `key_length` - the length of the key to be derived. If the value is higher than the bounds of `u16` or the
+    ///   context hash * 255, an error will be returned
     ///
     /// # Errors
     /// OpenMls secret generation error

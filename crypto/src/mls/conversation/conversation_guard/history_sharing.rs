@@ -80,10 +80,10 @@ impl ConversationGuard {
     /// Disable history sharing by removing history clients from the conversation.
     pub async fn disable_history_sharing(&mut self) -> Result<()> {
         let mut history_client_ids = self.get_client_ids().await;
-        // We're facing a trade-off situation here: do we want to avoid unnecessary iteration and assume that there is always
-        // at most one history client in a conversation?
-        // Then we could use something like `into_iter().find_map()` to lazily evaluate client ids, but this way we're making sure to
-        // remove any history client, and not just the first one we find.
+        // We're facing a trade-off situation here: do we want to avoid unnecessary iteration and assume that there is
+        // always at most one history client in a conversation?
+        // Then we could use something like `into_iter().find_map()` to lazily evaluate client ids, but this way we're
+        // making sure to remove any history client, and not just the first one we find.
         history_client_ids.retain(|client_id| crate::ephemeral::is_history_client(client_id));
 
         if history_client_ids.is_empty() {
@@ -310,8 +310,8 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    /// In this test, we're testing our mls library. However, our current mls fork doesn't have this test, and we require this behavior
-    /// for history sharing, that's why this test lives here, for now.
+    /// In this test, we're testing our mls library. However, our current mls fork doesn't have this test, and we
+    /// require this behavior for history sharing, that's why this test lives here, for now.
     async fn can_remove_two_and_add_one_member_in_commit(case: TestContext) {
         // This many members are initially in the conversation.
         const INITIAL_MEMBERS_COUNT: usize = 6;

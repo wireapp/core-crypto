@@ -208,7 +208,8 @@ impl MlsCredentialExt for StoredCredential {
         transaction: &TransactionWrapper<'_>,
         credential: Vec<u8>,
     ) -> CryptoKeystoreResult<()> {
-        // we do not have an index on this since we'll never have more than a handful of credentials in the sotre (~40 max)
+        // we do not have an index on this since we'll never have more than a handful of credentials in the sotre (~40
+        // max)
         transaction.execute("DELETE FROM mls_credentials WHERE credential = ?", [&credential[..]])?;
         Ok(())
     }

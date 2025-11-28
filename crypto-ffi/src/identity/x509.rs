@@ -1,6 +1,7 @@
 use std::time::{Duration, SystemTime};
 
-/// Represents the parts of [WireIdentity][crate::WireIdentity] that are specific to a X509 certificate (and not a Basic one).
+/// Represents the parts of [WireIdentity][crate::WireIdentity] that are specific to a X509 certificate (and not a Basic
+/// one).
 ///
 /// We don't use an enum here since the sole purpose of this is to be exposed through the FFI (and
 /// union types are impossible to carry over the FFI boundary)

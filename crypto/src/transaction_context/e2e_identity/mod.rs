@@ -116,12 +116,13 @@ impl TransactionContext {
         Ok(crl_new_distribution_points)
     }
 
-    /// When x509 new credentials are registered this extracts the new CRL Distribution Point from the end entity certificate
-    /// and all the intermediates
+    /// When x509 new credentials are registered this extracts the new CRL Distribution Point from the end entity
+    /// certificate and all the intermediates
     async fn extract_dp_on_init(&self, certificate_chain: &[Vec<u8>]) -> Result<NewCrlDistributionPoints> {
         use x509_cert::der::Decode as _;
 
-        // Own intermediates are not provided by smallstep in the /federation endpoint so we got to intercept them here, at issuance
+        // Own intermediates are not provided by smallstep in the /federation endpoint so we got to intercept them here,
+        // at issuance
         let size = certificate_chain.len();
         let mut crl_new_distribution_points = HashSet::new();
         if size > 1 {

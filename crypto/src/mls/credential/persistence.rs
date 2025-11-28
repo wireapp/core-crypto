@@ -8,7 +8,8 @@ use crate::{Credential, CredentialRef, KeystoreError};
 impl Credential {
     /// Update all the fields that were updated by the DB during the save.
     ///
-    /// [`<StoredCredential as EntityTransactionExt>::pre_save`][core_crypto_keystore::entities::EntityTransactionExt::pre_save].
+    /// [`<StoredCredential as
+    /// EntityTransactionExt>::pre_save`][core_crypto_keystore::entities::EntityTransactionExt::pre_save].
     fn update_from(&mut self, stored: StoredCredential) {
         self.earliest_validity = stored.created_at;
     }

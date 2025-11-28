@@ -12,7 +12,8 @@ use crate::{
 };
 
 impl TransactionContext {
-    /// Create a conversation from a TLS serialized MLS Welcome message. The `MlsConversationConfiguration` used in this function will be the default implementation.
+    /// Create a conversation from a TLS serialized MLS Welcome message. The `MlsConversationConfiguration` used in this
+    /// function will be the default implementation.
     ///
     /// # Arguments
     /// * `welcome` - a TLS serialized welcome message
@@ -115,7 +116,8 @@ mod tests {
             // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
             commit_guard.notify_members().await;
 
-            // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS Welcome message
+            // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS
+            // Welcome message
             let next_count = bob.transaction.count_entities().await;
             assert_eq!(next_count.key_package, prev_count.key_package - 1);
             assert_eq!(next_count.hpke_private_key, prev_count.hpke_private_key - 1);

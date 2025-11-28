@@ -64,7 +64,8 @@ impl TransactionContext {
     /// having to change/rotate their credential, either because the former one is expired or it
     /// has been revoked. As a consequence, this method does not support changing neither ClientId which
     /// should remain the same as the previous one. It lets you change the DisplayName or the handle
-    /// if you need to. Once the enrollment is finished, use the instance in [TransactionContext::save_x509_credential] to do the rotation.
+    /// if you need to. Once the enrollment is finished, use the instance in [TransactionContext::save_x509_credential]
+    /// to do the rotation.
     pub async fn e2ei_new_rotate_enrollment(
         &self,
         display_name: Option<String>,
@@ -110,7 +111,8 @@ impl TransactionContext {
             &mls_provider,
             ciphersuite,
             sign_keypair,
-            true, // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it
+            true, /* Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST
+                   * already have done an OIDC authn and gotten a refresh token from it */
         )
         .map_err(RecursiveError::e2e_identity("creating new enrollment"))
         .map_err(Into::into)
@@ -125,8 +127,7 @@ impl TransactionContext {
     /// 2. Generate new key packages with [crate::mls::session::Session::request_key_packages]
     /// 3. Use these to replace the stale ones the in the backend
     /// 4. Delete the stale ones locally using [Self::delete_stale_key_packages]
-    ///     * This is the last step because you might still need the old key packages to avoid
-    ///       an orphan welcome message
+    ///     * This is the last step because you might still need the old key packages to avoid an orphan welcome message
     pub async fn save_x509_credential(
         &self,
         enrollment: &mut E2eiEnrollment,
@@ -816,11 +817,12 @@ mod tests {
 
                 let final_count = alice.transaction.count_entities().await;
                 assert_eq!(init_count.encryption_keypair, final_count.encryption_keypair);
-                // TODO: there is no efficient way to clean a credential when alice merges her pending commit. Tracking issue: WPB-9594
-                // One option would be to fetch all conversations and see if Alice is never represented with the said Credential
-                // but let's be honest this is not very efficient.
-                // The other option would be to get rid of having an implicit KeyPackage for the creator of a conversation
-                // assert_eq!(init_count.credential, final_count.credential);
+                // TODO: there is no efficient way to clean a credential when alice merges her pending commit. Tracking
+                // issue: WPB-9594 One option would be to fetch all conversations and see if Alice is
+                // never represented with the said Credential but let's be honest this is not very
+                // efficient. The other option would be to get rid of having an implicit KeyPackage for
+                // the creator of a conversation assert_eq!(init_count.credential,
+                // final_count.credential);
             })
             .await
         }
