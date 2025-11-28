@@ -12,6 +12,13 @@ pub trait KeyType: Send + Sync {
     fn bytes(&self) -> Cow<'_, [u8]>;
 }
 
+// useful for unique entities; non-allocating
+impl KeyType for () {
+    fn bytes(&self) -> Cow<'_, [u8]> {
+        Vec::new().into()
+    }
+}
+
 macro_rules! impl_keytype {
     ($t:ty, |$self:ident| $impl:expr) => {
         impl KeyType for $t {
