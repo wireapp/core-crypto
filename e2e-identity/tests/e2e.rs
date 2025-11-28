@@ -3,10 +3,8 @@
 //!
 //! Prerequisites:
 //! - Docker
-//! - a running test-wire-server instance, pointed at by the TEST_WIRE_SERVER_ADDR environment
-//!   variable
-//! - a configured IdP to use, via the TEST_IDP environment variable
-//!   (currently supported: `keycloak`, `authelia`)
+//! - a running test-wire-server instance, pointed at by the TEST_WIRE_SERVER_ADDR environment variable
+//! - a configured IdP to use, via the TEST_IDP environment variable (currently supported: `keycloak`, `authelia`)
 //!
 //! An instance of the chosen IdP will be started automatically, but it will not be shut down
 //! automatically.
@@ -406,7 +404,8 @@ mod dpop_challenge {
 
     #[rstest]
     #[tokio::test]
-    /// The access token has a 'chal' claim which should match the Acme challenge 'token'. This is verified by the acme server
+    /// The access token has a 'chal' claim which should match the Acme challenge 'token'. This is verified by the acme
+    /// server
     // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_access_token_challenge_claim_is_not_current_challenge_one(test_env: TestEnvironment) {
         let test = E2eTest::new(test_env).start().await;
@@ -760,7 +759,8 @@ mod dpop_challenge {
             create_dpop_token: Box::new(
                 |mut test, (mut dpop_chall, backend_nonce, handle, team, display_name, expiry)| {
                     Box::pin(async move {
-                        // change the url in the DPoP challenge to alter what's in the DPoP token, then restore it at the end
+                        // change the url in the DPoP challenge to alter what's in the DPoP token, then restore it at
+                        // the end
                         let dpop_challenge_url = dpop_chall.url.clone();
                         dpop_chall.url = "http://unknown.com".parse().unwrap();
 

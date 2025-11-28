@@ -5,8 +5,7 @@
 //! On a high level, the process of getting a certificate for a particular Wire client looks like
 //! the following:
 //!
-//! 1. the client requests an [ACME](https://www.rfc-editor.org/rfc/rfc8555.html) server to create a new
-//!    certificate
+//! 1. the client requests an [ACME](https://www.rfc-editor.org/rfc/rfc8555.html) server to create a new certificate
 //! 2. the ACME server responds with two challenges, [DPoP](#dpop-challenge-wire-dpop-01) and
 //!    [OIDC](#oidc-challenge-wire-oidc-01)
 //! 3. the client completes the DPoP challenge
@@ -49,10 +48,8 @@
 //!  - the Wire server responds with a nonce
 //!  - the client constructs a [DPoP](https://www.rfc-editor.org/rfc/rfc9449.html) token
 //!     - the token contains client ID, team and user name
-//!     - the token is signed by the clients ACME account key
-//!       (see [Terminology](https://www.rfc-editor.org/rfc/rfc8555.html#section-3))
-//!  - the client sends the DPoP, together with the nonce, to the Wire server,
-//!    via the `/clients/token/nonce` endpoint
+//!     - the token is signed by the clients ACME account key (see [Terminology](https://www.rfc-editor.org/rfc/rfc8555.html#section-3))
+//!  - the client sends the DPoP, together with the nonce, to the Wire server, via the `/clients/token/nonce` endpoint
 //!  - the Wire server responds with an access token
 //!     - the access token contains the DPoP provided by the client
 //!     - the access token is signed by the key whose public part is known to the ACME server
@@ -96,19 +93,18 @@
 //! and looks roughly as follows:
 //!  - the client generates a PKCE `(code challenge, code verifier)` pair
 //!  - the client makes an authorization request to the user's IdP
-//!     - the request makes use of the `claims` parameter to instruct the IdP to include `keyauth`
-//!       and `acme_aud` claims with the provided values in the ID token
-//!     - the request specifies the `redirect_uri` parameter which is going to be used by the IdP
-//!       to redirect the user back after a login
-//!     - the request includes the PKCE code challenge value, to be verified later by the IdP
-//!       when the client requests an access token
+//!     - the request makes use of the `claims` parameter to instruct the IdP to include `keyauth` and `acme_aud` claims
+//!       with the provided values in the ID token
+//!     - the request specifies the `redirect_uri` parameter which is going to be used by the IdP to redirect the user
+//!       back after a login
+//!     - the request includes the PKCE code challenge value, to be verified later by the IdP when the client requests
+//!       an access token
 //!  - the user is redirected to the IdP's login page, where authentication is performed
-//!  - after a successful authentication, the IdP redirects the user back to
-//!    the OIDC (in this case Wire) client, returning the authorization code
-//!  - the client uses the authorization code and the PKCE code verifier to make an access token
-//!    request to the IdP
-//!  - the IdP verifies both authorization code and the PKCE code verifier and returns the access
-//!    token with the ID token embedded in it; at this point the IdP is no longer needed
+//!  - after a successful authentication, the IdP redirects the user back to the OIDC (in this case Wire) client,
+//!    returning the authorization code
+//!  - the client uses the authorization code and the PKCE code verifier to make an access token request to the IdP
+//!  - the IdP verifies both authorization code and the PKCE code verifier and returns the access token with the ID
+//!    token embedded in it; at this point the IdP is no longer needed
 //!  - the client extracts the ID token from the access token and sends it to the ACME server
 //!  - the ACME server verifies the challenge by
 //!     - verifying the ID token signature
@@ -265,7 +261,8 @@ impl RustyE2eIdentity {
     /// # Parameters
     /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// * `domain` - DNS name of owning backend e.g. `example.com`
-    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ/6add501bacd1d90e@example.com`
+    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g.
+    ///   `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ/6add501bacd1d90e@example.com`
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// * `expiry` - x509 generated certificate expiry
     /// * `directory` - you got from [Self::acme_directory_response]
@@ -320,8 +317,8 @@ impl RustyE2eIdentity {
     /// # Parameters
     /// * `url` - one of the URL in new order's authorizations (from [Self::acme_new_order_response])
     /// * `account` - you got from [Self::acme_new_account_response]
-    /// * `previous_nonce` - "replay-nonce" response header from `POST /acme/{provisioner-name}/new-order`
-    ///   (or from the previous to this method if you are creating the second authorization)
+    /// * `previous_nonce` - "replay-nonce" response header from `POST /acme/{provisioner-name}/new-order` (or from the
+    ///   previous to this method if you are creating the second authorization)
     pub fn acme_new_authz_request(
         &self,
         url: &url::Url,
@@ -376,11 +373,11 @@ impl RustyE2eIdentity {
     ///
     /// # Parameters
     /// * `access_token_url` - backend endpoint where this token will be sent. Should be [this one](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token)
-    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g.
+    ///   `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
     /// * `dpop_challenge` - you found after [Self::acme_new_authz_response]
     /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server.
-    /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
-    ///   See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
+    /// * `handle` - user handle e.g. `alice.smith.qa@example.com` See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
     /// * `expiry` - token expiry
     #[allow(clippy::too_many_arguments)]
     pub fn new_dpop_token(
@@ -494,7 +491,8 @@ impl RustyE2eIdentity {
     /// # Parameters
     /// * `order_url` - "location" header from http response you got from [Self::acme_new_order_response]
     /// * `account` - you got from [Self::acme_new_account_response]
-    /// * `previous_nonce` - "replay-nonce" response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
+    /// * `previous_nonce` - "replay-nonce" response header from `POST
+    ///   /acme/{provisioner-name}/challenge/{challenge-id}`
     pub fn acme_check_order_request(
         &self,
         order_url: url::Url,
