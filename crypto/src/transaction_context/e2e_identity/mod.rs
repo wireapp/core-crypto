@@ -72,7 +72,7 @@ impl TransactionContext {
         let sk = enrollment
             .get_sign_key_for_mls()
             .map_err(RecursiveError::e2e_identity("creating new enrollment"))?;
-        let cs = *enrollment.ciphersuite();
+        let ciphersuite = *enrollment.ciphersuite();
         let certificate_chain = enrollment
             .certificate_response(
                 certificate_chain,
@@ -90,7 +90,7 @@ impl TransactionContext {
 
         let private_key = CertificatePrivateKey {
             value: sk,
-            signature_scheme: cs.signature_algorithm(),
+            signature_scheme: ciphersuite.signature_algorithm(),
         };
 
         let cert_bundle = CertificateBundle {
@@ -98,9 +98,9 @@ impl TransactionContext {
             private_key,
         };
 
-        let mut credential = Credential::x509(cert_bundle.clone()).map_err(RecursiveError::mls_credential(
-            "creating credential from certificate bundle in e2ei_mls_init_only",
-        ))?;
+        let mut credential = Credential::x509(ciphersuite, cert_bundle.clone()).map_err(
+            RecursiveError::mls_credential("creating credential from certificate bundle in e2ei_mls_init_only"),
+        )?;
         // we don't need to keep the credential ref; this credential will be loaded in mls_init later on
         credential
             .save(&mls_provider.keystore())
@@ -109,8 +109,8 @@ impl TransactionContext {
                 "saving credential in e2ei_mls_init_only",
             ))?;
 
-        let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
-        self.mls_init(identifier, &[cs])
+        let identifier = ClientIdentifier::X509(HashMap::from([(ciphersuite.signature_algorithm(), cert_bundle)]));
+        self.mls_init(identifier, &[ciphersuite])
             .await
             .map_err(RecursiveError::transaction("initializing mls"))?;
         Ok(crl_new_distribution_points)

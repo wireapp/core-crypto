@@ -4,10 +4,7 @@ use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{EntityFindParams, StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
 };
-use openmls::prelude::{
-    Credential as MlsCredential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey, KeyPackage,
-    KeyPackageIn, Lifetime, SignaturePublicKey,
-};
+use openmls::prelude::{Credential as MlsCredential, ExternalSender, HpkePublicKey, KeyPackage, SignaturePublicKey};
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
 use tls_codec::Serialize;
 use wire_e2e_identity::prelude::WireIdentityReader;
@@ -18,8 +15,8 @@ use super::{
     test_conversation::operation_guard::{Commit, OperationGuard},
 };
 use crate::{
-    CertificateBundle, Ciphersuite, CoreCrypto, CredentialType, MlsConversationConfiguration,
-    MlsConversationDecryptMessage, RecursiveError, WireIdentity,
+    CertificateBundle, Ciphersuite, CoreCrypto, CredentialRef, CredentialType, MlsConversationDecryptMessage,
+    WireIdentity,
     e2e_identity::{
         device_status::DeviceStatus,
         id::{QualifiedE2eiClientId, WireQualifiedClientId},
@@ -33,39 +30,25 @@ pub const TEAM: &'static str = "world";
 
 pub struct RotateAllResult<'a> {
     pub(crate) commits: Vec<OperationGuard<'a, Commit>>,
-    pub(crate) new_key_packages: Vec<KeyPackage>,
 }
 
 impl SessionContext {
-    pub async fn get_one_key_package(&self, case: &TestContext) -> KeyPackage {
-        let kps = self
-            .transaction
-            .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 1)
-            .await
-            .unwrap();
-        kps.first().unwrap().clone()
+    pub async fn new_keypackage(&self, case: &TestContext) -> KeyPackage {
+        self.new_keypackage_with_lifetime(case, None).await
     }
 
-    pub async fn new_keypackage(&self, case: &TestContext, lifetime: Lifetime) -> KeyPackage {
-        let cb = self
+    pub async fn new_keypackage_with_lifetime(
+        &self,
+        case: &TestContext,
+        lifetime: Option<std::time::Duration>,
+    ) -> KeyPackage {
+        let credential = self
             .find_most_recent_credential(case.signature_scheme(), case.credential_type)
             .await
             .unwrap();
-        KeyPackage::builder()
-            .key_package_lifetime(lifetime)
-            .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
-            .build(
-                CryptoConfig {
-                    ciphersuite: case.ciphersuite().into(),
-                    version: openmls::versions::ProtocolVersion::default(),
-                },
-                &self.transaction.mls_provider().await.unwrap(),
-                &cb.signature_key_pair,
-                CredentialWithKey {
-                    credential: cb.mls_credential.clone(),
-                    signature_key: cb.signature_key_pair.public().into(),
-                },
-            )
+        let credential_ref = CredentialRef::from_credential(&credential);
+        self.session
+            .generate_keypackage(&credential_ref, lifetime)
             .await
             .unwrap()
     }
@@ -87,19 +70,6 @@ impl SessionContext {
                     .unwrap_or(true)
             })
             .count()
-    }
-
-    pub async fn rand_key_package(&self, case: &TestContext) -> KeyPackageIn {
-        self.rand_key_package_of_type(case, case.credential_type).await
-    }
-
-    pub async fn rand_key_package_of_type(&self, case: &TestContext, ct: CredentialType) -> KeyPackageIn {
-        let client = self.transaction.session().await.unwrap();
-        client
-            .generate_one_keypackage(&self.transaction.mls_provider().await.unwrap(), case.ciphersuite(), ct)
-            .await
-            .unwrap()
-            .into()
     }
 
     pub async fn commit_transaction(&mut self) {
@@ -135,10 +105,10 @@ impl SessionContext {
         let client_id = client.id().await.unwrap();
 
         let credential = match case.credential_type {
-            CredentialType::Basic => Credential::basic(case.signature_scheme(), client_id, backend).unwrap(),
+            CredentialType::Basic => Credential::basic(case.ciphersuite(), client_id, backend).unwrap(),
             CredentialType::X509 => {
                 let cert_bundle = CertificateBundle::rand(&client_id, signer.unwrap());
-                Credential::x509(cert_bundle).unwrap()
+                Credential::x509(case.ciphersuite(), cert_bundle).unwrap()
             }
         };
 
@@ -227,40 +197,33 @@ impl SessionContext {
 
     pub async fn save_new_credential(
         &self,
-        _case: &TestContext,
+        case: &TestContext,
         handle: &str,
         display_name: &str,
         signer: &X509Certificate,
     ) -> Arc<Credential> {
         let cid = QualifiedE2eiClientId::try_from(self.get_client_id().await.as_slice()).unwrap();
         let new_cert = CertificateBundle::new(handle, display_name, Some(&cid), None, signer);
-        let credential = Credential::x509(new_cert).unwrap();
+        let credential = Credential::x509(case.ciphersuite(), new_cert).unwrap();
         let client = self.session().await;
         client.add_credential_producing_arc(credential).await.unwrap()
     }
 
-    pub(crate) async fn create_key_packages_and_update_credential_in_all_conversations<'a>(
+    pub(crate) async fn update_credential_in_all_conversations<'a>(
         &self,
         all_conversations: Vec<TestConversation<'a>>,
         cb: &Credential,
         cipher_suite: Ciphersuite,
-        key_package_count: usize,
     ) -> Result<RotateAllResult<'a>> {
+        assert_eq!(cipher_suite, cb.ciphersuite);
+
         let mut commits = Vec::with_capacity(all_conversations.len());
         for conv in all_conversations {
             let commit_guard = conv.acting_as(self).await.e2ei_rotate(None).await;
             commits.push(commit_guard);
         }
-        let new_key_packages = self
-            .session()
-            .await
-            .generate_new_keypackages(&self.session.crypto_provider, cipher_suite, cb, key_package_count)
-            .await
-            .map_err(RecursiveError::mls_client("generating new key packages"))?;
-        Ok(RotateAllResult {
-            commits,
-            new_key_packages,
-        })
+
+        Ok(RotateAllResult { commits })
     }
 
     pub async fn get_e2ei_client_id(&self) -> wire_e2e_identity::prelude::E2eiClientId {

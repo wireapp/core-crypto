@@ -53,17 +53,19 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         smol::block_on(async {
-                            let (alice_central, id, _, _, delivery_service) =
+                            let (alice_central, id, _, _, delivery_service, _) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
 
-                            let (bob_central, ..) =
+                            let (bob_central, _, _, bob_credential_ref) =
                                 new_central(ciphersuite, credential.as_ref(), in_memory, true).await;
+                            let bob_credential_ref =
+                                bob_credential_ref.expect("new_central definitely created a credential for bob");
                             let bob_context = bob_central.new_transaction().await.unwrap();
-                            let bob_kpbs = bob_context
-                                .get_or_create_client_keypackages(ciphersuite, CredentialType::Basic, 1)
+
+                            let bob_kp = bob_context
+                                .generate_keypackage(&bob_credential_ref, None)
                                 .await
                                 .unwrap();
-                            let bob_kp = bob_kpbs.first().unwrap().clone();
                             bob_context.finish().await.unwrap();
                             let alice_context = alice_central.new_transaction().await.unwrap();
                             alice_context

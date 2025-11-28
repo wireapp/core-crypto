@@ -48,7 +48,7 @@ fn commit_add_n_clients_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         smol::block_on(async {
-                            let (central, id, _) = setup_mls(ciphersuite, credential.as_ref(), in_memory, true).await;
+                            let (central, id, ..) = setup_mls(ciphersuite, credential.as_ref(), in_memory, true).await;
                             let mut kps = Vec::with_capacity(*i);
                             for _ in 0..*i {
                                 let (kp, _) = rand_key_package(ciphersuite).await;

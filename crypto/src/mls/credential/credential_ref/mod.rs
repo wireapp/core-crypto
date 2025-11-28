@@ -8,7 +8,7 @@ use openmls::prelude::SignatureScheme;
 
 pub(crate) use self::error::{Error, Result};
 pub use self::find::{FindFilters, FindFiltersBuilder};
-use crate::{ClientId, ClientIdRef, CredentialType};
+use crate::{Ciphersuite, ClientId, ClientIdRef, CredentialType};
 
 /// A reference to a credential which has been stored in a session.
 ///
@@ -28,7 +28,7 @@ pub struct CredentialRef {
     client_id: ClientId,
     public_key: Vec<u8>,
     r#type: CredentialType,
-    signature_scheme: SignatureScheme,
+    ciphersuite: Ciphersuite,
     // first unix timestamp at which the credential is valid
     earliest_validity: u64,
 }
@@ -41,7 +41,7 @@ impl CredentialRef {
             client_id: credential.client_id().to_owned(),
             public_key: credential.signature_key_pair.public().to_owned(),
             r#type: credential.credential_type(),
-            signature_scheme: credential.signature_scheme(),
+            ciphersuite: credential.ciphersuite(),
             earliest_validity: credential.earliest_validity,
         }
     }
@@ -63,7 +63,12 @@ impl CredentialRef {
 
     /// Get the signature scheme associated with this credential
     pub fn signature_scheme(&self) -> SignatureScheme {
-        self.signature_scheme
+        self.ciphersuite.signature_algorithm()
+    }
+
+    /// Get the ciphersuite associated with this credential
+    pub fn ciphersuite(&self) -> Ciphersuite {
+        self.ciphersuite
     }
 
     /// Get the unix timestamp of the earliest validity of this credential.

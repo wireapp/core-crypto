@@ -648,19 +648,12 @@ mod tests {
             .await
             .unwrap();
 
-        let credential =
-            Credential::from_identifier(&identifier, case.signature_scheme(), &cc.mls.crypto_provider).unwrap();
-        cc.add_credential(credential).await.unwrap();
+        let credential = Credential::from_identifier(&identifier, case.ciphersuite(), &cc.mls.crypto_provider).unwrap();
+        let credential_ref = cc.add_credential(credential).await.unwrap();
 
         // expect MLS to work
-        assert_eq!(
-            transaction
-                .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 2)
-                .await
-                .unwrap()
-                .len(),
-            2
-        );
+        assert!(transaction.generate_keypackage(&credential_ref, None).await.is_ok());
+
         #[cfg(not(target_family = "wasm"))]
         drop(db_file);
     }

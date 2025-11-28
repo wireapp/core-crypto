@@ -1,65 +1,62 @@
 //! This module contains all transactional behavior related to key packages
 
-use openmls::prelude::{KeyPackage, KeyPackageRef};
+use std::time::Duration;
 
 use super::{Result, TransactionContext};
-use crate::{Ciphersuite, CredentialType, RecursiveError};
+use crate::{CredentialRef, Keypackage, KeypackageRef, RecursiveError};
 
 impl TransactionContext {
-    /// Returns `amount_requested` OpenMLS [KeyPackage]s.
-    /// Will always return the requested amount as it will generate the necessary (lacking) amount on-the-fly
+    /// Generate a [Keypackage] from the referenced credential.
     ///
-    /// Note: Keypackage pruning is performed as a first step
+    /// Makes no attempt to look up or prune existing keypackges.
     ///
-    /// # Arguments
-    /// * `amount_requested` - number of KeyPackages to request and fill the `KeyPackageBundle`
-    ///
-    /// # Return type
-    /// A vector of `KeyPackageBundle`
-    ///
-    /// # Errors
-    /// Errors can happen when accessing the KeyStore
-    pub async fn get_or_create_client_keypackages(
+    /// If `lifetime` is set, the keypackages will expire that span into the future.
+    /// If it is unset, [`KEYPACKAGE_DEFAULT_LIFETIME`][crate::mls::session::key_package::KEYPACKAGE_DEFAULT_LIFETIME]
+    /// is used.
+    pub async fn generate_keypackage(
         &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-        amount_requested: usize,
-    ) -> Result<Vec<KeyPackage>> {
+        credential_ref: &CredentialRef,
+        lifetime: Option<Duration>,
+    ) -> Result<Keypackage> {
         let session = self.session().await?;
         session
-            .request_key_packages(
-                amount_requested,
-                ciphersuite,
-                credential_type,
-                &self.mls_provider().await?,
-            )
+            .generate_keypackage(credential_ref, lifetime)
             .await
-            .map_err(RecursiveError::mls_client("requesting key packages"))
+            .map_err(RecursiveError::mls_client("generating keypackages for transaction"))
             .map_err(Into::into)
     }
 
-    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [Ciphersuite] and [CredentialType]
-    pub async fn client_valid_key_packages_count(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-    ) -> Result<usize> {
+    /// Get all [`KeypackageRef`]s known to the keystore.
+    pub async fn get_keypackage_refs(&self) -> Result<Vec<KeypackageRef>> {
         let session = self.session().await?;
         session
-            .valid_keypackages_count(&self.mls_provider().await?, ciphersuite, credential_type)
+            .get_keypackage_refs()
             .await
-            .map_err(RecursiveError::mls_client("counting valid key packages"))
+            .map_err(RecursiveError::mls_client(
+                "getting all key package refs for transaction",
+            ))
             .map_err(Into::into)
     }
 
-    /// Prunes local KeyPackages after making sure they also have been deleted on the backend side
-    /// You should only use this after [TransactionContext::save_x509_credential]
-    pub async fn delete_keypackages(&self, refs: impl IntoIterator<Item = KeyPackageRef>) -> Result<()> {
-        let mut session = self.session().await?;
+    /// Remove a [`Keypackage`] from the keystore.
+    pub async fn remove_keypackage(&self, kp_ref: &KeypackageRef) -> Result<()> {
+        let session = self.session().await?;
         session
-            .prune_keypackages_and_credential(&self.mls_provider().await?, refs)
+            .remove_keypackage(kp_ref)
             .await
-            .map_err(RecursiveError::mls_client("pruning key packages and credential"))
+            .map_err(RecursiveError::mls_client("removing a keypackage for transaction"))
+            .map_err(Into::into)
+    }
+
+    /// Remove all [`Keypackage`]s associated with this ref.
+    pub async fn remove_keypackages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
+        let session = self.session().await?;
+        session
+            .remove_keypackages_for(credential_ref)
+            .await
+            .map_err(RecursiveError::mls_client(
+                "removing all keypackages for credential ref for transaction",
+            ))
             .map_err(Into::into)
     }
 }

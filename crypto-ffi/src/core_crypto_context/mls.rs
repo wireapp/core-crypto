@@ -1,15 +1,17 @@
+use std::{sync::Arc, time::Duration};
+
 use core_crypto::{
-    Ciphersuite as CryptoCiphersuite, ClientIdentifier, CredentialFindFilters, KeyPackageIn,
-    MlsConversationConfiguration, RecursiveError, VerifiableGroupInfo, mls::conversation::Conversation as _,
+    Ciphersuite as CryptoCiphersuite, ClientIdentifier, CredentialFindFilters, MlsConversationConfiguration,
+    RecursiveError, VerifiableGroupInfo, mls::conversation::Conversation as _,
     transaction_context::Error as TransactionError,
 };
-use tls_codec::{Deserialize as _, Serialize as _};
+use tls_codec::Deserialize as _;
 
 use crate::{
     Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoResult,
-    CredentialRef, CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle, bytes_wrapper::bytes_wrapper,
-    client_id::ClientIdMaybeArc, credential::CredentialMaybeArc, credential_ref::CredentialRefMaybeArc,
-    crl::NewCrlDistributionPoints,
+    CredentialRef, CredentialType, CustomConfiguration, DecryptedMessage, Keypackage, KeypackageRef, WelcomeBundle,
+    bytes_wrapper::bytes_wrapper, client_id::ClientIdMaybeArc, credential::CredentialMaybeArc,
+    credential_ref::CredentialRefMaybeArc, crl::NewCrlDistributionPoints,
 };
 
 bytes_wrapper!(
@@ -32,13 +34,6 @@ bytes_wrapper!(
     /// It can be found within the `GroupInfoBundle` within a `CommitBundle`.
     #[derive(Debug, Clone)]
     GroupInfo
-);
-bytes_wrapper!(
-    /// A signed object describing a client's identity and capabilities.
-    ///
-    /// Includes a public key that can be used to encrypt to that client.
-    /// Other clients can use a client's KeyPackage to introduce that client to a new group.
-    KeyPackage
 );
 bytes_wrapper!(
     /// A TLS-serialized Welcome message.
@@ -138,45 +133,6 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::get_or_create_client_keypackages]
-    pub async fn client_keypackages(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-        amount_requested: u32,
-    ) -> CoreCryptoResult<Vec<KeyPackageMaybeArc>> {
-        let kps = self
-            .inner
-            .get_or_create_client_keypackages(ciphersuite.into(), credential_type.into(), amount_requested as usize)
-            .await
-            .map_err(RecursiveError::transaction("getting or creating client keypackages"))?;
-
-        kps.into_iter()
-            .map(|kp| {
-                kp.tls_serialize_detached()
-                    .map(key_package_coerce_maybe_arc)
-                    .map_err(core_crypto::mls::conversation::Error::tls_serialize("keypackage"))
-                    .map_err(RecursiveError::mls_conversation("serializing keypackage"))
-                    .map_err(Into::into)
-            })
-            .collect::<CoreCryptoResult<_>>()
-    }
-
-    /// See [core_crypto::transaction_context::TransactionContext::client_valid_key_packages_count]
-    pub async fn client_valid_keypackages_count(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-    ) -> CoreCryptoResult<u64> {
-        let count = self
-            .inner
-            .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
-            .await
-            .map_err(RecursiveError::transaction("counting client valid keypackages"))?;
-
-        Ok(count.try_into().unwrap_or(0))
-    }
-
     /// See [core_crypto::transaction_context::TransactionContext::new_conversation]
     pub async fn create_conversation(
         &self,
@@ -224,20 +180,16 @@ impl CoreCryptoContext {
     pub async fn add_clients_to_conversation(
         &self,
         conversation_id: &ConversationId,
-        key_packages: Vec<KeyPackageMaybeArc>,
+        key_packages: Vec<Arc<Keypackage>>,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        let key_packages = key_packages
+        let keypackages = key_packages
             .into_iter()
-            .map(|kp| {
-                KeyPackageIn::tls_deserialize(&mut kp.as_slice())
-                    .map_err(core_crypto::mls::conversation::Error::tls_deserialize("keypackage"))
-                    .map_err(RecursiveError::mls_conversation("adding members to conversation"))
-                    .map_err(Into::into)
-            })
-            .collect::<CoreCryptoResult<Vec<_>>>()?;
+            .map(std::sync::Arc::unwrap_or_clone)
+            .map(Into::into)
+            .collect();
 
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
-        let distribution_points = conversation.add_members(key_packages).await?.into();
+        let distribution_points = conversation.add_members(keypackages).await?.into();
         Ok(distribution_points)
     }
 
@@ -298,7 +250,7 @@ impl CoreCryptoContext {
             Err(e) => Err(e)?,
         };
 
-        decrypted_message.try_into()
+        Ok(decrypted_message.into())
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::encrypt_message]
@@ -391,16 +343,14 @@ impl CoreCryptoContext {
         let client_id = client_id.as_ref().map(|client_id| client_id.as_cc());
         let client_id = client_id.as_ref().map(|client_id| client_id.as_ref());
 
-        let signature_scheme = ciphersuite
-            .map(CryptoCiphersuite::from)
-            .map(|ciphersuite| ciphersuite.signature_algorithm());
+        let ciphersuite = ciphersuite.map(CryptoCiphersuite::from);
 
         let credential_type = credential_type.map(core_crypto::CredentialType::from);
 
         let find_filters = CredentialFindFilters {
             client_id,
             public_key: public_key.as_deref(),
-            signature_scheme,
+            ciphersuite,
             credential_type,
             earliest_validity,
         };
@@ -415,6 +365,48 @@ impl CoreCryptoContext {
                     .map(CredentialRef::into_maybe_arc)
                     .collect()
             })
+            .map_err(Into::into)
+    }
+
+    /// Generate a `KeyPackage` from the referenced credential.
+    ///
+    /// Makes no attempt to look up or prune existing keypackges.
+    ///
+    /// If `lifetime` is set, the keypackages will expire that span into the future.
+    /// If it is unset, a default lifetime of approximately 3 months is used.
+    #[uniffi::method(default(lifetime = None))]
+    pub async fn generate_keypackage(
+        &self,
+        credential_ref: &CredentialRefMaybeArc,
+        lifetime: Option<Duration>,
+    ) -> CoreCryptoResult<Arc<Keypackage>> {
+        let credential_ref = &credential_ref.0;
+        self.inner
+            .generate_keypackage(credential_ref, lifetime)
+            .await
+            .map(Keypackage::coerce_arc)
+            .map_err(Into::into)
+    }
+
+    /// Get a reference to each `KeyPackage` in the database.
+    pub async fn get_keypackages(&self) -> CoreCryptoResult<Vec<Arc<KeypackageRef>>> {
+        self.inner
+            .get_keypackage_refs()
+            .await
+            .map(|kp_refs| kp_refs.into_iter().map(KeypackageRef::coerce_arc).collect())
+            .map_err(Into::into)
+    }
+
+    /// Remove a `KeyPackage` from the database.
+    pub async fn remove_keypackage(&self, kp_ref: &Arc<KeypackageRef>) -> CoreCryptoResult<()> {
+        self.inner.remove_keypackage(kp_ref.as_cc()).await.map_err(Into::into)
+    }
+
+    /// Remove all `KeyPackage`s associated with this credential ref.
+    pub async fn remove_keypackages_for(&self, credential_ref: &CredentialRefMaybeArc) -> CoreCryptoResult<()> {
+        self.inner
+            .remove_keypackages_for(&credential_ref.0)
+            .await
             .map_err(Into::into)
     }
 }

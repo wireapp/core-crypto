@@ -26,8 +26,8 @@ impl CoreCryptoFfi {
             .get_device_identities(&device_ids)
             .await?
             .into_iter()
-            .map(WireIdentity::try_from)
-            .collect::<CoreCryptoResult<Vec<WireIdentity>>>()?;
+            .map(WireIdentity::from)
+            .collect::<Vec<_>>();
         Ok(wire_identities)
     }
 
@@ -46,10 +46,7 @@ impl CoreCryptoFfi {
         let identities = identities
             .into_iter()
             .map(|(k, v)| -> CoreCryptoResult<_> {
-                let identities = v
-                    .into_iter()
-                    .map(WireIdentity::try_from)
-                    .collect::<CoreCryptoResult<Vec<_>>>()?;
+                let identities = v.into_iter().map(WireIdentity::from).collect::<Vec<_>>();
                 Ok((k, identities))
             })
             .collect::<CoreCryptoResult<HashMap<_, _>>>()?;

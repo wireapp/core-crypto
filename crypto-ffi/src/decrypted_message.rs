@@ -3,10 +3,7 @@
 
 use core_crypto::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage};
 
-use crate::{
-    ClientId, CoreCryptoError, CoreCryptoResult, WireIdentity, client_id::ClientIdMaybeArc,
-    crl::NewCrlDistributionPoints,
-};
+use crate::{ClientId, WireIdentity, client_id::ClientIdMaybeArc, crl::NewCrlDistributionPoints};
 
 /// A decrypted message and various associated metadata
 #[derive(Debug, uniffi::Record)]
@@ -38,31 +35,23 @@ pub struct DecryptedMessage {
     pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
-impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
-    type Error = CoreCryptoError;
-
-    fn try_from(from: MlsConversationDecryptMessage) -> Result<Self, Self::Error> {
+impl From<MlsConversationDecryptMessage> for DecryptedMessage {
+    fn from(from: MlsConversationDecryptMessage) -> Self {
         let buffered_messages = from
             .buffered_messages
-            .map(|bm| {
-                bm.into_iter()
-                    .map(TryInto::try_into)
-                    .collect::<CoreCryptoResult<Vec<_>>>()
-            })
-            .transpose()?;
+            .map(|bm| bm.into_iter().map(Into::into).collect::<Vec<_>>());
 
         #[expect(deprecated)]
-        let msg = Self {
+        Self {
             message: from.app_msg,
             is_active: from.is_active,
             commit_delay: from.delay,
             sender_client_id: from.sender_client_id.map(ClientId::from_cc),
             has_epoch_changed: from.has_epoch_changed,
-            identity: from.identity.try_into()?,
+            identity: from.identity.into(),
             buffered_messages,
             crl_new_distribution_points: from.crl_new_distribution_points.into(),
-        };
-        Ok(msg)
+        }
     }
 }
 
@@ -91,20 +80,17 @@ pub struct BufferedDecryptedMessage {
     pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
-impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage {
-    type Error = CoreCryptoError;
-
-    fn try_from(from: MlsBufferedConversationDecryptMessage) -> Result<Self, Self::Error> {
+impl From<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage {
+    fn from(from: MlsBufferedConversationDecryptMessage) -> Self {
         #[expect(deprecated)]
-        let msg = Self {
+        Self {
             message: from.app_msg,
             is_active: from.is_active,
             commit_delay: from.delay,
             sender_client_id: from.sender_client_id.map(ClientId::from_cc),
             has_epoch_changed: from.has_epoch_changed,
-            identity: from.identity.try_into()?,
+            identity: from.identity.into(),
             crl_new_distribution_points: from.crl_new_distribution_points.into(),
-        };
-        Ok(msg)
+        }
     }
 }

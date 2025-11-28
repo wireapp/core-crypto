@@ -2,7 +2,8 @@ use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, MlsMessageOut};
 
 use super::Result;
 use crate::{
-    Ciphersuite, ConversationId, CredentialType, MlsError, RecursiveError, transaction_context::TransactionContext,
+    Ciphersuite, ConversationId, CredentialRef, CredentialType, MlsError, RecursiveError,
+    transaction_context::TransactionContext,
 };
 
 impl TransactionContext {
@@ -31,21 +32,18 @@ impl TransactionContext {
         credential_type: CredentialType,
     ) -> Result<MlsMessageOut> {
         let group_id = GroupId::from_slice(conversation_id.as_ref());
-        let mls_provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
 
         let client = self
             .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
         let cb = client
-            .find_most_recent_or_create_basic_credential(ciphersuite.signature_algorithm(), credential_type)
+            .find_most_recent_or_create_basic_credential(ciphersuite, credential_type)
             .await
             .map_err(RecursiveError::mls_client("initializing basic credential if missing"))?;
+        let credential_ref = CredentialRef::from_credential(&cb);
         let kp = client
-            .generate_one_keypackage_from_credential(&mls_provider, ciphersuite, &cb)
+            .generate_keypackage(&credential_ref, None)
             .await
             .map_err(RecursiveError::mls_client("generating one keypackage from credential"))?;
 

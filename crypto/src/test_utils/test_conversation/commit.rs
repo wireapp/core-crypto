@@ -6,7 +6,7 @@ use super::{
     operation_guard::{AddGuard, Commit, OperationGuard, TestOperation},
 };
 use crate::{
-    CredentialType,
+    CredentialRef, CredentialType,
     mls::{
         conversation::{ConversationWithMls as _, pending_conversation::PendingConversation},
         credential::Credential,
@@ -48,11 +48,18 @@ impl<'a> TestConversation<'a> {
     ) -> OperationGuard<'a, Commit> {
         let new_members = sessions.into_iter().collect::<Vec<_>>();
 
-        let key_packages = futures_util::future::join_all(
-            new_members
-                .iter()
-                .map(|cc| cc.rand_key_package_of_type(self.case, credential_type)),
-        )
+        let key_packages = futures_util::future::join_all(new_members.iter().map(async |cc| {
+            let credential = cc
+                .find_most_recent_credential(self.case.signature_scheme(), credential_type)
+                .await
+                .expect("session already has a credential of appropriate type");
+            let credential_ref = CredentialRef::from_credential(&credential);
+            cc.transaction
+                .generate_keypackage(&credential_ref, None)
+                .await
+                .unwrap()
+                .into()
+        }))
         .await;
         self.guard().await.add_members(key_packages).await.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;

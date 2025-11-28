@@ -6,6 +6,7 @@ pub(crate) mod ciphersuite;
 pub mod conversation;
 pub mod credential;
 mod error;
+pub mod key_package;
 pub(crate) mod proposal;
 pub(crate) mod session;
 
@@ -138,19 +139,12 @@ mod tests {
                 .unwrap();
 
             let credential =
-                Credential::from_identifier(&identifier, case.signature_scheme(), &cc.mls.crypto_provider).unwrap();
-            cc.add_credential(credential).await.unwrap();
+                Credential::from_identifier(&identifier, case.ciphersuite(), &cc.mls.crypto_provider).unwrap();
+            let credential_ref = cc.add_credential(credential).await.unwrap();
 
             assert!(context.session().await.unwrap().is_ready().await);
             // expect mls_client to work
-            assert_eq!(
-                context
-                    .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 2)
-                    .await
-                    .unwrap()
-                    .len(),
-                2
-            );
+            assert!(context.generate_keypackage(&credential_ref, None).await.is_ok());
         })
         .await
     }

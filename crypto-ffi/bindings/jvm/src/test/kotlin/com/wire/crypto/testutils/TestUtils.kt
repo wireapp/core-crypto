@@ -105,5 +105,19 @@ suspend fun CoreCryptoContext.createConversationShort(
     id: ConversationId
 ) = createConversation(id, CREDENTIAL_TYPE_DEFAULT, CONVERSATION_CONFIGURATION_DEFAULT)
 
-/** Shorthand for getting keypackages with defaults */
-suspend fun CoreCryptoContext.clientKeypackagesShort(amount: UInt) = clientKeypackages(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT, amount)
+/** Shorthand for generating keypackages with defaults */
+suspend fun CoreCryptoContext.clientKeypackagesShort(amount: UInt): List<Keypackage> {
+    val credentials = findCredentials(
+        clientId = null,
+        publicKey = null,
+        ciphersuite = CIPHERSUITE_DEFAULT,
+        credentialType = CREDENTIAL_TYPE_DEFAULT,
+        earliestValidity = null
+    )
+    val credential = credentials.last()
+
+    return List(amount.toInt()) { _ ->
+        // cycle through credentials if amount > credentials.size
+        generateKeypackage(credential)
+    }
+}

@@ -25,8 +25,10 @@ mod e2ei;
 mod ephemeral;
 mod error;
 mod identity;
+mod key_package;
 mod metadata;
 mod proteus;
+mod signature_scheme;
 
 pub use bundles::{
     commit::CommitBundle, group_info::GroupInfoBundle, proteus_auto_prekey::ProteusAutoPrekeyBundle,
@@ -72,4 +74,6 @@ pub use identity::{
     wire::{DeviceStatus, WireIdentity},
     x509::X509Identity,
 };
+pub use key_package::{Keypackage, KeypackageRef};
 pub use metadata::{BuildMetadata, build_metadata, version};
+pub use signature_scheme::SignatureScheme;

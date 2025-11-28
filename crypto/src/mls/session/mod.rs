@@ -17,7 +17,6 @@ pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
 use identities::Identities;
-use key_package::KEYPACKAGE_DEFAULT_LIFETIME;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 
@@ -68,7 +67,6 @@ impl HasSessionAndCrypto for Session {
 pub(crate) struct SessionInner {
     id: ClientId,
     pub(crate) identities: Identities,
-    keypackage_lifetime: std::time::Duration,
 }
 
 impl Session {
@@ -185,7 +183,6 @@ impl Session {
         self.replace_inner(SessionInner {
             id: client_id,
             identities,
-            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
         })
         .await;
 
@@ -296,7 +293,6 @@ impl Session {
         self.replace_inner(SessionInner {
             id: history_secret.client_id.clone(),
             identities: Identities::new(0),
-            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
         })
         .await;
 
@@ -360,13 +356,13 @@ mod tests {
             match case.credential_type {
                 CredentialType::Basic => {
                     identifier = ClientIdentifier::Basic(client_id.clone());
-                    credential = Credential::basic(case.signature_scheme(), client_id, &self.crypto_provider).unwrap();
+                    credential = Credential::basic(case.ciphersuite(), client_id, &self.crypto_provider).unwrap();
                 }
                 CredentialType::X509 => {
                     let signer = signer.expect("Missing intermediate CA").to_owned();
                     let cert = CertificateBundle::rand(&client_id, &signer);
                     identifier = ClientIdentifier::X509([(case.signature_scheme(), cert.clone())].into());
-                    credential = Credential::x509(cert).unwrap();
+                    credential = Credential::x509(case.ciphersuite(), cert).unwrap();
                 }
             };
 
@@ -385,16 +381,6 @@ mod tests {
                 .await
                 .map_err(KeystoreError::wrap("fetching mls keypackages"))?;
             Ok(kps)
-        }
-
-        pub(crate) async fn generate_one_keypackage(
-            &self,
-            backend: &MlsCryptoProvider,
-            cs: Ciphersuite,
-            ct: CredentialType,
-        ) -> Result<openmls::prelude::KeyPackage> {
-            let cb = self.find_most_recent_credential(cs.signature_algorithm(), ct).await?;
-            self.generate_one_keypackage_from_credential(backend, cs, &cb).await
         }
 
         /// Count the entities

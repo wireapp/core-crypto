@@ -117,7 +117,7 @@ mod tests {
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice]).await;
                 let id = conversation.id.clone();
-                let bob_keypackage = bob.rand_key_package(&case).await;
+                let bob_keypackage = bob.new_keypackage(&case).await;
                 // First, abort commit transport
                 alice
                     .replace_transport(Arc::<CoreCryptoTransportAbortProvider>::default())
@@ -127,7 +127,7 @@ mod tests {
                     .conversation(&id)
                     .await
                     .unwrap()
-                    .add_members(vec![bob_keypackage.clone()])
+                    .add_members(vec![bob_keypackage.clone().into()])
                     .await
                     .unwrap_err();
 

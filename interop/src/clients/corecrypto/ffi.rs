@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use core_crypto_ffi::{
-    ClientId, CoreCryptoFfi, CredentialType, CustomConfiguration, Database, DatabaseKey, TransactionHelper,
+    ClientId, CoreCryptoFfi, CredentialType, CustomConfiguration, Database, DatabaseKey, Keypackage, TransactionHelper,
     credential_basic,
 };
 use tempfile::NamedTempFile;
@@ -89,18 +89,22 @@ impl EmulatedClient for CoreCryptoFfiClient {
 #[async_trait::async_trait(?Send)]
 impl EmulatedMlsClient for CoreCryptoFfiClient {
     async fn get_keypackage(&self) -> Result<Vec<u8>> {
-        let ciphersuite = CIPHERSUITE_IN_USE.into();
-        let credential_type = CredentialType::Basic;
-        let extractor = TransactionHelper::new(move |context| async move {
-            Ok(context
-                .client_keypackages(ciphersuite, credential_type, 1)
-                .await?
-                .pop()
-                .unwrap())
+        let ciphersuite = Some(CIPHERSUITE_IN_USE.into());
+        let credential_type = Some(CredentialType::Basic);
+
+        let extractor = TransactionHelper::new(async move |context| {
+            let credentials = context
+                .find_credentials(None, None, ciphersuite, credential_type, None)
+                .await?;
+            let credential = credentials
+                .last()
+                .expect("at least 1 credential already exists for this client");
+            let keypackage = context.generate_keypackage(credential, None).await?;
+            Ok(keypackage)
         });
         self.cc.transaction(extractor.clone()).await?;
         let kp = extractor.into_return_value();
-        Ok(kp.copy_bytes())
+        kp.serialize().map_err(Into::into)
     }
 
     async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
@@ -123,7 +127,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
                 .await?;
         }
 
-        let key_packages = vec![Arc::new(kp.into())];
+        let key_packages = vec![Arc::new(Keypackage::new(kp)?)];
         let extractor = TransactionHelper::new(async move |context| {
             context
                 .add_clients_to_conversation(&conversation_id, key_packages)

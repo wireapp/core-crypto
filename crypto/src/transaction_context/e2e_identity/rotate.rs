@@ -1,11 +1,8 @@
-use core_crypto_keystore::{CryptoKeystoreMls, connection::FetchFromDatabase, entities::StoredKeypackage};
-use openmls::prelude::KeyPackage;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use super::error::{Error, Result};
 use crate::{
-    CertificateBundle, Ciphersuite, Credential, CredentialType, E2eiEnrollment, KeystoreError, MlsError,
-    RecursiveError,
+    CertificateBundle, Ciphersuite, Credential, CredentialType, E2eiEnrollment, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     transaction_context::TransactionContext,
@@ -122,11 +119,9 @@ impl TransactionContext {
     ///
     /// # Expected actions to perform after this function (in this order)
     /// 1. Rotate credentials for each conversation in [crate::mls::conversation::ConversationGuard::e2ei_rotate]
-    /// 2. Generate new key packages with [crate::mls::session::Session::request_key_packages]
+    /// 2. Generate new key packages with [Self::generate_keypackage]
     /// 3. Use these to replace the stale ones the in the backend
-    /// 4. Delete the stale ones locally using [Self::delete_stale_key_packages]
-    ///     * This is the last step because you might still need the old key packages to avoid
-    ///       an orphan welcome message
+    /// 4. Delete the old credentials and keypackages locally using [Self::remove_credential]
     pub async fn save_x509_credential(
         &self,
         enrollment: &mut E2eiEnrollment,
@@ -135,7 +130,8 @@ impl TransactionContext {
         let sk = enrollment
             .get_sign_key_for_mls()
             .map_err(RecursiveError::e2e_identity("getting sign key for mls"))?;
-        let signature_scheme = enrollment.ciphersuite().signature_algorithm();
+        let ciphersuite = *enrollment.ciphersuite();
+        let signature_scheme = ciphersuite.signature_algorithm();
 
         let mls_provider = self
             .mls_provider()
@@ -170,7 +166,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting session"))?;
 
-        let credential = Credential::x509(cert_bundle).map_err(RecursiveError::mls_credential(
+        let credential = Credential::x509(ciphersuite, cert_bundle).map_err(RecursiveError::mls_credential(
             "creating new x509 credential from certificate bundle in save_x509_credential",
         ))?;
         client
@@ -181,54 +177,6 @@ impl TransactionContext {
             ))?;
 
         Ok(crl_new_distribution_points)
-    }
-
-    /// Deletes all key packages whose leaf node's credential does not match the most recently
-    /// saved x509 credential with the provided signature scheme.
-    pub async fn delete_stale_key_packages(&self, cipher_suite: Ciphersuite) -> Result<()> {
-        let signature_scheme = cipher_suite.signature_algorithm();
-        let keystore = self
-            .keystore()
-            .await
-            .map_err(RecursiveError::transaction("getting keystore"))?;
-        let nb_kp = keystore
-            .count::<StoredKeypackage>()
-            .await
-            .map_err(KeystoreError::wrap("counting key packages"))?;
-        let kps: Vec<KeyPackage> = keystore
-            .mls_fetch_keypackages(nb_kp as u32)
-            .await
-            .map_err(KeystoreError::wrap("fetching key packages"))?;
-        let client = self
-            .session()
-            .await
-            .map_err(RecursiveError::transaction("getting mls client"))?;
-
-        let cb = client
-            .find_most_recent_credential(signature_scheme, CredentialType::X509)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential"))?;
-
-        let mut kp_refs = vec![];
-
-        let provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
-        for kp in kps {
-            let kp_cred = kp.leaf_node().credential().mls_credential();
-            let local_cred = cb.mls_credential().mls_credential();
-            if kp_cred != local_cred {
-                let kpr = kp
-                    .hash_ref(provider.crypto())
-                    .map_err(MlsError::wrap("computing keypackage hashref"))?;
-                kp_refs.push(kpr);
-            };
-        }
-        self.delete_keypackages(kp_refs)
-            .await
-            .map_err(RecursiveError::transaction("deleting keypackages"))?;
-        Ok(())
     }
 }
 
@@ -255,7 +203,6 @@ mod tests {
             let [alice, bob, charlie] = case.sessions_with_pki_env().await;
             Box::pin(async move {
                 const N: usize = 50;
-                const NB_KEY_PACKAGE: usize = 50;
 
                 let mut conversations = vec![];
 
@@ -266,15 +213,19 @@ mod tests {
                     conversations.push(conversation)
                 }
 
-                alice
-                    .transaction
-                    .get_or_create_client_keypackages(
-                        case.ciphersuite(),
-                        case.credential_type,
-                        INITIAL_KEYING_MATERIAL_COUNT,
-                    )
+                let alice_credential = alice
+                    .find_most_recent_credential(case.signature_scheme(), case.credential_type)
                     .await
                     .unwrap();
+                let alice_credential_ref = CredentialRef::from_credential(&alice_credential);
+
+                for _ in 0..INITIAL_KEYING_MATERIAL_COUNT {
+                    alice
+                        .transaction
+                        .generate_keypackage(&alice_credential_ref, None)
+                        .await
+                        .unwrap();
+                }
 
                 // Count the key material before the rotation to compare it later
                 let before_rotate = alice.transaction.count_entities().await;
@@ -318,18 +269,14 @@ mod tests {
                     .unwrap();
 
                 let result = alice
-                    .create_key_packages_and_update_credential_in_all_conversations(
-                        conversations,
-                        &cb,
-                        *enrollment.ciphersuite(),
-                        NB_KEY_PACKAGE,
-                    )
+                    .update_credential_in_all_conversations(conversations, &cb, *enrollment.ciphersuite())
                     .await
                     .unwrap();
 
                 let after_rotate = alice.transaction.count_entities().await;
-                // verify we have indeed created the right amount of new X509 KeyPackages
-                assert_eq!(after_rotate.key_package - before_rotate.key_package, NB_KEY_PACKAGE);
+
+                // rotation neither creates nor deletes keypackages
+                assert_eq!(after_rotate.key_package, before_rotate.key_package);
 
                 // and a new Credential has been persisted in the keystore
                 assert_eq!(after_rotate.credential - before_rotate.credential, 1);
@@ -342,26 +289,7 @@ mod tests {
                         .await;
                 }
 
-                // Verify that all the new KeyPackages contain the new identity
-                let new_credentials = result
-                    .new_key_packages
-                    .iter()
-                    .map(|kp| kp.leaf_node().to_credential_with_key());
-                for c in new_credentials {
-                    assert_eq!(c.credential.credential_type(), openmls::prelude::CredentialType::X509);
-                    let identity = c.extract_identity(case.ciphersuite(), None).unwrap();
-                    assert_eq!(
-                        identity.x509_identity.as_ref().unwrap().display_name,
-                        e2ei_utils::NEW_DISPLAY_NAME
-                    );
-                    assert_eq!(
-                        identity.x509_identity.as_ref().unwrap().handle,
-                        format!("wireapp://%40{}@world.com", e2ei_utils::NEW_HANDLE)
-                    );
-                }
-
                 // Alice has to delete her old KeyPackages
-
                 // But first let's verify the previous credential material is present
                 assert!(
                     alice
@@ -374,36 +302,29 @@ mod tests {
                         .is_some()
                 );
 
-                // we also have generated the right amount of private encryption keys
+                // rotation neither creates nor deletes private keys or key packages
                 let before_delete = alice.transaction.count_entities().await;
-                assert_eq!(
-                    before_delete.hpke_private_key - before_rotate.hpke_private_key,
-                    NB_KEY_PACKAGE
-                );
+                assert_eq!(before_delete.hpke_private_key, before_rotate.hpke_private_key);
+                assert_eq!(before_delete.key_package, before_rotate.key_package);
 
-                // 1 has been created per new KeyPackage created in the rotation
-                assert_eq!(before_delete.key_package - before_rotate.key_package, NB_KEY_PACKAGE);
-
-                // Checks are done, now let's delete ALL the deprecated KeyPackages.
-                // This should have the consequence to purge the previous credential material as well.
+                // Checks are done, now let's delete the old credential.
+                // This should have the consequence to purge the all the stale keypackages as well.
                 alice
                     .transaction
-                    .delete_stale_key_packages(case.ciphersuite())
+                    .remove_credential(&alice_credential_ref)
                     .await
                     .unwrap();
 
-                // Alice should just have the number of X509 KeyPackages she requested
+                // No keypackages were automatically created.
                 let nb_x509_kp = alice
                     .count_key_package(case.ciphersuite(), Some(CredentialType::X509))
                     .await;
-                assert_eq!(nb_x509_kp, NB_KEY_PACKAGE);
-                // in both cases, Alice should not anymore have any Basic KeyPackage
+                assert_eq!(nb_x509_kp, 0);
+                // Because we removed her old credential, Alice should not anymore have any Basic KeyPackages
                 let nb_basic_kp = alice
                     .count_key_package(case.ciphersuite(), Some(CredentialType::Basic))
                     .await;
                 assert_eq!(nb_basic_kp, 0);
-
-                // and since all of Alice's unclaimed KeyPackages have been purged, so should be her old Credential
 
                 // Also the old Credential has been removed from the keystore
                 let after_delete = alice.transaction.count_entities().await;
@@ -411,15 +332,13 @@ mod tests {
                 assert!(alice.find_credential_from_keystore(&old_credential).await.is_none());
 
                 // and all her Private HPKE keys...
-                assert_eq!(after_delete.hpke_private_key, NB_KEY_PACKAGE);
+                assert_eq!(after_delete.hpke_private_key, 0);
 
                 // ...and encryption keypairs
-                assert_eq!(
-                    after_rotate.encryption_keypair - after_delete.encryption_keypair,
-                    INITIAL_KEYING_MATERIAL_COUNT
-                );
+                assert_eq!(after_delete.encryption_keypair, 0);
 
-                // Now charlie tries to add Alice to a conversation with her new KeyPackages
+                // Now charlie tries to add Alice to a conversation
+                // (the create_conversation helper implicitly generates keypackages as needed)
                 let conversation = case
                     .create_conversation([&charlie])
                     .await

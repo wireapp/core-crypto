@@ -33,7 +33,7 @@ pub use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed};
 pub use openmls::{
     group::{MlsGroup, MlsGroupConfig},
     prelude::{
-        Ciphersuite as MlsCiphersuite, GroupEpoch, KeyPackage, KeyPackageIn, KeyPackageRef, MlsMessageIn, Node,
+        Ciphersuite as MlsCiphersuite, GroupEpoch, KeyPackageIn, MlsMessageIn, Node, SignatureScheme,
         group_info::VerifiableGroupInfo,
     },
 };
@@ -67,12 +67,13 @@ pub use crate::{
         credential::{
             Credential, CredentialRef, CredentialType, FindFilters as CredentialFindFilters, x509::CertificateBundle,
         },
+        key_package::{Keypackage, KeypackageRef},
         proposal::{MlsProposal, MlsProposalRef},
         session::{
             EpochObserver, HistoryObserver, Session,
             id::{ClientId, ClientIdRef},
             identifier::ClientIdentifier,
-            key_package::INITIAL_KEYING_MATERIAL_COUNT,
+            key_package::{INITIAL_KEYING_MATERIAL_COUNT, KEYPACKAGE_DEFAULT_LIFETIME},
             user_id::UserId,
         },
     },
