@@ -2,7 +2,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
-use quote::quote;
+// use quote::quote;
 use syn::{
     Attribute, Block, FnArg, ItemFn, ReturnType, Visibility, parse_macro_input, punctuated::Punctuated, token::Comma,
 };
@@ -18,8 +18,11 @@ mod idempotent;
 /// To be used internally inside the `core-crypto-keystore` crate only.
 #[proc_macro_derive(Entity, attributes(entity, id))]
 pub fn derive_entity(input: TokenStream) -> TokenStream {
-    let parsed = parse_macro_input!(input as KeyStoreEntity).flatten();
-    TokenStream::from(quote! { #parsed })
+    // TODO, DO NOT MERGE THIS PR UNTIL ATTENDED TO
+    // temporarily disable deriving entity
+    let _parsed = parse_macro_input!(input as KeyStoreEntity).flatten();
+    TokenStream::new()
+    // TokenStream::from(quote! { #parsed })
 }
 
 /// Will drop current MLS group in memory and replace it with the one in the keystore.
