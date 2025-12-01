@@ -245,21 +245,18 @@ pub async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
     run_command(&node, "mv intermediate-ca.crt certs/intermediate_ca.crt").await;
     run_command(&node, "mv intermediate-ca.key secrets/intermediate_ca_key").await;
 
-    // Allow the user outside the container to read certificates.
+    // Allow the user outside the container to read certificates and alter configuration.
     run_command(&node, "chmod -R o+r certs").await;
     run_command(&node, "chmod o+rx config certs").await;
-
-    // GitHub doesn't allow the host user by default to read or write files created
-    // by the container user.
-    //
-    // Also, running this command breaks the tests on macOS and/or Podman for unknown
-    // reasons. This is why we run this in CI only.
-    if std::env::var("CI").is_ok_and(|value| value == "true") {
-        run_command(&node, "chmod o+rw config/ca.json").await;
-    }
+    run_command(&node, "chmod o+rw config/ca.json").await;
 
     // Alter the CA configuration by substituting our provisioner.
     alter_configuration(&host_volume, ca_cfg);
+
+    // For some reason, on macOS with Podman there is an error ("unexpected EOF") if step-ca reads
+    // the config/ca.json file immediately after we write to it. Waiting a bit helps.
+    #[cfg(target_os = "macos")]
+    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
     // We're now ready to start.
     run_command(
