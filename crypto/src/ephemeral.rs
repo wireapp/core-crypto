@@ -111,7 +111,8 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
         .await
         .map_err(MlsError::wrap("encapsulating key package"))?;
 
-    // we don't need to finish the transaction here--the point of the ephemeral CC was that no mutations would be saved there
+    // we don't need to finish the transaction here--the point of the ephemeral CC was that no mutations would be saved
+    // there
     let _ = tx.abort().await;
 
     Ok(HistorySecret { client_id, key_package })

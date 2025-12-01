@@ -95,7 +95,8 @@ impl Credential {
     ///
     /// The result is independent of any client instance and the database; it lives in memory only.
     ///
-    /// The earliest validity of this credential is always 0. It will be updated once the credential is added to a session.
+    /// The earliest validity of this credential is always 0. It will be updated once the credential is added to a
+    /// session.
     pub fn basic(ciphersuite: Ciphersuite, client_id: ClientId, crypto: impl OpenMlsCrypto) -> Result<Self> {
         let signature_scheme = ciphersuite.signature_algorithm();
         let (private_key, public_key) = crypto

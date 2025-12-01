@@ -117,8 +117,8 @@ pub(crate) fn v5_credential_matches_signature_key(
 /// We need to map a signature scheme to a ciphersuite in our migrations. Most of these mappings are unambiguous.
 /// However, we still need to consider the possibility that users are using unexpected signature schemes.
 ///
-/// The strategy here is to perform an analysis of the existing conversations, counting the ciphersuites actually in use.
-/// For each ambiguous signature scheme, there are these possibilities to consider:
+/// The strategy here is to perform an analysis of the existing conversations, counting the ciphersuites actually in
+/// use. For each ambiguous signature scheme, there are these possibilities to consider:
 ///
 /// | Ciphersuite A | Ciphersuite B | Outcome |
 /// |---------------|---------------|---------|

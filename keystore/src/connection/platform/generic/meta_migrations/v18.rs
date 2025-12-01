@@ -47,7 +47,8 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
             secret_key: row.get("secret_key")?,
         };
 
-        // Insert the new credential into temporary mls_credentials_new table, that will be renamed in the next migration
+        // Insert the new credential into temporary mls_credentials_new table, that will be renamed in the next
+        // migration
         if let Some(ciphersuite) = ciphersuite_for_signature_scheme(v6.signature_scheme) {
             tx.execute(
                 "INSERT INTO mls_credentials_new (

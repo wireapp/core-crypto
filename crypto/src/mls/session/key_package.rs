@@ -55,7 +55,8 @@ impl Session {
     ///
     /// As a side effect, stores the keypackages and some related data in the keystore.
     ///
-    /// Must not be fully public, only crate-public, because as it mutates the keystore it must only ever happen within a transaction.
+    /// Must not be fully public, only crate-public, because as it mutates the keystore it must only ever happen within
+    /// a transaction.
     pub(crate) async fn generate_keypackage(
         &self,
         credential_ref: &CredentialRef,
