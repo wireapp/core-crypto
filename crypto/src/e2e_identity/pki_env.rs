@@ -1,14 +1,18 @@
-use std::collections::HashSet;
+//! PKI Environment API
+
+use std::{collections::HashSet, sync::Arc};
 
 use core_crypto_keystore::{
+    connection::Database,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
     traits::FetchFromDatabase,
 };
-use wire_e2e_identity::prelude::x509::revocation::{PkiEnvironment, PkiEnvironmentParams};
+use mls_crypto_provider::PkiEnvironmentProvider;
+use wire_e2e_identity::prelude::x509::revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams};
 use x509_cert::der::Decode;
 
 use super::Result;
-use crate::KeystoreError;
+use crate::{KeystoreError, RecursiveError, e2e_identity::pki_env_hooks::PkiEnvironmentHooks};
 
 /// New Certificate Revocation List distribution points.
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::DerefMut)]
@@ -31,7 +35,7 @@ impl IntoIterator for NewCrlDistributionPoints {
     }
 }
 
-pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<Option<PkiEnvironment>> {
+async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<Option<RjtPkiEnvironment>> {
     let mut trust_roots = vec![];
     let Ok(Some(ta_raw)) = data_provider.get_unique::<E2eiAcmeCA>().await else {
         return Ok(None);
@@ -64,5 +68,36 @@ pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> R
         time_of_interest: None,
     };
 
-    Ok(Some(PkiEnvironment::init(params)?))
+    Ok(Some(RjtPkiEnvironment::init(params)?))
+}
+
+/// The PKI environment which can be initialized independently from a CoreCrypto session.
+#[derive(Debug, Clone)]
+pub struct PkiEnvironment {
+    /// Implemented by the clients and used by us to make external calls during e2e flow
+    // TODO: remove this config with further implementation of RFC CC2, as soon as hooks are actually used
+    #[expect(dead_code)]
+    hooks: Arc<dyn PkiEnvironmentHooks>,
+    /// The database in which X509 Credentials are stored.
+    database: Database,
+    /// The PkiEnvironmentProvider is the provider used by the MlsCryptoProvider which has to implement
+    /// openmls_traits::OpenMlsCryptoProvideropenMls. It therefore has to be shared with the MlsCryptoProvider but
+    /// we consider this struct to be the place where it actually belongs to.
+    mls_pki_env_provider: PkiEnvironmentProvider,
+}
+
+impl PkiEnvironment {
+    /// Create a new PKI Environment
+    pub async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Database) -> Result<PkiEnvironment> {
+        let mls_pki_env_provider = restore_pki_env(&database)
+            .await
+            .map_err(RecursiveError::e2e_identity("restoring pki env"))?
+            .map(PkiEnvironmentProvider::from)
+            .unwrap_or_default();
+        Ok(Self {
+            hooks,
+            database,
+            mls_pki_env_provider,
+        })
+    }
 }
