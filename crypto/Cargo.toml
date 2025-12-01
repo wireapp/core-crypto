@@ -101,7 +101,7 @@ macro_rules_attribute.workspace = true
 proteus = { git = "https://github.com/wireapp/proteus", branch = "otak/fix-1.0.3" }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
-version = "0.7"
+version = "0.8"
 features = ["async_smol", "async_futures", "html_reports"]
 
 [package.metadata.wasm-pack.profile.release]
