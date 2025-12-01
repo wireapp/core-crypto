@@ -558,7 +558,7 @@ docs-kotlin: $(DOCS_KOTLIN) ## Generate Kotlin docs
 # TypeScript docs via Typedoc
 $(STAMPS)/docs-ts: $(TS_OUT)
 	cd crypto-ffi/bindings/js && \
-	bun x typedoc \
+	bun typedoc \
 	  --basePath ./ \
 	  --entryPoints src/CoreCrypto.ts \
 	  --tsconfig tsconfig.json \
