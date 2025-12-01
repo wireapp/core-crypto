@@ -298,18 +298,18 @@
 <a href=#298 id=298 data-nosnippet>298</a>        configuration: MlsConversationConfiguration,
 <a href=#299 id=299 data-nosnippet>299</a>        backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
 <a href=#300 id=300 data-nosnippet>300</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-<a href=#301 id=301 data-nosnippet>301</a>        <span class="kw">let </span>(cs, ct) = (configuration.ciphersuite, creator_credential_type);
-<a href=#302 id=302 data-nosnippet>302</a>        <span class="kw">let </span>cb = author_client
-<a href=#303 id=303 data-nosnippet>303</a>            .find_most_recent_or_create_basic_credential(cs.signature_algorithm(), ct)
+<a href=#301 id=301 data-nosnippet>301</a>        <span class="kw">let </span>(ciphersuite, credential_type) = (configuration.ciphersuite, creator_credential_type);
+<a href=#302 id=302 data-nosnippet>302</a>        <span class="kw">let </span>credential = author_client
+<a href=#303 id=303 data-nosnippet>303</a>            .find_most_recent_or_create_basic_credential(ciphersuite, credential_type)
 <a href=#304 id=304 data-nosnippet>304</a>            .<span class="kw">await
 <a href=#305 id=305 data-nosnippet>305</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting or creating credential"</span>))<span class="question-mark">?</span>;
 <a href=#306 id=306 data-nosnippet>306</a>
 <a href=#307 id=307 data-nosnippet>307</a>        <span class="kw">let </span>group = MlsGroup::new_with_group_id(
 <a href=#308 id=308 data-nosnippet>308</a>            backend,
-<a href=#309 id=309 data-nosnippet>309</a>            <span class="kw-2">&amp;</span>cb.signature_key_pair,
+<a href=#309 id=309 data-nosnippet>309</a>            <span class="kw-2">&amp;</span>credential.signature_key_pair,
 <a href=#310 id=310 data-nosnippet>310</a>            <span class="kw-2">&amp;</span>configuration.as_openmls_default_configuration()<span class="question-mark">?</span>,
 <a href=#311 id=311 data-nosnippet>311</a>            openmls::prelude::GroupId::from_slice(id.as_ref()),
-<a href=#312 id=312 data-nosnippet>312</a>            cb.to_mls_credential_with_key(),
+<a href=#312 id=312 data-nosnippet>312</a>            credential.to_mls_credential_with_key(),
 <a href=#313 id=313 data-nosnippet>313</a>        )
 <a href=#314 id=314 data-nosnippet>314</a>        .<span class="kw">await
 <a href=#315 id=315 data-nosnippet>315</a>        </span>.map_err(MlsError::wrap(<span class="string">"creating group with id"</span>))<span class="question-mark">?</span>;

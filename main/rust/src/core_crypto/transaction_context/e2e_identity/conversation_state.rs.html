@@ -169,12 +169,12 @@
 <a href=#169 id=169 data-nosnippet>169</a>            <span class="kw">let </span>intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
 <a href=#170 id=170 data-nosnippet>170</a>            <span class="comment">// this completely invents a new client id for alice, which gets propagated into the credential
 <a href=#171 id=171 data-nosnippet>171</a>            </span><span class="kw">let </span>cert = CertificateBundle::new_with_default_values(intermediate_ca, <span class="prelude-val">Some</span>(expiration_time));
-<a href=#172 id=172 data-nosnippet>172</a>            <span class="kw">let </span>cb = Credential::x509(cert.clone()).unwrap();
+<a href=#172 id=172 data-nosnippet>172</a>            <span class="kw">let </span>cb = Credential::x509(case.ciphersuite(), cert.clone()).unwrap();
 <a href=#173 id=173 data-nosnippet>173</a>            <span class="kw">let </span>conversation = conversation.e2ei_rotate_notify(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>cb)).<span class="kw">await</span>;
 <a href=#174 id=174 data-nosnippet>174</a>
 <a href=#175 id=175 data-nosnippet>175</a>            <span class="kw">let </span>alice_client = alice.transaction.session().<span class="kw">await</span>.unwrap();
 <a href=#176 id=176 data-nosnippet>176</a>            <span class="comment">// Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
-<a href=#177 id=177 data-nosnippet>177</a>            </span><span class="kw">let </span>credential = Credential::x509(cert).unwrap();
+<a href=#177 id=177 data-nosnippet>177</a>            </span><span class="kw">let </span>credential = Credential::x509(case.ciphersuite(), cert).unwrap();
 <a href=#178 id=178 data-nosnippet>178</a>            alice_client
 <a href=#179 id=179 data-nosnippet>179</a>                .add_credential_without_clientid_check(credential)
 <a href=#180 id=180 data-nosnippet>180</a>                .<span class="kw">await
@@ -230,7 +230,7 @@
 <a href=#230 id=230 data-nosnippet>230</a>
 <a href=#231 id=231 data-nosnippet>231</a>            <span class="kw">let </span>cert_bundle =
 <a href=#232 id=232 data-nosnippet>232</a>                CertificateBundle::from_certificate_and_issuer(<span class="kw-2">&amp;</span>alice_cert.certificate, alice_intermediate_ca);
-<a href=#233 id=233 data-nosnippet>233</a>            <span class="kw">let </span>cb = Credential::x509(cert_bundle.clone()).unwrap();
+<a href=#233 id=233 data-nosnippet>233</a>            <span class="kw">let </span>cb = Credential::x509(case.ciphersuite(), cert_bundle.clone()).unwrap();
 <a href=#234 id=234 data-nosnippet>234</a>            <span class="kw">let </span>conversation = conversation.e2ei_rotate_notify(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>cb)).<span class="kw">await</span>;
 <a href=#235 id=235 data-nosnippet>235</a>
 <a href=#236 id=236 data-nosnippet>236</a>            <span class="kw">let </span>alice_client = alice.session().<span class="kw">await</span>;
@@ -241,7 +241,7 @@
 <a href=#241 id=241 data-nosnippet>241</a>            </span>smol::Timer::after(std::time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
 <a href=#242 id=242 data-nosnippet>242</a>
 <a href=#243 id=243 data-nosnippet>243</a>            <span class="comment">// Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
-<a href=#244 id=244 data-nosnippet>244</a>            </span><span class="kw">let </span>credential = Credential::x509(cert_bundle).unwrap();
+<a href=#244 id=244 data-nosnippet>244</a>            </span><span class="kw">let </span>credential = Credential::x509(case.ciphersuite(), cert_bundle).unwrap();
 <a href=#245 id=245 data-nosnippet>245</a>            alice_client.add_credential(credential).<span class="kw">await</span>.unwrap();
 <a href=#246 id=246 data-nosnippet>246</a>
 <a href=#247 id=247 data-nosnippet>247</a>            <span class="kw">let </span>elapsed = start.elapsed();

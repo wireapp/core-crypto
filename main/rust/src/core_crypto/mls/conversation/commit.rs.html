@@ -117,7 +117,7 @@
 <a href=#117 id=117 data-nosnippet>117</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#118 id=118 data-nosnippet>118</a>                <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>;
 <a href=#119 id=119 data-nosnippet>119</a>                <span class="kw">let </span>id = conversation.id.clone();
-<a href=#120 id=120 data-nosnippet>120</a>                <span class="kw">let </span>bob_keypackage = bob.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
+<a href=#120 id=120 data-nosnippet>120</a>                <span class="kw">let </span>bob_keypackage = bob.new_keypackage(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
 <a href=#121 id=121 data-nosnippet>121</a>                <span class="comment">// First, abort commit transport
 <a href=#122 id=122 data-nosnippet>122</a>                </span>alice
 <a href=#123 id=123 data-nosnippet>123</a>                    .replace_transport(Arc::&lt;CoreCryptoTransportAbortProvider&gt;::default())
@@ -127,7 +127,7 @@
 <a href=#127 id=127 data-nosnippet>127</a>                    .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#128 id=128 data-nosnippet>128</a>                    .<span class="kw">await
 <a href=#129 id=129 data-nosnippet>129</a>                    </span>.unwrap()
-<a href=#130 id=130 data-nosnippet>130</a>                    .add_members(<span class="macro">vec!</span>[bob_keypackage.clone()])
+<a href=#130 id=130 data-nosnippet>130</a>                    .add_members(<span class="macro">vec!</span>[bob_keypackage.clone().into()])
 <a href=#131 id=131 data-nosnippet>131</a>                    .<span class="kw">await
 <a href=#132 id=132 data-nosnippet>132</a>                    </span>.unwrap_err();
 <a href=#133 id=133 data-nosnippet>133</a>

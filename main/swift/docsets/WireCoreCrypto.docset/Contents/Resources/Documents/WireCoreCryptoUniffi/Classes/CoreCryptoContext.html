@@ -92,7 +92,10 @@
                 <a href="../../WireCoreCryptoUniffi/Classes/HistoryObserverImpl.html">HistoryObserverImpl</a>
               </li>
               <li class="nav-group-task">
-                <a href="../../WireCoreCryptoUniffi/Classes/KeyPackage.html">KeyPackage</a>
+                <a href="../../WireCoreCryptoUniffi/Classes/Keypackage.html">Keypackage</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/KeypackageRef.html">KeypackageRef</a>
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Classes/MlsTransportImpl.html">MlsTransportImpl</a>
@@ -149,6 +152,9 @@
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Enums/ProteusError.html">ProteusError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/SignatureScheme.html">SignatureScheme</a>
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Enums/WirePolicy.html">WirePolicy</a>
@@ -263,7 +269,10 @@
                 <a href="../../WireCoreCryptoUniffi/Protocols/HistoryObserver.html">HistoryObserver</a>
               </li>
               <li class="nav-group-task">
-                <a href="../../WireCoreCryptoUniffi/Protocols/KeyPackageProtocol.html">KeyPackageProtocol</a>
+                <a href="../../WireCoreCryptoUniffi/Protocols/KeypackageProtocol.html">KeypackageProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/KeypackageRefProtocol.html">KeypackageRefProtocol</a>
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Protocols/MlsTransport.html">MlsTransport</a>
@@ -368,9 +377,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC24addClientsToConversation14conversationId11keyPackagesSaySSGSgAA0iK0C_SayAA10KeyPackageCGtYaKF"></a>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC24addClientsToConversation14conversationId11keyPackagesSaySSGSgAA0iK0C_SayAA10KeypackageCGtYaKF"></a>
                     <a name="//apple_ref/swift/Method/addClientsToConversation(conversationId:keyPackages:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC24addClientsToConversation14conversationId11keyPackagesSaySSGSgAA0iK0C_SayAA10KeyPackageCGtYaKF">addClientsToConversation(conversationId:<wbr>keyPackages:<wbr>)</a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC24addClientsToConversation14conversationId11keyPackagesSaySSGSgAA0iK0C_SayAA10KeypackageCGtYaKF">addClientsToConversation(conversationId:<wbr>keyPackages:<wbr>)</a>
                     </code>
                       <span class="declaration-note">
                         Asynchronous
@@ -388,7 +397,7 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">addClientsToConversation</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">keyPackages</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/KeyPackage.html">KeyPackage</a></span><span class="p">])</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]?</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">addClientsToConversation</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">keyPackages</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/Keypackage.html">Keypackage</a></span><span class="p">])</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]?</span></code></pre>
 
                         </div>
                       </div>
@@ -434,36 +443,6 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC17clientKeypackages11ciphersuite14credentialType15amountRequestedSayAA10KeyPackageCGAA11CiphersuiteO_AA010CredentialJ0Os6UInt32VtYaKF"></a>
-                    <a name="//apple_ref/swift/Method/clientKeypackages(ciphersuite:credentialType:amountRequested:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC17clientKeypackages11ciphersuite14credentialType15amountRequestedSayAA10KeyPackageCGAA11CiphersuiteO_AA010CredentialJ0Os6UInt32VtYaKF">clientKeypackages(ciphersuite:<wbr>credentialType:<wbr>amountRequested:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::get_or_create_client_keypackages]</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">clientKeypackages</span><span class="p">(</span><span class="nv">ciphersuite</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/Ciphersuite.html">Ciphersuite</a></span><span class="p">,</span> <span class="nv">credentialType</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/CredentialType.html">CredentialType</a></span><span class="p">,</span> <span class="nv">amountRequested</span><span class="p">:</span> <span class="kt">UInt32</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/KeyPackage.html">KeyPackage</a></span><span class="p">]</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
                     <a name="/s:20WireCoreCryptoUniffi0bC7ContextC15clientPublicKey11ciphersuite14credentialType10Foundation4DataVAA11CiphersuiteO_AA010CredentialK0OtYaKF"></a>
                     <a name="//apple_ref/swift/Method/clientPublicKey(ciphersuite:credentialType:)" class="dashAnchor"></a>
                     <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC15clientPublicKey11ciphersuite14credentialType10Foundation4DataVAA11CiphersuiteO_AA010CredentialK0OtYaKF">clientPublicKey(ciphersuite:<wbr>credentialType:<wbr>)</a>
@@ -485,36 +464,6 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">clientPublicKey</span><span class="p">(</span><span class="nv">ciphersuite</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/Ciphersuite.html">Ciphersuite</a></span><span class="p">,</span> <span class="nv">credentialType</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/CredentialType.html">CredentialType</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC27clientValidKeypackagesCount11ciphersuite14credentialTypes6UInt64VAA11CiphersuiteO_AA010CredentialL0OtYaKF"></a>
-                    <a name="//apple_ref/swift/Method/clientValidKeypackagesCount(ciphersuite:credentialType:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC27clientValidKeypackagesCount11ciphersuite14credentialTypes6UInt64VAA11CiphersuiteO_AA010CredentialL0OtYaKF">clientValidKeypackagesCount(ciphersuite:<wbr>credentialType:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::client_valid_key_packages_count]</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">clientValidKeypackagesCount</span><span class="p">(</span><span class="nv">ciphersuite</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/Ciphersuite.html">Ciphersuite</a></span><span class="p">,</span> <span class="nv">credentialType</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/CredentialType.html">CredentialType</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">UInt64</span></code></pre>
 
                         </div>
                       </div>
@@ -695,36 +644,6 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">decryptMessage</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">payload</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/DecryptedMessage.html">DecryptedMessage</a></span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC22deleteStaleKeyPackages11ciphersuiteyAA11CiphersuiteO_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/deleteStaleKeyPackages(ciphersuite:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC22deleteStaleKeyPackages11ciphersuiteyAA11CiphersuiteO_tYaKF">deleteStaleKeyPackages(ciphersuite:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::delete_stale_key_packages]</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">deleteStaleKeyPackages</span><span class="p">(</span><span class="nv">ciphersuite</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/Ciphersuite.html">Ciphersuite</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
@@ -1279,6 +1198,41 @@
                 <li class="item">
                   <div>
                     <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC18generateKeypackage13credentialRef8lifetimeAA0G0CAA010CredentialI0C_SdSgtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/generateKeypackage(credentialRef:lifetime:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC18generateKeypackage13credentialRef8lifetimeAA0G0CAA010CredentialI0C_SdSgtYaKF">generateKeypackage(credentialRef:<wbr>lifetime:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Generate a <code>KeyPackage</code> from the referenced credential.</p>
+
+<p>Makes no attempt to look up or prune existing keypackges.</p>
+
+<p>If <code>lifetime</code> is set, the keypackages will expire that span into the future.
+ If it is unset, a default lifetime of approximately 3 months is used.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">generateKeypackage</span><span class="p">(</span><span class="nv">credentialRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">,</span> <span class="nv">lifetime</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/Keypackage.html">Keypackage</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
                     <a name="/s:20WireCoreCryptoUniffi0bC7ContextC12getClientIds14conversationIdSayAA0gJ0CGAA012ConversationJ0C_tYaKF"></a>
                     <a name="//apple_ref/swift/Method/getClientIds(conversationId:)" class="dashAnchor"></a>
                     <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC12getClientIds14conversationIdSayAA0gJ0CGAA012ConversationJ0C_tYaKF">getClientIds(conversationId:<wbr>)</a>
@@ -1420,6 +1374,36 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">getExternalSender</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ExternalSenderKey.html">ExternalSenderKey</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC14getKeypackagesSayAA13KeypackageRefCGyYaKF"></a>
+                    <a name="//apple_ref/swift/Method/getKeypackages()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC14getKeypackagesSayAA13KeypackageRefCGyYaKF">getKeypackages()</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Get a reference to each <code>KeyPackage</code> in the database.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">getKeypackages</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/KeypackageRef.html">KeypackageRef</a></span><span class="p">]</span></code></pre>
 
                         </div>
                       </div>
@@ -2187,6 +2171,66 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">removeCredential</span><span class="p">(</span><span class="nv">credentialRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC16removeKeypackage5kpRefyAA0gI0C_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/removeKeypackage(kpRef:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC16removeKeypackage5kpRefyAA0gI0C_tYaKF">removeKeypackage(kpRef:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Remove a <code>KeyPackage</code> from the database.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">removeKeypackage</span><span class="p">(</span><span class="nv">kpRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/KeypackageRef.html">KeypackageRef</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC20removeKeypackagesFor13credentialRefyAA010CredentialJ0C_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/removeKeypackagesFor(credentialRef:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC20removeKeypackagesFor13credentialRefyAA010CredentialJ0C_tYaKF">removeKeypackagesFor(credentialRef:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Remove all <code>KeyPackage</code>s associated with this credential ref.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">removeKeypackagesFor</span><span class="p">(</span><span class="nv">credentialRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>

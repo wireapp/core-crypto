@@ -72,7 +72,7 @@
 <a href=#72 id=72 data-nosnippet>72</a>        <span class="kw">let </span>sk = enrollment
 <a href=#73 id=73 data-nosnippet>73</a>            .get_sign_key_for_mls()
 <a href=#74 id=74 data-nosnippet>74</a>            .map_err(RecursiveError::e2e_identity(<span class="string">"creating new enrollment"</span>))<span class="question-mark">?</span>;
-<a href=#75 id=75 data-nosnippet>75</a>        <span class="kw">let </span>cs = <span class="kw-2">*</span>enrollment.ciphersuite();
+<a href=#75 id=75 data-nosnippet>75</a>        <span class="kw">let </span>ciphersuite = <span class="kw-2">*</span>enrollment.ciphersuite();
 <a href=#76 id=76 data-nosnippet>76</a>        <span class="kw">let </span>certificate_chain = enrollment
 <a href=#77 id=77 data-nosnippet>77</a>            .certificate_response(
 <a href=#78 id=78 data-nosnippet>78</a>                certificate_chain,
@@ -90,7 +90,7 @@
 <a href=#90 id=90 data-nosnippet>90</a>
 <a href=#91 id=91 data-nosnippet>91</a>        <span class="kw">let </span>private_key = CertificatePrivateKey {
 <a href=#92 id=92 data-nosnippet>92</a>            value: sk,
-<a href=#93 id=93 data-nosnippet>93</a>            signature_scheme: cs.signature_algorithm(),
+<a href=#93 id=93 data-nosnippet>93</a>            signature_scheme: ciphersuite.signature_algorithm(),
 <a href=#94 id=94 data-nosnippet>94</a>        };
 <a href=#95 id=95 data-nosnippet>95</a>
 <a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">let </span>cert_bundle = CertificateBundle {
@@ -98,9 +98,9 @@
 <a href=#98 id=98 data-nosnippet>98</a>            private_key,
 <a href=#99 id=99 data-nosnippet>99</a>        };
 <a href=#100 id=100 data-nosnippet>100</a>
-<a href=#101 id=101 data-nosnippet>101</a>        <span class="kw">let </span><span class="kw-2">mut </span>credential = Credential::x509(cert_bundle.clone()).map_err(RecursiveError::mls_credential(
-<a href=#102 id=102 data-nosnippet>102</a>            <span class="string">"creating credential from certificate bundle in e2ei_mls_init_only"</span>,
-<a href=#103 id=103 data-nosnippet>103</a>        ))<span class="question-mark">?</span>;
+<a href=#101 id=101 data-nosnippet>101</a>        <span class="kw">let </span><span class="kw-2">mut </span>credential = Credential::x509(ciphersuite, cert_bundle.clone()).map_err(
+<a href=#102 id=102 data-nosnippet>102</a>            RecursiveError::mls_credential(<span class="string">"creating credential from certificate bundle in e2ei_mls_init_only"</span>),
+<a href=#103 id=103 data-nosnippet>103</a>        )<span class="question-mark">?</span>;
 <a href=#104 id=104 data-nosnippet>104</a>        <span class="comment">// we don't need to keep the credential ref; this credential will be loaded in mls_init later on
 <a href=#105 id=105 data-nosnippet>105</a>        </span>credential
 <a href=#106 id=106 data-nosnippet>106</a>            .save(<span class="kw-2">&amp;</span>mls_provider.keystore())
@@ -109,8 +109,8 @@
 <a href=#109 id=109 data-nosnippet>109</a>                <span class="string">"saving credential in e2ei_mls_init_only"</span>,
 <a href=#110 id=110 data-nosnippet>110</a>            ))<span class="question-mark">?</span>;
 <a href=#111 id=111 data-nosnippet>111</a>
-<a href=#112 id=112 data-nosnippet>112</a>        <span class="kw">let </span>identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
-<a href=#113 id=113 data-nosnippet>113</a>        <span class="self">self</span>.mls_init(identifier, <span class="kw-2">&amp;</span>[cs])
+<a href=#112 id=112 data-nosnippet>112</a>        <span class="kw">let </span>identifier = ClientIdentifier::X509(HashMap::from([(ciphersuite.signature_algorithm(), cert_bundle)]));
+<a href=#113 id=113 data-nosnippet>113</a>        <span class="self">self</span>.mls_init(identifier, <span class="kw-2">&amp;</span>[ciphersuite])
 <a href=#114 id=114 data-nosnippet>114</a>            .<span class="kw">await
 <a href=#115 id=115 data-nosnippet>115</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"initializing mls"</span>))<span class="question-mark">?</span>;
 <a href=#116 id=116 data-nosnippet>116</a>        <span class="prelude-val">Ok</span>(crl_new_distribution_points)

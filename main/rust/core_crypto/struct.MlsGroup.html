@@ -61,7 +61,7 @@ and incoming messages from the DS must be processed afterwards.</p>
     ratchet_tree: <a class="enum" href="https://doc.rust-lang.org/1.91.1/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;RatchetTreeIn&gt;,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.91.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.MlsGroup.html" title="struct core_crypto::MlsGroup">MlsGroup</a>, WelcomeError&lt;&lt;KeyStore as OpenMlsKeyStore&gt;::Error&gt;&gt;<div class="where">where
     KeyStore: OpenMlsKeyStore,</div></h4></section></summary><div class="docblock"><p>Creates a new group from a [<code>Welcome</code>] message. Returns an error
-([<code>WelcomeError::NoMatchingKeyPackage</code>]) if no <a href="struct.KeyPackage.html" title="struct core_crypto::KeyPackage"><code>KeyPackage</code></a>
+([<code>WelcomeError::NoMatchingKeyPackage</code>]) if no <a href="struct.Keypackage.html" title="struct core_crypto::Keypackage"><code>KeyPackage</code></a>
 can be found.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.join_by_external_commit" class="method"><h4 class="code-header">pub async fn <a href="#method.join_by_external_commit" class="fn">join_by_external_commit</a>(
     backend: &amp;impl OpenMlsCryptoProvider,
@@ -166,7 +166,7 @@ of the group but does not merge them yet.</p>
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.91.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;(MlsMessageOut, <a class="enum" href="https://doc.rust-lang.org/1.91.1/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;MlsMessageOut&gt;, <a class="enum" href="https://doc.rust-lang.org/1.91.1/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;GroupInfo&gt;), UpdateExtensionsError&lt;&lt;KeyStore as OpenMlsKeyStore&gt;::Error&gt;&gt;<div class="where">where
     KeyStore: OpenMlsKeyStore,</div></h4></section></summary><div class="docblock"><p>Updates the extensions of the group</p>
 <p>This operation results in a Commit with a <code>path</code>, i.e. it includes an
-update of the committer’s leaf <a href="struct.KeyPackage.html" title="struct core_crypto::KeyPackage">KeyPackage</a>.</p>
+update of the committer’s leaf <a href="struct.Keypackage.html" title="struct core_crypto::Keypackage">KeyPackage</a>.</p>
 <p>If successful, it returns a triple where the first element
 contains the commit, the second one the [Welcome] and the third an optional [GroupInfo] that
 will be <a href="https://doc.rust-lang.org/1.91.1/core/option/enum.Option.html#variant.Some" title="variant core::option::Option::Some">Some</a> if the group has the <code>use_ratchet_tree_extension</code> flag set.</p>
@@ -181,7 +181,7 @@ will be <a href="https://doc.rust-lang.org/1.91.1/core/option/enum.Option.html#v
     KeyStore: OpenMlsKeyStore,</div></h4></section></summary><div class="docblock"><p>Adds members to the group.</p>
 <p>New members are added by providing a <code>KeyPackage</code> for each member.</p>
 <p>This operation results in a Commit with a <code>path</code>, i.e. it includes an
-update of the committer’s leaf <a href="struct.KeyPackage.html" title="struct core_crypto::KeyPackage">KeyPackage</a>.</p>
+update of the committer’s leaf <a href="struct.Keypackage.html" title="struct core_crypto::Keypackage">KeyPackage</a>.</p>
 <p>If successful, it returns a triple of [<code>MlsMessageOut</code>]s, where the first
 contains the commit, the second one the [Welcome] and the third an optional [GroupInfo] that
 will be <a href="https://doc.rust-lang.org/1.91.1/core/option/enum.Option.html#variant.Some" title="variant core::option::Option::Some">Some</a> if the group has the <code>use_ratchet_tree_extension</code> flag set.</p>

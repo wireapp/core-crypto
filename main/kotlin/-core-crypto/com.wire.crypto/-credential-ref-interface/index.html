@@ -108,7 +108,7 @@
   <div class="breadcrumbs"><a href="../../../index.html">CoreCrypto</a><span class="delimiter">/</span><a href="../index.html">com.wire.crypto</a><span class="delimiter">/</span><span class="current">CredentialRefInterface</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Credential</span><wbr></wbr><span>Ref</span><wbr></wbr><span><span>Interface</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">interface </span><a href="index.html">CredentialRefInterface</a><span class="clearfix"><span class="floating-right">(<a href="https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt#L7687">source</a>)</span></span></div><p class="paragraph">A reference to a credential which has been persisted in CC.</p><p class="paragraph">This is because credentials can be quite large; we'd really like to avoid passing them back and forth across the FFI boundary more than is strictly required. Therefore, we use this type which is substantially more compact.</p><p class="paragraph">Created with crate::CoreCryptoContext::add_credential.</p><p class="paragraph">This reference is <i>not</i> a literal reference in memory. It is instead the key from which a credential can be retrieved. This means that it is stable over time and across the FFI boundary.</p><h4 class="">Inheritors</h4><div class="table"><div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../-credential-ref/index.html">CredentialRef</a></div></span></div><div></div></div></div></div></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">interface </span><a href="index.html">CredentialRefInterface</a><span class="clearfix"><span class="floating-right">(<a href="https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt#L7824">source</a>)</span></span></div><p class="paragraph">A reference to a credential which has been persisted in CC.</p><p class="paragraph">This is because credentials can be quite large; we'd really like to avoid passing them back and forth across the FFI boundary more than is strictly required. Therefore, we use this type which is substantially more compact.</p><p class="paragraph">Created with crate::CoreCryptoContext::add_credential.</p><p class="paragraph">This reference is <i>not</i> a literal reference in memory. It is instead the key from which a credential can be retrieved. This means that it is stable over time and across the FFI boundary.</p><h4 class="">Inheritors</h4><div class="table"><div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../-credential-ref/index.html">CredentialRef</a></div></span></div><div></div></div></div></div></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
@@ -134,7 +134,22 @@
       </div>
       <div data-togglable="FUNCTION">
         <h2 class="">Functions</h2>
-        <div class="table"><a data-name="376376087%2FFunctions%2F1144021071" anchor-label="clientId" id="376376087%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+        <div class="table"><a data-name="1376454064%2FFunctions%2F1144021071" anchor-label="ciphersuite" id="1376454064%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="ciphersuite.html"><span><span>ciphersuite</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1376454064%2FFunctions%2F1144021071"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="ciphersuite.html"><span class="token function">ciphersuite</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-ciphersuite/index.html">Ciphersuite</a></div><div class="brief "><p class="paragraph">Get the ciphersuite of this credential ref.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="376376087%2FFunctions%2F1144021071" anchor-label="clientId" id="376376087%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
           <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
@@ -189,7 +204,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="signature-scheme.html"><span class="token function">signatureScheme</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-u-short/index.html">UShort</a></div><div class="brief "><p class="paragraph">Get the signature scheme of this credential ref.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="signature-scheme.html"><span class="token function">signatureScheme</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-signature-scheme/index.html">SignatureScheme</a></div><div class="brief "><p class="paragraph">Get the signature scheme of this credential ref.</p></div></div></div>
                 </div>
               </div>
             </div>

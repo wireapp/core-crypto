@@ -164,7 +164,7 @@
 <a href=#164 id=164 data-nosnippet>164</a>
 <a href=#165 id=165 data-nosnippet>165</a>    <span class="kw">let </span>master_client_id = ClientId::from(<span class="string">b"interop master client"</span>.as_slice());
 <a href=#166 id=166 data-nosnippet>166</a>    <span class="kw">let </span>credential = Credential::basic(
-<a href=#167 id=167 data-nosnippet>167</a>        CIPHERSUITE_IN_USE.signature_algorithm(),
+<a href=#167 id=167 data-nosnippet>167</a>        CIPHERSUITE_IN_USE.into(),
 <a href=#168 id=168 data-nosnippet>168</a>        master_client_id.clone(),
 <a href=#169 id=169 data-nosnippet>169</a>        mls_crypto_provider::RustCrypto::default(),
 <a href=#170 id=170 data-nosnippet>170</a>    )<span class="question-mark">?</span>;
