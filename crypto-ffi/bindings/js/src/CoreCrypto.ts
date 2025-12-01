@@ -129,6 +129,8 @@ export {
     type AcmeDirectory,
     ProteusAutoPrekeyBundle,
     BufferedDecryptedMessage,
+    Keypackage,
+    KeypackageRef,
     type KeypackageInterface,
     type KeypackageRefInterface,
     SignatureScheme,
