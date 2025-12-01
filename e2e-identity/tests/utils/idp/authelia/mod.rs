@@ -87,7 +87,7 @@ pub async fn start_server(config: &IdpServerConfig, port: u16) -> IdpServer {
 
     std::fs::write(host_volume.join("config/private.pem"), &keypair_pem).unwrap();
 
-    let image = GenericImage::new("authelia/authelia", "master")
+    let image = GenericImage::new("authelia/authelia", "4.39.15")
         .with_container_name("authelia.local")
         .with_network(NETWORK)
         .with_hostname("authelia.local")
