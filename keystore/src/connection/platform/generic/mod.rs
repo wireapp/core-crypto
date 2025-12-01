@@ -288,3 +288,31 @@ impl<'a> DatabaseConnection<'a> for SqlCipherConnection {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod migration_test {
+    use std::io::Write;
+
+    use tempfile::NamedTempFile;
+
+    use crate::{ConnectionType, Database, DatabaseKey};
+
+    const DB: &[u8] = include_bytes!("../../../../../crypto-ffi/bindings/jvm/src/test/resources/db-v10002003.sqlite");
+    const OLD_KEY: &str = "secret";
+
+    // a close replica of the JVM test in `GeneralTest.kt`, but way more debuggable
+    #[test]
+    fn can_migrate_key_type_to_bytes() {
+        let mut db_file = NamedTempFile::new().unwrap();
+        db_file.write_all(DB).unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+
+        let new_key = DatabaseKey::generate();
+        smol::block_on(Database::migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
+
+        let _db = smol::block_on(Database::open(ConnectionType::Persistent(path), &new_key)).unwrap();
+    }
+}
