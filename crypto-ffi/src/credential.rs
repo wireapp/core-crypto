@@ -15,8 +15,6 @@ use crate::{Ciphersuite, CoreCryptoResult, CredentialType, SignatureScheme, clie
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, uniffi::Object)]
 pub struct Credential(pub(crate) CryptoCredential);
 
-pub(crate) type CredentialMaybeArc = Arc<Credential>;
-
 impl Credential {
     fn basic_impl(ciphersuite: Ciphersuite, client_id: &Arc<ClientId>) -> CoreCryptoResult<Self> {
         let crypto = RustCrypto::default();
