@@ -23,7 +23,9 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           rustflags: ''
-      - uses: taiki-e/install-action@cargo-deny
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny@0.18.6
       - name: "check licenses / supply chain"
         run: |
           cargo deny --all-features check >> $GITHUB_STEP_SUMMARY
