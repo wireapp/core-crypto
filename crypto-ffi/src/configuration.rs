@@ -1,8 +1,8 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use core_crypto::MlsCustomConfiguration;
 
-use crate::{Ciphersuite, core_crypto_context::mls::ExternalSenderKeyMaybeArc};
+use crate::{Ciphersuite, core_crypto_context::mls::ExternalSenderKey};
 
 /// See [core_crypto::MlsWirePolicy]
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
@@ -67,7 +67,7 @@ pub struct ConversationConfiguration {
     /// The ciphersuite used in the group
     pub ciphersuite: Option<Ciphersuite>,
     /// Delivery service public signature key and credential
-    pub external_senders: Vec<ExternalSenderKeyMaybeArc>,
+    pub external_senders: Vec<Arc<ExternalSenderKey>>,
     /// Implementation specific configuration
     pub custom: CustomConfiguration,
 }
