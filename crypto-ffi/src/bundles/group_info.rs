@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use core_crypto::MlsGroupInfoBundle;
 
-use crate::core_crypto_context::mls::{GroupInfoMaybeArc, group_info_coerce_maybe_arc};
+use crate::core_crypto_context::mls::GroupInfo;
 
 #[derive(Debug, Clone, Copy, uniffi::Enum)]
 #[repr(u8)]
@@ -68,7 +70,7 @@ pub struct GroupInfoBundle {
     /// What kind of ratchet tree is used
     pub ratchet_tree_type: MlsRatchetTreeType,
     /// The group info
-    pub payload: GroupInfoMaybeArc,
+    pub payload: Arc<GroupInfo>,
 }
 
 impl From<MlsGroupInfoBundle> for GroupInfoBundle {
@@ -76,7 +78,7 @@ impl From<MlsGroupInfoBundle> for GroupInfoBundle {
         Self {
             encryption_type: gi.encryption_type.into(),
             ratchet_tree_type: gi.ratchet_tree_type.into(),
-            payload: group_info_coerce_maybe_arc(gi.payload.bytes()),
+            payload: Arc::new(gi.payload.bytes().into()),
         }
     }
 }

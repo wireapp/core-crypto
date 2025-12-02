@@ -266,7 +266,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::join_by_external_commit]
     pub async fn join_by_external_commit(
         &self,
-        group_info: GroupInfoMaybeArc,
+        group_info: Arc<GroupInfo>,
         custom_configuration: CustomConfiguration,
         credential_type: CredentialType,
     ) -> CoreCryptoResult<WelcomeBundle> {
