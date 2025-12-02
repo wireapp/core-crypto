@@ -15,6 +15,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
     let tx = conn.transaction()?;
     let mut stmt = tx.prepare(&format!(
         "SELECT
+            {credential_table}.rowid AS cred_rowid,
             id,
             credential,
             unixepoch(created_at) AS created_at,
@@ -67,10 +68,11 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
             )?;
 
             // Delete this credential from the old table, so that migration only happens once
+            let rowid = row.get::<_, i32>("cred_rowid")?;
             tx.execute(
                 "DELETE FROM mls_credentials
-                        WHERE id = ?1",
-                (c.id.clone(),),
+                        WHERE rowid = ?1",
+                (rowid,),
             )?;
         }
     }
