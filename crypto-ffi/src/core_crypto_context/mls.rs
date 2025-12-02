@@ -10,8 +10,7 @@ use tls_codec::Deserialize as _;
 use crate::{
     Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoResult,
     CredentialRef, CredentialType, CustomConfiguration, DecryptedMessage, Keypackage, KeypackageRef, WelcomeBundle,
-    bytes_wrapper::bytes_wrapper, credential::CredentialMaybeArc, credential_ref::CredentialRefMaybeArc,
-    crl::NewCrlDistributionPoints,
+    bytes_wrapper::bytes_wrapper, credential::CredentialMaybeArc, crl::NewCrlDistributionPoints,
 };
 
 bytes_wrapper!(
@@ -308,24 +307,18 @@ impl CoreCryptoContext {
     }
 
     /// Remove a [`Credential`][crate::Credential] from this client.
-    pub async fn remove_credential(&self, credential_ref: &CredentialRefMaybeArc) -> CoreCryptoResult<()> {
+    pub async fn remove_credential(&self, credential_ref: &Arc<CredentialRef>) -> CoreCryptoResult<()> {
         let credential_ref = credential_ref.as_ref();
         self.inner.remove_credential(&credential_ref.0).await?;
         Ok(())
     }
 
     /// Get all credentials from this client.
-    pub async fn get_credentials(&self) -> CoreCryptoResult<Vec<CredentialRefMaybeArc>> {
+    pub async fn get_credentials(&self) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
         self.inner
             .get_credentials()
             .await
-            .map(|credentials| {
-                credentials
-                    .into_iter()
-                    .map(CredentialRef::from)
-                    .map(CredentialRef::into_maybe_arc)
-                    .collect()
-            })
+            .map(|credentials| credentials.into_iter().map(CredentialRef::from).map(Arc::new).collect())
             .map_err(Into::into)
     }
 
@@ -340,7 +333,7 @@ impl CoreCryptoContext {
         ciphersuite: Option<Ciphersuite>,
         credential_type: Option<CredentialType>,
         earliest_validity: Option<u64>,
-    ) -> CoreCryptoResult<Vec<CredentialRefMaybeArc>> {
+    ) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
         let client_id = client_id.as_ref().map(|client_id| client_id.as_cc());
         let client_id = client_id.as_ref().map(|client_id| client_id.as_ref());
 
@@ -359,13 +352,7 @@ impl CoreCryptoContext {
         self.inner
             .find_credentials(find_filters)
             .await
-            .map(|credentials| {
-                credentials
-                    .into_iter()
-                    .map(CredentialRef::from)
-                    .map(CredentialRef::into_maybe_arc)
-                    .collect()
-            })
+            .map(|credentials| credentials.into_iter().map(CredentialRef::from).map(Arc::new).collect())
             .map_err(Into::into)
     }
 
@@ -378,7 +365,7 @@ impl CoreCryptoContext {
     #[uniffi::method(default(lifetime = None))]
     pub async fn generate_keypackage(
         &self,
-        credential_ref: &CredentialRefMaybeArc,
+        credential_ref: &Arc<CredentialRef>,
         lifetime: Option<Duration>,
     ) -> CoreCryptoResult<Arc<Keypackage>> {
         let credential_ref = &credential_ref.0;
@@ -404,7 +391,7 @@ impl CoreCryptoContext {
     }
 
     /// Remove all `KeyPackage`s associated with this credential ref.
-    pub async fn remove_keypackages_for(&self, credential_ref: &CredentialRefMaybeArc) -> CoreCryptoResult<()> {
+    pub async fn remove_keypackages_for(&self, credential_ref: &Arc<CredentialRef>) -> CoreCryptoResult<()> {
         self.inner
             .remove_keypackages_for(&credential_ref.0)
             .await

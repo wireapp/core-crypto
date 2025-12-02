@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use core_crypto::CredentialRef as CryptoCredentialRef;
 
 use crate::{Ciphersuite, ClientId, CredentialType, SignatureScheme};
@@ -18,15 +16,6 @@ use crate::{Ciphersuite, ClientId, CredentialType, SignatureScheme};
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, uniffi::Object)]
 #[uniffi::export(Debug)]
 pub struct CredentialRef(pub(crate) CryptoCredentialRef);
-
-pub(crate) type CredentialRefMaybeArc = Arc<CredentialRef>;
-
-impl CredentialRef {
-    #[inline]
-    pub(crate) fn into_maybe_arc(self) -> CredentialRefMaybeArc {
-        Arc::new(self)
-    }
-}
 
 #[uniffi::export]
 impl CredentialRef {
