@@ -7,15 +7,6 @@ use crate::{CoreCryptoError, CoreCryptoResult};
 #[uniffi::export(Eq)]
 pub struct DatabaseKey(core_crypto_keystore::DatabaseKey);
 
-impl DatabaseKey {
-    /// Convert a [`core_crypto_keystore::DatabaseKey`] into the local type.
-    ///
-    /// Note that the target of this conversion changes according to the compilation target.
-    pub fn from_cc(cc: core_crypto_keystore::DatabaseKey) -> DatabaseKeyMaybeArc {
-        Self(cc).into()
-    }
-}
-
 #[uniffi::export]
 impl DatabaseKey {
     /// Construct a new instance from a byte vector.
@@ -24,22 +15,6 @@ impl DatabaseKey {
         core_crypto_keystore::DatabaseKey::try_from(key.as_slice())
             .map(Self)
             .map_err(CoreCryptoError::generic())
-    }
-}
-
-pub(crate) type DatabaseKeyMaybeArc = std::sync::Arc<DatabaseKey>;
-
-impl super::ToCc for DatabaseKeyMaybeArc {
-    type Target = core_crypto_keystore::DatabaseKey;
-
-    #[inline]
-    fn to_cc(self) -> core_crypto_keystore::DatabaseKey {
-        std::sync::Arc::unwrap_or_clone(self).0
-    }
-
-    #[inline]
-    fn as_cc(&self) -> &core_crypto_keystore::DatabaseKey {
-        &self.as_ref().0
     }
 }
 
