@@ -7,7 +7,10 @@ use openmls_x509_credential::X509Ext as _;
 use x509_cert::der::Decode as _;
 use zeroize::Zeroize;
 
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, deser, entities::PersistedMlsGroup};
+use crate::{
+    CryptoKeystoreError, CryptoKeystoreResult, deser,
+    entities::{PersistedMlsGroup, StoredCredential},
+};
 
 /// Entity representing a persisted `Credential` per the schema prior to integrating the signature keypair
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
@@ -254,4 +257,17 @@ pub(crate) fn make_least_used_ciphersuite(
     };
 
     Ok(least_used_ciphersuite)
+}
+
+pub(crate) fn detect_duplicate_credentials(creds: &[StoredCredential]) -> Vec<(&StoredCredential, &StoredCredential)> {
+    let mut duplicates = Vec::new();
+
+    for (i, a) in creds.iter().enumerate() {
+        for b in creds.iter().skip(i + 1) {
+            if a.public_key == b.public_key {
+                duplicates.push((a, b));
+            }
+        }
+    }
+    duplicates
 }
