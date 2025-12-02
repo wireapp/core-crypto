@@ -165,7 +165,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::process_raw_welcome_message]
     pub async fn process_welcome_message(
         &self,
-        welcome_message: WelcomeMaybeArc,
+        welcome_message: Arc<Welcome>,
         custom_configuration: CustomConfiguration,
     ) -> CoreCryptoResult<WelcomeBundle> {
         let result = self
