@@ -11,12 +11,11 @@ mod proteus;
 #[cfg(feature = "wasm")]
 mod randomness;
 
+use std::sync::Arc;
+
 use core_crypto::Session;
 
-use crate::{
-    CoreCryptoResult,
-    database::{DatabaseMaybeArc, ToCc as _},
-};
+use crate::{CoreCryptoResult, Database};
 
 /// CoreCrypto wraps around MLS and Proteus implementations and provides a transactional interface for each.
 #[derive(Debug, uniffi::Object)]
@@ -31,17 +30,17 @@ pub struct CoreCryptoFfi {
 /// MLS or proteus can be initialized  with [core_crypto::transaction_context::TransactionContext::mls_init] or
 /// [core_crypto::transaction_context::TransactionContext::proteus_init], respectively.
 #[uniffi::export]
-pub async fn core_crypto_new(database: &DatabaseMaybeArc) -> CoreCryptoResult<CoreCryptoFfi> {
+pub async fn core_crypto_new(database: &Arc<Database>) -> CoreCryptoResult<CoreCryptoFfi> {
     CoreCryptoFfi::new(database).await
 }
 
 impl CoreCryptoFfi {
     /// Instantiate CC
-    pub async fn new(database: &DatabaseMaybeArc) -> CoreCryptoResult<Self> {
+    pub async fn new(database: &Arc<Database>) -> CoreCryptoResult<Self> {
         #[cfg(target_family = "wasm")]
         console_error_panic_hook::set_once();
 
-        let client = Session::try_new(database.as_cc()).await?;
+        let client = Session::try_new(database).await?;
         let inner = core_crypto::CoreCrypto::from(client);
 
         Ok(Self { inner })

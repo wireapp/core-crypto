@@ -35,8 +35,8 @@ impl CoreCryptoFfiClient {
         let client_id_bytes: Vec<u8> = client_id.as_hyphenated().to_string().into_bytes();
         let client_id = Arc::new(ClientId::from(core_crypto::ClientId::from(client_id_bytes.clone())));
         let temp_file = NamedTempFile::with_prefix("interop-ffi-keystore-")?;
-        let key = DatabaseKey::from_cc(core_crypto::DatabaseKey::generate());
-        let db = Database::open(&temp_file.path().to_string_lossy(), key)
+        let key = DatabaseKey::from(core_crypto::DatabaseKey::generate());
+        let db = Database::open(&temp_file.path().to_string_lossy(), key.into())
             .await
             .unwrap()
             .into();
