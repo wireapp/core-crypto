@@ -634,7 +634,7 @@ SWIFT_TESTS = ./crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCryptoTests
 SWIFT_FILES := $(shell find $(SWIFT_WRAPPER) $(SWIFT_TESTS) $(SWIFT_INTEROP) -type f -name '*.swift')
 
 $(STAMPS)/swift-fmt: $(SWIFT_FILES)
-	swift format -r -i $(SWIFT_INTEROP) $(SWIFT_TESTS) $(SWIFT_WRAPPER) && \
+	swift format -r -i $(SWIFT_INTEROP) $(SWIFT_TESTS) $(SWIFT_WRAPPER)
 	$(TOUCH_STAMP)
 
 .PHONY: swift-fmt
