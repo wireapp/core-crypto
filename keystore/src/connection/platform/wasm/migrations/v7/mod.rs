@@ -4,7 +4,7 @@ use super::{DB_VERSION_7, Metabuilder};
 use crate::{
     CryptoKeystoreResult, Database, DatabaseKey,
     connection::FetchFromDatabase as _,
-    entities::{Entity, EntityFindParams, PersistedMlsGroup, StoredCredential},
+    entities::{EntityFindParams, PersistedMlsGroup, StoredCredential},
     migrations::{V6Credential, make_ciphersuite_for_signature_scheme},
 };
 
@@ -34,7 +34,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
             db_before_migration.save(new_credential).await?;
         }
         db_before_migration
-            .remove::<V6Credential, _>(v6_credential.id_raw())
+            .cred_delete_by_credential(v6_credential.credential.clone())
             .await?;
     }
 

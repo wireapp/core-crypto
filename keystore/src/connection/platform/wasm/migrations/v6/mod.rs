@@ -4,7 +4,7 @@ use super::{DB_VERSION_6, Metabuilder};
 use crate::{
     CryptoKeystoreResult, Database, DatabaseKey,
     connection::FetchFromDatabase,
-    entities::{Entity, EntityBase as _, EntityFindParams},
+    entities::{EntityBase as _, EntityFindParams},
     migrations::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
 };
 
@@ -24,7 +24,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
         for v5_credential in v5_credentials.iter() {
             if let Some(new_credential) = migrate_to_new_credential(v5_credential, signature_key)? {
                 db_before_migration
-                    .remove::<V5Credential, _>(v5_credential.id_raw())
+                    .cred_delete_by_credential(v5_credential.credential.clone())
                     .await?;
                 db_before_migration.save(new_credential).await?;
             }
