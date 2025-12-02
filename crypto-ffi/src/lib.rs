@@ -37,6 +37,7 @@ pub use bundles::{
 pub use ciphersuite::{Ciphersuite, ciphersuite_default, ciphersuite_from_u16};
 pub use client_id::ClientId;
 pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePolicy};
+pub(crate) use core_crypto::e2ei::identities::UserIdentities;
 pub use core_crypto::{
     CoreCryptoFfi,
     command::CoreCryptoCommand,
@@ -47,10 +48,6 @@ pub use core_crypto::{
 };
 #[cfg(not(target_family = "wasm"))]
 pub use core_crypto::{command::transaction_helper::TransactionHelper, core_crypto_new};
-pub(crate) use core_crypto::{
-    conversation::{ConversationIdMaybeArc, conversation_id_coerce_maybe_arc},
-    e2ei::identities::UserIdentities,
-};
 pub use core_crypto_context::CoreCryptoContext;
 pub use credential::Credential;
 #[cfg(not(target_family = "wasm"))]

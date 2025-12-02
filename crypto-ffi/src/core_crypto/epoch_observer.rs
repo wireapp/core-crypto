@@ -1,11 +1,8 @@
 use std::sync::Arc;
 
-use ::core_crypto::ConversationId;
 use async_trait::async_trait;
 
-use crate::{
-    ConversationIdMaybeArc, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, conversation_id_coerce_maybe_arc,
-};
+use crate::{ConversationId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult};
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 #[uniffi(flat_error)]
@@ -35,7 +32,7 @@ pub trait EpochObserver: Send + Sync {
     /// and ignore internal errors instead of propagating them, to the maximum extent possible.
     async fn epoch_changed(
         &self,
-        conversation_id: ConversationIdMaybeArc,
+        conversation_id: Arc<ConversationId>,
         epoch: u64,
     ) -> Result<(), EpochChangedReportingError>;
 }
@@ -50,10 +47,10 @@ struct ObserverShim(Arc<dyn EpochObserver>);
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl core_crypto::mls::EpochObserver for ObserverShim {
-    async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64) {
+    async fn epoch_changed(&self, conversation_id: core_crypto::ConversationId, epoch: u64) {
         if let Err(err) = self
             .0
-            .epoch_changed(conversation_id_coerce_maybe_arc(&conversation_id), epoch)
+            .epoch_changed(Arc::new(ConversationId(conversation_id.as_ref().to_owned())), epoch)
             .await
         {
             // we don't _care_ if an error is thrown by the notification function, per se,

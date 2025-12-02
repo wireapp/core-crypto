@@ -1,12 +1,8 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use core_crypto::ConversationId;
 
-use crate::{
-    ConversationIdMaybeArc, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, HistorySecret,
-    conversation_id_coerce_maybe_arc,
-};
+use crate::{ConversationId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, HistorySecret};
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 #[uniffi(flat_error)]
@@ -36,7 +32,7 @@ pub trait HistoryObserver: Send + Sync {
     /// and ignore internal errors instead of propagating them, to the maximum extent possible.
     async fn history_client_created(
         &self,
-        conversation_id: ConversationIdMaybeArc,
+        conversation_id: Arc<ConversationId>,
         secret: HistorySecret,
     ) -> Result<(), NewHistoryClientReportingError>;
 }
@@ -51,7 +47,11 @@ struct ObserverShim(Arc<dyn HistoryObserver>);
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
 impl core_crypto::mls::HistoryObserver for ObserverShim {
-    async fn history_client_created(&self, conversation_id: ConversationId, secret: &core_crypto::HistorySecret) {
+    async fn history_client_created(
+        &self,
+        conversation_id: core_crypto::ConversationId,
+        secret: &core_crypto::HistorySecret,
+    ) {
         let Ok(secret) = HistorySecret::try_from(secret) else {
             // weird that we couldn't convert this but ¯\_(ツ)_/¯
             log::warn!(
@@ -61,7 +61,7 @@ impl core_crypto::mls::HistoryObserver for ObserverShim {
         };
         if let Err(err) = self
             .0
-            .history_client_created(conversation_id_coerce_maybe_arc(&conversation_id), secret)
+            .history_client_created(Arc::new(ConversationId(conversation_id.clone().into())), secret)
             .await
         {
             // we don't _care_ if an error is thrown by the notification function, per se,
