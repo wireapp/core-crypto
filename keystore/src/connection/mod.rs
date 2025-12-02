@@ -14,6 +14,10 @@ pub mod platform {
             mod generic;
             pub use self::generic::SqlCipherConnection as KeystoreDatabaseConnection;
             pub use self::generic::TransactionWrapper;
+            #[cfg(test)]
+            pub(crate) use generic::MigrationTarget;
+
+
         }
     }
 }
@@ -221,6 +225,22 @@ impl Database {
         };
         let conn = Mutex::new(Some(conn));
         #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
+        let conn = Arc::new(conn);
+        Ok(Self {
+            conn,
+            transaction: Default::default(),
+            transaction_semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
+        })
+    }
+
+    #[cfg(all(test, not(target_family = "wasm")))]
+    pub(crate) async fn open_at_schema_version(
+        name: &str,
+        key: &DatabaseKey,
+        version: MigrationTarget,
+    ) -> CryptoKeystoreResult<Self> {
+        let conn = KeystoreDatabaseConnection::init_with_key_at_schema_version(name, key, version)?;
+        let conn = Mutex::new(Some(conn));
         let conn = Arc::new(conn);
         Ok(Self {
             conn,

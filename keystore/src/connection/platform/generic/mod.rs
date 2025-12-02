@@ -79,7 +79,7 @@ unsafe impl Send for SqlCipherConnection {}
 unsafe impl Sync for SqlCipherConnection {}
 
 #[derive(Default)]
-enum MigrationTarget {
+pub(crate) enum MigrationTarget {
     #[default]
     Latest,
     Version(u16),
@@ -105,6 +105,29 @@ impl SqlCipherConnection {
         conn.pragma_update(None, "foreign_keys", "OFF")?;
 
         Self::run_migrations(&mut conn, Default::default())?;
+
+        let conn = Self {
+            path: path.into(),
+            conn: Mutex::new(conn),
+        };
+
+        Ok(conn)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn init_with_key_at_schema_version(
+        path: &str,
+        key: &DatabaseKey,
+        version: MigrationTarget,
+    ) -> CryptoKeystoreResult<Self> {
+        let mut conn = rusqlite::Connection::open(path)?;
+
+        Self::set_key(&mut conn, key)?;
+
+        // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
+        conn.pragma_update(None, "foreign_keys", "OFF")?;
+
+        Self::run_migrations(&mut conn, version)?;
 
         let conn = Self {
             path: path.into(),
@@ -295,9 +318,14 @@ impl<'a> DatabaseConnection<'a> for SqlCipherConnection {
 mod migration_test {
     use std::io::Write;
 
+    use openmls::prelude::Ciphersuite;
     use tempfile::NamedTempFile;
 
-    use crate::{ConnectionType, Database, DatabaseKey};
+    use crate::{
+        ConnectionType, Database, DatabaseKey,
+        connection::{FetchFromDatabase, MigrationTarget},
+        entities::{EntityFindParams, StoredCredential},
+    };
 
     const DB: &[u8] = include_bytes!("../../../../../crypto-ffi/bindings/jvm/src/test/resources/db-v10002003.sqlite");
     const OLD_KEY: &str = "secret";
@@ -316,5 +344,106 @@ mod migration_test {
         smol::block_on(Database::migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
 
         let _db = smol::block_on(Database::open(ConnectionType::Persistent(path), &new_key)).unwrap();
+    }
+
+    #[test]
+    fn deduplicating_credentials() {
+        let mut db_file = NamedTempFile::new().unwrap();
+        db_file.write_all(DB).unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+
+        let new_key = DatabaseKey::generate();
+        smol::block_on(Database::migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
+
+        smol::block_on(async {
+            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(18))
+                .await
+                .unwrap();
+
+            let conn_guard = db.conn().await.unwrap();
+            let conn = conn_guard.conn.lock().await;
+            let mut stmt = conn
+                .prepare(&format!(
+                    "SELECT
+                        id,
+                        credential,
+                        unixepoch(created_at) AS created_at,
+                        ciphersuite,
+                        public_key,
+                        secret_key
+                     FROM {credential_table}",
+                    credential_table = "mls_credentials_new",
+                ))
+                .expect("preparing statement");
+
+            let credential = stmt
+                .query_one([], |row| {
+                    Ok(StoredCredential {
+                        id: row.get("id")?,
+                        credential: row.get("credential")?,
+                        created_at: row.get("created_at")?,
+                        ciphersuite: row.get("ciphersuite")?,
+                        public_key: row.get("public_key")?,
+                        secret_key: row.get("secret_key")?,
+                    })
+                })
+                .expect("credential from row");
+
+            // Ciphersuites need to be ambiguous w.r.t their signature scheme to be a relevant duplicate
+            conn.execute(
+                "UPDATE mls_credentials_new SET ciphersuite = ?1",
+                [Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u16],
+            )
+            .expect("updating ciphersuite");
+
+            // Create a duplicate from this credential
+            conn.execute(
+                "INSERT INTO mls_credentials_new (
+                        id,
+                        credential,
+                        created_at,
+                        ciphersuite,
+                        public_key,
+                        secret_key
+                    )
+                    VALUES (?1, ?2, datetime(?3, 'unixepoch'), ?4, ?5, ?6)",
+                (
+                    credential.id.clone(),
+                    credential.credential.clone(),
+                    credential.created_at,
+                    Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 as u16,
+                    credential.public_key.clone(),
+                    credential.secret_key.clone(),
+                ),
+            )
+            .expect("inserting duplicate");
+
+            let count = conn
+                .query_row("SELECT COUNT(*) FROM mls_credentials_new", [], |row| {
+                    row.get::<_, i32>(0)
+                })
+                .unwrap();
+
+            assert_eq!(count, 2);
+
+            drop(stmt);
+            drop(conn);
+            drop(conn_guard);
+            drop(db);
+
+            let db = Database::open(ConnectionType::Persistent(path), &new_key)
+                .await
+                .unwrap();
+            let deduplicated_count = db
+                .find_all::<StoredCredential>(EntityFindParams::default())
+                .await
+                .expect("deduplicated credentials")
+                .len();
+
+            assert_eq!(deduplicated_count, 1);
+        });
     }
 }
