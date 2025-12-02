@@ -256,6 +256,7 @@ impl SqlCipherConnection {
         match sql_migration_version {
             meta_migrations::v16::VERSION => meta_migrations::v16::meta_migration(conn),
             meta_migrations::v18::VERSION => meta_migrations::v18::meta_migration(conn),
+            meta_migrations::v19::VERSION => meta_migrations::v19::meta_migration(conn),
             _ => Ok(()),
         }
     }
