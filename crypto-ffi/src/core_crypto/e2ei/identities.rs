@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
 
-use crate::{ConversationId, CoreCryptoFfi, CoreCryptoResult, WireIdentity, client_id::ClientIdMaybeArc};
+use crate::{ClientId, ConversationId, CoreCryptoFfi, CoreCryptoResult, WireIdentity};
 
 type DeviceIdentities = Vec<WireIdentity>;
 
@@ -14,7 +14,7 @@ impl CoreCryptoFfi {
     pub async fn get_device_identities(
         &self,
         conversation_id: &ConversationId,
-        device_ids: Vec<ClientIdMaybeArc>,
+        device_ids: Vec<Arc<ClientId>>,
     ) -> CoreCryptoResult<DeviceIdentities> {
         let conversation = self
             .inner

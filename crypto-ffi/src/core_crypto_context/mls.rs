@@ -10,8 +10,8 @@ use tls_codec::Deserialize as _;
 use crate::{
     Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoResult,
     CredentialRef, CredentialType, CustomConfiguration, DecryptedMessage, Keypackage, KeypackageRef, WelcomeBundle,
-    bytes_wrapper::bytes_wrapper, client_id::ClientIdMaybeArc, credential::CredentialMaybeArc,
-    credential_ref::CredentialRefMaybeArc, crl::NewCrlDistributionPoints,
+    bytes_wrapper::bytes_wrapper, credential::CredentialMaybeArc, credential_ref::CredentialRefMaybeArc,
+    crl::NewCrlDistributionPoints,
 };
 
 bytes_wrapper!(
@@ -47,7 +47,7 @@ bytes_wrapper!(
 #[uniffi::export]
 impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::mls_init]
-    pub async fn mls_init(&self, client_id: &ClientIdMaybeArc, ciphersuites: Vec<Ciphersuite>) -> CoreCryptoResult<()> {
+    pub async fn mls_init(&self, client_id: &Arc<ClientId>, ciphersuites: Vec<Ciphersuite>) -> CoreCryptoResult<()> {
         self.inner
             .mls_init(
                 ClientIdentifier::Basic(client_id.as_cc()),
@@ -98,7 +98,7 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_client_ids]
-    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<ClientIdMaybeArc>> {
+    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<Arc<ClientId>>> {
         let conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         let client_ids = conversation
             .get_client_ids()
@@ -197,7 +197,7 @@ impl CoreCryptoContext {
     pub async fn remove_clients_from_conversation(
         &self,
         conversation_id: &ConversationId,
-        clients: Vec<ClientIdMaybeArc>,
+        clients: Vec<Arc<ClientId>>,
     ) -> CoreCryptoResult<()> {
         let clients: Vec<core_crypto::ClientId> = clients.into_iter().map(|c| c.as_cc()).collect();
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
@@ -335,7 +335,7 @@ impl CoreCryptoContext {
     /// matching that value.
     pub async fn find_credentials(
         &self,
-        client_id: Option<ClientIdMaybeArc>,
+        client_id: Option<Arc<ClientId>>,
         public_key: Option<Vec<u8>>,
         ciphersuite: Option<Ciphersuite>,
         credential_type: Option<CredentialType>,

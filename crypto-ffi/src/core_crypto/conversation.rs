@@ -1,13 +1,11 @@
-use std::borrow::Borrow;
+use std::{borrow::Borrow, sync::Arc};
 
 use core_crypto::{
     RecursiveError,
     mls::conversation::{Conversation as _, ConversationIdRef},
 };
 
-use crate::{
-    Ciphersuite, ClientId, CoreCryptoFfi, CoreCryptoResult, bytes_wrapper::bytes_wrapper, client_id::ClientIdMaybeArc,
-};
+use crate::{Ciphersuite, ClientId, CoreCryptoFfi, CoreCryptoResult, bytes_wrapper::bytes_wrapper};
 
 bytes_wrapper!(
     /// A unique identifier for a single conversation.
@@ -65,7 +63,7 @@ impl CoreCryptoFfi {
     }
 
     /// See [core_crypto::mls::conversation::Conversation::get_client_ids]
-    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<ClientIdMaybeArc>> {
+    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<Arc<ClientId>>> {
         let conversation = self
             .inner
             .get_raw_conversation(conversation_id.as_ref())

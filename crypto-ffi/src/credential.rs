@@ -3,7 +3,7 @@ use std::sync::Arc;
 use core_crypto::{Ciphersuite as CryptoCiphersuite, Credential as CryptoCredential};
 use mls_crypto_provider::RustCrypto;
 
-use crate::{Ciphersuite, CoreCryptoResult, CredentialType, SignatureScheme, client_id::ClientIdMaybeArc};
+use crate::{Ciphersuite, CoreCryptoResult, CredentialType, SignatureScheme, client_id::ClientId};
 
 /// A cryptographic credential.
 ///
@@ -18,7 +18,7 @@ pub struct Credential(pub(crate) CryptoCredential);
 pub(crate) type CredentialMaybeArc = Arc<Credential>;
 
 impl Credential {
-    fn basic_impl(ciphersuite: Ciphersuite, client_id: &ClientIdMaybeArc) -> CoreCryptoResult<Self> {
+    fn basic_impl(ciphersuite: Ciphersuite, client_id: &Arc<ClientId>) -> CoreCryptoResult<Self> {
         let crypto = RustCrypto::default();
         CryptoCredential::basic(CryptoCiphersuite::from(ciphersuite), client_id.as_cc(), crypto)
             .map(Into::into)
@@ -30,7 +30,7 @@ impl Credential {
 ///
 /// The result is independent of any client instance and the database; it lives in memory only.
 #[uniffi::export]
-pub fn credential_basic(ciphersuite: Ciphersuite, client_id: &ClientIdMaybeArc) -> CoreCryptoResult<Credential> {
+pub fn credential_basic(ciphersuite: Ciphersuite, client_id: &Arc<ClientId>) -> CoreCryptoResult<Credential> {
     Credential::basic_impl(ciphersuite, client_id)
 }
 

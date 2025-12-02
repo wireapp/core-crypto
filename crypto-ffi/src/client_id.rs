@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 /// A Client identifier
 ///
 /// A unique identifier for clients. A client is an identifier for each App a user is using, such as desktop,
@@ -5,8 +7,6 @@
 /// More information [here](https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients)
 #[derive(Debug, Clone, Eq, Hash, PartialEq, derive_more::From, uniffi::Object)]
 pub struct ClientId(pub(crate) core_crypto::ClientId);
-
-pub(crate) type ClientIdMaybeArc = std::sync::Arc<ClientId>;
 
 #[uniffi::export]
 impl ClientId {
@@ -27,7 +27,7 @@ impl ClientId {
         self.0.clone()
     }
 
-    pub(crate) fn from_cc(id: core_crypto::ClientId) -> ClientIdMaybeArc {
+    pub(crate) fn from_cc(id: core_crypto::ClientId) -> Arc<ClientId> {
         std::sync::Arc::new(ClientId(id))
     }
 }

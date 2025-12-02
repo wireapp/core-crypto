@@ -1,13 +1,15 @@
+use std::sync::Arc;
+
 use core_crypto::{CoreCrypto, HistorySecret as CoreCryptoHistorySecret};
 
-use crate::{ClientId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, client_id::ClientIdMaybeArc};
+use crate::{ClientId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult};
 
 /// A `HistorySecret` encodes sufficient client state that it can be used to instantiate an
 /// ephemeral client.
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, uniffi::Record)]
 pub struct HistorySecret {
     /// Client id of the associated history client
-    pub client_id: ClientIdMaybeArc,
+    pub client_id: Arc<ClientId>,
     /// Opaque secret data sufficient to reconstruct a history client.
     pub data: Vec<u8>,
 }

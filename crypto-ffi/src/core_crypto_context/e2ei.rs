@@ -3,9 +3,8 @@ use std::{collections::HashMap, sync::Arc};
 use core_crypto::{mls::conversation::Conversation as _, transaction_context::Error as TransactionError};
 
 use crate::{
-    Ciphersuite, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CrlRegistration,
-    E2eiConversationState, E2eiEnrollment, UserIdentities, WireIdentity, client_id::ClientIdMaybeArc,
-    crl::NewCrlDistributionPoints,
+    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CrlRegistration,
+    E2eiConversationState, E2eiEnrollment, UserIdentities, WireIdentity, crl::NewCrlDistributionPoints,
 };
 
 type EnrollmentParameter = Arc<E2eiEnrollment>;
@@ -188,7 +187,7 @@ impl CoreCryptoContext {
     pub async fn get_device_identities(
         &self,
         conversation_id: &ConversationId,
-        device_ids: Vec<ClientIdMaybeArc>,
+        device_ids: Vec<Arc<ClientId>>,
     ) -> CoreCryptoResult<Vec<WireIdentity>> {
         let device_ids = device_ids.into_iter().map(|cid| cid.as_cc()).collect::<Vec<_>>();
 
