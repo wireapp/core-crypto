@@ -86,7 +86,6 @@ pub enum CryptoKeystoreError {
     #[cfg(target_family = "wasm")]
     #[error("The task has been canceled")]
     WasmExecutorError,
-    #[cfg(target_family = "wasm")]
     #[error("aead::Error")]
     AesGcmError,
     #[cfg(target_family = "wasm")]
@@ -140,7 +139,6 @@ pub enum CryptoKeystoreError {
     TimestampError,
     #[error("Could not find {0} in keystore with value {1}")]
     NotFound(&'static str, String),
-    #[cfg(target_family = "wasm")]
     #[error(transparent)]
     SerdeJsonError(#[from] serde_json::Error),
     #[cfg(target_family = "wasm")]

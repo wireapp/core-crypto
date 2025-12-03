@@ -11,16 +11,18 @@ pub(crate) mod proteus;
 mod traits;
 pub mod transaction;
 
-pub use self::connection::{Database, DatabaseKey};
-#[cfg(feature = "dummy-entity")]
-pub use self::entities::{DummyStoreValue, DummyValue};
-pub use self::error::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind};
-pub use self::mls::{CryptoKeystoreMls, deser, ser};
-#[cfg(feature = "proteus-keystore")]
-pub use self::proteus::CryptoKeystoreProteus;
-
 #[cfg(not(target_family = "wasm"))]
 use sha2::{Digest, Sha256};
+
+#[cfg(feature = "dummy-entity")]
+pub use self::entities::{DummyStoreValue, DummyValue};
+#[cfg(feature = "proteus-keystore")]
+pub use self::proteus::CryptoKeystoreProteus;
+pub use self::{
+    connection::{ConnectionType, Database, DatabaseKey},
+    error::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind},
+    mls::{CryptoKeystoreMls, deser, ser},
+};
 
 /// Used to calculate ID hashes for some MlsEntities' SQLite tables (not used on wasm).
 /// We only use sha256 on platforms where we use SQLite.
