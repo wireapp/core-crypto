@@ -311,7 +311,7 @@ android-env:
 	@ndk_version=$$(perl -ne 's/Pkg\.Revision = // and print' $(ANDROID_NDK_HOME)/source.properties) && \
 		echo "Using Android NDK $${ndk_version} at $(ANDROID_NDK_HOME)"; \
 
-ANDROID_ARMv7 := target/armv7-linux-androideabi/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+ANDROID_ARMv7 := target/armv7-linux-androideabi/$(RELEASE_MODE)/libcore_crypto_ffi.so
 android-armv7-deps := $(RUST_SOURCES)
 $(ANDROID_ARMv7): $(android-armv7-deps) | android-env
 	cargo rustc --locked \
@@ -323,7 +323,7 @@ $(ANDROID_ARMv7): $(android-armv7-deps) | android-env
 .PHONY: android-armv7
 android-armv7: $(ANDROID_ARMv7) ## Build core-crypto-ffi for armv7-linux-androideabi
 
-ANDROID_ARMv8 := target/aarch64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+ANDROID_ARMv8 := target/aarch64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.so
 android-armv8-deps := $(RUST_SOURCES)
 $(ANDROID_ARMv8): $(android-armv8-deps) | android-env
 	cargo rustc --locked \
@@ -335,7 +335,7 @@ $(ANDROID_ARMv8): $(android-armv8-deps) | android-env
 .PHONY: android-armv8
 android-armv8: $(ANDROID_ARMv8) ## Build core-crypto-ffi for aarch64-linux-android
 
-ANDROID_X86 := target/x86_64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+ANDROID_X86 := target/x86_64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.so
 android-x86-deps := $(RUST_SOURCES)
 $(ANDROID_X86): $(android-x86-deps) | android-env
 	# Link clang_rt.builtins statically for x86_64 Android
