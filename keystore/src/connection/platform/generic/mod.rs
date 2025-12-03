@@ -437,13 +437,22 @@ mod migration_test {
             let db = Database::open(ConnectionType::Persistent(path), &new_key)
                 .await
                 .unwrap();
-            let deduplicated_count = db
+            let deduplicated_credentials = db
                 .find_all::<StoredCredential>(EntityFindParams::default())
                 .await
-                .expect("deduplicated credentials")
-                .len();
+                .expect("deduplicated credentials");
+
+            let deduplicated_count = deduplicated_credentials.len();
+
+            let deduplicated_credential = deduplicated_credentials.first().expect("first credential");
 
             assert_eq!(deduplicated_count, 1);
+
+            // In case of equal occurence, the credential with the numerically lower ciphersuite is kept.
+            assert_eq!(
+                deduplicated_credential.ciphersuite,
+                Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u16
+            );
         });
     }
 }
