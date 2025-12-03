@@ -2,8 +2,7 @@ use async_trait::async_trait;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::entity_transaction_ext::EntityTransactionExt,
-    traits::{Entity, EntityBase},
+    traits::{Entity, EntityBase, entity_transaction_ext::EntityTransactionExt},
 };
 
 /// A unique entity can appear either 0 or 1 times in the database.

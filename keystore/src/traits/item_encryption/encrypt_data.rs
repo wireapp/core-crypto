@@ -1,6 +1,5 @@
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, traits::Entity};
-
 use super::aad::{AES_GCM_256_NONCE_SIZE, Aad};
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, traits::Entity};
 
 // About WASM Encryption:
 // The store key (i.e. passphrase) is hashed using SHA256 to obtain 32 bytes

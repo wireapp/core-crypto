@@ -31,7 +31,8 @@ pub trait EntityTransactionExt<'a>: Entity<ConnectionType = crate::connection::K
     ///
     /// Returns `true` if at least one entity was deleted, or `false` if the id was not found in the database.
     ///
-    /// For entites whose primary key has a distinct borrowed type, it is best to implement this as a direct passthrough:
+    /// For entites whose primary key has a distinct borrowed type, it is best to implement this as a direct
+    /// passthrough:
     ///
     /// ```rust,ignore
     /// async fn delete(tx: &Self::Transaction, key: &Self::PrimaryKey) -> CoreCryptoKeystoreResult<bool> {

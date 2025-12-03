@@ -23,7 +23,8 @@ pub trait Entity: EntityBase {
 
     /// Get an entity by its primary key.
     ///
-    /// For entites whose primary key has a distinct borrowed type, it is best to implement this as a direct passthrough:
+    /// For entites whose primary key has a distinct borrowed type, it is best to implement this as a direct
+    /// passthrough:
     ///
     /// ```rust,ignore
     /// async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CoreCryptoKeystoreResult<Option<Self>> {
