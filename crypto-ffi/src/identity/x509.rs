@@ -2,7 +2,7 @@
 use wasm_bindgen::prelude::*;
 
 #[cfg(not(target_family = "wasm"))]
-use std::time::{Duration, SystemTime};
+use crate::Timestamp;
 
 /// Represents the parts of [WireIdentity][crate::WireIdentity] that are specific to a X509 certificate (and not a Basic one).
 ///
@@ -39,7 +39,7 @@ pub struct X509Identity {
 
     /// X509 certificate not before
     #[cfg(not(target_family = "wasm"))]
-    pub not_before: SystemTime,
+    pub not_before: Timestamp,
 
     /// X509 certificate not after as Unix timestamp
     #[cfg(target_family = "wasm")]
@@ -48,7 +48,7 @@ pub struct X509Identity {
 
     /// X509 certificate not after
     #[cfg(not(target_family = "wasm"))]
-    pub not_after: SystemTime,
+    pub not_after: Timestamp,
 }
 
 impl From<core_crypto::prelude::X509Identity> for X509Identity {
@@ -60,10 +60,10 @@ impl From<core_crypto::prelude::X509Identity> for X509Identity {
         let not_after = i.not_after;
 
         #[cfg(not(target_family = "wasm"))]
-        let not_before = SystemTime::UNIX_EPOCH + Duration::from_secs(i.not_before);
+        let not_before = Timestamp::from_epoch_secs(i.not_before);
 
         #[cfg(not(target_family = "wasm"))]
-        let not_after = SystemTime::UNIX_EPOCH + Duration::from_secs(i.not_after);
+        let not_after = Timestamp::from_epoch_secs(i.not_after);
 
         Self {
             handle: i.handle,

@@ -20,6 +20,7 @@ dependencies {
     implementation(kotlin("stdlib-jdk7"))
     implementation("${libs.jna.get()}@aar")
     implementation(libs.coroutines.core)
+    implementation(libs.kotlinx.datetime)
     implementation("androidx.annotation:annotation:1.9.1")
 
     androidTestImplementation(kotlin("test"))
