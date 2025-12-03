@@ -68,20 +68,19 @@ impl ProteusPrekey {
         self.id_bytes = self.id.to_le_bytes().into();
     }
 
+    #[cfg(target_family = "wasm")]
     pub async fn get_free_id(conn: &crate::Database) -> crate::CryptoKeystoreResult<u16> {
-        let mut id = 1u16;
-        let limit = u16::MAX;
-        while id <= limit {
-            if id == limit {
-                return Err(crate::CryptoKeystoreError::NoFreePrekeyId);
-            }
-            if conn.find::<Self>(&id.to_le_bytes()).await?.is_none() {
-                break;
-            }
-            id += 1;
-        }
+        todo!()
+    }
 
-        Ok(id)
+    #[cfg(not(target_family = "wasm"))]
+    pub async fn get_free_id(conn: &crate::Database) -> crate::CryptoKeystoreResult<u16> {
+        let conn = conn.conn().await?;
+        let conn = conn.conn().await;
+
+        let mut statement = conn.prepare_cached("SELECT COALESCE(MAX(id), 0) FROM proteus_prekeys")?;
+        let existing_max_id = statement.query_one([], |row| row.get::<_, u16>(0))?;
+        Ok(existing_max_id + 1)
     }
 }
 
