@@ -15,7 +15,7 @@ pub enum RustyAcmeError {
     JwtError(#[from] rusty_jwt_tools::prelude::RustyJwtError),
     /// Error related to various X509 processing facilities/tools/checks
     #[error(transparent)]
-    X509CheckError(#[from] crate::x509_check::RustyX509CheckError),
+    X509CheckError(#[from] crate::acme::x509_check::RustyX509CheckError),
     /// Failed mapping an ASN.1 ObjectIdentifier
     #[error(transparent)]
     OidError(#[from] x509_cert::der::oid::Error),
@@ -45,19 +45,19 @@ pub enum RustyAcmeError {
     SmallstepImplementationError(&'static str),
     /// Error while processing an account
     #[error(transparent)]
-    AccountError(#[from] crate::account::AcmeAccountError),
+    AccountError(#[from] crate::acme::account::AcmeAccountError),
     /// Error while processing an order
     #[error(transparent)]
-    OrderError(#[from] crate::order::AcmeOrderError),
+    OrderError(#[from] crate::acme::order::AcmeOrderError),
     /// Error while processing an authorization
     #[error(transparent)]
-    AuthzError(#[from] crate::authz::AcmeAuthzError),
+    AuthzError(#[from] crate::acme::authz::AcmeAuthzError),
     /// Error while validating a challenge
     #[error(transparent)]
-    ChallengeError(#[from] crate::chall::AcmeChallError),
+    ChallengeError(#[from] crate::acme::chall::AcmeChallError),
     /// Error while finalizing an order
     #[error(transparent)]
-    FinalizeError(#[from] crate::finalize::AcmeFinalizeError),
+    FinalizeError(#[from] crate::acme::finalize::AcmeFinalizeError),
     /// UTF-8 parsing error
     #[error(transparent)]
     Utf8(#[from] std::str::Utf8Error),

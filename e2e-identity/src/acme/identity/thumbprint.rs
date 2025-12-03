@@ -5,7 +5,7 @@ use rusty_jwt_tools::{
 };
 use x509_cert::spki::SubjectPublicKeyInfoOwned;
 
-use crate::{
+use crate::acme::{
     error::CertificateError,
     prelude::{RustyAcmeError, RustyAcmeResult},
 };

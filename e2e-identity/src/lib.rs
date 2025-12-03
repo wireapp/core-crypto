@@ -125,7 +125,6 @@
 use error::*;
 use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair, Jwk};
 use prelude::*;
-use rusty_acme::prelude::{AcmeChallenge, AcmeIdentifier};
 use rusty_jwt_tools::{
     jwk::TryIntoJwk,
     jwk_thumbprint::JwkThumbprint,
@@ -133,16 +132,16 @@ use rusty_jwt_tools::{
 };
 use zeroize::Zeroize;
 
-use crate::prelude::x509::revocation::PkiEnvironment;
+use crate::{
+    acme::prelude::{AcmeChallenge, AcmeIdentifier},
+    prelude::x509::revocation::PkiEnvironment,
+};
 
+pub mod acme;
 mod error;
 mod types;
 
 pub mod prelude {
-    pub use rusty_acme::prelude::{
-        AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader, compute_raw_key_thumbprint, x509,
-        x509::IdentityStatus,
-    };
     #[cfg(feature = "builder")]
     pub use rusty_jwt_tools::prelude::generate_jwk;
     pub use rusty_jwt_tools::prelude::{
@@ -156,6 +155,10 @@ pub mod prelude {
             E2eiAcmeAccount, E2eiAcmeAuthorization, E2eiAcmeChallenge, E2eiAcmeFinalize, E2eiAcmeOrder,
             E2eiNewAcmeOrder,
         },
+    };
+    pub use crate::acme::prelude::{
+        AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader, compute_raw_key_thumbprint, x509,
+        x509::IdentityStatus,
     };
 }
 

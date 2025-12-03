@@ -1,7 +1,7 @@
 use rusty_jwt_tools::prelude::*;
 use x509_cert::{Certificate, anchor::TrustAnchorChoice};
 
-use crate::{
+use crate::acme::{
     error::CertificateError,
     identifier::CanonicalIdentifier,
     prelude::*,

@@ -1,7 +1,7 @@
 use jwt_simple::prelude::*;
 use rusty_jwt_tools::prelude::*;
 
-use crate::prelude::*;
+use crate::acme::prelude::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(test, derive(Clone))]

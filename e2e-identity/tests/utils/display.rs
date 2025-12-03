@@ -134,7 +134,7 @@ impl TestDisplay {
 
     pub fn display_body<T: serde::Serialize>(&mut self, body: &T) {
         let body = serde_json::to_string_pretty(body).unwrap();
-        let acme_payload = serde_json::from_str::<rusty_acme::prelude::AcmeJws>(&body)
+        let acme_payload = serde_json::from_str::<wire_e2e_identity::acme::prelude::AcmeJws>(&body)
             .ok()
             .and_then(|jws| {
                 let protected = base64::prelude::BASE64_URL_SAFE_NO_PAD.decode(jws.protected).ok()?;

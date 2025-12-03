@@ -1,6 +1,6 @@
 use rusty_jwt_tools::prelude::*;
 
-use crate::prelude::*;
+use crate::acme::prelude::*;
 
 impl RustyAcme {
     /// 5. Create a new acme account see [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3)

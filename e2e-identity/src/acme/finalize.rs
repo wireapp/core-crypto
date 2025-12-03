@@ -3,7 +3,7 @@ use jwt_simple::prelude::*;
 use rusty_jwt_tools::prelude::*;
 use x509_cert::der::Encode;
 
-use crate::{
+use crate::acme::{
     identifier::CanonicalIdentifier,
     order::{AcmeOrderError, AcmeOrderStatus},
     prelude::*,

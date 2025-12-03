@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use rusty_jwt_tools::prelude::*;
 
-use crate::{identifier::CanonicalIdentifier, prelude::*};
+use crate::acme::{identifier::CanonicalIdentifier, prelude::*};
 
 // Order creation
 impl RustyAcme {

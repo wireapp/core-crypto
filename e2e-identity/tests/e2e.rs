@@ -25,7 +25,6 @@
 
 use jwt_simple::prelude::*;
 use rstest::rstest;
-use rusty_acme::prelude::*;
 use rusty_jwt_tools::prelude::*;
 use utils::{
     TestError,
@@ -34,6 +33,7 @@ use utils::{
     rand_base64_str, rand_client_id,
     stepca::CaCfg,
 };
+use wire_e2e_identity::acme::prelude::*;
 
 #[path = "utils/mod.rs"]
 mod utils;
@@ -178,7 +178,7 @@ mod alg {
 
 /// Since the acme server is a fork, verify its invariants are respected
 mod acme_server {
-    use rusty_acme::prelude::x509::{
+    use wire_e2e_identity::acme::prelude::x509::{
         RustyX509CheckError,
         reexports::{certval, certval::PathValidationStatus},
         revocation::{PkiEnvironment, PkiEnvironmentParams},

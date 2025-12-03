@@ -17,13 +17,13 @@ use openidconnect::{
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
 };
 use reqwest::StatusCode;
-use rusty_acme::prelude::{x509::revocation::PkiEnvironment, *};
 use rusty_jwt_tools::{
     jwk::{TryFromJwk, TryIntoJwk},
     prelude::*,
 };
 use serde_json::{Value, json};
 use url::Url;
+use wire_e2e_identity::acme::prelude::{x509::revocation::PkiEnvironment, *};
 use x509_cert::{
     Certificate,
     der::{Decode as _, DecodePem, Encode as _, asn1::Ia5String},

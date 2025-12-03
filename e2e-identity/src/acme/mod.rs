@@ -26,7 +26,7 @@ pub mod prelude {
 
     pub use super::RustyAcme;
     use super::*;
-    pub use crate::x509_check as x509;
+    pub use crate::acme::x509_check as x509;
 }
 
 pub struct RustyAcme;
