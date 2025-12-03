@@ -1,6 +1,6 @@
 use zeroize::Zeroize;
 
-use crate::connection::FetchFromDatabase;
+use crate::FetchFromDatabase as _;
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
@@ -70,7 +70,14 @@ impl ProteusPrekey {
 
     #[cfg(target_family = "wasm")]
     pub async fn get_free_id(conn: &crate::Database) -> crate::CryptoKeystoreResult<u16> {
-        todo!()
+        let mut id = 1u16;
+        let limit = u16::MAX;
+        while id < limit && conn.get::<Self>(&id).await?.is_none() {
+            id += 1;
+        }
+        if id == limit {
+            return Err(crate::CryptoKeystoreError::NoFreePrekeyId);
+        }
     }
 
     #[cfg(not(target_family = "wasm"))]

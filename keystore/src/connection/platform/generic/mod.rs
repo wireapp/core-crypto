@@ -198,6 +198,7 @@ impl SqlCipherConnection {
         Ok(result?)
     }
 
+    /// Get a guard over the inner connection.
     pub async fn conn(&self) -> MutexGuard<'_, rusqlite::Connection> {
         self.conn.lock().await
     }

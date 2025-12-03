@@ -10,9 +10,9 @@ use zeroize::Zeroizing;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::proteus::*;
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
+    CryptoKeystoreError, CryptoKeystoreResult, Entity, EntityTransactionExt, KeyType, UniqueEntity,
     connection::{Database, KeystoreDatabaseConnection},
-    entities::{ConsumerData, EntityBase, EntityFindParams, EntityTransactionExt, UniqueEntity, mls::*},
+    entities::{ConsumerData, mls::*},
     transaction::dynamic_dispatch::EntityId,
 };
 
@@ -34,6 +34,9 @@ pub(crate) struct KeystoreTransaction {
 }
 
 impl KeystoreTransaction {
+    /// Construct a new transaction, handing over the semaphore guard.
+    ///
+    /// When this transaction is dropped, the guard will be released.
     pub(crate) async fn new(semaphore_guard: SemaphoreGuardArc) -> CryptoKeystoreResult<Self> {
         Ok(Self {
             cache: Default::default(),
@@ -43,12 +46,13 @@ impl KeystoreTransaction {
         })
     }
 
-    pub(crate) async fn save_mut<
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
-    >(
-        &self,
-        mut entity: E,
-    ) -> CryptoKeystoreResult<E> {
+    /// Save and modify the provided entity. Return the modified entity.
+    ///
+    /// This allows for e.g. updating timestamps to the first-saved time.
+    pub(crate) async fn save_mut<'a, E>(&self, mut entity: E) -> CryptoKeystoreResult<E>
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt<'a> + Send + Sync,
+    {
         entity.pre_save().await?;
         let mut cache_guard = self.cache.write().await;
         let table = cache_guard.entry(E::COLLECTION_NAME.to_string()).or_default();
@@ -56,17 +60,15 @@ impl KeystoreTransaction {
         // Use merge_key() because `id_raw()` is not always unique for records.
         // For `StoredCredential`, `id_raw()` is the `CLientId`.
         // For `MlsPendingMessage` it's the id of the group it belongs to.
-        table.insert(entity.merge_key(), Zeroizing::new(serialized));
+        table.insert(entity.primary_key().bytes().into_owned(), Zeroizing::new(serialized));
         Ok(entity)
     }
 
-    pub(crate) async fn remove<
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt,
-        S: AsRef<[u8]>,
-    >(
-        &self,
-        id: S,
-    ) -> CryptoKeystoreResult<()> {
+    /// Remove the given entity from the database by its ID.
+    pub(crate) async fn remove<'a, E>(&self, id: &<E as Entity>::PrimaryKey) -> CryptoKeystoreResult<()>
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt<'a> + Sync,
+    {
         let mut cache_guard = self.cache.write().await;
         if let Entry::Occupied(mut table) = cache_guard.entry(E::COLLECTION_NAME.to_string())
             && let Entry::Occupied(cached_record) = table.get_mut().entry(id.as_ref().to_vec())
@@ -81,7 +83,7 @@ impl KeystoreTransaction {
 
     pub(crate) async fn child_groups<E>(&self, entity: E, persisted_records: Vec<E>) -> CryptoKeystoreResult<Vec<E>>
     where
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + PersistedMlsGroupExt + Sync,
+        E: Entity<ConnectionType = KeystoreDatabaseConnection> + PersistedMlsGroupExt + Sync,
     {
         // First get all raw groups from the cache, then deserialize them to enable filtering by there parent id
         // matching `entity.id_raw()`.
@@ -97,9 +99,7 @@ impl KeystoreTransaction {
             })
             .collect();
 
-        Ok(self
-            .merge_records(cached_records, persisted_records, EntityFindParams::default())
-            .await)
+        Ok(self.merge_records(cached_records, persisted_records).await)
     }
 
     pub(crate) async fn cred_delete_by_credential(&self, cred: Vec<u8>) -> CryptoKeystoreResult<()> {
@@ -149,15 +149,13 @@ impl KeystoreTransaction {
             .into_iter()
             .filter(|pending_message| pending_message.foreign_id == conversation_id)
             .collect();
-        let merged_records = self
-            .merge_records(cached_records, persisted_records, Default::default())
-            .await;
+        let merged_records = self.merge_records(cached_records, persisted_records).await;
         Ok(merged_records)
     }
 
     async fn find_in_cache<E>(&self, id: &[u8]) -> CryptoKeystoreResult<Option<E>>
     where
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>,
+        E: Entity<ConnectionType = KeystoreDatabaseConnection>,
     {
         let cache_guard = self.cache.read().await;
         cache_guard
@@ -176,7 +174,7 @@ impl KeystoreTransaction {
     /// * `None` - there is no information about the record in the cache
     pub(crate) async fn find<E>(&self, id: &[u8]) -> CryptoKeystoreResult<Option<Option<E>>>
     where
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>,
+        E: Entity<ConnectionType = KeystoreDatabaseConnection>,
     {
         let maybe_cached_record = self.find_in_cache(id).await?;
         if let Some(cached_record) = maybe_cached_record {
@@ -191,14 +189,11 @@ impl KeystoreTransaction {
         Ok(None)
     }
 
-    pub(crate) async fn find_unique<U: UniqueEntity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-    ) -> CryptoKeystoreResult<Option<U>> {
-        #[cfg(target_family = "wasm")]
-        let id = &U::ID;
-        #[cfg(not(target_family = "wasm"))]
-        let id = &[U::ID as u8];
-        let maybe_cached_record = self.find_in_cache::<U>(id).await?;
+    pub(crate) async fn find_unique<U>(&self) -> CryptoKeystoreResult<Option<U>>
+    where
+        U: UniqueEntity<ConnectionType = KeystoreDatabaseConnection>,
+    {
+        let maybe_cached_record = self.find_in_cache::<U>(U::ID).await?;
         match maybe_cached_record {
             Some(cached_record) => Ok(Some(cached_record)),
             _ => {
@@ -209,9 +204,10 @@ impl KeystoreTransaction {
         }
     }
 
-    async fn find_all_in_cache<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-    ) -> CryptoKeystoreResult<Vec<E>> {
+    async fn find_all_in_cache<E>(&self) -> CryptoKeystoreResult<Vec<E>>
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection>,
+    {
         let cache_guard = self.cache.read().await;
         let cached_records = cache_guard
             .get(E::COLLECTION_NAME)
@@ -226,28 +222,13 @@ impl KeystoreTransaction {
         Ok(cached_records)
     }
 
-    pub(crate) async fn find_all<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        persisted_records: Vec<E>,
-        params: EntityFindParams,
-    ) -> CryptoKeystoreResult<Vec<E>> {
+    pub(crate) async fn find_all<E>(&self, persisted_records: Vec<E>) -> CryptoKeystoreResult<Vec<E>>
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection>,
+    {
         let cached_records = self.find_all_in_cache().await?;
-        let merged_records = self.merge_records(cached_records, persisted_records, params).await;
+        let merged_records = self.merge_records(cached_records, persisted_records).await;
         Ok(merged_records)
-    }
-
-    pub(crate) async fn find_many<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        persisted_records: Vec<E>,
-        ids: &[Vec<u8>],
-    ) -> CryptoKeystoreResult<Vec<E>> {
-        let records = self
-            .find_all(persisted_records, EntityFindParams::default())
-            .await?
-            .into_iter()
-            .filter(|record| ids.contains(&record.id_raw().to_vec()))
-            .collect();
-        Ok(records)
     }
 
     /// Build a single list of unique records from two potentially overlapping lists.
@@ -257,42 +238,39 @@ impl KeystoreTransaction {
     ///
     /// Further, the output list of records is built with respect to the provided [EntityFindParams]
     /// and the deleted records cached in this [Self] instance.
-    async fn merge_records<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+    async fn merge_records<E>(
         &self,
-        records_a: Vec<E>,
-        records_b: Vec<E>,
-        params: EntityFindParams,
-    ) -> Vec<E> {
-        let mut merged = records_a.into_iter().chain(records_b).unique_by(|e| e.merge_key());
+        records_a: impl IntoIterator<Item = E>,
+        records_b: impl IntoIterator<Item = E>,
+    ) -> impl Iterator<Item = E>
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection>,
+        <E as Entity>::PrimaryKey: std::hash::Hash,
+    {
+        let mut merged = records_a.into_iter().chain(records_b).unique_by(|e| e.primary_key());
 
         let deleted_records = self.deleted.read().await;
         let deleted_credentials = self.deleted_credentials.read().await;
 
-        let merged: &mut dyn Iterator<Item = E> = if params.reverse { &mut merged.rev() } else { &mut merged };
-
-        merged
-            .filter(|record| {
-                !Self::record_is_in_deleted_list(record, &deleted_records)
-                    && !Self::credential_is_in_deleted_list(record, &deleted_credentials)
-            })
-            .skip(params.offset.unwrap_or(0) as usize)
-            .take(params.limit.unwrap_or(u32::MAX) as usize)
-            .collect()
+        merged.filter(|record| {
+            !Self::record_is_in_deleted_list(record, &deleted_records)
+                && !Self::credential_is_in_deleted_list(record, &deleted_credentials)
+        })
     }
 
-    fn record_is_in_deleted_list<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        record: &E,
-        deleted_records: &[EntityId],
-    ) -> bool {
+    fn record_is_in_deleted_list<E>(record: &E, deleted_records: &[EntityId]) -> bool
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection>,
+    {
         let id = EntityId::from_collection_name(E::COLLECTION_NAME, record.id_raw());
         let Ok(id) = id else { return false };
         deleted_records.contains(&id)
     }
 
-    fn credential_is_in_deleted_list<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        maybe_credential: &E,
-        deleted_credentials: &[Vec<u8>],
-    ) -> bool {
+    fn credential_is_in_deleted_list<E>(maybe_credential: &E, deleted_credentials: &[Vec<u8>]) -> bool
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection>,
+    {
         let Some(credential) = maybe_credential.downcast::<StoredCredential>() else {
             return false;
         };

@@ -1,31 +1,29 @@
-use std::{fmt, ops::Deref};
+pub mod platform {
+    #[cfg(not(target_family = "wasm"))]
+    mod generic;
+    #[cfg(target_family = "wasm")]
+    mod wasm;
 
+    #[cfg(not(target_family = "wasm"))]
+    pub use self::generic::{SqlCipherConnection as KeystoreDatabaseConnection, TransactionWrapper};
+    #[cfg(target_family = "wasm")]
+    pub use self::wasm::{
+        WasmConnection as KeystoreDatabaseConnection, storage, storage::WasmStorageTransaction as TransactionWrapper,
+    };
+}
+use std::{
+    fmt,
+    ops::{Deref, DerefMut},
+    sync::Arc,
+};
+
+use async_lock::{Mutex, MutexGuard, Semaphore};
 use sha2::{Digest as _, Sha256};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-pub mod platform {
-    cfg_if::cfg_if! {
-        if #[cfg(target_family = "wasm")] {
-            mod wasm;
-            pub use self::wasm::WasmConnection as KeystoreDatabaseConnection;
-            pub use wasm::storage;
-            pub use self::wasm::storage::WasmStorageTransaction as TransactionWrapper;
-        } else {
-            mod generic;
-            pub use self::generic::SqlCipherConnection as KeystoreDatabaseConnection;
-            pub use self::generic::TransactionWrapper;
-        }
-    }
-}
-
-use std::{ops::DerefMut, sync::Arc};
-
-use async_lock::{Mutex, MutexGuard, Semaphore};
-
 pub use self::platform::*;
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
-    entities::{Entity, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StringEntityId, UniqueEntity},
+    CryptoKeystoreError, CryptoKeystoreResult, Entity, EntityTransactionExt, FetchFromDatabase, UniqueEntity,
     transaction::KeystoreTransaction,
 };
 
@@ -134,32 +132,6 @@ pub struct Database {
 }
 
 const ALLOWED_CONCURRENT_TRANSACTIONS_COUNT: usize = 1;
-
-/// Interface to fetch from the database either from the connection directly or through a
-/// transaaction
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait FetchFromDatabase: Send + Sync {
-    async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        id: impl AsRef<[u8]> + Send,
-    ) -> CryptoKeystoreResult<Option<E>>;
-
-    async fn find_unique<U: UniqueEntity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-    ) -> CryptoKeystoreResult<U>;
-
-    async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        params: EntityFindParams,
-    ) -> CryptoKeystoreResult<Vec<E>>;
-
-    async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        ids: &[Vec<u8>],
-    ) -> CryptoKeystoreResult<Vec<E>>;
-    async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize>;
-}
 
 // SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
 unsafe impl Send for Database {}
@@ -302,12 +274,10 @@ impl Database {
         Ok(())
     }
 
-    pub async fn child_groups<
+    pub async fn child_groups<E>(&self, entity: E) -> CryptoKeystoreResult<Vec<E>>
+    where
         E: Entity<ConnectionType = KeystoreDatabaseConnection> + crate::entities::PersistedMlsGroupExt + Sync,
-    >(
-        &self,
-        entity: E,
-    ) -> CryptoKeystoreResult<Vec<E>> {
+    {
         let mut conn = self.conn().await?;
         let persisted_records = entity.child_groups(conn.deref_mut()).await?;
 
@@ -318,10 +288,10 @@ impl Database {
         transaction.child_groups(entity, persisted_records).await
     }
 
-    pub async fn save<E: Entity<ConnectionType = KeystoreDatabaseConnection> + Sync + EntityTransactionExt>(
-        &self,
-        entity: E,
-    ) -> CryptoKeystoreResult<E> {
+    pub async fn save<'a, E>(&self, entity: E) -> CryptoKeystoreResult<E>
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection> + Sync + EntityTransactionExt<'a>,
+    {
         let transaction_guard = self.transaction.lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
             return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
@@ -329,13 +299,11 @@ impl Database {
         transaction.save_mut(entity).await
     }
 
-    pub async fn remove<
-        E: Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt,
+    pub async fn remove<'a, E, S>(&self, id: S) -> CryptoKeystoreResult<()>
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt<'a>,
         S: AsRef<[u8]>,
-    >(
-        &self,
-        id: S,
-    ) -> CryptoKeystoreResult<()> {
+    {
         let transaction_guard = self.transaction.lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
             return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
@@ -343,22 +311,22 @@ impl Database {
         transaction.remove::<E, S>(id).await
     }
 
-    pub async fn find_pending_messages_by_conversation_id(
-        &self,
-        conversation_id: &[u8],
-    ) -> CryptoKeystoreResult<Vec<MlsPendingMessage>> {
-        let mut conn = self.conn().await?;
-        let persisted_records =
-            MlsPendingMessage::find_all_by_conversation_id(&mut conn, conversation_id, Default::default()).await?;
+    // pub async fn find_pending_messages_by_conversation_id(
+    //     &self,
+    //     conversation_id: &[u8],
+    // ) -> CryptoKeystoreResult<Vec<MlsPendingMessage>> {
+    //     let mut conn = self.conn().await?;
+    //     let persisted_records =
+    //         MlsPendingMessage::find_all_by_conversation_id(&mut conn, conversation_id, Default::default()).await?;
 
-        let transaction_guard = self.transaction.lock().await;
-        let Some(transaction) = transaction_guard.as_ref() else {
-            return Ok(persisted_records);
-        };
-        transaction
-            .find_pending_messages_by_conversation_id(conversation_id, persisted_records)
-            .await
-    }
+    //     let transaction_guard = self.transaction.lock().await;
+    //     let Some(transaction) = transaction_guard.as_ref() else {
+    //         return Ok(persisted_records);
+    //     };
+    //     transaction
+    //         .find_pending_messages_by_conversation_id(conversation_id, persisted_records)
+    //         .await
+    // }
 
     pub async fn remove_pending_messages_by_conversation_id(
         &self,
@@ -382,13 +350,89 @@ impl Database {
     }
 }
 
+// #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+// #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+// impl FetchFromDatabase for Database {
+//     async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
+//         &self,
+//         id: impl AsRef<[u8]> + Send,
+//     ) -> CryptoKeystoreResult<Option<E>> {
+//         // If a transaction is in progress...
+//         if let Some(transaction) = self.transaction.lock().await.as_ref()
+//             //... and it has information about this entity, ...
+//             && let Some(cached_record) = transaction.find::<E>(id.as_ref()).await?
+//         {
+//             // ... return that result
+//             return Ok(cached_record);
+//         }
+
+//         // Otherwise get it from the database
+//         let mut conn = self.conn().await?;
+//         E::find_one(&mut conn, &id.as_ref().into()).await
+//     }
+
+//     async fn find_unique<U: UniqueEntity>(&self) -> CryptoKeystoreResult<U> {
+//         // If a transaction is in progress...
+//         if let Some(transaction) = self.transaction.lock().await.as_ref()
+//             //... and it has information about this entity, ...
+//             && let Some(cached_record) = transaction.find_unique::<U>().await?
+//         {
+//             // ... return that result
+//             return Ok(cached_record);
+//         }
+//         // Otherwise get it from the database
+//         let mut conn = self.conn().await?;
+//         U::find_unique(&mut conn).await
+//     }
+
+//     async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
+//         &self,
+//         params: EntityFindParams,
+//     ) -> CryptoKeystoreResult<Vec<E>> {
+//         let mut conn = self.conn().await?;
+//         let persisted_records = E::find_all(&mut conn, params.clone()).await?;
+
+//         let transaction_guard = self.transaction.lock().await;
+//         let Some(transaction) = transaction_guard.as_ref() else {
+//             return Ok(persisted_records);
+//         };
+//         transaction.find_all(persisted_records, params).await
+//     }
+
+//     async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
+//         &self,
+//         ids: &[Vec<u8>],
+//     ) -> CryptoKeystoreResult<Vec<E>> {
+//         let entity_ids: Vec<StringEntityId> = ids.iter().map(|id| id.as_slice().into()).collect();
+//         let mut conn = self.conn().await?;
+//         let persisted_records = E::find_many(&mut conn, &entity_ids).await?;
+
+//         let transaction_guard = self.transaction.lock().await;
+//         let Some(transaction) = transaction_guard.as_ref() else {
+//             return Ok(persisted_records);
+//         };
+//         transaction.find_many(persisted_records, ids).await
+//     }
+
+//     async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize> {
+//         if self.transaction.lock().await.is_some() {
+//             // Unfortunately, we have to do this because of possible record id overlap
+//             // between cache and db.
+//             return Ok(self.find_all::<E>(Default::default()).await?.len());
+//         };
+//         let mut conn = self.conn().await?;
+//         E::count(&mut conn).await
+//     }
+// }
+
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl FetchFromDatabase for Database {
-    async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        id: impl AsRef<[u8]> + Send,
-    ) -> CryptoKeystoreResult<Option<E>> {
+    /// Get an instance of `E` from the database by its primary key.
+    async fn get<E>(&self, id: &<E as Entity>::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection>,
+    {
         // If a transaction is in progress...
         if let Some(transaction) = self.transaction.lock().await.as_ref()
             //... and it has information about this entity, ...
@@ -400,59 +444,30 @@ impl FetchFromDatabase for Database {
 
         // Otherwise get it from the database
         let mut conn = self.conn().await?;
-        E::find_one(&mut conn, &id.as_ref().into()).await
+        E::get(&mut conn, &id.as_ref().into()).await
     }
 
-    async fn find_unique<U: UniqueEntity>(&self) -> CryptoKeystoreResult<U> {
-        // If a transaction is in progress...
-        if let Some(transaction) = self.transaction.lock().await.as_ref()
-            //... and it has information about this entity, ...
-            && let Some(cached_record) = transaction.find_unique::<U>().await?
-        {
-            // ... return that result
-            return Ok(cached_record);
-        }
-        // Otherwise get it from the database
-        let mut conn = self.conn().await?;
-        U::find_unique(&mut conn).await
+    /// Count the number of `E`s in the database.
+    async fn count<E>(&self) -> CryptoKeystoreResult<u32>
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection>,
+    {
+        todo!()
     }
 
-    async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        params: EntityFindParams,
-    ) -> CryptoKeystoreResult<Vec<E>> {
-        let mut conn = self.conn().await?;
-        let persisted_records = E::find_all(&mut conn, params.clone()).await?;
-
-        let transaction_guard = self.transaction.lock().await;
-        let Some(transaction) = transaction_guard.as_ref() else {
-            return Ok(persisted_records);
-        };
-        transaction.find_all(persisted_records, params).await
+    /// Load all `E`s from the database.
+    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<E>>
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection>,
+    {
+        todo!()
     }
 
-    async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        ids: &[Vec<u8>],
-    ) -> CryptoKeystoreResult<Vec<E>> {
-        let entity_ids: Vec<StringEntityId> = ids.iter().map(|id| id.as_slice().into()).collect();
-        let mut conn = self.conn().await?;
-        let persisted_records = E::find_many(&mut conn, &entity_ids).await?;
-
-        let transaction_guard = self.transaction.lock().await;
-        let Some(transaction) = transaction_guard.as_ref() else {
-            return Ok(persisted_records);
-        };
-        transaction.find_many(persisted_records, ids).await
-    }
-
-    async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize> {
-        if self.transaction.lock().await.is_some() {
-            // Unfortunately, we have to do this because of possible record id overlap
-            // between cache and db.
-            return Ok(self.find_all::<E>(Default::default()).await?.len());
-        };
-        let mut conn = self.conn().await?;
-        E::count(&mut conn).await
+    /// Get the requested unique entity from the database.
+    async fn get_unique<U>(&self) -> CryptoKeystoreResult<Option<U>>
+    where
+        U: UniqueEntity<ConnectionType = KeystoreDatabaseConnection>,
+    {
+        todo!()
     }
 }

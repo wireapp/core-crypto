@@ -1,11 +1,8 @@
 mod general;
 mod mls;
+#[cfg(feature = "proteus-keystore")]
+pub(crate) mod proteus;
 
 pub use self::mls::*;
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "proteus-keystore")] {
-        mod proteus;
-        pub use self::proteus::*;
-    }
-}
+#[cfg(feature = "proteus-keystore")]
+pub use self::proteus::*;

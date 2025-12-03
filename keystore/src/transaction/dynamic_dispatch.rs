@@ -9,10 +9,9 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     connection::TransactionWrapper,
     entities::{
-        ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, EntityBase, EntityTransactionExt, MlsPendingMessage,
-        PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
+        ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
+        PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
         StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
-        StringEntityId, UniqueEntity,
     },
 };
 
@@ -70,33 +69,6 @@ pub enum EntityId {
 }
 
 impl EntityId {
-    fn as_id(&self) -> StringEntityId<'_> {
-        match self {
-            EntityId::HpkePrivateKey(vec) => vec.as_slice().into(),
-            EntityId::KeyPackage(vec) => vec.as_slice().into(),
-            EntityId::PskBundle(vec) => vec.as_slice().into(),
-            EntityId::EncryptionKeyPair(vec) => vec.as_slice().into(),
-            EntityId::EpochEncryptionKeyPair(vec) => vec.as_slice().into(),
-            EntityId::StoredCredential(vec) => vec.as_slice().into(),
-            EntityId::StoredBufferedCommit(vec) => vec.as_slice().into(),
-            EntityId::PersistedMlsGroup(vec) => vec.as_slice().into(),
-            EntityId::PersistedMlsPendingGroup(vec) => vec.as_slice().into(),
-            EntityId::MlsPendingMessage(vec) => vec.as_slice().into(),
-            EntityId::StoredE2eiEnrollment(vec) => vec.as_slice().into(),
-            #[cfg(target_family = "wasm")]
-            EntityId::E2eiRefreshToken(vec) => vec.as_slice().into(),
-            EntityId::E2eiAcmeCA(vec) => vec.as_slice().into(),
-            EntityId::E2eiIntermediateCert(vec) => vec.as_slice().into(),
-            EntityId::E2eiCrl(vec) => vec.as_slice().into(),
-            #[cfg(feature = "proteus-keystore")]
-            EntityId::ProteusIdentity(vec) => vec.as_slice().into(),
-            #[cfg(feature = "proteus-keystore")]
-            EntityId::ProteusSession(id) => id.as_slice().into(),
-            #[cfg(feature = "proteus-keystore")]
-            EntityId::ProteusPrekey(vec) => vec.as_slice().into(),
-        }
-    }
-
     pub(crate) fn from_collection_name(entity_id: &'static str, id: &[u8]) -> CryptoKeystoreResult<Self> {
         match entity_id {
             StoredHpkePrivateKey::COLLECTION_NAME => Ok(Self::HpkePrivateKey(id.into())),

@@ -19,13 +19,14 @@ pub fn store_name() -> String {
     let name: String = (0usize..12)
         .map(|_| rng.sample(rand::distributions::Alphanumeric) as char)
         .collect();
-    cfg_if::cfg_if! {
-        if #[cfg(target_family = "wasm")] {
-            format!("corecrypto.test.{}.edb", name)
-        } else {
-            format!("./test.{name}.edb")
-        }
-    }
+
+    #[cfg(target_family = "wasm")]
+    let filename = format!("corecrypto.test.{}.edb", name);
+
+    #[cfg(not(target_family = "wasm"))]
+    let filename = format!("./test.{name}.edb");
+
+    filename
 }
 
 #[fixture(name = store_name(), in_memory = false)]

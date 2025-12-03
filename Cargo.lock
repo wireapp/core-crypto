@@ -876,7 +876,6 @@ dependencies = [
  "async-lock",
  "async-trait",
  "blocking",
- "cfg-if",
  "core-crypto-keystore",
  "core-crypto-macros",
  "core-foundation 0.10.1",

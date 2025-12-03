@@ -7,11 +7,7 @@ use sha2::Digest as _;
 use wasm_bindgen::JsValue;
 
 use super::WasmConnection;
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
-    connection::DatabaseKey,
-    entities::{Entity, EntityFindParams},
-};
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, Entity, connection::DatabaseKey};
 
 type InMemoryDB = HashMap<String, HashMap<Vec<u8>, JsValue>>;
 
@@ -52,12 +48,12 @@ impl WasmStorageTransaction<'_> {
 
     pub(crate) async fn delete(&self, collection_name: &'static str, id: impl AsRef<[u8]>) -> CryptoKeystoreResult<()> {
         match self {
-            WasmStorageTransaction::Persistent { tx, cipher: _cipher } => {
+            WasmStorageTransaction::Persistent { tx, .. } => {
                 let store = tx.object_store(collection_name)?;
                 let k = Uint8Array::from(id.as_ref());
                 store.delete(JsValue::from(k))?.await?;
             }
-            WasmStorageTransaction::InMemory { db, cipher: _cipher } => {
+            WasmStorageTransaction::InMemory { db, .. } => {
                 db.borrow_mut().entry(collection_name.into()).and_modify(|store| {
                     store.remove(id.as_ref());
                 });
@@ -180,14 +176,14 @@ impl WasmEncryptedStorage {
                 let store = transaction.object_store(collection)?;
                 let id = Uint8Array::from(id.as_ref());
                 let get_store_request = store.get(JsValue::from(id))?;
-                if let Some(entity_raw) = get_store_request.await? {
-                    let mut entity: R = serde_wasm_bindgen::from_value(entity_raw)?;
-                    entity.decrypt(&self.cipher)?;
+                let Some(entity_raw) = get_store_request.await? else {
+                    return Ok(None);
+                };
 
-                    Ok(Some(entity))
-                } else {
-                    Ok(None)
-                }
+                let mut entity: R = serde_wasm_bindgen::from_value(entity_raw)?;
+                entity.decrypt(&self.cipher)?;
+
+                Ok(Some(entity))
             }
             WasmStorageWrapper::InMemory(map) => {
                 let map = map.borrow();
@@ -209,30 +205,29 @@ impl WasmEncryptedStorage {
     pub async fn get_all<R: Entity<ConnectionType = WasmConnection> + 'static>(
         &self,
         collection: &str,
-        params: Option<EntityFindParams>,
     ) -> CryptoKeystoreResult<Vec<R>> {
-        self.get_all_with_query(collection, None::<JsValue>, params).await
+        self.get_all_with_query(collection, None::<JsValue>).await
     }
 
     pub(crate) async fn get_all_with_query<R: Entity<ConnectionType = WasmConnection> + 'static>(
         &self,
         collection: &str,
         query: Option<impl Into<idb::Query>>,
-        params: Option<EntityFindParams>,
     ) -> CryptoKeystoreResult<Vec<R>> {
         match &self.storage {
             WasmStorageWrapper::Persistent(idb) => {
                 let transaction = idb.transaction(&[collection], TransactionMode::ReadOnly)?;
                 let store = transaction.object_store(collection)?;
-                let params = params.unwrap_or_default();
+
                 let mut data = store
-                    .get_all(query.map(Into::into), params.limit)?
+                    .get_all(query.map(Into::into), None)?
                     .await?
                     .into_iter()
                     .filter_map(|v| serde_wasm_bindgen::from_value::<R>(v).ok())
-                    .filter_map(|mut entity| entity.decrypt(&self.cipher).ok().map(|_| entity));
-
-                let data: &mut dyn Iterator<Item = R> = if params.reverse { &mut data.rev() } else { &mut data };
+                    .filter_map(|mut entity| {
+                        entity.decrypt(&self.cipher).ok()?;
+                        Some(entity)
+                    });
 
                 Ok(data.collect())
             }
@@ -243,12 +238,13 @@ impl WasmEncryptedStorage {
                     v.values()
                         .cloned()
                         .filter_map(|v| {
-                            if let Some(mut entity) = serde_wasm_bindgen::from_value::<Option<R>>(v).ok().flatten() {
-                                entity.decrypt(&self.cipher).ok()?;
-                                Some(entity)
-                            } else {
-                                None
-                            }
+                            serde_wasm_bindgen::from_value::<Option<R>>(v)
+                                .ok()
+                                .flatten()
+                                .and_then(|mut entity| {
+                                    entity.decrypt(&self.cipher).ok()?;
+                                    Some(entity)
+                                })
                         })
                         .collect::<Vec<R>>()
                 })
