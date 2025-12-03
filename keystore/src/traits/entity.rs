@@ -13,7 +13,7 @@ use crate::{
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
 pub trait Entity: EntityBase {
-    /// Each distinct [`PrimaryKey`] uniquely identifies either 0 or 1 instance.
+    /// Each distinct `PrimaryKey` uniquely identifies either 0 or 1 instance.
     ///
     /// This constraint should be enforced at the DB level.
     type PrimaryKey: KeyType;
