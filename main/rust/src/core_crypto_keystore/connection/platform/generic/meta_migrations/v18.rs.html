@@ -28,7 +28,7 @@
 <a href=#28 id=28 data-nosnippet>28</a>        <span class="string">"SELECT
 <a href=#29 id=29 data-nosnippet>29</a>            id,
 <a href=#30 id=30 data-nosnippet>30</a>            credential,
-<a href=#31 id=31 data-nosnippet>31</a>            created_at,
+<a href=#31 id=31 data-nosnippet>31</a>            unixepoch(created_at) AS created_at,
 <a href=#32 id=32 data-nosnippet>32</a>            signature_scheme,
 <a href=#33 id=33 data-nosnippet>33</a>            public_key,
 <a href=#34 id=34 data-nosnippet>34</a>            secret_key
@@ -59,7 +59,7 @@
 <a href=#59 id=59 data-nosnippet>59</a>                        public_key,
 <a href=#60 id=60 data-nosnippet>60</a>                        secret_key
 <a href=#61 id=61 data-nosnippet>61</a>                    )
-<a href=#62 id=62 data-nosnippet>62</a>                    VALUES (?1, ?2, ?3, ?4, ?5, ?6)"</span>,
+<a href=#62 id=62 data-nosnippet>62</a>                    VALUES (?1, ?2, datetime(?3, 'unixepoch'), ?4, ?5, ?6)"</span>,
 <a href=#63 id=63 data-nosnippet>63</a>                (
 <a href=#64 id=64 data-nosnippet>64</a>                    v6.id.clone(),
 <a href=#65 id=65 data-nosnippet>65</a>                    v6.credential.clone(),

@@ -7,176 +7,267 @@
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>x509_cert::der::Decode <span class="kw">as _</span>;
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>zeroize::Zeroize;
 <a href=#9 id=9 data-nosnippet>9</a>
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use crate</span>::{CryptoKeystoreError, CryptoKeystoreResult, deser, entities::PersistedMlsGroup};
-<a href=#11 id=11 data-nosnippet>11</a>
-<a href=#12 id=12 data-nosnippet>12</a><span class="doccomment">/// Entity representing a persisted `Credential` per the schema prior to integrating the signature keypair
-<a href=#13 id=13 data-nosnippet>13</a></span><span class="attr">#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
-<a href=#14 id=14 data-nosnippet>14</a>#[zeroize(drop)]
-<a href=#15 id=15 data-nosnippet>15</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>V5Credential {
-<a href=#16 id=16 data-nosnippet>16</a>    <span class="attr">#[sensitive]
-<a href=#17 id=17 data-nosnippet>17</a>    </span><span class="kw">pub </span>id: Vec&lt;u8&gt;,
-<a href=#18 id=18 data-nosnippet>18</a>    <span class="attr">#[sensitive]
-<a href=#19 id=19 data-nosnippet>19</a>    </span><span class="kw">pub </span>credential: Vec&lt;u8&gt;,
-<a href=#20 id=20 data-nosnippet>20</a>    <span class="kw">pub </span>created_at: u64,
-<a href=#21 id=21 data-nosnippet>21</a>}
-<a href=#22 id=22 data-nosnippet>22</a>
-<a href=#23 id=23 data-nosnippet>23</a><span class="doccomment">/// Entity representing a persisted `Credential` prior to replacing signature scheme with ciphersuite
-<a href=#24 id=24 data-nosnippet>24</a></span><span class="attr">#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
-<a href=#25 id=25 data-nosnippet>25</a>#[zeroize(drop)]
-<a href=#26 id=26 data-nosnippet>26</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>V6Credential {
-<a href=#27 id=27 data-nosnippet>27</a>    <span class="doccomment">/// Note: this is not a unique identifier, but the session id this credential belongs to.
-<a href=#28 id=28 data-nosnippet>28</a>    </span><span class="attr">#[sensitive]
-<a href=#29 id=29 data-nosnippet>29</a>    </span><span class="kw">pub </span>id: Vec&lt;u8&gt;,
-<a href=#30 id=30 data-nosnippet>30</a>    <span class="attr">#[sensitive]
-<a href=#31 id=31 data-nosnippet>31</a>    </span><span class="kw">pub </span>credential: Vec&lt;u8&gt;,
-<a href=#32 id=32 data-nosnippet>32</a>    <span class="kw">pub </span>created_at: u64,
-<a href=#33 id=33 data-nosnippet>33</a>    <span class="kw">pub </span>signature_scheme: u16,
-<a href=#34 id=34 data-nosnippet>34</a>    <span class="attr">#[sensitive]
-<a href=#35 id=35 data-nosnippet>35</a>    </span><span class="kw">pub </span>public_key: Vec&lt;u8&gt;,
-<a href=#36 id=36 data-nosnippet>36</a>    <span class="attr">#[sensitive]
-<a href=#37 id=37 data-nosnippet>37</a>    </span><span class="kw">pub </span>secret_key: Vec&lt;u8&gt;,
-<a href=#38 id=38 data-nosnippet>38</a>}
-<a href=#39 id=39 data-nosnippet>39</a>
-<a href=#40 id=40 data-nosnippet>40</a><span class="doccomment">/// Entity representing a persisted `SignatureKeyPair`
-<a href=#41 id=41 data-nosnippet>41</a></span><span class="attr">#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
-<a href=#42 id=42 data-nosnippet>42</a>#[zeroize(drop)]
-<a href=#43 id=43 data-nosnippet>43</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>StoredSignatureKeypair {
-<a href=#44 id=44 data-nosnippet>44</a>    <span class="kw">pub </span>signature_scheme: u16,
-<a href=#45 id=45 data-nosnippet>45</a>    <span class="attr">#[sensitive]
-<a href=#46 id=46 data-nosnippet>46</a>    </span><span class="kw">pub </span>pk: Vec&lt;u8&gt;,
-<a href=#47 id=47 data-nosnippet>47</a>    <span class="attr">#[sensitive]
-<a href=#48 id=48 data-nosnippet>48</a>    </span><span class="kw">pub </span>keypair: Vec&lt;u8&gt;,
-<a href=#49 id=49 data-nosnippet>49</a>    <span class="attr">#[sensitive]
-<a href=#50 id=50 data-nosnippet>50</a>    </span><span class="kw">pub </span>credential_id: Vec&lt;u8&gt;,
-<a href=#51 id=51 data-nosnippet>51</a>}
-<a href=#52 id=52 data-nosnippet>52</a>
-<a href=#53 id=53 data-nosnippet>53</a><span class="doccomment">/// Try to extract the relevant data from the v5 credential and signature keypair to determine whether they correspond
-<a href=#54 id=54 data-nosnippet>54</a>/// to each other. If succeeding, and they do match, return Ok(Some) with the new credential, return Ok(None) if they
-<a href=#55 id=55 data-nosnippet>55</a>/// don't, and return an Error if the data extraction fails.
-<a href=#56 id=56 data-nosnippet>56</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>migrate_to_new_credential(
-<a href=#57 id=57 data-nosnippet>57</a>    v5_credential: <span class="kw-2">&amp;</span>V5Credential,
-<a href=#58 id=58 data-nosnippet>58</a>    stored_keypair: <span class="kw-2">&amp;</span>StoredSignatureKeypair,
-<a href=#59 id=59 data-nosnippet>59</a>) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;V6Credential&gt;&gt; {
-<a href=#60 id=60 data-nosnippet>60</a>    <span class="kw">let </span>mls_keypair = SignatureKeyPair::tls_deserialize_exact(<span class="kw-2">&amp;</span>stored_keypair.keypair)
-<a href=#61 id=61 data-nosnippet>61</a>        .map_err(|e| CryptoKeystoreError::MigrationFailed(<span class="macro">format!</span>(<span class="string">"Deserializing keypair: {e}"</span>)))<span class="question-mark">?</span>;
-<a href=#62 id=62 data-nosnippet>62</a>
-<a href=#63 id=63 data-nosnippet>63</a>    <span class="kw">if </span>!v5_credential_matches_signature_key(v5_credential, stored_keypair, <span class="kw-2">&amp;</span>mls_keypair)<span class="question-mark">? </span>{
-<a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
-<a href=#65 id=65 data-nosnippet>65</a>    }
-<a href=#66 id=66 data-nosnippet>66</a>
-<a href=#67 id=67 data-nosnippet>67</a>    <span class="kw">let </span>new_credential = V6Credential {
-<a href=#68 id=68 data-nosnippet>68</a>        id: v5_credential.id.clone(),
-<a href=#69 id=69 data-nosnippet>69</a>        credential: v5_credential.credential.clone(),
-<a href=#70 id=70 data-nosnippet>70</a>        created_at: v5_credential.created_at,
-<a href=#71 id=71 data-nosnippet>71</a>        signature_scheme: stored_keypair.signature_scheme,
-<a href=#72 id=72 data-nosnippet>72</a>        secret_key: mls_keypair.private().to_owned(),
-<a href=#73 id=73 data-nosnippet>73</a>        public_key: stored_keypair.pk.clone(),
-<a href=#74 id=74 data-nosnippet>74</a>    };
-<a href=#75 id=75 data-nosnippet>75</a>
-<a href=#76 id=76 data-nosnippet>76</a>    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(new_credential))
-<a href=#77 id=77 data-nosnippet>77</a>}
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use crate</span>::{
+<a href=#11 id=11 data-nosnippet>11</a>    CryptoKeystoreError, CryptoKeystoreResult, deser,
+<a href=#12 id=12 data-nosnippet>12</a>    entities::{PersistedMlsGroup, StoredCredential},
+<a href=#13 id=13 data-nosnippet>13</a>};
+<a href=#14 id=14 data-nosnippet>14</a>
+<a href=#15 id=15 data-nosnippet>15</a><span class="doccomment">/// Entity representing a persisted `Credential` per the schema prior to integrating the signature keypair
+<a href=#16 id=16 data-nosnippet>16</a></span><span class="attr">#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+<a href=#17 id=17 data-nosnippet>17</a>#[zeroize(drop)]
+<a href=#18 id=18 data-nosnippet>18</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>V5Credential {
+<a href=#19 id=19 data-nosnippet>19</a>    <span class="attr">#[sensitive]
+<a href=#20 id=20 data-nosnippet>20</a>    </span><span class="kw">pub </span>id: Vec&lt;u8&gt;,
+<a href=#21 id=21 data-nosnippet>21</a>    <span class="attr">#[sensitive]
+<a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">pub </span>credential: Vec&lt;u8&gt;,
+<a href=#23 id=23 data-nosnippet>23</a>    <span class="kw">pub </span>created_at: u64,
+<a href=#24 id=24 data-nosnippet>24</a>}
+<a href=#25 id=25 data-nosnippet>25</a>
+<a href=#26 id=26 data-nosnippet>26</a><span class="doccomment">/// Entity representing a persisted `Credential` prior to replacing signature scheme with ciphersuite
+<a href=#27 id=27 data-nosnippet>27</a></span><span class="attr">#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+<a href=#28 id=28 data-nosnippet>28</a>#[zeroize(drop)]
+<a href=#29 id=29 data-nosnippet>29</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>V6Credential {
+<a href=#30 id=30 data-nosnippet>30</a>    <span class="doccomment">/// Note: this is not a unique identifier, but the session id this credential belongs to.
+<a href=#31 id=31 data-nosnippet>31</a>    </span><span class="attr">#[sensitive]
+<a href=#32 id=32 data-nosnippet>32</a>    </span><span class="kw">pub </span>id: Vec&lt;u8&gt;,
+<a href=#33 id=33 data-nosnippet>33</a>    <span class="attr">#[sensitive]
+<a href=#34 id=34 data-nosnippet>34</a>    </span><span class="kw">pub </span>credential: Vec&lt;u8&gt;,
+<a href=#35 id=35 data-nosnippet>35</a>    <span class="kw">pub </span>created_at: u64,
+<a href=#36 id=36 data-nosnippet>36</a>    <span class="kw">pub </span>signature_scheme: u16,
+<a href=#37 id=37 data-nosnippet>37</a>    <span class="attr">#[sensitive]
+<a href=#38 id=38 data-nosnippet>38</a>    </span><span class="kw">pub </span>public_key: Vec&lt;u8&gt;,
+<a href=#39 id=39 data-nosnippet>39</a>    <span class="attr">#[sensitive]
+<a href=#40 id=40 data-nosnippet>40</a>    </span><span class="kw">pub </span>secret_key: Vec&lt;u8&gt;,
+<a href=#41 id=41 data-nosnippet>41</a>}
+<a href=#42 id=42 data-nosnippet>42</a>
+<a href=#43 id=43 data-nosnippet>43</a><span class="doccomment">/// Entity representing a persisted `SignatureKeyPair`
+<a href=#44 id=44 data-nosnippet>44</a></span><span class="attr">#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+<a href=#45 id=45 data-nosnippet>45</a>#[zeroize(drop)]
+<a href=#46 id=46 data-nosnippet>46</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>StoredSignatureKeypair {
+<a href=#47 id=47 data-nosnippet>47</a>    <span class="kw">pub </span>signature_scheme: u16,
+<a href=#48 id=48 data-nosnippet>48</a>    <span class="attr">#[sensitive]
+<a href=#49 id=49 data-nosnippet>49</a>    </span><span class="kw">pub </span>pk: Vec&lt;u8&gt;,
+<a href=#50 id=50 data-nosnippet>50</a>    <span class="attr">#[sensitive]
+<a href=#51 id=51 data-nosnippet>51</a>    </span><span class="kw">pub </span>keypair: Vec&lt;u8&gt;,
+<a href=#52 id=52 data-nosnippet>52</a>    <span class="attr">#[sensitive]
+<a href=#53 id=53 data-nosnippet>53</a>    </span><span class="kw">pub </span>credential_id: Vec&lt;u8&gt;,
+<a href=#54 id=54 data-nosnippet>54</a>}
+<a href=#55 id=55 data-nosnippet>55</a>
+<a href=#56 id=56 data-nosnippet>56</a><span class="doccomment">/// Try to extract the relevant data from the v5 credential and signature keypair to determine whether they correspond
+<a href=#57 id=57 data-nosnippet>57</a>/// to each other. If succeeding, and they do match, return Ok(Some) with the new credential, return Ok(None) if they
+<a href=#58 id=58 data-nosnippet>58</a>/// don't, and return an Error if the data extraction fails.
+<a href=#59 id=59 data-nosnippet>59</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>migrate_to_new_credential(
+<a href=#60 id=60 data-nosnippet>60</a>    v5_credential: <span class="kw-2">&amp;</span>V5Credential,
+<a href=#61 id=61 data-nosnippet>61</a>    stored_keypair: <span class="kw-2">&amp;</span>StoredSignatureKeypair,
+<a href=#62 id=62 data-nosnippet>62</a>) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;V6Credential&gt;&gt; {
+<a href=#63 id=63 data-nosnippet>63</a>    <span class="kw">let </span>mls_keypair = SignatureKeyPair::tls_deserialize_exact(<span class="kw-2">&amp;</span>stored_keypair.keypair)
+<a href=#64 id=64 data-nosnippet>64</a>        .map_err(|e| CryptoKeystoreError::MigrationFailed(<span class="macro">format!</span>(<span class="string">"Deserializing keypair: {e}"</span>)))<span class="question-mark">?</span>;
+<a href=#65 id=65 data-nosnippet>65</a>
+<a href=#66 id=66 data-nosnippet>66</a>    <span class="kw">if </span>!v5_credential_matches_signature_key(v5_credential, stored_keypair, <span class="kw-2">&amp;</span>mls_keypair)<span class="question-mark">? </span>{
+<a href=#67 id=67 data-nosnippet>67</a>        <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
+<a href=#68 id=68 data-nosnippet>68</a>    }
+<a href=#69 id=69 data-nosnippet>69</a>
+<a href=#70 id=70 data-nosnippet>70</a>    <span class="kw">let </span>new_credential = V6Credential {
+<a href=#71 id=71 data-nosnippet>71</a>        id: v5_credential.id.clone(),
+<a href=#72 id=72 data-nosnippet>72</a>        credential: v5_credential.credential.clone(),
+<a href=#73 id=73 data-nosnippet>73</a>        created_at: v5_credential.created_at,
+<a href=#74 id=74 data-nosnippet>74</a>        signature_scheme: stored_keypair.signature_scheme,
+<a href=#75 id=75 data-nosnippet>75</a>        secret_key: mls_keypair.private().to_owned(),
+<a href=#76 id=76 data-nosnippet>76</a>        public_key: stored_keypair.pk.clone(),
+<a href=#77 id=77 data-nosnippet>77</a>    };
 <a href=#78 id=78 data-nosnippet>78</a>
-<a href=#79 id=79 data-nosnippet>79</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>v5_credential_matches_signature_key(
-<a href=#80 id=80 data-nosnippet>80</a>    v5_credential: <span class="kw-2">&amp;</span>V5Credential,
-<a href=#81 id=81 data-nosnippet>81</a>    stored_keypair: <span class="kw-2">&amp;</span>StoredSignatureKeypair,
-<a href=#82 id=82 data-nosnippet>82</a>    signature_key: <span class="kw-2">&amp;</span>SignatureKeyPair,
-<a href=#83 id=83 data-nosnippet>83</a>) -&gt; CryptoKeystoreResult&lt;bool&gt; {
-<a href=#84 id=84 data-nosnippet>84</a>    <span class="kw">let </span>mls_credential = MlsCredential::tls_deserialize_exact(<span class="kw-2">&amp;</span>v5_credential.credential)
-<a href=#85 id=85 data-nosnippet>85</a>        .map_err(|e| CryptoKeystoreError::MigrationFailed(<span class="macro">format!</span>(<span class="string">"deserializing stored credential: {e}"</span>)))<span class="question-mark">?</span>;
-<a href=#86 id=86 data-nosnippet>86</a>
-<a href=#87 id=87 data-nosnippet>87</a>    <span class="kw">match </span>mls_credential.mls_credential() {
-<a href=#88 id=88 data-nosnippet>88</a>        MlsCredentialType::Basic(<span class="kw">_</span>) =&gt; {
-<a href=#89 id=89 data-nosnippet>89</a>            <span class="kw">let </span>keypair_identity = <span class="kw-2">&amp;</span>stored_keypair.credential_id;
-<a href=#90 id=90 data-nosnippet>90</a>            <span class="kw">if </span>keypair_identity != mls_credential.identity() {
-<a href=#91 id=91 data-nosnippet>91</a>                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
-<a href=#92 id=92 data-nosnippet>92</a>            }
-<a href=#93 id=93 data-nosnippet>93</a>        }
-<a href=#94 id=94 data-nosnippet>94</a>
-<a href=#95 id=95 data-nosnippet>95</a>        MlsCredentialType::X509(cert) =&gt; {
-<a href=#96 id=96 data-nosnippet>96</a>            <span class="kw">let </span>certificate_bytes = cert
-<a href=#97 id=97 data-nosnippet>97</a>                .certificates
-<a href=#98 id=98 data-nosnippet>98</a>                .first()
-<a href=#99 id=99 data-nosnippet>99</a>                .ok_or(CryptoKeystoreError::MigrationFailed(<span class="string">"No leaf certificate"</span>.into()))<span class="question-mark">?</span>;
-<a href=#100 id=100 data-nosnippet>100</a>            <span class="kw">let </span>certificate_inner = x509_cert::Certificate::from_der(certificate_bytes.as_slice())
-<a href=#101 id=101 data-nosnippet>101</a>                .map_err(|e| CryptoKeystoreError::MigrationFailed(<span class="macro">format!</span>(<span class="string">"decoding x509 certificate: {e}"</span>)))<span class="question-mark">?</span>;
-<a href=#102 id=102 data-nosnippet>102</a>            <span class="kw">let </span>credential_public_key = certificate_inner
-<a href=#103 id=103 data-nosnippet>103</a>                .public_key()
-<a href=#104 id=104 data-nosnippet>104</a>                .map_err(|e| CryptoKeystoreError::MigrationFailed(<span class="macro">format!</span>(<span class="string">"extracting public key from cert: {e}"</span>)))<span class="question-mark">?</span>;
-<a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a>            <span class="kw">if </span>signature_key.public() != credential_public_key {
-<a href=#107 id=107 data-nosnippet>107</a>                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
-<a href=#108 id=108 data-nosnippet>108</a>            }
-<a href=#109 id=109 data-nosnippet>109</a>        }
-<a href=#110 id=110 data-nosnippet>110</a>    }
-<a href=#111 id=111 data-nosnippet>111</a>
-<a href=#112 id=112 data-nosnippet>112</a>    <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
-<a href=#113 id=113 data-nosnippet>113</a>}
+<a href=#79 id=79 data-nosnippet>79</a>    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(new_credential))
+<a href=#80 id=80 data-nosnippet>80</a>}
+<a href=#81 id=81 data-nosnippet>81</a>
+<a href=#82 id=82 data-nosnippet>82</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>v5_credential_matches_signature_key(
+<a href=#83 id=83 data-nosnippet>83</a>    v5_credential: <span class="kw-2">&amp;</span>V5Credential,
+<a href=#84 id=84 data-nosnippet>84</a>    stored_keypair: <span class="kw-2">&amp;</span>StoredSignatureKeypair,
+<a href=#85 id=85 data-nosnippet>85</a>    signature_key: <span class="kw-2">&amp;</span>SignatureKeyPair,
+<a href=#86 id=86 data-nosnippet>86</a>) -&gt; CryptoKeystoreResult&lt;bool&gt; {
+<a href=#87 id=87 data-nosnippet>87</a>    <span class="kw">let </span>mls_credential = MlsCredential::tls_deserialize_exact(<span class="kw-2">&amp;</span>v5_credential.credential)
+<a href=#88 id=88 data-nosnippet>88</a>        .map_err(|e| CryptoKeystoreError::MigrationFailed(<span class="macro">format!</span>(<span class="string">"deserializing stored credential: {e}"</span>)))<span class="question-mark">?</span>;
+<a href=#89 id=89 data-nosnippet>89</a>
+<a href=#90 id=90 data-nosnippet>90</a>    <span class="kw">match </span>mls_credential.mls_credential() {
+<a href=#91 id=91 data-nosnippet>91</a>        MlsCredentialType::Basic(<span class="kw">_</span>) =&gt; {
+<a href=#92 id=92 data-nosnippet>92</a>            <span class="kw">let </span>keypair_identity = <span class="kw-2">&amp;</span>stored_keypair.credential_id;
+<a href=#93 id=93 data-nosnippet>93</a>            <span class="kw">if </span>keypair_identity != mls_credential.identity() {
+<a href=#94 id=94 data-nosnippet>94</a>                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
+<a href=#95 id=95 data-nosnippet>95</a>            }
+<a href=#96 id=96 data-nosnippet>96</a>        }
+<a href=#97 id=97 data-nosnippet>97</a>
+<a href=#98 id=98 data-nosnippet>98</a>        MlsCredentialType::X509(cert) =&gt; {
+<a href=#99 id=99 data-nosnippet>99</a>            <span class="kw">let </span>certificate_bytes = cert
+<a href=#100 id=100 data-nosnippet>100</a>                .certificates
+<a href=#101 id=101 data-nosnippet>101</a>                .first()
+<a href=#102 id=102 data-nosnippet>102</a>                .ok_or(CryptoKeystoreError::MigrationFailed(<span class="string">"No leaf certificate"</span>.into()))<span class="question-mark">?</span>;
+<a href=#103 id=103 data-nosnippet>103</a>            <span class="kw">let </span>certificate_inner = x509_cert::Certificate::from_der(certificate_bytes.as_slice())
+<a href=#104 id=104 data-nosnippet>104</a>                .map_err(|e| CryptoKeystoreError::MigrationFailed(<span class="macro">format!</span>(<span class="string">"decoding x509 certificate: {e}"</span>)))<span class="question-mark">?</span>;
+<a href=#105 id=105 data-nosnippet>105</a>            <span class="kw">let </span>credential_public_key = certificate_inner
+<a href=#106 id=106 data-nosnippet>106</a>                .public_key()
+<a href=#107 id=107 data-nosnippet>107</a>                .map_err(|e| CryptoKeystoreError::MigrationFailed(<span class="macro">format!</span>(<span class="string">"extracting public key from cert: {e}"</span>)))<span class="question-mark">?</span>;
+<a href=#108 id=108 data-nosnippet>108</a>
+<a href=#109 id=109 data-nosnippet>109</a>            <span class="kw">if </span>signature_key.public() != credential_public_key {
+<a href=#110 id=110 data-nosnippet>110</a>                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
+<a href=#111 id=111 data-nosnippet>111</a>            }
+<a href=#112 id=112 data-nosnippet>112</a>        }
+<a href=#113 id=113 data-nosnippet>113</a>    }
 <a href=#114 id=114 data-nosnippet>114</a>
-<a href=#115 id=115 data-nosnippet>115</a><span class="doccomment">/// Make a function which inverts [`Credential::signature_algorithm`](https://github.com/wireapp/openmls/blob/c9cde17076508968c9cbead5728454f0a1f60c4f/traits/src/types.rs#L472-L474)
-<a href=#116 id=116 data-nosnippet>116</a>///
-<a href=#117 id=117 data-nosnippet>117</a>/// We need to map a signature scheme to a ciphersuite in our migrations. Most of these mappings are unambiguous.
-<a href=#118 id=118 data-nosnippet>118</a>/// However, we still need to consider the possibility that users are using unexpected signature schemes.
-<a href=#119 id=119 data-nosnippet>119</a>///
-<a href=#120 id=120 data-nosnippet>120</a>/// The strategy here is to perform an analysis of the existing conversations, counting the ciphersuites actually in
-<a href=#121 id=121 data-nosnippet>121</a>/// use. For each ambiguous signature scheme, there are these possibilities to consider:
-<a href=#122 id=122 data-nosnippet>122</a>///
-<a href=#123 id=123 data-nosnippet>123</a>/// | Ciphersuite A | Ciphersuite B | Outcome |
-<a href=#124 id=124 data-nosnippet>124</a>/// |---------------|---------------|---------|
-<a href=#125 id=125 data-nosnippet>125</a>/// |             0 |             0 | Ciphersuite unused, drop this credential |
-<a href=#126 id=126 data-nosnippet>126</a>/// |      non-zero |             0 | As all conversations use ciphersuite A, it is safe to uniquely map the credential to this ciphersuite |
-<a href=#127 id=127 data-nosnippet>127</a>/// |             0 |      non-zero | As all conversations use ciphersuite B, it is safe to uniquely map the credential to this ciphersuite |
-<a href=#128 id=128 data-nosnippet>128</a>/// |    non-zero n |    non-zero n | We arbitrarily choose the ciphersuite with smaller canonical number, breaking half the user conversations |
-<a href=#129 id=129 data-nosnippet>129</a>/// |    non-zero a |    non-zero b | We choose the ciphersuite with the greater population, breaking those conversations with the lesser |
-<a href=#130 id=130 data-nosnippet>130</a>///
-<a href=#131 id=131 data-nosnippet>131</a>/// However, we expect the cases where both A and B have non-zero counts to be very rare.
-<a href=#132 id=132 data-nosnippet>132</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>make_ciphersuite_for_signature_scheme(
-<a href=#133 id=133 data-nosnippet>133</a>    persisted_mls_groups: <span class="kw">impl </span>IntoIterator&lt;Item = PersistedMlsGroup&gt;,
-<a href=#134 id=134 data-nosnippet>134</a>) -&gt; CryptoKeystoreResult&lt;<span class="kw">impl </span>Fn(u16) -&gt; <span class="prelude-ty">Option</span>&lt;u16&gt;&gt; {
-<a href=#135 id=135 data-nosnippet>135</a>    <span class="kw">let </span><span class="kw-2">mut </span>ed25519_aes = <span class="number">0</span>; <span class="comment">// MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-<a href=#136 id=136 data-nosnippet>136</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>ed25519_chacha = <span class="number">0</span>; <span class="comment">// MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
-<a href=#137 id=137 data-nosnippet>137</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>ed448_aes = <span class="number">0</span>; <span class="comment">// MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
-<a href=#138 id=138 data-nosnippet>138</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>ed448_chacha = <span class="number">0</span>; <span class="comment">// MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448
-<a href=#139 id=139 data-nosnippet>139</a>
-<a href=#140 id=140 data-nosnippet>140</a>    </span><span class="kw">for </span>mls_group <span class="kw">in </span>persisted_mls_groups {
-<a href=#141 id=141 data-nosnippet>141</a>        <span class="kw">let </span>mls_group = deser::&lt;MlsGroup&gt;(<span class="kw-2">&amp;</span>mls_group.state)<span class="question-mark">?</span>;
-<a href=#142 id=142 data-nosnippet>142</a>        <span class="kw">match </span>mls_group.ciphersuite() {
-<a href=#143 id=143 data-nosnippet>143</a>            Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 =&gt; ed25519_aes += <span class="number">1</span>,
-<a href=#144 id=144 data-nosnippet>144</a>            Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 =&gt; ed25519_chacha += <span class="number">1</span>,
-<a href=#145 id=145 data-nosnippet>145</a>            Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 =&gt; ed448_aes += <span class="number">1</span>,
-<a href=#146 id=146 data-nosnippet>146</a>            Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 =&gt; ed448_chacha += <span class="number">1</span>,
-<a href=#147 id=147 data-nosnippet>147</a>            <span class="kw">_ </span>=&gt; {}
-<a href=#148 id=148 data-nosnippet>148</a>        }
-<a href=#149 id=149 data-nosnippet>149</a>    }
-<a href=#150 id=150 data-nosnippet>150</a>
-<a href=#151 id=151 data-nosnippet>151</a>    <span class="kw">let </span>ed25519 = <span class="kw">match </span>(ed25519_aes, ed25519_chacha) {
-<a href=#152 id=152 data-nosnippet>152</a>        (<span class="number">0</span>, <span class="number">0</span>) =&gt; <span class="prelude-val">None</span>,
-<a href=#153 id=153 data-nosnippet>153</a>        <span class="comment">// other 0 cases are degenerate and handled below
-<a href=#154 id=154 data-nosnippet>154</a>        </span>(a, b) <span class="kw">if </span>a &gt;= b =&gt; <span class="prelude-val">Some</span>(Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.into()),
-<a href=#155 id=155 data-nosnippet>155</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519.into()),
-<a href=#156 id=156 data-nosnippet>156</a>    };
-<a href=#157 id=157 data-nosnippet>157</a>
-<a href=#158 id=158 data-nosnippet>158</a>    <span class="kw">let </span>ed448 = <span class="kw">match </span>(ed448_aes, ed448_chacha) {
-<a href=#159 id=159 data-nosnippet>159</a>        (<span class="number">0</span>, <span class="number">0</span>) =&gt; <span class="prelude-val">None</span>,
-<a href=#160 id=160 data-nosnippet>160</a>        <span class="comment">// other 0 cases are degenerate and handled below
-<a href=#161 id=161 data-nosnippet>161</a>        </span>(a, b) <span class="kw">if </span>a &gt;= b =&gt; <span class="prelude-val">Some</span>(Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448.into()),
-<a href=#162 id=162 data-nosnippet>162</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448.into()),
-<a href=#163 id=163 data-nosnippet>163</a>    };
-<a href=#164 id=164 data-nosnippet>164</a>
-<a href=#165 id=165 data-nosnippet>165</a>    <span class="kw">let </span>ciphersuite_for_signature_scheme = <span class="kw">move </span>|signature_scheme: u16| -&gt; <span class="prelude-ty">Option</span>&lt;u16&gt; {
-<a href=#166 id=166 data-nosnippet>166</a>        <span class="kw">let </span>signature_scheme = SignatureScheme::try_from(signature_scheme).ok()<span class="question-mark">?</span>;
-<a href=#167 id=167 data-nosnippet>167</a>        <span class="kw">match </span>signature_scheme {
-<a href=#168 id=168 data-nosnippet>168</a>            SignatureScheme::ECDSA_SECP256R1_SHA256 =&gt; {
-<a href=#169 id=169 data-nosnippet>169</a>                <span class="prelude-val">Some</span>(Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256.into())
-<a href=#170 id=170 data-nosnippet>170</a>            }
-<a href=#171 id=171 data-nosnippet>171</a>            SignatureScheme::ECDSA_SECP384R1_SHA384 =&gt; {
-<a href=#172 id=172 data-nosnippet>172</a>                <span class="prelude-val">Some</span>(Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384.into())
-<a href=#173 id=173 data-nosnippet>173</a>            }
-<a href=#174 id=174 data-nosnippet>174</a>            SignatureScheme::ECDSA_SECP521R1_SHA512 =&gt; {
-<a href=#175 id=175 data-nosnippet>175</a>                <span class="prelude-val">Some</span>(Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521.into())
-<a href=#176 id=176 data-nosnippet>176</a>            }
-<a href=#177 id=177 data-nosnippet>177</a>            SignatureScheme::ED25519 =&gt; ed25519,
-<a href=#178 id=178 data-nosnippet>178</a>            SignatureScheme::ED448 =&gt; ed448,
-<a href=#179 id=179 data-nosnippet>179</a>        }
-<a href=#180 id=180 data-nosnippet>180</a>    };
-<a href=#181 id=181 data-nosnippet>181</a>    <span class="prelude-val">Ok</span>(ciphersuite_for_signature_scheme)
-<a href=#182 id=182 data-nosnippet>182</a>}</code></pre></div></section></main></body></html>
+<a href=#115 id=115 data-nosnippet>115</a>    <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
+<a href=#116 id=116 data-nosnippet>116</a>}
+<a href=#117 id=117 data-nosnippet>117</a>
+<a href=#118 id=118 data-nosnippet>118</a><span class="attr">#[derive(Default)]
+<a href=#119 id=119 data-nosnippet>119</a></span><span class="kw">struct </span>CiphersuiteOccurences {
+<a href=#120 id=120 data-nosnippet>120</a>    <span class="doccomment">/// MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+<a href=#121 id=121 data-nosnippet>121</a>    </span>ed25519_aes: u32,
+<a href=#122 id=122 data-nosnippet>122</a>    <span class="doccomment">/// MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
+<a href=#123 id=123 data-nosnippet>123</a>    </span>ed25519_chacha: u32,
+<a href=#124 id=124 data-nosnippet>124</a>    <span class="doccomment">/// MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
+<a href=#125 id=125 data-nosnippet>125</a>    </span>ed448_aes: u32,
+<a href=#126 id=126 data-nosnippet>126</a>    <span class="doccomment">/// MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448
+<a href=#127 id=127 data-nosnippet>127</a>    </span>ed448_chacha: u32,
+<a href=#128 id=128 data-nosnippet>128</a>}
+<a href=#129 id=129 data-nosnippet>129</a>
+<a href=#130 id=130 data-nosnippet>130</a><span class="kw">impl </span>CiphersuiteOccurences {
+<a href=#131 id=131 data-nosnippet>131</a>    <span class="kw">fn </span>of(<span class="kw-2">&amp;</span><span class="self">self</span>, ciphersuite: u16) -&gt; <span class="prelude-ty">Option</span>&lt;u32&gt; {
+<a href=#132 id=132 data-nosnippet>132</a>        <span class="kw">match </span>ciphersuite.try_into().ok()<span class="question-mark">? </span>{
+<a href=#133 id=133 data-nosnippet>133</a>            Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 =&gt; <span class="self">self</span>.ed25519_aes.into(),
+<a href=#134 id=134 data-nosnippet>134</a>            Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 =&gt; <span class="prelude-val">None</span>,
+<a href=#135 id=135 data-nosnippet>135</a>            Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 =&gt; <span class="self">self</span>.ed25519_chacha.into(),
+<a href=#136 id=136 data-nosnippet>136</a>            Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 =&gt; <span class="self">self</span>.ed448_aes.into(),
+<a href=#137 id=137 data-nosnippet>137</a>            Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 =&gt; <span class="prelude-val">None</span>,
+<a href=#138 id=138 data-nosnippet>138</a>            Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 =&gt; <span class="self">self</span>.ed448_chacha.into(),
+<a href=#139 id=139 data-nosnippet>139</a>            Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 =&gt; <span class="prelude-val">None</span>,
+<a href=#140 id=140 data-nosnippet>140</a>        }
+<a href=#141 id=141 data-nosnippet>141</a>    }
+<a href=#142 id=142 data-nosnippet>142</a>}
+<a href=#143 id=143 data-nosnippet>143</a>
+<a href=#144 id=144 data-nosnippet>144</a><span class="doccomment">/// Count occurences of ciphersuites ambiguous with regard to the signature scheme.
+<a href=#145 id=145 data-nosnippet>145</a></span><span class="kw">fn </span>count_ciphersuite_occurences(
+<a href=#146 id=146 data-nosnippet>146</a>    persisted_mls_groups: <span class="kw">impl </span>IntoIterator&lt;Item = PersistedMlsGroup&gt;,
+<a href=#147 id=147 data-nosnippet>147</a>) -&gt; CryptoKeystoreResult&lt;CiphersuiteOccurences&gt; {
+<a href=#148 id=148 data-nosnippet>148</a>    <span class="kw">let </span><span class="kw-2">mut </span>occurences = CiphersuiteOccurences::default();
+<a href=#149 id=149 data-nosnippet>149</a>
+<a href=#150 id=150 data-nosnippet>150</a>    <span class="kw">for </span>mls_group <span class="kw">in </span>persisted_mls_groups {
+<a href=#151 id=151 data-nosnippet>151</a>        <span class="kw">let </span>mls_group = deser::&lt;MlsGroup&gt;(<span class="kw-2">&amp;</span>mls_group.state)<span class="question-mark">?</span>;
+<a href=#152 id=152 data-nosnippet>152</a>        <span class="kw">match </span>mls_group.ciphersuite() {
+<a href=#153 id=153 data-nosnippet>153</a>            Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 =&gt; occurences.ed25519_aes += <span class="number">1</span>,
+<a href=#154 id=154 data-nosnippet>154</a>            Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 =&gt; occurences.ed25519_chacha += <span class="number">1</span>,
+<a href=#155 id=155 data-nosnippet>155</a>            Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 =&gt; occurences.ed448_aes += <span class="number">1</span>,
+<a href=#156 id=156 data-nosnippet>156</a>            Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 =&gt; occurences.ed448_chacha += <span class="number">1</span>,
+<a href=#157 id=157 data-nosnippet>157</a>            <span class="kw">_ </span>=&gt; {}
+<a href=#158 id=158 data-nosnippet>158</a>        }
+<a href=#159 id=159 data-nosnippet>159</a>    }
+<a href=#160 id=160 data-nosnippet>160</a>
+<a href=#161 id=161 data-nosnippet>161</a>    <span class="prelude-val">Ok</span>(occurences)
+<a href=#162 id=162 data-nosnippet>162</a>}
+<a href=#163 id=163 data-nosnippet>163</a>
+<a href=#164 id=164 data-nosnippet>164</a><span class="doccomment">/// Make a function which inverts [`Credential::signature_algorithm`](https://github.com/wireapp/openmls/blob/c9cde17076508968c9cbead5728454f0a1f60c4f/traits/src/types.rs#L472-L474)
+<a href=#165 id=165 data-nosnippet>165</a>///
+<a href=#166 id=166 data-nosnippet>166</a>/// We need to map a signature scheme to a ciphersuite in our migrations. Most of these mappings are unambiguous.
+<a href=#167 id=167 data-nosnippet>167</a>/// However, we still need to consider the possibility that users are using unexpected signature schemes.
+<a href=#168 id=168 data-nosnippet>168</a>///
+<a href=#169 id=169 data-nosnippet>169</a>/// The strategy here is to perform an analysis of the existing conversations, counting the ciphersuites actually in
+<a href=#170 id=170 data-nosnippet>170</a>/// use. For each ambiguous signature scheme, there are these possibilities to consider:
+<a href=#171 id=171 data-nosnippet>171</a>///
+<a href=#172 id=172 data-nosnippet>172</a>/// | Ciphersuite A | Ciphersuite B | Outcome |
+<a href=#173 id=173 data-nosnippet>173</a>/// |---------------|---------------|---------|
+<a href=#174 id=174 data-nosnippet>174</a>/// |             0 |             0 | Ciphersuite unused, drop this credential |
+<a href=#175 id=175 data-nosnippet>175</a>/// |      non-zero |             0 | As all conversations use ciphersuite A, it is safe to uniquely map the credential to this ciphersuite |
+<a href=#176 id=176 data-nosnippet>176</a>/// |             0 |      non-zero | As all conversations use ciphersuite B, it is safe to uniquely map the credential to this ciphersuite |
+<a href=#177 id=177 data-nosnippet>177</a>/// |    non-zero n |    non-zero n | We arbitrarily choose the ciphersuite with smaller canonical number, breaking half the user conversations |
+<a href=#178 id=178 data-nosnippet>178</a>/// |    non-zero a |    non-zero b | We choose the ciphersuite with the greater population, breaking those conversations with the lesser |
+<a href=#179 id=179 data-nosnippet>179</a>///
+<a href=#180 id=180 data-nosnippet>180</a>/// However, we expect the cases where both A and B have non-zero counts to be very rare.
+<a href=#181 id=181 data-nosnippet>181</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>make_ciphersuite_for_signature_scheme(
+<a href=#182 id=182 data-nosnippet>182</a>    persisted_mls_groups: <span class="kw">impl </span>IntoIterator&lt;Item = PersistedMlsGroup&gt;,
+<a href=#183 id=183 data-nosnippet>183</a>) -&gt; CryptoKeystoreResult&lt;<span class="kw">impl </span>Fn(u16) -&gt; <span class="prelude-ty">Option</span>&lt;u16&gt;&gt; {
+<a href=#184 id=184 data-nosnippet>184</a>    <span class="kw">let </span>occurences = count_ciphersuite_occurences(persisted_mls_groups)<span class="question-mark">?</span>;
+<a href=#185 id=185 data-nosnippet>185</a>
+<a href=#186 id=186 data-nosnippet>186</a>    <span class="kw">let </span>ed25519 = <span class="kw">match </span>(occurences.ed25519_aes, occurences.ed25519_chacha) {
+<a href=#187 id=187 data-nosnippet>187</a>        (<span class="number">0</span>, <span class="number">0</span>) =&gt; <span class="prelude-val">None</span>,
+<a href=#188 id=188 data-nosnippet>188</a>        <span class="comment">// other 0 cases are degenerate and handled below
+<a href=#189 id=189 data-nosnippet>189</a>        </span>(a, b) <span class="kw">if </span>a &gt;= b =&gt; <span class="prelude-val">Some</span>(Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.into()),
+<a href=#190 id=190 data-nosnippet>190</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519.into()),
+<a href=#191 id=191 data-nosnippet>191</a>    };
+<a href=#192 id=192 data-nosnippet>192</a>
+<a href=#193 id=193 data-nosnippet>193</a>    <span class="kw">let </span>ed448 = <span class="kw">match </span>(occurences.ed448_aes, occurences.ed448_chacha) {
+<a href=#194 id=194 data-nosnippet>194</a>        (<span class="number">0</span>, <span class="number">0</span>) =&gt; <span class="prelude-val">None</span>,
+<a href=#195 id=195 data-nosnippet>195</a>        <span class="comment">// other 0 cases are degenerate and handled below
+<a href=#196 id=196 data-nosnippet>196</a>        </span>(a, b) <span class="kw">if </span>a &gt;= b =&gt; <span class="prelude-val">Some</span>(Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448.into()),
+<a href=#197 id=197 data-nosnippet>197</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448.into()),
+<a href=#198 id=198 data-nosnippet>198</a>    };
+<a href=#199 id=199 data-nosnippet>199</a>
+<a href=#200 id=200 data-nosnippet>200</a>    <span class="kw">let </span>ciphersuite_for_signature_scheme = <span class="kw">move </span>|signature_scheme: u16| -&gt; <span class="prelude-ty">Option</span>&lt;u16&gt; {
+<a href=#201 id=201 data-nosnippet>201</a>        <span class="kw">let </span>signature_scheme = SignatureScheme::try_from(signature_scheme).ok()<span class="question-mark">?</span>;
+<a href=#202 id=202 data-nosnippet>202</a>        <span class="kw">match </span>signature_scheme {
+<a href=#203 id=203 data-nosnippet>203</a>            SignatureScheme::ECDSA_SECP256R1_SHA256 =&gt; {
+<a href=#204 id=204 data-nosnippet>204</a>                <span class="prelude-val">Some</span>(Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256.into())
+<a href=#205 id=205 data-nosnippet>205</a>            }
+<a href=#206 id=206 data-nosnippet>206</a>            SignatureScheme::ECDSA_SECP384R1_SHA384 =&gt; {
+<a href=#207 id=207 data-nosnippet>207</a>                <span class="prelude-val">Some</span>(Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384.into())
+<a href=#208 id=208 data-nosnippet>208</a>            }
+<a href=#209 id=209 data-nosnippet>209</a>            SignatureScheme::ECDSA_SECP521R1_SHA512 =&gt; {
+<a href=#210 id=210 data-nosnippet>210</a>                <span class="prelude-val">Some</span>(Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521.into())
+<a href=#211 id=211 data-nosnippet>211</a>            }
+<a href=#212 id=212 data-nosnippet>212</a>            SignatureScheme::ED25519 =&gt; ed25519,
+<a href=#213 id=213 data-nosnippet>213</a>            SignatureScheme::ED448 =&gt; ed448,
+<a href=#214 id=214 data-nosnippet>214</a>        }
+<a href=#215 id=215 data-nosnippet>215</a>    };
+<a href=#216 id=216 data-nosnippet>216</a>    <span class="prelude-val">Ok</span>(ciphersuite_for_signature_scheme)
+<a href=#217 id=217 data-nosnippet>217</a>}
+<a href=#218 id=218 data-nosnippet>218</a>
+<a href=#219 id=219 data-nosnippet>219</a><span class="doccomment">/// Make a function that determines the least used ciphersuite dependeing on usages in the given mls groups.
+<a href=#220 id=220 data-nosnippet>220</a>///
+<a href=#221 id=221 data-nosnippet>221</a>/// Behavioral notes of the resulting function:
+<a href=#222 id=222 data-nosnippet>222</a>/// * Ciphersuites that are not considered will cause `None` to be returned.
+<a href=#223 id=223 data-nosnippet>223</a>/// * Only ciphersuites ambiguous w.r.t. their signature scheme will be considered (see [CiphersuiteOccurences]).
+<a href=#224 id=224 data-nosnippet>224</a>/// * If both ciphersuites have an occurence of 0, `None` is returned.
+<a href=#225 id=225 data-nosnippet>225</a>/// * If both ciphersuites have equal occurence, the numerically higher ciphersuite is returned.
+<a href=#226 id=226 data-nosnippet>226</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>make_least_used_ciphersuite(
+<a href=#227 id=227 data-nosnippet>227</a>    persisted_mls_groups: <span class="kw">impl </span>IntoIterator&lt;Item = PersistedMlsGroup&gt;,
+<a href=#228 id=228 data-nosnippet>228</a>) -&gt; CryptoKeystoreResult&lt;<span class="kw">impl </span>Fn(u16, u16) -&gt; <span class="prelude-ty">Option</span>&lt;u16&gt;&gt; {
+<a href=#229 id=229 data-nosnippet>229</a>    <span class="kw">let </span>occurences = count_ciphersuite_occurences(persisted_mls_groups)<span class="question-mark">?</span>;
+<a href=#230 id=230 data-nosnippet>230</a>
+<a href=#231 id=231 data-nosnippet>231</a>    <span class="kw">let </span>least_used_ciphersuite = <span class="kw">move </span>|ciphersuite_a: u16, ciphersuite_b: u16| -&gt; <span class="prelude-ty">Option</span>&lt;u16&gt; {
+<a href=#232 id=232 data-nosnippet>232</a>        <span class="kw">let </span>occurence_a = occurences.of(ciphersuite_a);
+<a href=#233 id=233 data-nosnippet>233</a>        <span class="kw">let </span>occurence_b = occurences.of(ciphersuite_b);
+<a href=#234 id=234 data-nosnippet>234</a>
+<a href=#235 id=235 data-nosnippet>235</a>        <span class="kw">match </span>(occurence_a, occurence_b) {
+<a href=#236 id=236 data-nosnippet>236</a>            <span class="comment">// If one of the occurences is None, it means that the ciphersuites aren't both instances of an ambiguous
+<a href=#237 id=237 data-nosnippet>237</a>            // pair of ciphersuites. If both have an occurence of 0, we cannot determine a least used ciphersuite,
+<a href=#238 id=238 data-nosnippet>238</a>            // either.
+<a href=#239 id=239 data-nosnippet>239</a>            </span>(<span class="prelude-val">None</span>, <span class="kw">_</span>) | (<span class="kw">_</span>, <span class="prelude-val">None</span>) | (<span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">Some</span>(<span class="number">0</span>)) =&gt; <span class="kw">return </span><span class="prelude-val">None</span>,
+<a href=#240 id=240 data-nosnippet>240</a>            (<span class="prelude-val">Some</span>(a), <span class="prelude-val">Some</span>(b)) <span class="kw">if </span>a &lt; b =&gt; {
+<a href=#241 id=241 data-nosnippet>241</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(ciphersuite_a);
+<a href=#242 id=242 data-nosnippet>242</a>            }
+<a href=#243 id=243 data-nosnippet>243</a>            <span class="comment">// If both credentials have equal occurence, let the below if-clause handle this.
+<a href=#244 id=244 data-nosnippet>244</a>            </span>(<span class="prelude-val">Some</span>(a), <span class="prelude-val">Some</span>(b)) <span class="kw">if </span>a == b =&gt; {}
+<a href=#245 id=245 data-nosnippet>245</a>            <span class="kw">_ </span>=&gt; {
+<a href=#246 id=246 data-nosnippet>246</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(ciphersuite_b);
+<a href=#247 id=247 data-nosnippet>247</a>            }
+<a href=#248 id=248 data-nosnippet>248</a>        }
+<a href=#249 id=249 data-nosnippet>249</a>
+<a href=#250 id=250 data-nosnippet>250</a>        <span class="comment">// This is reached when both credentials have equal occurence. Take the one with the numerically
+<a href=#251 id=251 data-nosnippet>251</a>        // higher ciphersuite in this case.
+<a href=#252 id=252 data-nosnippet>252</a>        </span><span class="kw">if </span>ciphersuite_a &gt; ciphersuite_b {
+<a href=#253 id=253 data-nosnippet>253</a>            <span class="prelude-val">Some</span>(ciphersuite_a)
+<a href=#254 id=254 data-nosnippet>254</a>        } <span class="kw">else </span>{
+<a href=#255 id=255 data-nosnippet>255</a>            <span class="prelude-val">Some</span>(ciphersuite_b)
+<a href=#256 id=256 data-nosnippet>256</a>        }
+<a href=#257 id=257 data-nosnippet>257</a>    };
+<a href=#258 id=258 data-nosnippet>258</a>
+<a href=#259 id=259 data-nosnippet>259</a>    <span class="prelude-val">Ok</span>(least_used_ciphersuite)
+<a href=#260 id=260 data-nosnippet>260</a>}
+<a href=#261 id=261 data-nosnippet>261</a>
+<a href=#262 id=262 data-nosnippet>262</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>detect_duplicate_credentials(creds: <span class="kw-2">&amp;</span>[StoredCredential]) -&gt; Vec&lt;(<span class="kw-2">&amp;</span>StoredCredential, <span class="kw-2">&amp;</span>StoredCredential)&gt; {
+<a href=#263 id=263 data-nosnippet>263</a>    <span class="kw">let </span><span class="kw-2">mut </span>duplicates = Vec::new();
+<a href=#264 id=264 data-nosnippet>264</a>
+<a href=#265 id=265 data-nosnippet>265</a>    <span class="kw">for </span>(i, a) <span class="kw">in </span>creds.iter().enumerate() {
+<a href=#266 id=266 data-nosnippet>266</a>        <span class="kw">for </span>b <span class="kw">in </span>creds.iter().skip(i + <span class="number">1</span>) {
+<a href=#267 id=267 data-nosnippet>267</a>            <span class="kw">if </span>a.public_key == b.public_key {
+<a href=#268 id=268 data-nosnippet>268</a>                duplicates.push((a, b));
+<a href=#269 id=269 data-nosnippet>269</a>            }
+<a href=#270 id=270 data-nosnippet>270</a>        }
+<a href=#271 id=271 data-nosnippet>271</a>    }
+<a href=#272 id=272 data-nosnippet>272</a>    duplicates
+<a href=#273 id=273 data-nosnippet>273</a>}</code></pre></div></section></main></body></html>
