@@ -1,7 +1,6 @@
 use std::borrow::Borrow;
 
 use async_trait::async_trait;
-use serde::{Serialize, de::DeserializeOwned};
 
 use crate::{CryptoKeystoreResult, EntityBase, KeyType};
 
@@ -10,7 +9,7 @@ use crate::{CryptoKeystoreResult, EntityBase, KeyType};
 /// It has a primary key, which uniquely identifies it.
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
-pub trait Entity: EntityBase + Serialize + DeserializeOwned {
+pub trait Entity: EntityBase {
     /// Each distinct [`PrimaryKey`] uniquely identifies either 0 or 1 instance.
     ///
     /// This constraint should be enforced at the DB level.
