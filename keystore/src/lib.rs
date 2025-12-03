@@ -8,7 +8,7 @@ pub(crate) mod migrations;
 pub(crate) mod mls;
 #[cfg(feature = "proteus-keystore")]
 pub(crate) mod proteus;
-mod traits;
+pub mod traits;
 pub mod transaction;
 
 #[cfg(not(target_family = "wasm"))]
