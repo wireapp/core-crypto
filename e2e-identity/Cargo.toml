@@ -14,7 +14,6 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-rusty-acme = { version = "0.13.0", path = "../acme" }
 rusty-jwt-tools = { version = "0.13.0", path = "../jwt" }
 serde = { workspace = true }
 serde_json = { workspace = true }
