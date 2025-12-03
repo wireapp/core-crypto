@@ -1,6 +1,7 @@
 [versions]
 kotlin = "1.9.25"
 coroutines = "1.7.3"
+kotlinx-datetime = "0.6.1"
 jna = "5.17.0"
 assertj = "3.24.2"
 espresso = "3.6.1"
@@ -29,3 +30,4 @@ espresso = { module = "androidx.test.espresso:espresso-core", version.ref = "esp
 android-junit = { module = "androidx.test.ext:junit", version.ref = "android-junit" }
 android-tools = { module = "com.android.tools.build:gradle", version.ref = "android-tools" }
 kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
