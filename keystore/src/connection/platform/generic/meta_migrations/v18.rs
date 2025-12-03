@@ -28,7 +28,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
         "SELECT
             id,
             credential,
-            created_at,
+            unixepoch(created_at) AS created_at,
             signature_scheme,
             public_key,
             secret_key
@@ -59,7 +59,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
                         public_key,
                         secret_key
                     )
-                    VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                    VALUES (?1, ?2, datetime(?3, 'unixepoch'), ?4, ?5, ?6)",
                 (
                     v6.id.clone(),
                     v6.credential.clone(),
