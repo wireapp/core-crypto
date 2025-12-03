@@ -55,17 +55,6 @@ macro_rules! bytes_wrapper {
                 &self.0
             }
         }
-
-        paste::paste! {
-            #[allow(dead_code)]
-            pub(crate) type [<$id MaybeArc>] = std::sync::Arc<$id>;
-
-            #[allow(dead_code)]
-            #[inline]
-            pub(crate) fn [<$id:snake _coerce_maybe_arc>]<'a>(value: impl Into<std::borrow::Cow<'a, [u8]>>) -> [<$id MaybeArc>] {
-                std::sync::Arc::new($id(value.into().into_owned()))
-            }
-        }
     };
 }
 
