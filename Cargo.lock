@@ -863,7 +863,6 @@ dependencies = [
  "macro_rules_attribute 0.2.2",
  "mls-crypto-provider",
  "obfuscate",
- "paste",
  "proteus-wasm",
  "rmp-serde",
  "serde_json",

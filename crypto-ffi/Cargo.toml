@@ -38,7 +38,6 @@ log-reload.workspace = true
 log.workspace = true
 mls-crypto-provider.workspace = true
 obfuscate = { workspace = true, features = ["openmls"] }
-paste = "1.0.15"
 proteus-wasm = { workspace = true, optional = true }
 rmp-serde.workspace = true
 serde_json.workspace = true
