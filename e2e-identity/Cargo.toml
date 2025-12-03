@@ -23,12 +23,29 @@ derive_more = { workspace = true, features = ["deref", "from", "into"] }
 url = { workspace = true }
 zeroize = { workspace = true }
 uuid = { workspace = true, optional = true }
-x509-cert = { workspace = true, optional = true }
-time = { workspace = true, optional = true }
+x509-cert = { workspace = true }
+time = { workspace = true, features = [
+  "serde",
+  "serde-well-known",
+  "wasm-bindgen",
+] }
 rand = { workspace = true, optional = true }
 ed25519-dalek = { workspace = true, optional = true }
-signature = { workspace = true, optional = true }
+signature = { workspace = true }
 log.workspace = true
+ecdsa = { workspace = true }
+p256 = { workspace = true }
+p384 = { workspace = true }
+p521 = { workspace = true }
+pem = { workspace = true }
+getrandom = { workspace = true, features = ["js"] }
+web-time = { workspace = true }
+hex = { workspace = true }
+flagset = { workspace = true }
+certval = { workspace = true }
+der = { workspace = true }
+const-oid.workspace = true
+base64 = { workspace = true }
 
 [dev-dependencies]
 argon2 = "0.5"
@@ -39,7 +56,6 @@ rusty-jwt-tools = { version = "0.13.0", path = "../jwt", features = [
   "test-utils",
   "rsa",
 ] }
-base64 = { workspace = true }
 url = { workspace = true }
 itertools = { workspace = true }
 uuid = { workspace = true }
@@ -47,7 +63,6 @@ wasm-bindgen-test = { workspace = true }
 hex = { workspace = true }
 webbrowser = { workspace = true }
 shlex = "1"
-const-oid.workspace = true
 
 openidconnect = { workspace = true }
 html_parser = { workspace = true }
@@ -78,4 +93,4 @@ features = ["std", "js"]
 
 [features]
 default = []
-builder = ["dep:x509-cert", "rusty-jwt-tools/test-utils"]
+builder = ["rusty-jwt-tools/test-utils"]
