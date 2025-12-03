@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 /// A Client identifier
 ///
 /// A unique identifier for clients. A client is an identifier for each App a user is using, such as desktop,
@@ -19,15 +17,5 @@ impl ClientId {
     /// Copy the id into a new byte array.
     pub fn copy_bytes(&self) -> Vec<u8> {
         self.0.to_vec()
-    }
-}
-
-impl ClientId {
-    pub(crate) fn as_cc(&self) -> core_crypto::ClientId {
-        self.0.clone()
-    }
-
-    pub(crate) fn from_cc(id: core_crypto::ClientId) -> Arc<ClientId> {
-        std::sync::Arc::new(ClientId(id))
     }
 }

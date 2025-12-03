@@ -73,7 +73,8 @@ impl CoreCryptoFfi {
             .get_client_ids()
             .await
             .into_iter()
-            .map(ClientId::from_cc)
+            .map(Into::into)
+            .map(Arc::new)
             .collect())
     }
 

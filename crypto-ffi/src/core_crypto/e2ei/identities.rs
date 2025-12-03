@@ -21,7 +21,11 @@ impl CoreCryptoFfi {
             .get_raw_conversation(conversation_id.as_ref())
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation"))?;
-        let device_ids = device_ids.into_iter().map(|id| id.as_cc()).collect::<Vec<_>>();
+        let device_ids = device_ids
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .map(Into::into)
+            .collect::<Vec<_>>();
         let wire_identities = conversation
             .get_device_identities(&device_ids)
             .await?

@@ -18,11 +18,11 @@ impl TryFrom<&CoreCryptoHistorySecret> for HistorySecret {
     type Error = CoreCryptoError;
 
     fn try_from(value: &CoreCryptoHistorySecret) -> Result<Self, Self::Error> {
-        let client_id = value.client_id.clone();
+        let client_id = ClientId::from(value.client_id.clone()).into();
         rmp_serde::to_vec(&value)
             .map_err(CoreCryptoError::generic())
             .map(|secret| HistorySecret {
-                client_id: ClientId::from_cc(client_id),
+                client_id,
                 data: secret,
             })
     }

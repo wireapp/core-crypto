@@ -93,7 +93,7 @@ impl core_crypto::MlsTransport for MlsTransportShim {
         &self,
         secret: &HistorySecret,
     ) -> core_crypto::Result<core_crypto::MlsTransportData> {
-        let client_id = ClientId::from_cc(secret.client_id.clone());
+        let client_id = ClientId::from(secret.client_id.clone()).into();
         let history_secret = rmp_serde::to_vec(&secret)
             .map(|secret| HistorySecretFfi {
                 client_id,

@@ -49,7 +49,7 @@ impl CoreCryptoContext {
     pub async fn mls_init(&self, client_id: &Arc<ClientId>, ciphersuites: Vec<Ciphersuite>) -> CoreCryptoResult<()> {
         self.inner
             .mls_init(
-                ClientIdentifier::Basic(client_id.as_cc()),
+                ClientIdentifier::Basic(Arc::unwrap_or_clone(client_id.to_owned()).into()),
                 &ciphersuites
                     .into_iter()
                     .map(CryptoCiphersuite::from)
@@ -103,7 +103,8 @@ impl CoreCryptoContext {
             .get_client_ids()
             .await
             .into_iter()
-            .map(ClientId::from_cc)
+            .map(Into::into)
+            .map(Arc::new)
             .collect();
         Ok(client_ids)
     }
@@ -198,7 +199,8 @@ impl CoreCryptoContext {
         conversation_id: &ConversationId,
         clients: Vec<Arc<ClientId>>,
     ) -> CoreCryptoResult<()> {
-        let clients: Vec<core_crypto::ClientId> = clients.into_iter().map(|c| c.as_cc()).collect();
+        let clients: Vec<core_crypto::ClientId> =
+            clients.into_iter().map(Arc::unwrap_or_clone).map(Into::into).collect();
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         conversation.remove_members(&clients).await.map_err(Into::into)
     }
@@ -334,7 +336,7 @@ impl CoreCryptoContext {
         credential_type: Option<CredentialType>,
         earliest_validity: Option<u64>,
     ) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
-        let client_id = client_id.as_ref().map(|client_id| client_id.as_cc());
+        let client_id = client_id.map(Arc::unwrap_or_clone).map(core_crypto::ClientId::from);
         let client_id = client_id.as_ref().map(|client_id| client_id.as_ref());
 
         let ciphersuite = ciphersuite.map(CryptoCiphersuite::from);
