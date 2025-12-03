@@ -18,13 +18,10 @@ pub struct Credential(pub(crate) CryptoCredential);
 impl Credential {
     fn basic_impl(ciphersuite: Ciphersuite, client_id: &Arc<ClientId>) -> CoreCryptoResult<Self> {
         let crypto = RustCrypto::default();
-        CryptoCredential::basic(
-            CryptoCiphersuite::from(ciphersuite),
-            Arc::unwrap_or_clone(client_id.to_owned()).into(),
-            crypto,
-        )
-        .map(Into::into)
-        .map_err(Into::into)
+        let client_id_ref = client_id.as_ref().as_ref();
+        CryptoCredential::basic(CryptoCiphersuite::from(ciphersuite), client_id_ref.to_owned(), crypto)
+            .map(Into::into)
+            .map_err(Into::into)
     }
 }
 

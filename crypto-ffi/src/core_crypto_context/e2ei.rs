@@ -189,11 +189,7 @@ impl CoreCryptoContext {
         conversation_id: &ConversationId,
         device_ids: Vec<Arc<ClientId>>,
     ) -> CoreCryptoResult<Vec<WireIdentity>> {
-        let device_ids = device_ids
-            .into_iter()
-            .map(Arc::unwrap_or_clone)
-            .map(Into::into)
-            .collect::<Vec<_>>();
+        let device_ids = device_ids.iter().map(|c| c.as_ref().as_ref()).collect::<Vec<_>>();
 
         let conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         let wire_ids = conversation.get_device_identities(device_ids.as_slice()).await?;

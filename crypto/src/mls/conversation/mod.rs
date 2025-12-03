@@ -34,6 +34,7 @@ pub(crate) mod welcome;
 mod wipe;
 
 use std::{
+    borrow::Borrow,
     collections::{HashMap, HashSet},
     ops::Deref,
     sync::Arc,
@@ -57,8 +58,8 @@ pub use self::{
 };
 use super::credential::Credential;
 use crate::{
-    Ciphersuite, ClientId, CredentialType, E2eiConversationState, LeafError, MlsError, RecursiveError, UserId,
-    WireIdentity,
+    Ciphersuite, ClientId, ClientIdRef, CredentialType, E2eiConversationState, LeafError, MlsError, RecursiveError,
+    UserId, WireIdentity,
     mls::{HasSessionAndCrypto, Session, credential::ext::CredentialExt as _},
 };
 
@@ -181,7 +182,10 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
     /// From a given conversation, get the identity of the members supplied. Identity is only present for
     /// members with a Certificate Credential (after turning on end-to-end identity).
     /// If no member has a x509 certificate, it will return an empty Vec
-    async fn get_device_identities(&'a self, device_ids: &[ClientId]) -> Result<Vec<WireIdentity>> {
+    async fn get_device_identities(
+        &'a self,
+        device_ids: &[impl Borrow<ClientIdRef> + Sync],
+    ) -> Result<Vec<WireIdentity>> {
         if device_ids.is_empty() {
             return Err(Error::CallerError(
                 "This function accepts a list of IDs as a parameter, but that list was empty.",
@@ -196,7 +200,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         conversation
             .members_with_key()
             .into_iter()
-            .filter(|(id, _)| device_ids.iter().any(|client_id| *client_id == id.as_slice()))
+            .filter(|(id, _)| device_ids.iter().any(|client_id| client_id.borrow() == id))
             .map(|(_, c)| {
                 c.extract_identity(conversation.ciphersuite(), env)
                     .map_err(RecursiveError::mls_credential("extracting identity"))
@@ -604,7 +608,8 @@ mod tests {
                     alice_ios.transaction.client_id().await.unwrap().0.as_slice()
                 );
 
-                let invalid = conversation.guard().await.get_device_identities(&[]).await;
+                let empty_slice: &[ClientId] = &[];
+                let invalid = conversation.guard().await.get_device_identities(empty_slice).await;
                 assert!(matches!(invalid.unwrap_err(), Error::CallerError(_)));
             })
             .await

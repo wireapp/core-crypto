@@ -19,3 +19,9 @@ impl ClientId {
         self.0.to_vec()
     }
 }
+
+impl AsRef<core_crypto::ClientIdRef> for ClientId {
+    fn as_ref(&self) -> &core_crypto::ClientIdRef {
+        core_crypto::ClientIdRef::new(&self.0)
+    }
+}
