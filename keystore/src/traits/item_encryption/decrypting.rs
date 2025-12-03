@@ -5,7 +5,8 @@ use crate::{CryptoKeystoreResult, traits::Entity};
 /// This trait restores to a plaintext form of this struct, where all sensitive fields have been
 /// decrypted.
 ///
-/// This is quite likely to be handled automatically by a macro, depending on how annoying it is to implement everywhere.
+/// This is quite likely to be handled automatically by a macro, depending on how annoying it is to implement
+/// everywhere.
 ///
 /// ## Example
 ///
@@ -51,7 +52,8 @@ pub trait Decrypting<'de>: 'de + Deserialize<'de> {
 ///
 /// This is mainly useful so that the encrypted form does not need to be named, or even nameable.
 ///
-/// This is quite likely to be handled automatically by a macro, depending on how annoying it is to implement everywhere.
+/// This is quite likely to be handled automatically by a macro, depending on how annoying it is to implement
+/// everywhere.
 ///
 /// ## Example
 ///

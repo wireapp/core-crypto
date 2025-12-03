@@ -5,7 +5,8 @@ use crate::CryptoKeystoreResult;
 /// This trait produces an encrypted form of this struct, where all sensitive fields have been
 /// encrypted using the [`EncryptData`][super::EncryptData] helper.
 ///
-/// This is quite likely to be handled automatically by a macro, depending on how annoying it is to implement everywhere.
+/// This is quite likely to be handled automatically by a macro, depending on how annoying it is to implement
+/// everywhere.
 ///
 /// ## Example
 ///
