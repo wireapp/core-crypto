@@ -14,7 +14,7 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-rusty-jwt-tools = { version = "0.13.0", path = "../jwt" }
+rusty-jwt-tools = { version = "0.13.0", git = "https://github.com/wireapp/rusty-jwt-tools.git" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -52,7 +52,7 @@ argon2 = "0.5"
 password-hash = { version = "0.5", features = ["getrandom"] }
 env_logger.workspace = true
 wire-e2e-identity = { version = "0.13.0", path = ".", features = ["builder"] }
-rusty-jwt-tools = { version = "0.13.0", path = "../jwt", features = [
+rusty-jwt-tools = { version = "0.13.0", git = "https://github.com/wireapp/rusty-jwt-tools.git", features = [
   "test-utils",
   "rsa",
 ] }
