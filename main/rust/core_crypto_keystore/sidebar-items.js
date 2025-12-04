@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["CryptoKeystoreError","MissingKeyErrorKind"],"fn":["deser","ser"],"mod":["connection","entities","transaction"],"trait":["CryptoKeystoreMls","CryptoKeystoreProteus"],"type":["CryptoKeystoreResult"]};
+window.SIDEBAR_ITEMS = {"enum":["CryptoKeystoreError","MissingKeyErrorKind"],"fn":["deser","ser"],"mod":["connection","entities","traits","transaction"],"trait":["CryptoKeystoreMls","CryptoKeystoreProteus"],"type":["CryptoKeystoreResult"]};
