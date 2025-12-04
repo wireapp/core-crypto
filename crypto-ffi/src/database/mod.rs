@@ -15,8 +15,7 @@ pub struct Database(core_crypto_keystore::Database);
 impl Database {
     /// Open or create a [Database].
     pub async fn open(name: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
-        let key = &Arc::unwrap_or_clone(key);
-        core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::Persistent(name), key)
+        core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::Persistent(name), key.as_ref())
             .await
             .map(Database)
             .map_err(CoreCryptoError::generic())
@@ -24,8 +23,7 @@ impl Database {
 
     /// Create an in-memory [Database] whose data will be lost when the instance is dropped.
     pub async fn in_memory(key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
-        let key = Arc::unwrap_or_clone(key);
-        core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::InMemory, &key.into())
+        core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::InMemory, key.as_ref())
             .await
             .map(Database)
             .map_err(CoreCryptoError::generic())
