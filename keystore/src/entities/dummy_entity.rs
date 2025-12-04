@@ -5,6 +5,7 @@ use crate::{
 
 #[derive(Debug, Eq, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct DummyStoreValue;
+
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl EntityBase for DummyStoreValue {
@@ -31,9 +32,11 @@ impl Entity for DummyStoreValue {
     async fn find_all(_conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         Ok(vec![])
     }
+
     async fn find_one(_conn: &mut Self::ConnectionType, _id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
         Ok(Some(DummyStoreValue))
     }
+
     async fn find_many(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<Vec<Self>> {
         // Default, inefficient & naive method
         let mut ret = Vec::with_capacity(ids.len());
@@ -45,6 +48,7 @@ impl Entity for DummyStoreValue {
 
         Ok(ret)
     }
+
     async fn count(_conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
         Ok(0)
     }
@@ -53,6 +57,7 @@ impl Entity for DummyStoreValue {
     fn encrypt(&mut self, _cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
         Ok(())
     }
+
     #[cfg(target_family = "wasm")]
     fn decrypt(&mut self, _cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
         Ok(())
