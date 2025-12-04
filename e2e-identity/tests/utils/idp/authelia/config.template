@@ -1,0 +1,99 @@
+server:
+  address: 'tcp://:{port}'
+
+log:
+  level: 'trace'
+
+definitions:
+  # We need keyauth and acme_aud to appear in the ID token. So we define these
+  # user attributes here and specify that their values are to be taken from the
+  # values provided in the authorization request. We will refer to these
+  # attributes later when we configure the claims policy.
+  user_attributes:
+    keyauth:
+      expression: 'openid_authreq_claim_value'
+    acme_aud:
+      expression: 'openid_authreq_claim_value'
+
+identity_validation:
+  reset_password:
+    jwt_secret: '{jwt_secret}'
+
+authentication_backend:
+  file:
+    path: '/config/users.yml'
+
+access_control:
+  default_policy: 'deny'
+  rules:
+    # Rules applied to everyone
+    - domain: '*'
+      policy: 'one_factor'
+
+session:
+  secret: '{session_secret}'
+  cookies:
+    - name: 'authelia_session'
+      domain: '{hostname}'
+      authelia_url: 'https://{hostname}'
+
+storage:
+  encryption_key: '{storage_key}'
+  local:
+    path: '/config/db.sqlite3'
+
+notifier:
+  filesystem:
+    filename: '/config/notification.txt'
+
+identity_providers:
+  oidc:
+    jwks:
+      - key: |
+          # Authelia template syntax uses two braces, but this file is
+          # processed by Rust's format!() macro first so we need to escape them
+          # and that's how we end up with four.
+          {{{{ secret "/config/private.pem" | mindent 10 "|" | msquote }}}}
+
+    # We must configure the policy so that our custom claims, keyauth and
+    # acme_aud, are returned in the ID token.
+    claims_policies:
+      default:
+        id_token: [email, name, preferred_username, keyauth, acme_aud]
+        custom_claims:
+          keyauth:
+            name: 'keyauth'
+            attribute: 'keyauth'
+          acme_aud:
+            name: 'acme_aud'
+            attribute: 'acme_aud'
+
+    scopes:
+      wire:
+        claims:
+          - 'keyauth'
+          - 'acme_aud'
+
+    clients:
+      - client_id: '{oauth_client_id}'
+        client_name: '{oauth_client_name}'
+        public: true
+        redirect_uris:
+          - '{redirect_uri}'
+        scopes:
+          - 'openid'
+          - 'email'
+          - 'profile'
+          - 'wire'
+        grant_types:
+          - 'authorization_code'
+        response_types:
+          - 'code'
+        response_modes:
+          - 'form_post'
+          - 'query'
+          - 'fragment'
+        authorization_policy: 'one_factor'
+        claims_policy: 'default'
+        requested_audience_mode: 'explicit'
+        consent_mode: 'implicit'
