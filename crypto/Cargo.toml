@@ -89,7 +89,7 @@ futures-util = { workspace = true, features = ["std", "alloc"] }
 proteus-traits = { workspace = true }
 async-trait.workspace = true
 wire-e2e-identity = { workspace = true, features = ["builder"] }
-web-time = "1.1.0"
+web-time.workspace = true
 time = { version = "0.3", features = ["wasm-bindgen"] }
 core-crypto-keystore = { workspace = true, features = ["dummy-entity"] }
 rmp-serde = { workspace = true }
