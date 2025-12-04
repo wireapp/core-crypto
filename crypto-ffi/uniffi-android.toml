@@ -1,3 +1,13 @@
 [bindings.kotlin]
 android = true
 android_cleaner = true
+
+[bindings.kotlin.custom_types.KotlinInstant]
+imports = [
+  "kotlinx.datetime.Instant",
+  "kotlinx.datetime.toKotlinInstant",
+  "kotlinx.datetime.toJavaInstant",
+]
+type_name = "Instant"
+lift = "{}.toKotlinInstant()"
+lower = "{}.toJavaInstant()"

@@ -1,4 +1,4 @@
-use std::time::{Duration, SystemTime};
+use crate::Timestamp;
 
 /// Represents the parts of [WireIdentity][crate::WireIdentity] that are specific to a X509 certificate (and not a Basic
 /// one).
@@ -19,26 +19,22 @@ pub struct X509Identity {
     pub serial_number: String,
 
     /// X509 certificate not before
-    pub not_before: SystemTime,
+    pub not_before: Timestamp,
 
     /// X509 certificate not after
-    pub not_after: SystemTime,
+    pub not_after: Timestamp,
 }
 
 impl From<core_crypto::X509Identity> for X509Identity {
     fn from(i: core_crypto::X509Identity) -> Self {
-        let not_before = SystemTime::UNIX_EPOCH + Duration::from_secs(i.not_before);
-
-        let not_after = SystemTime::UNIX_EPOCH + Duration::from_secs(i.not_after);
-
         Self {
             handle: i.handle,
             display_name: i.display_name,
             domain: i.domain,
             certificate: i.certificate,
             serial_number: i.serial_number,
-            not_before,
-            not_after,
+            not_before: Timestamp::from_epoch_secs(i.not_before),
+            not_after: Timestamp::from_epoch_secs(i.not_after),
         }
     }
 }

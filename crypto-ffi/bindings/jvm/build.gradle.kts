@@ -20,6 +20,7 @@ dependencies {
     implementation(kotlin("stdlib-jdk7"))
     implementation(libs.jna)
     implementation(libs.coroutines.core)
+    implementation(libs.kotlinx.datetime)
     testImplementation(kotlin("test"))
     testImplementation(libs.coroutines.test)
     testImplementation(libs.assertj.core)
