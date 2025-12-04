@@ -93,7 +93,7 @@
 <a href=#93 id=93 data-nosnippet>93</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#94 id=94 data-nosnippet>94</a>        secret: <span class="kw-2">&amp;</span>HistorySecret,
 <a href=#95 id=95 data-nosnippet>95</a>    ) -&gt; core_crypto::Result&lt;core_crypto::MlsTransportData&gt; {
-<a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">let </span>client_id = ClientId::from_cc(secret.client_id.clone());
+<a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">let </span>client_id = ClientId::from(secret.client_id.clone()).into();
 <a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">let </span>history_secret = rmp_serde::to_vec(<span class="kw-2">&amp;</span>secret)
 <a href=#98 id=98 data-nosnippet>98</a>            .map(|secret| HistorySecretFfi {
 <a href=#99 id=99 data-nosnippet>99</a>                client_id,

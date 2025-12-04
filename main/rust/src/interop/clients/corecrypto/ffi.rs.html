@@ -35,8 +35,8 @@
 <a href=#35 id=35 data-nosnippet>35</a>        <span class="kw">let </span>client_id_bytes: Vec&lt;u8&gt; = client_id.as_hyphenated().to_string().into_bytes();
 <a href=#36 id=36 data-nosnippet>36</a>        <span class="kw">let </span>client_id = Arc::new(ClientId::from(core_crypto::ClientId::from(client_id_bytes.clone())));
 <a href=#37 id=37 data-nosnippet>37</a>        <span class="kw">let </span>temp_file = NamedTempFile::with_prefix(<span class="string">"interop-ffi-keystore-"</span>)<span class="question-mark">?</span>;
-<a href=#38 id=38 data-nosnippet>38</a>        <span class="kw">let </span>key = DatabaseKey::from_cc(core_crypto::DatabaseKey::generate());
-<a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let </span>db = Database::open(<span class="kw-2">&amp;</span>temp_file.path().to_string_lossy(), key)
+<a href=#38 id=38 data-nosnippet>38</a>        <span class="kw">let </span>key = DatabaseKey::from(core_crypto::DatabaseKey::generate());
+<a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let </span>db = Database::open(<span class="kw-2">&amp;</span>temp_file.path().to_string_lossy(), key.into())
 <a href=#40 id=40 data-nosnippet>40</a>            .<span class="kw">await
 <a href=#41 id=41 data-nosnippet>41</a>            </span>.unwrap()
 <a href=#42 id=42 data-nosnippet>42</a>            .into();
