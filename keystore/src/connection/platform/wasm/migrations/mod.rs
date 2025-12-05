@@ -1,5 +1,4 @@
 mod db_key_type_to_bytes;
-mod metabuilder;
 mod pre_v4;
 mod v0;
 mod v2;
@@ -12,7 +11,6 @@ mod v8;
 
 pub(super) use db_key_type_to_bytes::migrate_db_key_type_to_bytes;
 use idb::{Database, Factory};
-use metabuilder::Metabuilder;
 
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::DatabaseKey};
 
