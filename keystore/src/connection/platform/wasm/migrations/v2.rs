@@ -1,9 +1,9 @@
 use idb::{
     KeyPath,
-    builder::{IndexBuilder, ObjectStoreBuilder},
+    builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder},
 };
 
-use super::{DB_VERSION_2, Metabuilder};
+use super::DB_VERSION_2;
 use crate::{
     CryptoKeystoreResult,
     entities::{ConsumerData, EntityBase as _},
@@ -18,7 +18,7 @@ pub(super) async fn migrate(name: &str) -> CryptoKeystoreResult<u32> {
 }
 
 /// Add a new object store for the ConsumerData struct.
-pub(super) fn get_builder(name: &str) -> Metabuilder {
+pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
     let previous_builder = super::v0::get_builder(name);
     previous_builder.version(DB_VERSION_2).add_object_store(
         ObjectStoreBuilder::new(ConsumerData::COLLECTION_NAME)

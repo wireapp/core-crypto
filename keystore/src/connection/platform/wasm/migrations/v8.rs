@@ -2,10 +2,10 @@
 
 use idb::{
     KeyPath,
-    builder::{IndexBuilder, ObjectStoreBuilder},
+    builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder},
 };
 
-use super::{DB_VERSION_8, Metabuilder};
+use super::DB_VERSION_8;
 use crate::{
     CryptoKeystoreResult, Database, DatabaseKey,
     connection::FetchFromDatabase as _,
@@ -67,7 +67,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
 }
 
 /// Set up the builder for v8.
-pub(super) fn get_builder(name: &str) -> Metabuilder {
+pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
     super::v7::get_builder(name).version(DB_VERSION_8).add_object_store(
         ObjectStoreBuilder::new(&format!(
             "{collection_name}_new",
