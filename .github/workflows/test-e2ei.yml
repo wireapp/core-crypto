@@ -1,0 +1,36 @@
+name: test-e2ei
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+on:
+  push:
+    tags:
+      - '*'
+  pull_request:
+
+env:
+  RELEASE: 1
+  RUST_BACKTRACE: 1
+  CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+
+jobs:
+  test-e2ei:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        idp:
+          - authelia
+          - keycloak
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+          toolchain: 'stable'
+      - uses: taiki-e/install-action@nextest
+      - run: TEST_IDP=${{ matrix.idp }} sh scripts/run-e2ei-tests.sh
