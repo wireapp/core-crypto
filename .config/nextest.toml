@@ -1,3 +1,11 @@
+[profile.default]
+# Some tests in wire-e2e-identity require a special setup and it's not possible
+# to run them via a simple `cargo nextest run` command (they should be run via
+# scripts/run-e2ei-tests.sh instead). Still, we want to be able to just say
+# `cargo nextest run` and at least have everything else tested, so we just
+# exclude the package needing special setup.
+default-filter = 'not package(wire-e2e-identity)'
+
 [profile.default.junit]
 path = "junit.xml"
 store-success-output = true
