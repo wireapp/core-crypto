@@ -18,7 +18,7 @@ esac
 tmpfile=$(mktemp)
 rm ${tmpfile}
 mkfifo ${tmpfile}
-cargo run --locked test-wire-server > ${tmpfile} &
+cargo run --locked --bin test-wire-server > ${tmpfile} &
 test_wire_server_pid=$!
 
 # The test suite needs this environment variable in order to set up the test
@@ -27,7 +27,7 @@ read TEST_WIRE_SERVER_ADDR < ${tmpfile}
 export TEST_WIRE_SERVER_ADDR
 
 echo -e \\nRunning nextest with arguments \"$@\"
-cargo nextest run --locked "$@"
+cargo nextest run --ignore-default-filter --locked -p wire-e2e-identity "$@"
 test_exit_code="$?"
 
 # Clean up.
