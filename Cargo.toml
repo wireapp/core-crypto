@@ -10,6 +10,7 @@ members = [
   "interop",
   "decode",
   "obfuscate",
+  "test-wire-server",
 ]
 resolver = "2"
 

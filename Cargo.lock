@@ -5888,6 +5888,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-wire-server"
+version = "0.13.0"
+dependencies = [
+ "base64 0.22.1",
+ "http 1.1.0",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "rusty-jwt-tools",
+ "serde_json",
+ "tokio",
+ "url",
+ "uuid",
+]
+
+[[package]]
 name = "testcontainers"
 version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
