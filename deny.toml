@@ -25,6 +25,12 @@ ignore = [
   # `paste` is no longer maintained and its repo is archived,
   # however `uniffi` still depends on it.
   "RUSTSEC-2024-0436",
+  # The fix at https://github.com/RustCrypto/RSA/pull/394 is merged,
+  # and will be in rsa v0.10, once that comes out of the eternal
+  # pre-release state. We need to update it via our rusty-jwt-simple.
+  "RUSTSEC-2023-0071",
+  # fxhash is no longer maintained, but scraper depends on it.
+  "RUSTSEC-2025-0057",
 ]
 
 [bans]
