@@ -102,6 +102,75 @@ make ts</code></pre></div><h3 id="testing"><a class="doc-anchor" href="#testing"
 logs.</p>
 <h4 id="platform-specific-tests-for-kotlinjvm"><a class="doc-anchor" href="#platform-specific-tests-for-kotlinjvm">§</a>Platform-specific tests for Kotlin/JVM<a name="platform-specific-tests-for-kotlinjvm"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make jvm-test</code></pre></div><h4 id="platform-specific-tests-for-android"><a class="doc-anchor" href="#platform-specific-tests-for-android">§</a>Platform-specific tests for Android<a name="platform-specific-tests-for-android"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make android-test</code></pre></div><h4 id="swiftios"><a class="doc-anchor" href="#swiftios">§</a>Swift/iOS<a name="swiftios"></a></h4>
 <p><em>No E2E testing is available as of now on Swift.</em></p>
+<h4 id="end-to-end-identity-e2ei-testing"><a class="doc-anchor" href="#end-to-end-identity-e2ei-testing">§</a>End-to-end-identity (E2EI) testing<a name="end-to-end-identity-e2ei-testing"></a></h4><h5 id="preparing-the-container-runtime-environment"><a class="doc-anchor" href="#preparing-the-container-runtime-environment">§</a>Preparing the container runtime environment<a name="preparing-the-container-runtime-environment"></a></h5>
+<p>Some tests require a working container runtime, so make sure to prepare one before running all tests. Platform-specific
+instructions follow below.</p>
+<h6 id="on-linux-with-docker"><a class="doc-anchor" href="#on-linux-with-docker">§</a>On Linux with Docker<a name="on-linux-with-docker"></a></h6>
+<p>Make sure to start the Docker service if it is not already running:</p>
+<div class="example-wrap"><pre class="language-sh"><code>systemctl start docker.service</code></pre></div><h6 id="on-linux-with-podman"><a class="doc-anchor" href="#on-linux-with-podman">§</a>On Linux with Podman<a name="on-linux-with-podman"></a></h6><div class="example-wrap"><pre class="language-sh"><code># start socket activation, which will cause Podman to start once
+# anything connects to the socket:
+systemctl --user start podman.socket
+
+# check that socket activation works
+podman version
+
+# if the above didn&#39;t work, depending on the distribution and installed packages,
+# it may be necessary to configure the DOCKER_HOST variable to point to Podman&#39;s socket
+export DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock</code></pre></div><h6 id="on-macos-with-docker"><a class="doc-anchor" href="#on-macos-with-docker">§</a>On macOS with Docker<a name="on-macos-with-docker"></a></h6>
+<p>Note: Docker under macOS requires Docker Desktop, which must run as a GUI application.</p>
+<div class="example-wrap"><pre class="language-sh"><code># install docker and docker-desktop
+brew install docker docker-desktop
+
+# start the Docker daemon by launching docker-desktop as a GUI application
+
+# check if everything went fine
+docker version</code></pre></div><h6 id="on-macos-with-podman"><a class="doc-anchor" href="#on-macos-with-podman">§</a>On macOS with Podman<a name="on-macos-with-podman"></a></h6><div class="example-wrap"><pre class="language-sh"><code># install Podman
+brew install podman
+
+# install podman-mac-helper
+sudo podman-mac-helper install
+
+# create new VM based on machine-os:5.5; note that we&#39;re explicitly specifying
+# an older image version because the newest one seems to be broken
+podman machine init --image docker://quay.io/podman/machine-os:5.5
+
+# start the machine
+podman machine start
+
+# if everything went well, this should print server version `5.5.x`
+podman version
+
+# symlink docker to podman (test scripts and code assume existence
+# of the `docker` command)
+ln -s /opt/homebrew/bin/podman /opt/homebrew/bin/docker</code></pre></div><h5 id="choosing-the-oidc-identity-provider"><a class="doc-anchor" href="#choosing-the-oidc-identity-provider">§</a>Choosing the OIDC identity provider<a name="choosing-the-oidc-identity-provider"></a></h5>
+<p>Choose the OIDC identity provider to use in tests by setting the <code>TEST_IDP</code> variable:</p>
+<div class="example-wrap"><pre class="language-sh"><code># use Keycloak
+export TEST_IDP=keycloak
+
+# or Authelia
+export TEST_IDP=authelia</code></pre></div><h5 id="running-all-tests-at-once"><a class="doc-anchor" href="#running-all-tests-at-once">§</a>Running all tests at once<a name="running-all-tests-at-once"></a></h5>
+<p>Simply execute the <code>run-e2ei-tests.sh</code> script:</p>
+<div class="example-wrap"><pre class="language-sh"><code>bash scripts/run-e2ei-tests.sh</code></pre></div>
+<p>The script will take care of cleaning up processes and containers that are started during tests.</p>
+<h5 id="running-specific-tests"><a class="doc-anchor" href="#running-specific-tests">§</a>Running specific tests<a name="running-specific-tests"></a></h5>
+<p><code>run-e2ei-tests.sh</code> forwards its arguments to <code>cargo nextest</code>, which can be used to run a specific test, or any subset
+of tests, e.g.</p>
+<div class="example-wrap"><pre class="language-sh"><code>bash scripts/run-e2ei-tests.sh alg::p256</code></pre></div><h5 id="manually-invoking-tests"><a class="doc-anchor" href="#manually-invoking-tests">§</a>Manually invoking tests<a name="manually-invoking-tests"></a></h5>
+<p>First, you need to start <code>test-wire-server</code>:</p>
+<div class="example-wrap"><pre class="language-sh"><code>$ cargo run --locked --bin test-wire-server
+[...]
+127.0.0.1:20530</code></pre></div>
+<p>Note the IP and port printed by <code>test-wire-server</code> and export that as <code>TEST_WIRE_SERVER_ADDR</code>:</p>
+<div class="example-wrap"><pre class="language-sh"><code>export TEST_WIRE_SERVER_ADDR=127.0.0.1:20530</code></pre></div>
+<p>Now that the environment is ready, you can run a specific test, or any subset of tests, e.g.</p>
+<div class="example-wrap"><pre class="language-sh"><code>cargo nextest run --locked --ignore-default-filter -p wire-e2e-identity alg::p256</code></pre></div>
+<p>Once you are done with testing, terminate the IdP container that has been started:</p>
+<div class="example-wrap"><pre class="language-sh"><code># if you&#39;re using Keycloak
+docker kill keycloak &amp;&amp; docker rm keycloak
+
+# if you&#39;re using Authelia
+docker kill authelia.local &amp;&amp; docker rm authelia.local</code></pre></div>
+<p>as well as the <code>test-wire-server</code> instance.</p>
 <h3 id="formatting-and-linting"><a class="doc-anchor" href="#formatting-and-linting">§</a>Formatting and Linting<a name="formatting-and-linting"></a></h3>
 <p>For all languages we provide make rules for formatting and checking.</p>
 <ul>
