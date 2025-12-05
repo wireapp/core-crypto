@@ -36,6 +36,16 @@ express prior written consent of Wire Swiss GmbH.
     - [Platform-specific tests for Kotlin/JVM](#platform-specific-tests-for-kotlinjvm)
     - [Platform-specific tests for Android](#platform-specific-tests-for-android)
     - [Swift/iOS](#swiftios)
+    - [End-to-end-identity (E2EI) testing](#end-to-end-identity-e2ei-testing)
+      - [Preparing the container runtime environment](#preparing-the-container-runtime-environment)
+        - [On Linux with Docker](#on-linux-with-docker)
+        - [On Linux with Podman](#on-linux-with-podman)
+        - [On macOS with Docker](#on-macos-with-docker)
+        - [On macOS with Podman](#on-macos-with-podman)
+      - [Choosing the OIDC identity provider](#choosing-the-oidc-identity-provider)
+      - [Running all tests at once](#running-all-tests-at-once)
+      - [Running specific tests](#running-specific-tests)
+      - [Manually invoking tests](#manually-invoking-tests)
   - [Formatting and Linting](#formatting-and-linting)
     - [Requirements](#requirements)
       - [Swift](#swift)
@@ -241,6 +251,139 @@ make android-test
 ### Swift/iOS<a name="swiftios"></a>
 
 *No E2E testing is available as of now on Swift.*
+
+### End-to-end-identity (E2EI) testing<a name="end-to-end-identity-e2ei-testing"></a>
+
+#### Preparing the container runtime environment<a name="preparing-the-container-runtime-environment"></a>
+
+Some tests require a working container runtime, so make sure to prepare one before running all tests. Platform-specific
+instructions follow below.
+
+##### On Linux with Docker<a name="on-linux-with-docker"></a>
+
+Make sure to start the Docker service if it is not already running:
+
+```sh
+systemctl start docker.service
+```
+
+##### On Linux with Podman<a name="on-linux-with-podman"></a>
+
+```sh
+# start socket activation, which will cause Podman to start once
+# anything connects to the socket:
+systemctl --user start podman.socket
+
+# check that socket activation works
+podman version
+
+# if the above didn't work, depending on the distribution and installed packages,
+# it may be necessary to configure the DOCKER_HOST variable to point to Podman's socket
+export DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock
+```
+
+##### On macOS with Docker<a name="on-macos-with-docker"></a>
+
+Note: Docker under macOS requires Docker Desktop, which must run as a GUI application.
+
+```sh
+# install docker and docker-desktop
+brew install docker docker-desktop
+
+# start the Docker daemon by launching docker-desktop as a GUI application
+
+# check if everything went fine
+docker version
+```
+
+##### On macOS with Podman<a name="on-macos-with-podman"></a>
+
+```sh
+# install Podman
+brew install podman
+
+# install podman-mac-helper
+sudo podman-mac-helper install
+
+# create new VM based on machine-os:5.5; note that we're explicitly specifying
+# an older image version because the newest one seems to be broken
+podman machine init --image docker://quay.io/podman/machine-os:5.5
+
+# start the machine
+podman machine start
+
+# if everything went well, this should print server version `5.5.x`
+podman version
+
+# symlink docker to podman (test scripts and code assume existence
+# of the `docker` command)
+ln -s /opt/homebrew/bin/podman /opt/homebrew/bin/docker
+```
+
+#### Choosing the OIDC identity provider<a name="choosing-the-oidc-identity-provider"></a>
+
+Choose the OIDC identity provider to use in tests by setting the `TEST_IDP` variable:
+
+```sh
+# use Keycloak
+export TEST_IDP=keycloak
+
+# or Authelia
+export TEST_IDP=authelia
+```
+
+#### Running all tests at once<a name="running-all-tests-at-once"></a>
+
+Simply execute the `run-e2ei-tests.sh` script:
+
+```sh
+bash scripts/run-e2ei-tests.sh
+```
+
+The script will take care of cleaning up processes and containers that are started during tests.
+
+#### Running specific tests<a name="running-specific-tests"></a>
+
+`run-e2ei-tests.sh` forwards its arguments to `cargo nextest`, which can be used to run a specific test, or any subset
+of tests, e.g.
+
+```sh
+bash scripts/run-e2ei-tests.sh alg::p256
+```
+
+#### Manually invoking tests<a name="manually-invoking-tests"></a>
+
+First, you need to start `test-wire-server`:
+
+```sh
+$ cargo run --locked --bin test-wire-server
+[...]
+127.0.0.1:20530
+```
+
+Note the IP and port printed by `test-wire-server` and export that as `TEST_WIRE_SERVER_ADDR`:
+
+```sh
+export TEST_WIRE_SERVER_ADDR=127.0.0.1:20530
+```
+
+Now that the environment is ready, you can run a specific test, or any subset of tests, e.g.
+
+```sh
+cargo nextest run --locked --ignore-default-filter -p wire-e2e-identity alg::p256
+```
+
+Once you are done with testing, terminate the IdP container that has been started:
+
+```sh
+# if you're using Keycloak
+docker kill keycloak && docker rm keycloak
+
+# if you're using Authelia
+docker kill authelia.local && docker rm authelia.local
+```
+
+as well as the `test-wire-server` instance.
 
 ## Formatting and Linting<a name="formatting-and-linting"></a>
 
