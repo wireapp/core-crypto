@@ -1,8 +1,15 @@
-use super::{DB_VERSION_8, Metabuilder};
+//! This migration deduplicates credentials and creates a new object store, "mls_credentials_new".
+
+use idb::{
+    KeyPath,
+    builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder},
+};
+
+use super::DB_VERSION_8;
 use crate::{
     CryptoKeystoreResult, Database, DatabaseKey,
     connection::FetchFromDatabase as _,
-    entities::{EntityFindParams, PersistedMlsGroup, StoredCredential},
+    entities::{EntityBase, EntityFindParams, PersistedMlsGroup, StoredCredential},
     migrations::{detect_duplicate_credentials, make_least_used_ciphersuite},
 };
 
@@ -60,7 +67,13 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
 }
 
 /// Set up the builder for v8.
-pub(super) fn get_builder(name: &str) -> Metabuilder {
-    super::v7::get_builder(name).version(DB_VERSION_8)
-    // TODO(SimonThormeyer): having de-deduplicated credentials, make the pk column the primary key.
+pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
+    super::v7::get_builder(name).version(DB_VERSION_8).add_object_store(
+        ObjectStoreBuilder::new(&format!(
+            "{collection_name}_new",
+            collection_name = StoredCredential::COLLECTION_NAME
+        ))
+        .auto_increment(false)
+        .add_index(IndexBuilder::new("public_key".into(), KeyPath::new_single("public_key")).unique(true)),
+    )
 }

@@ -1,9 +1,9 @@
 use idb::{
     KeyPath,
-    builder::{IndexBuilder, ObjectStoreBuilder},
+    builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder},
 };
 
-use super::{DB_VERSION_0, Metabuilder};
+use super::DB_VERSION_0;
 use crate::{
     entities::{
         E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, E2eiRefreshToken, EntityBase as _, MlsPendingMessage,
@@ -14,8 +14,8 @@ use crate::{
     migrations::{StoredSignatureKeypair, V5Credential},
 };
 
-pub(super) fn get_builder(name: &str) -> Metabuilder {
-    let idb_builder = Metabuilder::new(name)
+pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
+    let idb_builder = DatabaseBuilder::new(name)
         .version(DB_VERSION_0)
         .add_object_store(
             ObjectStoreBuilder::new(V5Credential::COLLECTION_NAME)
