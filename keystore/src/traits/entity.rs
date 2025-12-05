@@ -19,6 +19,10 @@ pub trait Entity: EntityBase {
     type PrimaryKey: KeyType;
 
     /// Get this entity's primary key.
+    ///
+    /// This must return an owned type, because there are some entities for which only owned primary keys are possible.
+    /// However, entities which have primary keys owned within the entity itself should consider also implementing
+    /// [`BorrowPrimaryKey`] for greater efficiency.
     fn primary_key(&self) -> Self::PrimaryKey;
 
     /// Get an entity by its primary key.
@@ -28,7 +32,7 @@ pub trait Entity: EntityBase {
     ///
     /// ```rust,ignore
     /// async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CoreCryptoKeystoreResult<Option<Self>> {
-    ///     <Self as EntityGetBorrowed>::get_borrowed(conn, key).await
+    ///     Self::get_borrowed(conn, key).await
     /// }
     /// ```
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>>;
@@ -45,7 +49,14 @@ pub trait Entity: EntityBase {
 /// i.e. `String`, `Vec<u8>`, etc.
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
-pub trait EntityGetBorrowed: Entity {
+pub trait BorrowPrimaryKey: Entity {
+    type BorrowedPrimaryKey: ?Sized + ToOwned<Owned = Self::PrimaryKey>;
+
+    /// Borrow this entity's primary key without copying any data.
+    ///
+    /// This borrowed key has a lifetime tied to that of this entity.
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey;
+
     /// Get an entity by a borrowed form of its primary key.
     ///
     /// The type signature here is somewhat complicated, but it breaks down simply: if our primary key is something

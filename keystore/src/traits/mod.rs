@@ -11,7 +11,7 @@ mod item_encryption;
 mod key_type;
 mod unique_entity;
 
-pub use entity::{Entity, EntityGetBorrowed};
+pub use entity::{BorrowPrimaryKey, Entity};
 pub use entity_base::EntityBase;
 pub use entity_database_mutation::{EntityDatabaseMutation, EntityDeleteBorrowed};
 pub use fetch_from_database::FetchFromDatabase;
