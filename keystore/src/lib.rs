@@ -15,7 +15,7 @@ pub mod transaction;
 use sha2::{Digest, Sha256};
 
 #[cfg(feature = "dummy-entity")]
-pub use self::entities::{DummyStoreValue, DummyValue};
+pub use self::entities::{DummyStoreValue, DummyValue, NewDummyStoreValue};
 #[cfg(feature = "proteus-keystore")]
 pub use self::proteus::CryptoKeystoreProteus;
 pub use self::{
