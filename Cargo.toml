@@ -37,6 +37,7 @@ core-crypto = { path = "crypto" }
 core-crypto-keystore = { path = "keystore" }
 core-crypto-macros = { path = "crypto-macros" }
 wire-e2e-identity = { path = "e2e-identity" }
+rusty-jwt-tools = { version = "0.13.0", git = "https://github.com/wireapp/rusty-jwt-tools.git" }
 derive_more = { version = "2.0", features = [
   "from",
   "into",
