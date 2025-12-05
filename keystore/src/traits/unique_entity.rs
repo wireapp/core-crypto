@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{Entity, EntityBase, entity_transaction_ext::EntityTransactionExt},
+    traits::{Entity, EntityBase, entity_database_mutation::EntityDatabaseMutation},
 };
 
 /// A unique entity can appear either 0 or 1 times in the database.
@@ -14,7 +14,7 @@ pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreD
 /// Unique entities get some convenience methods implemented automatically.
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
-pub trait UniqueEntityExt<'a>: UniqueEntity + EntityTransactionExt<'a> {
+pub trait UniqueEntityExt<'a>: UniqueEntity + EntityDatabaseMutation<'a> {
     /// Get this unique entity from the database.
     async fn get_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>>;
 
@@ -37,8 +37,8 @@ pub trait UniqueEntityExt<'a>: UniqueEntity + EntityTransactionExt<'a> {
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
 impl<'a, E> UniqueEntityExt<'a> for E
 where
-    E: UniqueEntity + EntityTransactionExt<'a> + Sync,
-    <E as EntityTransactionExt<'a>>::Transaction: Sync,
+    E: UniqueEntity + EntityDatabaseMutation<'a> + Sync,
+    <E as EntityDatabaseMutation<'a>>::Transaction: Sync,
 {
     /// Get this unique entity from the database.
     async fn get_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>> {
@@ -59,7 +59,7 @@ where
     ///
     /// Returns `true` if the entity was saved, or `false` if it aborted due to an already-existing entity.
     async fn set_if_absent(&self, tx: &Self::Transaction) -> CryptoKeystoreResult<bool> {
-        let count = <Self as EntityTransactionExt>::count(tx).await?;
+        let count = <Self as EntityDatabaseMutation>::count(tx).await?;
         if count > 0 {
             return Ok(false);
         }

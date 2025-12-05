@@ -1,7 +1,7 @@
 use super::aad::{AES_GCM_256_NONCE_SIZE, Aad};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
-    traits::{Entity, EntityTransactionDeleteBorrowed, KeyType as _},
+    traits::{Entity, EntityDeleteBorrowed, KeyType as _},
 };
 
 fn decrypt_with_nonce_and_aad(
