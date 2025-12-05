@@ -1130,7 +1130,6 @@ dependencies = [
  "getrandom 0.2.15",
  "hex",
  "idb",
- "indexmap 2.12.1",
  "itertools 0.14.0",
  "js-sys",
  "log",
@@ -2749,12 +2748,12 @@ checksum = "a1e52775179941363cc594e49ce99284d13d6948928d8e72c755f55e98caa1eb"
 [[package]]
 name = "idb"
 version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3afe8830d5802f769dc0be20a87f9f116798c896650cb6266eb5c19a3c109eed"
+source = "git+https://github.com/wireapp/idb?rev=05573e5b29191fdeb442104ad1040346a3889822#05573e5b29191fdeb442104ad1040346a3889822"
 dependencies = [
+ "indexmap 2.12.1",
  "js-sys",
  "num-traits",
- "thiserror 1.0.69",
+ "thiserror 2.0.17",
  "tokio",
  "wasm-bindgen",
  "web-sys",
