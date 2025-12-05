@@ -23,10 +23,10 @@ jobs:
       fail-fast: false
       matrix:
         command:
-          - cargo check --locked --all-targets
-          - cargo check --locked --target wasm32-unknown-unknown
-          - cargo clippy --locked --all-targets
-          - cargo clippy --locked --target wasm32-unknown-unknown
+          - cargo check --workspace --locked --all-targets
+          - cargo check --workspace --locked --target wasm32-unknown-unknown --exclude test-wire-server
+          - cargo clippy --workspace --locked --all-targets
+          - cargo clippy --workspace --locked --target wasm32-unknown-unknown --exclude test-wire-server
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-and-cache-rust
