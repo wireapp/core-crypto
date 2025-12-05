@@ -1,4 +1,6 @@
-use super::{DB_VERSION_5, Metabuilder};
+use idb::builder::DatabaseBuilder;
+
+use super::DB_VERSION_5;
 use crate::{
     CryptoKeystoreResult,
     entities::{E2eiRefreshToken, EntityBase as _},
@@ -13,7 +15,7 @@ pub(super) async fn migrate(name: &str) -> CryptoKeystoreResult<u32> {
 }
 
 /// Just set up the builder for v5.
-pub(super) fn get_builder(name: &str) -> Metabuilder {
+pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
     super::v4::get_builder(name)
         .version(DB_VERSION_5)
         .remove_object_store(E2eiRefreshToken::COLLECTION_NAME)

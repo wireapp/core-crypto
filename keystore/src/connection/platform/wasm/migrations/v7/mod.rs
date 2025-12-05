@@ -1,6 +1,8 @@
 mod v6_entities;
 
-use super::{DB_VERSION_7, Metabuilder};
+use idb::builder::DatabaseBuilder;
+
+use super::DB_VERSION_7;
 use crate::{
     CryptoKeystoreResult, Database, DatabaseKey,
     connection::FetchFromDatabase as _,
@@ -48,6 +50,6 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
 }
 
 /// Set up the builder for v7.
-pub(super) fn get_builder(name: &str) -> Metabuilder {
+pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
     super::v6::get_builder(name).version(DB_VERSION_7)
 }
