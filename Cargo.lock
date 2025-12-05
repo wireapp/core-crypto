@@ -407,7 +407,7 @@ dependencies = [
  "axum-core",
  "bytes",
  "futures-util",
- "http 1.1.0",
+ "http 1.4.0",
  "http-body",
  "http-body-util",
  "itoa",
@@ -431,7 +431,7 @@ checksum = "59446ce19cd142f8833f856eb31f3eb097812d1479ab224f54d72428ca21ea22"
 dependencies = [
  "bytes",
  "futures-core",
- "http 1.1.0",
+ "http 1.4.0",
  "http-body",
  "http-body-util",
  "mime",
@@ -549,7 +549,7 @@ dependencies = [
  "futures-util",
  "hex",
  "home",
- "http 1.1.0",
+ "http 1.4.0",
  "http-body-util",
  "hyper",
  "hyper-named-pipe",
@@ -1872,7 +1872,7 @@ dependencies = [
  "base64 0.22.1",
  "cookie 0.18.1",
  "futures-util",
- "http 1.1.0",
+ "http 1.4.0",
  "http-body-util",
  "hyper",
  "hyper-tls",
@@ -2210,7 +2210,7 @@ dependencies = [
  "fnv",
  "futures-core",
  "futures-sink",
- "http 1.1.0",
+ "http 1.4.0",
  "indexmap 2.12.1",
  "slab",
  "tokio",
@@ -2273,7 +2273,7 @@ dependencies = [
  "base64 0.22.1",
  "bytes",
  "headers-core",
- "http 1.1.0",
+ "http 1.4.0",
  "httpdate",
  "mime",
  "sha1",
@@ -2285,7 +2285,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54b4a22553d4242c49fddb9ba998a99962b5cc6f22cb5a3482bec22522403ce4"
 dependencies = [
- "http 1.1.0",
+ "http 1.4.0",
 ]
 
 [[package]]
@@ -2424,12 +2424,11 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "1.1.0"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21b9ddb458710bc376481b842f5da65cdf31522de232c1ca8146abce2a358258"
+checksum = "e3ba2a386d7f85a81f119ad7498ebe444d2e22c2af0b86b069416ace48b3311a"
 dependencies = [
  "bytes",
- "fnv",
  "itoa",
 ]
 
@@ -2440,7 +2439,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1efedce1fb8e6913f23e0c92de8e62cd5b772a67e7b3946df930a62566c93184"
 dependencies = [
  "bytes",
- "http 1.1.0",
+ "http 1.4.0",
 ]
 
 [[package]]
@@ -2451,7 +2450,7 @@ checksum = "793429d76616a256bcb62c2a2ec2bed781c8307e797e2598c50010f2bee2544f"
 dependencies = [
  "bytes",
  "futures-util",
- "http 1.1.0",
+ "http 1.4.0",
  "http-body",
  "pin-project-lite",
 ]
@@ -2479,7 +2478,7 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "h2",
- "http 1.1.0",
+ "http 1.4.0",
  "http-body",
  "httparse",
  "httpdate",
@@ -2512,7 +2511,7 @@ version = "0.27.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3c93eb611681b207e1fe55d5a71ecf91572ec8a6705cdb6857f7d8d5242cf58"
 dependencies = [
- "http 1.1.0",
+ "http 1.4.0",
  "hyper",
  "hyper-util",
  "rustls",
@@ -2562,7 +2561,7 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "futures-util",
- "http 1.1.0",
+ "http 1.4.0",
  "http-body",
  "hyper",
  "ipnet",
@@ -3622,7 +3621,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "getrandom 0.2.15",
- "http 1.1.0",
+ "http 1.4.0",
  "rand 0.8.5",
  "reqwest",
  "serde",
@@ -3713,7 +3712,7 @@ dependencies = [
  "dyn-clone",
  "ed25519-dalek",
  "hmac",
- "http 1.1.0",
+ "http 1.4.0",
  "itertools 0.10.5",
  "log",
  "oauth2",
@@ -4695,7 +4694,7 @@ dependencies = [
  "cookie 0.18.1",
  "cookie_store",
  "futures-core",
- "http 1.1.0",
+ "http 1.4.0",
  "http-body",
  "http-body-util",
  "hyper",
@@ -5893,7 +5892,7 @@ name = "test-wire-server"
 version = "0.13.0"
 dependencies = [
  "base64 0.22.1",
- "http 1.1.0",
+ "http 1.4.0",
  "http-body-util",
  "hyper",
  "hyper-util",
@@ -6177,7 +6176,7 @@ dependencies = [
  "base64 0.22.1",
  "bytes",
  "h2",
- "http 1.1.0",
+ "http 1.4.0",
  "http-body",
  "http-body-util",
  "hyper",
@@ -6234,7 +6233,7 @@ dependencies = [
  "bitflags",
  "bytes",
  "futures-util",
- "http 1.1.0",
+ "http 1.4.0",
  "http-body",
  "iri-string",
  "pin-project-lite",
@@ -6573,7 +6572,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d81f9efa9df032be5934a46a068815a10a042b494b6a58cb0a1a97bb5467ed6f"
 dependencies = [
  "base64 0.22.1",
- "http 1.1.0",
+ "http 1.4.0",
  "httparse",
  "log",
 ]
@@ -6742,7 +6741,7 @@ dependencies = [
  "bytes",
  "futures-util",
  "headers",
- "http 1.1.0",
+ "http 1.4.0",
  "http-body",
  "http-body-util",
  "hyper",
@@ -7429,7 +7428,7 @@ dependencies = [
  "getrandom 0.2.15",
  "hex",
  "html_parser",
- "http 1.1.0",
+ "http 1.4.0",
  "http-body-util",
  "hyper",
  "hyper-util",
