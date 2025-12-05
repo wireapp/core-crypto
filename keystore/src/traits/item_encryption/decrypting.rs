@@ -17,18 +17,18 @@ use crate::{CryptoKeystoreResult, traits::Entity};
 ///     sensitive_data: Vec<u8>, // sensitive!
 /// }
 ///
-/// #[derive(serde::Serialize)]
-/// struct EncryptedFoo<'de> {
+/// #[derive(serde::Deserialize)]
+/// struct EncryptedFoo<'a> {
 ///     id: Vec<u8>,
-///     sensitive_data: &'de [u8],
+///     sensitive_data: &'a [u8],
 /// }
 ///
-/// impl<'de> Decrypting<'de> for EncryptedFoo<'de> {
+/// impl<'a> Decrypting<'a> for EncryptedFoo<'a> {
 ///     type DecryptedForm = Foo;
 ///
 ///     fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Foo> {
 ///         let id = self.id;
-///         let sensitive_data = E::decrypt_data(cipher, &id, self.sensitive_data)?;
+///         let sensitive_data = Foo::decrypt_data(cipher, &id, self.sensitive_data)?;
 ///         Ok(Foo {
 ///             id,
 ///             sensitive_data,
@@ -42,7 +42,7 @@ use crate::{CryptoKeystoreResult, traits::Entity};
 /// ```rust,ignore
 /// let foo = serde_json::from_str::<EncryptedFoo>(json)?.decrypt(cipher)?;
 /// ```
-pub trait Decrypting<'de>: 'de + Deserialize<'de> {
+pub trait Decrypting<'a>: 'a + Deserialize<'a> {
     type DecryptedForm: Entity;
 
     fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::DecryptedForm>;
@@ -81,6 +81,6 @@ pub trait Decrypting<'de>: 'de + Deserialize<'de> {
 /// ```rust,ignore
 /// let foo = serde_json::from_str::<Foo::DecryptableFrom>(json)?.decrypt(cipher)?;
 /// ```
-pub trait Decryptable<'de>: Entity {
-    type DecryptableFrom: 'de + Decrypting<'de>;
+pub trait Decryptable<'a>: Entity {
+    type DecryptableFrom: 'a + Decrypting<'a>;
 }
