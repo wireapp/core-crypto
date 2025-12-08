@@ -31,6 +31,9 @@ ignore = [
   "RUSTSEC-2023-0071",
   # fxhash is no longer maintained, but scraper depends on it.
   "RUSTSEC-2025-0057",
+  # rustls-pemfile crate is no longer maintained, but we depend on it:
+  # testcontainers v0.26.0 -> bollard v0.19.4 -> rustls-pemfile v2.2.0
+  "RUSTSEC-2025-0134",
 ]
 
 [bans]
