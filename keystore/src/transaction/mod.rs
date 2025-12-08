@@ -29,7 +29,6 @@ type InMemoryCache = Arc<RwLock<HashMap<String, InMemoryTable>>>;
 pub(crate) struct KeystoreTransaction {
     cache: InMemoryCache,
     deleted: Arc<RwLock<Vec<EntityId>>>,
-    deleted_credentials: Arc<RwLock<Vec<Vec<u8>>>>,
     _semaphore_guard: Arc<SemaphoreGuardArc>,
 }
 
@@ -38,7 +37,6 @@ impl KeystoreTransaction {
         Ok(Self {
             cache: Default::default(),
             deleted: Arc::new(Default::default()),
-            deleted_credentials: Arc::new(Default::default()),
             _semaphore_guard: Arc::new(semaphore_guard),
         })
     }
@@ -54,7 +52,6 @@ impl KeystoreTransaction {
         let table = cache_guard.entry(E::COLLECTION_NAME.to_string()).or_default();
         let serialized = postcard::to_stdvec(&entity)?;
         // Use merge_key() because `id_raw()` is not always unique for records.
-        // For `StoredCredential`, `id_raw()` is the `CLientId`.
         // For `MlsPendingMessage` it's the id of the group it belongs to.
         table.insert(entity.merge_key(), Zeroizing::new(serialized));
         Ok(entity)
@@ -100,17 +97,6 @@ impl KeystoreTransaction {
         Ok(self
             .merge_records(cached_records, persisted_records, EntityFindParams::default())
             .await)
-    }
-
-    pub(crate) async fn cred_delete_by_credential(&self, cred: Vec<u8>) -> CryptoKeystoreResult<()> {
-        let mut cache_guard = self.cache.write().await;
-        if let Entry::Occupied(mut table) = cache_guard.entry(StoredCredential::COLLECTION_NAME.to_string()) {
-            table.get_mut().retain(|_, value| **value != cred);
-        }
-
-        let mut deleted_list = self.deleted_credentials.write().await;
-        deleted_list.push(cred);
-        Ok(())
     }
 
     pub(crate) async fn remove_pending_messages_by_conversation_id(
@@ -266,15 +252,11 @@ impl KeystoreTransaction {
         let mut merged = records_a.into_iter().chain(records_b).unique_by(|e| e.merge_key());
 
         let deleted_records = self.deleted.read().await;
-        let deleted_credentials = self.deleted_credentials.read().await;
 
         let merged: &mut dyn Iterator<Item = E> = if params.reverse { &mut merged.rev() } else { &mut merged };
 
         merged
-            .filter(|record| {
-                !Self::record_is_in_deleted_list(record, &deleted_records)
-                    && !Self::credential_is_in_deleted_list(record, &deleted_credentials)
-            })
+            .filter(|record| !Self::record_is_in_deleted_list(record, &deleted_records))
             .skip(params.offset.unwrap_or(0) as usize)
             .take(params.limit.unwrap_or(u32::MAX) as usize)
             .collect()
@@ -287,16 +269,6 @@ impl KeystoreTransaction {
         let id = EntityId::from_collection_name(E::COLLECTION_NAME, record.id_raw());
         let Ok(id) = id else { return false };
         deleted_records.contains(&id)
-    }
-
-    fn credential_is_in_deleted_list<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        maybe_credential: &E,
-        deleted_credentials: &[Vec<u8>],
-    ) -> bool {
-        let Some(credential) = maybe_credential.downcast::<StoredCredential>() else {
-            return false;
-        };
-        deleted_credentials.contains(&credential.credential)
     }
 }
 
@@ -384,10 +356,6 @@ macro_rules! commit_transaction {
 
         for deleted_id in deleted_ids.iter() {
             dynamic_dispatch::execute_delete(&tx, deleted_id).await?
-        }
-
-        for deleted_credential in $keystore_transaction.deleted_credentials.read().await.iter() {
-            StoredCredential::delete_by_credential(&tx, deleted_credential.to_owned()).await?;
         }
 
          tx.commit_tx().await?;
