@@ -129,6 +129,7 @@ runs:
       with:
         name: ${{ steps.compute-key.outputs.key }}
         path: artifact.tar.gz
+        retention-days: ${{ github.ref_name == 'main' && 7 || 2 }}
 
     - name: Cleanup
       run: |
