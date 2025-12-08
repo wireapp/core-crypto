@@ -13,8 +13,6 @@ mod randomness;
 
 use std::sync::Arc;
 
-use core_crypto::Session;
-
 use crate::{CoreCryptoResult, Database};
 
 /// CoreCrypto wraps around MLS and Proteus implementations and provides a transactional interface for each.
@@ -39,9 +37,8 @@ impl CoreCryptoFfi {
     pub async fn new(database: &Arc<Database>) -> CoreCryptoResult<Self> {
         #[cfg(target_family = "wasm")]
         console_error_panic_hook::set_once();
-
-        let client = Session::try_new(database).await?;
-        let inner = core_crypto::CoreCrypto::from(client);
+        let db = database.as_ref().clone().into();
+        let inner = core_crypto::CoreCrypto::new(db);
 
         Ok(Self { inner })
     }
