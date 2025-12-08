@@ -9,7 +9,8 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{
-        Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsCredentialExt, StoredCredential, StringEntityId,
+        Entity, EntityBase, EntityFindParams, EntityIdStringExt as _, EntityTransactionExt, MlsCredentialExt,
+        StoredCredential, StringEntityId,
     },
 };
 
@@ -54,14 +55,9 @@ impl StoredCredential {
 #[async_trait::async_trait]
 impl Entity for StoredCredential {
     fn id_raw(&self) -> &[u8] {
-        self.id.as_slice()
+        &self.public_key
     }
 
-    fn merge_key(&self) -> Vec<u8> {
-        // Credentials are unique by id and type, the type is contained in the bytes
-        // inside self.credential.
-        self.id_raw().iter().chain(self.credential.iter()).cloned().collect()
-    }
     async fn find_all(
         conn: &mut Self::ConnectionType,
         params: EntityFindParams,
@@ -95,10 +91,11 @@ impl Entity for StoredCredential {
         let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         use rusqlite::OptionalExtension as _;
+        let public_key_sha256 = id.sha256();
         transaction
             .query_row(
-                "SELECT rowid, unixepoch(created_at), ciphersuite FROM mls_credentials WHERE id = ?",
-                [id.as_slice()],
+                "SELECT rowid, unixepoch(created_at), ciphersuite FROM mls_credentials WHERE public_key_sha256 = ?",
+                [public_key_sha256],
                 |r| Ok((r.get::<_, i64>(0)?, r.get(1)?, r.get(2)?)),
             )
             .optional()?
@@ -136,22 +133,33 @@ impl EntityTransactionExt for StoredCredential {
         Self::ConnectionType::check_buffer_size(self.secret_key.len())?;
         Self::ConnectionType::check_buffer_size(self.public_key.len())?;
 
+        let pk_sha256 = self.id_sha256();
+        let zb_pk = rusqlite::blob::ZeroBlob(self.public_key.len() as i32);
         let zb_id = rusqlite::blob::ZeroBlob(self.id.len() as i32);
         let zb_cred = rusqlite::blob::ZeroBlob(self.credential.len() as i32);
-        let zb_pk = rusqlite::blob::ZeroBlob(self.public_key.len() as i32);
         let zb_sk = rusqlite::blob::ZeroBlob(self.secret_key.len() as i32);
 
         use rusqlite::ToSql as _;
-        let params: [rusqlite::types::ToSqlOutput; 6] = [
+        let params: [rusqlite::types::ToSqlOutput; 7] = [
+            pk_sha256.to_sql()?,
+            zb_pk.to_sql()?,
             zb_id.to_sql()?,
             zb_cred.to_sql()?,
             self.created_at.to_sql()?,
             self.ciphersuite.to_sql()?,
-            zb_pk.to_sql()?,
             zb_sk.to_sql()?,
         ];
 
-        let sql = "INSERT INTO mls_credentials (id, credential, created_at, ciphersuite, public_key, secret_key) VALUES (?, ?, datetime(?, 'unixepoch'), ?, ?, ?)";
+        let sql = "INSERT INTO mls_credentials (
+                public_key_sha256,
+                public_key,
+                id,
+                credential,
+                created_at,
+                ciphersuite,
+                secret_key
+            ) VALUES (?, ?, ?, ?, datetime(?, 'unixepoch'), ?, ?)";
+
         transaction.execute(sql, params)?;
         let row_id = transaction.last_insert_rowid();
 
@@ -192,7 +200,11 @@ impl EntityTransactionExt for StoredCredential {
         transaction: &TransactionWrapper<'_>,
         id: StringEntityId<'_>,
     ) -> crate::CryptoKeystoreResult<()> {
-        let updated = transaction.execute("DELETE FROM mls_credentials WHERE id = ?", [id.as_slice()])?;
+        let public_key_sha256 = id.sha256();
+        let updated = transaction.execute(
+            "DELETE FROM mls_credentials WHERE public_key_sha256 = ?",
+            [public_key_sha256],
+        )?;
 
         if updated > 0 {
             Ok(())
