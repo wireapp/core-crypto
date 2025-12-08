@@ -14,8 +14,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
                 <action android:name="android.intent.action.RUN"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <action android:name="android.intent.action.SYNC"/>
-                <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </activity>
     </application>
