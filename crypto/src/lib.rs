@@ -158,4 +158,34 @@ impl CoreCrypto {
         }
     }
 
+    /// Sets the mls session
+    async fn set_mls_session(&self, session: Session) {
+        let mut guard = self.mls.write().await;
+        *guard = Some(session);
+    }
+
+    pub async fn mls_init(
+        &self,
+        identifier: ClientIdentifier,
+        ciphersuites: &[Ciphersuite],
+        transport: Arc<dyn MlsTransport>,
+    ) -> Result<()> {
+        let context = self
+            .new_transaction()
+            .await
+            .map_err(RecursiveError::transaction("starting new transaction"))?;
+
+        let session = context
+            .mls_init(identifier, ciphersuites, self.keystore.clone(), transport)
+            .await
+            .map_err(RecursiveError::transaction("initializing MLS client"))?;
+        self.set_mls_session(session);
+
+        context
+            .finish()
+            .await
+            .map_err(RecursiveError::transaction("finishing transaction"))?;
+
+        Ok(())
+    }
 }
