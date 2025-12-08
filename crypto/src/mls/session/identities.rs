@@ -19,7 +19,7 @@ use crate::{
 ///
 /// We keep each credential inside an arc to avoid cloning them, as X509 credentials can get quite large.
 #[derive(Debug, Clone)]
-pub(crate) struct Identities {
+pub struct Identities {
     // u16 because `CredentialType: !Hash` for Reasons
     credentials: HashMap<(SignatureScheme, u16), Vec<Arc<Credential>>>,
 }
