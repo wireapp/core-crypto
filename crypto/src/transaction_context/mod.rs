@@ -16,7 +16,8 @@ use crate::proteus::ProteusCentral;
 use crate::{
     Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef,
     CredentialType, KeystoreError, MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
-    group_store::GroupStore, mls::HasSessionAndCrypto,
+    group_store::GroupStore,
+    mls::{HasSessionAndCrypto, session::Error as SessionError, session::identities::Identities},
 };
 pub mod conversation;
 pub mod e2e_identity;
@@ -215,30 +216,98 @@ impl TransactionContext {
         result
     }
 
-    /// Initializes the MLS client of [super::CoreCrypto].
-    pub async fn mls_init(&self, identifier: ClientIdentifier, ciphersuites: &[Ciphersuite]) -> Result<()> {
-        let mls_client = self.session().await?;
-        mls_client
-            .init(
-                identifier,
-                &ciphersuites
-                    .iter()
-                    .map(|ciphersuite| ciphersuite.signature_algorithm())
-                    .collect::<Vec<_>>(),
-            )
-            .await
-            .map_err(RecursiveError::mls_client("initializing mls client"))?;
+    /// Loads any cryptographic material already present in the keystore, but does not create any.
+    /// If no credentials are present in the keystore, then one _must_ be created and added to the
+    /// session before it can be used.
+    pub async fn init(
+        &self,
+        identifier: ClientIdentifier,
+        ciphersuites: &[Ciphersuite],
+        database: &Database,
+    ) -> Result<(ClientId, Identities)> {
+        let client_id = identifier
+            .get_id()
+            .map_err(RecursiveError::mls_client("getting client id"))?
+            .into_owned();
 
-        if mls_client.is_e2ei_capable().await {
-            let client_id = mls_client
-                .id()
+        let signature_schemes = &ciphersuites
+            .iter()
+            .map(|ciphersuite| ciphersuite.signature_algorithm())
+            .collect::<Vec<_>>();
+
+        // we want to find all credentials matching this identifier, having a valid signature scheme.
+        // the `CredentialRef::find` API doesn't allow us to easily find those credentials having
+        // one of a set of signature schemes, meaning we have two paths here:
+        // we could either search unbound by signature schemes and then filter for valid ones here,
+        // or we could iterate over the list of signature schemes and build up a set of credential refs.
+        // as there are only a few signature schemes possible and the cost of a find operation is non-trivial,
+        // we choose the first option.
+        // we might revisit this choice after WPB-20844 and WPB-21819.
+        let mut credential_refs =
+            CredentialRef::find(database, CredentialFindFilters::builder().client_id(&client_id).build())
                 .await
-                .map_err(RecursiveError::mls_client("getting client id"))?;
+                .map_err(RecursiveError::mls_credential_ref(
+                    "loading matching credential refs while initializing a client",
+                ))?;
+        credential_refs.retain(|credential_ref| signature_schemes.contains(&credential_ref.signature_scheme()));
+
+        let mut identities = Identities::new(credential_refs.len());
+        let credentials_cache =
+            CredentialRef::load_stored_credentials(database)
+                .await
+                .map_err(RecursiveError::mls_credential_ref(
+                    "loading credential ref cache while initializing session",
+                ))?;
+
+        for credential_ref in credential_refs {
+            for credential_result in
+                credential_ref
+                    .load_from_cache(&credentials_cache)
+                    .map_err(RecursiveError::mls_credential_ref(
+                        "loading credential list in session init",
+                    ))?
+            {
+                let credential = credential_result
+                    .map_err(RecursiveError::mls_credential_ref("loading credential in session init"))?;
+
+                match identities.push_credential(credential).await {
+                    Err(SessionError::CredentialConflict) => {
+                        // this is what we get for not having real primary keys in our DB
+                        // no harm done though; no need to propagate this error
+                    }
+                    Ok(_) => {}
+                    Err(err) => {
+                        return Err(RecursiveError::MlsClient {
+                            context: "adding credential to identities in init",
+                            source: Box::new(err),
+                        }
+                        .into());
+                    }
+                }
+            }
+        }
+
+        Ok((client_id, identities))
+    }
+    /// Initializes the MLS client of [super::CoreCrypto].
+    pub async fn mls_init(
+        &self,
+        identifier: ClientIdentifier,
+        ciphersuites: &[Ciphersuite],
+        database: Database,
+        transport: Arc<dyn MlsTransport>,
+    ) -> Result<Session> {
+        let (client_id, identities) = self.init(identifier, ciphersuites, &database).await?;
+
+        let mls_backend = MlsCryptoProvider::new(database);
+        let session = Session::new(client_id.clone(), identities, mls_backend, transport);
+
+        if session.is_e2ei_capable().await {
             log::trace!(client_id:% = client_id; "Initializing PKI environment");
             self.init_pki_env().await?;
         }
 
-        Ok(())
+        Ok(session)
     }
 
     /// Returns the client's public key.
