@@ -13,7 +13,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
 class MainActivity : ComponentActivity() {
-
     val actionHandler = runBlocking {
         InteropActionHandler(InteropActionHandler.defaultCoreCryptoClient())
     }
@@ -41,12 +40,12 @@ class MainActivity : ComponentActivity() {
             runBlocking {
                 actionHandler.handleAction(action)
                     .onSuccess { println(Json.encodeToString(InteropResponse.serializer(), InteropResponse.Success(it))) }
-                    .onFailure { println(Json.encodeToString(InteropResponse.serializer(),InteropResponse.Failure(it.message ?: "Unknown error"))) }
+                    .onFailure {
+                        println(Json.encodeToString(InteropResponse.serializer(), InteropResponse.Failure(it.message ?: "Unknown error")))
+                    }
             }
         } catch (e: Throwable) {
             return println(Json.encodeToString(InteropResponse.serializer(), InteropResponse.Failure(e.message ?: "Unknown error")))
         }
     }
-
 }
-

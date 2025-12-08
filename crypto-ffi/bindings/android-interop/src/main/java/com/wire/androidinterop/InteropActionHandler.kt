@@ -17,11 +17,9 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 
 class InteropActionHandler(val coreCrypto: CoreCrypto) {
-
     @OptIn(ExperimentalEncodingApi::class)
     suspend fun handleAction(action: InteropAction): Result<String> {
-        return when(action) {
-
+        return when (action) {
             is InteropAction.MLS.InitMLS -> {
                 coreCrypto.transaction({ context ->
                     context.mlsInit(
@@ -29,10 +27,12 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
                         ciphersuites = listOf(ciphersuiteFromU16(action.ciphersuite.toUShort()))
                     )
 
-                    context.addCredential(credentialBasic(
-                        clientId = ClientId(action.clientId),
-                        ciphersuite = ciphersuiteFromU16(action.ciphersuite.toUShort())
-                    ))
+                    context.addCredential(
+                        credentialBasic(
+                            clientId = ClientId(action.clientId),
+                            ciphersuite = ciphersuiteFromU16(action.ciphersuite.toUShort())
+                        )
+                    )
                 })
 
                 return Result.success("MLS initialized")
@@ -41,14 +41,16 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
             is InteropAction.MLS.AddClient -> {
                 coreCrypto.transaction { context ->
                     context.addClientsToConversation(
-                        ConversationId(action.conversationId), keyPackages = listOf(
+                        ConversationId(action.conversationId),
+                        keyPackages = listOf(
                             Keypackage(action.keyPackage)
-                        ))
+                        )
+                    )
                 }
 
                 return Result.success("Client added")
-
             }
+
             is InteropAction.MLS.RemoveClient -> {
                 coreCrypto.transaction { context ->
                     context.removeClientsFromConversation(ConversationId(action.conversationId), listOf(ClientId(action.clientId)))
@@ -56,6 +58,7 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
 
                 return Result.success("Client removed")
             }
+
             is InteropAction.MLS.DecryptMessage -> {
                 coreCrypto.transaction { context ->
                     context.decryptMessage(ConversationId(bytes = action.conversationId), action.message)
@@ -64,6 +67,7 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
                 }
                 Result.success("decrypted protocol message")
             }
+
             is InteropAction.MLS.EncryptMessage -> {
                 coreCrypto.transaction { context ->
                     context.encryptMessage(ConversationId(action.conversationId), action.message)
@@ -71,6 +75,7 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
                     Result.success(Base64.Default.encode(it))
                 }
             }
+
             is InteropAction.MLS.GetKeyPackage -> {
                 coreCrypto.transaction { context ->
                     val credential = context.findCredentials(
@@ -95,7 +100,7 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
             }
 
             is InteropAction.Proteus.InitProteus -> {
-                coreCrypto.transaction( { context ->
+                coreCrypto.transaction({ context ->
                     context.proteusInit()
                 })
 
@@ -103,7 +108,7 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
             }
 
             is InteropAction.Proteus.GetPrekey -> {
-                coreCrypto.transaction( { context ->
+                coreCrypto.transaction({ context ->
                     context.proteusNewPrekey(action.id)
                 }).let {
                     Result.success(Base64.Default.encode(it))
@@ -164,13 +169,13 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
     }
 
     companion object {
-
         private fun genDatabaseKey(): DatabaseKey {
             val bytes = ByteArray(32)
             val random = SecureRandom()
             random.nextBytes(bytes)
             return DatabaseKey(bytes)
         }
+
         private fun randomIdentifier(n: Int = 12): String {
             val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
             return (1..n)
@@ -178,7 +183,7 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
                 .joinToString("")
         }
 
-        suspend  fun defaultCoreCryptoClient(): CoreCrypto {
+        suspend fun defaultCoreCryptoClient(): CoreCrypto {
             val root = Files.createTempDirectory("mls").toFile()
             val path = root.resolve("keystore-${randomIdentifier()}")
             val database = openDatabase(path.absolutePath, key = genDatabaseKey())

@@ -7,24 +7,35 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 
 @Serializable
 sealed class InteropAction {
-    sealed class MLS: InteropAction() {
-        class InitMLS(val clientId: ByteArray, val ciphersuite: Int): MLS()
-        class GetKeyPackage(val ciphersuite: Int): MLS()
-        class AddClient(val conversationId: ByteArray, val keyPackage: ByteArray): MLS()
-        class RemoveClient(val conversationId: ByteArray, val clientId: ByteArray): MLS()
-        class ProcessWelcome(val welcome: ByteArray): MLS()
-        class EncryptMessage(val conversationId: ByteArray, val message: ByteArray): MLS()
-        class DecryptMessage(val conversationId: ByteArray, val message: ByteArray): MLS()
+    sealed class MLS : InteropAction() {
+        class InitMLS(val clientId: ByteArray, val ciphersuite: Int) : MLS()
 
+        class GetKeyPackage(val ciphersuite: Int) : MLS()
+
+        class AddClient(val conversationId: ByteArray, val keyPackage: ByteArray) : MLS()
+
+        class RemoveClient(val conversationId: ByteArray, val clientId: ByteArray) : MLS()
+
+        class ProcessWelcome(val welcome: ByteArray) : MLS()
+
+        class EncryptMessage(val conversationId: ByteArray, val message: ByteArray) : MLS()
+
+        class DecryptMessage(val conversationId: ByteArray, val message: ByteArray) : MLS()
     }
 
-    sealed class Proteus: InteropAction() {
-        class InitProteus: Proteus()
+    sealed class Proteus : InteropAction() {
+        class InitProteus : Proteus()
+
         class GetPrekey(val id: UShort) : Proteus()
+
         class SessionFromPrekey(val sessionId: String, val prekey: ByteArray) : Proteus()
+
         class SessionFromMessage(val sessionId: String, val message: ByteArray) : Proteus()
+
         class EncryptProteusMessage(val sessionId: String, val message: ByteArray) : Proteus()
+
         class DecryptProteusMessage(val sessionId: String, val message: ByteArray) : Proteus()
+
         class GetProteusFingerprint() : Proteus()
     }
 
@@ -119,7 +130,9 @@ sealed class InteropAction {
                     Proteus.GetProteusFingerprint()
                 }
 
-                else -> throw IllegalArgumentException("Unknown action: ${intent.getStringExtra("action")}")
+                else -> {
+                    throw IllegalArgumentException("Unknown action: ${intent.getStringExtra("action")}")
+                }
             }
         }
     }
