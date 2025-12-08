@@ -26,6 +26,7 @@ pub mod mls;
 pub mod proteus;
 pub mod transaction_context;
 
+use async_lock::RwLock;
 pub use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
 #[cfg(test)]
 pub use core_crypto_macros::{dispotent, durable, idempotent};
@@ -125,21 +126,13 @@ pub trait MlsTransport: std::fmt::Debug + Send + Sync {
 /// This is cheap to clone as all internal members have `Arc` wrappers or are `Copy`.
 #[derive(Debug, Clone)]
 pub struct CoreCrypto {
-    mls: mls::session::Session,
+    keystore: Database,
+    mls: Arc<RwLock<Option<mls::session::Session>>>,
     #[cfg(feature = "proteus")]
     proteus: Arc<Mutex<Option<proteus::ProteusCentral>>>,
     #[cfg(not(feature = "proteus"))]
     #[allow(dead_code)]
     proteus: (),
-}
-
-impl From<mls::session::Session> for CoreCrypto {
-    fn from(mls: mls::session::Session) -> Self {
-        Self {
-            mls,
-            proteus: Default::default(),
-        }
-    }
 }
 
 impl std::ops::Deref for CoreCrypto {
@@ -157,9 +150,13 @@ impl std::ops::DerefMut for CoreCrypto {
 }
 
 impl CoreCrypto {
-    /// Allows to extract the MLS Client from the wrapper superstruct
-    #[inline]
-    pub fn take(self) -> mls::session::Session {
-        self.mls
+    /// Create an new CoreCrypto client without any initialized session.
+    pub fn new(keystore: Database) -> Self {
+        Self {
+            keystore,
+            mls: Default::default(),
+            proteus: Default::default(),
+        }
     }
+
 }
