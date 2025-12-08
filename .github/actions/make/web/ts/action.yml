@@ -11,7 +11,9 @@ runs:
         uses: ./.github/actions/make/set-make-executable
 
       - name: Install wasm-bindgen-cli
-        uses: jetli/wasm-bindgen-action@v0.2.0
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen-cli
 
       # ensure bun deps are installed freshly before any command using bun is invoked
       - name: install bun deps
