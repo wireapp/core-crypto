@@ -40,8 +40,7 @@ impl CoreCryptoFfi {
         #[cfg(target_family = "wasm")]
         console_error_panic_hook::set_once();
 
-        let client = Session::try_new(database).await?;
-        let inner = core_crypto::CoreCrypto::from(client);
+        let inner = core_crypto::CoreCrypto::new();
 
         Ok(Self { inner })
     }

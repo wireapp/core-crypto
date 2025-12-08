@@ -42,9 +42,10 @@ use crate::{
 /// [RFC 9720]: https://www.rfc-editor.org/rfc/rfc9420.html
 #[derive(Clone, derive_more::Debug)]
 pub struct Session {
-    pub(crate) inner: Arc<RwLock<Option<SessionInner>>>,
+    id: ClientId,
+    identities: Identities,
     pub(crate) crypto_provider: MlsCryptoProvider,
-    pub(crate) transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
+    pub(crate) transport: Arc<dyn MlsTransport + 'static>,
     #[debug("EpochObserver")]
     pub(crate) epoch_observer: Arc<RwLock<Option<Arc<dyn EpochObserver + 'static>>>>,
     #[debug("HistoryObserver")]
@@ -61,12 +62,6 @@ impl HasSessionAndCrypto for Session {
     async fn crypto_provider(&self) -> mls::Result<MlsCryptoProvider> {
         Ok(self.crypto_provider.clone())
     }
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct SessionInner {
-    id: ClientId,
-    pub(crate) identities: Identities,
 }
 
 impl Session {
