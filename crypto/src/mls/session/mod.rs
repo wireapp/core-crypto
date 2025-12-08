@@ -12,17 +12,15 @@ pub(crate) mod user_id;
 use std::sync::Arc;
 
 use async_lock::RwLock;
-use core_crypto_keystore::Database;
 pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
 use identities::Identities;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
-use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
+use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::{
-    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, CredentialFindFilters, CredentialRef, CredentialType,
-    HistorySecret, LeafError, MlsError, MlsTransport, RecursiveError,
+    Ciphersuite, ClientId, CredentialType, HistorySecret, LeafError, MlsError, MlsTransport, RecursiveError,
     group_store::GroupStore,
     mls::{
         self, HasSessionAndCrypto,
@@ -65,120 +63,21 @@ impl HasSessionAndCrypto for Session {
 }
 
 impl Session {
-    /// Creates a new [Session]. Does not initialize MLS or Proteus.
-    ///
-    /// ## Errors
-    ///
-    /// Failures in the initialization of the KeyStore can cause errors, such as IO, the same kind
-    /// of errors can happen when the groups are being restored from the KeyStore or even during
-    /// the client initialization (to fetch the identity signature).
-    pub async fn try_new(database: &Database) -> crate::mls::Result<Self> {
-        // cloning a database is relatively cheap; it's all arcs inside
-        let database = database.to_owned();
-        // Init backend (crypto + rand + keystore)
-        let mls_backend = MlsCryptoProvider::new(database);
-
-        // We create the core crypto instance first to enable creating a transaction from it and
-        // doing all subsequent actions inside a single transaction, though it forces us to clone
-        // a few Arcs and locks.
-        let session = Self {
-            crypto_provider: mls_backend,
-            inner: Default::default(),
-            transport: Arc::new(None.into()),
-            epoch_observer: Arc::new(None.into()),
-            history_observer: Arc::new(None.into()),
-        };
-
-        let cc = CoreCrypto::from(session);
-        let context = cc
-            .new_transaction()
-            .await
-            .map_err(RecursiveError::transaction("starting new transaction"))?;
-
-        context
-            .init_pki_env()
-            .await
-            .map_err(RecursiveError::transaction("initializing pki environment"))?;
-        context
-            .finish()
-            .await
-            .map_err(RecursiveError::transaction("finishing transaction"))?;
-
-        Ok(cc.mls)
-    }
-
-    /// Provide the implementation of functions to communicate with the delivery service
-    /// (see [MlsTransport]).
-    pub async fn provide_transport(&self, transport: Arc<dyn MlsTransport>) {
-        self.transport.write().await.replace(transport);
-    }
-
-    /// Initializes the client.
-    ///
-    /// Loads any cryptographic material already present in the keystore, but does not create any.
-    /// If no credentials are present in the keystore, then one _must_ be created and added to the
-    /// session before it can be used.
-    pub async fn init(&self, identifier: ClientIdentifier, signature_schemes: &[SignatureScheme]) -> Result<()> {
-        self.ensure_unready().await?;
-        let client_id = identifier.get_id()?.into_owned();
-
-        // we want to find all credentials matching this identifier, having a valid signature scheme.
-        // the `CredentialRef::find` API doesn't allow us to easily find those credentials having
-        // one of a set of signature schemes, meaning we have two paths here:
-        // we could either search unbound by signature schemes and then filter for valid ones here,
-        // or we could iterate over the list of signature schemes and build up a set of credential refs.
-        // as there are only a few signature schemes possible and the cost of a find operation is non-trivial,
-        // we choose the first option.
-        // we might revisit this choice after WPB-20844 and WPB-21819.
-        let mut credential_refs = CredentialRef::find(
-            &self.crypto_provider.keystore(),
-            CredentialFindFilters::builder().client_id(&client_id).build(),
-        )
-        .await
-        .map_err(RecursiveError::mls_credential_ref(
-            "loading matching credential refs while initializing a client",
-        ))?;
-        credential_refs.retain(|credential_ref| signature_schemes.contains(&credential_ref.signature_scheme()));
-
-        let mut identities = Identities::new(credential_refs.len());
-        let credentials_cache = CredentialRef::load_stored_credentials(&self.crypto_provider.keystore())
-            .await
-            .map_err(RecursiveError::mls_credential_ref(
-                "loading credential ref cache while initializing session",
-            ))?;
-
-        for credential_ref in credential_refs {
-            if let Some(credential) =
-                credential_ref
-                    .load_from_cache(&credentials_cache)
-                    .map_err(RecursiveError::mls_credential_ref(
-                        "loading credential list in session init",
-                    ))?
-            {
-                match identities.push_credential(credential).await {
-                    Err(Error::CredentialConflict) => {
-                        // this is what we get for not having real primary keys in our DB
-                        // no harm done though; no need to propagate this error
-                    }
-                    Ok(_) => {}
-                    Err(err) => {
-                        return Err(RecursiveError::MlsClient {
-                            context: "adding credential to identities in init",
-                            source: Box::new(err),
-                        }
-                        .into());
-                    }
-                }
-            }
-        }
-
-        self.replace_inner(SessionInner {
-            id: client_id,
+    /// Create a new `Session`
+    pub fn new(
+        id: ClientId,
+        identities: Identities,
+        crypto_provider: MlsCryptoProvider,
+        transport: Arc<dyn MlsTransport>,
+    ) -> Self {
+        Self {
+            id,
             identities,
-        })
-        .await;
-
-        Ok(())
+            crypto_provider,
+            transport,
+            epoch_observer: Arc::new(RwLock::new(None)),
+            history_observer: Arc::new(RwLock::new(None)),
+        }
     }
 
     /// Resets the client to an uninitialized state.
@@ -299,21 +198,15 @@ impl Session {
     }
 
     /// Retrieves the client's client id. This is free-form and not inspected.
-    pub async fn id(&self) -> Result<ClientId> {
-        match &*self.inner.read().await {
-            None => Err(Error::MlsNotInitialized),
-            Some(SessionInner { id, .. }) => Ok(id.clone()),
-        }
+    pub fn id(&self) -> ClientId {
+        self.id.clone()
     }
 
     /// Returns whether this client is E2EI capable
     pub async fn is_e2ei_capable(&self) -> bool {
-        match &*self.inner.read().await {
-            None => false,
-            Some(SessionInner { identities, .. }) => identities
-                .iter()
-                .any(|cred| cred.credential_type() == CredentialType::X509),
-        }
+        self.identities
+            .iter()
+            .any(|cred| cred.credential_type() == CredentialType::X509)
     }
 }
 
