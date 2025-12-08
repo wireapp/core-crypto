@@ -1,14 +1,36 @@
-use openmls_traits::OpenMlsCryptoProvider;
+use openmls_basic_credential::SignatureKeyPair;
+use openmls_traits::{OpenMlsCryptoProvider as _, random::OpenMlsRand as _};
 
 use super::error::{Error, Result};
 use crate::{
-    CertificateBundle, Ciphersuite, Credential, CredentialType, E2eiEnrollment, RecursiveError,
-    e2e_identity::NewCrlDistributionPoints,
+    CertificateBundle, Ciphersuite, Credential, CredentialType, E2eiEnrollment, MlsError, RecursiveError,
+    e2e_identity::{E2eiSignatureKeypair, NewCrlDistributionPoints},
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     transaction_context::TransactionContext,
 };
 
 impl TransactionContext {
+    async fn new_sign_keypair(&self, ciphersuite: Ciphersuite) -> Result<E2eiSignatureKeypair> {
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
+
+        let sign_keypair = &SignatureKeyPair::new(
+            ciphersuite.signature_algorithm(),
+            &mut *mls_provider
+                .rand()
+                .borrow_rand()
+                .map_err(MlsError::wrap("borrowing rng"))?,
+        )
+        .map_err(MlsError::wrap("generating new sign keypair"))?;
+
+        sign_keypair
+            .try_into()
+            .map_err(RecursiveError::e2e_identity("creating E2eiSignatureKeypair"))
+            .map_err(Into::into)
+    }
+
     /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential)
     /// willing to migrate to E2EI. As a consequence, this method does not support changing the
     /// ClientId which should remain the same as the Basic one.
@@ -36,11 +58,7 @@ impl TransactionContext {
             .map_err(|_| Error::MissingExistingClient(CredentialType::Basic))?;
         let client_id = cb.mls_credential().identity().to_owned().into();
 
-        let sign_keypair = Some(
-            cb.signature_key()
-                .try_into()
-                .map_err(RecursiveError::e2e_identity("creating E2eiSignatureKeypair"))?,
-        );
+        let sign_keypair = self.new_sign_keypair(ciphersuite).await?;
 
         E2eiEnrollment::try_new(
             client_id,
@@ -50,7 +68,7 @@ impl TransactionContext {
             expiry_sec,
             &mls_provider,
             ciphersuite,
-            sign_keypair,
+            Some(sign_keypair),
             false, // no x509 credential yet at this point so no OIDC authn yet so no refresh token to restore
         )
         .map_err(RecursiveError::e2e_identity("creating new enrollment"))
@@ -84,11 +102,7 @@ impl TransactionContext {
             .await
             .map_err(|_| Error::MissingExistingClient(CredentialType::X509))?;
         let client_id = cb.mls_credential().identity().to_owned().into();
-        let sign_keypair = Some(
-            cb.signature_key()
-                .try_into()
-                .map_err(RecursiveError::e2e_identity("creating E2eiSignatureKeypair"))?,
-        );
+        let sign_keypair = self.new_sign_keypair(ciphersuite).await?;
         let existing_identity = cb
             .to_mls_credential_with_key()
             .extract_identity(ciphersuite, None)
@@ -107,7 +121,7 @@ impl TransactionContext {
             expiry_sec,
             &mls_provider,
             ciphersuite,
-            sign_keypair,
+            Some(sign_keypair),
             true, /* Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST
                    * already have done an OIDC authn and gotten a refresh token from it */
         )
