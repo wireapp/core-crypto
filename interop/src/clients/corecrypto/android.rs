@@ -40,7 +40,7 @@ struct SimulatorDriverError {
 
 impl SimulatorDriver {
     fn new(device: String, application: String) -> Self {
-        let application = Self::launch_application(&device, &application, true).expect("Failed ot launch application");
+        let application = Self::launch_application(&device, &application, true).expect("Failed to launch application");
 
         Self {
             device,
@@ -150,20 +150,22 @@ impl SimulatorDriver {
     }
 
     async fn execute(&self, action: String) -> Result<String> {
-        log::info!("adb shell am start -W -a android.intent.action.RUN {}", action);
+        let args = [
+            "-s",
+            self.device.as_str(),
+            "shell",
+            "am",
+            "start",
+            "-W",
+            "-a",
+            "android.intent.action.RUN",
+            action.as_str(),
+        ];
+
+        log::info!("adb {}", args.join(" "));
 
         Command::new("adb")
-            .args([
-                "-s",
-                self.device.as_str(),
-                "shell",
-                "am",
-                "start",
-                "-W",
-                "-a",
-                "android.intent.action.RUN",
-                action.as_str(),
-            ])
+            .args(args)
             .output()
             .expect("Failed to execute action");
 
