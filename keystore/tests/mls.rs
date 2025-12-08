@@ -102,7 +102,7 @@ mod tests {
 
         backend
             .key_store()
-            .cred_delete_by_credential(credential_from_store.credential.clone())
+            .remove::<StoredCredential, _>(credential_from_store.public_key.clone())
             .await
             .unwrap();
     }

@@ -45,13 +45,8 @@ impl Credential {
 
     /// Delete this credential from the database
     pub(crate) async fn delete(self, database: &Database) -> Result<()> {
-        let credential_data = self
-            .mls_credential
-            .tls_serialize_detached()
-            .map_err(Error::tls_serialize("credential"))?;
-
         database
-            .cred_delete_by_credential(credential_data)
+            .remove::<StoredCredential, _>(self.signature_key_pair.public())
             .await
             .map_err(KeystoreError::wrap("deleting credential"))?;
 
