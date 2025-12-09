@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["generate_access_token","generate_nonce","handle_callback","main","not_found","wire_api"],"type":["Nonces"]};
+window.SIDEBAR_ITEMS = {"fn":["main"],"mod":["non_wasm"]};
