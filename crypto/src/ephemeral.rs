@@ -55,21 +55,6 @@ impl Obfuscate for HistorySecret {
     }
 }
 
-/// Create a new [`CoreCrypto`] with an **uninitialized** mls session.
-///
-/// You must initialize the session yourself before using this!
-async fn in_memory_cc() -> Result<CoreCrypto> {
-    let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
-        .await
-        .unwrap();
-
-    let session = Session::try_new(&db)
-        .await
-        .map_err(RecursiveError::mls("creating ephemeral session"))?;
-
-    Ok(session.into())
-}
-
 /// Generate a new [`HistorySecret`].
 ///
 /// This is useful when it's this client's turn to generate a new history client.
