@@ -21,7 +21,7 @@
 //! Any attempt to encrypt a message will fail because the client cannot retrieve the signature key from
 //! its keystore.
 
-use std::borrow::Borrow;
+use std::{borrow::Borrow, sync::Arc};
 
 use core_crypto_keystore::{ConnectionType, Database};
 use mls_crypto_provider::DatabaseKey;
@@ -29,8 +29,8 @@ use obfuscate::{Obfuscate, Obfuscated};
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
-    Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, Credential, Error, MlsError, RecursiveError,
-    Result, Session,
+    Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, CoreCryptoTransportNotImplementedProvider,
+    Credential, Error, MlsError, RecursiveError, Result, Session, test_utils::CoreCryptoTransportRetrySuccessProvider,
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -86,16 +86,25 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
     let client_id = ClientId::from(client_id.into_bytes());
     let identifier = ClientIdentifier::Basic(client_id.clone());
 
-    let cc = in_memory_cc().await?;
+    let database = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
+        .await
+        .unwrap();
+
+    let cc = CoreCrypto::new(database.clone());
     let tx = cc
         .new_transaction()
         .await
         .map_err(RecursiveError::transaction("creating new transaction"))?;
-    cc.init(identifier, &[ciphersuite.signature_algorithm()])
-        .await
-        .map_err(RecursiveError::mls_client("initializing ephemeral cc"))?;
 
-    let credential = Credential::basic(ciphersuite, client_id.clone(), &cc.mls.crypto_provider).map_err(
+    let transport = Arc::new(CoreCryptoTransportNotImplementedProvider::default());
+    tx.mls_init(identifier, &[ciphersuite], transport)
+        .await
+        .map_err(RecursiveError::transaction("initializing ephemeral cc"))?;
+    let session = tx
+        .session()
+        .await
+        .map_err(RecursiveError::transaction("Getting mls session"))?;
+    let credential = Credential::basic(ciphersuite, client_id.clone(), &session.crypto_provider).map_err(
         RecursiveError::mls_credential("generating basic credential for ephemeral client"),
     )?;
     let credential_ref = cc.add_credential(credential).await.map_err(RecursiveError::mls_client(
