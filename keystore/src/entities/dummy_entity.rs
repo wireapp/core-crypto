@@ -256,3 +256,56 @@ impl<'a> Encrypting<'a> for NewDummyStoreValue {
         Ok(NewDummyStoreValueEncrypt { id, data })
     }
 }
+
+/// Testbed for deriving the new entity traits.
+///
+/// Demonstrates a few things:
+///
+/// 1. Derivation works properly
+/// 2. Derivation does not depend on any particular symbols existing in the namespace.
+/// 3. Derivation produces equivalent code to a manual implementation.
+///
+/// To validate these properties, uncomment the relevant struct, and run:
+///
+/// ```sh
+///  cargo expand -p core-crypto-keystore --features dummy-entity entities::dummy_entity::derive
+/// ```
+///
+/// Note that none of these will actually build correctly right now, because none of them have
+/// variants in the dynamic dispatch enum. This is why they're all commented out by default.
+mod derive {
+    // test a very simple entity
+    // #[derive(core_crypto_macros::EntityNew)]
+    // struct SimpleEntity {
+    //     id: Vec<u8>,
+    //     data: Vec<u8>,
+    // }
+
+    // test an entity which has an explicitly-set id
+    // #[derive(core_crypto_macros::EntityNew)]
+    // struct ExplicitId {
+    //     #[entity(id)]
+    //     not_named_id: Vec<u8>,
+    // }
+
+    // test an entity which has several fields of various types
+    // #[derive(core_crypto_macros::EntityNew)]
+    // struct MultiFieldEntity {
+    //     id: String,
+    //     bytes_value: Vec<u8>,
+    //     string_value: String,
+    //     optional_value: Option<Vec<u8>>,
+    // }
+
+    // test an entity which has an explicit collection name and some more complicated fields
+    // #[derive(core_crypto_macros::EntityNew)]
+    // #[entity(collection_name = "complex_entities")]
+    // struct ComplexEntity {
+    //     #[entity(id, hex, column = "id_hex")]
+    //     key: Vec<u8>,
+    //     #[entity(hex)]
+    //     hex_data: Vec<u8>,
+    //     #[entity(column = "renamed_column")]
+    //     rename_me: Vec<u8>,
+    // }
+}
