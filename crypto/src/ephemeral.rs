@@ -24,13 +24,13 @@
 use std::{borrow::Borrow, sync::Arc};
 
 use core_crypto_keystore::{ConnectionType, Database};
-use mls_crypto_provider::DatabaseKey;
+use mls_crypto_provider::{DatabaseKey, MlsCryptoProvider};
 use obfuscate::{Obfuscate, Obfuscated};
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
     Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, CoreCryptoTransportNotImplementedProvider,
-    Credential, Error, MlsError, RecursiveError, Result, Session, test_utils::CoreCryptoTransportRetrySuccessProvider,
+    Credential, Error, MlsError, RecursiveError, Result, Session, mls::session::identities::Identities,
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -129,11 +129,26 @@ impl CoreCrypto {
             return Err(Error::InvalidHistorySecret("client id has invalid format"));
         }
 
-        let session = in_memory_cc().await?;
-        let tx = session
+        // pass in-memory database
+        let database = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
+            .await
+            .unwrap();
+
+        let cc = CoreCrypto::new(database.clone());
+        let tx = cc
             .new_transaction()
             .await
             .map_err(RecursiveError::transaction("creating new transaction"))?;
+
+        // store the client id (with some other stuff)
+        let mls_backend = MlsCryptoProvider::new(database);
+        let transport = Arc::new(CoreCryptoTransportNotImplementedProvider::default());
+        let session = Session::new(
+            history_secret.client_id.clone(),
+            Identities::new(0),
+            mls_backend,
+            transport,
+        );
 
         session
             .restore_from_history_secret(history_secret)
@@ -142,11 +157,15 @@ impl CoreCrypto {
                 "restoring ephemeral session from history secret",
             ))?;
 
+        tx.set_mls_session(session)
+            .await
+            .map_err(RecursiveError::transaction("Setting mls session"))?;
+
         tx.finish()
             .await
             .map_err(RecursiveError::transaction("finishing transaction"))?;
 
-        Ok(session)
+        Ok(cc)
     }
 }
 

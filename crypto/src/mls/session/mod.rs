@@ -178,15 +178,6 @@ impl Session {
 
     /// Restore from an external [`HistorySecret`].
     pub(crate) async fn restore_from_history_secret(&self, history_secret: HistorySecret) -> Result<()> {
-        self.ensure_unready().await?;
-
-        // store the client id (with some other stuff)
-        self.replace_inner(SessionInner {
-            id: history_secret.client_id.clone(),
-            identities: Identities::new(0),
-        })
-        .await;
-
         // store the key package
         history_secret
             .key_package
