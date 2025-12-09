@@ -1,4 +1,5 @@
 mod db_key_type_to_bytes;
+mod delete_credential_by_value;
 mod pre_v4;
 mod v0;
 mod v2;
@@ -11,6 +12,7 @@ mod v8;
 mod v9;
 
 pub(super) use db_key_type_to_bytes::migrate_db_key_type_to_bytes;
+pub(super) use delete_credential_by_value::delete_credential_by_value;
 use idb::{Database, Factory};
 
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::DatabaseKey};
