@@ -120,6 +120,27 @@ pub trait MlsTransport: std::fmt::Debug + Send + Sync {
     async fn prepare_for_transport(&self, secret: &HistorySecret) -> Result<MlsTransportData>;
 }
 
+/// This provider is mainly used for the initialization of the history client session, the only case where transport
+/// doesn't need to be implemented.
+#[derive(Debug, Default)]
+pub struct CoreCryptoTransportNotImplementedProvider();
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
+    async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> crate::Result<MlsTransportResponse> {
+        Err(Error::MlsTransportNotProvided)
+    }
+
+    async fn send_message(&self, _mls_message: Vec<u8>) -> crate::Result<MlsTransportResponse> {
+        Err(Error::MlsTransportNotProvided)
+    }
+
+    async fn prepare_for_transport(&self, _secret: &HistorySecret) -> crate::Result<MlsTransportData> {
+        Err(Error::MlsTransportNotProvided)
+    }
+}
+
 /// Wrapper superstruct for both [mls::session::Session] and [proteus::ProteusCentral]
 ///
 /// As [std::ops::Deref] is implemented, this struct is automatically dereferred to [mls::session::Session] apart from
