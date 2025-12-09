@@ -28,7 +28,7 @@ use crate::{
 ///
 /// Your `from_row` implementation should ideally just need to map the database fields to an appropriate struct,
 /// but if it absolutely must handle errors, consider mapping them to [`rusqlite::Error::UserFunctionError`].
-async fn get_helper<E, FromRow>(
+pub(crate) async fn get_helper<E, FromRow>(
     conn: &KeystoreDatabaseConnection,
     primary_key_column_name: &str,
     primary_key: impl ToSql,
@@ -52,7 +52,7 @@ where
 /// Helper to perform an SQL query to count these entities in the database.
 ///
 /// This function prepares and caches a statement of the form `SELECT count(*) FROM collection_name`.
-async fn count_helper<E: Entity>(conn: &KeystoreDatabaseConnection) -> CryptoKeystoreResult<u32> {
+pub(crate) async fn count_helper<E: Entity>(conn: &KeystoreDatabaseConnection) -> CryptoKeystoreResult<u32> {
     let conn = conn.conn().await;
     let mut statement = conn.prepare_cached(&format!(
         "SELECT count(*) FROM {collection_name}",
@@ -64,7 +64,7 @@ async fn count_helper<E: Entity>(conn: &KeystoreDatabaseConnection) -> CryptoKey
 /// Helper to perform an SQL query to count these entities in the database.
 ///
 /// This function prepares and caches a statement of the form `SELECT count(*) FROM collection_name`.
-async fn count_helper_tx<E: Entity>(tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<u32> {
+pub(crate) async fn count_helper_tx<E: Entity>(tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<u32> {
     let mut statement = tx.prepare_cached(&format!(
         "SELECT count(*) FROM {collection_name}",
         collection_name = E::COLLECTION_NAME
@@ -81,7 +81,7 @@ async fn count_helper_tx<E: Entity>(tx: &TransactionWrapper<'_>) -> CryptoKeysto
 ///
 /// Your `from_row` implementation should ideally just need to map the database fields to an appropriate struct,
 /// but if it absolutely must handle errors, consider mapping them to [`rusqlite::Error::UserFunctionError`].
-async fn load_all_helper<E, FromRow>(
+pub(crate) async fn load_all_helper<E, FromRow>(
     conn: &KeystoreDatabaseConnection,
     from_row: FromRow,
 ) -> CryptoKeystoreResult<Vec<E>>
@@ -106,7 +106,7 @@ where
 /// You need to provide the primary key's column name and the actual primary key.
 ///
 /// Returns `true` if at least one entity was deleted, or `false` if the id was not found in the database.
-async fn delete_helper<E: Entity>(
+pub(crate) async fn delete_helper<E: Entity>(
     tx: &TransactionWrapper<'_>,
     primary_key_column_name: &str,
     primary_key: impl ToSql,
