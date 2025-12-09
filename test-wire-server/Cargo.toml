@@ -6,7 +6,7 @@ edition = "2024"
 license = "MPL-2.0"
 publish = false
 
-[dependencies]
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
 base64 = { workspace = true }
 hyper = { workspace = true, features = ["server"] }
 http = { workspace = true }
@@ -17,6 +17,8 @@ serde_json = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 url = { workspace = true }
 uuid = { workspace = true }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
 
 [lints]
 workspace = true
