@@ -99,7 +99,7 @@ static NEW_DUMMY_STORE_IDS: LazyLock<RwLock<HashSet<Vec<u8>>>> = LazyLock::new(|
 /// This struct is intended as a testbed for implementation of new entity traits.
 ///
 /// It's mainly to confirm that it is possible to implement the traits as designed for a semi-realistic type.
-struct NewDummyStoreValue {
+pub struct NewDummyStoreValue {
     id: Vec<u8>,
     data: Vec<u8>,
 }
@@ -222,7 +222,7 @@ impl EntityDeleteBorrowed<'_> for NewDummyStoreValue {
 }
 
 #[derive(serde::Deserialize)]
-struct NewDummyStoreValueDecrypt<'a> {
+pub struct NewDummyStoreValueDecrypt<'a> {
     id: Vec<u8>,
     sensitive_data: &'a [u8],
 }
@@ -242,7 +242,7 @@ impl<'a> Decryptable<'a> for NewDummyStoreValue {
 }
 
 #[derive(serde::Serialize)]
-struct NewDummyStoreValueEncrypt<'a> {
+pub struct NewDummyStoreValueEncrypt<'a> {
     id: &'a Vec<u8>,
     data: Vec<u8>,
 }
