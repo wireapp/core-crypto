@@ -25,7 +25,11 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
         .await?;
     let duplicates = detect_duplicate_credentials(&credentials);
 
-    db_before_migration.new_transaction().await?;
+    let connection = db_before_migration.conn().await?;
+    let mut tx_creator = connection.conn().await;
+    let tx = tx_creator
+        .new_transaction(&[&StoredCredential::COLLECTION_NAME])
+        .await?;
 
     for (cred_a, cred_b) in duplicates.into_iter() {
         let least_used_ciphersuite = least_used_ciphersuite(cred_a.ciphersuite, cred_b.ciphersuite);
@@ -39,12 +43,8 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
                 // b) both ciphersuites don't get used in any mls group
                 //
                 // In both cases, what we want to do is delete both credentials.
-                db_before_migration
-                    .cred_delete_by_credential(cred_a.credential.clone())
-                    .await?;
-                db_before_migration
-                    .cred_delete_by_credential(cred_b.credential.clone())
-                    .await?;
+                super::delete_credential_by_value(&tx, cred_a.credential.clone()).await?;
+                super::delete_credential_by_value(&tx, cred_b.credential.clone()).await?;
             }
             Some(least_used_ciphersuite) => {
                 let cred_to_delete = if least_used_ciphersuite == cred_a.ciphersuite {
@@ -52,7 +52,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
                 } else {
                     cred_b.credential.clone()
                 };
-                db_before_migration.cred_delete_by_credential(cred_to_delete).await?;
+                super::delete_credential_by_value(&tx, cred_to_delete).await?;
             }
         };
     }

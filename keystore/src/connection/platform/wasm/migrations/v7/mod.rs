@@ -6,7 +6,7 @@ use super::DB_VERSION_7;
 use crate::{
     CryptoKeystoreResult, Database, DatabaseKey,
     connection::FetchFromDatabase as _,
-    entities::{EntityFindParams, PersistedMlsGroup, StoredCredential},
+    entities::{EntityBase as _, EntityFindParams, EntityTransactionExt as _, PersistedMlsGroup, StoredCredential},
     migrations::{V6Credential, make_ciphersuite_for_signature_scheme},
 };
 
@@ -21,7 +21,11 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
         .find_all::<V6Credential>(EntityFindParams::default())
         .await?;
 
-    db_before_migration.new_transaction().await?;
+    let connection = db_before_migration.conn().await?;
+    let mut tx_creator = connection.conn().await;
+    let tx = tx_creator
+        .new_transaction(&[&StoredCredential::COLLECTION_NAME])
+        .await?;
 
     for v6_credential in v6_credentials {
         if let Some(ciphersuite) = ciphersuite_for_signature_scheme(v6_credential.signature_scheme) {
@@ -33,11 +37,9 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
                 public_key: v6_credential.public_key.clone(),
                 secret_key: v6_credential.secret_key.clone(),
             };
-            db_before_migration.save(new_credential).await?;
+            new_credential.save(&tx).await?;
+            super::delete_credential_by_value(&tx, v6_credential.credential.clone()).await?;
         }
-        db_before_migration
-            .cred_delete_by_credential(v6_credential.credential.clone())
-            .await?;
     }
 
     db_before_migration.commit_transaction().await?;

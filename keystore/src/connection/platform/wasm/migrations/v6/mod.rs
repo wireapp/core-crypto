@@ -1,3 +1,5 @@
+//! This migration merges signature keypair and credential data
+
 mod v5_entities;
 
 use idb::builder::DatabaseBuilder;
@@ -6,7 +8,7 @@ use super::DB_VERSION_6;
 use crate::{
     CryptoKeystoreResult, Database, DatabaseKey,
     connection::FetchFromDatabase,
-    entities::{EntityBase as _, EntityFindParams},
+    entities::{EntityBase as _, EntityFindParams, EntityTransactionExt, StoredCredential},
     migrations::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
 };
 
@@ -20,15 +22,17 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
         .find_all::<V5Credential>(EntityFindParams::default())
         .await?;
 
-    db_before_migration.new_transaction().await?;
+    let connection = db_before_migration.conn().await?;
+    let mut tx_creator = connection.conn().await;
+    let tx = tx_creator
+        .new_transaction(&[&StoredCredential::COLLECTION_NAME])
+        .await?;
 
     for signature_key in signature_keys.iter() {
         for v5_credential in v5_credentials.iter() {
             if let Some(new_credential) = migrate_to_new_credential(v5_credential, signature_key)? {
-                db_before_migration
-                    .cred_delete_by_credential(v5_credential.credential.clone())
-                    .await?;
-                db_before_migration.save(new_credential).await?;
+                super::delete_credential_by_value(&tx, v5_credential.credential.clone()).await?;
+                new_credential.save(&tx).await?;
             }
         }
     }
