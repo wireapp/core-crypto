@@ -2,6 +2,7 @@
 mod dummy_entity;
 pub(crate) mod general;
 pub(crate) mod mls;
+pub(crate) mod platform;
 
 #[cfg(feature = "dummy-entity")]
 pub use self::dummy_entity::*;
@@ -11,18 +12,6 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "proteus-keystore")] {
         pub(crate) mod proteus;
         pub use self::proteus::*;
-    }
-}
-
-mod platform {
-    cfg_if::cfg_if! {
-        if #[cfg(target_family = "wasm")] {
-            mod wasm;
-            pub use self::wasm::*;
-        } else {
-            mod generic;
-            pub use self::generic::*;
-        }
     }
 }
 
