@@ -80,4 +80,23 @@ impl WasmStorageTransaction<'_> {
         }
         Ok(())
     }
+
+    // This will start seeing use in WPB-22194
+    #[expect(dead_code)]
+    pub(crate) async fn count<E: Entity<ConnectionType = WasmConnection>>(&self) -> CryptoKeystoreResult<u32> {
+        match self {
+            WasmStorageTransaction::Persistent { tx, .. } => {
+                let object_store = tx.object_store(E::COLLECTION_NAME)?;
+                let count = object_store.count(None)?.await?;
+                Ok(count)
+            }
+            WasmStorageTransaction::InMemory { db, .. } => {
+                let map = db.borrow();
+                Ok(map
+                    .get(E::COLLECTION_NAME)
+                    .map(|collection| collection.len())
+                    .unwrap_or_default() as _)
+            }
+        }
+    }
 }
