@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["DecryptData","Decryptable","Decrypting","EncryptData","Encrypting","Entity","EntityBase","EntityGetBorrowed","EntityTransactionDeleteBorrowed","EntityTransactionExt","FetchFromDatabase","KeyType","UniqueEntity","UniqueEntityExt"]};
+window.SIDEBAR_ITEMS = {"trait":["BorrowPrimaryKey","DecryptData","Decryptable","Decrypting","EncryptData","Encrypting","Entity","EntityBase","EntityDatabaseMutation","EntityDeleteBorrowed","FetchFromDatabase","KeyType","UniqueEntity","UniqueEntityExt"]};

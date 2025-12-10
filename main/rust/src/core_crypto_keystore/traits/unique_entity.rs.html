@@ -2,7 +2,7 @@
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use crate</span>::{
 <a href=#4 id=4 data-nosnippet>4</a>    CryptoKeystoreResult,
-<a href=#5 id=5 data-nosnippet>5</a>    traits::{Entity, EntityBase, entity_transaction_ext::EntityTransactionExt},
+<a href=#5 id=5 data-nosnippet>5</a>    traits::{Entity, EntityBase, entity_database_mutation::EntityDatabaseMutation},
 <a href=#6 id=6 data-nosnippet>6</a>};
 <a href=#7 id=7 data-nosnippet>7</a>
 <a href=#8 id=8 data-nosnippet>8</a><span class="doccomment">/// A unique entity can appear either 0 or 1 times in the database.
@@ -14,7 +14,7 @@
 <a href=#14 id=14 data-nosnippet>14</a><span class="doccomment">/// Unique entities get some convenience methods implemented automatically.
 <a href=#15 id=15 data-nosnippet>15</a></span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait(<span class="question-mark">?</span>Send))]
 <a href=#16 id=16 data-nosnippet>16</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait)]
-<a href=#17 id=17 data-nosnippet>17</a></span><span class="kw">pub trait </span>UniqueEntityExt&lt;<span class="lifetime">'a</span>&gt;: UniqueEntity + EntityTransactionExt&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#17 id=17 data-nosnippet>17</a></span><span class="kw">pub trait </span>UniqueEntityExt&lt;<span class="lifetime">'a</span>&gt;: UniqueEntity + EntityDatabaseMutation&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#18 id=18 data-nosnippet>18</a>    <span class="doccomment">/// Get this unique entity from the database.
 <a href=#19 id=19 data-nosnippet>19</a>    </span><span class="kw">async fn </span>get_unique(conn: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::ConnectionType) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt;;
 <a href=#20 id=20 data-nosnippet>20</a>
@@ -37,8 +37,8 @@
 <a href=#37 id=37 data-nosnippet>37</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait)]
 <a href=#38 id=38 data-nosnippet>38</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, E&gt; UniqueEntityExt&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>E
 <a href=#39 id=39 data-nosnippet>39</a><span class="kw">where
-<a href=#40 id=40 data-nosnippet>40</a>    </span>E: UniqueEntity + EntityTransactionExt&lt;<span class="lifetime">'a</span>&gt; + Sync,
-<a href=#41 id=41 data-nosnippet>41</a>    &lt;E <span class="kw">as </span>EntityTransactionExt&lt;<span class="lifetime">'a</span>&gt;&gt;::Transaction: Sync,
+<a href=#40 id=40 data-nosnippet>40</a>    </span>E: UniqueEntity + EntityDatabaseMutation&lt;<span class="lifetime">'a</span>&gt; + Sync,
+<a href=#41 id=41 data-nosnippet>41</a>    &lt;E <span class="kw">as </span>EntityDatabaseMutation&lt;<span class="lifetime">'a</span>&gt;&gt;::Transaction: Sync,
 <a href=#42 id=42 data-nosnippet>42</a>{
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="doccomment">/// Get this unique entity from the database.
 <a href=#44 id=44 data-nosnippet>44</a>    </span><span class="kw">async fn </span>get_unique(conn: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::ConnectionType) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
@@ -59,7 +59,7 @@
 <a href=#59 id=59 data-nosnippet>59</a>    ///
 <a href=#60 id=60 data-nosnippet>60</a>    /// Returns `true` if the entity was saved, or `false` if it aborted due to an already-existing entity.
 <a href=#61 id=61 data-nosnippet>61</a>    </span><span class="kw">async fn </span>set_if_absent(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span><span class="self">Self</span>::Transaction) -&gt; CryptoKeystoreResult&lt;bool&gt; {
-<a href=#62 id=62 data-nosnippet>62</a>        <span class="kw">let </span>count = &lt;<span class="self">Self </span><span class="kw">as </span>EntityTransactionExt&gt;::count(tx).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#62 id=62 data-nosnippet>62</a>        <span class="kw">let </span>count = &lt;<span class="self">Self </span><span class="kw">as </span>EntityDatabaseMutation&gt;::count(tx).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#63 id=63 data-nosnippet>63</a>        <span class="kw">if </span>count &gt; <span class="number">0 </span>{
 <a href=#64 id=64 data-nosnippet>64</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
 <a href=#65 id=65 data-nosnippet>65</a>        }
