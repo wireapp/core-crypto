@@ -25,7 +25,7 @@ mod tests {
 
     use crate::{
         CertificateBundle, ClientIdentifier, CoreCrypto, CredentialType,
-        mls::Session,
+        mls::HasSessionAndCrypto,
         test_utils::{x509::X509TestChain, *},
         transaction_context::Error as TransactionError,
     };
@@ -91,17 +91,17 @@ mod tests {
     async fn can_2_phase_init_central(mut case: TestContext) {
         let db = case.create_persistent_db().await;
         Box::pin(async move {
+            use std::sync::Arc;
+
             use crate::{ClientId, Credential};
 
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
             // phase 1: init without initialized mls_client
-            let client = Session::try_new(&db).await.unwrap();
-            let cc = CoreCrypto::from(client);
+            let cc = CoreCrypto::new(db);
             let context = cc.new_transaction().await.unwrap();
             x509_test_chain.register_with_central(&context).await;
 
-            assert!(!context.session().await.unwrap().is_ready().await);
             // phase 2: init mls_client
             let client_id = ClientId::from("alice");
             let identifier = match case.credential_type {
@@ -111,15 +111,28 @@ mod tests {
                 }
             };
             context
-                .mls_init(identifier.clone(), &[case.ciphersuite()])
+                .mls_init(
+                    identifier.clone(),
+                    &[case.ciphersuite()],
+                    Arc::new(CoreCryptoTransportSuccessProvider::default()),
+                )
                 .await
                 .unwrap();
 
-            let credential =
-                Credential::from_identifier(&identifier, case.ciphersuite(), &cc.mls.crypto_provider).unwrap();
-            let credential_ref = cc.add_credential(credential).await.unwrap();
+            let credential = Credential::from_identifier(
+                &identifier,
+                case.ciphersuite(),
+                &context.crypto_provider().await.unwrap(),
+            )
+            .unwrap();
+            let credential_ref = context
+                .session()
+                .await
+                .unwrap()
+                .add_credential(credential)
+                .await
+                .unwrap();
 
-            assert!(context.session().await.unwrap().is_ready().await);
             // expect mls_client to work
             assert!(context.generate_keypackage(&credential_ref, None).await.is_ok());
         })
