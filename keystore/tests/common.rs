@@ -35,6 +35,8 @@ pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> KeystoreTestContex
     } else {
         ConnectionType::Persistent(name.as_ref())
     };
+    #[cfg(target_family = "wasm")]
+    console_error_panic_hook::set_once();
     let store = core_crypto_keystore::Database::open(location, &TEST_ENCRYPTION_KEY)
         .await
         .expect("Could not open keystore");
