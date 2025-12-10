@@ -34,7 +34,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
             Ok(StoredCredential {
                 ciphersuite: row.get("ciphersuite")?,
                 public_key: row.get("public_key")?,
-                id: Vec::new(),          // not relevant for this application
+                session_id: Vec::new(),  // not relevant for this application
                 credential: Vec::new(),  // not relevant for this application
                 created_at: 0,           // not relevant for this application
                 private_key: Vec::new(), // not relevant for this application

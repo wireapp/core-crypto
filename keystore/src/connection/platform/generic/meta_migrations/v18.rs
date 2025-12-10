@@ -26,7 +26,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
 
     let mut credential_stmt = tx.prepare(&format!(
         "SELECT
-            id,
+            session_id,
             credential,
             unixepoch(created_at) AS created_at,
             signature_scheme,
@@ -39,7 +39,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
     let mut rows = credential_stmt.query([])?;
     while let Some(row) = rows.next()? {
         let v6 = V6Credential {
-            id: row.get("id")?,
+            session_id: row.get("session_id")?,
             credential: row.get("credential")?,
             created_at: row.get("created_at")?,
             signature_scheme: row.get("signature_scheme")?,
@@ -52,7 +52,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
         if let Some(ciphersuite) = ciphersuite_for_signature_scheme(v6.signature_scheme) {
             tx.execute(
                 "INSERT INTO mls_credentials_new (
-                        id,
+                        session_id,
                         credential,
                         created_at,
                         ciphersuite,
@@ -61,7 +61,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
                     )
                     VALUES (?1, ?2, datetime(?3, 'unixepoch'), ?4, ?5, ?6)",
                 (
-                    v6.id.clone(),
+                    v6.session_id.clone(),
                     v6.credential.clone(),
                     v6.created_at,
                     ciphersuite,

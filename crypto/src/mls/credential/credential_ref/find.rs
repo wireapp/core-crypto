@@ -72,7 +72,7 @@ impl CredentialRef {
             .map_err(KeystoreError::wrap("finding all credentials"))?
             .into_iter()
             .filter(|stored| {
-                client_id.is_none_or(|client_id| client_id.as_ref() == stored.id)
+                client_id.is_none_or(|client_id| client_id.as_ref() == stored.session_id)
                     && earliest_validity.is_none_or(|earliest_validity| earliest_validity == stored.created_at)
                     && ciphersuite.is_none_or(|ciphersuite| u16::from(ciphersuite) == stored.ciphersuite)
                     && public_key.is_none_or(|public_key| public_key == stored.public_key)
@@ -96,7 +96,7 @@ impl CredentialRef {
                 && let Ok(ciphersuite) = stored_credential.ciphersuite.try_into()
             {
                 out.push(Self {
-                    client_id: ClientId(stored_credential.id.clone()),
+                    client_id: ClientId(stored_credential.session_id.clone()),
                     r#type,
                     ciphersuite,
                     earliest_validity: stored_credential.created_at,

@@ -368,7 +368,7 @@ mod migration_test {
             let mut stmt = conn
                 .prepare(&format!(
                     "SELECT
-                        id,
+                        session_id,
                         credential,
                         unixepoch(created_at) AS created_at,
                         ciphersuite,
@@ -382,7 +382,7 @@ mod migration_test {
             let credential = stmt
                 .query_one([], |row| {
                     Ok(StoredCredential {
-                        id: row.get("id")?,
+                        session_id: row.get("session_id")?,
                         credential: row.get("credential")?,
                         created_at: row.get("created_at")?,
                         ciphersuite: row.get("ciphersuite")?,
@@ -402,7 +402,7 @@ mod migration_test {
             // Create a duplicate from this credential
             conn.execute(
                 "INSERT INTO mls_credentials_new (
-                        id,
+                        session_id,
                         credential,
                         created_at,
                         ciphersuite,
@@ -411,7 +411,7 @@ mod migration_test {
                     )
                     VALUES (?1, ?2, datetime(?3, 'unixepoch'), ?4, ?5, ?6)",
                 (
-                    credential.id.clone(),
+                    credential.session_id.clone(),
                     credential.credential.clone(),
                     credential.created_at,
                     Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 as u16,

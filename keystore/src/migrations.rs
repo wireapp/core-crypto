@@ -29,7 +29,7 @@ pub(crate) struct V5Credential {
 pub(crate) struct V6Credential {
     /// Note: this is not a unique identifier, but the session id this credential belongs to.
     #[sensitive]
-    pub id: Vec<u8>,
+    pub session_id: Vec<u8>,
     #[sensitive]
     pub credential: Vec<u8>,
     pub created_at: u64,
@@ -68,7 +68,7 @@ pub(crate) fn migrate_to_new_credential(
     }
 
     let new_credential = V6Credential {
-        id: v5_credential.id.clone(),
+        session_id: v5_credential.id.clone(),
         credential: v5_credential.credential.clone(),
         created_at: v5_credential.created_at,
         signature_scheme: stored_keypair.signature_scheme,

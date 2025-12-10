@@ -63,7 +63,7 @@ impl CredentialRef {
             // these are the only checks we can currently do at the DB level: match the client id, creation timestamp,
             // public key and signature scheme
             .filter(|stored_credential|
-                        stored_credential.id == self.client_id().as_slice()
+                        stored_credential.session_id == self.client_id().as_slice()
                         && stored_credential.created_at == self.earliest_validity
                         && stored_credential.public_key == self.public_key
                         && stored_credential.ciphersuite == u16::from(self.ciphersuite)

@@ -21,9 +21,9 @@ impl StoredCredential {
         created_at: u64,
         ciphersuite: u16,
     ) -> CryptoKeystoreResult<Self> {
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "id", rowid, true)?;
-        let mut id = vec![];
-        blob.read_to_end(&mut id)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "session_id", rowid, true)?;
+        let mut session_id = vec![];
+        blob.read_to_end(&mut session_id)?;
         blob.close()?;
 
         let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "credential", rowid, true)?;
@@ -42,7 +42,7 @@ impl StoredCredential {
         blob.close()?;
 
         Ok(Self {
-            id,
+            session_id,
             credential,
             ciphersuite,
             created_at,
@@ -128,14 +128,14 @@ impl EntityBase for StoredCredential {
 #[async_trait::async_trait]
 impl EntityTransactionExt for StoredCredential {
     async fn save(&self, transaction: &TransactionWrapper<'_>) -> crate::CryptoKeystoreResult<()> {
-        Self::ConnectionType::check_buffer_size(self.id.len())?;
+        Self::ConnectionType::check_buffer_size(self.session_id.len())?;
         Self::ConnectionType::check_buffer_size(self.credential.len())?;
         Self::ConnectionType::check_buffer_size(self.private_key.len())?;
         Self::ConnectionType::check_buffer_size(self.public_key.len())?;
 
         let pk_sha256 = self.id_sha256();
         let zb_pk = rusqlite::blob::ZeroBlob(self.public_key.len() as i32);
-        let zb_id = rusqlite::blob::ZeroBlob(self.id.len() as i32);
+        let zb_id = rusqlite::blob::ZeroBlob(self.session_id.len() as i32);
         let zb_cred = rusqlite::blob::ZeroBlob(self.credential.len() as i32);
         let zb_sk = rusqlite::blob::ZeroBlob(self.private_key.len() as i32);
 
@@ -153,7 +153,7 @@ impl EntityTransactionExt for StoredCredential {
         let sql = "INSERT INTO mls_credentials (
                 public_key_sha256,
                 public_key,
-                id,
+                session_id,
                 credential,
                 created_at,
                 ciphersuite,
@@ -163,9 +163,9 @@ impl EntityTransactionExt for StoredCredential {
         transaction.execute(sql, params)?;
         let row_id = transaction.last_insert_rowid();
 
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "id", row_id, false)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "session_id", row_id, false)?;
 
-        blob.write_all(&self.id)?;
+        blob.write_all(&self.session_id)?;
         blob.close()?;
 
         let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "credential", row_id, false)?;

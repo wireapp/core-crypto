@@ -49,7 +49,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
         if let Some(c) = migrate_to_new_credential(&v5, &kp)? {
             tx.execute(
                 "INSERT INTO mls_credentials_new (
-                        id,
+                        session_id,
                         credential,
                         created_at,
                         signature_scheme,
@@ -58,7 +58,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
                     )
                     VALUES (?1, ?2, datetime(?3, 'unixepoch'), ?4, ?5, ?6)",
                 (
-                    c.id.clone(),
+                    c.session_id.clone(),
                     c.credential.clone(),
                     c.created_at,
                     c.signature_scheme,

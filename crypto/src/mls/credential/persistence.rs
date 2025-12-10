@@ -28,7 +28,7 @@ impl Credential {
 
         let stored_credential = database
             .save(StoredCredential {
-                id: self.client_id().to_owned().into_inner(),
+                session_id: self.client_id().to_owned().into_inner(),
                 credential: credential_data,
                 created_at: Default::default(), // updated by the `.save` impl
                 ciphersuite: u16::from(self.ciphersuite),

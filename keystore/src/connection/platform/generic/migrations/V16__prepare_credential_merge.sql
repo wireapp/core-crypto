@@ -1,5 +1,5 @@
 CREATE TABLE mls_credentials_new (
-    id BLOB NOT NULL,
+    session_id BLOB NOT NULL,
     credential BLOB NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     signature_scheme INT NOT NULL,

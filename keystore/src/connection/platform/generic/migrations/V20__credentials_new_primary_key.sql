@@ -1,7 +1,7 @@
 CREATE TABLE mls_credentials_new (
     public_key_sha256 TEXT UNIQUE NOT NULL,
     public_key BLOB NOT NULL,
-    id BLOB NOT NULL,
+    session_id BLOB NOT NULL,
     credential BLOB NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     ciphersuite INT NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE mls_credentials_new (
 INSERT INTO mls_credentials_new (
     public_key_sha256,
     public_key,
-    id,
+    session_id,
     credential,
     created_at,
     ciphersuite,
@@ -19,7 +19,7 @@ INSERT INTO mls_credentials_new (
 )
 SELECT sha256_blob(public_key),
     public_key,
-    id,
+    session_id,
     credential,
     created_at,
     ciphersuite,

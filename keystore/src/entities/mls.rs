@@ -132,7 +132,7 @@ impl StoredBufferedCommit {
 pub struct StoredCredential {
     /// Note: this is not a unique identifier, but the session id this credential belongs to.
     #[sensitive]
-    pub id: Vec<u8>,
+    pub session_id: Vec<u8>,
     #[sensitive]
     pub credential: Vec<u8>,
     pub created_at: u64,

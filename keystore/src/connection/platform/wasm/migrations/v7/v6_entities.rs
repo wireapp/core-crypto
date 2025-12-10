@@ -40,7 +40,7 @@ impl EntityTransactionExt for V6Credential {
 #[async_trait::async_trait(?Send)]
 impl Entity for V6Credential {
     fn id_raw(&self) -> &[u8] {
-        self.id.as_slice()
+        self.session_id.as_slice()
     }
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
@@ -103,7 +103,7 @@ impl MlsCredentialExt for V6Credential {
                 let mut credential = serde_wasm_bindgen::from_value::<V6Credential>(entity_raw)?;
                 credential.decrypt(cipher)?;
 
-                let id = JsValue::from(credential.id.clone());
+                let id = JsValue::from(credential.session_id.clone());
                 let request = store.delete(id)?;
                 request.await?;
             }

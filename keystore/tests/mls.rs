@@ -80,7 +80,7 @@ mod tests {
         .unwrap();
 
         let store_credential = StoredCredential {
-            id: credential_id.clone(),
+            session_id: credential_id.clone(),
             credential: credential.tls_serialize_detached().unwrap(),
             created_at: 0,
             ciphersuite: ciphersuite as u16,
@@ -96,7 +96,7 @@ mod tests {
             .await
             .unwrap()
             .into_iter()
-            .filter(|cred| cred.id == credential_id)
+            .filter(|cred| cred.session_id == credential_id)
             .collect_tuple()
             .expect("credentials should be exactly one");
 

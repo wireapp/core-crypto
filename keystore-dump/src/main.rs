@@ -62,7 +62,7 @@ async fn main() -> anyhow::Result<()> {
             .ok_or_else(|| anyhow!("Cannot parse credential creation date"))?;
 
         credentials.push(serde_json::json!({
-            "id": cred.id,
+            "session_id": cred.session_id,
             "credential": mls_credential,
             "created_at": date,
             "mls_keypair": mls_keypair,

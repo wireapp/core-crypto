@@ -23,7 +23,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
             if let Some(ciphersuite) = ciphersuite_for_signature_scheme(v6_credential.signature_scheme) {
                 let new_credential = StoredCredential {
                     ciphersuite,
-                    id: v6_credential.id.clone(),
+                    session_id: v6_credential.session_id.clone(),
                     credential: v6_credential.credential.clone(),
                     created_at: v6_credential.created_at,
                     public_key: v6_credential.public_key.clone(),
