@@ -373,7 +373,7 @@ mod migration_test {
                         unixepoch(created_at) AS created_at,
                         ciphersuite,
                         public_key,
-                        secret_key
+                        private_key
                      FROM {credential_table}",
                     credential_table = "mls_credentials_new",
                 ))
@@ -387,7 +387,7 @@ mod migration_test {
                         created_at: row.get("created_at")?,
                         ciphersuite: row.get("ciphersuite")?,
                         public_key: row.get("public_key")?,
-                        secret_key: row.get("secret_key")?,
+                        private_key: row.get("private_key")?,
                     })
                 })
                 .expect("credential from row");
@@ -407,7 +407,7 @@ mod migration_test {
                         created_at,
                         ciphersuite,
                         public_key,
-                        secret_key
+                        private_key
                     )
                     VALUES (?1, ?2, datetime(?3, 'unixepoch'), ?4, ?5, ?6)",
                 (
@@ -416,7 +416,7 @@ mod migration_test {
                     credential.created_at,
                     Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 as u16,
                     credential.public_key.clone(),
-                    credential.secret_key.clone(),
+                    credential.private_key.clone(),
                 ),
             )
             .expect("inserting duplicate");

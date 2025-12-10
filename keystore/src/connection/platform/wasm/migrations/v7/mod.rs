@@ -27,7 +27,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
                     credential: v6_credential.credential.clone(),
                     created_at: v6_credential.created_at,
                     public_key: v6_credential.public_key.clone(),
-                    secret_key: v6_credential.secret_key.clone(),
+                    private_key: v6_credential.private_key.clone(),
                 };
                 new_credential.save(tx).await?;
                 super::delete_credential_by_value(tx, v6_credential.credential.clone()).await?;

@@ -31,9 +31,9 @@ impl StoredCredential {
         blob.read_to_end(&mut credential)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "secret_key", rowid, true)?;
-        let mut secret_key = vec![];
-        blob.read_to_end(&mut secret_key)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "private_key", rowid, true)?;
+        let mut private_key = vec![];
+        blob.read_to_end(&mut private_key)?;
         blob.close()?;
 
         let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "public_key", rowid, true)?;
@@ -47,7 +47,7 @@ impl StoredCredential {
             ciphersuite,
             created_at,
             public_key,
-            secret_key,
+            private_key,
         })
     }
 }
@@ -130,14 +130,14 @@ impl EntityTransactionExt for StoredCredential {
     async fn save(&self, transaction: &TransactionWrapper<'_>) -> crate::CryptoKeystoreResult<()> {
         Self::ConnectionType::check_buffer_size(self.id.len())?;
         Self::ConnectionType::check_buffer_size(self.credential.len())?;
-        Self::ConnectionType::check_buffer_size(self.secret_key.len())?;
+        Self::ConnectionType::check_buffer_size(self.private_key.len())?;
         Self::ConnectionType::check_buffer_size(self.public_key.len())?;
 
         let pk_sha256 = self.id_sha256();
         let zb_pk = rusqlite::blob::ZeroBlob(self.public_key.len() as i32);
         let zb_id = rusqlite::blob::ZeroBlob(self.id.len() as i32);
         let zb_cred = rusqlite::blob::ZeroBlob(self.credential.len() as i32);
-        let zb_sk = rusqlite::blob::ZeroBlob(self.secret_key.len() as i32);
+        let zb_sk = rusqlite::blob::ZeroBlob(self.private_key.len() as i32);
 
         use rusqlite::ToSql as _;
         let params: [rusqlite::types::ToSqlOutput; 7] = [
@@ -157,7 +157,7 @@ impl EntityTransactionExt for StoredCredential {
                 credential,
                 created_at,
                 ciphersuite,
-                secret_key
+                private_key
             ) VALUES (?, ?, ?, ?, datetime(?, 'unixepoch'), ?, ?)";
 
         transaction.execute(sql, params)?;
@@ -178,9 +178,9 @@ impl EntityTransactionExt for StoredCredential {
         blob.write_all(&self.public_key)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "secret_key", row_id, false)?;
+        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "private_key", row_id, false)?;
 
-        blob.write_all(&self.secret_key)?;
+        blob.write_all(&self.private_key)?;
         blob.close()?;
 
         Ok(())

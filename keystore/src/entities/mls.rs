@@ -140,7 +140,7 @@ pub struct StoredCredential {
     #[sensitive]
     pub public_key: Vec<u8>,
     #[sensitive]
-    pub secret_key: Vec<u8>,
+    pub private_key: Vec<u8>,
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]

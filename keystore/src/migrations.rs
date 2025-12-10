@@ -37,7 +37,7 @@ pub(crate) struct V6Credential {
     #[sensitive]
     pub public_key: Vec<u8>,
     #[sensitive]
-    pub secret_key: Vec<u8>,
+    pub private_key: Vec<u8>,
 }
 
 /// Entity representing a persisted `SignatureKeyPair`
@@ -72,7 +72,7 @@ pub(crate) fn migrate_to_new_credential(
         credential: v5_credential.credential.clone(),
         created_at: v5_credential.created_at,
         signature_scheme: stored_keypair.signature_scheme,
-        secret_key: mls_keypair.private().to_owned(),
+        private_key: mls_keypair.private().to_owned(),
         public_key: stored_keypair.pk.clone(),
     };
 

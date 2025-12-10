@@ -31,7 +31,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
             unixepoch(created_at) AS created_at,
             signature_scheme,
             public_key,
-            secret_key
+            private_key
          FROM {credential_table}",
         credential_table = StoredCredential::COLLECTION_NAME,
     ))?;
@@ -44,7 +44,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
             created_at: row.get("created_at")?,
             signature_scheme: row.get("signature_scheme")?,
             public_key: row.get("public_key")?,
-            secret_key: row.get("secret_key")?,
+            private_key: row.get("private_key")?,
         };
 
         // Insert the new credential into temporary mls_credentials_new table, that will be renamed in the next
@@ -57,7 +57,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
                         created_at,
                         ciphersuite,
                         public_key,
-                        secret_key
+                        private_key
                     )
                     VALUES (?1, ?2, datetime(?3, 'unixepoch'), ?4, ?5, ?6)",
                 (
@@ -66,7 +66,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
                     v6.created_at,
                     ciphersuite,
                     v6.public_key.clone(),
-                    v6.secret_key.clone(),
+                    v6.private_key.clone(),
                 ),
             )?;
         }

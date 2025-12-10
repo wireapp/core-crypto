@@ -5,7 +5,7 @@ CREATE TABLE mls_credentials_new (
     credential BLOB NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     ciphersuite INT NOT NULL,
-    secret_key BLOB NOT NULL
+    private_key BLOB NOT NULL
 );
 
 INSERT INTO mls_credentials_new (
@@ -15,7 +15,7 @@ INSERT INTO mls_credentials_new (
     credential,
     created_at,
     ciphersuite,
-    secret_key
+    private_key
 )
 SELECT sha256_blob(public_key),
     public_key,
@@ -23,7 +23,7 @@ SELECT sha256_blob(public_key),
     credential,
     created_at,
     ciphersuite,
-    secret_key
+    private_key
 FROM mls_credentials;
 
 DROP TABLE mls_credentials;

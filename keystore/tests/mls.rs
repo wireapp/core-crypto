@@ -84,7 +84,7 @@ mod tests {
             credential: credential.tls_serialize_detached().unwrap(),
             created_at: 0,
             ciphersuite: ciphersuite as u16,
-            secret_key: keypair.private().to_owned(),
+            private_key: keypair.private().to_owned(),
             public_key: keypair.to_public_vec(),
         };
 

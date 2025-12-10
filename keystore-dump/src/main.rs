@@ -53,7 +53,7 @@ async fn main() -> anyhow::Result<()> {
             core_crypto::Ciphersuite::try_from(cred.ciphersuite)
                 .expect("ciphersuite from db")
                 .signature_algorithm(),
-            cred.secret_key.to_owned(),
+            cred.private_key.to_owned(),
             cred.public_key.to_owned(),
         );
         let date = chrono::Utc
@@ -66,7 +66,7 @@ async fn main() -> anyhow::Result<()> {
             "credential": mls_credential,
             "created_at": date,
             "mls_keypair": mls_keypair,
-            "secret_key": cred.secret_key,
+            "private_key": cred.private_key,
             "public_key": cred.public_key,
         }));
     }

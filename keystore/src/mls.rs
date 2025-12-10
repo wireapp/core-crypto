@@ -323,7 +323,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
 
                 let mls_keypair = SignatureKeyPair::from_raw(
                     signature_scheme,
-                    stored_credential.secret_key.to_vec(),
+                    stored_credential.private_key.to_vec(),
                     stored_credential.public_key.to_vec(),
                 );
 

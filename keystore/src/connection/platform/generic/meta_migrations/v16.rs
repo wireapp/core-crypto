@@ -54,7 +54,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
                         created_at,
                         signature_scheme,
                         public_key,
-                        secret_key
+                        private_key
                     )
                     VALUES (?1, ?2, datetime(?3, 'unixepoch'), ?4, ?5, ?6)",
                 (
@@ -63,7 +63,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
                     c.created_at,
                     c.signature_scheme,
                     c.public_key.clone(),
-                    c.secret_key.clone(),
+                    c.private_key.clone(),
                 ),
             )?;
 

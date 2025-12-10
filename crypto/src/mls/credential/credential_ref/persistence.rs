@@ -73,7 +73,7 @@ impl CredentialRef {
                 let mls_credential = MlsCredential::tls_deserialize(&mut stored_credential.credential.as_slice())
                     .map_err(Error::tls_deserialize("mls credential"))?;
                 let ciphersuite = Ciphersuite::try_from(stored_credential.ciphersuite).map_err(RecursiveError::mls("loading ciphersuite from db"))?;
-                let signature_key_pair = openmls_basic_credential::SignatureKeyPair::from_raw(ciphersuite.signature_algorithm(), stored_credential.secret_key.to_owned(), stored_credential.public_key.to_owned());
+                let signature_key_pair = openmls_basic_credential::SignatureKeyPair::from_raw(ciphersuite.signature_algorithm(), stored_credential.private_key.to_owned(), stored_credential.public_key.to_owned());
                 let credential_type = mls_credential.credential_type().try_into().map_err(RecursiveError::mls_credential("loading credential from db"))?;
                 let earliest_validity = stored_credential.created_at;
                 Ok(Credential {
