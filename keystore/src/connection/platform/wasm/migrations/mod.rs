@@ -1,5 +1,6 @@
 mod db_key_type_to_bytes;
 mod delete_credential_by_value;
+mod migration_connection;
 mod pre_v4;
 mod v0;
 mod v2;

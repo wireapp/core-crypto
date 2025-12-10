@@ -54,6 +54,14 @@ impl WasmConnection {
 
         Ok(())
     }
+
+    /// Only for use during migrations.
+    pub(crate) fn from_inner(inner: WasmEncryptedStorage) -> Self {
+        Self {
+            name: None,
+            conn: inner,
+        }
+    }
 }
 
 impl DatabaseConnectionRequirements for WasmConnection {}
