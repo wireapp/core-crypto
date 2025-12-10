@@ -82,5 +82,5 @@ pub trait Decrypting<'a>: 'a + Deserialize<'a> {
 /// let foo = serde_json::from_str::<Foo::DecryptableFrom>(json)?.decrypt(cipher)?;
 /// ```
 pub trait Decryptable<'a>: Entity {
-    type DecryptableFrom: 'a + Decrypting<'a>;
+    type DecryptableFrom: 'a + Decrypting<'a, DecryptedForm = Self>;
 }
