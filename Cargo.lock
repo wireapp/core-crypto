@@ -4970,14 +4970,12 @@ checksum = "f7c45b9784283f1b2e7fb61b42047c2fd678ef0960d4f6f1eba131594cc369d4"
 [[package]]
 name = "rusty-jwt-tools"
 version = "0.13.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools.git#e2c2f088690305111ea4eeb802ab9c05ed49a2d3"
+source = "git+https://github.com/wireapp/rusty-jwt-tools.git?rev=05e0e3243c2f3ad9da2c37599f7ad3f004f12d98#05e0e3243c2f3ad9da2c37599f7ad3f004f12d98"
 dependencies = [
  "base64 0.22.1",
  "const_format",
  "derive_more",
- "getrandom 0.2.15",
  "jwt-simple",
- "lazy_static",
  "p256",
  "p384",
  "p521",
@@ -4987,7 +4985,6 @@ dependencies = [
  "serde_json",
  "sha2",
  "thiserror 2.0.17",
- "time",
  "url",
  "uuid",
  "zeroize",
