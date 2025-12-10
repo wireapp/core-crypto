@@ -53,7 +53,7 @@
 <a href=#53 id=53 data-nosnippet>53</a>            core_crypto::Ciphersuite::try_from(cred.ciphersuite)
 <a href=#54 id=54 data-nosnippet>54</a>                .expect(<span class="string">"ciphersuite from db"</span>)
 <a href=#55 id=55 data-nosnippet>55</a>                .signature_algorithm(),
-<a href=#56 id=56 data-nosnippet>56</a>            cred.secret_key.to_owned(),
+<a href=#56 id=56 data-nosnippet>56</a>            cred.private_key.to_owned(),
 <a href=#57 id=57 data-nosnippet>57</a>            cred.public_key.to_owned(),
 <a href=#58 id=58 data-nosnippet>58</a>        );
 <a href=#59 id=59 data-nosnippet>59</a>        <span class="kw">let </span>date = chrono::Utc
@@ -62,11 +62,11 @@
 <a href=#62 id=62 data-nosnippet>62</a>            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Cannot parse credential creation date"</span>))<span class="question-mark">?</span>;
 <a href=#63 id=63 data-nosnippet>63</a>
 <a href=#64 id=64 data-nosnippet>64</a>        credentials.push(<span class="macro">serde_json::json!</span>({
-<a href=#65 id=65 data-nosnippet>65</a>            <span class="string">"id"</span>: cred.id,
+<a href=#65 id=65 data-nosnippet>65</a>            <span class="string">"session_id"</span>: cred.session_id,
 <a href=#66 id=66 data-nosnippet>66</a>            <span class="string">"credential"</span>: mls_credential,
 <a href=#67 id=67 data-nosnippet>67</a>            <span class="string">"created_at"</span>: date,
 <a href=#68 id=68 data-nosnippet>68</a>            <span class="string">"mls_keypair"</span>: mls_keypair,
-<a href=#69 id=69 data-nosnippet>69</a>            <span class="string">"secret_key"</span>: cred.secret_key,
+<a href=#69 id=69 data-nosnippet>69</a>            <span class="string">"private_key"</span>: cred.private_key,
 <a href=#70 id=70 data-nosnippet>70</a>            <span class="string">"public_key"</span>: cred.public_key,
 <a href=#71 id=71 data-nosnippet>71</a>        }));
 <a href=#72 id=72 data-nosnippet>72</a>    }

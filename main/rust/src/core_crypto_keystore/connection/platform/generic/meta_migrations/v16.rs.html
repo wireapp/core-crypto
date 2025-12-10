@@ -49,21 +49,21 @@
 <a href=#49 id=49 data-nosnippet>49</a>        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(c) = migrate_to_new_credential(<span class="kw-2">&amp;</span>v5, <span class="kw-2">&amp;</span>kp)<span class="question-mark">? </span>{
 <a href=#50 id=50 data-nosnippet>50</a>            tx.execute(
 <a href=#51 id=51 data-nosnippet>51</a>                <span class="string">"INSERT INTO mls_credentials_new (
-<a href=#52 id=52 data-nosnippet>52</a>                        id,
+<a href=#52 id=52 data-nosnippet>52</a>                        session_id,
 <a href=#53 id=53 data-nosnippet>53</a>                        credential,
 <a href=#54 id=54 data-nosnippet>54</a>                        created_at,
 <a href=#55 id=55 data-nosnippet>55</a>                        signature_scheme,
 <a href=#56 id=56 data-nosnippet>56</a>                        public_key,
-<a href=#57 id=57 data-nosnippet>57</a>                        secret_key
+<a href=#57 id=57 data-nosnippet>57</a>                        private_key
 <a href=#58 id=58 data-nosnippet>58</a>                    )
 <a href=#59 id=59 data-nosnippet>59</a>                    VALUES (?1, ?2, datetime(?3, 'unixepoch'), ?4, ?5, ?6)"</span>,
 <a href=#60 id=60 data-nosnippet>60</a>                (
-<a href=#61 id=61 data-nosnippet>61</a>                    c.id.clone(),
+<a href=#61 id=61 data-nosnippet>61</a>                    c.session_id.clone(),
 <a href=#62 id=62 data-nosnippet>62</a>                    c.credential.clone(),
 <a href=#63 id=63 data-nosnippet>63</a>                    c.created_at,
 <a href=#64 id=64 data-nosnippet>64</a>                    c.signature_scheme,
 <a href=#65 id=65 data-nosnippet>65</a>                    c.public_key.clone(),
-<a href=#66 id=66 data-nosnippet>66</a>                    c.secret_key.clone(),
+<a href=#66 id=66 data-nosnippet>66</a>                    c.private_key.clone(),
 <a href=#67 id=67 data-nosnippet>67</a>                ),
 <a href=#68 id=68 data-nosnippet>68</a>            )<span class="question-mark">?</span>;
 <a href=#69 id=69 data-nosnippet>69</a>

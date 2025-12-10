@@ -34,10 +34,10 @@
 <a href=#34 id=34 data-nosnippet>34</a>            <span class="prelude-val">Ok</span>(StoredCredential {
 <a href=#35 id=35 data-nosnippet>35</a>                ciphersuite: row.get(<span class="string">"ciphersuite"</span>)<span class="question-mark">?</span>,
 <a href=#36 id=36 data-nosnippet>36</a>                public_key: row.get(<span class="string">"public_key"</span>)<span class="question-mark">?</span>,
-<a href=#37 id=37 data-nosnippet>37</a>                id: Vec::new(),         <span class="comment">// not relevant for this application
-<a href=#38 id=38 data-nosnippet>38</a>                </span>credential: Vec::new(), <span class="comment">// not relevant for this application
-<a href=#39 id=39 data-nosnippet>39</a>                </span>created_at: <span class="number">0</span>,          <span class="comment">// not relevant for this application
-<a href=#40 id=40 data-nosnippet>40</a>                </span>secret_key: Vec::new(), <span class="comment">// not relevant for this application
+<a href=#37 id=37 data-nosnippet>37</a>                session_id: Vec::new(),  <span class="comment">// not relevant for this application
+<a href=#38 id=38 data-nosnippet>38</a>                </span>credential: Vec::new(),  <span class="comment">// not relevant for this application
+<a href=#39 id=39 data-nosnippet>39</a>                </span>created_at: <span class="number">0</span>,           <span class="comment">// not relevant for this application
+<a href=#40 id=40 data-nosnippet>40</a>                </span>private_key: Vec::new(), <span class="comment">// not relevant for this application
 <a href=#41 id=41 data-nosnippet>41</a>            </span>})
 <a href=#42 id=42 data-nosnippet>42</a>        })<span class="question-mark">?
 <a href=#43 id=43 data-nosnippet>43</a>        </span>.filter_map(|row| row.ok())

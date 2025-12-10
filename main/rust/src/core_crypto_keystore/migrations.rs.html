@@ -29,7 +29,7 @@
 <a href=#29 id=29 data-nosnippet>29</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>V6Credential {
 <a href=#30 id=30 data-nosnippet>30</a>    <span class="doccomment">/// Note: this is not a unique identifier, but the session id this credential belongs to.
 <a href=#31 id=31 data-nosnippet>31</a>    </span><span class="attr">#[sensitive]
-<a href=#32 id=32 data-nosnippet>32</a>    </span><span class="kw">pub </span>id: Vec&lt;u8&gt;,
+<a href=#32 id=32 data-nosnippet>32</a>    </span><span class="kw">pub </span>session_id: Vec&lt;u8&gt;,
 <a href=#33 id=33 data-nosnippet>33</a>    <span class="attr">#[sensitive]
 <a href=#34 id=34 data-nosnippet>34</a>    </span><span class="kw">pub </span>credential: Vec&lt;u8&gt;,
 <a href=#35 id=35 data-nosnippet>35</a>    <span class="kw">pub </span>created_at: u64,
@@ -37,7 +37,7 @@
 <a href=#37 id=37 data-nosnippet>37</a>    <span class="attr">#[sensitive]
 <a href=#38 id=38 data-nosnippet>38</a>    </span><span class="kw">pub </span>public_key: Vec&lt;u8&gt;,
 <a href=#39 id=39 data-nosnippet>39</a>    <span class="attr">#[sensitive]
-<a href=#40 id=40 data-nosnippet>40</a>    </span><span class="kw">pub </span>secret_key: Vec&lt;u8&gt;,
+<a href=#40 id=40 data-nosnippet>40</a>    </span><span class="kw">pub </span>private_key: Vec&lt;u8&gt;,
 <a href=#41 id=41 data-nosnippet>41</a>}
 <a href=#42 id=42 data-nosnippet>42</a>
 <a href=#43 id=43 data-nosnippet>43</a><span class="doccomment">/// Entity representing a persisted `SignatureKeyPair`
@@ -68,11 +68,11 @@
 <a href=#68 id=68 data-nosnippet>68</a>    }
 <a href=#69 id=69 data-nosnippet>69</a>
 <a href=#70 id=70 data-nosnippet>70</a>    <span class="kw">let </span>new_credential = V6Credential {
-<a href=#71 id=71 data-nosnippet>71</a>        id: v5_credential.id.clone(),
+<a href=#71 id=71 data-nosnippet>71</a>        session_id: v5_credential.id.clone(),
 <a href=#72 id=72 data-nosnippet>72</a>        credential: v5_credential.credential.clone(),
 <a href=#73 id=73 data-nosnippet>73</a>        created_at: v5_credential.created_at,
 <a href=#74 id=74 data-nosnippet>74</a>        signature_scheme: stored_keypair.signature_scheme,
-<a href=#75 id=75 data-nosnippet>75</a>        secret_key: mls_keypair.private().to_owned(),
+<a href=#75 id=75 data-nosnippet>75</a>        private_key: mls_keypair.private().to_owned(),
 <a href=#76 id=76 data-nosnippet>76</a>        public_key: stored_keypair.pk.clone(),
 <a href=#77 id=77 data-nosnippet>77</a>    };
 <a href=#78 id=78 data-nosnippet>78</a>

@@ -132,7 +132,7 @@
 <a href=#132 id=132 data-nosnippet>132</a></span><span class="kw">pub struct </span>StoredCredential {
 <a href=#133 id=133 data-nosnippet>133</a>    <span class="doccomment">/// Note: this is not a unique identifier, but the session id this credential belongs to.
 <a href=#134 id=134 data-nosnippet>134</a>    </span><span class="attr">#[sensitive]
-<a href=#135 id=135 data-nosnippet>135</a>    </span><span class="kw">pub </span>id: Vec&lt;u8&gt;,
+<a href=#135 id=135 data-nosnippet>135</a>    </span><span class="kw">pub </span>session_id: Vec&lt;u8&gt;,
 <a href=#136 id=136 data-nosnippet>136</a>    <span class="attr">#[sensitive]
 <a href=#137 id=137 data-nosnippet>137</a>    </span><span class="kw">pub </span>credential: Vec&lt;u8&gt;,
 <a href=#138 id=138 data-nosnippet>138</a>    <span class="kw">pub </span>created_at: u64,
@@ -140,7 +140,7 @@
 <a href=#140 id=140 data-nosnippet>140</a>    <span class="attr">#[sensitive]
 <a href=#141 id=141 data-nosnippet>141</a>    </span><span class="kw">pub </span>public_key: Vec&lt;u8&gt;,
 <a href=#142 id=142 data-nosnippet>142</a>    <span class="attr">#[sensitive]
-<a href=#143 id=143 data-nosnippet>143</a>    </span><span class="kw">pub </span>secret_key: Vec&lt;u8&gt;,
+<a href=#143 id=143 data-nosnippet>143</a>    </span><span class="kw">pub </span>private_key: Vec&lt;u8&gt;,
 <a href=#144 id=144 data-nosnippet>144</a>}
 <a href=#145 id=145 data-nosnippet>145</a>
 <a href=#146 id=146 data-nosnippet>146</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
