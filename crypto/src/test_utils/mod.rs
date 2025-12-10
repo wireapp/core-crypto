@@ -121,21 +121,22 @@ impl SessionContext {
             .await
             .unwrap();
 
-        let session = Session::try_new(&db).await.unwrap();
-        let cc = CoreCrypto::from(session);
+        let cc = CoreCrypto::new(db.clone());
+        cc.mls_init(
+            identifier.clone(),
+            &[context.cfg.ciphersuite],
+            context.transport.clone(),
+        )
+        .await;
+
         let transaction = cc.new_transaction().await.unwrap();
-        let session = cc.mls;
         // Setup the X509 PKI environment
         if let Some(chain) = chain.as_ref() {
             chain.register_with_central(&transaction).await;
         }
 
-        transaction
-            .mls_init(identifier.clone(), &[context.cfg.ciphersuite])
-            .await
-            .map_err(RecursiveError::transaction("mls init"))?;
-
-        session.provide_transport(context.transport.clone()).await;
+        let guard = cc.mls.read().await;
+        let session = guard.as_ref().unwrap().clone();
 
         let credential = Credential::from_identifier(&identifier, context.ciphersuite(), &session.crypto_provider)
             .map_err(RecursiveError::mls_credential("creating credential from identifier"))?;
