@@ -107,8 +107,7 @@ impl CoreCrypto {
     ) -> Result<Option<GroupStoreValue<ProteusConversationSession>>> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.mls.crypto_provider.keystore();
-        proteus.session(session_id, &keystore).await
+        proteus.session(session_id, &self.keystore).await
     }
 
     /// Proteus session exists
@@ -119,8 +118,7 @@ impl CoreCrypto {
     pub async fn proteus_session_exists(&self, session_id: &str) -> Result<bool> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.mls.crypto_provider.keystore();
-        Ok(proteus.session_exists(session_id, &keystore).await)
+        Ok(proteus.session_exists(session_id, &self.keystore).await)
     }
 
     /// Returns the proteus last resort prekey id (u16::MAX = 65535)
@@ -147,8 +145,7 @@ impl CoreCrypto {
     pub async fn proteus_fingerprint_local(&self, session_id: &str) -> Result<String> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.mls.crypto_provider.keystore();
-        proteus.fingerprint_local(session_id, &keystore).await
+        proteus.fingerprint_local(session_id, &self.keystore).await
     }
 
     /// Returns the proteus identity's public key fingerprint
@@ -159,8 +156,7 @@ impl CoreCrypto {
     pub async fn proteus_fingerprint_remote(&self, session_id: &str) -> Result<String> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.mls.crypto_provider.keystore();
-        proteus.fingerprint_remote(session_id, &keystore).await
+        proteus.fingerprint_remote(session_id, &self.keystore).await
     }
 }
 
