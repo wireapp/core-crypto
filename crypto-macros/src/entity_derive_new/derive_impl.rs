@@ -349,6 +349,10 @@ impl Entity {
                     })
                 }
             }
+
+            impl<#lifetime> crate::traits::Decryptable<#lifetime> for #struct_name {
+                type DecryptableFrom = #decrypt_struct_name<#lifetime>;
+            }
         }
     }
 }
