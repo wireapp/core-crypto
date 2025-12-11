@@ -1175,6 +1175,7 @@ version = "9.0.1"
 dependencies = [
  "darling 0.23.0",
  "heck 0.5.0",
+ "itertools 0.14.0",
  "proc-macro2",
  "quote",
  "syn 2.0.111",
