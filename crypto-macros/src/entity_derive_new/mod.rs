@@ -19,8 +19,6 @@ use crate::entity_derive_new::{
 /// Less abstract version of [parse::Entity] that has all the fields flattened
 /// ready for usage in `quote!()`.
 pub(super) struct Entity {
-    // This will be necessary for WPB-22192 and WPB-22193
-    #[expect(dead_code)]
     visibility: Visibility,
     struct_name: Ident,
     collection_name: String,

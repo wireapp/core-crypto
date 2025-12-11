@@ -1,8 +1,12 @@
 use itertools::Itertools as _;
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
+use syn::{Ident, Lifetime};
 
-use crate::entity_derive_new::Entity;
+use crate::entity_derive_new::{
+    Entity,
+    column_type::{ColumnType, EmitBorrowedForm as _},
+};
 
 impl quote::ToTokens for Entity {
     fn to_tokens(&self, tokens: &mut TokenStream) {
@@ -12,6 +16,7 @@ impl quote::ToTokens for Entity {
         tokens.extend(self.impl_borrow_primary_key());
         tokens.extend(self.impl_entity_database_mutation());
         tokens.extend(self.impl_entity_delete_borrowed());
+        tokens.extend(self.impl_decrypting());
     }
 }
 
@@ -265,6 +270,83 @@ impl Entity {
                     {
                         crate::entities::platform::delete_helper::<Self>(tx, #id_column_name, id.bytes().as_ref()).await
                     }
+                }
+            }
+        }
+    }
+
+    fn impl_decrypting(&self) -> TokenStream {
+        let Self {
+            visibility,
+            struct_name,
+            id_column,
+            other_columns,
+            ..
+        } = self;
+
+        let decrypt_struct_name = Ident::new(&format!("{struct_name}Decrypt"), Span::call_site());
+        let lifetime = Lifetime::new("'a", Span::call_site());
+        let field_name =
+            std::iter::once(&id_column.field_name).chain(other_columns.iter().map(|column| &column.field_name));
+        let field_type = std::iter::once(id_column.column_type.owned()).chain(
+            other_columns
+                .iter()
+                .map(|column| column.column_type.encrypted_form().borrowed(&lifetime)),
+        );
+
+        let id_field_name = &id_column.field_name;
+        // id field gets moved: no cloning!
+        let id_field_assignment = quote!(#id_field_name: self.#id_field_name);
+
+        let other_field_assignment = other_columns.iter().map(|column| {
+            let field_name = &column.field_name;
+            let make_decrypt_operation = |accessor: TokenStream| {
+                quote!(
+                    <#struct_name as crate::traits::DecryptData>::decrypt_data(
+                        cipher,
+                        &self.#id_field_name,
+                        #accessor,
+                    )
+                )
+            };
+            let field_expr = match column.column_type {
+                ColumnType::Bytes => {
+                    let decrypt_operation = make_decrypt_operation(quote!(self.#field_name));
+                    quote!(#decrypt_operation?)
+                }
+                ColumnType::String => {
+                    let decrypt_operation = make_decrypt_operation(quote!(self.#field_name));
+                    quote!(String::from_utf8(#decrypt_operation?).map_err(|err| err.utf8_error())?)
+                }
+                ColumnType::OptionalBytes => {
+                    let decrypt_operation = make_decrypt_operation(quote!(#field_name));
+                    quote!(self.#field_name.map(|#field_name| #decrypt_operation).transpose()?)
+                }
+            };
+
+            quote!(#field_name: #field_expr)
+        });
+
+        // id field gets moved _last_ so that we can borrow `self.id_field` for the `decrypt_data` calls
+        let field_assignment = other_field_assignment.chain(std::iter::once(id_field_assignment));
+
+        quote! {
+            #[derive(serde::Deserialize)]
+            #visibility struct #decrypt_struct_name<#lifetime> {
+                // we need this phantom data to ensure the lifetime is _always_ used;
+                // this produces an error otherwise
+                #[serde(skip)]
+                _phantom_data: std::marker::PhantomData<&#lifetime ()>,
+                #( #field_name: #field_type, )*
+            }
+
+            impl<#lifetime> crate::traits::Decrypting<#lifetime> for #decrypt_struct_name<#lifetime> {
+                type DecryptedForm = #struct_name;
+
+                fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> crate::CryptoKeystoreResult<#struct_name> {
+                    Ok(#struct_name {
+                        #( #field_assignment, )*
+                    })
                 }
             }
         }
