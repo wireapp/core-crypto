@@ -1,3 +1,4 @@
+use itertools::Itertools as _;
 use proc_macro2::TokenStream;
 use quote::quote;
 
@@ -9,6 +10,7 @@ impl quote::ToTokens for Entity {
         tokens.extend(self.impl_entity_generic());
         tokens.extend(self.impl_entity_wasm());
         tokens.extend(self.impl_borrow_primary_key());
+        tokens.extend(self.impl_entity_database_mutation());
     }
 }
 
@@ -166,6 +168,66 @@ impl Entity {
                             })
                         }).await
                     }
+                }
+            }
+        }
+    }
+
+    fn impl_entity_database_mutation(&self) -> proc_macro2::TokenStream {
+        let Self {
+            collection_name,
+            struct_name,
+            id_column,
+            other_columns,
+            ..
+        } = self;
+
+        let sql_column_names = std::iter::once(id_column.sql_name())
+            .chain(other_columns.iter().map(|column| column.sql_name()))
+            .join(", ");
+        let sql_field_placeholders = std::iter::repeat_n("?", other_columns.len() + 1).join(", ");
+        let sql_statement =
+            format!("INSERT OR REPLACE INTO {collection_name} ({sql_column_names}) VALUES ({sql_field_placeholders})");
+        let fields = std::iter::once(id_column.store_expression())
+            .chain(other_columns.iter().map(|column| column.store_expression()))
+            .map(|tokens| quote!(#tokens,))
+            .collect::<TokenStream>();
+
+        quote! {
+            #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+            #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+            impl<'a> crate::traits::EntityDatabaseMutation<'a> for #struct_name {
+                type Transaction = crate::connection::TransactionWrapper<'a>;
+
+                async fn save(&self, tx: &Self::Transaction) -> crate::CryptoKeystoreResult<()> {
+                    #[cfg(target_family = "wasm")]
+                        {
+                            // TODO(WPB-22196): don't clone here, we don't need mutable ownership to save
+                            tx.save(self.clone()).await
+                        }
+
+                        #[cfg(not(target_family = "wasm"))]
+                        {
+                            let mut stmt = tx.prepare_cached(#sql_statement)?;
+                            stmt.execute(rusqlite::params![#fields])?;
+                            Ok(())
+                        }
+                }
+
+                async fn count(tx: &Self::Transaction) -> crate::CryptoKeystoreResult<u32> {
+                    #[cfg(target_family = "wasm")]
+                    {
+                        tx.count::<Self>().await
+                    }
+
+                    #[cfg(not(target_family = "wasm"))]
+                    {
+                        crate::entities::platform::count_helper_tx::<Self>(tx).await
+                    }
+                }
+
+                async fn delete(tx: &Self::Transaction, id: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<bool> {
+                    Self::delete_borrowed(tx, id).await
                 }
             }
         }

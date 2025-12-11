@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::Type;
@@ -53,7 +55,7 @@ where
     /// This assumes that a value `row: rusqlite::Row` is in scope,
     /// and the containing scope can handle early returns of type `rusqlite::Error`
     pub(super) fn load_expression(&self) -> TokenStream {
-        let column_name = self.column_name.clone().unwrap_or_else(|| self.field_name.to_string());
+        let column_name = self.sql_name();
 
         let expr = quote!(row.get::<_, Vec<u8>>(#column_name)?);
 
@@ -77,5 +79,28 @@ where
         let field_name = &self.field_name;
         let load_expression = self.load_expression();
         quote!(#field_name: #load_expression)
+    }
+}
+
+impl<Type> GenericColumn<Type> {
+    /// Emit the sql column name for this column
+    pub(super) fn sql_name(&self) -> Cow<'_, str> {
+        self.column_name
+            .as_ref()
+            .map(Into::into)
+            .unwrap_or_else(|| self.field_name.to_string().into())
+    }
+
+    /// Emit a store expression.
+    ///
+    /// This assumes that `self` is in scope and the expression is in a context where it will be
+    /// automatically borrowed.
+    pub(super) fn store_expression(&self) -> TokenStream {
+        let Self { field_name, .. } = self;
+        let expr = quote!(self.#field_name);
+        match self.transformation {
+            None => expr,
+            Some(FieldTransformation::Hex) => quote!(hex::encode(&#expr)),
+        }
     }
 }
