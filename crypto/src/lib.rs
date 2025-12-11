@@ -207,4 +207,23 @@ impl CoreCrypto {
 
         Ok(())
     }
+
+    pub async fn proteus_init(&self) -> Result<()> {
+        let context = self
+            .new_transaction()
+            .await
+            .map_err(RecursiveError::transaction("starting new transaction"))?;
+
+        context
+            .proteus_init(self.keystore.clone())
+            .await
+            .map_err(RecursiveError::transaction("initializing MLS client"))?;
+
+        context
+            .finish()
+            .await
+            .map_err(RecursiveError::transaction("finishing transaction"))?;
+
+        Ok(())
+    }
 }

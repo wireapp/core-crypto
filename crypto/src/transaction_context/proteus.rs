@@ -1,5 +1,7 @@
 //! This module contains all [super::TransactionContext] methods concerning proteus.
 
+use mls_crypto_provider::Database;
+
 use super::{Error, Result, TransactionContext};
 use crate::{
     RecursiveError,
@@ -9,8 +11,8 @@ use crate::{
 
 impl TransactionContext {
     /// Initializes the proteus client
-    pub async fn proteus_init(&self) -> Result<()> {
-        let keystore = self.keystore().await?;
+    pub async fn proteus_init(&self, database: Database) -> Result<()> {
+        let keystore = database;
         let proteus_client = ProteusCentral::try_new(&keystore)
             .await
             .map_err(RecursiveError::root("creating new proteus client"))?;
