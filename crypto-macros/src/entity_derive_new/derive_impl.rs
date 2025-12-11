@@ -173,7 +173,7 @@ impl Entity {
         }
     }
 
-    fn impl_entity_database_mutation(&self) -> proc_macro2::TokenStream {
+    fn impl_entity_database_mutation(&self) -> TokenStream {
         let Self {
             collection_name,
             struct_name,
