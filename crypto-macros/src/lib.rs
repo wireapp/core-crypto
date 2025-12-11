@@ -97,11 +97,11 @@ pub fn derive_entity(input: TokenStream) -> TokenStream {
 /// - `EntityBase`
 /// - `Entity`
 /// - `BorrowPrimaryKey`
+/// - `EntityDatabaseMutation`
+/// - `EntityDeleteBorrowed`
 ///
 /// ### Planned to Implement
 ///
-/// - `EntityDatabaseMutation`
-/// - `EntityDeleteBorrowed`
 /// - `Decrypting` (+ relevant associated struct)
 /// - `Encrypting` (+ relevant associated struct)
 ///
@@ -124,6 +124,16 @@ pub fn derive_entity(input: TokenStream) -> TokenStream {
 /// key, you need to implement all these traits manually.
 ///
 /// Implementation of `get_borrowed` defers to the helper function defined in `entities::platform::generic`.
+///
+/// ### `EntityDatabaseMutation`
+///
+/// The derived `save` method (non-wasm) generates sql like:
+///
+/// ```sql
+/// INSERT OR REPLACE INTO entities (id, foo, bar) VALUES (?, ?, ?)
+/// ```
+///
+/// The wasm implementation delegates to the transaction's `save` method, which serializes via serde.
 #[proc_macro_derive(EntityNew, attributes(entity))]
 pub fn derive_entity_new(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
