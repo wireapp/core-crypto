@@ -99,11 +99,9 @@ pub fn derive_entity(input: TokenStream) -> TokenStream {
 /// - `BorrowPrimaryKey`
 /// - `EntityDatabaseMutation`
 /// - `EntityDeleteBorrowed`
-///
-/// ### Planned to Implement
-///
-/// - `Decrypting` (+ relevant associated struct)
 /// - `Encrypting` (+ relevant associated struct)
+/// - `Decrypting` (+ relevant associated struct)
+/// - `Decryptable`
 ///
 /// ### `EntityBase`
 ///
@@ -134,6 +132,26 @@ pub fn derive_entity(input: TokenStream) -> TokenStream {
 /// ```
 ///
 /// The wasm implementation delegates to the transaction's `save` method, which serializes via serde.
+///
+/// ### Item-level encryption (i.e. `Encrypting`, `Decrypting`)
+///
+/// All fields except the id field are encrypted. If you need more unencrypted fields, implement this trait family
+/// yourself.
+///
+/// This macro generates an encryption helper associated struct. If this item is `Foo`, the associated struct is
+/// `FooEncrypt`. `FooEncrypt` implements `serde::Serialize`. Expected usage:
+///
+/// ```rust,ignore
+/// let encrypted = serde_json::to_string(&foo.encrypt(cipher)?)?;
+/// ```
+///
+/// This macro generates a decryption helper associated struct. If this item is `Foo`, the associated struct is
+/// `FooDecrypt`. `FooDecrypt` implements `serde::Deserialize` and `Decrypting`, with `FooDecrypt::DecryptedForm:
+/// Foo`. `Foo` implements `Decryptable`, with `Decryptable::DecryptableFrom: FooDecrypt`. Expected usage:
+///
+/// ```rust,ignore
+/// let decrypted = serde_json::from_str::<Foo::DecryptableFrom>(&encrypted)?.decrypt(cipher)?;
+/// ```
 #[proc_macro_derive(EntityNew, attributes(entity))]
 pub fn derive_entity_new(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
