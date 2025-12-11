@@ -11,6 +11,7 @@ impl quote::ToTokens for Entity {
         tokens.extend(self.impl_entity_wasm());
         tokens.extend(self.impl_borrow_primary_key());
         tokens.extend(self.impl_entity_database_mutation());
+        tokens.extend(self.impl_entity_delete_borrowed());
     }
 }
 
@@ -227,7 +228,43 @@ impl Entity {
                 }
 
                 async fn delete(tx: &Self::Transaction, id: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<bool> {
-                    Self::delete_borrowed(tx, id).await
+                    <Self as crate::traits::EntityDeleteBorrowed>::delete_borrowed(tx, id).await
+                }
+            }
+        }
+    }
+
+    fn impl_entity_delete_borrowed(&self) -> TokenStream {
+        let Self {
+            collection_name,
+            struct_name,
+            id_column,
+            ..
+        } = self;
+
+        let id_column_name = id_column.sql_name();
+
+        quote! {
+            #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+            #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+            impl<'a> crate::traits::EntityDeleteBorrowed<'a> for #struct_name {
+                async fn delete_borrowed<Q>(
+                    tx: &<Self as crate::traits::EntityDatabaseMutation<'a>>::Transaction,
+                    id: &Q,
+                ) -> crate::CryptoKeystoreResult<bool>
+                where
+                    Self::PrimaryKey: std::borrow::Borrow<Q>,
+                    Q: crate::traits::KeyType
+                {
+                    #[cfg(target_family = "wasm")]
+                    {
+                        tx.delete(#collection_name, id.bytes().as_ref()).await
+                    }
+
+                    #[cfg(not(target_family = "wasm"))]
+                    {
+                        crate::entities::platform::delete_helper::<Self>(tx, #id_column_name, id.bytes().as_ref()).await
+                    }
                 }
             }
         }
