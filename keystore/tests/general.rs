@@ -62,8 +62,6 @@ mod tests {
 
         let store_names = db.store_names();
 
-        assert!(store_names.contains(&"regression_check".into()));
-
         assert!(store_names.contains(&"mls_psk_bundles".into()));
         assert!(store_names.contains(&"mls_hpke_private_keys".into()));
         assert!(store_names.contains(&"mls_encryption_keypairs".into()));

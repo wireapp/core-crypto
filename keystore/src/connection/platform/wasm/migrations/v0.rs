@@ -15,7 +15,7 @@ use crate::{
 };
 
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
-    let idb_builder = DatabaseBuilder::new(name)
+    DatabaseBuilder::new(name)
         .version(DB_VERSION_0)
         .add_object_store(
             ObjectStoreBuilder::new(V5Credential::COLLECTION_NAME)
@@ -116,8 +116,5 @@ pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
             ObjectStoreBuilder::new(ProteusSession::COLLECTION_NAME)
                 .auto_increment(false)
                 .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
-        );
-    #[cfg(feature = "idb-regression-test")]
-    let idb_builder = idb_builder.add_object_store(ObjectStoreBuilder::new("regression_check").auto_increment(false));
-    idb_builder
+        )
 }

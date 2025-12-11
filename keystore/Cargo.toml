@@ -17,7 +17,6 @@ workspace = true
 [features]
 default = ["proteus-keystore"]
 proteus-keystore = ["dep:proteus-traits"]
-idb-regression-test = []
 log-queries = ["rusqlite/trace"]
 # kept here because legacy keystore module is using this feature.
 serde = []
@@ -95,10 +94,7 @@ mls-crypto-provider.workspace = true
 rstest = "0.26"
 rstest_reuse = "0.7"
 futures-lite = "2.6"
-core-crypto-keystore = { path = ".", features = [
-  "idb-regression-test",
-  "log-queries",
-] }
+core-crypto-keystore = { path = ".", features = ["log-queries"] }
 env_logger = "0.11"
 proteus-wasm = { workspace = true }
 
