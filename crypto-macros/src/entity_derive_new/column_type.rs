@@ -120,7 +120,7 @@ impl EmitGetExpression for ColumnType {
             ColumnType::String => quote!(String::from_utf8(#input).map_err(|err| err.utf8_error())?),
             ColumnType::OptionalBytes => quote! {{
                 let data = #input;
-                (!data.is_empty).then_some(data)
+                (!data.is_empty()).then_some(data)
             }},
         }
     }
