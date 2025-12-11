@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 #[cfg(feature = "proteus")]
 use async_lock::Mutex;
-use async_lock::{RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
+use async_lock::{RwLock, RwLockWriteGuardArc};
 use core_crypto_keystore::{CryptoKeystoreError, connection::FetchFromDatabase, entities::ConsumerData};
 pub use error::{Error, Result};
 use mls_crypto_provider::{Database, MlsCryptoProvider};
@@ -17,7 +17,10 @@ use crate::{
     Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef,
     CredentialType, KeystoreError, MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
     group_store::GroupStore,
-    mls::{HasSessionAndCrypto, session::Error as SessionError, session::identities::Identities},
+    mls::{
+        self, HasSessionAndCrypto,
+        session::{Error as SessionError, identities::Identities},
+    },
 };
 pub mod conversation;
 pub mod e2e_identity;
@@ -45,9 +48,8 @@ pub struct TransactionContext {
 #[derive(Debug, Clone)]
 enum TransactionContextInner {
     Valid {
-        provider: MlsCryptoProvider,
-        transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
-        mls_client: Session,
+        keystore: Database,
+        mls_client: Arc<RwLock<Option<Session>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
         #[cfg(feature = "proteus")]
         proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
@@ -61,7 +63,8 @@ impl CoreCrypto {
     /// in a single database transaction.
     pub async fn new_transaction(&self) -> Result<TransactionContext> {
         TransactionContext::new(
-            &self.mls,
+            self.keystore.clone(),
+            self.mls.clone(),
             #[cfg(feature = "proteus")]
             self.proteus.clone(),
         )
@@ -89,23 +92,21 @@ impl HasSessionAndCrypto for TransactionContext {
 
 impl TransactionContext {
     async fn new(
-        client: &Session,
+        keystore: Database,
+        client: Arc<RwLock<Option<Session>>>,
         #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     ) -> Result<Self> {
-        client
-            .crypto_provider
+        keystore
             .new_transaction()
             .await
             .map_err(MlsError::wrap("creating new transaction"))?;
         let mls_groups = Arc::new(RwLock::new(Default::default()));
-        let callbacks = client.transport.clone();
         let mls_client = client.clone();
         Ok(Self {
             inner: Arc::new(
                 TransactionContextInner::Valid {
+                    keystore,
                     mls_client,
-                    transport: callbacks,
-                    provider: client.crypto_provider.clone(),
                     mls_groups,
                     #[cfg(feature = "proteus")]
                     proteus_central,
@@ -117,30 +118,34 @@ impl TransactionContext {
 
     pub(crate) async fn session(&self) -> Result<Session> {
         match &*self.inner.read().await {
-            TransactionContextInner::Valid { mls_client, .. } => Ok(mls_client.clone()),
-            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
-        }
-    }
-
-    pub(crate) async fn mls_transport(&self) -> Result<RwLockReadGuardArc<Option<Arc<dyn MlsTransport + 'static>>>> {
-        match &*self.inner.read().await {
-            TransactionContextInner::Valid {
-                transport: callbacks, ..
-            } => Ok(callbacks.read_arc().await),
-            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) async fn set_transport_callbacks(
-        &self,
-        callbacks: Option<Arc<dyn MlsTransport + 'static>>,
-    ) -> Result<()> {
-        match &*self.inner.read().await {
-            TransactionContextInner::Valid { transport: cbs, .. } => {
-                *cbs.write_arc().await = callbacks;
-                Ok(())
+            TransactionContextInner::Valid { mls_client, .. } => {
+                if let Some(session) = mls_client.read().await.as_ref() {
+                    return Ok(session.clone());
+                }
+                Err(mls::session::Error::MlsNotInitialized)
+                    .map_err(RecursiveError::mls_client(
+                        "Getting mls session from transaction context",
+                    ))
+                    .map_err(Into::into)
             }
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
+        }
+    }
+
+    pub(crate) async fn mls_transport(&self) -> Result<Arc<dyn MlsTransport + 'static>> {
+        match &*self.inner.read().await {
+            TransactionContextInner::Valid { mls_client, .. } => {
+                if let Some(mls_client) = mls_client.read().await.as_ref() {
+                    let transport = mls_client.transport.clone();
+                    return Ok(transport);
+                }
+                Err(mls::session::Error::MlsNotInitialized)
+                    .map_err(RecursiveError::mls_client(
+                        "Getting mls session from transaction context",
+                    ))
+                    .map_err(Into::into)
+            }
+
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
@@ -148,14 +153,23 @@ impl TransactionContext {
     /// Clones all references that the [MlsCryptoProvider] comprises.
     pub async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
         match &*self.inner.read().await {
-            TransactionContextInner::Valid { provider, .. } => Ok(provider.clone()),
+            TransactionContextInner::Valid { mls_client, .. } => {
+                if let Some(session) = mls_client.read().await.as_ref() {
+                    return Ok(session.crypto_provider.clone());
+                }
+                Err(mls::session::Error::MlsNotInitialized)
+                    .map_err(RecursiveError::mls_client(
+                        "Getting mls session from transaction context",
+                    ))
+                    .map_err(Into::into)
+            }
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
 
     pub(crate) async fn keystore(&self) -> Result<Database> {
         match &*self.inner.read().await {
-            TransactionContextInner::Valid { provider, .. } => Ok(provider.keystore()),
+            TransactionContextInner::Valid { keystore, .. } => Ok(keystore.clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
@@ -180,12 +194,11 @@ impl TransactionContext {
     /// something is called from this object.
     pub async fn finish(&self) -> Result<()> {
         let mut guard = self.inner.write().await;
-        let TransactionContextInner::Valid { provider, .. } = &*guard else {
+        let TransactionContextInner::Valid { keystore, .. } = &*guard else {
             return Err(Error::InvalidTransactionContext);
         };
 
-        let commit_result = provider
-            .keystore()
+        let commit_result = keystore
             .commit_transaction()
             .await
             .map_err(KeystoreError::wrap("commiting transaction"))
@@ -201,12 +214,11 @@ impl TransactionContext {
     pub async fn abort(&self) -> Result<()> {
         let mut guard = self.inner.write().await;
 
-        let TransactionContextInner::Valid { provider, .. } = &*guard else {
+        let TransactionContextInner::Valid { keystore, .. } = &*guard else {
             return Err(Error::InvalidTransactionContext);
         };
 
-        let result = provider
-            .keystore()
+        let result = keystore
             .rollback_transaction()
             .await
             .map_err(KeystoreError::wrap("rolling back transaction"))
