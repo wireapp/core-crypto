@@ -3,10 +3,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{Ident, Lifetime};
 
-use crate::entity_derive_new::{
-    Entity,
-    column_type::{ColumnType, EmitBorrowedForm as _},
-};
+use crate::entity_derive_new::{Entity, column_type::ColumnType};
 
 impl quote::ToTokens for Entity {
     fn to_tokens(&self, tokens: &mut TokenStream) {
@@ -17,6 +14,7 @@ impl quote::ToTokens for Entity {
         tokens.extend(self.impl_entity_database_mutation());
         tokens.extend(self.impl_entity_delete_borrowed());
         tokens.extend(self.impl_decrypting());
+        tokens.extend(self.impl_encrypting());
     }
 }
 
@@ -291,7 +289,7 @@ impl Entity {
         let field_type = std::iter::once(id_column.column_type.owned()).chain(
             other_columns
                 .iter()
-                .map(|column| column.column_type.encrypted_form().borrowed(&lifetime)),
+                .map(|column| column.column_type.encrypted_form().borrowed_with_sigil(&lifetime)),
         );
 
         let id_field_name = &id_column.field_name;
@@ -352,6 +350,77 @@ impl Entity {
 
             impl<#lifetime> crate::traits::Decryptable<#lifetime> for #struct_name {
                 type DecryptableFrom = #decrypt_struct_name<#lifetime>;
+            }
+        }
+    }
+
+    fn impl_encrypting(&self) -> TokenStream {
+        let Self {
+            visibility,
+            struct_name,
+            id_column,
+            other_columns,
+            ..
+        } = self;
+
+        let encrypt_struct_name = Ident::new(&format!("{struct_name}Encrypt"), Span::call_site());
+        let lifetime = Lifetime::new("'a", Span::call_site());
+        let field_name =
+            std::iter::once(&id_column.field_name).chain(other_columns.iter().map(|column| &column.field_name));
+        let field_type = std::iter::once(id_column.column_type.borrowed_with_sigil(&lifetime)).chain(
+            other_columns
+                .iter()
+                .map(|column| column.column_type.encrypted_form().owned()),
+        );
+
+        let id_field_name = &id_column.field_name;
+        let id_field_assignment = quote!(#id_field_name: &self.#id_field_name);
+
+        let other_field_assignment = other_columns.iter().map(|column| {
+            let field_name = &column.field_name;
+            let make_encrypt_operation = |accessor: TokenStream| {
+                quote!(
+                    self.encrypt_data(
+                        cipher,
+                        #accessor,
+                    )
+                )
+            };
+            let field_expr = match column.column_type {
+                ColumnType::Bytes => {
+                    let encrypt_operation = make_encrypt_operation(quote!(&self.#field_name));
+                    quote!(#encrypt_operation?)
+                }
+                ColumnType::String => {
+                    let encrypt_operation = make_encrypt_operation(quote!(self.#field_name.as_bytes()));
+                    quote!(#encrypt_operation?)
+                }
+                ColumnType::OptionalBytes => {
+                    let encrypt_operation = make_encrypt_operation(quote!(#field_name));
+                    quote!(self.#field_name.as_ref().map(|#field_name| #encrypt_operation).transpose()?)
+                }
+            };
+
+            quote!(#field_name: #field_expr)
+        });
+
+        let field_assignment = std::iter::once(id_field_assignment).chain(other_field_assignment);
+
+        quote! {
+            #[derive(serde::Serialize)]
+            #visibility struct #encrypt_struct_name<#lifetime> {
+                #( #field_name: #field_type, )*
+            }
+
+            impl<#lifetime> crate::traits::Encrypting<#lifetime> for #struct_name {
+                type EncryptedForm = #encrypt_struct_name<#lifetime>;
+
+                fn encrypt(&#lifetime self, cipher: &aes_gcm::Aes256Gcm) -> crate::CryptoKeystoreResult<#encrypt_struct_name> {
+                    use crate::traits::EncryptData as _;
+                    Ok(#encrypt_struct_name {
+                        #( #field_assignment, )*
+                    })
+                }
             }
         }
     }

@@ -71,6 +71,14 @@ impl IdColumnType {
             Self::Bytes => quote!([u8]),
         }
     }
+
+    /// Emit the borrowed form of this type.
+    ///
+    /// Note that this _includes_ the `&` sigil and lifetime in appropriate positions.
+    pub(super) fn borrowed_with_sigil(&self, lifetime: &Lifetime) -> TokenStream {
+        let without_sigil = self.borrowed();
+        quote!(&#lifetime #without_sigil)
+    }
 }
 
 /// Legal types for any other column
@@ -89,6 +97,26 @@ impl ColumnType {
         match self {
             ColumnType::String => Self::Bytes,
             ColumnType::Bytes | ColumnType::OptionalBytes => *self,
+        }
+    }
+
+    /// emit the owned form of this type
+    pub(super) fn owned(&self) -> TokenStream {
+        match self {
+            Self::String => quote!(String),
+            Self::Bytes => quote!(Vec<u8>),
+            Self::OptionalBytes => quote!(Option<Vec<u8>>),
+        }
+    }
+
+    /// Emit the borrowed form of this type.
+    ///
+    /// Note that this _includes_ the `&` sigil and lifetime in appropriate positions.
+    pub(super) fn borrowed_with_sigil(&self, lifetime: &Lifetime) -> TokenStream {
+        match self {
+            Self::String => quote!(&#lifetime str),
+            Self::Bytes => quote!(&#lifetime [u8]),
+            Self::OptionalBytes => quote!(Option<&#lifetime [u8]>),
         }
     }
 }
@@ -136,33 +164,6 @@ impl EmitGetExpression for ColumnType {
                 let data = #input;
                 (!data.is_empty()).then_some(data)
             }},
-        }
-    }
-}
-
-/// These columns can emit the borrowed form of their own type.
-///
-/// This is convenient for constructing the derivative associated types for item-level encryption.
-pub(super) trait EmitBorrowedForm {
-    /// Emit the borrowed form of this type.
-    ///
-    /// Note that this _includes_ the `&` sigil and lifetime in appropriate positions.
-    fn borrowed(&self, lifetime: &Lifetime) -> TokenStream;
-}
-
-impl EmitBorrowedForm for IdColumnType {
-    fn borrowed(&self, lifetime: &Lifetime) -> TokenStream {
-        let without_sigil = <Self>::borrowed(self);
-        quote!(&#lifetime #without_sigil)
-    }
-}
-
-impl EmitBorrowedForm for ColumnType {
-    fn borrowed(&self, lifetime: &Lifetime) -> TokenStream {
-        match self {
-            Self::String => quote!(&#lifetime str),
-            Self::Bytes => quote!(&#lifetime [u8]),
-            Self::OptionalBytes => quote!(Option<&#lifetime [u8]>),
         }
     }
 }
