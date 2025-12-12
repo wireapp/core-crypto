@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
+use derive_more::derive;
 #[cfg(test)]
 use mls_crypto_provider::PkiKeypair;
 use openmls::prelude::Credential as MlsCredential;
@@ -20,18 +21,16 @@ use crate::{
     e2e_identity::id::WireQualifiedClientId,
 };
 
-#[derive(core_crypto_macros::Debug, Clone, Zeroize)]
+#[derive(core_crypto_macros::Debug, Clone, Zeroize, derive::Constructor)]
 #[zeroize(drop)]
 pub struct CertificatePrivateKey {
     #[sensitive]
-    pub(crate) value: Vec<u8>,
-    #[zeroize(skip)]
-    pub(crate) signature_scheme: SignatureScheme,
+    value: Vec<u8>,
 }
 
 impl CertificatePrivateKey {
-    pub(crate) fn into_parts(mut self) -> (Vec<u8>, SignatureScheme) {
-        (std::mem::take(&mut self.value), self.signature_scheme)
+    pub(crate) fn into_inner(mut self) -> Vec<u8> {
+        std::mem::take(&mut self.value)
     }
 }
 
@@ -105,7 +104,7 @@ impl Credential {
         let earliest_validity = cert.get_created_at().map_err(RecursiveError::mls_credential(
             "getting credential 'not before' claim from leaf cert in Credential::x509",
         ))?;
-        let (sk, ..) = cert.private_key.into_parts();
+        let sk = cert.private_key.into_inner();
         let chain = cert.certificate_chain;
 
         let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::wrap("creating certificate key pair"))?;
@@ -215,10 +214,7 @@ impl CertificateBundle {
     pub fn from_certificate_and_issuer(cert: &X509Certificate, issuer: &X509Certificate) -> Self {
         Self {
             certificate_chain: vec![cert.certificate.to_der().unwrap(), issuer.certificate.to_der().unwrap()],
-            private_key: CertificatePrivateKey {
-                value: cert.pki_keypair.signing_key_bytes(),
-                signature_scheme: cert.signature_scheme,
-            },
+            private_key: CertificatePrivateKey::new(cert.pki_keypair.signing_key_bytes()),
             signature_scheme: cert.signature_scheme,
         }
     }

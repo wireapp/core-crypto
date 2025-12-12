@@ -205,10 +205,9 @@ impl SessionContext {
                 let cert_der = actor_cert.certificate.to_der().unwrap();
                 CertificateBundle {
                     certificate_chain: vec![cert_der],
-                    private_key: crate::mls::credential::x509::CertificatePrivateKey {
-                        signature_scheme,
-                        value: actor_cert.pki_keypair.signing_key_bytes(),
-                    },
+                    private_key: crate::mls::credential::x509::CertificatePrivateKey::new(
+                        actor_cert.pki_keypair.signing_key_bytes(),
+                    ),
                     signature_scheme,
                 }
             }
