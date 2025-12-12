@@ -457,7 +457,7 @@ WASM_GEN := $(wildcard $(GEN_DIR)/wasm-bindgen/*) $(GEN_DIR)/core_crypto_ffi.ts
 wasm-build-deps := $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES) $(PACKAGE_JSON) $(BUNFIG)
 $(WASM_GEN): $(wasm-build-deps)
 	cd $(JS_DIR) && \
-	bun ubrn build web $(CARGO_BUILD_ARGS) && \
+	RUSTFLAGS="" bun ubrn build web $(CARGO_BUILD_ARGS) && \
 	rm src/index.web.ts # This file is generated but we don't use it
 wasm-build: $(WASM_GEN)
 
