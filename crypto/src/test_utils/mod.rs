@@ -236,16 +236,6 @@ impl SessionContext {
         self.session.id().await.unwrap()
     }
 
-    pub async fn replace_transport(&self, new_transport: Arc<dyn MlsTransportTestExt>) {
-        self.transaction
-            .set_transport_callbacks(Some(new_transport.clone()))
-            .await
-            .unwrap();
-
-        let mut transport_guard = self.mls_transport.write().await;
-        *transport_guard = new_transport;
-    }
-
     pub async fn mls_transport(&self) -> Arc<dyn MlsTransportTestExt> {
         self.mls_transport.read().await.clone()
     }
