@@ -49,7 +49,7 @@ pub struct TransactionContext {
 enum TransactionContextInner {
     Valid {
         keystore: Database,
-        mls_client: Arc<RwLock<Option<Session>>>,
+        mls_session: Arc<RwLock<Option<Session>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
         #[cfg(feature = "proteus")]
         proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
@@ -93,7 +93,7 @@ impl HasSessionAndCrypto for TransactionContext {
 impl TransactionContext {
     async fn new(
         keystore: Database,
-        client: Arc<RwLock<Option<Session>>>,
+        mls_session: Arc<RwLock<Option<Session>>>,
         #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     ) -> Result<Self> {
         keystore
@@ -101,12 +101,11 @@ impl TransactionContext {
             .await
             .map_err(MlsError::wrap("creating new transaction"))?;
         let mls_groups = Arc::new(RwLock::new(Default::default()));
-        let mls_client = client.clone();
         Ok(Self {
             inner: Arc::new(
                 TransactionContextInner::Valid {
                     keystore,
-                    mls_client,
+                    mls_session: mls_session.clone(),
                     mls_groups,
                     #[cfg(feature = "proteus")]
                     proteus_central,
@@ -118,8 +117,8 @@ impl TransactionContext {
 
     pub(crate) async fn session(&self) -> Result<Session> {
         match &*self.inner.read().await {
-            TransactionContextInner::Valid { mls_client, .. } => {
-                if let Some(session) = mls_client.read().await.as_ref() {
+            TransactionContextInner::Valid { mls_session, .. } => {
+                if let Some(session) = mls_session.read().await.as_ref() {
                     return Ok(session.clone());
                 }
                 Err(mls::session::Error::MlsNotInitialized)
@@ -134,9 +133,9 @@ impl TransactionContext {
 
     pub(crate) async fn mls_transport(&self) -> Result<Arc<dyn MlsTransport + 'static>> {
         match &*self.inner.read().await {
-            TransactionContextInner::Valid { mls_client, .. } => {
-                if let Some(mls_client) = mls_client.read().await.as_ref() {
-                    let transport = mls_client.transport.clone();
+            TransactionContextInner::Valid { mls_session, .. } => {
+                if let Some(session) = mls_session.read().await.as_ref() {
+                    let transport = session.transport.clone();
                     return Ok(transport);
                 }
                 Err(mls::session::Error::MlsNotInitialized)
@@ -153,8 +152,8 @@ impl TransactionContext {
     /// Clones all references that the [MlsCryptoProvider] comprises.
     pub async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
         match &*self.inner.read().await {
-            TransactionContextInner::Valid { mls_client, .. } => {
-                if let Some(session) = mls_client.read().await.as_ref() {
+            TransactionContextInner::Valid { mls_session, .. } => {
+                if let Some(session) = mls_session.read().await.as_ref() {
                     return Ok(session.crypto_provider.clone());
                 }
                 Err(mls::session::Error::MlsNotInitialized)
