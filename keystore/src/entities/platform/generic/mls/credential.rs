@@ -1,16 +1,22 @@
 use std::{
+    borrow::Borrow,
     io::{Read, Write},
     time::SystemTime,
 };
 
-use rusqlite::Transaction;
+use async_trait::async_trait;
+use rusqlite::{OptionalExtension as _, Row, Transaction, params};
 
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
+    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind, Sha256Hash,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{
         Entity, EntityBase, EntityFindParams, EntityIdStringExt as _, EntityTransactionExt, StoredCredential,
-        StringEntityId,
+        StringEntityId, count_helper, count_helper_tx, delete_helper,
+    },
+    traits::{
+        BorrowPrimaryKey, Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation,
+        EntityDeleteBorrowed, KeyType,
     },
 };
 
@@ -21,22 +27,46 @@ impl StoredCredential {
         created_at: u64,
         ciphersuite: u16,
     ) -> CryptoKeystoreResult<Self> {
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "session_id", rowid, true)?;
+        let mut blob = transaction.blob_open(
+            rusqlite::MAIN_DB,
+            <Self as EntityBase>::COLLECTION_NAME,
+            "session_id",
+            rowid,
+            true,
+        )?;
         let mut session_id = vec![];
         blob.read_to_end(&mut session_id)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "credential", rowid, true)?;
+        let mut blob = transaction.blob_open(
+            rusqlite::MAIN_DB,
+            <Self as EntityBase>::COLLECTION_NAME,
+            "credential",
+            rowid,
+            true,
+        )?;
         let mut credential = vec![];
         blob.read_to_end(&mut credential)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "private_key", rowid, true)?;
+        let mut blob = transaction.blob_open(
+            rusqlite::MAIN_DB,
+            <Self as EntityBase>::COLLECTION_NAME,
+            "private_key",
+            rowid,
+            true,
+        )?;
         let mut private_key = vec![];
         blob.read_to_end(&mut private_key)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "public_key", rowid, true)?;
+        let mut blob = transaction.blob_open(
+            rusqlite::MAIN_DB,
+            <Self as EntityBase>::COLLECTION_NAME,
+            "public_key",
+            rowid,
+            true,
+        )?;
         let mut public_key = vec![];
         blob.read_to_end(&mut public_key)?;
         blob.close()?;
@@ -46,6 +76,24 @@ impl StoredCredential {
             credential,
             ciphersuite,
             created_at,
+            public_key,
+            private_key,
+        })
+    }
+
+    fn from_row(row: &Row<'_>) -> rusqlite::Result<Self> {
+        let session_id = row.get("session_id")?;
+        let credential = row.get("credential")?;
+        let created_at = row.get("created_at")?;
+        let ciphersuite = row.get("ciphersuite")?;
+        let public_key = row.get("public_key")?;
+        let private_key = row.get("private_key")?;
+
+        Ok(Self {
+            session_id,
+            credential,
+            created_at,
+            ciphersuite,
             public_key,
             private_key,
         })
@@ -163,22 +211,46 @@ impl EntityTransactionExt for StoredCredential {
         transaction.execute(sql, params)?;
         let row_id = transaction.last_insert_rowid();
 
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "session_id", row_id, false)?;
+        let mut blob = transaction.blob_open(
+            rusqlite::MAIN_DB,
+            <Self as EntityBase>::COLLECTION_NAME,
+            "session_id",
+            row_id,
+            false,
+        )?;
 
         blob.write_all(&self.session_id)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "credential", row_id, false)?;
+        let mut blob = transaction.blob_open(
+            rusqlite::MAIN_DB,
+            <Self as EntityBase>::COLLECTION_NAME,
+            "credential",
+            row_id,
+            false,
+        )?;
 
         blob.write_all(&self.credential)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "public_key", row_id, false)?;
+        let mut blob = transaction.blob_open(
+            rusqlite::MAIN_DB,
+            <Self as EntityBase>::COLLECTION_NAME,
+            "public_key",
+            row_id,
+            false,
+        )?;
 
         blob.write_all(&self.public_key)?;
         blob.close()?;
 
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "private_key", row_id, false)?;
+        let mut blob = transaction.blob_open(
+            rusqlite::MAIN_DB,
+            <Self as EntityBase>::COLLECTION_NAME,
+            "private_key",
+            row_id,
+            false,
+        )?;
 
         blob.write_all(&self.private_key)?;
         blob.close()?;
@@ -211,5 +283,111 @@ impl EntityTransactionExt for StoredCredential {
         } else {
             Err(Self::to_missing_key_err_kind().into())
         }
+    }
+}
+
+impl NewEntityBase for StoredCredential {
+    type ConnectionType = KeystoreDatabaseConnection;
+    type AutoGeneratedFields = u64;
+    const COLLECTION_NAME: &'static str = "mls_credentials";
+
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::StoredCredential(self)
+    }
+}
+
+#[async_trait]
+impl NewEntity for StoredCredential {
+    type PrimaryKey = Sha256Hash;
+
+    fn primary_key(&self) -> Self::PrimaryKey {
+        Sha256Hash::hash_from(&self.public_key)
+    }
+
+    async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
+        let conn = conn.conn().await;
+        let mut stmt = conn.prepare_cached(
+            "SELECT
+                session_id,
+                credential,
+                unixepoch(created_at) AS created_at,
+                ciphersuite,
+                public_key,
+                private_key
+            FROM mls_credentials
+            WHERE public_key_sha256 = ?",
+        )?;
+
+        stmt.query_row([key], Self::from_row).optional().map_err(Into::into)
+    }
+
+    async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<u32> {
+        count_helper::<Self>(conn).await
+    }
+
+    async fn load_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
+        let conn = conn.conn().await;
+        let mut stmt = conn.prepare_cached(
+            "SELECT
+                session_id,
+                credential,
+                unixepoch(created_at) AS created_at,
+                ciphersuite,
+                public_key,
+                private_key
+            FROM mls_credentials",
+        )?;
+        stmt.query_map([], Self::from_row)?
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+}
+
+#[async_trait]
+impl<'a> EntityDatabaseMutation<'a> for StoredCredential {
+    type Transaction = TransactionWrapper<'a>;
+
+    async fn pre_save(&mut self) -> CryptoKeystoreResult<Self::AutoGeneratedFields> {
+        let now = SystemTime::now();
+        let created_at = now
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .map_err(|_| CryptoKeystoreError::TimestampError)?
+            .as_secs();
+        self.created_at = created_at;
+        Ok(created_at)
+    }
+
+    async fn save(&'a self, tx: &Self::Transaction) -> CryptoKeystoreResult<()> {
+        // note not "or replace": a duplicate credential is an error and will produce one in sql
+        let mut stmt = tx.prepare_cached(
+            "INSERT INTO mls_credentials (
+                public_key_sha256,
+                public_key,
+                session_id,
+                credential,
+                created_at,
+                ciphersuite,
+                private_key
+            ) VALUES (?, ?, ?, ?, datetime(?, 'unixepoch'), ?, ?)",
+        )?;
+        stmt.execute(params![
+            self.primary_key(),
+            self.public_key,
+            self.session_id,
+            self.credential,
+            self.created_at,
+            self.ciphersuite,
+            self.private_key,
+        ])?;
+
+        Ok(())
+    }
+
+    async fn count(tx: &Self::Transaction) -> CryptoKeystoreResult<u32> {
+        count_helper_tx::<Self>(tx).await
+    }
+
+    async fn delete(tx: &Self::Transaction, id: &<Self as NewEntity>::PrimaryKey) -> CryptoKeystoreResult<bool> {
+        delete_helper::<Self>(tx, "public_key_sha256", id).await
     }
 }
