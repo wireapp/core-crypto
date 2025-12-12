@@ -43,7 +43,7 @@ use crate::{
 #[derive(Clone, derive_more::Debug)]
 pub struct Session {
     id: ClientId,
-    identities: Identities,
+    identities: Arc<RwLock<Identities>>,
     pub(crate) crypto_provider: MlsCryptoProvider,
     pub(crate) transport: Arc<dyn MlsTransport + 'static>,
     #[debug("EpochObserver")]
@@ -73,7 +73,7 @@ impl Session {
     ) -> Self {
         Self {
             id,
-            identities,
+            identities: Arc::new(RwLock::new(identities)),
             crypto_provider,
             transport,
             epoch_observer: Arc::new(RwLock::new(None)),
@@ -172,6 +172,8 @@ impl Session {
     /// Returns whether this client is E2EI capable
     pub async fn is_e2ei_capable(&self) -> bool {
         self.identities
+            .read()
+            .await
             .iter()
             .any(|cred| cred.credential_type() == CredentialType::X509)
     }
