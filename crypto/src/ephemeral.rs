@@ -92,16 +92,19 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
     let credential = Credential::basic(ciphersuite, client_id.clone(), &session.crypto_provider).map_err(
         RecursiveError::mls_credential("generating basic credential for ephemeral client"),
     )?;
-    let credential_ref = cc.add_credential(credential).await.map_err(RecursiveError::mls_client(
-        "adding basic credential to ephemeral client",
-    ))?;
+    let credential_ref = session
+        .add_credential(credential)
+        .await
+        .map_err(RecursiveError::mls_client(
+            "adding basic credential to ephemeral client",
+        ))?;
 
     // we can generate a key package from the ephemeral cc and ciphersutite
     let key_package = tx
         .generate_keypackage(&credential_ref, None)
         .await
         .map_err(RecursiveError::transaction("generating keypackage"))?;
-    let key_package = KeyPackageSecretEncapsulation::load(&cc.crypto_provider, key_package)
+    let key_package = KeyPackageSecretEncapsulation::load(&session.crypto_provider, key_package)
         .await
         .map_err(MlsError::wrap("encapsulating key package"))?;
 
