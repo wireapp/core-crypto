@@ -54,17 +54,7 @@ impl ConversationGuard {
     }
 
     async fn transport(&self) -> Result<Arc<dyn MlsTransport>> {
-        let transport = self
-            .session()
-            .await?
-            .transport
-            .read()
-            .await
-            .as_ref()
-            .ok_or::<Error>(
-                RecursiveError::root("getting mls transport")(crate::Error::MlsTransportNotProvided).into(),
-            )?
-            .clone();
+        let transport = self.session().await?.transport.clone();
         Ok(transport)
     }
 
