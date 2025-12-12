@@ -80,31 +80,6 @@ impl Session {
         }
     }
 
-    /// Resets the client to an uninitialized state.
-    #[cfg(test)]
-    pub(crate) async fn reset(&self) {
-        let mut inner_lock = self.inner.write().await;
-        *inner_lock = None;
-    }
-
-    pub(crate) async fn is_ready(&self) -> bool {
-        let inner_lock = self.inner.read().await;
-        inner_lock.is_some()
-    }
-
-    async fn ensure_unready(&self) -> Result<()> {
-        if self.is_ready().await {
-            Err(Error::UnexpectedlyReady)
-        } else {
-            Ok(())
-        }
-    }
-
-    async fn replace_inner(&self, new_inner: SessionInner) {
-        let mut inner_lock = self.inner.write().await;
-        *inner_lock = Some(new_inner);
-    }
-
     /// Get an immutable view of an `MlsConversation`.
     ///
     /// Because it operates on the raw conversation type, this may be faster than
