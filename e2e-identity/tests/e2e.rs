@@ -753,6 +753,7 @@ mod dpop_challenge {
     #[tokio::test]
     /// We bind the DPoP challenge "uri" to the access token. It is then validated by the ACME server
     // @SF.PROVISIONING @TSFI.ACME @S8
+    #[allow(unused_assignments)]
     async fn should_fail_when_invalid_dpop_audience(test_env: TestEnvironment) {
         let test = E2eTest::new(test_env).start().await;
         let flow = EnrollmentFlow {
@@ -876,6 +877,7 @@ mod oidc_challenge {
     #[tokio::test]
     /// We add an "acme_aud" in the idToken which must match the OIDC challenge url
     // @SF.PROVISIONING @TSFI.ACME @S8
+    #[allow(unused_assignments)]
     async fn should_fail_when_invalid_audience(test_env: TestEnvironment) {
         let test = E2eTest::new(test_env).start().await;
         let flow = EnrollmentFlow {
