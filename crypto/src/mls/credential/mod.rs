@@ -331,6 +331,7 @@ mod tests {
         let cb = CertificateBundle {
             certificate_chain: certs.certificate_chain,
             private_key: eve_key,
+            signature_scheme: case.ciphersuite().signature_algorithm(),
         };
         let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
 

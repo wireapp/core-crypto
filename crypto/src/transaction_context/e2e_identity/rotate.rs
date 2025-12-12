@@ -176,6 +176,7 @@ impl TransactionContext {
         let cert_bundle = CertificateBundle {
             certificate_chain,
             private_key,
+            signature_scheme,
         };
         let client = &self
             .session()

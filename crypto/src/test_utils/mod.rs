@@ -209,6 +209,7 @@ impl SessionContext {
                         signature_scheme,
                         value: actor_cert.pki_keypair.signing_key_bytes(),
                     },
+                    signature_scheme,
                 }
             }
         };

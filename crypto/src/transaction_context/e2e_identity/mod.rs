@@ -96,6 +96,7 @@ impl TransactionContext {
         let cert_bundle = CertificateBundle {
             certificate_chain,
             private_key,
+            signature_scheme: ciphersuite.signature_algorithm(),
         };
 
         let mut credential = Credential::x509(ciphersuite, cert_bundle.clone()).map_err(

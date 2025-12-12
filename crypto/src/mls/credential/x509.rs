@@ -45,6 +45,8 @@ pub struct CertificateBundle {
     pub certificate_chain: Vec<Vec<u8>>,
     /// Leaf certificate private key
     pub private_key: CertificatePrivateKey,
+    /// Signature scheme of private key
+    pub signature_scheme: SignatureScheme,
 }
 
 impl fmt::Debug for CertificateBundle {
@@ -74,7 +76,7 @@ impl CertificateBundle {
     pub fn get_client_id(&self) -> Result<ClientId> {
         let leaf = self.certificate_chain.first().ok_or(Error::InvalidIdentity)?;
 
-        let hash_alg = match self.private_key.signature_scheme {
+        let hash_alg = match self.signature_scheme {
             SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ED25519 => HashAlgorithm::SHA256,
             SignatureScheme::ECDSA_SECP384R1_SHA384 => HashAlgorithm::SHA384,
             SignatureScheme::ED448 | SignatureScheme::ECDSA_SECP521R1_SHA512 => HashAlgorithm::SHA512,
@@ -217,6 +219,7 @@ impl CertificateBundle {
                 value: cert.pki_keypair.signing_key_bytes(),
                 signature_scheme: cert.signature_scheme,
             },
+            signature_scheme: cert.signature_scheme,
         }
     }
 
