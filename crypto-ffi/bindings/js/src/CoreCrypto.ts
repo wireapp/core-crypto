@@ -59,6 +59,7 @@ export {
     X509Identity,
     CoreCrypto,
 } from "./CoreCryptoInstance";
+export type { Timestamp } from "./CoreCryptoInstance";
 
 export {
     Credential,
