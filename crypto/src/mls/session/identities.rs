@@ -94,39 +94,6 @@ impl Identities {
         self.index(signature_scheme, credential_type)?.last().cloned()
     }
 
-    /// Raise an error if the database cannot handle adding a credential with these details.
-    pub(crate) fn ensure_distinct(
-        &self,
-        signature_scheme: SignatureScheme,
-        credential_type: CredentialType,
-        earliest_validity: u64,
-    ) -> Result<()> {
-        let Some(credentials) = self.index(signature_scheme, credential_type) else {
-            return Ok(());
-        };
-
-        debug_assert!(
-            credentials.is_sorted_by_key(|credential| credential.earliest_validity),
-            "can't binary search if credentials are not sorted by validity"
-        );
-        debug_assert_eq!(
-            credentials
-                .iter()
-                .map(|credential| credential.earliest_validity)
-                .collect::<std::collections::HashSet<_>>()
-                .len(),
-            credentials.len(),
-            "credentials must be distinct by earliest validity"
-        );
-
-        match credentials.binary_search_by_key(&earliest_validity, |credential| credential.earliest_validity) {
-            // found a matching key i.e. not distinct
-            Ok(_) => Err(Error::CredentialConflict),
-            // no match i.e. distinct
-            Err(_) => Ok(()),
-        }
-    }
-
     /// Add this credential to the identities.
     ///
     /// If there already exists a credential whose signature scheme, credential type, and timestamp of creation
