@@ -17,8 +17,8 @@ inputs:
       multiple rust targets because keys cannot contain commas.
     required: false
   toolchain:
-    description: Set this to overwrite the stable default rust toolchain
-    default: 'stable'
+    description: Set this to overwrite the toolchain specified in rust-toolchain.toml
+    required: false
 runs:
   using: composite
   steps:
