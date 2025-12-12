@@ -21,8 +21,6 @@ const ROUNDTRIP_MSG_AMOUNT: usize = 100;
 
 const CIPHERSUITE_IN_USE: MlsCiphersuite = MlsCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 
-// TODO: Add support for Android emulator. Tracking issue: WPB-9646
-// TODO: Add support for iOS emulator when on macOS. Tracking issue: WPB-9646
 fn main() -> Result<()> {
     run_test()
 }
@@ -33,6 +31,11 @@ async fn create_mls_clients<'a>(
     web_server: &'a std::net::SocketAddr,
 ) -> Vec<Box<dyn clients::EmulatedMlsClient>> {
     vec![
+        Box::new(
+            clients::corecrypto::android::CoreCryptoAndroidClient::new()
+                .await
+                .unwrap(),
+        ),
         #[cfg(target_os = "ios")]
         Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
         Box::new(
@@ -55,6 +58,11 @@ async fn create_proteus_clients<'a>(
     web_server: &'a std::net::SocketAddr,
 ) -> Vec<Box<dyn clients::EmulatedProteusClient>> {
     vec![
+        Box::new(
+            clients::corecrypto::android::CoreCryptoAndroidClient::new()
+                .await
+                .unwrap(),
+        ),
         #[cfg(target_os = "ios")]
         Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
         Box::new(
