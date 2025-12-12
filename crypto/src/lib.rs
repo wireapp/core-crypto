@@ -158,20 +158,6 @@ pub struct CoreCrypto {
     proteus: (),
 }
 
-impl std::ops::Deref for CoreCrypto {
-    type Target = mls::session::Session;
-
-    fn deref(&self) -> &Self::Target {
-        &self.mls
-    }
-}
-
-impl std::ops::DerefMut for CoreCrypto {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.mls
-    }
-}
-
 impl CoreCrypto {
     /// Create an new CoreCrypto client without any initialized session.
     pub fn new(keystore: Database) -> Self {
