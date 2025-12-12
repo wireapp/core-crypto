@@ -11,6 +11,7 @@ use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::TransactionWr
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
+    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -18,6 +19,7 @@ use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::TransactionWr
 #[entity(collection_name = "mls_groups")]
 #[sensitive]
 pub struct PersistedMlsGroup {
+    #[entity(id, hex, column = "id_hex")]
     #[id(hex, column = "id_hex")]
     pub id: Vec<u8>,
     pub state: Vec<u8>,
@@ -91,13 +93,13 @@ pub struct MlsPendingMessage {
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
+    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
 #[entity(collection_name = "mls_buffered_commits")]
 pub struct StoredBufferedCommit {
-    // we'd ideally just call this field `conversation_id`, but as of right now the
-    // Entity macro does not yet support id columns not named `id`
+    #[entity(id, hex, column = "conversation_id_hex")]
     #[id(hex, column = "conversation_id_hex")]
     #[sensitive]
     conversation_id: Vec<u8>,
@@ -169,12 +171,14 @@ pub struct StoredEncryptionKeyPair {
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
+    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
 #[zeroize(drop)]
 #[entity(collection_name = "mls_epoch_encryption_keypairs")]
 pub struct StoredEpochEncryptionKeypair {
+    #[entity(hex, column = "id_hex")]
     #[id(hex, column = "id_hex")]
     pub id: Vec<u8>,
     #[sensitive]
@@ -198,12 +202,14 @@ pub struct StoredPskBundle {
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
+    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
 #[zeroize(drop)]
 #[entity(collection_name = "mls_keypackages")]
 pub struct StoredKeypackage {
+    #[entity(id, hex, column = "keypackage_ref_hex")]
     #[id(hex, column = "keypackage_ref_hex")]
     pub keypackage_ref: Vec<u8>,
     #[sensitive]
@@ -219,6 +225,7 @@ pub struct StoredKeypackage {
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
+    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -407,6 +414,7 @@ pub struct E2eiAcmeCA {
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
+    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -415,6 +423,7 @@ pub struct E2eiIntermediateCert {
     // key to identify the CA cert; Using a combination of SKI & AKI extensions concatenated like so is suitable:
     // `SKI[+AKI]`
     #[id]
+    #[entity(id)]
     pub ski_aki_pair: String,
     pub content: Vec<u8>,
 }
@@ -426,12 +435,14 @@ pub struct E2eiIntermediateCert {
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
+    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
 #[zeroize(drop)]
 pub struct E2eiCrl {
     #[id]
+    #[entity(id)]
     pub distribution_point: String,
     pub content: Vec<u8>,
 }
