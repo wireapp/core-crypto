@@ -68,7 +68,7 @@ mod tests {
                     .await
                     .commit_accepted(
                         &alice.transaction.session().await.unwrap(),
-                        &alice.session.crypto_provider,
+                        &alice.session.read().await.as_ref().unwrap().crypto_provider,
                     )
                     .await
                     .unwrap();
