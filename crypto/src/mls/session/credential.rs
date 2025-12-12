@@ -60,38 +60,12 @@ impl Session {
         &self,
         mut credential: Credential,
     ) -> Result<Arc<Credential>> {
-        let credential_ref = credential
+        let _credential_ref = credential
             .save(&self.crypto_provider.keystore())
             .await
             .map_err(RecursiveError::mls_credential("saving credential"))?;
 
         let guard = self.inner.upgradable_read().await;
-        let inner = guard.as_ref().ok_or(Error::MlsNotInitialized)?;
-
-        // failfast before loading the cache if we know already that this credential ref can't be added to the identity
-        // set
-        let distinct_result = inner.identities.ensure_distinct(
-            credential_ref.signature_scheme(),
-            credential_ref.r#type(),
-            credential_ref.earliest_validity(),
-        );
-        if let Err(err) = distinct_result {
-            // first clean up by removing the credential we just saved
-            // otherwise, we'll have nondeterministic results when we load
-            //
-            // TODO this depends for correctness that no two added credentials have the same keypair;
-            // if this happens for a keypair which was removed, we'll remove the (old, used) keypair
-            // and forever after be unable to mls_init on that DB due to a missing keypair for the given credential
-            // this is pointlessly difficult to check right now, but we should do a uniqueness check
-            // after WPB-20844
-            credential
-                .delete(&self.crypto_provider.keystore())
-                .await
-                .map_err(RecursiveError::mls_credential(
-                    "deleting nondistinct credential from keystore",
-                ))?;
-            return Err(err);
-        }
 
         // only upgrade to a write guard here in order to minimize the amount of time the unique lock is held
         let mut guard = async_lock::RwLockUpgradableReadGuard::upgrade(guard).await;
@@ -113,7 +87,7 @@ impl Session {
 
         let database = self.crypto_provider.keystore();
 
-        let credentials = credential_ref
+        let credential = credential_ref
             .load(&database)
             .await
             .map_err(RecursiveError::mls_credential_ref(
@@ -135,10 +109,7 @@ impl Session {
             let converation_credential = conversation
                 .own_mls_credential()
                 .map_err(RecursiveError::mls_conversation("geting conversation credential"))?;
-            if credentials
-                .iter()
-                .any(|credential| credential.mls_credential() == converation_credential)
-            {
+            if credential.mls_credential() == converation_credential {
                 return Err(Error::CredentialStillInUse(conversation_id));
             }
         }
@@ -152,20 +123,15 @@ impl Session {
         {
             let mut inner = self.inner.write().await;
             let inner = inner.as_mut().ok_or(Error::MlsNotInitialized)?;
-            for credential in &credentials {
-                inner.identities.remove_by_mls_credential(credential.mls_credential());
-            }
+            inner.identities.remove_by_mls_credential(credential.mls_credential());
         }
 
         // finally remove the credentials from the keystore so they won't be loaded on next mls_init
-        for credential in credentials {
-            credential
-                .delete(&database)
-                .await
-                .map_err(RecursiveError::mls_credential("deleting credential from keystore"))?;
-        }
-
-        Ok(())
+        credential
+            .delete(&database)
+            .await
+            .map_err(RecursiveError::mls_credential("deleting credential from keystore"))
+            .map_err(Into::into)
     }
 
     /// convenience function deferring to the implementation on the inner type
