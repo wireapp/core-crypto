@@ -5,7 +5,7 @@ use openmls::prelude::{SignaturePublicKey, SignatureScheme};
 use super::{Error, Result};
 use crate::{
     Ciphersuite, Credential, CredentialFindFilters, CredentialRef, CredentialType, LeafError, MlsConversation,
-    RecursiveError, Session, mls::session::SessionInner,
+    RecursiveError, Session,
 };
 
 impl Session {
@@ -13,10 +13,10 @@ impl Session {
     ///
     /// If no filters are set, this is equivalent to [`Self::get_credentials`].
     pub async fn find_credentials(&self, find_filters: CredentialFindFilters<'_>) -> Result<Vec<CredentialRef>> {
-        let guard = self.inner.read().await;
-        let inner = guard.as_ref().ok_or(Error::MlsNotInitialized)?;
-        Ok(inner
+        Ok(self
             .identities
+            .read()
+            .await
             .find_credential(find_filters)
             .map(|credential| CredentialRef::from_credential(&credential))
             .collect())
@@ -65,12 +65,11 @@ impl Session {
             .await
             .map_err(RecursiveError::mls_credential("saving credential"))?;
 
-        let guard = self.inner.upgradable_read().await;
+        let identities_guard = self.identities.upgradable_read().await;
 
         // only upgrade to a write guard here in order to minimize the amount of time the unique lock is held
-        let mut guard = async_lock::RwLockUpgradableReadGuard::upgrade(guard).await;
-        let inner = guard.as_mut().ok_or(Error::MlsNotInitialized)?;
-        let credential = inner.identities.push_credential(credential).await?;
+        let mut identities_guard = async_lock::RwLockUpgradableReadGuard::upgrade(identities_guard).await;
+        let credential = identities_guard.push_credential(credential).await?;
 
         Ok(credential)
     }
@@ -121,9 +120,8 @@ impl Session {
         // only remove the actual credential after the keypackages are all gone,
         // and keep the lock open as briefly as possible
         {
-            let mut inner = self.inner.write().await;
-            let inner = inner.as_mut().ok_or(Error::MlsNotInitialized)?;
-            inner.identities.remove_by_mls_credential(credential.mls_credential());
+            let mut identities = self.identities.write().await;
+            identities.remove_by_mls_credential(credential.mls_credential());
         }
 
         // finally remove the credentials from the keystore so they won't be loaded on next mls_init
@@ -140,13 +138,12 @@ impl Session {
         signature_scheme: SignatureScheme,
         credential_type: CredentialType,
     ) -> Result<Arc<Credential>> {
-        match &*self.inner.read().await {
-            None => Err(Error::MlsNotInitialized),
-            Some(SessionInner { identities, .. }) => identities
-                .find_most_recent_credential(signature_scheme, credential_type)
-                .await
-                .ok_or(Error::CredentialNotFound(credential_type, signature_scheme)),
-        }
+        self.identities
+            .read()
+            .await
+            .find_most_recent_credential(signature_scheme, credential_type)
+            .await
+            .ok_or(Error::CredentialNotFound(credential_type, signature_scheme))
     }
 
     /// convenience function deferring to the implementation on the inner type
@@ -156,13 +153,12 @@ impl Session {
         credential_type: CredentialType,
         public_key: &SignaturePublicKey,
     ) -> Result<Arc<Credential>> {
-        match &*self.inner.read().await {
-            None => Err(Error::MlsNotInitialized),
-            Some(SessionInner { identities, .. }) => identities
-                .find_credential_by_public_key(signature_scheme, credential_type, public_key)
-                .await
-                .ok_or(Error::CredentialNotFound(credential_type, signature_scheme)),
-        }
+        self.identities
+            .read()
+            .await
+            .find_credential_by_public_key(signature_scheme, credential_type, public_key)
+            .await
+            .ok_or(Error::CredentialNotFound(credential_type, signature_scheme))
     }
 
     /// Convenience function to get the most recent credential, creating it if the credential type is basic.
