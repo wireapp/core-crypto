@@ -20,18 +20,22 @@ use crate::{
     e2e_identity::id::WireQualifiedClientId,
 };
 
-#[derive(core_crypto_macros::Debug, Clone, Zeroize)]
+#[derive(core_crypto_macros::Debug, Clone, Zeroize, derive_more::Constructor)]
 #[zeroize(drop)]
 pub struct CertificatePrivateKey {
     #[sensitive]
-    pub(crate) value: Vec<u8>,
+    value: Vec<u8>,
     #[zeroize(skip)]
-    pub(crate) signature_scheme: SignatureScheme,
+    signature_scheme: SignatureScheme,
 }
 
 impl CertificatePrivateKey {
     pub(crate) fn into_parts(mut self) -> (Vec<u8>, SignatureScheme) {
         (std::mem::take(&mut self.value), self.signature_scheme)
+    }
+
+    pub(crate) fn signature_scheme(&self) -> SignatureScheme {
+        self.signature_scheme
     }
 }
 
@@ -74,7 +78,7 @@ impl CertificateBundle {
     pub fn get_client_id(&self) -> Result<ClientId> {
         let leaf = self.certificate_chain.first().ok_or(Error::InvalidIdentity)?;
 
-        let hash_alg = match self.private_key.signature_scheme {
+        let hash_alg = match self.private_key.signature_scheme() {
             SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ED25519 => HashAlgorithm::SHA256,
             SignatureScheme::ECDSA_SECP384R1_SHA384 => HashAlgorithm::SHA384,
             SignatureScheme::ED448 | SignatureScheme::ECDSA_SECP521R1_SHA512 => HashAlgorithm::SHA512,
@@ -213,10 +217,7 @@ impl CertificateBundle {
     pub fn from_certificate_and_issuer(cert: &X509Certificate, issuer: &X509Certificate) -> Self {
         Self {
             certificate_chain: vec![cert.certificate.to_der().unwrap(), issuer.certificate.to_der().unwrap()],
-            private_key: CertificatePrivateKey {
-                value: cert.pki_keypair.signing_key_bytes(),
-                signature_scheme: cert.signature_scheme,
-            },
+            private_key: CertificatePrivateKey::new(cert.pki_keypair.signing_key_bytes(), cert.signature_scheme),
         }
     }
 

@@ -88,10 +88,7 @@ impl TransactionContext {
 
         let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
 
-        let private_key = CertificatePrivateKey {
-            value: sk,
-            signature_scheme: ciphersuite.signature_algorithm(),
-        };
+        let private_key = CertificatePrivateKey::new(sk, ciphersuite.signature_algorithm());
 
         let cert_bundle = CertificateBundle {
             certificate_chain,

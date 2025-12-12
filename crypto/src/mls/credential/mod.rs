@@ -324,10 +324,8 @@ mod tests {
         let certs = CertificateBundle::rand(&"alice".into(), x509_intermediate);
         let new_pki_kp = PkiKeypair::rand_unchecked(case.signature_scheme());
 
-        let eve_key = CertificatePrivateKey {
-            value: new_pki_kp.signing_key_bytes(),
-            signature_scheme: case.ciphersuite().signature_algorithm(),
-        };
+        let eve_key =
+            CertificatePrivateKey::new(new_pki_kp.signing_key_bytes(), case.ciphersuite().signature_algorithm());
         let cb = CertificateBundle {
             certificate_chain: certs.certificate_chain,
             private_key: eve_key,

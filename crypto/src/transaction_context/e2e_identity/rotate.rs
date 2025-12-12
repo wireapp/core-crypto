@@ -166,10 +166,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::e2e_identity("getting certificate response"))?;
 
-        let private_key = CertificatePrivateKey {
-            value: sk,
-            signature_scheme,
-        };
+        let private_key = CertificatePrivateKey::new(sk, signature_scheme);
 
         let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
 
