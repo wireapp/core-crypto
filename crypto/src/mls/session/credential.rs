@@ -113,7 +113,7 @@ impl Session {
 
         let database = self.crypto_provider.keystore();
 
-        let credentials = credential_ref
+        let credential = credential_ref
             .load(&database)
             .await
             .map_err(RecursiveError::mls_credential_ref(
@@ -135,10 +135,7 @@ impl Session {
             let converation_credential = conversation
                 .own_mls_credential()
                 .map_err(RecursiveError::mls_conversation("geting conversation credential"))?;
-            if credentials
-                .iter()
-                .any(|credential| credential.mls_credential() == converation_credential)
-            {
+            if credential.mls_credential() == converation_credential {
                 return Err(Error::CredentialStillInUse(conversation_id));
             }
         }
@@ -152,20 +149,15 @@ impl Session {
         {
             let mut inner = self.inner.write().await;
             let inner = inner.as_mut().ok_or(Error::MlsNotInitialized)?;
-            for credential in &credentials {
-                inner.identities.remove_by_mls_credential(credential.mls_credential());
-            }
+            inner.identities.remove_by_mls_credential(credential.mls_credential());
         }
 
         // finally remove the credentials from the keystore so they won't be loaded on next mls_init
-        for credential in credentials {
-            credential
-                .delete(&database)
-                .await
-                .map_err(RecursiveError::mls_credential("deleting credential from keystore"))?;
-        }
-
-        Ok(())
+        credential
+            .delete(&database)
+            .await
+            .map_err(RecursiveError::mls_credential("deleting credential from keystore"))
+            .map_err(Into::into)
     }
 
     /// convenience function deferring to the implementation on the inner type

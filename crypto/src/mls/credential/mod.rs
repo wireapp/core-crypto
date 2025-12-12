@@ -10,9 +10,11 @@ pub(crate) mod ext;
 mod persistence;
 pub(crate) mod x509;
 
+use core_crypto_keystore::entities::StoredCredential;
 use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, MlsCredentialType, SignatureScheme};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::crypto::OpenMlsCrypto;
+use tls_codec::Deserialize as _;
 
 pub(crate) use self::error::Result;
 pub use self::{
@@ -61,6 +63,34 @@ pub struct Credential {
     /// Only meaningful for X509, where it is the "valid_from" claim of the leaf credential.
     /// For basic credentials, this is always 0.
     pub(crate) earliest_validity: u64,
+}
+
+impl TryFrom<&StoredCredential> for Credential {
+    type Error = Error;
+
+    fn try_from(stored_credential: &StoredCredential) -> Result<Credential> {
+        let mls_credential = MlsCredential::tls_deserialize(&mut stored_credential.credential.as_slice())
+            .map_err(Error::tls_deserialize("mls credential"))?;
+        let ciphersuite = Ciphersuite::try_from(stored_credential.ciphersuite)
+            .map_err(RecursiveError::mls("loading ciphersuite from db"))?;
+        let signature_key_pair = openmls_basic_credential::SignatureKeyPair::from_raw(
+            ciphersuite.signature_algorithm(),
+            stored_credential.private_key.to_owned(),
+            stored_credential.public_key.to_owned(),
+        );
+        let credential_type = mls_credential
+            .credential_type()
+            .try_into()
+            .map_err(RecursiveError::mls_credential("loading credential from db"))?;
+        let earliest_validity = stored_credential.created_at;
+        Ok(Credential {
+            ciphersuite,
+            signature_key_pair,
+            credential_type,
+            mls_credential,
+            earliest_validity,
+        })
+    }
 }
 
 impl Credential {

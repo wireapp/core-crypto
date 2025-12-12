@@ -153,16 +153,13 @@ impl Session {
             ))?;
 
         for credential_ref in credential_refs {
-            for credential_result in
+            if let Some(credential) =
                 credential_ref
                     .load_from_cache(&credentials_cache)
                     .map_err(RecursiveError::mls_credential_ref(
                         "loading credential list in session init",
                     ))?
             {
-                let credential = credential_result
-                    .map_err(RecursiveError::mls_credential_ref("loading credential in session init"))?;
-
                 match identities.push_credential(credential).await {
                     Err(Error::CredentialConflict) => {
                         // this is what we get for not having real primary keys in our DB
