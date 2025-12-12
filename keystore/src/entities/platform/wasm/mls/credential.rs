@@ -37,7 +37,7 @@ impl EntityTransactionExt for StoredCredential {
 #[async_trait::async_trait(?Send)]
 impl Entity for StoredCredential {
     fn id_raw(&self) -> &[u8] {
-        self.session_id.as_slice()
+        &self.public_key
     }
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
