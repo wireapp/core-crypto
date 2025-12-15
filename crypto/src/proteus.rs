@@ -588,25 +588,20 @@ mod tests {
 
     use super::*;
     use crate::{
-        CertificateBundle, ClientId, ClientIdentifier, CredentialType, Session,
+        CertificateBundle, ClientIdentifier, CredentialType,
         test_utils::{proteus_utils::*, x509::X509TestChain, *},
     };
-
-    #[apply(all_cred_cipher)]
-    async fn cc_can_init(case: TestContext) {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn cc_can_init() {
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
-        let client_id = ClientId::from("alice").into();
         let db = Database::open(ConnectionType::Persistent(&path), &DatabaseKey::generate())
             .await
             .unwrap();
 
-        let cc: CoreCrypto = Session::try_new(&db).await.unwrap().into();
-        cc.init(client_id, &[case.ciphersuite().signature_algorithm()])
-            .await
-            .unwrap();
+        let cc: CoreCrypto = CoreCrypto::new(db);
         let context = cc.new_transaction().await.unwrap();
         assert!(context.proteus_init().await.is_ok());
         assert!(context.proteus_new_prekey(1).await.is_ok());
@@ -627,11 +622,11 @@ mod tests {
             .await
             .unwrap();
 
-        let cc: CoreCrypto = Session::try_new(&db).await.unwrap().into();
+        let cc: CoreCrypto = CoreCrypto::new(db);
         let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(&transaction).await;
-        assert!(transaction.proteus_init().await.is_ok());
+        assert!(transaction.proteus_init(db.clone).await.is_ok());
         // proteus is initialized, prekeys can be generated
         assert!(transaction.proteus_new_prekey(1).await.is_ok());
         // 👇 and so a unique 'client_id' can be fetched from wire-server
@@ -642,13 +637,15 @@ mod tests {
                 CertificateBundle::rand_identifier(&client_id, &[x509_test_chain.find_local_intermediate_ca()])
             }
         };
+        let transport = Arc::new(CoreCryptoTransportSuccessProvider::default());
         transaction
-            .mls_init(identifier.clone(), &[case.ciphersuite()])
+            .mls_init(identifier.clone(), &[case.ciphersuite()], transport)
             .await
             .unwrap();
-
-        let credential = Credential::from_identifier(&identifier, case.ciphersuite(), &cc.mls.crypto_provider).unwrap();
-        let credential_ref = cc.add_credential(credential).await.unwrap();
+        let session = &cc.mls_session().await.unwrap();
+        let credential =
+            Credential::from_identifier(&identifier, case.ciphersuite(), &session.crypto_provider).unwrap();
+        let credential_ref = session.add_credential(credential).await.unwrap();
 
         // expect MLS to work
         assert!(transaction.generate_keypackage(&credential_ref, None).await.is_ok());
