@@ -7,7 +7,7 @@ use std::{fmt, sync::Arc};
 
 use core_crypto::{HistorySecret, MlsCommitBundle};
 
-use crate::{ClientId, CommitBundle, CoreCryptoFfi, CoreCryptoResult, HistorySecret as HistorySecretFfi};
+use crate::{ClientId, CommitBundle, HistorySecret as HistorySecretFfi};
 
 /// MLS transport may or may not succeeed; this response indicates to CC the outcome of the transport attempt.
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
@@ -107,13 +107,4 @@ impl core_crypto::MlsTransport for MlsTransportShim {
 /// In uniffi, `MlsTransport` is a trait which we need to wrap
 fn callback_shim(callbacks: Arc<dyn MlsTransport>) -> Arc<dyn core_crypto::MlsTransport> {
     Arc::new(MlsTransportShim::new(callbacks))
-}
-
-#[uniffi::export]
-impl CoreCryptoFfi {
-    /// See [core_crypto::Session::provide_transport]
-    pub async fn provide_transport(&self, callbacks: Arc<dyn MlsTransport>) -> CoreCryptoResult<()> {
-        self.inner.provide_transport(callback_shim(callbacks)).await;
-        Ok(())
-    }
 }
