@@ -169,7 +169,7 @@ impl CoreCrypto {
     }
 
     /// Get the mls session if initialized
-    pub async fn get_mls_session(&self) -> Result<Session> {
+    pub async fn mls_session(&self) -> Result<Session> {
         if let Some(session) = self.mls.read().await.as_ref() {
             return Ok(session.clone());
         }

@@ -84,6 +84,8 @@ impl CoreCryptoFfi {
     pub async fn register_history_observer(&self, history_observer: Arc<dyn HistoryObserver>) -> CoreCryptoResult<()> {
         let shim = Arc::new(ObserverShim(history_observer));
         self.inner
+            .mls_session()
+            .await?
             .register_history_observer(shim)
             .await
             .map_err(CoreCryptoError::generic())

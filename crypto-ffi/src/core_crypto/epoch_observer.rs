@@ -74,6 +74,8 @@ impl CoreCryptoFfi {
     pub async fn register_epoch_observer(&self, epoch_observer: Arc<dyn EpochObserver>) -> CoreCryptoResult<()> {
         let shim = Arc::new(ObserverShim(epoch_observer));
         self.inner
+            .mls_session()
+            .await?
             .register_epoch_observer(shim)
             .await
             .map_err(CoreCryptoError::generic())
