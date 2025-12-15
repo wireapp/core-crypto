@@ -149,7 +149,7 @@ impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
 /// This is cheap to clone as all internal members have `Arc` wrappers or are `Copy`.
 #[derive(Debug, Clone)]
 pub struct CoreCrypto {
-    keystore: Database,
+    database: Database,
     mls: Arc<RwLock<Option<mls::session::Session>>>,
     #[cfg(feature = "proteus")]
     proteus: Arc<Mutex<Option<proteus::ProteusCentral>>>,
@@ -160,9 +160,9 @@ pub struct CoreCrypto {
 
 impl CoreCrypto {
     /// Create an new CoreCrypto client without any initialized session.
-    pub fn new(keystore: Database) -> Self {
+    pub fn new(database: Database) -> Self {
         Self {
-            keystore,
+            database,
             mls: Default::default(),
             proteus: Default::default(),
         }
