@@ -199,10 +199,10 @@ mod tests {
             )
             .await
             .unwrap();
-
+            let transport = Arc::new(CoreCryptoTransportSuccessProvider::default());
             session
                 .transaction
-                .e2ei_mls_init_only(&mut enrollment, cert)
+                .e2ei_mls_init_only(&mut enrollment, cert, transport)
                 .await
                 .unwrap();
 
