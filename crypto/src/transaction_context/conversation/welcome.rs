@@ -132,13 +132,14 @@ mod tests {
 
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
+            let credential_ref = &bob.initial_credential;
             let commit = case.create_conversation([&alice]).await.invite([&bob]).await;
             let conversation = commit.conversation();
             let id = conversation.id().clone();
                 // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
                 bob
                     .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .new_conversation(&id, credential_ref, case.cfg.clone())
                     .await
                     .unwrap();
 

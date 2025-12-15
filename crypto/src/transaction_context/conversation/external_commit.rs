@@ -340,10 +340,11 @@ mod tests {
             // Bob to join a conversation but while the server processes its request he
             // creates a conversation with the id of the conversation he's trying to join
             conversation.external_join(&bob).await;
+            let credential_ref = &bob.initial_credential;
             // erroneous call
             let conflict_join = bob
                 .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .new_conversation(&id, credential_ref, case.cfg.clone())
                 .await;
             assert!(matches!(
                 conflict_join.unwrap_err(),

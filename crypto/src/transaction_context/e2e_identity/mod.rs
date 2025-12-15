@@ -202,8 +202,13 @@ mod tests {
                 .unwrap();
 
             // verify the created client can create a conversation
+            let credential = session
+                .find_most_recent_credential(case.signature_scheme(), CredentialType::X509)
+                .await
+                .expect("we just enrolled into e2ei");
+            let credential_ref = CredentialRef::from_credential(&credential);
             let conversation = case
-                .create_conversation_with_credential_type(CredentialType::X509, [&session])
+                .create_conversation_with_credentials([(&session, &credential_ref)])
                 .await;
             conversation
                 .guard()

@@ -88,11 +88,13 @@ mod tests {
         Box::pin(async move {
             let conversation = case.create_conversation([&alice]).await;
             let id = conversation.id().clone();
+            let credentials =alice.session.find_credentials(Default::default()).await.expect("finding credentials");
+            let credential = credentials.first().expect("first credential");
 
                 // creating a conversation should first verify that the conversation does not already exist ; only then create it
                 let repeat_create = alice
                     .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .new_conversation(&id, credential, case.cfg.clone())
                     .await;
                 assert!(matches!(repeat_create.unwrap_err(), TransactionError::Leaf(LeafError::ConversationAlreadyExists(i)) if i == id));
             })
