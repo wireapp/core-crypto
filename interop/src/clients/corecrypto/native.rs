@@ -107,32 +107,6 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         Ok(kp.tls_serialize_detached()?)
     }
 
-    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
-        let conversation_id = ConversationId::from(conversation_id);
-        let transaction = self.cc.new_transaction().await?;
-        if !transaction.conversation_exists(&conversation_id).await? {
-            let config = MlsConversationConfiguration {
-                ciphersuite: CIPHERSUITE_IN_USE.into(),
-                ..Default::default()
-            };
-            transaction
-                .new_conversation(&conversation_id, CredentialType::Basic, config)
-                .await?;
-        }
-
-        use tls_codec::Deserialize as _;
-
-        let kp = KeyPackageIn::tls_deserialize(&mut &kp[..])?;
-        transaction
-            .conversation(&conversation_id)
-            .await?
-            .add_members(vec![kp])
-            .await?;
-        transaction.finish().await?;
-
-        Ok(())
-    }
-
     async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
         let transaction = self.cc.new_transaction().await?;
         let conversation_id = ConversationId::from(conversation_id);

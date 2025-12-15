@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use core_crypto_ffi::{
-    ClientId, CoreCryptoFfi, CredentialType, CustomConfiguration, Database, DatabaseKey, Keypackage, TransactionHelper,
+    ClientId, CoreCryptoFfi, CredentialType, CustomConfiguration, Database, DatabaseKey, TransactionHelper,
     credential_basic,
 };
 use tempfile::NamedTempFile;
@@ -105,36 +105,6 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         self.cc.transaction(extractor.clone()).await?;
         let kp = extractor.into_return_value();
         kp.serialize().map_err(Into::into)
-    }
-
-    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
-        let conversation_id = conversation_id.into();
-        if !self.cc.conversation_exists(&conversation_id).await? {
-            let cfg = core_crypto_ffi::ConversationConfiguration {
-                ciphersuite: Some(CIPHERSUITE_IN_USE.into()),
-                external_senders: Default::default(),
-                custom: Default::default(),
-            };
-            let conversation_id = conversation_id.clone();
-            self.cc
-                .transaction(TransactionHelper::new(async move |context| {
-                    let conversation_id = conversation_id.clone();
-                    context
-                        .create_conversation(&conversation_id, CredentialType::Basic, cfg)
-                        .await?;
-                    Ok(())
-                }))
-                .await?;
-        }
-
-        let key_packages = vec![Arc::new(Keypackage::new(kp)?)];
-        let extractor = TransactionHelper::new(async move |context| {
-            context
-                .add_clients_to_conversation(&conversation_id, key_packages)
-                .await
-        });
-        self.cc.transaction(extractor.clone()).await?;
-        Ok(())
     }
 
     async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
