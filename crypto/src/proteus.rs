@@ -626,7 +626,7 @@ mod tests {
         let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(&transaction).await;
-        assert!(transaction.proteus_init(db.clone).await.is_ok());
+        assert!(transaction.proteus_init().await.is_ok());
         // proteus is initialized, prekeys can be generated
         assert!(transaction.proteus_new_prekey(1).await.is_ok());
         // 👇 and so a unique 'client_id' can be fetched from wire-server
