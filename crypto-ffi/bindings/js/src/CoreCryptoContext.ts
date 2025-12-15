@@ -185,16 +185,12 @@ export class CoreCryptoContext {
      */
     async createConversation(
         conversationId: ConversationId,
-        creatorCredentialType: CredentialType,
+        credentialRef: CredentialRefInterface,
         configuration: ConversationConfiguration = {}
     ) {
         const config = conversationConfigurationToFfi(configuration);
         return await CoreCryptoError.asyncMapErr(
-            this.#ctx.createConversation(
-                conversationId,
-                creatorCredentialType,
-                config
-            )
+            this.#ctx.createConversation(conversationId, credentialRef, config)
         );
     }
 
