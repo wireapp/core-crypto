@@ -129,22 +129,15 @@ pub async fn setup_mls(
     ciphersuite: Ciphersuite,
     certificate_bundle: Option<&CertificateBundle>,
     in_memory: bool,
-    with_credential: bool,
-) -> (
-    CoreCrypto,
-    ConversationId,
-    Arc<dyn MlsTransportTestExt>,
-    Option<CredentialRef>,
-) {
-    let (central, _, delivery_service, credential_ref) =
-        new_central(ciphersuite, certificate_bundle, in_memory, with_credential).await;
+) -> (CoreCrypto, ConversationId, Arc<dyn MlsTransportTestExt>, CredentialRef) {
+    let (central, _, delivery_service, credential_ref) = new_central(ciphersuite, certificate_bundle, in_memory).await;
     let core_crypto = central;
     let context = core_crypto.new_transaction().await.unwrap();
     let id = conversation_id();
     context
         .new_conversation(
             &id,
-            CredentialType::Basic,
+            &credential_ref,
             MlsConversationConfiguration {
                 ciphersuite,
                 ..Default::default()
@@ -161,12 +154,11 @@ pub async fn new_central(
     ciphersuite: Ciphersuite,
     certificate_bundle: Option<&CertificateBundle>,
     in_memory: bool,
-    with_credential: bool,
 ) -> (
     CoreCrypto,
     tempfile::TempDir,
     Arc<dyn MlsTransportTestExt>,
-    Option<CredentialRef>,
+    CredentialRef,
 ) {
     let (path, tmp_file) = tmp_db_file();
     let connection_type = if in_memory {
@@ -186,18 +178,16 @@ pub async fn new_central(
     let delivery_service = Arc::<CoreCryptoTransportSuccessProvider>::default();
     cc.provide_transport(delivery_service.clone()).await;
 
-    let mut credential_ref = None;
-    if with_credential {
-        let ctx = cc.new_transaction().await.unwrap();
+    let ctx = cc.new_transaction().await.unwrap();
 
-        let credential = match certificate_bundle {
-            Some(certificate_bundle) => CcCredential::x509(ciphersuite, certificate_bundle.to_owned()).unwrap(),
-            None => CcCredential::basic(ciphersuite, client_id, RustCrypto::default()).unwrap(),
-        };
-        credential_ref = Some(ctx.add_credential(credential).await.unwrap());
+    let credential = match certificate_bundle {
+        Some(certificate_bundle) => CcCredential::x509(ciphersuite, certificate_bundle.to_owned()).unwrap(),
+        None => CcCredential::basic(ciphersuite, client_id, RustCrypto::default()).unwrap(),
+    };
+    let credential_ref = ctx.add_credential(credential).await.unwrap();
 
-        ctx.finish().await.unwrap();
-    }
+    ctx.finish().await.unwrap();
+
     (cc, tmp_file, delivery_service.clone(), credential_ref)
 }
 
@@ -264,8 +254,7 @@ pub async fn setup_mls_and_add_clients(
     Arc<dyn MlsTransportTestExt>,
     CredentialRef,
 ) {
-    let (core_crypto, id, delivery_service, credential_ref) =
-        setup_mls(cipher_suite, credential, in_memory, true).await;
+    let (core_crypto, id, delivery_service, credential_ref) = setup_mls(cipher_suite, credential, in_memory).await;
     let (client_ids, group_info) = add_clients(
         &mut core_crypto.clone(),
         &id,
@@ -280,7 +269,7 @@ pub async fn setup_mls_and_add_clients(
         client_ids,
         group_info,
         delivery_service,
-        credential_ref.expect("always created in setup_mls"),
+        credential_ref,
     )
 }
 
