@@ -54,3 +54,10 @@ impl_keytype_for_integer!(i16);
 impl_keytype_for_integer!(i32);
 impl_keytype_for_integer!(i64);
 impl_keytype_for_integer!(i128);
+
+/// Some unique entities use a single byte as a key type
+impl KeyType for [u8; 1] {
+    fn bytes(&self) -> Cow<'_, [u8]> {
+        self.into()
+    }
+}
