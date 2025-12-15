@@ -105,6 +105,6 @@ impl core_crypto::MlsTransport for MlsTransportShim {
 }
 
 /// In uniffi, `MlsTransport` is a trait which we need to wrap
-fn callback_shim(callbacks: Arc<dyn MlsTransport>) -> Arc<dyn core_crypto::MlsTransport> {
+pub(crate) fn callback_shim(callbacks: Arc<dyn MlsTransport>) -> Arc<dyn core_crypto::MlsTransport> {
     Arc::new(MlsTransportShim::new(callbacks))
 }

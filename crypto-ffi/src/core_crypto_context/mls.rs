@@ -9,8 +9,8 @@ use tls_codec::Deserialize as _;
 
 use crate::{
     Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, Credential, CredentialRef,
-    CredentialType, DecryptedMessage, Keypackage, KeypackageRef, WelcomeBundle, bytes_wrapper::bytes_wrapper,
-    crl::NewCrlDistributionPoints,
+    CredentialType, DecryptedMessage, Keypackage, KeypackageRef, MlsTransport, WelcomeBundle,
+    bytes_wrapper::bytes_wrapper, core_crypto::mls_transport::callback_shim, crl::NewCrlDistributionPoints,
 };
 
 bytes_wrapper!(
@@ -46,7 +46,13 @@ bytes_wrapper!(
 #[uniffi::export]
 impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::mls_init]
-    pub async fn mls_init(&self, client_id: &Arc<ClientId>, ciphersuites: Vec<Ciphersuite>) -> CoreCryptoResult<()> {
+    pub async fn mls_init(
+        &self,
+        client_id: &Arc<ClientId>,
+        ciphersuites: Vec<Ciphersuite>,
+        transport: Arc<dyn MlsTransport>,
+    ) -> CoreCryptoResult<()> {
+        let transport = callback_shim(transport);
         self.inner
             .mls_init(
                 ClientIdentifier::Basic(client_id.as_ref().as_ref().to_owned()),
@@ -54,6 +60,7 @@ impl CoreCryptoContext {
                     .into_iter()
                     .map(CryptoCiphersuite::from)
                     .collect::<Vec<_>>(),
+                transport,
             )
             .await?;
         Ok(())
