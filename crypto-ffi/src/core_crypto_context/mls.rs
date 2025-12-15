@@ -137,7 +137,7 @@ impl CoreCryptoContext {
     pub async fn create_conversation(
         &self,
         conversation_id: &ConversationId,
-        creator_credential_type: CredentialType,
+        credential_ref: &CredentialRef,
         config: ConversationConfiguration,
     ) -> CoreCryptoResult<()> {
         let mut lower_cfg = MlsConversationConfiguration {
@@ -157,7 +157,7 @@ impl CoreCryptoContext {
             .await?;
 
         self.inner
-            .new_conversation(conversation_id.as_ref(), creator_credential_type.into(), lower_cfg)
+            .new_conversation(conversation_id.as_ref(), &credential_ref.0, lower_cfg)
             .await?;
         Ok(())
     }
