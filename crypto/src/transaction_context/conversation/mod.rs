@@ -10,7 +10,7 @@ use core_crypto_keystore::{connection::FetchFromDatabase as _, entities::Persist
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    CredentialType, KeystoreError, LeafError, MlsConversation, MlsConversationConfiguration, RecursiveError,
+    CredentialRef, KeystoreError, LeafError, MlsConversation, MlsConversationConfiguration, RecursiveError,
     mls::conversation::{ConversationGuard, ConversationIdRef, pending_conversation::PendingConversation},
 };
 
@@ -62,21 +62,15 @@ impl TransactionContext {
     pub async fn new_conversation(
         &self,
         id: &ConversationIdRef,
-        creator_credential_type: CredentialType,
+        credential_ref: &CredentialRef,
         config: MlsConversationConfiguration,
     ) -> Result<()> {
         if self.conversation_exists(id).await? || self.pending_conversation_exists(id).await? {
             return Err(LeafError::ConversationAlreadyExists(id.to_owned()).into());
         }
-        let conversation = MlsConversation::create(
-            id.to_owned(),
-            &self.session().await?,
-            creator_credential_type,
-            config,
-            &self.mls_provider().await?,
-        )
-        .await
-        .map_err(RecursiveError::mls_conversation("creating conversation"))?;
+        let conversation = MlsConversation::create(id.to_owned(), &self.session().await?, credential_ref, config)
+            .await
+            .map_err(RecursiveError::mls_conversation("creating conversation"))?;
 
         self.mls_groups().await?.insert(id, conversation);
 
