@@ -7,7 +7,10 @@ mod init_certificates;
 mod rotate;
 mod stash;
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 pub use error::{Error, Result};
 use openmls_traits::OpenMlsCryptoProvider as _;
@@ -15,7 +18,8 @@ use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
 use super::TransactionContext;
 use crate::{
-    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, Credential, E2eiEnrollment, RecursiveError,
+    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, Credential, E2eiEnrollment, MlsTransport,
+    RecursiveError, Session,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{crl::get_new_crl_distribution_points, x509::CertificatePrivateKey},
 };
@@ -63,6 +67,7 @@ impl TransactionContext {
         &self,
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
+        transport: Arc<dyn MlsTransport>,
     ) -> Result<NewCrlDistributionPoints> {
         let mls_provider = self
             .mls_provider()
@@ -108,7 +113,7 @@ impl TransactionContext {
             ))?;
 
         let identifier = ClientIdentifier::X509(HashMap::from([(ciphersuite.signature_algorithm(), cert_bundle)]));
-        self.mls_init(identifier, &[ciphersuite])
+        self.mls_init(identifier, &[ciphersuite], transport)
             .await
             .map_err(RecursiveError::transaction("initializing mls"))?;
         Ok(crl_new_distribution_points)
