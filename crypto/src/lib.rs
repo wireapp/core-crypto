@@ -168,4 +168,17 @@ impl CoreCrypto {
         }
     }
 
+    /// Get the mls session if initialized
+    pub async fn get_mls_session(&self) -> Result<Session> {
+        if let Some(session) = self.mls.read().await.as_ref() {
+            return Ok(session.clone());
+        }
+        let err = Err(mls::session::Error::MlsNotInitialized);
+        err.map_err(RecursiveError::mls_client("Getting mls session"))?
+    }
+
+    /// Get the database
+    pub fn database(&self) -> Database {
+        self.database.clone()
+    }
 }
