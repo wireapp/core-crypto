@@ -181,4 +181,14 @@ impl CoreCrypto {
     pub fn database(&self) -> Database {
         self.database.clone()
     }
+
+    /// Closes the database
+    /// indexdb connections must be closed explicitly while rusqlite implements drop which suffices.
+    pub async fn close(&self) -> Result<()> {
+        self.database
+            .close()
+            .await
+            .map_err(crate::KeystoreError::wrap("Closing database"))?;
+        Ok(())
+    }
 }

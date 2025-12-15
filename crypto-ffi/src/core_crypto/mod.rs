@@ -47,9 +47,9 @@ impl CoreCryptoFfi {
 #[cfg(feature = "wasm")]
 #[uniffi::export]
 impl CoreCryptoFfi {
-    /// See [Session::close]
-    // indexdb connections must be closed explicitly while rusqlite implements drop which suffices.
+    /// Closes the database
+    /// indexdb connections must be closed explicitly while rusqlite implements drop which suffices.
     pub async fn close(&self) -> CoreCryptoResult<()> {
-        self.inner.keystore.close().await?
+        self.inner.close().await.map_err(Into::into)
     }
 }
