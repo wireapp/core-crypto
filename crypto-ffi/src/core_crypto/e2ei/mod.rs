@@ -8,14 +8,18 @@ pub(crate) mod identities;
 #[uniffi::export]
 impl CoreCryptoFfi {
     /// See [core_crypto::Session::e2ei_is_pki_env_setup]
-    pub async fn e2ei_is_pki_env_setup(&self) -> bool {
-        self.inner.e2ei_is_pki_env_setup().await
+    pub async fn e2ei_is_pki_env_setup(&self) -> CoreCryptoResult<bool> {
+        // TODO: don't depend on mls session WPB-19578
+        let result = self.inner.mls_session().await?.e2ei_is_pki_env_setup().await;
+        Ok(result)
     }
 
     /// See [core_crypto::Session::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
         let signature_scheme = core_crypto::Ciphersuite::from(ciphersuite).signature_algorithm();
         self.inner
+            .mls_session()
+            .await?
             .e2ei_is_enabled(signature_scheme)
             .await
             .map_err(RecursiveError::mls_client("checking if e2ei is enabled"))

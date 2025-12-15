@@ -18,6 +18,8 @@ impl CoreCryptoFfi {
     ) -> CoreCryptoResult<DeviceIdentities> {
         let conversation = self
             .inner
+            .mls_session()
+            .await?
             .get_raw_conversation(conversation_id.as_ref())
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation"))?;
@@ -39,6 +41,8 @@ impl CoreCryptoFfi {
     ) -> CoreCryptoResult<UserIdentities> {
         let conversation = self
             .inner
+            .mls_session()
+            .await?
             .get_raw_conversation(conversation_id.as_ref())
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation"))?;

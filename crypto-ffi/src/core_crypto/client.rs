@@ -16,6 +16,8 @@ impl CoreCryptoFfi {
         credential_type: CredentialType,
     ) -> CoreCryptoResult<Vec<u8>> {
         self.inner
+            .mls_session()
+            .await?
             .public_key(ciphersuite.into(), credential_type.into())
             .await
             .map_err(Into::into)
