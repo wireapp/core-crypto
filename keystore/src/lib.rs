@@ -12,6 +12,10 @@ pub(crate) mod proteus;
 pub mod traits;
 pub mod transaction;
 
+pub use hash::Sha256Hash;
+#[cfg(not(target_family = "wasm"))]
+pub(crate) use hash::sha256;
+
 #[cfg(feature = "dummy-entity")]
 pub use self::entities::{DummyStoreValue, DummyValue, NewDummyStoreValue};
 #[cfg(feature = "proteus-keystore")]
@@ -21,5 +25,3 @@ pub use self::{
     error::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind},
     mls::{CryptoKeystoreMls, deser, ser},
 };
-#[cfg(not(target_family = "wasm"))]
-pub(crate) use hash::sha256;
