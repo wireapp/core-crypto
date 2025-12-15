@@ -58,8 +58,8 @@ pub use self::{
 };
 use super::credential::Credential;
 use crate::{
-    Ciphersuite, ClientId, ClientIdRef, CredentialType, E2eiConversationState, LeafError, MlsError, RecursiveError,
-    UserId, WireIdentity,
+    Ciphersuite, ClientId, ClientIdRef, CredentialRef, CredentialType, E2eiConversationState, LeafError, MlsError,
+    RecursiveError, UserId, WireIdentity,
     mls::{HasSessionAndCrypto, Session, credential::ext::CredentialExt as _},
 };
 
@@ -289,27 +289,25 @@ impl MlsConversation {
     /// # Arguments
     /// * `id` - group/conversation identifier
     /// * `author_client` - the client responsible for creating the group
-    /// * `creator_credential_type` - kind of credential the creator wants to join the group with
+    /// * `credential_ref` - ref of the credential the creator wants to join the group with
     /// * `config` - group configuration
-    /// * `backend` - MLS Provider that will be used to persist the group
     ///
     /// # Errors
     /// Errors can happen from OpenMls or from the KeyStore
     pub async fn create(
         id: ConversationId,
         author_client: &Session,
-        creator_credential_type: CredentialType,
+        credential_ref: &CredentialRef,
         configuration: MlsConversationConfiguration,
-        backend: &MlsCryptoProvider,
     ) -> Result<Self> {
-        let (ciphersuite, credential_type) = (configuration.ciphersuite, creator_credential_type);
-        let credential = author_client
-            .find_most_recent_or_create_basic_credential(ciphersuite, credential_type)
+        let database = &author_client.crypto_provider.keystore();
+        let credential = credential_ref
+            .load(database)
             .await
-            .map_err(RecursiveError::mls_client("getting or creating credential"))?;
+            .map_err(RecursiveError::mls_credential_ref("getting credential"))?;
 
         let group = MlsGroup::new_with_group_id(
-            backend,
+            &author_client.crypto_provider,
             &credential.signature_key_pair,
             &configuration.as_openmls_default_configuration()?,
             openmls::prelude::GroupId::from_slice(id.as_ref()),
@@ -325,9 +323,7 @@ impl MlsConversation {
             configuration,
         };
 
-        conversation
-            .persist_group_when_changed(&backend.keystore(), true)
-            .await?;
+        conversation.persist_group_when_changed(database, true).await?;
 
         Ok(conversation)
     }
