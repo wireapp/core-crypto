@@ -129,14 +129,12 @@ mod tests {
         let ([x509_session], [basic_session]) = case.sessions_mixed_credential_types().await;
         Box::pin(async move {
             // That way the conversation creator (Alice) will have a different credential type than Bob
-            let (alice, bob, alice_credential_type) = match case.credential_type {
-                CredentialType::Basic => (x509_session, basic_session, CredentialType::X509),
-                CredentialType::X509 => (basic_session, x509_session, CredentialType::Basic),
+            let (alice, bob) = match case.credential_type {
+                CredentialType::Basic => (x509_session, basic_session),
+                CredentialType::X509 => (basic_session, x509_session),
             };
 
-            let conversation = case
-                .create_heterogeneous_conversation(alice_credential_type, case.credential_type, [&alice, &bob])
-                .await;
+            let conversation = case.create_conversation([&alice, &bob]).await;
 
             // since in that case both have a different credential type the conversation is always not verified
             let alice_state = conversation.e2ei_state().await;

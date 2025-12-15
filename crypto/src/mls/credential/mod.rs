@@ -280,15 +280,14 @@ mod tests {
     async fn heterogeneous_clients_can_send_messages(case: TestContext) {
         // check that both credentials can initiate/join a group
         let ([x509_session], [basic_session]) = case.sessions_mixed_credential_types().await;
+
         // That way the conversation creator (Alice) will have a different credential type than Bob
-        let (alice, bob, alice_credential_type) = match case.credential_type {
-            CredentialType::Basic => (x509_session, basic_session, CredentialType::X509),
-            CredentialType::X509 => (basic_session, x509_session, CredentialType::Basic),
+        let (alice, bob) = match case.credential_type {
+            CredentialType::Basic => (x509_session, basic_session),
+            CredentialType::X509 => (basic_session, x509_session),
         };
 
-        let conversation = case
-            .create_heterogeneous_conversation(alice_credential_type, case.credential_type, [&alice, &bob])
-            .await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
         assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
     }
 
@@ -442,7 +441,7 @@ mod tests {
 
             // Charlie is a basic client that tries to join (i.e. emulates guest links in Wire)
             let conversation = conversation
-                .invite_with_credential_type_notify(CredentialType::Basic, [&charlie])
+                .invite_with_credential_notify([(&charlie, &charlie.initial_credential)])
                 .await;
 
             assert_eq!(

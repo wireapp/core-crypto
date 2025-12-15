@@ -353,10 +353,15 @@ mod tests {
 
                 // Now charlie tries to add Alice to a conversation
                 // (the create_conversation helper implicitly generates keypackages as needed)
+                let credential = alice
+                    .find_most_recent_credential(case.signature_scheme(), CredentialType::X509)
+                    .await
+                    .expect("alice should have a credential");
+                let credential_ref = CredentialRef::from_credential(&credential);
                 let conversation = case
                     .create_conversation([&charlie])
                     .await
-                    .invite_with_credential_type_notify(CredentialType::X509, [&alice])
+                    .invite_with_credential_notify([(&alice, &credential_ref)])
                     .await;
                 assert!(conversation.is_functional_and_contains([&alice, &charlie]).await);
             })
@@ -448,7 +453,7 @@ mod tests {
                 new_client.reset().await;
 
                 new_client
-                    .init(alice.identifier.clone(), &scs.iter().copied().collect::<Vec<_>>())
+                    .init(alice.identifier, &scs.iter().copied().collect::<Vec<_>>())
                     .await
                     .unwrap();
 
@@ -619,7 +624,7 @@ mod tests {
 
     mod one {
         use super::*;
-        use crate::mls::conversation::Conversation as _;
+        use crate::{CredentialRef, mls::conversation::Conversation as _};
 
         #[apply(all_cred_cipher)]
         pub async fn should_rotate_one_conversations_credential(case: TestContext) {
@@ -767,8 +772,18 @@ mod tests {
 
             let [alice, bob] = case.sessions_basic_with_pki_env().await;
             Box::pin(async move {
+                let alice_credential = alice
+                    .find_most_recent_credential(case.signature_scheme(), CredentialType::Basic)
+                    .await
+                    .expect("should have a basic credential");
+                let alice_cred_ref = CredentialRef::from_credential(&alice_credential);
+                let bob_credential = bob
+                    .find_most_recent_credential(case.signature_scheme(), CredentialType::Basic)
+                    .await
+                    .expect("should have a basic credential");
+                let bob_cred_ref = CredentialRef::from_credential(&bob_credential);
                 let conversation = case
-                    .create_conversation_with_credential_type(CredentialType::Basic, [&alice, &bob])
+                    .create_conversation_with_credentials([(&alice, &alice_cred_ref), (&bob, &bob_cred_ref)])
                     .await;
                 let id = conversation.id().clone();
 

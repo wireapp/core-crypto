@@ -636,8 +636,8 @@ mod tests {
 
             Box::pin(async move {
                 let ([alice, bob, rupert], [john, dilbert]) = &sessions;
-                let mut sessions = sessions.0.iter().chain(sessions.1.iter());
-                let conversation = case.create_conversation(&mut sessions).await;
+                let sessions = sessions.0.iter().chain(sessions.1.iter());
+                let conversation = case.create_conversation(sessions.clone()).await;
 
                 let (alice_id, bob_id, rupert_id, john_id, dilbert_id) = (
                     alice.get_client_id().await,
