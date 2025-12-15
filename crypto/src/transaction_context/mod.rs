@@ -93,7 +93,7 @@ impl HasSessionAndCrypto for TransactionContext {
 impl TransactionContext {
     async fn new(
         keystore: Database,
-        client: Arc<RwLock<Option<Session>>>,
+        mls_session: Arc<RwLock<Option<Session>>>,
         #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     ) -> Result<Self> {
         keystore
@@ -101,12 +101,11 @@ impl TransactionContext {
             .await
             .map_err(MlsError::wrap("creating new transaction"))?;
         let mls_groups = Arc::new(RwLock::new(Default::default()));
-        let mls_session = client.clone();
         Ok(Self {
             inner: Arc::new(
                 TransactionContextInner::Valid {
                     keystore,
-                    mls_session,
+                    mls_session: mls_session.clone(),
                     mls_groups,
                     #[cfg(feature = "proteus")]
                     proteus_central,
