@@ -67,7 +67,6 @@ impl TransactionContext {
         &self,
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
-        database: Database,
         transport: Arc<dyn MlsTransport>,
     ) -> Result<NewCrlDistributionPoints> {
         let mls_provider = self

@@ -63,7 +63,7 @@ impl CoreCrypto {
     /// in a single database transaction.
     pub async fn new_transaction(&self) -> Result<TransactionContext> {
         TransactionContext::new(
-            self.keystore.clone(),
+            self.database.clone(),
             self.mls.clone(),
             #[cfg(feature = "proteus")]
             self.proteus.clone(),
