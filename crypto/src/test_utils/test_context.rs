@@ -12,7 +12,7 @@ use super::{
 };
 pub use crate::{Ciphersuite, CredentialType, MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy};
 use crate::{
-    ClientId, ConnectionType, Database, DatabaseKey,
+    ClientId, ConnectionType, CredentialRef, Database, DatabaseKey,
     e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId},
     test_utils::SessionContext,
 };
@@ -379,7 +379,8 @@ impl TestContext {
         &'a self,
         members: impl IntoIterator<Item = &'a SessionContext>,
     ) -> TestConversation<'a> {
-        self.create_conversation_with_credential_type(self.credential_type, members)
+        let members_with_credentials = members.into_iter().map(|member| (member, &member.initial_credential));
+        self.create_conversation_with_credentials(members_with_credentials)
             .await
     }
 
@@ -399,46 +400,31 @@ impl TestContext {
             .set_raw_external_senders(&mut self.cfg, vec![signature_key])
             .await
             .unwrap();
-        self.create_conversation_with_credential_type(self.credential_type, members)
-            .await
+        self.create_conversation(members).await
     }
 
     /// Create a test conversation with the specified credential type.
     ///
     /// The first member is required, and is the conversation's creator.
-    pub async fn create_conversation_with_credential_type<'a>(
+    pub async fn create_conversation_with_credentials<'a>(
         &'a self,
-        credential_type: CredentialType,
-        members: impl IntoIterator<Item = &'a SessionContext>,
+        members_with_credentials: impl IntoIterator<Item = (&'a SessionContext, &'a CredentialRef)>,
     ) -> TestConversation<'a> {
-        self.create_heterogeneous_conversation(credential_type, credential_type, members)
-            .await
-    }
-
-    /// Create a test conversation with a credential type, invite sessions with another.
-    ///
-    /// The first member is required, and is the conversation's creator.
-    pub async fn create_heterogeneous_conversation<'a>(
-        &'a self,
-        creator_credential_type: CredentialType,
-        member_credential_type: CredentialType,
-        members: impl IntoIterator<Item = &'a SessionContext>,
-    ) -> TestConversation<'a> {
-        let mut members = members.into_iter();
-        let creator = members
+        let mut members_with_credentials = members_with_credentials.into_iter();
+        let (creator, credential_ref) = members_with_credentials
             .next()
             .expect("each conversation needs at least 1 member, the creator");
 
-        let conversation = TestConversation::new_with_credential_type(self, creator, creator_credential_type).await;
+        let conversation = TestConversation::new_with_credential(self, creator, credential_ref).await;
 
         // if members are empty, return early here
-        let mut members = members.peekable();
-        if members.peek().is_none() {
+        let mut members_with_credentials = members_with_credentials.peekable();
+        if members_with_credentials.peek().is_none() {
             return conversation;
         }
 
         conversation
-            .invite_with_credential_type_notify(member_credential_type, members)
+            .invite_with_credential_notify(members_with_credentials)
             .await
     }
 }
