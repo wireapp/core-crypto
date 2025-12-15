@@ -90,10 +90,7 @@ impl Entity {
     /// `#[cfg(target_family = "wasm")] impl Entity for MyEntity`
     fn impl_entity_wasm(&self) -> TokenStream {
         let Self {
-            collection_name,
-            struct_name,
-            id_column,
-            ..
+            struct_name, id_column, ..
         } = self;
 
         let primary_key = id_column.column_type.owned();
@@ -110,15 +107,15 @@ impl Entity {
                 }
 
                 async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<Option<Self>> {
-                    Self::get_borrowed(conn, key).await
+                    <Self as crate::traits::BorrowPrimaryKey>::get_borrowed(conn, key).await
                 }
 
                 async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<u32> {
-                    conn.storage().count(#collection_name).await
+                    conn.storage().new_count::<Self>().await
                 }
 
                 async fn load_all(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<Vec<Self>> {
-                    conn.storage().get_all(#collection_name).await
+                    conn.storage().new_get_all().await
                 }
             }
         }
@@ -127,7 +124,6 @@ impl Entity {
     /// `impl BorrowPrimaryKey for MyEntity`
     fn impl_borrow_primary_key(&self) -> TokenStream {
         let Self {
-            collection_name,
             struct_name,
             id_column,
             other_columns,
@@ -161,7 +157,7 @@ impl Entity {
                 {
                     #[cfg(target_family = "wasm")]
                     {
-                        conn.storage().get(#collection_name, key.bytes().as_ref()).await
+                        conn.storage().new_get(key.bytes().as_ref()).await
                     }
 
                     #[cfg(not(target_family = "wasm"))]
@@ -206,8 +202,7 @@ impl Entity {
                 async fn save(&'a self, tx: &Self::Transaction) -> crate::CryptoKeystoreResult<()> {
                     #[cfg(target_family = "wasm")]
                         {
-                            // TODO(WPB-22196): don't clone here, we don't need mutable ownership to save
-                            tx.save(self.clone()).await
+                            tx.new_save(self).await
                         }
 
                         #[cfg(not(target_family = "wasm"))]
@@ -221,7 +216,7 @@ impl Entity {
                 async fn count(tx: &Self::Transaction) -> crate::CryptoKeystoreResult<u32> {
                     #[cfg(target_family = "wasm")]
                     {
-                        tx.count::<Self>().await
+                        tx.new_count::<Self>().await
                     }
 
                     #[cfg(not(target_family = "wasm"))]
@@ -239,10 +234,7 @@ impl Entity {
 
     fn impl_entity_delete_borrowed(&self) -> TokenStream {
         let Self {
-            collection_name,
-            struct_name,
-            id_column,
-            ..
+            struct_name, id_column, ..
         } = self;
 
         let id_column_name = id_column.sql_name();
@@ -261,7 +253,7 @@ impl Entity {
                 {
                     #[cfg(target_family = "wasm")]
                     {
-                        tx.delete(#collection_name, id.bytes().as_ref()).await
+                        tx.new_delete::<Self>(id.bytes().as_ref()).await
                     }
 
                     #[cfg(not(target_family = "wasm"))]
@@ -283,13 +275,12 @@ impl Entity {
         } = self;
 
         let decrypt_struct_name = Ident::new(&format!("{struct_name}Decrypt"), Span::call_site());
-        let lifetime = Lifetime::new("'a", Span::call_site());
         let field_name =
             std::iter::once(&id_column.field_name).chain(other_columns.iter().map(|column| &column.field_name));
         let field_type = std::iter::once(id_column.column_type.owned()).chain(
             other_columns
                 .iter()
-                .map(|column| column.column_type.encrypted_form().borrowed_with_sigil(&lifetime)),
+                .map(|column| column.column_type.encrypted_form().owned()),
         );
 
         let id_field_name = &id_column.field_name;
@@ -309,16 +300,16 @@ impl Entity {
             };
             let field_expr = match column.column_type {
                 ColumnType::Bytes => {
-                    let decrypt_operation = make_decrypt_operation(quote!(self.#field_name));
+                    let decrypt_operation = make_decrypt_operation(quote!(&self.#field_name));
                     quote!(#decrypt_operation?)
                 }
                 ColumnType::String => {
-                    let decrypt_operation = make_decrypt_operation(quote!(self.#field_name));
+                    let decrypt_operation = make_decrypt_operation(quote!(&self.#field_name));
                     quote!(String::from_utf8(#decrypt_operation?).map_err(|err| err.utf8_error())?)
                 }
                 ColumnType::OptionalBytes => {
                     let decrypt_operation = make_decrypt_operation(quote!(#field_name));
-                    quote!(self.#field_name.map(|#field_name| #decrypt_operation).transpose()?)
+                    quote!(self.#field_name.as_ref().map(|#field_name| #decrypt_operation).transpose()?)
                 }
             };
 
@@ -330,15 +321,11 @@ impl Entity {
 
         quote! {
             #[derive(serde::Deserialize)]
-            #visibility struct #decrypt_struct_name<#lifetime> {
-                // we need this phantom data to ensure the lifetime is _always_ used;
-                // this produces an error otherwise
-                #[serde(skip)]
-                _phantom_data: std::marker::PhantomData<&#lifetime ()>,
+            #visibility struct #decrypt_struct_name {
                 #( #field_name: #field_type, )*
             }
 
-            impl<#lifetime> crate::traits::Decrypting<#lifetime> for #decrypt_struct_name<#lifetime> {
+            impl crate::traits::Decrypting<'static> for #decrypt_struct_name {
                 type DecryptedForm = #struct_name;
 
                 fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> crate::CryptoKeystoreResult<#struct_name> {
@@ -348,8 +335,8 @@ impl Entity {
                 }
             }
 
-            impl<#lifetime> crate::traits::Decryptable<#lifetime> for #struct_name {
-                type DecryptableFrom = #decrypt_struct_name<#lifetime>;
+            impl crate::traits::Decryptable<'static> for #struct_name {
+                type DecryptableFrom = #decrypt_struct_name;
             }
         }
     }
@@ -380,7 +367,8 @@ impl Entity {
             let field_name = &column.field_name;
             let make_encrypt_operation = |accessor: TokenStream| {
                 quote!(
-                    self.encrypt_data(
+                    <Self as crate::traits::EncryptData>::encrypt_data(
+                        self,
                         cipher,
                         #accessor,
                     )

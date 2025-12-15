@@ -108,17 +108,6 @@ impl ColumnType {
             Self::OptionalBytes => quote!(Option<Vec<u8>>),
         }
     }
-
-    /// Emit the borrowed form of this type.
-    ///
-    /// Note that this _includes_ the `&` sigil and lifetime in appropriate positions.
-    pub(super) fn borrowed_with_sigil(&self, lifetime: &Lifetime) -> TokenStream {
-        match self {
-            Self::String => quote!(&#lifetime str),
-            Self::Bytes => quote!(&#lifetime [u8]),
-            Self::OptionalBytes => quote!(Option<&#lifetime [u8]>),
-        }
-    }
 }
 
 impl TryFrom<Type> for ColumnType {
