@@ -4,7 +4,8 @@ use core_crypto::{mls::conversation::Conversation as _, transaction_context::Err
 
 use crate::{
     Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CrlRegistration,
-    E2eiConversationState, E2eiEnrollment, UserIdentities, WireIdentity, crl::NewCrlDistributionPoints,
+    E2eiConversationState, E2eiEnrollment, MlsTransport, UserIdentities, WireIdentity,
+    core_crypto::mls_transport::callback_shim, crl::NewCrlDistributionPoints,
 };
 
 type EnrollmentParameter = Arc<E2eiEnrollment>;
@@ -104,10 +105,13 @@ impl CoreCryptoContext {
         &self,
         enrollment: EnrollmentParameter,
         certificate_chain: String,
+        transport: Arc<dyn MlsTransport>,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
         let mut enrollment = enrollment.write().await?;
+
+        let transport = callback_shim(transport);
         self.inner
-            .e2ei_mls_init_only(&mut enrollment, certificate_chain)
+            .e2ei_mls_init_only(&mut enrollment, certificate_chain, transport)
             .await
             .map(Into::into)
             .map_err(Into::<TransactionError>::into)
