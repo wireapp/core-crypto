@@ -143,12 +143,6 @@ pub struct StoredCredential {
     pub private_key: Vec<u8>,
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait MlsCredentialExt: Entity {
-    async fn delete_by_credential(tx: &TransactionWrapper<'_>, credential: Vec<u8>) -> CryptoKeystoreResult<()>;
-}
-
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]

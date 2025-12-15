@@ -9,8 +9,8 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{
-        Entity, EntityBase, EntityFindParams, EntityIdStringExt as _, EntityTransactionExt, MlsCredentialExt,
-        StoredCredential, StringEntityId,
+        Entity, EntityBase, EntityFindParams, EntityIdStringExt as _, EntityTransactionExt, StoredCredential,
+        StringEntityId,
     },
 };
 
