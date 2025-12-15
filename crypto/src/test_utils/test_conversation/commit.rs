@@ -6,7 +6,7 @@ use super::{
     operation_guard::{AddGuard, Commit, OperationGuard, TestOperation},
 };
 use crate::{
-    CredentialRef, CredentialType,
+    CredentialRef,
     mls::{
         conversation::{ConversationWithMls as _, pending_conversation::PendingConversation},
         credential::Credential,
@@ -24,43 +24,46 @@ impl<'a> TestConversation<'a> {
     /// Invite all sessions into this conversation.
     /// The credential type of the invited members' key packages will be inherited from the [super::TestContext].
     pub async fn invite(self, sessions: impl IntoIterator<Item = &'a SessionContext>) -> OperationGuard<'a, Commit> {
-        let credential_type = self.case.credential_type;
-        self.invite_with_credential_type(credential_type, sessions).await
+        let sessions_with_credentials = sessions
+            .into_iter()
+            .map(|session| (session, &session.initial_credential));
+        self.invite_with_credential(sessions_with_credentials).await
     }
 
-    /// Like [Self::invite_notify], but the key packages of the invited members will be of the provided credential type.
-    pub async fn invite_with_credential_type_notify(
+    /// Like [Self::invite_notify], but the key packages of the invited members will use the provided credential.
+    pub async fn invite_with_credential_notify(
         self,
-        credential_type: CredentialType,
-        sessions: impl IntoIterator<Item = &'a SessionContext>,
+        sessions_with_credentials: impl IntoIterator<Item = (&'a SessionContext, &'a CredentialRef)>,
     ) -> TestConversation<'a> {
-        self.invite_with_credential_type(credential_type, sessions)
+        self.invite_with_credential(sessions_with_credentials)
             .await
             .notify_members()
             .await
     }
 
-    /// Like [Self::invite], but the key packages of the invited members will be of the provided credential type.
-    pub async fn invite_with_credential_type(
+    /// Like [Self::invite], but the key packages of the invited members will use the provided credential.
+    pub async fn invite_with_credential(
         self,
-        credential_type: CredentialType,
-        sessions: impl IntoIterator<Item = &'a SessionContext>,
+        sessions_with_credentials: impl IntoIterator<Item = (&'a SessionContext, &'a CredentialRef)>,
     ) -> OperationGuard<'a, Commit> {
-        let new_members = sessions.into_iter().collect::<Vec<_>>();
+        let new_memembers_with_credentials = sessions_with_credentials.into_iter().collect::<Vec<_>>();
 
-        let key_packages = futures_util::future::join_all(new_members.iter().map(async |cc| {
-            let credential = cc
-                .find_most_recent_credential(self.case.signature_scheme(), credential_type)
-                .await
-                .expect("session already has a credential of appropriate type");
-            let credential_ref = CredentialRef::from_credential(&credential);
-            cc.transaction
-                .generate_keypackage(&credential_ref, None)
-                .await
-                .unwrap()
-                .into()
-        }))
-        .await;
+        let key_packages =
+            futures_util::future::join_all(new_memembers_with_credentials.iter().map(async |(cc, credential_ref)| {
+                cc.transaction
+                    .generate_keypackage(credential_ref, None)
+                    .await
+                    .unwrap()
+                    .into()
+            }))
+            .await;
+
+        let (new_members, _): (Vec<&SessionContext>, Vec<&CredentialRef>) =
+            new_memembers_with_credentials.into_iter().unzip();
+
+        assert_eq!(new_members.len(), key_packages.len());
+        assert!(!new_members.is_empty());
+
         self.guard().await.add_members(key_packages).await.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;
         let actor_index = self.actor_index();
