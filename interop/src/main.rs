@@ -148,19 +148,14 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
         .unwrap();
 
     let mut clients = create_mls_clients(chrome_driver_addr, web_server).await;
-    let master_client = Session::try_new(&db).await?;
 
     let conversation_id: ConversationId = MLS_CONVERSATION_ID.into();
     let config = MlsConversationConfiguration {
         ciphersuite: CIPHERSUITE_IN_USE.into(),
         ..Default::default()
     };
-    let cc = CoreCrypto::from(master_client.clone());
+    let cc = CoreCrypto::new(db);
     spinner.update("initialized cc...");
-
-    let success_provider = Arc::new(MlsTransportSuccessProvider::default());
-    cc.provide_transport(success_provider.clone()).await;
-    spinner.update("provided transport...");
 
     let master_client_id = ClientId::from(b"interop master client".as_slice());
     let credential = Credential::basic(
@@ -171,8 +166,13 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     spinner.update("created credential...");
 
     let transaction = cc.new_transaction().await?;
+    let success_provider = Arc::new(MlsTransportSuccessProvider::default());
     transaction
-        .mls_init(master_client_id.into(), &[CIPHERSUITE_IN_USE.into()])
+        .mls_init(
+            master_client_id.clone().into(),
+            &[CIPHERSUITE_IN_USE.into()],
+            success_provider.clone(),
+        )
         .await?;
     let credential_ref = transaction.add_credential(credential).await?;
     transaction
@@ -223,7 +223,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
 
         log::info!(
             "Master client [{}] >>> {}",
-            hex::encode(master_client.id().await?.as_slice()),
+            hex::encode(master_client_id.as_slice()),
             message
         );
 
@@ -312,7 +312,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
         .await
         .unwrap();
 
-    let master_client = CoreCrypto::from(Session::try_new(&db).await?);
+    let master_client = CoreCrypto::new(db);
     let transaction = master_client.new_transaction().await?;
     transaction.proteus_init().await?;
 
