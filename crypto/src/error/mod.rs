@@ -19,7 +19,17 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 pub enum Error {
     /// Invalid [crate::transaction_context::TransactionContext]. This context has been finished and can no longer be
     /// used.
-    #[error("This transaction context has already been finished and can no longer be used.")]
+    #[cfg_attr(
+        target_family = "wasm",
+        error(
+            "This transaction context has already been finished. You most likely used the context outside the callback
+            or you forget to `await` a Promise inside the transaction callback."
+        )
+    )]
+    #[cfg_attr(
+        not(target_family = "wasm"),
+        error("This transaction context has already been finished and can no longer be used.")
+    )]
     InvalidTransactionContext,
     /// The proteus client has been called but has not been initialized yet
     #[error("Proteus client hasn't been initialized")]
