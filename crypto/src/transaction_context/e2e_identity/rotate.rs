@@ -433,7 +433,7 @@ mod tests {
                 assert_eq!(old_cb, old_cb_found);
                 let (scs, old_nb_identities) = {
                     let alice_client = alice.session().await;
-                    let old_nb_identities = alice_client.identities_count().await.unwrap();
+                    let old_nb_identities = alice_client.identities_count().await;
 
                     // Let's simulate an app crash, client gets deleted and restored from keystore
                     let scs = HashSet::from([case.signature_scheme()]);
@@ -476,7 +476,7 @@ mod tests {
                     format!("wireapp://%40{}@world.com", e2ei_utils::NEW_HANDLE)
                 );
 
-                assert_eq!(new_client.identities_count().await.unwrap(), old_nb_identities);
+                assert_eq!(new_client.identities_count().await, old_nb_identities);
             })
             .await
         }

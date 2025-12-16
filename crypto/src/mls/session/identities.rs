@@ -159,11 +159,9 @@ impl Identities {
 
 impl Session {
     #[cfg(test)]
-    pub(crate) async fn identities_count(&self) -> Result<usize> {
-        match &*self.inner.read().await {
-            None => Err(Error::MlsNotInitialized),
-            Some(super::SessionInner { identities, .. }) => Ok(identities.iter().count()),
-        }
+    pub(crate) async fn identities_count(&self) -> usize {
+        let guard = self.identities.read().await;
+        guard.iter().count()
     }
 }
 
@@ -249,7 +247,7 @@ mod tests {
             let [mut central] = case.sessions().await;
             Box::pin(async move {
                 let client = central.session().await;
-                let prev_count = client.identities_count().await.unwrap();
+                let prev_count = client.identities_count().await;
                 let cert = central.get_intermediate_ca().cloned();
 
                 // all credentials need to be distinguishable by type, scheme, and timestamp
@@ -259,7 +257,7 @@ mod tests {
 
                 // this calls 'push_credential' under the hood
                 central.new_credential(&case, cert.as_ref()).await;
-                let next_count = client.identities_count().await.unwrap();
+                let next_count = client.identities_count().await;
                 assert_eq!(next_count, prev_count + 1);
             })
             .await
