@@ -215,7 +215,7 @@ pub fn conversation_id() -> ConversationId {
 }
 
 pub async fn add_clients(
-    central: &mut Session,
+    core_crypto: &CoreCrypto,
     id: &ConversationId,
     ciphersuite: Ciphersuite,
     nb_clients: usize,
@@ -230,7 +230,6 @@ pub async fn add_clients(
         key_packages.push(kp.into())
     }
 
-    let core_crypto = CoreCrypto::from(central.clone());
     let context = core_crypto.new_transaction().await.unwrap();
     context
         .conversation(id)
@@ -266,14 +265,8 @@ pub async fn setup_mls_and_add_clients(
 ) {
     let (core_crypto, id, delivery_service, credential_ref) =
         setup_mls(cipher_suite, credential, in_memory, true).await;
-    let (client_ids, group_info) = add_clients(
-        &mut core_crypto.clone(),
-        &id,
-        cipher_suite,
-        client_count,
-        delivery_service.clone(),
-    )
-    .await;
+    let (client_ids, group_info) =
+        add_clients(&core_crypto, &id, cipher_suite, client_count, delivery_service.clone()).await;
     (
         core_crypto,
         id,
@@ -319,16 +312,14 @@ pub async fn rand_key_package(ciphersuite: Ciphersuite) -> (KeyPackage, ClientId
 }
 
 pub async fn invite(
-    from: &mut Session,
-    other: &mut Session,
+    from: &CoreCrypto,
+    other: &CoreCrypto,
     id: &ConversationId,
     ciphersuite: Ciphersuite,
     delivery_service: Arc<dyn MlsTransportTestExt>,
 ) {
-    let core_crypto = CoreCrypto::from(from.clone());
-    let from_context = core_crypto.new_transaction().await.unwrap();
-    let core_crypto = CoreCrypto::from(other.clone());
-    let other_context = core_crypto.new_transaction().await.unwrap();
+    let from_context = from.new_transaction().await.unwrap();
+    let other_context = other.new_transaction().await.unwrap();
     let credential_refs = other_context
         .find_credentials(
             CredentialFindFilters::builder()
