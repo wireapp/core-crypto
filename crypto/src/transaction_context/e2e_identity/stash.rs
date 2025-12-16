@@ -56,6 +56,8 @@ mod tests {
     async fn stash_and_pop_should_not_abort_enrollment(case: TestContext) {
         let cc = SessionContext::new_uninitialized(&case).await;
         Box::pin(async move {
+            use std::sync::Arc;
+
             let owned_x509_test_chain;
             // can't use `.unwrap_or_else` here because that confuses the initialization check for `owned_*`
             let x509_test_chain = match cc.x509_chain() {
@@ -84,7 +86,13 @@ mod tests {
             .await
             .unwrap();
 
-            assert!(cc.transaction.e2ei_mls_init_only(&mut enrollment, cert,).await.is_ok());
+            let transport = Arc::new(CoreCryptoTransportSuccessProvider::default());
+            assert!(
+                cc.transaction
+                    .e2ei_mls_init_only(&mut enrollment, cert, transport)
+                    .await
+                    .is_ok()
+            );
         })
         .await;
     }
