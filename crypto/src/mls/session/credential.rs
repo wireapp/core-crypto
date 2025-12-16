@@ -43,7 +43,7 @@ impl Session {
     /// This is a convenience for internal use and should _not_ be propagated across
     /// the FFI boundary. Instead, use [`Self::add_credential`] to produce a [`CredentialRef`].
     pub(crate) async fn add_credential_producing_arc(&self, credential: Credential) -> Result<Arc<Credential>> {
-        if *credential.client_id() != self.id().await? {
+        if *credential.client_id() != self.id() {
             return Err(Error::WrongCredential);
         }
 
@@ -81,7 +81,7 @@ impl Session {
     /// Removes both the credential itself and also any key packages which were generated from it.
     pub async fn remove_credential(&self, credential_ref: &CredentialRef) -> Result<()> {
         // setup
-        if *credential_ref.client_id() != self.id().await? {
+        if *credential_ref.client_id() != self.id() {
             return Err(Error::WrongCredential);
         }
 
@@ -179,7 +179,7 @@ impl Session {
         {
             Ok(credential) => credential,
             Err(Error::CredentialNotFound(..)) if credential_type == CredentialType::Basic => {
-                let client_id = self.id().await?;
+                let client_id = self.id();
                 let credential = Credential::basic(ciphersuite, client_id, &self.crypto_provider).map_err(
                     RecursiveError::mls_credential(
                         "creating basic credential in find_most_recent_or_create_basic_credential",

@@ -191,10 +191,10 @@ impl<'a> TestConversation<'a> {
     /// Panics if you try to remove the current actor (by default, the conversation creator);
     /// Panics if you try to remove someone who is not a current member.
     pub async fn remove(self, member: &'a SessionContext) -> OperationGuard<'a, Commit> {
-        let member_id = member.session.id().await.unwrap();
+        let member_id = member.session.id();
         assert_ne!(
             member_id,
-            self.actor().session.id().await.unwrap(),
+            self.actor().session.id(),
             "cannot remove the actor because we're acting on the actor's behalf."
         );
 

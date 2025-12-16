@@ -328,12 +328,12 @@ impl<'a> TestConversation<'a> {
     }
 
     async fn member_index(&self, member: &SessionContext) -> usize {
-        let member_id = member.session.id().await.unwrap();
+        let member_id = member.session.id();
 
         // can't use `Iterator::position` because getting the id is async
         let mut member_idx = None;
         for (idx, member) in self.members().enumerate() {
-            let joiner_id = member.session.id().await.unwrap();
+            let joiner_id = member.session.id();
             if joiner_id == member_id {
                 member_idx = Some(idx);
                 break;
