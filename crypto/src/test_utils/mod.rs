@@ -232,7 +232,7 @@ impl SessionContext {
     }
 
     pub async fn get_client_id(&self) -> ClientId {
-        self.session.id().await.unwrap()
+        self.session.read().await.id()
     }
 
     pub async fn replace_transport(&self, new_transport: Arc<dyn MlsTransportTestExt>) {

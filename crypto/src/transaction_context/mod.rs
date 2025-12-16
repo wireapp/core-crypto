@@ -340,12 +340,8 @@ impl TransactionContext {
 
     /// see [Session::id]
     pub async fn client_id(&self) -> Result<ClientId> {
-        self.session()
-            .await?
-            .id()
-            .await
-            .map_err(RecursiveError::mls_client("getting client id"))
-            .map_err(Into::into)
+        let session = self.session().await?;
+        Ok(session.id())
     }
 
     /// Generates a random byte array of the specified size
