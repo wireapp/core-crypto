@@ -28,14 +28,15 @@ impl CoreCryptoNativeClient {
             .await
             .unwrap();
 
-        let cc = CoreCrypto::from(Session::try_new(&db).await?);
-
-        cc.provide_transport(Arc::new(MlsTransportSuccessProvider::default()))
-            .await;
+        let cc = CoreCrypto::new(db);
 
         let ctx = cc.new_transaction().await?;
-        ctx.mls_init(client_id.clone().into(), &[CIPHERSUITE_IN_USE.into()])
-            .await?;
+        ctx.mls_init(
+            client_id.clone().into(),
+            &[CIPHERSUITE_IN_USE.into()],
+            Arc::new(MlsTransportSuccessProvider::default()),
+        )
+        .await?;
         ctx.add_credential(Credential::basic(
             CIPHERSUITE_IN_USE.into(),
             client_id.clone(),
