@@ -8,7 +8,7 @@ use core_crypto::{
     CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, ConnectionType, ConversationId, CoreCrypto,
     Credential as CcCredential, CredentialFindFilters, CredentialRef, CredentialType, Database, DatabaseKey,
     HistorySecret, MlsCommitBundle, MlsConversationConfiguration, MlsGroupInfoBundle, MlsTransport, MlsTransportData,
-    MlsTransportResponse, Session,
+    MlsTransportResponse,
 };
 use criterion::BenchmarkId;
 use mls_crypto_provider::{MlsCryptoProvider, RustCrypto};
@@ -170,13 +170,13 @@ pub async fn new_central(
     let client_identifier = ClientIdentifier::from(client_id.clone());
     let db = Database::open(connection_type, &DatabaseKey::generate()).await.unwrap();
 
-    let session = Session::try_new(&db).await.unwrap();
-    let cc = CoreCrypto::from(session);
-    cc.init(client_identifier, &[ciphersuite.signature_algorithm()])
+    let cc = CoreCrypto::new(db);
+    let delivery_service = Arc::<CoreCryptoTransportSuccessProvider>::default();
+    let tx = cc.new_transaction().await.unwrap();
+    tx.mls_init(client_identifier, &[ciphersuite], delivery_service.clone())
         .await
         .unwrap();
-    let delivery_service = Arc::<CoreCryptoTransportSuccessProvider>::default();
-    cc.provide_transport(delivery_service.clone()).await;
+    tx.finish().await.unwrap();
 
     let ctx = cc.new_transaction().await.unwrap();
 
