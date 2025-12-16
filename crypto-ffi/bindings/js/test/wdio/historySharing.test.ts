@@ -51,10 +51,10 @@ describe("history sharing", () => {
 
                 // create the conversation in one transaction
                 await cc.transaction(async (ctx) => {
-                    await ctx.createConversation(
-                        convId,
-                        window.ccModule.CredentialType.Basic
-                    );
+                    const [credentialRef] = await ctx.findCredentials({
+                        credentialType: window.ccModule.CredentialType.Basic,
+                    });
+                    await ctx.createConversation(convId, credentialRef!);
                 });
 
                 // register the observer

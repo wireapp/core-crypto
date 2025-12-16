@@ -257,15 +257,16 @@ export async function createConversation(
     return await browser.execute(
         async (clientName, conversationId) => {
             const cc = window.ensureCcDefined(clientName);
-            const cid = new window.ccModule.ConversationId(
-                new TextEncoder().encode(conversationId).buffer
-            );
-            await cc.transaction((ctx) =>
-                ctx.createConversation(
-                    cid,
-                    window.ccModule.CredentialType.Basic
-                )
-            );
+            await cc.transaction(async (ctx) => {
+                const conversationIdBytes = new window.ccModule.ConversationId(
+                    new TextEncoder().encode(conversationId).buffer
+                );
+                const [credentialRef] = await ctx.getCredentials();
+                await ctx.createConversation(
+                    conversationIdBytes,
+                    credentialRef!
+                );
+            });
         },
         clientName,
         conversationId
@@ -295,21 +296,29 @@ export async function invite(
         async (client1, client2, conversationId) => {
             const cc1 = window.ensureCcDefined(client1);
             const cc2 = window.ensureCcDefined(client2);
-
+            const conversationIdBytes = new window.ccModule.ConversationId(
+                new TextEncoder().encode(conversationId).buffer
+            );
             const kp = await cc2.transaction(async (ctx) => {
                 const [credentialRef] = await ctx.findCredentials({
                     ciphersuite: window.defaultCipherSuite,
                     credentialType: window.ccModule.CredentialType.Basic,
                 });
-                return await ctx.generateKeypackage(credentialRef!);
+                console.log("generated key package");
+                return (
+                    await ctx.generateKeypackage(credentialRef!)
+                ).serialize();
             });
 
-            const cid = new window.ccModule.ConversationId(
-                new TextEncoder().encode(conversationId).buffer
-            );
+            const clients = await cc1.getClientIds(conversationIdBytes);
+            console.log("clients");
+            console.log(clients);
+
+            console.log("inviting bob");
             await cc1.transaction((ctx) =>
-                ctx.addClientsToConversation(cid, [kp.serialize()])
+                ctx.addClientsToConversation(conversationIdBytes, [kp])
             );
+            console.log("processing welcome");
             const commitBundle =
                 await window.deliveryService.getLatestCommitBundle();
             await cc2.transaction((ctx) =>

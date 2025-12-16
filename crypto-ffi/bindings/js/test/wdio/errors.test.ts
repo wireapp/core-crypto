@@ -72,9 +72,13 @@ describe("core crypto errors", () => {
 
                 try {
                     await cc.transaction(async (cx) => {
+                        const [credentialRef] = await cx.findCredentials({
+                            credentialType:
+                                window.ccModule.CredentialType.Basic,
+                        });
                         await cx.createConversation(
                             conversationId,
-                            window.ccModule.CredentialType.Basic
+                            credentialRef!
                         );
                     });
                     return {
@@ -189,10 +193,13 @@ it("should build correctly when constructed by wasm bindgen", async () => {
 
             try {
                 await cc.transaction(async (cx) => {
+                    // pass in a string argument instead of a `ConversationId` instance
+                    const [credentialRef] = await cx.findCredentials({
+                        credentialType: window.ccModule.CredentialType.Basic,
+                    });
                     await cx.createConversation(
-                        // pass in a string argument instead of a `ConversationId` instance
                         convId as unknown as ConversationId,
-                        window.ccModule.CredentialType.Basic
+                        credentialRef!
                     );
                 });
                 return {
@@ -236,12 +243,13 @@ describe("Error type mapping", () => {
                     new TextEncoder().encode(conversationId).buffer
                 );
                 try {
-                    await cc.transaction((ctx) =>
-                        ctx.createConversation(
-                            cid,
-                            window.ccModule.CredentialType.Basic
-                        )
-                    );
+                    await cc.transaction(async (ctx) => {
+                        const [credentialRef] = await ctx.findCredentials({
+                            credentialType:
+                                window.ccModule.CredentialType.Basic,
+                        });
+                        await ctx.createConversation(cid, credentialRef!);
+                    });
                 } catch (e) {
                     return window.ccModule.isMlsConversationAlreadyExistsError(
                         e
