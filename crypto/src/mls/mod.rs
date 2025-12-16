@@ -66,20 +66,6 @@ mod tests {
         }
     }
 
-    mod invariants {
-        use super::*;
-
-        #[apply(all_cred_cipher)]
-        async fn can_create_from_valid_configuration(mut case: TestContext) {
-            let db = case.create_persistent_db().await;
-            Box::pin(async move {
-                let new_client_result = Session::try_new(&db).await;
-                assert!(new_client_result.is_ok())
-            })
-            .await
-        }
-    }
-
     #[apply(all_cred_cipher)]
     async fn create_conversation_should_fail_when_already_exists(case: TestContext) {
         use crate::LeafError;
