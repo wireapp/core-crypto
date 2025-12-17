@@ -152,6 +152,8 @@ pub enum CryptoKeystoreError {
     MigrationNotSupported(u32),
     #[error("The migration failed: {0}")]
     MigrationFailed(String),
+    #[error("the provided bytes could not be interpreted as the primary key of {0}")]
+    InvalidPrimaryKeyBytes(&'static str),
 }
 
 #[cfg(target_family = "wasm")]
