@@ -248,13 +248,20 @@ impl SessionContext {
     }
 
     pub async fn replace_transport(&self, new_transport: Arc<dyn MlsTransportTestExt>) {
-        self.transaction
-            .set_transport_callbacks(Some(new_transport.clone()))
-            .await
-            .unwrap();
+        let mut guard = self.mls_transport.write().await;
+        *guard = new_transport.clone();
+        let session = self.session().await;
+        let crypto_provider = session.crypto_provider.clone();
+        let identities = session.identities().await;
+        let new_session = Session::new(self.get_client_id().await, identities, crypto_provider, new_transport);
+        self.replace_session(new_session);
+    }
 
-        let mut transport_guard = self.mls_transport.write().await;
-        *transport_guard = new_transport;
+    pub async fn replace_session(&self, session: Session) {
+        let mut guard = self.session.write().await;
+        *guard = session.clone();
+
+        self.transaction.set_session_if_exists(session).await;
     }
 
     pub async fn mls_transport(&self) -> Arc<dyn MlsTransportTestExt> {
