@@ -28,7 +28,7 @@ use crate::{
     DatabaseKey, Error, MlsCommitBundle, MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse,
     RecursiveError, Session,
     e2e_identity::id::QualifiedE2eiClientId,
-    mls::{HasSessionAndCrypto, HistoryObserver},
+    mls::HistoryObserver,
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     transaction_context::TransactionContext,
 };
@@ -246,10 +246,21 @@ impl SessionContext {
         let crypto_provider = session.crypto_provider.clone();
         let identities = session.identities().await;
         let new_session = Session::new(self.get_client_id().await, identities, crypto_provider, new_transport);
-        self.replace_session(new_session);
+        self.set_session(new_session).await;
     }
 
-    pub async fn replace_session(&self, session: Session) {
+    pub async fn reinit_session(&self, identifier: ClientIdentifier, ciphersuites: &[Ciphersuite]) {
+        self.transaction
+            .mls_init(identifier, ciphersuites, self.mls_transport().await)
+            .await
+            .unwrap();
+
+        let session = self.transaction.session().await.unwrap();
+
+        self.set_session(session).await;
+    }
+
+    async fn set_session(&self, session: Session) {
         let mut guard = self.session.write().await;
         *guard = session.clone();
 
