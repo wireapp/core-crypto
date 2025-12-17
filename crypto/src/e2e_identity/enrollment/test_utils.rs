@@ -5,7 +5,7 @@ use serde_json::json;
 use crate::{
     CertificateBundle, CredentialType, RecursiveError,
     e2e_identity::{E2eiEnrollment, Result, id::QualifiedE2eiClientId},
-    test_utils::{SessionContext, TestContext, context::TEAM, x509::X509TestChain},
+    test_utils::{TestContext, context::TEAM, x509::X509TestChain},
     transaction_context::TransactionContext,
 };
 
@@ -99,21 +99,18 @@ pub(crate) struct E2eiInitWrapper<'a> {
 }
 
 pub(crate) async fn e2ei_enrollment<'a>(
-    ctx: &'a SessionContext,
+    ctx: &'a TransactionContext,
     case: &TestContext,
     x509_test_chain: &X509TestChain,
-    client_id: Option<&str>,
+    e2ei_client_id_uri: &str,
     is_renewal: bool,
     init: impl Fn(E2eiInitWrapper) -> InitFnReturn<'_>,
     // used to verify persisting the instance actually does restore it entirely
     restore: impl Fn(E2eiEnrollment, &'a TransactionContext) -> RestoreFnReturn<'a>,
 ) -> Result<(E2eiEnrollment, String)> {
-    x509_test_chain.register_with_central(&ctx.transaction).await;
+    x509_test_chain.register_with_central(ctx).await;
 
-    let wrapper = E2eiInitWrapper {
-        context: &ctx.transaction,
-        case,
-    };
+    let wrapper = E2eiInitWrapper { context: ctx, case };
     let mut enrollment = init(wrapper).await?;
 
     if is_renewal {
@@ -133,7 +130,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let directory = serde_json::to_vec(&directory)?;
     enrollment.directory_response(directory)?;
 
-    let mut enrollment = restore(enrollment, &ctx.transaction).await;
+    let mut enrollment = restore(enrollment, ctx).await;
 
     let previous_nonce = "YUVndEZQVTV6ZUNlUkJxRG10c0syQmNWeW1kanlPbjM";
     let _account_req = enrollment.new_account_request(previous_nonce.to_string())?;
@@ -145,15 +142,12 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let account_resp = serde_json::to_vec(&account_resp)?;
     enrollment.new_account_response(account_resp)?;
 
-    let enrollment = restore(enrollment, &ctx.transaction).await;
+    let enrollment = restore(enrollment, ctx).await;
 
     let _order_req = enrollment.new_order_request(previous_nonce.to_string()).unwrap();
-    let client_id = match client_id {
-        None => ctx.get_e2ei_client_id().await.to_uri(),
-        Some(client_id) => format!("{}{client_id}", wire_e2e_identity::prelude::E2eiClientId::URI_SCHEME),
-    };
+
     let device_identifier = format!(
-        "{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"client-id\":\"{client_id}\",\"handle\":\"wireapp://%40{handle}@world.com\"}}"
+        "{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"client-id\":\"{e2ei_client_id_uri}\",\"handle\":\"wireapp://%40{handle}@world.com\"}}"
     );
     let user_identifier = format!(
         "{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"handle\":\"wireapp://%40{handle}@world.com\"}}"
@@ -182,7 +176,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let order_resp = serde_json::to_vec(&order_resp)?;
     let new_order = enrollment.new_order_response(order_resp)?;
 
-    let mut enrollment = restore(enrollment, &ctx.transaction).await;
+    let mut enrollment = restore(enrollment, ctx).await;
 
     let order_url = "https://example.com/acme/wire-acme/order/C7uOXEgg5KPMPtbdE3aVMzv7cJjwUVth";
 
@@ -234,7 +228,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let device_authz_resp = serde_json::to_vec(&device_authz_resp)?;
     enrollment.new_authz_response(device_authz_resp)?;
 
-    let enrollment = restore(enrollment, &ctx.transaction).await;
+    let enrollment = restore(enrollment, ctx).await;
 
     let backend_nonce = "U09ZR0tnWE5QS1ozS2d3bkF2eWJyR3ZVUHppSTJsMnU";
     let _dpop_token = enrollment.create_dpop_token(3600, backend_nonce.to_string())?;
@@ -251,7 +245,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let dpop_chall_resp = serde_json::to_vec(&dpop_chall_resp)?;
     enrollment.new_dpop_challenge_response(dpop_chall_resp)?;
 
-    let mut enrollment = restore(enrollment, &ctx.transaction).await;
+    let mut enrollment = restore(enrollment, ctx).await;
 
     let id_token = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ".to_string();
 
@@ -270,7 +264,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
 
     enrollment.new_oidc_challenge_response(oidc_chall_resp)?;
 
-    let mut enrollment = restore(enrollment, &ctx.transaction).await;
+    let mut enrollment = restore(enrollment, ctx).await;
 
     let _get_order_req = enrollment.check_order_request(order_url.to_string(), previous_nonce.to_string())?;
 
@@ -298,7 +292,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let order_resp = serde_json::to_vec(&order_resp)?;
     enrollment.check_order_response(order_resp)?;
 
-    let mut enrollment = restore(enrollment, &ctx.transaction).await;
+    let mut enrollment = restore(enrollment, ctx).await;
 
     let _finalize_req = enrollment.finalize_request(previous_nonce.to_string())?;
     let finalize_resp = json!({
@@ -326,7 +320,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let finalize_resp = serde_json::to_vec(&finalize_resp)?;
     enrollment.finalize_response(finalize_resp)?;
 
-    let mut enrollment = restore(enrollment, &ctx.transaction).await;
+    let mut enrollment = restore(enrollment, ctx).await;
 
     let _certificate_req = enrollment.certificate_request(previous_nonce.to_string())?;
 
