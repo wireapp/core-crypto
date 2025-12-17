@@ -244,11 +244,7 @@ impl TransactionContext {
     /// Loads any cryptographic material already present in the keystore, but does not create any.
     /// If no credentials are present in the keystore, then one _must_ be created and added to the
     /// session before it can be used.
-    pub(crate) async fn init(
-        &self,
-        identifier: ClientIdentifier,
-        ciphersuites: &[Ciphersuite],
-    ) -> Result<(ClientId, Identities)> {
+    async fn init(&self, identifier: ClientIdentifier, ciphersuites: &[Ciphersuite]) -> Result<(ClientId, Identities)> {
         let database = self.keystore().await?;
         let client_id = identifier
             .get_id()
@@ -313,6 +309,7 @@ impl TransactionContext {
 
         Ok((client_id, identities))
     }
+
     /// Initializes the MLS client of [super::CoreCrypto].
     pub async fn mls_init(
         &self,
@@ -337,7 +334,7 @@ impl TransactionContext {
     }
 
     /// Set the `mls_session` Arc (also sets it on the transaction's CoreCrypto instance)
-    pub async fn set_mls_session(&self, session: Session) -> Result<()> {
+    pub(crate) async fn set_mls_session(&self, session: Session) -> Result<()> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { mls_session, .. } => {
                 let mut guard = mls_session.write().await;
