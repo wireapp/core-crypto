@@ -131,6 +131,20 @@ impl TransactionContext {
         }
     }
 
+    #[cfg(test)]
+    pub(crate) async fn set_session_if_exists(&self, new_session: Session) {
+        match &*self.inner.read().await {
+            TransactionContextInner::Valid { mls_session, .. } => {
+                let mut guard = mls_session.write().await;
+
+                if guard.as_ref().is_some() {
+                    *guard = Some(new_session)
+                }
+            }
+            TransactionContextInner::Invalid => {}
+        }
+    }
+
     pub(crate) async fn mls_transport(&self) -> Result<Arc<dyn MlsTransport + 'static>> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { mls_session, .. } => {

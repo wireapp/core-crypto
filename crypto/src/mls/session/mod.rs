@@ -192,6 +192,10 @@ mod tests {
         // test functions are not held to the same documentation standard as proper functions
         #![allow(missing_docs)]
 
+        pub async fn identities(&self) -> Identities {
+            self.identities.read().await.clone()
+        }
+
         /// Replace any existing credentials, identities, client_id, and similar with newly generated ones.
         pub async fn random_generate(
             &self,
