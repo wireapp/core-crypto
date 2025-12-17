@@ -14,6 +14,7 @@ use syn::{Ident, Type, Visibility};
 #[derive(Default, darling::FromMeta)]
 pub(super) struct OuterAttributes {
     pub(super) collection_name: Option<String>,
+    pub(super) no_upsert: Flag,
 }
 
 /// Parse the field attributes

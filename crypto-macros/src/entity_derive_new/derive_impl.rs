@@ -175,6 +175,7 @@ impl Entity {
 
     fn impl_entity_database_mutation(&self) -> TokenStream {
         let Self {
+            upsert,
             collection_name,
             struct_name,
             id_column,
@@ -182,12 +183,14 @@ impl Entity {
             ..
         } = self;
 
+        let or_replace = upsert.then_some("OR REPLACE").unwrap_or_default();
         let sql_column_names = std::iter::once(id_column.sql_name())
             .chain(other_columns.iter().map(|column| column.sql_name()))
             .join(", ");
         let sql_field_placeholders = std::iter::repeat_n("?", other_columns.len() + 1).join(", ");
-        let sql_statement =
-            format!("INSERT OR REPLACE INTO {collection_name} ({sql_column_names}) VALUES ({sql_field_placeholders})");
+        let sql_statement = format!(
+            "INSERT {or_replace} INTO {collection_name} ({sql_column_names}) VALUES ({sql_field_placeholders})"
+        );
         let fields = std::iter::once(id_column.store_expression())
             .chain(other_columns.iter().map(|column| column.store_expression()))
             .map(|tokens| quote!(#tokens,))

@@ -19,6 +19,7 @@ use crate::entity_derive_new::{
 /// Less abstract version of [parse::Entity] that has all the fields flattened
 /// ready for usage in `quote!()`.
 pub(super) struct Entity {
+    upsert: bool,
     visibility: Visibility,
     struct_name: Ident,
     collection_name: String,
@@ -37,6 +38,8 @@ impl TryFrom<parse::Entity> for Entity {
             data,
         } = value;
 
+        let upsert = !outer_attributes.no_upsert.is_present();
+
         let collection_name = outer_attributes
             .collection_name
             .unwrap_or_else(|| struct_name.to_string().to_snake_case() + "s");
@@ -44,6 +47,7 @@ impl TryFrom<parse::Entity> for Entity {
         let (id_column, other_columns) = parse_columns(struct_name.span(), data)?;
 
         Ok(Self {
+            upsert,
             visibility,
             struct_name,
             collection_name,
