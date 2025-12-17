@@ -89,7 +89,7 @@ impl<'a> TestConversation<'a> {
 
         let gi = group
             .export_group_info(
-                &self.actor().session.crypto_provider,
+                &self.actor().session().await.crypto_provider,
                 &credential.signature_key_pair,
                 true,
             )
@@ -102,7 +102,7 @@ impl<'a> TestConversation<'a> {
         let conversation = self.guard().await;
         let conversation = conversation.conversation().await;
         conversation
-            .find_current_credential(&self.actor().session)
+            .find_current_credential(&self.actor().session().await)
             .await
             .expect("expecting credential")
     }
@@ -328,12 +328,12 @@ impl<'a> TestConversation<'a> {
     }
 
     async fn member_index(&self, member: &SessionContext) -> usize {
-        let member_id = member.session.id();
+        let member_id = member.session().await.id();
 
         // can't use `Iterator::position` because getting the id is async
         let mut member_idx = None;
         for (idx, member) in self.members().enumerate() {
-            let joiner_id = member.session.id();
+            let joiner_id = member.session().await.id();
             if joiner_id == member_id {
                 member_idx = Some(idx);
                 break;
@@ -377,7 +377,8 @@ impl<'a> TestConversation<'a> {
         // the in-memory mapping
         let cb = self
             .actor()
-            .session
+            .session()
+            .await
             .find_most_recent_credential(self.case.signature_scheme(), CredentialType::X509)
             .await
             .expect("x509 credential");

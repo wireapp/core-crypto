@@ -59,7 +59,7 @@ impl<'a> TestConversation<'a> {
     /// Propose removing the member.
     pub async fn remove_proposal(self, member: &'a SessionContext) -> OperationGuard<'a, Proposal> {
         let proposer = self.actor();
-        let member_id = member.session.id();
+        let member_id = member.session().await.id();
         let proposal = proposer
             .transaction
             .new_remove_proposal(self.id(), member_id)

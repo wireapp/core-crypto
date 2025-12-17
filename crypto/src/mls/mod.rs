@@ -74,7 +74,7 @@ mod tests {
         Box::pin(async move {
             let conversation = case.create_conversation([&alice]).await;
             let id = conversation.id().clone();
-            let credentials =alice.session.find_credentials(Default::default()).await.expect("finding credentials");
+            let credentials =alice.session().await.find_credentials(Default::default()).await.expect("finding credentials");
             let credential = credentials.first().expect("first credential");
 
                 // creating a conversation should first verify that the conversation does not already exist ; only then create it

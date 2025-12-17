@@ -268,7 +268,11 @@ impl SessionContext {
         let mut history_observer = self.history_observer.write().await;
 
         *history_observer = Some(new_observer);
-        self.session.register_history_observer(new_observer_dyn).await.unwrap();
+        self.session()
+            .await
+            .register_history_observer(new_observer_dyn)
+            .await
+            .unwrap();
     }
 
     pub(crate) async fn history_observer(&self) -> Arc<TestHistoryObserver> {

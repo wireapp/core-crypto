@@ -47,7 +47,8 @@ impl SessionContext {
             .await
             .unwrap();
         let credential_ref = CredentialRef::from_credential(&credential);
-        self.session
+        self.session()
+            .await
             .generate_keypackage(&credential_ref, lifetime)
             .await
             .unwrap()
@@ -115,7 +116,8 @@ impl SessionContext {
         // in the x509 case, `CertificateBundle::rand` just completely invents a new client id in the format that e2ei
         // apparently prefers. We still need to add that credential even so, because this test util code is (meant to
         // be) part of setup, not part of the code under test.
-        self.session
+        self.session()
+            .await
             .add_credential_without_clientid_check(credential)
             .await
             .unwrap()
@@ -126,7 +128,7 @@ impl SessionContext {
         sc: SignatureScheme,
         ct: CredentialType,
     ) -> Option<Arc<Credential>> {
-        self.session.find_most_recent_credential(sc, ct).await.ok()
+        self.session().await.find_most_recent_credential(sc, ct).await.ok()
     }
 
     pub async fn find_credential(
