@@ -643,7 +643,8 @@ mod tests {
             .await
             .unwrap();
         let session = &cc.mls_session().await.unwrap();
-        let credential = Credential::from_identifier(&identifier, case.ciphersuite(), session.crypto_provider).unwrap();
+        let credential =
+            Credential::from_identifier(&identifier, case.ciphersuite(), &session.crypto_provider).unwrap();
         let credential_ref = session.add_credential(credential).await.unwrap();
 
         // expect MLS to work
