@@ -28,7 +28,7 @@ use crate::{
     DatabaseKey, Error, MlsCommitBundle, MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse,
     RecursiveError, Session,
     e2e_identity::id::QualifiedE2eiClientId,
-    mls::HistoryObserver,
+    mls::{HasSessionAndCrypto, HistoryObserver},
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     transaction_context::TransactionContext,
 };
@@ -164,13 +164,11 @@ impl SessionContext {
         let transport = context.transport.clone();
         let transaction = cc.new_transaction().await.unwrap();
 
-        let session = cc.mls;
+        let session = cc.mls_session().await.unwrap();
         // Setup the X509 PKI environment
         if let Some(chain) = chain.as_ref() {
             chain.register_with_central(&transaction).await;
         }
-
-        session.provide_transport(transport.clone()).await;
 
         let identifier = context.generate_identifier(chain).await;
         let initial_credential =
