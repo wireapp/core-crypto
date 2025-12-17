@@ -188,12 +188,6 @@ impl SessionContext {
         }
     }
 
-    pub(crate) async fn new_uninitialized(context: &TestContext) -> Self {
-        let [session_context] = context.sessions().await;
-        session_context.session.reset().await;
-        session_context
-    }
-
     fn x509_client_id(
         client_id: &ClientId,
         signature_scheme: SignatureScheme,
