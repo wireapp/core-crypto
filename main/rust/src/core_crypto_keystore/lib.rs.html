@@ -4,32 +4,24 @@
 <a href=#4 id=4 data-nosnippet>4</a></span><span class="kw">pub mod </span>connection;
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">pub mod </span>entities;
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">mod </span>error;
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>migrations;
-<a href=#8 id=8 data-nosnippet>8</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>mls;
-<a href=#9 id=9 data-nosnippet>9</a><span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
-<a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>proteus;
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">pub mod </span>traits;
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">pub mod </span>transaction;
-<a href=#13 id=13 data-nosnippet>13</a>
-<a href=#14 id=14 data-nosnippet>14</a><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-<a href=#15 id=15 data-nosnippet>15</a></span><span class="kw">use </span>sha2::{Digest, Sha256};
-<a href=#16 id=16 data-nosnippet>16</a>
-<a href=#17 id=17 data-nosnippet>17</a><span class="attr">#[cfg(feature = <span class="string">"dummy-entity"</span>)]
-<a href=#18 id=18 data-nosnippet>18</a></span><span class="kw">pub use </span><span class="self">self</span>::entities::{DummyStoreValue, DummyValue, NewDummyStoreValue};
-<a href=#19 id=19 data-nosnippet>19</a><span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
-<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">pub use </span><span class="self">self</span>::proteus::CryptoKeystoreProteus;
-<a href=#21 id=21 data-nosnippet>21</a><span class="kw">pub use </span><span class="self">self</span>::{
-<a href=#22 id=22 data-nosnippet>22</a>    connection::{ConnectionType, Database, DatabaseKey},
-<a href=#23 id=23 data-nosnippet>23</a>    error::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind},
-<a href=#24 id=24 data-nosnippet>24</a>    mls::{CryptoKeystoreMls, deser, ser},
-<a href=#25 id=25 data-nosnippet>25</a>};
-<a href=#26 id=26 data-nosnippet>26</a>
-<a href=#27 id=27 data-nosnippet>27</a><span class="doccomment">/// Used to calculate ID hashes for some MlsEntities' SQLite tables (not used on wasm).
-<a href=#28 id=28 data-nosnippet>28</a>/// We only use sha256 on platforms where we use SQLite.
-<a href=#29 id=29 data-nosnippet>29</a>/// On wasm, we use IndexedDB, a key-value store, via the idb crate.
-<a href=#30 id=30 data-nosnippet>30</a></span><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-<a href=#31 id=31 data-nosnippet>31</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>sha256(data: <span class="kw-2">&amp;</span>[u8]) -&gt; String {
-<a href=#32 id=32 data-nosnippet>32</a>    <span class="kw">let </span><span class="kw-2">mut </span>hasher = Sha256::new();
-<a href=#33 id=33 data-nosnippet>33</a>    hasher.update(data);
-<a href=#34 id=34 data-nosnippet>34</a>    <span class="macro">format!</span>(<span class="string">"{:x}"</span>, hasher.finalize())
-<a href=#35 id=35 data-nosnippet>35</a>}</code></pre></div></section></main></body></html>
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">mod </span>hash;
+<a href=#8 id=8 data-nosnippet>8</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>migrations;
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>mls;
+<a href=#10 id=10 data-nosnippet>10</a><span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
+<a href=#11 id=11 data-nosnippet>11</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>proteus;
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">pub mod </span>traits;
+<a href=#13 id=13 data-nosnippet>13</a><span class="kw">pub mod </span>transaction;
+<a href=#14 id=14 data-nosnippet>14</a>
+<a href=#15 id=15 data-nosnippet>15</a><span class="kw">pub use </span>hash::Sha256Hash;
+<a href=#16 id=16 data-nosnippet>16</a><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
+<a href=#17 id=17 data-nosnippet>17</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>hash::sha256;
+<a href=#18 id=18 data-nosnippet>18</a>
+<a href=#19 id=19 data-nosnippet>19</a><span class="attr">#[cfg(feature = <span class="string">"dummy-entity"</span>)]
+<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">pub use </span><span class="self">self</span>::entities::{DummyStoreValue, DummyValue, NewDummyStoreValue};
+<a href=#21 id=21 data-nosnippet>21</a><span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
+<a href=#22 id=22 data-nosnippet>22</a></span><span class="kw">pub use </span><span class="self">self</span>::proteus::CryptoKeystoreProteus;
+<a href=#23 id=23 data-nosnippet>23</a><span class="kw">pub use </span><span class="self">self</span>::{
+<a href=#24 id=24 data-nosnippet>24</a>    connection::{ConnectionType, Database, DatabaseKey},
+<a href=#25 id=25 data-nosnippet>25</a>    error::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind},
+<a href=#26 id=26 data-nosnippet>26</a>    mls::{CryptoKeystoreMls, deser, ser},
+<a href=#27 id=27 data-nosnippet>27</a>};</code></pre></div></section></main></body></html>

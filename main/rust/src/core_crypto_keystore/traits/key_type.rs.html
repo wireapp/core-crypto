@@ -53,4 +53,11 @@
 <a href=#53 id=53 data-nosnippet>53</a><span class="macro">impl_keytype_for_integer!</span>(i16);
 <a href=#54 id=54 data-nosnippet>54</a><span class="macro">impl_keytype_for_integer!</span>(i32);
 <a href=#55 id=55 data-nosnippet>55</a><span class="macro">impl_keytype_for_integer!</span>(i64);
-<a href=#56 id=56 data-nosnippet>56</a><span class="macro">impl_keytype_for_integer!</span>(i128);</code></pre></div></section></main></body></html>
+<a href=#56 id=56 data-nosnippet>56</a><span class="macro">impl_keytype_for_integer!</span>(i128);
+<a href=#57 id=57 data-nosnippet>57</a>
+<a href=#58 id=58 data-nosnippet>58</a><span class="doccomment">/// Some unique entities use a single byte as a key type
+<a href=#59 id=59 data-nosnippet>59</a></span><span class="kw">impl </span>KeyType <span class="kw">for </span>[u8; <span class="number">1</span>] {
+<a href=#60 id=60 data-nosnippet>60</a>    <span class="kw">fn </span>bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Cow&lt;<span class="lifetime">'_</span>, [u8]&gt; {
+<a href=#61 id=61 data-nosnippet>61</a>        <span class="self">self</span>.into()
+<a href=#62 id=62 data-nosnippet>62</a>    }
+<a href=#63 id=63 data-nosnippet>63</a>}</code></pre></div></section></main></body></html>
