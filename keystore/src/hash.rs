@@ -2,7 +2,10 @@ use std::fmt;
 
 use sha2::{Digest, Sha256};
 
-use crate::{CryptoKeystoreResult, traits::KeyType};
+use crate::{
+    CryptoKeystoreResult,
+    traits::{KeyType, OwnedKeyType},
+};
 
 /// Used to calculate ID hashes for some MlsEntities' SQLite tables (not used on wasm).
 /// We only use sha256 on platforms where we use SQLite.
@@ -66,6 +69,12 @@ impl fmt::Display for Sha256Hash {
 impl KeyType for Sha256Hash {
     fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {
         (&self.0).into()
+    }
+}
+
+impl OwnedKeyType for Sha256Hash {
+    fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        bytes.try_into().ok().map(Self)
     }
 }
 
