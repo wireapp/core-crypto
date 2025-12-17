@@ -22,7 +22,7 @@ pub trait EntityDatabaseMutation<'a>: Entity<ConnectionType = crate::connection:
     }
 
     /// Use the transaction's interface to save this entity to the database
-    async fn save(&self, tx: &Self::Transaction) -> CryptoKeystoreResult<()>;
+    async fn save(&'a self, tx: &Self::Transaction) -> CryptoKeystoreResult<()>;
 
     /// Use the transaction's interface to count the number of entities of this type in the database.
     async fn count(tx: &Self::Transaction) -> CryptoKeystoreResult<u32>;
