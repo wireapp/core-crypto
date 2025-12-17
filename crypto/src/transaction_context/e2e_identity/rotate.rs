@@ -260,10 +260,10 @@ mod tests {
                 let is_renewal = case.credential_type == CredentialType::X509;
 
                 let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
-                    &alice,
+                    &alice.transaction,
                     &case,
                     x509_test_chain,
-                    None,
+                    &alice.get_e2ei_client_id().await.to_uri(),
                     is_renewal,
                     e2ei_utils::init_activation_or_rotation,
                     e2ei_utils::noop_restore,
@@ -389,10 +389,10 @@ mod tests {
                 let is_renewal = case.credential_type == CredentialType::X509;
 
                 let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
-                    &alice,
+                    &alice.transaction,
                     &case,
                     x509_test_chain,
-                    None,
+                    &alice.get_e2ei_client_id().await.to_uri(),
                     is_renewal,
                     e2ei_utils::init_activation_or_rotation,
                     e2ei_utils::noop_restore,
@@ -526,10 +526,10 @@ mod tests {
                 let is_renewal = case.credential_type == CredentialType::X509;
 
                 let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
-                    &alice,
+                    &alice.transaction,
                     &case,
                     x509_test_chain,
-                    None,
+                    &alice.get_e2ei_client_id().await.to_uri(),
                     is_renewal,
                     init_alice,
                     e2ei_utils::noop_restore,
@@ -590,10 +590,10 @@ mod tests {
                 let is_renewal = case.credential_type == CredentialType::X509;
 
                 let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
-                    &bob,
+                    &bob.transaction,
                     &case,
                     x509_test_chain,
-                    None,
+                    &bob.get_e2ei_client_id().await.to_uri(),
                     is_renewal,
                     init_bob,
                     e2ei_utils::noop_restore,

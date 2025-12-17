@@ -268,10 +268,10 @@ mod tests {
             let test_chain = session_context.x509_chain_unchecked();
 
             let (mut enrollment, cert_chain) = e2ei_enrollment(
-                &session_context,
+                &session_context.transaction,
                 &case,
                 test_chain,
-                None,
+                &session_context.get_e2ei_client_id().await.to_uri(),
                 false,
                 init_activation_or_rotation,
                 noop_restore,

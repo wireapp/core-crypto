@@ -47,33 +47,27 @@ mod tests {
     use mls_crypto_provider::{Database, MlsCryptoProvider};
 
     use crate::{
-        E2eiEnrollment,
+        CoreCrypto, E2eiEnrollment,
         e2e_identity::{enrollment::test_utils::*, id::WireQualifiedClientId},
         test_utils::{x509::X509TestChain, *},
     };
 
     #[apply(all_cred_cipher)]
-    async fn stash_and_pop_should_not_abort_enrollment(case: TestContext) {
-        let cc = SessionContext::new_uninitialized(&case).await;
+    async fn stash_and_pop_should_not_abort_enrollment(mut case: TestContext) {
+        let db = case.create_in_memory_database().await;
+        let cc = CoreCrypto::new(db);
+        let tx = cc.new_transaction().await.unwrap();
         Box::pin(async move {
             use std::sync::Arc;
 
-            let owned_x509_test_chain;
-            // can't use `.unwrap_or_else` here because that confuses the initialization check for `owned_*`
-            let x509_test_chain = match cc.x509_chain() {
-                Some(chain) => chain,
-                None => {
-                    owned_x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-                    &owned_x509_test_chain
-                }
-            };
+            let chain = X509TestChain::init_empty(case.signature_scheme());
 
             let is_renewal = false;
             let (mut enrollment, cert) = e2ei_enrollment(
-                &cc,
+                &tx,
                 &case,
-                x509_test_chain,
-                Some(E2EI_CLIENT_ID_URI),
+                &chain,
+                E2EI_CLIENT_ID_URI,
                 is_renewal,
                 init_enrollment,
                 |e, cc| {
@@ -87,37 +81,26 @@ mod tests {
             .unwrap();
 
             let transport = Arc::new(CoreCryptoTransportSuccessProvider::default());
-            assert!(
-                cc.transaction
-                    .e2ei_mls_init_only(&mut enrollment, cert, transport)
-                    .await
-                    .is_ok()
-            );
+            assert!(tx.e2ei_mls_init_only(&mut enrollment, cert, transport).await.is_ok());
         })
         .await;
     }
 
     // this ensures the nominal test does its job
     #[apply(all_cred_cipher)]
-    async fn should_fail_when_restoring_invalid(case: TestContext) {
-        let cc = SessionContext::new_uninitialized(&case).await;
+    async fn should_fail_when_restoring_invalid(mut case: TestContext) {
+        let db = case.create_in_memory_database().await;
+        let cc = CoreCrypto::new(db);
+        let tx = cc.new_transaction().await.unwrap();
         Box::pin(async move {
-            let owned_x509_test_chain;
-            // can't use `.unwrap_or_else` here because that confuses the initialization check for `owned_*`
-            let x509_test_chain = match cc.x509_chain() {
-                Some(chain) => chain,
-                None => {
-                    owned_x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-                    &owned_x509_test_chain
-                }
-            };
+            let chain = X509TestChain::init_empty(case.signature_scheme());
 
             let is_renewal = false;
             let result = e2ei_enrollment(
-                &cc,
+                &tx,
                 &case,
-                x509_test_chain,
-                Some(E2EI_CLIENT_ID_URI),
+                &chain,
+                E2EI_CLIENT_ID_URI,
                 is_renewal,
                 init_enrollment,
                 move |e, _cc| {

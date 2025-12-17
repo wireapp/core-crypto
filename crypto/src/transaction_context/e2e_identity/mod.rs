@@ -19,7 +19,7 @@ use wire_e2e_identity::prelude::x509::extract_crl_uris;
 use super::TransactionContext;
 use crate::{
     CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, Credential, E2eiEnrollment, MlsTransport,
-    RecursiveError, Session,
+    RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{crl::get_new_crl_distribution_points, x509::CertificatePrivateKey},
 };
@@ -172,27 +172,22 @@ mod tests {
     };
 
     #[apply(all_cred_cipher)]
-    async fn e2e_identity_should_work(case: TestContext) {
+    async fn e2e_identity_should_work(mut case: TestContext) {
         use e2ei_utils::E2EI_CLIENT_ID_URI;
 
-        let session = SessionContext::new_uninitialized(&case).await;
+        let db = case.create_in_memory_database().await;
+        let cc = CoreCrypto::new(db);
+        let tx = cc.new_transaction().await.unwrap();
         Box::pin(async move {
-            let owned_x509_test_chain;
-            let x509_test_chain = match session.x509_chain() {
-                Some(chain) => chain,
-                None => {
-                    owned_x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-                    &owned_x509_test_chain
-                }
-            };
+            let chain = X509TestChain::init_empty(case.signature_scheme());
 
             let is_renewal = false;
 
             let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
-                &session,
+                &tx,
                 &case,
-                x509_test_chain,
-                Some(E2EI_CLIENT_ID_URI),
+                &chain,
+                E2EI_CLIENT_ID_URI,
                 is_renewal,
                 e2ei_utils::init_enrollment,
                 e2ei_utils::noop_restore,
@@ -200,11 +195,10 @@ mod tests {
             .await
             .unwrap();
             let transport = Arc::new(CoreCryptoTransportSuccessProvider::default());
-            session
-                .transaction
-                .e2ei_mls_init_only(&mut enrollment, cert, transport)
-                .await
-                .unwrap();
+
+            tx.e2ei_mls_init_only(&mut enrollment, cert, transport).await.unwrap();
+
+            let session = SessionContext::new_from_cc(&case, cc, Some(&chain)).await;
 
             // verify the created client can create a conversation
             let credential = session
