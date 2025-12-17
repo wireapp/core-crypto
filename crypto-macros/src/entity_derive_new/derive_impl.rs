@@ -203,7 +203,7 @@ impl Entity {
             impl<'a> crate::traits::EntityDatabaseMutation<'a> for #struct_name {
                 type Transaction = crate::connection::TransactionWrapper<'a>;
 
-                async fn save(&self, tx: &Self::Transaction) -> crate::CryptoKeystoreResult<()> {
+                async fn save(&'a self, tx: &Self::Transaction) -> crate::CryptoKeystoreResult<()> {
                     #[cfg(target_family = "wasm")]
                         {
                             // TODO(WPB-22196): don't clone here, we don't need mutable ownership to save
