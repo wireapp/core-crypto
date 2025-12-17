@@ -22,7 +22,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
         for signature_key in signature_keys.iter() {
             for v5_credential in v5_credentials.iter() {
                 if let Some(new_credential) = migrate_to_new_credential(v5_credential, signature_key)? {
-                    super::delete_credential_by_value(tx, v5_credential.credential.clone()).await?;
+                    super::delete_credential_by_session_id(tx, v5_credential.id.clone()).await?;
                     new_credential.save(tx).await?;
                 }
             }

@@ -36,16 +36,18 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
                     // b) both ciphersuites don't get used in any mls group
                     //
                     // In both cases, what we want to do is delete both credentials.
-                    super::delete_credential_by_value(tx, cred_a.credential.clone()).await?;
-                    super::delete_credential_by_value(tx, cred_b.credential.clone()).await?;
+                    super::delete_credential_by_session_id(tx, cred_a.session_id.clone()).await?;
+                    super::delete_credential_by_session_id(tx, cred_b.session_id.clone()).await?;
                 }
                 Some(least_used_ciphersuite) => {
-                    let cred_to_delete = if least_used_ciphersuite == cred_a.ciphersuite {
+                    let _cred_to_delete = if least_used_ciphersuite == cred_a.ciphersuite {
                         cred_a.credential.clone()
                     } else {
                         cred_b.credential.clone()
                     };
-                    super::delete_credential_by_value(tx, cred_to_delete).await?;
+                    // Here, we'd like to delete the duplicate. However, we cannot reliably delete a single credential
+                    // with the old schema. We don't need to handle duplicates anyway, since the old schema allowed just
+                    // one credential per session (see test in `migrations/mod.rs`).
                 }
             };
         }
