@@ -93,17 +93,7 @@ jobs:
                      -destination 'platform=iOS Simulator,name=iPhone 16 e2e-interop-test' clean build install DSTROOT=./Products
           ./install-interop-client.sh ${{ env.SIMULATOR }}
 
-      - name: setup android emulator & build android interop client
-        env:
-          RUST_LOG: interop=info
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 32
-          arch: arm64-v8a
-          working-directory: interop/src/clients
-          script: ./gradlew android-interop:installRelease
-
-      - name: run e2e interop test
+      - name: build android interop client & run e2e interop test
         env:
           RUST_LOG: interop=info
         uses: reactivecircus/android-emulator-runner@v2
@@ -113,7 +103,7 @@ jobs:
           working-directory: .
           # We're not building the interop binary in release mode, so it's in `target/debug`.
           script: |
-            adb install interop/src/clients/android-interop/build/outputs/apk/release/android-interop-release.apk
+            (cd interop/src/clients && ./gradlew android-interop:installRelease)
             ./target/debug/interop
 
         # we separate shutdown from deletion to make sure the device is always removed, even when shutdown failed
