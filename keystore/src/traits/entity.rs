@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{EntityBase, KeyType},
+    traits::{EntityBase, KeyType, OwnedKeyType},
 };
 
 /// Something which can be stored in our database.
@@ -16,7 +16,7 @@ pub trait Entity: EntityBase {
     /// Each distinct `PrimaryKey` uniquely identifies either 0 or 1 instance.
     ///
     /// This constraint should be enforced at the DB level.
-    type PrimaryKey: KeyType;
+    type PrimaryKey: OwnedKeyType;
 
     /// Get this entity's primary key.
     ///
