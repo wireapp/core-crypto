@@ -38,6 +38,7 @@ allow = [
   "MPL-2.0",
   "GPL-3.0",
   "GPL-3.0-only",
+  "GPL-3.0-or-later",
   "BSD-3-Clause",
   "Apache-2.0 WITH LLVM-exception",
   "ISC",
