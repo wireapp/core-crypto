@@ -4,8 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use core_crypto_ffi::{
-    ClientId, CoreCryptoFfi, CredentialType, CustomConfiguration, Database, DatabaseKey, TransactionHelper,
-    credential_basic,
+    ClientId, CoreCryptoFfi, CredentialType, Database, DatabaseKey, TransactionHelper, credential_basic,
 };
 use tempfile::NamedTempFile;
 
@@ -120,13 +119,9 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
     }
 
     async fn process_welcome(&self, welcome: &[u8]) -> Result<Vec<u8>> {
-        let cfg = CustomConfiguration {
-            key_rotation_span: None,
-            wire_policy: None,
-        };
         let welcome = Arc::new(welcome.into());
         let extractor =
-            TransactionHelper::new(move |context| async move { context.process_welcome_message(welcome, cfg).await });
+            TransactionHelper::new(move |context| async move { context.process_welcome_message(welcome).await });
         self.cc.transaction(extractor.clone()).await?;
         Ok(extractor.into_return_value().id.copy_bytes())
     }
