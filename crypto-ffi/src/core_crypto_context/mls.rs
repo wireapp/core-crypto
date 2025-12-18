@@ -145,9 +145,9 @@ impl CoreCryptoContext {
             ..Default::default()
         };
 
-        self.inner
+        lower_cfg
             .set_raw_external_senders(
-                &mut lower_cfg,
+                &self.inner.mls_provider().await?,
                 external_sender
                     .into_iter()
                     .map(|external_sender| external_sender.copy_bytes()),
