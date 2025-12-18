@@ -222,8 +222,6 @@ mod tests {
 
         backend.new_transaction().await.unwrap();
         session_context
-            .session()
-            .await
             .random_generate(
                 &case,
                 x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),

@@ -288,6 +288,40 @@ impl SessionContext {
     pub(crate) async fn history_observer(&self) -> Arc<TestHistoryObserver> {
         self.history_observer.read().await.clone().unwrap()
     }
+
+    /// Replace any existing credentials, identities, client_id, and similar with newly generated ones.
+    pub async fn random_generate(
+        &self,
+        case: &crate::test_utils::TestContext,
+        signer: Option<&crate::test_utils::x509::X509Certificate>,
+    ) -> Result<()> {
+        let user_uuid = uuid::Uuid::new_v4();
+        let rnd_id = rand::random::<usize>();
+        let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated());
+        let client_id = ClientId(client_id.into_bytes());
+
+        let credential;
+        let identifier;
+        match case.credential_type {
+            CredentialType::Basic => {
+                identifier = ClientIdentifier::Basic(client_id.clone());
+                credential =
+                    Credential::basic(case.ciphersuite(), client_id, &self.session().await.crypto_provider).unwrap();
+            }
+            CredentialType::X509 => {
+                let signer = signer.expect("Missing intermediate CA").to_owned();
+                let cert = CertificateBundle::rand(&client_id, &signer);
+                identifier = ClientIdentifier::X509([(case.signature_scheme(), cert.clone())].into());
+                credential = Credential::x509(case.ciphersuite(), cert).unwrap();
+            }
+        };
+
+        self.reinit_session(identifier, &[case.ciphersuite()]).await;
+
+        self.session().await.add_credential(credential).await.unwrap();
+
+        Ok(())
+    }
 }
 
 fn init_x509_test_chain(
