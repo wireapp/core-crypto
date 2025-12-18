@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::{
     CryptoKeystoreResult,
     connection::KeystoreDatabaseConnection,
-    traits::{Entity, UniqueEntity},
+    traits::{BorrowPrimaryKey, Entity, UniqueEntity, UniqueEntityExt},
 };
 
 /// Interface to fetch from the database either from the connection directly or through a
@@ -29,8 +29,21 @@ pub trait FetchFromDatabase: Send + Sync {
     where
         E: Entity<ConnectionType = KeystoreDatabaseConnection>;
 
-    /// Get the requested unique entity from the database.
-    async fn get_unique<U>(&self) -> CryptoKeystoreResult<Option<U>>
+    /// Get an instance of `E` from the database by the borrowed form of its primary key.
+    async fn get_borrowed<E>(
+        &self,
+        id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<E>>
     where
-        U: UniqueEntity<ConnectionType = KeystoreDatabaseConnection>;
+        E: BorrowPrimaryKey;
+
+    /// Get the requested unique entity from the database.
+    async fn get_unique<'a, U>(&self) -> CryptoKeystoreResult<Option<U>>
+    where
+        U: UniqueEntityExt<'a>;
+
+    /// Determine whether a unique entity is present in the database.
+    async fn exists<'a, U>(&self) -> CryptoKeystoreResult<bool>
+    where
+        U: UniqueEntityExt<'a>;
 }
