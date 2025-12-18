@@ -7,8 +7,8 @@ use async_lock::RwLock;
 use core_crypto::{
     CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, ConnectionType, ConversationId, CoreCrypto,
     Credential as CcCredential, CredentialFindFilters, CredentialRef, CredentialType, Database, DatabaseKey,
-    HistorySecret, MlsCommitBundle, MlsConversationConfiguration, MlsCustomConfiguration, MlsGroupInfoBundle,
-    MlsTransport, MlsTransportData, MlsTransportResponse, Session,
+    HistorySecret, MlsCommitBundle, MlsConversationConfiguration, MlsGroupInfoBundle, MlsTransport, MlsTransportData,
+    MlsTransportResponse, Session,
 };
 use criterion::BenchmarkId;
 use mls_crypto_provider::{MlsCryptoProvider, RustCrypto};
@@ -337,10 +337,7 @@ pub async fn invite(
         .await
         .unwrap();
     let welcome = delivery_service.latest_welcome_message().await;
-    other_context
-        .process_welcome_message(welcome.into(), MlsCustomConfiguration::default())
-        .await
-        .unwrap();
+    other_context.process_welcome_message(welcome.into()).await.unwrap();
     from_context.finish().await.unwrap();
     other_context.finish().await.unwrap();
 }
