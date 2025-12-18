@@ -196,7 +196,6 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
 
     use openmls::prelude::SignaturePublicKey;
 
@@ -431,34 +430,30 @@ mod tests {
                     .await
                     .unwrap();
                 assert_eq!(old_cb, old_cb_found);
-                let (scs, old_nb_identities) = {
+                let old_nb_identities = {
                     let alice_client = alice.session().await;
                     let old_nb_identities = alice_client.identities_count().await;
 
                     // Let's simulate an app crash, client gets deleted and restored from keystore
-                    let scs = HashSet::from([case.signature_scheme()]);
                     let all_credentials = CredentialRef::get_all(&alice.transaction.keystore().await.unwrap())
                         .await
                         .unwrap();
 
                     assert_eq!(all_credentials.len(), 2);
 
-                    (scs, old_nb_identities)
+                    old_nb_identities
                 };
                 let backend = &alice.transaction.mls_provider().await.unwrap();
                 backend.keystore().commit_transaction().await.unwrap();
                 backend.keystore().new_transaction().await.unwrap();
 
-                let new_client = alice.session.clone();
-                new_client.reset().await;
+                alice
+                    .reinit_session(alice.identifier.clone(), &[case.ciphersuite()])
+                    .await;
 
-                new_client
-                    .init(alice.identifier, &scs.iter().copied().collect::<Vec<_>>())
-                    .await
-                    .unwrap();
-
+                let new_session = alice.session().await;
                 // Verify that Alice has the same credentials
-                let cb = new_client
+                let cb = new_session
                     .find_most_recent_credential(case.signature_scheme(), CredentialType::X509)
                     .await
                     .unwrap();
@@ -476,7 +471,7 @@ mod tests {
                     format!("wireapp://%40{}@world.com", e2ei_utils::NEW_HANDLE)
                 );
 
-                assert_eq!(new_client.identities_count().await, old_nb_identities);
+                assert_eq!(new_session.identities_count().await, old_nb_identities);
             })
             .await
         }
