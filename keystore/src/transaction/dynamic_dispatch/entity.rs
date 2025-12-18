@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 #[cfg(target_family = "wasm")]
 use crate::entities::E2eiRefreshToken;
 #[cfg(feature = "proteus-keystore")]
@@ -10,51 +12,74 @@ use crate::{
         PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
         StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
-    traits::{EntityDatabaseMutation as _, UniqueEntityExt as _},
+    traits::{EntityBase, EntityDatabaseMutation as _, UniqueEntityExt as _},
 };
 
 #[derive(Debug)]
-pub(crate) enum Entity<'a> {
-    ConsumerData(&'a ConsumerData),
-    HpkePrivateKey(&'a StoredHpkePrivateKey),
-    StoredKeypackage(&'a StoredKeypackage),
-    PskBundle(&'a StoredPskBundle),
-    EncryptionKeyPair(&'a StoredEncryptionKeyPair),
-    StoredEpochEncryptionKeypair(&'a StoredEpochEncryptionKeypair),
-    StoredCredential(&'a StoredCredential),
-    StoredBufferedCommit(&'a StoredBufferedCommit),
-    PersistedMlsGroup(&'a PersistedMlsGroup),
-    PersistedMlsPendingGroup(&'a PersistedMlsPendingGroup),
-    MlsPendingMessage(&'a MlsPendingMessage),
-    StoredE2eiEnrollment(&'a StoredE2eiEnrollment),
+pub enum Entity {
+    ConsumerData(Arc<ConsumerData>),
+    HpkePrivateKey(Arc<StoredHpkePrivateKey>),
+    StoredKeypackage(Arc<StoredKeypackage>),
+    PskBundle(Arc<StoredPskBundle>),
+    EncryptionKeyPair(Arc<StoredEncryptionKeyPair>),
+    StoredEpochEncryptionKeypair(Arc<StoredEpochEncryptionKeypair>),
+    StoredCredential(Arc<StoredCredential>),
+    StoredBufferedCommit(Arc<StoredBufferedCommit>),
+    PersistedMlsGroup(Arc<PersistedMlsGroup>),
+    PersistedMlsPendingGroup(Arc<PersistedMlsPendingGroup>),
+    MlsPendingMessage(Arc<MlsPendingMessage>),
+    StoredE2eiEnrollment(Arc<StoredE2eiEnrollment>),
     #[cfg(target_family = "wasm")]
-    E2eiRefreshToken(&'a E2eiRefreshToken),
-    E2eiAcmeCA(&'a E2eiAcmeCA),
-    E2eiIntermediateCert(&'a E2eiIntermediateCert),
-    E2eiCrl(&'a E2eiCrl),
+    E2eiRefreshToken(Arc<E2eiRefreshToken>),
+    E2eiAcmeCA(Arc<E2eiAcmeCA>),
+    E2eiIntermediateCert(Arc<E2eiIntermediateCert>),
+    E2eiCrl(Arc<E2eiCrl>),
     #[cfg(feature = "proteus-keystore")]
-    ProteusIdentity(&'a ProteusIdentity),
+    ProteusIdentity(Arc<ProteusIdentity>),
     #[cfg(feature = "proteus-keystore")]
-    ProteusPrekey(&'a ProteusPrekey),
+    ProteusPrekey(Arc<ProteusPrekey>),
     #[cfg(feature = "proteus-keystore")]
-    ProteusSession(&'a ProteusSession),
+    ProteusSession(Arc<ProteusSession>),
 }
 
-impl<'a, E> From<&'a E> for Entity<'a>
-where
-    E: crate::traits::Entity,
-{
-    #[inline]
-    fn from(value: &'a E) -> Self {
-        value.to_transaction_entity()
+impl Entity {
+    /// Downcast this entity to an instance of the requested type.
+    ///
+    /// This increments the smart pointer counter instead of cloning the potentially large item instance.
+    pub(crate) fn downcast<E>(&self) -> Option<Arc<E>>
+    where
+        E: EntityBase + Send + Sync,
+    {
+        match self {
+            Entity::ConsumerData(consumer_data) => consumer_data.clone().downcast_arc(),
+            Entity::HpkePrivateKey(stored_hpke_private_key) => stored_hpke_private_key.clone().downcast_arc(),
+            Entity::StoredKeypackage(stored_keypackage) => stored_keypackage.clone().downcast_arc(),
+            Entity::PskBundle(stored_psk_bundle) => stored_psk_bundle.clone().downcast_arc(),
+            Entity::EncryptionKeyPair(stored_encryption_key_pair) => stored_encryption_key_pair.clone().downcast_arc(),
+            Entity::StoredEpochEncryptionKeypair(stored_epoch_encryption_keypair) => {
+                stored_epoch_encryption_keypair.clone().downcast_arc()
+            }
+            Entity::StoredCredential(stored_credential) => stored_credential.clone().downcast_arc(),
+            Entity::StoredBufferedCommit(stored_buffered_commit) => stored_buffered_commit.clone().downcast_arc(),
+            Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.clone().downcast_arc(),
+            Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => {
+                persisted_mls_pending_group.clone().downcast_arc()
+            }
+            Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.clone().downcast_arc(),
+            Entity::StoredE2eiEnrollment(stored_e2ei_enrollment) => stored_e2ei_enrollment.clone().downcast_arc(),
+            Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.clone().downcast_arc(),
+            Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.clone().downcast_arc(),
+            Entity::E2eiCrl(e2ei_crl) => e2ei_crl.clone().downcast_arc(),
+            Entity::ProteusIdentity(proteus_identity) => proteus_identity.clone().downcast_arc(),
+            Entity::ProteusPrekey(proteus_prekey) => proteus_prekey.clone().downcast_arc(),
+            Entity::ProteusSession(proteus_session) => proteus_session.clone().downcast_arc(),
+        }
     }
-}
 
-impl Entity<'_> {
     pub(crate) async fn execute_save(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         match self {
             Entity::ConsumerData(consumer_data) => {
-                consumer_data.set_and_replace(tx).await;
+                consumer_data.set_and_replace(tx).await?;
                 Ok(())
             }
             Entity::HpkePrivateKey(mls_hpke_private_key) => mls_hpke_private_key.save(tx).await,
@@ -73,7 +98,7 @@ impl Entity<'_> {
             #[cfg(target_family = "wasm")]
             Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.replace(tx).await,
             Entity::E2eiAcmeCA(e2ei_acme_ca) => {
-                e2ei_acme_ca.set_and_replace(tx).await;
+                e2ei_acme_ca.set_and_replace(tx).await?;
                 Ok(())
             }
             Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.save(tx).await,
