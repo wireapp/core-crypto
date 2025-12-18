@@ -158,7 +158,7 @@ impl EntityBase for MlsPendingMessage {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self)
+        crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self.into())
     }
 }
 
@@ -212,7 +212,7 @@ impl NewEntityBase for MlsPendingMessage {
     const COLLECTION_NAME: &'static str = "mls_pending_messages";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self)
+        crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self.into())
     }
 }
 

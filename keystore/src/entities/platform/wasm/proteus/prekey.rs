@@ -22,7 +22,7 @@ impl EntityBase for ProteusPrekey {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::ProteusPrekey(self)
+        crate::transaction::dynamic_dispatch::Entity::ProteusPrekey(self.into())
     }
 }
 
@@ -75,7 +75,7 @@ impl NewEntityBase for ProteusPrekey {
     const COLLECTION_NAME: &'static str = "proteus_prekeys";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::ProteusPrekey(self)
+        crate::transaction::dynamic_dispatch::Entity::ProteusPrekey(self.into())
     }
 }
 

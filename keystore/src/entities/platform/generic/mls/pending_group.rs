@@ -206,7 +206,7 @@ impl EntityBase for PersistedMlsPendingGroup {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::PersistedMlsPendingGroup(self)
+        crate::transaction::dynamic_dispatch::Entity::PersistedMlsPendingGroup(self.into())
     }
 }
 
@@ -315,7 +315,7 @@ impl NewEntityBase for PersistedMlsPendingGroup {
     const COLLECTION_NAME: &'static str = "mls_pending_groups";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::PersistedMlsPendingGroup(self)
+        crate::transaction::dynamic_dispatch::Entity::PersistedMlsPendingGroup(self.into())
     }
 }
 

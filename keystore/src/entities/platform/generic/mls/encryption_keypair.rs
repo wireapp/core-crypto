@@ -111,7 +111,7 @@ impl EntityBase for StoredEncryptionKeyPair {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::EncryptionKeyPair(self)
+        crate::transaction::dynamic_dispatch::Entity::EncryptionKeyPair(self.into())
     }
 }
 
@@ -180,7 +180,7 @@ impl NewEntityBase for StoredEncryptionKeyPair {
     const COLLECTION_NAME: &'static str = "mls_encryption_keypairs";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::EncryptionKeyPair(self)
+        crate::transaction::dynamic_dispatch::Entity::EncryptionKeyPair(self.into())
     }
 }
 
