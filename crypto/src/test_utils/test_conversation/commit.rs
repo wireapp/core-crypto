@@ -251,7 +251,7 @@ impl<'a> TestConversation<'a> {
     ) -> OperationGuard<'a, Commit> {
         joiner
             .transaction
-            .join_by_external_commit(group_info, self.case.custom_cfg(), self.case.credential_type)
+            .join_by_external_commit(group_info, self.case.credential_type)
             .await
             .unwrap();
         let join_commit = joiner.mls_transport().await.latest_commit().await;
@@ -304,7 +304,7 @@ impl<'a> TestConversation<'a> {
     ) -> (OperationGuard<'a, Commit>, PendingConversation) {
         let (join_commit, _, pending_conversation) = joiner
             .transaction
-            .create_external_join_commit(group_info, self.case.custom_cfg(), self.case.credential_type)
+            .create_external_join_commit(group_info, self.case.credential_type)
             .await
             .unwrap();
 

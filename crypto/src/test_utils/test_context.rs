@@ -401,7 +401,6 @@ impl TestContext {
         let creator = members.peek().unwrap();
         let signature_key = external_sender.client_signature_key(self).await.as_slice().to_vec();
         self.cfg
-            .clone()
             .set_raw_external_senders(&creator.session().await.crypto_provider, vec![signature_key])
             .await
             .unwrap();
