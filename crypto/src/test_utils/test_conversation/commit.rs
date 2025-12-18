@@ -7,10 +7,7 @@ use super::{
 };
 use crate::{
     CredentialRef,
-    mls::{
-        conversation::{ConversationWithMls as _, pending_conversation::PendingConversation},
-        credential::Credential,
-    },
+    mls::{conversation::pending_conversation::PendingConversation, credential::Credential},
 };
 
 impl<'a> TestConversation<'a> {
@@ -107,13 +104,9 @@ impl<'a> TestConversation<'a> {
     /// Create a commit that hasn't been merged by the actor.
     /// On [OperationGuard::notify_members], the actor will receive this commit.
     pub async fn update_unmerged(self) -> OperationGuard<'a, Commit> {
-        let mut conversation_guard = self.guard().await;
-        let commit = conversation_guard
-            .update_key_material_inner(None, None)
-            .await
-            .unwrap()
-            .commit;
-        OperationGuard::new(TestOperation::Update, commit, self, [])
+        let conversation_guard = self.guard().await;
+        let credential = conversation_guard.credential().await.unwrap();
+        self.set_credential_unmerged(&credential).await
     }
 
     /// Replace the existing credential with an x509 one and notify all members.
@@ -121,16 +114,12 @@ impl<'a> TestConversation<'a> {
         self.e2ei_rotate(credential).await.notify_members().await
     }
 
-    /// Create an update commit with a leaf node containing x509 credentials, that hasn't been merged by the actor.
+    /// Create an update commit with a leaf node containing the given credential, that hasn't been merged by the actor.
     /// On [OperationGuard::notify_members], the actor will receive this commit.
-    pub async fn e2ei_rotate_unmerged(self, credential: &Credential) -> OperationGuard<'a, Commit> {
+    pub async fn set_credential_unmerged(self, credential: &Credential) -> OperationGuard<'a, Commit> {
         let mut conversation_guard = self.guard().await;
-        let conversation = conversation_guard.conversation().await;
-        let mut leaf_node = conversation.group.own_leaf().unwrap().clone();
-        drop(conversation);
-        leaf_node.set_credential_with_key(credential.to_mls_credential_with_key());
         let commit = conversation_guard
-            .update_key_material_inner(Some(credential), Some(leaf_node))
+            .set_credential_inner(credential)
             .await
             .unwrap()
             .commit;

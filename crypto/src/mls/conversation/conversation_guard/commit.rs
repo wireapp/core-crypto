@@ -2,11 +2,12 @@
 
 use std::borrow::Borrow;
 
-use openmls::prelude::{KeyPackageIn, LeafNode};
+use openmls::prelude::KeyPackageIn;
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
-    ClientIdRef, CredentialType, LeafError, MlsError, MlsGroupInfoBundle, MlsTransportResponse, RecursiveError,
+    ClientIdRef, CredentialRef, CredentialType, LeafError, MlsError, MlsGroupInfoBundle, MlsTransportResponse,
+    RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::{
         conversation::{
@@ -197,9 +198,10 @@ impl ConversationGuard {
         .await
     }
 
-    /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited.
+    /// Self updates the own leaf node and automatically commits. Pending proposals will be committed.
     pub async fn update_key_material(&mut self) -> Result<()> {
-        let commit = self.update_key_material_inner(None, None).await?;
+        let credential = self.credential().await?;
+        let commit = self.set_credential_inner(&credential).await?;
         self.send_and_merge_commit(commit).await
     }
 
@@ -220,37 +222,50 @@ impl ConversationGuard {
                 .map_err(RecursiveError::mls_client("finding most recent x509 credential"))?,
         };
 
-        let mut leaf_node = conversation
-            .group
-            .own_leaf()
-            .ok_or(LeafError::InternalMlsError)?
-            .clone();
-        leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
-
         // we don't need the conversation anymore, but we do need to mutably borrow `self` again
         drop(conversation);
 
-        let commit = self.update_key_material_inner(Some(cb), Some(leaf_node)).await?;
+        let commit = self.set_credential_inner(cb).await?;
 
         self.send_and_merge_commit(commit).await
     }
 
-    pub(crate) async fn update_key_material_inner(
-        &mut self,
-        cb: Option<&Credential>,
-        leaf_node: Option<LeafNode>,
-    ) -> Result<MlsCommitBundle> {
+    /// Set the referenced credential for this conversation.
+    pub async fn set_credential_by_ref(&mut self, credential_ref: &CredentialRef) -> Result<()> {
+        let database = self.crypto_provider().await?.keystore();
+        let credential = credential_ref
+            .load(&database)
+            .await
+            .map_err(RecursiveError::mls_credential_ref("loading credential from ref"))?;
+        let commit = self.set_credential_inner(&credential).await?;
+
+        self.send_and_merge_commit(commit).await
+    }
+
+    /// Self updates the own leaf node with the given credential and automatically commits. Pending proposals will be
+    /// committed.
+    pub(crate) async fn set_credential_inner(&mut self, credential: &Credential) -> Result<MlsCommitBundle> {
         self.ensure_no_pending_commit().await?;
-        let session = &self.session().await?;
         let backend = &self.crypto_provider().await?;
         let mut conversation = self.conversation_mut().await;
-        let cb = match cb {
-            None => &conversation.find_most_recent_credential(session).await?,
-            Some(cb) => cb,
+
+        // If the credential remains the same and we still want to update, we explicitly need to pass `None` to openmls,
+        // if we just passed an unchanged leaf node, no update commit would be created.
+        // Also, we can avoid cloning in the case we don't need to create a new leaf node.
+        let updated_leaf_node = {
+            let leaf_node = conversation.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
+            if leaf_node.credential() == &credential.mls_credential {
+                None
+            } else {
+                let mut leaf_node = leaf_node.clone();
+                leaf_node.set_credential_with_key(credential.to_mls_credential_with_key());
+                Some(leaf_node)
+            }
         };
+
         let (commit, welcome, group_info) = conversation
             .group
-            .explicit_self_update(backend, &cb.signature_key_pair, leaf_node)
+            .explicit_self_update(backend, &credential.signature_key_pair, updated_leaf_node)
             .await
             .map_err(MlsError::wrap("group self update"))?;
 
