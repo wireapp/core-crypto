@@ -2,7 +2,6 @@
 
 pub mod external_commit;
 mod external_proposal;
-pub mod external_sender;
 pub(crate) mod proposal;
 pub mod welcome;
 
