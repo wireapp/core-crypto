@@ -43,12 +43,9 @@ impl PendingConversation {
         Self { inner, context }
     }
 
-    pub(crate) fn from_mls_group(
-        group: MlsGroup,
-        custom_cfg: MlsCustomConfiguration,
-        context: TransactionContext,
-    ) -> Result<Self> {
-        let serialized_cfg = serde_json::to_vec(&custom_cfg).map_err(MlsError::wrap("serializing custom config"))?;
+    pub(crate) fn from_mls_group(group: MlsGroup, context: TransactionContext) -> Result<Self> {
+        let serialized_cfg = serde_json::to_vec(&MlsCustomConfiguration::default())
+            .map_err(MlsError::wrap("serializing custom config"))?;
         let serialized_group =
             core_crypto_keystore::ser(&group).map_err(KeystoreError::wrap("serializing mls group"))?;
         let group_id = group.group_id().to_vec();
