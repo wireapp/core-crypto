@@ -1004,11 +1004,7 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        async fn can_decrypt_app_message_in_any_order(mut case: TestContext) {
-            // otherwise the test would fail because we decrypt messages in reverse order which is
-            // kinda dropping them
-            case.cfg.custom.maximum_forward_distance = 0;
-
+        async fn can_decrypt_app_message_in_reverse_order(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
@@ -1025,10 +1021,9 @@ mod tests {
                 }
 
                 // ..then unstack them to see out_of_order_tolerance come into play
-                messages.reverse();
-                for (i, (original, encrypted)) in messages.iter().enumerate() {
+                for (i, (original, encrypted)) in messages.iter().rev().enumerate() {
                     let decrypt = conversation.guard_of(&bob).await.decrypt_message(encrypted).await;
-                    if i > out_of_order_tolerance as usize {
+                    if i < out_of_order_tolerance as usize {
                         let decrypted = decrypt.unwrap().app_msg.unwrap();
                         assert_eq!(decrypted, original.as_bytes());
                     } else {
