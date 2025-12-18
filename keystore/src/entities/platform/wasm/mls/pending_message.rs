@@ -116,13 +116,13 @@ impl NewEntityBase for MlsPendingMessage {
     }
 }
 
-#[async_trait(?Send)]
 /// Pending messages have no distinct primary key;
 /// they must always be accessed via [`MlsPendingMessage::find_all_by_conversation_id`] and
 /// cleaned up with [`MlsPendingMessage::delete_by_conversation_id`]
 ///
 /// However, we have to fake it as a byte vector in this impl in order for encryption and decryption
 /// to work.
+#[async_trait(?Send)]
 impl NewEntity for MlsPendingMessage {
     type PrimaryKey = Vec<u8>;
 
@@ -140,6 +140,25 @@ impl NewEntity for MlsPendingMessage {
 
     async fn load_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
         conn.storage().new_get_all::<Self>().await
+    }
+}
+
+/// This implementation is purely to support `KeystoreTransaction::remove_pending_messages_by_conversation_id`;
+/// after WPB-20844, we should remove that whole API and also this implementation.
+#[async_trait(?Send)]
+impl BorrowPrimaryKey for MlsPendingMessage {
+    type BorrowedPrimaryKey = [u8];
+
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &self.foreign_id
+    }
+
+    async fn get_borrowed<Q>(conn: &mut Self::ConnectionType, key: &Q) -> CryptoKeystoreResult<Option<Self>>
+    where
+        Self::PrimaryKey: Borrow<Q>,
+        Q: KeyType,
+    {
+        panic!("cannot get `MlsPendingMessage` by primary key as it has no distinct primary key")
     }
 }
 
