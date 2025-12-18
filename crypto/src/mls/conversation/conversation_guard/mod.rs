@@ -121,7 +121,7 @@ impl ConversationGuard {
         }
     }
 
-    async fn credential(&self) -> Result<Arc<Credential>> {
+    pub(crate) async fn credential(&self) -> Result<Arc<Credential>> {
         let client = self.session().await?;
         let inner = self.conversation().await;
         inner

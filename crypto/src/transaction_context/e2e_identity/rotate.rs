@@ -721,7 +721,7 @@ mod tests {
                     .await;
 
                 // Alice issues an Update commit to replace her current identity
-                let conversation = conversation.e2ei_rotate_unmerged(&cb).await.finish();
+                let conversation = conversation.set_credential_unmerged(&cb).await.finish();
 
                 // Meanwhile, Bob creates a simple commit
                 // accepted by the backend
