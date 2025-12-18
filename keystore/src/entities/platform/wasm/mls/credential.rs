@@ -22,7 +22,7 @@ impl EntityBase for StoredCredential {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::StoredCredential(self)
+        crate::transaction::dynamic_dispatch::Entity::StoredCredential(self.into())
     }
 }
 
@@ -91,7 +91,7 @@ impl NewEntityBase for StoredCredential {
     const COLLECTION_NAME: &'static str = "mls_credentials";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::StoredCredential(self)
+        crate::transaction::dynamic_dispatch::Entity::StoredCredential(self.into())
     }
 }
 

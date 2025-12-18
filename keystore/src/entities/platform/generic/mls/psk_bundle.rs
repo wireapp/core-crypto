@@ -101,7 +101,7 @@ impl EntityBase for StoredPskBundle {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::PskBundle(self)
+        crate::transaction::dynamic_dispatch::Entity::PskBundle(self.into())
     }
 }
 
@@ -167,7 +167,7 @@ impl NewEntityBase for StoredPskBundle {
     const COLLECTION_NAME: &'static str = "mls_psk_bundles";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::PskBundle(self)
+        crate::transaction::dynamic_dispatch::Entity::PskBundle(self.into())
     }
 }
 

@@ -22,7 +22,7 @@ impl EntityBase for ProteusIdentity {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::ProteusIdentity(self)
+        crate::transaction::dynamic_dispatch::Entity::ProteusIdentity(self.into())
     }
 }
 
@@ -81,7 +81,7 @@ impl NewEntityBase for ProteusIdentity {
     const COLLECTION_NAME: &'static str = "proteus_identities";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::ProteusIdentity(self)
+        crate::transaction::dynamic_dispatch::Entity::ProteusIdentity(self.into())
     }
 }
 

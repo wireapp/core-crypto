@@ -16,7 +16,7 @@ impl EntityBase for E2eiRefreshToken {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::E2eiRefreshToken(self)
+        crate::transaction::dynamic_dispatch::Entity::E2eiRefreshToken(self.into())
     }
 }
 
@@ -37,7 +37,7 @@ impl NewEntityBase for E2eiRefreshToken {
     const COLLECTION_NAME: &'static str = "e2ei_refresh_token";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::E2eiRefreshToken(self)
+        crate::transaction::dynamic_dispatch::Entity::E2eiRefreshToken(self.into())
     }
 }
 

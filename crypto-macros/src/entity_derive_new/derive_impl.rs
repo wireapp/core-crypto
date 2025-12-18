@@ -37,7 +37,7 @@ impl Entity {
                 const COLLECTION_NAME: &'static str = #collection_name;
 
                 fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-                    crate::transaction::dynamic_dispatch::Entity::#struct_name(self)
+                    crate::transaction::dynamic_dispatch::Entity::#struct_name(self.into())
                 }
             }
         }
