@@ -12,7 +12,6 @@ mod bundles;
 mod bytes_wrapper;
 mod ciphersuite;
 mod client_id;
-mod configuration;
 mod core_crypto;
 mod core_crypto_context;
 mod credential;
@@ -37,7 +36,6 @@ pub use bundles::{
 };
 pub use ciphersuite::{Ciphersuite, ciphersuite_default, ciphersuite_from_u16};
 pub use client_id::ClientId;
-pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePolicy};
 pub(crate) use core_crypto::e2ei::identities::UserIdentities;
 pub use core_crypto::{
     CoreCryptoFfi,
