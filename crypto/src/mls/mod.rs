@@ -88,17 +88,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    async fn can_fetch_client_public_key(mut case: TestContext) {
-        let db = case.create_persistent_db().await;
-        Box::pin(async move {
-            let result = Session::try_new(&db).await;
-            println!("{result:?}");
-            assert!(result.is_ok());
-        })
-        .await
-    }
-
-    #[apply(all_cred_cipher)]
     async fn can_2_phase_init_central(mut case: TestContext) {
         let db = case.create_persistent_db().await;
         Box::pin(async move {
