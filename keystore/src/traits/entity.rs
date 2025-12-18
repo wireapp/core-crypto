@@ -61,8 +61,10 @@ pub trait BorrowPrimaryKey: Entity {
     ///
     /// The type signature here is somewhat complicated, but it breaks down simply: if our primary key is something
     /// like `Vec<u8>`, we want to be able to use this method even if what we have on hand is `&[u8]`.
-    async fn get_borrowed<Q>(conn: &mut Self::ConnectionType, key: &Q) -> CryptoKeystoreResult<Option<Self>>
+    async fn get_borrowed(
+        conn: &mut Self::ConnectionType,
+        key: &Self::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<Self>>
     where
-        Self::PrimaryKey: Borrow<Q>,
-        Q: KeyType;
+        for<'pk> &'pk Self::BorrowedPrimaryKey: KeyType;
 }
