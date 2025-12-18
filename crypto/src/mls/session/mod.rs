@@ -184,9 +184,7 @@ mod tests {
     use mls_crypto_provider::MlsCryptoProvider;
 
     use super::*;
-    use crate::{
-        CertificateBundle, Credential, KeystoreError, test_utils::*, transaction_context::test_utils::EntitiesCount,
-    };
+    use crate::{KeystoreError, test_utils::*, transaction_context::test_utils::EntitiesCount};
 
     impl Session {
         // test functions are not held to the same documentation standard as proper functions
@@ -194,40 +192,6 @@ mod tests {
 
         pub async fn identities(&self) -> Identities {
             self.identities.read().await.clone()
-        }
-
-        /// Replace any existing credentials, identities, client_id, and similar with newly generated ones.
-        pub async fn random_generate(
-            &self,
-            case: &crate::test_utils::TestContext,
-            signer: Option<&crate::test_utils::x509::X509Certificate>,
-        ) -> Result<()> {
-            self.reset().await;
-            let user_uuid = uuid::Uuid::new_v4();
-            let rnd_id = rand::random::<usize>();
-            let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated());
-            let client_id = ClientId(client_id.into_bytes());
-
-            let credential;
-            let identifier;
-            match case.credential_type {
-                CredentialType::Basic => {
-                    identifier = ClientIdentifier::Basic(client_id.clone());
-                    credential = Credential::basic(case.ciphersuite(), client_id, &self.crypto_provider).unwrap();
-                }
-                CredentialType::X509 => {
-                    let signer = signer.expect("Missing intermediate CA").to_owned();
-                    let cert = CertificateBundle::rand(&client_id, &signer);
-                    identifier = ClientIdentifier::X509([(case.signature_scheme(), cert.clone())].into());
-                    credential = Credential::x509(case.ciphersuite(), cert).unwrap();
-                }
-            };
-
-            self.init(identifier, &[case.signature_scheme()]).await.unwrap();
-
-            self.add_credential(credential).await.unwrap();
-
-            Ok(())
         }
 
         pub async fn find_keypackages(&self, backend: &MlsCryptoProvider) -> Result<Vec<openmls::prelude::KeyPackage>> {
@@ -281,8 +245,7 @@ mod tests {
             None
         };
         backend.new_transaction().await.unwrap();
-        let session = alice.session().await;
-        session
+        alice
             .random_generate(
                 &case,
                 x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
