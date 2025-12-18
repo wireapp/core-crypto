@@ -1,3 +1,5 @@
+use std::{any::Any, sync::Arc};
+
 use crate::connection::DatabaseConnection;
 
 /// A supertrait that all entities must implement. This handles multiplexing over the two different database backends.
@@ -14,6 +16,15 @@ pub trait EntityBase: 'static + Sized {
     fn downcast<T: EntityBase>(&self) -> Option<&T> {
         let as_dyn_any: &dyn std::any::Any = self;
         as_dyn_any.downcast_ref()
+    }
+
+    fn downcast_arc<T>(self: Arc<Self>) -> Option<Arc<T>>
+    where
+        Self: Send + Sync,
+        T: EntityBase + Send + Sync,
+    {
+        let as_dyn_any = self as Arc<dyn Any + Send + Sync>;
+        as_dyn_any.downcast().ok()
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity;
