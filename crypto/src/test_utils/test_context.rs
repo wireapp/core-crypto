@@ -68,7 +68,6 @@ use crate::{
         crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
-    case::pure_ciphertext(TestContext::default_cipher()),
 )]
 #[test_attr(macro_rules_attribute::apply(smol_macros::test))]
 #[allow(non_snake_case)]
