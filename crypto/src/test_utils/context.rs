@@ -15,8 +15,7 @@ use super::{
     test_conversation::operation_guard::{Commit, OperationGuard},
 };
 use crate::{
-    CertificateBundle, Ciphersuite, CoreCrypto, CredentialRef, CredentialType, MlsConversationDecryptMessage,
-    WireIdentity,
+    CertificateBundle, Ciphersuite, CredentialRef, CredentialType, MlsConversationDecryptMessage, WireIdentity,
     e2e_identity::{
         device_status::DeviceStatus,
         id::{QualifiedE2eiClientId, WireQualifiedClientId},
@@ -76,16 +75,14 @@ impl SessionContext {
     pub async fn commit_transaction(&mut self) {
         self.transaction.finish().await.unwrap();
         // start new transaction
-        let cc = CoreCrypto::from(self.session.clone());
-        self.transaction = cc.new_transaction().await.unwrap();
+        self.transaction = self.core_crypto.new_transaction().await.unwrap();
     }
 
     /// Pretends a crash by aborting the running transaction and starting a new, fresh one.
     pub async fn pretend_crash(&mut self) {
         self.transaction.abort().await.unwrap();
         // start new transaction
-        let cc = CoreCrypto::from(self.session.clone());
-        self.transaction = cc.new_transaction().await.unwrap();
+        self.transaction = self.core_crypto.new_transaction().await.unwrap();
     }
 
     pub async fn client_signature_key(&self, case: &TestContext) -> SignaturePublicKey {

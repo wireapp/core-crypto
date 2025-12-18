@@ -94,6 +94,7 @@ pub struct SessionContext {
     mls_transport: Arc<RwLock<Arc<dyn MlsTransportTestExt + 'static>>>,
     x509_test_chain: Arc<Option<X509TestChain>>,
     history_observer: Arc<RwLock<Option<Arc<TestHistoryObserver>>>>,
+    core_crypto: CoreCrypto,
     // We need to store the `TempDir` struct for the duration of the test session,
     // because its drop implementation takes care of the directory deletion.
     _db: Option<(Database, Arc<tempfile::TempDir>)>,
@@ -155,16 +156,21 @@ impl SessionContext {
             mls_transport: Arc::new(RwLock::new(context.transport.clone())),
             x509_test_chain: Arc::new(chain.cloned()),
             history_observer: Default::default(),
+            core_crypto,
             _db: Some((db, db_dir.into())),
         };
         Ok(session_context)
     }
 
-    pub(crate) async fn new_from_cc(context: &TestContext, cc: CoreCrypto, chain: Option<&X509TestChain>) -> Self {
+    pub(crate) async fn new_from_cc(
+        context: &TestContext,
+        core_crypto: CoreCrypto,
+        chain: Option<&X509TestChain>,
+    ) -> Self {
         let transport = context.transport.clone();
-        let transaction = cc.new_transaction().await.unwrap();
+        let transaction = core_crypto.new_transaction().await.unwrap();
 
-        let session = cc.mls_session().await.unwrap();
+        let session = core_crypto.mls_session().await.unwrap();
         // Setup the X509 PKI environment
         if let Some(chain) = chain.as_ref() {
             chain.register_with_central(&transaction).await;
@@ -184,6 +190,7 @@ impl SessionContext {
             mls_transport: Arc::new(RwLock::new(transport)),
             x509_test_chain: Arc::new(chain.cloned()),
             history_observer: Default::default(),
+            core_crypto,
             _db: None,
         }
     }
