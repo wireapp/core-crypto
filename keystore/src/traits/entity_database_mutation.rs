@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{Entity, KeyType},
+    traits::{BorrowPrimaryKey, Entity, KeyType},
 };
 
 /// Extend an [`Entity`] with db-mutating operations which can be performed when provided with a transaction.
@@ -45,16 +45,15 @@ pub trait EntityDatabaseMutation<'a>: Entity<ConnectionType = crate::connection:
 /// Extend an [`Entity`] with db-mutating operations which can be performed when provided with a transaction.
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
-pub trait EntityDeleteBorrowed<'a>: EntityDatabaseMutation<'a> {
+pub trait EntityDeleteBorrowed<'a>: EntityDatabaseMutation<'a> + BorrowPrimaryKey {
     /// Delete an entity by a borrowed form of its primary key.
     ///
     /// The type signature here is somewhat complicated, but it breaks down simply: if our primary key is something
     /// like `Vec<u8>`, we want to be able to use this method even if what we have on hand is `&[u8]`.
-    async fn delete_borrowed<Q>(
+    async fn delete_borrowed(
         tx: &<Self as EntityDatabaseMutation<'a>>::Transaction,
-        id: &Q,
+        id: &<Self as BorrowPrimaryKey>::BorrowedPrimaryKey,
     ) -> CryptoKeystoreResult<bool>
     where
-        Self::PrimaryKey: Borrow<Q>,
-        Q: KeyType;
+        for<'pk> &'pk Self::BorrowedPrimaryKey: KeyType;
 }
