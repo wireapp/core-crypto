@@ -1,6 +1,6 @@
 use std::hint::black_box;
 
-use core_crypto::{CredentialType, MlsConversationConfiguration, MlsCustomConfiguration};
+use core_crypto::{CredentialType, MlsConversationConfiguration};
 use criterion::{
     BatchSize, BenchmarkId, Criterion, async_executor::SmolExecutor as FuturesExecutor, criterion_group, criterion_main,
 };
@@ -81,12 +81,7 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                     },
                     |(central, welcome)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(
-                            context
-                                .process_welcome_message(welcome.into(), MlsCustomConfiguration::default())
-                                .await
-                                .unwrap(),
-                        );
+                        black_box(context.process_welcome_message(welcome.into()).await.unwrap());
                         context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
@@ -116,11 +111,7 @@ fn join_from_group_info_bench(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
                             context
-                                .join_by_external_commit(
-                                    group_info,
-                                    MlsCustomConfiguration::default(),
-                                    CredentialType::Basic,
-                                )
+                                .join_by_external_commit(group_info, CredentialType::Basic)
                                 .await
                                 .unwrap(),
                         );
