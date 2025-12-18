@@ -7,7 +7,7 @@ use tls_codec::Deserialize as _;
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration, RecursiveError, WelcomeBundle,
+    MlsConversation, MlsConversationConfiguration, RecursiveError, WelcomeBundle,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
 };
 
@@ -25,15 +25,11 @@ impl TransactionContext {
     /// # Errors
     /// see [TransactionContext::process_welcome_message]
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn process_raw_welcome_message(
-        &self,
-        welcome: &[u8],
-        custom_cfg: MlsCustomConfiguration,
-    ) -> Result<WelcomeBundle> {
+    pub async fn process_raw_welcome_message(&self, welcome: &[u8]) -> Result<WelcomeBundle> {
         let mut cursor = std::io::Cursor::new(welcome);
         let welcome =
             MlsMessageIn::tls_deserialize(&mut cursor).map_err(Error::tls_deserialize("mls message in (welcome)"))?;
-        self.process_welcome_message(welcome, custom_cfg).await
+        self.process_welcome_message(welcome).await
     }
 
     /// Create a conversation from a received MLS Welcome message
@@ -50,11 +46,7 @@ impl TransactionContext {
     /// * if no [openmls::key_packages::KeyPackage] can be read from the KeyStore
     /// * if the message can't be decrypted
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn process_welcome_message(
-        &self,
-        welcome: MlsMessageIn,
-        custom_cfg: MlsCustomConfiguration,
-    ) -> Result<WelcomeBundle> {
+    pub async fn process_welcome_message(&self, welcome: MlsMessageIn) -> Result<WelcomeBundle> {
         let MlsMessageInBody::Welcome(welcome) = welcome.extract() else {
             return Err(Error::CallerError(
                 "the message provided to process_welcome_message was not a welcome message",
@@ -63,7 +55,6 @@ impl TransactionContext {
         let cs = welcome.ciphersuite().into();
         let configuration = MlsConversationConfiguration {
             ciphersuite: cs,
-            custom: custom_cfg,
             ..Default::default()
         };
         let mls_provider = self
@@ -146,7 +137,7 @@ mod tests {
                 let welcome = conversation.transport().await.latest_welcome_message().await;
                 let join_welcome = bob
                     .transaction
-                    .process_welcome_message(welcome.into(), case.custom_cfg())
+                    .process_welcome_message(welcome.into())
                     .await;
                 assert!(
                     matches!(join_welcome.unwrap_err(),

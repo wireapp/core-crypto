@@ -161,14 +161,10 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::process_raw_welcome_message]
-    pub async fn process_welcome_message(
-        &self,
-        welcome_message: Arc<Welcome>,
-        custom_configuration: CustomConfiguration,
-    ) -> CoreCryptoResult<WelcomeBundle> {
+    pub async fn process_welcome_message(&self, welcome_message: Arc<Welcome>) -> CoreCryptoResult<WelcomeBundle> {
         let result = self
             .inner
-            .process_raw_welcome_message(welcome_message.as_slice(), custom_configuration.into())
+            .process_raw_welcome_message(welcome_message.as_slice())
             .await?
             .into();
         Ok(result)
@@ -265,7 +261,6 @@ impl CoreCryptoContext {
     pub async fn join_by_external_commit(
         &self,
         group_info: Arc<GroupInfo>,
-        custom_configuration: CustomConfiguration,
         credential_type: CredentialType,
     ) -> CoreCryptoResult<WelcomeBundle> {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
@@ -275,7 +270,7 @@ impl CoreCryptoContext {
             .map_err(RecursiveError::mls_conversation("joining by external commmit"))?;
         let welcome_bundle = self
             .inner
-            .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
+            .join_by_external_commit(group_info, credential_type.into())
             .await?;
         Ok(welcome_bundle.into())
     }
