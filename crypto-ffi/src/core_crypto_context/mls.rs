@@ -8,9 +8,9 @@ use core_crypto::{
 use tls_codec::Deserialize as _;
 
 use crate::{
-    Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoResult, Credential,
-    CredentialRef, CredentialType, CustomConfiguration, DecryptedMessage, Keypackage, KeypackageRef, WelcomeBundle,
-    bytes_wrapper::bytes_wrapper, crl::NewCrlDistributionPoints,
+    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, Credential, CredentialRef,
+    CredentialType, DecryptedMessage, Keypackage, KeypackageRef, WelcomeBundle, bytes_wrapper::bytes_wrapper,
+    crl::NewCrlDistributionPoints,
 };
 
 bytes_wrapper!(
@@ -138,19 +138,17 @@ impl CoreCryptoContext {
         &self,
         conversation_id: &ConversationId,
         credential_ref: &CredentialRef,
-        config: ConversationConfiguration,
+        external_sender: Option<Arc<ExternalSenderKey>>,
     ) -> CoreCryptoResult<()> {
         let mut lower_cfg = MlsConversationConfiguration {
-            custom: config.custom.into(),
-            ciphersuite: config.ciphersuite.map(Into::into).unwrap_or_default(),
+            ciphersuite: credential_ref.ciphersuite().into(),
             ..Default::default()
         };
 
         self.inner
             .set_raw_external_senders(
                 &mut lower_cfg,
-                config
-                    .external_senders
+                external_sender
                     .into_iter()
                     .map(|external_sender| external_sender.copy_bytes()),
             )
