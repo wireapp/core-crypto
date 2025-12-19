@@ -6,7 +6,8 @@ plugins {
     id("com.vanniktech.maven.publish.base")
 }
 
-val jvmSources = projectDir.resolve("../jvm/src")
+val sharedSources = projectDir.resolve("../shared/src/commonMain")
+val jvmTestSources = projectDir.resolve("../jvm/src")
 
 val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
     dependsOn(tasks.dokkaGeneratePublicationHtml)
@@ -87,12 +88,12 @@ android {
             main {
                 kotlin {
                     srcDir(projectDir.resolve("src/main/uniffi"))
-                    srcDir(jvmSources.resolve("main/kotlin"))
+                    srcDir(sharedSources.resolve("kotlin"))
                 }
             }
             androidTest {
                 kotlin {
-                    srcDir(jvmSources.resolve("test"))
+                    srcDir(jvmTestSources.resolve("test"))
                 }
             }
         }
