@@ -29,7 +29,7 @@ pub trait DecryptData: Entity {
     /// Decrypt some data, symmetrically to the process [`encrypt_data`][super::EncryptData::encrypt_data] uses.
     fn decrypt_data(
         cipher: &aes_gcm::Aes256Gcm,
-        primary_key: &<Self as Entity>::PrimaryKey,
+        primary_key: &Self::PrimaryKey,
         data: &[u8],
     ) -> CryptoKeystoreResult<Vec<u8>>;
 }

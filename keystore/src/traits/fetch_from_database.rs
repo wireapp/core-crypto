@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::{
     CryptoKeystoreResult,
     connection::KeystoreDatabaseConnection,
-    traits::{BorrowPrimaryKey, Entity, KeyType, UniqueEntity, UniqueEntityExt},
+    traits::{BorrowPrimaryKey, Entity, KeyType, PrimaryKey, UniqueEntity, UniqueEntityExt},
 };
 
 /// Interface to fetch from the database either from the connection directly or through a
@@ -17,7 +17,7 @@ use crate::{
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
 pub trait FetchFromDatabase: Send + Sync {
     /// Get an instance of `E` from the database by its primary key.
-    async fn get<E>(&self, id: &<E as Entity>::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
     where
         E: Entity<ConnectionType = KeystoreDatabaseConnection> + Clone + Send + Sync;
 

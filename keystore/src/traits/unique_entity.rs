@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 #[cfg(not(target_family = "wasm"))]
-use rusqlite::{OptionalExtension as _, params};
+use rusqlite::{OptionalExtension as _, ToSql, params};
 #[cfg(target_family = "wasm")]
 use serde::de::DeserializeOwned;
 
@@ -10,14 +10,16 @@ use crate::entities::{count_helper, count_helper_tx, delete_helper, load_all_hel
 use crate::traits::{Decryptable, Decrypting, Encrypting, KeyType as _};
 use crate::{
     CryptoKeystoreResult,
-    connection::TransactionWrapper,
-    traits::{Entity, EntityBase, entity_database_mutation::EntityDatabaseMutation},
+    connection::{KeystoreDatabaseConnection, TransactionWrapper},
+    traits::{Entity, EntityBase, PrimaryKey, entity_database_mutation::EntityDatabaseMutation},
 };
 
 /// A unique entity can appear either 0 or 1 times in the database.
-pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection> + Entity {
+pub trait UniqueEntity:
+    EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection> + PrimaryKey
+{
     /// The id used as they key when storing this entity in a KV store.
-    const KEY: <Self as Entity>::PrimaryKey;
+    const KEY: Self::PrimaryKey;
 }
 
 /// Unique entities get some convenience methods implemented automatically.
@@ -96,6 +98,7 @@ where
 ///
 /// If you implement this trait, you get the following traits auto-implemented:
 ///
+/// - `PrimaryKey`
 /// - `UniqueEntity`
 /// - `Entity`
 /// - `EntityDatabaseMutation`
@@ -110,13 +113,29 @@ pub trait UniqueEntityImplementationHelper {
     fn content(&self) -> &[u8];
 }
 
+impl<T> PrimaryKey for T
+where
+    T: EntityBase<ConnectionType = KeystoreDatabaseConnection> + UniqueEntityImplementationHelper,
+{
+    // The old keystore trait used usize as the primary key type, but that would vary
+    // in width across various implementations and so is intentionally not a `KeyType`.
+    // So we distinguish betwen `u32` and `u64` according to whether or not we're on wasm.
+    #[cfg(target_family = "wasm")]
+    type PrimaryKey = u32;
+    #[cfg(not(target_family = "wasm"))]
+    type PrimaryKey = u64;
+
+    fn primary_key(&self) -> Self::PrimaryKey {
+        Self::KEY
+    }
+}
+
 #[cfg(target_family = "wasm")]
-#[async_trait(?Send)]
 impl<T> UniqueEntity for T
 where
     T: EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection>
         + UniqueEntityImplementationHelper
-        + Entity<PrimaryKey = u32>,
+        + PrimaryKey<PrimaryKey = u32>,
 {
     const KEY: u32 = 0;
 }
@@ -131,15 +150,6 @@ where
         + Decryptable<'static>,
     <T as Decryptable<'static>>::DecryptableFrom: DeserializeOwned,
 {
-    // The old trait used usize as the primary key type, but that would vary
-    // in width across various implementations and so is intentionally not a `KeyType`.
-    // Instead we use `u32` which should be the same width on wasm.
-    type PrimaryKey = u32;
-
-    fn primary_key(&self) -> Self::PrimaryKey {
-        Self::KEY
-    }
-
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         conn.storage().new_get(key.bytes().as_ref()).await
     }
@@ -175,16 +185,17 @@ where
         tx.new_count::<Self>().await
     }
 
-    async fn delete(tx: &Self::Transaction, id: &<Self as Entity>::PrimaryKey) -> CryptoKeystoreResult<bool> {
+    async fn delete(tx: &Self::Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool> {
         tx.new_delete::<Self>(id.bytes().as_ref()).await
     }
 }
 
 #[cfg(not(target_family = "wasm"))]
-#[async_trait]
 impl<T> UniqueEntity for T
 where
-    T: EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection> + UniqueEntityImplementationHelper,
+    T: EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection>
+        + UniqueEntityImplementationHelper
+        + PrimaryKey<PrimaryKey = u64>,
 {
     const KEY: u64 = 0;
 }
@@ -193,18 +204,11 @@ where
 #[async_trait]
 impl<T> Entity for T
 where
-    T: EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection> + UniqueEntityImplementationHelper,
+    T: EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection>
+        + PrimaryKey
+        + UniqueEntityImplementationHelper,
+    <T as PrimaryKey>::PrimaryKey: ToSql,
 {
-    // The old trait used usize as the primary key type, not u64, but that would vary
-    // in width across various implementations and so is intentionally not a `KeyType`.
-    // Instead we use `u64` which should be the same width on the expected runtimes
-    // for non-wasm.
-    type PrimaryKey = u64;
-
-    fn primary_key(&self) -> Self::PrimaryKey {
-        Self::KEY
-    }
-
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         let conn = conn.conn().await;
         let mut statement = conn.prepare_cached(&format!(
@@ -233,8 +237,10 @@ where
 impl<'a, T> EntityDatabaseMutation<'a> for T
 where
     T: EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection, AutoGeneratedFields = ()>
+        + UniqueEntity
         + UniqueEntityImplementationHelper
         + Sync,
+    <T as PrimaryKey>::PrimaryKey: ToSql,
 {
     type Transaction = TransactionWrapper<'a>;
 
@@ -251,7 +257,7 @@ where
         count_helper_tx::<Self>(tx).await
     }
 
-    async fn delete(tx: &Self::Transaction, id: &<Self as Entity>::PrimaryKey) -> CryptoKeystoreResult<bool> {
+    async fn delete(tx: &Self::Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool> {
         delete_helper::<Self>(tx, "id", id).await
     }
 }
