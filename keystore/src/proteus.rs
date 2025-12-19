@@ -1,7 +1,6 @@
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
-    connection::{Database, FetchFromDatabase},
-    entities::ProteusPrekey,
+    CryptoKeystoreError, CryptoKeystoreResult, connection::Database, entities::ProteusPrekey,
+    traits::FetchFromDatabase as _,
 };
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -29,15 +28,12 @@ impl proteus_traits::PreKeyStore for Database {
         &mut self,
         id: proteus_traits::RawPreKeyId,
     ) -> Result<Option<proteus_traits::RawPreKey>, Self::Error> {
-        Ok(self
-            .find::<ProteusPrekey>(&id.to_le_bytes())
-            .await?
-            .map(|db_prekey| db_prekey.prekey.clone()))
+        self.get::<ProteusPrekey>(&id)
+            .await
+            .map(|db_prekey| db_prekey.map(|mut db_prekey| std::mem::take(&mut db_prekey.prekey)))
     }
 
     async fn remove(&mut self, id: proteus_traits::RawPreKeyId) -> Result<(), Self::Error> {
-        Database::remove::<ProteusPrekey, _>(self, id.to_le_bytes()).await?;
-
-        Ok(())
+        Database::remove::<ProteusPrekey>(self, &id).await
     }
 }
