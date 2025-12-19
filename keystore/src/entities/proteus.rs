@@ -1,6 +1,6 @@
 use zeroize::Zeroize;
 
-use crate::connection::FetchFromDatabase;
+use crate::traits::FetchFromDatabase as _;
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
@@ -75,7 +75,7 @@ impl ProteusPrekey {
             if id == limit {
                 return Err(crate::CryptoKeystoreError::NoFreePrekeyId);
             }
-            if conn.find::<Self>(&id.to_le_bytes()).await?.is_none() {
+            if conn.get::<Self>(&id).await?.is_none() {
                 break;
             }
             id += 1;
