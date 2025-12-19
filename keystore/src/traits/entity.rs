@@ -4,7 +4,10 @@ use async_trait::async_trait;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{EntityBase, KeyType, OwnedKeyType},
+    traits::{
+        EntityBase, KeyType, OwnedKeyType,
+        primary_key::{BorrowPrimaryKey, PrimaryKey},
+    },
 };
 
 /// Something which can be stored in our database.
@@ -12,19 +15,7 @@ use crate::{
 /// It has a primary key, which uniquely identifies it.
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
-pub trait Entity: EntityBase {
-    /// Each distinct `PrimaryKey` uniquely identifies either 0 or 1 instance.
-    ///
-    /// This constraint should be enforced at the DB level.
-    type PrimaryKey: OwnedKeyType;
-
-    /// Get this entity's primary key.
-    ///
-    /// This must return an owned type, because there are some entities for which only owned primary keys are possible.
-    /// However, entities which have primary keys owned within the entity itself should consider also implementing
-    /// [`BorrowPrimaryKey`] for greater efficiency.
-    fn primary_key(&self) -> Self::PrimaryKey;
-
+pub trait Entity: EntityBase + PrimaryKey {
     /// Get an entity by its primary key.
     ///
     /// For entites whose primary key has a distinct borrowed type, it is best to implement this as a direct
@@ -44,19 +35,9 @@ pub trait Entity: EntityBase {
     async fn load_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>>;
 }
 
-/// An extension trait which should be implemented for all entities whose primary key has a distinct borrowed form.
-///
-/// i.e. `String`, `Vec<u8>`, etc.
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
-pub trait BorrowPrimaryKey: Entity {
-    type BorrowedPrimaryKey: ?Sized + ToOwned<Owned = Self::PrimaryKey>;
-
-    /// Borrow this entity's primary key without copying any data.
-    ///
-    /// This borrowed key has a lifetime tied to that of this entity.
-    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey;
-
+pub trait EntityGetBorrowed: Entity + BorrowPrimaryKey {
     /// Get an entity by a borrowed form of its primary key.
     async fn get_borrowed(
         conn: &mut Self::ConnectionType,
