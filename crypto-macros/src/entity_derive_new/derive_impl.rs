@@ -198,6 +198,10 @@ impl Entity {
             .map(|tokens| quote!(#tokens,))
             .collect::<TokenStream>();
 
+        let sql_map_err = (!upsert).then_some(quote! {
+            .map_err(|_| CryptoKeystoreError::AlreadyExists(Self::COLLECTION_NAME))
+        });
+
         quote! {
             #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
             #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
@@ -213,7 +217,7 @@ impl Entity {
                         #[cfg(not(target_family = "wasm"))]
                         {
                             let mut stmt = tx.prepare_cached(#sql_statement)?;
-                            stmt.execute(rusqlite::params![#fields])?;
+                            stmt.execute(rusqlite::params![#fields])#sql_map_err?;
                             Ok(())
                         }
                 }
