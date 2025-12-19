@@ -248,7 +248,7 @@ pub struct StoredE2eiEnrollment {
 #[cfg(target_family = "wasm")]
 #[async_trait::async_trait(?Send)]
 pub trait UniqueEntity:
-    EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection>
+    crate::entities::EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection>
     + serde::Serialize
     + serde::de::DeserializeOwned
 where
@@ -268,7 +268,7 @@ where
             .ok_or(CryptoKeystoreError::NotFound(Self::COLLECTION_NAME, "".to_string()))?)
     }
 
-    async fn find_all(conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+    async fn find_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
         match Self::find_unique(conn).await {
             Ok(record) => Ok(vec![record]),
             Err(CryptoKeystoreError::NotFound(..)) => Ok(vec![]),
@@ -377,7 +377,10 @@ pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreD
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl<T> crate::entities::EntityTransactionExt for T
 where
-    T: crate::entities::Entity + UniqueEntity + Send + Sync,
+    T: crate::entities::Entity<ConnectionType = crate::connection::KeystoreDatabaseConnection>
+        + UniqueEntity
+        + Send
+        + Sync,
 {
     #[cfg(not(target_family = "wasm"))]
     async fn save(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
@@ -400,7 +403,7 @@ where
     #[cfg(target_family = "wasm")]
     async fn delete_fail_on_missing_id<'a>(
         _: &TransactionWrapper<'a>,
-        _id: StringEntityId<'a>,
+        _id: crate::entities::StringEntityId<'a>,
     ) -> CryptoKeystoreResult<()> {
         Err(CryptoKeystoreError::NotImplemented)
     }

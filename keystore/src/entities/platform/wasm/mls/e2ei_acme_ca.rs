@@ -1,8 +1,11 @@
 use crate::{
-    MissingKeyErrorKind,
+    CryptoKeystoreResult, MissingKeyErrorKind,
     connection::KeystoreDatabaseConnection,
     entities::{E2eiAcmeCA, EntityBase, UniqueEntity},
-    traits::{EntityBase as NewEntityBase, UniqueEntityImplementationHelper},
+    traits::{
+        DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, EntityBase as NewEntityBase, UniqueEntity as _,
+        UniqueEntityImplementationHelper,
+    },
 };
 
 impl EntityBase for E2eiAcmeCA {
@@ -46,4 +49,31 @@ impl UniqueEntityImplementationHelper for E2eiAcmeCA {
     fn content(&self) -> &[u8] {
         &self.content
     }
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct E2eiAcmeCAEncrypted {
+    content: Vec<u8>,
+}
+
+impl<'a> Encrypting<'a> for E2eiAcmeCA {
+    type EncryptedForm = E2eiAcmeCAEncrypted;
+
+    fn encrypt(&'a self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::EncryptedForm> {
+        let content = <Self as EncryptData>::encrypt_data(self, cipher, &self.content)?;
+        Ok(E2eiAcmeCAEncrypted { content })
+    }
+}
+
+impl Decrypting<'static> for E2eiAcmeCAEncrypted {
+    type DecryptedForm = E2eiAcmeCA;
+
+    fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::DecryptedForm> {
+        let content = <E2eiAcmeCA as DecryptData>::decrypt_data(cipher, &E2eiAcmeCA::KEY, &self.content)?;
+        Ok(E2eiAcmeCA { content })
+    }
+}
+
+impl Decryptable<'static> for E2eiAcmeCA {
+    type DecryptableFrom = E2eiAcmeCAEncrypted;
 }
