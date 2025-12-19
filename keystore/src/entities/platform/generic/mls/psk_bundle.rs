@@ -10,7 +10,10 @@ use crate::{
         Entity, EntityBase, EntityFindParams, EntityIdStringExt, EntityTransactionExt, StoredPskBundle, StringEntityId,
         count_helper, count_helper_tx, delete_helper, get_helper, load_all_helper,
     },
-    traits::{Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation, PrimaryKey},
+    traits::{
+        BorrowPrimaryKey, Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation,
+        EntityDeleteBorrowed, EntityGetBorrowed, PrimaryKey,
+    },
 };
 
 #[async_trait::async_trait]
@@ -172,17 +175,25 @@ impl NewEntityBase for StoredPskBundle {
 }
 
 impl PrimaryKey for StoredPskBundle {
-    type PrimaryKey = Sha256Hash;
+    type PrimaryKey = Vec<u8>;
 
     fn primary_key(&self) -> Self::PrimaryKey {
-        Sha256Hash::hash_from(&self.psk_id)
+        self.psk_id.clone()
+    }
+}
+
+impl BorrowPrimaryKey for StoredPskBundle {
+    type BorrowedPrimaryKey = [u8];
+
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &self.psk_id
     }
 }
 
 #[async_trait]
 impl NewEntity for StoredPskBundle {
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
-        get_helper::<Self, _>(conn, "id_sha256", key, Self::from_row).await
+        Self::get_borrowed(conn, key.as_slice()).await
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<u32> {
@@ -191,6 +202,16 @@ impl NewEntity for StoredPskBundle {
 
     async fn load_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
         load_all_helper::<Self, _>(conn, Self::from_row).await
+    }
+}
+
+#[async_trait]
+impl EntityGetBorrowed for StoredPskBundle {
+    async fn get_borrowed(
+        conn: &mut Self::ConnectionType,
+        key: &Self::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<Self>> {
+        get_helper::<Self, _>(conn, "id", key, Self::from_row).await
     }
 }
 
@@ -210,6 +231,13 @@ impl<'a> EntityDatabaseMutation<'a> for StoredPskBundle {
     }
 
     async fn delete(tx: &Self::Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool> {
-        delete_helper::<Self>(tx, "id_sha256", id).await
+        Self::delete_borrowed(tx, id.as_slice()).await
+    }
+}
+
+#[async_trait]
+impl<'a> EntityDeleteBorrowed<'a> for StoredPskBundle {
+    async fn delete_borrowed(tx: &Self::Transaction, id: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<bool> {
+        delete_helper::<Self>(tx, "id", id).await
     }
 }
