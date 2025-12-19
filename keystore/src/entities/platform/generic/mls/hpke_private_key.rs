@@ -15,7 +15,7 @@ use crate::{
     },
     traits::{
         BorrowPrimaryKey, Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation,
-        EntityDeleteBorrowed, KeyType,
+        EntityDeleteBorrowed, KeyType, PrimaryKey,
     },
 };
 
@@ -182,14 +182,16 @@ impl NewEntityBase for StoredHpkePrivateKey {
     }
 }
 
-#[async_trait]
-impl NewEntity for StoredHpkePrivateKey {
+impl PrimaryKey for StoredHpkePrivateKey {
     type PrimaryKey = Sha256Hash;
 
     fn primary_key(&self) -> Sha256Hash {
         Sha256Hash::hash_from(&self.pk)
     }
+}
 
+#[async_trait]
+impl NewEntity for StoredHpkePrivateKey {
     async fn get(conn: &mut Self::ConnectionType, id: &Sha256Hash) -> CryptoKeystoreResult<Option<Self>> {
         get_helper::<Self, _>(conn, "pk_sha256", id, Self::from_row).await
     }

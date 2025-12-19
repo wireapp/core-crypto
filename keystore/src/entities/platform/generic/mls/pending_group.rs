@@ -12,7 +12,7 @@ use crate::{
     },
     traits::{
         BorrowPrimaryKey, Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation,
-        EntityDeleteBorrowed, KeyType,
+        EntityDeleteBorrowed, EntityGetBorrowed, KeyType, PrimaryKey,
     },
 };
 
@@ -319,14 +319,24 @@ impl NewEntityBase for PersistedMlsPendingGroup {
     }
 }
 
-#[async_trait]
-impl NewEntity for PersistedMlsPendingGroup {
+impl PrimaryKey for PersistedMlsPendingGroup {
     type PrimaryKey = Vec<u8>;
 
     fn primary_key(&self) -> Self::PrimaryKey {
         self.id.clone()
     }
+}
 
+impl BorrowPrimaryKey for PersistedMlsPendingGroup {
+    type BorrowedPrimaryKey = [u8];
+
+    fn borrow_primary_key(&self) -> &[u8] {
+        &self.id
+    }
+}
+
+#[async_trait]
+impl NewEntity for PersistedMlsPendingGroup {
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         Self::get_borrowed(conn, key).await
     }
@@ -341,13 +351,7 @@ impl NewEntity for PersistedMlsPendingGroup {
 }
 
 #[async_trait]
-impl BorrowPrimaryKey for PersistedMlsPendingGroup {
-    type BorrowedPrimaryKey = [u8];
-
-    fn borrow_primary_key(&self) -> &[u8] {
-        &self.id
-    }
-
+impl EntityGetBorrowed for PersistedMlsPendingGroup {
     async fn get_borrowed(
         conn: &mut Self::ConnectionType,
         key: &Self::BorrowedPrimaryKey,

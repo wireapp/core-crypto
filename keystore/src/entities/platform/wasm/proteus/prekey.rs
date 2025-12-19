@@ -7,7 +7,7 @@ use crate::{
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, ProteusPrekey, StringEntityId},
     traits::{
         DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
-        EntityBase as NewEntityBase, EntityDatabaseMutation, KeyType,
+        EntityBase as NewEntityBase, EntityDatabaseMutation, KeyType, PrimaryKey,
     },
 };
 
@@ -79,14 +79,15 @@ impl NewEntityBase for ProteusPrekey {
     }
 }
 
-#[async_trait(?Send)]
-impl NewEntity for ProteusPrekey {
+impl PrimaryKey for ProteusPrekey {
     type PrimaryKey = u16;
-
-    fn primary_key(&self) -> u16 {
+    fn primary_key(&self) -> Self::PrimaryKey {
         self.id
     }
+}
 
+#[async_trait(?Send)]
+impl NewEntity for ProteusPrekey {
     async fn get(conn: &mut Self::ConnectionType, key: &u16) -> CryptoKeystoreResult<Option<Self>> {
         conn.storage().new_get(key.bytes().as_ref()).await
     }

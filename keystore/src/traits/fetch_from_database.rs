@@ -5,7 +5,9 @@ use async_trait::async_trait;
 use crate::{
     CryptoKeystoreResult,
     connection::KeystoreDatabaseConnection,
-    traits::{BorrowPrimaryKey, Entity, KeyType, PrimaryKey, UniqueEntity, UniqueEntityExt},
+    traits::{
+        BorrowPrimaryKey, Entity, EntityBase, EntityGetBorrowed, KeyType, PrimaryKey, UniqueEntity, UniqueEntityExt,
+    },
 };
 
 /// Interface to fetch from the database either from the connection directly or through a
@@ -37,7 +39,7 @@ pub trait FetchFromDatabase: Send + Sync {
         id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey,
     ) -> CryptoKeystoreResult<Option<E>>
     where
-        E: Entity<ConnectionType = KeystoreDatabaseConnection> + BorrowPrimaryKey + Clone + Send + Sync,
+        E: EntityGetBorrowed<ConnectionType = KeystoreDatabaseConnection> + Clone + Send + Sync,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
         for<'a> &'a E::BorrowedPrimaryKey: KeyType;
 

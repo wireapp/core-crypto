@@ -31,7 +31,10 @@ pub use self::platform::*;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     entities::{MlsPendingMessage, PersistedMlsGroupExt},
-    traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, FetchFromDatabase, KeyType},
+    traits::{
+        BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase,
+        KeyType,
+    },
     transaction::KeystoreTransaction,
 };
 
@@ -405,7 +408,7 @@ impl Database {
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
 impl FetchFromDatabase for Database {
-    async fn get<E>(&self, id: &<E as Entity>::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
     where
         E: Entity<ConnectionType = KeystoreDatabaseConnection> + Clone + Send + Sync,
     {
@@ -424,7 +427,7 @@ impl FetchFromDatabase for Database {
 
     async fn get_borrowed<E>(&self, id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<E>>
     where
-        E: Entity<ConnectionType = KeystoreDatabaseConnection> + BorrowPrimaryKey + Clone + Send + Sync,
+        E: EntityGetBorrowed<ConnectionType = KeystoreDatabaseConnection> + Clone + Send + Sync,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
         for<'a> &'a E::BorrowedPrimaryKey: KeyType,
     {

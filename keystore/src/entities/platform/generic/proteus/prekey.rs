@@ -8,7 +8,7 @@ use crate::{
         Entity, EntityBase, EntityFindParams, EntityTransactionExt, ProteusPrekey, StringEntityId, count_helper,
         count_helper_tx, delete_helper, get_helper, load_all_helper,
     },
-    traits::{Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation},
+    traits::{Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation, PrimaryKey},
 };
 
 #[async_trait::async_trait]
@@ -155,14 +155,16 @@ impl NewEntityBase for ProteusPrekey {
     }
 }
 
-#[async_trait]
-impl NewEntity for ProteusPrekey {
+impl PrimaryKey for ProteusPrekey {
     type PrimaryKey = u16;
 
     fn primary_key(&self) -> u16 {
         self.id
     }
+}
 
+#[async_trait]
+impl NewEntity for ProteusPrekey {
     async fn get(conn: &mut Self::ConnectionType, key: &u16) -> CryptoKeystoreResult<Option<Self>> {
         get_helper::<Self, _>(conn, "id", *key, Self::from_row).await
     }

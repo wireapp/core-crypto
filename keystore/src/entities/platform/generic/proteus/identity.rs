@@ -8,7 +8,7 @@ use crate::{
         Entity, EntityBase, EntityFindParams, EntityTransactionExt, ProteusIdentity, StringEntityId, count_helper,
         count_helper_tx, load_all_helper,
     },
-    traits::{Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation, UniqueEntity},
+    traits::{Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation, PrimaryKey, UniqueEntity},
 };
 
 #[async_trait::async_trait]
@@ -166,11 +166,13 @@ impl UniqueEntity for ProteusIdentity {
     const KEY: () = ();
 }
 
-#[async_trait]
-impl NewEntity for ProteusIdentity {
+impl PrimaryKey for ProteusIdentity {
     type PrimaryKey = ();
     fn primary_key(&self) -> Self::PrimaryKey {}
+}
 
+#[async_trait]
+impl NewEntity for ProteusIdentity {
     async fn get(conn: &mut Self::ConnectionType, _key: &()) -> CryptoKeystoreResult<Option<Self>> {
         let conn = conn.conn().await;
         let mut stmt = conn.prepare_cached("SELECT rowid FROM proteus_identities ORDER BY rowid ASC LIMIT 1")?;

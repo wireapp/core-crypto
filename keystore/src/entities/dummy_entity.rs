@@ -8,7 +8,7 @@ use crate::{
     entities::{Entity, EntityBase, EntityFindParams, StringEntityId},
     traits::{
         BorrowPrimaryKey, DecryptData as _, Decryptable, Decrypting, EncryptData as _, Encrypting, Entity as NewEntity,
-        EntityBase as NewEntityBase, KeyType, UniqueEntity,
+        EntityBase as NewEntityBase, EntityGetBorrowed, KeyType, PrimaryKey, UniqueEntity,
     },
 };
 #[cfg(not(target_family = "wasm"))]
@@ -90,15 +90,23 @@ impl Entity for DummyStoreValue {
     }
 }
 
+impl PrimaryKey for DummyStoreValue {
+    type PrimaryKey = Vec<u8>;
+    fn primary_key(&self) -> Self::PrimaryKey {
+        Vec::new()
+    }
+}
+
+impl BorrowPrimaryKey for DummyStoreValue {
+    type BorrowedPrimaryKey = [u8];
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &[]
+    }
+}
+
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl NewEntity for DummyStoreValue {
-    type PrimaryKey = Vec<u8>;
-
-    fn primary_key(&self) -> Vec<u8> {
-        Vec::new()
-    }
-
     async fn get(_conn: &mut Self::ConnectionType, _key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         Ok(None)
     }
@@ -116,13 +124,7 @@ impl NewEntity for DummyStoreValue {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl BorrowPrimaryKey for DummyStoreValue {
-    type BorrowedPrimaryKey = [u8];
-
-    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
-        &[]
-    }
-
+impl EntityGetBorrowed for DummyStoreValue {
     async fn get_borrowed(
         _conn: &mut Self::ConnectionType,
         _key: &Self::BorrowedPrimaryKey,
@@ -132,7 +134,7 @@ impl BorrowPrimaryKey for DummyStoreValue {
 }
 
 impl UniqueEntity for DummyStoreValue {
-    const KEY: <Self as NewEntity>::PrimaryKey = Vec::new();
+    const KEY: Self::PrimaryKey = Vec::new();
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -182,15 +184,23 @@ impl NewEntityBase for NewDummyStoreValue {
     }
 }
 
+impl PrimaryKey for NewDummyStoreValue {
+    type PrimaryKey = Vec<u8>;
+    fn primary_key(&self) -> Self::PrimaryKey {
+        self.id.clone()
+    }
+}
+
+impl BorrowPrimaryKey for NewDummyStoreValue {
+    type BorrowedPrimaryKey = [u8];
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &self.id
+    }
+}
+
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl NewEntity for NewDummyStoreValue {
-    type PrimaryKey = Vec<u8>;
-
-    fn primary_key(&self) -> Vec<u8> {
-        self.id.clone()
-    }
-
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         Self::get_borrowed(conn, key).await
     }
@@ -211,13 +221,7 @@ impl NewEntity for NewDummyStoreValue {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl BorrowPrimaryKey for NewDummyStoreValue {
-    type BorrowedPrimaryKey = [u8];
-
-    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
-        &self.id
-    }
-
+impl EntityGetBorrowed for NewDummyStoreValue {
     async fn get_borrowed(
         _conn: &mut Self::ConnectionType,
         key: &Self::BorrowedPrimaryKey,

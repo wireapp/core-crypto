@@ -1,8 +1,13 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
-    MissingKeyErrorKind,
+    CryptoKeystoreResult, MissingKeyErrorKind,
     connection::KeystoreDatabaseConnection,
     entities::{E2eiRefreshToken, EntityBase, UniqueEntity},
-    traits::{EntityBase as NewEntityBase, UniqueEntityImplementationHelper},
+    traits::{
+        DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, EntityBase as NewEntityBase, UniqueEntity as _,
+        UniqueEntityImplementationHelper,
+    },
 };
 
 #[async_trait::async_trait(?Send)]
@@ -49,4 +54,31 @@ impl UniqueEntityImplementationHelper for E2eiRefreshToken {
     fn content(&self) -> &[u8] {
         &self.content
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct E2eiRefreshTokenEncrypted {
+    content: Vec<u8>,
+}
+
+impl<'a> Encrypting<'a> for E2eiRefreshToken {
+    type EncryptedForm = E2eiRefreshTokenEncrypted;
+
+    fn encrypt(&'a self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::EncryptedForm> {
+        let content = <Self as EncryptData>::encrypt_data(self, cipher, &self.content)?;
+        Ok(E2eiRefreshTokenEncrypted { content })
+    }
+}
+
+impl Decrypting<'static> for E2eiRefreshTokenEncrypted {
+    type DecryptedForm = E2eiRefreshToken;
+
+    fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::DecryptedForm> {
+        let content = <E2eiRefreshToken as DecryptData>::decrypt_data(cipher, &E2eiRefreshToken::KEY, &self.content)?;
+        Ok(E2eiRefreshToken { content })
+    }
+}
+
+impl Decryptable<'static> for E2eiRefreshToken {
+    type DecryptableFrom = E2eiRefreshTokenEncrypted;
 }
