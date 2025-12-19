@@ -1,25 +1,25 @@
 use core_crypto_keystore::{
-    connection::FetchFromDatabase as _,
     entities::{
         MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredE2eiEnrollment,
         StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
+    traits::FetchFromDatabase as _,
 };
 
 use super::TransactionContext;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct EntitiesCount {
-    pub credential: usize,
-    pub encryption_keypair: usize,
-    pub epoch_encryption_keypair: usize,
-    pub enrollment: usize,
-    pub group: usize,
-    pub hpke_private_key: usize,
-    pub key_package: usize,
-    pub pending_group: usize,
-    pub pending_messages: usize,
-    pub psk_bundle: usize,
+    pub credential: u32,
+    pub encryption_keypair: u32,
+    pub epoch_encryption_keypair: u32,
+    pub enrollment: u32,
+    pub group: u32,
+    pub hpke_private_key: u32,
+    pub key_package: u32,
+    pub pending_group: u32,
+    pub pending_messages: u32,
+    pub psk_bundle: u32,
 }
 
 impl TransactionContext {

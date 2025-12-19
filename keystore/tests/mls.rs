@@ -59,7 +59,7 @@ mod tests {
 
     #[apply(all_storage_types)]
     pub async fn can_add_read_delete_credential_openmls_traits(context: KeystoreTestContext) {
-        use core_crypto_keystore::connection::FetchFromDatabase;
+        use core_crypto_keystore::{Sha256Hash, traits::FetchFromDatabase};
         use itertools::Itertools as _;
         use openmls_basic_credential::SignatureKeyPair;
 
@@ -92,7 +92,7 @@ mod tests {
 
         let (credential_from_store,) = backend
             .key_store()
-            .find_all::<StoredCredential>(Default::default())
+            .load_all::<StoredCredential>()
             .await
             .unwrap()
             .into_iter()
@@ -102,7 +102,7 @@ mod tests {
 
         backend
             .key_store()
-            .remove::<StoredCredential, _>(credential_from_store.public_key.clone())
+            .remove::<StoredCredential>(&Sha256Hash::hash_from(&credential_from_store.public_key))
             .await
             .unwrap();
     }

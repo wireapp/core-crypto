@@ -1,4 +1,4 @@
-use core_crypto_keystore::{connection::FetchFromDatabase as _, entities::StoredBufferedCommit};
+use core_crypto_keystore::{entities::StoredBufferedCommit, traits::FetchFromDatabase as _};
 use log::info;
 use openmls::framing::MlsMessageIn;
 use openmls_traits::OpenMlsCryptoProvider as _;
@@ -34,7 +34,7 @@ impl ConversationGuard {
         self.crypto_provider()
             .await?
             .keystore()
-            .find::<StoredBufferedCommit>(conversation.id())
+            .get_borrowed::<StoredBufferedCommit>(conversation.id().as_ref())
             .await
             .map(|option| option.map(StoredBufferedCommit::into_commit_data))
             .map_err(KeystoreError::wrap("attempting to retrieve buffered commit"))
@@ -69,7 +69,7 @@ impl ConversationGuard {
         self.crypto_provider()
             .await?
             .keystore()
-            .remove::<StoredBufferedCommit, _>(conversation.id())
+            .remove_borrowed::<StoredBufferedCommit>(conversation.id().as_ref())
             .await
             .map_err(KeystoreError::wrap("attempting to clear buffered commit"))
             .map_err(Into::into)

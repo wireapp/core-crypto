@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use core_crypto_keystore::{connection::FetchFromDatabase, entities::E2eiCrl};
+use core_crypto_keystore::{entities::E2eiCrl, traits::FetchFromDatabase};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
     group::MlsGroup,
@@ -75,7 +75,7 @@ pub(crate) async fn get_new_crl_distribution_points(
 
     let stored_crls = backend
         .key_store()
-        .find_all::<E2eiCrl>(Default::default())
+        .load_all::<E2eiCrl>()
         .await
         .map_err(KeystoreError::wrap("finding all e2e crl"))?;
     let stored_crl_dps: HashSet<&str> = stored_crls.iter().map(|crl| crl.distribution_point.as_str()).collect();

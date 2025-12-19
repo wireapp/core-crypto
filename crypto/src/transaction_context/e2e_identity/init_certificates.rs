@@ -1,6 +1,6 @@
 use core_crypto_keystore::{
-    connection::FetchFromDatabase,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
+    traits::FetchFromDatabase,
 };
 use openmls_traits::OpenMlsCryptoProvider;
 use wire_e2e_identity::prelude::x509::{
@@ -42,7 +42,7 @@ impl TransactionContext {
                 .await
                 .map_err(RecursiveError::transaction("getting mls provider"))?
                 .keystore()
-                .find_unique::<E2eiAcmeCA>()
+                .get_unique::<E2eiAcmeCA>()
                 .await
                 .is_ok()
             {
@@ -133,9 +133,10 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting keystore"))?;
         let trust_anchor = keystore
-            .find_unique::<E2eiAcmeCA>()
+            .get_unique::<E2eiAcmeCA>()
             .await
-            .map_err(KeystoreError::wrap("finding acme ca"))?;
+            .map_err(KeystoreError::wrap("finding acme ca"))?
+            .ok_or(Error::NotFound("E2eiAcmeCA"))?;
         let trust_anchor = x509_cert::Certificate::from_der(&trust_anchor.content)?;
 
         // the `/federation` endpoint from smallstep repeats the root CA
@@ -212,7 +213,7 @@ impl TransactionContext {
             .map_err(RecursiveError::transaction("getting keystore"))?;
 
         let dirty = ks
-            .find::<E2eiCrl>(crl_dp.as_bytes())
+            .get::<E2eiCrl>(&crl_dp)
             .await
             .ok()
             .flatten()

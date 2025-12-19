@@ -1,4 +1,4 @@
-use core_crypto_keystore::entities::StoredEncryptionKeyPair;
+use core_crypto_keystore::{Sha256Hash, entities::StoredEncryptionKeyPair};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{LeafNode, LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
@@ -131,7 +131,7 @@ impl MlsConversation {
             // encryption key from the keystore otherwise we would have a leak
             backend
                 .key_store()
-                .remove::<StoredEncryptionKeyPair, _>(leaf_node.encryption_key().as_slice())
+                .remove::<StoredEncryptionKeyPair>(&Sha256Hash::hash_from(leaf_node.encryption_key().as_slice()))
                 .await
                 .map_err(KeystoreError::wrap("removing mls encryption keypair"))?;
         }

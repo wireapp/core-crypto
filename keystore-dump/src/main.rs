@@ -23,7 +23,7 @@ async fn main() -> anyhow::Result<()> {
     use chrono::TimeZone;
     use clap::Parser as _;
     use core_crypto_keystore::{
-        ConnectionType, Database as Keystore, DatabaseKey, connection::FetchFromDatabase, entities::*,
+        ConnectionType, Database as Keystore, DatabaseKey, entities::*, traits::FetchFromDatabase,
     };
     use openmls::prelude::TlsDeserializeTrait;
     use serde::ser::{SerializeMap, Serializer};
@@ -43,11 +43,7 @@ async fn main() -> anyhow::Result<()> {
     let mut json_map = json_serializer.serialize_map(None)?;
 
     let mut credentials: Vec<serde_json::Value> = vec![];
-    for cred in keystore
-        .find_all::<StoredCredential>(Default::default())
-        .await?
-        .into_iter()
-    {
+    for cred in keystore.load_all::<StoredCredential>().await?.into_iter() {
         let mls_credential = openmls::prelude::Credential::tls_deserialize(&mut cred.credential.as_slice())?;
         let mls_keypair = openmls_basic_credential::SignatureKeyPair::from_raw(
             core_crypto::Ciphersuite::try_from(cred.ciphersuite)
@@ -73,7 +69,7 @@ async fn main() -> anyhow::Result<()> {
     json_map.serialize_entry("mls_credentials", &credentials)?;
 
     let hpke_sks: Vec<openmls_traits::types::HpkePrivateKey> = keystore
-        .find_all::<StoredHpkePrivateKey>(Default::default())
+        .load_all::<StoredHpkePrivateKey>()
         .await?
         .into_iter()
         .map(|hpke_sk| postcard::from_bytes::<openmls_traits::types::HpkePrivateKey>(&hpke_sk.sk))
@@ -81,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
     json_map.serialize_entry("mls_hpke_private_keys", &hpke_sks)?;
 
     let hpke_keypairs: Vec<openmls_traits::types::HpkeKeyPair> = keystore
-        .find_all::<StoredEncryptionKeyPair>(Default::default())
+        .load_all::<StoredEncryptionKeyPair>()
         .await?
         .into_iter()
         .map(|hpke_kp| postcard::from_bytes::<openmls_traits::types::HpkeKeyPair>(&hpke_kp.sk))
@@ -89,11 +85,7 @@ async fn main() -> anyhow::Result<()> {
     json_map.serialize_entry("mls_hpke_keypairs", &hpke_keypairs)?;
 
     let mut external_psks: std::collections::HashMap<String, openmls::schedule::psk::PskBundle> = Default::default();
-    for psk in keystore
-        .find_all::<StoredPskBundle>(Default::default())
-        .await?
-        .into_iter()
-    {
+    for psk in keystore.load_all::<StoredPskBundle>().await?.into_iter() {
         let mls_psk = postcard::from_bytes::<openmls::schedule::psk::PskBundle>(&psk.psk)?;
         external_psks.insert(hex::encode(&psk.psk_id), mls_psk);
     }
@@ -101,7 +93,7 @@ async fn main() -> anyhow::Result<()> {
     json_map.serialize_entry("external_psks", &external_psks)?;
 
     let keypackages: Vec<openmls::prelude::KeyPackage> = keystore
-        .find_all::<StoredKeypackage>(Default::default())
+        .load_all::<StoredKeypackage>()
         .await?
         .into_iter()
         .map(|kp| postcard::from_bytes::<openmls::prelude::KeyPackage>(&kp.keypackage))
@@ -109,7 +101,7 @@ async fn main() -> anyhow::Result<()> {
     json_map.serialize_entry("mls_keypackages", &keypackages)?;
 
     let e2ei_enrollments: Vec<core_crypto::E2eiEnrollment> = keystore
-        .find_all::<StoredE2eiEnrollment>(Default::default())
+        .load_all::<StoredE2eiEnrollment>()
         .await?
         .into_iter()
         .map(|enrollment| serde_json::from_slice::<core_crypto::E2eiEnrollment>(&enrollment.content))
@@ -117,7 +109,7 @@ async fn main() -> anyhow::Result<()> {
     json_map.serialize_entry("e2ei_enrollments", &e2ei_enrollments)?;
 
     let pgroups: Vec<openmls::prelude::MlsGroup> = keystore
-        .find_all::<PersistedMlsGroup>(Default::default())
+        .load_all::<PersistedMlsGroup>()
         .await?
         .into_iter()
         .map(|pgroup| core_crypto_keystore::deser::<openmls::prelude::MlsGroup>(&pgroup.state))
@@ -125,14 +117,14 @@ async fn main() -> anyhow::Result<()> {
     json_map.serialize_entry("mls_groups", &pgroups)?;
 
     let pegroups: Vec<openmls::prelude::MlsGroup> = keystore
-        .find_all::<PersistedMlsPendingGroup>(Default::default())
+        .load_all::<PersistedMlsPendingGroup>()
         .await?
         .into_iter()
         .map(|pgroup| core_crypto_keystore::deser::<openmls::prelude::MlsGroup>(&pgroup.state))
         .collect::<core_crypto_keystore::CryptoKeystoreResult<_>>()?;
     json_map.serialize_entry("mls_pending_groups", &pegroups)?;
 
-    if let Some(proteus_identity) = keystore.find::<ProteusIdentity>(ProteusIdentity::ID).await? {
+    if let Some(proteus_identity) = keystore.get_unique::<ProteusIdentity>().await? {
         let identity = {
             let sk = proteus_identity.sk_raw();
             let pk = proteus_identity.pk_raw();
@@ -141,7 +133,7 @@ async fn main() -> anyhow::Result<()> {
         json_map.serialize_entry("proteus_identity", &identity)?;
 
         let prekeys: Vec<proteus_wasm::keys::PreKey> = keystore
-            .find_all::<ProteusPrekey>(Default::default())
+            .load_all::<ProteusPrekey>()
             .await?
             .into_iter()
             .map(|pk| proteus_wasm::keys::PreKey::deserialise(&pk.prekey))
@@ -149,7 +141,7 @@ async fn main() -> anyhow::Result<()> {
         json_map.serialize_entry("proteus_prekeys", &prekeys)?;
 
         let proteus_sessions: Vec<proteus_wasm::session::Session<proteus_wasm::keys::IdentityKeyPair>> = keystore
-            .find_all::<ProteusSession>(Default::default())
+            .load_all::<ProteusSession>()
             .await?
             .into_iter()
             .map(|session| proteus_wasm::session::Session::deserialise(identity.clone(), &session.session))

@@ -1,10 +1,6 @@
 use std::collections::HashMap;
 
-use core_crypto_keystore::{
-    CryptoKeystoreMls as _,
-    connection::FetchFromDatabase as _,
-    entities::{EntityFindParams, PersistedMlsGroup},
-};
+use core_crypto_keystore::{CryptoKeystoreMls as _, entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
 use mls_crypto_provider::Database;
 use openmls::group::{InnerState, MlsGroup};
 
@@ -50,7 +46,7 @@ impl MlsConversation {
     /// Effectively [`Database::mls_groups_restore`] but with better types
     pub(crate) async fn load_all(keystore: &Database) -> Result<HashMap<ConversationId, Self>> {
         let groups = keystore
-            .find_all::<PersistedMlsGroup>(EntityFindParams::default())
+            .load_all::<PersistedMlsGroup>()
             .await
             .map_err(KeystoreError::wrap("finding all persisted mls groups"))?;
         groups
