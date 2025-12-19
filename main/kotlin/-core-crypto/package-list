@@ -790,6 +790,7 @@ $dokka.location:com.wire.crypto/SignatureScheme/entries/#/PointingToDeclaration/
 $dokka.location:com.wire.crypto/SignatureScheme/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-signature-scheme/value.html
 $dokka.location:com.wire.crypto/SignatureScheme/valueOf/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-signature-scheme/value-of.html
 $dokka.location:com.wire.crypto/SignatureScheme/values/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-signature-scheme/values.html
+$dokka.location:com.wire.crypto/Timestamp///PointingToDeclaration/-core-crypto/com.wire.crypto/-timestamp/index.html
 $dokka.location:com.wire.crypto/Welcome.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/-companion/index.html
 $dokka.location:com.wire.crypto/Welcome///PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/index.html
 $dokka.location:com.wire.crypto/Welcome/Welcome/#com.sun.jna.Pointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/-welcome.html
@@ -829,7 +830,7 @@ $dokka.location:com.wire.crypto/WirePolicy/valueOf/#kotlin.String/PointingToDecl
 $dokka.location:com.wire.crypto/WirePolicy/values/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-wire-policy/values.html
 $dokka.location:com.wire.crypto/X509Identity.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/-companion/index.html
 $dokka.location:com.wire.crypto/X509Identity///PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/index.html
-$dokka.location:com.wire.crypto/X509Identity/X509Identity/#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.String#java.time.Instant#java.time.Instant/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/-x509-identity.html
+$dokka.location:com.wire.crypto/X509Identity/X509Identity/#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlinx.datetime.Instant#kotlinx.datetime.Instant/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/-x509-identity.html
 $dokka.location:com.wire.crypto/X509Identity/certificate/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/certificate.html
 $dokka.location:com.wire.crypto/X509Identity/displayName/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/display-name.html
 $dokka.location:com.wire.crypto/X509Identity/domain/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/domain.html
