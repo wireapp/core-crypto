@@ -6,7 +6,7 @@ use crate::{
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StoredEncryptionKeyPair, StringEntityId},
     traits::{
         DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
-        EntityBase as NewEntityBase, EntityDatabaseMutation, KeyType,
+        EntityBase as NewEntityBase, EntityDatabaseMutation, KeyType, PrimaryKey,
     },
 };
 
@@ -78,14 +78,16 @@ impl NewEntityBase for StoredEncryptionKeyPair {
     }
 }
 
-#[async_trait(?Send)]
-impl NewEntity for StoredEncryptionKeyPair {
+impl PrimaryKey for StoredEncryptionKeyPair {
     type PrimaryKey = Sha256Hash;
 
-    fn primary_key(&self) -> Sha256Hash {
+    fn primary_key(&self) -> Self::PrimaryKey {
         Sha256Hash::hash_from(&self.pk)
     }
+}
 
+#[async_trait(?Send)]
+impl NewEntity for StoredEncryptionKeyPair {
     async fn get(conn: &mut Self::ConnectionType, id: &Sha256Hash) -> CryptoKeystoreResult<Option<Self>> {
         conn.storage().new_get(id.bytes().as_ref()).await
     }

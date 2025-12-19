@@ -8,8 +8,8 @@ use crate::{
     connection::{KeystoreDatabaseConnection, TransactionWrapper},
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StringEntityId},
     traits::{
-        DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
-        EntityBase as NewEntityBase, EntityDatabaseMutation,
+        BorrowPrimaryKey, DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
+        EntityBase as NewEntityBase, EntityDatabaseMutation, PrimaryKey,
     },
 };
 
@@ -122,14 +122,26 @@ impl NewEntityBase for MlsPendingMessage {
 ///
 /// However, we have to fake it as a byte vector in this impl in order for encryption and decryption
 /// to work.
-#[async_trait(?Send)]
-impl NewEntity for MlsPendingMessage {
+impl PrimaryKey for MlsPendingMessage {
     type PrimaryKey = Vec<u8>;
 
-    fn primary_key(&self) -> Vec<u8> {
+    fn primary_key(&self) -> Self::PrimaryKey {
         self.foreign_id.clone()
     }
+}
 
+/// This implementation is purely to support `KeystoreTransaction::remove_pending_messages_by_conversation_id`;
+/// after WPB-20844, we should remove that whole API and also this implementation.
+impl BorrowPrimaryKey for MlsPendingMessage {
+    type BorrowedPrimaryKey = [u8];
+
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &self.foreign_id
+    }
+}
+
+#[async_trait(?Send)]
+impl NewEntity for MlsPendingMessage {
     async fn get(_conn: &mut Self::ConnectionType, _key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         panic!("cannot get `MlsPendingMessage` by primary key as it has no distinct primary key")
     }
@@ -140,24 +152,6 @@ impl NewEntity for MlsPendingMessage {
 
     async fn load_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
         conn.storage().new_get_all::<Self>().await
-    }
-}
-
-/// This implementation is purely to support `KeystoreTransaction::remove_pending_messages_by_conversation_id`;
-/// after WPB-20844, we should remove that whole API and also this implementation.
-#[async_trait(?Send)]
-impl BorrowPrimaryKey for MlsPendingMessage {
-    type BorrowedPrimaryKey = [u8];
-
-    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
-        &self.foreign_id
-    }
-
-    async fn get_borrowed(
-        conn: &mut Self::ConnectionType,
-        key: &Self::BorrowedPrimaryKey,
-    ) -> CryptoKeystoreResult<Option<Self>> {
-        panic!("cannot get `MlsPendingMessage` by primary key as it has no distinct primary key")
     }
 }
 

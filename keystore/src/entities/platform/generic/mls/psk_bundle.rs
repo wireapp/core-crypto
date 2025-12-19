@@ -10,7 +10,7 @@ use crate::{
         Entity, EntityBase, EntityFindParams, EntityIdStringExt, EntityTransactionExt, StoredPskBundle, StringEntityId,
         count_helper, count_helper_tx, delete_helper, get_helper, load_all_helper,
     },
-    traits::{Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation},
+    traits::{Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation, PrimaryKey},
 };
 
 #[async_trait::async_trait]
@@ -171,14 +171,16 @@ impl NewEntityBase for StoredPskBundle {
     }
 }
 
-#[async_trait]
-impl NewEntity for StoredPskBundle {
+impl PrimaryKey for StoredPskBundle {
     type PrimaryKey = Sha256Hash;
 
     fn primary_key(&self) -> Self::PrimaryKey {
         Sha256Hash::hash_from(&self.psk_id)
     }
+}
 
+#[async_trait]
+impl NewEntity for StoredPskBundle {
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         get_helper::<Self, _>(conn, "id_sha256", key, Self::from_row).await
     }
