@@ -34,7 +34,6 @@ val ffiLibsBase = layout.buildDirectory.dir("ffiLibs").get().asFile
 
 val copyFfiLibrary by tasks.registering {
     doLast {
-        val osName = System.getProperty("os.name")
         val libs = listOf(
             Triple("x86_64-unknown-linux-gnu", "linux-x86-64", "so"),
             Triple("aarch64-apple-darwin", "darwin-aarch64", "dylib")
