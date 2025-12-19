@@ -44,8 +44,49 @@ pub trait UniqueEntityExt<'a>: UniqueEntity + EntityDatabaseMutation<'a> {
     async fn exists(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<bool>;
 }
 
-#[cfg_attr(target_family = "wasm", async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait)]
+// unfortunately we have to implement this trait twice, with nearly-identical but distinct bounds
+
+#[cfg(target_family = "wasm")]
+#[async_trait(?Send)]
+impl<'a, E> UniqueEntityExt<'a> for E
+where
+    E: UniqueEntity + EntityDatabaseMutation<'a> + Sync,
+{
+    /// Get this unique entity from the database.
+    async fn get_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>> {
+        Self::get(conn, &Self::KEY).await
+    }
+
+    /// Set this unique entity into the database, replacing it if it already exists.
+    ///
+    /// Returns `true` if the entity previously existed and was replaced, or
+    /// `false` if it was not removed and this was a pure insertion.
+    async fn set_and_replace(&'a self, tx: &Self::Transaction) -> CryptoKeystoreResult<bool> {
+        let deleted = Self::delete(tx, &Self::KEY).await?;
+        self.save(tx).await?;
+        Ok(deleted)
+    }
+
+    /// Set this unique entity into the database if it does not already exist.
+    ///
+    /// Returns `true` if the entity was saved, or `false` if it aborted due to an already-existing entity.
+    async fn set_if_absent(&'a self, tx: &Self::Transaction) -> CryptoKeystoreResult<bool> {
+        let count = <Self as EntityDatabaseMutation>::count(tx).await?;
+        if count > 0 {
+            return Ok(false);
+        }
+        self.save(tx).await?;
+        Ok(true)
+    }
+
+    /// Returns whether or not the database contains an instance of this unique entity.
+    async fn exists(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<bool> {
+        <Self as Entity>::count(conn).await.map(|count| count > 0)
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[async_trait]
 impl<'a, E> UniqueEntityExt<'a> for E
 where
     E: UniqueEntity + EntityDatabaseMutation<'a> + Sync,

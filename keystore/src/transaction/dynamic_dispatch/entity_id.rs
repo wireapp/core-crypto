@@ -8,7 +8,7 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     connection::TransactionWrapper,
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup,
+        E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup,
         StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment, StoredEncryptionKeyPair,
         StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
@@ -27,7 +27,7 @@ impl EntityId {
     where
         E: Entity,
     {
-        <E as Entity>::PrimaryKey::from_bytes(&self.id)
+        E::PrimaryKey::from_bytes(&self.id)
             .ok_or(CryptoKeystoreError::InvalidPrimaryKeyBytes(self.typ.collection_name()))
     }
 
@@ -100,7 +100,7 @@ impl EntityId {
             EntityType::E2eiRefreshToken => {
                 E2eiRefreshToken::delete(tx, &self.primary_key::<E2eiRefreshToken>()?).await
             }
-            EntityType::E2eiAcmeCA => E2eiAcmeCA::delete(tx, &self.primary_key::<E2eiAcmeCA>()?).await,
+            EntityType::E2eiAcmeCA => Err(CryptoKeystoreError::NotImplemented),
             EntityType::E2eiIntermediateCert => {
                 E2eiIntermediateCert::delete(tx, &self.primary_key::<E2eiIntermediateCert>()?).await
             }

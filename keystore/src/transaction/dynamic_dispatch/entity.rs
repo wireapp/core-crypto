@@ -70,18 +70,20 @@ impl Entity {
             Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.clone().downcast_arc(),
             Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.clone().downcast_arc(),
             Entity::E2eiCrl(e2ei_crl) => e2ei_crl.clone().downcast_arc(),
+            #[cfg(target_family = "wasm")]
+            Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.clone().downcast_arc(),
+            #[cfg(feature = "proteus-keystore")]
             Entity::ProteusIdentity(proteus_identity) => proteus_identity.clone().downcast_arc(),
+            #[cfg(feature = "proteus-keystore")]
             Entity::ProteusPrekey(proteus_prekey) => proteus_prekey.clone().downcast_arc(),
+            #[cfg(feature = "proteus-keystore")]
             Entity::ProteusSession(proteus_session) => proteus_session.clone().downcast_arc(),
         }
     }
 
     pub(crate) async fn execute_save(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         match self {
-            Entity::ConsumerData(consumer_data) => {
-                consumer_data.set_and_replace(tx).await?;
-                Ok(())
-            }
+            Entity::ConsumerData(consumer_data) => consumer_data.set_and_replace(tx).await.map(|_| ()),
             Entity::HpkePrivateKey(mls_hpke_private_key) => mls_hpke_private_key.save(tx).await,
             Entity::StoredKeypackage(mls_key_package) => mls_key_package.save(tx).await,
             Entity::PskBundle(mls_psk_bundle) => mls_psk_bundle.save(tx).await,
@@ -95,13 +97,10 @@ impl Entity {
             Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => persisted_mls_pending_group.save(tx).await,
             Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.save(tx).await,
             Entity::StoredE2eiEnrollment(e2ei_enrollment) => e2ei_enrollment.save(tx).await,
-            #[cfg(target_family = "wasm")]
-            Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.replace(tx).await,
-            Entity::E2eiAcmeCA(e2ei_acme_ca) => {
-                e2ei_acme_ca.set_and_replace(tx).await?;
-                Ok(())
-            }
+            Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.set_and_replace(tx).await.map(|_| ()),
             Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.save(tx).await,
+            #[cfg(target_family = "wasm")]
+            Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.set_and_replace(tx).await.map(|_| ()),
             Entity::E2eiCrl(e2ei_crl) => e2ei_crl.save(tx).await,
             #[cfg(feature = "proteus-keystore")]
             Entity::ProteusSession(record) => record.save(tx).await,

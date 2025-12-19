@@ -1,8 +1,11 @@
 use crate::{
-    MissingKeyErrorKind,
+    CryptoKeystoreResult, MissingKeyErrorKind,
     connection::KeystoreDatabaseConnection,
     entities::{ConsumerData, EntityBase, UniqueEntity},
-    traits::{EntityBase as NewEntityBase, UniqueEntityImplementationHelper},
+    traits::{
+        DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, EntityBase as NewEntityBase, UniqueEntity as _,
+        UniqueEntityImplementationHelper,
+    },
 };
 
 #[async_trait::async_trait(?Send)]
@@ -49,4 +52,31 @@ impl UniqueEntityImplementationHelper for ConsumerData {
     fn content(&self) -> &[u8] {
         &self.content
     }
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct ConsumerDataEncrypted {
+    content: Vec<u8>,
+}
+
+impl<'a> Encrypting<'a> for ConsumerData {
+    type EncryptedForm = ConsumerDataEncrypted;
+
+    fn encrypt(&'a self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::EncryptedForm> {
+        let content = <Self as EncryptData>::encrypt_data(self, cipher, &self.content)?;
+        Ok(ConsumerDataEncrypted { content })
+    }
+}
+
+impl Decrypting<'static> for ConsumerDataEncrypted {
+    type DecryptedForm = ConsumerData;
+
+    fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::DecryptedForm> {
+        let content = <ConsumerData as DecryptData>::decrypt_data(cipher, &ConsumerData::KEY, &self.content)?;
+        Ok(ConsumerData { content })
+    }
+}
+
+impl Decryptable<'static> for ConsumerData {
+    type DecryptableFrom = ConsumerDataEncrypted;
 }
