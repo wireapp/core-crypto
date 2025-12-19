@@ -1,7 +1,10 @@
 use zeroize::Zeroize;
 
-use super::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId};
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::TransactionWrapper};
+use crate::{
+    CryptoKeystoreError, CryptoKeystoreResult,
+    connection::TransactionWrapper,
+    traits::{BorrowPrimaryKey, Entity, EntityBase, KeyType, OwnedKeyType},
+};
 
 /// Entity representing a persisted `MlsGroup`
 #[derive(
@@ -28,27 +31,32 @@ pub struct PersistedMlsGroup {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait PersistedMlsGroupExt: Entity {
+pub trait PersistedMlsGroupExt: Entity + BorrowPrimaryKey
+where
+    for<'a> &'a <Self as BorrowPrimaryKey>::BorrowedPrimaryKey: KeyType,
+{
     fn parent_id(&self) -> Option<&[u8]>;
 
-    async fn parent_group(
-        &self,
-        conn: &mut <Self as super::EntityBase>::ConnectionType,
-    ) -> CryptoKeystoreResult<Option<Self>> {
+    async fn parent_group(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>> {
         let Some(parent_id) = self.parent_id() else {
             return Ok(None);
         };
 
-        <Self as super::Entity>::find_one(conn, &parent_id.into()).await
+        let parent_id = OwnedKeyType::from_bytes(parent_id)
+            .ok_or(CryptoKeystoreError::InvalidPrimaryKeyBytes(Self::COLLECTION_NAME))?;
+        Self::get(conn, &parent_id).await
     }
 
-    async fn child_groups(
-        &self,
-        conn: &mut <Self as super::EntityBase>::ConnectionType,
-    ) -> CryptoKeystoreResult<Vec<Self>> {
-        let entities = <Self as super::Entity>::find_all(conn, super::EntityFindParams::default()).await?;
+    async fn child_groups(&self, conn: &mut <Self as EntityBase>::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
+        // A perfect opportunity for refactoring in WPB-20844
+        // when we do that, we no longer need varying implementations according to wasm or not,
+        // so both `parent_group` and this method should just be implemented directly on `PersistedMlsGroup`.
+        let entities = Self::load_all(conn).await?;
 
-        let id = self.id_raw();
+        // for whatever reason rustc needs each of these distinct bindings to prove to itself that the lifetimes work out
+        let id = self.borrow_primary_key();
+        let id = id.bytes();
+        let id = id.as_ref();
 
         Ok(entities
             .into_iter()
