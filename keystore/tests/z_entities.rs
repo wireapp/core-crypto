@@ -35,6 +35,7 @@ macro_rules! test_for_entity {
             crate::tests_impl::can_remove_entity::<$entity>(&store, entity).await;
 
             let ignore_count = pat_to_bool!($($ignore_entity_count)?);
+            crate::tests_impl::insert_count_entities::<$entity>(&store).await;
             crate::tests_impl::can_list_entities_with_find_all::<$entity>(&store, ignore_count).await;
         }
     };
@@ -129,6 +130,21 @@ mod tests_impl {
         store.remove::<R>(&entity.primary_key()).await.unwrap();
         let entity2: Option<R> = store.get(&entity.primary_key()).await.unwrap();
         assert!(entity2.is_none());
+    }
+
+    pub(super) async fn insert_count_entities<'a, R>(store: &CryptoKeystore)
+    where
+        R: Clone
+            + EntityRandomUpdateExt
+            + Entity<ConnectionType = KeystoreDatabaseConnection>
+            + EntityDatabaseMutation<'a>
+            + Send
+            + Sync,
+    {
+        for _ in 0..ENTITY_COUNT {
+            let entity = R::random();
+            store.save(entity).await.unwrap();
+        }
     }
 
     pub(crate) async fn can_list_entities_with_find_all<'a, R>(store: &CryptoKeystore, ignore_entity_count: bool)
