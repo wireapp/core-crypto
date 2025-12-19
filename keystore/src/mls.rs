@@ -3,12 +3,12 @@ use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
-    connection::FetchFromDatabase,
+    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind, Sha256Hash,
     entities::{
-        EntityFindParams, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredE2eiEnrollment,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredE2eiEnrollment, StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
+    traits::FetchFromDatabase,
 };
 
 /// An interface for the specialized queries in the KeyStore
@@ -124,23 +124,19 @@ pub trait CryptoKeystoreMls: Sized {
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl CryptoKeystoreMls for crate::Database {
     async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
-        let reverse = !cfg!(target_family = "wasm");
-        let keypackages = self
-            .find_all::<StoredKeypackage>(EntityFindParams {
-                limit: Some(count),
-                offset: None,
-                reverse,
-            })
-            .await?;
-
+        let keypackages = self.load_all::<StoredKeypackage>().await?;
         Ok(keypackages
             .into_iter()
             .filter_map(|kpb| postcard::from_bytes(&kpb.keypackage).ok())
+            .take(count as _)
             .collect())
     }
 
     async fn mls_group_exists(&self, group_id: impl AsRef<[u8]> + Send) -> bool {
-        matches!(self.find::<PersistedMlsGroup>(group_id).await, Ok(Some(_)))
+        matches!(
+            self.get_borrowed::<PersistedMlsGroup>(group_id.as_ref()).await,
+            Ok(Some(_))
+        )
     }
 
     async fn mls_group_persist(
@@ -162,16 +158,20 @@ impl CryptoKeystoreMls for crate::Database {
     async fn mls_groups_restore(
         &self,
     ) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, (Option<Vec<u8>>, Vec<u8>)>> {
-        let groups = self.find_all::<PersistedMlsGroup>(EntityFindParams::default()).await?;
+        let groups = self.load_all::<PersistedMlsGroup>().await?;
         Ok(groups
             .into_iter()
-            .map(|group: PersistedMlsGroup| (group.id.clone(), (group.parent_id.clone(), group.state.clone())))
+            .map(|mut group: PersistedMlsGroup| {
+                let id = std::mem::take(&mut group.id);
+                let parent_id = std::mem::take(&mut group.parent_id);
+                let state = std::mem::take(&mut group.state);
+                (id, (parent_id, state))
+            })
             .collect())
     }
 
     async fn mls_group_delete(&self, group_id: impl AsRef<[u8]> + Send) -> CryptoKeystoreResult<()> {
-        self.remove::<PersistedMlsGroup, _>(group_id).await?;
-
+        self.remove_borrowed::<PersistedMlsGroup>(group_id.as_ref()).await?;
         Ok(())
     }
 
@@ -196,7 +196,7 @@ impl CryptoKeystoreMls for crate::Database {
         &self,
         group_id: impl AsRef<[u8]> + Send,
     ) -> CryptoKeystoreResult<(Vec<u8>, Vec<u8>)> {
-        self.find(group_id)
+        self.get_borrowed(group_id.as_ref())
             .await?
             .map(|r: PersistedMlsPendingGroup| (r.state.clone(), r.custom_configuration.clone()))
             .ok_or(CryptoKeystoreError::MissingKeyInStore(
@@ -205,7 +205,8 @@ impl CryptoKeystoreMls for crate::Database {
     }
 
     async fn mls_pending_groups_delete(&self, group_id: impl AsRef<[u8]> + Send) -> CryptoKeystoreResult<()> {
-        self.remove::<PersistedMlsPendingGroup, _>(group_id).await
+        self.remove_borrowed::<PersistedMlsPendingGroup>(group_id.as_ref())
+            .await
     }
 
     async fn save_e2ei_enrollment(&self, id: &[u8], content: &[u8]) -> CryptoKeystoreResult<()> {
@@ -219,13 +220,13 @@ impl CryptoKeystoreMls for crate::Database {
 
     async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
         // someone who has time could try to optimize this but honestly it's really on the cold path
-        let enrollment = self
-            .find::<StoredE2eiEnrollment>(id)
-            .await?
-            .ok_or(CryptoKeystoreError::MissingKeyInStore(
-                MissingKeyErrorKind::StoredE2eiEnrollment,
-            ))?;
-        self.remove::<StoredE2eiEnrollment, _>(id).await?;
+        let enrollment =
+            self.get_borrowed::<StoredE2eiEnrollment>(id)
+                .await?
+                .ok_or(CryptoKeystoreError::MissingKeyInStore(
+                    MissingKeyErrorKind::StoredE2eiEnrollment,
+                ))?;
+        self.remove_borrowed::<StoredE2eiEnrollment>(id).await?;
         Ok(enrollment.content.clone())
     }
 }
@@ -313,11 +314,12 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
 
         match V::ID {
             MlsEntityId::GroupState => {
-                let group: PersistedMlsGroup = self.find(k).await.ok().flatten()?;
+                let group: PersistedMlsGroup = self.get_borrowed(k).await.ok().flatten()?;
                 deser(&group.state).ok()
             }
             MlsEntityId::SignatureKeyPair => {
-                let stored_credential = self.find::<StoredCredential>(k).await.ok().flatten()?;
+                let hash = Sha256Hash::from_existing_hash(k).ok()?;
+                let stored_credential = self.get::<StoredCredential>(&hash).await.ok().flatten()?;
                 let ciphersuite = Ciphersuite::try_from(stored_credential.ciphersuite).ok()?;
                 let signature_scheme = ciphersuite.signature_algorithm();
 
@@ -333,23 +335,26 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
                 deser(&mls_keypair_serialized).ok()
             }
             MlsEntityId::KeyPackage => {
-                let kp: StoredKeypackage = self.find(k).await.ok().flatten()?;
+                let kp: StoredKeypackage = self.get_borrowed(k).await.ok().flatten()?;
                 deser(&kp.keypackage).ok()
             }
             MlsEntityId::HpkePrivateKey => {
-                let hpke_pk: StoredHpkePrivateKey = self.find(k).await.ok().flatten()?;
+                let hash = Sha256Hash::from_existing_hash(k).ok()?;
+                let hpke_pk: StoredHpkePrivateKey = self.get(&hash).await.ok().flatten()?;
                 deser(&hpke_pk.sk).ok()
             }
             MlsEntityId::PskBundle => {
-                let psk_bundle: StoredPskBundle = self.find(k).await.ok().flatten()?;
+                let hash = Sha256Hash::from_existing_hash(k).ok()?;
+                let psk_bundle: StoredPskBundle = self.get(&hash).await.ok().flatten()?;
                 deser(&psk_bundle.psk).ok()
             }
             MlsEntityId::EncryptionKeyPair => {
-                let kp: StoredEncryptionKeyPair = self.find(k).await.ok().flatten()?;
+                let hash = Sha256Hash::from_existing_hash(k).ok()?;
+                let kp: StoredEncryptionKeyPair = self.get(&hash).await.ok().flatten()?;
                 deser(&kp.sk).ok()
             }
             MlsEntityId::EpochEncryptionKeyPair => {
-                let kp: StoredEpochEncryptionKeypair = self.find(k).await.ok().flatten()?;
+                let kp: StoredEpochEncryptionKeypair = self.get_borrowed(k).await.ok().flatten()?;
                 deser(&kp.keypairs).ok()
             }
         }
@@ -357,16 +362,25 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
 
     async fn delete<V: MlsEntity>(&self, k: &[u8]) -> Result<(), Self::Error> {
         match V::ID {
-            MlsEntityId::GroupState => self.remove::<PersistedMlsGroup, _>(k).await?,
+            MlsEntityId::GroupState => self.remove_borrowed::<PersistedMlsGroup>(k).await?,
             MlsEntityId::SignatureKeyPair => unimplemented!(
                 "Deleting a signature key pair should not be done through this API, any keypair should be deleted via
                 deleting a credential."
             ),
-            MlsEntityId::HpkePrivateKey => self.remove::<StoredHpkePrivateKey, _>(k).await?,
-            MlsEntityId::KeyPackage => self.remove::<StoredKeypackage, _>(k).await?,
-            MlsEntityId::PskBundle => self.remove::<StoredPskBundle, _>(k).await?,
-            MlsEntityId::EncryptionKeyPair => self.remove::<StoredEncryptionKeyPair, _>(k).await?,
-            MlsEntityId::EpochEncryptionKeyPair => self.remove::<StoredEpochEncryptionKeypair, _>(k).await?,
+            MlsEntityId::HpkePrivateKey => {
+                let hash = Sha256Hash::from_existing_hash(k)?;
+                self.remove::<StoredHpkePrivateKey>(&hash).await?
+            }
+            MlsEntityId::KeyPackage => self.remove_borrowed::<StoredKeypackage>(k).await?,
+            MlsEntityId::PskBundle => {
+                let hash = Sha256Hash::from_existing_hash(k)?;
+                self.remove::<StoredPskBundle>(&hash).await?
+            }
+            MlsEntityId::EncryptionKeyPair => {
+                let hash = Sha256Hash::from_existing_hash(k)?;
+                self.remove::<StoredEncryptionKeyPair>(&hash).await?
+            }
+            MlsEntityId::EpochEncryptionKeyPair => self.remove_borrowed::<StoredEpochEncryptionKeypair>(k).await?,
         }
 
         Ok(())
