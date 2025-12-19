@@ -1,4 +1,4 @@
-use core_crypto_keystore::{connection::FetchFromDatabase, entities::PersistedMlsPendingGroup};
+use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{MlsGroup, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
@@ -50,7 +50,10 @@ impl MlsConversation {
         let existing_conversation = mls_groups.get_fetch(&id, &backend.keystore(), None).await;
         let conversation_exists = existing_conversation.ok().flatten().is_some();
 
-        let pending_group = backend.key_store().find::<PersistedMlsPendingGroup>(id.as_ref()).await;
+        let pending_group = backend
+            .key_store()
+            .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
+            .await;
         let pending_group_exists = pending_group.ok().flatten().is_some();
 
         if conversation_exists || pending_group_exists {

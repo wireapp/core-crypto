@@ -4,10 +4,7 @@
 //! useful to end users. Clients building on the CC API can't do anything useful with a full [`Credential`],
 //! and it's wasteful to transfer one across the FFI boundary.
 
-use core_crypto_keystore::{
-    connection::FetchFromDatabase as _,
-    entities::{EntityFindParams, StoredCredential},
-};
+use core_crypto_keystore::{Sha256Hash, entities::StoredCredential, traits::FetchFromDatabase as _};
 use mls_crypto_provider::Database;
 
 use super::{Error, Result};
@@ -20,7 +17,7 @@ impl CredentialRef {
     /// For loading a single credential, prefer [`Self::load`].
     pub(crate) async fn load_stored_credentials(database: &Database) -> Result<Vec<StoredCredential>> {
         let credentials = database
-            .find_all::<StoredCredential>(EntityFindParams::default())
+            .load_all::<StoredCredential>()
             .await
             .map_err(KeystoreError::wrap("finding all mls credentials"))?;
         Ok(credentials)
@@ -31,7 +28,7 @@ impl CredentialRef {
     /// Note that this does not attach the credential to any Session; it just does the data manipulation.
     pub(crate) async fn load(&self, database: &Database) -> Result<Credential> {
         database
-            .find::<StoredCredential>(self.public_key())
+            .get::<StoredCredential>(&Sha256Hash::hash_from(self.public_key()))
             .await
             .map_err(KeystoreError::wrap("finding credential"))?
             .ok_or(Error::CredentialNotFound)

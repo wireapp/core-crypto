@@ -1,7 +1,4 @@
-use core_crypto_keystore::{
-    connection::FetchFromDatabase as _,
-    entities::{EntityFindParams, StoredCredential},
-};
+use core_crypto_keystore::{entities::StoredCredential, traits::FetchFromDatabase as _};
 use mls_crypto_provider::Database;
 use openmls::prelude::Credential as MlsCredential;
 use tls_codec::Deserialize as _;
@@ -67,7 +64,7 @@ impl CredentialRef {
         } = find_filters;
 
         let partial_credentials = database
-            .find_all::<StoredCredential>(EntityFindParams::default())
+            .load_all::<StoredCredential>()
             .await
             .map_err(KeystoreError::wrap("finding all credentials"))?
             .into_iter()

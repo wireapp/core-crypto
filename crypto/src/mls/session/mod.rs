@@ -180,7 +180,7 @@ impl Session {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::{connection::FetchFromDatabase as _, entities::*};
+    use core_crypto_keystore::{entities::*, traits::FetchFromDatabase as _};
     use mls_crypto_provider::MlsCryptoProvider;
 
     use super::*;

@@ -5,7 +5,7 @@ mod external_proposal;
 pub(crate) mod proposal;
 pub mod welcome;
 
-use core_crypto_keystore::{connection::FetchFromDatabase as _, entities::PersistedMlsPendingGroup};
+use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
 
 use super::{Error, Result, TransactionContext};
 use crate::{
@@ -38,7 +38,7 @@ impl TransactionContext {
     pub(crate) async fn pending_conversation(&self, id: &ConversationIdRef) -> Result<PendingConversation> {
         let keystore = self.keystore().await?;
         let Some(pending_group) = keystore
-            .find::<PersistedMlsPendingGroup>(id)
+            .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
             .await
             .map_err(KeystoreError::wrap("finding persisted mls pending group"))?
         else {

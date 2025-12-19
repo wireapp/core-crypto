@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
 use core_crypto_keystore::{
-    connection::FetchFromDatabase,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
+    traits::FetchFromDatabase,
 };
 use wire_e2e_identity::prelude::x509::revocation::{PkiEnvironment, PkiEnvironmentParams};
 use x509_cert::der::Decode;
@@ -33,7 +33,7 @@ impl IntoIterator for NewCrlDistributionPoints {
 
 pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<Option<PkiEnvironment>> {
     let mut trust_roots = vec![];
-    let Ok(ta_raw) = data_provider.find_unique::<E2eiAcmeCA>().await else {
+    let Ok(Some(ta_raw)) = data_provider.get_unique::<E2eiAcmeCA>().await else {
         return Ok(None);
     };
 
@@ -42,7 +42,7 @@ pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> R
     );
 
     let intermediates = data_provider
-        .find_all::<E2eiIntermediateCert>(Default::default())
+        .load_all::<E2eiIntermediateCert>()
         .await
         .map_err(KeystoreError::wrap("finding intermediate certificates"))?
         .into_iter()
@@ -50,7 +50,7 @@ pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> R
         .collect::<Result<Vec<_>, _>>()?;
 
     let crls = data_provider
-        .find_all::<E2eiCrl>(Default::default())
+        .load_all::<E2eiCrl>()
         .await
         .map_err(KeystoreError::wrap("finding crls"))?
         .into_iter()

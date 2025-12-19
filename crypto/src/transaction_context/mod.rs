@@ -6,7 +6,7 @@ use std::sync::Arc;
 #[cfg(feature = "proteus")]
 use async_lock::Mutex;
 use async_lock::{RwLock, RwLockWriteGuardArc};
-use core_crypto_keystore::{CryptoKeystoreError, connection::FetchFromDatabase, entities::ConsumerData};
+use core_crypto_keystore::{CryptoKeystoreError, entities::ConsumerData, traits::FetchFromDatabase as _};
 pub use error::{Error, Result};
 use mls_crypto_provider::{Database, MlsCryptoProvider};
 use openmls_traits::OpenMlsCryptoProvider as _;
@@ -392,8 +392,8 @@ impl TransactionContext {
     /// Get the data that has previously been set by [TransactionContext::set_data].
     /// This is meant to be used as a check point at the end of a transaction.
     pub async fn get_data(&self) -> Result<Option<Vec<u8>>> {
-        match self.keystore().await?.find_unique::<ConsumerData>().await {
-            Ok(data) => Ok(Some(data.into())),
+        match self.keystore().await?.get_unique::<ConsumerData>().await {
+            Ok(maybe_data) => Ok(maybe_data.map(Into::into)),
             Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
             Err(err) => Err(KeystoreError::wrap("finding unique consumer data")(err).into()),
         }

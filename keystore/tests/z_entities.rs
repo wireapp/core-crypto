@@ -35,8 +35,6 @@ macro_rules! test_for_entity {
             crate::tests_impl::can_remove_entity::<$entity>(&store, entity).await;
 
             let ignore_count = pat_to_bool!($($ignore_entity_count)?);
-            let ignore_find_many = pat_to_bool!($($ignore_find_many)?);
-            crate::tests_impl::can_list_entities_with_find_many::<$entity>(&store, ignore_count, ignore_find_many).await;
             crate::tests_impl::can_list_entities_with_find_all::<$entity>(&store, ignore_count).await;
         }
     };
@@ -45,29 +43,39 @@ macro_rules! test_for_entity {
 #[cfg(test)]
 mod tests_impl {
     use core_crypto_keystore::{
-        connection::{FetchFromDatabase, KeystoreDatabaseConnection},
-        entities::{Entity, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StoredCredential},
+        connection::KeystoreDatabaseConnection,
+        entities::{MlsPendingMessage, StoredCredential},
+        traits::{Entity, EntityDatabaseMutation, FetchFromDatabase as _, PrimaryKey as _},
     };
 
     use super::common::*;
     use crate::{ENTITY_COUNT, utils::EntityRandomUpdateExt};
 
-    pub(crate) async fn can_save_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
-    >(
-        store: &CryptoKeystore,
-    ) -> R {
+    pub(crate) async fn can_save_entity<'a, R>(store: &CryptoKeystore) -> R
+    where
+        R: Clone
+            + EntityRandomUpdateExt
+            + Entity<ConnectionType = KeystoreDatabaseConnection>
+            + EntityDatabaseMutation<'a>
+            + Send
+            + Sync,
+    {
         let entity = R::random();
         store.save(entity.clone()).await.unwrap();
         entity
     }
 
-    pub(crate) async fn can_find_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + 'static + Sync,
-    >(
-        store: &CryptoKeystore,
-        entity: &R,
-    ) {
+    pub(crate) async fn can_find_entity<'a, R>(store: &CryptoKeystore, entity: &R)
+    where
+        R: Clone
+            + std::fmt::Debug
+            + Eq
+            + EntityRandomUpdateExt
+            + Entity<ConnectionType = KeystoreDatabaseConnection>
+            + EntityDatabaseMutation<'a>
+            + Send
+            + Sync,
+    {
         if let Some(pending_message) = entity.downcast::<MlsPendingMessage>() {
             let pending_message_from_store = store
                 .find_pending_messages_by_conversation_id(&pending_message.foreign_id)
@@ -78,71 +86,61 @@ mod tests_impl {
             assert_eq!(*pending_message, pending_message_from_store);
         } else if let Some(credential) = entity.downcast::<StoredCredential>() {
             let mut credential_from_store = store
-                .find::<StoredCredential>(&entity.merge_key())
+                .get::<StoredCredential>(&credential.primary_key())
                 .await
                 .unwrap()
                 .unwrap();
             credential_from_store.equalize();
             assert_eq!(*credential, credential_from_store);
         } else {
-            let mut entity_from_store = store.find::<R>(entity.id_raw()).await.unwrap().unwrap();
+            let primary_key = entity.primary_key();
+            let mut entity_from_store = store.get::<R>(&primary_key).await.unwrap().unwrap();
             entity_from_store.equalize();
             assert_eq!(*entity, entity_from_store);
         };
     }
 
-    pub(crate) async fn can_update_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
-    >(
-        store: &CryptoKeystore,
-        entity: &mut R,
-    ) {
+    pub(crate) async fn can_update_entity<'a, R>(store: &CryptoKeystore, entity: &mut R)
+    where
+        R: Clone
+            + std::fmt::Debug
+            + Eq
+            + EntityRandomUpdateExt
+            + Entity<ConnectionType = KeystoreDatabaseConnection>
+            + EntityDatabaseMutation<'a>
+            + Send
+            + Sync,
+    {
         entity.random_update();
         store.save(entity.clone()).await.unwrap();
-        let entity2: R = store.find(entity.id_raw()).await.unwrap().unwrap();
+        let entity2: R = store.get(&entity.primary_key()).await.unwrap().unwrap();
         assert_eq!(*entity, entity2);
     }
 
-    pub(crate) async fn can_remove_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
-    >(
-        store: &CryptoKeystore,
-        entity: R,
-    ) {
-        store.remove::<R, _>(entity.id_raw()).await.unwrap();
-        let entity2: Option<R> = store.find(entity.id_raw()).await.unwrap();
+    pub(crate) async fn can_remove_entity<'a, R>(store: &CryptoKeystore, entity: R)
+    where
+        R: Clone
+            + EntityRandomUpdateExt
+            + Entity<ConnectionType = KeystoreDatabaseConnection>
+            + EntityDatabaseMutation<'a>
+            + Send
+            + Sync,
+    {
+        store.remove::<R>(&entity.primary_key()).await.unwrap();
+        let entity2: Option<R> = store.get(&entity.primary_key()).await.unwrap();
         assert!(entity2.is_none());
     }
 
-    pub(crate) async fn can_list_entities_with_find_many<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
-    >(
-        store: &CryptoKeystore,
-        ignore_entity_count: bool,
-        ignore_find_many: bool,
-    ) {
-        let mut ids: Vec<Vec<u8>> = vec![];
-        for _ in 0..ENTITY_COUNT {
-            let entity = R::random();
-            ids.push(entity.id_raw().to_vec());
-            store.save(entity).await.unwrap();
-        }
-
-        if !ignore_find_many {
-            let entities = store.find_many::<R>(&ids).await.unwrap();
-            if !ignore_entity_count {
-                assert_eq!(entities.len(), ENTITY_COUNT);
-            }
-        }
-    }
-
-    pub(crate) async fn can_list_entities_with_find_all<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
-    >(
-        store: &CryptoKeystore,
-        ignore_entity_count: bool,
-    ) {
-        let entities = store.find_all::<R>(EntityFindParams::default()).await.unwrap();
+    pub(crate) async fn can_list_entities_with_find_all<'a, R>(store: &CryptoKeystore, ignore_entity_count: bool)
+    where
+        R: Clone
+            + EntityRandomUpdateExt
+            + Entity<ConnectionType = KeystoreDatabaseConnection>
+            + EntityDatabaseMutation<'a>
+            + Send
+            + Sync,
+    {
+        let entities = store.load_all::<R>().await.unwrap();
         if !ignore_entity_count {
             assert_eq!(entities.len(), ENTITY_COUNT);
         }

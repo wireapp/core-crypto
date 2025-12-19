@@ -1,8 +1,9 @@
 use std::{sync::Arc, time::Duration};
 
 use core_crypto_keystore::{
-    connection::FetchFromDatabase,
-    entities::{EntityFindParams, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
+    Sha256Hash,
+    entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
+    traits::FetchFromDatabase,
 };
 use openmls::prelude::{CryptoConfig, Lifetime};
 
@@ -14,10 +15,10 @@ use crate::{
 
 /// Default number of Keypackages a client generates the first time it's created
 #[cfg(not(test))]
-pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
+pub const INITIAL_KEYING_MATERIAL_COUNT: u32 = 100;
 /// Default number of Keypackages a client generates the first time it's created
 #[cfg(test)]
-pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 10;
+pub const INITIAL_KEYING_MATERIAL_COUNT: u32 = 10;
 
 /// Default lifetime of all generated Keypackages. Matches the limit defined in openmls
 pub const KEYPACKAGE_DEFAULT_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
@@ -87,7 +88,7 @@ impl Session {
         let stored_keypackages: Vec<StoredKeypackage> = self
             .crypto_provider
             .keystore()
-            .find_all(EntityFindParams::default())
+            .load_all()
             .await
             .map_err(KeystoreError::wrap("finding all keypackages"))?;
 
@@ -115,7 +116,7 @@ impl Session {
     pub(crate) async fn load_keypackage(&self, kp_ref: &KeypackageRef) -> Result<Option<Keypackage>> {
         self.crypto_provider
             .keystore()
-            .find::<StoredKeypackage>(kp_ref.hash_ref())
+            .get_borrowed::<StoredKeypackage>(kp_ref.hash_ref())
             .await
             .map_err(KeystoreError::wrap("loading keypackage from database"))?
             .map(|stored_keypackage| from_stored(&stored_keypackage))
@@ -134,13 +135,13 @@ impl Session {
         };
 
         let db = self.crypto_provider.keystore();
-        db.remove::<StoredKeypackage, _>(kp_ref.hash_ref())
+        db.remove_borrowed::<StoredKeypackage>(kp_ref.hash_ref())
             .await
             .map_err(KeystoreError::wrap("removing key package from keystore"))?;
-        db.remove::<StoredHpkePrivateKey, _>(kp.hpke_init_key().as_slice())
+        db.remove::<StoredHpkePrivateKey>(&Sha256Hash::hash_from(kp.hpke_init_key().as_slice()))
             .await
             .map_err(KeystoreError::wrap("removing private key from keystore"))?;
-        db.remove::<StoredEncryptionKeyPair, _>(kp.leaf_node().encryption_key().as_slice())
+        db.remove::<StoredEncryptionKeyPair>(&Sha256Hash::hash_from(kp.leaf_node().encryption_key().as_slice()))
             .await
             .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
 

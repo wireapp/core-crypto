@@ -2,8 +2,8 @@ use std::{collections::HashMap, sync::Arc};
 
 use core_crypto_keystore::{
     Database as CryptoKeystore,
-    connection::FetchFromDatabase,
     entities::{ProteusIdentity, ProteusSession},
+    traits::FetchFromDatabase,
 };
 use proteus_wasm::{
     keys::{IdentityKeyPair, PreKeyBundle},
@@ -73,8 +73,11 @@ impl GroupStoreEntity for ProteusConversationSession {
         identity: Option<Self::IdentityType>,
         keystore: &impl FetchFromDatabase,
     ) -> crate::Result<Option<Self>> {
+        let id = str::from_utf8(id.as_ref()).map_err(KeystoreError::wrap(
+            "converting id to string to fetch ProteusConversationSession",
+        ))?;
         let result = keystore
-            .find::<Self::RawStoreValue>(id)
+            .get_borrowed::<Self::RawStoreValue>(id)
             .await
             .map_err(KeystoreError::wrap("finding raw group store entity by id"))?;
         let Some(store_value) = result else {
@@ -194,7 +197,7 @@ impl ProteusCentral {
     /// errors)
     async fn load_or_create_identity(keystore: &CryptoKeystore) -> Result<IdentityKeyPair> {
         let Some(identity) = keystore
-            .find::<ProteusIdentity>(ProteusIdentity::ID)
+            .get_unique::<ProteusIdentity>()
             .await
             .map_err(KeystoreError::wrap("finding proteus identity"))?
         else {
@@ -234,10 +237,9 @@ impl ProteusCentral {
     ) -> Result<GroupStore<ProteusConversationSession>> {
         let mut proteus_sessions = GroupStore::new_with_limit(crate::group_store::ITEM_LIMIT * 2);
         for session in keystore
-            .find_all::<ProteusSession>(Default::default())
+            .load_all::<ProteusSession>()
             .await
             .map_err(KeystoreError::wrap("finding all proteus sessions"))?
-            .into_iter()
         {
             let proteus_session = Session::deserialise(identity.clone(), &session.session)
                 .map_err(ProteusError::wrap("deserializing session"))?;
@@ -377,7 +379,7 @@ impl ProteusCentral {
 
     /// Deletes a session in the store
     pub(crate) async fn session_delete(&mut self, keystore: &CryptoKeystore, session_id: &str) -> Result<()> {
-        if keystore.remove::<ProteusSession, _>(session_id).await.is_ok() {
+        if keystore.remove_borrowed::<ProteusSession>(session_id).await.is_ok() {
             let _ = self.proteus_sessions.remove(session_id.as_bytes());
         }
         Ok(())
@@ -501,9 +503,7 @@ impl ProteusCentral {
     /// If it cannot be found, one will be created.
     pub(crate) async fn last_resort_prekey(&self, keystore: &CryptoKeystore) -> Result<Vec<u8>> {
         let last_resort = if let Some(last_resort) = keystore
-            .find::<core_crypto_keystore::entities::ProteusPrekey>(
-                Self::last_resort_prekey_id().to_le_bytes().as_slice(),
-            )
+            .get::<core_crypto_keystore::entities::ProteusPrekey>(&Self::last_resort_prekey_id())
             .await
             .map_err(KeystoreError::wrap("finding proteus prekey"))?
         {
@@ -803,7 +803,7 @@ mod tests {
             gap_ids.dedup();
         }
         for gap_id in gap_ids.iter() {
-            keystore.remove::<ProteusPrekey, _>(gap_id.to_le_bytes()).await.unwrap();
+            keystore.remove::<ProteusPrekey>(gap_id).await.unwrap();
         }
 
         gap_ids.sort();
@@ -824,7 +824,7 @@ mod tests {
             gap_ids.dedup();
         }
         for gap_id in gap_ids.iter() {
-            keystore.remove::<ProteusPrekey, _>(gap_id.to_le_bytes()).await.unwrap();
+            keystore.remove::<ProteusPrekey>(gap_id).await.unwrap();
         }
 
         let potential_range = *ID_TEST_RANGE.end()..=(*ID_TEST_RANGE.end() * 2);

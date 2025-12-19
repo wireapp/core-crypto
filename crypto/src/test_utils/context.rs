@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use core_crypto_keystore::{
-    connection::FetchFromDatabase,
-    entities::{EntityFindParams, StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
+    Sha256Hash,
+    entities::{StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
+    traits::FetchFromDatabase,
 };
 use openmls::prelude::{Credential as MlsCredential, ExternalSender, HpkePublicKey, KeyPackage, SignaturePublicKey};
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
@@ -58,7 +59,8 @@ impl SessionContext {
             .keystore()
             .await
             .unwrap()
-            .find_all::<StoredKeypackage>(EntityFindParams::default())
+            .key_store()
+            .load_all::<StoredKeypackage>()
             .await
             .unwrap()
             .into_iter()
@@ -145,7 +147,7 @@ impl SessionContext {
             .keystore()
             .await
             .unwrap()
-            .find::<StoredHpkePrivateKey>(&skp.tls_serialize_detached().unwrap())
+            .get::<StoredHpkePrivateKey>(&Sha256Hash::hash_from(skp.tls_serialize_detached().unwrap()))
             .await
             .unwrap()
     }
@@ -156,14 +158,14 @@ impl SessionContext {
             .keystore()
             .await
             .unwrap()
-            .find_all::<StoredCredential>(EntityFindParams::default())
+            .load_all::<StoredCredential>()
             .await
             .unwrap()
             .into_iter()
             .find(|c| c.credential[..] == credential)
     }
 
-    pub async fn count_hpke_private_key(&self) -> usize {
+    pub async fn count_hpke_private_key(&self) -> u32 {
         self.transaction
             .keystore()
             .await
@@ -173,7 +175,7 @@ impl SessionContext {
             .unwrap()
     }
 
-    pub async fn count_encryption_keypairs(&self) -> usize {
+    pub async fn count_encryption_keypairs(&self) -> u32 {
         self.transaction
             .keystore()
             .await
@@ -183,7 +185,7 @@ impl SessionContext {
             .unwrap()
     }
 
-    pub async fn count_credentials_in_keystore(&self) -> usize {
+    pub async fn count_credentials_in_keystore(&self) -> u32 {
         self.transaction
             .keystore()
             .await

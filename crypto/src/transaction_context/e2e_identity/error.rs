@@ -21,6 +21,8 @@ pub enum Error {
     PkiEnvironmentUnset,
     #[error("The certificate chain is invalid or not complete")]
     InvalidCertificateChain,
+    #[error("{0} not found")]
+    NotFound(&'static str),
     #[error(transparent)]
     X509Error(#[from] wire_e2e_identity::prelude::x509::RustyX509CheckError),
     #[error(transparent)]
