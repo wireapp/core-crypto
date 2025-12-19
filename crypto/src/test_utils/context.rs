@@ -55,10 +55,9 @@ impl SessionContext {
 
     pub async fn count_key_package(&self, cs: Ciphersuite, ct: Option<CredentialType>) -> usize {
         self.transaction
-            .mls_provider()
+            .keystore()
             .await
             .unwrap()
-            .key_store()
             .find_all::<StoredKeypackage>(EntityFindParams::default())
             .await
             .unwrap()

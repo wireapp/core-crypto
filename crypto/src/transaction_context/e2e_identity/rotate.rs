@@ -443,9 +443,9 @@ mod tests {
 
                     old_nb_identities
                 };
-                let backend = &alice.transaction.mls_provider().await.unwrap();
-                backend.keystore().commit_transaction().await.unwrap();
-                backend.keystore().new_transaction().await.unwrap();
+                let keystore = &alice.transaction.keystore().await.unwrap();
+                keystore.commit_transaction().await.unwrap();
+                keystore.new_transaction().await.unwrap();
 
                 alice
                     .reinit_session(alice.identifier.clone(), &[case.ciphersuite()])

@@ -38,10 +38,9 @@ impl TransactionContext {
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> Result<()> {
         {
             if self
-                .mls_provider()
-                .await
-                .map_err(RecursiveError::transaction("getting mls provider"))?
                 .keystore()
+                .await
+                .map_err(RecursiveError::transaction("Getting database from transaction context"))?
                 .find_unique::<E2eiAcmeCA>()
                 .await
                 .is_ok()
@@ -66,10 +65,9 @@ impl TransactionContext {
         // Save DER repr in keystore
         let cert_der = PkiEnvironment::encode_cert_to_der(&root_cert)?;
         let acme_ca = E2eiAcmeCA { content: cert_der };
-        self.mls_provider()
+        self.keystore()
             .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?
-            .keystore()
+            .map_err(RecursiveError::transaction("Getting database from transaction context"))?
             .save(acme_ca)
             .await
             .map_err(KeystoreError::wrap("saving acme ca"))?;
@@ -83,10 +81,9 @@ impl TransactionContext {
     pub(crate) async fn init_pki_env(&self) -> Result<()> {
         if let Some(pki_env) = restore_pki_env(
             &self
-                .mls_provider()
+                .keystore()
                 .await
-                .map_err(RecursiveError::transaction("getting mls provider"))?
-                .keystore(),
+                .map_err(RecursiveError::transaction("Getting database from transaction context"))?,
         )
         .await
         .map_err(RecursiveError::e2e_identity("restoring pki env"))?

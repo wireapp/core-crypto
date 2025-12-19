@@ -18,7 +18,7 @@ impl TransactionContext {
     ///
     /// This helper struct permits mutations on a conversation.
     pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationGuard> {
-        let keystore = self.mls_provider().await?.keystore();
+        let keystore = self.keystore().await?;
         let inner = self
             .mls_groups()
             .await?
@@ -80,7 +80,7 @@ impl TransactionContext {
     pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
         self.mls_groups()
             .await?
-            .get_fetch(id, &self.mls_provider().await?.keystore(), None)
+            .get_fetch(id, &self.keystore().await?, None)
             .await
             .map(|option| option.is_some())
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))
