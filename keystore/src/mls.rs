@@ -339,18 +339,15 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
                 deser(&kp.keypackage).ok()
             }
             MlsEntityId::HpkePrivateKey => {
-                let hash = Sha256Hash::from_existing_hash(k).ok()?;
-                let hpke_pk: StoredHpkePrivateKey = self.get(&hash).await.ok().flatten()?;
+                let hpke_pk: StoredHpkePrivateKey = self.get_borrowed(k).await.ok().flatten()?;
                 deser(&hpke_pk.sk).ok()
             }
             MlsEntityId::PskBundle => {
-                let hash = Sha256Hash::from_existing_hash(k).ok()?;
-                let psk_bundle: StoredPskBundle = self.get(&hash).await.ok().flatten()?;
+                let psk_bundle: StoredPskBundle = self.get_borrowed(k).await.ok().flatten()?;
                 deser(&psk_bundle.psk).ok()
             }
             MlsEntityId::EncryptionKeyPair => {
-                let hash = Sha256Hash::from_existing_hash(k).ok()?;
-                let kp: StoredEncryptionKeyPair = self.get(&hash).await.ok().flatten()?;
+                let kp: StoredEncryptionKeyPair = self.get_borrowed(k).await.ok().flatten()?;
                 deser(&kp.sk).ok()
             }
             MlsEntityId::EpochEncryptionKeyPair => {
@@ -367,19 +364,10 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database 
                 "Deleting a signature key pair should not be done through this API, any keypair should be deleted via
                 deleting a credential."
             ),
-            MlsEntityId::HpkePrivateKey => {
-                let hash = Sha256Hash::from_existing_hash(k)?;
-                self.remove::<StoredHpkePrivateKey>(&hash).await?
-            }
+            MlsEntityId::HpkePrivateKey => self.remove_borrowed::<StoredHpkePrivateKey>(k).await?,
             MlsEntityId::KeyPackage => self.remove_borrowed::<StoredKeypackage>(k).await?,
-            MlsEntityId::PskBundle => {
-                let hash = Sha256Hash::from_existing_hash(k)?;
-                self.remove::<StoredPskBundle>(&hash).await?
-            }
-            MlsEntityId::EncryptionKeyPair => {
-                let hash = Sha256Hash::from_existing_hash(k)?;
-                self.remove::<StoredEncryptionKeyPair>(&hash).await?
-            }
+            MlsEntityId::PskBundle => self.remove_borrowed::<StoredPskBundle>(k).await?,
+            MlsEntityId::EncryptionKeyPair => self.remove_borrowed::<StoredEncryptionKeyPair>(k).await?,
             MlsEntityId::EpochEncryptionKeyPair => self.remove_borrowed::<StoredEpochEncryptionKeypair>(k).await?,
         }
 
