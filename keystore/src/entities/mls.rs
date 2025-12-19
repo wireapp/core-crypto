@@ -312,7 +312,7 @@ pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreD
         }
     }
 
-    async fn find_all(conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+    async fn find_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
         match Self::find_unique(conn).await {
             Ok(record) => Ok(vec![record]),
             Err(CryptoKeystoreError::NotFound(..)) => Ok(vec![]),
@@ -366,7 +366,10 @@ pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreD
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl<T: UniqueEntity + Send + Sync> EntityTransactionExt for T {
+impl<T> crate::entities::EntityTransactionExt for T
+where
+    T: crate::entities::Entity + UniqueEntity + Send + Sync,
+{
     #[cfg(not(target_family = "wasm"))]
     async fn save(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         self.replace(tx).await
@@ -380,7 +383,7 @@ impl<T: UniqueEntity + Send + Sync> EntityTransactionExt for T {
     #[cfg(not(target_family = "wasm"))]
     async fn delete_fail_on_missing_id(
         _: &TransactionWrapper<'_>,
-        _id: StringEntityId<'_>,
+        _id: crate::entities::StringEntityId<'_>,
     ) -> CryptoKeystoreResult<()> {
         Err(CryptoKeystoreError::NotImplemented)
     }
