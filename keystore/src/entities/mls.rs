@@ -53,7 +53,8 @@ where
         // so both `parent_group` and this method should just be implemented directly on `PersistedMlsGroup`.
         let entities = Self::load_all(conn).await?;
 
-        // for whatever reason rustc needs each of these distinct bindings to prove to itself that the lifetimes work out
+        // for whatever reason rustc needs each of these distinct bindings to prove to itself that the lifetimes work
+        // out
         let id = self.borrow_primary_key();
         let id = id.bytes();
         let id = id.as_ref();

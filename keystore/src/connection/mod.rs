@@ -31,10 +31,8 @@ pub use self::platform::*;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     entities::{MlsPendingMessage, PersistedMlsGroupExt},
-    traits::{
-        BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, FetchFromDatabase, KeyType,
-    },
-    transaction::{KeystoreTransaction},
+    traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, FetchFromDatabase, KeyType},
+    transaction::KeystoreTransaction,
 };
 
 /// Limit on the length of a blob to be stored in the database.
@@ -402,8 +400,6 @@ impl Database {
             .await;
         Ok(())
     }
-
-
 }
 
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
@@ -416,8 +412,9 @@ impl FetchFromDatabase for Database {
         // If a transaction is in progress...
         if let Some(transaction) = self.transaction.lock().await.as_ref()
             //... and it has information about this entity, ...
-            && let Some(cached_record) = transaction.get(id).await {
-                return Ok(cached_record.map(Arc::unwrap_or_clone));
+            && let Some(cached_record) = transaction.get(id).await
+        {
+            return Ok(cached_record.map(Arc::unwrap_or_clone));
         }
 
         // Otherwise get it from the database
@@ -431,11 +428,12 @@ impl FetchFromDatabase for Database {
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
         for<'a> &'a E::BorrowedPrimaryKey: KeyType,
     {
-                // If a transaction is in progress...
+        // If a transaction is in progress...
         if let Some(transaction) = self.transaction.lock().await.as_ref()
             //... and it has information about this entity, ...
-            && let Some(cached_record) = transaction.get_borrowed(id).await {
-                return Ok(cached_record.map(Arc::unwrap_or_clone));
+            && let Some(cached_record) = transaction.get_borrowed(id).await
+        {
+            return Ok(cached_record.map(Arc::unwrap_or_clone));
         }
 
         // Otherwise get it from the database
