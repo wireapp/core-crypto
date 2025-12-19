@@ -250,11 +250,10 @@ impl BorrowPrimaryKey for MlsPendingMessage {
         &self.foreign_id
     }
 
-    async fn get_borrowed<Q>(conn: &mut Self::ConnectionType, key: &Q) -> CryptoKeystoreResult<Option<Self>>
-    where
-        Self::PrimaryKey: Borrow<Q>,
-        Q: KeyType,
-    {
+    async fn get_borrowed(
+        conn: &mut Self::ConnectionType,
+        key: &Self::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<Self>> {
         panic!("cannot get `MlsPendingMessage` by primary key as it has no distinct primary key")
     }
 }

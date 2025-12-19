@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, collections::HashSet, sync::LazyLock};
+use std::{collections::HashSet, sync::LazyLock};
 
 use async_lock::RwLock;
 use sha2::{Digest as _, Sha256};
@@ -123,11 +123,10 @@ impl BorrowPrimaryKey for DummyStoreValue {
         &[]
     }
 
-    async fn get_borrowed<Q>(_conn: &mut Self::ConnectionType, _key: &Q) -> CryptoKeystoreResult<Option<Self>>
-    where
-        Self::PrimaryKey: Borrow<Q>,
-        Q: KeyType,
-    {
+    async fn get_borrowed(
+        _conn: &mut Self::ConnectionType,
+        _key: &Self::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<Self>> {
         Ok(None)
     }
 }
@@ -219,11 +218,10 @@ impl BorrowPrimaryKey for NewDummyStoreValue {
         &self.id
     }
 
-    async fn get_borrowed<Q>(_conn: &mut Self::ConnectionType, key: &Q) -> CryptoKeystoreResult<Option<Self>>
-    where
-        Self::PrimaryKey: Borrow<Q>,
-        Q: KeyType,
-    {
+    async fn get_borrowed(
+        _conn: &mut Self::ConnectionType,
+        key: &Self::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<Self>> {
         let guard = NEW_DUMMY_STORE_IDS.read().await;
         let key = key.bytes();
         let key = key.as_ref();
@@ -271,11 +269,7 @@ impl<'a> EntityDatabaseMutation<'a> for NewDummyStoreValue {
 #[async_trait::async_trait]
 impl EntityDeleteBorrowed<'_> for NewDummyStoreValue {
     /// Delete an entity by a borrowed form of its primary key.
-    async fn delete_borrowed<Q>(_tx: &Self::Transaction, id: &Q) -> CryptoKeystoreResult<bool>
-    where
-        Self::PrimaryKey: Borrow<Q>,
-        Q: KeyType,
-    {
+    async fn delete_borrowed(_tx: &Self::Transaction, id: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<bool> {
         let mut guard = NEW_DUMMY_STORE_IDS.write().await;
         let removed = guard.remove::<[u8]>(id.bytes().as_ref());
         Ok(removed)

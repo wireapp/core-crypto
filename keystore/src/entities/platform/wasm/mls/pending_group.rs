@@ -123,11 +123,10 @@ impl BorrowPrimaryKey for PersistedMlsPendingGroup {
         &self.id
     }
 
-    async fn get_borrowed<Q>(conn: &mut Self::ConnectionType, key: &Q) -> CryptoKeystoreResult<Option<Self>>
-    where
-        Self::PrimaryKey: Borrow<Q>,
-        Q: KeyType,
-    {
+    async fn get_borrowed(
+        conn: &mut Self::ConnectionType,
+        key: &Self::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<Self>> {
         conn.storage().new_get(key.bytes().as_ref()).await
     }
 }
@@ -151,11 +150,7 @@ impl<'a> EntityDatabaseMutation<'a> for PersistedMlsPendingGroup {
 
 #[async_trait(?Send)]
 impl<'a> EntityDeleteBorrowed<'a> for PersistedMlsPendingGroup {
-    async fn delete_borrowed<Q>(tx: &Self::Transaction, id: &Q) -> CryptoKeystoreResult<bool>
-    where
-        Self::PrimaryKey: Borrow<Q>,
-        Q: KeyType,
-    {
+    async fn delete_borrowed(tx: &Self::Transaction, id: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<bool> {
         tx.new_delete::<Self>(id.bytes().as_ref()).await
     }
 }

@@ -150,19 +150,21 @@ impl Entity {
                     &self.#pk_field_name
                 }
 
-                async fn get_borrowed<Q>(conn: &mut Self::ConnectionType, key: &Q) -> crate::CryptoKeystoreResult<Option<Self>>
+                async fn get_borrowed(conn: &mut Self::ConnectionType, key: &Self::BorrowedPrimaryKey)
+                    -> crate::CryptoKeystoreResult<Option<Self>>
                 where
-                    Self::PrimaryKey: std::borrow::Borrow<Q>,
-                    Q: crate::traits::KeyType,
+                    for<'pk> &'pk Self::BorrowedPrimaryKey: crate::traits::KeyType,
                 {
+                    let key_bytes = <&Self::BorrowedPrimaryKey as crate::traits::KeyType>::bytes(&key);
+                    let key_bytes = key_bytes.as_ref();
                     #[cfg(target_family = "wasm")]
                     {
-                        conn.storage().new_get(key.bytes().as_ref()).await
+                        conn.storage().new_get(key_bytes).await
                     }
 
                     #[cfg(not(target_family = "wasm"))]
                     {
-                        crate::entities::platform::get_helper::<Self, _>(conn, #pk_column_name, key.bytes().as_ref(), |row| {
+                        crate::entities::platform::get_helper::<Self, _>(conn, #pk_column_name, key_bytes, |row| {
                             Ok(Self {
                                 #( #field_assignments, )*
                             })
@@ -246,22 +248,23 @@ impl Entity {
             #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
             #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
             impl<'a> crate::traits::EntityDeleteBorrowed<'a> for #struct_name {
-                async fn delete_borrowed<Q>(
+                async fn delete_borrowed(
                     tx: &<Self as crate::traits::EntityDatabaseMutation<'a>>::Transaction,
-                    id: &Q,
+                    id: &<Self as crate::traits::BorrowPrimaryKey>::BorrowedPrimaryKey,
                 ) -> crate::CryptoKeystoreResult<bool>
                 where
-                    Self::PrimaryKey: std::borrow::Borrow<Q>,
-                    Q: crate::traits::KeyType
+                    for<'pk> &'pk <Self as crate::traits::BorrowPrimaryKey>::BorrowedPrimaryKey: crate::traits::KeyType,
                 {
+                    let id_bytes = <&<Self as crate::traits::BorrowPrimaryKey>::BorrowedPrimaryKey as crate::traits::KeyType>::bytes(&id);
+                    let id_bytes = id_bytes.as_ref();
                     #[cfg(target_family = "wasm")]
                     {
-                        tx.new_delete::<Self>(id.bytes().as_ref()).await
+                        tx.new_delete::<Self>(id_bytes).await
                     }
 
                     #[cfg(not(target_family = "wasm"))]
                     {
-                        crate::entities::platform::delete_helper::<Self>(tx, #id_column_name, id.bytes().as_ref()).await
+                        crate::entities::platform::delete_helper::<Self>(tx, #id_column_name, id_bytes).await
                     }
                 }
             }
