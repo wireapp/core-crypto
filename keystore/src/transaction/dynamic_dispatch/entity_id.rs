@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 #[cfg(target_family = "wasm")]
 use crate::entities::E2eiRefreshToken;
 #[cfg(feature = "proteus-keystore")]
@@ -10,7 +12,7 @@ use crate::{
         StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment, StoredEncryptionKeyPair,
         StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
-    traits::{Entity, EntityDatabaseMutation, KeyType as _, OwnedKeyType as _},
+    traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, KeyType, OwnedKeyType as _},
     transaction::dynamic_dispatch::EntityType,
 };
 
@@ -29,15 +31,40 @@ impl EntityId {
             .ok_or(CryptoKeystoreError::InvalidPrimaryKeyBytes(self.typ.collection_name()))
     }
 
-    pub(crate) fn from_entity<E>(entity: &E) -> Self
+    fn from_key<E>(primary_key: Cow<'_, [u8]>) -> Self
     where
         E: Entity,
     {
         // assumption: nobody outside this crate will ever implement `Entity` on a foreign type
         let typ =
             EntityType::from_collection_name(E::COLLECTION_NAME).expect("all entities have a valid collection name");
-        let id = entity.primary_key().bytes().into_owned();
+        let id = primary_key.into_owned();
         Self { typ, id }
+    }
+
+    pub(crate) fn from_entity<E>(entity: &E) -> Self
+    where
+        E: Entity,
+    {
+        Self::from_key::<E>(entity.primary_key().bytes())
+    }
+
+    pub(crate) fn from_primary_key<E>(primary_key: &E::PrimaryKey) -> Self
+    where
+        E: Entity,
+    {
+        Self::from_key::<E>(primary_key.bytes())
+    }
+
+    pub(crate) fn from_borrowed_primary_key<E>(primary_key: &E::BorrowedPrimaryKey) -> Self
+    where
+        E: Entity + BorrowPrimaryKey,
+    {
+        Self::from_key::<E>(primary_key.to_owned().bytes())
+    }
+
+    pub(crate) fn collection_name(&self) -> &'static str {
+        self.typ.collection_name()
     }
 
     pub(crate) async fn execute_delete(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<bool> {
@@ -65,9 +92,7 @@ impl EntityId {
             EntityType::PersistedMlsPendingGroup => {
                 PersistedMlsPendingGroup::delete(tx, &self.primary_key::<PersistedMlsPendingGroup>()?).await
             }
-            EntityType::MlsPendingMessage => {
-                MlsPendingMessage::delete(tx, &self.primary_key::<MlsPendingMessage>()?).await
-            }
+            EntityType::MlsPendingMessage => MlsPendingMessage::delete_by_conversation_id(tx, &self.id).await,
             EntityType::StoredE2eiEnrollment => {
                 StoredE2eiEnrollment::delete(tx, &self.primary_key::<StoredE2eiEnrollment>()?).await
             }
