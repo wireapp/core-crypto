@@ -72,7 +72,7 @@ impl Drop for KeystoreTestContext {
             #[cfg(not(target_family = "wasm"))]
             futures_lite::future::block_on(rollback_and_wipe);
             #[cfg(target_family = "wasm")]
-            wasm_bindgen_futures::spawn_local(commit_and_wipe);
+            wasm_bindgen_futures::spawn_local(rollback_and_wipe);
         }
     }
 }
