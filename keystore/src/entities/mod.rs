@@ -324,13 +324,15 @@ cfg_if::cfg_if! {
         }
 
         #[async_trait::async_trait]
-        impl<T: UniqueEntity> Entity for T {
+        impl<T> Entity for T
+        where T : UniqueEntity + crate::entities::EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection>
+        {
             fn id_raw(&self) -> &[u8] {
                 &[Self::ID as u8]
             }
 
-            async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
-                <Self as UniqueEntity>::find_all(conn, params).await
+            async fn find_all(conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+                <Self as UniqueEntity>::find_all(conn).await
             }
 
             async fn find_one(conn: &mut Self::ConnectionType, _id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
