@@ -347,4 +347,19 @@ mod tests {
         })
         .await
     }
+
+    #[apply(all_cred_cipher)]
+    async fn can_store_and_load_key_packages(case: TestContext) {
+        let [cc] = case.sessions().await;
+
+        // generate a keypackage; automatically saves it
+        let kp = cc.new_keypackage(&case).await;
+
+        let all_keypackages = cc.session.get_keypackages().await.unwrap();
+        assert_eq!(all_keypackages[0], kp);
+
+        let kp_ref = kp.make_ref().unwrap();
+        let by_ref = cc.session.load_keypackage(&kp_ref).await.unwrap().unwrap();
+        assert_eq!(kp, by_ref);
+    }
 }
