@@ -189,6 +189,7 @@ mod tests {
     test_for_entity!(test_e2ei_intermediate_cert, E2eiIntermediateCert);
     test_for_entity!(test_e2ei_crl, E2eiCrl);
     test_for_entity!(test_e2ei_enrollment, StoredE2eiEnrollment ignore_update:true);
+    test_for_entity!(test_e2ei_acme_ca, E2eiAcmeCA ignore_entity_count:true ignore_find_many:true);
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "proteus-keystore")] {
@@ -231,7 +232,7 @@ mod tests {
 #[cfg(test)]
 pub mod utils {
     use core_crypto_keystore::entities::{
-        MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession, StoredCredential,
+        E2eiAcmeCA, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession, StoredCredential,
         StoredE2eiEnrollment, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
         StoredKeypackage, StoredPskBundle,
     };
@@ -351,6 +352,7 @@ pub mod utils {
     impl_entity_random_update_ext!(MlsPendingMessage, id_field = foreign_id, blob_fields = [message,]);
     impl_entity_random_update_ext!(StoredE2eiEnrollment, id_field = id, blob_fields = [content,]);
     impl_entity_random_update_ext!(StoredEpochEncryptionKeypair, id_field = id, blob_fields = [keypairs,]);
+    impl_entity_random_update_ext!(E2eiAcmeCA, blob_fields = [content,]);
 
     impl EntityRandomExt for core_crypto_keystore::entities::E2eiIntermediateCert {
         fn random() -> Self {
