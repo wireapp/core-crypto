@@ -26,6 +26,8 @@ mod error;
 mod identity;
 mod metadata;
 mod proteus;
+#[cfg(not(target_family = "wasm"))]
+mod timestamp;
 
 pub use bundles::{
     commit::CommitBundle, group_info::GroupInfoBundle, proteus_auto_prekey::ProteusAutoPrekeyBundle,
@@ -70,3 +72,5 @@ pub use identity::{
     x509::X509Identity,
 };
 pub use metadata::{BuildMetadata, build_metadata, version};
+#[cfg(not(target_family = "wasm"))]
+pub use timestamp::Timestamp;
