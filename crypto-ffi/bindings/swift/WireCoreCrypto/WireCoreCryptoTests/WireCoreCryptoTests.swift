@@ -81,7 +81,7 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let pubkey1 = try await coreCrypto.transaction {
             try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite])
-            try await $0.addCredential(credential: credential)
+            _ = try await $0.addCredential(credential: credential)
             return try await $0.clientPublicKey(
                 ciphersuite: ciphersuite, credentialType: CredentialType.basic
             )
@@ -197,36 +197,28 @@ final class WireCoreCryptoTests: XCTestCase {
     func testTransactionRollsBackOnError() async throws {
         struct MyError: Error, Equatable {}
 
-        let aliceId = ClientId(bytes: Data("alice1".utf8))
+        let coreCrypto = try await createClients("alice1")[0]
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
-        let configuration = ConversationConfiguration(
-            ciphersuite: ciphersuite,
-            externalSenders: [],
-            custom: CustomConfiguration(
-                keyRotationSpan: nil,
-                wirePolicy: nil
-            )
-        )
-        let coreCrypto = try await createCoreCrypto()
         let expectedError = MyError()
 
-        try await coreCrypto.transaction {
-            try await $0.mlsInit(
-                clientId: aliceId,
-                ciphersuites: [ciphersuite]
-            )
+        let credentialRef = try await coreCrypto.transaction {
+            return try await $0.findCredentials(
+                clientId: nil,
+                publicKey: nil,
+                ciphersuite: ciphersuite,
+                credentialType: nil,
+                earliestValidity: nil
+            ).first!
         }
 
         await XCTAssertThrowsErrorAsync(
             expectedError,
             when: {
-                try await coreCrypto.transaction { ctx in
-                    try await ctx.createConversation(
-                        conversationId: conversationId,
-                        creatorCredentialType: .basic,
-                        config: configuration
-                    )
+                try await coreCrypto.transaction {
+                    try await $0.createConversation(
+                        conversationId: conversationId, credentialRef: credentialRef,
+                        externalSender: nil)
                     throw expectedError
                 }
             }
@@ -235,10 +227,8 @@ final class WireCoreCryptoTests: XCTestCase {
         // This would fail with a "Conversation already exists" exception, if the above
         // transaction hadn't been rolled back.
         try await coreCrypto.transaction { ctx in
-            try await ctx.createConversation(
-                conversationId: conversationId,
-                creatorCredentialType: .basic,
-                config: configuration
+            await ctx.createConversationShort(
+                conversationId: conversationId
             )
         }
     }
@@ -341,20 +331,17 @@ final class WireCoreCryptoTests: XCTestCase {
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let alice = try await createClients("alice1")[0]
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
-        let configuration = ConversationConfiguration(
-            ciphersuite: ciphersuite,
-            externalSenders: [],
-            custom: CustomConfiguration(
-                keyRotationSpan: nil,
-                wirePolicy: nil
+        let credentialRef = try await alice.transaction {
+            await $0.createConversationShort(
+                conversationId: conversationId
             )
-        )
-        try await alice.transaction {
-            try await $0.createConversation(
-                conversationId: conversationId,
-                creatorCredentialType: .basic,
-                config: configuration
-            )
+            return try await $0.findCredentials(
+                clientId: nil,
+                publicKey: nil,
+                ciphersuite: ciphersuite,
+                credentialType: nil,
+                earliestValidity: nil
+            ).first!
         }
 
         let expectedError = CoreCryptoError.Mls(
@@ -366,8 +353,8 @@ final class WireCoreCryptoTests: XCTestCase {
             await self.XCTAssertThrowsErrorAsync(expectedError) {
                 try await ctx.createConversation(
                     conversationId: conversationId,
-                    creatorCredentialType: .basic,
-                    config: configuration
+                    credentialRef: credentialRef,
+                    externalSender: nil
                 )
             }
         }
@@ -389,7 +376,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let credential = try Credential.basic(
             ciphersuite: ciphersuiteDefault(), clientId: genClientId()
         )
-        XCTAssertEqual(try credential.type(), CredentialType.basic)
+        XCTAssertEqual(credential.type(), CredentialType.basic)
         XCTAssertEqual(credential.earliestValidity(), 0)
     }
 
@@ -403,7 +390,7 @@ final class WireCoreCryptoTests: XCTestCase {
             return try await $0.addCredential(credential: credential)
         }
 
-        XCTAssertEqual(try ref.type(), CredentialType.basic)
+        XCTAssertEqual(ref.type(), CredentialType.basic)
         XCTAssertNotEqual(ref.earliestValidity(), 0)
 
         let allCredentials = try await alice.transaction { ctx in
@@ -443,8 +430,8 @@ final class WireCoreCryptoTests: XCTestCase {
         let alice = try await createCoreCrypto()
         try await alice.transaction {
             try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
-            try await $0.addCredential(credential: credential1)
-            try await $0.addCredential(credential: credential2)
+            _ = try await $0.addCredential(credential: credential1)
+            _ = try await $0.addCredential(credential: credential2)
         }
 
         let results1 = try await alice.transaction {
@@ -474,22 +461,24 @@ final class WireCoreCryptoTests: XCTestCase {
     func testConversationExistsShouldReturnTrue() async throws {
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
-        let configuration = ConversationConfiguration(
-            ciphersuite: ciphersuite,
-            externalSenders: [],
-            custom: CustomConfiguration(
-                keyRotationSpan: nil,
-                wirePolicy: nil
-            )
-        )
         let alice = try await createClients("alice1")[0]
+
+        let credentialRef = try await alice.transaction {
+            return try await $0.findCredentials(
+                clientId: nil,
+                publicKey: nil,
+                ciphersuite: ciphersuite,
+                credentialType: nil,
+                earliestValidity: nil
+            ).first!
+        }
+
         let resultBefore = try await alice.transaction {
             try await $0.conversationExists(conversationId: conversationId)
         }
         let resultAfter = try await alice.transaction {
             try await $0.createConversation(
-                conversationId: conversationId, creatorCredentialType: .basic,
-                config: configuration
+                conversationId: conversationId, credentialRef: credentialRef, externalSender: nil
             )
             return try await $0.conversationExists(conversationId: conversationId)
         }
@@ -497,27 +486,16 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertTrue(resultAfter)
     }
 
-    // swiftlint:disable:next function_body_length
     func testUpdateKeyingMaterialShouldProcessTheCommitMessage() async throws {
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
-        let configuration = ConversationConfiguration(
-            ciphersuite: ciphersuite,
-            externalSenders: [],
-            custom: CustomConfiguration(
-                keyRotationSpan: nil,
-                wirePolicy: nil
-            )
-        )
         let clients = try await createClients("alice1", "bob1")
         let alice = clients[0]
         let bob = clients[1]
 
         try await bob.transaction {
-            try await $0.createConversation(
-                conversationId: conversationId,
-                creatorCredentialType: .basic,
-                config: configuration
+            await $0.createConversationShort(
+                conversationId: conversationId
             )
         }
         let aliceKp = try await alice.transaction {
@@ -542,8 +520,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let welcome = await mockMlsTransport.lastCommitBundle?.welcome
         _ = try await alice.transaction {
             try await $0.processWelcomeMessage(
-                welcomeMessage: welcome!,
-                customConfiguration: configuration.custom
+                welcomeMessage: welcome!
             ).id
         }
         try await bob.transaction {
@@ -563,23 +540,13 @@ final class WireCoreCryptoTests: XCTestCase {
     func testEncryptMessageCanBeDecryptedByReceiver() async throws {
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
-        let configuration = ConversationConfiguration(
-            ciphersuite: ciphersuite,
-            externalSenders: [],
-            custom: CustomConfiguration(
-                keyRotationSpan: nil,
-                wirePolicy: nil
-            )
-        )
         let clients = try await createClients("alice1", "bob1")
         let alice = clients[0]
         let bob = clients[1]
 
         try await bob.transaction {
-            try await $0.createConversation(
-                conversationId: conversationId,
-                creatorCredentialType: .basic,
-                config: configuration
+            await $0.createConversationShort(
+                conversationId: conversationId
             )
         }
 
@@ -605,8 +572,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let welcome = await mockMlsTransport.lastCommitBundle?.welcome
         _ = try await alice.transaction {
             try await $0.processWelcomeMessage(
-                welcomeMessage: welcome!,
-                customConfiguration: configuration.custom
+                welcomeMessage: welcome!
             ).id
         }
         let message = Data("Hello World !".utf8)
@@ -645,29 +611,13 @@ final class WireCoreCryptoTests: XCTestCase {
             }
         }
 
-        let aliceId = ClientId(bytes: Data("alice1".utf8))
+        let coreCrypto = try await createClients("alice")[0]
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
-        let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
-        let configuration = ConversationConfiguration(
-            ciphersuite: ciphersuite,
-            externalSenders: [],
-            custom: CustomConfiguration(
-                keyRotationSpan: nil,
-                wirePolicy: nil
-            )
-        )
 
         // set up the conversation in one transaction
-        let coreCrypto = try await createCoreCrypto()
         try await coreCrypto.transaction { context in
-            try await context.mlsInit(
-                clientId: aliceId,
-                ciphersuites: [ciphersuite]
-            )
-            try await context.createConversation(
-                conversationId: conversationId,
-                creatorCredentialType: .basic,
-                config: configuration
+            await context.createConversationShort(
+                conversationId: conversationId
             )
         }
 
@@ -700,29 +650,13 @@ final class WireCoreCryptoTests: XCTestCase {
             }
         }
 
-        let aliceId = ClientId(bytes: Data("alice1".utf8))
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
-        let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
-        let configuration = ConversationConfiguration(
-            ciphersuite: ciphersuite,
-            externalSenders: [],
-            custom: CustomConfiguration(
-                keyRotationSpan: nil,
-                wirePolicy: nil
-            )
-        )
+        let coreCrypto = try await createClients("alice")[0]
 
         // set up the conversation in one transaction
-        let coreCrypto = try await createCoreCrypto()
         try await coreCrypto.transaction {
-            try await $0.mlsInit(
-                clientId: aliceId,
-                ciphersuites: [ciphersuite]
-            )
-            try await $0.createConversation(
-                conversationId: conversationId,
-                creatorCredentialType: .basic,
-                config: configuration
+            await $0.createConversationShort(
+                conversationId: conversationId
             )
         }
 
@@ -918,14 +852,14 @@ final class WireCoreCryptoTests: XCTestCase {
         let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
         var clients: [CoreCrypto] = []
         for clientId in clientIds {
-            var clientId = ClientId(bytes: clientId.data(using: .utf8)!)
+            let clientId = ClientId(bytes: clientId.data(using: .utf8)!)
             let coreCrypto = try await createCoreCrypto()
             try await coreCrypto.transaction({
                 try await $0.mlsInit(
                     clientId: clientId,
                     ciphersuites: [ciphersuite]
                 )
-                try await $0.addCredential(
+                _ = try await $0.addCredential(
                     credential: Credential.basic(
                         ciphersuite: ciphersuite,
                         clientId: clientId
@@ -1015,6 +949,25 @@ final class WireCoreCryptoTests: XCTestCase {
         } catch {
             errorHandler(error)
         }
+    }
+}
+
+extension CoreCryptoContextProtocol {
+    func createConversationShort(conversationId: ConversationId) async {
+        // swiftlint:disable:next force_try
+        let ciphersuite = try! ciphersuiteFromU16(discriminant: 2)
+        // swiftlint:disable:next force_try
+        let credential = try! await self.findCredentials(
+            clientId: nil,
+            publicKey: nil,
+            ciphersuite: ciphersuite,
+            credentialType: .basic,
+            earliestValidity: nil
+        ).first!
+
+        // swiftlint:disable:next force_try
+        try! await self.createConversation(
+            conversationId: conversationId, credentialRef: credential, externalSender: nil)
     }
 }
 
