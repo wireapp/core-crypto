@@ -10,7 +10,7 @@
 //! | 0 pend. Proposal  | ❌              | ✅              |
 //! | 1+ pend. Proposal | ❌              | ✅              |
 
-use core_crypto_keystore::{Sha256Hash, entities::StoredEncryptionKeyPair};
+use core_crypto_keystore::entities::StoredEncryptionKeyPair;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -33,10 +33,7 @@ impl MlsConversation {
         // ..so if there's any, we clear them after the commit is merged
         for oln in &previous_own_leaf_nodes {
             let ek = oln.encryption_key().as_slice();
-            let _ = backend
-                .key_store()
-                .remove::<StoredEncryptionKeyPair>(&Sha256Hash::hash_from(ek))
-                .await;
+            let _ = backend.key_store().remove_borrowed::<StoredEncryptionKeyPair>(ek).await;
         }
 
         client
