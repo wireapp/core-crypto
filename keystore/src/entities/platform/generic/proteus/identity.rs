@@ -175,7 +175,7 @@ impl PrimaryKey for ProteusIdentity {
 impl NewEntity for ProteusIdentity {
     async fn get(conn: &mut Self::ConnectionType, _key: &()) -> CryptoKeystoreResult<Option<Self>> {
         let conn = conn.conn().await;
-        let mut stmt = conn.prepare_cached("SELECT rowid FROM proteus_identities ORDER BY rowid ASC LIMIT 1")?;
+        let mut stmt = conn.prepare_cached("SELECT sk, pk FROM proteus_identities ORDER BY rowid ASC LIMIT 1")?;
         stmt.query_one([], Self::from_row).optional().map_err(Into::into)
     }
 
