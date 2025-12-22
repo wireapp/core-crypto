@@ -115,6 +115,17 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         self.conversation().await.ciphersuite()
     }
 
+    /// Returns the credential ref to a credential of a given conversation
+    async fn credential_ref(&'a self) -> Result<CredentialRef> {
+        let inner = self.conversation().await;
+        let session = self.session().await?;
+        let credential = inner
+            .find_current_credential(&session)
+            .await
+            .map_err(|_| Error::IdentityInitializationError)?;
+        Ok(CredentialRef::from_credential(&credential))
+    }
+
     /// Derives a new key from the one in the group, to be used elsewhere.
     ///
     /// # Arguments
