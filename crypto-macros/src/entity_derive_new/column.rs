@@ -57,7 +57,11 @@ where
     pub(super) fn load_expression(&self) -> TokenStream {
         let column_name = self.sql_name();
 
-        let expr = quote!(row.get::<_, Vec<u8>>(#column_name)?);
+        let sql_data_type = match self.transformation {
+            None => quote!(Vec<u8>),
+            Some(FieldTransformation::Hex) => quote!(String),
+        };
+        let expr = quote!(row.get::<_, #sql_data_type>(#column_name)?);
 
         let expr = match self.transformation {
             None => expr,
