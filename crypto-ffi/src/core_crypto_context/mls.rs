@@ -88,6 +88,31 @@ impl CoreCryptoContext {
         Ok(Ciphersuite::from(cs))
     }
 
+    /// Get the credential ref for the given conversation.
+    pub async fn conversation_credential(&self, conversation_id: &ConversationId) -> CoreCryptoResult<CredentialRef> {
+        self.inner
+            .conversation(conversation_id.as_ref())
+            .await?
+            .credential_ref()
+            .await
+            .map(Into::into)
+            .map_err(Into::into)
+    }
+
+    /// Set the credential ref for the given conversation.
+    pub async fn set_conversation_credential(
+        &self,
+        conversation_id: &ConversationId,
+        credential_ref: Arc<CredentialRef>,
+    ) -> CoreCryptoResult<()> {
+        self.inner
+            .conversation(conversation_id.as_ref())
+            .await?
+            .set_credential_by_ref(&credential_ref.0)
+            .await
+            .map_err(Into::into)
+    }
+
     /// See [core_crypto::Session::conversation_exists]
     pub async fn conversation_exists(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
         self.inner
