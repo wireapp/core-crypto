@@ -36,18 +36,14 @@ impl TransactionContext {
     /// # Parameters
     /// * `trust_anchor_pem` - PEM certificate to anchor as a Trust Root
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> Result<()> {
-        {
-            if self
-                .mls_provider()
-                .await
-                .map_err(RecursiveError::transaction("getting mls provider"))?
-                .keystore()
-                .get_unique::<E2eiAcmeCA>()
-                .await
-                .is_ok()
-            {
-                return Err(Error::TrustAnchorAlreadyRegistered);
-            }
+        let database = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::transaction("getting mls provider"))?
+            .keystore();
+
+        if matches!(database.get_unique::<E2eiAcmeCA>().await, Ok(Some(_))) {
+            return Err(Error::TrustAnchorAlreadyRegistered);
         }
 
         let pki_env = PkiEnvironment::init(PkiEnvironmentParams {
@@ -66,10 +62,7 @@ impl TransactionContext {
         // Save DER repr in keystore
         let cert_der = PkiEnvironment::encode_cert_to_der(&root_cert)?;
         let acme_ca = E2eiAcmeCA { content: cert_der };
-        self.mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?
-            .keystore()
+        database
             .save(acme_ca)
             .await
             .map_err(KeystoreError::wrap("saving acme ca"))?;
