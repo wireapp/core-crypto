@@ -286,7 +286,7 @@ impl CoreCryptoContext {
     pub async fn join_by_external_commit(
         &self,
         group_info: Arc<GroupInfo>,
-        credential_type: CredentialType,
+        credential_ref: Arc<CredentialRef>,
     ) -> CoreCryptoResult<WelcomeBundle> {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
             .map_err(core_crypto::mls::conversation::Error::tls_deserialize(
@@ -295,7 +295,7 @@ impl CoreCryptoContext {
             .map_err(RecursiveError::mls_conversation("joining by external commmit"))?;
         let welcome_bundle = self
             .inner
-            .join_by_external_commit(group_info, credential_type.into())
+            .join_by_external_commit(group_info, &credential_ref.0)
             .await?;
         Ok(welcome_bundle.into())
     }
