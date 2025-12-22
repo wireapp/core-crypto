@@ -238,9 +238,10 @@ impl<'a> TestConversation<'a> {
         joiner: &'a SessionContext,
         group_info: VerifiableGroupInfo,
     ) -> OperationGuard<'a, Commit> {
+        let joiner_credential_ref = joiner.initial_credential.clone();
         joiner
             .transaction
-            .join_by_external_commit(group_info, self.case.credential_type)
+            .join_by_external_commit(group_info, &joiner_credential_ref)
             .await
             .unwrap();
         let join_commit = joiner.mls_transport().await.latest_commit().await;
@@ -291,9 +292,10 @@ impl<'a> TestConversation<'a> {
         joiner: &'a SessionContext,
         group_info: VerifiableGroupInfo,
     ) -> (OperationGuard<'a, Commit>, PendingConversation) {
+        let joiner_credential_ref = joiner.initial_credential.clone();
         let (join_commit, _, pending_conversation) = joiner
             .transaction
-            .create_external_join_commit(group_info, self.case.credential_type)
+            .create_external_join_commit(group_info, &joiner_credential_ref)
             .await
             .unwrap();
 
