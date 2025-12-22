@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use core_crypto_keystore::{
-    Sha256Hash,
     entities::{StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
     traits::FetchFromDatabase,
 };
@@ -147,7 +146,7 @@ impl SessionContext {
             .keystore()
             .await
             .unwrap()
-            .get::<StoredHpkePrivateKey>(&Sha256Hash::hash_from(skp.tls_serialize_detached().unwrap()))
+            .get::<StoredHpkePrivateKey>(&skp.tls_serialize_detached().unwrap())
             .await
             .unwrap()
     }

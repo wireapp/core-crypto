@@ -1,7 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
 use core_crypto_keystore::{
-    Sha256Hash,
     entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
     traits::FetchFromDatabase,
 };
@@ -138,10 +137,10 @@ impl Session {
         db.remove_borrowed::<StoredKeypackage>(kp_ref.hash_ref())
             .await
             .map_err(KeystoreError::wrap("removing key package from keystore"))?;
-        db.remove::<StoredHpkePrivateKey>(&Sha256Hash::hash_from(kp.hpke_init_key().as_slice()))
+        db.remove_borrowed::<StoredHpkePrivateKey>(kp.hpke_init_key().as_slice())
             .await
             .map_err(KeystoreError::wrap("removing private key from keystore"))?;
-        db.remove::<StoredEncryptionKeyPair>(&Sha256Hash::hash_from(kp.leaf_node().encryption_key().as_slice()))
+        db.remove_borrowed::<StoredEncryptionKeyPair>(kp.leaf_node().encryption_key().as_slice())
             .await
             .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
 
