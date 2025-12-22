@@ -9,15 +9,12 @@
 //! This can be removed once we fully migrate to Kotlin Multiplatform and
 //! stop generating JVM/Android bindings.
 
-#[cfg(not(target_family = "wasm"))]
 use std::time::{Duration, SystemTime};
 
 /// A wrapper around `SystemTime` for FFI bindings with custom type mapping per language.
-#[cfg(not(target_family = "wasm"))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Timestamp(pub SystemTime);
 
-#[cfg(not(target_family = "wasm"))]
 impl Timestamp {
     /// Creates a new `Timestamp` from a `SystemTime`.
     pub fn new(time: SystemTime) -> Self {
@@ -35,19 +32,16 @@ impl Timestamp {
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
 impl From<SystemTime> for Timestamp {
     fn from(time: SystemTime) -> Self {
         Self(time)
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
 impl From<Timestamp> for SystemTime {
     fn from(timestamp: Timestamp) -> Self {
         timestamp.0
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
 uniffi::custom_type!(Timestamp, SystemTime);
