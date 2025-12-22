@@ -36,12 +36,12 @@ impl TransactionContext {
     /// # Parameters
     /// * `trust_anchor_pem` - PEM certificate to anchor as a Trust Root
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> Result<()> {
-        let keystore = self
+        let database = self
             .keystore()
             .await
             .map_err(RecursiveError::transaction("Getting database from transaction context"))?;
 
-        if keystore.get_unique::<E2eiAcmeCA>().await.is_ok() {
+        if matches!(database.get_unique::<E2eiAcmeCA>().await, Ok(Some(_))) {
             return Err(Error::TrustAnchorAlreadyRegistered);
         }
 
@@ -61,7 +61,7 @@ impl TransactionContext {
         // Save DER repr in keystore
         let cert_der = PkiEnvironment::encode_cert_to_der(&root_cert)?;
         let acme_ca = E2eiAcmeCA { content: cert_der };
-        keystore
+        database
             .save(acme_ca)
             .await
             .map_err(KeystoreError::wrap("saving acme ca"))?;
