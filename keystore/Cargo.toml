@@ -87,7 +87,7 @@ wasm-bindgen-futures = "0.4"
 web-time = "1.1.0"
 
 [dev-dependencies]
-wasm-bindgen-test = "0.3"
+wasm-bindgen-test = { workspace = true }
 uuid = { workspace = true, features = ["v4", "js"] }
 openmls = { workspace = true, features = ["crypto-subtle"] }
 mls-crypto-provider.workspace = true
