@@ -3,7 +3,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{Ident, Lifetime};
 
-use crate::entity_derive_new::{Entity, column_type::ColumnType};
+use crate::entity_derive_new::{Entity, FieldTransformation, column_type::ColumnType};
 
 impl quote::ToTokens for Entity {
     fn to_tokens(&self, tokens: &mut TokenStream) {
@@ -148,6 +148,13 @@ impl Entity {
         let field_assignments = std::iter::once(id_column.field_assignment())
             .chain(other_columns.iter().map(|column| column.field_assignment()));
 
+        // if we ever add a second field transformation, we'll want this match pattern
+        #[allow(clippy::manual_map)]
+        let key_transform = match id_column.transformation {
+            None => None,
+            Some(FieldTransformation::Hex) => Some(quote! {let key = hex::encode(key);}),
+        };
+
         quote! {
             #[cfg_attr(target_family = "wasm", ::async_trait::async_trait(?Send))]
             #[cfg_attr(not(target_family = "wasm"), ::async_trait::async_trait)]
@@ -155,16 +162,17 @@ impl Entity {
                 async fn get_borrowed(conn: &mut Self::ConnectionType, key: &Self::BorrowedPrimaryKey)
                     -> crate::CryptoKeystoreResult<Option<Self>>
                 {
-                    let key_bytes = <&Self::BorrowedPrimaryKey as crate::traits::KeyType>::bytes(&key);
-                    let key_bytes = key_bytes.as_ref();
+                    let key = <&Self::BorrowedPrimaryKey as crate::traits::KeyType>::bytes(&key);
+                    let key = key.as_ref();
+                    #key_transform
                     #[cfg(target_family = "wasm")]
                     {
-                        conn.storage().new_get(key_bytes).await
+                        conn.storage().new_get(key).await
                     }
 
                     #[cfg(not(target_family = "wasm"))]
                     {
-                        crate::entities::platform::get_helper::<Self, _>(conn, #pk_column_name, key_bytes, |row| {
+                        crate::entities::platform::get_helper::<Self, _>(conn, #pk_column_name, key, |row| {
                             Ok(Self {
                                 #( #field_assignments, )*
                             })
@@ -247,6 +255,12 @@ impl Entity {
         } = self;
 
         let id_column_name = id_column.sql_name();
+        // if we ever add a second field transformation, we'll want this match pattern
+        #[allow(clippy::manual_map)]
+        let key_transform = match id_column.transformation {
+            None => None,
+            Some(FieldTransformation::Hex) => Some(quote! {let key = hex::encode(key);}),
+        };
 
         quote! {
             #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -259,16 +273,17 @@ impl Entity {
                 where
                     for<'pk> &'pk <Self as crate::traits::BorrowPrimaryKey>::BorrowedPrimaryKey: crate::traits::KeyType,
                 {
-                    let id_bytes = <&<Self as crate::traits::BorrowPrimaryKey>::BorrowedPrimaryKey as crate::traits::KeyType>::bytes(&id);
-                    let id_bytes = id_bytes.as_ref();
+                    let key = <&<Self as crate::traits::BorrowPrimaryKey>::BorrowedPrimaryKey as crate::traits::KeyType>::bytes(&id);
+                    let key = key.as_ref();
+                    #key_transform
                     #[cfg(target_family = "wasm")]
                     {
-                        tx.new_delete::<Self>(id_bytes).await
+                        tx.new_delete::<Self>(key).await
                     }
 
                     #[cfg(not(target_family = "wasm"))]
                     {
-                        crate::entities::platform::delete_helper::<Self>(tx, #id_column_name, id_bytes).await
+                        crate::entities::platform::delete_helper::<Self>(tx, #id_column_name, key).await
                     }
                 }
             }
