@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-export type { ConversationConfiguration } from "./ConversationConfiguration";
 export {
     CoreCryptoError,
     ErrorType,
@@ -64,7 +63,6 @@ export type { Timestamp } from "./CoreCryptoInstance";
 export {
     Credential,
     CredentialType,
-    WirePolicy,
     GroupInfoEncryptionType,
     RatchetTreeType,
     DeviceStatus,
@@ -88,7 +86,6 @@ export {
     ciphersuiteFromU16,
     ciphersuiteDefault,
     ClientId,
-    CustomConfiguration,
     openDatabase,
     Database,
     DatabaseKey,
