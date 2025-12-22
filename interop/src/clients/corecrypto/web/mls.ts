@@ -77,9 +77,11 @@ export async function addClient() {
     const keyPackage = new Keypackage(Uint8Array.from(Object.values(kp)).buffer);
 
     if (!window.cc.conversationExists(conversationId)) {
-        await window.cc.transaction((ctx) =>
-            ctx.createConversation(conversationId, window.credentialType, { ciphersuite: window.ciphersuite })
-        );
+        await window.cc.transaction(async (ctx) => {
+            const credentials = await ctx.findCredentials({ ciphersuite: window.ciphersuite, credentialType: window.credentialType });
+            const credential = credentials[0]
+            await ctx.createConversation(conversationId, credential)
+        });
     }
     await window.cc.transaction((ctx) =>
         ctx.addClientsToConversation(conversationId, [keyPackage]));

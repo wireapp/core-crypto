@@ -115,7 +115,7 @@ struct InteropClientApp: App {
                 try await context.mlsInit(
                     clientId: clientId,
                     ciphersuites: [ciphersuite])
-                try await context.addCredential(
+                _ = try await context.addCredential(
                     credential: Credential.basic(ciphersuite: ciphersuite, clientId: clientId))
             })
 
@@ -151,18 +151,14 @@ struct InteropClientApp: App {
                 if try await context.conversationExists(
                     conversationId: conversationId) == false
                 {
-                    let customConfiguration = CustomConfiguration(
-                        keyRotationSpan: nil, wirePolicy: nil)
-                    let conversationConfiguration = ConversationConfiguration(
-                        ciphersuite: ciphersuite,
-                        externalSenders: [],
-                        custom: customConfiguration
-                    )
+                    let credentialRef = try await context.findCredentials(
+                        clientId: nil, publicKey: nil, ciphersuite: ciphersuite,
+                        credentialType: .basic, earliestValidity: nil
+                    ).first!
 
                     try await context.createConversation(
                         conversationId: conversationId,
-                        creatorCredentialType: .basic,
-                        config: conversationConfiguration)
+                        credentialRef: credentialRef, externalSender: nil)
                 }
             }
 
@@ -193,12 +189,9 @@ struct InteropClientApp: App {
             guard let coreCrypto else { throw InteropError.notInitialised }
 
             let welcomeMessage = try Welcome(bytes: Data(contentsOf: welcomePath))
-            let configuration = CustomConfiguration(
-                keyRotationSpan: nil, wirePolicy: nil)
             let bundle = try await coreCrypto.transaction {
                 try await $0.processWelcomeMessage(
-                    welcomeMessage: welcomeMessage,
-                    customConfiguration: configuration
+                    welcomeMessage: welcomeMessage
                 )
             }
 
