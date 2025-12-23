@@ -150,10 +150,11 @@ impl WasmStorageTransaction<'_> {
     /// `BorrowPrimaryKey` or not, and without specialization, we can't just do the right thing
     /// and accept the more general form. But we do know the primary key and its borrowed form
     /// both implement `KeyType`, so it's always safe to accept a byte reference.
-    pub(crate) async fn new_delete<E>(&self, key: &[u8]) -> CryptoKeystoreResult<bool>
+    pub(crate) async fn new_delete<E>(&self, key: impl AsRef<[u8]>) -> CryptoKeystoreResult<bool>
     where
         E: NewEntity<ConnectionType = WasmConnection>,
     {
+        let key = key.as_ref();
         match self {
             WasmStorageTransaction::Persistent { tx, .. } => {
                 let query = JsValue::from(Uint8Array::from(key));
