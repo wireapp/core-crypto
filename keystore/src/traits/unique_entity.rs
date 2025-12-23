@@ -253,11 +253,11 @@ where
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         let conn = conn.conn().await;
         let mut statement = conn.prepare_cached(&format!(
-            "SELECT * FROM {collection_name} WHERE id = ?",
+            "SELECT content FROM {collection_name} WHERE id = ?",
             collection_name = Self::COLLECTION_NAME
         ))?;
         statement
-            .query_row([key], |row| Ok(Self::new(row.get(0)?)))
+            .query_row([key], |row| Ok(Self::new(row.get("content")?)))
             .optional()
             .map_err(Into::into)
     }
@@ -269,7 +269,7 @@ where
 
     /// Retrieve all entities of this type from the database.
     async fn load_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
-        load_all_helper::<Self, _>(conn, |row| Ok(Self::new(row.get(0)?))).await
+        load_all_helper::<Self, _>(conn, |row| Ok(Self::new(row.get("content")?))).await
     }
 }
 
