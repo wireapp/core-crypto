@@ -26,7 +26,7 @@ pub(crate) struct EntityId {
 impl fmt::Display for EntityId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let Self { typ, id } = self;
-        write!(f, "{typ:?}: {}", hex::encode(&id))
+        write!(f, "{typ:?}: {}", hex::encode(id))
     }
 }
 
