@@ -83,8 +83,9 @@ pub struct PersistedMlsPendingGroup {
 /// they must always be accessed via [`MlsPendingMessage::find_all_by_conversation_id`] and
 /// cleaned up with [`MlsPendingMessage::delete_by_conversation_id`]
 ///
-/// However, we have to fake a primary key type in order to support `KeystoreTransaction::remove_pending_messages_by_conversation_id`.
-/// Additionally we need the same one in WASM, where it's necessary for item-level encryption.
+/// However, we have to fake a primary key type in order to support
+/// `KeystoreTransaction::remove_pending_messages_by_conversation_id`. Additionally we need the same one in WASM, where
+/// it's necessary for item-level encryption.
 ///
 /// This implementation is fairly inefficient and hopefully temporary. But it at least implements the correct semantics.
 #[derive(ZeroizeOnDrop)]
