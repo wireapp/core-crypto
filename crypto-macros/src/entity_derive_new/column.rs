@@ -58,7 +58,7 @@ where
         let column_name = self.sql_name();
 
         let sql_data_type = match self.transformation {
-            None => quote!(Vec<u8>),
+            None => self.column_type.get_as_type(),
             Some(FieldTransformation::Hex) => quote!(String),
         };
         let expr = quote!(row.get::<_, #sql_data_type>(#column_name)?);
