@@ -8,8 +8,8 @@ use crate::{
     connection::{KeystoreDatabaseConnection, TransactionWrapper},
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StringEntityId},
     traits::{
-        BorrowPrimaryKey, DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
-        EntityBase as NewEntityBase, EntityDatabaseMutation, PrimaryKey,
+        DecryptWithExplicitEncryptionKey as _, Decryptable, Decrypting, EncryptWithExplicitEncryptionKey as _,
+        Encrypting, EncryptionKey, Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation,
     },
 };
 
@@ -116,30 +116,6 @@ impl NewEntityBase for MlsPendingMessage {
     }
 }
 
-/// Pending messages have no distinct primary key;
-/// they must always be accessed via [`MlsPendingMessage::find_all_by_conversation_id`] and
-/// cleaned up with [`MlsPendingMessage::delete_by_conversation_id`]
-///
-/// However, we have to fake it as a byte vector in this impl in order for encryption and decryption
-/// to work.
-impl PrimaryKey for MlsPendingMessage {
-    type PrimaryKey = Vec<u8>;
-
-    fn primary_key(&self) -> Self::PrimaryKey {
-        self.foreign_id.clone()
-    }
-}
-
-/// This implementation is purely to support `KeystoreTransaction::remove_pending_messages_by_conversation_id`;
-/// after WPB-20844, we should remove that whole API and also this implementation.
-impl BorrowPrimaryKey for MlsPendingMessage {
-    type BorrowedPrimaryKey = [u8];
-
-    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
-        &self.foreign_id
-    }
-}
-
 #[async_trait(?Send)]
 impl NewEntity for MlsPendingMessage {
     async fn get(_conn: &mut Self::ConnectionType, _key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
@@ -172,6 +148,12 @@ impl<'a> EntityDatabaseMutation<'a> for MlsPendingMessage {
     }
 }
 
+impl EncryptionKey for MlsPendingMessage {
+    fn encryption_key(&self) -> &[u8] {
+        &self.foreign_id
+    }
+}
+
 #[derive(Serialize)]
 pub struct MlsPendingMessageEncrypt<'a> {
     foreign_id: &'a [u8],
@@ -182,7 +164,7 @@ impl<'a> Encrypting<'a> for MlsPendingMessage {
     type EncryptedForm = MlsPendingMessageEncrypt<'a>;
 
     fn encrypt(&'a self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::EncryptedForm> {
-        let message = <Self as EncryptData>::encrypt_data(self, cipher, &self.message)?;
+        let message = self.encrypt_data_with_encryption_key(cipher, &self.message)?;
         Ok(MlsPendingMessageEncrypt {
             foreign_id: &self.foreign_id,
             message,
@@ -200,7 +182,7 @@ impl Decrypting<'static> for MlsPendingMessageDecrypt {
     type DecryptedForm = MlsPendingMessage;
 
     fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::DecryptedForm> {
-        let message = <MlsPendingMessage as DecryptData>::decrypt_data(cipher, &self.foreign_id, &self.message)?;
+        let message = MlsPendingMessage::decrypt_data_with_encryption_key(cipher, &self.foreign_id, &self.message)?;
         Ok(MlsPendingMessage {
             foreign_id: self.foreign_id,
             message,
