@@ -227,6 +227,45 @@ mod tests {
         store.rollback_transaction().await.unwrap();
         store.new_transaction().await.unwrap();
     }
+
+    #[apply(all_storage_types)]
+    async fn can_save_and_load_consumer_data(context: KeystoreTestContext) {
+        use core_crypto_keystore::traits::FetchFromDatabase as _;
+
+        eprintln!("creating store");
+        let store = context.store();
+
+        eprintln!("checking consumer data before it exists");
+        assert!(!store.exists::<ConsumerData>().await.unwrap());
+        let consumer_data = store.get_unique::<ConsumerData>().await.unwrap();
+        assert!(consumer_data.is_none());
+
+        eprintln!("saving some consumer data");
+        const DATA: &[u8] = b"here is some arbitrary data";
+        store
+            .save(ConsumerData {
+                content: DATA.to_owned(),
+            })
+            .await
+            .unwrap();
+
+        // from transaction
+        eprintln!("checking retrieving consumer data from active transaction");
+        assert!(store.exists::<ConsumerData>().await.unwrap());
+        let consumer_data = store.get_unique::<ConsumerData>().await.unwrap().unwrap();
+        assert_eq!(consumer_data.content, DATA);
+
+        eprintln!("committing transaction");
+        store.commit_transaction().await.unwrap();
+        // don't forget to open a new (blank) transaction
+        store.new_transaction().await.unwrap();
+
+        // from storage (fallthrough)
+        eprintln!("checking retrieving consumer data from storage");
+        assert!(store.exists::<ConsumerData>().await.unwrap());
+        let consumer_data = store.get_unique::<ConsumerData>().await.unwrap().unwrap();
+        assert_eq!(consumer_data.content, DATA);
+    }
 }
 
 #[cfg(test)]
