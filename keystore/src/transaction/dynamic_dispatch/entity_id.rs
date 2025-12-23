@@ -9,7 +9,7 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     connection::TransactionWrapper,
     entities::{
-        E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup,
+        ConsumerData, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup,
         StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment, StoredEncryptionKeyPair,
         StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
@@ -120,6 +120,7 @@ impl EntityId {
             EntityType::ProteusIdentity => ProteusIdentity::delete(tx, &self.primary_key::<ProteusIdentity>()?).await,
             #[cfg(feature = "proteus-keystore")]
             EntityType::ProteusPrekey => ProteusPrekey::delete(tx, &self.primary_key::<ProteusPrekey>()?).await,
+            EntityType::ConsumerData => ConsumerData::delete(tx, &self.primary_key::<ConsumerData>()?).await,
         }
     }
 }
