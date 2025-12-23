@@ -14,6 +14,8 @@ kotlin {
     jvmToolchain(17)
 }
 
+val sharedSources = projectDir.resolve("../shared/src/commonMain")
+
 dependencies {
     implementation(platform(kotlin("bom")))
     implementation(platform(libs.coroutines.bom))
@@ -61,7 +63,7 @@ tasks.named("compileKotlin") {
 sourceSets {
     main {
         kotlin {
-            srcDir(projectDir.resolve("src/main/kotlin"))
+            srcDir(sharedSources.resolve("kotlin"))
             srcDir(projectDir.resolve("src/main/uniffi"))
         }
         resources {
