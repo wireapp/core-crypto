@@ -154,6 +154,8 @@ pub enum CryptoKeystoreError {
     MigrationFailed(String),
     #[error("the provided bytes could not be interpreted as the primary key of {0}")]
     InvalidPrimaryKeyBytes(&'static str),
+    #[error("the entity {0} had an unknown collection name and could not be found")]
+    UnknownEntity(&'static str),
 }
 
 #[cfg(target_family = "wasm")]

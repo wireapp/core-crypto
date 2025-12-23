@@ -57,7 +57,7 @@ impl KeystoreTransaction {
     {
         let auto_generated_fields = entity.pre_save().await?;
 
-        let entity_id = EntityId::from_entity(&entity);
+        let entity_id = EntityId::from_entity(&entity).ok_or(CryptoKeystoreError::UnknownEntity(E::COLLECTION_NAME))?;
         {
             // start by adding the entity
             let mut cache_guard = self.cache.write().await;
@@ -103,7 +103,8 @@ impl KeystoreTransaction {
     where
         E: Entity + EntityDatabaseMutation<'a>,
     {
-        let entity_id = EntityId::from_primary_key::<E>(id);
+        let entity_id =
+            EntityId::from_primary_key::<E>(id).ok_or(CryptoKeystoreError::UnknownEntity(E::COLLECTION_NAME))?;
         self.remove_by_entity_id::<E>(entity_id).await
     }
 
@@ -115,7 +116,8 @@ impl KeystoreTransaction {
     where
         E: EntityDeleteBorrowed<'a> + BorrowPrimaryKey,
     {
-        let entity_id = EntityId::from_borrowed_primary_key::<E>(id);
+        let entity_id = EntityId::from_borrowed_primary_key::<E>(id)
+            .ok_or(CryptoKeystoreError::UnknownEntity(E::COLLECTION_NAME))?;
         self.remove_by_entity_id::<E>(entity_id).await
     }
 
@@ -161,9 +163,12 @@ impl KeystoreTransaction {
         drop(cache_guard);
 
         let mut deleted_set = self.deleted.write().await;
-        deleted_set.insert(EntityId::from_primary_key::<MlsPendingMessage>(
-            &MlsPendingMessagePrimaryKey::from_conversation_id(conversation_id),
-        ));
+        deleted_set.insert(
+            EntityId::from_primary_key::<MlsPendingMessage>(&MlsPendingMessagePrimaryKey::from_conversation_id(
+                conversation_id,
+            ))
+            .expect("mls pending messages are proper entities which can be parsed"),
+        );
     }
 
     pub(crate) async fn find_pending_messages_by_conversation_id(
@@ -220,7 +225,7 @@ impl KeystoreTransaction {
     where
         E: Entity + Send + Sync,
     {
-        let entity_id = EntityId::from_primary_key::<E>(id);
+        let entity_id = EntityId::from_primary_key::<E>(id)?;
         self.get_by_entity_id(&entity_id).await
     }
 
@@ -232,7 +237,7 @@ impl KeystoreTransaction {
     where
         E: Entity + BorrowPrimaryKey + Send + Sync,
     {
-        let entity_id = EntityId::from_borrowed_primary_key::<E>(id);
+        let entity_id = EntityId::from_borrowed_primary_key::<E>(id)?;
         self.get_by_entity_id(&entity_id).await
     }
 
@@ -293,7 +298,7 @@ impl KeystoreTransaction {
             .chain(records_b)
             .unique_by(|e| e.primary_key().bytes().into_owned())
             .filter_map(|record| {
-                let id = EntityId::from_entity(record.as_ref());
+                let id = EntityId::from_entity(record.as_ref())?;
                 (!deleted_records.contains(&id)).then_some(record.into_owned())
             })
             .collect()
