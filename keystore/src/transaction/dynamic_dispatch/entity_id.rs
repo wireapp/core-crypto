@@ -39,32 +39,30 @@ impl EntityId {
             .ok_or(CryptoKeystoreError::InvalidPrimaryKeyBytes(self.typ.collection_name()))
     }
 
-    fn from_key<E>(primary_key: Cow<'_, [u8]>) -> Self
+    fn from_key<E>(primary_key: Cow<'_, [u8]>) -> Option<Self>
     where
         E: Entity,
     {
-        // assumption: nobody outside this crate will ever implement `Entity` on a foreign type
-        let typ =
-            EntityType::from_collection_name(E::COLLECTION_NAME).expect("all entities have a valid collection name");
+        let typ = EntityType::from_collection_name(E::COLLECTION_NAME)?;
         let id = primary_key.into_owned();
-        Self { typ, id }
+        Some(Self { typ, id })
     }
 
-    pub(crate) fn from_entity<E>(entity: &E) -> Self
+    pub(crate) fn from_entity<E>(entity: &E) -> Option<Self>
     where
         E: Entity,
     {
         Self::from_key::<E>(entity.primary_key().bytes())
     }
 
-    pub(crate) fn from_primary_key<E>(primary_key: &E::PrimaryKey) -> Self
+    pub(crate) fn from_primary_key<E>(primary_key: &E::PrimaryKey) -> Option<Self>
     where
         E: Entity,
     {
         Self::from_key::<E>(primary_key.bytes())
     }
 
-    pub(crate) fn from_borrowed_primary_key<E>(primary_key: &E::BorrowedPrimaryKey) -> Self
+    pub(crate) fn from_borrowed_primary_key<E>(primary_key: &E::BorrowedPrimaryKey) -> Option<Self>
     where
         E: Entity + BorrowPrimaryKey,
     {
