@@ -1,3 +1,4 @@
+use core::fmt;
 use std::borrow::Cow;
 
 #[cfg(target_family = "wasm")]
@@ -20,6 +21,13 @@ use crate::{
 pub(crate) struct EntityId {
     typ: EntityType,
     id: Vec<u8>,
+}
+
+impl fmt::Display for EntityId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let Self { typ, id } = self;
+        write!(f, "{typ:?}: {}", hex::encode(id))
+    }
 }
 
 impl EntityId {
@@ -92,7 +100,10 @@ impl EntityId {
             EntityType::PersistedMlsPendingGroup => {
                 PersistedMlsPendingGroup::delete(tx, &self.primary_key::<PersistedMlsPendingGroup>()?).await
             }
-            EntityType::MlsPendingMessage => MlsPendingMessage::delete_by_conversation_id(tx, &self.id).await,
+            EntityType::MlsPendingMessage => {
+                let primary_key = self.primary_key::<MlsPendingMessage>()?;
+                MlsPendingMessage::delete_by_conversation_id(tx, &primary_key.foreign_id).await
+            }
             EntityType::StoredE2eiEnrollment => {
                 StoredE2eiEnrollment::delete(tx, &self.primary_key::<StoredE2eiEnrollment>()?).await
             }

@@ -12,7 +12,7 @@ use crate::{
     },
     traits::{
         BorrowPrimaryKey, Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation,
-        EntityDeleteBorrowed, EntityGetBorrowed, KeyType, PrimaryKey,
+        EntityDeleteBorrowed, EntityGetBorrowed, KeyType, OwnedKeyType, PrimaryKey,
     },
 };
 
@@ -216,27 +216,6 @@ impl NewEntityBase for MlsPendingMessage {
     }
 }
 
-/// Pending messages have no distinct primary key;
-/// they must always be accessed via [`MlsPendingMessage::find_all_by_conversation_id`] and
-/// cleaned up with [`MlsPendingMessage::delete_by_conversation_id`]
-///
-/// However, we have to fake it here to support `KeystoreTransaction::remove_pending_messages_by_conversation_id`.
-/// This is temporary! Post WPB-20844, we should remove that whole API and also reset the primary key type here to `()`.
-impl PrimaryKey for MlsPendingMessage {
-    type PrimaryKey = Vec<u8>;
-    fn primary_key(&self) -> Self::PrimaryKey {
-        self.foreign_id.clone()
-    }
-}
-
-impl BorrowPrimaryKey for MlsPendingMessage {
-    type BorrowedPrimaryKey = [u8];
-
-    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
-        &self.foreign_id
-    }
-}
-
 #[async_trait]
 impl NewEntity for MlsPendingMessage {
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
@@ -249,16 +228,6 @@ impl NewEntity for MlsPendingMessage {
 
     async fn load_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
         load_all_helper::<Self, _>(conn, Self::from_row).await
-    }
-}
-
-#[async_trait]
-impl EntityGetBorrowed for MlsPendingMessage {
-    async fn get_borrowed(
-        conn: &mut Self::ConnectionType,
-        key: &Self::BorrowedPrimaryKey,
-    ) -> CryptoKeystoreResult<Option<Self>> {
-        panic!("cannot get `MlsPendingMessage` by primary key as it has no distinct primary key")
     }
 }
 

@@ -16,7 +16,10 @@ pub use entity::{Entity, EntityGetBorrowed};
 pub use entity_base::EntityBase;
 pub use entity_database_mutation::{EntityDatabaseMutation, EntityDeleteBorrowed};
 pub use fetch_from_database::FetchFromDatabase;
-pub use item_encryption::{DecryptData, Decryptable, Decrypting, EncryptData, Encrypting};
+pub use item_encryption::{
+    DecryptData, DecryptWithExplicitEncryptionKey, Decryptable, Decrypting, EncryptData,
+    EncryptWithExplicitEncryptionKey, Encrypting, EncryptionKey,
+};
 pub use key_type::{KeyType, OwnedKeyType};
 pub use primary_key::{BorrowPrimaryKey, PrimaryKey};
 pub use unique_entity::{UniqueEntity, UniqueEntityExt, UniqueEntityImplementationHelper};

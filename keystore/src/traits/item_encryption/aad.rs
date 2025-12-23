@@ -32,4 +32,11 @@ impl Aad {
         let id = primary_key.bytes().into_owned();
         Self { type_name, id }
     }
+
+    /// Don't use this unless you really have to! Prefer [`Self::from_primary_key`].
+    pub(super) fn from_encryption_key_bytes<E: Entity>(key_bytes: impl AsRef<[u8]>) -> Self {
+        let type_name = E::COLLECTION_NAME.as_bytes().to_vec();
+        let id = key_bytes.as_ref().to_owned();
+        Self { type_name, id }
+    }
 }

@@ -39,7 +39,7 @@ mod decrypting;
 mod encrypt_data;
 mod encrypting;
 
-pub use decrypt_data::DecryptData;
+pub use decrypt_data::{DecryptData, DecryptWithExplicitEncryptionKey};
 pub use decrypting::{Decryptable, Decrypting};
-pub use encrypt_data::EncryptData;
+pub use encrypt_data::{EncryptData, EncryptWithExplicitEncryptionKey, EncryptionKey};
 pub use encrypting::Encrypting;

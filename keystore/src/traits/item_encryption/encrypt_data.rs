@@ -46,3 +46,41 @@ impl<E: Entity> EncryptData for E {
         encrypt_with_nonce_and_aad(cipher, data, &nonce_bytes, &aad)
     }
 }
+
+/// This trait is a hack enabling us to encrypt types for which we don't use the primary key in the AAD.
+///
+/// The only reason we'd ever want this is if the primary key is not what we actually use, and the only
+/// reason that would be the case is if we're faking a primary key where no such key really exists.
+///
+/// In other words, MLS pending messages.
+pub trait EncryptionKey {
+    /// Get the key bytes which are to be used as the encryption key for this data.
+    fn encryption_key(&self) -> &[u8];
+}
+
+/// This trait uses the explicitly-set encryption key to encrypt some data.
+///
+/// This should rarely be used.
+pub trait EncryptWithExplicitEncryptionKey {
+    /// Encrypt some data with an encryption key (see [`EncryptionKey`]) instead of the instance's primary key.
+    fn encrypt_data_with_encryption_key(
+        &self,
+        cipher: &aes_gcm::Aes256Gcm,
+        data: &[u8],
+    ) -> CryptoKeystoreResult<Vec<u8>>;
+}
+
+impl<E> EncryptWithExplicitEncryptionKey for E
+where
+    E: Entity + EncryptionKey,
+{
+    fn encrypt_data_with_encryption_key(
+        &self,
+        cipher: &aes_gcm::Aes256Gcm,
+        data: &[u8],
+    ) -> CryptoKeystoreResult<Vec<u8>> {
+        let aad = Aad::from_encryption_key_bytes::<E>(self.encryption_key()).serialize()?;
+        let nonce_bytes: [u8; AES_GCM_256_NONCE_SIZE] = rand::random();
+        encrypt_with_nonce_and_aad(cipher, data, &nonce_bytes, &aad)
+    }
+}
