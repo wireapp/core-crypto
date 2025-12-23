@@ -148,6 +148,8 @@ impl Entity {
         let field_assignments = std::iter::once(id_column.field_assignment())
             .chain(other_columns.iter().map(|column| column.field_assignment()));
 
+        // if we ever add a second field transformation, we'll want this match pattern
+        #[allow(clippy::manual_map)]
         let key_transform = match id_column.transformation {
             None => None,
             Some(FieldTransformation::Hex) => Some(quote! {let key = hex::encode(key);}),
@@ -253,6 +255,8 @@ impl Entity {
         } = self;
 
         let id_column_name = id_column.sql_name();
+        // if we ever add a second field transformation, we'll want this match pattern
+        #[allow(clippy::manual_map)]
         let key_transform = match id_column.transformation {
             None => None,
             Some(FieldTransformation::Hex) => Some(quote! {let key = hex::encode(key);}),
