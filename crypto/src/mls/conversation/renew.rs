@@ -131,7 +131,7 @@ impl MlsConversation {
             // encryption key from the keystore otherwise we would have a leak
             backend
                 .key_store()
-                .remove::<StoredEncryptionKeyPair, _>(leaf_node.encryption_key().as_slice())
+                .remove_borrowed::<StoredEncryptionKeyPair>(leaf_node.encryption_key().as_slice())
                 .await
                 .map_err(KeystoreError::wrap("removing mls encryption keypair"))?;
         }

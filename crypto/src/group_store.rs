@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use core_crypto_keystore::connection::FetchFromDatabase;
+use core_crypto_keystore::traits::FetchFromDatabase;
 
 use crate::{ConversationId, KeystoreError, MlsConversation, RecursiveError, Result};
 
@@ -31,7 +31,7 @@ impl GroupStoreEntity for MlsConversation {
         keystore: &impl FetchFromDatabase,
     ) -> crate::Result<Option<Self>> {
         let result = keystore
-            .find::<Self::RawStoreValue>(id)
+            .get_borrowed::<Self::RawStoreValue>(id.as_ref())
             .await
             .map_err(KeystoreError::wrap("finding mls conversation from keystore by id"))?;
         let Some(store_value) = result else {

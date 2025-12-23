@@ -280,11 +280,12 @@ impl WasmEncryptedStorage {
     // After putting some thought into it, I'd prefer not to redesign the `Decrypting` trait, though.
     // There's always the chance that `serde_wasm_bindgen` will relax that restriction, at which point
     // we can just relax this bound and all will be good.
-    pub async fn new_get<'a, E>(&self, key: &[u8]) -> CryptoKeystoreResult<Option<E>>
+    pub async fn new_get<'a, E>(&self, key: impl AsRef<[u8]>) -> CryptoKeystoreResult<Option<E>>
     where
         E: NewEntity<ConnectionType = WasmConnection> + Decryptable<'a>,
         <E as Decryptable<'a>>::DecryptableFrom: DeserializeOwned,
     {
+        let key = key.as_ref();
         let js_value = match &self.storage {
             WasmStorageWrapper::Persistent(idb) => {
                 let transaction = idb.transaction(&[E::COLLECTION_NAME], TransactionMode::ReadOnly)?;

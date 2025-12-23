@@ -36,7 +36,7 @@ impl EntityBase for ConsumerData {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::ConsumerData(self)
+        crate::transaction::dynamic_dispatch::Entity::ConsumerData(self.into())
     }
 }
 
@@ -46,7 +46,7 @@ impl NewEntityBase for ConsumerData {
     const COLLECTION_NAME: &'static str = "consumer_data";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::ConsumerData(self)
+        crate::transaction::dynamic_dispatch::Entity::ConsumerData(self.into())
     }
 }
 

@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +7,8 @@ use crate::{
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, PersistedMlsPendingGroup, StringEntityId},
     traits::{
         BorrowPrimaryKey, DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
-        EntityBase as NewEntityBase, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType,
+        EntityBase as NewEntityBase, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, KeyType,
+        PrimaryKey,
     },
 };
 
@@ -23,7 +22,7 @@ impl EntityBase for PersistedMlsPendingGroup {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::PersistedMlsPendingGroup(self)
+        crate::transaction::dynamic_dispatch::Entity::PersistedMlsPendingGroup(self.into())
     }
 }
 
@@ -90,18 +89,28 @@ impl NewEntityBase for PersistedMlsPendingGroup {
     const COLLECTION_NAME: &'static str = "mls_pending_groups";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::PersistedMlsPendingGroup(self)
+        crate::transaction::dynamic_dispatch::Entity::PersistedMlsPendingGroup(self.into())
     }
 }
 
-#[async_trait(?Send)]
-impl NewEntity for PersistedMlsPendingGroup {
+impl PrimaryKey for PersistedMlsPendingGroup {
     type PrimaryKey = Vec<u8>;
 
     fn primary_key(&self) -> Self::PrimaryKey {
         self.id.clone()
     }
+}
 
+impl BorrowPrimaryKey for PersistedMlsPendingGroup {
+    type BorrowedPrimaryKey = [u8];
+
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &self.id
+    }
+}
+
+#[async_trait(?Send)]
+impl NewEntity for PersistedMlsPendingGroup {
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         Self::get_borrowed(conn, key).await
     }
@@ -116,18 +125,11 @@ impl NewEntity for PersistedMlsPendingGroup {
 }
 
 #[async_trait(?Send)]
-impl BorrowPrimaryKey for PersistedMlsPendingGroup {
-    type BorrowedPrimaryKey = [u8];
-
-    fn borrow_primary_key(&self) -> &[u8] {
-        &self.id
-    }
-
-    async fn get_borrowed<Q>(conn: &mut Self::ConnectionType, key: &Q) -> CryptoKeystoreResult<Option<Self>>
-    where
-        Self::PrimaryKey: Borrow<Q>,
-        Q: KeyType,
-    {
+impl EntityGetBorrowed for PersistedMlsPendingGroup {
+    async fn get_borrowed(
+        conn: &mut Self::ConnectionType,
+        key: &Self::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<Self>> {
         conn.storage().new_get(key.bytes().as_ref()).await
     }
 }
@@ -151,11 +153,7 @@ impl<'a> EntityDatabaseMutation<'a> for PersistedMlsPendingGroup {
 
 #[async_trait(?Send)]
 impl<'a> EntityDeleteBorrowed<'a> for PersistedMlsPendingGroup {
-    async fn delete_borrowed<Q>(tx: &Self::Transaction, id: &Q) -> CryptoKeystoreResult<bool>
-    where
-        Self::PrimaryKey: Borrow<Q>,
-        Q: KeyType,
-    {
+    async fn delete_borrowed(tx: &Self::Transaction, id: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<bool> {
         tx.new_delete::<Self>(id.bytes().as_ref()).await
     }
 }

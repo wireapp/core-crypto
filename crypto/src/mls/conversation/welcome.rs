@@ -1,4 +1,4 @@
-use core_crypto_keystore::{connection::FetchFromDatabase, entities::PersistedMlsPendingGroup};
+use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{MlsGroup, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
@@ -38,19 +38,24 @@ impl MlsConversation {
     ) -> Result<Self> {
         let mls_group_config = configuration.as_openmls_default_configuration()?;
 
-        let group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None).await;
-
-        let group = match group {
-            Err(openmls::prelude::WelcomeError::NoMatchingKeyPackage)
-            | Err(openmls::prelude::WelcomeError::NoMatchingEncryptionKey) => return Err(Error::OrphanWelcome),
-            _ => group.map_err(MlsError::wrap("group could not be created from welcome"))?,
-        };
+        let group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None)
+            .await
+            .map_err(|err| {
+                use openmls::prelude::WelcomeError;
+                match err {
+                    WelcomeError::NoMatchingKeyPackage | WelcomeError::NoMatchingEncryptionKey => Error::OrphanWelcome,
+                    _ => MlsError::wrap("group could not be created from welcome")(err).into(),
+                }
+            })?;
 
         let id = ConversationId::from(group.group_id().as_slice());
         let existing_conversation = mls_groups.get_fetch(&id, &backend.keystore(), None).await;
         let conversation_exists = existing_conversation.ok().flatten().is_some();
 
-        let pending_group = backend.key_store().find::<PersistedMlsPendingGroup>(id.as_ref()).await;
+        let pending_group = backend
+            .key_store()
+            .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
+            .await;
         let pending_group_exists = pending_group.ok().flatten().is_some();
 
         if conversation_exists || pending_group_exists {

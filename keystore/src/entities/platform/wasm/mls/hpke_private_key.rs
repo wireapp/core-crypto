@@ -2,12 +2,12 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    CryptoKeystoreResult, MissingKeyErrorKind, Sha256Hash,
+    CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StoredHpkePrivateKey, StringEntityId},
     traits::{
-        DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
-        EntityBase as NewEntityBase, EntityDatabaseMutation, KeyType,
+        BorrowPrimaryKey, DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
+        EntityBase as NewEntityBase, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, PrimaryKey,
     },
 };
 
@@ -22,7 +22,7 @@ impl EntityBase for StoredHpkePrivateKey {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::HpkePrivateKey(self)
+        crate::transaction::dynamic_dispatch::Entity::HpkePrivateKey(self.into())
     }
 }
 
@@ -75,20 +75,30 @@ impl NewEntityBase for StoredHpkePrivateKey {
     const COLLECTION_NAME: &'static str = "mls_hpke_private_keys";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::HpkePrivateKey(self)
+        crate::transaction::dynamic_dispatch::Entity::HpkePrivateKey(self.into())
+    }
+}
+
+impl PrimaryKey for StoredHpkePrivateKey {
+    type PrimaryKey = Vec<u8>;
+
+    fn primary_key(&self) -> Vec<u8> {
+        self.pk.clone()
+    }
+}
+
+impl BorrowPrimaryKey for StoredHpkePrivateKey {
+    type BorrowedPrimaryKey = [u8];
+
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &self.pk
     }
 }
 
 #[async_trait(?Send)]
 impl NewEntity for StoredHpkePrivateKey {
-    type PrimaryKey = Sha256Hash;
-
-    fn primary_key(&self) -> Sha256Hash {
-        Sha256Hash::hash_from(&self.pk)
-    }
-
-    async fn get(conn: &mut Self::ConnectionType, id: &Sha256Hash) -> CryptoKeystoreResult<Option<Self>> {
-        conn.storage().new_get(id.bytes().as_ref()).await
+    async fn get(conn: &mut Self::ConnectionType, id: &Vec<u8>) -> CryptoKeystoreResult<Option<Self>> {
+        Self::get_borrowed(conn, id.as_slice()).await
     }
 
     async fn load_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
@@ -97,6 +107,16 @@ impl NewEntity for StoredHpkePrivateKey {
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<u32> {
         conn.storage().new_count::<Self>().await
+    }
+}
+
+#[async_trait(?Send)]
+impl EntityGetBorrowed for StoredHpkePrivateKey {
+    async fn get_borrowed(
+        conn: &mut <Self as NewEntityBase>::ConnectionType,
+        id: &[u8],
+    ) -> CryptoKeystoreResult<Option<Self>> {
+        conn.storage().new_get(id).await
     }
 }
 
@@ -112,8 +132,18 @@ impl<'a> EntityDatabaseMutation<'a> for StoredHpkePrivateKey {
         tx.new_count::<Self>().await
     }
 
-    async fn delete(tx: &Self::Transaction, id: &Sha256Hash) -> CryptoKeystoreResult<bool> {
-        tx.new_delete::<Self>(id.bytes().as_ref()).await
+    async fn delete(tx: &Self::Transaction, id: &Vec<u8>) -> CryptoKeystoreResult<bool> {
+        Self::delete_borrowed(tx, id.as_slice()).await
+    }
+}
+
+#[async_trait(?Send)]
+impl<'a> EntityDeleteBorrowed<'a> for StoredHpkePrivateKey {
+    async fn delete_borrowed(
+        tx: &<Self as EntityDatabaseMutation<'a>>::Transaction,
+        id: &[u8],
+    ) -> CryptoKeystoreResult<bool> {
+        tx.new_delete::<Self>(id).await
     }
 }
 
@@ -142,8 +172,7 @@ impl Decrypting<'static> for StoredHpkePrivateKeyDecrypt {
     type DecryptedForm = StoredHpkePrivateKey;
 
     fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::DecryptedForm> {
-        let primary_key = Sha256Hash::hash_from(&self.pk);
-        let sk = <StoredHpkePrivateKey as DecryptData>::decrypt_data(cipher, &primary_key, &self.sk)?;
+        let sk = <StoredHpkePrivateKey as DecryptData>::decrypt_data(cipher, &self.pk, &self.sk)?;
         Ok(StoredHpkePrivateKey { sk, pk: self.pk })
     }
 }

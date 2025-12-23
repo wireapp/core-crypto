@@ -1,6 +1,6 @@
 use core_crypto_keystore::{
-    connection::FetchFromDatabase,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
+    traits::FetchFromDatabase,
 };
 use openmls_traits::OpenMlsCryptoProvider;
 use wire_e2e_identity::prelude::x509::{
@@ -36,18 +36,14 @@ impl TransactionContext {
     /// # Parameters
     /// * `trust_anchor_pem` - PEM certificate to anchor as a Trust Root
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> Result<()> {
-        {
-            if self
-                .mls_provider()
-                .await
-                .map_err(RecursiveError::transaction("getting mls provider"))?
-                .keystore()
-                .find_unique::<E2eiAcmeCA>()
-                .await
-                .is_ok()
-            {
-                return Err(Error::TrustAnchorAlreadyRegistered);
-            }
+        let database = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::transaction("getting mls provider"))?
+            .keystore();
+
+        if matches!(database.get_unique::<E2eiAcmeCA>().await, Ok(Some(_))) {
+            return Err(Error::TrustAnchorAlreadyRegistered);
         }
 
         let pki_env = PkiEnvironment::init(PkiEnvironmentParams {
@@ -66,10 +62,7 @@ impl TransactionContext {
         // Save DER repr in keystore
         let cert_der = PkiEnvironment::encode_cert_to_der(&root_cert)?;
         let acme_ca = E2eiAcmeCA { content: cert_der };
-        self.mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?
-            .keystore()
+        database
             .save(acme_ca)
             .await
             .map_err(KeystoreError::wrap("saving acme ca"))?;
@@ -133,9 +126,10 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting keystore"))?;
         let trust_anchor = keystore
-            .find_unique::<E2eiAcmeCA>()
+            .get_unique::<E2eiAcmeCA>()
             .await
-            .map_err(KeystoreError::wrap("finding acme ca"))?;
+            .map_err(KeystoreError::wrap("finding acme ca"))?
+            .ok_or(Error::NotFound("E2eiAcmeCA"))?;
         let trust_anchor = x509_cert::Certificate::from_der(&trust_anchor.content)?;
 
         // the `/federation` endpoint from smallstep repeats the root CA
@@ -212,7 +206,7 @@ impl TransactionContext {
             .map_err(RecursiveError::transaction("getting keystore"))?;
 
         let dirty = ks
-            .find::<E2eiCrl>(crl_dp.as_bytes())
+            .get::<E2eiCrl>(&crl_dp)
             .await
             .ok()
             .flatten()

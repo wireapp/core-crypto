@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, collections::HashSet, sync::LazyLock};
+use std::{collections::HashSet, sync::LazyLock};
 
 use async_lock::RwLock;
 use sha2::{Digest as _, Sha256};
@@ -8,7 +8,7 @@ use crate::{
     entities::{Entity, EntityBase, EntityFindParams, StringEntityId},
     traits::{
         BorrowPrimaryKey, DecryptData as _, Decryptable, Decrypting, EncryptData as _, Encrypting, Entity as NewEntity,
-        EntityBase as NewEntityBase, KeyType, UniqueEntity,
+        EntityBase as NewEntityBase, EntityGetBorrowed, KeyType, PrimaryKey, UniqueEntity,
     },
 };
 #[cfg(not(target_family = "wasm"))]
@@ -90,15 +90,23 @@ impl Entity for DummyStoreValue {
     }
 }
 
+impl PrimaryKey for DummyStoreValue {
+    type PrimaryKey = Vec<u8>;
+    fn primary_key(&self) -> Self::PrimaryKey {
+        Vec::new()
+    }
+}
+
+impl BorrowPrimaryKey for DummyStoreValue {
+    type BorrowedPrimaryKey = [u8];
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &[]
+    }
+}
+
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl NewEntity for DummyStoreValue {
-    type PrimaryKey = Vec<u8>;
-
-    fn primary_key(&self) -> Vec<u8> {
-        Vec::new()
-    }
-
     async fn get(_conn: &mut Self::ConnectionType, _key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         Ok(None)
     }
@@ -116,24 +124,17 @@ impl NewEntity for DummyStoreValue {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl BorrowPrimaryKey for DummyStoreValue {
-    type BorrowedPrimaryKey = [u8];
-
-    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
-        &[]
-    }
-
-    async fn get_borrowed<Q>(_conn: &mut Self::ConnectionType, _key: &Q) -> CryptoKeystoreResult<Option<Self>>
-    where
-        Self::PrimaryKey: Borrow<Q>,
-        Q: KeyType,
-    {
+impl EntityGetBorrowed for DummyStoreValue {
+    async fn get_borrowed(
+        _conn: &mut Self::ConnectionType,
+        _key: &Self::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<Self>> {
         Ok(None)
     }
 }
 
 impl UniqueEntity for DummyStoreValue {
-    const KEY: <Self as NewEntity>::PrimaryKey = Vec::new();
+    const KEY: Self::PrimaryKey = Vec::new();
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -183,15 +184,23 @@ impl NewEntityBase for NewDummyStoreValue {
     }
 }
 
+impl PrimaryKey for NewDummyStoreValue {
+    type PrimaryKey = Vec<u8>;
+    fn primary_key(&self) -> Self::PrimaryKey {
+        self.id.clone()
+    }
+}
+
+impl BorrowPrimaryKey for NewDummyStoreValue {
+    type BorrowedPrimaryKey = [u8];
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &self.id
+    }
+}
+
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl NewEntity for NewDummyStoreValue {
-    type PrimaryKey = Vec<u8>;
-
-    fn primary_key(&self) -> Vec<u8> {
-        self.id.clone()
-    }
-
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         Self::get_borrowed(conn, key).await
     }
@@ -212,18 +221,11 @@ impl NewEntity for NewDummyStoreValue {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl BorrowPrimaryKey for NewDummyStoreValue {
-    type BorrowedPrimaryKey = [u8];
-
-    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
-        &self.id
-    }
-
-    async fn get_borrowed<Q>(_conn: &mut Self::ConnectionType, key: &Q) -> CryptoKeystoreResult<Option<Self>>
-    where
-        Self::PrimaryKey: Borrow<Q>,
-        Q: KeyType,
-    {
+impl EntityGetBorrowed for NewDummyStoreValue {
+    async fn get_borrowed(
+        _conn: &mut Self::ConnectionType,
+        key: &Self::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<Self>> {
         let guard = NEW_DUMMY_STORE_IDS.read().await;
         let key = key.bytes();
         let key = key.as_ref();
@@ -271,11 +273,7 @@ impl<'a> EntityDatabaseMutation<'a> for NewDummyStoreValue {
 #[async_trait::async_trait]
 impl EntityDeleteBorrowed<'_> for NewDummyStoreValue {
     /// Delete an entity by a borrowed form of its primary key.
-    async fn delete_borrowed<Q>(_tx: &Self::Transaction, id: &Q) -> CryptoKeystoreResult<bool>
-    where
-        Self::PrimaryKey: Borrow<Q>,
-        Q: KeyType,
-    {
+    async fn delete_borrowed(_tx: &Self::Transaction, id: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<bool> {
         let mut guard = NEW_DUMMY_STORE_IDS.write().await;
         let removed = guard.remove::<[u8]>(id.bytes().as_ref());
         Ok(removed)

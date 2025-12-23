@@ -1,7 +1,10 @@
-use zeroize::Zeroize;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use super::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId};
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::TransactionWrapper};
+use crate::{
+    CryptoKeystoreError, CryptoKeystoreResult,
+    connection::TransactionWrapper,
+    traits::{BorrowPrimaryKey, Entity, EntityBase, KeyType, OwnedKeyType, PrimaryKey},
+};
 
 /// Entity representing a persisted `MlsGroup`
 #[derive(
@@ -28,27 +31,33 @@ pub struct PersistedMlsGroup {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait PersistedMlsGroupExt: Entity {
+pub trait PersistedMlsGroupExt: Entity + BorrowPrimaryKey
+where
+    for<'a> &'a <Self as BorrowPrimaryKey>::BorrowedPrimaryKey: KeyType,
+{
     fn parent_id(&self) -> Option<&[u8]>;
 
-    async fn parent_group(
-        &self,
-        conn: &mut <Self as super::EntityBase>::ConnectionType,
-    ) -> CryptoKeystoreResult<Option<Self>> {
+    async fn parent_group(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>> {
         let Some(parent_id) = self.parent_id() else {
             return Ok(None);
         };
 
-        <Self as super::Entity>::find_one(conn, &parent_id.into()).await
+        let parent_id = OwnedKeyType::from_bytes(parent_id)
+            .ok_or(CryptoKeystoreError::InvalidPrimaryKeyBytes(Self::COLLECTION_NAME))?;
+        Self::get(conn, &parent_id).await
     }
 
-    async fn child_groups(
-        &self,
-        conn: &mut <Self as super::EntityBase>::ConnectionType,
-    ) -> CryptoKeystoreResult<Vec<Self>> {
-        let entities = <Self as super::Entity>::find_all(conn, super::EntityFindParams::default()).await?;
+    async fn child_groups(&self, conn: &mut <Self as EntityBase>::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
+        // A perfect opportunity for refactoring in WPB-20844
+        // when we do that, we no longer need varying implementations according to wasm or not,
+        // so both `parent_group` and this method should just be implemented directly on `PersistedMlsGroup`.
+        let entities = Self::load_all(conn).await?;
 
-        let id = self.id_raw();
+        // for whatever reason rustc needs each of these distinct bindings to prove to itself that the lifetimes work
+        // out
+        let id = self.borrow_primary_key();
+        let id = id.bytes();
+        let id = id.as_ref();
 
         Ok(entities
             .into_iter()
@@ -70,6 +79,77 @@ pub struct PersistedMlsPendingGroup {
     pub custom_configuration: Vec<u8>,
 }
 
+/// [`MlsPendingMessage`]s have no distinct primary key;
+/// they must always be accessed via [`MlsPendingMessage::find_all_by_conversation_id`] and
+/// cleaned up with [`MlsPendingMessage::delete_by_conversation_id`]
+///
+/// However, we have to fake a primary key type in order to support
+/// `KeystoreTransaction::remove_pending_messages_by_conversation_id`. Additionally we need the same one in WASM, where
+/// it's necessary for item-level encryption.
+///
+/// This implementation is fairly inefficient and hopefully temporary. But it at least implements the correct semantics.
+#[derive(ZeroizeOnDrop)]
+pub struct MlsPendingMessagePrimaryKey {
+    pub(crate) foreign_id: Vec<u8>,
+    message: Vec<u8>,
+}
+
+impl MlsPendingMessagePrimaryKey {
+    /// Construct a partial mls pending message primary key from only the conversation id.
+    ///
+    /// This does not in fact uniquely identify a single pending message--it should always uniquely
+    /// identify exactly 0 pending messages--but we have to have it so that we can search and delete
+    /// by conversation id within transactions.
+    pub(crate) fn from_conversation_id(conversation_id: impl AsRef<[u8]>) -> Self {
+        Self {
+            foreign_id: conversation_id.as_ref().to_owned(),
+            message: Vec::new(),
+        }
+    }
+}
+
+impl From<&MlsPendingMessage> for MlsPendingMessagePrimaryKey {
+    fn from(value: &MlsPendingMessage) -> Self {
+        Self {
+            foreign_id: value.foreign_id.clone(),
+            message: value.message.clone(),
+        }
+    }
+}
+
+impl KeyType for MlsPendingMessagePrimaryKey {
+    fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {
+        // run-length encoding: 32 bits of size for each field, followed by the field
+        let fields = [&self.foreign_id, &self.message];
+        let mut key = Vec::with_capacity(
+            ((u32::BITS / u8::BITS) as usize * fields.len()) + self.foreign_id.len() + self.message.len(),
+        );
+        for field in fields {
+            key.extend((field.len() as u32).to_le_bytes());
+            key.extend(field.as_slice());
+        }
+        key.into()
+    }
+}
+
+impl OwnedKeyType for MlsPendingMessagePrimaryKey {
+    fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        // run-length decoding: 32 bits of size for each field, followed by the field
+        let (len, bytes) = bytes.split_at_checked(4)?;
+        let len = u32::from_le_bytes(len.try_into().ok()?);
+        let (foreign_id, bytes) = bytes.split_at_checked(len as _)?;
+
+        let (len, bytes) = bytes.split_at_checked(4)?;
+        let len = u32::from_le_bytes(len.try_into().ok()?);
+        let (message, bytes) = bytes.split_at_checked(len as _)?;
+
+        bytes.is_empty().then(|| Self {
+            foreign_id: foreign_id.to_owned(),
+            message: message.to_owned(),
+        })
+    }
+}
+
 /// Entity representing a buffered message
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
@@ -77,6 +157,13 @@ pub struct MlsPendingMessage {
     #[sensitive]
     pub foreign_id: Vec<u8>,
     pub message: Vec<u8>,
+}
+
+impl PrimaryKey for MlsPendingMessage {
+    type PrimaryKey = MlsPendingMessagePrimaryKey;
+    fn primary_key(&self) -> Self::PrimaryKey {
+        self.into()
+    }
 }
 
 /// Entity representing a buffered commit.
@@ -239,7 +326,7 @@ pub struct StoredE2eiEnrollment {
 #[cfg(target_family = "wasm")]
 #[async_trait::async_trait(?Send)]
 pub trait UniqueEntity:
-    EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection>
+    crate::entities::EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection>
     + serde::Serialize
     + serde::de::DeserializeOwned
 where
@@ -259,7 +346,7 @@ where
             .ok_or(CryptoKeystoreError::NotFound(Self::COLLECTION_NAME, "".to_string()))?)
     }
 
-    async fn find_all(conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+    async fn find_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
         match Self::find_unique(conn).await {
             Ok(record) => Ok(vec![record]),
             Err(CryptoKeystoreError::NotFound(..)) => Ok(vec![]),
@@ -312,7 +399,7 @@ pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreD
         }
     }
 
-    async fn find_all(conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+    async fn find_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
         match Self::find_unique(conn).await {
             Ok(record) => Ok(vec![record]),
             Err(CryptoKeystoreError::NotFound(..)) => Ok(vec![]),
@@ -366,7 +453,13 @@ pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreD
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl<T: UniqueEntity + Send + Sync> EntityTransactionExt for T {
+impl<T> crate::entities::EntityTransactionExt for T
+where
+    T: crate::entities::Entity<ConnectionType = crate::connection::KeystoreDatabaseConnection>
+        + UniqueEntity
+        + Send
+        + Sync,
+{
     #[cfg(not(target_family = "wasm"))]
     async fn save(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         self.replace(tx).await
@@ -380,7 +473,7 @@ impl<T: UniqueEntity + Send + Sync> EntityTransactionExt for T {
     #[cfg(not(target_family = "wasm"))]
     async fn delete_fail_on_missing_id(
         _: &TransactionWrapper<'_>,
-        _id: StringEntityId<'_>,
+        _id: crate::entities::StringEntityId<'_>,
     ) -> CryptoKeystoreResult<()> {
         Err(CryptoKeystoreError::NotImplemented)
     }
@@ -388,7 +481,7 @@ impl<T: UniqueEntity + Send + Sync> EntityTransactionExt for T {
     #[cfg(target_family = "wasm")]
     async fn delete_fail_on_missing_id<'a>(
         _: &TransactionWrapper<'a>,
-        _id: StringEntityId<'a>,
+        _id: crate::entities::StringEntityId<'a>,
     ) -> CryptoKeystoreResult<()> {
         Err(CryptoKeystoreError::NotImplemented)
     }

@@ -324,7 +324,7 @@ mod migration_test {
     use crate::{
         ConnectionType, Database, DatabaseKey,
         connection::{FetchFromDatabase, MigrationTarget},
-        entities::{EntityFindParams, StoredCredential},
+        entities::StoredCredential,
     };
 
     const DB: &[u8] = include_bytes!("../../../../../crypto-ffi/bindings/jvm/src/test/resources/db-v10002003.sqlite");
@@ -438,7 +438,7 @@ mod migration_test {
                 .await
                 .unwrap();
             let deduplicated_credentials = db
-                .find_all::<StoredCredential>(EntityFindParams::default())
+                .load_all::<StoredCredential>()
                 .await
                 .expect("deduplicated credentials");
 

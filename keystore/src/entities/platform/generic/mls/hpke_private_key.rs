@@ -15,7 +15,7 @@ use crate::{
     },
     traits::{
         BorrowPrimaryKey, Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation,
-        EntityDeleteBorrowed, KeyType,
+        EntityDeleteBorrowed, EntityGetBorrowed, KeyType, PrimaryKey,
     },
 };
 
@@ -111,7 +111,7 @@ impl EntityBase for StoredHpkePrivateKey {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::HpkePrivateKey(self)
+        crate::transaction::dynamic_dispatch::Entity::HpkePrivateKey(self.into())
     }
 }
 
@@ -178,20 +178,30 @@ impl NewEntityBase for StoredHpkePrivateKey {
     const COLLECTION_NAME: &'static str = "mls_hpke_private_keys";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::HpkePrivateKey(self)
+        crate::transaction::dynamic_dispatch::Entity::HpkePrivateKey(self.into())
+    }
+}
+
+impl PrimaryKey for StoredHpkePrivateKey {
+    type PrimaryKey = Vec<u8>;
+
+    fn primary_key(&self) -> Vec<u8> {
+        self.pk.clone()
+    }
+}
+
+impl BorrowPrimaryKey for StoredHpkePrivateKey {
+    type BorrowedPrimaryKey = [u8];
+
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &self.pk
     }
 }
 
 #[async_trait]
 impl NewEntity for StoredHpkePrivateKey {
-    type PrimaryKey = Sha256Hash;
-
-    fn primary_key(&self) -> Sha256Hash {
-        Sha256Hash::hash_from(&self.pk)
-    }
-
-    async fn get(conn: &mut Self::ConnectionType, id: &Sha256Hash) -> CryptoKeystoreResult<Option<Self>> {
-        get_helper::<Self, _>(conn, "pk_sha256", id, Self::from_row).await
+    async fn get(conn: &mut Self::ConnectionType, id: &Vec<u8>) -> CryptoKeystoreResult<Option<Self>> {
+        Self::get_borrowed(conn, id.as_slice()).await
     }
 
     async fn load_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
@@ -200,6 +210,13 @@ impl NewEntity for StoredHpkePrivateKey {
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<u32> {
         count_helper::<Self>(conn).await
+    }
+}
+
+#[async_trait]
+impl EntityGetBorrowed for StoredHpkePrivateKey {
+    async fn get_borrowed(conn: &mut Self::ConnectionType, id: &[u8]) -> CryptoKeystoreResult<Option<Self>> {
+        get_helper::<Self, _>(conn, "pk", id, Self::from_row).await
     }
 }
 
@@ -218,7 +235,14 @@ impl<'a> EntityDatabaseMutation<'a> for StoredHpkePrivateKey {
         count_helper_tx::<Self>(tx).await
     }
 
-    async fn delete(tx: &Self::Transaction, id: &Sha256Hash) -> CryptoKeystoreResult<bool> {
-        delete_helper::<Self>(tx, "pk_sha256", id).await
+    async fn delete(tx: &Self::Transaction, id: &Vec<u8>) -> CryptoKeystoreResult<bool> {
+        Self::delete_borrowed(tx, id.as_slice()).await
+    }
+}
+
+#[async_trait]
+impl<'a> EntityDeleteBorrowed<'a> for StoredHpkePrivateKey {
+    async fn delete_borrowed(tx: &Self::Transaction, id: &[u8]) -> CryptoKeystoreResult<bool> {
+        delete_helper::<Self>(tx, "pk", id).await
     }
 }

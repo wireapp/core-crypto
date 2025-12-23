@@ -7,7 +7,7 @@ use crate::{
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, ProteusIdentity, StringEntityId},
     traits::{
         DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
-        EntityBase as NewEntityBase, EntityDatabaseMutation, KeyType as _, UniqueEntity,
+        EntityBase as NewEntityBase, EntityDatabaseMutation, KeyType as _, PrimaryKey, UniqueEntity,
     },
 };
 
@@ -22,7 +22,7 @@ impl EntityBase for ProteusIdentity {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::ProteusIdentity(self)
+        crate::transaction::dynamic_dispatch::Entity::ProteusIdentity(self.into())
     }
 }
 
@@ -81,7 +81,7 @@ impl NewEntityBase for ProteusIdentity {
     const COLLECTION_NAME: &'static str = "proteus_identities";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::ProteusIdentity(self)
+        crate::transaction::dynamic_dispatch::Entity::ProteusIdentity(self.into())
     }
 }
 
@@ -89,13 +89,15 @@ impl UniqueEntity for ProteusIdentity {
     const KEY: [u8; 1] = [1];
 }
 
-#[async_trait(?Send)]
-impl NewEntity for ProteusIdentity {
+impl PrimaryKey for ProteusIdentity {
     type PrimaryKey = [u8; 1];
-    fn primary_key(&self) -> [u8; 1] {
+    fn primary_key(&self) -> Self::PrimaryKey {
         Self::KEY
     }
+}
 
+#[async_trait(?Send)]
+impl NewEntity for ProteusIdentity {
     async fn get(conn: &mut Self::ConnectionType, _key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         let identity = Self::load_all(conn).await?.pop();
         Ok(identity)

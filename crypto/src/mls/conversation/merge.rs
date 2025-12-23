@@ -33,7 +33,7 @@ impl MlsConversation {
         // ..so if there's any, we clear them after the commit is merged
         for oln in &previous_own_leaf_nodes {
             let ek = oln.encryption_key().as_slice();
-            let _ = backend.key_store().remove::<StoredEncryptionKeyPair, _>(ek).await;
+            let _ = backend.key_store().remove_borrowed::<StoredEncryptionKeyPair>(ek).await;
         }
 
         client

@@ -8,8 +8,8 @@ use crate::{
     connection::{KeystoreDatabaseConnection, TransactionWrapper},
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StringEntityId},
     traits::{
-        DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
-        EntityBase as NewEntityBase, EntityDatabaseMutation,
+        DecryptWithExplicitEncryptionKey as _, Decryptable, Decrypting, EncryptWithExplicitEncryptionKey as _,
+        Encrypting, EncryptionKey, Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation,
     },
 };
 
@@ -24,7 +24,7 @@ impl EntityBase for MlsPendingMessage {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self)
+        crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self.into())
     }
 }
 
@@ -112,24 +112,12 @@ impl NewEntityBase for MlsPendingMessage {
     const COLLECTION_NAME: &'static str = "mls_pending_messages";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self)
+        crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self.into())
     }
 }
 
 #[async_trait(?Send)]
-/// Pending messages have no distinct primary key;
-/// they must always be accessed via [`MlsPendingMessage::find_all_by_conversation_id`] and
-/// cleaned up with [`MlsPendingMessage::delete_by_conversation_id`]
-///
-/// However, we have to fake it as a byte vector in this impl in order for encryption and decryption
-/// to work.
 impl NewEntity for MlsPendingMessage {
-    type PrimaryKey = Vec<u8>;
-
-    fn primary_key(&self) -> Vec<u8> {
-        self.foreign_id.clone()
-    }
-
     async fn get(_conn: &mut Self::ConnectionType, _key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         panic!("cannot get `MlsPendingMessage` by primary key as it has no distinct primary key")
     }
@@ -160,6 +148,12 @@ impl<'a> EntityDatabaseMutation<'a> for MlsPendingMessage {
     }
 }
 
+impl EncryptionKey for MlsPendingMessage {
+    fn encryption_key(&self) -> &[u8] {
+        &self.foreign_id
+    }
+}
+
 #[derive(Serialize)]
 pub struct MlsPendingMessageEncrypt<'a> {
     foreign_id: &'a [u8],
@@ -170,7 +164,7 @@ impl<'a> Encrypting<'a> for MlsPendingMessage {
     type EncryptedForm = MlsPendingMessageEncrypt<'a>;
 
     fn encrypt(&'a self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::EncryptedForm> {
-        let message = <Self as EncryptData>::encrypt_data(self, cipher, &self.message)?;
+        let message = self.encrypt_data_with_encryption_key(cipher, &self.message)?;
         Ok(MlsPendingMessageEncrypt {
             foreign_id: &self.foreign_id,
             message,
@@ -188,7 +182,7 @@ impl Decrypting<'static> for MlsPendingMessageDecrypt {
     type DecryptedForm = MlsPendingMessage;
 
     fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::DecryptedForm> {
-        let message = <MlsPendingMessage as DecryptData>::decrypt_data(cipher, &self.foreign_id, &self.message)?;
+        let message = MlsPendingMessage::decrypt_data_with_encryption_key(cipher, &self.foreign_id, &self.message)?;
         Ok(MlsPendingMessage {
             foreign_id: self.foreign_id,
             message,

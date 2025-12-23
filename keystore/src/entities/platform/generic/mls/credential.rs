@@ -16,7 +16,7 @@ use crate::{
     },
     traits::{
         BorrowPrimaryKey, Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation,
-        EntityDeleteBorrowed, KeyType,
+        EntityDeleteBorrowed, KeyType, PrimaryKey,
     },
 };
 
@@ -169,7 +169,7 @@ impl EntityBase for StoredCredential {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::StoredCredential(self)
+        crate::transaction::dynamic_dispatch::Entity::StoredCredential(self.into())
     }
 }
 
@@ -292,18 +292,20 @@ impl NewEntityBase for StoredCredential {
     const COLLECTION_NAME: &'static str = "mls_credentials";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::StoredCredential(self)
+        crate::transaction::dynamic_dispatch::Entity::StoredCredential(self.into())
     }
 }
 
-#[async_trait]
-impl NewEntity for StoredCredential {
+impl PrimaryKey for StoredCredential {
     type PrimaryKey = Sha256Hash;
 
     fn primary_key(&self) -> Self::PrimaryKey {
         Sha256Hash::hash_from(&self.public_key)
     }
+}
 
+#[async_trait]
+impl NewEntity for StoredCredential {
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         let conn = conn.conn().await;
         let mut stmt = conn.prepare_cached(
@@ -387,7 +389,7 @@ impl<'a> EntityDatabaseMutation<'a> for StoredCredential {
         count_helper_tx::<Self>(tx).await
     }
 
-    async fn delete(tx: &Self::Transaction, id: &<Self as NewEntity>::PrimaryKey) -> CryptoKeystoreResult<bool> {
+    async fn delete(tx: &Self::Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool> {
         delete_helper::<Self>(tx, "public_key_sha256", id).await
     }
 }

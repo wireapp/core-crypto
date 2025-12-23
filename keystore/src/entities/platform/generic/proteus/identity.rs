@@ -8,7 +8,7 @@ use crate::{
         Entity, EntityBase, EntityFindParams, EntityTransactionExt, ProteusIdentity, StringEntityId, count_helper,
         count_helper_tx, load_all_helper,
     },
-    traits::{Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation, UniqueEntity},
+    traits::{Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation, PrimaryKey, UniqueEntity},
 };
 
 #[async_trait::async_trait]
@@ -98,7 +98,7 @@ impl EntityBase for ProteusIdentity {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::ProteusIdentity(self)
+        crate::transaction::dynamic_dispatch::Entity::ProteusIdentity(self.into())
     }
 }
 
@@ -158,7 +158,7 @@ impl NewEntityBase for ProteusIdentity {
     const COLLECTION_NAME: &'static str = "proteus_identities";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::ProteusIdentity(self)
+        crate::transaction::dynamic_dispatch::Entity::ProteusIdentity(self.into())
     }
 }
 
@@ -166,14 +166,16 @@ impl UniqueEntity for ProteusIdentity {
     const KEY: () = ();
 }
 
-#[async_trait]
-impl NewEntity for ProteusIdentity {
+impl PrimaryKey for ProteusIdentity {
     type PrimaryKey = ();
     fn primary_key(&self) -> Self::PrimaryKey {}
+}
 
+#[async_trait]
+impl NewEntity for ProteusIdentity {
     async fn get(conn: &mut Self::ConnectionType, _key: &()) -> CryptoKeystoreResult<Option<Self>> {
         let conn = conn.conn().await;
-        let mut stmt = conn.prepare_cached("SELECT rowid FROM proteus_identities ORDER BY rowid ASC LIMIT 1")?;
+        let mut stmt = conn.prepare_cached("SELECT sk, pk FROM proteus_identities ORDER BY rowid ASC LIMIT 1")?;
         stmt.query_one([], Self::from_row).optional().map_err(Into::into)
     }
 

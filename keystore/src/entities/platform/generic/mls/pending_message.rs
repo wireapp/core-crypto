@@ -12,7 +12,7 @@ use crate::{
     },
     traits::{
         BorrowPrimaryKey, Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation,
-        EntityDeleteBorrowed, KeyType,
+        EntityDeleteBorrowed, EntityGetBorrowed, KeyType, OwnedKeyType, PrimaryKey,
     },
 };
 
@@ -158,7 +158,7 @@ impl EntityBase for MlsPendingMessage {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self)
+        crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self.into())
     }
 }
 
@@ -212,18 +212,12 @@ impl NewEntityBase for MlsPendingMessage {
     const COLLECTION_NAME: &'static str = "mls_pending_messages";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self)
+        crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self.into())
     }
 }
 
 #[async_trait]
-/// Pending messages have no distinct primary key;
-/// they must always be accessed via [`MlsPendingMessage::find_all_by_conversation_id`] and
-/// cleaned up with [`MlsPendingMessage::delete_by_conversation_id`]
 impl NewEntity for MlsPendingMessage {
-    type PrimaryKey = ();
-    fn primary_key(&self) -> Self::PrimaryKey {}
-
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         panic!("cannot get `MlsPendingMessage` by primary key as it has no distinct primary key")
     }

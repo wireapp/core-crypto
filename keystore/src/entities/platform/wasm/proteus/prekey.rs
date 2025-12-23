@@ -7,7 +7,7 @@ use crate::{
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, ProteusPrekey, StringEntityId},
     traits::{
         DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
-        EntityBase as NewEntityBase, EntityDatabaseMutation, KeyType,
+        EntityBase as NewEntityBase, EntityDatabaseMutation, KeyType, PrimaryKey,
     },
 };
 
@@ -22,7 +22,7 @@ impl EntityBase for ProteusPrekey {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::ProteusPrekey(self)
+        crate::transaction::dynamic_dispatch::Entity::ProteusPrekey(self.into())
     }
 }
 
@@ -75,18 +75,19 @@ impl NewEntityBase for ProteusPrekey {
     const COLLECTION_NAME: &'static str = "proteus_prekeys";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::ProteusPrekey(self)
+        crate::transaction::dynamic_dispatch::Entity::ProteusPrekey(self.into())
+    }
+}
+
+impl PrimaryKey for ProteusPrekey {
+    type PrimaryKey = u16;
+    fn primary_key(&self) -> Self::PrimaryKey {
+        self.id
     }
 }
 
 #[async_trait(?Send)]
 impl NewEntity for ProteusPrekey {
-    type PrimaryKey = u16;
-
-    fn primary_key(&self) -> u16 {
-        self.id
-    }
-
     async fn get(conn: &mut Self::ConnectionType, key: &u16) -> CryptoKeystoreResult<Option<Self>> {
         conn.storage().new_get(key.bytes().as_ref()).await
     }

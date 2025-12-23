@@ -34,7 +34,7 @@ impl EntityBase for E2eiAcmeCA {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::E2eiAcmeCA(self)
+        crate::transaction::dynamic_dispatch::Entity::E2eiAcmeCA(self.into())
     }
 }
 
@@ -44,7 +44,7 @@ impl NewEntityBase for E2eiAcmeCA {
     const COLLECTION_NAME: &'static str = "e2ei_acme_ca";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::E2eiAcmeCA(self)
+        crate::transaction::dynamic_dispatch::Entity::E2eiAcmeCA(self.into())
     }
 }
 

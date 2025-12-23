@@ -2,12 +2,12 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    CryptoKeystoreResult, MissingKeyErrorKind, Sha256Hash,
+    CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StoredPskBundle, StringEntityId},
     traits::{
-        DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
-        EntityBase as NewEntityBase, EntityDatabaseMutation, KeyType as _,
+        BorrowPrimaryKey, DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
+        EntityBase as NewEntityBase, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, PrimaryKey,
     },
 };
 
@@ -22,7 +22,7 @@ impl EntityBase for StoredPskBundle {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::PskBundle(self)
+        crate::transaction::dynamic_dispatch::Entity::PskBundle(self.into())
     }
 }
 
@@ -75,20 +75,30 @@ impl NewEntityBase for StoredPskBundle {
     const COLLECTION_NAME: &'static str = "mls_psk_bundles";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::PskBundle(self)
+        crate::transaction::dynamic_dispatch::Entity::PskBundle(self.into())
+    }
+}
+
+impl PrimaryKey for StoredPskBundle {
+    type PrimaryKey = Vec<u8>;
+
+    fn primary_key(&self) -> Vec<u8> {
+        self.psk_id.clone()
+    }
+}
+
+impl BorrowPrimaryKey for StoredPskBundle {
+    type BorrowedPrimaryKey = [u8];
+
+    fn borrow_primary_key(&self) -> &[u8] {
+        &self.psk_id
     }
 }
 
 #[async_trait(?Send)]
 impl NewEntity for StoredPskBundle {
-    type PrimaryKey = Sha256Hash;
-
-    fn primary_key(&self) -> Self::PrimaryKey {
-        Sha256Hash::hash_from(&self.psk_id)
-    }
-
-    async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
-        conn.storage().new_get(key.bytes().as_ref()).await
+    async fn get(conn: &mut Self::ConnectionType, key: &Vec<u8>) -> CryptoKeystoreResult<Option<Self>> {
+        Self::get_borrowed(conn, key.as_slice()).await
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<u32> {
@@ -97,6 +107,16 @@ impl NewEntity for StoredPskBundle {
 
     async fn load_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
         conn.storage().new_get_all().await
+    }
+}
+
+#[async_trait(?Send)]
+impl EntityGetBorrowed for StoredPskBundle {
+    async fn get_borrowed(
+        conn: &mut <Self as NewEntityBase>::ConnectionType,
+        key: &[u8],
+    ) -> CryptoKeystoreResult<Option<Self>> {
+        conn.storage().new_get(key).await
     }
 }
 
@@ -112,8 +132,18 @@ impl<'a> EntityDatabaseMutation<'a> for StoredPskBundle {
         tx.new_count::<Self>().await
     }
 
-    async fn delete(tx: &Self::Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool> {
-        tx.new_delete::<Self>(id.bytes().as_ref()).await
+    async fn delete(tx: &Self::Transaction, id: &Vec<u8>) -> CryptoKeystoreResult<bool> {
+        Self::delete_borrowed(tx, id.as_slice()).await
+    }
+}
+
+#[async_trait(?Send)]
+impl<'a> EntityDeleteBorrowed<'a> for StoredPskBundle {
+    async fn delete_borrowed(
+        tx: &<Self as EntityDatabaseMutation<'a>>::Transaction,
+        id: &[u8],
+    ) -> CryptoKeystoreResult<bool> {
+        tx.new_delete::<Self>(id).await
     }
 }
 
@@ -145,8 +175,7 @@ impl Decrypting<'static> for StoredPskBundleDecrypt {
     type DecryptedForm = StoredPskBundle;
 
     fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::DecryptedForm> {
-        let primary_key = Sha256Hash::hash_from(&self.psk_id);
-        let psk = <StoredPskBundle as DecryptData>::decrypt_data(cipher, &primary_key, &self.psk)?;
+        let psk = <StoredPskBundle as DecryptData>::decrypt_data(cipher, &self.psk_id, &self.psk)?;
         Ok(StoredPskBundle {
             psk_id: self.psk_id,
             psk,

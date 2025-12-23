@@ -7,7 +7,7 @@ use crate::{
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StoredCredential, StringEntityId},
     traits::{
         DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity as NewEntity,
-        EntityBase as NewEntityBase, EntityDatabaseMutation, KeyType as _,
+        EntityBase as NewEntityBase, EntityDatabaseMutation, KeyType as _, PrimaryKey,
     },
 };
 
@@ -22,7 +22,7 @@ impl EntityBase for StoredCredential {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::StoredCredential(self)
+        crate::transaction::dynamic_dispatch::Entity::StoredCredential(self.into())
     }
 }
 
@@ -91,18 +91,20 @@ impl NewEntityBase for StoredCredential {
     const COLLECTION_NAME: &'static str = "mls_credentials";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::StoredCredential(self)
+        crate::transaction::dynamic_dispatch::Entity::StoredCredential(self.into())
     }
 }
 
-#[async_trait(?Send)]
-impl NewEntity for StoredCredential {
+impl PrimaryKey for StoredCredential {
     type PrimaryKey = Sha256Hash;
 
     fn primary_key(&self) -> Self::PrimaryKey {
         Sha256Hash::hash_from(&self.public_key)
     }
+}
 
+#[async_trait(?Send)]
+impl NewEntity for StoredCredential {
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         conn.storage().new_get(key.bytes().as_ref()).await
     }
@@ -138,7 +140,7 @@ impl<'a> EntityDatabaseMutation<'a> for StoredCredential {
         tx.new_count::<Self>().await
     }
 
-    async fn delete(tx: &Self::Transaction, id: &<Self as NewEntity>::PrimaryKey) -> CryptoKeystoreResult<bool> {
+    async fn delete(tx: &Self::Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool> {
         tx.new_delete::<Self>(id.bytes().as_ref()).await
     }
 }
