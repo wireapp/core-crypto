@@ -1,6 +1,6 @@
 use std::hint::black_box;
 
-use core_crypto::{CredentialType, MlsConversationConfiguration, MlsCustomConfiguration};
+use core_crypto::MlsConversationConfiguration;
 use criterion::{
     BatchSize, BenchmarkId, Criterion, async_executor::SmolExecutor as FuturesExecutor, criterion_group, criterion_main,
 };
@@ -21,18 +21,19 @@ fn create_group_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         smol::block_on(async {
-                            let (central, ..) = new_central(*ciphersuite, credential.as_ref(), in_memory, true).await;
+                            let (central, _, _, credential_ref) =
+                                new_central(*ciphersuite, credential.as_ref(), in_memory).await;
                             let id = conversation_id();
                             let cfg = MlsConversationConfiguration {
                                 ciphersuite: *ciphersuite,
                                 ..Default::default()
                             };
-                            (central, id, cfg)
+                            (central, id, credential_ref, cfg)
                         })
                     },
-                    |(central, id, cfg)| async move {
+                    |(central, id, credential_ref, cfg)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        context.new_conversation(&id, CredentialType::Basic, cfg).await.unwrap();
+                        context.new_conversation(&id, &credential_ref, cfg).await.unwrap();
                         context.finish().await.unwrap();
                         black_box(());
                     },
@@ -57,9 +58,7 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
 
                             let (bob_central, _, _, bob_credential_ref) =
-                                new_central(ciphersuite, credential.as_ref(), in_memory, true).await;
-                            let bob_credential_ref =
-                                bob_credential_ref.expect("new_central definitely created a credential for bob");
+                                new_central(ciphersuite, credential.as_ref(), in_memory).await;
                             let bob_context = bob_central.new_transaction().await.unwrap();
 
                             let bob_kp = bob_context
@@ -82,12 +81,7 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                     },
                     |(central, welcome)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(
-                            context
-                                .process_welcome_message(welcome.into(), MlsCustomConfiguration::default())
-                                .await
-                                .unwrap(),
-                        );
+                        black_box(context.process_welcome_message(welcome.into()).await.unwrap());
                         context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
@@ -109,20 +103,16 @@ fn join_from_group_info_bench(c: &mut Criterion) {
                         smol::block_on(async {
                             let (_, _, _, group_info, ..) =
                                 setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
-                            let (bob_central, ..) =
-                                new_central(ciphersuite, credential.as_ref(), in_memory, true).await;
-                            (bob_central, group_info)
+                            let (bob_central, _, _, bob_credential_ref) =
+                                new_central(ciphersuite, credential.as_ref(), in_memory).await;
+                            (bob_central, group_info, bob_credential_ref)
                         })
                     },
-                    |(central, group_info)| async move {
+                    |(central, group_info, credential_ref)| async move {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
                             context
-                                .join_by_external_commit(
-                                    group_info,
-                                    MlsCustomConfiguration::default(),
-                                    CredentialType::Basic,
-                                )
+                                .join_by_external_commit(group_info, &credential_ref)
                                 .await
                                 .unwrap(),
                         );

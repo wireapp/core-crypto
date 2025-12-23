@@ -24,8 +24,9 @@ use self::error::Result;
 pub(crate) use self::{epoch_observer::TestEpochObserver, history_observer::TestHistoryObserver};
 pub use self::{error::Error as TestError, message::*, test_context::*, test_conversation::TestConversation};
 use crate::{
-    CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Credential, Database, DatabaseKey, Error,
-    MlsCommitBundle, MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse, RecursiveError, Session,
+    CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Credential, CredentialRef, Database,
+    DatabaseKey, Error, MlsCommitBundle, MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse,
+    RecursiveError, Session,
     e2e_identity::id::QualifiedE2eiClientId,
     mls::HistoryObserver,
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
@@ -89,6 +90,7 @@ pub struct SessionContext {
     pub transaction: TransactionContext,
     pub session: Session,
     pub identifier: ClientIdentifier,
+    pub initial_credential: CredentialRef,
     mls_transport: Arc<RwLock<Arc<dyn MlsTransportTestExt + 'static>>>,
     x509_test_chain: Arc<Option<X509TestChain>>,
     history_observer: Arc<RwLock<Option<Arc<TestHistoryObserver>>>>,
@@ -139,11 +141,12 @@ impl SessionContext {
 
         let credential = Credential::from_identifier(&identifier, context.ciphersuite(), &session.crypto_provider)
             .map_err(RecursiveError::mls_credential("creating credential from identifier"))?;
-        session.add_credential(credential).await.unwrap();
+        let initial_credential = session.add_credential(credential).await.unwrap();
 
         let session_context = Self {
             transaction,
             session,
+            initial_credential,
             identifier,
             mls_transport: Arc::new(RwLock::new(context.transport.clone())),
             x509_test_chain: Arc::new(chain.cloned()),
@@ -166,10 +169,15 @@ impl SessionContext {
         session.provide_transport(transport.clone()).await;
 
         let identifier = context.generate_identifier(chain).await;
+        let initial_credential =
+            Credential::from_identifier(&identifier, context.ciphersuite(), &session.crypto_provider)
+                .expect("creating credential from identifier");
+        let initial_credential = CredentialRef::from_credential(&initial_credential);
 
         Self {
             transaction,
             session,
+            initial_credential,
             identifier,
             mls_transport: Arc::new(RwLock::new(transport)),
             x509_test_chain: Arc::new(chain.cloned()),

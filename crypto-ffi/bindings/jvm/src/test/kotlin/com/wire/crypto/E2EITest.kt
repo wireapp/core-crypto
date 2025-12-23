@@ -218,12 +218,12 @@ internal class E2EITest : HasMockDeliveryService() {
         runTest {
             val (alice, bob) = newClients(this@E2EITest, genClientId(), genClientId())
 
-            bob.transaction { ctx -> ctx.createConversation(id, CREDENTIAL_TYPE_DEFAULT, CONVERSATION_CONFIGURATION_DEFAULT) }
+            bob.transaction { ctx -> ctx.createConversationShort(id) }
 
             val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1u).first() }
             bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
             val welcome = HasMockDeliveryService.mockDeliveryService.getLatestWelcome()
-            val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome, CUSTOM_CONFIGURATION_DEFAULT).id }
+            val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome).id }
 
             assertThat(alice.transaction { ctx -> ctx.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NOT_ENABLED)
             assertThat(bob.transaction { ctx -> ctx.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NOT_ENABLED)

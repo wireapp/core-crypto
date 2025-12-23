@@ -18,13 +18,10 @@ fn generate_key_package_bench(c: &mut Criterion) {
                     || {
                         smol::block_on(async {
                             let (client, _, _, credential_ref) =
-                                setup_mls(ciphersuite, certificate_bundle.as_ref(), in_memory, true).await;
+                                setup_mls(ciphersuite, certificate_bundle.as_ref(), in_memory).await;
 
                             let tx_context = client.new_transaction().await.unwrap();
-                            (
-                                tx_context,
-                                credential_ref.expect("we definitely created a credential in setup_mls"),
-                            )
+                            (tx_context, credential_ref)
                         })
                     },
                     |(context, credential_ref)| async move {
@@ -50,8 +47,7 @@ fn get_key_packages_bench(c: &mut Criterion) {
                     || {
                         smol::block_on(async {
                             let (client, _, _, credential_ref) =
-                                setup_mls(ciphersuite, certificate_bundle.as_ref(), in_memory, true).await;
-                            let credential_ref = credential_ref.expect("we did add a credential above");
+                                setup_mls(ciphersuite, certificate_bundle.as_ref(), in_memory).await;
                             let context = client.new_transaction().await.unwrap();
 
                             for _ in 0..*i {

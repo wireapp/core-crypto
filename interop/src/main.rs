@@ -174,9 +174,9 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     transaction
         .mls_init(master_client_id.into(), &[CIPHERSUITE_IN_USE.into()])
         .await?;
-    transaction.add_credential(credential).await?;
+    let credential_ref = transaction.add_credential(credential).await?;
     transaction
-        .new_conversation(&conversation_id, CredentialType::Basic, config)
+        .new_conversation(&conversation_id, &credential_ref, config)
         .await?;
 
     spinner.success("[MLS] Step 0: Initializing clients [OK]");

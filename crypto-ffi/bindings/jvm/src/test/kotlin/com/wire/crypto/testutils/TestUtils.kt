@@ -103,7 +103,17 @@ suspend fun CoreCryptoContext.mlsInitShort(clientId: ClientId) = mlsInit(clientI
 /** Shorthand for creating a conversation with defaults */
 suspend fun CoreCryptoContext.createConversationShort(
     id: ConversationId
-) = createConversation(id, CREDENTIAL_TYPE_DEFAULT, CONVERSATION_CONFIGURATION_DEFAULT)
+) {
+    val credentials = findCredentials(
+        clientId = null,
+        publicKey = null,
+        ciphersuite = CIPHERSUITE_DEFAULT,
+        credentialType = CREDENTIAL_TYPE_DEFAULT,
+        earliestValidity = null
+    )
+    val credential = credentials.last()
+    createConversation(id, credential, null)
+}
 
 /** Shorthand for generating keypackages with defaults */
 suspend fun CoreCryptoContext.clientKeypackagesShort(amount: UInt): List<Keypackage> {

@@ -4,7 +4,7 @@ use openmls::{group::QueuedProposal, prelude::group_info::VerifiableGroupInfo};
 
 use super::{CredentialType, MessageExt as _, MlsTransportTestExt, SessionContext, TestContext, TestError};
 use crate::{
-    ConversationId, E2eiConversationState, MlsProposalRef, RecursiveError,
+    ConversationId, CredentialRef, E2eiConversationState, MlsProposalRef, RecursiveError,
     mls::{
         conversation::{Conversation, ConversationGuard, ConversationWithMls as _},
         credential::{Credential, ext::CredentialExt as _},
@@ -31,19 +31,19 @@ pub struct TestConversation<'a> {
 impl<'a> TestConversation<'a> {
     /// Create a new test conversation with parameters inherited from the [TestContext].
     pub async fn new(case: &'a TestContext, creator: &'a SessionContext) -> Self {
-        Self::new_with_credential_type(case, creator, case.credential_type).await
+        Self::new_with_credential(case, creator, &creator.initial_credential).await
     }
 
     /// Like [Self::new], but with the provided [CredentialType].
-    pub async fn new_with_credential_type(
+    pub async fn new_with_credential(
         case: &'a TestContext,
         creator: &'a SessionContext,
-        credential_type: CredentialType,
+        credential_ref: &CredentialRef,
     ) -> Self {
         let id = super::conversation_id();
         creator
             .transaction
-            .new_conversation(&id, credential_type, case.cfg.clone())
+            .new_conversation(&id, credential_ref, case.cfg.clone())
             .await
             .unwrap();
 

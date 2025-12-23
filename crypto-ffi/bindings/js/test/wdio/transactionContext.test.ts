@@ -95,10 +95,14 @@ describe("transaction context", () => {
             let thrownError;
             try {
                 await cc.transaction(async (ctx) => {
+                    const [credentialRef] = await ctx.findCredentials({
+                        credentialType: basicCredentialType,
+                    });
                     await ctx.createConversation(
                         conversationId,
-                        basicCredentialType
+                        credentialRef!
                     );
+
                     throw expectedError;
                 });
             } catch (e) {
@@ -110,16 +114,19 @@ describe("transaction context", () => {
 
             // This would fail with a "Conversation already exists" error, if the above transaction hadn't been rolled back.
             await cc.transaction(async (ctx) => {
-                await ctx.createConversation(
-                    conversationId,
-                    basicCredentialType
-                );
+                const [credentialRef] = await ctx.findCredentials({
+                    credentialType: basicCredentialType,
+                });
+                await ctx.createConversation(conversationId, credentialRef!);
             });
             try {
                 await cc.transaction(async (ctx) => {
+                    const [credentialRef] = await ctx.findCredentials({
+                        credentialType: basicCredentialType,
+                    });
                     await ctx.createConversation(
                         conversationId,
-                        basicCredentialType
+                        credentialRef!
                     );
                 });
             } catch (err) {

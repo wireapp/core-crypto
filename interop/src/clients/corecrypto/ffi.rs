@@ -4,8 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use core_crypto_ffi::{
-    ClientId, CoreCryptoFfi, CredentialType, CustomConfiguration, Database, DatabaseKey, Keypackage, TransactionHelper,
-    credential_basic,
+    ClientId, CoreCryptoFfi, CredentialType, Database, DatabaseKey, TransactionHelper, credential_basic,
 };
 use tempfile::NamedTempFile;
 
@@ -107,36 +106,6 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         kp.serialize().map_err(Into::into)
     }
 
-    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
-        let conversation_id = conversation_id.into();
-        if !self.cc.conversation_exists(&conversation_id).await? {
-            let cfg = core_crypto_ffi::ConversationConfiguration {
-                ciphersuite: Some(CIPHERSUITE_IN_USE.into()),
-                external_senders: Default::default(),
-                custom: Default::default(),
-            };
-            let conversation_id = conversation_id.clone();
-            self.cc
-                .transaction(TransactionHelper::new(async move |context| {
-                    let conversation_id = conversation_id.clone();
-                    context
-                        .create_conversation(&conversation_id, CredentialType::Basic, cfg)
-                        .await?;
-                    Ok(())
-                }))
-                .await?;
-        }
-
-        let key_packages = vec![Arc::new(Keypackage::new(kp)?)];
-        let extractor = TransactionHelper::new(async move |context| {
-            context
-                .add_clients_to_conversation(&conversation_id, key_packages)
-                .await
-        });
-        self.cc.transaction(extractor.clone()).await?;
-        Ok(())
-    }
-
     async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
         let client_id = Arc::new(ClientId::from(core_crypto::ClientId::from(client_id.to_owned())));
         let conversation_id = conversation_id.into();
@@ -150,13 +119,9 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
     }
 
     async fn process_welcome(&self, welcome: &[u8]) -> Result<Vec<u8>> {
-        let cfg = CustomConfiguration {
-            key_rotation_span: None,
-            wire_policy: None,
-        };
         let welcome = Arc::new(welcome.into());
         let extractor =
-            TransactionHelper::new(move |context| async move { context.process_welcome_message(welcome, cfg).await });
+            TransactionHelper::new(move |context| async move { context.process_welcome_message(welcome).await });
         self.cc.transaction(extractor.clone()).await?;
         Ok(extractor.into_return_value().id.copy_bytes())
     }

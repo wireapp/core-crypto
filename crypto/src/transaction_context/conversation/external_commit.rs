@@ -4,8 +4,8 @@ use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
 use super::{Error, Result};
 use crate::{
-    ConversationId, CredentialType, LeafError, MlsCommitBundle, MlsConversationConfiguration, MlsCustomConfiguration,
-    MlsError, MlsGroupInfoBundle, RecursiveError, WelcomeBundle,
+    ConversationId, CredentialRef, LeafError, MlsCommitBundle, MlsConversationConfiguration, MlsError,
+    MlsGroupInfoBundle, RecursiveError, WelcomeBundle,
     mls::{
         self,
         conversation::{ConversationIdRef, pending_conversation::PendingConversation},
@@ -27,11 +27,7 @@ impl TransactionContext {
     /// # Arguments
     /// * `group_info` - a GroupInfo wrapped in a MLS message. it can be obtained by deserializing a TLS serialized
     ///   `GroupInfo` object
-    /// * `custom_cfg` - configuration of the MLS conversation fetched from the Delivery Service
-    /// * `credential_type` - kind of [openmls::prelude::Credential] to use for joining this group. If
-    ///   [CredentialType::Basic] is chosen and no Credential has been created yet for it, a new one will be generated.
-    ///   When [CredentialType::X509] is chosen, it fails when no [openmls::prelude::Credential] has been created for
-    ///   the given Ciphersuite.
+    /// * `credential_ref` - reference to the [crate::Credential] to use for joining this group.
     ///
     /// # Returns [WelcomeBundle]
     ///
@@ -40,12 +36,10 @@ impl TransactionContext {
     pub async fn join_by_external_commit(
         &self,
         group_info: VerifiableGroupInfo,
-        custom_cfg: MlsCustomConfiguration,
-        credential_type: CredentialType,
+        credential_ref: &CredentialRef,
     ) -> Result<WelcomeBundle> {
-        let (commit_bundle, welcome_bundle, mut pending_conversation) = self
-            .create_external_join_commit(group_info, custom_cfg, credential_type)
-            .await?;
+        let (commit_bundle, welcome_bundle, mut pending_conversation) =
+            self.create_external_join_commit(group_info, credential_ref).await?;
 
         let commit_result = pending_conversation.send_commit(commit_bundle).await;
         if let Err(err @ mls::conversation::Error::MessageRejected { .. }) = commit_result {
@@ -68,27 +62,24 @@ impl TransactionContext {
     pub(crate) async fn create_external_join_commit(
         &self,
         group_info: VerifiableGroupInfo,
-        custom_cfg: MlsCustomConfiguration,
-        credential_type: CredentialType,
+        credential_ref: &CredentialRef,
     ) -> Result<(MlsCommitBundle, WelcomeBundle, PendingConversation)> {
-        let client = &self.session().await?;
-
         let ciphersuite = group_info.ciphersuite().into();
         let mls_provider = self.mls_provider().await?;
-        let cb = client
-            .find_most_recent_or_create_basic_credential(ciphersuite, credential_type)
+        let database = mls_provider.keystore();
+        let credential = credential_ref
+            .load(&database)
             .await
-            .map_err(RecursiveError::mls_client("getting or creating credential"))?;
+            .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
 
         let configuration = MlsConversationConfiguration {
             ciphersuite,
-            custom: custom_cfg.clone(),
             ..Default::default()
         };
 
         let (group, commit, group_info) = MlsGroup::join_by_external_commit(
             &mls_provider,
-            &cb.signature_key_pair,
+            &credential.signature_key_pair,
             None,
             group_info,
             &configuration
@@ -97,7 +88,7 @@ impl TransactionContext {
                     "using configuration as openmls default configuration",
                 ))?,
             &[],
-            cb.to_mls_credential_with_key(),
+            credential.to_mls_credential_with_key(),
         )
         .await
         .map_err(MlsError::wrap("joining mls group by external commit"))?;
@@ -118,7 +109,7 @@ impl TransactionContext {
 
         let new_group_id = group.group_id().to_vec();
 
-        let pending_conversation = PendingConversation::from_mls_group(group, custom_cfg, self.clone())
+        let pending_conversation = PendingConversation::from_mls_group(group, self.clone())
             .map_err(RecursiveError::mls_conversation("creating pending conversation"))?;
         pending_conversation
             .save()
@@ -340,10 +331,11 @@ mod tests {
             // Bob to join a conversation but while the server processes its request he
             // creates a conversation with the id of the conversation he's trying to join
             conversation.external_join(&bob).await;
+            let credential_ref = &bob.initial_credential;
             // erroneous call
             let conflict_join = bob
                 .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .new_conversation(&id, credential_ref, case.cfg.clone())
                 .await;
             assert!(matches!(
                 conflict_join.unwrap_err(),
@@ -375,7 +367,7 @@ mod tests {
                 // erroneous call
                 let conflict_welcome = bob
                     .transaction
-                    .process_welcome_message(welcome.into(), case.custom_cfg())
+                    .process_welcome_message(welcome.into() )
                     .await;
 
                 assert!(matches!(
@@ -423,7 +415,7 @@ mod tests {
 
         let join_ext_commit = guest
             .transaction
-            .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
+            .join_by_external_commit(group_info, &guest.initial_credential)
             .await;
 
         assert!(innermost_source_matches!(

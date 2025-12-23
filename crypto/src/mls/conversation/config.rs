@@ -103,6 +103,29 @@ impl MlsConversationConfiguration {
         RequiredCapabilitiesExtension::new(&[], &[], Self::DEFAULT_SUPPORTED_CREDENTIALS)
     }
 
+    /// Parses external senders' keys provided by the delivery service
+    /// and updates the conversation's configuration with them.
+    pub async fn set_raw_external_senders(
+        &mut self,
+        mls_crypto_provider: &MlsCryptoProvider,
+        external_senders: impl IntoIterator<Item = Vec<u8>>,
+    ) -> Result<()> {
+        self.external_senders = external_senders
+            .into_iter()
+            .map(|key| {
+                MlsConversationConfiguration::parse_external_sender(&key).or_else(|_| {
+                    MlsConversationConfiguration::legacy_external_sender(
+                        key,
+                        self.ciphersuite.signature_algorithm(),
+                        mls_crypto_provider,
+                    )
+                })
+            })
+            .collect::<crate::mls::conversation::Result<_>>()
+            .map_err(RecursiveError::mls_conversation("setting external sender"))?;
+        Ok(())
+    }
+
     /// This expects a raw json serialized JWK. It works with any Signature scheme
     pub(crate) fn parse_external_sender(jwk: &[u8]) -> Result<ExternalSender> {
         let pk = parse_json_jwk(jwk)
@@ -271,8 +294,9 @@ mod tests {
                 .unwrap();
 
             assert!(
-                cc.transaction
-                    .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
+                case.cfg
+                    .clone()
+                    .set_raw_external_senders(&cc.session().await.crypto_provider, vec![pk])
                     .await
                     .is_ok()
             );
@@ -295,10 +319,13 @@ mod tests {
             };
 
             let jwk = wire_e2e_identity::prelude::generate_jwk(alg);
-            cc.transaction
-                .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk])
-                .await
-                .unwrap();
+            assert!(
+                case.cfg
+                    .clone()
+                    .set_raw_external_senders(&cc.session().await.crypto_provider, vec![jwk])
+                    .await
+                    .is_ok()
+            );
         })
         .await;
     }

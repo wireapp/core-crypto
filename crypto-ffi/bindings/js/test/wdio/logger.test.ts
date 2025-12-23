@@ -49,10 +49,10 @@ describe("logger", () => {
                     new TextEncoder().encode(conversationId).buffer
                 );
                 await cc.transaction(async (ctx) => {
-                    await ctx.createConversation(
-                        cid,
-                        window.ccModule.CredentialType.Basic
-                    );
+                    const [credentialRef] = await ctx.findCredentials({
+                        credentialType: window.ccModule.CredentialType.Basic,
+                    });
+                    await ctx.createConversation(cid, credentialRef!);
                 });
                 return logs;
             },
@@ -89,10 +89,10 @@ describe("logger", () => {
                     new TextEncoder().encode(conversationId).buffer
                 );
                 await cc.transaction(async (ctx) => {
-                    await ctx.createConversation(
-                        cid,
-                        window.ccModule.CredentialType.Basic
-                    );
+                    const [credentialRef] = await ctx.findCredentials({
+                        credentialType: window.ccModule.CredentialType.Basic,
+                    });
+                    await ctx.createConversation(cid, credentialRef!);
                 });
                 return logs;
             },
@@ -124,10 +124,10 @@ describe("logger", () => {
                     new TextEncoder().encode(conversationId).buffer
                 );
                 await cc.transaction(async (ctx) => {
-                    await ctx.createConversation(
-                        cid,
-                        window.ccModule.CredentialType.Basic
-                    );
+                    const [credentialRef] = await ctx.findCredentials({
+                        credentialType: window.ccModule.CredentialType.Basic,
+                    });
+                    await ctx.createConversation(cid, credentialRef!);
                 });
                 return logs;
             },
@@ -159,10 +159,10 @@ describe("logger", () => {
                     new TextEncoder().encode(conversationId).buffer
                 );
                 await cc.transaction(async (ctx) => {
-                    await ctx.createConversation(
-                        cid,
-                        window.ccModule.CredentialType.Basic
-                    );
+                    const [credentialRef] = await ctx.findCredentials({
+                        credentialType: window.ccModule.CredentialType.Basic,
+                    });
+                    await ctx.createConversation(cid, credentialRef!);
                 });
             },
             alice,

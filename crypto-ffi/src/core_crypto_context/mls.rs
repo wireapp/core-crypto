@@ -8,9 +8,9 @@ use core_crypto::{
 use tls_codec::Deserialize as _;
 
 use crate::{
-    Ciphersuite, ClientId, ConversationConfiguration, ConversationId, CoreCryptoContext, CoreCryptoResult, Credential,
-    CredentialRef, CredentialType, CustomConfiguration, DecryptedMessage, Keypackage, KeypackageRef, WelcomeBundle,
-    bytes_wrapper::bytes_wrapper, crl::NewCrlDistributionPoints,
+    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, Credential, CredentialRef,
+    CredentialType, DecryptedMessage, Keypackage, KeypackageRef, WelcomeBundle, bytes_wrapper::bytes_wrapper,
+    crl::NewCrlDistributionPoints,
 };
 
 bytes_wrapper!(
@@ -88,6 +88,31 @@ impl CoreCryptoContext {
         Ok(Ciphersuite::from(cs))
     }
 
+    /// Get the credential ref for the given conversation.
+    pub async fn conversation_credential(&self, conversation_id: &ConversationId) -> CoreCryptoResult<CredentialRef> {
+        self.inner
+            .conversation(conversation_id.as_ref())
+            .await?
+            .credential_ref()
+            .await
+            .map(Into::into)
+            .map_err(Into::into)
+    }
+
+    /// Set the credential ref for the given conversation.
+    pub async fn set_conversation_credential(
+        &self,
+        conversation_id: &ConversationId,
+        credential_ref: Arc<CredentialRef>,
+    ) -> CoreCryptoResult<()> {
+        self.inner
+            .conversation(conversation_id.as_ref())
+            .await?
+            .set_credential_by_ref(&credential_ref.0)
+            .await
+            .map_err(Into::into)
+    }
+
     /// See [core_crypto::Session::conversation_exists]
     pub async fn conversation_exists(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
         self.inner
@@ -137,40 +162,34 @@ impl CoreCryptoContext {
     pub async fn create_conversation(
         &self,
         conversation_id: &ConversationId,
-        creator_credential_type: CredentialType,
-        config: ConversationConfiguration,
+        credential_ref: &CredentialRef,
+        external_sender: Option<Arc<ExternalSenderKey>>,
     ) -> CoreCryptoResult<()> {
         let mut lower_cfg = MlsConversationConfiguration {
-            custom: config.custom.into(),
-            ciphersuite: config.ciphersuite.map(Into::into).unwrap_or_default(),
+            ciphersuite: credential_ref.ciphersuite().into(),
             ..Default::default()
         };
 
-        self.inner
+        lower_cfg
             .set_raw_external_senders(
-                &mut lower_cfg,
-                config
-                    .external_senders
+                &self.inner.mls_provider().await?,
+                external_sender
                     .into_iter()
                     .map(|external_sender| external_sender.copy_bytes()),
             )
             .await?;
 
         self.inner
-            .new_conversation(conversation_id.as_ref(), creator_credential_type.into(), lower_cfg)
+            .new_conversation(conversation_id.as_ref(), &credential_ref.0, lower_cfg)
             .await?;
         Ok(())
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::process_raw_welcome_message]
-    pub async fn process_welcome_message(
-        &self,
-        welcome_message: Arc<Welcome>,
-        custom_configuration: CustomConfiguration,
-    ) -> CoreCryptoResult<WelcomeBundle> {
+    pub async fn process_welcome_message(&self, welcome_message: Arc<Welcome>) -> CoreCryptoResult<WelcomeBundle> {
         let result = self
             .inner
-            .process_raw_welcome_message(welcome_message.as_slice(), custom_configuration.into())
+            .process_raw_welcome_message(welcome_message.as_slice())
             .await?
             .into();
         Ok(result)
@@ -267,8 +286,7 @@ impl CoreCryptoContext {
     pub async fn join_by_external_commit(
         &self,
         group_info: Arc<GroupInfo>,
-        custom_configuration: CustomConfiguration,
-        credential_type: CredentialType,
+        credential_ref: Arc<CredentialRef>,
     ) -> CoreCryptoResult<WelcomeBundle> {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
             .map_err(core_crypto::mls::conversation::Error::tls_deserialize(
@@ -277,7 +295,7 @@ impl CoreCryptoContext {
             .map_err(RecursiveError::mls_conversation("joining by external commmit"))?;
         let welcome_bundle = self
             .inner
-            .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
+            .join_by_external_commit(group_info, &credential_ref.0)
             .await?;
         Ok(welcome_bundle.into())
     }

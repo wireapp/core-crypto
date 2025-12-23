@@ -5,7 +5,7 @@ use core_crypto::{
     mls::conversation::{Conversation as _, ConversationIdRef},
 };
 
-use crate::{Ciphersuite, ClientId, CoreCryptoFfi, CoreCryptoResult, bytes_wrapper::bytes_wrapper};
+use crate::{Ciphersuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef, bytes_wrapper::bytes_wrapper};
 
 bytes_wrapper!(
     /// A unique identifier for a single conversation.
@@ -51,6 +51,18 @@ impl CoreCryptoFfi {
             .ciphersuite()
             .await;
         Ok(Ciphersuite::from(core_crypto::MlsCiphersuite::from(cs)))
+    }
+
+    /// Get the credential ref for the given conversation.
+    pub async fn conversation_credential(&self, conversation_id: &ConversationId) -> CoreCryptoResult<CredentialRef> {
+        self.inner
+            .get_raw_conversation(conversation_id.as_ref())
+            .await
+            .map_err(RecursiveError::mls_client("getting raw conversation by id"))?
+            .credential_ref()
+            .await
+            .map(Into::into)
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::Session::conversation_exists]

@@ -168,16 +168,6 @@ impl EmulatedMlsClient for CoreCryptoWebClient {
         Ok(kp_raw)
     }
 
-    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
-        let js = MLS_FUNCTIONS
-            .get("addClient")
-            .context("getting `addClient` from `mls.ts`")?;
-        self.browser
-            .execute(js, vec![conversation_id.into(), kp.into()])
-            .await?;
-        Ok(())
-    }
-
     async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
         let js = MLS_FUNCTIONS
             .get("kickClient")

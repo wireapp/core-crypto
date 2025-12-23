@@ -166,7 +166,7 @@ mod tests {
                 .await;
 
             // create a commit. This will also store it in the store
-            let commit_guard = conversation.e2ei_rotate_unmerged(&cb).await;
+            let commit_guard = conversation.set_credential_unmerged(&cb).await;
             assert!(commit_guard.conversation().has_pending_commit().await);
 
             // since the pending commit is the same as the incoming one, it should succeed

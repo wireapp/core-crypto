@@ -6,11 +6,8 @@ use super::{
     operation_guard::{AddGuard, Commit, OperationGuard, TestOperation},
 };
 use crate::{
-    CredentialRef, CredentialType,
-    mls::{
-        conversation::{ConversationWithMls as _, pending_conversation::PendingConversation},
-        credential::Credential,
-    },
+    CredentialRef,
+    mls::{conversation::pending_conversation::PendingConversation, credential::Credential},
 };
 
 impl<'a> TestConversation<'a> {
@@ -24,43 +21,46 @@ impl<'a> TestConversation<'a> {
     /// Invite all sessions into this conversation.
     /// The credential type of the invited members' key packages will be inherited from the [super::TestContext].
     pub async fn invite(self, sessions: impl IntoIterator<Item = &'a SessionContext>) -> OperationGuard<'a, Commit> {
-        let credential_type = self.case.credential_type;
-        self.invite_with_credential_type(credential_type, sessions).await
+        let sessions_with_credentials = sessions
+            .into_iter()
+            .map(|session| (session, &session.initial_credential));
+        self.invite_with_credential(sessions_with_credentials).await
     }
 
     /// Like [Self::invite_notify], but the key packages of the invited members will be of the provided credential type.
-    pub async fn invite_with_credential_type_notify(
+    pub async fn invite_with_credential_notify(
         self,
-        credential_type: CredentialType,
-        sessions: impl IntoIterator<Item = &'a SessionContext>,
+        sessions_with_credentials: impl IntoIterator<Item = (&'a SessionContext, &'a CredentialRef)>,
     ) -> TestConversation<'a> {
-        self.invite_with_credential_type(credential_type, sessions)
+        self.invite_with_credential(sessions_with_credentials)
             .await
             .notify_members()
             .await
     }
 
     /// Like [Self::invite], but the key packages of the invited members will be of the provided credential type.
-    pub async fn invite_with_credential_type(
+    pub async fn invite_with_credential(
         self,
-        credential_type: CredentialType,
-        sessions: impl IntoIterator<Item = &'a SessionContext>,
+        sessions_with_credentials: impl IntoIterator<Item = (&'a SessionContext, &'a CredentialRef)>,
     ) -> OperationGuard<'a, Commit> {
-        let new_members = sessions.into_iter().collect::<Vec<_>>();
+        let new_memembers_with_credentials = sessions_with_credentials.into_iter().collect::<Vec<_>>();
 
-        let key_packages = futures_util::future::join_all(new_members.iter().map(async |cc| {
-            let credential = cc
-                .find_most_recent_credential(self.case.signature_scheme(), credential_type)
-                .await
-                .expect("session already has a credential of appropriate type");
-            let credential_ref = CredentialRef::from_credential(&credential);
-            cc.transaction
-                .generate_keypackage(&credential_ref, None)
-                .await
-                .unwrap()
-                .into()
-        }))
-        .await;
+        let key_packages =
+            futures_util::future::join_all(new_memembers_with_credentials.iter().map(async |(cc, credential_ref)| {
+                cc.transaction
+                    .generate_keypackage(credential_ref, None)
+                    .await
+                    .unwrap()
+                    .into()
+            }))
+            .await;
+
+        let (new_members, _): (Vec<&SessionContext>, Vec<&CredentialRef>) =
+            new_memembers_with_credentials.into_iter().unzip();
+
+        assert_eq!(new_members.len(), key_packages.len());
+        assert!(!new_members.is_empty());
+
         self.guard().await.add_members(key_packages).await.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;
         let actor_index = self.actor_index();
@@ -93,13 +93,9 @@ impl<'a> TestConversation<'a> {
     /// Create a commit that hasn't been merged by the actor.
     /// On [OperationGuard::notify_members], the actor will receive this commit.
     pub async fn update_unmerged(self) -> OperationGuard<'a, Commit> {
-        let mut conversation_guard = self.guard().await;
-        let commit = conversation_guard
-            .update_key_material_inner(None, None)
-            .await
-            .unwrap()
-            .commit;
-        OperationGuard::new(TestOperation::Update, commit, self, [])
+        let conversation_guard = self.guard().await;
+        let credential = conversation_guard.credential().await.unwrap();
+        self.set_credential_unmerged(&credential).await
     }
 
     /// Replace the existing credential with an x509 one and notify all members.
@@ -107,16 +103,12 @@ impl<'a> TestConversation<'a> {
         self.e2ei_rotate(credential).await.notify_members().await
     }
 
-    /// Create an update commit with a leaf node containing x509 credentials, that hasn't been merged by the actor.
+    /// Create an update commit with a leaf node containing the given credential, that hasn't been merged by the actor.
     /// On [OperationGuard::notify_members], the actor will receive this commit.
-    pub async fn e2ei_rotate_unmerged(self, credential: &Credential) -> OperationGuard<'a, Commit> {
+    pub async fn set_credential_unmerged(self, credential: &Credential) -> OperationGuard<'a, Commit> {
         let mut conversation_guard = self.guard().await;
-        let conversation = conversation_guard.conversation().await;
-        let mut leaf_node = conversation.group.own_leaf().unwrap().clone();
-        drop(conversation);
-        leaf_node.set_credential_with_key(credential.to_mls_credential_with_key());
         let commit = conversation_guard
-            .update_key_material_inner(Some(credential), Some(leaf_node))
+            .set_credential_inner(credential)
             .await
             .unwrap()
             .commit;
@@ -235,9 +227,10 @@ impl<'a> TestConversation<'a> {
         joiner: &'a SessionContext,
         group_info: VerifiableGroupInfo,
     ) -> OperationGuard<'a, Commit> {
+        let joiner_credential_ref = joiner.initial_credential.clone();
         joiner
             .transaction
-            .join_by_external_commit(group_info, self.case.custom_cfg(), self.case.credential_type)
+            .join_by_external_commit(group_info, &joiner_credential_ref)
             .await
             .unwrap();
         let join_commit = joiner.mls_transport().await.latest_commit().await;
@@ -288,9 +281,10 @@ impl<'a> TestConversation<'a> {
         joiner: &'a SessionContext,
         group_info: VerifiableGroupInfo,
     ) -> (OperationGuard<'a, Commit>, PendingConversation) {
+        let joiner_credential_ref = joiner.initial_credential.clone();
         let (join_commit, _, pending_conversation) = joiner
             .transaction
-            .create_external_join_commit(group_info, self.case.custom_cfg(), self.case.credential_type)
+            .create_external_join_commit(group_info, &joiner_credential_ref)
             .await
             .unwrap();
 
