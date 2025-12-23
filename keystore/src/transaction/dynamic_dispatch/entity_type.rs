@@ -4,9 +4,9 @@ use crate::entities::E2eiRefreshToken;
 use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
 use crate::{
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup,
-        StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
+        PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
+        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
     traits::EntityBase as _,
 };
@@ -35,6 +35,7 @@ pub(crate) enum EntityType {
     ProteusPrekey,
     #[cfg(feature = "proteus-keystore")]
     ProteusSession,
+    ConsumerData,
 }
 
 impl EntityType {
@@ -62,6 +63,7 @@ impl EntityType {
             ProteusPrekey::COLLECTION_NAME => Some(Self::ProteusPrekey),
             #[cfg(feature = "proteus-keystore")]
             ProteusSession::COLLECTION_NAME => Some(Self::ProteusSession),
+            ConsumerData::COLLECTION_NAME => Some(Self::ConsumerData),
             _ => None,
         }
     }
@@ -90,6 +92,7 @@ impl EntityType {
             #[cfg(feature = "proteus-keystore")]
             Self::ProteusSession => ProteusSession::COLLECTION_NAME,
             Self::HpkePrivateKey => StoredHpkePrivateKey::COLLECTION_NAME,
+            Self::ConsumerData => ConsumerData::COLLECTION_NAME,
         }
     }
 }
