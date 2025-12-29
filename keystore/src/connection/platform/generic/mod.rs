@@ -195,6 +195,31 @@ impl SqlCipherConnection {
         conn.close().map_err(|(_, e)| e.into())
     }
 
+    /// Export a copy of the database to the specified path using VACUUM INTO.
+    /// This creates a fully vacuumed and optimized copy of the database.
+    /// The copy will be encrypted with the same key as the source database.
+    ///
+    /// # Arguments
+    /// * `destination_path` - The file path where the database copy should be created
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - The database is in-memory (cannot export in-memory databases)
+    /// - The destination path is invalid
+    /// - The VACUUM INTO operation fails
+    pub async fn export_copy(&self, destination_path: &str) -> CryptoKeystoreResult<()> {
+        if self.path.is_empty() {
+            return Err(CryptoKeystoreError::NotSupported(
+                "Cannot export in-memory database".to_string(),
+            ));
+        }
+
+        let conn = self.conn().await;
+        conn.execute("VACUUM INTO ?1", [destination_path])?;
+
+        Ok(())
+    }
+
     fn run_migrations(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
         conn.create_scalar_function("sha256_blob", 1, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
             let input_blob = ctx.get::<Vec<u8>>(0)?;
@@ -239,5 +264,105 @@ impl<'a> DatabaseConnection<'a> for SqlCipherConnection {
     async fn wipe(self) -> CryptoKeystoreResult<()> {
         self.wipe().await?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod migration_test {
+    use std::io::Write;
+
+    use tempfile::NamedTempFile;
+
+    use crate::{
+        ConnectionType, Database, DatabaseKey,
+        connection::FetchFromDatabase,
+        entities::{EntityFindParams, StoredCredential},
+    };
+
+    const DB: &[u8] = include_bytes!("../../../../../crypto-ffi/bindings/jvm/src/test/resources/db-v10002003.sqlite");
+    const OLD_KEY: &str = "secret";
+
+    #[test]
+    fn can_export_database_copy() {
+        // Create a test database
+        let mut source_db_file = NamedTempFile::new().unwrap();
+        let source_path = source_db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode")
+            .to_string(); // Convert to String to avoid borrowing issues
+
+        // Create destination file path
+        let dest_db_file = NamedTempFile::new().unwrap();
+        let dest_path = dest_db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode")
+            .to_string(); // Convert to String to avoid borrowing issues
+
+        // Use the test database
+        source_db_file.write_all(DB).unwrap();
+        drop(source_db_file); // Close the file so SQLCipher can open it
+
+        // Migrate the database to use the new key format
+        let key = DatabaseKey::generate();
+        smol::block_on(Database::migrate_db_key_type_to_bytes(&source_path, OLD_KEY, &key)).unwrap();
+
+        // Open the database and export it
+        smol::block_on(async {
+            let db = Database::open(ConnectionType::Persistent(&source_path), &key)
+                .await
+                .unwrap();
+
+            // Export the database
+            db.export_copy(&dest_path).await.unwrap();
+
+            // Verify the exported database can be opened with the same key
+            let exported_db = Database::open(ConnectionType::Persistent(&dest_path), &key)
+                .await
+                .unwrap();
+
+            // Verify data integrity by counting credentials
+            let source_count = db.count::<StoredCredential>().await.unwrap();
+            let dest_count = exported_db.count::<StoredCredential>().await.unwrap();
+
+            assert_eq!(
+                source_count, dest_count,
+                "Exported database should have the same number of credentials"
+            );
+        });
+    }
+
+    #[test]
+    fn cannot_export_in_memory_database() {
+        let key = DatabaseKey::generate();
+
+        smol::block_on(async {
+            let db = Database::open(ConnectionType::InMemory, &key).await.unwrap();
+
+            let result = db.export_copy("/tmp/should_fail.db").await;
+
+            assert!(result.is_err(), "Exporting in-memory database should fail");
+            assert!(
+                result.unwrap_err().to_string().contains("in-memory"),
+                "Error should mention in-memory database"
+            );
+        });
+    }
+
+    // a close replica of the JVM test in `GeneralTest.kt`, but way more debuggable
+    #[test]
+    fn can_migrate_key_type_to_bytes() {
+        let mut db_file = NamedTempFile::new().unwrap();
+        db_file.write_all(DB).unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+
+        let new_key = DatabaseKey::generate();
+        smol::block_on(Database::migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
+
+        let _db = smol::block_on(Database::open(ConnectionType::Persistent(path), &new_key)).unwrap();
     }
 }
