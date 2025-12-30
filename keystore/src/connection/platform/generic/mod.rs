@@ -292,10 +292,30 @@ mod export_test {
             let key = DatabaseKey::generate();
             Database::migrate_db_key_type_to_bytes(&source_path, OLD_KEY, &key).await.unwrap();
 
-            // Open the database and export it
+            // Open the database
             let db = Database::open(ConnectionType::Persistent(&source_path), &key)
                 .await
                 .unwrap();
+
+            // Insert test data into a test table
+            let test_data = b"test data for export verification";
+            let test_id = 12345;
+            {
+                let conn = db.borrow_conn().await.unwrap();
+                let conn_guard = conn.conn().await;
+
+                // Create a test table
+                conn_guard.execute(
+                    "CREATE TABLE IF NOT EXISTS test_export_data (id INTEGER PRIMARY KEY, data BLOB)",
+                    [],
+                ).unwrap();
+
+                // Insert test data
+                conn_guard.execute(
+                    "INSERT INTO test_export_data (id, data) VALUES (?1, ?2)",
+                    [&test_id as &dyn rusqlite::ToSql, &test_data.as_slice()],
+                ).unwrap();
+            }
 
             // Export the database
             db.export_copy(&dest_path).await.unwrap();
@@ -304,6 +324,22 @@ mod export_test {
             let exported_db = Database::open(ConnectionType::Persistent(&dest_path), &key)
                 .await
                 .unwrap();
+
+            // Read the data from the exported database
+            {
+                let conn = exported_db.borrow_conn().await.unwrap();
+                let conn_guard = conn.conn().await;
+
+                let mut stmt = conn_guard.prepare("SELECT id, data FROM test_export_data WHERE id = ?1").unwrap();
+                let mut rows = stmt.query([test_id]).unwrap();
+
+                let row = rows.next().unwrap().expect("Expected row to exist");
+                let read_id: i32 = row.get(0).unwrap();
+                let read_data: Vec<u8> = row.get(1).unwrap();
+
+                assert_eq!(read_id, test_id, "ID should match in exported database");
+                assert_eq!(read_data, test_data, "Data should match in exported database");
+            }
 
             // Close databases before cleanup
             drop(db);
