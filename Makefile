@@ -339,7 +339,7 @@ $(ANDROID_X86): $(android-x86-deps) | android-env
 	  $(CARGO_BUILD_ARGS) -- \
 	  -C strip=symbols \
 	  -l static=clang_rt.builtins-x86_64-android \
-	  -L $$($(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(PLATFORM_DIR)/bin/clang --print-runtime-dir)
+	  -L $(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(PLATFORM_DIR)/lib/clang/21/lib/linux
 
 .PHONY: android-x86
 android-x86: $(ANDROID_X86) ## Build core-crypto-ffi for x86_64-linux-android

@@ -213,7 +213,7 @@ impl Database {
     /// - The export operation fails
     #[cfg(not(target_family = "wasm"))]
     pub async fn export_copy(&self, destination_path: &str) -> CryptoKeystoreResult<()> {
-        let conn = self.conn().await?;
+        let conn = self.borrow_conn().await?;
         conn.export_copy(destination_path).await
     }
 

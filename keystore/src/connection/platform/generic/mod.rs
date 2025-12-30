@@ -3,7 +3,7 @@ use std::path::Path;
 
 use zeroize::Zeroize as _;
 
-use crate::CryptoKeystoreResult;
+use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use crate::connection::{DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey};
 use async_lock::{Mutex, MutexGuard};
 use blocking::unblock;
