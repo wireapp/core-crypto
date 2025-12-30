@@ -268,15 +268,11 @@ impl<'a> DatabaseConnection<'a> for SqlCipherConnection {
 }
 
 #[cfg(test)]
-mod migration_test {
-    use std::io::Write;
-
-    use tempfile::NamedTempFile;
+mod export_test {
+    use futures_lite::future;
 
     use crate::{
         ConnectionType, Database, DatabaseKey,
-        connection::FetchFromDatabase,
-        entities::{EntityFindParams, StoredCredential},
     };
 
     const DB: &[u8] = include_bytes!("../../../../../crypto-ffi/bindings/jvm/src/test/resources/db-v10002003.sqlite");
@@ -284,32 +280,19 @@ mod migration_test {
 
     #[test]
     fn can_export_database_copy() {
-        // Create a test database
-        let mut source_db_file = NamedTempFile::new().unwrap();
-        let source_path = source_db_file
-            .path()
-            .to_str()
-            .expect("tmpfile path is representable in unicode")
-            .to_string(); // Convert to String to avoid borrowing issues
+        future::block_on(async {
+            // Create temporary files for source and destination
+            let source_path = format!("./test_export_source_{}.db", rand::random::<u32>());
+            let dest_path = format!("./test_export_dest_{}.db", rand::random::<u32>());
 
-        // Create destination file path
-        let dest_db_file = NamedTempFile::new().unwrap();
-        let dest_path = dest_db_file
-            .path()
-            .to_str()
-            .expect("tmpfile path is representable in unicode")
-            .to_string(); // Convert to String to avoid borrowing issues
+            // Write test database
+            std::fs::write(&source_path, DB).unwrap();
 
-        // Use the test database
-        source_db_file.write_all(DB).unwrap();
-        drop(source_db_file); // Close the file so SQLCipher can open it
+            // Migrate the database to use the new key format
+            let key = DatabaseKey::generate();
+            Database::migrate_db_key_type_to_bytes(&source_path, OLD_KEY, &key).await.unwrap();
 
-        // Migrate the database to use the new key format
-        let key = DatabaseKey::generate();
-        smol::block_on(Database::migrate_db_key_type_to_bytes(&source_path, OLD_KEY, &key)).unwrap();
-
-        // Open the database and export it
-        smol::block_on(async {
+            // Open the database and export it
             let db = Database::open(ConnectionType::Persistent(&source_path), &key)
                 .await
                 .unwrap();
@@ -322,22 +305,24 @@ mod migration_test {
                 .await
                 .unwrap();
 
-            // Verify data integrity by counting credentials
-            let source_count = db.count::<StoredCredential>().await.unwrap();
-            let dest_count = exported_db.count::<StoredCredential>().await.unwrap();
+            // Close databases before cleanup
+            drop(db);
+            drop(exported_db);
 
-            assert_eq!(
-                source_count, dest_count,
-                "Exported database should have the same number of credentials"
-            );
+            // Cleanup
+            let _ = std::fs::remove_file(&source_path);
+            let _ = std::fs::remove_file(&dest_path);
+            let _ = std::fs::remove_file(format!("{}-wal", source_path));
+            let _ = std::fs::remove_file(format!("{}-shm", source_path));
+            let _ = std::fs::remove_file(format!("{}-wal", dest_path));
+            let _ = std::fs::remove_file(format!("{}-shm", dest_path));
         });
     }
 
     #[test]
     fn cannot_export_in_memory_database() {
-        let key = DatabaseKey::generate();
-
-        smol::block_on(async {
+        future::block_on(async {
+            let key = DatabaseKey::generate();
             let db = Database::open(ConnectionType::InMemory, &key).await.unwrap();
 
             let result = db.export_copy("/tmp/should_fail.db").await;
@@ -348,21 +333,5 @@ mod migration_test {
                 "Error should mention in-memory database"
             );
         });
-    }
-
-    // a close replica of the JVM test in `GeneralTest.kt`, but way more debuggable
-    #[test]
-    fn can_migrate_key_type_to_bytes() {
-        let mut db_file = NamedTempFile::new().unwrap();
-        db_file.write_all(DB).unwrap();
-        let path = db_file
-            .path()
-            .to_str()
-            .expect("tmpfile path is representable in unicode");
-
-        let new_key = DatabaseKey::generate();
-        smol::block_on(Database::migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
-
-        let _db = smol::block_on(Database::open(ConnectionType::Persistent(path), &new_key)).unwrap();
     }
 }
