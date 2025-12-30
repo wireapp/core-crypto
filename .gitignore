@@ -214,3 +214,4 @@ dist
 # Make stampfile directory for timestamp comparisons
 .stamps
 .claude
+problems-report.html
