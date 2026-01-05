@@ -149,7 +149,6 @@ describe("database", () => {
                 }
             }
 
-            console.log("before close");
             // It is important to close the database here since otherwise the migration process
             // will be stuck because we'd be holding a connection to the same database open.
             db.close();
@@ -164,7 +163,6 @@ describe("database", () => {
                 old_key,
                 new_key
             );
-            console.log("before open db");
 
             // Reconstruct the client based on the migrated database and fetch the epoch.
             const encoder = new TextEncoder();
