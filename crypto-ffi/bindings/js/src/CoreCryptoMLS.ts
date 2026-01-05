@@ -61,7 +61,7 @@ function mapTransportResponseToFfi(
 
 /**
  * An interface that must be implemented and provided to CoreCrypto via
- * {@link CoreCrypto.provideTransport}.
+ * {@link CoreCryptoContext.mlsInit}.
  */
 export interface MlsTransport {
     /**
