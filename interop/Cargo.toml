@@ -40,7 +40,7 @@ thiserror = { workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = "2.2"
-tokio = { version = "1.48", features = ["full"] }
+tokio = { version = "1.49", features = ["full"] }
 # Http Server
 warp = { version = "0.4", features = ["server"] }
 fantoccini = "0.22"

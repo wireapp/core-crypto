@@ -103,7 +103,7 @@ openidconnect = { version = "4", default-features = false }
 rstest = { version = "0.26", default-features = false }
 rstest_reuse = { version = "0.7", default-features = false }
 scraper = { version = "0.25", default-features = false }
-tokio = { version = "1.48", default-features = false }
+tokio = { version = "1.49", default-features = false }
 wasm-bindgen-test = { version = "0.3" }
 webbrowser = { version = "1.0", default-features = false }
 http = { version = "1", default-features = false }
