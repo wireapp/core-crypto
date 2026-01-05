@@ -16,14 +16,22 @@ use crate::{
 impl<'a> TestConversation<'a> {
     /// Invite all sessions into this conversation and notify all members, old and new.
     /// The credential type of the invited members' key packages will be inherited from the [super::TestContext].
-    pub async fn invite_notify(self, sessions: impl IntoIterator<Item = &'a SessionContext>) -> TestConversation<'a> {
+    pub async fn invite_notify<S>(self, sessions: S) -> TestConversation<'a>
+    where
+        S: IntoIterator<Item = &'a SessionContext>,
+        <S as IntoIterator>::IntoIter: Clone,
+    {
         let commit_guard = self.invite(sessions).await;
         commit_guard.notify_members().await
     }
 
     /// Invite all sessions into this conversation.
     /// The credential type of the invited members' key packages will be inherited from the [super::TestContext].
-    pub async fn invite(self, sessions: impl IntoIterator<Item = &'a SessionContext>) -> OperationGuard<'a, Commit> {
+    pub async fn invite<S>(self, sessions: S) -> OperationGuard<'a, Commit>
+    where
+        S: IntoIterator<Item = &'a SessionContext>,
+        <S as IntoIterator>::IntoIter: Clone,
+    {
         let sessions_with_credentials = sessions
             .into_iter()
             .map(|session| (session, &session.initial_credential));
@@ -31,10 +39,11 @@ impl<'a> TestConversation<'a> {
     }
 
     /// Like [Self::invite_notify], but the key packages of the invited members will use the provided credential.
-    pub async fn invite_with_credential_notify(
-        self,
-        sessions_with_credentials: impl IntoIterator<Item = (&'a SessionContext, &'a CredentialRef)>,
-    ) -> TestConversation<'a> {
+    pub async fn invite_with_credential_notify<SC>(self, sessions_with_credentials: SC) -> TestConversation<'a>
+    where
+        SC: IntoIterator<Item = (&'a SessionContext, &'a CredentialRef)>,
+        <SC as IntoIterator>::IntoIter: Clone,
+    {
         self.invite_with_credential(sessions_with_credentials)
             .await
             .notify_members()
@@ -42,21 +51,23 @@ impl<'a> TestConversation<'a> {
     }
 
     /// Like [Self::invite], but the key packages of the invited members will use the provided credential.
-    pub async fn invite_with_credential(
-        self,
-        sessions_with_credentials: impl IntoIterator<Item = (&'a SessionContext, &'a CredentialRef)>,
-    ) -> OperationGuard<'a, Commit> {
-        let new_memembers_with_credentials = sessions_with_credentials.into_iter().collect::<Vec<_>>();
+    pub async fn invite_with_credential<SC>(self, sessions_with_credentials: SC) -> OperationGuard<'a, Commit>
+    where
+        SC: IntoIterator<Item = (&'a SessionContext, &'a CredentialRef)>,
+        <SC as IntoIterator>::IntoIter: Clone,
+    {
+        let new_memembers_with_credentials = sessions_with_credentials.into_iter();
 
-        let key_packages =
-            futures_util::future::join_all(new_memembers_with_credentials.iter().map(async |(cc, credential_ref)| {
+        let key_packages = futures_util::future::join_all(new_memembers_with_credentials.clone().map(
+            async |(cc, credential_ref)| {
                 cc.transaction
                     .generate_keypackage(credential_ref, None)
                     .await
                     .unwrap()
                     .into()
-            }))
-            .await;
+            },
+        ))
+        .await;
 
         let (new_members, _): (Vec<&SessionContext>, Vec<&CredentialRef>) =
             new_memembers_with_credentials.into_iter().unzip();

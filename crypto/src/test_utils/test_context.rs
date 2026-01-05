@@ -375,10 +375,11 @@ impl TestContext {
     /// Create a test conversation.
     ///
     /// The first member is required, and is the conversation's creator.
-    pub async fn create_conversation<'a>(
-        &'a self,
-        members: impl IntoIterator<Item = &'a SessionContext>,
-    ) -> TestConversation<'a> {
+    pub async fn create_conversation<'a, S>(&'a self, members: S) -> TestConversation<'a>
+    where
+        S: IntoIterator<Item = &'a SessionContext>,
+        <S as IntoIterator>::IntoIter: Clone,
+    {
         let members_with_credentials = members.into_iter().map(|member| (member, &member.initial_credential));
         self.create_conversation_with_credentials(members_with_credentials)
             .await
@@ -387,11 +388,15 @@ impl TestContext {
     /// Create a test conversation.
     ///
     /// The first member is required, and is the conversation's creator.
-    pub async fn create_conversation_with_external_sender<'a>(
+    pub async fn create_conversation_with_external_sender<'a, S>(
         &'a mut self,
         external_sender: &SessionContext,
-        members: impl IntoIterator<Item = &'a SessionContext>,
-    ) -> TestConversation<'a> {
+        members: S,
+    ) -> TestConversation<'a>
+    where
+        S: IntoIterator<Item = &'a SessionContext>,
+        <S as IntoIterator>::IntoIter: Clone,
+    {
         let mut members = members.into_iter().peekable();
         let creator = members.peek().unwrap();
         let signature_key = external_sender.client_signature_key(self).await.as_slice().to_vec();
@@ -406,10 +411,14 @@ impl TestContext {
     /// Create a test conversation with the specified credential type.
     ///
     /// The first member is required, and is the conversation's creator.
-    pub async fn create_conversation_with_credentials<'a>(
+    pub async fn create_conversation_with_credentials<'a, SC>(
         &'a self,
-        members_with_credentials: impl IntoIterator<Item = (&'a SessionContext, &'a CredentialRef)>,
-    ) -> TestConversation<'a> {
+        members_with_credentials: SC,
+    ) -> TestConversation<'a>
+    where
+        SC: IntoIterator<Item = (&'a SessionContext, &'a CredentialRef)>,
+        <SC as IntoIterator>::IntoIter: Clone,
+    {
         let mut members_with_credentials = members_with_credentials.into_iter();
         let (creator, credential_ref) = members_with_credentials
             .next()
