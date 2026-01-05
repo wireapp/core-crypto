@@ -174,9 +174,9 @@
 <a href=#174 id=174 data-nosnippet>174</a>    transaction
 <a href=#175 id=175 data-nosnippet>175</a>        .mls_init(master_client_id.into(), <span class="kw-2">&amp;</span>[CIPHERSUITE_IN_USE.into()])
 <a href=#176 id=176 data-nosnippet>176</a>        .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#177 id=177 data-nosnippet>177</a>    transaction.add_credential(credential).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#177 id=177 data-nosnippet>177</a>    <span class="kw">let </span>credential_ref = transaction.add_credential(credential).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#178 id=178 data-nosnippet>178</a>    transaction
-<a href=#179 id=179 data-nosnippet>179</a>        .new_conversation(<span class="kw-2">&amp;</span>conversation_id, CredentialType::Basic, config)
+<a href=#179 id=179 data-nosnippet>179</a>        .new_conversation(<span class="kw-2">&amp;</span>conversation_id, <span class="kw-2">&amp;</span>credential_ref, config)
 <a href=#180 id=180 data-nosnippet>180</a>        .<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#181 id=181 data-nosnippet>181</a>
 <a href=#182 id=182 data-nosnippet>182</a>    spinner.success(<span class="string">"[MLS] Step 0: Initializing clients [OK]"</span>);

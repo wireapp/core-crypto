@@ -166,7 +166,7 @@
 <a href=#166 id=166 data-nosnippet>166</a>                .<span class="kw">await</span>;
 <a href=#167 id=167 data-nosnippet>167</a>
 <a href=#168 id=168 data-nosnippet>168</a>            <span class="comment">// create a commit. This will also store it in the store
-<a href=#169 id=169 data-nosnippet>169</a>            </span><span class="kw">let </span>commit_guard = conversation.e2ei_rotate_unmerged(<span class="kw-2">&amp;</span>cb).<span class="kw">await</span>;
+<a href=#169 id=169 data-nosnippet>169</a>            </span><span class="kw">let </span>commit_guard = conversation.set_credential_unmerged(<span class="kw-2">&amp;</span>cb).<span class="kw">await</span>;
 <a href=#170 id=170 data-nosnippet>170</a>            <span class="macro">assert!</span>(commit_guard.conversation().has_pending_commit().<span class="kw">await</span>);
 <a href=#171 id=171 data-nosnippet>171</a>
 <a href=#172 id=172 data-nosnippet>172</a>            <span class="comment">// since the pending commit is the same as the incoming one, it should succeed

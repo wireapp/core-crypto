@@ -121,7 +121,7 @@
 <a href=#121 id=121 data-nosnippet>121</a>        }
 <a href=#122 id=122 data-nosnippet>122</a>    }
 <a href=#123 id=123 data-nosnippet>123</a>
-<a href=#124 id=124 data-nosnippet>124</a>    <span class="kw">async fn </span>credential(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;Credential&gt;&gt; {
+<a href=#124 id=124 data-nosnippet>124</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>credential(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;Credential&gt;&gt; {
 <a href=#125 id=125 data-nosnippet>125</a>        <span class="kw">let </span>client = <span class="self">self</span>.session().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#126 id=126 data-nosnippet>126</a>        <span class="kw">let </span>inner = <span class="self">self</span>.conversation().<span class="kw">await</span>;
 <a href=#127 id=127 data-nosnippet>127</a>        inner

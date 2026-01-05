@@ -156,9 +156,6 @@
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Enums/SignatureScheme.html">SignatureScheme</a>
               </li>
-              <li class="nav-group-task">
-                <a href="../../WireCoreCryptoUniffi/Enums/WirePolicy.html">WirePolicy</a>
-              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -304,13 +301,7 @@
                 <a href="../../WireCoreCryptoUniffi/Structs/CommitBundle.html">CommitBundle</a>
               </li>
               <li class="nav-group-task">
-                <a href="../../WireCoreCryptoUniffi/Structs/ConversationConfiguration.html">ConversationConfiguration</a>
-              </li>
-              <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Structs/CrlRegistration.html">CrlRegistration</a>
-              </li>
-              <li class="nav-group-task">
-                <a href="../../WireCoreCryptoUniffi/Structs/CustomConfiguration.html">CustomConfiguration</a>
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Structs/DecryptedMessage.html">DecryptedMessage</a>
@@ -536,6 +527,36 @@
                 <li class="item">
                   <div>
                     <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC22conversationCredential0F2IdAA0G3RefCAA012ConversationH0C_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/conversationCredential(conversationId:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC22conversationCredential0F2IdAA0G3RefCAA012ConversationH0C_tYaKF">conversationCredential(conversationId:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Get the credential ref for the given conversation.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">conversationCredential</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
                     <a name="/s:20WireCoreCryptoUniffi0bC7ContextC17conversationEpoch0F2Ids6UInt64VAA012ConversationH0C_tYaKF"></a>
                     <a name="//apple_ref/swift/Method/conversationEpoch(conversationId:)" class="dashAnchor"></a>
                     <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC17conversationEpoch0F2Ids6UInt64VAA012ConversationH0C_tYaKF">conversationEpoch(conversationId:<wbr>)</a>
@@ -596,9 +617,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC18createConversation14conversationId21creatorCredentialType6configyAA0gI0C_AA0kL0OAA0G13ConfigurationVtYaKF"></a>
-                    <a name="//apple_ref/swift/Method/createConversation(conversationId:creatorCredentialType:config:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC18createConversation14conversationId21creatorCredentialType6configyAA0gI0C_AA0kL0OAA0G13ConfigurationVtYaKF">createConversation(conversationId:<wbr>creatorCredentialType:<wbr>config:<wbr>)</a>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC18createConversation14conversationId13credentialRef14externalSenderyAA0gI0C_AA010CredentialK0CAA08ExternalM3KeyCSgtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/createConversation(conversationId:credentialRef:externalSender:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC18createConversation14conversationId13credentialRef14externalSenderyAA0gI0C_AA010CredentialK0CAA08ExternalM3KeyCSgtYaKF">createConversation(conversationId:<wbr>credentialRef:<wbr>externalSender:<wbr>)</a>
                     </code>
                       <span class="declaration-note">
                         Asynchronous
@@ -616,7 +637,7 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">createConversation</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">creatorCredentialType</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/CredentialType.html">CredentialType</a></span><span class="p">,</span> <span class="nv">config</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/ConversationConfiguration.html">ConversationConfiguration</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">createConversation</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">credentialRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">,</span> <span class="nv">externalSender</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ExternalSenderKey.html">ExternalSenderKey</a></span><span class="p">?)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
@@ -1446,9 +1467,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC20joinByExternalCommit9groupInfo19customConfiguration14credentialTypeAA13WelcomeBundleVAA05GroupK0C_AA06CustomM0VAA010CredentialO0OtYaKF"></a>
-                    <a name="//apple_ref/swift/Method/joinByExternalCommit(groupInfo:customConfiguration:credentialType:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC20joinByExternalCommit9groupInfo19customConfiguration14credentialTypeAA13WelcomeBundleVAA05GroupK0C_AA06CustomM0VAA010CredentialO0OtYaKF">joinByExternalCommit(groupInfo:<wbr>customConfiguration:<wbr>credentialType:<wbr>)</a>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC20joinByExternalCommit9groupInfo13credentialRefAA13WelcomeBundleVAA05GroupK0C_AA010CredentialM0CtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/joinByExternalCommit(groupInfo:credentialRef:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC20joinByExternalCommit9groupInfo13credentialRefAA13WelcomeBundleVAA05GroupK0C_AA010CredentialM0CtYaKF">joinByExternalCommit(groupInfo:<wbr>credentialRef:<wbr>)</a>
                     </code>
                       <span class="declaration-note">
                         Asynchronous
@@ -1466,7 +1487,7 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">joinByExternalCommit</span><span class="p">(</span><span class="nv">groupInfo</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/GroupInfo.html">GroupInfo</a></span><span class="p">,</span> <span class="nv">customConfiguration</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/CustomConfiguration.html">CustomConfiguration</a></span><span class="p">,</span> <span class="nv">credentialType</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/CredentialType.html">CredentialType</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WelcomeBundle.html">WelcomeBundle</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">joinByExternalCommit</span><span class="p">(</span><span class="nv">groupInfo</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/GroupInfo.html">GroupInfo</a></span><span class="p">,</span> <span class="nv">credentialRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WelcomeBundle.html">WelcomeBundle</a></span></code></pre>
 
                         </div>
                       </div>
@@ -1536,9 +1557,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC21processWelcomeMessage07welcomeH019customConfigurationAA0G6BundleVAA0G0C_AA06CustomK0VtYaKF"></a>
-                    <a name="//apple_ref/swift/Method/processWelcomeMessage(welcomeMessage:customConfiguration:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC21processWelcomeMessage07welcomeH019customConfigurationAA0G6BundleVAA0G0C_AA06CustomK0VtYaKF">processWelcomeMessage(welcomeMessage:<wbr>customConfiguration:<wbr>)</a>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC21processWelcomeMessage07welcomeH0AA0G6BundleVAA0G0C_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/processWelcomeMessage(welcomeMessage:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC21processWelcomeMessage07welcomeH0AA0G6BundleVAA0G0C_tYaKF">processWelcomeMessage(welcomeMessage:<wbr>)</a>
                     </code>
                       <span class="declaration-note">
                         Asynchronous
@@ -1556,7 +1577,7 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">processWelcomeMessage</span><span class="p">(</span><span class="nv">welcomeMessage</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/Welcome.html">Welcome</a></span><span class="p">,</span> <span class="nv">customConfiguration</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/CustomConfiguration.html">CustomConfiguration</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WelcomeBundle.html">WelcomeBundle</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">processWelcomeMessage</span><span class="p">(</span><span class="nv">welcomeMessage</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/Welcome.html">Welcome</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WelcomeBundle.html">WelcomeBundle</a></span></code></pre>
 
                         </div>
                       </div>
@@ -2273,6 +2294,36 @@
                 <li class="item">
                   <div>
                     <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC25setConversationCredential14conversationId13credentialRefyAA0gJ0C_AA0hL0CtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/setConversationCredential(conversationId:credentialRef:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC25setConversationCredential14conversationId13credentialRefyAA0gJ0C_AA0hL0CtYaKF">setConversationCredential(conversationId:<wbr>credentialRef:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Set the credential ref for the given conversation.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">setConversationCredential</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">credentialRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
                     <a name="/s:20WireCoreCryptoUniffi0bC7ContextC7setData4datay10Foundation0G0V_tYaKF"></a>
                     <a name="//apple_ref/swift/Method/setData(data:)" class="dashAnchor"></a>
                     <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC7setData4datay10Foundation0G0V_tYaKF">setData(data:<wbr>)</a>
@@ -2365,7 +2416,7 @@
           </section>
         </section>
         <section id="footer">
-          <p>&copy; 2025 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2025-12-23)</p>
+          <p>&copy; 2026 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2026-01-05)</p>
           <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.4</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
         </section>
       </article>

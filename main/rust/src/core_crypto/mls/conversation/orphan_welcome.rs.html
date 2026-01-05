@@ -33,7 +33,7 @@
 <a href=#33 id=33 data-nosnippet>33</a>                // and rejoin with an external commit
 <a href=#34 id=34 data-nosnippet>34</a>                </span><span class="kw">let </span>process_welcome = bob
 <a href=#35 id=35 data-nosnippet>35</a>                    .transaction
-<a href=#36 id=36 data-nosnippet>36</a>                    .process_welcome_message(welcome.into(), case.custom_cfg())
+<a href=#36 id=36 data-nosnippet>36</a>                    .process_welcome_message(welcome.into())
 <a href=#37 id=37 data-nosnippet>37</a>                    .<span class="kw">await</span>;
 <a href=#38 id=38 data-nosnippet>38</a>                <span class="macro">assert!</span>(<span class="macro">matches!</span>(
 <a href=#39 id=39 data-nosnippet>39</a>                    process_welcome.unwrap_err(),
