@@ -51,9 +51,7 @@ derive_more = { version = "2.1", features = [
 ] }
 futures-util = "0.3"
 hex = "0.4"
-
-# Until devashishdxt/idb#36 is resolved, we're keeping our fork
-idb = { git = "https://github.com/wireapp/idb", rev = "05573e5b29191fdeb442104ad1040346a3889822" }
+idb = "0.6"
 itertools = "0.14"
 log = { version = "0.4", features = ["kv_serde"] }
 log-reload = "0.1.3"
