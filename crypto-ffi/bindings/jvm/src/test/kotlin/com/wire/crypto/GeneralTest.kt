@@ -4,6 +4,7 @@ package com.wire.crypto
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
+import testutils.MockMlsTransportSuccessProvider
 import testutils.genDatabaseKey
 import java.nio.file.Files
 import kotlin.io.path.*
@@ -93,8 +94,9 @@ class DatabaseKeyTest {
         val clientId = "alice".toClientId()
         val db = openDatabase(path.absolutePathString(), oldKey)
         var cc = CoreCrypto(db)
+        var transport = MockMlsTransportSuccessProvider()
         val pubkey1 = cc.transaction {
-            it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT)
+            it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT, transport)
             it.addCredential(Credential.basic(CIPHERSUITE_DEFAULT, clientId))
             it.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
         }
@@ -107,7 +109,7 @@ class DatabaseKeyTest {
         val newDb = openDatabase(path.absolutePathString(), newKey)
         cc = CoreCrypto(newDb)
         val pubkey2 = cc.transaction {
-            it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT)
+            it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT, transport)
             it.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
         }
         cc.close()
