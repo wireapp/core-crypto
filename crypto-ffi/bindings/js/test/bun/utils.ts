@@ -102,11 +102,14 @@ export async function ccInit(clientId?: ClientId): Promise<CoreCrypto> {
     const db = await inMemoryDatabase(key);
 
     const cc = await CoreCrypto.init(db);
-    await cc.provideTransport(DELIVERY_SERVICE);
 
     if (clientId) {
         await cc.transaction(async (ctx) => {
-            await ctx.mlsInit(clientId, [ciphersuiteDefault()]);
+            await ctx.mlsInit(
+                clientId,
+                [ciphersuiteDefault()],
+                DELIVERY_SERVICE
+            );
         });
     }
 

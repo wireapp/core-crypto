@@ -179,15 +179,17 @@ export async function ccInit(
 
             const instance = await window.ccModule.CoreCrypto.init(database);
             await instance.transaction(async (ctx) => {
-                await ctx.mlsInit(clientId, [cipherSuite]);
+                await ctx.mlsInit(
+                    clientId,
+                    [cipherSuite],
+                    window.deliveryService
+                );
                 if (withCredential) {
                     await ctx.addCredential(
                         window.ccModule.credentialBasic(cipherSuite, clientId)
                     );
                 }
             });
-
-            await instance.provideTransport(window.deliveryService);
 
             if (window.cc === undefined) {
                 window.cc = new Map();
