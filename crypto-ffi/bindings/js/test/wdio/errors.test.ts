@@ -129,6 +129,20 @@ describe("core crypto errors", () => {
     it("should be correct when message rejected", async () => {
         const alice = crypto.randomUUID();
         const convId = crypto.randomUUID();
+
+        browser.execute((_) => {
+            const transport_override = {
+                async sendCommitBundle(_: CommitBundle) {
+                    return { abort: { reason: "just testing" } };
+                },
+            };
+
+            window.deliveryService = {
+                ...window.deliveryService,
+                ...transport_override,
+            };
+        });
+
         await ccInit(alice);
         await createConversation(alice, convId);
 
@@ -144,8 +158,6 @@ describe("core crypto errors", () => {
                         },
                     },
                 };
-
-                cc.provideTransport(window.deliveryService);
 
                 const conversationId = new window.ccModule.ConversationId(
                     new TextEncoder().encode(convId).buffer
