@@ -80,7 +80,8 @@ final class WireCoreCryptoTests: XCTestCase {
         let credential = try Credential.basic(ciphersuite: ciphersuite, clientId: clientId)
 
         let pubkey1 = try await coreCrypto.transaction {
-            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite])
+            try await $0.mlsInit(
+                clientId: clientId, ciphersuites: [ciphersuite], transport: self.mockMlsTransport)
             _ = try await $0.addCredential(credential: credential)
             return try await $0.clientPublicKey(
                 ciphersuite: ciphersuite, credentialType: CredentialType.basic
@@ -95,7 +96,8 @@ final class WireCoreCryptoTests: XCTestCase {
 
         coreCrypto = try await CoreCrypto(database: database2)
         let pubkey2 = try await coreCrypto.transaction {
-            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuite])
+            try await $0.mlsInit(
+                clientId: clientId, ciphersuites: [ciphersuite], transport: self.mockMlsTransport)
             return try await $0.clientPublicKey(
                 ciphersuite: ciphersuite, credentialType: CredentialType.basic
             )
@@ -173,7 +175,8 @@ final class WireCoreCryptoTests: XCTestCase {
         await XCTAssertThrowsErrorAsync {
             try await context?.mlsInit(
                 clientId: aliceId,
-                ciphersuites: [ciphersuite]
+                ciphersuites: [ciphersuite],
+                transport: mockMlsTransport
             )
         }
     }
@@ -386,7 +389,9 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let alice = try await createCoreCrypto()
         let ref = try await alice.transaction {
-            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            try await $0.mlsInit(
+                clientId: clientId, ciphersuites: [ciphersuiteDefault()],
+                transport: self.mockMlsTransport)
             return try await $0.addCredential(credential: credential)
         }
 
@@ -405,7 +410,9 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let alice = try await createCoreCrypto()
         let ref = try await alice.transaction {
-            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            try await $0.mlsInit(
+                clientId: clientId, ciphersuites: [ciphersuiteDefault()],
+                transport: self.mockMlsTransport)
             return try await $0.addCredential(credential: credential)
         }
 
@@ -429,7 +436,10 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let alice = try await createCoreCrypto()
         try await alice.transaction {
-            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            try await $0.mlsInit(
+                clientId: clientId, ciphersuites: [ciphersuiteDefault()],
+                transport: self.mockMlsTransport
+            )
             _ = try await $0.addCredential(credential: credential1)
             _ = try await $0.addCredential(credential: credential2)
         }
@@ -681,7 +691,11 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let alice = try await createCoreCrypto()
         let credentialRef = try await alice.transaction {
-            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            try await $0.mlsInit(
+                clientId: clientId, ciphersuites: [ciphersuiteDefault()],
+                transport: self.mockMlsTransport
+
+            )
             return try await $0.addCredential(credential: credential)
         }
 
@@ -698,7 +712,11 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let alice = try await createCoreCrypto()
         let credentialRef = try await alice.transaction {
-            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            try await $0.mlsInit(
+                clientId: clientId, ciphersuites: [ciphersuiteDefault()],
+                transport: self.mockMlsTransport
+
+            )
             return try await $0.addCredential(credential: credential)
         }
 
@@ -722,7 +740,11 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let alice = try await createCoreCrypto()
         let credentialRef = try await alice.transaction {
-            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            try await $0.mlsInit(
+                clientId: clientId, ciphersuites: [ciphersuiteDefault()],
+                transport: self.mockMlsTransport
+
+            )
             return try await $0.addCredential(credential: credential)
         }
 
@@ -744,7 +766,11 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let alice = try await createCoreCrypto()
         let credentialRef = try await alice.transaction {
-            try await $0.mlsInit(clientId: clientId, ciphersuites: [ciphersuiteDefault()])
+            try await $0.mlsInit(
+                clientId: clientId, ciphersuites: [ciphersuiteDefault()],
+
+                transport: self.mockMlsTransport
+            )
             return try await $0.addCredential(credential: credential)
         }
 
@@ -789,7 +815,10 @@ final class WireCoreCryptoTests: XCTestCase {
                 ciphersuites: [
                     .mls128Dhkemx25519Aes128gcmSha256Ed25519,
                     .mls128Dhkemp256Aes128gcmSha256P256,
-                ])
+                ],
+                transport: self.mockMlsTransport
+
+            )
             let cref1 = try await ctx.addCredential(credential: credential1)
             let cref2 = try await ctx.addCredential(credential: credential2)
 
@@ -844,7 +873,6 @@ final class WireCoreCryptoTests: XCTestCase {
         let coreCrypto = try await CoreCrypto(
             database: database
         )
-        try await coreCrypto.provideTransport(transport: mockMlsTransport)
         return coreCrypto
     }
 
@@ -857,7 +885,8 @@ final class WireCoreCryptoTests: XCTestCase {
             try await coreCrypto.transaction({
                 try await $0.mlsInit(
                     clientId: clientId,
-                    ciphersuites: [ciphersuite]
+                    ciphersuites: [ciphersuite],
+                    transport: self.mockMlsTransport
                 )
                 _ = try await $0.addCredential(
                     credential: Credential.basic(
