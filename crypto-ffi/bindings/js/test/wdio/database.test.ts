@@ -180,11 +180,13 @@ describe("database", () => {
             );
 
             const instance = await window.ccModule.CoreCrypto.init(database);
-            const epoch = await instance.conversationEpoch(
-                new window.ccModule.ConversationId(
-                    encoder.encode("convId").buffer
-                )
-            );
+            const epoch = await instance.transaction(async (ctx) => {
+                return await ctx.conversationEpoch(
+                    new window.ccModule.ConversationId(
+                        encoder.encode("convId").buffer
+                    )
+                );
+            });
             return epoch;
         }, JSON.stringify(stores));
 
