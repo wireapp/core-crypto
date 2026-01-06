@@ -36,7 +36,7 @@ export async function ccNew() {
     window.CoreCrypto = CoreCrypto;
     window.cc = await window.CoreCrypto.init(database);
     await window.cc.transaction(async (ctx) => {
-        await ctx.mlsInit(clientId, ciphersuites);
+        await ctx.mlsInit(clientId, ciphersuites, window.deliveryService);
         for (const ciphersuite of ciphersuites) {
             await ctx.addCredential(credentialBasic(ciphersuite, clientId));
         }
@@ -56,8 +56,6 @@ export async function ccNew() {
             return secret.data
         }
     };
-
-    await window.cc.provideTransport(window.deliveryService);
 }
 
 export async function getKeypackage() {

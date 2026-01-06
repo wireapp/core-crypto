@@ -106,15 +106,14 @@ struct InteropClientApp: App {
                 database: database
             )
 
-            try await self.coreCrypto?.provideTransport(
-                transport: TransportProvider())
-
             let ciphersuite = try ciphersuiteFromU16(discriminant: ciphersuite)
             let clientId = ClientId(bytes: clientId)
             try await self.coreCrypto?.transaction({ context in
                 try await context.mlsInit(
                     clientId: clientId,
-                    ciphersuites: [ciphersuite])
+                    ciphersuites: [ciphersuite],
+                    transport: TransportProvider()
+                )
                 _ = try await context.addCredential(
                     credential: Credential.basic(ciphersuite: ciphersuite, clientId: clientId))
             })
@@ -234,9 +233,6 @@ struct InteropClientApp: App {
                 self.coreCrypto = try await CoreCrypto(
                     database: database
                 )
-
-                try await self.coreCrypto?.provideTransport(
-                    transport: TransportProvider())
             }
 
             try await coreCrypto?.transaction { try await $0.proteusInit() }
