@@ -62,7 +62,11 @@ describe("database", () => {
             let cc = await window.ccModule.CoreCrypto.init(database);
             cc.transaction(async (ctx) => {
                 const clientId = makeClientId();
-                await ctx.mlsInit(makeClientId(), [cipherSuite]);
+                await ctx.mlsInit(
+                    makeClientId(),
+                    [cipherSuite],
+                    window.deliveryService
+                );
                 await ctx.addCredential(
                     window.ccModule.credentialBasic(cipherSuite, clientId)
                 );
@@ -91,7 +95,11 @@ describe("database", () => {
 
             cc = await window.ccModule.CoreCrypto.init(newDatabase);
             const pubkey2 = await cc.transaction(async (ctx) => {
-                await ctx.mlsInit(makeClientId(), [cipherSuite]);
+                await ctx.mlsInit(
+                    makeClientId(),
+                    [cipherSuite],
+                    window.deliveryService
+                );
                 return await ctx.clientPublicKey(
                     cipherSuite,
                     window.ccModule.CredentialType.Basic
