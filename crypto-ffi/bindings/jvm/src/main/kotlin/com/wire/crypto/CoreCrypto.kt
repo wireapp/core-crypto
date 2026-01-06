@@ -93,14 +93,6 @@ class CoreCrypto(private val cc: CoreCryptoFfi) {
         return@withContext result as R
     }
 
-    /** Provide an implementation of the MlsTransport interface.
-     * See [MlsTransport].
-     * @param transport the transport to be used
-     */
-    suspend fun provideTransport(transport: MlsTransport) {
-        cc.provideTransport(transport)
-    }
-
     /**
      * Register an Epoch Observer which will be notified every time a conversation's epoch changes.
      *
