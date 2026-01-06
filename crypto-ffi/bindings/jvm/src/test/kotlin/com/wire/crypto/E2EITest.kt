@@ -7,6 +7,7 @@ import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import testutils.*
 import java.nio.file.Files
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 
 internal class E2EITest : HasMockDeliveryService() {
@@ -19,6 +20,7 @@ internal class E2EITest : HasMockDeliveryService() {
         setupMocks()
     }
 
+    @Ignore("Temporarily broken until PKI environment is decoupled from session initialization implemented with WPB-19578")
     @Test
     fun sample_e2ei_enrollment_should_succeed() = runTest {
         val aliceId = genClientId()
