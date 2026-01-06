@@ -54,11 +54,6 @@ public protocol CoreCryptoProtocol {
         _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
     ) async throws -> Result
 
-    /// Register a callback which will be called when performing MLS operations which require communication
-    /// with the delivery service.
-    ///
-    func provideTransport(transport: any MlsTransport) async throws
-
     ///
     /// Register an Epoch Observer which will be notified every time a conversation's epoch changes.
     ///
@@ -132,11 +127,6 @@ public final class CoreCrypto: CoreCryptoProtocol {
             throw await transactionExecutor.innerError ?? error
         }
         return await transactionExecutor.result!
-    }
-
-    public func provideTransport(transport: any MlsTransport) async throws {
-        try await coreCrypto.provideTransport(
-            callbacks: transport)
     }
 
     public func registerEpochObserver(_ epochObserver: EpochObserver) async throws {
