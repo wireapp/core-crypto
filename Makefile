@@ -402,10 +402,12 @@ else
 $(error Unsupported host platform for jvm: $(UNAME_S))
 endif
 
-.PHONY: jvm-test
-jvm-test: $(JVM_LIB) bindings-kotlin-jvm ## Run Kotlin tests on JVM
+jvm-test-deps := $(JVM_LIB) $(UNIFFI_JVM_OUTPUT)
+
+$(STAMPS)/jvm-test: $(jvm-test-deps)
 	cd crypto-ffi/bindings && \
 	./gradlew jvm:test --rerun
+	$(TOUCH_STAMP)
 
 #-------------------------------------------------------------------------------
 # TypeScript / JS tasks
@@ -485,9 +487,10 @@ $(TS_OUT): $(ts-deps)
 .PHONY: ts
 ts: $(TS_OUT) ## Build the TypeScript wrapper
 
+ts-test-deps := $(TS_OUT)
+
 # run WebDriver tests + bun’s built-in tests
-.PHONY: ts-test
-ts-test: $(TS_OUT) ## Run TypeScript wrapper tests via wdio and bun. Optionally pass TEST=<test> to filter by test name.
+$(STAMPS)/ts-test: $(ts-test-deps)
 	@set -euo pipefail; \
 	cd $(JS_DIR) && \
 	if [ -n "$(TEST)" ]; then \
@@ -497,6 +500,7 @@ ts-test: $(TS_OUT) ## Run TypeScript wrapper tests via wdio and bun. Optionally 
 		bun x wdio run wdio.conf.ts --spec test/wdio/*.test.ts; \
 		bun test; \
 	fi
+	$(TOUCH_STAMP)
 
 # run WebDriver benches
 .PHONY: ts-bench
@@ -693,3 +697,24 @@ fmt: rust-fmt swift-fmt kotlin-fmt ts-fmt ## Format all files
 
 .PHONY: check
 check: rust-check swift-check kotlin-check ts-check ## Run all linters
+
+#-------------------------------------------------------------------------------
+# Lazy targets
+#-------------------------------------------------------------------------------
+
+LAZY_TARGETS := jvm-test ts-test
+
+ts-test: ## Run TypeScript wrapper tests via wdio and bun. Optionally pass TEST=<test> to filter by test name.
+jvm-test: ## Run Kotlin tests on JVM
+
+ifeq ($(LAZY_MAKE),)
+
+.PHONY: $(LAZY_TARGETS)
+$(LAZY_TARGETS):
+	@rm -f $(STAMPS)/$@
+	@$(MAKE) $(STAMPS)/$@
+
+else
+$(LAZY_TARGETS): %: $(STAMPS)/%
+
+endif
