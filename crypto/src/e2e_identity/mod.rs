@@ -3,7 +3,7 @@ pub(crate) mod device_status;
 mod error;
 pub(crate) mod id;
 pub(crate) mod identity;
-mod pki_env;
+pub mod pki_env;
 pub mod pki_env_hooks;
 pub(crate) use crypto::E2eiSignatureKeypair;
 pub use pki_env::NewCrlDistributionPoints;

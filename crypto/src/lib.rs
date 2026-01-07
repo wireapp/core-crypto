@@ -43,6 +43,7 @@ pub use openmls::{
     },
 };
 
+use crate::e2e_identity::pki_env::PkiEnvironment;
 pub use crate::{
     build_metadata::{BUILD_METADATA, BuildMetadata},
     e2e_identity::{
@@ -150,6 +151,7 @@ impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
 #[derive(Debug, Clone)]
 pub struct CoreCrypto {
     database: Database,
+    pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
     mls: Arc<RwLock<Option<mls::session::Session>>>,
     #[cfg(feature = "proteus")]
     proteus: Arc<Mutex<Option<proteus::ProteusCentral>>>,
@@ -163,6 +165,7 @@ impl CoreCrypto {
     pub fn new(database: Database) -> Self {
         Self {
             database,
+            pki_environment: Default::default(),
             mls: Default::default(),
             proteus: Default::default(),
         }
