@@ -4,6 +4,13 @@
 
 ### Features
 
+- removed `CoreCrypto.provideTransport()`, added `transport` parameter to `CoreCryptoContext.mlsInit()`
+
+  Instead of providing transport separately from session initialization it is now provided when initializing the MLS
+  session.
+
+  Affected platforms: android, ios, web
+
 - renamed `CoreCrypto.reseedRng()` to `CoreCrypto.reseed()`
 
   Affected platforms: web
