@@ -357,6 +357,18 @@ android: $(android-deps) ## Build all Android targets
 	cd crypto-ffi/bindings && \
 	./gradlew android:assemble$(GRADLE_BUILD_TYPE)
 
+ifeq ($(UNAME_S),Linux)
+ANDROID_TEST_LIB := $(ANDROID_X86)
+android-test-lib-deps := $(android-x86-deps)
+android-test-lib: android-x86 ## Build core-crypto-ffi for Android (automatically select the target based on the host machine)
+else ifeq ($(UNAME_S),Darwin)
+ANDROID_TEST_LIB := $(ANDROID_ARMv8)
+android-test-lib-deps := $(android-armv8-deps)
+android-test-lib: android-armv8
+else
+$(error Unsupported host platform for android-test-lib: $(UNAME_S))
+endif
+
 #-------------------------------------------------------------------------------
 # JVM native builds (Darwin + Linux)
 #-------------------------------------------------------------------------------
