@@ -192,6 +192,22 @@ impl TransactionContext {
         }
     }
 
+    pub(crate) async fn pki_environment(&self) -> Result<PkiEnvironment> {
+        match &*self.inner.read().await {
+            TransactionContextInner::Valid { pki_environment, .. } => {
+                if let Some(pki_environment) = pki_environment.read().await.as_ref() {
+                    return Ok(pki_environment.clone());
+                }
+                Err(e2e_identity::Error::PkiEnvironmentUnset)
+                    .map_err(RecursiveError::transaction(
+                        "Getting PKI environment from transaction context",
+                    ))
+                    .map_err(Into::into)
+            }
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
+        }
+    }
+
     pub(crate) async fn pki_environment_option(&self) -> Result<Option<PkiEnvironment>> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { pki_environment, .. } => Ok(pki_environment.read().await.clone()),
