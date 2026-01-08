@@ -148,31 +148,31 @@
 <a href=#148 id=148 data-nosnippet>148</a>        </span>.unwrap();
 <a href=#149 id=149 data-nosnippet>149</a>
 <a href=#150 id=150 data-nosnippet>150</a>    <span class="kw">let </span><span class="kw-2">mut </span>clients = create_mls_clients(chrome_driver_addr, web_server).<span class="kw">await</span>;
-<a href=#151 id=151 data-nosnippet>151</a>    <span class="kw">let </span>master_client = Session::try_new(<span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#152 id=152 data-nosnippet>152</a>
-<a href=#153 id=153 data-nosnippet>153</a>    <span class="kw">let </span>conversation_id: ConversationId = MLS_CONVERSATION_ID.into();
-<a href=#154 id=154 data-nosnippet>154</a>    <span class="kw">let </span>config = MlsConversationConfiguration {
-<a href=#155 id=155 data-nosnippet>155</a>        ciphersuite: CIPHERSUITE_IN_USE.into(),
-<a href=#156 id=156 data-nosnippet>156</a>        ..Default::default()
-<a href=#157 id=157 data-nosnippet>157</a>    };
-<a href=#158 id=158 data-nosnippet>158</a>    <span class="kw">let </span>cc = CoreCrypto::from(master_client.clone());
-<a href=#159 id=159 data-nosnippet>159</a>    spinner.update(<span class="string">"initialized cc..."</span>);
-<a href=#160 id=160 data-nosnippet>160</a>
-<a href=#161 id=161 data-nosnippet>161</a>    <span class="kw">let </span>success_provider = Arc::new(MlsTransportSuccessProvider::default());
-<a href=#162 id=162 data-nosnippet>162</a>    cc.provide_transport(success_provider.clone()).<span class="kw">await</span>;
-<a href=#163 id=163 data-nosnippet>163</a>    spinner.update(<span class="string">"provided transport..."</span>);
-<a href=#164 id=164 data-nosnippet>164</a>
-<a href=#165 id=165 data-nosnippet>165</a>    <span class="kw">let </span>master_client_id = ClientId::from(<span class="string">b"interop master client"</span>.as_slice());
-<a href=#166 id=166 data-nosnippet>166</a>    <span class="kw">let </span>credential = Credential::basic(
-<a href=#167 id=167 data-nosnippet>167</a>        CIPHERSUITE_IN_USE.into(),
-<a href=#168 id=168 data-nosnippet>168</a>        master_client_id.clone(),
-<a href=#169 id=169 data-nosnippet>169</a>        mls_crypto_provider::RustCrypto::default(),
-<a href=#170 id=170 data-nosnippet>170</a>    )<span class="question-mark">?</span>;
-<a href=#171 id=171 data-nosnippet>171</a>    spinner.update(<span class="string">"created credential..."</span>);
-<a href=#172 id=172 data-nosnippet>172</a>
-<a href=#173 id=173 data-nosnippet>173</a>    <span class="kw">let </span>transaction = cc.new_transaction().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#174 id=174 data-nosnippet>174</a>    transaction
-<a href=#175 id=175 data-nosnippet>175</a>        .mls_init(master_client_id.into(), <span class="kw-2">&amp;</span>[CIPHERSUITE_IN_USE.into()])
+<a href=#151 id=151 data-nosnippet>151</a>
+<a href=#152 id=152 data-nosnippet>152</a>    <span class="kw">let </span>conversation_id: ConversationId = MLS_CONVERSATION_ID.into();
+<a href=#153 id=153 data-nosnippet>153</a>    <span class="kw">let </span>config = MlsConversationConfiguration {
+<a href=#154 id=154 data-nosnippet>154</a>        ciphersuite: CIPHERSUITE_IN_USE.into(),
+<a href=#155 id=155 data-nosnippet>155</a>        ..Default::default()
+<a href=#156 id=156 data-nosnippet>156</a>    };
+<a href=#157 id=157 data-nosnippet>157</a>    <span class="kw">let </span>cc = CoreCrypto::new(db);
+<a href=#158 id=158 data-nosnippet>158</a>    spinner.update(<span class="string">"initialized cc..."</span>);
+<a href=#159 id=159 data-nosnippet>159</a>
+<a href=#160 id=160 data-nosnippet>160</a>    <span class="kw">let </span>master_client_id = ClientId::from(<span class="string">b"interop master client"</span>.as_slice());
+<a href=#161 id=161 data-nosnippet>161</a>    <span class="kw">let </span>credential = Credential::basic(
+<a href=#162 id=162 data-nosnippet>162</a>        CIPHERSUITE_IN_USE.into(),
+<a href=#163 id=163 data-nosnippet>163</a>        master_client_id.clone(),
+<a href=#164 id=164 data-nosnippet>164</a>        mls_crypto_provider::RustCrypto::default(),
+<a href=#165 id=165 data-nosnippet>165</a>    )<span class="question-mark">?</span>;
+<a href=#166 id=166 data-nosnippet>166</a>    spinner.update(<span class="string">"created credential..."</span>);
+<a href=#167 id=167 data-nosnippet>167</a>
+<a href=#168 id=168 data-nosnippet>168</a>    <span class="kw">let </span>transaction = cc.new_transaction().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#169 id=169 data-nosnippet>169</a>    <span class="kw">let </span>success_provider = Arc::new(MlsTransportSuccessProvider::default());
+<a href=#170 id=170 data-nosnippet>170</a>    transaction
+<a href=#171 id=171 data-nosnippet>171</a>        .mls_init(
+<a href=#172 id=172 data-nosnippet>172</a>            master_client_id.clone().into(),
+<a href=#173 id=173 data-nosnippet>173</a>            <span class="kw-2">&amp;</span>[CIPHERSUITE_IN_USE.into()],
+<a href=#174 id=174 data-nosnippet>174</a>            success_provider.clone(),
+<a href=#175 id=175 data-nosnippet>175</a>        )
 <a href=#176 id=176 data-nosnippet>176</a>        .<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#177 id=177 data-nosnippet>177</a>    <span class="kw">let </span>credential_ref = transaction.add_credential(credential).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#178 id=178 data-nosnippet>178</a>    transaction
@@ -223,7 +223,7 @@
 <a href=#223 id=223 data-nosnippet>223</a>
 <a href=#224 id=224 data-nosnippet>224</a>        <span class="macro">log::info!</span>(
 <a href=#225 id=225 data-nosnippet>225</a>            <span class="string">"Master client [{}] &gt;&gt;&gt; {}"</span>,
-<a href=#226 id=226 data-nosnippet>226</a>            hex::encode(master_client.id().<span class="kw">await</span><span class="question-mark">?</span>.as_slice()),
+<a href=#226 id=226 data-nosnippet>226</a>            hex::encode(master_client_id.as_slice()),
 <a href=#227 id=227 data-nosnippet>227</a>            message
 <a href=#228 id=228 data-nosnippet>228</a>        );
 <a href=#229 id=229 data-nosnippet>229</a>
@@ -312,7 +312,7 @@
 <a href=#312 id=312 data-nosnippet>312</a>        .<span class="kw">await
 <a href=#313 id=313 data-nosnippet>313</a>        </span>.unwrap();
 <a href=#314 id=314 data-nosnippet>314</a>
-<a href=#315 id=315 data-nosnippet>315</a>    <span class="kw">let </span>master_client = CoreCrypto::from(Session::try_new(<span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>);
+<a href=#315 id=315 data-nosnippet>315</a>    <span class="kw">let </span>master_client = CoreCrypto::new(db);
 <a href=#316 id=316 data-nosnippet>316</a>    <span class="kw">let </span>transaction = master_client.new_transaction().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#317 id=317 data-nosnippet>317</a>    transaction.proteus_init().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#318 id=318 data-nosnippet>318</a>

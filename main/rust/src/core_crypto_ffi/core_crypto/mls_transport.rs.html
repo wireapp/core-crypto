@@ -7,7 +7,7 @@
 <a href=#7 id=7 data-nosnippet>7</a>
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>core_crypto::{HistorySecret, MlsCommitBundle};
 <a href=#9 id=9 data-nosnippet>9</a>
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use crate</span>::{ClientId, CommitBundle, CoreCryptoFfi, CoreCryptoResult, HistorySecret <span class="kw">as </span>HistorySecretFfi};
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use crate</span>::{ClientId, CommitBundle, HistorySecret <span class="kw">as </span>HistorySecretFfi};
 <a href=#11 id=11 data-nosnippet>11</a>
 <a href=#12 id=12 data-nosnippet>12</a><span class="doccomment">/// MLS transport may or may not succeeed; this response indicates to CC the outcome of the transport attempt.
 <a href=#13 id=13 data-nosnippet>13</a></span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
@@ -105,15 +105,6 @@
 <a href=#105 id=105 data-nosnippet>105</a>}
 <a href=#106 id=106 data-nosnippet>106</a>
 <a href=#107 id=107 data-nosnippet>107</a><span class="doccomment">/// In uniffi, `MlsTransport` is a trait which we need to wrap
-<a href=#108 id=108 data-nosnippet>108</a></span><span class="kw">fn </span>callback_shim(callbacks: Arc&lt;<span class="kw">dyn </span>MlsTransport&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>core_crypto::MlsTransport&gt; {
+<a href=#108 id=108 data-nosnippet>108</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>callback_shim(callbacks: Arc&lt;<span class="kw">dyn </span>MlsTransport&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>core_crypto::MlsTransport&gt; {
 <a href=#109 id=109 data-nosnippet>109</a>    Arc::new(MlsTransportShim::new(callbacks))
-<a href=#110 id=110 data-nosnippet>110</a>}
-<a href=#111 id=111 data-nosnippet>111</a>
-<a href=#112 id=112 data-nosnippet>112</a><span class="attr">#[uniffi::export]
-<a href=#113 id=113 data-nosnippet>113</a></span><span class="kw">impl </span>CoreCryptoFfi {
-<a href=#114 id=114 data-nosnippet>114</a>    <span class="doccomment">/// See [core_crypto::Session::provide_transport]
-<a href=#115 id=115 data-nosnippet>115</a>    </span><span class="kw">pub async fn </span>provide_transport(<span class="kw-2">&amp;</span><span class="self">self</span>, callbacks: Arc&lt;<span class="kw">dyn </span>MlsTransport&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
-<a href=#116 id=116 data-nosnippet>116</a>        <span class="self">self</span>.inner.provide_transport(callback_shim(callbacks)).<span class="kw">await</span>;
-<a href=#117 id=117 data-nosnippet>117</a>        <span class="prelude-val">Ok</span>(())
-<a href=#118 id=118 data-nosnippet>118</a>    }
-<a href=#119 id=119 data-nosnippet>119</a>}</code></pre></div></section></main></body></html>
+<a href=#110 id=110 data-nosnippet>110</a>}</code></pre></div></section></main></body></html>

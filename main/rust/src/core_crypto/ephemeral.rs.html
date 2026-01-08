@@ -21,16 +21,16 @@
 <a href=#21 id=21 data-nosnippet>21</a>//! Any attempt to encrypt a message will fail because the client cannot retrieve the signature key from
 <a href=#22 id=22 data-nosnippet>22</a>//! its keystore.
 <a href=#23 id=23 data-nosnippet>23</a>
-<a href=#24 id=24 data-nosnippet>24</a></span><span class="kw">use </span>std::borrow::Borrow;
+<a href=#24 id=24 data-nosnippet>24</a></span><span class="kw">use </span>std::{borrow::Borrow, sync::Arc};
 <a href=#25 id=25 data-nosnippet>25</a>
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>core_crypto_keystore::{ConnectionType, Database};
-<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>mls_crypto_provider::DatabaseKey;
+<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>mls_crypto_provider::{DatabaseKey, MlsCryptoProvider};
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>obfuscate::{Obfuscate, Obfuscated};
 <a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span>openmls::prelude::KeyPackageSecretEncapsulation;
 <a href=#30 id=30 data-nosnippet>30</a>
 <a href=#31 id=31 data-nosnippet>31</a><span class="kw">use crate</span>::{
-<a href=#32 id=32 data-nosnippet>32</a>    Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, Credential, Error, MlsError, RecursiveError,
-<a href=#33 id=33 data-nosnippet>33</a>    <span class="prelude-ty">Result</span>, Session,
+<a href=#32 id=32 data-nosnippet>32</a>    Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, CoreCryptoTransportNotImplementedProvider,
+<a href=#33 id=33 data-nosnippet>33</a>    Credential, Error, MlsError, RecursiveError, <span class="prelude-ty">Result</span>, Session, mls::session::identities::Identities,
 <a href=#34 id=34 data-nosnippet>34</a>};
 <a href=#35 id=35 data-nosnippet>35</a>
 <a href=#36 id=36 data-nosnippet>36</a><span class="doccomment">/// We always instantiate history clients with this prefix in their client id, so
@@ -55,135 +55,151 @@
 <a href=#55 id=55 data-nosnippet>55</a>    }
 <a href=#56 id=56 data-nosnippet>56</a>}
 <a href=#57 id=57 data-nosnippet>57</a>
-<a href=#58 id=58 data-nosnippet>58</a><span class="doccomment">/// Create a new [`CoreCrypto`] with an **uninitialized** mls session.
+<a href=#58 id=58 data-nosnippet>58</a><span class="doccomment">/// Generate a new [`HistorySecret`].
 <a href=#59 id=59 data-nosnippet>59</a>///
-<a href=#60 id=60 data-nosnippet>60</a>/// You must initialize the session yourself before using this!
-<a href=#61 id=61 data-nosnippet>61</a></span><span class="kw">async fn </span>in_memory_cc() -&gt; <span class="prelude-ty">Result</span>&lt;CoreCrypto&gt; {
-<a href=#62 id=62 data-nosnippet>62</a>    <span class="kw">let </span>db = Database::open(ConnectionType::InMemory, <span class="kw-2">&amp;</span>DatabaseKey::generate())
-<a href=#63 id=63 data-nosnippet>63</a>        .<span class="kw">await
-<a href=#64 id=64 data-nosnippet>64</a>        </span>.unwrap();
-<a href=#65 id=65 data-nosnippet>65</a>
-<a href=#66 id=66 data-nosnippet>66</a>    <span class="kw">let </span>session = Session::try_new(<span class="kw-2">&amp;</span>db)
-<a href=#67 id=67 data-nosnippet>67</a>        .<span class="kw">await
-<a href=#68 id=68 data-nosnippet>68</a>        </span>.map_err(RecursiveError::mls(<span class="string">"creating ephemeral session"</span>))<span class="question-mark">?</span>;
-<a href=#69 id=69 data-nosnippet>69</a>
-<a href=#70 id=70 data-nosnippet>70</a>    <span class="prelude-val">Ok</span>(session.into())
-<a href=#71 id=71 data-nosnippet>71</a>}
-<a href=#72 id=72 data-nosnippet>72</a>
-<a href=#73 id=73 data-nosnippet>73</a><span class="doccomment">/// Generate a new [`HistorySecret`].
-<a href=#74 id=74 data-nosnippet>74</a>///
-<a href=#75 id=75 data-nosnippet>75</a>/// This is useful when it's this client's turn to generate a new history client.
-<a href=#76 id=76 data-nosnippet>76</a>///
-<a href=#77 id=77 data-nosnippet>77</a>/// The generated secret is cryptographically unrelated to the current CoreCrypto client.
-<a href=#78 id=78 data-nosnippet>78</a>///
-<a href=#79 id=79 data-nosnippet>79</a>/// Note that this is a crate-private function; the public interface for this feature is
-<a href=#80 id=80 data-nosnippet>80</a>/// [`Conversation::generate_history_secret`][crate::mls::conversation::Conversation::generate_history_secret].
-<a href=#81 id=81 data-nosnippet>81</a>/// This implementation lives here instead of there for organizational reasons.
-<a href=#82 id=82 data-nosnippet>82</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>generate_history_secret(ciphersuite: Ciphersuite) -&gt; <span class="prelude-ty">Result</span>&lt;HistorySecret&gt; {
-<a href=#83 id=83 data-nosnippet>83</a>    <span class="comment">// generate a new completely arbitrary client id
-<a href=#84 id=84 data-nosnippet>84</a>    </span><span class="kw">let </span>client_id = uuid::Uuid::new_v4();
-<a href=#85 id=85 data-nosnippet>85</a>    <span class="kw">let </span>client_id = <span class="macro">format!</span>(<span class="string">"{HISTORY_CLIENT_ID_PREFIX}-{client_id}"</span>);
-<a href=#86 id=86 data-nosnippet>86</a>    <span class="kw">let </span>client_id = ClientId::from(client_id.into_bytes());
-<a href=#87 id=87 data-nosnippet>87</a>    <span class="kw">let </span>identifier = ClientIdentifier::Basic(client_id.clone());
-<a href=#88 id=88 data-nosnippet>88</a>
-<a href=#89 id=89 data-nosnippet>89</a>    <span class="kw">let </span>cc = in_memory_cc().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#90 id=90 data-nosnippet>90</a>    <span class="kw">let </span>tx = cc
-<a href=#91 id=91 data-nosnippet>91</a>        .new_transaction()
-<a href=#92 id=92 data-nosnippet>92</a>        .<span class="kw">await
-<a href=#93 id=93 data-nosnippet>93</a>        </span>.map_err(RecursiveError::transaction(<span class="string">"creating new transaction"</span>))<span class="question-mark">?</span>;
-<a href=#94 id=94 data-nosnippet>94</a>    cc.init(identifier, <span class="kw-2">&amp;</span>[ciphersuite.signature_algorithm()])
-<a href=#95 id=95 data-nosnippet>95</a>        .<span class="kw">await
-<a href=#96 id=96 data-nosnippet>96</a>        </span>.map_err(RecursiveError::mls_client(<span class="string">"initializing ephemeral cc"</span>))<span class="question-mark">?</span>;
-<a href=#97 id=97 data-nosnippet>97</a>
-<a href=#98 id=98 data-nosnippet>98</a>    <span class="kw">let </span>credential = Credential::basic(ciphersuite, client_id.clone(), <span class="kw-2">&amp;</span>cc.mls.crypto_provider).map_err(
-<a href=#99 id=99 data-nosnippet>99</a>        RecursiveError::mls_credential(<span class="string">"generating basic credential for ephemeral client"</span>),
-<a href=#100 id=100 data-nosnippet>100</a>    )<span class="question-mark">?</span>;
-<a href=#101 id=101 data-nosnippet>101</a>    <span class="kw">let </span>credential_ref = cc.add_credential(credential).<span class="kw">await</span>.map_err(RecursiveError::mls_client(
-<a href=#102 id=102 data-nosnippet>102</a>        <span class="string">"adding basic credential to ephemeral client"</span>,
-<a href=#103 id=103 data-nosnippet>103</a>    ))<span class="question-mark">?</span>;
-<a href=#104 id=104 data-nosnippet>104</a>
-<a href=#105 id=105 data-nosnippet>105</a>    <span class="comment">// we can generate a key package from the ephemeral cc and ciphersutite
-<a href=#106 id=106 data-nosnippet>106</a>    </span><span class="kw">let </span>key_package = tx
-<a href=#107 id=107 data-nosnippet>107</a>        .generate_keypackage(<span class="kw-2">&amp;</span>credential_ref, <span class="prelude-val">None</span>)
+<a href=#60 id=60 data-nosnippet>60</a>/// This is useful when it's this client's turn to generate a new history client.
+<a href=#61 id=61 data-nosnippet>61</a>///
+<a href=#62 id=62 data-nosnippet>62</a>/// The generated secret is cryptographically unrelated to the current CoreCrypto client.
+<a href=#63 id=63 data-nosnippet>63</a>///
+<a href=#64 id=64 data-nosnippet>64</a>/// Note that this is a crate-private function; the public interface for this feature is
+<a href=#65 id=65 data-nosnippet>65</a>/// [`Conversation::generate_history_secret`][crate::mls::conversation::Conversation::generate_history_secret].
+<a href=#66 id=66 data-nosnippet>66</a>/// This implementation lives here instead of there for organizational reasons.
+<a href=#67 id=67 data-nosnippet>67</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>generate_history_secret(ciphersuite: Ciphersuite) -&gt; <span class="prelude-ty">Result</span>&lt;HistorySecret&gt; {
+<a href=#68 id=68 data-nosnippet>68</a>    <span class="comment">// generate a new completely arbitrary client id
+<a href=#69 id=69 data-nosnippet>69</a>    </span><span class="kw">let </span>client_id = uuid::Uuid::new_v4();
+<a href=#70 id=70 data-nosnippet>70</a>    <span class="kw">let </span>client_id = <span class="macro">format!</span>(<span class="string">"{HISTORY_CLIENT_ID_PREFIX}-{client_id}"</span>);
+<a href=#71 id=71 data-nosnippet>71</a>    <span class="kw">let </span>client_id = ClientId::from(client_id.into_bytes());
+<a href=#72 id=72 data-nosnippet>72</a>    <span class="kw">let </span>identifier = ClientIdentifier::Basic(client_id.clone());
+<a href=#73 id=73 data-nosnippet>73</a>
+<a href=#74 id=74 data-nosnippet>74</a>    <span class="kw">let </span>database = Database::open(ConnectionType::InMemory, <span class="kw-2">&amp;</span>DatabaseKey::generate())
+<a href=#75 id=75 data-nosnippet>75</a>        .<span class="kw">await
+<a href=#76 id=76 data-nosnippet>76</a>        </span>.unwrap();
+<a href=#77 id=77 data-nosnippet>77</a>
+<a href=#78 id=78 data-nosnippet>78</a>    <span class="kw">let </span>cc = CoreCrypto::new(database.clone());
+<a href=#79 id=79 data-nosnippet>79</a>    <span class="kw">let </span>tx = cc
+<a href=#80 id=80 data-nosnippet>80</a>        .new_transaction()
+<a href=#81 id=81 data-nosnippet>81</a>        .<span class="kw">await
+<a href=#82 id=82 data-nosnippet>82</a>        </span>.map_err(RecursiveError::transaction(<span class="string">"creating new transaction"</span>))<span class="question-mark">?</span>;
+<a href=#83 id=83 data-nosnippet>83</a>
+<a href=#84 id=84 data-nosnippet>84</a>    <span class="kw">let </span>transport = Arc::new(CoreCryptoTransportNotImplementedProvider::default());
+<a href=#85 id=85 data-nosnippet>85</a>    tx.mls_init(identifier, <span class="kw-2">&amp;</span>[ciphersuite], transport)
+<a href=#86 id=86 data-nosnippet>86</a>        .<span class="kw">await
+<a href=#87 id=87 data-nosnippet>87</a>        </span>.map_err(RecursiveError::transaction(<span class="string">"initializing ephemeral cc"</span>))<span class="question-mark">?</span>;
+<a href=#88 id=88 data-nosnippet>88</a>    <span class="kw">let </span>session = tx
+<a href=#89 id=89 data-nosnippet>89</a>        .session()
+<a href=#90 id=90 data-nosnippet>90</a>        .<span class="kw">await
+<a href=#91 id=91 data-nosnippet>91</a>        </span>.map_err(RecursiveError::transaction(<span class="string">"Getting mls session"</span>))<span class="question-mark">?</span>;
+<a href=#92 id=92 data-nosnippet>92</a>    <span class="kw">let </span>credential = Credential::basic(ciphersuite, client_id.clone(), <span class="kw-2">&amp;</span>session.crypto_provider).map_err(
+<a href=#93 id=93 data-nosnippet>93</a>        RecursiveError::mls_credential(<span class="string">"generating basic credential for ephemeral client"</span>),
+<a href=#94 id=94 data-nosnippet>94</a>    )<span class="question-mark">?</span>;
+<a href=#95 id=95 data-nosnippet>95</a>    <span class="kw">let </span>credential_ref = session
+<a href=#96 id=96 data-nosnippet>96</a>        .add_credential(credential)
+<a href=#97 id=97 data-nosnippet>97</a>        .<span class="kw">await
+<a href=#98 id=98 data-nosnippet>98</a>        </span>.map_err(RecursiveError::mls_client(
+<a href=#99 id=99 data-nosnippet>99</a>            <span class="string">"adding basic credential to ephemeral client"</span>,
+<a href=#100 id=100 data-nosnippet>100</a>        ))<span class="question-mark">?</span>;
+<a href=#101 id=101 data-nosnippet>101</a>
+<a href=#102 id=102 data-nosnippet>102</a>    <span class="comment">// we can generate a key package from the ephemeral cc and ciphersutite
+<a href=#103 id=103 data-nosnippet>103</a>    </span><span class="kw">let </span>key_package = tx
+<a href=#104 id=104 data-nosnippet>104</a>        .generate_keypackage(<span class="kw-2">&amp;</span>credential_ref, <span class="prelude-val">None</span>)
+<a href=#105 id=105 data-nosnippet>105</a>        .<span class="kw">await
+<a href=#106 id=106 data-nosnippet>106</a>        </span>.map_err(RecursiveError::transaction(<span class="string">"generating keypackage"</span>))<span class="question-mark">?</span>;
+<a href=#107 id=107 data-nosnippet>107</a>    <span class="kw">let </span>key_package = KeyPackageSecretEncapsulation::load(<span class="kw-2">&amp;</span>session.crypto_provider, key_package)
 <a href=#108 id=108 data-nosnippet>108</a>        .<span class="kw">await
-<a href=#109 id=109 data-nosnippet>109</a>        </span>.map_err(RecursiveError::transaction(<span class="string">"generating keypackage"</span>))<span class="question-mark">?</span>;
-<a href=#110 id=110 data-nosnippet>110</a>    <span class="kw">let </span>key_package = KeyPackageSecretEncapsulation::load(<span class="kw-2">&amp;</span>cc.crypto_provider, key_package)
-<a href=#111 id=111 data-nosnippet>111</a>        .<span class="kw">await
-<a href=#112 id=112 data-nosnippet>112</a>        </span>.map_err(MlsError::wrap(<span class="string">"encapsulating key package"</span>))<span class="question-mark">?</span>;
-<a href=#113 id=113 data-nosnippet>113</a>
-<a href=#114 id=114 data-nosnippet>114</a>    <span class="comment">// we don't need to finish the transaction here--the point of the ephemeral CC was that no mutations would be saved
-<a href=#115 id=115 data-nosnippet>115</a>    // there
-<a href=#116 id=116 data-nosnippet>116</a>    </span><span class="kw">let _ </span>= tx.abort().<span class="kw">await</span>;
+<a href=#109 id=109 data-nosnippet>109</a>        </span>.map_err(MlsError::wrap(<span class="string">"encapsulating key package"</span>))<span class="question-mark">?</span>;
+<a href=#110 id=110 data-nosnippet>110</a>
+<a href=#111 id=111 data-nosnippet>111</a>    <span class="comment">// we don't need to finish the transaction here--the point of the ephemeral CC was that no mutations would be saved
+<a href=#112 id=112 data-nosnippet>112</a>    // there
+<a href=#113 id=113 data-nosnippet>113</a>    </span><span class="kw">let _ </span>= tx.abort().<span class="kw">await</span>;
+<a href=#114 id=114 data-nosnippet>114</a>
+<a href=#115 id=115 data-nosnippet>115</a>    <span class="prelude-val">Ok</span>(HistorySecret { client_id, key_package })
+<a href=#116 id=116 data-nosnippet>116</a>}
 <a href=#117 id=117 data-nosnippet>117</a>
-<a href=#118 id=118 data-nosnippet>118</a>    <span class="prelude-val">Ok</span>(HistorySecret { client_id, key_package })
-<a href=#119 id=119 data-nosnippet>119</a>}
-<a href=#120 id=120 data-nosnippet>120</a>
-<a href=#121 id=121 data-nosnippet>121</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>is_history_client(client_id: <span class="kw">impl </span>Borrow&lt;ClientIdRef&gt;) -&gt; bool {
-<a href=#122 id=122 data-nosnippet>122</a>    client_id.borrow().starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes())
-<a href=#123 id=123 data-nosnippet>123</a>}
-<a href=#124 id=124 data-nosnippet>124</a>
-<a href=#125 id=125 data-nosnippet>125</a><span class="kw">impl </span>CoreCrypto {
-<a href=#126 id=126 data-nosnippet>126</a>    <span class="doccomment">/// Instantiate a history client.
-<a href=#127 id=127 data-nosnippet>127</a>    ///
-<a href=#128 id=128 data-nosnippet>128</a>    /// This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
-<a href=#129 id=129 data-nosnippet>129</a>    /// Other use is a logic error.
-<a href=#130 id=130 data-nosnippet>130</a>    </span><span class="kw">pub async fn </span>history_client(history_secret: HistorySecret) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-<a href=#131 id=131 data-nosnippet>131</a>        <span class="kw">if </span>!history_secret
-<a href=#132 id=132 data-nosnippet>132</a>            .client_id
-<a href=#133 id=133 data-nosnippet>133</a>            .starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes())
-<a href=#134 id=134 data-nosnippet>134</a>        {
-<a href=#135 id=135 data-nosnippet>135</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidHistorySecret(<span class="string">"client id has invalid format"</span>));
-<a href=#136 id=136 data-nosnippet>136</a>        }
-<a href=#137 id=137 data-nosnippet>137</a>
-<a href=#138 id=138 data-nosnippet>138</a>        <span class="kw">let </span>session = in_memory_cc().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#139 id=139 data-nosnippet>139</a>        <span class="kw">let </span>tx = session
-<a href=#140 id=140 data-nosnippet>140</a>            .new_transaction()
-<a href=#141 id=141 data-nosnippet>141</a>            .<span class="kw">await
-<a href=#142 id=142 data-nosnippet>142</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"creating new transaction"</span>))<span class="question-mark">?</span>;
-<a href=#143 id=143 data-nosnippet>143</a>
-<a href=#144 id=144 data-nosnippet>144</a>        session
-<a href=#145 id=145 data-nosnippet>145</a>            .restore_from_history_secret(history_secret)
-<a href=#146 id=146 data-nosnippet>146</a>            .<span class="kw">await
-<a href=#147 id=147 data-nosnippet>147</a>            </span>.map_err(RecursiveError::mls_client(
-<a href=#148 id=148 data-nosnippet>148</a>                <span class="string">"restoring ephemeral session from history secret"</span>,
-<a href=#149 id=149 data-nosnippet>149</a>            ))<span class="question-mark">?</span>;
-<a href=#150 id=150 data-nosnippet>150</a>
-<a href=#151 id=151 data-nosnippet>151</a>        tx.finish()
-<a href=#152 id=152 data-nosnippet>152</a>            .<span class="kw">await
-<a href=#153 id=153 data-nosnippet>153</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"finishing transaction"</span>))<span class="question-mark">?</span>;
-<a href=#154 id=154 data-nosnippet>154</a>
-<a href=#155 id=155 data-nosnippet>155</a>        <span class="prelude-val">Ok</span>(session)
-<a href=#156 id=156 data-nosnippet>156</a>    }
-<a href=#157 id=157 data-nosnippet>157</a>}
-<a href=#158 id=158 data-nosnippet>158</a>
-<a href=#159 id=159 data-nosnippet>159</a><span class="attr">#[cfg(test)]
-<a href=#160 id=160 data-nosnippet>160</a></span><span class="kw">mod </span>tests {
-<a href=#161 id=161 data-nosnippet>161</a>    <span class="kw">use </span>rstest::rstest;
-<a href=#162 id=162 data-nosnippet>162</a>    <span class="kw">use </span>rstest_reuse::apply;
-<a href=#163 id=163 data-nosnippet>163</a>
-<a href=#164 id=164 data-nosnippet>164</a>    <span class="kw">use </span><span class="kw">crate</span>::test_utils::{TestContext, all_cred_cipher};
-<a href=#165 id=165 data-nosnippet>165</a>
-<a href=#166 id=166 data-nosnippet>166</a>    <span class="doccomment">/// Create a history secret, and restore it into a CoreCrypto instance
-<a href=#167 id=167 data-nosnippet>167</a>    </span><span class="attr">#[apply(all_cred_cipher)]
-<a href=#168 id=168 data-nosnippet>168</a>    </span><span class="kw">async fn </span>can_create_ephemeral_client(case: TestContext) {
-<a href=#169 id=169 data-nosnippet>169</a>        <span class="kw">let </span>[alice] = case.sessions().<span class="kw">await</span>;
-<a href=#170 id=170 data-nosnippet>170</a>        <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>;
-<a href=#171 id=171 data-nosnippet>171</a>        <span class="kw">let </span>conversation = conversation.enable_history_sharing_notify().<span class="kw">await</span>;
-<a href=#172 id=172 data-nosnippet>172</a>
-<a href=#173 id=173 data-nosnippet>173</a>        <span class="macro">assert_eq!</span>(
-<a href=#174 id=174 data-nosnippet>174</a>            conversation.member_count().<span class="kw">await</span>,
-<a href=#175 id=175 data-nosnippet>175</a>            <span class="number">2</span>,
-<a href=#176 id=176 data-nosnippet>176</a>            <span class="string">"the conversation should now magically have a second member"
-<a href=#177 id=177 data-nosnippet>177</a>        </span>);
-<a href=#178 id=178 data-nosnippet>178</a>
-<a href=#179 id=179 data-nosnippet>179</a>        <span class="kw">let </span>ephemeral_client = conversation.members().nth(<span class="number">1</span>).unwrap();
-<a href=#180 id=180 data-nosnippet>180</a>        <span class="macro">assert!</span>(
-<a href=#181 id=181 data-nosnippet>181</a>            conversation.can_one_way_communicate(<span class="kw-2">&amp;</span>alice, ephemeral_client).<span class="kw">await</span>,
-<a href=#182 id=182 data-nosnippet>182</a>            <span class="string">"alice can send messages to the history client"
-<a href=#183 id=183 data-nosnippet>183</a>        </span>);
-<a href=#184 id=184 data-nosnippet>184</a>        <span class="macro">assert!</span>(
-<a href=#185 id=185 data-nosnippet>185</a>            !conversation.can_one_way_communicate(ephemeral_client, <span class="kw-2">&amp;</span>alice).<span class="kw">await</span>,
-<a href=#186 id=186 data-nosnippet>186</a>            <span class="string">"the history client cannot send messages"
-<a href=#187 id=187 data-nosnippet>187</a>        </span>);
-<a href=#188 id=188 data-nosnippet>188</a>    }
-<a href=#189 id=189 data-nosnippet>189</a>}</code></pre></div></section></main></body></html>
+<a href=#118 id=118 data-nosnippet>118</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>is_history_client(client_id: <span class="kw">impl </span>Borrow&lt;ClientIdRef&gt;) -&gt; bool {
+<a href=#119 id=119 data-nosnippet>119</a>    client_id.borrow().starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes())
+<a href=#120 id=120 data-nosnippet>120</a>}
+<a href=#121 id=121 data-nosnippet>121</a>
+<a href=#122 id=122 data-nosnippet>122</a><span class="kw">impl </span>CoreCrypto {
+<a href=#123 id=123 data-nosnippet>123</a>    <span class="doccomment">/// Instantiate a history client.
+<a href=#124 id=124 data-nosnippet>124</a>    ///
+<a href=#125 id=125 data-nosnippet>125</a>    /// This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
+<a href=#126 id=126 data-nosnippet>126</a>    /// Other use is a logic error.
+<a href=#127 id=127 data-nosnippet>127</a>    </span><span class="kw">pub async fn </span>history_client(history_secret: HistorySecret) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+<a href=#128 id=128 data-nosnippet>128</a>        <span class="kw">if </span>!history_secret
+<a href=#129 id=129 data-nosnippet>129</a>            .client_id
+<a href=#130 id=130 data-nosnippet>130</a>            .starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes())
+<a href=#131 id=131 data-nosnippet>131</a>        {
+<a href=#132 id=132 data-nosnippet>132</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidHistorySecret(<span class="string">"client id has invalid format"</span>));
+<a href=#133 id=133 data-nosnippet>133</a>        }
+<a href=#134 id=134 data-nosnippet>134</a>
+<a href=#135 id=135 data-nosnippet>135</a>        <span class="comment">// pass in-memory database
+<a href=#136 id=136 data-nosnippet>136</a>        </span><span class="kw">let </span>database = Database::open(ConnectionType::InMemory, <span class="kw-2">&amp;</span>DatabaseKey::generate())
+<a href=#137 id=137 data-nosnippet>137</a>            .<span class="kw">await
+<a href=#138 id=138 data-nosnippet>138</a>            </span>.unwrap();
+<a href=#139 id=139 data-nosnippet>139</a>
+<a href=#140 id=140 data-nosnippet>140</a>        <span class="kw">let </span>cc = CoreCrypto::new(database.clone());
+<a href=#141 id=141 data-nosnippet>141</a>        <span class="kw">let </span>tx = cc
+<a href=#142 id=142 data-nosnippet>142</a>            .new_transaction()
+<a href=#143 id=143 data-nosnippet>143</a>            .<span class="kw">await
+<a href=#144 id=144 data-nosnippet>144</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"creating new transaction"</span>))<span class="question-mark">?</span>;
+<a href=#145 id=145 data-nosnippet>145</a>
+<a href=#146 id=146 data-nosnippet>146</a>        <span class="comment">// store the client id (with some other stuff)
+<a href=#147 id=147 data-nosnippet>147</a>        </span><span class="kw">let </span>mls_backend = MlsCryptoProvider::new(database);
+<a href=#148 id=148 data-nosnippet>148</a>        <span class="kw">let </span>transport = Arc::new(CoreCryptoTransportNotImplementedProvider::default());
+<a href=#149 id=149 data-nosnippet>149</a>        <span class="kw">let </span>session = Session::new(
+<a href=#150 id=150 data-nosnippet>150</a>            history_secret.client_id.clone(),
+<a href=#151 id=151 data-nosnippet>151</a>            Identities::new(<span class="number">0</span>),
+<a href=#152 id=152 data-nosnippet>152</a>            mls_backend,
+<a href=#153 id=153 data-nosnippet>153</a>            transport,
+<a href=#154 id=154 data-nosnippet>154</a>        );
+<a href=#155 id=155 data-nosnippet>155</a>
+<a href=#156 id=156 data-nosnippet>156</a>        session
+<a href=#157 id=157 data-nosnippet>157</a>            .restore_from_history_secret(history_secret)
+<a href=#158 id=158 data-nosnippet>158</a>            .<span class="kw">await
+<a href=#159 id=159 data-nosnippet>159</a>            </span>.map_err(RecursiveError::mls_client(
+<a href=#160 id=160 data-nosnippet>160</a>                <span class="string">"restoring ephemeral session from history secret"</span>,
+<a href=#161 id=161 data-nosnippet>161</a>            ))<span class="question-mark">?</span>;
+<a href=#162 id=162 data-nosnippet>162</a>
+<a href=#163 id=163 data-nosnippet>163</a>        tx.set_mls_session(session)
+<a href=#164 id=164 data-nosnippet>164</a>            .<span class="kw">await
+<a href=#165 id=165 data-nosnippet>165</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"Setting mls session"</span>))<span class="question-mark">?</span>;
+<a href=#166 id=166 data-nosnippet>166</a>
+<a href=#167 id=167 data-nosnippet>167</a>        tx.finish()
+<a href=#168 id=168 data-nosnippet>168</a>            .<span class="kw">await
+<a href=#169 id=169 data-nosnippet>169</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"finishing transaction"</span>))<span class="question-mark">?</span>;
+<a href=#170 id=170 data-nosnippet>170</a>
+<a href=#171 id=171 data-nosnippet>171</a>        <span class="prelude-val">Ok</span>(cc)
+<a href=#172 id=172 data-nosnippet>172</a>    }
+<a href=#173 id=173 data-nosnippet>173</a>}
+<a href=#174 id=174 data-nosnippet>174</a>
+<a href=#175 id=175 data-nosnippet>175</a><span class="attr">#[cfg(test)]
+<a href=#176 id=176 data-nosnippet>176</a></span><span class="kw">mod </span>tests {
+<a href=#177 id=177 data-nosnippet>177</a>    <span class="kw">use </span>rstest::rstest;
+<a href=#178 id=178 data-nosnippet>178</a>    <span class="kw">use </span>rstest_reuse::apply;
+<a href=#179 id=179 data-nosnippet>179</a>
+<a href=#180 id=180 data-nosnippet>180</a>    <span class="kw">use </span><span class="kw">crate</span>::test_utils::{TestContext, all_cred_cipher};
+<a href=#181 id=181 data-nosnippet>181</a>
+<a href=#182 id=182 data-nosnippet>182</a>    <span class="doccomment">/// Create a history secret, and restore it into a CoreCrypto instance
+<a href=#183 id=183 data-nosnippet>183</a>    </span><span class="attr">#[apply(all_cred_cipher)]
+<a href=#184 id=184 data-nosnippet>184</a>    </span><span class="kw">async fn </span>can_create_ephemeral_client(case: TestContext) {
+<a href=#185 id=185 data-nosnippet>185</a>        <span class="kw">let </span>[alice] = case.sessions().<span class="kw">await</span>;
+<a href=#186 id=186 data-nosnippet>186</a>        <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>;
+<a href=#187 id=187 data-nosnippet>187</a>        <span class="kw">let </span>conversation = conversation.enable_history_sharing_notify().<span class="kw">await</span>;
+<a href=#188 id=188 data-nosnippet>188</a>
+<a href=#189 id=189 data-nosnippet>189</a>        <span class="macro">assert_eq!</span>(
+<a href=#190 id=190 data-nosnippet>190</a>            conversation.member_count().<span class="kw">await</span>,
+<a href=#191 id=191 data-nosnippet>191</a>            <span class="number">2</span>,
+<a href=#192 id=192 data-nosnippet>192</a>            <span class="string">"the conversation should now magically have a second member"
+<a href=#193 id=193 data-nosnippet>193</a>        </span>);
+<a href=#194 id=194 data-nosnippet>194</a>
+<a href=#195 id=195 data-nosnippet>195</a>        <span class="kw">let </span>ephemeral_client = conversation.members().nth(<span class="number">1</span>).unwrap();
+<a href=#196 id=196 data-nosnippet>196</a>        <span class="macro">assert!</span>(
+<a href=#197 id=197 data-nosnippet>197</a>            conversation.can_one_way_communicate(<span class="kw-2">&amp;</span>alice, ephemeral_client).<span class="kw">await</span>,
+<a href=#198 id=198 data-nosnippet>198</a>            <span class="string">"alice can send messages to the history client"
+<a href=#199 id=199 data-nosnippet>199</a>        </span>);
+<a href=#200 id=200 data-nosnippet>200</a>        <span class="macro">assert!</span>(
+<a href=#201 id=201 data-nosnippet>201</a>            !conversation.can_one_way_communicate(ephemeral_client, <span class="kw-2">&amp;</span>alice).<span class="kw">await</span>,
+<a href=#202 id=202 data-nosnippet>202</a>            <span class="string">"the history client cannot send messages"
+<a href=#203 id=203 data-nosnippet>203</a>        </span>);
+<a href=#204 id=204 data-nosnippet>204</a>    }
+<a href=#205 id=205 data-nosnippet>205</a>}</code></pre></div></section></main></body></html>

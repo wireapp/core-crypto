@@ -84,8 +84,10 @@
 <a href=#84 id=84 data-nosnippet>84</a>    </span><span class="kw">pub async fn </span>register_history_observer(<span class="kw-2">&amp;</span><span class="self">self</span>, history_observer: Arc&lt;<span class="kw">dyn </span>HistoryObserver&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
 <a href=#85 id=85 data-nosnippet>85</a>        <span class="kw">let </span>shim = Arc::new(ObserverShim(history_observer));
 <a href=#86 id=86 data-nosnippet>86</a>        <span class="self">self</span>.inner
-<a href=#87 id=87 data-nosnippet>87</a>            .register_history_observer(shim)
-<a href=#88 id=88 data-nosnippet>88</a>            .<span class="kw">await
-<a href=#89 id=89 data-nosnippet>89</a>            </span>.map_err(CoreCryptoError::generic())
-<a href=#90 id=90 data-nosnippet>90</a>    }
-<a href=#91 id=91 data-nosnippet>91</a>}</code></pre></div></section></main></body></html>
+<a href=#87 id=87 data-nosnippet>87</a>            .mls_session()
+<a href=#88 id=88 data-nosnippet>88</a>            .<span class="kw">await</span><span class="question-mark">?
+<a href=#89 id=89 data-nosnippet>89</a>            </span>.register_history_observer(shim)
+<a href=#90 id=90 data-nosnippet>90</a>            .<span class="kw">await
+<a href=#91 id=91 data-nosnippet>91</a>            </span>.map_err(CoreCryptoError::generic())
+<a href=#92 id=92 data-nosnippet>92</a>    }
+<a href=#93 id=93 data-nosnippet>93</a>}</code></pre></div></section></main></body></html>
