@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["ffi","native","web"]};
+window.SIDEBAR_ITEMS = {"mod":["android","ffi","native","web"]};
