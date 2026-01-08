@@ -313,7 +313,8 @@ android-env:
 
 ANDROID_ARMv7 := target/armv7-linux-androideabi/$(RELEASE_MODE)/libcore_crypto_ffi.so
 android-armv7-deps := $(RUST_SOURCES)
-$(ANDROID_ARMv7): $(android-armv7-deps) | android-env
+$(ANDROID_ARMv7): $(android-armv7-deps)
+	$(MAKE) android-env;
 	cargo rustc --locked \
 	  --target armv7-linux-androideabi \
 	  --package core-crypto-ffi \
@@ -325,7 +326,8 @@ android-armv7: $(ANDROID_ARMv7) ## Build core-crypto-ffi for armv7-linux-android
 
 ANDROID_ARMv8 := target/aarch64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.so
 android-armv8-deps := $(RUST_SOURCES)
-$(ANDROID_ARMv8): $(android-armv8-deps) | android-env
+$(ANDROID_ARMv8): $(android-armv8-deps)
+	$(MAKE) android-env;
 	cargo rustc --locked \
 	  --target aarch64-linux-android \
 	  --package core-crypto-ffi \
@@ -337,7 +339,8 @@ android-armv8: $(ANDROID_ARMv8) ## Build core-crypto-ffi for aarch64-linux-andro
 
 ANDROID_X86 := target/x86_64-linux-android/$(RELEASE_MODE)/libcore_crypto_ffi.so
 android-x86-deps := $(RUST_SOURCES)
-$(ANDROID_X86): $(android-x86-deps) | android-env
+$(ANDROID_X86): $(android-x86-deps)
+	$(MAKE) android-env;
 	# Link clang_rt.builtins statically for x86_64 Android
 	cargo rustc --locked \
 	  --target x86_64-linux-android \
