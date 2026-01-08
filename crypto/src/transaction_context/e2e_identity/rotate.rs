@@ -164,15 +164,15 @@ impl TransactionContext {
         let ciphersuite = *enrollment.ciphersuite();
         let signature_scheme = ciphersuite.signature_algorithm();
 
-        let mls_provider = self
-            .mls_provider()
+        let pki_environment = self
+            .pki_environment()
             .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
+            .map_err(RecursiveError::transaction("getting pki environment"))?;
         let certificate_chain = enrollment
             .certificate_response(
                 certificate_chain,
-                mls_provider
-                    .authentication_service()
+                pki_environment
+                    .mls_pki_env_provider()
                     .borrow()
                     .await
                     .as_ref()
