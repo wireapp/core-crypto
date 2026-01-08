@@ -101,6 +101,11 @@ impl MlsCryptoProvider {
         self.pki_env.update_env(pki_env).await
     }
 
+    /// Set pki_env to a new shared pki environment provider
+    pub async fn set_pki_environment_provider(&mut self, pki_env: PkiEnvironmentProvider) {
+        self.pki_env = pki_env;
+    }
+
     /// Returns whether we have a PKI env setup
     pub async fn is_pki_env_setup(&self) -> bool {
         self.pki_env.is_env_setup().await

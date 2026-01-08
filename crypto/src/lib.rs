@@ -171,6 +171,26 @@ impl CoreCrypto {
         }
     }
 
+    /// Set the session's PKI Environment
+    pub async fn set_pki_environment(&self, pki_environment: Option<PkiEnvironment>) -> Result<()> {
+        if let Some(mls_session) = self.mls.write().await.as_mut() {
+            mls_session
+                .crypto_provider
+                .set_pki_environment_provider(pki_environment.as_ref().map(|p| p.mls_pki_env_provider()))
+                .await
+        }
+
+        let mut guard = self.pki_environment.write().await;
+        *guard = pki_environment;
+
+        Ok(())
+    }
+
+    /// Get the session's PKI Environment
+    pub async fn get_pki_environment(&self) -> Option<PkiEnvironment> {
+        self.pki_environment.read().await.clone()
+    }
+
     /// Get the mls session if initialized
     pub async fn mls_session(&self) -> Result<Session> {
         if let Some(session) = self.mls.read().await.as_ref() {
