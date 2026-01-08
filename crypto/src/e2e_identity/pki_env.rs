@@ -101,7 +101,18 @@ impl PkiEnvironment {
         })
     }
 
-    pub fn mls_pki_env_provider(&self) -> PkiEnvironmentProvider {
+    pub(crate) fn mls_pki_env_provider(&self) -> PkiEnvironmentProvider {
         self.mls_pki_env_provider.clone()
+    }
+
+    pub(crate) async fn update_pki_environment_provider(&self) -> Result<()> {
+        if let Some(rjt_pki_environment) = restore_pki_env(&self.database).await? {
+            self.mls_pki_env_provider.update_env(Some(rjt_pki_environment)).await;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn database(&self) -> &Database {
+        &self.database
     }
 }
