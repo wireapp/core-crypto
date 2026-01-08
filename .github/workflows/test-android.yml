@@ -10,11 +10,7 @@ env:
 
 jobs:
   test-android:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-
-    env:
-      ANDROID_NDK_VERSION: 28.1.13356709
 
     steps:
       - uses: actions/checkout@v6
@@ -33,16 +29,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: download android package
-        uses: ./.github/actions/make/android/package
+      - name: android instrumentation tests
+        uses: ./.github/actions/make/android/test
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: android instrumentation tests
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 32
-          arch: x86_64
-          working-directory: ./crypto-ffi/bindings
-          script: ./gradlew android:connectedAndroidTest
-

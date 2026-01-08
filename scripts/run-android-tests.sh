@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 set -e
+cd $(realpath $(dirname $0))
 
-./scripts/create-android-virtual-device.sh
+if [[ "${GITHUB_ACTIONS}" == "true" ]]; then
+    sh ./setup-android-emulator.sh
+fi
+
+./create-android-emulator.sh
 
 trap '
   echo "Shutting down Android emulator via adb"
   $ANDROID_HOME/platform-tools/adb emu kill
 ' EXIT
 
-cd crypto-ffi/bindings
+cd ../crypto-ffi/bindings
 
 ./gradlew android:connectedAndroidTest --rerun

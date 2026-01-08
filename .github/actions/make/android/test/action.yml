@@ -1,0 +1,40 @@
+name: Test kotlin bindings for android via make
+inputs:
+  gh-token:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: download armv7-linux-androideabi binaries
+      uses: ./.github/actions/make/android/lib
+      with:
+        task: android-armv7
+        gh-token: ${{ inputs.gh-token }}
+
+    - name: download aarch64-linux-android binaries
+      uses: ./.github/actions/make/android/lib
+      with:
+        task: android-armv8
+        gh-token: ${{ inputs.gh-token }}
+
+    - name: download x86_64-linux-android binaries
+      uses: ./.github/actions/make/android/lib
+      with:
+        task: android-x86
+        gh-token: ${{ inputs.gh-token }}
+
+    - name: fetch android bindings
+      uses: ./.github/actions/make/android/bindings
+      with:
+        gh-token: ${{ inputs.gh-token }}
+
+    - name: make android-test
+      uses: ./.github/actions/make
+      with:
+        key: android-test
+        make-rule: android-test
+        target-path: |
+          .stamps/android-test
+        always-run: ${{ github.ref_name == 'main' }}
+        gh-token: ${{ inputs.gh-token }}
