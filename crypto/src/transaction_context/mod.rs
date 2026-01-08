@@ -14,8 +14,9 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef, KeystoreError,
-    MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
+    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef,
+    CredentialType, KeystoreError, MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
+    e2e_identity::pki_env::PkiEnvironment,
     group_store::GroupStore,
     mls::{self, HasSessionAndCrypto},
 };
@@ -45,6 +46,7 @@ pub struct TransactionContext {
 #[derive(Debug, Clone)]
 enum TransactionContextInner {
     Valid {
+        pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
         keystore: Database,
         mls_session: Arc<RwLock<Option<Session>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
@@ -61,6 +63,7 @@ impl CoreCrypto {
     pub async fn new_transaction(&self) -> Result<TransactionContext> {
         TransactionContext::new(
             self.database.clone(),
+            self.pki_environment.clone(),
             self.mls.clone(),
             #[cfg(feature = "proteus")]
             self.proteus.clone(),
@@ -90,6 +93,7 @@ impl HasSessionAndCrypto for TransactionContext {
 impl TransactionContext {
     async fn new(
         keystore: Database,
+        pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
         mls_session: Arc<RwLock<Option<Session>>>,
         #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     ) -> Result<Self> {
@@ -102,6 +106,7 @@ impl TransactionContext {
             inner: Arc::new(
                 TransactionContextInner::Valid {
                     keystore,
+                    pki_environment,
                     mls_session: mls_session.clone(),
                     mls_groups,
                     #[cfg(feature = "proteus")]
