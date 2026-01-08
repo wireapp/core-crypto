@@ -167,15 +167,6 @@ impl Session {
     pub fn id(&self) -> ClientId {
         self.id.clone()
     }
-
-    /// Returns whether this client is E2EI capable
-    pub async fn is_e2ei_capable(&self) -> bool {
-        self.identities
-            .read()
-            .await
-            .iter()
-            .any(|cred| cred.credential_type() == CredentialType::X509)
-    }
 }
 
 #[cfg(test)]

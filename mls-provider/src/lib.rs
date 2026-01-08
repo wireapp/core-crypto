@@ -87,6 +87,14 @@ impl MlsCryptoProvider {
         }
     }
 
+    pub fn new_with_pki_env(key_store: Database, pki_env: PkiEnvironmentProvider) -> Self {
+        Self {
+            key_store,
+            crypto: Default::default(),
+            pki_env,
+        }
+    }
+
     /// Clones the references of the PkiEnvironment and the CryptoProvider into a transaction
     /// keystore to pass to openmls as the `OpenMlsCryptoProvider`
     pub async fn new_transaction(&self) -> MlsProviderResult<()> {

@@ -192,6 +192,14 @@ impl TransactionContext {
         }
     }
 
+    pub(crate) async fn pki_environment_option(&self) -> Result<Option<PkiEnvironment>> {
+        match &*self.inner.read().await {
+            TransactionContextInner::Valid { pki_environment, .. } => Ok(pki_environment.read().await.clone()),
+
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
+        }
+    }
+
     pub(crate) async fn mls_groups(&self) -> Result<RwLockWriteGuardArc<GroupStore<MlsConversation>>> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { mls_groups, .. } => Ok(mls_groups.write_arc().await),
@@ -325,13 +333,14 @@ impl TransactionContext {
         let database = self.keystore().await?;
         let (client_id, identities) = self.init(identifier, ciphersuites).await?;
 
-        let mls_backend = MlsCryptoProvider::new(database);
-        let session = Session::new(client_id.clone(), identities, mls_backend, transport);
+        let pki_env_provider = self
+            .pki_environment_option()
+            .await?
+            .map(|pki_env| pki_env.mls_pki_env_provider())
+            .unwrap_or_default();
 
-        if session.is_e2ei_capable().await {
-            log::trace!(client_id:% = client_id; "Initializing PKI environment");
-            self.init_pki_env().await?;
-        }
+        let crypto_provider = MlsCryptoProvider::new_with_pki_env(database, pki_env_provider);
+        let session = Session::new(client_id.clone(), identities, crypto_provider, transport);
 
         self.set_mls_session(session).await?;
 
