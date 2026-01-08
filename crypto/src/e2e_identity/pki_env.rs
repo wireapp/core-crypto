@@ -100,4 +100,8 @@ impl PkiEnvironment {
             mls_pki_env_provider,
         })
     }
+
+    pub fn mls_pki_env_provider(&self) -> PkiEnvironmentProvider {
+        self.mls_pki_env_provider.clone()
+    }
 }

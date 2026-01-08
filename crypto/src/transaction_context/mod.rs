@@ -14,8 +14,8 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef,
-    CredentialType, KeystoreError, MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
+    ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef, KeystoreError,
+    MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
     e2e_identity::pki_env::PkiEnvironment,
     group_store::GroupStore,
     mls::{self, HasSessionAndCrypto},
@@ -189,6 +189,14 @@ impl TransactionContext {
         }
     }
 
+    pub(crate) async fn pki_environment_option(&self) -> Result<Option<PkiEnvironment>> {
+        match &*self.inner.read().await {
+            TransactionContextInner::Valid { pki_environment, .. } => Ok(pki_environment.read().await.clone()),
+
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
+        }
+    }
+
     pub(crate) async fn mls_groups(&self) -> Result<RwLockWriteGuardArc<GroupStore<MlsConversation>>> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { mls_groups, .. } => Ok(mls_groups.write_arc().await),
@@ -251,14 +259,14 @@ impl TransactionContext {
             .map_err(RecursiveError::mls_client("getting client id"))?
             .into_owned();
 
-        let mls_backend = MlsCryptoProvider::new(database);
-        let session = Session::new(client_id.clone(), mls_backend, transport);
+        let pki_env_provider = self
+            .pki_environment_option()
+            .await?
+            .map(|pki_env| pki_env.mls_pki_env_provider())
+            .unwrap_or_default();
 
-        if matches!(identifier, ClientIdentifier::X509(..)) {
-            log::trace!(client_id:% = client_id; "Initializing PKI environment");
-            self.init_pki_env().await?;
-        }
-
+        let crypto_provider = MlsCryptoProvider::new_with_pki_env(database, pki_env_provider);
+        let session = Session::new(client_id.clone(), crypto_provider, transport);
         self.set_mls_session(session).await?;
 
         Ok(())
