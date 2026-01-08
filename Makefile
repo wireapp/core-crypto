@@ -309,7 +309,7 @@ android-env:
 	  echo "ERROR: set ANDROID_NDK_HOME"; exit 1; \
 	fi
 	@ndk_version=$$(perl -ne 's/Pkg\.Revision = // and print' $(ANDROID_NDK_HOME)/source.properties) && \
-		echo "Using Android NDK $${ndk_version} at $(ANDROID_NDK_HOME)"; \
+		echo "Using Android NDK $${ndk_version} at $(ANDROID_NDK_HOME)";
 
 ANDROID_ARMv7 := target/armv7-linux-androideabi/$(RELEASE_MODE)/libcore_crypto_ffi.so
 android-armv7-deps := $(RUST_SOURCES)
