@@ -298,6 +298,12 @@ $(STAMPS)/ios-create-xcframework: $(ios-create-xcframework-deps)
 .PHONY: ios-create-xcframework
 ios-create-xcframework: $(STAMPS)/ios-create-xcframework ## Build the XCode framework (macOS only)
 
+ios-test-deps := $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT)
+
+$(STAMPS)/ios-test: $(ios-test-deps)
+	$(SHELL) scripts/run-ios-tests.sh $(XCODE_CONFIG)
+	$(TOUCH_STAMP)
+
 #-------------------------------------------------------------------------------
 # Android builds
 #-------------------------------------------------------------------------------
@@ -723,11 +729,12 @@ check: rust-check swift-check kotlin-check ts-check ## Run all linters
 # Lazy targets
 #-------------------------------------------------------------------------------
 
-LAZY_TARGETS := jvm-test ts-test android-test
+LAZY_TARGETS := jvm-test ts-test android-test ios-test
 
 ts-test: ## Run TypeScript wrapper tests via wdio and bun. Optionally pass TEST=<test> to filter by test name.
 jvm-test: ## Run Kotlin tests on JVM
 android-test: ## Run Kotlin tests on Android
+ios-test: ## Run Swift tests on iOS (macOS only)
 
 ifeq ($(LAZY_MAKE),)
 
