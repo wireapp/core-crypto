@@ -369,6 +369,12 @@ else
 $(error Unsupported host platform for android-test-lib: $(UNAME_S))
 endif
 
+android-test-deps := $(ANDROID_TEST_LIB) $(UNIFFI_ANDROID_OUTPUT)
+
+$(STAMPS)/android-test: $(android-test-deps)
+	$(SHELL) scripts/run-android-tests.sh
+	$(TOUCH_STAMP)
+
 #-------------------------------------------------------------------------------
 # JVM native builds (Darwin + Linux)
 #-------------------------------------------------------------------------------
@@ -714,10 +720,11 @@ check: rust-check swift-check kotlin-check ts-check ## Run all linters
 # Lazy targets
 #-------------------------------------------------------------------------------
 
-LAZY_TARGETS := jvm-test ts-test
+LAZY_TARGETS := jvm-test ts-test android-test
 
 ts-test: ## Run TypeScript wrapper tests via wdio and bun. Optionally pass TEST=<test> to filter by test name.
 jvm-test: ## Run Kotlin tests on JVM
+android-test: ## Run Kotlin tests on Android
 
 ifeq ($(LAZY_MAKE),)
 
