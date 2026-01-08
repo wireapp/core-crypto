@@ -589,7 +589,7 @@ $(STAMPS)/docs-ts: $(TS_OUT)
 docs-ts: $(STAMPS)/docs-ts ## Generate TypeScript docs
 
 # Swift docs via Jazzy (macOS only)
-docs-swift-deps := $(IOS_DEVICE) $(IOS_SIMULATOR_ARM) $(STAMPS)/bindings-swift
+docs-swift-deps := $(IOS_DEVICE) $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT)
 $(STAMPS)/docs-swift: $(docs-swift-deps)
 	mkdir -p target/swift/doc
 	cd crypto-ffi/bindings/swift/WireCoreCrypto && \
