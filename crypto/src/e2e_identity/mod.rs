@@ -6,7 +6,6 @@ pub(crate) mod identity;
 pub mod pki_env;
 pub(crate) use crypto::E2eiSignatureKeypair;
 pub use pki_env::NewCrlDistributionPoints;
-pub(crate) use pki_env::restore_pki_env;
 #[cfg(not(test))]
 mod enrollment;
 #[cfg(test)]

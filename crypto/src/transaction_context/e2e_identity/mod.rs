@@ -13,7 +13,6 @@ use std::{
 };
 
 pub use error::{Error, Result};
-use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
 use super::TransactionContext;
@@ -69,10 +68,10 @@ impl TransactionContext {
         certificate_chain: String,
         transport: Arc<dyn MlsTransport>,
     ) -> Result<NewCrlDistributionPoints> {
-        let mls_provider = self
-            .mls_provider()
+        let pki_environment = self
+            .pki_environment()
             .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
+            .map_err(RecursiveError::transaction("getting pki environment"))?;
 
         let sk = enrollment
             .get_sign_key_for_mls()
@@ -81,8 +80,8 @@ impl TransactionContext {
         let certificate_chain = enrollment
             .certificate_response(
                 certificate_chain,
-                mls_provider
-                    .authentication_service()
+                pki_environment
+                    .mls_pki_env_provider()
                     .borrow()
                     .await
                     .as_ref()
@@ -106,7 +105,12 @@ impl TransactionContext {
         )?;
         // we don't need to keep the credential ref; this credential will be loaded in mls_init later on
         credential
-            .save(&mls_provider.keystore())
+            .save(
+                &self
+                    .keystore()
+                    .await
+                    .map_err(RecursiveError::transaction("Getting database from transaction context"))?,
+            )
             .await
             .map_err(RecursiveError::mls_credential(
                 "saving credential in e2ei_mls_init_only",

@@ -2,7 +2,6 @@ use core_crypto_keystore::{
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
     traits::FetchFromDatabase,
 };
-use openmls_traits::OpenMlsCryptoProvider;
 use wire_e2e_identity::prelude::x509::{
     extract_crl_uris, extract_expiration_from_crl,
     revocation::{PkiEnvironment, PkiEnvironmentParams},
@@ -11,8 +10,8 @@ use x509_cert::der::Decode;
 
 use super::{Error, Result};
 use crate::{
-    KeystoreError, MlsError, RecursiveError,
-    e2e_identity::{CrlRegistration, NewCrlDistributionPoints, restore_pki_env},
+    KeystoreError, RecursiveError,
+    e2e_identity::{CrlRegistration, NewCrlDistributionPoints},
     transaction_context::TransactionContext,
 };
 
@@ -20,10 +19,10 @@ impl TransactionContext {
     /// See [crate::mls::session::Session::e2ei_is_pki_env_setup].
     pub async fn e2ei_is_pki_env_setup(&self) -> Result<bool> {
         Ok(self
-            .mls_provider()
+            .pki_environment()
             .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?
-            .authentication_service()
+            .map_err(RecursiveError::transaction("Getting pki provider"))?
+            .mls_pki_env_provider()
             .is_env_setup()
             .await)
     }
@@ -36,10 +35,11 @@ impl TransactionContext {
     /// # Parameters
     /// * `trust_anchor_pem` - PEM certificate to anchor as a Trust Root
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> Result<()> {
-        let database = self
-            .keystore()
-            .await
-            .map_err(RecursiveError::transaction("Getting database from transaction context"))?;
+        let pki_environment = self.pki_environment().await.map_err(RecursiveError::transaction(
+            "Getting PKI environment from transaction context",
+        ))?;
+
+        let database = pki_environment.database();
 
         if matches!(database.get_unique::<E2eiAcmeCA>().await, Ok(Some(_))) {
             return Err(Error::TrustAnchorAlreadyRegistered);
@@ -66,33 +66,11 @@ impl TransactionContext {
             .await
             .map_err(KeystoreError::wrap("saving acme ca"))?;
 
-        // To do that, tear down and recreate the pki env
-        self.init_pki_env().await?;
-
-        Ok(())
-    }
-
-    pub(crate) async fn init_pki_env(&self) -> Result<()> {
-        if let Some(pki_env) = restore_pki_env(
-            &self
-                .keystore()
-                .await
-                .map_err(RecursiveError::transaction("Getting database from transaction context"))?,
-        )
-        .await
-        .map_err(RecursiveError::e2e_identity("restoring pki env"))?
-        {
-            let provider = self
-                .mls_provider()
-                .await
-                .map_err(RecursiveError::transaction("getting mls provider"))?;
-            provider
-                .authentication_service()
-                .update_env(pki_env)
-                .await
-                .map_err(MlsError::wrap("updating authentication service env"))?;
-        }
-
+        // To do that, tear down and recreate the inner pki env
+        pki_environment
+            .update_pki_environment_provider()
+            .await
+            .map_err(RecursiveError::e2e_identity("updating pki environment"))?;
         Ok(())
     }
 
@@ -118,12 +96,14 @@ impl TransactionContext {
         &self,
         inter_ca: x509_cert::Certificate,
     ) -> Result<NewCrlDistributionPoints> {
+        let pki_environment = self.pki_environment().await.map_err(RecursiveError::transaction(
+            "Getting PKI environment from transaction context",
+        ))?;
+
         // TrustAnchor must have been registered at this point
-        let keystore = self
-            .keystore()
-            .await
-            .map_err(RecursiveError::transaction("getting keystore"))?;
-        let trust_anchor = keystore
+        let database = pki_environment.database();
+
+        let trust_anchor = database
             .get_unique::<E2eiAcmeCA>()
             .await
             .map_err(KeystoreError::wrap("finding acme ca"))?
@@ -144,11 +124,8 @@ impl TransactionContext {
 
         // Validate it
         {
-            let provider = self
-                .mls_provider()
-                .await
-                .map_err(RecursiveError::transaction("getting mls provider"))?;
-            let auth_service_arc = provider.authentication_service().borrow().await;
+            let provider = pki_environment.mls_pki_env_provider();
+            let auth_service_arc = provider.borrow().await;
             let Some(pki_env) = auth_service_arc.as_ref() else {
                 return Err(Error::PkiEnvironmentUnset);
             };
@@ -161,12 +138,15 @@ impl TransactionContext {
             content: cert_der,
             ski_aki_pair,
         };
-        keystore
+        database
             .save(intermediate_ca)
             .await
             .map_err(KeystoreError::wrap("saving intermediate ca"))?;
 
-        self.init_pki_env().await?;
+        pki_environment
+            .update_pki_environment_provider()
+            .await
+            .map_err(RecursiveError::e2e_identity("updating pki environment"))?;
 
         Ok(intermediate_crl.into())
     }
@@ -183,13 +163,13 @@ impl TransactionContext {
     /// # Returns
     /// A [CrlRegistration] with the dirty state of the new CRL (see struct) and its expiration timestamp
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> Result<CrlRegistration> {
+        let pki_environment = self.pki_environment().await.map_err(RecursiveError::transaction(
+            "Getting PKI environment from transaction context",
+        ))?;
         // Parse & Validate CRL
         let crl = {
-            let provider = self
-                .mls_provider()
-                .await
-                .map_err(RecursiveError::transaction("getting mls provider"))?;
-            let auth_service_arc = provider.authentication_service().borrow().await;
+            let provider = pki_environment.mls_pki_env_provider();
+            let auth_service_arc = provider.borrow().await;
             let Some(pki_env) = auth_service_arc.as_ref() else {
                 return Err(Error::PkiEnvironmentUnset);
             };
@@ -198,12 +178,9 @@ impl TransactionContext {
 
         let expiration = extract_expiration_from_crl(&crl);
 
-        let ks = self
-            .keystore()
-            .await
-            .map_err(RecursiveError::transaction("getting keystore"))?;
+        let database = pki_environment.database();
 
-        let dirty = ks
+        let dirty = database
             .get::<E2eiCrl>(&crl_dp)
             .await
             .ok()
@@ -220,10 +197,15 @@ impl TransactionContext {
             content: PkiEnvironment::encode_crl_to_der(&crl)?,
             distribution_point: crl_dp,
         };
-        ks.save(crl_data).await.map_err(KeystoreError::wrap("saving crl"))?;
+        database
+            .save(crl_data)
+            .await
+            .map_err(KeystoreError::wrap("saving crl"))?;
 
-        self.init_pki_env().await?;
-
+        pki_environment
+            .update_pki_environment_provider()
+            .await
+            .map_err(RecursiveError::e2e_identity("updating pki environment"))?;
         Ok(CrlRegistration { expiration, dirty })
     }
 }
