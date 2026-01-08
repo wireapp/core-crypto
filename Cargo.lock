@@ -668,16 +668,6 @@ checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
 [[package]]
 name = "cbor-codec"
 version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e083a023562b37c52837e850131a51b1154cceb9d149f41ee3d386737b140f46"
-dependencies = [
- "byteorder",
- "libc",
-]
-
-[[package]]
-name = "cbor-codec"
-version = "0.7.1"
 source = "git+https://github.com/wireapp/proteus?tag=v2.1.1#b92dbc2d0c77105cae3911a7388acba05450a06d"
 dependencies = [
  "byteorder",
@@ -1046,7 +1036,6 @@ dependencies = [
  "openmls_traits",
  "openmls_x509_credential",
  "pem",
- "proteus",
  "proteus-traits",
  "proteus-wasm",
  "rand 0.8.5",
@@ -1734,7 +1723,7 @@ dependencies = [
  "ff",
  "generic-array",
  "group",
- "hkdf 0.12.4",
+ "hkdf",
  "pem-rfc7468",
  "pkcs8",
  "rand_core 0.6.4",
@@ -2356,14 +2345,6 @@ checksum = "e712f64ec3850b98572bffac52e2c6f282b29fe6c5fa6d42334b30be438d95c1"
 
 [[package]]
 name = "hkdf"
-version = "0.3.2"
-source = "git+https://github.com/wireapp/hkdf?tag=v0.3.2#3a40aafeb47337015d5478a43429fb9072a6dc53"
-dependencies = [
- "sodiumoxide",
-]
-
-[[package]]
-name = "hkdf"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b5f8eb2ad728638ea2c7d47a21db23b7b58a72ed6a38256b8a1849f15fbbdf7"
@@ -2400,7 +2381,7 @@ dependencies = [
  "chacha20poly1305",
  "digest",
  "generic-array",
- "hkdf 0.12.4",
+ "hkdf",
  "hmac",
  "p256",
  "p384",
@@ -3133,18 +3114,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "libsodium-sys"
-version = "0.2.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b779387cd56adfbc02ea4a668e704f729be8d6a6abd2c27ca5ee537849a92fd"
-dependencies = [
- "cc",
- "libc",
- "pkg-config",
- "walkdir",
-]
-
-[[package]]
 name = "libsqlite3-sys"
 version = "0.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3359,7 +3328,7 @@ dependencies = [
  "getrandom 0.2.15",
  "hex",
  "hex-literal",
- "hkdf 0.12.4",
+ "hkdf",
  "hmac",
  "hpke",
  "macro_rules_attribute 0.2.2",
@@ -4425,16 +4394,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "proteus"
-version = "1.0.3"
-source = "git+https://github.com/wireapp/proteus?branch=otak%2Ffix-1.0.3#f3cd17da5f788d243a17bf624be71794358724f8"
-dependencies = [
- "cbor-codec 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "hkdf 0.3.2",
- "sodiumoxide",
-]
-
-[[package]]
 name = "proteus-traits"
 version = "2.1.0"
 source = "git+https://github.com/wireapp/proteus?tag=v2.1.1#b92dbc2d0c77105cae3911a7388acba05450a06d"
@@ -4447,7 +4406,7 @@ name = "proteus-wasm"
 version = "2.1.0"
 source = "git+https://github.com/wireapp/proteus?tag=v2.1.1#b92dbc2d0c77105cae3911a7388acba05450a06d"
 dependencies = [
- "cbor-codec 0.7.1 (git+https://github.com/wireapp/proteus?tag=v2.1.1)",
+ "cbor-codec",
  "chacha20",
  "curve25519-dalek",
  "ed25519-dalek",
@@ -4455,7 +4414,7 @@ dependencies = [
  "generic-array",
  "getrandom 0.2.15",
  "hex",
- "hkdf 0.12.4",
+ "hkdf",
  "hmac",
  "proteus-traits",
  "rand 0.8.5",
@@ -5547,16 +5506,6 @@ checksum = "233504af464074f9d066d7b5416c5f9b894a5862a6506e306f7b816cdd6f1807"
 dependencies = [
  "libc",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "sodiumoxide"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "585232e78a4fc18133eef9946d3080befdf68b906c51b621531c37e91787fa2b"
-dependencies = [
- "libc",
- "libsodium-sys",
 ]
 
 [[package]]
