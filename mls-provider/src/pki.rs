@@ -35,12 +35,8 @@ impl PkiEnvironmentProvider {
         self.0.read().await.is_some()
     }
 
-    pub async fn update_env(
-        &self,
-        env: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
-    ) -> MlsProviderResult<()> {
+    pub async fn update_env(&self, env: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment) {
         self.0.write().await.replace(env);
-        Ok(())
     }
 
     #[allow(dead_code)]

@@ -15,9 +15,7 @@ use openmls_traits::{
         KemOutput, SignatureScheme,
     },
 };
-pub use pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
-
-use crate::pki::PkiEnvironmentProvider;
+pub use pki::{CertProfile, CertificateGenerationArgs, PkiEnvironmentProvider, PkiKeypair};
 
 pub mod reexports {
     pub use rand_core;
@@ -102,10 +100,7 @@ impl MlsCryptoProvider {
     }
 
     /// Replaces the PKI env currently in place
-    pub async fn update_pki_env(
-        &self,
-        pki_env: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
-    ) -> MlsProviderResult<()> {
+    pub async fn update_pki_env(&self, pki_env: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment) {
         self.pki_env.update_env(pki_env).await
     }
 
