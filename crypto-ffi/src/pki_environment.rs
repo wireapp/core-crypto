@@ -70,6 +70,14 @@ pub struct HttpResponse {
     pub body: Vec<u8>,
 }
 
+impl From<HttpResponse> for core_crypto::e2e_identity::pki_env::HttpResponse {
+    fn from(ffi: HttpResponse) -> Self {
+        Self {
+            status: ffi.status,
+            headers: ffi.headers.into_iter().map(Into::into).collect(),
+            body: ffi.body,
+        }
+    }
 }
 
 /// An OAuthResponse used for pki hooks
@@ -87,6 +95,19 @@ pub struct OAuthResponse {
     pub scope: Option<String>,
     /// OAuth Refresh Token
     pub refresh_token: Option<String>,
+}
+
+impl From<OAuthResponse> for core_crypto::e2e_identity::pki_env::OAuthResponse {
+    fn from(ffi: OAuthResponse) -> Self {
+        Self {
+            access_token: ffi.access_token,
+            id_token: ffi.id_token,
+            token_type: ffi.token_type,
+            expires_in: ffi.expires_in,
+            scope: ffi.scope,
+            refresh_token: ffi.refresh_token,
+        }
+    }
 }
 
 /// Callbacks that CoreCrypto uses during E2e flow.
@@ -108,4 +129,43 @@ pub trait PkiEnvironmentHooks: Send + Sync {
 
     /// this one is only used for DPoP challenge
     async fn fetch_backend_access_token(&self, dpop: String) -> String;
+}
+
+#[derive(derive_more::Constructor)]
+struct PkiEnvironmentHooksShim(Arc<dyn PkiEnvironmentHooks>);
+
+impl std::fmt::Debug for PkiEnvironmentHooksShim {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("PkiEnvironmentHooksShim")
+            .field(&"Arc<dyn PkiEnvironmentHooks>")
+            .finish()
+    }
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl core_crypto::e2e_identity::pki_env::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
+    async fn http_request(
+        &self,
+        method: core_crypto::e2e_identity::pki_env::HttpMethod,
+        url: String,
+        headers: Vec<core_crypto::e2e_identity::pki_env::HttpHeader>,
+        body: Vec<u8>,
+    ) -> core_crypto::e2e_identity::pki_env::HttpResponse {
+        let headers = headers.into_iter().map(Into::into).collect();
+        self.0.http_request(method.into(), url, headers, body).await.into()
+    }
+
+    async fn authenticate(
+        &self,
+        idp: String,
+        key_auth: String,
+        acme_aud: String,
+    ) -> core_crypto::e2e_identity::pki_env::OAuthResponse {
+        self.0.authenticate(idp, key_auth, acme_aud).await.into()
+    }
+
+    async fn fetch_backend_access_token(&self, dpop: String) -> String {
+        self.0.fetch_backend_access_token(dpop).await
+    }
 }
