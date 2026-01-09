@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::Result;
 use base64::{Engine as _, engine::general_purpose};
-use core_crypto::{KeyPackage, KeyPackageIn};
+use core_crypto::{KeyPackageIn, Keypackage};
 use thiserror::Error;
 use tls_codec::Deserialize;
 
@@ -218,7 +218,7 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
             .execute(format!("get-key-package?ciphersuite={}", ciphersuite))
             .await?;
         let kp_raw = general_purpose::STANDARD.decode(kp_base64)?;
-        let kp: KeyPackage = KeyPackageIn::tls_deserialize(&mut kp_raw.as_slice())?.into();
+        let kp: Keypackage = KeyPackageIn::tls_deserialize(&mut kp_raw.as_slice())?.into();
 
         log::info!(
             "KP Init Key [took {}ms]: Client {} [{}] - {}",
