@@ -36,7 +36,7 @@ async fn create_mls_clients<'a>(
                 .await
                 .unwrap(),
         ),
-        #[cfg(target_os = "ios")]
+        #[cfg(target_os = "macos")]
         Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
         Box::new(
             clients::corecrypto::native::CoreCryptoNativeClient::new()
@@ -63,7 +63,7 @@ async fn create_proteus_clients<'a>(
                 .await
                 .unwrap(),
         ),
-        #[cfg(target_os = "ios")]
+        #[cfg(target_os = "macos")]
         Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
         Box::new(
             clients::corecrypto::native::CoreCryptoNativeClient::new()
