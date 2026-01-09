@@ -554,6 +554,12 @@ interop-build-deps := $(INTEROP_SOURCES)
 $(INTEROP_OUT): $(interop-build-deps)
 	cargo build --bin interop
 
+interop-test-deps := $(INTEROP_OUT) $(TS_OUT) $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT) $(ANDROID_ARMv8) $(ANDROID_ARMv7) $(ANDROID_X86) $(UNIFFI_ANDROID_OUTPUT)
+
+$(STAMPS)/interop-test: $(interop-test-deps)
+	$(SHELL) scripts/run-interop-test.sh $(XCODE_CONFIG)
+	$(TOUCH_STAMP)
+
 #-------------------------------------------------------------------------------
 # Documentation targets
 #-------------------------------------------------------------------------------
@@ -729,12 +735,13 @@ check: rust-check swift-check kotlin-check ts-check ## Run all linters
 # Lazy targets
 #-------------------------------------------------------------------------------
 
-LAZY_TARGETS := jvm-test ts-test android-test ios-test
+LAZY_TARGETS := jvm-test ts-test android-test ios-test interop-test
 
 ts-test: ## Run TypeScript wrapper tests via wdio and bun. Optionally pass TEST=<test> to filter by test name.
 jvm-test: ## Run Kotlin tests on JVM
 android-test: ## Run Kotlin tests on Android
 ios-test: ## Run Swift tests on iOS (macOS only)
+interop-test: ## Run e2e interop test
 
 ifeq ($(LAZY_MAKE),)
 
