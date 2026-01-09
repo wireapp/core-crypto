@@ -476,6 +476,12 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
    - all workspace member crates
    - `package.json`
    - `crypto-ffi/bindings/gradle.properties` Make sure the result of the script run is correct.
+1. Generate a fresh `e2e-identity/README.md.test`:
+   ```bash
+   TEST_IDP=authelia bash scripts/run-e2ei-tests.sh demo_should_succeed
+   ```
+   If there are non-trivial differences between `e2e-identity/README.md` and the generated file, update
+   `e2e-identity/README.md` and commit the changes.
 1. Generate the relevant changelog section:
    ```bash
    git cliff --bump --unreleased
