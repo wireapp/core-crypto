@@ -44,15 +44,27 @@ jobs:
   build-android:
     uses: ./.github/workflows/build-android.yml
 
-  package-android:
+  bindings-android:
+    runs-on: ubuntu-latest
     needs:
       - uniffi-bindgen-linux
       - ffi-library-linux
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/make/android/bindings
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+  package-android:
+    needs:
+      - bindings-android
       - build-android
     uses: ./.github/workflows/package-android.yml
 
   test-android:
-    needs: package-android
+    needs:
+      - bindings-android
+      - build-android
     uses: ./.github/workflows/test-android.yml
 
   #################
