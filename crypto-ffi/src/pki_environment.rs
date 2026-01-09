@@ -169,3 +169,23 @@ impl core_crypto::e2e_identity::pki_env::PkiEnvironmentHooks for PkiEnvironmentH
         self.0.fetch_backend_access_token(dpop).await
     }
 }
+
+#[derive(derive_more::Into, Clone, uniffi::Object)]
+pub struct PkiEnvironment(core_crypto::e2e_identity::pki_env::PkiEnvironment);
+
+#[uniffi::export]
+impl CoreCryptoFfi {
+    /// Set the Pki Environment of the CoreCrypto instance
+    pub async fn set_pki_environment(&self, pki_environment: &Arc<PkiEnvironment>) -> CoreCryptoResult<()> {
+        self.inner
+            .set_pki_environment(pki_environment.as_ref().clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    /// Get the Pki Environment of the CoreCrypto instance
+    /// Returns null if it is not set.
+    pub async fn get_pki_environment(&self) -> Option<Arc<PkiEnvironment>> {
+        self.inner.get_pki_environment().await.map(PkiEnvironment).map(Arc::new)
+    }
+}
