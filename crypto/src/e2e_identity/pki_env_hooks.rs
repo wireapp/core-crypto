@@ -104,3 +104,50 @@ pub trait PkiEnvironmentHooks: std::fmt::Debug + Send + Sync {
     /// backend to obtain an access token, which should be returned to the caller.
     async fn fetch_backend_access_token(&self, dpop: String) -> Result<String, PkiEnvironmentHooksError>;
 }
+
+#[allow(missing_docs)]
+#[cfg(test)]
+pub(crate) mod test {
+    use crate::e2e_identity::pki_env_hooks::{
+        HttpHeader, HttpMethod, HttpResponse, PkiEnvironmentHooks, PkiEnvironmentHooksError,
+    };
+
+    /// Dummy struct for tests
+    #[derive(Debug, Default)]
+    pub struct DummyPkiEnvironmentHooks;
+
+    #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+    #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+    impl PkiEnvironmentHooks for DummyPkiEnvironmentHooks {
+        async fn http_request(
+            &self,
+            _method: HttpMethod,
+            _url: String,
+            _headers: Vec<HttpHeader>,
+            _body: Vec<u8>,
+        ) -> HttpResponse {
+            HttpResponse {
+                status: 200,
+                headers: vec![],
+                body: vec![],
+            }
+        }
+
+        async fn authenticate(
+            &self,
+            _idp: String,
+            _key_auth: String,
+            _acme_aud: String,
+        ) -> Result<String, PkiEnvironmentHooksError> {
+            Ok("dummy-id-token".to_string())
+        }
+
+        async fn get_backend_nonce(&self) -> Result<String, PkiEnvironmentHooksError> {
+            Ok("dummy-backend-nonce".to_string())
+        }
+
+        async fn fetch_backend_access_token(&self, _dpop: String) -> Result<String, PkiEnvironmentHooksError> {
+            Ok("dummy-backend-token".to_string())
+        }
+    }
+}
