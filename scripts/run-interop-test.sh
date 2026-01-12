@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -e
+scripts=$(realpath $(dirname $0))
+cd $scripts
 
 TARGET_NAME=$1
 
@@ -8,7 +10,7 @@ OS="$(uname -s)"
 cleanup() {
   if [ -n "$simulator_id" ]; then
     echo "deleting simulator device $simulator_id"
-    scripts/delete-ios-sim-device.sh "$simulator_id"
+    $scripts/delete-ios-sim-device.sh "$simulator_id"
   fi
 
   echo "Shutting down Android emulator via adb"
@@ -18,9 +20,9 @@ cleanup() {
 trap cleanup EXIT
 
 if [ "$OS" = "Darwin" ]; then
-    simulator_id=$(./scripts/create-ios-sim-device.sh "iPhone 16 e2e-interop-test")
+    simulator_id=$($scripts/create-ios-sim-device.sh "iPhone 16 e2e-interop-test")
 
-    cd interop/src/clients/InteropClient
+    cd ../interop/src/clients/InteropClient
 
     xcodebuild \
     	-scheme InteropClient \
@@ -31,15 +33,15 @@ if [ "$OS" = "Darwin" ]; then
 
     ./install-interop-client.sh $simulator_id
 
-    cd -
+    cd $scripts
 fi
 
-./scripts/create-android-virtual-device.sh
+./create-android-emulator.sh
 
-cd interop/src/clients
+cd ../interop/src/clients
 
 ./gradlew android-interop:install$TARGET_NAME
 
-cd -
+cd $scripts/..
 
 ./target/debug/interop

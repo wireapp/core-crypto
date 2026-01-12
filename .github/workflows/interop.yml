@@ -10,19 +10,9 @@ env:
 
 jobs:
   e2e-interop-test:
-    if: github.event_name == 'pull_request'
     runs-on: self-hosted
 
-    env:
-      ANDROID_NDK_VERSION: 28.1.13356709
-
     steps:
-      - uses: actions/checkout@v6
-      - name: Setup rust macOS
-        uses: ./.github/actions/setup-and-cache-rust
-        with:
-          rustflags: ''
-          cache-key-prefix: e2e-interop-test
       - uses: actions/checkout@v6
       - name: set up jdk 17
         uses: actions/setup-java@v5
@@ -46,68 +36,22 @@ jobs:
         run: |
           bun x @puppeteer/browsers install chrome-headless-shell@latest --path $PWD
           echo "CHROME_PATH=$(echo $PWD/chrome-headless-shell/*/*/chrome-headless-shell)" >> $GITHUB_ENV
+
       - name: Install chromedriver
         run: |
           bun x @puppeteer/browsers install chromedriver@latest --path $PWD
           echo "CHROMEDRIVER_PATH=$(echo $PWD/chromedriver/*/*/chromedriver)" >> $GITHUB_ENV
-      - name: download web bindings
-        uses: ./.github/actions/make/web/ts
+
+      - name: Run e2e interop test
+        uses: ./.github/actions/make/interop/test
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: download artifacts for ios device
-        uses: ./.github/actions/make/ios
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          task: ios-device
-
-      - name: download artifacts for ios simulator
-        uses: ./.github/actions/make/ios
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          task: ios-simulator-arm
-
-      - name: download swift bindings
-        uses: ./.github/actions/make/bindings-swift
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: download android package
-        uses: ./.github/actions/make/android/package
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: download interop test binary
-        uses: ./.github/actions/make/interop-build
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: create iOS simulator
-        run: |
-          echo "SIMULATOR=$(./scripts/create-ios-sim-device.sh "iPhone 16 e2e-interop-test")" >> $GITHUB_ENV
-
-      - name: build & install iOS Interop client
-        run: |
-          cd interop/src/clients/InteropClient
-          xcodebuild -scheme InteropClient -sdk iphonesimulator -configuration Release \
-                     -destination 'platform=iOS Simulator,name=iPhone 16 e2e-interop-test' clean build install DSTROOT=./Products
-          ./install-interop-client.sh ${{ env.SIMULATOR }}
-
-      - name: build android interop client & run e2e interop test
-        env:
-          RUST_LOG: interop=info
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 32
-          arch: arm64-v8a
-          working-directory: .
-          # We're not building the interop binary in release mode, so it's in `target/debug`.
-          script: |
-            (cd interop/src/clients && ./gradlew android-interop:installRelease)
-            ./target/debug/interop
 
         # we separate shutdown from deletion to make sure the device is always removed, even when shutdown failed
-      - name: delete simulator
+      - name: delete ios simulator and kill android emulator
         if: always()
         run: |
           ./scripts/delete-ios-sim-device.sh ${{ env.SIMULATOR }}
+          if adb devices | grep -q '^emulator-'; then
+            adb emu kill
+          fi

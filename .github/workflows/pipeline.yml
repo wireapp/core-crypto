@@ -206,7 +206,7 @@ jobs:
       # Needed for parity between github and self-hosted runner
       - run: brew install make
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/make/interop-build
+      - uses: ./.github/actions/make/interop/build
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
