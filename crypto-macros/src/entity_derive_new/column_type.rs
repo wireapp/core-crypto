@@ -131,37 +131,24 @@ impl TryFrom<Type> for ColumnType {
 }
 
 pub(super) trait EmitGetExpression {
-    /// Emit an expression which wraps the input expression, appropriately parsing according to this column type.
-    fn emit_get_expression(&self, input: TokenStream) -> TokenStream;
-
     /// Emit an expression with the rust type which should be used in the rusqlite `get` expression
     fn get_as_type(&self) -> TokenStream;
 }
 
 impl EmitGetExpression for IdColumnType {
-    fn emit_get_expression(&self, input: TokenStream) -> TokenStream {
-        match self {
-            Self::Bytes => input,
-            Self::String => quote!(String::from_utf8(#input).map_err(|err| err.utf8_error())?),
-        }
-    }
-
     fn get_as_type(&self) -> TokenStream {
-        quote!(Vec<u8>)
+        match self {
+            IdColumnType::Bytes => quote!(Vec<u8>),
+            IdColumnType::String => quote!(String),
+        }
     }
 }
 
 impl EmitGetExpression for ColumnType {
-    fn emit_get_expression(&self, input: TokenStream) -> TokenStream {
-        match self {
-            ColumnType::Bytes | ColumnType::OptionalBytes => input,
-            ColumnType::String => quote!(String::from_utf8(#input).map_err(|err| err.utf8_error())?),
-        }
-    }
-
     fn get_as_type(&self) -> TokenStream {
         match self {
-            ColumnType::Bytes | ColumnType::String => quote!(Vec<u8>),
+            ColumnType::Bytes => quote!(Vec<u8>),
+            ColumnType::String => quote!(String),
             ColumnType::OptionalBytes => quote!(Option<Vec<u8>>),
         }
     }

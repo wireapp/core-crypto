@@ -63,14 +63,12 @@ where
         };
         let expr = quote!(row.get::<_, #sql_data_type>(#column_name)?);
 
-        let expr = match self.transformation {
+        match self.transformation {
             None => expr,
             Some(FieldTransformation::Hex) => {
                 quote!(hex::decode(#expr).map_err(|err| rusqlite::Error::UserFunctionError(err.into()))?)
             }
-        };
-
-        self.column_type.emit_get_expression(expr)
+        }
     }
 
     /// Emit a field assignment.
