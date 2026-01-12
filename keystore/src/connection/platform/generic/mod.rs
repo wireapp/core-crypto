@@ -195,6 +195,26 @@ impl SqlCipherConnection {
         conn.close().map_err(|(_, e)| e.into())
     }
 
+    /// Export a copy of the database to the specified path using VACUUM INTO.
+    ///
+    /// This creates a fully vacuumed and optimized copy of the database.
+    /// The copy will be encrypted with the same key as the source database.
+    ///
+    /// # Arguments
+    /// * `destination_path` - The file path where the database copy should be created
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - The database is in-memory (cannot export in-memory databases)
+    /// - The destination path is invalid
+    /// - The VACUUM INTO operation fails
+    pub async fn export_copy(&self, destination_path: &str) -> CryptoKeystoreResult<()> {
+        let conn = self.conn().await;
+        conn.execute("VACUUM INTO ?1", [destination_path])?;
+
+        Ok(())
+    }
+
     fn run_migrations(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
         conn.create_scalar_function("sha256_blob", 1, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
             let input_blob = ctx.get::<Vec<u8>>(0)?;
