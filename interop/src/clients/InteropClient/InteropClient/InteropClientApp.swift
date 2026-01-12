@@ -53,11 +53,17 @@ struct InteropClientApp: App {
     }
 
     /// Generates a random keystore path so we'll start with a new keystore on each launch
-    private func generateKeystorePath() -> String {
-        FileManager.default.temporaryDirectory.appending(
-            path: "keystore-\(UUID())",
-            directoryHint: .notDirectory
-        ).absoluteString
+    private func generateKeystorePath() throws -> URL {
+        let keystorePath = FileManager.default.temporaryDirectory.appending(
+            path: "corecrypto/keystore-\(UUID())"
+        )
+
+        try FileManager.default.createDirectory(
+            at: keystorePath.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+
+        return keystorePath
     }
 
     private func handleURL(url: URL) async throws {
@@ -101,7 +107,8 @@ struct InteropClientApp: App {
         switch action {
         case .initMLS(let clientId, let ciphersuite):
             let key = try generateDatabaseKey()
-            let database = try await Database(keystorePath: generateKeystorePath(), key: key)
+            let keystorePath = try generateKeystorePath()
+            let database = try await Database(keystorePath: keystorePath.path, key: key)
             self.coreCrypto = try await CoreCrypto(
                 database: database
             )
@@ -229,7 +236,8 @@ struct InteropClientApp: App {
         case .initProteus:
             if coreCrypto == nil {
                 let key = try generateDatabaseKey()
-                let database = try await Database(keystorePath: generateKeystorePath(), key: key)
+                let database = try await Database(
+                    keystorePath: generateKeystorePath().path, key: key)
                 self.coreCrypto = try await CoreCrypto(
                     database: database
                 )
