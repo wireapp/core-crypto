@@ -137,17 +137,6 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         Ok(inserted_value)
     }
 
-    /// Returns the value from the keystore.
-    /// WARNING: the returned value is not attached to the keystore and mutations on it will be
-    /// lost when the object is dropped
-    pub(crate) async fn fetch_from_keystore(
-        k: impl AsRef<[u8]> + Send,
-        keystore: &impl FetchFromDatabase,
-        identity: Option<V::IdentityType>,
-    ) -> crate::Result<Option<V>> {
-        V::fetch_from_id(k, identity, keystore).await
-    }
-
     fn insert_prepped(&mut self, k: impl AsRef<[u8]>, prepped_entity: GroupStoreValue<V>) {
         self.0.insert(k.as_ref().to_owned(), prepped_entity);
     }

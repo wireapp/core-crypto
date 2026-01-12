@@ -20,8 +20,8 @@ use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::{
-    Ciphersuite, ClientId, CredentialType, HistorySecret, LeafError, MlsError, MlsTransport, RecursiveError,
-    group_store::GroupStore,
+    Ciphersuite, ClientId, CredentialType, HistorySecret, LeafError, MlsConversation, MlsError, MlsTransport,
+    RecursiveError,
     mls::{
         self, HasSessionAndCrypto,
         conversation::{ConversationIdRef, ImmutableConversation},
@@ -83,12 +83,12 @@ impl Session {
     /// Get an immutable view of an `MlsConversation`.
     ///
     /// Because it operates on the raw conversation type, this may be faster than
-    /// [crate::transaction_context::TransactionContext::conversation]. for transient and immutable
+    /// [crate::transaction_context::TransactionContext::conversation] for transient and immutable
     /// purposes. For long-lived or mutable purposes, prefer the other method.
     pub async fn get_raw_conversation(&self, id: &ConversationIdRef) -> Result<ImmutableConversation> {
-        let raw_conversation = GroupStore::fetch_from_keystore(id, &self.crypto_provider.keystore(), None)
+        let raw_conversation = MlsConversation::load(&self.crypto_provider.keystore(), id)
             .await
-            .map_err(RecursiveError::root("getting conversation by id"))?
+            .map_err(RecursiveError::mls_conversation("getting raw conversation by id"))?
             .ok_or_else(|| LeafError::ConversationNotFound(id.to_owned()))?;
         Ok(ImmutableConversation::new(raw_conversation, self.clone()))
     }

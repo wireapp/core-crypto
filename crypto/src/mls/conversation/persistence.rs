@@ -43,6 +43,20 @@ impl MlsConversation {
         })
     }
 
+    /// Load a conversation from the database
+    pub(crate) async fn load(keystore: &Database, id: impl AsRef<[u8]>) -> Result<Option<Self>> {
+        let group = keystore
+            .get_borrowed::<PersistedMlsGroup>(id.as_ref())
+            .await
+            .map_err(KeystoreError::wrap("finding a persisted mls group"))?;
+        let Some(mut group) = group else { return Ok(None) };
+        let conversation = Self::from_serialized_state(
+            std::mem::take(&mut group.state),
+            std::mem::take(&mut group.parent_id).map(Into::into),
+        )?;
+        Ok(Some(conversation))
+    }
+
     /// Effectively [`Database::mls_groups_restore`] but with better types
     pub(crate) async fn load_all(keystore: &Database) -> Result<HashMap<ConversationId, Self>> {
         let groups = keystore
