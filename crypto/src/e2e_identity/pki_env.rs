@@ -187,3 +187,46 @@ pub trait PkiEnvironmentHooks: std::fmt::Debug + Send + Sync {
     /// Only used for DPoP challenge
     async fn fetch_backend_access_token(&self, dpop: String) -> String;
 }
+
+#[allow(missing_docs)]
+#[cfg(test)]
+pub mod test {
+    use crate::e2e_identity::pki_env::{HttpHeader, HttpMethod, HttpResponse, OAuthResponse, PkiEnvironmentHooks};
+
+    /// Dummy struct for tests
+    #[derive(Debug, Default)]
+    pub struct DummyPkiEnvironmentHooks;
+
+    #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+    #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+    impl PkiEnvironmentHooks for DummyPkiEnvironmentHooks {
+        async fn http_request(
+            &self,
+            _method: HttpMethod,
+            _url: String,
+            _headers: Vec<HttpHeader>,
+            _body: Vec<u8>,
+        ) -> HttpResponse {
+            HttpResponse {
+                status: 200,
+                headers: vec![],
+                body: vec![],
+            }
+        }
+
+        async fn authenticate(&self, _idp: String, _key_auth: String, _acme_aud: String) -> OAuthResponse {
+            OAuthResponse {
+                access_token: "dummy-access-token".to_string(),
+                id_token: None,
+                token_type: Some("Bearer".to_string()),
+                expires_in: Some(3600),
+                scope: None,
+                refresh_token: None,
+            }
+        }
+
+        async fn fetch_backend_access_token(&self, _dpop: String) -> String {
+            "dummy-backend-token".to_string()
+        }
+    }
+}
