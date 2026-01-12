@@ -11,6 +11,87 @@ afterEach(async () => {
     await teardown();
 });
 
+describe("PKI environment", () => {
+    it("should be settable after mls init", async () => {
+        const alice = crypto.randomUUID();
+        await ccInit(alice);
+
+        // Get unset pki environment
+        let pki_env = await browser.execute(async (alice) => {
+            const cc = window.ensureCcDefined(alice);
+            return await cc.getPkiEnvironment();
+        }, alice);
+
+        expect(pki_env == undefined);
+
+        // set pki environment
+        pki_env = await browser.execute(async (alice) => {
+            const cc = window.ensureCcDefined(alice);
+            const key = new Uint8Array(32);
+            window.crypto.getRandomValues(key);
+            const database = await window.ccModule.openDatabase(
+                alice,
+                new window.ccModule.DatabaseKey(key.buffer)
+            );
+            const pki_env = await window.ccModule.createPkiEnvironment(
+                window.pkiEnvironmentHooks,
+                database
+            );
+            await cc.setPkiEnvironment(pki_env);
+
+            return await cc.getPkiEnvironment();
+        }, alice);
+        expect(pki_env != undefined);
+
+        pki_env = await browser.execute(async (alice) => {
+            const cc = window.ensureCcDefined(alice);
+            await cc.setPkiEnvironment(undefined);
+            return await cc.getPkiEnvironment();
+        }, alice);
+        expect(pki_env == undefined);
+    });
+
+    it("should be settable before mls init", async () => {
+        const alice = crypto.randomUUID();
+
+        let pki_env = await browser.execute(async (alice) => {
+            const key = new Uint8Array(32);
+            window.crypto.getRandomValues(key);
+            const database = await window.ccModule.openDatabase(
+                alice,
+                new window.ccModule.DatabaseKey(key.buffer)
+            );
+
+            const cc = await window.ccModule.CoreCrypto.init(database);
+            window.cc = new Map();
+            window.cc.set(alice, cc);
+            const pki_env = await cc.getPkiEnvironment();
+            return pki_env;
+        }, alice);
+
+        expect(pki_env == undefined);
+
+        pki_env = await browser.execute(async (alice) => {
+            const key = new Uint8Array(32);
+            window.crypto.getRandomValues(key);
+            const database = await window.ccModule.openDatabase(
+                alice,
+                new window.ccModule.DatabaseKey(key.buffer)
+            );
+
+            const cc = window.ensureCcDefined(alice);
+            const pki_env = await window.ccModule.createPkiEnvironment(
+                window.pkiEnvironmentHooks,
+                database
+            );
+            await cc.setPkiEnvironment(pki_env);
+
+            return await cc.getPkiEnvironment();
+        }, alice);
+        expect(pki_env != undefined);
+    });
+});
+
 describe("end to end identity", () => {
     it("enrollment flow should succeed", async () => {
         const alice = crypto.randomUUID();
