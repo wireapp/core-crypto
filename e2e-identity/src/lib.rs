@@ -44,12 +44,13 @@
 //! The challenge requires a Wire server that supports the `/clients/{cid}/access-token` endpoint.
 //!
 //! The flow is roughly as follows:
-//!  - the client requests a fresh nonce from the Wire server via the `/clients/token/nonce` endpoint
+//!  - the client requests a fresh nonce from the Wire server via the `/clients/{cid}/nonce` endpoint
 //!  - the Wire server responds with a nonce
 //!  - the client constructs a [DPoP](https://www.rfc-editor.org/rfc/rfc9449.html) token
 //!     - the token contains client ID, team and user name
 //!     - the token is signed by the clients ACME account key (see [Terminology](https://www.rfc-editor.org/rfc/rfc8555.html#section-3))
-//!  - the client sends the DPoP, together with the nonce, to the Wire server, via the `/clients/token/nonce` endpoint
+//!  - the client sends the DPoP, together with the nonce, to the Wire server, via the `/clients/{cid}/access-token`
+//!    endpoint
 //!  - the Wire server responds with an access token
 //!     - the access token contains the DPoP provided by the client
 //!     - the access token is signed by the key whose public part is known to the ACME server
