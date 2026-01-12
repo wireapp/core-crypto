@@ -10,7 +10,6 @@ env:
 
 jobs:
   test-ts:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
 
     steps:
@@ -28,5 +27,11 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
       - name: lint
         run: make ts-check
+
       - name: test
-        run: make ts-test
+        uses: ./.github/actions/make
+        with:
+          key: ts-test
+          make-rule: ts-test
+          always-run: ${{ github.ref_name == 'main' }}
+          gh-token: ${{ secrets.GITHUB_TOKEN }}

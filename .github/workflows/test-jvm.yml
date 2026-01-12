@@ -10,7 +10,6 @@ env:
 
 jobs:
   test-jvm:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
 
     steps:
@@ -49,7 +48,11 @@ jobs:
         run: |
           cd crypto-ffi/bindings
           ./gradlew jvm:detekt
+
       - name: build and test jvm package
-        run: |
-          cd crypto-ffi/bindings
-          ./gradlew jvm:build -x lint -x lintRelease
+        uses: ./.github/actions/make
+        with:
+          key: jvm-test
+          make-rule: jvm-test
+          always-run: ${{ github.ref_name == 'main' }}
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
