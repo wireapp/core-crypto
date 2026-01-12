@@ -36,6 +36,7 @@ express prior written consent of Wire Swiss GmbH.
     - [Platform-specific tests for Kotlin/JVM](#platform-specific-tests-for-kotlinjvm)
     - [Platform-specific tests for Android](#platform-specific-tests-for-android)
     - [Swift/iOS](#swiftios)
+    - [Interop](#interop)
     - [End-to-end-identity (E2EI) testing](#end-to-end-identity-e2ei-testing)
       - [Preparing the container runtime environment](#preparing-the-container-runtime-environment)
         - [On Linux with Docker](#on-linux-with-docker)
@@ -250,7 +251,18 @@ make android-test
 
 ### Swift/iOS<a name="swiftios"></a>
 
-*No E2E testing is available as of now on Swift.*
+Currently works on macOS only.
+
+```sh
+make ios-test
+```
+
+### Interop<a name="interop"></a>
+
+1. Make sure you've successfully run each platform-specific test suite that is supported on your machine, since the
+   setup required for this test is a superset of the requirements for each platform.
+1. Install Chrome and `chromedriver`
+1. `make interop-test`
 
 ### End-to-end-identity (E2EI) testing<a name="end-to-end-identity-e2ei-testing"></a>
 
