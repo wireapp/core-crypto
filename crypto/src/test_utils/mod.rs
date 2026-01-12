@@ -27,7 +27,7 @@ use crate::{
     CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Credential, CredentialRef, Database,
     DatabaseKey, Error, MlsCommitBundle, MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse,
     RecursiveError, Session,
-    e2e_identity::id::QualifiedE2eiClientId,
+    e2e_identity::{id::QualifiedE2eiClientId, pki_env::PkiEnvironment, pki_env_hooks::test::DummyPkiEnvironmentHooks},
     mls::HistoryObserver,
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     transaction_context::TransactionContext,
@@ -135,6 +135,14 @@ impl SessionContext {
 
         // Setup the X509 PKI environment
         if let Some(chain) = chain.as_ref() {
+            let dummy_hooks = Arc::new(DummyPkiEnvironmentHooks);
+            let pki_env = PkiEnvironment::new(dummy_hooks, db.clone())
+                .await
+                .expect("Constructing pki environment");
+            core_crypto
+                .set_pki_environment(Some(pki_env))
+                .await
+                .expect("Setting pki environment");
             chain.register_with_central(&transaction).await;
         }
 
@@ -169,6 +177,14 @@ impl SessionContext {
         let session = core_crypto.mls_session().await.unwrap();
         // Setup the X509 PKI environment
         if let Some(chain) = chain.as_ref() {
+            let dummy_hooks = Arc::new(DummyPkiEnvironmentHooks);
+            let pki_env = PkiEnvironment::new(dummy_hooks, core_crypto.database.clone())
+                .await
+                .expect("Constructing pki environment");
+            core_crypto
+                .set_pki_environment(Some(pki_env))
+                .await
+                .expect("Setting pki environment");
             chain.register_with_central(&transaction).await;
         }
 
