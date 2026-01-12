@@ -56,6 +56,7 @@ runs:
       shell: bash -euo pipefail {0}
 
     - name: Download artifact
+      id: download
       run: |
         branch="${{ steps.branch-name.outputs.branch }}"
 
@@ -68,17 +69,17 @@ runs:
 
         artifact_name="${{ steps.compute-key.outputs.key }}"
 
-        echo "found=false" >> $GITHUB_ENV
-        echo "found_in_this_run=false" >> $GITHUB_ENV
+        echo "found=false" >> $GITHUB_OUTPUT
+        echo "found_in_this_run=false" >> $GITHUB_OUTPUT
 
         # For each run in the sorted list of run ids, try downloading the artifact
         # with the given name.
         for run_id in $runs; do
           if gh run download "$run_id" -n "$artifact_name" >/dev/null 2>&1; then
             echo "Downloaded artifact $artifact_name from run with id: $run_id"
-            echo "found=true" >> $GITHUB_ENV
+            echo "found=true" >> $GITHUB_OUTPUT
             if [ "$run_id" = "${{ github.run_id }}" ]; then
-              echo "found_in_this_run=true" >> $GITHUB_ENV
+              echo "found_in_this_run=true" >> $GITHUB_OUTPUT
             fi
             exit 0
           fi
@@ -90,7 +91,7 @@ runs:
       shell: bash -euo pipefail {0}
 
     - name: Unpack and touch downloaded files to update timestamps
-      if: env.found == 'true'
+      if: steps.download.outputs.found == 'true'
       run: |
         tar -xzf artifact.tar.gz
         # This is necessary because the github checkout action doesn't preserve
@@ -106,14 +107,14 @@ runs:
       shell: bash -euo pipefail {0}
 
     - name: setup-and-cache-rust
-      if: env.found != 'true' && inputs.uses-rust == 'true'
+      if: steps.download.outputs.found != 'true' && inputs.uses-rust == 'true'
       uses: ./.github/actions/setup-and-cache-rust
       with:
         target: ${{ inputs.rust-target }}
         rustflags: ${{ inputs.rust-rustflags }}
 
     - name: Run make ${{ inputs.make-rule }} if needed
-      if: env.found != 'true'
+      if: steps.download.outputs.found != 'true'
       run: $MAKE ${{ inputs.make-rule }}
       shell: bash -euo pipefail {0}
 
@@ -124,7 +125,7 @@ runs:
       shell: bash -euo pipefail {0}
 
     - name: Upload artifact if it doesn't exist for this workflow run
-      if: env.found_in_this_run != 'true'
+      if: steps.download.outputs.found_in_this_run != 'true'
       uses: actions/upload-artifact@v6.0.0
       with:
         name: ${{ steps.compute-key.outputs.key }}
