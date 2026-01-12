@@ -212,6 +212,15 @@ impl CoreCrypto {
             .close()
             .await
             .map_err(crate::KeystoreError::wrap("Closing database"))?;
+
+        if let Some(pki_env) = self.get_pki_environment().await {
+            pki_env
+                .database()
+                .close()
+                .await
+                .map_err(crate::KeystoreError::wrap("Closing PKI environment database"))?;
+        }
+
         Ok(())
     }
 }
