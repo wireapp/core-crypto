@@ -355,11 +355,11 @@ mod tests {
         // generate a keypackage; automatically saves it
         let kp = cc.new_keypackage(&case).await;
 
-        let all_keypackages = cc.session.get_keypackages().await.unwrap();
+        let all_keypackages = cc.session.read().await.get_keypackages().await.unwrap();
         assert_eq!(all_keypackages[0], kp);
 
         let kp_ref = kp.make_ref().unwrap();
-        let by_ref = cc.session.load_keypackage(&kp_ref).await.unwrap().unwrap();
+        let by_ref = cc.session.read().await.load_keypackage(&kp_ref).await.unwrap().unwrap();
         assert_eq!(kp, by_ref);
     }
 }

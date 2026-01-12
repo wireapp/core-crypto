@@ -58,7 +58,6 @@ impl SessionContext {
             .keystore()
             .await
             .unwrap()
-            .key_store()
             .load_all::<StoredKeypackage>()
             .await
             .unwrap()
