@@ -56,7 +56,8 @@ pub use credential_ref::CredentialRef;
 pub use credential_type::CredentialType;
 pub use crl::CrlRegistration;
 pub use database::{
-    Database, DatabaseKey, in_memory_database, migrate_database_key_type_to_bytes, open_database, update_database_key,
+    Database, DatabaseKey, export_database_copy, in_memory_database, migrate_database_key_type_to_bytes, open_database,
+    update_database_key,
 };
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 pub use e2ei::{

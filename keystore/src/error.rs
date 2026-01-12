@@ -85,6 +85,8 @@ pub enum CryptoKeystoreError {
     JsError(String),
     #[error("Not implemented (and probably never will)")]
     NotImplemented,
+    #[error("Operation not supported: {0}")]
+    NotSupported(String),
     #[error("Failed getting current timestamp")]
     TimestampError,
     #[error("Could not find {0} in keystore with value {1}")]
