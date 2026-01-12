@@ -65,10 +65,7 @@ impl Session {
             .await
             .map_err(RecursiveError::mls_credential("saving credential"))?;
 
-        let identities_guard = self.identities.upgradable_read().await;
-
-        // only upgrade to a write guard here in order to minimize the amount of time the unique lock is held
-        let mut identities_guard = async_lock::RwLockUpgradableReadGuard::upgrade(identities_guard).await;
+        let mut identities_guard = self.identities.write().await;
         let credential = identities_guard.push_credential(credential).await?;
 
         Ok(credential)
