@@ -10,6 +10,9 @@ import {
     type HistorySecret,
     type MlsTransportData,
     CoreCryptoLogLevel,
+    type PkiEnvironmentHooks,
+    HttpMethod,
+    HttpHeader,
 } from "../../src/CoreCrypto";
 
 type ccModuleType = typeof import("../../src/CoreCrypto");
@@ -35,6 +38,7 @@ declare global {
         cc: Map<string, CoreCrypto>;
         defaultCipherSuite: Ciphersuite;
         deliveryService: DeliveryService;
+        pkiEnvironmentHooks: PkiEnvironmentHooks;
         _latestCommitBundle: CommitBundle;
         recordedLogs: LogEntry[];
 
@@ -113,6 +117,38 @@ export async function setup() {
             },
             async getLatestCommitBundle() {
                 return window._latestCommitBundle;
+            },
+        };
+
+        window.pkiEnvironmentHooks = {
+            async httpRequest(
+                _method: HttpMethod,
+                _url: string,
+                _headers: Array<HttpHeader>,
+                _body: ArrayBuffer
+            ) {
+                // return a HttpResponse
+                return {
+                    status: 200,
+                    headers: [],
+                    body: new Uint8Array().buffer,
+                };
+            },
+
+            async authenticate(
+                _idp: string,
+                _keyAuth: string,
+                _acmeAud: string
+            ) {
+                return "dummy-id-token";
+            },
+
+            async getBackendNonce() {
+                return "dummy-backend-nonce";
+            },
+
+            async fetchBackendAccessToken(_dpop) {
+                return "dummy-backend-token";
             },
         };
 
