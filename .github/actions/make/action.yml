@@ -14,6 +14,9 @@ inputs:
   gh-token:
     description: The github token
     required: true
+  always-run:
+    description: Invoke make even when an identical artifact could be downloaded (used for tests)
+    required: false
   uses-rust:
     description: Whether to run setup-and-cache-rust if no artifact was found
     required: false
@@ -114,7 +117,7 @@ runs:
         rustflags: ${{ inputs.rust-rustflags }}
 
     - name: Run make ${{ inputs.make-rule }} if needed
-      if: steps.download.outputs.found != 'true'
+      if: steps.download.outputs.found != 'true' || inputs.always-run == 'true'
       run: $MAKE ${{ inputs.make-rule }}
       shell: bash -euo pipefail {0}
 
