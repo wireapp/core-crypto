@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 set -e
+scripts=$(realpath $(dirname $0))
+cd "$scripts"
 
 XCODE_CONFIG=$1
 
-simulator_id=$(./scripts/create-ios-sim-device.sh "iPhone 16 test-ios")
+simulator_id=$(./create-ios-sim-device.sh "iPhone 16 test-ios")
 
 trap 'echo "deleting simulator device $simulator_id";
-        ../../../../scripts/delete-ios-sim-device.sh "$simulator_id"' EXIT
+        "$scripts/delete-ios-sim-device.sh" "$simulator_id"' EXIT
 
-cd crypto-ffi/bindings/swift/WireCoreCrypto
+cd ../crypto-ffi/bindings/swift/WireCoreCrypto
 
 xcodebuild test \
 	-scheme TestHost \

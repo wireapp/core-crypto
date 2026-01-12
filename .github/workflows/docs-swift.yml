@@ -29,13 +29,13 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: download artifacts for ios device
-        uses: ./.github/actions/make/ios
+        uses: ./.github/actions/make/ios/build
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
           task: ios-device
       - name: download artifacts for ios simulator
-        uses: ./.github/actions/make/ios
+        uses: ./.github/actions/make/ios/build
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           task: ios-simulator-arm

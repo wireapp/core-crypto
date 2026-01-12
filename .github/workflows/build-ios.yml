@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: build ${{ matrix.task }}
-        uses: ./.github/actions/make/ios
+        uses: ./.github/actions/make/ios/build
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           task: ${{ matrix.task }}

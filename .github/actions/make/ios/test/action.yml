@@ -1,4 +1,4 @@
-name: Run e2e interop test via make
+name: Run ios test via make
 inputs:
   gh-token:
     required: true
@@ -7,8 +7,13 @@ runs:
   using: composite
 
   steps:
-    - name: download web bindings
-      uses: ./.github/actions/make/web/ts
+    - name: fetch uniffi bindgen artifact
+      uses: ./.github/actions/make/uniffi-bindgen
+      with:
+        gh-token: ${{ inputs.gh-token }}
+
+    - name: fetch ffi library
+      uses: ./.github/actions/make/ffi-library
       with:
         gh-token: ${{ inputs.gh-token }}
 
@@ -29,21 +34,9 @@ runs:
       with:
         gh-token: ${{ inputs.gh-token }}
 
-    - name: download android package
-      uses: ./.github/actions/make/android/package
-      with:
-        gh-token: ${{ inputs.gh-token }}
-
-    - name: download interop test binary
-      uses: ./.github/actions/make/interop/build
-      with:
-        gh-token: ${{ inputs.gh-token }}
-
     - uses: ./.github/actions/make
-      env:
-        RUST_LOG: interop=info
       with:
-        key: interop-test
-        make-rule: interop-test
+        key: ios-test
+        make-rule: ios-test
         always-run: ${{ github.ref_name == 'main' }}
         gh-token: ${{ inputs.gh-token }}
