@@ -16,21 +16,14 @@ bitflags::bitflags! {
 #[non_exhaustive]
 #[allow(dead_code)]
 pub(crate) enum EmulatedClientType {
-    Native,
-    // Natively test the FFI in `generic.rs`
-    NativeFfi,
     Web,
-    // TODO: Bind with & drive iOS Emulator. Tracking issue: WPB-9646
     AppleiOS,
-    // TODO: Bind with & drive Android Emulator. Tracking issue: WPB-9646
     Android,
 }
 
 impl std::fmt::Display for EmulatedClientType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let repr = match self {
-            Self::Native => "Native",
-            Self::NativeFfi => "Native FFI",
             Self::Web => "Web",
             Self::AppleiOS => "iOS",
             Self::Android => "Android",

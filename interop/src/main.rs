@@ -39,12 +39,6 @@ async fn create_mls_clients<'a>(
         #[cfg(target_os = "macos")]
         Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
         Box::new(
-            clients::corecrypto::native::CoreCryptoNativeClient::new()
-                .await
-                .unwrap(),
-        ),
-        Box::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await.unwrap()),
-        Box::new(
             clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr, web_server)
                 .await
                 .unwrap(),
@@ -65,12 +59,6 @@ async fn create_proteus_clients<'a>(
         ),
         #[cfg(target_os = "macos")]
         Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
-        Box::new(
-            clients::corecrypto::native::CoreCryptoNativeClient::new()
-                .await
-                .unwrap(),
-        ),
-        Box::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await.unwrap()),
         Box::new(
             clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr, web_server)
                 .await
