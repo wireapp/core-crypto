@@ -25,3 +25,30 @@ pub async fn open_database(name: &str, key: DatabaseKeyMaybeArc) -> CoreCryptoRe
         .map(Database)
         .map_err(CoreCryptoError::generic())
 }
+
+/// Export a copy of the database to the specified path.
+///
+/// This creates a fully vacuumed and optimized copy of the database using SQLite's VACUUM INTO command.
+/// The copy will be encrypted with the same key as the source database.
+///
+/// # Platform Support
+/// This method is only available on platforms using SQLCipher (iOS, Android, JVM, native).
+/// It is not available on WASM platforms.
+///
+/// # Arguments
+/// * `database` - The database instance to export
+/// * `destination_path` - The file path where the database copy should be created
+///
+/// # Errors
+/// Returns an error if:
+/// - The database is in-memory (cannot export in-memory databases)
+/// - The destination path is invalid or not writable
+/// - The export operation fails
+#[cfg(not(target_family = "wasm"))]
+#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+pub async fn export_database_copy(database: &Database, destination_path: &str) -> CoreCryptoResult<()> {
+    database.0
+        .export_copy(destination_path)
+        .await
+        .map_err(CoreCryptoError::generic())
+}

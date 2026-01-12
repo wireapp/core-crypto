@@ -54,6 +54,8 @@ pub use core_crypto_context::CoreCryptoContext;
 pub use credential_type::CredentialType;
 pub use crl::CrlRegistration;
 pub use database::{Database, DatabaseKey, migrate_database_key_type_to_bytes, open_database, update_database_key};
+#[cfg(not(target_family = "wasm"))]
+pub use database::export_database_copy;
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 pub use e2ei::{
     E2eiConversationState, acme_challenge::AcmeChallenge, acme_directory::AcmeDirectory, enrollment::E2eiEnrollment,

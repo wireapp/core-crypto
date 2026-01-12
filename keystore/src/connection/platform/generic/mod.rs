@@ -3,7 +3,7 @@ use std::path::Path;
 
 use zeroize::Zeroize as _;
 
-use crate::CryptoKeystoreResult;
+use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use crate::connection::{DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey};
 use async_lock::{Mutex, MutexGuard};
 use blocking::unblock;
@@ -195,6 +195,31 @@ impl SqlCipherConnection {
         conn.close().map_err(|(_, e)| e.into())
     }
 
+    /// Export a copy of the database to the specified path using VACUUM INTO.
+    /// This creates a fully vacuumed and optimized copy of the database.
+    /// The copy will be encrypted with the same key as the source database.
+    ///
+    /// # Arguments
+    /// * `destination_path` - The file path where the database copy should be created
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - The database is in-memory (cannot export in-memory databases)
+    /// - The destination path is invalid
+    /// - The VACUUM INTO operation fails
+    pub async fn export_copy(&self, destination_path: &str) -> CryptoKeystoreResult<()> {
+        if self.path.is_empty() {
+            return Err(CryptoKeystoreError::NotSupported(
+                "Cannot export in-memory database".to_string(),
+            ));
+        }
+
+        let conn = self.conn().await;
+        conn.execute("VACUUM INTO ?1", [destination_path])?;
+
+        Ok(())
+    }
+
     fn run_migrations(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
         conn.create_scalar_function("sha256_blob", 1, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
             let input_blob = ctx.get::<Vec<u8>>(0)?;
@@ -239,5 +264,110 @@ impl<'a> DatabaseConnection<'a> for SqlCipherConnection {
     async fn wipe(self) -> CryptoKeystoreResult<()> {
         self.wipe().await?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod export_test {
+    use futures_lite::future;
+
+    use crate::{
+        ConnectionType, Database, DatabaseKey,
+    };
+
+    const DB: &[u8] = include_bytes!("../../../../../crypto-ffi/bindings/jvm/src/test/resources/db-v10002003.sqlite");
+    const OLD_KEY: &str = "secret";
+
+    #[test]
+    fn can_export_database_copy() {
+        future::block_on(async {
+            // Create temporary files for source and destination
+            let source_path = format!("./test_export_source_{}.db", rand::random::<u32>());
+            let dest_path = format!("./test_export_dest_{}.db", rand::random::<u32>());
+
+            // Write test database
+            std::fs::write(&source_path, DB).unwrap();
+
+            // Migrate the database to use the new key format
+            let key = DatabaseKey::generate();
+            Database::migrate_db_key_type_to_bytes(&source_path, OLD_KEY, &key).await.unwrap();
+
+            // Open the database
+            let db = Database::open(ConnectionType::Persistent(&source_path), &key)
+                .await
+                .unwrap();
+
+            // Insert test data into a test table
+            let test_data = b"test data for export verification";
+            let test_id = 12345;
+            {
+                let conn = db.borrow_conn().await.unwrap();
+                let conn_guard = conn.conn().await;
+
+                // Create a test table
+                conn_guard.execute(
+                    "CREATE TABLE IF NOT EXISTS test_export_data (id INTEGER PRIMARY KEY, data BLOB)",
+                    [],
+                ).unwrap();
+
+                // Insert test data
+                conn_guard.execute(
+                    "INSERT INTO test_export_data (id, data) VALUES (?1, ?2)",
+                    [&test_id as &dyn rusqlite::ToSql, &test_data.as_slice()],
+                ).unwrap();
+            }
+
+            // Export the database
+            db.export_copy(&dest_path).await.unwrap();
+
+            // Verify the exported database can be opened with the same key
+            let exported_db = Database::open(ConnectionType::Persistent(&dest_path), &key)
+                .await
+                .unwrap();
+
+            // Read the data from the exported database
+            {
+                let conn = exported_db.borrow_conn().await.unwrap();
+                let conn_guard = conn.conn().await;
+
+                let mut stmt = conn_guard.prepare("SELECT id, data FROM test_export_data WHERE id = ?1").unwrap();
+                let mut rows = stmt.query([test_id]).unwrap();
+
+                let row = rows.next().unwrap().expect("Expected row to exist");
+                let read_id: i32 = row.get(0).unwrap();
+                let read_data: Vec<u8> = row.get(1).unwrap();
+
+                assert_eq!(read_id, test_id, "ID should match in exported database");
+                assert_eq!(read_data, test_data, "Data should match in exported database");
+            }
+
+            // Close databases before cleanup
+            drop(db);
+            drop(exported_db);
+
+            // Cleanup
+            let _ = std::fs::remove_file(&source_path);
+            let _ = std::fs::remove_file(&dest_path);
+            let _ = std::fs::remove_file(format!("{}-wal", source_path));
+            let _ = std::fs::remove_file(format!("{}-shm", source_path));
+            let _ = std::fs::remove_file(format!("{}-wal", dest_path));
+            let _ = std::fs::remove_file(format!("{}-shm", dest_path));
+        });
+    }
+
+    #[test]
+    fn cannot_export_in_memory_database() {
+        future::block_on(async {
+            let key = DatabaseKey::generate();
+            let db = Database::open(ConnectionType::InMemory, &key).await.unwrap();
+
+            let result = db.export_copy("/tmp/should_fail.db").await;
+
+            assert!(result.is_err(), "Exporting in-memory database should fail");
+            assert!(
+                result.unwrap_err().to_string().contains("in-memory"),
+                "Error should mention in-memory database"
+            );
+        });
     }
 }

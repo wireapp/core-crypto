@@ -196,6 +196,27 @@ impl Database {
         Ok(self.conn.lock().await)
     }
 
+    /// Export a copy of the database to the specified path.
+    /// This creates a fully vacuumed and optimized copy of the database.
+    /// The copy will be encrypted with the same key as the source database.
+    ///
+    /// # Platform Support
+    /// This method is only available on platforms using SQLCipher (not WASM).
+    ///
+    /// # Arguments
+    /// * `destination_path` - The file path where the database copy should be created
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - The database is in-memory (cannot export in-memory databases)
+    /// - The destination path is invalid
+    /// - The export operation fails
+    #[cfg(not(target_family = "wasm"))]
+    pub async fn export_copy(&self, destination_path: &str) -> CryptoKeystoreResult<()> {
+        let conn = self.borrow_conn().await?;
+        conn.export_copy(destination_path).await
+    }
+
     pub async fn migrate_db_key_type_to_bytes(
         name: &str,
         old_key: &str,
