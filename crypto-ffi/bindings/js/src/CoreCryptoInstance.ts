@@ -465,4 +465,24 @@ export class CoreCrypto {
             this.#cc.registerHistoryObserver(historyObserver)
         );
     }
+
+    /**
+     * Get the Pki Environment of the CoreCrypto instance
+     */
+    async getPkiEnvironment(): Promise<
+        CoreCryptoFfiTypes.PkiEnvironmentInterface | undefined
+    > {
+        return await this.#cc.getPkiEnvironment();
+    }
+
+    /**
+     * Set the Pki Environment of the CoreCrypto instance
+     */
+    async setPkiEnvironemnt(
+        pki_environment: CoreCryptoFfiTypes.PkiEnvironmentInterface
+    ): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.setPkiEnvironment(pki_environment)
+        );
+    }
 }
