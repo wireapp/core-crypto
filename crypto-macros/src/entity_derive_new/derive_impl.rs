@@ -152,7 +152,10 @@ impl Entity {
         #[allow(clippy::manual_map)]
         let key_transform = match id_column.transformation {
             None => None,
-            Some(FieldTransformation::Hex) => Some(quote! {let key = hex::encode(key);}),
+            Some(FieldTransformation::Hex) => Some(quote! {
+                #[cfg(not(target_family = "wasm"))]
+                let key = hex::encode(key);
+            }),
         };
 
         quote! {
@@ -259,7 +262,10 @@ impl Entity {
         #[allow(clippy::manual_map)]
         let key_transform = match id_column.transformation {
             None => None,
-            Some(FieldTransformation::Hex) => Some(quote! {let key = hex::encode(key);}),
+            Some(FieldTransformation::Hex) => Some(quote! {
+                #[cfg(not(target_family = "wasm"))]
+                let key = hex::encode(key);
+            }),
         };
 
         quote! {
