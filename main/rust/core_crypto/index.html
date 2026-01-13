@@ -101,7 +101,14 @@ make ts</code></pre></div><h3 id="testing"><a class="doc-anchor" href="#testing"
 <p>Note the <code>CC_TEST_LOG_LEVEL</code> environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto
 logs.</p>
 <h4 id="platform-specific-tests-for-kotlinjvm"><a class="doc-anchor" href="#platform-specific-tests-for-kotlinjvm">§</a>Platform-specific tests for Kotlin/JVM<a name="platform-specific-tests-for-kotlinjvm"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make jvm-test</code></pre></div><h4 id="platform-specific-tests-for-android"><a class="doc-anchor" href="#platform-specific-tests-for-android">§</a>Platform-specific tests for Android<a name="platform-specific-tests-for-android"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make android-test</code></pre></div><h4 id="swiftios"><a class="doc-anchor" href="#swiftios">§</a>Swift/iOS<a name="swiftios"></a></h4>
-<p><em>No E2E testing is available as of now on Swift.</em></p>
+<p>Currently works on macOS only.</p>
+<div class="example-wrap"><pre class="language-sh"><code>make ios-test</code></pre></div><h4 id="interop"><a class="doc-anchor" href="#interop">§</a>Interop<a name="interop"></a></h4>
+<ol>
+<li>Make sure you’ve successfully run each platform-specific test suite that is supported on your machine, since the
+setup required for this test is a superset of the requirements for each platform.</li>
+<li>Install Chrome and <code>chromedriver</code></li>
+<li><code>make interop-test</code></li>
+</ol>
 <h4 id="end-to-end-identity-e2ei-testing"><a class="doc-anchor" href="#end-to-end-identity-e2ei-testing">§</a>End-to-end-identity (E2EI) testing<a name="end-to-end-identity-e2ei-testing"></a></h4><h5 id="preparing-the-container-runtime-environment"><a class="doc-anchor" href="#preparing-the-container-runtime-environment">§</a>Preparing the container runtime environment<a name="preparing-the-container-runtime-environment"></a></h5>
 <p>Some tests require a working container runtime, so make sure to prepare one before running all tests. Platform-specific
 instructions follow below.</p>
