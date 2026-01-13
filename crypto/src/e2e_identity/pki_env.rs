@@ -101,6 +101,11 @@ impl PkiEnvironment {
         })
     }
 
+    /// Returns true if the inner pki environment has been restored from the database.
+    pub async fn provider_is_setup(&self) -> bool {
+        self.mls_pki_env_provider.is_env_setup().await
+    }
+
     pub(crate) fn mls_pki_env_provider(&self) -> PkiEnvironmentProvider {
         self.mls_pki_env_provider.clone()
     }

@@ -17,14 +17,12 @@ use crate::{
 
 impl TransactionContext {
     /// See [crate::mls::session::Session::e2ei_is_pki_env_setup].
-    pub async fn e2ei_is_pki_env_setup(&self) -> Result<bool> {
-        Ok(self
-            .pki_environment()
-            .await
-            .map_err(RecursiveError::transaction("Getting pki provider"))?
-            .mls_pki_env_provider()
-            .is_env_setup()
-            .await)
+    pub async fn e2ei_is_pki_env_setup(&self) -> bool {
+        let Ok(pki_env) = self.pki_environment().await else {
+            return false;
+        };
+
+        pki_env.mls_pki_env_provider().is_env_setup().await
     }
 
     /// Registers a Root Trust Anchor CA for the use in E2EI processing.
@@ -255,7 +253,7 @@ mod tests {
             .unwrap();
 
         Box::pin(async move {
-            assert!(!alice.transaction.e2ei_is_pki_env_setup().await.unwrap());
+            assert!(!alice.transaction.e2ei_is_pki_env_setup().await);
 
             // mls_central.restore_from_disk().await.unwrap();
 

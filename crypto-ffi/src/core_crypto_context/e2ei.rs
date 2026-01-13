@@ -216,11 +216,7 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::Session::e2ei_is_pki_env_setup]
-    pub async fn e2ei_is_pki_env_setup(&self) -> CoreCryptoResult<bool> {
-        self.inner
-            .e2ei_is_pki_env_setup()
-            .await
-            .map_err(Into::<TransactionError>::into)
-            .map_err(Into::into)
+    pub async fn e2ei_is_pki_env_setup(&self) -> bool {
+        self.inner.e2ei_is_pki_env_setup().await
     }
 }

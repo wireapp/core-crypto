@@ -8,10 +8,12 @@ pub(crate) mod identities;
 #[uniffi::export]
 impl CoreCryptoFfi {
     /// See [core_crypto::Session::e2ei_is_pki_env_setup]
-    pub async fn e2ei_is_pki_env_setup(&self) -> CoreCryptoResult<bool> {
-        // TODO: don't depend on mls session WPB-19578
-        let result = self.inner.mls_session().await?.e2ei_is_pki_env_setup().await;
-        Ok(result)
+    pub async fn e2ei_is_pki_env_setup(&self) -> bool {
+        if let Some(pki_env) = self.inner.get_pki_environment().await {
+            return pki_env.provider_is_setup().await;
+        };
+
+        false
     }
 
     /// See [core_crypto::Session::e2ei_is_enabled]
