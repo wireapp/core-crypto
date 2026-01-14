@@ -51,12 +51,13 @@ describe("database", () => {
                 return new window.ccModule.ClientId(array.buffer);
             };
 
-            const key = new Uint8Array(32);
-            window.crypto.getRandomValues(key);
+            const keyBytes = new Uint8Array(32);
+            window.crypto.getRandomValues(keyBytes);
+            const key = new window.ccModule.DatabaseKey(keyBytes.buffer);
 
             const database = await window.ccModule.openDatabase(
                 databaseName,
-                new window.ccModule.DatabaseKey(key.buffer)
+                key
             );
 
             let cc = await window.ccModule.CoreCrypto.init(database);
@@ -79,18 +80,25 @@ describe("database", () => {
             );
             cc.close();
 
-            const newKey = new Uint8Array(32);
-            window.crypto.getRandomValues(newKey);
+            const newKeyBytes = new Uint8Array(32);
+            window.crypto.getRandomValues(newKeyBytes);
+            const newKey = new window.ccModule.DatabaseKey(newKeyBytes.buffer);
 
-            await window.ccModule.updateDatabaseKey(
-                databaseName,
-                new window.ccModule.DatabaseKey(key.buffer),
-                new window.ccModule.DatabaseKey(newKey.buffer)
-            );
+            try {
+                await window.ccModule.updateDatabaseKey(
+                    databaseName,
+                    key,
+                    newKey
+                );
+            } catch (e) {
+                console.error("updating database key caught:", e);
+                console.error(JSON.stringify(e));
+                throw e;
+            }
 
             const newDatabase = await window.ccModule.openDatabase(
                 databaseName,
-                new window.ccModule.DatabaseKey(newKey.buffer)
+                newKey
             );
 
             cc = await window.ccModule.CoreCrypto.init(newDatabase);

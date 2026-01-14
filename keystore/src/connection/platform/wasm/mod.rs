@@ -1,6 +1,5 @@
 use aes_gcm::KeyInit as _;
 use idb::{Factory, TransactionMode};
-use serde::Serialize as _;
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
@@ -8,10 +7,9 @@ use crate::{
         DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey, platform::wasm::migrations::open_and_migrate,
     },
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, Entity as _, EntityBase as _, MlsPendingMessage, PersistedMlsGroup,
-        PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential,
-        StoredE2eiEnrollment, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeypackage, StoredPskBundle,
+        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup,
+        ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential, StoredE2eiEnrollment,
+        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
 };
 
@@ -96,7 +94,7 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
                 let old_cipher = self.conn.cipher.clone();
                 let new_cipher = aes_gcm::Aes256Gcm::new(new_key.as_ref().into());
 
-                rekey::rekey_entities!(
+                rekey::rekey_entities_new!(
                     db,
                     old_cipher,
                     new_cipher,
