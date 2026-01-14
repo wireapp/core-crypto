@@ -62,21 +62,11 @@ pub async fn in_memory_database(key: Arc<DatabaseKey>) -> CoreCryptoResult<Datab
 /// - The destination path is invalid or not writable
 /// - The export operation fails
 #[uniffi::export]
+#[cfg(not(feature = "wasm"))]
 pub async fn export_database_copy(database: &Database, destination_path: &str) -> CoreCryptoResult<()> {
-    #[cfg(target_family = "wasm")]
-    {
-        let _ = (database, destination_path); // Suppress unused warnings
-        Err(CoreCryptoError::ad_hoc(
-            "export_database_copy is not supported on WASM. This function requires filesystem operations and SQLCipher, which are only available on native platforms (iOS, Android, JVM).",
-        ))
-    }
-
-    #[cfg(not(target_family = "wasm"))]
-    {
-        database
-            .0
-            .export_copy(destination_path)
-            .await
-            .map_err(CoreCryptoError::generic())
-    }
+    database
+        .0
+        .export_copy(destination_path)
+        .await
+        .map_err(CoreCryptoError::generic())
 }
