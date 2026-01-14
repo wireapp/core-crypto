@@ -11,20 +11,10 @@ use syn::{
 
 mod debug;
 mod durable;
-mod entity_derive;
 mod entity_derive_new;
 mod idempotent;
 
-/// Implements the `Entity` trait for the given struct.
-/// To be used internally inside the `core-crypto-keystore` crate only.
-#[proc_macro_derive(Entity, attributes(entity, id))]
-pub fn derive_entity(input: TokenStream) -> TokenStream {
-    use crate::entity_derive::KeyStoreEntity;
-    let parsed = parse_macro_input!(input as KeyStoreEntity).flatten();
-    TokenStream::from(quote! { #parsed })
-}
-
-/// Implements the new `Entity` trait and related traits for the given struct.
+/// Implements the `Entity` trait and related traits for the given struct.
 ///
 /// Intended to be used only within `core-crypto-keystore`.
 ///
