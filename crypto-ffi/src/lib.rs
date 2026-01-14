@@ -55,9 +55,10 @@ pub use credential::credential_basic;
 pub use credential_ref::CredentialRef;
 pub use credential_type::CredentialType;
 pub use crl::CrlRegistration;
+#[cfg(not(feature = "wasm"))]
+pub use database::export_database_copy;
 pub use database::{
-    Database, DatabaseKey, export_database_copy, in_memory_database, migrate_database_key_type_to_bytes, open_database,
-    update_database_key,
+    Database, DatabaseKey, in_memory_database, migrate_database_key_type_to_bytes, open_database, update_database_key,
 };
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 pub use e2ei::{
