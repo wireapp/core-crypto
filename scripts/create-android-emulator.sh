@@ -44,7 +44,7 @@ echo "Creating AVD $ANDROID_AVD..."
 mkdir -p "$ANDROID_AVD_HOME"
 echo "no" | avdmanager create avd \
     -n $ANDROID_AVD \
-    -k "system-images;android-$ANDROID_API_LEVEL;default;$ANDROID_ARCH" \
+    --package "system-images;android-$ANDROID_API_LEVEL;default;$ANDROID_ARCH" \
     --force \
     -p "$ANDROID_AVD_HOME/$ANDROID_AVD"
 
@@ -52,11 +52,10 @@ echo "no" | avdmanager create avd \
 # LAUNCH EMULATOR HEADLESS
 # =========================
 echo "Launching emulator $ANDROID_AVD headlessly..."
-emulator -avd $ANDROID_AVD -no-window -no-snapshot-save >/dev/null &
+emulator -avd $ANDROID_AVD -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics >/dev/null &
 EMULATOR_PID=$!
 
 echo "Waiting for Android emulator to be fully booted..."
-adb wait-for-device
 
 until adb shell getprop sys.boot_completed | grep -m 1 '1'; do
   sleep 1
