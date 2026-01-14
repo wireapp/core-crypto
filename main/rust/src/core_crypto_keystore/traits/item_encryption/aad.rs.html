@@ -32,4 +32,11 @@
 <a href=#32 id=32 data-nosnippet>32</a>        <span class="kw">let </span>id = primary_key.bytes().into_owned();
 <a href=#33 id=33 data-nosnippet>33</a>        <span class="self">Self </span>{ type_name, id }
 <a href=#34 id=34 data-nosnippet>34</a>    }
-<a href=#35 id=35 data-nosnippet>35</a>}</code></pre></div></section></main></body></html>
+<a href=#35 id=35 data-nosnippet>35</a>
+<a href=#36 id=36 data-nosnippet>36</a>    <span class="doccomment">/// Don't use this unless you really have to! Prefer [`Self::from_primary_key`].
+<a href=#37 id=37 data-nosnippet>37</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>from_encryption_key_bytes&lt;E: Entity&gt;(key_bytes: <span class="kw">impl </span>AsRef&lt;[u8]&gt;) -&gt; <span class="self">Self </span>{
+<a href=#38 id=38 data-nosnippet>38</a>        <span class="kw">let </span>type_name = E::COLLECTION_NAME.as_bytes().to_vec();
+<a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let </span>id = key_bytes.as_ref().to_owned();
+<a href=#40 id=40 data-nosnippet>40</a>        <span class="self">Self </span>{ type_name, id }
+<a href=#41 id=41 data-nosnippet>41</a>    }
+<a href=#42 id=42 data-nosnippet>42</a>}</code></pre></div></section></main></body></html>

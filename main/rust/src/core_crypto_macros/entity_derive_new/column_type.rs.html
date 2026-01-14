@@ -131,28 +131,25 @@
 <a href=#131 id=131 data-nosnippet>131</a>}
 <a href=#132 id=132 data-nosnippet>132</a>
 <a href=#133 id=133 data-nosnippet>133</a><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">trait </span>EmitGetExpression {
-<a href=#134 id=134 data-nosnippet>134</a>    <span class="doccomment">/// Emit an expression which wraps the input expression, appropriately parsing according to this column type.
-<a href=#135 id=135 data-nosnippet>135</a>    </span><span class="kw">fn </span>emit_get_expression(<span class="kw-2">&amp;</span><span class="self">self</span>, input: TokenStream) -&gt; TokenStream;
+<a href=#134 id=134 data-nosnippet>134</a>    <span class="doccomment">/// Emit an expression with the rust type which should be used in the rusqlite `get` expression
+<a href=#135 id=135 data-nosnippet>135</a>    </span><span class="kw">fn </span>get_as_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TokenStream;
 <a href=#136 id=136 data-nosnippet>136</a>}
 <a href=#137 id=137 data-nosnippet>137</a>
 <a href=#138 id=138 data-nosnippet>138</a><span class="kw">impl </span>EmitGetExpression <span class="kw">for </span>IdColumnType {
-<a href=#139 id=139 data-nosnippet>139</a>    <span class="kw">fn </span>emit_get_expression(<span class="kw-2">&amp;</span><span class="self">self</span>, input: TokenStream) -&gt; TokenStream {
+<a href=#139 id=139 data-nosnippet>139</a>    <span class="kw">fn </span>get_as_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TokenStream {
 <a href=#140 id=140 data-nosnippet>140</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#141 id=141 data-nosnippet>141</a>            <span class="self">Self</span>::Bytes =&gt; input,
-<a href=#142 id=142 data-nosnippet>142</a>            <span class="self">Self</span>::String =&gt; <span class="macro">quote!</span>(String::from_utf8(#input).map_err(|err| err.utf8_error())<span class="question-mark">?</span>),
+<a href=#141 id=141 data-nosnippet>141</a>            IdColumnType::Bytes =&gt; <span class="macro">quote!</span>(Vec&lt;u8&gt;),
+<a href=#142 id=142 data-nosnippet>142</a>            IdColumnType::String =&gt; <span class="macro">quote!</span>(String),
 <a href=#143 id=143 data-nosnippet>143</a>        }
 <a href=#144 id=144 data-nosnippet>144</a>    }
 <a href=#145 id=145 data-nosnippet>145</a>}
 <a href=#146 id=146 data-nosnippet>146</a>
 <a href=#147 id=147 data-nosnippet>147</a><span class="kw">impl </span>EmitGetExpression <span class="kw">for </span>ColumnType {
-<a href=#148 id=148 data-nosnippet>148</a>    <span class="kw">fn </span>emit_get_expression(<span class="kw-2">&amp;</span><span class="self">self</span>, input: TokenStream) -&gt; TokenStream {
+<a href=#148 id=148 data-nosnippet>148</a>    <span class="kw">fn </span>get_as_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TokenStream {
 <a href=#149 id=149 data-nosnippet>149</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#150 id=150 data-nosnippet>150</a>            ColumnType::Bytes =&gt; input,
-<a href=#151 id=151 data-nosnippet>151</a>            ColumnType::String =&gt; <span class="macro">quote!</span>(String::from_utf8(#input).map_err(|err| err.utf8_error())<span class="question-mark">?</span>),
-<a href=#152 id=152 data-nosnippet>152</a>            ColumnType::OptionalBytes =&gt; <span class="macro">quote!</span> {{
-<a href=#153 id=153 data-nosnippet>153</a>                <span class="kw">let </span>data = #input;
-<a href=#154 id=154 data-nosnippet>154</a>                (!data.is_empty()).then_some(data)
-<a href=#155 id=155 data-nosnippet>155</a>            }},
-<a href=#156 id=156 data-nosnippet>156</a>        }
-<a href=#157 id=157 data-nosnippet>157</a>    }
-<a href=#158 id=158 data-nosnippet>158</a>}</code></pre></div></section></main></body></html>
+<a href=#150 id=150 data-nosnippet>150</a>            ColumnType::Bytes =&gt; <span class="macro">quote!</span>(Vec&lt;u8&gt;),
+<a href=#151 id=151 data-nosnippet>151</a>            ColumnType::String =&gt; <span class="macro">quote!</span>(String),
+<a href=#152 id=152 data-nosnippet>152</a>            ColumnType::OptionalBytes =&gt; <span class="macro">quote!</span>(<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;),
+<a href=#153 id=153 data-nosnippet>153</a>        }
+<a href=#154 id=154 data-nosnippet>154</a>    }
+<a href=#155 id=155 data-nosnippet>155</a>}</code></pre></div></section></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["dynamic_dispatch"]};
+window.SIDEBAR_ITEMS = {};

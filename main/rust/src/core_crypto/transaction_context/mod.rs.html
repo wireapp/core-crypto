@@ -6,7 +6,7 @@
 <a href=#6 id=6 data-nosnippet>6</a><span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
 <a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">use </span>async_lock::Mutex;
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>async_lock::{RwLock, RwLockWriteGuardArc};
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>core_crypto_keystore::{CryptoKeystoreError, connection::FetchFromDatabase, entities::ConsumerData};
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>core_crypto_keystore::{CryptoKeystoreError, entities::ConsumerData, traits::FetchFromDatabase <span class="kw">as _</span>};
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">pub use </span>error::{Error, <span class="prelude-ty">Result</span>};
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>mls_crypto_provider::{Database, MlsCryptoProvider};
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider <span class="kw">as _</span>;
@@ -392,8 +392,8 @@
 <a href=#392 id=392 data-nosnippet>392</a>    <span class="doccomment">/// Get the data that has previously been set by [TransactionContext::set_data].
 <a href=#393 id=393 data-nosnippet>393</a>    /// This is meant to be used as a check point at the end of a transaction.
 <a href=#394 id=394 data-nosnippet>394</a>    </span><span class="kw">pub async fn </span>get_data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;&gt; {
-<a href=#395 id=395 data-nosnippet>395</a>        <span class="kw">match </span><span class="self">self</span>.keystore().<span class="kw">await</span><span class="question-mark">?</span>.find_unique::&lt;ConsumerData&gt;().<span class="kw">await </span>{
-<a href=#396 id=396 data-nosnippet>396</a>            <span class="prelude-val">Ok</span>(data) =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(data.into())),
+<a href=#395 id=395 data-nosnippet>395</a>        <span class="kw">match </span><span class="self">self</span>.keystore().<span class="kw">await</span><span class="question-mark">?</span>.get_unique::&lt;ConsumerData&gt;().<span class="kw">await </span>{
+<a href=#396 id=396 data-nosnippet>396</a>            <span class="prelude-val">Ok</span>(maybe_data) =&gt; <span class="prelude-val">Ok</span>(maybe_data.map(Into::into)),
 <a href=#397 id=397 data-nosnippet>397</a>            <span class="prelude-val">Err</span>(CryptoKeystoreError::NotFound(..)) =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
 <a href=#398 id=398 data-nosnippet>398</a>            <span class="prelude-val">Err</span>(err) =&gt; <span class="prelude-val">Err</span>(KeystoreError::wrap(<span class="string">"finding unique consumer data"</span>)(err).into()),
 <a href=#399 id=399 data-nosnippet>399</a>        }

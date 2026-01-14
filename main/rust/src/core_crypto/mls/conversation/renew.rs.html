@@ -131,7 +131,7 @@
 <a href=#131 id=131 data-nosnippet>131</a>            // encryption key from the keystore otherwise we would have a leak
 <a href=#132 id=132 data-nosnippet>132</a>            </span>backend
 <a href=#133 id=133 data-nosnippet>133</a>                .key_store()
-<a href=#134 id=134 data-nosnippet>134</a>                .remove::&lt;StoredEncryptionKeyPair, <span class="kw">_</span>&gt;(leaf_node.encryption_key().as_slice())
+<a href=#134 id=134 data-nosnippet>134</a>                .remove_borrowed::&lt;StoredEncryptionKeyPair&gt;(leaf_node.encryption_key().as_slice())
 <a href=#135 id=135 data-nosnippet>135</a>                .<span class="kw">await
 <a href=#136 id=136 data-nosnippet>136</a>                </span>.map_err(KeystoreError::wrap(<span class="string">"removing mls encryption keypair"</span>))<span class="question-mark">?</span>;
 <a href=#137 id=137 data-nosnippet>137</a>        }

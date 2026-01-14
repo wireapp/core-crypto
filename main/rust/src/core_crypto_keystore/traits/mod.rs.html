@@ -9,12 +9,17 @@
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">mod </span>fetch_from_database;
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">mod </span>item_encryption;
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">mod </span>key_type;
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">mod </span>unique_entity;
-<a href=#13 id=13 data-nosnippet>13</a>
-<a href=#14 id=14 data-nosnippet>14</a><span class="kw">pub use </span>entity::{BorrowPrimaryKey, Entity};
-<a href=#15 id=15 data-nosnippet>15</a><span class="kw">pub use </span>entity_base::EntityBase;
-<a href=#16 id=16 data-nosnippet>16</a><span class="kw">pub use </span>entity_database_mutation::{EntityDatabaseMutation, EntityDeleteBorrowed};
-<a href=#17 id=17 data-nosnippet>17</a><span class="kw">pub use </span>fetch_from_database::FetchFromDatabase;
-<a href=#18 id=18 data-nosnippet>18</a><span class="kw">pub use </span>item_encryption::{DecryptData, Decryptable, Decrypting, EncryptData, Encrypting};
-<a href=#19 id=19 data-nosnippet>19</a><span class="kw">pub use </span>key_type::KeyType;
-<a href=#20 id=20 data-nosnippet>20</a><span class="kw">pub use </span>unique_entity::{UniqueEntity, UniqueEntityExt, UniqueEntityImplementationHelper};</code></pre></div></section></main></body></html>
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">mod </span>primary_key;
+<a href=#13 id=13 data-nosnippet>13</a><span class="kw">mod </span>unique_entity;
+<a href=#14 id=14 data-nosnippet>14</a>
+<a href=#15 id=15 data-nosnippet>15</a><span class="kw">pub use </span>entity::{Entity, EntityGetBorrowed};
+<a href=#16 id=16 data-nosnippet>16</a><span class="kw">pub use </span>entity_base::EntityBase;
+<a href=#17 id=17 data-nosnippet>17</a><span class="kw">pub use </span>entity_database_mutation::{EntityDatabaseMutation, EntityDeleteBorrowed};
+<a href=#18 id=18 data-nosnippet>18</a><span class="kw">pub use </span>fetch_from_database::FetchFromDatabase;
+<a href=#19 id=19 data-nosnippet>19</a><span class="kw">pub use </span>item_encryption::{
+<a href=#20 id=20 data-nosnippet>20</a>    DecryptData, DecryptWithExplicitEncryptionKey, Decryptable, Decrypting, EncryptData,
+<a href=#21 id=21 data-nosnippet>21</a>    EncryptWithExplicitEncryptionKey, Encrypting, EncryptionKey,
+<a href=#22 id=22 data-nosnippet>22</a>};
+<a href=#23 id=23 data-nosnippet>23</a><span class="kw">pub use </span>key_type::{KeyType, OwnedKeyType};
+<a href=#24 id=24 data-nosnippet>24</a><span class="kw">pub use </span>primary_key::{BorrowPrimaryKey, PrimaryKey};
+<a href=#25 id=25 data-nosnippet>25</a><span class="kw">pub use </span>unique_entity::{UniqueEntity, UniqueEntityExt, UniqueEntityImplementationHelper};</code></pre></div></section></main></body></html>

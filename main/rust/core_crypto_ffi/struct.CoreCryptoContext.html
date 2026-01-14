@@ -437,7 +437,7 @@ So this is the first step to perform after initializing your E2EI client</p>
 <ul>
 <li><code>trust_anchor_pem</code> - PEM certificate to anchor as a Trust Root</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.e2ei_register_intermediate_ca_pem" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/init_certificates.rs.html#112">Source</a><h4 class="code-header">pub async fn <a href="#method.e2ei_register_intermediate_ca_pem" class="fn">e2ei_register_intermediate_ca_pem</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.e2ei_register_intermediate_ca_pem" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/init_certificates.rs.html#106">Source</a><h4 class="code-header">pub async fn <a href="#method.e2ei_register_intermediate_ca_pem" class="fn">e2ei_register_intermediate_ca_pem</a>(
     &amp;self,
     cert_pem: <a class="struct" href="https://doc.rust-lang.org/1.92.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.92.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../core_crypto/e2e_identity/pki_env/struct.NewCrlDistributionPoints.html" title="struct core_crypto::e2e_identity::pki_env::NewCrlDistributionPoints">NewCrlDistributionPoints</a>, <a class="enum" href="../core_crypto/transaction_context/e2e_identity/error/enum.Error.html" title="enum core_crypto::transaction_context::e2e_identity::error::Error">Error</a>&gt;</h4></section></summary><div class="docblock"><p>Registers an Intermediate CA for the use in E2EI processing.</p>
@@ -447,7 +447,7 @@ You <strong>need</strong> to have a Root CA registered before calling this</p>
 <ul>
 <li><code>cert_pem</code> - PEM certificate to register as an Intermediate CA</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.e2ei_register_crl-1" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/init_certificates.rs.html#190">Source</a><h4 class="code-header">pub async fn <a href="#method.e2ei_register_crl-1" class="fn">e2ei_register_crl</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.e2ei_register_crl-1" class="method"><a class="src rightside" href="../src/core_crypto/transaction_context/e2e_identity/init_certificates.rs.html#185">Source</a><h4 class="code-header">pub async fn <a href="#method.e2ei_register_crl-1" class="fn">e2ei_register_crl</a>(
     &amp;self,
     crl_dp: <a class="struct" href="https://doc.rust-lang.org/1.92.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
     crl_der: <a class="struct" href="https://doc.rust-lang.org/1.92.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.92.0/std/primitive.u8.html">u8</a>&gt;,

@@ -20,8 +20,8 @@
 <a href=#20 id=20 data-nosnippet>20</a><span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider;
 <a href=#21 id=21 data-nosnippet>21</a>
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">use crate</span>::{
-<a href=#23 id=23 data-nosnippet>23</a>    Ciphersuite, ClientId, CredentialType, HistorySecret, LeafError, MlsError, MlsTransport, RecursiveError,
-<a href=#24 id=24 data-nosnippet>24</a>    group_store::GroupStore,
+<a href=#23 id=23 data-nosnippet>23</a>    Ciphersuite, ClientId, CredentialType, HistorySecret, LeafError, MlsConversation, MlsError, MlsTransport,
+<a href=#24 id=24 data-nosnippet>24</a>    RecursiveError,
 <a href=#25 id=25 data-nosnippet>25</a>    mls::{
 <a href=#26 id=26 data-nosnippet>26</a>        <span class="self">self</span>, HasSessionAndCrypto,
 <a href=#27 id=27 data-nosnippet>27</a>        conversation::{ConversationIdRef, ImmutableConversation},
@@ -83,12 +83,12 @@
 <a href=#83 id=83 data-nosnippet>83</a>    <span class="doccomment">/// Get an immutable view of an `MlsConversation`.
 <a href=#84 id=84 data-nosnippet>84</a>    ///
 <a href=#85 id=85 data-nosnippet>85</a>    /// Because it operates on the raw conversation type, this may be faster than
-<a href=#86 id=86 data-nosnippet>86</a>    /// [crate::transaction_context::TransactionContext::conversation]. for transient and immutable
+<a href=#86 id=86 data-nosnippet>86</a>    /// [crate::transaction_context::TransactionContext::conversation] for transient and immutable
 <a href=#87 id=87 data-nosnippet>87</a>    /// purposes. For long-lived or mutable purposes, prefer the other method.
 <a href=#88 id=88 data-nosnippet>88</a>    </span><span class="kw">pub async fn </span>get_raw_conversation(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationIdRef) -&gt; <span class="prelude-ty">Result</span>&lt;ImmutableConversation&gt; {
-<a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">let </span>raw_conversation = GroupStore::fetch_from_keystore(id, <span class="kw-2">&amp;</span><span class="self">self</span>.crypto_provider.keystore(), <span class="prelude-val">None</span>)
+<a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">let </span>raw_conversation = MlsConversation::load(<span class="kw-2">&amp;</span><span class="self">self</span>.crypto_provider.keystore(), id)
 <a href=#90 id=90 data-nosnippet>90</a>            .<span class="kw">await
-<a href=#91 id=91 data-nosnippet>91</a>            </span>.map_err(RecursiveError::root(<span class="string">"getting conversation by id"</span>))<span class="question-mark">?
+<a href=#91 id=91 data-nosnippet>91</a>            </span>.map_err(RecursiveError::mls_conversation(<span class="string">"getting raw conversation by id"</span>))<span class="question-mark">?
 <a href=#92 id=92 data-nosnippet>92</a>            </span>.ok_or_else(|| LeafError::ConversationNotFound(id.to_owned()))<span class="question-mark">?</span>;
 <a href=#93 id=93 data-nosnippet>93</a>        <span class="prelude-val">Ok</span>(ImmutableConversation::new(raw_conversation, <span class="self">self</span>.clone()))
 <a href=#94 id=94 data-nosnippet>94</a>    }
@@ -180,7 +180,7 @@
 <a href=#180 id=180 data-nosnippet>180</a>
 <a href=#181 id=181 data-nosnippet>181</a><span class="attr">#[cfg(test)]
 <a href=#182 id=182 data-nosnippet>182</a></span><span class="kw">mod </span>tests {
-<a href=#183 id=183 data-nosnippet>183</a>    <span class="kw">use </span>core_crypto_keystore::{connection::FetchFromDatabase <span class="kw">as _</span>, entities::<span class="kw-2">*</span>};
+<a href=#183 id=183 data-nosnippet>183</a>    <span class="kw">use </span>core_crypto_keystore::{entities::<span class="kw-2">*</span>, traits::FetchFromDatabase <span class="kw">as _</span>};
 <a href=#184 id=184 data-nosnippet>184</a>    <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
 <a href=#185 id=185 data-nosnippet>185</a>
 <a href=#186 id=186 data-nosnippet>186</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
