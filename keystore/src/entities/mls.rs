@@ -13,7 +13,6 @@ use crate::{
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::Entity,
     core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
@@ -23,7 +22,6 @@ use crate::{
 #[sensitive]
 pub struct PersistedMlsGroup {
     #[entity(id, hex, column = "id_hex")]
-    #[id(hex, column = "id_hex")]
     pub id: Vec<u8>,
     pub state: Vec<u8>,
     pub parent_id: Option<Vec<u8>>,
@@ -179,7 +177,6 @@ impl PrimaryKey for MlsPendingMessage {
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::Entity,
     core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
@@ -187,7 +184,6 @@ impl PrimaryKey for MlsPendingMessage {
 #[entity(collection_name = "mls_buffered_commits")]
 pub struct StoredBufferedCommit {
     #[entity(id, hex, column = "conversation_id_hex")]
-    #[id(hex, column = "conversation_id_hex")]
     #[sensitive]
     conversation_id: Vec<u8>,
     commit_data: Vec<u8>,
@@ -257,7 +253,6 @@ pub struct StoredEncryptionKeyPair {
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::Entity,
     core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
@@ -266,7 +261,6 @@ pub struct StoredEncryptionKeyPair {
 #[entity(collection_name = "mls_epoch_encryption_keypairs")]
 pub struct StoredEpochEncryptionKeypair {
     #[entity(hex, column = "id_hex")]
-    #[id(hex, column = "id_hex")]
     pub id: Vec<u8>,
     #[sensitive]
     pub keypairs: Vec<u8>,
@@ -288,7 +282,6 @@ pub struct StoredPskBundle {
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::Entity,
     core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
@@ -297,7 +290,6 @@ pub struct StoredPskBundle {
 #[entity(collection_name = "mls_keypackages")]
 pub struct StoredKeypackage {
     #[entity(id, hex, column = "keypackage_ref_hex")]
-    #[id(hex, column = "keypackage_ref_hex")]
     pub keypackage_ref: Vec<u8>,
     #[sensitive]
     pub keypackage: Vec<u8>,
@@ -311,7 +303,6 @@ pub struct StoredKeypackage {
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::Entity,
     core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
@@ -506,7 +497,6 @@ pub struct E2eiAcmeCA {
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::Entity,
     core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
@@ -515,7 +505,6 @@ pub struct E2eiAcmeCA {
 pub struct E2eiIntermediateCert {
     // key to identify the CA cert; Using a combination of SKI & AKI extensions concatenated like so is suitable:
     // `SKI[+AKI]`
-    #[id]
     #[entity(id)]
     pub ski_aki_pair: String,
     pub content: Vec<u8>,
@@ -527,14 +516,12 @@ pub struct E2eiIntermediateCert {
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::Entity,
     core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
 #[zeroize(drop)]
 pub struct E2eiCrl {
-    #[id]
     #[entity(id)]
     pub distribution_point: String,
     pub content: Vec<u8>,
