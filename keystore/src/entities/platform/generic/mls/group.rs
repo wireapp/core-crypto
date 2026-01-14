@@ -1,6 +1,7 @@
 use crate::{
     CryptoKeystoreResult,
-    entities::{Entity, EntityBase, PersistedMlsGroup, PersistedMlsGroupExt},
+    entities::{PersistedMlsGroup, PersistedMlsGroupExt},
+    traits::{BorrowPrimaryKey as _, EntityBase as _},
 };
 
 #[async_trait::async_trait]
@@ -9,8 +10,8 @@ impl PersistedMlsGroupExt for PersistedMlsGroup {
         self.parent_id.as_deref()
     }
 
-    async fn child_groups(&self, conn: &mut <Self as EntityBase>::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
-        let id = self.id_raw();
+    async fn child_groups(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
+        let id = self.borrow_primary_key();
         let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         let mut query = transaction.prepare_cached("SELECT rowid FROM mls_groups WHERE parent_id = ?")?;
