@@ -1,7 +1,8 @@
 use crate::{
     CryptoKeystoreResult,
-    entities::{EntityBase, PersistedMlsGroup, StoredCredential},
+    entities::{PersistedMlsGroup, StoredCredential},
     migrations::{detect_duplicate_credentials, make_least_used_ciphersuite},
+    traits::EntityBase as _,
 };
 
 pub(crate) const VERSION: i32 = 19;
