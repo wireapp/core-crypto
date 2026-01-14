@@ -110,8 +110,8 @@ impl<'a> TestConversation<'a> {
     }
 
     /// Replace the existing credential with an x509 one and notify all members.
-    pub async fn e2ei_rotate_notify(self, credential: Option<&Credential>) -> TestConversation<'a> {
-        self.e2ei_rotate(credential).await.notify_members().await
+    pub async fn set_credential_by_ref_notify(self, credential: &CredentialRef) -> TestConversation<'a> {
+        self.set_credential_by_ref(credential).await.notify_members().await
     }
 
     /// Create an update commit with a leaf node containing the given credential, that hasn't been merged by the actor.
@@ -127,18 +127,21 @@ impl<'a> TestConversation<'a> {
         OperationGuard::new(TestOperation::Update, commit, self, [])
     }
 
-    /// Like [Self::e2ei_rotate_notify], but also when notifying other members, call
+    /// Like [Self::set_credential_by_ref], but also when notifying other members, call
     /// [SessionContext::verify_sender_identity].
-    pub async fn e2ei_rotate_notify_and_verify_sender(self, credential: Option<&Credential>) -> TestConversation<'a> {
-        self.e2ei_rotate(credential)
+    pub async fn set_credential_by_ref_notify_and_verify_sender(
+        self,
+        credential: &CredentialRef,
+    ) -> TestConversation<'a> {
+        self.set_credential_by_ref(credential)
             .await
             .notify_members_and_verify_sender()
             .await
     }
 
-    /// Replace the existing credential with an x509 one.
-    pub async fn e2ei_rotate(self, credential: Option<&Credential>) -> OperationGuard<'a, Commit> {
-        self.guard().await.e2ei_rotate(credential).await.unwrap();
+    /// Replace the existing credential with the given credential.
+    pub async fn set_credential_by_ref(self, credential: &CredentialRef) -> OperationGuard<'a, Commit> {
+        self.guard().await.set_credential_by_ref(credential).await.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;
         let committer_index = self.actor_index();
         OperationGuard::new(TestOperation::Update, commit, self, [committer_index])
