@@ -210,14 +210,14 @@ impl SessionContext {
     pub(crate) async fn update_credential_in_all_conversations<'a>(
         &self,
         all_conversations: Vec<TestConversation<'a>>,
-        cb: &Credential,
+        credential_ref: &CredentialRef,
         cipher_suite: Ciphersuite,
     ) -> Result<RotateAllResult<'a>> {
-        assert_eq!(cipher_suite, cb.ciphersuite);
+        assert_eq!(cipher_suite, credential_ref.ciphersuite());
 
         let mut commits = Vec::with_capacity(all_conversations.len());
         for conv in all_conversations {
-            let commit_guard = conv.acting_as(self).await.e2ei_rotate(None).await;
+            let commit_guard = conv.acting_as(self).await.set_credential_by_ref(credential_ref).await;
             commits.push(commit_guard);
         }
 

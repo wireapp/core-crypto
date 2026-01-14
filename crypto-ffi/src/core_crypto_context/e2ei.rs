@@ -3,8 +3,8 @@ use std::{collections::HashMap, sync::Arc};
 use core_crypto::{mls::conversation::Conversation as _, transaction_context::Error as TransactionError};
 
 use crate::{
-    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CrlRegistration,
-    E2eiConversationState, E2eiEnrollment, MlsTransport, UserIdentities, WireIdentity,
+    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CredentialRef,
+    CrlRegistration, E2eiConversationState, E2eiEnrollment, MlsTransport, UserIdentities, WireIdentity,
     core_crypto::mls_transport::callback_shim, crl::NewCrlDistributionPoints,
 };
 
@@ -118,25 +118,21 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::ConversationGuard::e2ei_rotate]
-    pub async fn e2ei_rotate(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
-        let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
-        conversation.e2ei_rotate(None).await.map_err(Into::into)
-    }
-
     /// See [core_crypto::transaction_context::TransactionContext::save_x509_credential]
     pub async fn save_x509_credential(
         &self,
         enrollment: EnrollmentParameter,
         certificate_chain: String,
-    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
+    ) -> CoreCryptoResult<CredentialRef> {
         let mut enrollment = enrollment.write().await?;
-        self.inner
+        let (credential, _) = self
+            .inner
             .save_x509_credential(&mut enrollment, certificate_chain)
             .await
-            .map(Into::into)
             .map_err(Into::<TransactionError>::into)
-            .map_err(Into::into)
+            .map_err(Into::<CoreCryptoError>::into)?;
+
+        Ok(credential.into())
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::e2ei_enrollment_stash]

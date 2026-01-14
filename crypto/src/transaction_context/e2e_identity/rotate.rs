@@ -3,7 +3,8 @@ use openmls_traits::{OpenMlsCryptoProvider as _, random::OpenMlsRand as _};
 
 use super::error::{Error, Result};
 use crate::{
-    CertificateBundle, Ciphersuite, Credential, CredentialType, E2eiEnrollment, MlsError, RecursiveError,
+    CertificateBundle, Ciphersuite, Credential, CredentialRef, CredentialType, E2eiEnrollment, MlsError,
+    RecursiveError,
     e2e_identity::{E2eiSignatureKeypair, NewCrlDistributionPoints},
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     transaction_context::TransactionContext,
@@ -142,7 +143,7 @@ impl TransactionContext {
         &self,
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
-    ) -> Result<NewCrlDistributionPoints> {
+    ) -> Result<(CredentialRef, NewCrlDistributionPoints)> {
         let sk = enrollment
             .get_sign_key_for_mls()
             .map_err(RecursiveError::e2e_identity("getting sign key for mls"))?;
@@ -183,14 +184,15 @@ impl TransactionContext {
         let credential = Credential::x509(ciphersuite, cert_bundle).map_err(RecursiveError::mls_credential(
             "creating new x509 credential from certificate bundle in save_x509_credential",
         ))?;
-        client
+
+        let credential_ref = client
             .add_credential(credential)
             .await
             .map_err(RecursiveError::mls_client(
                 "saving and adding credential in save_x509_credential",
             ))?;
 
-        Ok(crl_new_distribution_points)
+        Ok((credential_ref, crl_new_distribution_points))
     }
 }
 
@@ -270,19 +272,14 @@ mod tests {
                 .await
                 .unwrap();
 
-                alice
+                let (credential_ref, _) = alice
                     .transaction
                     .save_x509_credential(&mut enrollment, cert)
                     .await
                     .unwrap();
 
-                let cb = alice
-                    .find_most_recent_credential(case.signature_scheme(), CredentialType::X509)
-                    .await
-                    .unwrap();
-
                 let result = alice
-                    .update_credential_in_all_conversations(conversations, &cb, *enrollment.ciphersuite())
+                    .update_credential_in_all_conversations(conversations, &credential_ref, *enrollment.ciphersuite())
                     .await
                     .unwrap();
 
@@ -537,12 +534,14 @@ mod tests {
                 // (our DB has a timestamp resolution of 1s)
                 smol::Timer::after(std::time::Duration::from_secs(1)).await;
 
-                alice
+                let (credential_ref, _) = alice
                     .transaction
                     .save_x509_credential(&mut enrollment, cert)
                     .await
                     .unwrap();
-                let conversation = conversation.e2ei_rotate_notify_and_verify_sender(None).await;
+                let conversation = conversation
+                    .set_credential_by_ref_notify_and_verify_sender(&credential_ref)
+                    .await;
 
                 conversation
                     .verify_credential_handle_and_name(ALICE_NEW_HANDLE, ALICE_NEW_DISPLAY_NAME)
@@ -596,7 +595,8 @@ mod tests {
                 .await
                 .unwrap();
 
-                bob.transaction
+                let (cred_ref, _) = bob
+                    .transaction
                     .save_x509_credential(&mut enrollment, cert)
                     .await
                     .unwrap();
@@ -604,7 +604,7 @@ mod tests {
                 let conversation = conversation
                     .acting_as(&bob)
                     .await
-                    .e2ei_rotate_notify_and_verify_sender(None)
+                    .set_credential_by_ref_notify_and_verify_sender(&cred_ref)
                     .await;
 
                 conversation
@@ -665,8 +665,11 @@ mod tests {
                         format!("{new_handle}@world.com")
                     );
 
+                    let credential_ref = CredentialRef::from_credential(&cb);
                     // Alice issues an Update commit to replace her current identity
-                    let conversation = conversation.e2ei_rotate_notify_and_verify_sender(Some(&cb)).await;
+                    let conversation = conversation
+                        .set_credential_by_ref_notify_and_verify_sender(&credential_ref)
+                        .await;
 
                     // Finally, Alice merges her commit and verifies her new identity gets applied
                     conversation
@@ -788,7 +791,7 @@ mod tests {
                 // Alice creates a new Credential, updating her handle/display_name
                 let alice_cid = alice.get_client_id().await;
                 let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
-                alice
+                let credential = alice
                     .save_new_credential(&case, new_handle, new_display_name, intermediate_ca)
                     .await;
 
@@ -808,7 +811,10 @@ mod tests {
                 // Alice issues an Update commit to replace her current identity
                 // Bob decrypts the commit...
                 // ...and verifies that now Alice is represented with her new identity
-                let conversation = conversation.e2ei_rotate_notify_and_verify_sender(None).await;
+                let credential_ref = CredentialRef::from_credential(&credential);
+                let conversation = conversation
+                    .set_credential_by_ref_notify_and_verify_sender(&credential_ref)
+                    .await;
 
                 // Finally, Alice merges her commit and verifies her new identity gets applied
                 conversation
