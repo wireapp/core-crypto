@@ -27,7 +27,6 @@ wasm = []
 [dependencies]
 async-lock.workspace = true
 async-trait.workspace = true
-cfg-if.workspace = true
 core-crypto-keystore.workspace = true
 core-crypto-macros.workspace = true
 core-crypto.workspace = true
@@ -58,7 +57,6 @@ web-sys = "0.3"
 console_error_panic_hook.workspace = true
 
 [build-dependencies]
-cfg-if = "1.0"
 uniffi = { workspace = true, features = [
   "build",
   "bindgen",

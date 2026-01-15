@@ -55,7 +55,6 @@ uuid = { workspace = true, features = ["v4", "js"] }
 openmls.workspace = true
 rstest = "0.26"
 rstest_reuse = "0.7"
-cfg-if.workspace = true
 hex-literal = "1.1"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
