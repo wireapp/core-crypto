@@ -8,7 +8,7 @@ use super::{
     FieldTransformation,
     column_type::{ColumnType, IdColumnType},
 };
-use crate::entity_derive_new::column_type::EmitGetExpression;
+use crate::entity_derive::column_type::EmitGetExpression;
 
 pub(super) struct GenericColumn<Type> {
     pub(super) field_name: Ident,

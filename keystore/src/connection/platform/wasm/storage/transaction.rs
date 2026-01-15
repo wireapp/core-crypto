@@ -7,7 +7,7 @@ use wasm_bindgen::JsValue;
 use super::{super::WasmConnection, InMemoryDB};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
-    traits::{Encrypting, Entity as NewEntity, KeyType},
+    traits::{Encrypting, Entity, KeyType},
 };
 
 // The lifetime is to comply with the sqlite implementation.
@@ -48,9 +48,9 @@ impl WasmStorageTransaction<'_> {
     }
 
     /// Count the number of entities in this transaction.
-    pub(crate) async fn new_count<E>(&self) -> CryptoKeystoreResult<u32>
+    pub(crate) async fn count<E>(&self) -> CryptoKeystoreResult<u32>
     where
-        E: NewEntity<ConnectionType = WasmConnection>,
+        E: Entity<ConnectionType = WasmConnection>,
     {
         match self {
             WasmStorageTransaction::Persistent { tx, .. } => {
@@ -69,9 +69,9 @@ impl WasmStorageTransaction<'_> {
     }
 
     /// Save an entity instance into the transaction.
-    pub(crate) async fn new_save<'a, E>(&self, entity: &'a E) -> CryptoKeystoreResult<()>
+    pub(crate) async fn save<'a, E>(&self, entity: &'a E) -> CryptoKeystoreResult<()>
     where
-        E: NewEntity<ConnectionType = WasmConnection> + Encrypting<'a>,
+        E: Entity<ConnectionType = WasmConnection> + Encrypting<'a>,
     {
         let serializer = serde_wasm_bindgen::Serializer::json_compatible();
         let encrypted = entity.encrypt(self.cipher())?;
@@ -104,9 +104,9 @@ impl WasmStorageTransaction<'_> {
     /// `BorrowPrimaryKey` or not, and without specialization, we can't just do the right thing
     /// and accept the more general form. But we do know the primary key and its borrowed form
     /// both implement `KeyType`, so it's always safe to accept a byte reference.
-    pub(crate) async fn new_delete<E>(&self, key: impl AsRef<[u8]>) -> CryptoKeystoreResult<bool>
+    pub(crate) async fn delete<E>(&self, key: impl AsRef<[u8]>) -> CryptoKeystoreResult<bool>
     where
-        E: NewEntity<ConnectionType = WasmConnection>,
+        E: Entity<ConnectionType = WasmConnection>,
     {
         let key = key.as_ref();
         match self {

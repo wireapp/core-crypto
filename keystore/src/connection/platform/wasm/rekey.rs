@@ -32,7 +32,7 @@ where
     Ok(())
 }
 
-macro_rules! rekey_entities_new {
+macro_rules! rekey_entities {
     ($db:expr, $old_cipher:expr, $new_cipher:expr, [$($entity:ty),*]) => {
         let transaction = $db.transaction(&$db.store_names(), TransactionMode::ReadWrite)?;
         let serializer = serde_wasm_bindgen::Serializer::json_compatible();
@@ -56,4 +56,4 @@ macro_rules! rekey_entities_new {
     }
 }
 
-pub(super) use rekey_entities_new;
+pub(super) use rekey_entities;

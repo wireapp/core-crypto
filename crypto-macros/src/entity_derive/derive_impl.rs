@@ -3,7 +3,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{Ident, Lifetime};
 
-use crate::entity_derive_new::{Entity, FieldTransformation, column_type::ColumnType};
+use crate::entity_derive::{Entity, FieldTransformation, column_type::ColumnType};
 
 impl quote::ToTokens for Entity {
     fn to_tokens(&self, tokens: &mut TokenStream) {
@@ -121,11 +121,11 @@ impl Entity {
                 }
 
                 async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<u32> {
-                    conn.storage().new_count::<Self>().await
+                    conn.storage().count::<Self>().await
                 }
 
                 async fn load_all(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<Vec<Self>> {
-                    conn.storage().new_get_all().await
+                    conn.storage().get_all().await
                 }
             }
         }
@@ -170,7 +170,7 @@ impl Entity {
                     #key_transform
                     #[cfg(target_family = "wasm")]
                     {
-                        conn.storage().new_get(key).await
+                        conn.storage().get(key).await
                     }
 
                     #[cfg(not(target_family = "wasm"))]
@@ -222,7 +222,7 @@ impl Entity {
                 async fn save(&'a self, tx: &Self::Transaction) -> crate::CryptoKeystoreResult<()> {
                     #[cfg(target_family = "wasm")]
                         {
-                            tx.new_save(self).await
+                            tx.save(self).await
                         }
 
                         #[cfg(not(target_family = "wasm"))]
@@ -236,7 +236,7 @@ impl Entity {
                 async fn count(tx: &Self::Transaction) -> crate::CryptoKeystoreResult<u32> {
                     #[cfg(target_family = "wasm")]
                     {
-                        tx.new_count::<Self>().await
+                        tx.count::<Self>().await
                     }
 
                     #[cfg(not(target_family = "wasm"))]
@@ -284,7 +284,7 @@ impl Entity {
                     #key_transform
                     #[cfg(target_family = "wasm")]
                     {
-                        tx.new_delete::<Self>(key).await
+                        tx.delete::<Self>(key).await
                     }
 
                     #[cfg(not(target_family = "wasm"))]

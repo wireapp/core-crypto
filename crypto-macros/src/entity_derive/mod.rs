@@ -11,7 +11,7 @@ use heck::ToSnakeCase;
 use proc_macro2::Ident;
 use syn::Visibility;
 
-use crate::entity_derive_new::{
+use crate::entity_derive::{
     column::{Column, IdColumn},
     is_id::parse_columns,
 };
