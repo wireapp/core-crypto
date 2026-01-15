@@ -16,11 +16,10 @@ impl CoreCryptoFfi {
 
     /// See [core_crypto::Session::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
-        let signature_scheme = core_crypto::Ciphersuite::from(ciphersuite).signature_algorithm();
         self.inner
             .mls_session()
             .await?
-            .e2ei_is_enabled(signature_scheme)
+            .e2ei_is_enabled(ciphersuite.into())
             .await
             .map_err(RecursiveError::mls_client("checking if e2ei is enabled"))
             .map_err(Into::into)
