@@ -59,6 +59,39 @@ class MockMlsTransportSuccessProvider : MockDeliveryService {
     override suspend fun getLatestCommit(): ByteArray = getLatestCommitBundle().commit
 }
 
+class MockPkiEnvironmentHooks : PkiEnvironmentHooks {
+    override suspend fun httpRequest(
+        method: HttpMethod,
+        url: String,
+        headers: List<HttpHeader>,
+        body: ByteArray
+    ): HttpResponse {
+        return HttpResponse(
+            status = 200u,
+            headers = emptyList(),
+            body = ByteArray(0)
+        )
+    }
+
+    override suspend fun authenticate(
+        idp: String,
+        keyAuth: String,
+        acmeAud: String
+    ): String {
+        return "mock-id-token"
+    }
+
+    override suspend fun getBackendNonce(): String {
+        return "mock-backend-nonce"
+    }
+
+    override suspend fun fetchBackendAccessToken(
+        dpop: String
+    ): String {
+        return "mock-backend-access-token"
+    }
+}
+
 abstract class HasMockDeliveryService {
     companion object {
         internal lateinit var mockDeliveryService: MockDeliveryService

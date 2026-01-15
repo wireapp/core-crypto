@@ -20,6 +20,22 @@ internal class E2EITest : HasMockDeliveryService() {
         setupMocks()
     }
 
+    @Test
+    fun testSetPkiEnvironment() = runTest {
+        val aliceId = genClientId()
+        val root = Files.createTempDirectory("mls").toFile()
+        val path = root.resolve("pki-$aliceId")
+        val key = genDatabaseKey()
+        val hooks = MockPkiEnvironmentHooks()
+        val db = openDatabase(path.absolutePath, key)
+        val pkiEnv = createPkiEnvironment(hooks, db)
+
+        val cc = CoreCrypto(db)
+        cc.setPkiEnvironment(pkiEnv)
+        val pkiEnv2 = cc.getPkiEnvironment()
+        assert(pkiEnv2 != null)
+    }
+
     @Ignore("Temporarily broken until PKI environment is decoupled from session initialization implemented with WPB-22816")
     @Test
     fun sample_e2ei_enrollment_should_succeed() = runTest {
