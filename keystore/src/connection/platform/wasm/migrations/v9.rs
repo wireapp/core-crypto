@@ -8,14 +8,15 @@ use super::DB_VERSION_9;
 use crate::{
     CryptoKeystoreResult, Database, DatabaseKey,
     connection::platform::wasm::WasmStorageTransaction,
-    entities::{Entity as _, EntityBase, EntityFindParams, StoredCredential},
+    entities::StoredCredential,
+    traits::{Encrypting as _, Entity as _, EntityBase as _},
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
     let previous_builder = super::v8::get_builder(name);
     let mut db_during_migration = Database::migration_connection(previous_builder, key).await?;
-    let credentials = StoredCredential::find_all(&mut db_during_migration, EntityFindParams::default()).await?;
+    let credentials = StoredCredential::load_all(&mut db_during_migration).await?;
 
     let collection_name = format!(
         "{collection_name}_new",
@@ -27,10 +28,9 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
             WasmStorageTransaction::Persistent { tx, cipher } => {
                 let serializer = serde_wasm_bindgen::Serializer::json_compatible();
                 let store = tx.object_store(&collection_name)?;
-                for mut credential in credentials {
+                for credential in credentials {
                     let key = &js_sys::Uint8Array::from(credential.public_key.as_slice()).into();
-                    credential.encrypt(cipher)?;
-                    let js_value = credential.serialize(&serializer)?;
+                    let js_value = credential.encrypt(cipher)?.serialize(&serializer)?;
                     store.put(&js_value, Some(key))?.await?;
                 }
             }

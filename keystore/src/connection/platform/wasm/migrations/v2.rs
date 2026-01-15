@@ -4,10 +4,7 @@ use idb::{
 };
 
 use super::DB_VERSION_2;
-use crate::{
-    CryptoKeystoreResult,
-    entities::{ConsumerData, EntityBase as _},
-};
+use crate::{CryptoKeystoreResult, entities::ConsumerData, traits::EntityBase as _};
 
 /// Open IDB once with the new builder and close it, this will add the new object store.
 pub(super) async fn migrate(name: &str) -> CryptoKeystoreResult<u32> {

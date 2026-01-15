@@ -26,7 +26,11 @@ pub(crate) struct V5Credential {
 /// Entity representing a persisted `Credential` prior to replacing signature scheme with ciphersuite
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-pub(crate) struct V6Credential {
+// This is only public because it has to be: there's a trait implementation where this is an associated type,
+// and because that's a public trait, this item has to be public. Even so, it's really not meant to be part
+// of the public interface for this crate.
+#[expect(unreachable_pub)]
+pub struct V6Credential {
     /// Note: this is not a unique identifier, but the session id this credential belongs to.
     #[sensitive]
     pub session_id: Vec<u8>,
