@@ -47,12 +47,14 @@ impl ProteusErrorKind {
     }
     /// Returns the proteus error code
     pub fn error_code(&self) -> Option<u16> {
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "proteus")] {
-                self.proteus_error_code().map(|code| code as u16)
-            } else {
-                None
-            }
+        #[cfg(feature = "proteus")]
+        {
+            self.proteus_error_code().map(|code| code as u16)
+        }
+
+        #[cfg(not(feature = "proteus"))]
+        {
+            None
         }
     }
 }

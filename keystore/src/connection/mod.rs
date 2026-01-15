@@ -1,31 +1,16 @@
-use std::{borrow::Borrow, fmt, ops::Deref};
+pub mod platform;
 
+use std::{
+    borrow::Borrow,
+    fmt,
+    ops::{Deref, DerefMut},
+    sync::Arc,
+};
+
+use async_lock::{Mutex, MutexGuard, Semaphore};
 use async_trait::async_trait;
 use sha2::{Digest as _, Sha256};
 use zeroize::{Zeroize, ZeroizeOnDrop};
-
-pub mod platform {
-    cfg_if::cfg_if! {
-        if #[cfg(target_family = "wasm")] {
-            mod wasm;
-            pub use self::wasm::WasmConnection as KeystoreDatabaseConnection;
-            pub use wasm::storage;
-            pub use self::wasm::storage::WasmStorageTransaction as TransactionWrapper;
-        } else {
-            mod generic;
-            pub use self::generic::SqlCipherConnection as KeystoreDatabaseConnection;
-            pub use self::generic::TransactionWrapper;
-            #[cfg(test)]
-            pub(crate) use generic::MigrationTarget;
-
-
-        }
-    }
-}
-
-use std::{ops::DerefMut, sync::Arc};
-
-use async_lock::{Mutex, MutexGuard, Semaphore};
 
 pub use self::platform::*;
 use crate::{
