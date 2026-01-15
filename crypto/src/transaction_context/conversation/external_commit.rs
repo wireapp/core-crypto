@@ -142,7 +142,7 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
+    use core_crypto_keystore::CryptoKeystoreMls;
 
     use super::Error;
     use crate::{
@@ -186,10 +186,7 @@ mod tests {
                 .unwrap()
                 .mls_pending_groups_load(&id)
                 .await;
-            assert!(matches!(
-                error.unwrap_err(),
-                CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsPendingGroup)
-            ));
+            assert!(matches!(error, Ok(None)));
 
             // Ensure it's durable i.e. MLS group has been persisted
             bob.transaction

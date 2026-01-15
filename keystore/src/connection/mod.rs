@@ -359,8 +359,7 @@ impl Database {
         conversation_id: &[u8],
     ) -> CryptoKeystoreResult<Vec<MlsPendingMessage>> {
         let mut conn = self.conn().await?;
-        let persisted_records =
-            MlsPendingMessage::find_all_by_conversation_id(&mut conn, conversation_id, Default::default()).await?;
+        let persisted_records = MlsPendingMessage::find_all_by_conversation_id(&mut conn, conversation_id).await?;
 
         let transaction_guard = self.transaction.lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
