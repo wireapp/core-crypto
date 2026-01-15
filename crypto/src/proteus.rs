@@ -589,6 +589,7 @@ mod tests {
     use super::*;
     use crate::{
         CertificateBundle, ClientIdentifier, CredentialType,
+        e2e_identity::pki_env::test::DummyPkiEnvironmentHooks,
         test_utils::{proteus_utils::*, x509::X509TestChain, *},
     };
     #[macro_rules_attribute::apply(smol_macros::test)]
@@ -610,12 +611,9 @@ mod tests {
         drop(db_file);
     }
 
-    // TODO: This test has to be disabled because of the session rewrite. We have to create a mls session to init the
-    // pki right now, however this must not be a requirement. It must be enabled and working again with WPB-19578.
-    #[ignore]
     #[apply(all_cred_cipher)]
     async fn cc_can_2_phase_init(case: TestContext) {
-        use crate::{ClientId, Credential};
+        use crate::{ClientId, Credential, e2e_identity::pki_env::PkiEnvironment};
 
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
@@ -625,7 +623,10 @@ mod tests {
             .await
             .unwrap();
 
-        let cc: CoreCrypto = CoreCrypto::new(db);
+        let cc: CoreCrypto = CoreCrypto::new(db.clone());
+        let hooks = Arc::new(DummyPkiEnvironmentHooks);
+        let pki_env = PkiEnvironment::new(hooks, db).await.expect("creating pki environment");
+        cc.set_pki_environment(pki_env).await.expect("setting pki environment");
         let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(&transaction).await;
