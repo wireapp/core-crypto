@@ -655,7 +655,9 @@ mod tests {
                 assert!(decrypted.delay.is_none());
                 assert!(decrypted.app_msg.is_none());
 
-                alice.verify_sender_identity(&case, &decrypted).await;
+                alice
+                    .verify_sender_identity(&case, &alice.initial_credential, &decrypted)
+                    .await;
             })
             .await
         }
@@ -941,7 +943,9 @@ mod tests {
                 let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
                 assert_eq!(dec_msg, &msg[..]);
                 assert!(!bob_observer.has_changed().await);
-                alice.verify_sender_identity(&case, &decrypted).await;
+                alice
+                    .verify_sender_identity(&case, &alice.initial_credential, &decrypted)
+                    .await;
 
                 let msg = b"Hello alice";
                 let encrypted = conversation.guard_of(&bob).await.encrypt_message(msg).await.unwrap();
@@ -950,7 +954,8 @@ mod tests {
                 let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
                 assert_eq!(dec_msg, &msg[..]);
                 assert!(!alice_observer.has_changed().await);
-                bob.verify_sender_identity(&case, &decrypted).await;
+                bob.verify_sender_identity(&case, &bob.initial_credential, &decrypted)
+                    .await;
             })
             .await
         }

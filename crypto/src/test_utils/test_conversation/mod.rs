@@ -357,7 +357,13 @@ impl<'a> TestConversation<'a> {
             .encryption_key
     }
 
-    pub(crate) async fn verify_credential_handle_and_name(&self, new_handle: &str, new_display_name: &str) {
+    /// Checks if the handle/name match with the conversation credential and the given credential
+    pub(crate) async fn verify_credential_handle_and_name(
+        &self,
+        new_handle: &str,
+        new_display_name: &str,
+        credential_ref: &CredentialRef,
+    ) {
         let new_handle = format!("wireapp://%40{new_handle}@world.com");
         // verify the identity in..
         // the MLS group
@@ -374,13 +380,11 @@ impl<'a> TestConversation<'a> {
         assert_eq!(group_identity.status, crate::DeviceStatus::Valid);
         assert!(!group_identity.thumbprint.is_empty());
 
-        // the database
-        let ciphersuite = self.case.ciphersuite();
-        let credential = self
-            .actor()
-            .find_any_credential(ciphersuite, CredentialType::X509)
-            .await;
+        // the given credential ref
+        let database = self.actor().transaction.keystore().await.unwrap();
+        let credential = credential_ref.load(&database).await.unwrap();
         let mls_credential_with_key = credential.to_mls_credential_with_key();
+        let ciphersuite = self.case.ciphersuite();
         let local_identity = mls_credential_with_key.extract_identity(ciphersuite, None).unwrap();
 
         assert_eq!(&local_identity.client_id.as_bytes(), &cid.0);

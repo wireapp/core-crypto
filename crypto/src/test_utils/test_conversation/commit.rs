@@ -135,7 +135,7 @@ impl<'a> TestConversation<'a> {
     ) -> TestConversation<'a> {
         self.set_credential_by_ref(credential)
             .await
-            .notify_members_and_verify_sender()
+            .notify_members_and_verify_sender_with_credential(credential)
             .await
     }
 
