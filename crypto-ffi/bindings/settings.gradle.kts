@@ -7,4 +7,4 @@ pluginManagement {
     }
 }
 
-include(":jvm", ":android")
+include(":shared", ":jvm", ":android")
