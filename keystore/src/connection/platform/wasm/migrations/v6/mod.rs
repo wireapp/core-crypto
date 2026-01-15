@@ -6,17 +6,16 @@ use idb::builder::DatabaseBuilder;
 use super::DB_VERSION_6;
 use crate::{
     CryptoKeystoreResult, Database, DatabaseKey,
-    entities::{Entity, EntityBase as _, EntityFindParams, EntityTransactionExt},
     migrations::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
+    traits::{Entity as _, EntityBase as _, EntityDatabaseMutation as _},
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
     let previous_builder = super::v5::get_builder(name);
     let mut db_during_migration = Database::migration_connection(previous_builder, key).await?;
-    let signature_keys =
-        StoredSignatureKeypair::find_all(&mut db_during_migration, EntityFindParams::default()).await?;
-    let v5_credentials = V5Credential::find_all(&mut db_during_migration, EntityFindParams::default()).await?;
+    let signature_keys = StoredSignatureKeypair::load_all(&mut db_during_migration).await?;
+    let v5_credentials = V5Credential::load_all(&mut db_during_migration).await?;
 
     Database::migration_transaction(db_during_migration, async |tx| {
         for signature_key in signature_keys.iter() {

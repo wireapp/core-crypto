@@ -99,7 +99,8 @@ mod tests {
     use super::*;
     use crate::{
         connection::{platform::wasm::WasmStorageTransaction, storage::WasmStorageWrapper},
-        entities::{Entity, EntityBase, EntityTransactionExt, StoredCredential},
+        entities::StoredCredential,
+        traits::{Encrypting as _, Entity, EntityBase as _, EntityDatabaseMutation as _},
     };
 
     pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(DatabaseKey::generate);
@@ -214,11 +215,10 @@ mod tests {
                 WasmStorageTransaction::Persistent { tx, cipher } => {
                     let serializer = serde_wasm_bindgen::Serializer::json_compatible();
                     let store = tx.object_store(StoredCredential::COLLECTION_NAME)?;
-                    for mut credential in credentials {
+                    for credential in credentials {
                         // Save credentials with session id as key
                         let key = &js_sys::Uint8Array::from(credential.session_id.as_slice()).into();
-                        credential.encrypt(cipher)?;
-                        let js_value = credential.serialize(&serializer)?;
+                        let js_value = credential.encrypt(cipher)?.serialize(&serializer)?;
                         store.put(&js_value, Some(key))?.await?;
                     }
                 }
@@ -235,7 +235,9 @@ mod tests {
             .await
             .expect("DB_VERSION_6");
 
-        let count = StoredCredential::count(&mut conn).await.expect("credential count");
+        let count = <StoredCredential as Entity>::count(&mut conn)
+            .await
+            .expect("credential count");
 
         assert_eq!(
             count, 1,
@@ -300,7 +302,9 @@ mod tests {
             .await
             .expect("DB_VERSION_9");
 
-        let count = StoredCredential::count(&mut conn).await.expect("credential count");
+        let count = <StoredCredential as Entity>::count(&mut conn)
+            .await
+            .expect("credential count");
 
         assert_eq!(count, 2);
 
