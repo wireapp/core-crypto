@@ -4,15 +4,24 @@ use argon2::{
     Algorithm, Argon2, ParamsBuilder, Version,
     password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
 };
+use http::header;
+use oauth2::{CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
+use openidconnect::{
+    IssuerUrl, Nonce,
+    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
+};
+use serde_json::json;
 use testcontainers::{
     GenericImage, ImageExt,
     core::{IntoContainerPort, Mount, ReuseDirective, logs::consumer::logging_consumer::LoggingConsumer},
     runners::AsyncRunner,
 };
+use url::Url;
 
 use crate::utils::{
     NETWORK, SHM,
-    idp::{IdpServer, IdpServerConfig, OAUTH_CLIENT_ID, OAUTH_CLIENT_NAME, OidcProvider, User},
+    ctx::{ctx_get_http_client, ctx_get_http_client_builder, custom_oauth_client},
+    idp::{IdpServer, IdpServerConfig, OAUTH_CLIENT_ID, OAUTH_CLIENT_NAME, OauthCfg, OidcProvider, User},
     rand_str,
 };
 
@@ -122,4 +131,118 @@ pub async fn start_server(config: &IdpServerConfig, port: u16) -> IdpServer {
         discovery_base_url,
         user: config.user.clone(),
     }
+}
+
+pub(super) async fn fetch_id_token(
+    idp_server: &IdpServer,
+    oauth_cfg: &OauthCfg,
+    oidc_target: &Url,
+    keyauth: &str,
+    acme_audience: &str,
+) -> String {
+    // Create HTTP client with cookie store enabled
+    let client = ctx_get_http_client_builder().cookie_store(true).build().unwrap();
+
+    let cookie = {
+        use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
+        use serde_json::json;
+
+        let host = &idp_server.hostname;
+        let port = idp_server.addr.port();
+        let authelia_url = format!("http://{host}:{port}/api/firstfactor");
+
+        // Prepare login payload
+        let payload = json!({
+            "username": idp_server.user.username.clone(),
+            "password": idp_server.user.password.clone(),
+        });
+
+        // Set headers
+        let mut headers = HeaderMap::new();
+        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+
+        // Send login request
+        let response = client
+            .post(authelia_url)
+            .headers(headers)
+            .json(&payload)
+            .send()
+            .await
+            .unwrap();
+
+        assert!(response.status().is_success());
+        let cookie = response
+            .cookies()
+            .find(|cookie| cookie.name() == "authelia_session")
+            .unwrap();
+        format!("{}={}", cookie.name(), cookie.value())
+    };
+
+    // We cannot use oidc_target as-is, because it contains '/' as the last character,
+    // causing an issuer URL mismatch. So remove the `/` before constructing an IssuerUrl.
+    let mut url = oidc_target.to_string();
+    url.pop();
+    let issuer_url = IssuerUrl::new(url).unwrap();
+
+    let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), &async |r| {
+        custom_oauth_client("discovery", ctx_get_http_client(), r).await
+    })
+    .await
+    .unwrap();
+
+    let client_id = openidconnect::ClientId::new(oauth_cfg.client_id.clone());
+    let redirect_url = RedirectUrl::new(oauth_cfg.redirect_uri.clone()).unwrap();
+    let oidc_client =
+        CoreClient::from_provider_metadata(provider_metadata, client_id, None).set_redirect_uri(redirect_url);
+
+    let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
+
+    // A variant of https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter
+    let extra = json!({
+        "id_token": {
+            "keyauth": { "essential": true, "value": keyauth },
+            "acme_aud": { "essential": true, "value": acme_audience },
+        }
+    })
+    .to_string();
+
+    let (authz_url, ..) = oidc_client
+        .authorize_url(
+            CoreAuthenticationFlow::AuthorizationCode,
+            CsrfToken::new_random,
+            Nonce::new_random,
+        )
+        .add_scopes([
+            Scope::new("profile".to_string()),
+            Scope::new("email".to_string()),
+            Scope::new("wire".to_string()),
+        ])
+        .add_extra_param("claims", extra)
+        .set_pkce_challenge(pkce_challenge)
+        .url();
+
+    let authz_req = client
+        .get(authz_url.as_str())
+        .header(header::COOKIE, cookie)
+        .build()
+        .unwrap();
+
+    // Perform an authorization request. The server will not redirect to the login prompt since
+    // we're using an pre-authenticated session, indicated by the cookie.
+    let resp = client.execute(authz_req).await.unwrap();
+    let authz_code = resp.text().await.unwrap();
+
+    let token_request = oidc_client
+        .exchange_code(openidconnect::AuthorizationCode::new(authz_code))
+        .unwrap()
+        .set_pkce_verifier(pkce_verifier);
+
+    // Authorization server validates Verifier & Challenge Codes
+    let oauth_token_response = token_request
+        .request_async(&async |r| custom_oauth_client("exchange-code", ctx_get_http_client(), r).await)
+        .await
+        .unwrap();
+
+    use openidconnect::TokenResponse as _;
+    oauth_token_response.id_token().unwrap().to_string()
 }

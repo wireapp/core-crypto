@@ -1,6 +1,9 @@
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener};
 
 use serde::{Deserialize, Serialize};
+use url::Url;
+
+use crate::utils::cfg::OauthCfg;
 
 mod authelia;
 mod keycloak;
@@ -74,4 +77,21 @@ pub async fn start_idp_server(provider: OidcProvider, wire_server_hostname: &str
     };
     log::debug!("Started IdP server: {server:?}");
     server
+}
+
+pub async fn fetch_id_token(
+    idp_server: &IdpServer,
+    oauth_cfg: &OauthCfg,
+    oidc_target: &Url,
+    keyauth: &str,
+    acme_audience: &str,
+) -> String {
+    match idp_server.provider {
+        OidcProvider::Authelia => {
+            authelia::fetch_id_token(idp_server, oauth_cfg, oidc_target, keyauth, acme_audience).await
+        }
+        OidcProvider::Keycloak => {
+            keycloak::fetch_id_token(idp_server, oauth_cfg, oidc_target, keyauth, acme_audience).await
+        }
+    }
 }

@@ -1,18 +1,29 @@
 use std::{borrow::Cow, collections::HashMap, env, net::SocketAddr, process::Command, sync::OnceLock};
 
+use http::header;
+use itertools::Itertools as _;
 use keycloak::{
     KeycloakAdmin, KeycloakAdminToken,
     types::{ClientRepresentation, CredentialRepresentation, ProtocolMapperRepresentation, UserRepresentation},
 };
+use oauth2::{CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
+use openidconnect::{
+    IssuerUrl, Nonce,
+    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
+};
+use serde_json::json;
 use testcontainers::{
     Image, ImageExt, ReuseDirective,
     core::{ContainerPort, IntoContainerPort, Mount, WaitFor},
     runners::AsyncRunner,
 };
+use url::Url;
 
 use crate::utils::{
     NETWORK, SHM,
-    idp::{IdpServer, IdpServerConfig, OAUTH_CLIENT_ID, OAUTH_CLIENT_NAME, OidcProvider, User},
+    cfg::scrap_login,
+    ctx::{ctx_get_http_client, custom_oauth_client},
+    idp::{IdpServer, IdpServerConfig, OAUTH_CLIENT_ID, OAUTH_CLIENT_NAME, OauthCfg, OidcProvider, User},
 };
 
 #[derive(Debug)]
@@ -243,4 +254,91 @@ pub async fn start_server(config: &IdpServerConfig, port: u16) -> IdpServer {
         discovery_base_url,
         user: config.user.clone(),
     }
+}
+
+pub(super) async fn fetch_id_token(
+    idp_server: &IdpServer,
+    oauth_cfg: &OauthCfg,
+    oidc_target: &Url,
+    keyauth: &str,
+    acme_audience: &str,
+) -> String {
+    let issuer_url = IssuerUrl::new(oidc_target.as_str().to_string()).unwrap();
+
+    let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), &async |r| {
+        custom_oauth_client("discovery", ctx_get_http_client(), r).await
+    })
+    .await
+    .unwrap();
+
+    let client_id = openidconnect::ClientId::new(oauth_cfg.client_id.clone());
+    let redirect_url = RedirectUrl::new(oauth_cfg.redirect_uri.clone()).unwrap();
+    let oidc_client =
+        CoreClient::from_provider_metadata(provider_metadata, client_id, None).set_redirect_uri(redirect_url);
+
+    let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
+
+    // A variant of https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter
+    let extra = json!({
+        "id_token": {
+            "keyauth": { "essential": true, "value": keyauth },
+            "acme_aud": { "essential": true, "value": acme_audience }
+        }
+    })
+    .to_string();
+
+    let (authz_url, ..) = oidc_client
+        .authorize_url(
+            CoreAuthenticationFlow::AuthorizationCode,
+            CsrfToken::new_random,
+            Nonce::new_random,
+        )
+        .add_scope(Scope::new("profile".to_string()))
+        .add_extra_param("claims", extra)
+        .set_pkce_challenge(pkce_challenge)
+        .url();
+
+    let client = ctx_get_http_client();
+    let authz_req = client.get(authz_url.as_str()).build().unwrap();
+
+    // Authorization Server redirects to login prompt
+    let resp = client.execute(authz_req).await.unwrap();
+
+    let cookies = resp.cookies().map(|c| format!("{}={}", c.name(), c.value())).join("; ");
+
+    let html = resp.text().await.unwrap();
+    let action = scrap_login(html);
+
+    // client signs in
+    let mut form_uri = Url::parse(&action).unwrap();
+    form_uri.set_host(Some("127.0.0.1")).unwrap();
+    let form_body = HashMap::<&str, String>::from_iter(vec![
+        ("username", idp_server.user.username.clone()),
+        ("password", idp_server.user.password.clone()),
+        ("credentialId", "".to_string()),
+    ]);
+
+    // Client submits login form
+    let login_form_req = client
+        .post(form_uri)
+        .form(&form_body)
+        .header(header::COOKIE, cookies)
+        .build()
+        .unwrap();
+    let resp = client.execute(login_form_req).await.unwrap();
+    let authz_code = resp.text().await.unwrap();
+
+    let token_request = oidc_client
+        .exchange_code(openidconnect::AuthorizationCode::new(authz_code))
+        .unwrap()
+        .set_pkce_verifier(pkce_verifier);
+
+    // Authorization server validates Verifier & Challenge Codes
+    let oauth_token_response = token_request
+        .request_async(&async |r| custom_oauth_client("exchange-code", ctx_get_http_client(), r).await)
+        .await
+        .unwrap();
+
+    use openidconnect::TokenResponse as _;
+    oauth_token_response.id_token().unwrap().to_string()
 }
