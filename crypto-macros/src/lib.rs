@@ -18,8 +18,6 @@ mod idempotent;
 ///
 /// Intended to be used only within `core-crypto-keystore`.
 ///
-/// Should take over the `Entity` name and move into the `entity_derive` module during WPB-22196.
-///
 /// All fields in an entity using this derive macro must have one of three types:
 ///
 /// - `Vec<u8>`
