@@ -5,25 +5,12 @@ mod common;
 
 #[cfg(feature = "proteus-keystore")]
 mod tests {
-    use core_crypto_keystore::{
-        MissingKeyErrorKind,
-        entities::{EntityBase, ProteusPrekey},
-    };
     use proteus_wasm::keys::{PreKey, PreKeyId};
     use wasm_bindgen_test::*;
 
     use crate::common::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
-
-    #[test]
-    #[wasm_bindgen_test]
-    fn proteus_entities_have_correct_error_kinds() {
-        assert_eq!(
-            ProteusPrekey::to_missing_key_err_kind(),
-            MissingKeyErrorKind::ProteusPrekey
-        );
-    }
 
     #[apply(all_storage_types)]
     pub async fn can_add_read_delete_prekey_traits(mut context: KeystoreTestContext) {

@@ -165,7 +165,7 @@ mod tests_impl {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::CryptoKeystoreError;
+    use core_crypto_keystore::{CryptoKeystoreError, traits::EntityBase as _};
     use wasm_bindgen_test::*;
 
     use crate::{

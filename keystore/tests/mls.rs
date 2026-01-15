@@ -12,50 +12,10 @@ mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    use core_crypto_keystore::{
-        MissingKeyErrorKind,
-        entities::{
-            EntityBase, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredHpkePrivateKey,
-            StoredKeypackage, StoredPskBundle,
-        },
-    };
+    use core_crypto_keystore::entities::StoredCredential;
     use mls_crypto_provider::MlsCryptoProvider;
     use openmls::prelude::TlsSerializeTrait as _;
     use openmls_traits::OpenMlsCryptoProvider as _;
-
-    #[test]
-    #[wasm_bindgen_test]
-    fn mls_entities_have_correct_error_kinds() {
-        assert_eq!(
-            StoredCredential::to_missing_key_err_kind(),
-            MissingKeyErrorKind::StoredCredential
-        );
-
-        assert_eq!(
-            StoredKeypackage::to_missing_key_err_kind(),
-            MissingKeyErrorKind::StoredKeypackage
-        );
-
-        assert_eq!(
-            PersistedMlsGroup::to_missing_key_err_kind(),
-            MissingKeyErrorKind::PersistedMlsGroup
-        );
-
-        assert_eq!(
-            PersistedMlsPendingGroup::to_missing_key_err_kind(),
-            MissingKeyErrorKind::MlsPendingGroup
-        );
-
-        assert_eq!(
-            StoredHpkePrivateKey::to_missing_key_err_kind(),
-            MissingKeyErrorKind::StoredHpkePrivateKey
-        );
-
-        assert_eq!(
-            StoredPskBundle::to_missing_key_err_kind(),
-            MissingKeyErrorKind::StoredPskBundle
-        );
-    }
 
     #[apply(all_storage_types)]
     pub async fn can_add_read_delete_credential_openmls_traits(context: KeystoreTestContext) {
