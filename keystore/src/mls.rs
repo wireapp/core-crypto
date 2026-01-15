@@ -3,7 +3,7 @@ use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind, Sha256Hash,
+    CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash,
     entities::{
         PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredE2eiEnrollment, StoredEncryptionKeyPair,
         StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
@@ -94,7 +94,7 @@ pub trait CryptoKeystoreMls: Sized {
     async fn mls_pending_groups_load(
         &self,
         group_id: impl AsRef<[u8]> + Send,
-    ) -> CryptoKeystoreResult<(Vec<u8>, Vec<u8>)>;
+    ) -> CryptoKeystoreResult<Option<(Vec<u8>, Vec<u8>)>>;
 
     /// Deletes a temporary `MlsGroup` from the database
     ///
@@ -117,7 +117,7 @@ pub trait CryptoKeystoreMls: Sized {
     ///
     /// # Arguments
     /// * `id` - hash of the enrollment and unique identifier
-    async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Vec<u8>>;
+    async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Option<Vec<u8>>>;
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -195,13 +195,12 @@ impl CryptoKeystoreMls for crate::Database {
     async fn mls_pending_groups_load(
         &self,
         group_id: impl AsRef<[u8]> + Send,
-    ) -> CryptoKeystoreResult<(Vec<u8>, Vec<u8>)> {
-        self.get_borrowed(group_id.as_ref())
-            .await?
-            .map(|r: PersistedMlsPendingGroup| (r.state.clone(), r.custom_configuration.clone()))
-            .ok_or(CryptoKeystoreError::MissingKeyInStore(
-                MissingKeyErrorKind::MlsPendingGroup,
-            ))
+    ) -> CryptoKeystoreResult<Option<(Vec<u8>, Vec<u8>)>> {
+        self.get_borrowed::<PersistedMlsPendingGroup>(group_id.as_ref())
+            .await
+            .map(|optional| {
+                optional.map(|pending_group| (pending_group.state.clone(), pending_group.custom_configuration.clone()))
+            })
     }
 
     async fn mls_pending_groups_delete(&self, group_id: impl AsRef<[u8]> + Send) -> CryptoKeystoreResult<()> {
@@ -218,16 +217,13 @@ impl CryptoKeystoreMls for crate::Database {
         Ok(())
     }
 
-    async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
+    async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Option<Vec<u8>>> {
         // someone who has time could try to optimize this but honestly it's really on the cold path
-        let enrollment =
-            self.get_borrowed::<StoredE2eiEnrollment>(id)
-                .await?
-                .ok_or(CryptoKeystoreError::MissingKeyInStore(
-                    MissingKeyErrorKind::StoredE2eiEnrollment,
-                ))?;
+        let Some(mut enrollment) = self.get_borrowed::<StoredE2eiEnrollment>(id).await? else {
+            return Ok(None);
+        };
         self.remove_borrowed::<StoredE2eiEnrollment>(id).await?;
-        Ok(enrollment.content.clone())
+        Ok(Some(std::mem::take(&mut enrollment.content)))
     }
 }
 

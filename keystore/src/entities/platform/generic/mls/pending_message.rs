@@ -4,12 +4,9 @@ use async_trait::async_trait;
 use rusqlite::{Row, params};
 
 use crate::{
-    CryptoKeystoreResult, MissingKeyErrorKind,
+    CryptoKeystoreResult,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
-    entities::{
-        Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StringEntityId, count_helper,
-        count_helper_tx, delete_helper, get_helper, load_all_helper,
-    },
+    entities::{MlsPendingMessage, count_helper, count_helper_tx, delete_helper, get_helper, load_all_helper},
     traits::{
         BorrowPrimaryKey, Entity as NewEntity, EntityBase as NewEntityBase, EntityDatabaseMutation,
         EntityDeleteBorrowed, EntityGetBorrowed, KeyType, OwnedKeyType, PrimaryKey,
@@ -17,51 +14,13 @@ use crate::{
 };
 
 impl MlsPendingMessage {
-    pub async fn find_all_by_conversation_id(
-        conn: &mut <Self as EntityBase>::ConnectionType,
-        conversation_id: &[u8],
-        params: EntityFindParams,
-    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        let mut conn = conn.conn().await;
-        let transaction = conn.transaction()?;
-        let query: String = format!(
-            "SELECT rowid FROM mls_pending_messages WHERE id = ? {}",
-            params.to_sql()
-        );
-
-        let mut stmt = transaction.prepare_cached(&query)?;
-        let rows = stmt.query_map([conversation_id], |r| r.get(0))?;
-        rows.map(|rowid_result| {
-            let rowid = rowid_result?;
-            use std::io::Read as _;
-
-            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_messages", "id", rowid, true)?;
-            let mut conversation_id = vec![];
-            blob.read_to_end(&mut conversation_id)?;
-            blob.close()?;
-
-            let mut blob = transaction.blob_open(rusqlite::MAIN_DB, "mls_pending_messages", "message", rowid, true)?;
-            let mut message = vec![];
-            blob.read_to_end(&mut message)?;
-            blob.close()?;
-
-            Ok(Self {
-                foreign_id: conversation_id,
-                message,
-            })
-        })
-        .collect()
-    }
-
     fn from_row(row: &Row<'_>) -> rusqlite::Result<Self> {
         let foreign_id = row.get("id")?;
         let message = row.get("message")?;
         Ok(Self { foreign_id, message })
     }
 
-    // TODO WPB-22196 delete the old method and replace it with this
-    /// Pending replacement for [`Self::find_all_by_conversation_id`].
-    pub async fn new_find_all_by_conversation_id(
+    pub async fn find_all_by_conversation_id(
         conn: &mut <Self as NewEntityBase>::ConnectionType,
         conversation_id: &[u8],
     ) -> CryptoKeystoreResult<Vec<Self>> {
