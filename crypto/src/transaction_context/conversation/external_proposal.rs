@@ -69,7 +69,9 @@ mod tests {
                 assert_eq!(conversation.member_count().await, 1);
 
                 // verify Guest's (sender) identity
-                guest.verify_sender_identity(&case, &decrypted.unwrap()).await;
+                guest
+                    .verify_sender_identity(&case, &guest.initial_credential, &decrypted.unwrap())
+                    .await;
 
                 // simulate commit message reception from server
                 let conversation = conversation.commit_pending_proposals_notify().await;

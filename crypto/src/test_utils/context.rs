@@ -238,14 +238,17 @@ impl SessionContext {
             .map(|chain| chain.find_local_intermediate_ca())
     }
 
-    pub async fn verify_sender_identity(&self, case: &TestContext, decrypted: &MlsConversationDecryptMessage) {
-        let sender_cb = &self.initial_credential;
-        let sender_cb = sender_cb
-            .load(&self.transaction.keystore().await.unwrap())
-            .await
-            .unwrap();
-
-        if let openmls::prelude::MlsCredentialType::X509(certificate) = &sender_cb.mls_credential().mls_credential() {
+    pub async fn verify_sender_identity(
+        &self,
+        case: &TestContext,
+        expected_credential_ref: &CredentialRef,
+        decrypted: &MlsConversationDecryptMessage,
+    ) {
+        let database = self.transaction.keystore().await.unwrap();
+        let expected_credential = expected_credential_ref.load(&database).await.unwrap();
+        if let openmls::prelude::MlsCredentialType::X509(certificate) =
+            &expected_credential.mls_credential().mls_credential()
+        {
             let mls_identity = certificate.extract_identity(case.ciphersuite(), None).unwrap();
             let mls_client_id = mls_identity.client_id.as_bytes();
 

@@ -132,7 +132,7 @@ mod tests {
     use openmls::prelude::{ProcessMessageError, ValidationError};
 
     use super::super::error::Error;
-    use crate::{MlsError, mls::conversation::Conversation as _, test_utils::*};
+    use crate::{CredentialRef, MlsError, mls::conversation::Conversation as _, test_utils::*};
 
     // If there’s a pending commit & it matches the incoming commit: mark pending commit as accepted
     #[apply(all_cred_cipher)]
@@ -161,16 +161,18 @@ mod tests {
 
             // Alice creates a new Credential, updating her handle/display_name
             let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
-            let cb = alice
+            let credential = alice
                 .save_new_credential(&case, new_handle, new_display_name, intermediate_ca)
                 .await;
 
             // create a commit. This will also store it in the store
-            let commit_guard = conversation.set_credential_unmerged(&cb).await;
+            let commit_guard = conversation.set_credential_unmerged(&credential).await;
             assert!(commit_guard.conversation().has_pending_commit().await);
 
             // since the pending commit is the same as the incoming one, it should succeed
-            let conversation = commit_guard.notify_members_and_verify_sender().await;
+            let conversation = commit_guard
+                .notify_members_and_verify_sender_with_credential(&CredentialRef::from_credential(&credential))
+                .await;
 
             let epoch_after_decrypt = conversation.guard().await.epoch().await;
             assert_eq!(epoch + 1, epoch_after_decrypt);
@@ -179,8 +181,9 @@ mod tests {
             assert!(!conversation.has_pending_proposals().await);
 
             // verify that we return the new identity
+            let credential_ref = CredentialRef::from_credential(&credential);
             conversation
-                .verify_credential_handle_and_name(new_handle, new_display_name)
+                .verify_credential_handle_and_name(new_handle, new_display_name, &credential_ref)
                 .await;
         })
         .await

@@ -3,7 +3,7 @@ use std::{collections::HashSet, marker::PhantomData};
 use openmls::prelude::MlsMessageOut;
 
 use super::{SessionContext, TestConversation};
-use crate::{MlsConversationDecryptMessage, mls::conversation::Conversation as _};
+use crate::{CredentialRef, MlsConversationDecryptMessage, mls::conversation::Conversation as _};
 
 pub struct Commit;
 
@@ -113,11 +113,17 @@ impl<'a, T> OperationGuard<'a, T> {
     }
 
     /// Notify a single member about this and call [SessionContext::verify_sender_identity].
-    pub async fn notify_member_and_verify_sender(mut self, member: &SessionContext) -> Self {
+    pub async fn notify_member_and_verify_sender(
+        mut self,
+        member: &SessionContext,
+        credential_ref: &CredentialRef,
+    ) -> Self {
         let result = self.notify_member_inner(member).await.unwrap();
         let sender = self.conversation().actor();
         if let Some(ref decrypted) = result {
-            sender.verify_sender_identity(self.conversation().case, decrypted).await;
+            sender
+                .verify_sender_identity(self.conversation().case, credential_ref, decrypted)
+                .await;
         }
         self
     }
@@ -177,10 +183,19 @@ impl<'a> OperationGuard<'a, Commit> {
         self.process_member_changes().await.finish()
     }
 
-    pub async fn notify_members_and_verify_sender(mut self) -> TestConversation<'a> {
+    pub async fn notify_members_and_verify_sender(self) -> TestConversation<'a> {
+        let credential_ref = self.conversation.actor().initial_credential.clone();
+        self.notify_members_and_verify_sender_with_credential(&credential_ref)
+            .await
+    }
+
+    pub async fn notify_members_and_verify_sender_with_credential(
+        mut self,
+        credential_ref: &CredentialRef,
+    ) -> TestConversation<'a> {
         let members = self.conversation.members.clone();
         for member in members {
-            self = self.notify_member_and_verify_sender(member).await;
+            self = self.notify_member_and_verify_sender(member, credential_ref).await;
         }
         self.process_member_changes().await.finish()
     }

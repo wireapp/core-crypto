@@ -298,10 +298,16 @@ mod tests {
                 assert_eq!(after_rotate.credential - before_rotate.credential, 1);
 
                 for commit in result.commits {
-                    let conversation = commit.notify_members_and_verify_sender().await;
+                    let conversation = commit
+                        .notify_members_and_verify_sender_with_credential(&credential_ref)
+                        .await;
 
                     conversation
-                        .verify_credential_handle_and_name(e2ei_utils::NEW_HANDLE, e2ei_utils::NEW_DISPLAY_NAME)
+                        .verify_credential_handle_and_name(
+                            e2ei_utils::NEW_HANDLE,
+                            e2ei_utils::NEW_DISPLAY_NAME,
+                            &credential_ref,
+                        )
                         .await;
                 }
 
@@ -554,7 +560,7 @@ mod tests {
                     .await;
 
                 conversation
-                    .verify_credential_handle_and_name(ALICE_NEW_HANDLE, ALICE_NEW_DISPLAY_NAME)
+                    .verify_credential_handle_and_name(ALICE_NEW_HANDLE, ALICE_NEW_DISPLAY_NAME, &credential_ref)
                     .await;
 
                 // Bob's turn
@@ -620,7 +626,7 @@ mod tests {
                 conversation
                     .acting_as(&bob)
                     .await
-                    .verify_credential_handle_and_name(BOB_NEW_HANDLE, BOB_NEW_DISPLAY_NAME)
+                    .verify_credential_handle_and_name(BOB_NEW_HANDLE, BOB_NEW_DISPLAY_NAME, &cred_ref)
                     .await;
             })
             .await
@@ -683,7 +689,7 @@ mod tests {
 
                     // Finally, Alice merges her commit and verifies her new identity gets applied
                     conversation
-                        .verify_credential_handle_and_name(new_handle, new_display_name)
+                        .verify_credential_handle_and_name(new_handle, new_display_name, &credential_ref)
                         .await;
 
                     let final_count = alice.transaction.count_entities().await;
@@ -724,12 +730,12 @@ mod tests {
 
                 // Alice creates a new Credential, updating her handle/display_name
                 let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
-                let cb = alice
+                let credential = alice
                     .save_new_credential(&case, new_handle, new_display_name, intermediate_ca)
                     .await;
 
                 // Alice issues an Update commit to replace her current identity
-                let conversation = conversation.set_credential_unmerged(&cb).await.finish();
+                let conversation = conversation.set_credential_unmerged(&credential).await.finish();
 
                 // Meanwhile, Bob creates a simple commit
                 // accepted by the backend
@@ -748,16 +754,18 @@ mod tests {
                 assert_eq!(decrypted.proposals.len(), 1);
 
                 // Bob verifies that now Alice is represented with her new identity
+                //
+                let credential_ref = CredentialRef::from_credential(&credential);
                 let conversation = commit
                     .finish()
                     .commit_pending_proposals()
                     .await
-                    .notify_members_and_verify_sender()
+                    .notify_members_and_verify_sender_with_credential(&credential_ref)
                     .await;
 
                 // Finally, Alice merges her commit and verifies her new identity gets applied
                 conversation
-                    .verify_credential_handle_and_name(new_handle, new_display_name)
+                    .verify_credential_handle_and_name(new_handle, new_display_name, &credential_ref)
                     .await;
 
                 let final_count = alice.transaction.count_entities().await;
@@ -820,7 +828,7 @@ mod tests {
 
                 // Finally, Alice merges her commit and verifies her new identity gets applied
                 conversation
-                    .verify_credential_handle_and_name(new_handle, new_display_name)
+                    .verify_credential_handle_and_name(new_handle, new_display_name, &credential_ref)
                     .await;
             })
             .await

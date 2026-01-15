@@ -167,7 +167,8 @@ mod tests {
 
             let decrypted = result.unwrap();
             // verify Bob's (sender) identity
-            bob.verify_sender_identity(&case, &decrypted).await;
+            bob.verify_sender_identity(&case, &bob.initial_credential, &decrypted)
+                .await;
 
             // Let's say backend accepted our external commit.
             // So Bob can merge the commit and update the local state
