@@ -345,21 +345,6 @@ impl TransactionContext {
         }
     }
 
-    /// Returns the client's public key.
-    pub async fn client_public_key(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-    ) -> Result<Vec<u8>> {
-        let cb = self
-            .session()
-            .await?
-            .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential"))?;
-        Ok(cb.signature_key_pair.to_public_vec())
-    }
-
     /// see [Session::id]
     pub async fn client_id(&self) -> Result<ClientId> {
         let session = self.session().await?;
