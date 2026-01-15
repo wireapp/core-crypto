@@ -22,6 +22,6 @@ pub use self::entities::{DummyStoreValue, DummyValue, NewDummyStoreValue};
 pub use self::proteus::CryptoKeystoreProteus;
 pub use self::{
     connection::{ConnectionType, Database, DatabaseKey},
-    error::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind},
+    error::{CryptoKeystoreError, CryptoKeystoreResult},
     mls::{CryptoKeystoreMls, deser, ser},
 };
