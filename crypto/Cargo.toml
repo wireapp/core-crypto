@@ -30,7 +30,6 @@ bench-in-db = []
 derive_more.workspace = true
 thiserror.workspace = true
 strum.workspace = true
-cfg-if.workspace = true
 hex.workspace = true
 futures-util.workspace = true
 
