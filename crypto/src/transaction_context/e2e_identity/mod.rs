@@ -18,8 +18,8 @@ use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
 use super::TransactionContext;
 use crate::{
-    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, Credential, E2eiEnrollment, MlsTransport,
-    RecursiveError,
+    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, Credential, CredentialRef, E2eiEnrollment,
+    MlsTransport, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{crl::get_new_crl_distribution_points, x509::CertificatePrivateKey},
 };
@@ -68,7 +68,7 @@ impl TransactionContext {
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
         transport: Arc<dyn MlsTransport>,
-    ) -> Result<NewCrlDistributionPoints> {
+    ) -> Result<(CredentialRef, NewCrlDistributionPoints)> {
         let mls_provider = self
             .mls_provider()
             .await
@@ -104,19 +104,20 @@ impl TransactionContext {
         let mut credential = Credential::x509(ciphersuite, cert_bundle.clone()).map_err(
             RecursiveError::mls_credential("creating credential from certificate bundle in e2ei_mls_init_only"),
         )?;
-        // we don't need to keep the credential ref; this credential will be loaded in mls_init later on
-        credential
-            .save(&mls_provider.keystore())
-            .await
-            .map_err(RecursiveError::mls_credential(
-                "saving credential in e2ei_mls_init_only",
-            ))?;
+
+        let credential_ref =
+            credential
+                .save(&mls_provider.keystore())
+                .await
+                .map_err(RecursiveError::mls_credential(
+                    "saving credential in e2ei_mls_init_only",
+                ))?;
 
         let identifier = ClientIdentifier::X509(HashMap::from([(ciphersuite.signature_algorithm(), cert_bundle)]));
         self.mls_init(identifier, &[ciphersuite], transport)
             .await
             .map_err(RecursiveError::transaction("initializing mls"))?;
-        Ok(crl_new_distribution_points)
+        Ok((credential_ref, crl_new_distribution_points))
     }
 
     /// When x509 new credentials are registered this extracts the new CRL Distribution Point from the end entity
