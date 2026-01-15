@@ -161,6 +161,8 @@ mod tests {
 
     #[wasm_bindgen_test]
     pub async fn v5_schema_allows_1_cred_per_session() {
+        eprintln!("eprintln works");
+        log::info!("log::info works");
         let name = "test";
 
         let test_builder = |version| -> DatabaseBuilder {
