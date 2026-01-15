@@ -1,10 +1,7 @@
 use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, MlsMessageOut};
 
 use super::Result;
-use crate::{
-    Ciphersuite, ConversationId, CredentialRef, CredentialType, MlsError, RecursiveError,
-    transaction_context::TransactionContext,
-};
+use crate::{ConversationId, CredentialRef, MlsError, RecursiveError, transaction_context::TransactionContext};
 
 impl TransactionContext {
     /// Crafts a new external Add proposal. Enables a client outside a group to request addition to this group.
@@ -13,23 +10,16 @@ impl TransactionContext {
     /// # Arguments
     /// * `conversation_id` - the group/conversation id
     /// * `epoch` - the current epoch of the group. See [openmls::group::GroupEpoch]
-    /// * `ciphersuite` - of the new [openmls::prelude::KeyPackage] to create
-    /// * `credential_type` - of the new [openmls::prelude::KeyPackage] to create
+    /// * `credential_ref` - of the new [openmls::prelude::KeyPackage] to create
     ///
     /// # Return type
     /// Returns a message with the proposal to be add a new client
-    ///
-    /// # Errors
-    /// Errors resulting from the creation of the proposal within OpenMls.
-    /// Fails when `credential_type` is [CredentialType::X509] and no Credential has been created
-    /// for it beforehand with [TransactionContext::e2ei_mls_init_only] or variants.
     #[cfg_attr(test, crate::dispotent)]
     pub async fn new_external_add_proposal(
         &self,
         conversation_id: ConversationId,
         epoch: GroupEpoch,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
+        credential_ref: &CredentialRef,
     ) -> Result<MlsMessageOut> {
         let group_id = GroupId::from_slice(conversation_id.as_ref());
 
@@ -37,17 +27,18 @@ impl TransactionContext {
             .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
-        let cb = client
-            .find_most_recent_or_create_basic_credential(ciphersuite, credential_type)
-            .await
-            .map_err(RecursiveError::mls_client("initializing basic credential if missing"))?;
-        let credential_ref = CredentialRef::from_credential(&cb);
         let kp = client
-            .generate_keypackage(&credential_ref, None)
+            .generate_keypackage(credential_ref, None)
             .await
             .map_err(RecursiveError::mls_client("generating one keypackage from credential"))?;
 
-        JoinProposal::new(kp, group_id, epoch, &cb.signature_key_pair)
+        let database = client.crypto_provider.keystore();
+        let credential = credential_ref
+            .load(&database)
+            .await
+            .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
+
+        JoinProposal::new(kp, group_id, epoch, &credential.signature_key_pair)
             .map_err(MlsError::wrap("creating join proposal"))
             .map_err(Into::into)
     }
