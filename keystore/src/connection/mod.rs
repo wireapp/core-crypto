@@ -1,31 +1,16 @@
-use std::{borrow::Borrow, fmt, ops::Deref};
+pub mod platform;
 
+use std::{
+    borrow::Borrow,
+    fmt,
+    ops::{Deref, DerefMut},
+    sync::Arc,
+};
+
+use async_lock::{Mutex, MutexGuard, Semaphore};
 use async_trait::async_trait;
 use sha2::{Digest as _, Sha256};
 use zeroize::{Zeroize, ZeroizeOnDrop};
-
-pub mod platform {
-    cfg_if::cfg_if! {
-        if #[cfg(target_family = "wasm")] {
-            mod wasm;
-            pub use self::wasm::WasmConnection as KeystoreDatabaseConnection;
-            pub use wasm::storage;
-            pub use self::wasm::storage::WasmStorageTransaction as TransactionWrapper;
-        } else {
-            mod generic;
-            pub use self::generic::SqlCipherConnection as KeystoreDatabaseConnection;
-            pub use self::generic::TransactionWrapper;
-            #[cfg(test)]
-            pub(crate) use generic::MigrationTarget;
-
-
-        }
-    }
-}
-
-use std::{ops::DerefMut, sync::Arc};
-
-use async_lock::{Mutex, MutexGuard, Semaphore};
 
 pub use self::platform::*;
 use crate::{
@@ -143,32 +128,6 @@ pub struct Database {
 }
 
 const ALLOWED_CONCURRENT_TRANSACTIONS_COUNT: usize = 1;
-
-/// Interface to fetch from the database either from the connection directly or through a
-/// transaaction
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait OldFetchFromDatabase: Send + Sync {
-    async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        id: impl AsRef<[u8]> + Send,
-    ) -> CryptoKeystoreResult<Option<E>>;
-
-    async fn find_unique<U: crate::entities::UniqueEntity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-    ) -> CryptoKeystoreResult<U>;
-
-    async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        params: crate::entities::EntityFindParams,
-    ) -> CryptoKeystoreResult<Vec<E>>;
-
-    async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        ids: &[Vec<u8>],
-    ) -> CryptoKeystoreResult<Vec<E>>;
-    async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize>;
-}
 
 // SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
 unsafe impl Send for Database {}
@@ -378,8 +337,7 @@ impl Database {
         conversation_id: &[u8],
     ) -> CryptoKeystoreResult<Vec<MlsPendingMessage>> {
         let mut conn = self.conn().await?;
-        let persisted_records =
-            MlsPendingMessage::find_all_by_conversation_id(&mut conn, conversation_id, Default::default()).await?;
+        let persisted_records = MlsPendingMessage::find_all_by_conversation_id(&mut conn, conversation_id).await?;
 
         let transaction_guard = self.transaction.lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {

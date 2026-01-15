@@ -1,6 +1,5 @@
 use aes_gcm::KeyInit as _;
 use idb::{Factory, TransactionMode};
-use serde::Serialize as _;
 use sha2::Digest as _;
 
 use super::{DB_VERSION_3, DB_VERSION_4, pre_v4};
@@ -8,10 +7,9 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
     connection::platform::wasm::rekey::rekey_entities,
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, E2eiRefreshToken, Entity as _, EntityBase as _, MlsPendingMessage,
-        PersistedMlsGroup, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
-        StoredE2eiEnrollment, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeypackage, StoredPskBundle,
+        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, E2eiRefreshToken, MlsPendingMessage, PersistedMlsGroup,
+        PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession, StoredE2eiEnrollment,
+        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
     migrations::{StoredSignatureKeypair, V5Credential},
 };

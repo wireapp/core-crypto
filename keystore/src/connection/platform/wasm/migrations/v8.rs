@@ -8,19 +8,19 @@ use idb::{
 use super::DB_VERSION_8;
 use crate::{
     CryptoKeystoreResult, Database, DatabaseKey,
-    entities::{Entity as _, EntityBase, EntityFindParams, PersistedMlsGroup, StoredCredential},
+    entities::{PersistedMlsGroup, StoredCredential},
     migrations::{detect_duplicate_credentials, make_least_used_ciphersuite},
+    traits::{Entity as _, EntityBase as _},
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
     let previous_builder = super::v7::get_builder(name);
     let mut db_during_migration = Database::migration_connection(previous_builder, key).await?;
-    let persisted_mls_groups =
-        PersistedMlsGroup::find_all(&mut db_during_migration, EntityFindParams::default()).await?;
+    let persisted_mls_groups = PersistedMlsGroup::load_all(&mut db_during_migration).await?;
 
     let least_used_ciphersuite = make_least_used_ciphersuite(persisted_mls_groups)?;
-    let credentials = StoredCredential::find_all(&mut db_during_migration, EntityFindParams::default()).await?;
+    let credentials = StoredCredential::load_all(&mut db_during_migration).await?;
     let duplicates = detect_duplicate_credentials(&credentials);
 
     Database::migration_transaction(db_during_migration, async |tx| {

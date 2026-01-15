@@ -94,7 +94,7 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
                 let old_cipher = self.conn.cipher.clone();
                 let new_cipher = aes_gcm::Aes256Gcm::new(new_key.as_ref().into());
 
-                rekey::rekey_entities_new!(
+                rekey::rekey_entities!(
                     db,
                     old_cipher,
                     new_cipher,

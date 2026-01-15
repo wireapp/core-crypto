@@ -7,8 +7,7 @@ use wasm_bindgen::JsValue;
 use super::{super::WasmConnection, InMemoryDB};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
-    entities::Entity,
-    traits::{Encrypting, Entity as NewEntity, KeyType},
+    traits::{Encrypting, Entity, KeyType},
 };
 
 // The lifetime is to comply with the sqlite implementation.
@@ -48,55 +47,10 @@ impl WasmStorageTransaction<'_> {
         Ok(())
     }
 
-    pub(crate) async fn delete(&self, collection_name: &'static str, id: impl AsRef<[u8]>) -> CryptoKeystoreResult<()> {
-        match self {
-            WasmStorageTransaction::Persistent { tx, cipher: _cipher } => {
-                let store = tx.object_store(collection_name)?;
-                let k = Uint8Array::from(id.as_ref());
-                store.delete(JsValue::from(k))?.await?;
-            }
-            WasmStorageTransaction::InMemory { db, cipher: _cipher } => {
-                db.borrow_mut().entry(collection_name.into()).and_modify(|store| {
-                    store.remove(id.as_ref());
-                });
-            }
-        }
-        Ok(())
-    }
-
-    pub(crate) async fn save<R: Entity<ConnectionType = WasmConnection>>(
-        &self,
-        mut entity: R,
-    ) -> CryptoKeystoreResult<()> {
-        let serializer = serde_wasm_bindgen::Serializer::json_compatible();
-        let collection_name = R::COLLECTION_NAME;
-        let key = entity.id()?;
-        match self {
-            WasmStorageTransaction::Persistent { tx, cipher } => {
-                entity.encrypt(cipher)?;
-                let js_value = entity.serialize(&serializer)?;
-                let store = tx.object_store(collection_name)?;
-                store.put(&js_value, Some(&key))?.await?;
-            }
-            WasmStorageTransaction::InMemory { db, cipher } => {
-                entity.encrypt(cipher)?;
-                let js_value = entity.serialize(&serializer)?;
-                let mut map = db.borrow_mut();
-                let entry = map.entry(collection_name.into()).or_default();
-                let id = key
-                    .as_string()
-                    .map(|s| CryptoKeystoreResult::Ok(s.as_bytes().into()))
-                    .unwrap_or_else(|| Ok(serde_wasm_bindgen::from_value(key)?))?;
-                entry.insert(id, js_value);
-            }
-        }
-        Ok(())
-    }
-
     /// Count the number of entities in this transaction.
-    pub(crate) async fn new_count<E>(&self) -> CryptoKeystoreResult<u32>
+    pub(crate) async fn count<E>(&self) -> CryptoKeystoreResult<u32>
     where
-        E: NewEntity<ConnectionType = WasmConnection>,
+        E: Entity<ConnectionType = WasmConnection>,
     {
         match self {
             WasmStorageTransaction::Persistent { tx, .. } => {
@@ -115,9 +69,9 @@ impl WasmStorageTransaction<'_> {
     }
 
     /// Save an entity instance into the transaction.
-    pub(crate) async fn new_save<'a, E>(&self, entity: &'a E) -> CryptoKeystoreResult<()>
+    pub(crate) async fn save<'a, E>(&self, entity: &'a E) -> CryptoKeystoreResult<()>
     where
-        E: NewEntity<ConnectionType = WasmConnection> + Encrypting<'a>,
+        E: Entity<ConnectionType = WasmConnection> + Encrypting<'a>,
     {
         let serializer = serde_wasm_bindgen::Serializer::json_compatible();
         let encrypted = entity.encrypt(self.cipher())?;
@@ -150,9 +104,9 @@ impl WasmStorageTransaction<'_> {
     /// `BorrowPrimaryKey` or not, and without specialization, we can't just do the right thing
     /// and accept the more general form. But we do know the primary key and its borrowed form
     /// both implement `KeyType`, so it's always safe to accept a byte reference.
-    pub(crate) async fn new_delete<E>(&self, key: impl AsRef<[u8]>) -> CryptoKeystoreResult<bool>
+    pub(crate) async fn delete<E>(&self, key: impl AsRef<[u8]>) -> CryptoKeystoreResult<bool>
     where
-        E: NewEntity<ConnectionType = WasmConnection>,
+        E: Entity<ConnectionType = WasmConnection>,
     {
         let key = key.as_ref();
         match self {

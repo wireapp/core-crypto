@@ -92,7 +92,6 @@ impl ProteusPrekey {
     PartialEq,
     Eq,
     core_crypto_macros::Entity,
-    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]

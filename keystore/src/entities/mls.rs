@@ -1,9 +1,15 @@
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
+// This trait import is required for the `Entity` macro to work properly.
+// Apparently its use in the macro is hidden from the code which checks whether
+// it's being used.
+// Also we can't use an `expect` attribute here because of the unfulfilled expectation,
+// which is proper as we do in fact use it, so... it's a bit of a mess.
+#[allow(unused_imports)]
+use crate::traits::EntityBase as _;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
-    connection::TransactionWrapper,
-    traits::{BorrowPrimaryKey, Entity, EntityBase, KeyType, OwnedKeyType, PrimaryKey},
+    traits::{BorrowPrimaryKey, Entity, KeyType, OwnedKeyType, PrimaryKey},
 };
 
 /// Entity representing a persisted `MlsGroup`
@@ -14,7 +20,6 @@ use crate::{
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
-    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -23,7 +28,6 @@ use crate::{
 #[sensitive]
 pub struct PersistedMlsGroup {
     #[entity(id, hex, column = "id_hex")]
-    #[id(hex, column = "id_hex")]
     pub id: Vec<u8>,
     pub state: Vec<u8>,
     pub parent_id: Option<Vec<u8>>,
@@ -47,7 +51,7 @@ where
         Self::get(conn, &parent_id).await
     }
 
-    async fn child_groups(&self, conn: &mut <Self as EntityBase>::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
+    async fn child_groups(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
         // A perfect opportunity for refactoring in WPB-20844
         // when we do that, we no longer need varying implementations according to wasm or not,
         // so both `parent_group` and this method should just be implemented directly on `PersistedMlsGroup`.
@@ -180,14 +184,12 @@ impl PrimaryKey for MlsPendingMessage {
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
-    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
 #[entity(collection_name = "mls_buffered_commits")]
 pub struct StoredBufferedCommit {
     #[entity(id, hex, column = "conversation_id_hex")]
-    #[id(hex, column = "conversation_id_hex")]
     #[sensitive]
     conversation_id: Vec<u8>,
     commit_data: Vec<u8>,
@@ -258,7 +260,6 @@ pub struct StoredEncryptionKeyPair {
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
-    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -266,7 +267,6 @@ pub struct StoredEncryptionKeyPair {
 #[entity(collection_name = "mls_epoch_encryption_keypairs")]
 pub struct StoredEpochEncryptionKeypair {
     #[entity(hex, column = "id_hex")]
-    #[id(hex, column = "id_hex")]
     pub id: Vec<u8>,
     #[sensitive]
     pub keypairs: Vec<u8>,
@@ -289,7 +289,6 @@ pub struct StoredPskBundle {
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
-    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -297,7 +296,6 @@ pub struct StoredPskBundle {
 #[entity(collection_name = "mls_keypackages")]
 pub struct StoredKeypackage {
     #[entity(id, hex, column = "keypackage_ref_hex")]
-    #[id(hex, column = "keypackage_ref_hex")]
     pub keypackage_ref: Vec<u8>,
     #[sensitive]
     pub keypackage: Vec<u8>,
@@ -312,7 +310,6 @@ pub struct StoredKeypackage {
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
-    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -321,170 +318,6 @@ pub struct StoredKeypackage {
 pub struct StoredE2eiEnrollment {
     pub id: Vec<u8>,
     pub content: Vec<u8>,
-}
-
-#[cfg(target_family = "wasm")]
-#[async_trait::async_trait(?Send)]
-pub trait UniqueEntity:
-    crate::entities::EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection>
-    + serde::Serialize
-    + serde::de::DeserializeOwned
-where
-    Self: 'static,
-{
-    const ID: [u8; 1] = [0];
-
-    fn content(&self) -> &[u8];
-
-    fn set_content(&mut self, content: Vec<u8>);
-
-    async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self> {
-        Ok(conn
-            .storage()
-            .get(Self::COLLECTION_NAME, &Self::ID)
-            .await?
-            .ok_or(CryptoKeystoreError::NotFound(Self::COLLECTION_NAME, "".to_string()))?)
-    }
-
-    async fn find_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
-        match Self::find_unique(conn).await {
-            Ok(record) => Ok(vec![record]),
-            Err(CryptoKeystoreError::NotFound(..)) => Ok(vec![]),
-            Err(err) => Err(err),
-        }
-    }
-
-    async fn find_one(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>> {
-        match Self::find_unique(conn).await {
-            Ok(record) => Ok(Some(record)),
-            Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
-            Err(err) => Err(err),
-        }
-    }
-
-    async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
-        conn.storage().count(Self::COLLECTION_NAME).await
-    }
-
-    async fn replace<'a>(&'a self, transaction: &TransactionWrapper<'a>) -> CryptoKeystoreResult<()> {
-        transaction.save(self.clone()).await?;
-        Ok(())
-    }
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[async_trait::async_trait]
-pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection> {
-    const ID: usize = 0;
-
-    fn new(content: Vec<u8>) -> Self;
-
-    async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self> {
-        let mut conn = conn.conn().await;
-        let transaction = conn.transaction()?;
-        use rusqlite::OptionalExtension as _;
-
-        let maybe_content = transaction
-            .query_row(
-                &format!("SELECT content FROM {} WHERE id = ?", Self::COLLECTION_NAME),
-                [Self::ID],
-                |r| r.get::<_, Vec<u8>>(0),
-            )
-            .optional()?;
-
-        if let Some(content) = maybe_content {
-            Ok(Self::new(content))
-        } else {
-            Err(CryptoKeystoreError::NotFound(Self::COLLECTION_NAME, "".to_string()))
-        }
-    }
-
-    async fn find_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
-        match Self::find_unique(conn).await {
-            Ok(record) => Ok(vec![record]),
-            Err(CryptoKeystoreError::NotFound(..)) => Ok(vec![]),
-            Err(err) => Err(err),
-        }
-    }
-
-    async fn find_one(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>> {
-        match Self::find_unique(conn).await {
-            Ok(record) => Ok(Some(record)),
-            Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
-            Err(err) => Err(err),
-        }
-    }
-
-    async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
-        let conn = conn.conn().await;
-        conn.query_row(&format!("SELECT COUNT(*) FROM {}", Self::COLLECTION_NAME), [], |r| {
-            r.get(0)
-        })
-        .map_err(Into::into)
-    }
-
-    fn content(&self) -> &[u8];
-
-    async fn replace(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
-        use crate::connection::DatabaseConnection;
-        Self::ConnectionType::check_buffer_size(self.content().len())?;
-        let zb_content = rusqlite::blob::ZeroBlob(self.content().len() as i32);
-
-        use rusqlite::ToSql;
-        let params: [rusqlite::types::ToSqlOutput; 2] = [Self::ID.to_sql()?, zb_content.to_sql()?];
-
-        transaction.execute(
-            &format!(
-                "INSERT OR REPLACE INTO {} (id, content) VALUES (?, ?)",
-                Self::COLLECTION_NAME
-            ),
-            params,
-        )?;
-        let row_id = transaction.last_insert_rowid();
-
-        let mut blob = transaction.blob_open(rusqlite::MAIN_DB, Self::COLLECTION_NAME, "content", row_id, false)?;
-        use std::io::Write;
-        blob.write_all(self.content())?;
-        blob.close()?;
-
-        Ok(())
-    }
-}
-
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl<T> crate::entities::EntityTransactionExt for T
-where
-    T: crate::entities::Entity<ConnectionType = crate::connection::KeystoreDatabaseConnection>
-        + UniqueEntity
-        + Send
-        + Sync,
-{
-    #[cfg(not(target_family = "wasm"))]
-    async fn save(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
-        self.replace(tx).await
-    }
-
-    #[cfg(target_family = "wasm")]
-    async fn save<'a>(&'a self, tx: &TransactionWrapper<'a>) -> CryptoKeystoreResult<()> {
-        self.replace(tx).await
-    }
-
-    #[cfg(not(target_family = "wasm"))]
-    async fn delete_fail_on_missing_id(
-        _: &TransactionWrapper<'_>,
-        _id: crate::entities::StringEntityId<'_>,
-    ) -> CryptoKeystoreResult<()> {
-        Err(CryptoKeystoreError::NotImplemented)
-    }
-
-    #[cfg(target_family = "wasm")]
-    async fn delete_fail_on_missing_id<'a>(
-        _: &TransactionWrapper<'a>,
-        _id: crate::entities::StringEntityId<'a>,
-    ) -> CryptoKeystoreResult<()> {
-        Err(CryptoKeystoreError::NotImplemented)
-    }
 }
 
 /// OIDC refresh token used in E2EI
@@ -507,7 +340,6 @@ pub struct E2eiAcmeCA {
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
-    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -515,7 +347,6 @@ pub struct E2eiAcmeCA {
 pub struct E2eiIntermediateCert {
     // key to identify the CA cert; Using a combination of SKI & AKI extensions concatenated like so is suitable:
     // `SKI[+AKI]`
-    #[id]
     #[entity(id)]
     pub ski_aki_pair: String,
     pub content: Vec<u8>,
@@ -528,13 +359,11 @@ pub struct E2eiIntermediateCert {
     Eq,
     Zeroize,
     core_crypto_macros::Entity,
-    core_crypto_macros::EntityNew,
     serde::Serialize,
     serde::Deserialize,
 )]
 #[zeroize(drop)]
 pub struct E2eiCrl {
-    #[id]
     #[entity(id)]
     pub distribution_point: String,
     pub content: Vec<u8>,

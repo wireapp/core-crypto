@@ -17,11 +17,11 @@ pub use hash::Sha256Hash;
 pub(crate) use hash::sha256;
 
 #[cfg(feature = "dummy-entity")]
-pub use self::entities::{DummyStoreValue, DummyValue, NewDummyStoreValue};
+pub use self::entities::{DummyStoreValue, DummyValue};
 #[cfg(feature = "proteus-keystore")]
 pub use self::proteus::CryptoKeystoreProteus;
 pub use self::{
     connection::{ConnectionType, Database, DatabaseKey},
-    error::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind},
+    error::{CryptoKeystoreError, CryptoKeystoreResult},
     mls::{CryptoKeystoreMls, deser, ser},
 };

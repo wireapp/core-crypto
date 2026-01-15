@@ -12,23 +12,11 @@ use syn::{
 mod debug;
 mod durable;
 mod entity_derive;
-mod entity_derive_new;
 mod idempotent;
 
-/// Implements the `Entity` trait for the given struct.
-/// To be used internally inside the `core-crypto-keystore` crate only.
-#[proc_macro_derive(Entity, attributes(entity, id))]
-pub fn derive_entity(input: TokenStream) -> TokenStream {
-    use crate::entity_derive::KeyStoreEntity;
-    let parsed = parse_macro_input!(input as KeyStoreEntity).flatten();
-    TokenStream::from(quote! { #parsed })
-}
-
-/// Implements the new `Entity` trait and related traits for the given struct.
+/// Implements the `Entity` trait and related traits for the given struct.
 ///
 /// Intended to be used only within `core-crypto-keystore`.
-///
-/// Should take over the `Entity` name and move into the `entity_derive` module during WPB-22196.
 ///
 /// All fields in an entity using this derive macro must have one of three types:
 ///
@@ -152,10 +140,10 @@ pub fn derive_entity(input: TokenStream) -> TokenStream {
 /// ```rust,ignore
 /// let decrypted = serde_json::from_str::<Foo::DecryptableFrom>(&encrypted)?.decrypt(cipher)?;
 /// ```
-#[proc_macro_derive(EntityNew, attributes(entity))]
-pub fn derive_entity_new(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(Entity, attributes(entity))]
+pub fn derive_entity(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    match entity_derive_new::Entity::from_derive_input(&input) {
+    match entity_derive::Entity::from_derive_input(&input) {
         Ok(entity) => quote! { #entity },
         Err(err) => err.write_errors(),
     }

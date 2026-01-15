@@ -62,6 +62,8 @@ pub enum Error {
     PendingProposalNotFound(crate::mls::proposal::MlsProposalRef),
     #[error("Couldn't find pending commit")]
     PendingCommitNotFound,
+    #[error("Couldn't find pending conversation")]
+    PendingConversationNotFound,
     #[error(
         "Happens when a client creates a commit, sends it to the DS which accepts it but then client \
     clears this pending commit and creates another commit. This is triggered when the client tries to decrypt the original commit.\
