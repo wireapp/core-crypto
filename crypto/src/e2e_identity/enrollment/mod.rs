@@ -464,7 +464,8 @@ impl E2eiEnrollment {
             .key_store()
             .pop_e2ei_enrollment(&handle)
             .await
-            .map_err(KeystoreError::wrap("popping e2ei enrollment"))?;
+            .map_err(KeystoreError::wrap("popping e2ei enrollment"))?
+            .ok_or(Error::NotFound)?;
         Ok(serde_json::from_slice(&content)?)
     }
 }

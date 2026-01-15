@@ -7,7 +7,7 @@ use crate::{ConversationId, KeystoreError, MlsConversation, RecursiveError, Resu
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub(crate) trait GroupStoreEntity: std::fmt::Debug {
-    type RawStoreValue: core_crypto_keystore::entities::Entity;
+    type RawStoreValue: core_crypto_keystore::traits::Entity;
     type IdentityType;
 
     async fn fetch_from_id(
