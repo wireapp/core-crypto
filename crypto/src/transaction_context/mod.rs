@@ -15,7 +15,7 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 use crate::proteus::ProteusCentral;
 use crate::{
     Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef,
-    CredentialType, KeystoreError, MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
+    KeystoreError, MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
     group_store::GroupStore,
     mls::{
         self, HasSessionAndCrypto,

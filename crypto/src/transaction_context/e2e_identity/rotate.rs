@@ -3,8 +3,8 @@ use openmls_traits::{OpenMlsCryptoProvider as _, random::OpenMlsRand as _};
 
 use super::error::{Error, Result};
 use crate::{
-    CertificateBundle, Ciphersuite, Credential, CredentialRef, CredentialType, E2eiEnrollment, MlsError,
-    RecursiveError,
+    CertificateBundle, Ciphersuite, Credential, CredentialFindFilters, CredentialRef, CredentialType, E2eiEnrollment,
+    MlsError, RecursiveError,
     e2e_identity::{E2eiSignatureKeypair, NewCrlDistributionPoints},
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     transaction_context::TransactionContext,
@@ -49,15 +49,10 @@ impl TransactionContext {
             .mls_provider()
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
-        // look for existing credential of type basic. If there isn't, then this method has been misused
-        let cb = self
-            .session()
+        let client_id = self
+            .client_id()
             .await
-            .map_err(RecursiveError::transaction("getting mls client"))?
-            .find_most_recent_credential(ciphersuite.signature_algorithm(), CredentialType::Basic)
-            .await
-            .map_err(|_| Error::MissingExistingClient(CredentialType::Basic))?;
-        let client_id = cb.mls_credential().identity().to_owned().into();
+            .map_err(RecursiveError::transaction("getting client id"))?;
 
         let sign_keypair = self.new_sign_keypair(ciphersuite).await?;
 
@@ -94,17 +89,35 @@ impl TransactionContext {
             .mls_provider()
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
+
         // look for existing credential of type x509. If there isn't, then this method has been misused
-        let cb = self
-            .session()
+        let find_filters = CredentialFindFilters::builder()
+            .credential_type(CredentialType::X509)
+            .ciphersuite(ciphersuite)
+            .build();
+        let credentials = self
+            .find_credentials(find_filters)
             .await
-            .map_err(RecursiveError::transaction("getting mls client"))?
-            .find_most_recent_credential(ciphersuite.signature_algorithm(), CredentialType::X509)
+            .map_err(RecursiveError::transaction("finding x509 credentials"))?;
+        let credential_ref = credentials
+            .first()
+            .ok_or(Error::MissingExistingClient(CredentialType::X509))?;
+
+        let database = self
+            .keystore()
             .await
-            .map_err(|_| Error::MissingExistingClient(CredentialType::X509))?;
-        let client_id = cb.mls_credential().identity().to_owned().into();
+            .map_err(RecursiveError::transaction("getting database"))?;
+        let credential = credential_ref
+            .load(&database)
+            .await
+            .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
+
+        let client_id = self
+            .client_id()
+            .await
+            .map_err(RecursiveError::transaction("getting client id"))?;
         let sign_keypair = self.new_sign_keypair(ciphersuite).await?;
-        let existing_identity = cb
+        let existing_identity = credential
             .to_mls_credential_with_key()
             .extract_identity(ciphersuite, None)
             .map_err(RecursiveError::mls_credential("extracting identity"))?
@@ -229,16 +242,12 @@ mod tests {
                     conversations.push(conversation)
                 }
 
-                let alice_credential = alice
-                    .find_most_recent_credential(case.signature_scheme(), case.credential_type)
-                    .await
-                    .unwrap();
-                let alice_credential_ref = CredentialRef::from_credential(&alice_credential);
+                let alice_credential_ref = &alice.initial_credential;
 
                 for _ in 0..INITIAL_KEYING_MATERIAL_COUNT {
                     alice
                         .transaction
-                        .generate_keypackage(&alice_credential_ref, None)
+                        .generate_keypackage(alice_credential_ref, None)
                         .await
                         .unwrap();
                 }
@@ -253,11 +262,7 @@ mod tests {
                 assert_eq!(before_rotate.encryption_keypair, INITIAL_KEYING_MATERIAL_COUNT);
 
                 assert_eq!(before_rotate.credential, 1);
-                let old_credential = alice
-                    .find_most_recent_credential(case.signature_scheme(), case.credential_type)
-                    .await
-                    .unwrap()
-                    .clone();
+                let old_credential = alice_credential_ref.clone();
 
                 let is_renewal = case.credential_type == CredentialType::X509;
 
@@ -307,7 +312,7 @@ mod tests {
                         .find_credential(
                             case.signature_scheme(),
                             case.credential_type,
-                            &old_credential.signature_key_pair.public().into()
+                            &old_credential.public_key().into()
                         )
                         .await
                         .is_some()
@@ -320,11 +325,7 @@ mod tests {
 
                 // Checks are done, now let's delete the old credential.
                 // This should have the consequence to purge the all the stale keypackages as well.
-                alice
-                    .transaction
-                    .remove_credential(&alice_credential_ref)
-                    .await
-                    .unwrap();
+                alice.transaction.remove_credential(alice_credential_ref).await.unwrap();
 
                 // No keypackages were automatically created.
                 let nb_x509_kp = alice
@@ -340,7 +341,12 @@ mod tests {
                 // Also the old Credential has been removed from the keystore
                 let after_delete = alice.transaction.count_entities().await;
                 assert_eq!(after_delete.credential, 1);
-                assert!(alice.find_credential_from_keystore(&old_credential).await.is_none());
+                let database = alice.transaction.keystore().await.unwrap();
+                let err = old_credential.load(&database).await.unwrap_err();
+                assert!(matches!(
+                    err,
+                    crate::mls::credential::credential_ref::Error::CredentialNotFound
+                ));
 
                 // and all her Private HPKE keys...
                 assert_eq!(after_delete.hpke_private_key, 0);
@@ -351,9 +357,8 @@ mod tests {
                 // Now charlie tries to add Alice to a conversation
                 // (the create_conversation helper implicitly generates keypackages as needed)
                 let credential = alice
-                    .find_most_recent_credential(case.signature_scheme(), CredentialType::X509)
-                    .await
-                    .expect("alice should have a credential");
+                    .find_any_credential(case.ciphersuite(), CredentialType::X509)
+                    .await;
                 let credential_ref = CredentialRef::from_credential(&credential);
                 let conversation = case
                     .create_conversation([&charlie])
@@ -373,11 +378,11 @@ mod tests {
 
                 case.create_conversation([&alice]).await;
 
-                let old_cb = alice
-                    .find_most_recent_credential(case.signature_scheme(), case.credential_type)
+                let initial_cred_ref = alice.initial_credential.clone();
+                let old_cb = initial_cred_ref
+                    .load(&alice.transaction.keystore().await.unwrap())
                     .await
-                    .unwrap()
-                    .clone();
+                    .unwrap();
 
                 // simulate a real rotation where both credential are not created within the same second
                 // we only have a precision of 1 second for the `created_at` field of the Credential
@@ -397,15 +402,15 @@ mod tests {
                 .await
                 .unwrap();
 
-                alice
+                let (credential_ref, _) = alice
                     .transaction
                     .save_x509_credential(&mut enrollment, cert)
                     .await
                     .unwrap();
 
                 // So alice has a new Credential as expected
-                let cb = alice
-                    .find_most_recent_credential(case.signature_scheme(), CredentialType::X509)
+                let cb = credential_ref
+                    .load(&alice.transaction.keystore().await.unwrap())
                     .await
                     .unwrap();
                 let identity = cb
@@ -422,12 +427,12 @@ mod tests {
                 );
 
                 // but keeps her old one since it's referenced from some KeyPackages
-                let old_spk = SignaturePublicKey::from(old_cb.signature_key_pair.public());
+                let old_spk = SignaturePublicKey::from(initial_cred_ref.public_key());
                 let old_cb_found = alice
                     .find_credential(case.signature_scheme(), case.credential_type, &old_spk)
                     .await
                     .unwrap();
-                assert_eq!(old_cb, old_cb_found);
+                assert_eq!(std::sync::Arc::new(old_cb), old_cb_found);
                 let old_nb_identities = {
                     let alice_client = alice.session().await;
                     let old_nb_identities = alice_client.identities_count().await;
@@ -452,7 +457,11 @@ mod tests {
                 let new_session = alice.session().await;
                 // Verify that Alice has the same credentials
                 let cb = new_session
-                    .find_most_recent_credential(case.signature_scheme(), CredentialType::X509)
+                    .find_credential_by_public_key(
+                        credential_ref.signature_scheme(),
+                        CredentialType::X509,
+                        &cb.to_mls_credential_with_key().signature_key,
+                    )
                     .await
                     .unwrap();
                 let identity = cb
@@ -771,18 +780,10 @@ mod tests {
 
             let [alice, bob] = case.sessions_basic_with_pki_env().await;
             Box::pin(async move {
-                let alice_credential = alice
-                    .find_most_recent_credential(case.signature_scheme(), CredentialType::Basic)
-                    .await
-                    .expect("should have a basic credential");
-                let alice_cred_ref = CredentialRef::from_credential(&alice_credential);
-                let bob_credential = bob
-                    .find_most_recent_credential(case.signature_scheme(), CredentialType::Basic)
-                    .await
-                    .expect("should have a basic credential");
-                let bob_cred_ref = CredentialRef::from_credential(&bob_credential);
+                let alice_cred_ref = &alice.initial_credential;
+                let bob_cred_ref = &bob.initial_credential;
                 let conversation = case
-                    .create_conversation_with_credentials([(&alice, &alice_cred_ref), (&bob, &bob_cred_ref)])
+                    .create_conversation_with_credentials([(&alice, alice_cred_ref), (&bob, bob_cred_ref)])
                     .await;
                 let id = conversation.id().clone();
 

@@ -398,8 +398,7 @@ mod tests {
                 .try_into()
                 .expect("case conversation has a known credential type");
             let cs = group.ciphersuite();
-            let client = alice.session().await;
-            let cb = client.find_most_recent_credential(cs.into(), ct).await.unwrap();
+            let cb = alice.find_any_credential(cs.into(), ct).await;
 
             let gi = group
                 .export_group_info(

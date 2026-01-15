@@ -4,7 +4,7 @@ use openmls::prelude::{LeafNode, LeafNodeIndex, Proposal, QueuedProposal, Sender
 use openmls_traits::OpenMlsCryptoProvider;
 
 use super::{Error, Result};
-use crate::{KeystoreError, MlsConversation, MlsProposalBundle, RecursiveError, Session};
+use crate::{KeystoreError, MlsConversation, MlsProposalBundle, Session};
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
 /// in case another commit has been accepted by the backend instead of ours
@@ -122,14 +122,14 @@ impl MlsConversation {
     /// At this point, we have already verified we are only operating on proposals created by self.
     async fn renew_update(
         &mut self,
-        client: &Session,
-        backend: &MlsCryptoProvider,
+        session: &Session,
+        crypto_provider: &MlsCryptoProvider,
         leaf_node: Option<&LeafNode>,
     ) -> Result<MlsProposalBundle> {
         if let Some(leaf_node) = leaf_node {
             // Creating an update rekeys the LeafNode everytime. Hence we need to clear the previous
             // encryption key from the keystore otherwise we would have a leak
-            backend
+            crypto_provider
                 .key_store()
                 .remove_borrowed::<StoredEncryptionKeyPair>(leaf_node.encryption_key().as_slice())
                 .await
@@ -141,16 +141,11 @@ impl MlsConversation {
             .cloned()
             .ok_or(Error::MlsGroupInvalidState("own_leaf is None"))?;
 
-        let sc = self.signature_scheme();
-        let ct = self.own_credential_type()?;
-        let cb = client
-            .find_most_recent_credential(sc, ct)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential"))?;
+        let credential = self.find_current_credential(session).await?;
 
-        leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
+        leaf_node.set_credential_with_key(credential.to_mls_credential_with_key());
 
-        self.propose_explicit_self_update(client, backend, Some(leaf_node))
+        self.propose_explicit_self_update(session, crypto_provider, Some(leaf_node))
             .await
     }
 

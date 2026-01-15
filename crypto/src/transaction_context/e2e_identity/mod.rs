@@ -200,16 +200,11 @@ mod tests {
             .unwrap();
             let transport = Arc::new(CoreCryptoTransportSuccessProvider::default());
 
-            tx.e2ei_mls_init_only(&mut enrollment, cert, transport).await.unwrap();
+            let (credential_ref, _) = tx.e2ei_mls_init_only(&mut enrollment, cert, transport).await.unwrap();
 
             let session = SessionContext::new_from_cc(&case, cc, Some(&chain)).await;
 
             // verify the created client can create a conversation
-            let credential = session
-                .find_most_recent_credential(case.signature_scheme(), CredentialType::X509)
-                .await
-                .expect("we just enrolled into e2ei");
-            let credential_ref = CredentialRef::from_credential(&credential);
             let conversation = case
                 .create_conversation_with_credentials([(&session, &credential_ref)])
                 .await;
@@ -223,13 +218,7 @@ mod tests {
                 conversation.guard().await.e2ei_conversation_state().await.unwrap(),
                 E2eiConversationState::Verified
             );
-            assert!(
-                session
-                    .transaction
-                    .e2ei_is_enabled(case.signature_scheme())
-                    .await
-                    .unwrap()
-            );
+            assert!(session.transaction.e2ei_is_enabled(case.ciphersuite()).await.unwrap());
         })
         .await
     }

@@ -1,3 +1,5 @@
+//! Whether e2ei is enabled
+
 use super::Result;
 use crate::{Ciphersuite, RecursiveError, transaction_context::TransactionContext};
 
@@ -18,7 +20,7 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use openmls_traits::types::SignatureScheme;
+    use openmls::prelude::Ciphersuite;
 
     use super::super::Error;
     use crate::{CredentialType, RecursiveError, mls, test_utils::*};
@@ -27,7 +29,7 @@ mod tests {
     async fn should_be_false_when_basic_and_true_when_x509(case: TestContext) {
         let [cc] = case.sessions().await;
         Box::pin(async move {
-            let e2ei_is_enabled = cc.transaction.e2ei_is_enabled(case.signature_scheme()).await.unwrap();
+            let e2ei_is_enabled = cc.transaction.e2ei_is_enabled(case.ciphersuite()).await.unwrap();
             let expect_enabled = match case.credential_type {
                 CredentialType::Basic => false,
                 CredentialType::X509 => true,
@@ -38,16 +40,18 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    async fn should_fail_when_no_credential_for_given_signature_scheme(case: TestContext) {
+    async fn should_fail_when_no_credential_for_given_ciphersuite(case: TestContext) {
         let [cc] = case.sessions().await;
         Box::pin(async move {
-            // just return something different from the signature scheme the MlsCentral was initialized with
-            let other_sc = match case.signature_scheme() {
-                SignatureScheme::ED25519 => SignatureScheme::ECDSA_SECP256R1_SHA256,
-                _ => SignatureScheme::ED25519,
+            // just return something different from the ciphersuite mls was initialized with
+            let other_ciphersuite = match *case.ciphersuite() {
+                Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 => {
+                    Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+                }
+                _ => Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
             };
             assert!(matches!(
-                cc.transaction.e2ei_is_enabled(other_sc).await.unwrap_err(),
+                cc.transaction.e2ei_is_enabled(other_ciphersuite.into()).await.unwrap_err(),
                 Error::Recursive(RecursiveError::MlsClient {  source, .. })
                 if matches!(*source, mls::session::Error::CredentialNotFound(..))
             ));

@@ -47,7 +47,7 @@ use openmls::{
     group::MlsGroup,
     prelude::{LeafNodeIndex, Proposal},
 };
-use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
+use openmls_traits::OpenMlsCryptoProvider;
 
 use self::config::MlsConversationConfiguration;
 pub use self::{
@@ -401,10 +401,6 @@ impl MlsConversation {
 
     pub(crate) fn ciphersuite(&self) -> Ciphersuite {
         self.configuration.ciphersuite
-    }
-
-    pub(crate) fn signature_scheme(&self) -> SignatureScheme {
-        self.ciphersuite().signature_algorithm()
     }
 
     pub(crate) async fn find_current_credential(&self, client: &Session) -> Result<Arc<Credential>> {
@@ -954,10 +950,7 @@ mod tests {
 
                 let alice_ext_sender = conversation.guard().await.get_external_sender().await.unwrap();
                 assert!(!alice_ext_sender.is_empty());
-                assert_eq!(
-                    alice_ext_sender,
-                    external_sender.client_signature_key(&case).await.as_slice().to_vec()
-                );
+                assert_eq!(alice_ext_sender, external_sender.initial_credential.public_key());
             })
             .await
         }

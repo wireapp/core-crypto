@@ -252,8 +252,6 @@ mod tests {
 
         let [session_context] = case.sessions_basic_with_pki_env().await;
         Box::pin(async move {
-            let signature_scheme = case.signature_scheme();
-
             // Generate 5 Basic key packages first
             let mut initial_kp_refs = Vec::new();
             for _ in 0..5 {
@@ -287,7 +285,7 @@ mod tests {
             assert!(
                 session_context
                     .transaction
-                    .e2ei_is_enabled(signature_scheme)
+                    .e2ei_is_enabled(case.ciphersuite())
                     .await
                     .unwrap()
             );

@@ -277,7 +277,7 @@ impl ConversationGuard {
             return Ok(None);
         }
 
-        let signer = &inner.find_most_recent_credential(session).await?.signature_key_pair;
+        let signer = &inner.find_current_credential(session).await?.signature_key_pair;
 
         let (commit, welcome, gi) = inner
             .group
@@ -306,7 +306,7 @@ impl ConversationGuard {
         if proposals.is_empty() {
             return Ok(None);
         }
-        let signer = &inner.find_most_recent_credential(session).await?.signature_key_pair;
+        let signer = &inner.find_current_credential(session).await?.signature_key_pair;
 
         let (commit, welcome, gi) = inner
             .group
