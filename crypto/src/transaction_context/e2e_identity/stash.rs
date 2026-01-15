@@ -53,7 +53,7 @@ mod tests {
     };
 
     // TODO: This test has to be disabled because of the session rewrite. We have to create a session first right now.
-    // It must be enabled and working again with WPB-19578.
+    // It must be enabled and working again with WPB-22816.
     #[ignore]
     #[apply(all_cred_cipher)]
     async fn stash_and_pop_should_not_abort_enrollment(mut case: TestContext) {
@@ -90,7 +90,7 @@ mod tests {
     }
 
     // TODO: This test has to be disabled because of the session rewrite. We have to create a session to init the pki
-    // right now, however this must not be a requirement. It must be enabled and working again with WPB-19578.
+    // right now, however this must not be a requirement. It must be enabled and working again with WPB-22816.
     // this ensures the nominal test does its job
     #[ignore]
     #[apply(all_cred_cipher)]
