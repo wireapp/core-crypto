@@ -106,16 +106,18 @@ impl CoreCryptoContext {
         enrollment: EnrollmentParameter,
         certificate_chain: String,
         transport: Arc<dyn MlsTransport>,
-    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
+    ) -> CoreCryptoResult<CredentialRef> {
         let mut enrollment = enrollment.write().await?;
 
         let transport = callback_shim(transport);
-        self.inner
+        let (credential, _) = self
+            .inner
             .e2ei_mls_init_only(&mut enrollment, certificate_chain, transport)
             .await
-            .map(Into::into)
             .map_err(Into::<TransactionError>::into)
-            .map_err(Into::into)
+            .map_err(Into::<CoreCryptoError>::into)?;
+
+        Ok(credential.into())
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::save_x509_credential]
