@@ -11,7 +11,7 @@ use syn::{
 
 mod debug;
 mod durable;
-mod entity_derive_new;
+mod entity_derive;
 mod idempotent;
 
 /// Implements the `Entity` trait and related traits for the given struct.
@@ -142,10 +142,10 @@ mod idempotent;
 /// ```rust,ignore
 /// let decrypted = serde_json::from_str::<Foo::DecryptableFrom>(&encrypted)?.decrypt(cipher)?;
 /// ```
-#[proc_macro_derive(EntityNew, attributes(entity))]
-pub fn derive_entity_new(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(Entity, attributes(entity))]
+pub fn derive_entity(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    match entity_derive_new::Entity::from_derive_input(&input) {
+    match entity_derive::Entity::from_derive_input(&input) {
         Ok(entity) => quote! { #entity },
         Err(err) => err.write_errors(),
     }

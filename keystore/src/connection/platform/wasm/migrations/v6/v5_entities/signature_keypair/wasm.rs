@@ -31,15 +31,15 @@ impl PrimaryKey for StoredSignatureKeypair {
 #[async_trait::async_trait(?Send)]
 impl Entity for StoredSignatureKeypair {
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
-        conn.storage().new_get(key).await
+        conn.storage().get(key).await
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<u32> {
-        conn.storage().new_count::<Self>().await
+        conn.storage().count::<Self>().await
     }
 
     async fn load_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
-        conn.storage().new_get_all::<Self>().await
+        conn.storage().get_all::<Self>().await
     }
 }
 
@@ -48,15 +48,15 @@ impl<'a> EntityDatabaseMutation<'a> for StoredSignatureKeypair {
     type Transaction = TransactionWrapper<'a>;
 
     async fn save(&'a self, tx: &Self::Transaction) -> CryptoKeystoreResult<()> {
-        tx.new_save(self).await
+        tx.save(self).await
     }
 
     async fn count(tx: &Self::Transaction) -> CryptoKeystoreResult<u32> {
-        tx.new_count::<Self>().await
+        tx.count::<Self>().await
     }
 
     async fn delete(tx: &Self::Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool> {
-        tx.new_delete::<Self>(id).await
+        tx.delete::<Self>(id).await
     }
 }
 

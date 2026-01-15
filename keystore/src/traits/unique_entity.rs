@@ -192,17 +192,17 @@ where
     <T as Decryptable<'static>>::DecryptableFrom: DeserializeOwned,
 {
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
-        conn.storage().new_get(key.bytes().as_ref()).await
+        conn.storage().get(key.bytes().as_ref()).await
     }
 
     /// Count the number of entities of this type in the database.
     async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<u32> {
-        conn.storage().new_count::<Self>().await
+        conn.storage().count::<Self>().await
     }
 
     /// Retrieve all entities of this type from the database.
     async fn load_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
-        conn.storage().new_get_all().await
+        conn.storage().get_all().await
     }
 }
 
@@ -219,15 +219,15 @@ where
     type Transaction = TransactionWrapper<'a>;
 
     async fn save(&'a self, tx: &Self::Transaction) -> CryptoKeystoreResult<()> {
-        tx.new_save(self).await
+        tx.save(self).await
     }
 
     async fn count(tx: &Self::Transaction) -> CryptoKeystoreResult<u32> {
-        tx.new_count::<Self>().await
+        tx.count::<Self>().await
     }
 
     async fn delete(tx: &Self::Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool> {
-        tx.new_delete::<Self>(id.bytes().as_ref()).await
+        tx.delete::<Self>(id.bytes().as_ref()).await
     }
 }
 

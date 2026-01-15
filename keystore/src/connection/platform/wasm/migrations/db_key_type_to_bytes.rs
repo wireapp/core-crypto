@@ -5,7 +5,7 @@ use sha2::Digest as _;
 use super::{DB_VERSION_3, DB_VERSION_4, pre_v4};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
-    connection::platform::wasm::rekey::rekey_entities_new,
+    connection::platform::wasm::rekey::rekey_entities,
     entities::{
         E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, E2eiRefreshToken, MlsPendingMessage, PersistedMlsGroup,
         PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession, StoredE2eiEnrollment,
@@ -29,7 +29,7 @@ pub(crate) async fn migrate_db_key_type_to_bytes(
     let version = db.version()?;
     assert!(version == DB_VERSION_3);
 
-    rekey_entities_new!(
+    rekey_entities!(
         db,
         old_cipher,
         new_cipher,

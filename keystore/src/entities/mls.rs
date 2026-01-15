@@ -19,7 +19,7 @@ use crate::{
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::EntityNew,
+    core_crypto_macros::Entity,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -183,7 +183,7 @@ impl PrimaryKey for MlsPendingMessage {
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::EntityNew,
+    core_crypto_macros::Entity,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -259,7 +259,7 @@ pub struct StoredEncryptionKeyPair {
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::EntityNew,
+    core_crypto_macros::Entity,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -288,7 +288,7 @@ pub struct StoredPskBundle {
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::EntityNew,
+    core_crypto_macros::Entity,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -309,7 +309,7 @@ pub struct StoredKeypackage {
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::EntityNew,
+    core_crypto_macros::Entity,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -339,7 +339,7 @@ pub struct E2eiAcmeCA {
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::EntityNew,
+    core_crypto_macros::Entity,
     serde::Serialize,
     serde::Deserialize,
 )]
@@ -358,7 +358,7 @@ pub struct E2eiIntermediateCert {
     PartialEq,
     Eq,
     Zeroize,
-    core_crypto_macros::EntityNew,
+    core_crypto_macros::Entity,
     serde::Serialize,
     serde::Deserialize,
 )]

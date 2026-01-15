@@ -9,7 +9,7 @@ use super::{super::WasmConnection, WasmStorageWrapper};
 use crate::{
     CryptoKeystoreResult,
     connection::DatabaseKey,
-    traits::{Decryptable, Decrypting, Entity as NewEntity},
+    traits::{Decryptable, Decrypting, Entity},
 };
 
 pub struct WasmEncryptedStorage {
@@ -74,9 +74,9 @@ impl WasmEncryptedStorage {
     }
 
     /// Count the number of entities in this storage.
-    pub async fn new_count<E>(&self) -> CryptoKeystoreResult<u32>
+    pub async fn count<E>(&self) -> CryptoKeystoreResult<u32>
     where
-        E: NewEntity<ConnectionType = WasmConnection>,
+        E: Entity<ConnectionType = WasmConnection>,
     {
         match &self.storage {
             WasmStorageWrapper::Persistent(idb) => {
@@ -111,9 +111,9 @@ impl WasmEncryptedStorage {
     // After putting some thought into it, I'd prefer not to redesign the `Decrypting` trait, though.
     // There's always the chance that `serde_wasm_bindgen` will relax that restriction, at which point
     // we can just relax this bound and all will be good.
-    pub async fn new_get<'a, E>(&self, key: impl AsRef<[u8]>) -> CryptoKeystoreResult<Option<E>>
+    pub async fn get<'a, E>(&self, key: impl AsRef<[u8]>) -> CryptoKeystoreResult<Option<E>>
     where
-        E: NewEntity<ConnectionType = WasmConnection> + Decryptable<'a>,
+        E: Entity<ConnectionType = WasmConnection> + Decryptable<'a>,
         <E as Decryptable<'a>>::DecryptableFrom: DeserializeOwned,
     {
         let key = key.as_ref();
@@ -146,21 +146,21 @@ impl WasmEncryptedStorage {
     }
 
     /// Get all instances of `E` from the database.
-    pub async fn new_get_all<'a, E>(&self) -> CryptoKeystoreResult<Vec<E>>
+    pub async fn get_all<'a, E>(&self) -> CryptoKeystoreResult<Vec<E>>
     where
-        E: NewEntity<ConnectionType = WasmConnection> + Decryptable<'a>,
+        E: Entity<ConnectionType = WasmConnection> + Decryptable<'a>,
         <E as Decryptable<'a>>::DecryptableFrom: DeserializeOwned,
     {
-        self.new_get_all_with_query(None).await
+        self.get_all_with_query(None).await
     }
 
     /// Get all instance of `E` from the database, limiting to the key or key range specified in `query`.
     ///
     /// This has the same `DeserializeOwned` limitation that [`Self::new_get`] does; see documentation
     /// there for details.
-    pub async fn new_get_all_with_query<'a, E>(&self, query: Option<idb::Query>) -> CryptoKeystoreResult<Vec<E>>
+    pub async fn get_all_with_query<'a, E>(&self, query: Option<idb::Query>) -> CryptoKeystoreResult<Vec<E>>
     where
-        E: NewEntity<ConnectionType = WasmConnection> + Decryptable<'a>,
+        E: Entity<ConnectionType = WasmConnection> + Decryptable<'a>,
         <E as Decryptable<'a>>::DecryptableFrom: DeserializeOwned,
     {
         let js_values = match &self.storage {
