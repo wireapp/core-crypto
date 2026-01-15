@@ -420,19 +420,6 @@ impl MlsConversation {
             .map_err(RecursiveError::mls_client("finding current credential"))
             .map_err(Into::into)
     }
-
-    pub(crate) async fn find_most_recent_credential(&self, client: &Session) -> Result<Arc<Credential>> {
-        let sc = self.ciphersuite().signature_algorithm();
-        let ct = self
-            .own_credential_type()
-            .map_err(RecursiveError::mls_conversation("getting own credential type"))?;
-
-        client
-            .find_most_recent_credential(sc, ct)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential"))
-            .map_err(Into::into)
-    }
 }
 
 #[cfg(test)]
