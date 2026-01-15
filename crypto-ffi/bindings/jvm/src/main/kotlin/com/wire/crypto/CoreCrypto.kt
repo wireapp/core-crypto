@@ -137,6 +137,18 @@ class CoreCrypto(private val cc: CoreCryptoFfi) {
     suspend fun isHistorySharingEnabled(conversationId: ConversationId): Boolean = cc.isHistorySharingEnabled(conversationId)
 
     /**
+     * Set the PkiEnvironment of the CoreCrypto instance
+     * @param pkiEnvironment the pki environment to set
+     */
+    suspend fun setPkiEnvironment(pkiEnvironment: PkiEnvironment?) = cc.setPkiEnvironment(pkiEnvironment)
+
+    /**
+     * Get the Pki Environment of the CoreCrypto instance
+     * @return the pki environment or null if not set
+     */
+    suspend fun getPkiEnvironment(): PkiEnvironment? = cc.getPkiEnvironment()
+
+    /**
      * Closes this [CoreCrypto] instance and deallocates all loaded resources.
      *
      * **CAUTION**: This {@link CoreCrypto} instance won't be usable after a call to this method, but there's no way to express this requirement in Kotlin, so you'll get errors instead!
