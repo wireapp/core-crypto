@@ -1,56 +1,6 @@
-/// Error to represent when a key is not present in the KeyStore
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-pub enum MissingKeyErrorKind {
-    #[error("Consumer Data")]
-    ConsumerData,
-    #[error("MLS KeyPackage")]
-    StoredKeypackage,
-    #[error("MLS SignatureKeyPair")]
-    StoredSignatureKeypair,
-    #[error("MLS HpkePrivateKey")]
-    StoredHpkePrivateKey,
-    #[error("MLS EncryptionKeyPair")]
-    StoredEncryptionKeyPair,
-    #[error("MLS Epoch EncryptionKeyPair")]
-    StoredEpochEncryptionKeypair,
-    #[error("MLS PreSharedKeyBundle")]
-    StoredPskBundle,
-    #[error("MLS Credential")]
-    StoredCredential,
-    #[error("MLS Buffered Commit")]
-    StoredBufferedCommit,
-    #[error("MLS Persisted Group")]
-    PersistedMlsGroup,
-    #[error("MLS Persisted Pending Group")]
-    MlsPendingGroup,
-    #[error("MLS Pending Messages")]
-    MlsPendingMessages,
-    #[error("End-to-end identity enrollment")]
-    StoredE2eiEnrollment,
-    #[error("OIDC refresh token")]
-    E2eiRefreshToken,
-    #[error("End-to-end identity root trust anchor CA cert")]
-    E2eiAcmeCA,
-    #[error("End-to-end identity intermediate CA cert")]
-    E2eiIntermediateCert,
-    #[error("End-to-end identity CRL")]
-    E2eiCrl,
-    #[cfg(feature = "proteus-keystore")]
-    #[error("Proteus PreKey")]
-    ProteusPrekey,
-    #[cfg(feature = "proteus-keystore")]
-    #[error("Proteus Session")]
-    ProteusSession,
-    #[cfg(feature = "proteus-keystore")]
-    #[error("Proteus Identity")]
-    ProteusIdentity,
-}
-
 /// Error type to represent various errors that can happen in the KeyStore
 #[derive(Debug, thiserror::Error)]
 pub enum CryptoKeystoreError {
-    #[error("The requested {0} is not present in the store")]
-    MissingKeyInStore(#[from] MissingKeyErrorKind),
     #[error("The given key doesn't contain valid utf-8")]
     KeyReprError(#[from] std::str::Utf8Error),
     #[error("A transaction must be in progress to perform this operation.")]
@@ -185,12 +135,6 @@ impl proteus_traits::ProteusErrorCode for CryptoKeystoreError {
     fn code(&self) -> proteus_traits::ProteusErrorKind {
         use proteus_traits::ProteusErrorKind;
         match self {
-            CryptoKeystoreError::MissingKeyInStore(k) => match k {
-                MissingKeyErrorKind::ProteusPrekey => ProteusErrorKind::PreKeyNotFound,
-                MissingKeyErrorKind::ProteusSession => ProteusErrorKind::SessionStateNotFoundForTag,
-                MissingKeyErrorKind::ProteusIdentity => ProteusErrorKind::Unknown,
-                _ => unreachable!(),
-            },
             CryptoKeystoreError::KeyReprError(_) => ProteusErrorKind::DecodeError,
             CryptoKeystoreError::TryFromSliceError(_) => ProteusErrorKind::DecodeError,
             CryptoKeystoreError::LockPoisonError => ProteusErrorKind::OtherSystemError,
