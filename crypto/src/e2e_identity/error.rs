@@ -19,6 +19,8 @@ pub enum Error {
     InvalidClientId,
     #[error("This function accepts a list of IDs as a parameter, but that list was empty")]
     EmptyInputIdList,
+    #[error("No enrollment was found")]
+    NotFound,
     #[error(transparent)]
     IdentityError(#[from] wire_e2e_identity::prelude::E2eIdentityError),
     #[error(transparent)]

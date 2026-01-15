@@ -140,7 +140,8 @@ impl PendingConversation {
         let (group, _cfg) = keystore
             .mls_pending_groups_load(self.id())
             .await
-            .map_err(KeystoreError::wrap("loading mls pending groups"))?;
+            .map_err(KeystoreError::wrap("loading mls pending groups"))?
+            .ok_or(Error::PendingConversationNotFound)?;
         let mut mls_group = core_crypto_keystore::deser::<MlsGroup>(&group)
             .map_err(KeystoreError::wrap("deserializing mls pending groups"))?;
 
