@@ -1,12 +1,15 @@
 use openmls::{
-    prelude::{Credential, Node, SignatureScheme, group_info::VerifiableGroupInfo},
+    prelude::{Credential, Node, group_info::VerifiableGroupInfo},
     treesync::RatchetTree,
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::prelude::WireIdentityReader as _;
 
-use super::{Error, Result, Session};
-use crate::{Ciphersuite, CredentialType, E2eiConversationState, MlsError, mls::credential::ext::CredentialExt as _};
+use super::{Result, Session};
+use crate::{
+    Ciphersuite, CredentialFindFilters, CredentialType, E2eiConversationState, MlsError,
+    mls::{credential::ext::CredentialExt as _, session::Error},
+};
 
 impl Session {
     /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
@@ -14,20 +17,32 @@ impl Session {
         self.crypto_provider.is_pki_env_setup().await
     }
 
-    /// Returns true when end-to-end-identity is enabled for the given SignatureScheme
-    pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
-        let x509_result = self
-            .find_most_recent_credential(signature_scheme, CredentialType::X509)
-            .await;
-        match x509_result {
-            Err(Error::CredentialNotFound(CredentialType::X509, _)) => {
-                self.find_most_recent_credential(signature_scheme, CredentialType::Basic)
-                    .await?;
-                Ok(false)
-            }
-            Err(e) => Err(e),
-            Ok(_) => Ok(true),
+    /// Returns true if end-to-end-identity is enabled for the given ciphersuite.
+    ///
+    /// This is determined by checking for existence of credentials for the given ciphersuite:
+    /// If there are x509 (and optionally basic) credentials -> Ok(true)
+    /// If there are no x509 but basic credentials -> Ok(false)
+    /// If there are no credentials for the given ciphersuite -> Err(CredentialNotFound)
+    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> Result<bool> {
+        let credentials = self
+            .find_credentials(CredentialFindFilters::builder().ciphersuite(ciphersuite).build())
+            .await?;
+
+        let x509_credential_exists = credentials
+            .iter()
+            .any(|credential| credential.r#type() == CredentialType::X509);
+        if x509_credential_exists {
+            return Ok(true);
         }
+
+        if !credentials.is_empty() {
+            return Ok(false);
+        }
+
+        Err(Error::CredentialNotFound(
+            CredentialType::Basic,
+            ciphersuite.signature_algorithm(),
+        ))
     }
 
     /// Verifies a Group state before joining it

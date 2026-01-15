@@ -1,19 +1,15 @@
-//! Utility for clients to get the current state of E2EI when the app resumes
-
-use openmls_traits::types::SignatureScheme;
-
 use super::Result;
-use crate::{RecursiveError, transaction_context::TransactionContext};
+use crate::{Ciphersuite, RecursiveError, transaction_context::TransactionContext};
 
 impl TransactionContext {
     /// See [crate::mls::session::Session::e2ei_is_enabled]
-    pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
+    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> Result<bool> {
         let client = self
             .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
         client
-            .e2ei_is_enabled(signature_scheme)
+            .e2ei_is_enabled(ciphersuite)
             .await
             .map_err(RecursiveError::mls_client("is e2ei enabled for client?"))
             .map_err(Into::into)
