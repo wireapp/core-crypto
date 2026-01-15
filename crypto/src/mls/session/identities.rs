@@ -86,14 +86,6 @@ impl Identities {
             .cloned()
     }
 
-    pub(crate) async fn find_most_recent_credential(
-        &self,
-        signature_scheme: SignatureScheme,
-        credential_type: CredentialType,
-    ) -> Option<Arc<Credential>> {
-        self.index(signature_scheme, credential_type)?.last().cloned()
-    }
-
     /// Add this credential to the identities.
     ///
     /// If there already exists a credential whose signature scheme, credential type, and timestamp of creation

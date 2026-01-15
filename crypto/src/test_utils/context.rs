@@ -119,14 +119,6 @@ impl SessionContext {
             .unwrap()
     }
 
-    pub async fn find_most_recent_credential(
-        &self,
-        sc: SignatureScheme,
-        ct: CredentialType,
-    ) -> Option<Arc<Credential>> {
-        self.session().await.find_most_recent_credential(sc, ct).await.ok()
-    }
-
     pub async fn find_credential(
         &self,
         sc: SignatureScheme,
