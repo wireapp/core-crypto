@@ -147,32 +147,6 @@ pub struct Database {
 
 const ALLOWED_CONCURRENT_TRANSACTIONS_COUNT: usize = 1;
 
-/// Interface to fetch from the database either from the connection directly or through a
-/// transaaction
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait OldFetchFromDatabase: Send + Sync {
-    async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        id: impl AsRef<[u8]> + Send,
-    ) -> CryptoKeystoreResult<Option<E>>;
-
-    async fn find_unique<U: crate::entities::UniqueEntity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-    ) -> CryptoKeystoreResult<U>;
-
-    async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        params: crate::entities::EntityFindParams,
-    ) -> CryptoKeystoreResult<Vec<E>>;
-
-    async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        ids: &[Vec<u8>],
-    ) -> CryptoKeystoreResult<Vec<E>>;
-    async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize>;
-}
-
 // SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
 unsafe impl Send for Database {}
 // SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
