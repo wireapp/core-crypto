@@ -191,13 +191,12 @@ mod tests {
     test_for_entity!(test_e2ei_enrollment, StoredE2eiEnrollment ignore_update:true);
     test_for_entity!(test_e2ei_acme_ca, E2eiAcmeCA ignore_entity_count:true ignore_find_many:true);
 
-    cfg_if::cfg_if! {
-        if #[cfg(feature = "proteus-keystore")] {
-            test_for_entity!(test_proteus_identity, ProteusIdentity ignore_entity_count:true ignore_update:true);
-            test_for_entity!(test_proteus_prekey, ProteusPrekey);
-            test_for_entity!(test_proteus_session, ProteusSession);
-        }
-    }
+    #[cfg(feature = "proteus-keystore")]
+    test_for_entity!(test_proteus_identity, ProteusIdentity ignore_entity_count:true ignore_update:true);
+    #[cfg(feature = "proteus-keystore")]
+    test_for_entity!(test_proteus_prekey, ProteusPrekey);
+    #[cfg(feature = "proteus-keystore")]
+    test_for_entity!(test_proteus_session, ProteusSession);
 
     // This test cannot pass on WASM: if you grep through the codebase, you'll note that
     // `CoreCryptoKeystore::AlreadyExists` is only produced in one place: in the entity derive macro,
@@ -449,60 +448,55 @@ pub mod utils {
         }
     }
 
-    cfg_if::cfg_if! {
-        if #[cfg(feature = "proteus-keystore")] {
+    #[cfg(feature = "proteus-keystore")]
+    const _: () = {
+        impl_entity_random_update_ext!(ProteusSession, blob_fields=[session,], additional_fields=[(id: uuid::Uuid::new_v4().hyphenated().to_string()),]);
 
-            impl_entity_random_update_ext!(ProteusSession, blob_fields=[session,], additional_fields=[(id: uuid::Uuid::new_v4().hyphenated().to_string()),]);
+        impl EntityRandomExt for core_crypto_keystore::entities::ProteusPrekey {
+            fn random() -> Self {
+                use rand::Rng as _;
+                let mut rng = rand::thread_rng();
 
-            impl EntityRandomExt for core_crypto_keystore::entities::ProteusPrekey {
-                fn random() -> Self {
-                    use rand::Rng as _;
-                    let mut rng = rand::thread_rng();
+                let id: u16 = rng.r#gen();
+                let mut prekey = vec![0u8; rng.gen_range(MAX_BLOB_SIZE)];
+                rng.fill(&mut prekey[..]);
 
-                    let id: u16 = rng.r#gen();
-                    let mut prekey = vec![0u8; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut prekey[..]);
-
-                    Self::from_raw(id, prekey)
-                }
-            }
-
-            impl EntityRandomUpdateExt for core_crypto_keystore::entities::ProteusPrekey {
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-                    // self.set_id(rng.gen());
-                    self.prekey = vec![0u8; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.prekey[..]);
-                }
-            }
-
-             impl EntityRandomExt for core_crypto_keystore::entities::ProteusIdentity {
-                fn random() -> Self {
-                    use rand::Rng as _;
-                    let mut rng = rand::thread_rng();
-
-                    let mut sk = vec![0u8; Self::SK_KEY_SIZE];
-                    rng.fill(&mut sk[..]);
-                    let mut pk = vec![0u8; Self::PK_KEY_SIZE];
-                    rng.fill(&mut pk[..]);
-
-                    Self {
-                        sk,
-                        pk,
-                    }
-                }
-            }
-
-            impl EntityRandomUpdateExt for core_crypto_keystore::entities::ProteusIdentity {
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-                    self.sk = vec![0u8; Self::SK_KEY_SIZE];
-                    rng.fill(&mut self.sk[..]);
-
-                    self.pk = vec![0u8; Self::PK_KEY_SIZE];
-                    rng.fill(&mut self.pk[..]);
-                }
+                Self::from_raw(id, prekey)
             }
         }
-    }
+
+        impl EntityRandomUpdateExt for core_crypto_keystore::entities::ProteusPrekey {
+            fn random_update(&mut self) {
+                let mut rng = rand::thread_rng();
+                // self.set_id(rng.gen());
+                self.prekey = vec![0u8; rng.gen_range(MAX_BLOB_SIZE)];
+                rng.fill(&mut self.prekey[..]);
+            }
+        }
+
+        impl EntityRandomExt for core_crypto_keystore::entities::ProteusIdentity {
+            fn random() -> Self {
+                use rand::Rng as _;
+                let mut rng = rand::thread_rng();
+
+                let mut sk = vec![0u8; Self::SK_KEY_SIZE];
+                rng.fill(&mut sk[..]);
+                let mut pk = vec![0u8; Self::PK_KEY_SIZE];
+                rng.fill(&mut pk[..]);
+
+                Self { sk, pk }
+            }
+        }
+
+        impl EntityRandomUpdateExt for core_crypto_keystore::entities::ProteusIdentity {
+            fn random_update(&mut self) {
+                let mut rng = rand::thread_rng();
+                self.sk = vec![0u8; Self::SK_KEY_SIZE];
+                rng.fill(&mut self.sk[..]);
+
+                self.pk = vec![0u8; Self::PK_KEY_SIZE];
+                rng.fill(&mut self.pk[..]);
+            }
+        }
+    };
 }
