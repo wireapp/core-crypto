@@ -15,7 +15,8 @@ use super::{
     test_conversation::operation_guard::{Commit, OperationGuard},
 };
 use crate::{
-    CertificateBundle, Ciphersuite, CredentialRef, CredentialType, MlsConversationDecryptMessage, WireIdentity,
+    CertificateBundle, Ciphersuite, CredentialFindFilters, CredentialRef, CredentialType,
+    MlsConversationDecryptMessage, WireIdentity,
     e2e_identity::{
         device_status::DeviceStatus,
         id::{QualifiedE2eiClientId, WireQualifiedClientId},
@@ -41,10 +42,7 @@ impl SessionContext {
         case: &TestContext,
         lifetime: Option<std::time::Duration>,
     ) -> KeyPackage {
-        let credential = self
-            .find_most_recent_credential(case.signature_scheme(), case.credential_type)
-            .await
-            .unwrap();
+        let credential = self.find_any_credential(case.ciphersuite(), case.credential_type).await;
         let credential_ref = CredentialRef::from_credential(&credential);
         self.session()
             .await
@@ -84,13 +82,6 @@ impl SessionContext {
         self.transaction = self.core_crypto.new_transaction().await.unwrap();
     }
 
-    pub async fn client_signature_key(&self, case: &TestContext) -> SignaturePublicKey {
-        let (sc, ct) = (case.signature_scheme(), case.credential_type);
-        let client = self.session().await;
-        let cb = client.find_most_recent_credential(sc, ct).await.unwrap();
-        SignaturePublicKey::from(cb.signature_key_pair.public())
-    }
-
     pub async fn get_user_id(&self) -> String {
         WireQualifiedClientId::from(self.get_client_id().await).get_user_id()
     }
@@ -117,6 +108,23 @@ impl SessionContext {
             .add_credential_without_clientid_check(credential)
             .await
             .unwrap()
+    }
+
+    pub async fn find_any_credential(&self, ciphersuite: Ciphersuite, credential_type: CredentialType) -> Credential {
+        let find_filters = CredentialFindFilters::builder()
+            .credential_type(credential_type)
+            .ciphersuite(ciphersuite)
+            .build();
+        let credentials = self
+            .session()
+            .await
+            .find_credentials(find_filters)
+            .await
+            .expect("find credentials for ciphersuite and credential type");
+        let credential_ref = credentials.first().expect("at least one credential found");
+
+        let database = self.transaction.keystore().await.unwrap();
+        credential_ref.load(&database).await.unwrap()
     }
 
     pub async fn find_credential(
@@ -231,9 +239,11 @@ impl SessionContext {
     }
 
     pub async fn verify_sender_identity(&self, case: &TestContext, decrypted: &MlsConversationDecryptMessage) {
-        let (sc, ct) = (case.signature_scheme(), case.credential_type);
-        let client = self.session().await;
-        let sender_cb = client.find_most_recent_credential(sc, ct).await.unwrap();
+        let sender_cb = &self.initial_credential;
+        let sender_cb = sender_cb
+            .load(&self.transaction.keystore().await.unwrap())
+            .await
+            .unwrap();
 
         if let openmls::prelude::MlsCredentialType::X509(certificate) = &sender_cb.mls_credential().mls_credential() {
             let mls_identity = certificate.extract_identity(case.ciphersuite(), None).unwrap();

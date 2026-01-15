@@ -100,10 +100,8 @@ impl MlsConversation {
             .signature_key_pair;
 
         let proposal = if let Some(leaf_node) = leaf_node {
-            let leaf_node_signer = &self.find_most_recent_credential(client).await?.signature_key_pair;
-
             self.group
-                .propose_explicit_self_update(backend, msg_signer, leaf_node, leaf_node_signer)
+                .propose_explicit_self_update(backend, msg_signer, leaf_node, msg_signer)
                 .await
         } else {
             self.group.propose_self_update(backend, msg_signer).await

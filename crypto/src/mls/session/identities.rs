@@ -168,34 +168,6 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        async fn should_find_most_recent(case: TestContext) {
-            let [mut central] = case.sessions().await;
-            Box::pin(async move {
-                let cert = central.get_intermediate_ca().cloned();
-
-                // all credentials need to be distinguishable by type, scheme, and timestamp
-                // we need to wait a second so the new credential has a distinct timestamp
-                // (our DB has a timestamp resolution of 1s)
-                smol::Timer::after(std::time::Duration::from_secs(1)).await;
-
-                let old = central.new_credential(&case, cert.as_ref()).await;
-
-                // again here
-                smol::Timer::after(std::time::Duration::from_secs(1)).await;
-
-                let new = central.new_credential(&case, cert.as_ref()).await;
-                assert_ne!(old, new);
-
-                let found = central
-                    .find_most_recent_credential(case.signature_scheme(), case.credential_type)
-                    .await
-                    .unwrap();
-                assert_eq!(found, new);
-            })
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
         async fn should_find_by_public_key(case: TestContext) {
             let [mut central] = case.sessions().await;
             Box::pin(async move {
