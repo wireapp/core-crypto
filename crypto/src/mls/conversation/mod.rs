@@ -44,8 +44,8 @@ use itertools::Itertools as _;
 use log::trace;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
-    group::MlsGroup,
-    prelude::{LeafNodeIndex, Proposal},
+    group::{MlsGroup, QueuedProposal},
+    prelude::{LeafNode, LeafNodeIndex, Proposal, Sender},
 };
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -403,18 +403,48 @@ impl MlsConversation {
         self.configuration.ciphersuite
     }
 
-    pub(crate) async fn find_current_credential(&self, client: &Session) -> Result<Arc<Credential>> {
-        let own_leaf = self.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
-        let sc = self.ciphersuite().signature_algorithm();
-        let ct = self
-            .own_credential_type()
-            .map_err(RecursiveError::mls_conversation("getting own credential type"))?;
+    fn extract_own_updated_node_from_proposals<'a>(
+        own_index: &LeafNodeIndex,
+        pending_proposals: impl Iterator<Item = &'a QueuedProposal>,
+    ) -> Option<&'a LeafNode> {
+        pending_proposals
+            .filter_map(|proposal| {
+                if let Sender::Member(index) = proposal.sender()
+                    && index == own_index
+                    && let Proposal::Update(update_proposal) = proposal.proposal()
+                {
+                    return Some(update_proposal.leaf_node());
+                }
+                None
+            })
+            .last()
+    }
 
-        client
-            .find_credential_by_public_key(sc, ct, own_leaf.signature_key())
+    async fn find_credential_for_leaf_node(&self, session: &Session, leaf_node: &LeafNode) -> Result<Arc<Credential>> {
+        let sc = self.ciphersuite().signature_algorithm();
+        let ct = match leaf_node.credential().credential_type() {
+            openmls::prelude::CredentialType::Basic => Ok(CredentialType::Basic),
+            openmls::prelude::CredentialType::X509 => Ok(CredentialType::X509),
+            openmls::prelude::CredentialType::Unknown(_) => Err(Error::MlsGroupInvalidState("Unknown Credential Type")),
+        }?;
+
+        let credential = session
+            .find_credential_by_public_key(sc, ct, leaf_node.signature_key())
             .await
-            .map_err(RecursiveError::mls_client("finding current credential"))
-            .map_err(Into::into)
+            .map_err(RecursiveError::mls_client("finding current credential"))?;
+        Ok(credential)
+    }
+
+    pub(crate) async fn find_current_credential(&self, client: &Session) -> Result<Arc<Credential>> {
+        // if the group has pending proposals one of which is an own update proposal, we should take the credential from
+        // there.
+        let own_leaf = Self::extract_own_updated_node_from_proposals(
+            &self.group().own_leaf_index(),
+            self.group().pending_proposals(),
+        )
+        .or_else(|| self.group.own_leaf())
+        .ok_or(LeafError::InternalMlsError)?;
+        self.find_credential_for_leaf_node(client, own_leaf).await
     }
 }
 
