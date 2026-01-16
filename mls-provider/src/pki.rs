@@ -35,35 +35,8 @@ impl PkiEnvironmentProvider {
         self.0.read().await.is_some()
     }
 
-    pub async fn update_env(
-        &self,
-        env: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
-    ) -> MlsProviderResult<()> {
+    pub async fn update_env(&self, env: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment) {
         self.0.write().await.replace(env);
-        Ok(())
-    }
-
-    #[allow(dead_code)]
-    async fn dump_certs(&self) {
-        use x509_cert::der::EncodePem as _;
-        let env = self.0.read().await;
-        let pki_env = env.as_ref().expect("No pki env");
-        for (i, ta) in pki_env.get_trust_anchors().unwrap().iter().enumerate() {
-            let x509_cert::anchor::TrustAnchorChoice::Certificate(ta_cert) = &ta.decoded_ta else {
-                unreachable!("Kaboom");
-            };
-            println!(
-                "Trust Anchor #{i}: \n{}",
-                ta_cert.to_pem(x509_cert::der::pem::LineEnding::LF).unwrap()
-            )
-        }
-
-        for (i, cert) in pki_env.get_intermediates().unwrap().iter().enumerate() {
-            println!(
-                "Intermediate #{i}: \n{}",
-                cert.decoded_cert.to_pem(x509_cert::der::pem::LineEnding::LF).unwrap()
-            )
-        }
     }
 }
 

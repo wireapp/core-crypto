@@ -152,6 +152,7 @@ impl Identities {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn iter(&self) -> impl '_ + Iterator<Item = Arc<Credential>> {
         self.credentials.values().flatten().cloned()
     }

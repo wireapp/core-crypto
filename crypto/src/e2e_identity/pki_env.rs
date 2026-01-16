@@ -1,14 +1,18 @@
-use std::collections::HashSet;
+//! PKI Environment API
+
+use std::{collections::HashSet, sync::Arc};
 
 use core_crypto_keystore::{
+    connection::Database,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
     traits::FetchFromDatabase,
 };
-use wire_e2e_identity::prelude::x509::revocation::{PkiEnvironment, PkiEnvironmentParams};
+use mls_crypto_provider::PkiEnvironmentProvider;
+use wire_e2e_identity::prelude::x509::revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams};
 use x509_cert::der::Decode;
 
 use super::Result;
-use crate::KeystoreError;
+use crate::{KeystoreError, RecursiveError};
 
 /// New Certificate Revocation List distribution points.
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::DerefMut)]
@@ -31,7 +35,7 @@ impl IntoIterator for NewCrlDistributionPoints {
     }
 }
 
-pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<Option<PkiEnvironment>> {
+pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<Option<RjtPkiEnvironment>> {
     let mut trust_roots = vec![];
     let Ok(Some(ta_raw)) = data_provider.get_unique::<E2eiAcmeCA>().await else {
         return Ok(None);
@@ -64,5 +68,170 @@ pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> R
         time_of_interest: None,
     };
 
-    Ok(Some(PkiEnvironment::init(params)?))
+    Ok(Some(RjtPkiEnvironment::init(params)?))
+}
+
+/// The PKI environment which can be initialized independently from a CoreCrypto session.
+#[derive(Debug, Clone)]
+pub struct PkiEnvironment {
+    /// Implemented by the clients and used by us to make external calls during e2e flow
+    // TODO: remove this config with further implementation of RFC CC2, as soon as hooks are actually used
+    #[allow(dead_code)]
+    hooks: Arc<dyn PkiEnvironmentHooks>,
+    /// The database in which X509 Credentials are stored. It is unrelated to the CoreCrypto session data base but can
+    /// be the same.
+    database: Database,
+    /// The PkiEnvironmentProvider is the provider used by the MlsCryptoProvider which has to implement
+    /// openmls_traits::OpenMlsCryptoProvideropenMls. It therefore has to be shared with the MlsCryptoProvider but
+    /// we consider this struct to be the place where it actually belongs to.
+    mls_pki_env_provider: PkiEnvironmentProvider,
+}
+
+impl PkiEnvironment {
+    /// Create a new PKI Environment
+    pub async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Database) -> Result<PkiEnvironment> {
+        let mls_pki_env_provider = restore_pki_env(&database)
+            .await
+            .map_err(RecursiveError::e2e_identity("restoring pki env"))?
+            .map(PkiEnvironmentProvider::from)
+            .unwrap_or_default();
+        Ok(Self {
+            hooks,
+            database,
+            mls_pki_env_provider,
+        })
+    }
+
+    /// Returns true if the inner pki environment has been restored from the database.
+    pub async fn provider_is_setup(&self) -> bool {
+        self.mls_pki_env_provider.is_env_setup().await
+    }
+
+    pub(crate) fn mls_pki_env_provider(&self) -> PkiEnvironmentProvider {
+        self.mls_pki_env_provider.clone()
+    }
+
+    pub(crate) async fn update_pki_environment_provider(&self) -> Result<()> {
+        if let Some(rjt_pki_environment) = restore_pki_env(&self.database).await? {
+            self.mls_pki_env_provider.update_env(rjt_pki_environment).await;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn database(&self) -> &Database {
+        &self.database
+    }
+}
+
+/// An http method
+pub enum HttpMethod {
+    /// GET
+    Get,
+    /// POST
+    Post,
+    /// PUT
+    Put,
+    /// DELETE
+    Delete,
+    /// PATCH
+    Patch,
+    /// HEAD
+    Head,
+}
+
+/// An http header
+pub struct HttpHeader {
+    /// header name
+    pub name: String,
+    /// header value
+    pub value: String,
+}
+
+/// An HTTP Response
+pub struct HttpResponse {
+    /// Response status code
+    pub status: u16,
+    /// Response Header
+    pub headers: Vec<HttpHeader>,
+    /// Response Body
+    pub body: Vec<u8>,
+}
+
+/// An OAuthResponse
+pub struct OAuthResponse {
+    /// OAuth Access Token
+    pub access_token: String,
+    /// OAuth Id Token
+    pub id_token: Option<String>,
+    /// The Token Type
+    pub token_type: Option<String>,
+    /// Expiration
+    pub expires_in: Option<u64>,
+    /// OAuth Scope
+    pub scope: Option<String>,
+    /// OAuth Refresh Token
+    pub refresh_token: Option<String>,
+}
+
+/// The PKI Environment Hooks used for external calls during e2e enrollment flow.
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+pub trait PkiEnvironmentHooks: std::fmt::Debug + Send + Sync {
+    /// Used for making HTTP requests to ACME servers, CRL distributors etc.
+    async fn http_request(
+        &self,
+        method: HttpMethod,
+        url: String,
+        headers: Vec<HttpHeader>,
+        body: Vec<u8>,
+    ) -> HttpResponse;
+
+    /// Only used to authenticate with the user's identity provider
+    async fn authenticate(&self, idp: String, key_auth: String, acme_aud: String) -> OAuthResponse;
+
+    /// Only used for DPoP challenge
+    async fn fetch_backend_access_token(&self, dpop: String) -> String;
+}
+
+#[allow(missing_docs)]
+#[cfg(test)]
+pub mod test {
+    use crate::e2e_identity::pki_env::{HttpHeader, HttpMethod, HttpResponse, OAuthResponse, PkiEnvironmentHooks};
+
+    /// Dummy struct for tests
+    #[derive(Debug, Default)]
+    pub struct DummyPkiEnvironmentHooks;
+
+    #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+    #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+    impl PkiEnvironmentHooks for DummyPkiEnvironmentHooks {
+        async fn http_request(
+            &self,
+            _method: HttpMethod,
+            _url: String,
+            _headers: Vec<HttpHeader>,
+            _body: Vec<u8>,
+        ) -> HttpResponse {
+            HttpResponse {
+                status: 200,
+                headers: vec![],
+                body: vec![],
+            }
+        }
+
+        async fn authenticate(&self, _idp: String, _key_auth: String, _acme_aud: String) -> OAuthResponse {
+            OAuthResponse {
+                access_token: "dummy-access-token".to_string(),
+                id_token: None,
+                token_type: Some("Bearer".to_string()),
+                expires_in: Some(3600),
+                scope: None,
+                refresh_token: None,
+            }
+        }
+
+        async fn fetch_backend_access_token(&self, _dpop: String) -> String {
+            "dummy-backend-token".to_string()
+        }
+    }
 }

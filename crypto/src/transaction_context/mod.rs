@@ -16,6 +16,7 @@ use crate::proteus::ProteusCentral;
 use crate::{
     Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef,
     CredentialType, KeystoreError, MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
+    e2e_identity::pki_env::PkiEnvironment,
     group_store::GroupStore,
     mls::{
         self, HasSessionAndCrypto,
@@ -48,6 +49,7 @@ pub struct TransactionContext {
 #[derive(Debug, Clone)]
 enum TransactionContextInner {
     Valid {
+        pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
         keystore: Database,
         mls_session: Arc<RwLock<Option<Session>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
@@ -64,6 +66,7 @@ impl CoreCrypto {
     pub async fn new_transaction(&self) -> Result<TransactionContext> {
         TransactionContext::new(
             self.database.clone(),
+            self.pki_environment.clone(),
             self.mls.clone(),
             #[cfg(feature = "proteus")]
             self.proteus.clone(),
@@ -93,6 +96,7 @@ impl HasSessionAndCrypto for TransactionContext {
 impl TransactionContext {
     async fn new(
         keystore: Database,
+        pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
         mls_session: Arc<RwLock<Option<Session>>>,
         #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     ) -> Result<Self> {
@@ -105,6 +109,7 @@ impl TransactionContext {
             inner: Arc::new(
                 TransactionContextInner::Valid {
                     keystore,
+                    pki_environment,
                     mls_session: mls_session.clone(),
                     mls_groups,
                     #[cfg(feature = "proteus")]
@@ -183,6 +188,30 @@ impl TransactionContext {
     pub(crate) async fn keystore(&self) -> Result<Database> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { keystore, .. } => Ok(keystore.clone()),
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
+        }
+    }
+
+    pub(crate) async fn pki_environment(&self) -> Result<PkiEnvironment> {
+        match &*self.inner.read().await {
+            TransactionContextInner::Valid { pki_environment, .. } => {
+                if let Some(pki_environment) = pki_environment.read().await.as_ref() {
+                    return Ok(pki_environment.clone());
+                }
+                Err(e2e_identity::Error::PkiEnvironmentUnset)
+                    .map_err(RecursiveError::transaction(
+                        "Getting PKI environment from transaction context",
+                    ))
+                    .map_err(Into::into)
+            }
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
+        }
+    }
+
+    pub(crate) async fn pki_environment_option(&self) -> Result<Option<PkiEnvironment>> {
+        match &*self.inner.read().await {
+            TransactionContextInner::Valid { pki_environment, .. } => Ok(pki_environment.read().await.clone()),
+
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
@@ -320,13 +349,14 @@ impl TransactionContext {
         let database = self.keystore().await?;
         let (client_id, identities) = self.init(identifier, ciphersuites).await?;
 
-        let mls_backend = MlsCryptoProvider::new(database);
-        let session = Session::new(client_id.clone(), identities, mls_backend, transport);
+        let pki_env_provider = self
+            .pki_environment_option()
+            .await?
+            .map(|pki_env| pki_env.mls_pki_env_provider())
+            .unwrap_or_default();
 
-        if session.is_e2ei_capable().await {
-            log::trace!(client_id:% = client_id; "Initializing PKI environment");
-            self.init_pki_env().await?;
-        }
+        let crypto_provider = MlsCryptoProvider::new_with_pki_env(database, pki_env_provider);
+        let session = Session::new(client_id.clone(), identities, crypto_provider, transport);
 
         self.set_mls_session(session).await?;
 

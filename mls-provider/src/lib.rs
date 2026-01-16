@@ -15,9 +15,7 @@ use openmls_traits::{
         KemOutput, SignatureScheme,
     },
 };
-pub use pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
-
-use crate::pki::PkiEnvironmentProvider;
+pub use pki::{CertProfile, CertificateGenerationArgs, PkiEnvironmentProvider, PkiKeypair};
 
 pub mod reexports {
     pub use rand_core;
@@ -87,6 +85,14 @@ impl MlsCryptoProvider {
         }
     }
 
+    pub fn new_with_pki_env(key_store: Database, pki_env: PkiEnvironmentProvider) -> Self {
+        Self {
+            key_store,
+            crypto: Default::default(),
+            pki_env,
+        }
+    }
+
     /// Clones the references of the PkiEnvironment and the CryptoProvider into a transaction
     /// keystore to pass to openmls as the `OpenMlsCryptoProvider`
     pub async fn new_transaction(&self) -> MlsProviderResult<()> {
@@ -94,11 +100,13 @@ impl MlsCryptoProvider {
     }
 
     /// Replaces the PKI env currently in place
-    pub async fn update_pki_env(
-        &self,
-        pki_env: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
-    ) -> MlsProviderResult<()> {
+    pub async fn update_pki_env(&self, pki_env: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment) {
         self.pki_env.update_env(pki_env).await
+    }
+
+    /// Set pki_env to a new shared pki environment provider
+    pub async fn set_pki_environment_provider(&mut self, pki_env: PkiEnvironmentProvider) {
+        self.pki_env = pki_env;
     }
 
     /// Returns whether we have a PKI env setup

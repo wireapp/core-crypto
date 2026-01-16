@@ -43,6 +43,7 @@ pub use openmls::{
     },
 };
 
+use crate::e2e_identity::pki_env::PkiEnvironment;
 pub use crate::{
     build_metadata::{BUILD_METADATA, BuildMetadata},
     e2e_identity::{
@@ -150,6 +151,7 @@ impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
 #[derive(Debug, Clone)]
 pub struct CoreCrypto {
     database: Database,
+    pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
     mls: Arc<RwLock<Option<mls::session::Session>>>,
     #[cfg(feature = "proteus")]
     proteus: Arc<Mutex<Option<proteus::ProteusCentral>>>,
@@ -163,9 +165,30 @@ impl CoreCrypto {
     pub fn new(database: Database) -> Self {
         Self {
             database,
+            pki_environment: Default::default(),
             mls: Default::default(),
             proteus: Default::default(),
         }
+    }
+
+    /// Set the client's PKI Environment
+    pub async fn set_pki_environment(&self, pki_environment: PkiEnvironment) -> Result<()> {
+        if let Some(mls_session) = self.mls.write().await.as_mut() {
+            mls_session
+                .crypto_provider
+                .set_pki_environment_provider(pki_environment.mls_pki_env_provider())
+                .await
+        }
+
+        let mut guard = self.pki_environment.write().await;
+        *guard = Some(pki_environment);
+
+        Ok(())
+    }
+
+    /// Get the client's PKI Environment
+    pub async fn get_pki_environment(&self) -> Option<PkiEnvironment> {
+        self.pki_environment.read().await.clone()
     }
 
     /// Get the mls session if initialized
@@ -189,6 +212,15 @@ impl CoreCrypto {
             .close()
             .await
             .map_err(crate::KeystoreError::wrap("Closing database"))?;
+
+        if let Some(pki_env) = self.get_pki_environment().await {
+            pki_env
+                .database()
+                .close()
+                .await
+                .map_err(crate::KeystoreError::wrap("Closing PKI environment database"))?;
+        }
+
         Ok(())
     }
 }
