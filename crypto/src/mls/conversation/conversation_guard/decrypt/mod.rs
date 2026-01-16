@@ -375,7 +375,7 @@ impl ConversationGuard {
 
                 let (proposals_to_renew, needs_update) = Renew::renew(
                     &conversation.group.own_leaf_index(),
-                    pending_proposals.into_iter(),
+                    pending_proposals.iter(),
                     pending_commit.as_ref(),
                     staged_commit.as_ref(),
                 );

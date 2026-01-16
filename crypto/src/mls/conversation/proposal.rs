@@ -99,15 +99,16 @@ impl MlsConversation {
             .map_err(|_| Error::IdentityInitializationError)?
             .signature_key_pair;
 
-        let proposal = if let Some(leaf_node) = leaf_node {
+        let proposal = if let Some(own_leaf) = leaf_node {
+            let credential = self.find_credential_for_leaf_node(client, &own_leaf).await?;
             self.group
-                .propose_explicit_self_update(backend, msg_signer, leaf_node, msg_signer)
+                .propose_explicit_self_update(backend, msg_signer, own_leaf, credential.signature_key())
                 .await
         } else {
             self.group.propose_self_update(backend, msg_signer).await
         }
         .map(MlsProposalBundle::from)
-        .map_err(MlsError::wrap("proposing self update"))?;
+        .map_err(MlsError::wrap("proposing explicit self update"))?;
 
         self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(proposal)

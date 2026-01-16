@@ -24,47 +24,48 @@ impl Renew {
     /// * `valid_commit` - commit accepted by the backend which will now supersede our local pending commit
     pub(crate) fn renew<'a>(
         self_index: &LeafNodeIndex,
-        pending_proposals: impl Iterator<Item = QueuedProposal> + 'a,
+        pending_proposals: impl Iterator<Item = &'a QueuedProposal>,
         pending_commit: Option<&'a StagedCommit>,
         valid_commit: &'a StagedCommit,
-    ) -> (Vec<QueuedProposal>, bool) {
+    ) -> (Vec<QueuedProposal>, Option<&'a LeafNode>) {
         // indicates if we need to renew an update proposal.
-        // true only if we have an empty pending commit or the valid commit does not contain one of our update proposal
-        // otherwise, local orphan update proposal will be renewed regularly, without this flag
-        let mut needs_update = false;
+        let mut explicit_update = None;
 
         let renewed_pending_proposals = if let Some(pending_commit) = pending_commit {
-            // present in pending commit but not in valid commit
-            let commit_proposals = pending_commit.queued_proposals().cloned().collect::<Vec<_>>();
-
-            // if our own pending commit is empty it means we were attempting to update
-            let empty_commit = commit_proposals.is_empty();
-
-            // does the valid commit contains one of our update proposal ?
-            let valid_commit_has_own_update_proposal = valid_commit.update_proposals().any(|p| match p.sender() {
-                Sender::Member(sender_index) => self_index == sender_index,
-                _ => false,
-            });
-
-            // do we need to renew the update or has it already been committed
-            needs_update = !valid_commit_has_own_update_proposal && empty_commit;
-
+            explicit_update =
+                MlsConversation::extract_own_updated_node_from_proposals(self_index, valid_commit.queued_proposals())
+                    .or_else(|| {
+                        // If there are no proposals in the pending commit this implies that we were updating.
+                        // This is implied by an empty proposal list because openmls erases any self update proposals
+                        // from the queue when creating the staged commit.
+                        pending_commit
+                            .queued_proposals()
+                            .next()
+                            .is_none()
+                            .then(|| pending_commit.get_update_path_leaf_node())
+                            .flatten()
+                    });
             // local proposals present in local pending commit but not in valid commit
-            commit_proposals
-                .into_iter()
+            pending_commit
+                .queued_proposals()
                 .filter_map(|p| Self::is_proposal_renewable(p, Some(valid_commit)))
+                .cloned()
                 .collect::<Vec<_>>()
         } else {
             // local pending proposals present locally but not in valid commit
             pending_proposals
                 .filter_map(|p| Self::is_proposal_renewable(p, Some(valid_commit)))
+                .cloned()
                 .collect::<Vec<_>>()
         };
-        (renewed_pending_proposals, needs_update)
+        (renewed_pending_proposals, explicit_update)
     }
 
     /// A proposal has to be renewed if it is absent from supplied commit
-    fn is_proposal_renewable(proposal: QueuedProposal, commit: Option<&StagedCommit>) -> Option<QueuedProposal> {
+    fn is_proposal_renewable<'a>(
+        proposal: &'a QueuedProposal,
+        commit: Option<&'a StagedCommit>,
+    ) -> Option<&'a QueuedProposal> {
         if let Some(commit) = commit {
             let in_commit = match proposal.proposal() {
                 Proposal::Add(add) => commit.add_proposals().any(|p| {
@@ -96,7 +97,7 @@ impl MlsConversation {
         client: &Session,
         backend: &MlsCryptoProvider,
         proposals: impl Iterator<Item = QueuedProposal>,
-        needs_update: bool,
+        additional_update: Option<&LeafNode>,
     ) -> Result<Vec<MlsProposalBundle>> {
         let mut bundle = vec![];
         let is_external = |p: &QueuedProposal| matches!(p.sender(), Sender::External(_) | Sender::NewMemberProposal);
@@ -105,13 +106,13 @@ impl MlsConversation {
             let msg = match proposal.proposal {
                 Proposal::Add(add) => self.propose_add_member(client, backend, add.key_package.into()).await?,
                 Proposal::Remove(remove) => self.propose_remove_member(client, backend, remove.removed()).await?,
-                Proposal::Update(update) => self.renew_update(client, backend, Some(update.leaf_node())).await?,
+                Proposal::Update(update) => self.renew_update(client, backend, update.leaf_node()).await?,
                 _ => return Err(Error::ProposalVariantCannotBeRenewed),
             };
             bundle.push(msg);
         }
-        if needs_update {
-            let proposal = self.renew_update(client, backend, None).await?;
+        if let Some(leaf_node) = additional_update {
+            let proposal = self.renew_update(client, backend, leaf_node).await?;
             bundle.push(proposal);
         }
         Ok(bundle)
@@ -124,28 +125,17 @@ impl MlsConversation {
         &mut self,
         session: &Session,
         crypto_provider: &MlsCryptoProvider,
-        leaf_node: Option<&LeafNode>,
+        leaf_node: &LeafNode,
     ) -> Result<MlsProposalBundle> {
-        if let Some(leaf_node) = leaf_node {
-            // Creating an update rekeys the LeafNode everytime. Hence we need to clear the previous
-            // encryption key from the keystore otherwise we would have a leak
-            crypto_provider
-                .key_store()
-                .remove_borrowed::<StoredEncryptionKeyPair>(leaf_node.encryption_key().as_slice())
-                .await
-                .map_err(KeystoreError::wrap("removing mls encryption keypair"))?;
-        }
+        // Creating an update rekeys the LeafNode everytime. Hence we need to clear the previous
+        // encryption key from the keystore otherwise we would have a leak
+        crypto_provider
+            .key_store()
+            .remove_borrowed::<StoredEncryptionKeyPair>(leaf_node.encryption_key().as_slice())
+            .await
+            .map_err(KeystoreError::wrap("removing mls encryption keypair"))?;
 
-        let mut leaf_node = leaf_node
-            .or_else(|| self.group.own_leaf())
-            .cloned()
-            .ok_or(Error::MlsGroupInvalidState("own_leaf is None"))?;
-
-        let credential = self.find_current_credential(session).await?;
-
-        leaf_node.set_credential_with_key(credential.to_mls_credential_with_key());
-
-        self.propose_explicit_self_update(session, crypto_provider, Some(leaf_node))
+        self.propose_explicit_self_update(session, crypto_provider, Some(leaf_node.clone()))
             .await
     }
 
