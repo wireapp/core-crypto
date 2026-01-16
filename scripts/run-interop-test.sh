@@ -36,7 +36,7 @@ if [ "$OS" = "Darwin" ]; then
     cd $scripts
 fi
 
-./create-android-emulator.sh
+./start-android-emulator.sh
 
 cd ../interop/src/clients
 
