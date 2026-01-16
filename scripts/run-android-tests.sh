@@ -6,7 +6,7 @@ if [[ "${GITHUB_ACTIONS}" == "true" ]]; then
     sh ./setup-android-emulator.sh
 fi
 
-./create-android-emulator.sh
+./start-android-emulator.sh
 
 trap '
   echo "Shutting down Android emulator via adb"
