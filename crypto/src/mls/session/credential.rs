@@ -12,13 +12,11 @@ impl Session {
     ///
     /// If no filters are set, this is equivalent to [`Self::get_credentials`].
     pub async fn find_credentials(&self, find_filters: CredentialFindFilters<'_>) -> Result<Vec<CredentialRef>> {
-        Ok(self
-            .identities
-            .read()
+        let database = self.crypto_provider.keystore();
+        CredentialRef::find(&database, find_filters)
             .await
-            .find_credential(find_filters)
-            .map(|credential| CredentialRef::from_credential(&credential))
-            .collect())
+            .map_err(RecursiveError::mls_credential_ref("finding credentials with filters"))
+            .map_err(Into::into)
     }
 
     /// Get all credentials known by this session.
