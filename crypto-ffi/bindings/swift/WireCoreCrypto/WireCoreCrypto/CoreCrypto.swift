@@ -46,6 +46,18 @@ public protocol CoreCryptoProtocol {
     /// Check if history sharing is enabled, i.e., if any of the conversation members have a ``ClientId`` starting
     /// with the specific history client prefix.
     func isHistorySharingEnabled(conversationId: ConversationId) async throws -> Bool
+
+    ///
+    /// Set the PkiEnvironment of the CoreCrypto instance
+    /// - Parameter pkiEnvironment: the pki environment to set
+    ///
+    func setPkiEnvironment(_ pkiEnvironment: PkiEnvironment?) async throws
+
+    ///
+    /// Get the Pki Environment of the CoreCrypto instance
+    /// - Returns: the pki environment or null if not set
+    ///
+    func getPkiEnvironment() async throws -> PkiEnvironment?
 }
 
 /// CoreCrypto client which manages one cryptographic client for proteus and MLS.
@@ -116,6 +128,14 @@ public final class CoreCrypto: CoreCryptoProtocol {
 
     public func isHistorySharingEnabled(conversationId: ConversationId) async throws -> Bool {
         try await coreCrypto.isHistorySharingEnabled(conversationId: conversationId)
+    }
+
+    public func setPkiEnvironment(_ pkiEnvironment: PkiEnvironment?) async throws {
+        try await coreCrypto.setPkiEnvironment(pkiEnvironment: pkiEnvironment)
+    }
+
+    public func getPkiEnvironment() async -> PkiEnvironment? {
+        return await coreCrypto.getPkiEnvironment()
     }
 
     /// Returns the last resort PreKey id
