@@ -66,18 +66,6 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::client_public_key]
-    pub async fn client_public_key(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-    ) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self
-            .inner
-            .client_public_key(ciphersuite.into(), credential_type.into())
-            .await?)
-    }
-
     /// See [core_crypto::mls::conversation::Conversation::epoch]
     pub async fn conversation_epoch(&self, conversation_id: &ConversationId) -> CoreCryptoResult<u64> {
         let conversation = self.inner.conversation(conversation_id.as_ref()).await?;

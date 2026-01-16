@@ -167,7 +167,8 @@ mod tests {
 
             let decrypted = result.unwrap();
             // verify Bob's (sender) identity
-            bob.verify_sender_identity(&case, &decrypted).await;
+            bob.verify_sender_identity(&case, &bob.initial_credential, &decrypted)
+                .await;
 
             // Let's say backend accepted our external commit.
             // So Bob can merge the commit and update the local state
@@ -398,8 +399,7 @@ mod tests {
                 .try_into()
                 .expect("case conversation has a known credential type");
             let cs = group.ciphersuite();
-            let client = alice.session().await;
-            let cb = client.find_most_recent_credential(cs.into(), ct).await.unwrap();
+            let cb = alice.find_any_credential(cs.into(), ct).await;
 
             let gi = group
                 .export_group_info(

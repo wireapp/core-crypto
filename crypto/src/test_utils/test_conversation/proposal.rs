@@ -83,8 +83,7 @@ impl<'a> TestConversation<'a> {
             .new_external_add_proposal(
                 self.id().clone(),
                 self.guard().await.epoch().await.into(),
-                self.case.ciphersuite(),
-                self.case.credential_type,
+                &joiner.initial_credential,
             )
             .await
             .unwrap();
@@ -143,8 +142,8 @@ impl<'a> TestConversation<'a> {
             .index;
         let sender_index = openmls::prelude::SenderExtensionIndex::new(sender_index);
 
-        let (sc, ct) = (self.case.signature_scheme(), self.case.credential_type);
-        let cb = external_actor.find_most_recent_credential(sc, ct).await.unwrap();
+        let (cs, ct) = (self.case.ciphersuite(), self.case.credential_type);
+        let cb = external_actor.find_any_credential(cs, ct).await;
 
         let group_id = openmls::group::GroupId::from_slice(self.id().as_ref());
         let epoch = self.guard().await.epoch().await;

@@ -194,8 +194,6 @@ impl Session {
 mod tests {
     use std::time::Duration;
 
-    use core_crypto_keystore::{ConnectionType, DatabaseKey};
-    use mls_crypto_provider::{Database, MlsCryptoProvider};
     use openmls::prelude::{KeyPackageIn, ProtocolVersion};
     use openmls_traits::types::VerifiableCiphersuite;
 
@@ -208,33 +206,14 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn can_assess_keypackage_expiration(case: TestContext) {
-        let [session_context] = case.sessions().await;
-        let key = DatabaseKey::generate();
-        let database = Database::open(ConnectionType::InMemory, &key).await.unwrap();
-        let backend = MlsCryptoProvider::new(database);
-        let x509_test_chain = if case.is_x509() {
-            let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
-            x509_test_chain.register_with_provider(&backend).await;
-            Some(x509_test_chain)
-        } else {
-            None
-        };
-
-        backend.new_transaction().await.unwrap();
-        session_context
-            .random_generate(
-                &case,
-                x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
-            )
-            .await
-            .unwrap();
+        let [session] = case.sessions().await;
 
         // 90-day standard expiration
-        let kp_std_exp = session_context.new_keypackage(&case).await;
+        let kp_std_exp = session.new_keypackage(&case).await;
         assert!(kp_std_exp.is_valid());
 
         // 1-second expiration
-        let kp_1s_exp = session_context
+        let kp_1s_exp = session
             .new_keypackage_with_lifetime(&case, Some(Duration::from_secs(1)))
             .await;
 
@@ -252,8 +231,6 @@ mod tests {
 
         let [session_context] = case.sessions_basic_with_pki_env().await;
         Box::pin(async move {
-            let signature_scheme = case.signature_scheme();
-
             // Generate 5 Basic key packages first
             let mut initial_kp_refs = Vec::new();
             for _ in 0..5 {
@@ -287,7 +264,7 @@ mod tests {
             assert!(
                 session_context
                     .transaction
-                    .e2ei_is_enabled(signature_scheme)
+                    .e2ei_is_enabled(case.ciphersuite())
                     .await
                     .unwrap()
             );

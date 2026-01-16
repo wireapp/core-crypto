@@ -4,7 +4,7 @@ use openmls::prelude::{Credential as MlsCredential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
 
 use crate::{
-    Credential, CredentialFindFilters, CredentialType, Session,
+    Credential, CredentialType, Session,
     mls::session::error::{Error, Result},
 };
 
@@ -40,37 +40,6 @@ impl Identities {
         self.credentials.get(&(signature_scheme, credential_type.into()))
     }
 
-    /// Return an iterator over all credentials matching the given filters.
-    pub(crate) fn find_credential(&self, filters: CredentialFindFilters<'_>) -> impl Iterator<Item = Arc<Credential>> {
-        let CredentialFindFilters {
-            client_id,
-            public_key,
-            ciphersuite,
-            credential_type,
-            earliest_validity,
-        } = filters;
-
-        // we have an easy way to filter out a bunch of credentials if the right filters are set,
-        // but we have to search through all of them if it is not.
-        let values: Box<dyn Iterator<Item = Arc<Credential>>> = match ciphersuite.zip(credential_type) {
-            Some((ciphersuite, credential_type)) => {
-                match self.index(ciphersuite.signature_algorithm(), credential_type) {
-                    Some(set) => Box::new(set.iter().cloned()),
-                    None => Box::new(std::iter::empty()),
-                }
-            }
-            None => Box::new(self.credentials.values().flatten().cloned()),
-        };
-
-        values.filter(move |credential| {
-            ciphersuite.is_none_or(|ciphersuite| credential.signature_scheme() == ciphersuite.signature_algorithm())
-                && credential_type.is_none_or(|credential_type| credential.credential_type() == credential_type)
-                && earliest_validity.is_none_or(|earliest_validity| credential.earliest_validity == earliest_validity)
-                && client_id.is_none_or(|client_id| credential.client_id() == client_id)
-                && public_key.is_none_or(|public_key| credential.signature_key_pair.public() == public_key)
-        })
-    }
-
     /// Return the first credential matching the supplied fields
     ///
     /// Note that other credentials could in theory also match if they share the same public key.
@@ -84,14 +53,6 @@ impl Identities {
             .iter()
             .find(|credential| credential.signature_key_pair.public() == public_key.as_slice())
             .cloned()
-    }
-
-    pub(crate) async fn find_most_recent_credential(
-        &self,
-        signature_scheme: SignatureScheme,
-        credential_type: CredentialType,
-    ) -> Option<Arc<Credential>> {
-        self.index(signature_scheme, credential_type)?.last().cloned()
     }
 
     /// Add this credential to the identities.
@@ -174,34 +135,6 @@ mod tests {
 
     mod find {
         use super::*;
-
-        #[apply(all_cred_cipher)]
-        async fn should_find_most_recent(case: TestContext) {
-            let [mut central] = case.sessions().await;
-            Box::pin(async move {
-                let cert = central.get_intermediate_ca().cloned();
-
-                // all credentials need to be distinguishable by type, scheme, and timestamp
-                // we need to wait a second so the new credential has a distinct timestamp
-                // (our DB has a timestamp resolution of 1s)
-                smol::Timer::after(std::time::Duration::from_secs(1)).await;
-
-                let old = central.new_credential(&case, cert.as_ref()).await;
-
-                // again here
-                smol::Timer::after(std::time::Duration::from_secs(1)).await;
-
-                let new = central.new_credential(&case, cert.as_ref()).await;
-                assert_ne!(old, new);
-
-                let found = central
-                    .find_most_recent_credential(case.signature_scheme(), case.credential_type)
-                    .await
-                    .unwrap();
-                assert_eq!(found, new);
-            })
-            .await
-        }
 
         #[apply(all_cred_cipher)]
         async fn should_find_by_public_key(case: TestContext) {

@@ -398,7 +398,7 @@ impl TestContext {
     {
         let mut members = members.into_iter().peekable();
         let creator = members.peek().unwrap();
-        let signature_key = external_sender.client_signature_key(self).await.as_slice().to_vec();
+        let signature_key = external_sender.initial_credential.public_key().to_vec();
         self.cfg
             .set_raw_external_senders(&creator.session().await.crypto_provider, vec![signature_key])
             .await

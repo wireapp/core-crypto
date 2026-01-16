@@ -4,8 +4,7 @@ use openmls::prelude::{SignaturePublicKey, SignatureScheme};
 
 use super::{Error, Result};
 use crate::{
-    Ciphersuite, Credential, CredentialFindFilters, CredentialRef, CredentialType, LeafError, MlsConversation,
-    RecursiveError, Session,
+    Credential, CredentialFindFilters, CredentialRef, CredentialType, MlsConversation, RecursiveError, Session,
 };
 
 impl Session {
@@ -13,13 +12,11 @@ impl Session {
     ///
     /// If no filters are set, this is equivalent to [`Self::get_credentials`].
     pub async fn find_credentials(&self, find_filters: CredentialFindFilters<'_>) -> Result<Vec<CredentialRef>> {
-        Ok(self
-            .identities
-            .read()
+        let database = self.crypto_provider.keystore();
+        CredentialRef::find(&database, find_filters)
             .await
-            .find_credential(find_filters)
-            .map(|credential| CredentialRef::from_credential(&credential))
-            .collect())
+            .map_err(RecursiveError::mls_credential_ref("finding credentials with filters"))
+            .map_err(Into::into)
     }
 
     /// Get all credentials known by this session.
@@ -130,20 +127,6 @@ impl Session {
     }
 
     /// convenience function deferring to the implementation on the inner type
-    pub(crate) async fn find_most_recent_credential(
-        &self,
-        signature_scheme: SignatureScheme,
-        credential_type: CredentialType,
-    ) -> Result<Arc<Credential>> {
-        self.identities
-            .read()
-            .await
-            .find_most_recent_credential(signature_scheme, credential_type)
-            .await
-            .ok_or(Error::CredentialNotFound(credential_type, signature_scheme))
-    }
-
-    /// convenience function deferring to the implementation on the inner type
     pub(crate) async fn find_credential_by_public_key(
         &self,
         signature_scheme: SignatureScheme,
@@ -156,35 +139,5 @@ impl Session {
             .find_credential_by_public_key(signature_scheme, credential_type, public_key)
             .await
             .ok_or(Error::CredentialNotFound(credential_type, signature_scheme))
-    }
-
-    /// Convenience function to get the most recent credential, creating it if the credential type is basic.
-    ///
-    /// If the credential type is X509, a missing credential returns `LeafError::E2eiEnrollmentNotDone`
-    pub(crate) async fn find_most_recent_or_create_basic_credential(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-    ) -> Result<Arc<Credential>> {
-        let credential = match self
-            .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
-            .await
-        {
-            Ok(credential) => credential,
-            Err(Error::CredentialNotFound(..)) if credential_type == CredentialType::Basic => {
-                let client_id = self.id();
-                let credential = Credential::basic(ciphersuite, client_id, &self.crypto_provider).map_err(
-                    RecursiveError::mls_credential(
-                        "creating basic credential in find_most_recent_or_create_basic_credential",
-                    ),
-                )?;
-                self.add_credential_producing_arc(credential).await?
-            }
-            Err(Error::CredentialNotFound(..)) if credential_type == CredentialType::X509 => {
-                return Err(LeafError::E2eiEnrollmentNotDone.into());
-            }
-            Err(err) => return Err(err),
-        };
-        Ok(credential)
     }
 }

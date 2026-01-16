@@ -18,8 +18,8 @@ use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
 use super::TransactionContext;
 use crate::{
-    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, Credential, E2eiEnrollment, MlsTransport,
-    RecursiveError,
+    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, Credential, CredentialRef, E2eiEnrollment,
+    MlsTransport, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{crl::get_new_crl_distribution_points, x509::CertificatePrivateKey},
 };
@@ -68,7 +68,7 @@ impl TransactionContext {
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
         transport: Arc<dyn MlsTransport>,
-    ) -> Result<NewCrlDistributionPoints> {
+    ) -> Result<(CredentialRef, NewCrlDistributionPoints)> {
         let mls_provider = self
             .mls_provider()
             .await
@@ -104,19 +104,20 @@ impl TransactionContext {
         let mut credential = Credential::x509(ciphersuite, cert_bundle.clone()).map_err(
             RecursiveError::mls_credential("creating credential from certificate bundle in e2ei_mls_init_only"),
         )?;
-        // we don't need to keep the credential ref; this credential will be loaded in mls_init later on
-        credential
-            .save(&mls_provider.keystore())
-            .await
-            .map_err(RecursiveError::mls_credential(
-                "saving credential in e2ei_mls_init_only",
-            ))?;
+
+        let credential_ref =
+            credential
+                .save(&mls_provider.keystore())
+                .await
+                .map_err(RecursiveError::mls_credential(
+                    "saving credential in e2ei_mls_init_only",
+                ))?;
 
         let identifier = ClientIdentifier::X509(HashMap::from([(ciphersuite.signature_algorithm(), cert_bundle)]));
         self.mls_init(identifier, &[ciphersuite], transport)
             .await
             .map_err(RecursiveError::transaction("initializing mls"))?;
-        Ok(crl_new_distribution_points)
+        Ok((credential_ref, crl_new_distribution_points))
     }
 
     /// When x509 new credentials are registered this extracts the new CRL Distribution Point from the end entity
@@ -199,16 +200,11 @@ mod tests {
             .unwrap();
             let transport = Arc::new(CoreCryptoTransportSuccessProvider::default());
 
-            tx.e2ei_mls_init_only(&mut enrollment, cert, transport).await.unwrap();
+            let (credential_ref, _) = tx.e2ei_mls_init_only(&mut enrollment, cert, transport).await.unwrap();
 
             let session = SessionContext::new_from_cc(&case, cc, Some(&chain)).await;
 
             // verify the created client can create a conversation
-            let credential = session
-                .find_most_recent_credential(case.signature_scheme(), CredentialType::X509)
-                .await
-                .expect("we just enrolled into e2ei");
-            let credential_ref = CredentialRef::from_credential(&credential);
             let conversation = case
                 .create_conversation_with_credentials([(&session, &credential_ref)])
                 .await;
@@ -222,13 +218,7 @@ mod tests {
                 conversation.guard().await.e2ei_conversation_state().await.unwrap(),
                 E2eiConversationState::Verified
             );
-            assert!(
-                session
-                    .transaction
-                    .e2ei_is_enabled(case.signature_scheme())
-                    .await
-                    .unwrap()
-            );
+            assert!(session.transaction.e2ei_is_enabled(case.ciphersuite()).await.unwrap());
         })
         .await
     }

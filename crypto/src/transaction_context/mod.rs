@@ -15,7 +15,7 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 use crate::proteus::ProteusCentral;
 use crate::{
     Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef,
-    CredentialType, KeystoreError, MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
+    KeystoreError, MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
     group_store::GroupStore,
     mls::{
         self, HasSessionAndCrypto,
@@ -343,21 +343,6 @@ impl TransactionContext {
             }
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
-    }
-
-    /// Returns the client's public key.
-    pub async fn client_public_key(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-    ) -> Result<Vec<u8>> {
-        let cb = self
-            .session()
-            .await?
-            .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential"))?;
-        Ok(cb.signature_key_pair.to_public_vec())
     }
 
     /// see [Session::id]

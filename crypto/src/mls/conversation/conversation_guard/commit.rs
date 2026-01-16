@@ -6,8 +6,7 @@ use openmls::prelude::KeyPackageIn;
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
-    ClientIdRef, CredentialRef, CredentialType, LeafError, MlsError, MlsGroupInfoBundle, MlsTransportResponse,
-    RecursiveError,
+    ClientIdRef, CredentialRef, LeafError, MlsError, MlsGroupInfoBundle, MlsTransportResponse, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::{
         conversation::{
@@ -205,31 +204,6 @@ impl ConversationGuard {
         self.send_and_merge_commit(commit).await
     }
 
-    /// Send a commit in a conversation for changing the credential. Requires first
-    /// having enrolled a new X509 certificate with either
-    /// [crate::transaction_context::TransactionContext::e2ei_new_activation_enrollment] or
-    /// [crate::transaction_context::TransactionContext::e2ei_new_rotate_enrollment] and having saved it with
-    /// [crate::transaction_context::TransactionContext::save_x509_credential].
-    pub async fn e2ei_rotate(&mut self, cb: Option<&Credential>) -> Result<()> {
-        let client = &self.session().await?;
-        let conversation = self.conversation().await;
-
-        let cb = match cb {
-            Some(cb) => cb,
-            None => &*client
-                .find_most_recent_credential(conversation.ciphersuite().signature_algorithm(), CredentialType::X509)
-                .await
-                .map_err(RecursiveError::mls_client("finding most recent x509 credential"))?,
-        };
-
-        // we don't need the conversation anymore, but we do need to mutably borrow `self` again
-        drop(conversation);
-
-        let commit = self.set_credential_inner(cb).await?;
-
-        self.send_and_merge_commit(commit).await
-    }
-
     /// Set the referenced credential for this conversation.
     pub async fn set_credential_by_ref(&mut self, credential_ref: &CredentialRef) -> Result<()> {
         let database = self.crypto_provider().await?.keystore();
@@ -303,7 +277,7 @@ impl ConversationGuard {
             return Ok(None);
         }
 
-        let signer = &inner.find_most_recent_credential(session).await?.signature_key_pair;
+        let signer = &inner.find_current_credential(session).await?.signature_key_pair;
 
         let (commit, welcome, gi) = inner
             .group
@@ -332,7 +306,7 @@ impl ConversationGuard {
         if proposals.is_empty() {
             return Ok(None);
         }
-        let signer = &inner.find_most_recent_credential(session).await?.signature_key_pair;
+        let signer = &inner.find_current_credential(session).await?.signature_key_pair;
 
         let (commit, welcome, gi) = inner
             .group

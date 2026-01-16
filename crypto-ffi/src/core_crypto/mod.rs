@@ -1,4 +1,3 @@
-mod client;
 pub(crate) mod command;
 pub(crate) mod conversation;
 pub(crate) mod e2ei;

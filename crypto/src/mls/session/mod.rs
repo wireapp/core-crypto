@@ -20,8 +20,7 @@ use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::{
-    Ciphersuite, ClientId, CredentialType, HistorySecret, LeafError, MlsConversation, MlsError, MlsTransport,
-    RecursiveError,
+    ClientId, CredentialType, HistorySecret, LeafError, MlsConversation, MlsError, MlsTransport, RecursiveError,
     mls::{
         self, HasSessionAndCrypto,
         conversation::{ConversationIdRef, ImmutableConversation},
@@ -91,24 +90,6 @@ impl Session {
             .map_err(RecursiveError::mls_conversation("getting raw conversation by id"))?
             .ok_or_else(|| LeafError::ConversationNotFound(id.to_owned()))?;
         Ok(ImmutableConversation::new(raw_conversation, self.clone()))
-    }
-
-    /// Returns the client's most recent public signature key as a buffer.
-    /// Used to upload a public key to the server in order to verify client's messages signature.
-    ///
-    /// # Arguments
-    /// * `ciphersuite` - a callback to be called to perform authorization
-    /// * `credential_type` - of the credential to look for
-    pub async fn public_key(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-    ) -> crate::mls::Result<Vec<u8>> {
-        let cb = self
-            .find_most_recent_credential(ciphersuite.signature_algorithm(), credential_type)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential"))?;
-        Ok(cb.signature_key_pair.to_public_vec())
     }
 
     /// Checks if a given conversation id exists locally

@@ -357,7 +357,13 @@ impl<'a> TestConversation<'a> {
             .encryption_key
     }
 
-    pub(crate) async fn verify_credential_handle_and_name(&self, new_handle: &str, new_display_name: &str) {
+    /// Checks if the handle/name match with the conversation credential and the given credential
+    pub(crate) async fn verify_credential_handle_and_name(
+        &self,
+        new_handle: &str,
+        new_display_name: &str,
+        credential_ref: &CredentialRef,
+    ) {
         let new_handle = format!("wireapp://%40{new_handle}@world.com");
         // verify the identity in..
         // the MLS group
@@ -374,16 +380,13 @@ impl<'a> TestConversation<'a> {
         assert_eq!(group_identity.status, crate::DeviceStatus::Valid);
         assert!(!group_identity.thumbprint.is_empty());
 
-        // the in-memory mapping
-        let cb = self
-            .actor()
-            .session()
-            .await
-            .find_most_recent_credential(self.case.signature_scheme(), CredentialType::X509)
-            .await
-            .expect("x509 credential");
-        let cs = guard.ciphersuite().await;
-        let local_identity = cb.to_mls_credential_with_key().extract_identity(cs, None).unwrap();
+        // the given credential ref
+        let database = self.actor().transaction.keystore().await.unwrap();
+        let credential = credential_ref.load(&database).await.unwrap();
+        let mls_credential_with_key = credential.to_mls_credential_with_key();
+        let ciphersuite = self.case.ciphersuite();
+        let local_identity = mls_credential_with_key.extract_identity(ciphersuite, None).unwrap();
+
         assert_eq!(&local_identity.client_id.as_bytes(), &cid.0);
         assert_eq!(
             local_identity.x509_identity.as_ref().unwrap().display_name,
@@ -393,19 +396,15 @@ impl<'a> TestConversation<'a> {
         assert_eq!(local_identity.status, crate::DeviceStatus::Valid);
         assert!(!local_identity.thumbprint.is_empty());
 
-        let credential = self.actor().find_credential_from_keystore(&cb).await.unwrap();
-        let signature_key = openmls::prelude::SignaturePublicKey::from(credential.public_key.to_owned());
-        let credential = <openmls::prelude::Credential as tls_codec::Deserialize>::tls_deserialize(
-            &mut credential.credential.as_slice(),
-        )
-        .unwrap();
+        let signature_key = mls_credential_with_key.signature_key;
+        let mls_credential = mls_credential_with_key.credential;
         let credential = openmls::prelude::CredentialWithKey {
-            credential,
+            credential: mls_credential,
             signature_key,
         };
 
         assert_eq!(credential.credential.identity(), &cid.0);
-        let keystore_identity = credential.extract_identity(cs, None).unwrap();
+        let keystore_identity = credential.extract_identity(ciphersuite, None).unwrap();
         assert_eq!(
             keystore_identity.x509_identity.as_ref().unwrap().display_name,
             new_display_name

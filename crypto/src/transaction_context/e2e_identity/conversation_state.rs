@@ -90,7 +90,7 @@ impl TransactionContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CertificateBundle, Credential, CredentialType, test_utils::*};
+    use crate::{CertificateBundle, Credential, CredentialRef, CredentialType, test_utils::*};
 
     // testing the case where both Bob & Alice have the same Credential type
     #[apply(all_cred_cipher)]
@@ -168,7 +168,6 @@ mod tests {
             // this completely invents a new client id for alice, which gets propagated into the credential
             let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
             let cb = Credential::x509(case.ciphersuite(), cert.clone()).unwrap();
-            let conversation = conversation.e2ei_rotate_notify(Some(&cb)).await;
 
             let alice_client = alice.transaction.session().await.unwrap();
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
@@ -177,6 +176,9 @@ mod tests {
                 .add_credential_without_clientid_check(credential)
                 .await
                 .unwrap();
+
+            let credential_ref = CredentialRef::from_credential(&cb);
+            let conversation = conversation.set_credential_by_ref_notify(&credential_ref).await;
 
             // Need to fetch it before it becomes invalid & expires
             let gi = conversation.export_group_info().await;
@@ -211,9 +213,7 @@ mod tests {
         let [client_id] = case.x509_client_ids_for_user(&alice_user_id);
         let [alice] = case.sessions_x509_with_client_ids([client_id]).await;
         Box::pin(async move {
-            let conversation = case.create_conversation([&alice]).await;
-
-            let expiration_time = core::time::Duration::from_secs(14);
+            let expiration_time = core::time::Duration::from_secs(3);
             let start = web_time::Instant::now();
             let alice_test_chain = alice.x509_chain_unchecked();
 
@@ -228,10 +228,21 @@ mod tests {
 
             let cert_bundle =
                 CertificateBundle::from_certificate_and_issuer(&alice_cert.certificate, alice_intermediate_ca);
-            let cb = Credential::x509(case.ciphersuite(), cert_bundle.clone()).unwrap();
-            let conversation = conversation.e2ei_rotate_notify(Some(&cb)).await;
+            let credential_with_short_expiration_time =
+                Credential::x509(case.ciphersuite(), cert_bundle.clone()).unwrap();
+            let credential_ref = CredentialRef::from_credential(&credential_with_short_expiration_time);
+            let session = alice.session().await;
 
-            let alice_client = alice.session().await;
+            // remove and add so that the existing credential with the long expiration time is replaced in the DB.
+            session.remove_credential(&credential_ref).await.unwrap();
+            session
+                .add_credential(credential_with_short_expiration_time)
+                .await
+                .unwrap();
+
+            let conversation = case
+                .create_conversation_with_credentials([(&alice, &credential_ref)])
+                .await;
 
             // all credentials need to be distinguishable by type, scheme, and timestamp
             // we need to wait a second so the new credential has a distinct timestamp
@@ -240,7 +251,7 @@ mod tests {
 
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
             let credential = Credential::x509(case.ciphersuite(), cert_bundle).unwrap();
-            alice_client.add_credential(credential).await.unwrap();
+            session.add_credential(credential).await.unwrap();
 
             let elapsed = start.elapsed();
             // Give time to the certificate to expire
