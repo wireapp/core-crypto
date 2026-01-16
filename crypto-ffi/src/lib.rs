@@ -26,6 +26,7 @@ mod error;
 mod identity;
 mod key_package;
 mod metadata;
+mod pki_env;
 mod proteus;
 mod signature_scheme;
 mod timestamp;
@@ -72,5 +73,6 @@ pub use identity::{
 };
 pub use key_package::{Keypackage, KeypackageRef};
 pub use metadata::{BuildMetadata, build_metadata, version};
+pub use pki_env::{HttpHeader, HttpMethod, HttpResponse, PkiEnvironment, PkiEnvironmentHooks, create_pki_environment};
 pub use signature_scheme::SignatureScheme;
 pub use timestamp::Timestamp;
