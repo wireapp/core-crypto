@@ -554,7 +554,10 @@ interop-build-deps := $(INTEROP_SOURCES)
 $(INTEROP_OUT): $(interop-build-deps)
 	cargo build --bin interop
 
-interop-test-deps := $(INTEROP_OUT) $(TS_OUT) $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT) $(ANDROID_ARMv8) $(ANDROID_ARMv7) $(ANDROID_X86) $(UNIFFI_ANDROID_OUTPUT)
+interop-test-deps := $(INTEROP_OUT) $(TS_OUT) $(UNIFFI_SWIFT_OUTPUT) $(ANDROID_ARMv8) $(ANDROID_ARMv7) $(ANDROID_X86) $(UNIFFI_ANDROID_OUTPUT)
+ifeq ($(UNAME_S),Darwin)
+interop-test-deps := $(interop-test-deps) $(IOS_SIMULATOR_ARM)
+endif
 
 $(STAMPS)/interop-test: $(interop-test-deps)
 	$(SHELL) scripts/run-interop-test.sh $(XCODE_CONFIG)
