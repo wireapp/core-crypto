@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, SignaturePublicKey};
 
 use super::{Error, Result};
-use crate::{CredentialType, MlsConversation, RecursiveError};
+use crate::MlsConversation;
 
 impl MlsConversation {
     /// Returns all members credentials from the group/conversation
@@ -38,17 +38,5 @@ impl MlsConversation {
             .ok_or(Error::MlsGroupInvalidState("own_leaf_node not present in group"))?
             .credential();
         Ok(credential)
-    }
-
-    pub(crate) fn own_credential_type(&self) -> Result<CredentialType> {
-        self.own_mls_credential().and_then(|credential| {
-            credential
-                .credential_type()
-                .try_into()
-                .map_err(RecursiveError::mls_credential(
-                    "getting credential type from conversation",
-                ))
-                .map_err(Into::into)
-        })
     }
 }
