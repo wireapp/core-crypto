@@ -1,10 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
-use openmls::prelude::{Credential as MlsCredential, SignaturePublicKey};
+use openmls::prelude::Credential as MlsCredential;
 use openmls_traits::types::SignatureScheme;
 
 use crate::{
-    Credential, CredentialType, Session,
+    Credential, Session,
     mls::session::error::{Error, Result},
 };
 
@@ -29,30 +29,6 @@ impl Identities {
         Self {
             credentials: HashMap::with_capacity(capacity),
         }
-    }
-
-    // not the real trait because we don't want to make the method public
-    fn index(
-        &self,
-        signature_scheme: SignatureScheme,
-        credential_type: CredentialType,
-    ) -> Option<&Vec<Arc<Credential>>> {
-        self.credentials.get(&(signature_scheme, credential_type.into()))
-    }
-
-    /// Return the first credential matching the supplied fields
-    ///
-    /// Note that other credentials could in theory also match if they share the same public key.
-    pub(crate) async fn find_credential_by_public_key(
-        &self,
-        signature_scheme: SignatureScheme,
-        credential_type: CredentialType,
-        public_key: &SignaturePublicKey,
-    ) -> Option<Arc<Credential>> {
-        self.index(signature_scheme, credential_type)?
-            .iter()
-            .find(|credential| credential.signature_key_pair.public() == public_key.as_slice())
-            .cloned()
     }
 
     /// Add this credential to the identities.
