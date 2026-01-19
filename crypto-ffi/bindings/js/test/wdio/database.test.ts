@@ -33,6 +33,25 @@ describe("database", () => {
         ).resolves.toMatchObject({ dbIsDefined: true });
     });
 
+    it("can get the database location", async () => {
+        await expect(
+            browser.execute(async () => {
+                const databaseName = crypto.randomUUID();
+                const key = new Uint8Array(32);
+                window.crypto.getRandomValues(key);
+
+                const db = await window.ccModule.openDatabase(
+                    databaseName,
+                    new window.ccModule.DatabaseKey(key.buffer)
+                );
+
+                return {
+                    locationMatches: databaseName === (await db.getLocation()),
+                };
+            })
+        ).resolves.toMatchObject({ locationMatches: true });
+    });
+
     it("key must have correct length", async () => {
         expect(() =>
             browser.execute(async () => {
