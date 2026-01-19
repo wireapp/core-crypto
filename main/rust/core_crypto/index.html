@@ -65,12 +65,28 @@ make ios-create-xcframework</code></pre></div><h4 id="macos"><a class="doc-ancho
 <div class="example-wrap"><pre class="language-sh"><code>rustup target add x86_64-unknown-linux-gnu</code></pre></div><h4 id="wasm"><a class="doc-anchor" href="#wasm">§</a>WASM<a name="wasm"></a></h4>
 <p>Make sure you have all prerequisites:</p>
 <ul>
-<li>Install <a href="https://github.com/drager/wasm-pack">wasm-pack</a>: <code>cargo install --locked wasm-pack</code></li>
-<li>Install the <code>wasm32-unknown-unknown</code> toolchain: <code>rustup target add wasm32-unknown-unknown</code></li>
-<li>Install node.js (recommended way is via <a href="https://volta.sh/">Volta</a>)</li>
-<li>Install Bun (follow the instructions on <a href="https://bun.sh/">Bun’s website</a>)</li>
-<li>Install <a href="https://github.com/wasm-bindgen/wasm-bindgen">wasm-bindgen-cli</a>: <code>cargo install wasm-bindgen-cli</code></li>
-<li>Install <a href="https://getwebdriver.com/chromedriver">chromedriver</a><div class="example-wrap"><pre class="language-sh"><code>bunx @puppeteer/browsers install --path ~/bin chrome-headless-shell
+<li>
+<p>Install the <code>wasm32-unknown-unknown</code> toolchain: <code>rustup target add wasm32-unknown-unknown</code></p>
+</li>
+<li>
+<p>Install node.js (recommended way is via <a href="https://volta.sh/">Volta</a>)</p>
+</li>
+<li>
+<p>Install Bun (follow the instructions on <a href="https://bun.sh/">Bun’s website</a>)</p>
+</li>
+<li>
+<p>Install <a href="https://github.com/wasm-bindgen/wasm-bindgen">wasm-bindgen-cli</a>:</p>
+<div class="example-wrap"><pre class="language-sh"><code>wasm_bindgen_version=&quot;$(
+  cargo metadata --format-version 1 |
+  jq -r &#39;.packages[] | select (.name == &quot;wasm-bindgen&quot;) | .version&#39;
+)&quot;
+cargo install wasm-bindgen-cli --version $wasm_bindgen_version</code></pre></div>
+<p>It is important to ensure that the <code>wasm-bindgen-cli</code> version always precisely matches the <code>wasm-bindgen</code> version in
+<code>Cargo.lock</code> (as shown by <code>cargo info wasm-bindgen</code>), because otherwise the wasm tests will not run.</p>
+</li>
+<li>
+<p>Install <a href="https://getwebdriver.com/chromedriver">chromedriver</a></p>
+<div class="example-wrap"><pre class="language-sh"><code>bunx @puppeteer/browsers install --path ~/bin chrome-headless-shell
 bunx @puppeteer/browsers install --path ~/bin chromedriver</code></pre></div></li>
 </ul>
 <p>Build:</p>
@@ -96,8 +112,10 @@ make ts</code></pre></div><h3 id="testing"><a class="doc-anchor" href="#testing"
 <ul>
 <li>Ensure you are set up to <a href="#wasm">build wasm</a></li>
 </ul>
-<p>Then, to run tests for a crate in the workspace do</p>
-<div class="example-wrap"><pre class="language-sh"><code>wasm-pack test --headless --chrome ./keystore</code></pre></div><h4 id="platform-specific-tests-for-wasmweb"><a class="doc-anchor" href="#platform-specific-tests-for-wasmweb">§</a>Platform-specific tests for WASM/Web<a name="platform-specific-tests-for-wasmweb"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make ts-test</code></pre></div>
+<p>Then, just use <code>cargo test</code>:</p>
+<div class="example-wrap"><pre class="language-sh"><code>cargo test --target wasm32-unknown-unknown -p core-crypto-keystore</code></pre></div>
+<p>Unfortunately it appears that nextest doesn’t work well with the wasm runner, so we’re stuck with the basic test runner.</p>
+<h4 id="platform-specific-tests-for-wasmweb"><a class="doc-anchor" href="#platform-specific-tests-for-wasmweb">§</a>Platform-specific tests for WASM/Web<a name="platform-specific-tests-for-wasmweb"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make ts-test</code></pre></div>
 <p>Note the <code>CC_TEST_LOG_LEVEL</code> environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto
 logs.</p>
 <h4 id="platform-specific-tests-for-kotlinjvm"><a class="doc-anchor" href="#platform-specific-tests-for-kotlinjvm">§</a>Platform-specific tests for Kotlin/JVM<a name="platform-specific-tests-for-kotlinjvm"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make jvm-test</code></pre></div><h4 id="platform-specific-tests-for-android"><a class="doc-anchor" href="#platform-specific-tests-for-android">§</a>Platform-specific tests for Android<a name="platform-specific-tests-for-android"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make android-test</code></pre></div><h4 id="swiftios"><a class="doc-anchor" href="#swiftios">§</a>Swift/iOS<a name="swiftios"></a></h4>

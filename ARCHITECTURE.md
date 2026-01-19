@@ -81,5 +81,4 @@ Allows other programming languages and platforms to embed and interact with `Cor
 
 - For iOS and Android, [UniFFI](https://github.com/mozilla/uniffi-rs) is used to produce the relevant Kotlin and Swift
   bindings
-- For JS/TS, a WebAssembly binary is produced using [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen) and
-  [wasm-pack](https://rustwasm.github.io/wasm-pack/)
+- For JS/TS, a WebAssembly binary is produced using [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen)
