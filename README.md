@@ -169,12 +169,27 @@ rustup target add x86_64-unknown-linux-gnu
 
 Make sure you have all prerequisites:
 
-- Install [wasm-pack](https://github.com/drager/wasm-pack): `cargo install --locked wasm-pack`
 - Install the `wasm32-unknown-unknown` toolchain: `rustup target add wasm32-unknown-unknown`
+
 - Install node.js (recommended way is via [Volta](https://volta.sh/))
+
 - Install Bun (follow the instructions on [Bun's website](https://bun.sh/))
-- Install [wasm-bindgen-cli](https://github.com/wasm-bindgen/wasm-bindgen): `cargo install wasm-bindgen-cli`
+
+- Install [wasm-bindgen-cli](https://github.com/wasm-bindgen/wasm-bindgen):
+
+  ```sh
+  wasm_bindgen_version="$(
+    cargo metadata --format-version 1 |
+    jq -r '.packages[] | select (.name == "wasm-bindgen") | .version'
+  )"
+  cargo install wasm-bindgen-cli --version $wasm_bindgen_version
+  ```
+
+  It is important to ensure that the `wasm-bindgen-cli` version always precisely matches the `wasm-bindgen` version in
+  `Cargo.lock` (as shown by `cargo info wasm-bindgen`), because otherwise the wasm tests will not run.
+
 - Install [chromedriver](https://getwebdriver.com/chromedriver)
+
   ```sh
   bunx @puppeteer/browsers install --path ~/bin chrome-headless-shell
   bunx @puppeteer/browsers install --path ~/bin chromedriver
@@ -228,11 +243,13 @@ Sometimes for the Keystore it is valuable to run Rust unit/integration tests on 
 
 - Ensure you are set up to [build wasm](#wasm)
 
-Then, to run tests for a crate in the workspace do
+Then, just use `cargo test`:
 
 ```sh
-wasm-pack test --headless --chrome ./keystore
+cargo test --target wasm32-unknown-unknown -p core-crypto-keystore
 ```
+
+Unfortunately it appears that nextest doesn't work well with the wasm runner, so we're stuck with the basic test runner.
 
 ### Platform-specific tests for WASM/Web<a name="platform-specific-tests-for-wasmweb"></a>
 
