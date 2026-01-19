@@ -847,6 +847,25 @@ final class WireCoreCryptoTests: XCTestCase {
         }
     }
 
+    func testCanSetPkiEnvironment() async throws {
+        let clientId = genClientId()
+        let root = FileManager.default.temporaryDirectory.appending(path: "mls")
+        let keystore = root.appending(path: "pki-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let database = try await Database.open(location: keystore.path, key: genDatabaseKey())
+
+        let pkiEnvironment: PkiEnvironment = try await createPkiEnvironment(
+            hooks: MockPkiEnvironmentHooks(), database: database)
+        let coreCrypto = try await CoreCrypto(database: database)
+        try await coreCrypto.setPkiEnvironment(pkiEnvironment)
+        let pkiEnvironment2 = await coreCrypto.getPkiEnvironment()
+        XCTAssertNotNil(pkiEnvironment2)
+
+        try await coreCrypto.setPkiEnvironment(nil)
+        let pkiEnvironment3 = await coreCrypto.getPkiEnvironment()
+        XCTAssertNil(pkiEnvironment3)
+    }
+
     // MARK: - helpers
 
     final actor MockMlsTransport: MlsTransport {
@@ -869,6 +888,39 @@ final class WireCoreCryptoTests: XCTestCase {
         {
             lastHistorySecret = historySecret
             return Data("secret".utf8)
+        }
+    }
+
+    final actor MockPkiEnvironmentHooks: PkiEnvironmentHooks {
+        func httpRequest(
+            method: HttpMethod,
+            url: String,
+            headers: [HttpHeader],
+            body: Data
+        ) async -> HttpResponse {
+            return HttpResponse(
+                status: 200,
+                headers: [],
+                body: Data()
+            )
+        }
+
+        func authenticate(
+            idp: String,
+            keyAuth: String,
+            acmeAud: String
+        ) async -> String {
+            return "mock-id-token"
+        }
+
+        func getBackendNonce() async -> String {
+            return "mock-backend-nonce"
+        }
+
+        func fetchBackendAccessToken(
+            dpop: String
+        ) async -> String {
+            return "mock-backend-access-token"
         }
     }
 
