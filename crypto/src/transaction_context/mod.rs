@@ -17,10 +17,7 @@ use crate::{
     Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef,
     KeystoreError, MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
     group_store::GroupStore,
-    mls::{
-        self, HasSessionAndCrypto,
-        session::{Error as SessionError, identities::Identities},
-    },
+    mls::{self, HasSessionAndCrypto, session::identities::Identities},
 };
 pub mod conversation;
 pub mod e2e_identity;
@@ -274,7 +271,7 @@ impl TransactionContext {
         ))?;
         credential_refs.retain(|credential_ref| signature_schemes.contains(&credential_ref.signature_scheme()));
 
-        let mut identities = Identities::new(credential_refs.len());
+        let identities = Identities::new(credential_refs.len());
         let credentials_cache =
             CredentialRef::load_stored_credentials(&database)
                 .await
@@ -290,20 +287,7 @@ impl TransactionContext {
                         "loading credential list in session init",
                     ))?
             {
-                match identities.push_credential(credential).await {
-                    Err(SessionError::CredentialConflict) => {
-                        // this is what we get for not having real primary keys in our DB
-                        // no harm done though; no need to propagate this error
-                    }
-                    Ok(_) => {}
-                    Err(err) => {
-                        return Err(RecursiveError::MlsClient {
-                            context: "adding credential to identities in init",
-                            source: Box::new(err),
-                        }
-                        .into());
-                    }
-                }
+                self.add_credential(credential).await?;
             }
         }
 

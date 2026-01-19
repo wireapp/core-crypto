@@ -22,17 +22,13 @@ impl Session {
         self.find_credentials(Default::default()).await
     }
 
-    /// Add a credential to the identities of this session.
-    ///
-    /// As a side effect, stores the credential in the keystore.
+    /// Add a credential to the database of this session.
     pub(crate) async fn add_credential(&self, credential: Credential) -> Result<CredentialRef> {
         let credential = self.add_credential_producing_arc(credential).await?;
         Ok(CredentialRef::from_credential(&credential))
     }
 
-    /// Add a credential to the identities of this session.
-    ///
-    /// As a side effect, stores the credential in the keystore.
+    /// Add a credential to the database of this session.
     ///
     /// Returns the actual credential instance which was loaded from the DB.
     /// This is a convenience for internal use and should _not_ be propagated across
@@ -45,7 +41,7 @@ impl Session {
         self.add_credential_without_clientid_check(credential).await
     }
 
-    /// Add a credential to the identities of this session without validating that its client ID matches the session
+    /// Add a credential to the database of this session without validating that its client ID matches the session
     /// client id.
     ///
     /// This is rarely useful and should only be used when absolutely necessary. You'll know it if you need it.
@@ -60,10 +56,7 @@ impl Session {
             .await
             .map_err(RecursiveError::mls_credential("saving credential"))?;
 
-        let mut identities_guard = self.identities.write().await;
-        let credential = identities_guard.push_credential(credential).await?;
-
-        Ok(credential)
+        Ok(Arc::new(credential))
     }
 
     /// Remove a credential from the identities of this session.

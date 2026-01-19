@@ -3,10 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use openmls::prelude::Credential as MlsCredential;
 use openmls_traits::types::SignatureScheme;
 
-use crate::{
-    Credential, Session,
-    mls::session::error::{Error, Result},
-};
+use crate::{Credential, Session};
 
 /// Each session has a set of credentials per signature scheme: they can have various properties, but typically
 /// we want to find the most recent of a particular type.
@@ -29,58 +26,6 @@ impl Identities {
         Self {
             credentials: HashMap::with_capacity(capacity),
         }
-    }
-
-    /// Add this credential to the identities.
-    ///
-    /// If there already exists a credential whose signature scheme, credential type, and timestamp of creation
-    /// match those of an existing credential, this will return a `CredentialConflict`. This is because our code
-    /// relies on `find_most_recent_credential` which can only distinguish credentials by those factors.
-    ///
-    /// Returns an `Arc<Credential>` which is a smart pointer to the credential within this data structure.
-    pub(crate) async fn push_credential(&mut self, credential: Credential) -> Result<Arc<Credential>> {
-        debug_assert_ne!(
-            credential.earliest_validity, 0,
-            "this credential must have been persisted/updated in the keystore, which sets this to the current timestamp"
-        );
-
-        let credential = Arc::new(credential);
-
-        let credentials = self
-            .credentials
-            .entry((credential.signature_scheme(), credential.credential_type().into()))
-            .or_default();
-
-        debug_assert!(
-            credentials.is_sorted_by_key(|credential| credential.earliest_validity),
-            "can't binary search if credentials are not sorted by validity"
-        );
-        // if binary search returns ok, it was not distinct by earliest validity, therefore we have a conflict
-        // normally we expect that the new credential has the most recent earliest_validity therefore adding the
-        // credential is as cheap as pushing to the end of the vector, but just in case of random insertion
-        // order, do the right thing
-        let Err(insertion_point) =
-            credentials.binary_search_by_key(&credential.earliest_validity, |credential| credential.earliest_validity)
-        else {
-            return Err(Error::CredentialConflict);
-        };
-        credentials.insert(insertion_point, credential.clone());
-
-        debug_assert!(
-            credentials.is_sorted_by_key(|credential| credential.earliest_validity),
-            "we must have inserted at the proper insertion point"
-        );
-        debug_assert_eq!(
-            credentials
-                .iter()
-                .map(|credential| credential.earliest_validity)
-                .collect::<std::collections::HashSet<_>>()
-                .len(),
-            credentials.len(),
-            "credentials must still be distinct by earliest validity"
-        );
-
-        Ok(credential)
     }
 
     pub(crate) fn remove_by_mls_credential(&mut self, mls_credential: &MlsCredential) {
@@ -140,31 +85,6 @@ mod tests {
                 let found = client.find_credential_by_public_key(&pk).await.unwrap();
 
                 assert_eq!(to_search, found);
-            })
-            .await
-        }
-    }
-
-    mod push {
-        use super::*;
-
-        #[apply(all_cred_cipher)]
-        async fn should_add_credential(case: TestContext) {
-            let [mut central] = case.sessions().await;
-            Box::pin(async move {
-                let client = central.session().await;
-                let prev_count = client.identities_count().await;
-                let cert = central.get_intermediate_ca().cloned();
-
-                // all credentials need to be distinguishable by type, scheme, and timestamp
-                // we need to wait a second so the new credential has a distinct timestamp
-                // (our DB has a timestamp resolution of 1s)
-                smol::Timer::after(std::time::Duration::from_secs(1)).await;
-
-                // this calls 'push_credential' under the hood
-                central.new_credential(&case, cert.as_ref()).await;
-                let next_count = client.identities_count().await;
-                assert_eq!(next_count, prev_count + 1);
             })
             .await
         }
