@@ -1,37 +1,6 @@
 import System
 @_exported public import WireCoreCryptoUniffi
 
-/// The database needed to initialize ``CoreCrypto``.
-public final class Database {
-    let inner: WireCoreCryptoUniffi.Database
-    let path: FilePath?
-
-    /// Initialize the database with an Ffi instance
-    private init(_ database: WireCoreCryptoUniffi.Database, keystorePath: FilePath? = nil) {
-        self.inner = database
-        self.path = keystorePath
-    }
-
-    /// Initialise or open a Database.
-    ///
-    /// - Parameter keystorePath: path to the database
-    /// - Parameter key: secret key to unlock the database
-    ///
-    public convenience init(keystorePath: String, key: DatabaseKey) async throws {
-        let database = try await openDatabase(name: keystorePath, key: key)
-        self.init(database, keystorePath: FilePath(stringLiteral: keystorePath))
-    }
-
-    /// Initialise an in-memory Database whose data will be lost when the instance is dropped.
-    ///
-    /// - Parameter key: secret key to unlock the database
-    public convenience init(key: DatabaseKey) async throws {
-        let database = try await inMemoryDatabase(key: key)
-        self.init(database)
-    }
-
-}
-
 /// Defines the protocol for a client.
 ///
 public protocol CoreCryptoProtocol {
@@ -101,7 +70,7 @@ public final class CoreCrypto: CoreCryptoProtocol {
     public convenience init(database: Database) async throws {
         let coreCrypto =
             try await WireCoreCryptoUniffi.coreCryptoNew(
-                database: database.inner
+                database: database
             )
         self.init(coreCrypto, database: database)
     }
@@ -119,8 +88,10 @@ public final class CoreCrypto: CoreCryptoProtocol {
     public func transaction<Result>(
         _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
     ) async throws -> Result {
+        let dbLocation = try await database?.getLocation()
+        let filePath = dbLocation.map { FilePath(stringLiteral: $0) }
         let transactionExecutor = try TransactionExecutor<Result>(
-            keystorePath: database?.path, block)
+            keystorePath: filePath, block)
         do {
             try await coreCrypto.transaction(command: transactionExecutor)
         } catch {
