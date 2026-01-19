@@ -4,6 +4,9 @@
 
 ### Features
 
+- added `Database.getLocation()` to allow getting the location of a persistent database instance. Returns null if the
+  database is in-memory.
+
 - removed `CoreCrypto.provideTransport()`, added `transport` parameter to `CoreCryptoContext.mlsInit()`
 
   Instead of providing transport separately from session initialization it is now provided when initializing the MLS
