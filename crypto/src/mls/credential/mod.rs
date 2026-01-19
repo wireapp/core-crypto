@@ -11,7 +11,7 @@ mod persistence;
 pub(crate) mod x509;
 
 use core_crypto_keystore::entities::StoredCredential;
-use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, MlsCredentialType, SignatureScheme};
+use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, SignatureScheme};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::crypto::OpenMlsCrypto;
 use tls_codec::Deserialize as _;
@@ -22,10 +22,7 @@ pub use self::{
     credential_type::CredentialType,
     error::Error,
 };
-use crate::{
-    Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, MlsError, RecursiveError,
-    mls::credential::{error::CredentialValidationError, ext::CredentialExt as _},
-};
+use crate::{Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, MlsError, RecursiveError};
 
 /// A cryptographic credential.
 ///
@@ -94,33 +91,6 @@ impl TryFrom<&StoredCredential> for Credential {
 }
 
 impl Credential {
-    /// Ensure that the provided `MlsCredential` matches the client id / signature key provided
-    pub(crate) fn validate_mls_credential(
-        mls_credential: &MlsCredential,
-        client_id: &ClientIdRef,
-        signature_key: &SignatureKeyPair,
-    ) -> Result<(), CredentialValidationError> {
-        match mls_credential.mls_credential() {
-            MlsCredentialType::Basic(_) => {
-                if client_id.as_slice() != mls_credential.identity() {
-                    return Err(CredentialValidationError::WrongCredential);
-                }
-            }
-            MlsCredentialType::X509(cert) => {
-                let certificate_public_key = cert
-                    .extract_public_key()
-                    .map_err(RecursiveError::mls_credential(
-                        "extracting public key from certificate in credential validation",
-                    ))?
-                    .ok_or(CredentialValidationError::NoPublicKey)?;
-                if signature_key.public() != certificate_public_key {
-                    return Err(CredentialValidationError::WrongCredential);
-                }
-            }
-        }
-        Ok(())
-    }
-
     /// Generate a basic credential.
     ///
     /// The result is independent of any client instance and the database; it lives in memory only.
