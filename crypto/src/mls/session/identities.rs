@@ -1,6 +1,5 @@
 use std::{collections::HashMap, sync::Arc};
 
-use openmls::prelude::Credential as MlsCredential;
 use openmls_traits::types::SignatureScheme;
 
 use crate::{Credential, Session};
@@ -25,12 +24,6 @@ impl Identities {
     pub(crate) fn new(capacity: usize) -> Self {
         Self {
             credentials: HashMap::with_capacity(capacity),
-        }
-    }
-
-    pub(crate) fn remove_by_mls_credential(&mut self, mls_credential: &MlsCredential) {
-        for credential_set in self.credentials.values_mut() {
-            credential_set.retain(|credential| credential.mls_credential() != mls_credential);
         }
     }
 
