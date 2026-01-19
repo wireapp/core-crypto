@@ -42,7 +42,6 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
                 coreCrypto.transaction({ context ->
                     context.mlsInit(
                         clientId = ClientId(action.clientId),
-                        ciphersuites = listOf(ciphersuiteFromU16(action.ciphersuite.toUShort())),
                         transport = DummyTransport()
                     )
 

@@ -132,9 +132,10 @@ class MLSTest : HasMockDeliveryService() {
     }
 
     @Test
-    fun getPublicKey_should_return_non_empty_result() = runTest {
-        val (alice) = newClients(this@MLSTest, genClientId())
-        assertThat(alice.transaction { ctx -> ctx.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT) }).isNotEmpty()
+    fun findCredentials_should_return_non_empty_result() = runTest {
+        val clientId = genClientId()
+        val (alice) = newClients(this@MLSTest, clientId)
+        assertThat(alice.transaction { it.findCredentials(clientId, null, null, null, null) }).isNotEmpty()
     }
 
     @Test

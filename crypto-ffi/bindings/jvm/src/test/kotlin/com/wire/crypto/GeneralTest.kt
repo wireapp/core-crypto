@@ -112,11 +112,11 @@ class DatabaseKeyTest {
         val db = openDatabase(path.absolutePathString(), oldKey)
         var cc = CoreCrypto(db)
         var transport = MockMlsTransportSuccessProvider()
-        val pubkey1 = cc.transaction {
-            it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT, transport)
+        val credentialRef1 = cc.transaction {
+            it.mlsInit(clientId = clientId, transport)
             it.addCredential(Credential.basic(CIPHERSUITE_DEFAULT, clientId))
-            it.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
-        }
+            it.findCredentials(clientId, null, null, null, null)
+        }.first()
         cc.close()
 
         val newKey = genDatabaseKey()
@@ -125,12 +125,12 @@ class DatabaseKeyTest {
         updateDatabaseKey(path.absolutePathString(), oldKey, newKey)
         val newDb = openDatabase(path.absolutePathString(), newKey)
         cc = CoreCrypto(newDb)
-        val pubkey2 = cc.transaction {
-            it.mlsInit(clientId = clientId, ciphersuites = CIPHERSUITES_DEFAULT, transport)
-            it.clientPublicKey(CIPHERSUITE_DEFAULT, CREDENTIAL_TYPE_DEFAULT)
-        }
+        val credentialRef2 = cc.transaction {
+            it.mlsInit(clientId = clientId, transport)
+            it.findCredentials(clientId, null, null, null, null)
+        }.first()
         cc.close()
-        assertContentEquals(pubkey1, pubkey2)
+        assertContentEquals(credentialRef1.publicKey(), credentialRef2.publicKey())
 
         tmpdir.toFile().deleteRecursively()
     }
