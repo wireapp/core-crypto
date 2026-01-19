@@ -7,6 +7,7 @@ import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import testutils.MockMlsTransportSuccessProvider
 import testutils.genDatabaseKey
 import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.io.path.*
 import kotlin.test.*
 
@@ -30,31 +31,36 @@ class GeneralTest {
 }
 
 class DatabaseTest {
-    @Test
-    fun givenDatabase_whenUsingSameNameAndKey_thenOpenShouldSucceed() = runTest {
+    suspend fun <T> withDatabase(block: suspend (Path, DatabaseKey) -> T): T {
         val tmpdir = createTempDirectory("cc-test-")
         val path = tmpdir / "keystore"
         val key = genDatabaseKey()
-        val db = openDatabase(path.absolutePathString(), key)
-        db.close()
+        return try {
+            block(path, key)
+        } finally {
+            tmpdir.toFile().deleteRecursively()
+        }
+    }
 
-        openDatabase(path.toString(), key)
+    @Test
+    fun givenDatabase_whenUsingSameNameAndKey_thenOpenShouldSucceed() = runTest {
+        withDatabase { path, key ->
+            val db = openDatabase(path.absolutePathString(), key)
+            db.close()
 
-        tmpdir.toFile().deleteRecursively()
+            openDatabase(path.toString(), key)
+        }
     }
 
     @Test
     fun givenDatabase_whenUsingWrongKey_thenOpenShouldFail() = runTest {
-        val tmpdir = createTempDirectory("cc-test-")
-        val path = tmpdir / "keystore"
-        val key = genDatabaseKey()
-        openDatabase(path.absolutePathString(), key)
+        withDatabase { path, key ->
+            openDatabase(path.absolutePathString(), key)
 
-        val key2 = genDatabaseKey()
-        assertFailsWith<CoreCryptoException.Other> { openDatabase(path.toString(), key2) }
-            .also { assertEquals("msg=file is not a database", it.message) }
-
-        tmpdir.toFile().deleteRecursively()
+            val key2 = genDatabaseKey()
+            assertFailsWith<CoreCryptoException.Other> { openDatabase(path.toString(), key2) }
+                .also { assertEquals("msg=file is not a database", it.message) }
+        }
     }
 }
 
