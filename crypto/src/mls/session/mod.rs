@@ -20,7 +20,8 @@ use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::{
-    ClientId, CredentialType, HistorySecret, LeafError, MlsConversation, MlsError, MlsTransport, RecursiveError,
+    ClientId, CredentialRef, CredentialType, HistorySecret, LeafError, MlsConversation, MlsError, MlsTransport,
+    RecursiveError,
     mls::{
         self, HasSessionAndCrypto,
         conversation::{ConversationIdRef, ImmutableConversation},
@@ -150,12 +151,12 @@ impl Session {
     }
 
     /// Returns whether this client is E2EI capable
-    pub async fn is_e2ei_capable(&self) -> bool {
-        self.identities
-            .read()
+    pub(crate) async fn is_e2ei_capable(&self) -> Result<bool> {
+        let database = self.crypto_provider.keystore();
+        let credential_refs = CredentialRef::get_all(&database)
             .await
-            .iter()
-            .any(|cred| cred.credential_type() == CredentialType::X509)
+            .map_err(RecursiveError::mls_credential_ref("loading all credentials"))?;
+        Ok(credential_refs.iter().any(|cred| cred.r#type() == CredentialType::X509))
     }
 }
 

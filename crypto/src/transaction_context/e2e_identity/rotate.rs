@@ -433,17 +433,13 @@ mod tests {
                 let old_cb_found = alice.find_credential(&old_spk).await.unwrap();
                 assert_eq!(std::sync::Arc::new(old_cb), old_cb_found);
                 let old_nb_identities = {
-                    let alice_client = alice.session().await;
-                    let old_nb_identities = alice_client.identities_count().await;
-
                     // Let's simulate an app crash, client gets deleted and restored from keystore
                     let all_credentials = CredentialRef::get_all(&alice.transaction.keystore().await.unwrap())
                         .await
                         .unwrap();
 
                     assert_eq!(all_credentials.len(), 2);
-
-                    old_nb_identities
+                    all_credentials.len()
                 };
                 let keystore = &alice.transaction.keystore().await.unwrap();
                 keystore.commit_transaction().await.unwrap();
@@ -473,7 +469,13 @@ mod tests {
                     format!("wireapp://%40{}@world.com", e2ei_utils::NEW_HANDLE)
                 );
 
-                assert_eq!(new_session.identities_count().await, old_nb_identities);
+                assert_eq!(
+                    CredentialRef::get_all(&new_session.crypto_provider.unwrap_keystore())
+                        .await
+                        .unwrap()
+                        .len(),
+                    old_nb_identities
+                );
             })
             .await
         }

@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use openmls_traits::types::SignatureScheme;
 
-use crate::{Credential, Session};
+use crate::Credential;
 
 /// Each session has a set of credentials per signature scheme: they can have various properties, but typically
 /// we want to find the most recent of a particular type.
@@ -25,18 +25,6 @@ impl Identities {
         Self {
             credentials: HashMap::with_capacity(capacity),
         }
-    }
-
-    pub(crate) fn iter(&self) -> impl '_ + Iterator<Item = Arc<Credential>> {
-        self.credentials.values().flatten().cloned()
-    }
-}
-
-impl Session {
-    #[cfg(test)]
-    pub(crate) async fn identities_count(&self) -> usize {
-        let guard = self.identities.read().await;
-        guard.iter().count()
     }
 }
 
