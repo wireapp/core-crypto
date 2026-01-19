@@ -4,6 +4,7 @@ concurrency:
 
 on:
   workflow_call:
+  workflow_dispatch:
 
 env:
   RELEASE: 1
@@ -45,6 +46,7 @@ jobs:
       - name: Run e2e interop test
         uses: ./.github/actions/make/interop/test
         with:
+          always-run: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'main' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
         # we separate shutdown from deletion to make sure the device is always removed, even when shutdown failed

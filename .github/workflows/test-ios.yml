@@ -4,6 +4,7 @@ concurrency:
 
 on:
   workflow_call:
+  workflow_dispatch:
 
 defaults:
   run:
@@ -43,6 +44,7 @@ jobs:
       - name: ios tests
         uses: ./.github/actions/make/ios/test
         with:
+          always-run: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'main' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Delete simulator

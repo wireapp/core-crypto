@@ -4,6 +4,7 @@ concurrency:
 
 on:
   workflow_call:
+  workflow_dispatch:
 
 env:
   RELEASE: 1
@@ -33,5 +34,5 @@ jobs:
         with:
           key: ts-test
           make-rule: ts-test
-          always-run: ${{ github.ref_name == 'main' }}
+          always-run: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'main' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}

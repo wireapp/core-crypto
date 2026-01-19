@@ -2,6 +2,9 @@ name: Test kotlin bindings for android via make
 inputs:
   gh-token:
     required: true
+  always-run:
+    description: Run the test even if dependencies haven't changed
+    required: false
 
 runs:
   using: composite
@@ -36,5 +39,5 @@ runs:
         make-rule: android-test
         target-path: |
           .stamps/android-test
-        always-run: ${{ github.ref_name == 'main' }}
+        always-run: ${{ inputs.always-run }}
         gh-token: ${{ inputs.gh-token }}
