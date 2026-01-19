@@ -83,7 +83,7 @@ final class WireCoreCryptoTests: XCTestCase {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 
         let key1 = genDatabaseKey()
-        let database1 = try await Database(keystorePath: keystore.path, key: key1)
+        let database1 = try await Database.open(keystorePath: keystore.path, key: key1)
         var coreCrypto = try await CoreCrypto(database: database1)
 
         let clientId = ClientId(bytes: UUID().uuidString.data(using: .utf8)!)
@@ -104,7 +104,7 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertNotEqual(key1, key2)
 
         try await updateDatabaseKey(name: keystore.path, oldKey: key1, newKey: key2)
-        let database2 = try await Database(keystorePath: keystore.path, key: key2)
+        let database2 = try await Database.open(keystorePath: keystore.path, key: key2)
 
         coreCrypto = try await CoreCrypto(database: database2)
         let pubkey2 = try await coreCrypto.transaction {
@@ -161,7 +161,8 @@ final class WireCoreCryptoTests: XCTestCase {
             path: targetPath.lastPathComponent, oldKey: oldKey, newKey: newKey
         )
 
-        let database = try await Database(keystorePath: targetPath.lastPathComponent, key: newKey)
+        let database = try await Database.open(
+            keystorePath: targetPath.lastPathComponent, key: newKey)
 
         // Check if we can read the conversation from the migrated database
         let alice = try await CoreCrypto(database: database)
@@ -302,7 +303,7 @@ final class WireCoreCryptoTests: XCTestCase {
         for _ in 0..<transactionCount {
             try coreCryptoInstances.append(
                 await CoreCrypto(
-                    database: Database(keystorePath: keystore.path, key: keystoreKey)
+                    database: Database.open(keystorePath: keystore.path, key: keystoreKey)
                 )
             )
         }
@@ -881,7 +882,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let root = FileManager.default.temporaryDirectory.appending(path: "mls")
         let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let database = try await Database(keystorePath: keystore.path, key: genDatabaseKey())
+        let database = try await Database.open(keystorePath: keystore.path, key: genDatabaseKey())
         let coreCrypto = try await CoreCrypto(
             database: database
         )
