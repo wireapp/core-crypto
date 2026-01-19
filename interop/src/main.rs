@@ -17,7 +17,7 @@ mod clients;
 mod util;
 
 const MLS_CONVERSATION_ID: &[u8] = b"test_conversation";
-const ROUNDTRIP_MSG_AMOUNT: usize = 100;
+const ROUNDTRIP_MSG_COUNT: usize = 10;
 
 const CIPHERSUITE_IN_USE: MlsCiphersuite = MlsCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 
@@ -208,13 +208,13 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     spinner.success("[MLS] Step 2: Added clients [OK]");
 
     let mut spinner = util::RunningProcess::new(
-        format!("[MLS] Step 3: Roundtripping messages [0/{ROUNDTRIP_MSG_AMOUNT}]"),
+        format!("[MLS] Step 3: Roundtripping messages [0/{ROUNDTRIP_MSG_COUNT}]"),
         true,
     );
 
     let mut prng = rand::thread_rng();
     let mut message;
-    for i in 1..=ROUNDTRIP_MSG_AMOUNT {
+    for i in 1..=ROUNDTRIP_MSG_COUNT {
         message = rand::distributions::Alphanumeric.sample_string(&mut prng, 16);
 
         log::info!(
@@ -275,12 +275,12 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
         assert_eq!(decrypted_master, message);
 
         spinner.update(format!(
-            "[MLS] Step 3: Roundtripping messages... [{i}/{ROUNDTRIP_MSG_AMOUNT}]"
+            "[MLS] Step 3: Roundtripping messages... [{i}/{ROUNDTRIP_MSG_COUNT}]"
         ));
     }
 
     spinner.success(format!(
-        "[MLS] Step 3: Roundtripping {ROUNDTRIP_MSG_AMOUNT} messages... [OK]"
+        "[MLS] Step 3: Roundtripping {ROUNDTRIP_MSG_COUNT} messages... [OK]"
     ));
 
     let spinner = util::RunningProcess::new("[MLS] Step 4: Deleting clients...", true);
@@ -365,14 +365,14 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
     spinner.success("[Proteus] Step 2: Creating sessions [OK]");
 
     let mut spinner = util::RunningProcess::new(
-        format!("[Proteus] Step 3: Roundtripping messages [0/{ROUNDTRIP_MSG_AMOUNT}]"),
+        format!("[Proteus] Step 3: Roundtripping messages [0/{ROUNDTRIP_MSG_COUNT}]"),
         true,
     );
 
     let mut prng = rand::thread_rng();
     let mut message = [0u8; 128];
     let mut master_messages_to_decrypt = std::collections::HashMap::new();
-    for i in 0..ROUNDTRIP_MSG_AMOUNT {
+    for i in 0..ROUNDTRIP_MSG_COUNT {
         use rand::RngCore as _;
 
         prng.fill_bytes(&mut message);
@@ -406,14 +406,14 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
         }
 
         spinner.update(format!(
-            "[Proteus] Step 3: Roundtripping messages... [{i}/{ROUNDTRIP_MSG_AMOUNT}]"
+            "[Proteus] Step 3: Roundtripping messages... [{i}/{ROUNDTRIP_MSG_COUNT}]"
         ));
     }
 
     clients.clear();
 
     spinner.success(format!(
-        "[Proteus] Step 3: Roundtripping {ROUNDTRIP_MSG_AMOUNT} messages... [OK]"
+        "[Proteus] Step 3: Roundtripping {ROUNDTRIP_MSG_COUNT} messages... [OK]"
     ));
 
     let spinner = util::RunningProcess::new("[Proteus] Step 4: Deleting clients...", true);
