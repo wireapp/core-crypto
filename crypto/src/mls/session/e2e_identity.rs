@@ -39,10 +39,7 @@ impl Session {
             return Ok(false);
         }
 
-        Err(Error::CredentialNotFound(
-            CredentialType::Basic,
-            ciphersuite.signature_algorithm(),
-        ))
+        Err(Error::NoCredentialWithType(CredentialType::Basic))
     }
 
     /// Verifies a Group state before joining it

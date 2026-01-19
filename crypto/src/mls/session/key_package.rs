@@ -31,18 +31,8 @@ fn from_stored(stored_keypackage: &StoredKeypackage) -> Result<Keypackage> {
 impl Session {
     /// Get an unambiguous credential for the provided ref from the currently-loaded set.
     async fn credential_from_ref(&self, credential_ref: &CredentialRef) -> Result<Arc<Credential>> {
-        let identities = self.identities.read().await;
-        identities
-            .find_credential_by_public_key(
-                credential_ref.signature_scheme(),
-                credential_ref.r#type(),
-                &credential_ref.public_key().into(),
-            )
-            .await
-            .ok_or(Error::CredentialNotFound(
-                credential_ref.r#type(),
-                credential_ref.signature_scheme(),
-            ))
+        let signature_public_key = credential_ref.public_key().into();
+        self.find_credential_by_public_key(&signature_public_key).await
     }
 
     /// Generate a [Keypackage] from the referenced credential.

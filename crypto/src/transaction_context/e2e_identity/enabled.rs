@@ -53,7 +53,7 @@ mod tests {
             assert!(matches!(
                 cc.transaction.e2ei_is_enabled(other_ciphersuite.into()).await.unwrap_err(),
                 Error::Recursive(RecursiveError::MlsClient {  source, .. })
-                if matches!(*source, mls::session::Error::CredentialNotFound(..))
+                if matches!(*source, mls::session::Error::NoCredentialWithType(CredentialType::Basic))
             ));
         })
         .await

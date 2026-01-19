@@ -421,15 +421,8 @@ impl MlsConversation {
     }
 
     async fn find_credential_for_leaf_node(&self, session: &Session, leaf_node: &LeafNode) -> Result<Arc<Credential>> {
-        let sc = self.ciphersuite().signature_algorithm();
-        let ct = match leaf_node.credential().credential_type() {
-            openmls::prelude::CredentialType::Basic => Ok(CredentialType::Basic),
-            openmls::prelude::CredentialType::X509 => Ok(CredentialType::X509),
-            openmls::prelude::CredentialType::Unknown(_) => Err(Error::MlsGroupInvalidState("Unknown Credential Type")),
-        }?;
-
         let credential = session
-            .find_credential_by_public_key(sc, ct, leaf_node.signature_key())
+            .find_credential_by_public_key(leaf_node.signature_key())
             .await
             .map_err(RecursiveError::mls_client("finding current credential"))?;
         Ok(credential)

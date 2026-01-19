@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
-use openmls::prelude::{SignaturePublicKey, SignatureScheme};
+use openmls::prelude::SignaturePublicKey;
 
 use super::{Error, Result};
-use crate::{
-    Credential, CredentialFindFilters, CredentialRef, CredentialType, MlsConversation, RecursiveError, Session,
-};
+use crate::{Credential, CredentialFindFilters, CredentialRef, MlsConversation, RecursiveError, Session};
 
 impl Session {
     /// Find all credentials known by this session which match the specified conditions.
@@ -129,15 +127,12 @@ impl Session {
     /// convenience function deferring to the implementation on the inner type
     pub(crate) async fn find_credential_by_public_key(
         &self,
-        signature_scheme: SignatureScheme,
-        credential_type: CredentialType,
         public_key: &SignaturePublicKey,
     ) -> Result<Arc<Credential>> {
-        self.identities
-            .read()
+        let database = self.crypto_provider.keystore();
+        let credential = Credential::find_by_public_key(&database, public_key)
             .await
-            .find_credential_by_public_key(signature_scheme, credential_type, public_key)
-            .await
-            .ok_or(Error::CredentialNotFound(credential_type, signature_scheme))
+            .map_err(RecursiveError::mls_credential("getting credential by public key"))?;
+        Ok(Arc::new(credential))
     }
 }

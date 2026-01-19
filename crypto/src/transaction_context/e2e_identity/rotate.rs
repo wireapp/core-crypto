@@ -315,11 +315,7 @@ mod tests {
                 // But first let's verify the previous credential material is present
                 assert!(
                     alice
-                        .find_credential(
-                            case.signature_scheme(),
-                            case.credential_type,
-                            &old_credential.public_key().into()
-                        )
+                        .find_credential(&old_credential.public_key().into())
                         .await
                         .is_some()
                 );
@@ -415,11 +411,11 @@ mod tests {
                     .unwrap();
 
                 // So alice has a new Credential as expected
-                let cb = credential_ref
+                let credential = credential_ref
                     .load(&alice.transaction.keystore().await.unwrap())
                     .await
                     .unwrap();
-                let identity = cb
+                let identity = credential
                     .to_mls_credential_with_key()
                     .extract_identity(case.ciphersuite(), None)
                     .unwrap();
@@ -434,10 +430,7 @@ mod tests {
 
                 // but keeps her old one since it's referenced from some KeyPackages
                 let old_spk = SignaturePublicKey::from(initial_cred_ref.public_key());
-                let old_cb_found = alice
-                    .find_credential(case.signature_scheme(), case.credential_type, &old_spk)
-                    .await
-                    .unwrap();
+                let old_cb_found = alice.find_credential(&old_spk).await.unwrap();
                 assert_eq!(std::sync::Arc::new(old_cb), old_cb_found);
                 let old_nb_identities = {
                     let alice_client = alice.session().await;
@@ -463,11 +456,7 @@ mod tests {
                 let new_session = alice.session().await;
                 // Verify that Alice has the same credentials
                 let cb = new_session
-                    .find_credential_by_public_key(
-                        credential_ref.signature_scheme(),
-                        CredentialType::X509,
-                        &cb.to_mls_credential_with_key().signature_key,
-                    )
+                    .find_credential_by_public_key(&credential.to_mls_credential_with_key().signature_key)
                     .await
                     .unwrap();
                 let identity = cb

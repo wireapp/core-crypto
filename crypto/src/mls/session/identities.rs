@@ -161,10 +161,7 @@ mod tests {
                 let pk = SignaturePublicKey::from(to_search.signature_key_pair.public());
                 let client = central.transaction.session().await.unwrap();
 
-                let found = client
-                    .find_credential_by_public_key(case.signature_scheme(), case.credential_type, &pk)
-                    .await
-                    .unwrap();
+                let found = client.find_credential_by_public_key(&pk).await.unwrap();
 
                 assert_eq!(to_search, found);
             })

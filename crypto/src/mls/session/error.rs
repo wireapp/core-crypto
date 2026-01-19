@@ -3,8 +3,6 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
-use openmls::prelude::SignatureScheme;
-
 use crate::ConversationId;
 
 pub(crate) type Result<T, E = Error> = core::result::Result<T, E>;
@@ -19,8 +17,8 @@ pub enum Error {
     CredentialConflict,
     #[error("A MLS operation was requested but MLS hasn't been initialized on this instance")]
     MlsNotInitialized,
-    #[error("No credential of type ({0:?}, {1:?}) was found in this session")]
-    CredentialNotFound(crate::CredentialType, SignatureScheme),
+    #[error("No credential of type ({0:?}) was found in this session")]
+    NoCredentialWithType(crate::CredentialType),
     #[error("supplied signature scheme was not valid")]
     InvalidSignatureScheme,
     /// The keystore has no knowledge of such client; this shouldn't happen as Client::init is failsafe

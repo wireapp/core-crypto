@@ -5,7 +5,7 @@ use core_crypto_keystore::{
     traits::FetchFromDatabase,
 };
 use openmls::prelude::{Credential as MlsCredential, ExternalSender, HpkePublicKey, KeyPackage, SignaturePublicKey};
-use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
+use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto};
 use tls_codec::Serialize;
 use wire_e2e_identity::prelude::WireIdentityReader;
 use x509_cert::der::Encode;
@@ -127,17 +127,8 @@ impl SessionContext {
         credential_ref.load(&database).await.unwrap()
     }
 
-    pub async fn find_credential(
-        &self,
-        sc: SignatureScheme,
-        ct: CredentialType,
-        pk: &SignaturePublicKey,
-    ) -> Option<Arc<Credential>> {
-        self.session()
-            .await
-            .find_credential_by_public_key(sc, ct, pk)
-            .await
-            .ok()
+    pub async fn find_credential(&self, pk: &SignaturePublicKey) -> Option<Arc<Credential>> {
+        self.session().await.find_credential_by_public_key(pk).await.ok()
     }
 
     pub async fn find_hpke_private_key_from_keystore(&self, skp: &HpkePublicKey) -> Option<StoredHpkePrivateKey> {

@@ -3,6 +3,8 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
+use openmls::prelude::SignaturePublicKey;
+
 pub(crate) type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
@@ -11,6 +13,8 @@ pub enum Error {
     DecodeX509(#[source] x509_cert::der::Error),
     #[error("client presented an invalid identity")]
     InvalidIdentity,
+    #[error("No credential for the given public key ({0:?}) was found in this database")]
+    CredentialNotFound(SignaturePublicKey),
     /// Unsupported credential type.
     ///
     /// Supported credential types:

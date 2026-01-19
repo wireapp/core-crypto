@@ -1,11 +1,24 @@
-use core_crypto_keystore::{Sha256Hash, entities::StoredCredential};
+use core_crypto_keystore::{Sha256Hash, entities::StoredCredential, traits::FetchFromDatabase as _};
 use mls_crypto_provider::Database;
+use openmls::prelude::SignaturePublicKey;
 use tls_codec::Serialize as _;
 
 use super::{Error, Result};
 use crate::{Credential, CredentialRef, KeystoreError};
 
 impl Credential {
+    /// Loads a credential with the given public key from the database.
+    ///
+    /// Should not be passed over the ffi boundary.
+    pub(crate) async fn find_by_public_key(database: &Database, public_key: &SignaturePublicKey) -> Result<Self> {
+        let stored_credential = &database
+            .get::<StoredCredential>(&Sha256Hash::hash_from(public_key.as_slice()))
+            .await
+            .map_err(KeystoreError::wrap("getting credential by public key"))?
+            .ok_or_else(|| Error::CredentialNotFound(public_key.clone()))?;
+        stored_credential.try_into()
+    }
+
     /// Persist this credential into the database.
     ///
     /// Returns a reference which is stable over time and across the FFI boundary.
