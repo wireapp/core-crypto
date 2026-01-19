@@ -47,6 +47,18 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertNotNil(database2)
     }
 
+    func testDbGetLocationWorks() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "mls")
+        let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+
+        let key = genDatabaseKey()
+
+        let database = try await openDatabase(name: keystore.path, key: key)
+        let location = try await database.getLocation()
+        XCTAssertEqual(keystore.path, location)
+    }
+
     func testOpenExistingDbWithInvalidKeyFails() async throws {
         let root = FileManager.default.temporaryDirectory.appending(path: "mls")
         let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
