@@ -26,6 +26,10 @@ pub struct WasmConnection {
 }
 
 impl WasmConnection {
+    pub fn name(&self) -> &Option<String> {
+        &self.name
+    }
+
     pub fn storage(&self) -> &WasmEncryptedStorage {
         &self.conn
     }

@@ -254,6 +254,20 @@ impl Database {
         })
     }
 
+    pub async fn location(&self) -> CryptoKeystoreResult<Option<String>> {
+        #[cfg(target_family = "wasm")]
+        return Ok(self.conn().await?.name().clone());
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let path = self.conn().await?.path().to_string();
+            Ok(match path.as_str() {
+                "" => None,
+                _ => Some(path),
+            })
+        }
+    }
+
     /// Get direct exclusive access to the connection.
     pub async fn conn(&self) -> CryptoKeystoreResult<ConnectionGuard<'_>> {
         self.conn.lock().await.try_into()
