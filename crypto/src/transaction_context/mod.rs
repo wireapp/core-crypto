@@ -17,7 +17,7 @@ use crate::{
     Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef,
     KeystoreError, MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
     group_store::GroupStore,
-    mls::{self, HasSessionAndCrypto, session::identities::Identities},
+    mls::{self, HasSessionAndCrypto},
 };
 pub mod conversation;
 pub mod e2e_identity;
@@ -241,7 +241,7 @@ impl TransactionContext {
     /// Loads any cryptographic material already present in the keystore, but does not create any.
     /// If no credentials are present in the keystore, then one _must_ be created and added to the
     /// session before it can be used.
-    async fn init(&self, identifier: ClientIdentifier, ciphersuites: &[Ciphersuite]) -> Result<(ClientId, Identities)> {
+    async fn init(&self, identifier: ClientIdentifier, ciphersuites: &[Ciphersuite]) -> Result<ClientId> {
         let database = self.keystore().await?;
         let client_id = identifier
             .get_id()
@@ -271,7 +271,6 @@ impl TransactionContext {
         ))?;
         credential_refs.retain(|credential_ref| signature_schemes.contains(&credential_ref.signature_scheme()));
 
-        let identities = Identities::new(credential_refs.len());
         let credentials_cache =
             CredentialRef::load_stored_credentials(&database)
                 .await
@@ -291,7 +290,7 @@ impl TransactionContext {
             }
         }
 
-        Ok((client_id, identities))
+        Ok(client_id)
     }
 
     /// Initializes the MLS client of [super::CoreCrypto].
@@ -302,10 +301,10 @@ impl TransactionContext {
         transport: Arc<dyn MlsTransport>,
     ) -> Result<()> {
         let database = self.keystore().await?;
-        let (client_id, identities) = self.init(identifier, ciphersuites).await?;
+        let client_id = self.init(identifier, ciphersuites).await?;
 
         let mls_backend = MlsCryptoProvider::new(database);
-        let session = Session::new(client_id.clone(), identities, mls_backend, transport);
+        let session = Session::new(client_id.clone(), mls_backend, transport);
 
         if matches!(identifier, ClientIdentifier::X509(..)) {
             log::trace!(client_id:% = client_id; "Initializing PKI environment");

@@ -30,7 +30,7 @@ use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
     Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, CoreCryptoTransportNotImplementedProvider,
-    Credential, Error, MlsError, RecursiveError, Result, Session, mls::session::identities::Identities,
+    Credential, Error, MlsError, RecursiveError, Result, Session,
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -146,12 +146,7 @@ impl CoreCrypto {
         // store the client id (with some other stuff)
         let mls_backend = MlsCryptoProvider::new(database);
         let transport = Arc::new(CoreCryptoTransportNotImplementedProvider::default());
-        let session = Session::new(
-            history_secret.client_id.clone(),
-            Identities::new(0),
-            mls_backend,
-            transport,
-        );
+        let session = Session::new(history_secret.client_id.clone(), mls_backend, transport);
 
         session
             .restore_from_history_secret(history_secret)

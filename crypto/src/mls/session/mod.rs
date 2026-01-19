@@ -5,7 +5,6 @@ mod error;
 mod history_observer;
 pub(crate) mod id;
 pub(crate) mod identifier;
-pub(crate) mod identities;
 pub(crate) mod key_package;
 pub(crate) mod user_id;
 
@@ -15,7 +14,6 @@ use async_lock::RwLock;
 pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
-use identities::Identities;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -40,7 +38,6 @@ use crate::{
 #[derive(Clone, derive_more::Debug)]
 pub struct Session {
     id: ClientId,
-    identities: Arc<RwLock<Identities>>,
     pub(crate) crypto_provider: MlsCryptoProvider,
     pub(crate) transport: Arc<dyn MlsTransport + 'static>,
     #[debug("EpochObserver")]
@@ -63,15 +60,9 @@ impl HasSessionAndCrypto for Session {
 
 impl Session {
     /// Create a new `Session`
-    pub fn new(
-        id: ClientId,
-        identities: Identities,
-        crypto_provider: MlsCryptoProvider,
-        transport: Arc<dyn MlsTransport>,
-    ) -> Self {
+    pub fn new(id: ClientId, crypto_provider: MlsCryptoProvider, transport: Arc<dyn MlsTransport>) -> Self {
         Self {
             id,
-            identities: Arc::new(RwLock::new(identities)),
             crypto_provider,
             transport,
             epoch_observer: Arc::new(RwLock::new(None)),
@@ -161,10 +152,6 @@ mod tests {
     impl Session {
         // test functions are not held to the same documentation standard as proper functions
         #![allow(missing_docs)]
-
-        pub async fn identities(&self) -> Identities {
-            self.identities.read().await.clone()
-        }
 
         pub async fn find_keypackages(&self, backend: &MlsCryptoProvider) -> Result<Vec<openmls::prelude::KeyPackage>> {
             use core_crypto_keystore::CryptoKeystoreMls as _;
