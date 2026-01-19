@@ -307,11 +307,7 @@ impl TransactionContext {
         let mls_backend = MlsCryptoProvider::new(database);
         let session = Session::new(client_id.clone(), identities, mls_backend, transport);
 
-        if session
-            .is_e2ei_capable()
-            .await
-            .map_err(RecursiveError::mls_client("check if client has x509 credentials"))?
-        {
+        if matches!(identifier, ClientIdentifier::X509(..)) {
             log::trace!(client_id:% = client_id; "Initializing PKI environment");
             self.init_pki_env().await?;
         }
