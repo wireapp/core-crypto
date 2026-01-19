@@ -4953,8 +4953,8 @@ checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 
 [[package]]
 name = "rusty-jwt-tools"
-version = "0.13.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools.git?rev=05e0e3243c2f3ad9da2c37599f7ad3f004f12d98#05e0e3243c2f3ad9da2c37599f7ad3f004f12d98"
+version = "0.14.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools.git?tag=v0.14.0#b5de03a239d41b51e7cf9cd7c2674fa6be205134"
 dependencies = [
  "base64 0.22.1",
  "const_format",
