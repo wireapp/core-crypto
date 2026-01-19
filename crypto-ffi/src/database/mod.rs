@@ -30,6 +30,15 @@ impl Database {
     }
 }
 
+#[uniffi::export]
+impl Database {
+    /// Get the location of the database
+    /// Returns null if in-memory
+    pub async fn get_location(&self) -> CoreCryptoResult<Option<String>> {
+        self.location().await.map_err(CoreCryptoError::generic())
+    }
+}
+
 /// Open or create a [Database].
 #[uniffi::export]
 pub async fn open_database(name: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Database> {
