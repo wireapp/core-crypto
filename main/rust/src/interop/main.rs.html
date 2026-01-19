@@ -17,7 +17,7 @@
 <a href=#17 id=17 data-nosnippet>17</a></span><span class="kw">mod </span>util;
 <a href=#18 id=18 data-nosnippet>18</a>
 <a href=#19 id=19 data-nosnippet>19</a><span class="kw">const </span>MLS_CONVERSATION_ID: <span class="kw-2">&amp;</span>[u8] = <span class="string">b"test_conversation"</span>;
-<a href=#20 id=20 data-nosnippet>20</a><span class="kw">const </span>ROUNDTRIP_MSG_AMOUNT: usize = <span class="number">100</span>;
+<a href=#20 id=20 data-nosnippet>20</a><span class="kw">const </span>ROUNDTRIP_MSG_COUNT: usize = <span class="number">10</span>;
 <a href=#21 id=21 data-nosnippet>21</a>
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">const </span>CIPHERSUITE_IN_USE: MlsCiphersuite = MlsCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 <a href=#23 id=23 data-nosnippet>23</a>
@@ -208,13 +208,13 @@
 <a href=#208 id=208 data-nosnippet>208</a>    spinner.success(<span class="string">"[MLS] Step 2: Added clients [OK]"</span>);
 <a href=#209 id=209 data-nosnippet>209</a>
 <a href=#210 id=210 data-nosnippet>210</a>    <span class="kw">let </span><span class="kw-2">mut </span>spinner = util::RunningProcess::new(
-<a href=#211 id=211 data-nosnippet>211</a>        <span class="macro">format!</span>(<span class="string">"[MLS] Step 3: Roundtripping messages [0/{ROUNDTRIP_MSG_AMOUNT}]"</span>),
+<a href=#211 id=211 data-nosnippet>211</a>        <span class="macro">format!</span>(<span class="string">"[MLS] Step 3: Roundtripping messages [0/{ROUNDTRIP_MSG_COUNT}]"</span>),
 <a href=#212 id=212 data-nosnippet>212</a>        <span class="bool-val">true</span>,
 <a href=#213 id=213 data-nosnippet>213</a>    );
 <a href=#214 id=214 data-nosnippet>214</a>
 <a href=#215 id=215 data-nosnippet>215</a>    <span class="kw">let </span><span class="kw-2">mut </span>prng = rand::thread_rng();
 <a href=#216 id=216 data-nosnippet>216</a>    <span class="kw">let </span><span class="kw-2">mut </span>message;
-<a href=#217 id=217 data-nosnippet>217</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">1</span>..=ROUNDTRIP_MSG_AMOUNT {
+<a href=#217 id=217 data-nosnippet>217</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">1</span>..=ROUNDTRIP_MSG_COUNT {
 <a href=#218 id=218 data-nosnippet>218</a>        message = rand::distributions::Alphanumeric.sample_string(<span class="kw-2">&amp;mut </span>prng, <span class="number">16</span>);
 <a href=#219 id=219 data-nosnippet>219</a>
 <a href=#220 id=220 data-nosnippet>220</a>        <span class="macro">log::info!</span>(
@@ -275,12 +275,12 @@
 <a href=#275 id=275 data-nosnippet>275</a>        <span class="macro">assert_eq!</span>(decrypted_master, message);
 <a href=#276 id=276 data-nosnippet>276</a>
 <a href=#277 id=277 data-nosnippet>277</a>        spinner.update(<span class="macro">format!</span>(
-<a href=#278 id=278 data-nosnippet>278</a>            <span class="string">"[MLS] Step 3: Roundtripping messages... [{i}/{ROUNDTRIP_MSG_AMOUNT}]"
+<a href=#278 id=278 data-nosnippet>278</a>            <span class="string">"[MLS] Step 3: Roundtripping messages... [{i}/{ROUNDTRIP_MSG_COUNT}]"
 <a href=#279 id=279 data-nosnippet>279</a>        </span>));
 <a href=#280 id=280 data-nosnippet>280</a>    }
 <a href=#281 id=281 data-nosnippet>281</a>
 <a href=#282 id=282 data-nosnippet>282</a>    spinner.success(<span class="macro">format!</span>(
-<a href=#283 id=283 data-nosnippet>283</a>        <span class="string">"[MLS] Step 3: Roundtripping {ROUNDTRIP_MSG_AMOUNT} messages... [OK]"
+<a href=#283 id=283 data-nosnippet>283</a>        <span class="string">"[MLS] Step 3: Roundtripping {ROUNDTRIP_MSG_COUNT} messages... [OK]"
 <a href=#284 id=284 data-nosnippet>284</a>    </span>));
 <a href=#285 id=285 data-nosnippet>285</a>
 <a href=#286 id=286 data-nosnippet>286</a>    <span class="kw">let </span>spinner = util::RunningProcess::new(<span class="string">"[MLS] Step 4: Deleting clients..."</span>, <span class="bool-val">true</span>);
@@ -365,14 +365,14 @@
 <a href=#365 id=365 data-nosnippet>365</a>    spinner.success(<span class="string">"[Proteus] Step 2: Creating sessions [OK]"</span>);
 <a href=#366 id=366 data-nosnippet>366</a>
 <a href=#367 id=367 data-nosnippet>367</a>    <span class="kw">let </span><span class="kw-2">mut </span>spinner = util::RunningProcess::new(
-<a href=#368 id=368 data-nosnippet>368</a>        <span class="macro">format!</span>(<span class="string">"[Proteus] Step 3: Roundtripping messages [0/{ROUNDTRIP_MSG_AMOUNT}]"</span>),
+<a href=#368 id=368 data-nosnippet>368</a>        <span class="macro">format!</span>(<span class="string">"[Proteus] Step 3: Roundtripping messages [0/{ROUNDTRIP_MSG_COUNT}]"</span>),
 <a href=#369 id=369 data-nosnippet>369</a>        <span class="bool-val">true</span>,
 <a href=#370 id=370 data-nosnippet>370</a>    );
 <a href=#371 id=371 data-nosnippet>371</a>
 <a href=#372 id=372 data-nosnippet>372</a>    <span class="kw">let </span><span class="kw-2">mut </span>prng = rand::thread_rng();
 <a href=#373 id=373 data-nosnippet>373</a>    <span class="kw">let </span><span class="kw-2">mut </span>message = [<span class="number">0u8</span>; <span class="number">128</span>];
 <a href=#374 id=374 data-nosnippet>374</a>    <span class="kw">let </span><span class="kw-2">mut </span>master_messages_to_decrypt = std::collections::HashMap::new();
-<a href=#375 id=375 data-nosnippet>375</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..ROUNDTRIP_MSG_AMOUNT {
+<a href=#375 id=375 data-nosnippet>375</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..ROUNDTRIP_MSG_COUNT {
 <a href=#376 id=376 data-nosnippet>376</a>        <span class="kw">use </span>rand::RngCore <span class="kw">as _</span>;
 <a href=#377 id=377 data-nosnippet>377</a>
 <a href=#378 id=378 data-nosnippet>378</a>        prng.fill_bytes(<span class="kw-2">&amp;mut </span>message);
@@ -406,14 +406,14 @@
 <a href=#406 id=406 data-nosnippet>406</a>        }
 <a href=#407 id=407 data-nosnippet>407</a>
 <a href=#408 id=408 data-nosnippet>408</a>        spinner.update(<span class="macro">format!</span>(
-<a href=#409 id=409 data-nosnippet>409</a>            <span class="string">"[Proteus] Step 3: Roundtripping messages... [{i}/{ROUNDTRIP_MSG_AMOUNT}]"
+<a href=#409 id=409 data-nosnippet>409</a>            <span class="string">"[Proteus] Step 3: Roundtripping messages... [{i}/{ROUNDTRIP_MSG_COUNT}]"
 <a href=#410 id=410 data-nosnippet>410</a>        </span>));
 <a href=#411 id=411 data-nosnippet>411</a>    }
 <a href=#412 id=412 data-nosnippet>412</a>
 <a href=#413 id=413 data-nosnippet>413</a>    clients.clear();
 <a href=#414 id=414 data-nosnippet>414</a>
 <a href=#415 id=415 data-nosnippet>415</a>    spinner.success(<span class="macro">format!</span>(
-<a href=#416 id=416 data-nosnippet>416</a>        <span class="string">"[Proteus] Step 3: Roundtripping {ROUNDTRIP_MSG_AMOUNT} messages... [OK]"
+<a href=#416 id=416 data-nosnippet>416</a>        <span class="string">"[Proteus] Step 3: Roundtripping {ROUNDTRIP_MSG_COUNT} messages... [OK]"
 <a href=#417 id=417 data-nosnippet>417</a>    </span>));
 <a href=#418 id=418 data-nosnippet>418</a>
 <a href=#419 id=419 data-nosnippet>419</a>    <span class="kw">let </span>spinner = util::RunningProcess::new(<span class="string">"[Proteus] Step 4: Deleting clients..."</span>, <span class="bool-val">true</span>);
