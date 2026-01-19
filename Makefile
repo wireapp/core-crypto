@@ -298,7 +298,7 @@ $(STAMPS)/ios-create-xcframework: $(ios-create-xcframework-deps)
 .PHONY: ios-create-xcframework
 ios-create-xcframework: $(STAMPS)/ios-create-xcframework ## Build the XCode framework (macOS only)
 
-ios-test-deps := $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT)
+ios-test-deps := $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT) $(SWIFT_FILES)
 
 $(STAMPS)/ios-test: $(ios-test-deps)
 	$(SHELL) scripts/run-ios-tests.sh $(XCODE_CONFIG)
@@ -378,7 +378,7 @@ else
 $(error Unsupported host platform for android-test-lib: $(UNAME_S))
 endif
 
-android-test-deps := $(ANDROID_TEST_LIB) $(UNIFFI_ANDROID_OUTPUT)
+android-test-deps := $(ANDROID_TEST_LIB) $(UNIFFI_ANDROID_OUTPUT) $(KT_FILES)
 
 $(STAMPS)/android-test: $(android-test-deps)
 	$(SHELL) scripts/run-android-tests.sh
@@ -429,7 +429,7 @@ else
 $(error Unsupported host platform for jvm: $(UNAME_S))
 endif
 
-jvm-test-deps := $(JVM_LIB) $(UNIFFI_JVM_OUTPUT)
+jvm-test-deps := $(JVM_LIB) $(UNIFFI_JVM_OUTPUT) $(KT_FILES)
 
 $(STAMPS)/jvm-test: $(jvm-test-deps)
 	cd crypto-ffi/bindings && \
@@ -514,7 +514,7 @@ $(TS_OUT): $(ts-deps)
 .PHONY: ts
 ts: $(TS_OUT) ## Build the TypeScript wrapper
 
-ts-test-deps := $(TS_OUT)
+ts-test-deps := $(TS_OUT) $(TS_TEST_FILES)
 
 # run WebDriver tests + bun’s built-in tests
 $(STAMPS)/ts-test: $(ts-test-deps)
@@ -554,9 +554,9 @@ interop-build-deps := $(INTEROP_SOURCES)
 $(INTEROP_OUT): $(interop-build-deps)
 	cargo build --bin interop
 
-interop-test-deps := $(INTEROP_OUT) $(TS_OUT) $(UNIFFI_SWIFT_OUTPUT) $(ANDROID_ARMv8) $(ANDROID_ARMv7) $(ANDROID_X86) $(UNIFFI_ANDROID_OUTPUT)
+interop-test-deps := $(INTEROP_OUT) $(TS_OUT) $(ANDROID_ARMv8) $(ANDROID_ARMv7) $(ANDROID_X86) $(UNIFFI_ANDROID_OUTPUT) $(KT_FILES)
 ifeq ($(UNAME_S),Darwin)
-interop-test-deps := $(interop-test-deps) $(IOS_SIMULATOR_ARM)
+interop-test-deps := $(interop-test-deps) $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT) $(SWIFT_FILES)
 endif
 
 $(STAMPS)/interop-test: $(interop-test-deps)
