@@ -173,9 +173,7 @@ pub async fn new_central(
     let cc = CoreCrypto::new(db);
     let delivery_service = Arc::<CoreCryptoTransportSuccessProvider>::default();
     let tx = cc.new_transaction().await.unwrap();
-    tx.mls_init(client_identifier, &[ciphersuite], delivery_service.clone())
-        .await
-        .unwrap();
+    tx.mls_init(client_identifier, delivery_service.clone()).await.unwrap();
     tx.finish().await.unwrap();
 
     let ctx = cc.new_transaction().await.unwrap();

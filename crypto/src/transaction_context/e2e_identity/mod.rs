@@ -114,7 +114,7 @@ impl TransactionContext {
                 ))?;
 
         let identifier = ClientIdentifier::X509(HashMap::from([(ciphersuite.signature_algorithm(), cert_bundle)]));
-        self.mls_init(identifier, &[ciphersuite], transport)
+        self.mls_init(identifier, transport)
             .await
             .map_err(RecursiveError::transaction("initializing mls"))?;
         Ok((credential_ref, crl_new_distribution_points))

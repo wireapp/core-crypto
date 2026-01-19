@@ -46,20 +46,11 @@ bytes_wrapper!(
 #[uniffi::export]
 impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::mls_init]
-    pub async fn mls_init(
-        &self,
-        client_id: &Arc<ClientId>,
-        ciphersuites: Vec<Ciphersuite>,
-        transport: Arc<dyn MlsTransport>,
-    ) -> CoreCryptoResult<()> {
+    pub async fn mls_init(&self, client_id: &Arc<ClientId>, transport: Arc<dyn MlsTransport>) -> CoreCryptoResult<()> {
         let transport = callback_shim(transport);
         self.inner
             .mls_init(
                 ClientIdentifier::Basic(client_id.as_ref().as_ref().to_owned()),
-                &ciphersuites
-                    .into_iter()
-                    .map(CryptoCiphersuite::from)
-                    .collect::<Vec<_>>(),
                 transport,
             )
             .await?;

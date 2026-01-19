@@ -116,7 +116,6 @@ mod tests {
             context
                 .mls_init(
                     identifier.clone(),
-                    &[case.ciphersuite()],
                     Arc::new(CoreCryptoTransportSuccessProvider::default()),
                 )
                 .await

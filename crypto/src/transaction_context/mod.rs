@@ -14,8 +14,8 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    Ciphersuite, ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef,
-    KeystoreError, MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
+    ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef, KeystoreError,
+    MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
     group_store::GroupStore,
     mls::{self, HasSessionAndCrypto},
 };
@@ -238,70 +238,13 @@ impl TransactionContext {
         result
     }
 
-    /// Loads any cryptographic material already present in the keystore, but does not create any.
-    /// If no credentials are present in the keystore, then one _must_ be created and added to the
-    /// session before it can be used.
-    async fn init(&self, identifier: ClientIdentifier, ciphersuites: &[Ciphersuite]) -> Result<ClientId> {
+    /// Initializes the MLS client of [super::CoreCrypto].
+    pub async fn mls_init(&self, identifier: ClientIdentifier, transport: Arc<dyn MlsTransport>) -> Result<()> {
         let database = self.keystore().await?;
         let client_id = identifier
             .get_id()
             .map_err(RecursiveError::mls_client("getting client id"))?
             .into_owned();
-
-        let signature_schemes = &ciphersuites
-            .iter()
-            .map(|ciphersuite| ciphersuite.signature_algorithm())
-            .collect::<Vec<_>>();
-
-        // we want to find all credentials matching this identifier, having a valid signature scheme.
-        // the `CredentialRef::find` API doesn't allow us to easily find those credentials having
-        // one of a set of signature schemes, meaning we have two paths here:
-        // we could either search unbound by signature schemes and then filter for valid ones here,
-        // or we could iterate over the list of signature schemes and build up a set of credential refs.
-        // as there are only a few signature schemes possible and the cost of a find operation is non-trivial,
-        // we choose the first option.
-        // we might revisit this choice after WPB-20844 and WPB-21819.
-        let mut credential_refs = CredentialRef::find(
-            &database,
-            CredentialFindFilters::builder().client_id(&client_id).build(),
-        )
-        .await
-        .map_err(RecursiveError::mls_credential_ref(
-            "loading matching credential refs while initializing a client",
-        ))?;
-        credential_refs.retain(|credential_ref| signature_schemes.contains(&credential_ref.signature_scheme()));
-
-        let credentials_cache =
-            CredentialRef::load_stored_credentials(&database)
-                .await
-                .map_err(RecursiveError::mls_credential_ref(
-                    "loading credential ref cache while initializing session",
-                ))?;
-
-        for credential_ref in credential_refs {
-            if let Some(credential) =
-                credential_ref
-                    .load_from_cache(&credentials_cache)
-                    .map_err(RecursiveError::mls_credential_ref(
-                        "loading credential list in session init",
-                    ))?
-            {
-                self.add_credential(credential).await?;
-            }
-        }
-
-        Ok(client_id)
-    }
-
-    /// Initializes the MLS client of [super::CoreCrypto].
-    pub async fn mls_init(
-        &self,
-        identifier: ClientIdentifier,
-        ciphersuites: &[Ciphersuite],
-        transport: Arc<dyn MlsTransport>,
-    ) -> Result<()> {
-        let database = self.keystore().await?;
-        let client_id = self.init(identifier, ciphersuites).await?;
 
         let mls_backend = MlsCryptoProvider::new(database);
         let session = Session::new(client_id.clone(), mls_backend, transport);

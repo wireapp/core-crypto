@@ -82,7 +82,7 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
         .map_err(RecursiveError::transaction("creating new transaction"))?;
 
     let transport = Arc::new(CoreCryptoTransportNotImplementedProvider::default());
-    tx.mls_init(identifier, &[ciphersuite], transport)
+    tx.mls_init(identifier, transport)
         .await
         .map_err(RecursiveError::transaction("initializing ephemeral cc"))?;
     let session = tx

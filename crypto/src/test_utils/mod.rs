@@ -129,11 +129,7 @@ impl SessionContext {
         let transaction = core_crypto.new_transaction().await.unwrap();
 
         transaction
-            .mls_init(
-                identifier.clone(),
-                &[context.cfg.ciphersuite],
-                context.transport.clone(),
-            )
+            .mls_init(identifier.clone(), context.transport.clone())
             .await
             .map_err(RecursiveError::transaction("mls init"))?;
 
@@ -255,9 +251,9 @@ impl SessionContext {
         self.set_session(new_session).await;
     }
 
-    pub async fn reinit_session(&self, identifier: ClientIdentifier, ciphersuites: &[Ciphersuite]) {
+    pub async fn reinit_session(&self, identifier: ClientIdentifier) {
         self.transaction
-            .mls_init(identifier, ciphersuites, self.mls_transport().await)
+            .mls_init(identifier, self.mls_transport().await)
             .await
             .unwrap();
 
@@ -322,7 +318,7 @@ impl SessionContext {
             }
         };
 
-        self.reinit_session(identifier, &[case.ciphersuite()]).await;
+        self.reinit_session(identifier).await;
 
         self.session().await.add_credential(credential).await.unwrap();
 

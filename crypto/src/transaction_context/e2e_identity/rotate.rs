@@ -445,9 +445,7 @@ mod tests {
                 keystore.commit_transaction().await.unwrap();
                 keystore.new_transaction().await.unwrap();
 
-                alice
-                    .reinit_session(alice.identifier.clone(), &[case.ciphersuite()])
-                    .await;
+                alice.reinit_session(alice.identifier.clone()).await;
 
                 let new_session = alice.session().await;
                 // Verify that Alice has the same credentials
