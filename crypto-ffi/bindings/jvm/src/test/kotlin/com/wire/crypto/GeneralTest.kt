@@ -43,6 +43,17 @@ class DatabaseTest {
     }
 
     @Test
+    fun givenDatabase_getLocation_shouldSucceed() = runTest {
+        withDatabase { path, key ->
+            val pathStr = path.absolutePathString()
+            val db = openDatabase(pathStr, key)
+            val location = db.getLocation()
+            assert(location == pathStr)
+            db.close()
+        }
+    }
+
+    @Test
     fun givenDatabase_whenUsingSameNameAndKey_thenOpenShouldSucceed() = runTest {
         withDatabase { path, key ->
             val db = openDatabase(path.absolutePathString(), key)
