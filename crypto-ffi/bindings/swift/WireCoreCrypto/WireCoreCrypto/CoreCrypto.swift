@@ -264,3 +264,21 @@ extension Credential {
         return try credentialBasic(ciphersuite: ciphersuite, clientId: clientId)
     }
 }
+
+extension Database {
+    /// Initialise or open a Database.
+    ///
+    /// - Parameter keystorePath: path to the database
+    /// - Parameter key: secret key to unlock the database
+    ///
+    public static func open(keystorePath: String, key: DatabaseKey) async throws -> Database {
+        return try await openDatabase(name: keystorePath, key: key)
+    }
+
+    /// Initialise an in-memory Database whose data will be lost when the instance is dropped.
+    ///
+    /// - Parameter key: secret key to unlock the database
+    public static func open(key: DatabaseKey) async throws -> Database {
+        return try await inMemoryDatabase(key: key)
+    }
+}
