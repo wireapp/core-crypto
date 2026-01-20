@@ -31,6 +31,19 @@ fi
 # Launch the emulator
 echo "Launching emulator on $AVD_NAME..."
 logfile=$(mktemp)
+
+if [ "${RUNNER_ENVIRONMENT-}" = github-hosted ]; then
+    # For some reason avdmanager on github runners puts newly created AVDs under
+    # the following dir. So point ANDROID_AVD_HOME to it so the emulator can find
+    # the AVD.
+    export ANDROID_AVD_HOME=~/.config/.android/avd
+fi
+
+# Make sure that the adb server is running before starting the emulator,
+# otherwise the emulator will not start correctly. Notably, the adb server may
+# not be running on our self-hosted runners.
+adb start-server
+
 emulator -avd $AVD_NAME -port $PORT -no-window -gpu swiftshader_indirect \
          -no-snapshot -noaudio -no-boot-anim -no-metrics >$logfile &
 EMULATOR_PID=$!
