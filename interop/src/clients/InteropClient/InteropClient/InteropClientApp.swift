@@ -118,7 +118,6 @@ struct InteropClientApp: App {
             try await self.coreCrypto?.transaction({ context in
                 try await context.mlsInit(
                     clientId: clientId,
-                    ciphersuites: [ciphersuite],
                     transport: TransportProvider()
                 )
                 _ = try await context.addCredential(
