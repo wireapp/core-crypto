@@ -8,10 +8,13 @@ fi
 
 ./start-android-emulator.sh
 
-trap '
+cleanup() {
   echo "Shutting down Android emulator via adb"
-  $ANDROID_HOME/platform-tools/adb emu kill
-' EXIT
+  adb_device=emulator-$((27000 + $(id -u)))
+  adb -s $adb_device emu kill
+}
+
+trap cleanup EXIT
 
 cd ../crypto-ffi/bindings
 

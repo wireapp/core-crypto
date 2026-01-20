@@ -14,7 +14,8 @@ cleanup() {
   fi
 
   echo "Shutting down Android emulator via adb"
-  adb emu kill
+  adb_device=emulator-$((27000 + $(id -u)))
+  adb -s $adb_device emu kill
 }
 
 trap cleanup EXIT
