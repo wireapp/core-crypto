@@ -29,10 +29,14 @@ if [ "$(adb -s $ADB_DEVICE emu avd name | head -n1 | sed 's/[[:space:]]*$//')" =
 fi
 
 # Launch the emulator
-echo "Launching emulator on $AVD_NAME..."
+echo "Launching emulator on $AVD_NAME, port $PORT..."
 logfile=$(mktemp)
-emulator -avd $AVD_NAME -port $PORT -no-window -gpu swiftshader_indirect \
-         -no-snapshot -noaudio -no-boot-anim -no-metrics >$logfile &
+timeout 1m emulator -avd $AVD_NAME -port $PORT -no-window -gpu swiftshader_indirect \
+         -no-snapshot -noaudio -no-boot-anim -no-metrics
+
+adb devices
+exit 1
+
 EMULATOR_PID=$!
 
 echo Emulator log file: $logfile
