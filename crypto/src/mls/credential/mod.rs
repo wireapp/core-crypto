@@ -31,17 +31,6 @@ use crate::{Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, MlsError, Recu
 ///
 /// To attach to a particular client instance and store, see
 /// [`TransactionContext::add_credential`][crate::transaction_context::TransactionContext::add_credential].
-///
-/// Note: the current database design makes some questionable assumptions:
-///
-/// - There are always either 0 or 1 `StoredSignatureKeypair` instances in the DB for a particular signature scheme
-/// - There may be multiple `StoredCredential` instances in the DB for a particular signature scheme, but they all share
-///   the same `ClientId` / signing key. In other words, the same signing keypair is _reused_ between credentials.
-/// - Practically, the code ensures that there is a 1:1 correspondence between signing scheme <-> identity/credential,
-///   and we need to maintain that property for now.
-///
-/// Work is ongoing to fix those limitations; see WPB-20844. Until that is resolved, we enforce those restrictions by
-/// raising errors as required to preserve DB integrity.
 #[derive(core_crypto_macros::Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Credential {
     /// Ciphersuite used by this credential
