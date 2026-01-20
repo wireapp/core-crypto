@@ -119,16 +119,12 @@ impl TransactionContext {
 
     pub(crate) async fn session(&self) -> Result<Session> {
         match &*self.inner.read().await {
-            TransactionContextInner::Valid { mls_session, .. } => {
-                if let Some(session) = mls_session.read().await.as_ref() {
-                    return Ok(session.clone());
-                }
-                Err(mls::session::Error::MlsNotInitialized)
-                    .map_err(RecursiveError::mls_client(
-                        "Getting mls session from transaction context",
-                    ))
-                    .map_err(Into::into)
-            }
+            TransactionContextInner::Valid { mls_session, .. } => mls_session.read().await.as_ref().cloned().ok_or(
+                RecursiveError::mls_client("Getting mls session from transaction context")(
+                    mls::session::Error::MlsNotInitialized,
+                )
+                .into(),
+            ),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
@@ -150,15 +146,12 @@ impl TransactionContext {
     pub(crate) async fn mls_transport(&self) -> Result<Arc<dyn MlsTransport + 'static>> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { mls_session, .. } => {
-                if let Some(session) = mls_session.read().await.as_ref() {
-                    let transport = session.transport.clone();
-                    return Ok(transport);
-                }
-                Err(mls::session::Error::MlsNotInitialized)
-                    .map_err(RecursiveError::mls_client(
-                        "Getting mls session from transaction context",
-                    ))
-                    .map_err(Into::into)
+                mls_session.read().await.as_ref().map(|s| s.transport.clone()).ok_or(
+                    RecursiveError::mls_client("Getting mls session from transaction context")(
+                        mls::session::Error::MlsNotInitialized,
+                    )
+                    .into(),
+                )
             }
 
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
@@ -168,16 +161,17 @@ impl TransactionContext {
     /// Clones all references that the [MlsCryptoProvider] comprises.
     pub async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
         match &*self.inner.read().await {
-            TransactionContextInner::Valid { mls_session, .. } => {
-                if let Some(session) = mls_session.read().await.as_ref() {
-                    return Ok(session.crypto_provider.clone());
-                }
-                Err(mls::session::Error::MlsNotInitialized)
-                    .map_err(RecursiveError::mls_client(
-                        "Getting mls session from transaction context",
-                    ))
-                    .map_err(Into::into)
-            }
+            TransactionContextInner::Valid { mls_session, .. } => mls_session
+                .read()
+                .await
+                .as_ref()
+                .map(|s| s.crypto_provider.clone())
+                .ok_or(
+                    RecursiveError::mls_client("Getting mls session from transaction context")(
+                        mls::session::Error::MlsNotInitialized,
+                    )
+                    .into(),
+                ),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
