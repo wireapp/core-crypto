@@ -92,6 +92,8 @@ mod tests {
     use std::sync::LazyLock;
 
     use idb::builder::{DatabaseBuilder, ObjectStoreBuilder};
+    use openmls::prelude::{Credential, TlsSerializeTrait as _};
+    use openmls_basic_credential::SignatureKeyPair;
     use rand::Rng as _;
     use serde::Serialize as _;
     use wasm_bindgen_test::wasm_bindgen_test;
@@ -100,6 +102,7 @@ mod tests {
     use crate::{
         connection::{platform::wasm::WasmStorageTransaction, storage::WasmStorageWrapper},
         entities::StoredCredential,
+        migrations::{StoredSignatureKeypair, V5Credential},
         traits::{Encrypting as _, Entity, EntityBase as _, EntityDatabaseMutation as _},
     };
 
@@ -110,6 +113,8 @@ mod tests {
     #[wasm_bindgen_test]
     pub async fn can_run_migrations() {
         let name = "test";
+        let factory = Factory::new().expect("factory");
+        factory.delete(name).expect("delete request").await.expect("wiping db");
 
         let test_builder = |version| -> DatabaseBuilder {
             v3::get_builder(name)
@@ -162,6 +167,8 @@ mod tests {
     #[wasm_bindgen_test]
     pub async fn v5_schema_allows_1_cred_per_session() {
         let name = "test";
+        let factory = Factory::new().expect("factory");
+        factory.delete(name).expect("delete request").await.expect("wiping db");
 
         let test_builder = |version| -> DatabaseBuilder {
             v3::get_builder(name)
@@ -177,17 +184,15 @@ mod tests {
             .unwrap();
 
         let builder = v5::get_builder(name);
-        let conn = crate::Database::migration_connection(builder, &TEST_ENCRYPTION_KEY)
+        let conn_v5 = crate::Database::migration_connection(builder, &TEST_ENCRYPTION_KEY)
             .await
-            .expect("DB_VERSION_6");
+            .expect("DB_VERSION_5");
 
         const LEN_RANGE: std::ops::Range<usize> = 1024..8192;
 
         let mut rng = rand::thread_rng();
 
-        crate::Database::migration_transaction(conn, async |tx| {
-            use openmls::prelude::Ciphersuite;
-
+        crate::Database::migration_transaction(conn_v5, async |tx| {
             use crate::entities::StoredCredential;
 
             let mut random_vec = || {
@@ -196,31 +201,51 @@ mod tests {
                 v
             };
 
-            let cred_a = StoredCredential {
-                session_id: random_vec(),
-                credential: random_vec(),
-                created_at: 2025,
-                ciphersuite: Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u16,
-                public_key: random_vec(),
-                private_key: random_vec(),
+            let session_id = random_vec();
+            let cred = Credential::new_basic(session_id);
+            let cred_a = V5Credential {
+                id: cred.identity().to_vec(),
+                credential: cred.tls_serialize_detached().unwrap(),
+                created_at: 2026,
             };
 
-            // Try creating a duplicate of this credential
+            let sign_key = SignatureKeyPair::from_raw(
+                openmls::prelude::SignatureScheme::ECDSA_SECP256R1_SHA256,
+                random_vec(),
+                random_vec(),
+            );
+
+            let sign_key_a = StoredSignatureKeypair {
+                signature_scheme: 0x0403,
+                pk: sign_key.to_public_vec(),
+                keypair: sign_key.tls_serialize_detached().unwrap(),
+                credential_id: cred_a.id.clone(),
+            };
+
+            // Try creating a duplicate of this credential (we can't meaningfully do this for a basic V5Credential - one
+            // could argue that the fact makes this test pointless. Probably it should be rewritten with an x509
+            // credential).
             let mut cred_b = cred_a.clone();
-            cred_b.credential = random_vec();
-            cred_b.ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 as u16;
+            cred_b.created_at += 1;
 
             let credentials = [cred_a, cred_b];
             match tx {
                 WasmStorageTransaction::Persistent { tx, cipher } => {
+                    let db_version = tx.database().version().unwrap();
+                    assert_eq!(db_version, DB_VERSION_5);
                     let serializer = serde_wasm_bindgen::Serializer::json_compatible();
                     let store = tx.object_store(StoredCredential::COLLECTION_NAME)?;
                     for credential in credentials {
                         // Save credentials with session id as key
-                        let key = &js_sys::Uint8Array::from(credential.session_id.as_slice()).into();
+                        let key = &js_sys::Uint8Array::from(credential.id.as_slice()).into();
                         let js_value = credential.encrypt(cipher)?.serialize(&serializer)?;
                         store.put(&js_value, Some(key))?.await?;
                     }
+
+                    let store = tx.object_store(StoredSignatureKeypair::COLLECTION_NAME)?;
+                    let key = &js_sys::Uint8Array::from(sign_key_a.pk.as_slice()).into();
+                    let js_value = sign_key_a.encrypt(cipher)?.serialize(&serializer)?;
+                    store.put(&js_value, Some(key))?.await?;
                 }
                 WasmStorageTransaction::InMemory { .. } => {}
             }
@@ -230,11 +255,10 @@ mod tests {
         .await
         .expect("inserting test data");
 
-        let builder = v6::get_builder(name);
-        let mut conn = crate::Database::migration_connection(builder, &TEST_ENCRYPTION_KEY)
+        let migrated_db = crate::Database::open(crate::ConnectionType::Persistent(name), &TEST_ENCRYPTION_KEY)
             .await
-            .expect("DB_VERSION_6");
-
+            .expect("completing migrations");
+        let mut conn = migrated_db.conn().await.unwrap();
         let count = <StoredCredential as Entity>::count(&mut conn)
             .await
             .expect("credential count");
@@ -243,10 +267,8 @@ mod tests {
             count, 1,
             "saving two different credentials by the same session id will result in a single credential"
         );
+        drop(conn);
 
-        let migrated_db = crate::Database::open(crate::ConnectionType::Persistent(name), &TEST_ENCRYPTION_KEY)
-            .await
-            .expect("completing migrations");
         migrated_db.close().await.expect("closing connection");
         let factory = Factory::new().expect("factory");
         factory.delete(name).expect("delete request").await.expect("wiping db");

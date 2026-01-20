@@ -1,6 +1,8 @@
 //! This migration merges signature keypair and credential data
 mod v5_entities;
 
+use std::collections::HashSet;
+
 use idb::builder::DatabaseBuilder;
 
 use super::DB_VERSION_6;
@@ -18,12 +20,22 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
     let v5_credentials = V5Credential::load_all(&mut db_during_migration).await?;
 
     Database::migration_transaction(db_during_migration, async |tx| {
-        for signature_key in signature_keys.iter() {
-            for v5_credential in v5_credentials.iter() {
+        let mut session_ids_to_clean_up = HashSet::<Vec<u8>>::new();
+        'credential: for v5_credential in v5_credentials.iter() {
+            for signature_key in signature_keys.iter() {
                 if let Some(new_credential) = migrate_to_new_credential(v5_credential, signature_key)? {
-                    super::delete_credential_by_session_id(tx, v5_credential.id.clone()).await?;
                     new_credential.save(tx).await?;
+                    super::delete_credential_by_session_id(tx, v5_credential.id.clone()).await?;
+                    continue 'credential;
                 }
+            }
+            session_ids_to_clean_up.insert(v5_credential.id.clone());
+        }
+
+        if !session_ids_to_clean_up.is_empty() {
+            log::warn!("expected to migrate all v5 credentials");
+            for session_id in session_ids_to_clean_up {
+                super::delete_credential_by_session_id(tx, session_id).await?;
             }
         }
 
