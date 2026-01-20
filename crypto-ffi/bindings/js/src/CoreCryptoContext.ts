@@ -83,20 +83,11 @@ export class CoreCryptoContext {
      * a commit bundle or a message, respectively.
      *
      * @param clientId - required
-     * @param ciphersuites - All the ciphersuites supported by this MLS client
      * @param transport - Any implementor of the {@link MlsTransport} interface
      */
-    async mlsInit(
-        clientId: ClientId,
-        ciphersuites: Ciphersuite[],
-        transport: MlsTransport
-    ): Promise<void> {
+    async mlsInit(clientId: ClientId, transport: MlsTransport): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
-            this.#ctx.mlsInit(
-                clientId,
-                ciphersuites,
-                mlsTransportToFfi(transport)
-            )
+            this.#ctx.mlsInit(clientId, mlsTransportToFfi(transport))
         );
     }
 
@@ -265,22 +256,6 @@ export class CoreCryptoContext {
     }
 
     /**
-     * Get the client's public signature key. To upload to the DS for further backend side validation
-     *
-     * @param ciphersuite - of the signature key to get
-     * @param credentialType - of the public key to look for
-     * @returns the client's public signature key
-     */
-    async clientPublicKey(
-        ciphersuite: Ciphersuite,
-        credentialType: CredentialType
-    ): Promise<ArrayBuffer> {
-        return await CoreCryptoError.asyncMapErr(
-            this.#ctx.clientPublicKey(ciphersuite, credentialType)
-        );
-    }
-
-    /**
      * Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation.
      *
      * Sends the corresponding commit via {@link MlsTransport.sendCommitBundle} and merges it if the call is successful.
@@ -360,6 +335,18 @@ export class CoreCryptoContext {
     ): Promise<WelcomeBundle> {
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.joinByExternalCommit(groupInfo, credentialRef)
+        );
+    }
+
+    /**
+     * Set the credential ref for the given conversation.
+     */
+    async setConversationCredential(
+        conversationId: ConversationId,
+        credentialRef: CredentialRefInterface
+    ): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.setConversationCredential(conversationId, credentialRef)
         );
     }
 
@@ -675,14 +662,14 @@ export class CoreCryptoContext {
 
     /**
      * Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
-     * Once the enrollment is finished, use {@link CoreCryptoContext.e2eiRotate} to do key rotation.
+     * Once the enrollment is finished, use {@link CoreCryptoContext.saveX509Credential} to save the new credential.
      *
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @param expirySec - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
      * @param team - name of the Wire team a user belongs to
-     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCryptoContext.e2eiRotate}
+     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCryptoContext.saveX509Credential}.
      */
     async e2eiNewActivationEnrollment(
         displayName: string,
@@ -707,15 +694,15 @@ export class CoreCryptoContext {
      * Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)
      * having to change/rotate their credential, either because the former one is expired or it
      * has been revoked. It lets you change the DisplayName or the handle
-     * if you need to. Once the enrollment is finished, use {@link CoreCryptoContext.e2eiRotate}
-     * to do key rotation.
+     * if you need to. Once the enrollment is finished, use {@link CoreCryptoContext.saveX509Credential}
+     * to save the new credential.
      *
      * @param expirySec - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @param team - name of the Wire team a user belongs to
-     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCryptoContext.e2eiRotate}
+     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCryptoContext.saveX509Credential}
      */
     async e2eiNewRotateEnrollment(
         expirySec: number,
@@ -748,7 +735,7 @@ export class CoreCryptoContext {
         enrollment: E2eiEnrollment,
         certificateChain: string,
         transport: MlsTransport
-    ): Promise<NewCrlDistributionPoints> {
+    ): Promise<CredentialRefInterface> {
         return await this.#ctx.e2eiMlsInitOnly(
             enrollment.inner(),
             certificateChain,
@@ -809,29 +796,13 @@ export class CoreCryptoContext {
     }
 
     /**
-     * Creates an update commit which replaces your leaf containing basic credentials with a leaf node containing x509 credentials in the conversation.
-     *
-     * NOTE: you can only call this after you've completed the enrollment for an end-to-end identity, and saved the
-     * resulting credential with {@link CoreCryptoContext.saveX509Credential}.
-     * Calling this without a valid end-to-end identity will result in an error.
-     *
-     * Sends the corresponding commit via {@link MlsTransport.sendCommitBundle} and merges it if the call is successful.
-     *
-     * @param conversationId - The ID of the conversation
-     */
-    async e2eiRotate(conversationId: ConversationId): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(
-            this.#ctx.e2eiRotate(conversationId)
-        );
-    }
-
-    /**
      * Saves a new X509 credential. Requires first
      * having enrolled a new X509 certificate with either {@link CoreCryptoContext.e2eiNewActivationEnrollment}
      * or {@link CoreCryptoContext.e2eiNewRotateEnrollment}
      *
      * # Expected actions to perform after this function (in this order)
-     * 1. Rotate credentials for each conversation using {@link CoreCryptoContext.e2eiRotate}
+     * 1. Set the credential to the return value of this function for each conversation via
+     {@link CoreCryptoContext.setConversationCredential}
      * 2. Generate new key packages with {@link CoreCryptoContext.generateKeypackage}
      * 3. Use these to replace the stale ones the in the backend
      * 4. Delete the stale ones locally.
@@ -840,12 +811,12 @@ export class CoreCryptoContext {
      *
      * @param enrollment - the enrollment instance used to fetch the certificates
      * @param certificateChain - the raw response from ACME server
-     * @returns Potentially a list of new crl distribution points discovered in the certificate chain
+     * @returns The ref of the stored credential
      */
     async saveX509Credential(
         enrollment: E2eiEnrollment,
         certificateChain: string
-    ): Promise<NewCrlDistributionPoints> {
+    ): Promise<CredentialRefInterface> {
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.saveX509Credential(enrollment.inner(), certificateChain)
         );

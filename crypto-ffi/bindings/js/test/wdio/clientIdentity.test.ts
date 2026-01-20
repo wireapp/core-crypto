@@ -17,11 +17,10 @@ describe("client identity", () => {
         const result = await browser.execute(async (clientName) => {
             const cc = window.ensureCcDefined(clientName);
             return (
-                await cc.clientPublicKey(
-                    window.defaultCipherSuite,
-                    window.ccModule.CredentialType.Basic
-                )
-            ).byteLength;
+                await cc.transaction(async (ctx) => {
+                    return await ctx.findCredentials({});
+                })
+            )[0]!.publicKey().byteLength;
         }, alice);
         expect(result).toBe(32);
     });

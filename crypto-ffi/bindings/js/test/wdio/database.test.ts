@@ -80,23 +80,16 @@ describe("database", () => {
             );
 
             let cc = await window.ccModule.CoreCrypto.init(database);
+            const clientId = makeClientId();
             cc.transaction(async (ctx) => {
-                const clientId = makeClientId();
-                await ctx.mlsInit(
-                    makeClientId(),
-                    [cipherSuite],
-                    window.deliveryService
-                );
+                await ctx.mlsInit(makeClientId(), window.deliveryService);
                 await ctx.addCredential(
                     window.ccModule.credentialBasic(cipherSuite, clientId)
                 );
             });
-            const pubkey1 = await cc.transaction((ctx) =>
-                ctx.clientPublicKey(
-                    cipherSuite,
-                    window.ccModule.CredentialType.Basic
-                )
-            );
+            const pubkey1 = (
+                await cc.transaction((ctx) => ctx.findCredentials({ clientId }))
+            )[0]!.publicKey();
             cc.close();
 
             const newKeyBytes = new Uint8Array(32);
@@ -122,15 +115,10 @@ describe("database", () => {
 
             cc = await window.ccModule.CoreCrypto.init(newDatabase);
             const pubkey2 = await cc.transaction(async (ctx) => {
-                await ctx.mlsInit(
-                    makeClientId(),
-                    [cipherSuite],
-                    window.deliveryService
-                );
-                return await ctx.clientPublicKey(
-                    cipherSuite,
-                    window.ccModule.CredentialType.Basic
-                );
+                await ctx.mlsInit(clientId, window.deliveryService);
+                return (
+                    await ctx.findCredentials({ clientId })
+                )[0]!.publicKey();
             });
             cc.close();
 
