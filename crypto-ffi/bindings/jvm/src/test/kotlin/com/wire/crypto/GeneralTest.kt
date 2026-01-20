@@ -46,7 +46,7 @@ class DatabaseTest {
     fun givenDatabase_getLocation_shouldSucceed() = runTest {
         withDatabase { path, key ->
             val pathStr = path.absolutePathString()
-            val db = openDatabase(pathStr, key)
+            val db = Database.open(pathStr, key)
             val location = db.getLocation()
             assert(location == pathStr)
             db.close()
@@ -56,7 +56,7 @@ class DatabaseTest {
     @Test
     fun givenDatabase_whenUsingSameNameAndKey_thenOpenShouldSucceed() = runTest {
         withDatabase { path, key ->
-            val db = openDatabase(path.absolutePathString(), key)
+            val db = Database.open(path.absolutePathString(), key)
             db.close()
 
             openDatabase(path.toString(), key)
@@ -66,10 +66,10 @@ class DatabaseTest {
     @Test
     fun givenDatabase_whenUsingWrongKey_thenOpenShouldFail() = runTest {
         withDatabase { path, key ->
-            openDatabase(path.absolutePathString(), key)
+            Database.open(path.absolutePathString(), key)
 
             val key2 = genDatabaseKey()
-            assertFailsWith<CoreCryptoException.Other> { openDatabase(path.toString(), key2) }
+            assertFailsWith<CoreCryptoException.Other> { Database.open(path.toString(), key2) }
                 .also { assertEquals("msg=file is not a database", it.message) }
         }
     }
