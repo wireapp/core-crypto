@@ -108,7 +108,7 @@ struct InteropClientApp: App {
         case .initMLS(let clientId, let ciphersuite):
             let key = try generateDatabaseKey()
             let keystorePath = try generateKeystorePath()
-            let database = try await Database.open(keystorePath: keystorePath.path, key: key)
+            let database = try await Database.open(location: keystorePath.path, key: key)
             self.coreCrypto = try await CoreCrypto(
                 database: database
             )
@@ -237,7 +237,7 @@ struct InteropClientApp: App {
             if coreCrypto == nil {
                 let key = try generateDatabaseKey()
                 let database = try await Database.open(
-                    keystorePath: generateKeystorePath().path, key: key)
+                    location: generateKeystorePath().path, key: key)
                 self.coreCrypto = try await CoreCrypto(
                     database: database
                 )
