@@ -26,10 +26,6 @@ pub struct WasmConnection {
 }
 
 impl WasmConnection {
-    pub fn name(&self) -> &Option<String> {
-        &self.name
-    }
-
     pub fn storage(&self) -> &WasmEncryptedStorage {
         &self.conn
     }
@@ -73,8 +69,8 @@ impl DatabaseConnectionRequirements for WasmConnection {}
 impl<'a> DatabaseConnection<'a> for WasmConnection {
     type Connection = &'a WasmEncryptedStorage;
 
-    async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
-        let name = name.to_string();
+    async fn open(location: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
+        let name = location.to_string();
         // ? Maybe find a cleaner way to define the schema
 
         let idb = open_and_migrate(&name, key).await?;
@@ -137,6 +133,11 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
         }
 
         Ok(())
+    }
+
+    fn location(&self) -> Option<&str> {
+        let name = &self.name;
+        name.as_deref()
     }
 }
 

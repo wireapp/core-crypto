@@ -112,7 +112,7 @@ impl TryFrom<&[u8]> for DatabaseKey {
 pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
     type Connection: 'a;
 
-    async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self>;
+    async fn open(location: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self>;
 
     async fn open_in_memory(key: &DatabaseKey) -> CryptoKeystoreResult<Self>;
 
@@ -133,6 +133,9 @@ pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
 
         Ok(())
     }
+
+    /// Returns the database location if persistent or None if in-memory
+    fn location(&self) -> Option<&str>;
 }
 
 #[derive(Debug, Clone)]
@@ -225,7 +228,7 @@ impl DerefMut for ConnectionGuard<'_> {
 impl Database {
     pub async fn open(location: ConnectionType<'_>, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let conn = match location {
-            ConnectionType::Persistent(name) => KeystoreDatabaseConnection::open(name, key).await?,
+            ConnectionType::Persistent(location) => KeystoreDatabaseConnection::open(location, key).await?,
             ConnectionType::InMemory => KeystoreDatabaseConnection::open_in_memory(key).await?,
         };
         let conn = Mutex::new(Some(conn));
@@ -255,17 +258,7 @@ impl Database {
     }
 
     pub async fn location(&self) -> CryptoKeystoreResult<Option<String>> {
-        #[cfg(target_family = "wasm")]
-        return Ok(self.conn().await?.name().clone());
-
-        #[cfg(not(target_family = "wasm"))]
-        {
-            let path = self.conn().await?.path().to_string();
-            Ok(match path.as_str() {
-                "" => None,
-                _ => Some(path),
-            })
-        }
+        return Ok(self.conn().await?.location().map(ToString::to_string));
     }
 
     /// Get direct exclusive access to the connection.

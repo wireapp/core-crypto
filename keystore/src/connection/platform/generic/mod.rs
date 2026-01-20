@@ -86,10 +86,6 @@ pub(crate) enum MigrationTarget {
 }
 
 impl SqlCipherConnection {
-    pub fn path(&self) -> &str {
-        &self.path
-    }
-
     fn init_with_key(path: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let mut conn = rusqlite::Connection::open(path)?;
 
@@ -315,6 +311,10 @@ impl<'a> DatabaseConnection<'a> for SqlCipherConnection {
     async fn wipe(self) -> CryptoKeystoreResult<()> {
         self.wipe().await?;
         Ok(())
+    }
+
+    fn location(&self) -> Option<&str> {
+        (!self.path.is_empty()).then_some(&self.path)
     }
 }
 
