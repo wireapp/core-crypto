@@ -48,7 +48,7 @@ where
     }
 
     async fn child_groups(&self, conn: &mut <Self as EntityBase>::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
-        // A perfect opportunity for refactoring in WPB-20844
+        // A perfect opportunity for refactoring in WPB-22945
         // when we do that, we no longer need varying implementations according to wasm or not,
         // so both `parent_group` and this method should just be implemented directly on `PersistedMlsGroup`.
         let entities = Self::load_all(conn).await?;
