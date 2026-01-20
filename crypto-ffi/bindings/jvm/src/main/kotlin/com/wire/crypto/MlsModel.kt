@@ -33,3 +33,14 @@ fun Credential.Companion.basic(
     ciphersuite: Ciphersuite,
     clientId: ClientId
 ): Credential = credentialBasic(ciphersuite, clientId)
+
+/** Initialise or open a Database */
+suspend fun Database.Companion.open(
+    location: String,
+    key: DatabaseKey
+) = openDatabase(location, key)
+
+/** Initialise an in-memory Database whose data will be lost when the instance is dropped */
+suspend fun Database.Companion.open(
+    key: DatabaseKey
+) = inMemoryDatabase(key)
