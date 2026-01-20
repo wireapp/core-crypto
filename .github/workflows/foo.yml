@@ -1,0 +1,29 @@
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-foo"
+  cancel-in-progress: true
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+
+env:
+  RELEASE: 1
+
+jobs:
+  foo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: set up jdk 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: "17"
+          distribution: "adopt"
+
+      - run: |
+          bash scripts/setup-android-emulator.sh
+          echo Setup DONE
+          bash scripts/start-android-emulator.sh
+

@@ -22,6 +22,7 @@ if ! avdmanager list avd | grep -q "^Name: $AVD_NAME"; then
     echo "no" | avdmanager create avd -n $AVD_NAME --package "$package" --force
 fi
 
+avdmanager list avd
 # If there's an emulator instance running with our AVD, shut it down first.
 if [ "$(adb -s $ADB_DEVICE emu avd name | head -n1 | sed 's/[[:space:]]*$//')" = "$AVD_NAME" ]; then
     echo An emulator is already running. Going to shut it down.
@@ -31,11 +32,14 @@ fi
 # Launch the emulator
 echo "Launching emulator on $AVD_NAME, port $PORT..."
 logfile=$(mktemp)
+if [ -n "$CI" ]; then
+    export ANDROID_AVD_HOME=~/.config/.android/avd
+    echo $HOME
+fi
 timeout 1m emulator -avd $AVD_NAME -port $PORT -no-window -gpu swiftshader_indirect \
          -no-snapshot -noaudio -no-boot-anim -no-metrics
 
 adb devices
-exit 1
 
 EMULATOR_PID=$!
 
