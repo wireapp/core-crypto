@@ -569,7 +569,7 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "serde_urlencoded",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "tokio",
  "tokio-stream",
  "tokio-util",
@@ -666,7 +666,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -680,7 +680,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -846,7 +846,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d80e97074da664d8e2c49e82cba54c40b9cec15c73810d90bf6a78261ab3ccaa"
 dependencies = [
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -908,7 +908,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fa961b519f0b462e3a3b4a34b64d119eeaca1d59af726fe450bbba07a9fc0a1"
 dependencies = [
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -1075,7 +1075,7 @@ dependencies = [
  "smol-macros",
  "strum",
  "tempfile",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "time",
  "tls_codec",
  "typed-builder",
@@ -1117,7 +1117,7 @@ dependencies = [
  "sha2",
  "smol-macros",
  "testing_logger",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "tls_codec",
  "uniffi",
  "web-sys",
@@ -1171,7 +1171,7 @@ dependencies = [
  "smol",
  "smol-macros",
  "tempfile",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -2796,7 +2796,7 @@ dependencies = [
  "indexmap 2.13.0",
  "js-sys",
  "num-traits",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "tokio",
  "wasm-bindgen",
  "web-sys",
@@ -2894,7 +2894,7 @@ dependencies = [
  "sha2",
  "spinoff",
  "tempfile",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "tls_codec",
  "tokio",
  "tree-sitter",
@@ -3371,7 +3371,7 @@ dependencies = [
  "signature",
  "smol-macros",
  "spki",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "tls_codec",
  "typed-builder",
  "uuid",
@@ -3406,7 +3406,7 @@ dependencies = [
  "safer-ffi-gen",
  "serde",
  "spin 0.10.0",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "wasm-bindgen",
  "zeroize",
 ]
@@ -3419,7 +3419,7 @@ checksum = "45bd834f164dc06c1fed805540ae307a460b7ed7c2769a35a376f1de577a0dc1"
 dependencies = [
  "itertools 0.14.0",
  "mls-rs-codec-derive",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "wasm-bindgen",
 ]
 
@@ -3447,7 +3447,7 @@ dependencies = [
  "mls-rs-codec",
  "safer-ffi-gen",
  "serde",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "wasm-bindgen",
  "zeroize",
 ]
@@ -3461,7 +3461,7 @@ dependencies = [
  "async-trait",
  "maybe-async",
  "mls-rs-core",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "wasm-bindgen",
 ]
 
@@ -4630,7 +4630,7 @@ dependencies = [
  "regex",
  "rusqlite",
  "siphasher 1.0.1",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "time",
  "url",
  "walkdir",
@@ -4968,7 +4968,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "url",
  "uuid",
  "zeroize",
@@ -5914,7 +5914,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "tokio",
  "tokio-stream",
  "tokio-util",
@@ -5950,11 +5950,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.17"
+version = "2.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f63587ca0f12b72a0600bcba1d40081f830876000bb46dd2337a3051618f4fc8"
+checksum = "4288b5bcbc7920c07a1149a35cf9590a2aa808e0bc1eafaade0b80947865fbc4"
 dependencies = [
- "thiserror-impl 2.0.17",
+ "thiserror-impl 2.0.18",
 ]
 
 [[package]]
@@ -5970,9 +5970,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.17"
+version = "2.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ff15c8ecd7de3849db632e14d18d2571fa09dfc5ed93479bc4485c7a517c913"
+checksum = "ebc4ee7f67670e9b64d05fa4253e753e016c6c95ff35b89b7941d6b856dec1d5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7443,7 +7443,7 @@ dependencies = [
  "shlex",
  "signature",
  "testcontainers",
- "thiserror 2.0.17",
+ "thiserror 2.0.18",
  "time",
  "tokio",
  "url",
