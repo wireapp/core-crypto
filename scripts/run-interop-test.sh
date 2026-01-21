@@ -14,8 +14,7 @@ cleanup() {
   fi
 
   echo "Shutting down Android emulator via adb"
-  adb_device=emulator-$((27000 + $(id -u)))
-  adb -s $adb_device emu kill
+  adb -s $ADB_DEVICE emu kill
 }
 
 trap cleanup EXIT
@@ -37,7 +36,13 @@ if [ "$OS" = "Darwin" ]; then
     cd $scripts
 fi
 
-./start-android-emulator.sh
+
+# We want to extract ADB_DEVICE from the script output, but
+# we also want to get immediate prints on the console, as the
+# script is running, so use tee to copy stdout to stderr.
+script_stdout=$(./start-android-emulator.sh | tee /dev/stderr)
+eval $(printf "%s" "$script_stdout" | grep '^ADB_DEVICE=')
+export ADB_DEVICE
 
 cd ../interop/src/clients
 

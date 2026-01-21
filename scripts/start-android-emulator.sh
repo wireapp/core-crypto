@@ -56,3 +56,5 @@ until adb -s $ADB_DEVICE shell getprop sys.boot_completed | grep -qm 1 '1'; do
 done
 
 echo "Emulator started. PID: $EMULATOR_PID"
+
+echo  "ADB_DEVICE=$ADB_DEVICE"

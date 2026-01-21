@@ -196,15 +196,10 @@ impl CoreCryptoAndroidClient {
         let client_id_base64 = general_purpose::STANDARD.encode(client_id_str.as_str());
         let ciphersuite = CIPHERSUITE_IN_USE as u16;
 
-        let output = Command::new("adb")
-            .args(["get-serialno"])
-            .output()
-            .expect("Failed to get connected android device");
-
-        let device = String::from_utf8(output.stdout)
-            .expect("output is not valid utf8")
-            .trim()
-            .to_string();
+        let device = std::env::var_os("ADB_DEVICE")
+            .expect("ADB_DEVICE must be set")
+            .into_string()
+            .expect("ADB_DEVICE must have valid string encoding");
         let driver = SimulatorDriver::new(device, "com.wire.androidinterop".into());
         log::info!("initialising core crypto with ciphersuite {ciphersuite}");
         driver
