@@ -143,7 +143,6 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/CoreCryptoContext/#com.sun.jna
 $dokka.location:com.wire.crypto/CoreCryptoContext/CoreCryptoContext/#com.wire.crypto.NoPointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/-core-crypto-context.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/addClientsToConversation/#com.wire.crypto.ConversationId#kotlin.collections.List[com.wire.crypto.Keypackage]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/add-clients-to-conversation.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/addCredential/#com.wire.crypto.Credential/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/add-credential.html
-$dokka.location:com.wire.crypto/CoreCryptoContext/clientPublicKey/#com.wire.crypto.Ciphersuite#com.wire.crypto.CredentialType/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/client-public-key.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/close.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/commitPendingProposals/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/commit-pending-proposals.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/conversationCiphersuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/conversation-ciphersuite.html
@@ -166,7 +165,6 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiNewRotateEnrollment/#kotli
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiRegisterAcmeCa/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/e2ei-register-acme-ca.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiRegisterCrl/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/e2ei-register-crl.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiRegisterIntermediateCa/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/e2ei-register-intermediate-ca.html
-$dokka.location:com.wire.crypto/CoreCryptoContext/e2eiRotate/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/e2ei-rotate.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/enableHistorySharing/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/enable-history-sharing.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/encryptMessage/#com.wire.crypto.ConversationId#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/encrypt-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/exportSecretKey/#com.wire.crypto.ConversationId#kotlin.UInt/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/export-secret-key.html
@@ -181,7 +179,7 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/getKeypackages/#/PointingToDec
 $dokka.location:com.wire.crypto/CoreCryptoContext/getUserIdentities/#com.wire.crypto.ConversationId#kotlin.collections.List[kotlin.String]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/get-user-identities.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/joinByExternalCommit/#com.wire.crypto.GroupInfo#com.wire.crypto.CredentialRef/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/join-by-external-commit.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/markConversationAsChildOf/#com.wire.crypto.ConversationId#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/mark-conversation-as-child-of.html
-$dokka.location:com.wire.crypto/CoreCryptoContext/mlsInit/#com.wire.crypto.ClientId#kotlin.collections.List[com.wire.crypto.Ciphersuite]#com.wire.crypto.MlsTransport/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/mls-init.html
+$dokka.location:com.wire.crypto/CoreCryptoContext/mlsInit/#com.wire.crypto.ClientId#com.wire.crypto.MlsTransport/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/mls-init.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/processWelcomeMessage/#com.wire.crypto.Welcome/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/process-welcome-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/proteusDecrypt/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/proteus-decrypt.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/proteusDecryptSafe/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/proteus-decrypt-safe.html
@@ -215,7 +213,6 @@ $dokka.location:com.wire.crypto/CoreCryptoContextInterface.Companion///PointingT
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/index.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/addClientsToConversation/#com.wire.crypto.ConversationId#kotlin.collections.List[com.wire.crypto.Keypackage]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/add-clients-to-conversation.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/addCredential/#com.wire.crypto.Credential/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/add-credential.html
-$dokka.location:com.wire.crypto/CoreCryptoContextInterface/clientPublicKey/#com.wire.crypto.Ciphersuite#com.wire.crypto.CredentialType/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/client-public-key.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/commitPendingProposals/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/commit-pending-proposals.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/conversationCiphersuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/conversation-ciphersuite.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/conversationCredential/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/conversation-credential.html
@@ -236,7 +233,6 @@ $dokka.location:com.wire.crypto/CoreCryptoContextInterface/e2eiNewRotateEnrollme
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/e2eiRegisterAcmeCa/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/e2ei-register-acme-ca.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/e2eiRegisterCrl/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/e2ei-register-crl.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/e2eiRegisterIntermediateCa/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/e2ei-register-intermediate-ca.html
-$dokka.location:com.wire.crypto/CoreCryptoContextInterface/e2eiRotate/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/e2ei-rotate.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/enableHistorySharing/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/enable-history-sharing.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/encryptMessage/#com.wire.crypto.ConversationId#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/encrypt-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/exportSecretKey/#com.wire.crypto.ConversationId#kotlin.UInt/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/export-secret-key.html
@@ -251,7 +247,7 @@ $dokka.location:com.wire.crypto/CoreCryptoContextInterface/getKeypackages/#/Poin
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/getUserIdentities/#com.wire.crypto.ConversationId#kotlin.collections.List[kotlin.String]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/get-user-identities.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/joinByExternalCommit/#com.wire.crypto.GroupInfo#com.wire.crypto.CredentialRef/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/join-by-external-commit.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/markConversationAsChildOf/#com.wire.crypto.ConversationId#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/mark-conversation-as-child-of.html
-$dokka.location:com.wire.crypto/CoreCryptoContextInterface/mlsInit/#com.wire.crypto.ClientId#kotlin.collections.List[com.wire.crypto.Ciphersuite]#com.wire.crypto.MlsTransport/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/mls-init.html
+$dokka.location:com.wire.crypto/CoreCryptoContextInterface/mlsInit/#com.wire.crypto.ClientId#com.wire.crypto.MlsTransport/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/mls-init.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/processWelcomeMessage/#com.wire.crypto.Welcome/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/process-welcome-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/proteusDecrypt/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/proteus-decrypt.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/proteusDecryptSafe/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/proteus-decrypt-safe.html
@@ -307,7 +303,6 @@ $dokka.location:com.wire.crypto/CoreCryptoFfi.Companion///PointingToDeclaration/
 $dokka.location:com.wire.crypto/CoreCryptoFfi///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/index.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/CoreCryptoFfi/#com.sun.jna.Pointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/-core-crypto-ffi.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/CoreCryptoFfi/#com.wire.crypto.NoPointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/-core-crypto-ffi.html
-$dokka.location:com.wire.crypto/CoreCryptoFfi/clientPublicKey/#com.wire.crypto.Ciphersuite#com.wire.crypto.CredentialType/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/client-public-key.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/close.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/conversationCiphersuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/conversation-ciphersuite.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/conversationCredential/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/conversation-credential.html
@@ -332,7 +327,6 @@ $dokka.location:com.wire.crypto/CoreCryptoFfi/transaction/#com.wire.crypto.CoreC
 $dokka.location:com.wire.crypto/CoreCryptoFfi/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/-companion/index.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/index.html
-$dokka.location:com.wire.crypto/CoreCryptoFfiInterface/clientPublicKey/#com.wire.crypto.Ciphersuite#com.wire.crypto.CredentialType/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/client-public-key.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/conversationCiphersuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/conversation-ciphersuite.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/conversationCredential/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/conversation-credential.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/conversationEpoch/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/conversation-epoch.html

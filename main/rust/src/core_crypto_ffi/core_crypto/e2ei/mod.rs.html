@@ -16,13 +16,12 @@
 <a href=#16 id=16 data-nosnippet>16</a>
 <a href=#17 id=17 data-nosnippet>17</a>    <span class="doccomment">/// See [core_crypto::Session::e2ei_is_enabled]
 <a href=#18 id=18 data-nosnippet>18</a>    </span><span class="kw">pub async fn </span>e2ei_is_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>, ciphersuite: Ciphersuite) -&gt; CoreCryptoResult&lt;bool&gt; {
-<a href=#19 id=19 data-nosnippet>19</a>        <span class="kw">let </span>signature_scheme = core_crypto::Ciphersuite::from(ciphersuite).signature_algorithm();
-<a href=#20 id=20 data-nosnippet>20</a>        <span class="self">self</span>.inner
-<a href=#21 id=21 data-nosnippet>21</a>            .mls_session()
-<a href=#22 id=22 data-nosnippet>22</a>            .<span class="kw">await</span><span class="question-mark">?
-<a href=#23 id=23 data-nosnippet>23</a>            </span>.e2ei_is_enabled(signature_scheme)
-<a href=#24 id=24 data-nosnippet>24</a>            .<span class="kw">await
-<a href=#25 id=25 data-nosnippet>25</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"checking if e2ei is enabled"</span>))
-<a href=#26 id=26 data-nosnippet>26</a>            .map_err(Into::into)
-<a href=#27 id=27 data-nosnippet>27</a>    }
-<a href=#28 id=28 data-nosnippet>28</a>}</code></pre></div></section></main></body></html>
+<a href=#19 id=19 data-nosnippet>19</a>        <span class="self">self</span>.inner
+<a href=#20 id=20 data-nosnippet>20</a>            .mls_session()
+<a href=#21 id=21 data-nosnippet>21</a>            .<span class="kw">await</span><span class="question-mark">?
+<a href=#22 id=22 data-nosnippet>22</a>            </span>.e2ei_is_enabled(ciphersuite.into())
+<a href=#23 id=23 data-nosnippet>23</a>            .<span class="kw">await
+<a href=#24 id=24 data-nosnippet>24</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"checking if e2ei is enabled"</span>))
+<a href=#25 id=25 data-nosnippet>25</a>            .map_err(Into::into)
+<a href=#26 id=26 data-nosnippet>26</a>    }
+<a href=#27 id=27 data-nosnippet>27</a>}</code></pre></div></section></main></body></html>
