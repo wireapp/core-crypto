@@ -3,6 +3,7 @@ mod delete_credential_by_session_id;
 mod migration_connection;
 mod pre_v4;
 mod v0;
+mod v10;
 mod v2;
 mod v3;
 mod v4;
@@ -37,9 +38,10 @@ const DB_VERSION_6: u32 = db_version_number(6);
 const DB_VERSION_7: u32 = db_version_number(7);
 const DB_VERSION_8: u32 = db_version_number(8);
 const DB_VERSION_9: u32 = db_version_number(9);
+const DB_VERSION_10: u32 = db_version_number(10);
 
 /// This must always be the latest version. Increment when adding a new migration.
-const TARGET_VERSION: u32 = DB_VERSION_9;
+const TARGET_VERSION: u32 = DB_VERSION_10;
 
 /// Open an existing idb database with the given name, and migrate it if needed.
 pub(crate) async fn open_and_migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Database> {
@@ -84,9 +86,11 @@ async fn do_migration_step(from: u32, name: &str, key: &DatabaseKey) -> CryptoKe
         DB_VERSION_6 => v7::migrate(name, key).await,
         DB_VERSION_7 => v8::migrate(name, key).await,
         DB_VERSION_8 => v9::migrate(name, key).await,
+        DB_VERSION_9 => v10::migrate(name, key).await,
         _ => Err(CryptoKeystoreError::MigrationNotSupported(from)),
     }
 }
+
 #[cfg(test)]
 mod tests {
     use std::sync::LazyLock;
