@@ -13,7 +13,7 @@ can produce multiple items.</p>
 searching.</p>
 <p>This trait can potentially be implemented multiple times per entity, in case there are
 a variety of interesting searches.</p>
-<p>While the trait design does not require it, implementaitons should take advantage of
+<p>While the trait design does not require it, implementations should take advantage of
 database features such as indices to ensure that searching by a search key is efficient.</p>
 </div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.find_all_matching" class="method"><a class="src rightside" href="../../src/core_crypto_keystore/traits/searchable_entity.rs.html#27-30">Source</a><h4 class="code-header">fn <a href="#tymethod.find_all_matching" class="fn">find_all_matching</a>&lt;'life0, 'life1, 'async_trait&gt;(
     conn: &amp;'life0 mut Self::<a class="associatedtype" href="trait.EntityBase.html#associatedtype.ConnectionType" title="type core_crypto_keystore::traits::EntityBase::ConnectionType">ConnectionType</a>,
