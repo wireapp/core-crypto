@@ -1,9 +1,84 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Implements the `Entity` trait for the given struct. To be used internally inside the `core-crypto-keystore` crate only."><title>Entity in core_crypto_macros - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="core_crypto_macros" data-themes="" data-resource-suffix="" data-rustdoc-version="1.92.0 (ded5c06cf 2025-12-08)" data-channel="1.92.0" data-search-js="search-d69d8955.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../static.files/storage-e2aeef58.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc derive"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Entity</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../core_crypto_macros/index.html">core_<wbr>crypto_<wbr>macros</a><span class="version">9.0.1</span></h2></div><div class="sidebar-elems"><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">core_crypto_macros</a></div><h1>Derive Macro <span class="derive">Entity</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/core_crypto_macros/lib.rs.html#21-25">Source</a> </span></div><pre class="rust item-decl"><code>#[derive(Entity)]
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Implements the `Entity` trait and related traits for the given struct."><title>Entity in core_crypto_macros - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="core_crypto_macros" data-themes="" data-resource-suffix="" data-rustdoc-version="1.92.0 (ded5c06cf 2025-12-08)" data-channel="1.92.0" data-search-js="search-d69d8955.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../static.files/storage-e2aeef58.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc derive"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Entity</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../core_crypto_macros/index.html">core_<wbr>crypto_<wbr>macros</a><span class="version">9.0.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Entity</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#attributes" title="Attributes">Attributes</a><ul><li><a href="#entitycollection_name--my_collection" title="`#[entity(collection_name = &#34;my_collection&#34;)]`"><code>#[entity(collection_name = "my_collection")]</code></a></li><li><a href="#entityid" title="`#[entity(id)]`"><code>#[entity(id)]</code></a></li><li><a href="#entityhex" title="`#[entity(hex)]`"><code>#[entity(hex)]</code></a></li><li><a href="#entitycolumn--my_column" title="`#[entity(column = &#34;my_column&#34;)]`"><code>#[entity(column = "my_column")]</code></a></li></ul></li><li><a href="#trait-implementations-1" title="Trait Implementations">Trait Implementations</a><ul><li><a href="#implements" title="Implements">Implements</a></li><li><a href="#entitybase" title="`EntityBase`"><code>EntityBase</code></a></li><li><a href="#entity" title="`Entity`"><code>Entity</code></a></li><li><a href="#borrowprimarykey" title="`BorrowPrimaryKey`"><code>BorrowPrimaryKey</code></a></li><li><a href="#entitydatabasemutation" title="`EntityDatabaseMutation`"><code>EntityDatabaseMutation</code></a></li><li><a href="#item-level-encryption-ie-encrypting-decrypting" title="Item-level encryption (i.e. `Encrypting`, `Decrypting`)">Item-level encryption (i.e. <code>Encrypting</code>, <code>Decrypting</code>)</a></li></ul></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="index.html">In crate core_<wbr>crypto_<wbr>macros</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">core_crypto_macros</a></div><h1>Derive Macro <span class="derive">Entity</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/core_crypto_macros/lib.rs.html#144-151">Source</a> </span></div><pre class="rust item-decl"><code>#[derive(Entity)]
 {
     <span class="comment">// Attributes available to this derive:</span>
     #[entity]
-    #[id]
 }
-</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Implements the <code>Entity</code> trait for the given struct.
-To be used internally inside the <code>core-crypto-keystore</code> crate only.</p>
-</div></details></section></div></main></body></html>
+</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Implements the <code>Entity</code> trait and related traits for the given struct.</p>
+<p>Intended to be used only within <code>core-crypto-keystore</code>.</p>
+<p>All fields in an entity using this derive macro must have one of three types:</p>
+<ul>
+<li><code>Vec&lt;u8&gt;</code></li>
+<li><code>String</code></li>
+<li><code>Option&lt;Vec&lt;u8&gt;&gt;</code></li>
+</ul>
+<p>There is one exception: the identity field can only be a <code>Vec&lt;u8&gt;</code> or <code>String</code>; the optional
+variant is forbidden in that context.</p>
+<p>This is intentionally restrictive. If your entity has other field types, implement these traits manually.</p>
+<h3 id="attributes"><a class="doc-anchor" href="#attributes">§</a>Attributes</h3>
+<p>Attributes modify the code generated by this proc macro by adding annotations to the whole struct
+or to distinct fields. All attributes accepted by this proc macro are keyed with <code>#[entity]</code>.
+The attribute itself appears in the following parenthesis.</p>
+<p>It is acceptable to combine multiple entity attributes together, simply by combining them
+within the parenthesis, separated by commas: <code>#[entity(id, hex)]</code>, for example.</p>
+<h4 id="entitycollection_name--my_collection"><a class="doc-anchor" href="#entitycollection_name--my_collection">§</a><code>#[entity(collection_name = "my_collection")]</code></h4>
+<p>This is an <strong>outer attribute</strong> which modifies the entire item. Its parameters:</p>
+<ul>
+<li><code>collection_name</code>: Optional. When set, this specifies the collection name which will be used. Otherwise, one will
+be generated by transforming the item name to snake case and adding an <code>s</code>.</li>
+</ul>
+<h4 id="entityid"><a class="doc-anchor" href="#entityid">§</a><code>#[entity(id)]</code></h4>
+<p>This is a <strong>field attribute</strong> which can be applied to at most 1 field in the item.</p>
+<p>The field to which this attribute is applied must have type <code>Vec&lt;u8&gt;</code> or <code>String</code>.
+Otherwise, you must implement all relevant entity traits manually instead of relying on this macro.</p>
+<p>If this attribute does not appear, the macro will search for a field whose name is <code>id</code> and assume
+that is an implicit id.</p>
+<p>This attribute does not accept a value.</p>
+<h4 id="entityhex"><a class="doc-anchor" href="#entityhex">§</a><code>#[entity(hex)]</code></h4>
+<p>This is a <strong>field attribute</strong> which can be applied to any number of fields in the struct.</p>
+<p>When set, this indicates that the actual data in the database is hex-encoded.
+The encoding and decoding will be applied transparently when storing or loading this field.</p>
+<p>This may only be applied to fields of type <code>Vec&lt;u8&gt;</code>.</p>
+<p>This attribute does not accept a value.</p>
+<p><strong>NOTE</strong>: this is mainly intended for backwards compatibility. It is not recommended that new fields be
+hex-encoded; doing so provides no safety but adds slight serialization costs on store/load.</p>
+<h4 id="entitycolumn--my_column"><a class="doc-anchor" href="#entitycolumn--my_column">§</a><code>#[entity(column = "my_column")]</code></h4>
+<p>This is a <strong>field attribute</strong> which can be applied to any number of fields in the struct.</p>
+<p>The <code>column</code> value will be used as the SQL column name for this field. If this is unset, the field’s name
+will be used as the sql column name.</p>
+<h3 id="trait-implementations-1"><a class="doc-anchor" href="#trait-implementations-1">§</a>Trait Implementations</h3><h4 id="implements"><a class="doc-anchor" href="#implements">§</a>Implements</h4>
+<ul>
+<li><code>EntityBase</code></li>
+<li><code>Entity</code></li>
+<li><code>BorrowPrimaryKey</code></li>
+<li><code>EntityDatabaseMutation</code></li>
+<li><code>EntityDeleteBorrowed</code></li>
+<li><code>Encrypting</code> (+ relevant associated struct)</li>
+<li><code>Decrypting</code> (+ relevant associated struct)</li>
+<li><code>Decryptable</code></li>
+</ul>
+<h4 id="entitybase"><a class="doc-anchor" href="#entitybase">§</a><code>EntityBase</code></h4>
+<p>This trait effectively stores only the collection name, and generates the transaction entity based on the item name.</p>
+<p>No fields are autogenerated. If any fields should be autogenerated, you must implement all relevant traits manually.</p>
+<h4 id="entity"><a class="doc-anchor" href="#entity">§</a><code>Entity</code></h4>
+<p>The primary key for all derived entities is <code>Vec&lt;u8&gt;</code>. For a more complicated primary key, you need to implement
+all these traits manually.</p>
+<p>Implementations of non-wasm methods defer to the helper functions defined in <code>entities::platform::generic</code>.</p>
+<h4 id="borrowprimarykey"><a class="doc-anchor" href="#borrowprimarykey">§</a><code>BorrowPrimaryKey</code></h4>
+<p>The borrowed form of the primary key for all derived entities is <code>&amp;[u8]</code>. For a more complicated borrowed primary
+key, you need to implement all these traits manually.</p>
+<p>Implementation of <code>get_borrowed</code> defers to the helper function defined in <code>entities::platform::generic</code>.</p>
+<h4 id="entitydatabasemutation"><a class="doc-anchor" href="#entitydatabasemutation">§</a><code>EntityDatabaseMutation</code></h4>
+<p>The derived <code>save</code> method (non-wasm) generates sql like:</p>
+<div class="example-wrap"><pre class="language-sql"><code>INSERT OR REPLACE INTO entities (id, foo, bar) VALUES (?, ?, ?)</code></pre></div>
+<p>The wasm implementation delegates to the transaction’s <code>save</code> method, which serializes via serde.</p>
+<h4 id="item-level-encryption-ie-encrypting-decrypting"><a class="doc-anchor" href="#item-level-encryption-ie-encrypting-decrypting">§</a>Item-level encryption (i.e. <code>Encrypting</code>, <code>Decrypting</code>)</h4>
+<p>All fields except the id field are encrypted. If you need more unencrypted fields, implement this trait family
+yourself.</p>
+<p>This macro generates an encryption helper associated struct. If this item is <code>Foo</code>, the associated struct is
+<code>FooEncrypt</code>. <code>FooEncrypt</code> implements <code>serde::Serialize</code>. Expected usage:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">let </span>encrypted = serde_json::to_string(<span class="kw-2">&amp;</span>foo.encrypt(cipher)<span class="question-mark">?</span>)<span class="question-mark">?</span>;</code></pre></div>
+<p>This macro generates a decryption helper associated struct. If this item is <code>Foo</code>, the associated struct is
+<code>FooDecrypt</code>. <code>FooDecrypt</code> implements <code>serde::Deserialize</code> and <code>Decrypting</code>, with <code>FooDecrypt::DecryptedForm: Foo</code>. <code>Foo</code> implements <code>Decryptable</code>, with <code>Decryptable::DecryptableFrom: FooDecrypt</code>. Expected usage:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">let </span>decrypted = serde_json::from_str::&lt;Foo::DecryptableFrom&gt;(<span class="kw-2">&amp;</span>encrypted)<span class="question-mark">?</span>.decrypt(cipher)<span class="question-mark">?</span>;</code></pre></div></div></details></section></div></main></body></html>

@@ -62,54 +62,56 @@
 <a href=#62 id=62 data-nosnippet>62</a>    </span>PendingProposalNotFound(<span class="kw">crate</span>::mls::proposal::MlsProposalRef),
 <a href=#63 id=63 data-nosnippet>63</a>    <span class="attr">#[error(<span class="string">"Couldn't find pending commit"</span>)]
 <a href=#64 id=64 data-nosnippet>64</a>    </span>PendingCommitNotFound,
-<a href=#65 id=65 data-nosnippet>65</a>    <span class="attr">#[error(
-<a href=#66 id=66 data-nosnippet>66</a>        <span class="string">"Happens when a client creates a commit, sends it to the DS which accepts it but then client \
-<a href=#67 id=67 data-nosnippet>67</a>    clears this pending commit and creates another commit. This is triggered when the client tries to decrypt the original commit.\
-<a href=#68 id=68 data-nosnippet>68</a>    This means something is very wrong in the client's code and has to be fixed immediately"
-<a href=#69 id=69 data-nosnippet>69</a>    </span>)]
-<a href=#70 id=70 data-nosnippet>70</a>    </span>ClearingPendingCommitError,
-<a href=#71 id=71 data-nosnippet>71</a>    <span class="attr">#[error(<span class="string">"Tried to decrypt a commit created by self which is likely to have been replayed by the DS"</span>)]
-<a href=#72 id=72 data-nosnippet>72</a>    </span>SelfCommitIgnored,
-<a href=#73 id=73 data-nosnippet>73</a>    <span class="attr">#[error(<span class="string">"This proposal variant cannot be renewed"</span>)]
-<a href=#74 id=74 data-nosnippet>74</a>    </span>ProposalVariantCannotBeRenewed,
-<a href=#75 id=75 data-nosnippet>75</a>    <span class="attr">#[error(<span class="string">"caller error: {0}"</span>)]
-<a href=#76 id=76 data-nosnippet>76</a>    </span>CallerError(<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str),
-<a href=#77 id=77 data-nosnippet>77</a>    <span class="doccomment">/// This happens when the DS cannot flag KeyPackages as claimed or not. In this scenario, a client
-<a href=#78 id=78 data-nosnippet>78</a>    /// requests their old KeyPackages to be deleted but one has already been claimed by another client to create a
-<a href=#79 id=79 data-nosnippet>79</a>    /// Welcome. In that case the only solution is that the client receiving such a Welcome tries to join the group
-<a href=#80 id=80 data-nosnippet>80</a>    /// with an External Commit instead
-<a href=#81 id=81 data-nosnippet>81</a>    </span><span class="attr">#[error(
-<a href=#82 id=82 data-nosnippet>82</a>        <span class="string">"Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit"
-<a href=#83 id=83 data-nosnippet>83</a>    </span>)]
-<a href=#84 id=84 data-nosnippet>84</a>    </span>OrphanWelcome,
-<a href=#85 id=85 data-nosnippet>85</a>    <span class="attr">#[error(<span class="string">"Serializing {item} for TLS"</span>)]
-<a href=#86 id=86 data-nosnippet>86</a>    </span>TlsSerialize {
-<a href=#87 id=87 data-nosnippet>87</a>        item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
-<a href=#88 id=88 data-nosnippet>88</a>        <span class="attr">#[source]
-<a href=#89 id=89 data-nosnippet>89</a>        </span>source: tls_codec::Error,
-<a href=#90 id=90 data-nosnippet>90</a>    },
-<a href=#91 id=91 data-nosnippet>91</a>    <span class="attr">#[error(<span class="string">"Deserializing {item} for TLS"</span>)]
-<a href=#92 id=92 data-nosnippet>92</a>    </span>TlsDeserialize {
-<a href=#93 id=93 data-nosnippet>93</a>        item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
-<a href=#94 id=94 data-nosnippet>94</a>        <span class="attr">#[source]
-<a href=#95 id=95 data-nosnippet>95</a>        </span>source: tls_codec::Error,
-<a href=#96 id=96 data-nosnippet>96</a>    },
-<a href=#97 id=97 data-nosnippet>97</a>    <span class="attr">#[error(transparent)]
-<a href=#98 id=98 data-nosnippet>98</a>    </span>Mls(<span class="attr">#[from] </span><span class="kw">crate</span>::MlsError),
+<a href=#65 id=65 data-nosnippet>65</a>    <span class="attr">#[error(<span class="string">"Couldn't find pending conversation"</span>)]
+<a href=#66 id=66 data-nosnippet>66</a>    </span>PendingConversationNotFound,
+<a href=#67 id=67 data-nosnippet>67</a>    <span class="attr">#[error(
+<a href=#68 id=68 data-nosnippet>68</a>        <span class="string">"Happens when a client creates a commit, sends it to the DS which accepts it but then client \
+<a href=#69 id=69 data-nosnippet>69</a>    clears this pending commit and creates another commit. This is triggered when the client tries to decrypt the original commit.\
+<a href=#70 id=70 data-nosnippet>70</a>    This means something is very wrong in the client's code and has to be fixed immediately"
+<a href=#71 id=71 data-nosnippet>71</a>    </span>)]
+<a href=#72 id=72 data-nosnippet>72</a>    </span>ClearingPendingCommitError,
+<a href=#73 id=73 data-nosnippet>73</a>    <span class="attr">#[error(<span class="string">"Tried to decrypt a commit created by self which is likely to have been replayed by the DS"</span>)]
+<a href=#74 id=74 data-nosnippet>74</a>    </span>SelfCommitIgnored,
+<a href=#75 id=75 data-nosnippet>75</a>    <span class="attr">#[error(<span class="string">"This proposal variant cannot be renewed"</span>)]
+<a href=#76 id=76 data-nosnippet>76</a>    </span>ProposalVariantCannotBeRenewed,
+<a href=#77 id=77 data-nosnippet>77</a>    <span class="attr">#[error(<span class="string">"caller error: {0}"</span>)]
+<a href=#78 id=78 data-nosnippet>78</a>    </span>CallerError(<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str),
+<a href=#79 id=79 data-nosnippet>79</a>    <span class="doccomment">/// This happens when the DS cannot flag KeyPackages as claimed or not. In this scenario, a client
+<a href=#80 id=80 data-nosnippet>80</a>    /// requests their old KeyPackages to be deleted but one has already been claimed by another client to create a
+<a href=#81 id=81 data-nosnippet>81</a>    /// Welcome. In that case the only solution is that the client receiving such a Welcome tries to join the group
+<a href=#82 id=82 data-nosnippet>82</a>    /// with an External Commit instead
+<a href=#83 id=83 data-nosnippet>83</a>    </span><span class="attr">#[error(
+<a href=#84 id=84 data-nosnippet>84</a>        <span class="string">"Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit"
+<a href=#85 id=85 data-nosnippet>85</a>    </span>)]
+<a href=#86 id=86 data-nosnippet>86</a>    </span>OrphanWelcome,
+<a href=#87 id=87 data-nosnippet>87</a>    <span class="attr">#[error(<span class="string">"Serializing {item} for TLS"</span>)]
+<a href=#88 id=88 data-nosnippet>88</a>    </span>TlsSerialize {
+<a href=#89 id=89 data-nosnippet>89</a>        item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+<a href=#90 id=90 data-nosnippet>90</a>        <span class="attr">#[source]
+<a href=#91 id=91 data-nosnippet>91</a>        </span>source: tls_codec::Error,
+<a href=#92 id=92 data-nosnippet>92</a>    },
+<a href=#93 id=93 data-nosnippet>93</a>    <span class="attr">#[error(<span class="string">"Deserializing {item} for TLS"</span>)]
+<a href=#94 id=94 data-nosnippet>94</a>    </span>TlsDeserialize {
+<a href=#95 id=95 data-nosnippet>95</a>        item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+<a href=#96 id=96 data-nosnippet>96</a>        <span class="attr">#[source]
+<a href=#97 id=97 data-nosnippet>97</a>        </span>source: tls_codec::Error,
+<a href=#98 id=98 data-nosnippet>98</a>    },
 <a href=#99 id=99 data-nosnippet>99</a>    <span class="attr">#[error(transparent)]
-<a href=#100 id=100 data-nosnippet>100</a>    </span>Keystore(<span class="attr">#[from] </span><span class="kw">crate</span>::KeystoreError),
-<a href=#101 id=101 data-nosnippet>101</a>    <span class="attr">#[error(<span class="string">"{0}"</span>)]
-<a href=#102 id=102 data-nosnippet>102</a>    </span>Leaf(<span class="attr">#[from] </span><span class="kw">crate</span>::LeafError),
-<a href=#103 id=103 data-nosnippet>103</a>    <span class="attr">#[error(transparent)]
-<a href=#104 id=104 data-nosnippet>104</a>    </span>Recursive(<span class="attr">#[from] </span><span class="kw">crate</span>::RecursiveError),
-<a href=#105 id=105 data-nosnippet>105</a>}
-<a href=#106 id=106 data-nosnippet>106</a>
-<a href=#107 id=107 data-nosnippet>107</a><span class="kw">impl </span>Error {
-<a href=#108 id=108 data-nosnippet>108</a>    <span class="kw">pub fn </span>tls_serialize(item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(tls_codec::Error) -&gt; <span class="self">Self </span>{
-<a href=#109 id=109 data-nosnippet>109</a>        <span class="kw">move </span>|source| <span class="self">Self</span>::TlsSerialize { item, source }
-<a href=#110 id=110 data-nosnippet>110</a>    }
-<a href=#111 id=111 data-nosnippet>111</a>
-<a href=#112 id=112 data-nosnippet>112</a>    <span class="kw">pub fn </span>tls_deserialize(item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(tls_codec::Error) -&gt; <span class="self">Self </span>{
-<a href=#113 id=113 data-nosnippet>113</a>        <span class="kw">move </span>|source| <span class="self">Self</span>::TlsDeserialize { item, source }
-<a href=#114 id=114 data-nosnippet>114</a>    }
-<a href=#115 id=115 data-nosnippet>115</a>}</code></pre></div></section></main></body></html>
+<a href=#100 id=100 data-nosnippet>100</a>    </span>Mls(<span class="attr">#[from] </span><span class="kw">crate</span>::MlsError),
+<a href=#101 id=101 data-nosnippet>101</a>    <span class="attr">#[error(transparent)]
+<a href=#102 id=102 data-nosnippet>102</a>    </span>Keystore(<span class="attr">#[from] </span><span class="kw">crate</span>::KeystoreError),
+<a href=#103 id=103 data-nosnippet>103</a>    <span class="attr">#[error(<span class="string">"{0}"</span>)]
+<a href=#104 id=104 data-nosnippet>104</a>    </span>Leaf(<span class="attr">#[from] </span><span class="kw">crate</span>::LeafError),
+<a href=#105 id=105 data-nosnippet>105</a>    <span class="attr">#[error(transparent)]
+<a href=#106 id=106 data-nosnippet>106</a>    </span>Recursive(<span class="attr">#[from] </span><span class="kw">crate</span>::RecursiveError),
+<a href=#107 id=107 data-nosnippet>107</a>}
+<a href=#108 id=108 data-nosnippet>108</a>
+<a href=#109 id=109 data-nosnippet>109</a><span class="kw">impl </span>Error {
+<a href=#110 id=110 data-nosnippet>110</a>    <span class="kw">pub fn </span>tls_serialize(item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(tls_codec::Error) -&gt; <span class="self">Self </span>{
+<a href=#111 id=111 data-nosnippet>111</a>        <span class="kw">move </span>|source| <span class="self">Self</span>::TlsSerialize { item, source }
+<a href=#112 id=112 data-nosnippet>112</a>    }
+<a href=#113 id=113 data-nosnippet>113</a>
+<a href=#114 id=114 data-nosnippet>114</a>    <span class="kw">pub fn </span>tls_deserialize(item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(tls_codec::Error) -&gt; <span class="self">Self </span>{
+<a href=#115 id=115 data-nosnippet>115</a>        <span class="kw">move </span>|source| <span class="self">Self</span>::TlsDeserialize { item, source }
+<a href=#116 id=116 data-nosnippet>116</a>    }
+<a href=#117 id=117 data-nosnippet>117</a>}</code></pre></div></section></main></body></html>
