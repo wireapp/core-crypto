@@ -49,15 +49,10 @@ import type {
 /**
  * Wrapper for the WASM-compiled version of CoreCrypto
  */
-export class CoreCrypto {
-    /** @hidden */
-    #cc: CoreCryptoFfiTypes.CoreCryptoFfiInterface;
-
-    /**
-     * Should only be used internally
-     */
-    inner(): unknown {
-        return this.#cc as CoreCryptoFfiTypes.CoreCryptoFfi;
+export class CoreCrypto extends CoreCryptoFfi {
+    /** @internal */
+    static instanceOf(obj: unknown): obj is CoreCryptoFfi {
+        return super.instanceOf(obj);
     }
 
     /**
@@ -69,9 +64,7 @@ export class CoreCrypto {
      * @param database - {@link Database}, initialized via {@link _openDatabase}
      */
     static async init(database: DatabaseInterface): Promise<CoreCrypto> {
-        const cc = await CoreCryptoError.asyncMapErr(
-            CoreCryptoFfiTypes.coreCryptoNew(database)
-        );
+        const cc = await CoreCryptoFfiTypes.coreCryptoNew(database);
         return new this(cc);
     }
 
@@ -134,9 +127,9 @@ export class CoreCrypto {
         return result;
     }
 
-    /** @hidden */
+    /** @internal */
     private constructor(cc: CoreCryptoFfiTypes.CoreCryptoFfiInterface) {
-        this.#cc = cc;
+        super(cc);
     }
 
     /**
