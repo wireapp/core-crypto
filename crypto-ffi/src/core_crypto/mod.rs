@@ -28,12 +28,13 @@ pub struct CoreCryptoFfi {
 /// [core_crypto::transaction_context::TransactionContext::proteus_init], respectively.
 #[uniffi::export]
 pub async fn core_crypto_new(database: &Arc<Database>) -> CoreCryptoResult<CoreCryptoFfi> {
-    CoreCryptoFfi::new(database).await
+    CoreCryptoFfi::new_(database).await
 }
 
 impl CoreCryptoFfi {
-    /// Instantiate CC
-    pub async fn new(database: &Arc<Database>) -> CoreCryptoResult<Self> {
+    /// Instantiate CC (not exported via uniffi). We cannot call this `new()`, because ubrn requires constructors to be
+    /// callied `new()` (see below).
+    pub async fn new_(database: &Arc<Database>) -> CoreCryptoResult<Self> {
         #[cfg(target_family = "wasm")]
         console_error_panic_hook::set_once();
         let db = database.as_ref().clone().into();
@@ -43,9 +44,14 @@ impl CoreCryptoFfi {
     }
 }
 
-#[cfg(feature = "wasm")]
-#[uniffi::export]
+#[cfg_attr(feature = "wasm", uniffi::export)]
 impl CoreCryptoFfi {
+    /// This is only needed to allow TS inheritance and should be hidden from library consumers.
+    #[uniffi::constructor]
+    pub fn new(instance: Arc<Self>) -> Arc<Self> {
+        instance
+    }
+
     /// Closes the database
     /// indexdb connections must be closed explicitly while rusqlite implements drop which suffices.
     pub async fn close(&self) -> CoreCryptoResult<()> {
