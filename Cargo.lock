@@ -2765,8 +2765,7 @@ checksum = "a1e52775179941363cc594e49ce99284d13d6948928d8e72c755f55e98caa1eb"
 [[package]]
 name = "idb"
 version = "0.6.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6554f394e990a1af530a528a7fdcad6e01b29cb1b990f89df3ffd62cf15f7828"
+source = "git+https://github.com/wireapp/idb.git?rev=10fad82eb4d4dd7f8be6db7b9427267168331511#10fad82eb4d4dd7f8be6db7b9427267168331511"
 dependencies = [
  "indexmap 2.13.0",
  "js-sys",
