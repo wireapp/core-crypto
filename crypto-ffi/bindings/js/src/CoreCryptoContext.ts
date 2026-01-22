@@ -46,18 +46,15 @@ export interface CredentialFindFilters {
     earliestValidity?: bigint;
 }
 
-export class CoreCryptoContext {
-    /** @hidden */
-    #ctx: CoreCryptoContextFfi;
-
-    /** @hidden */
-    private constructor(ctx: CoreCryptoContextFfi) {
-        this.#ctx = ctx;
+export class CoreCryptoContext extends CoreCryptoContextFfi {
+    /** @internal */
+    constructor(ctx: CoreCryptoContextFfi) {
+        super(ctx);
     }
 
-    /** @hidden */
-    static fromFfiContext(ctx: CoreCryptoContextFfi): CoreCryptoContext {
-        return new CoreCryptoContext(ctx);
+    /** @internal */
+    static instanceOf(obj: unknown): obj is CoreCryptoContextFfi {
+        return super.instanceOf(obj);
     }
 
     /**
