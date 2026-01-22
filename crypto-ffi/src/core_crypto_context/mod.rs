@@ -28,6 +28,15 @@ impl Deref for CoreCryptoContext {
     }
 }
 
+#[cfg_attr(feature = "wasm", uniffi::export)]
+impl CoreCryptoContext {
+    /// This is only needed to allow TS inheritance and should be hidden from library consumers.
+    #[uniffi::constructor]
+    pub fn new(instance: Arc<Self>) -> Arc<Self> {
+        instance
+    }
+}
+
 #[uniffi::export]
 impl CoreCryptoContext {
     /// See [core_crypto::transaction_context::TransactionContext::set_data]
