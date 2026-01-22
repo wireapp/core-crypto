@@ -36,32 +36,20 @@ export class CoreCryptoContext extends CoreCryptoContextFfi {
      * @param clientId - required
      * @param transport - Any implementor of the {@link MlsTransport} interface
      */
-    async mlsInit(clientId: ClientId, transport: MlsTransport): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(
-            this.#ctx.mlsInit(clientId, mlsTransportToFfi(transport))
-        );
+    async mlsInitialize(
+        clientId: ClientId,
+        transport: MlsTransport
+    ): Promise<void> {
+        return await super.mlsInit(clientId, mlsTransportToFfi(transport));
     }
 
-    /**
-     * Checks if the Client is member of a given conversation and if the MLS Group is loaded up
-     *
-     * @returns Whether the given conversation ID exists
-     *
-     * @example
-     * ```ts
-     *  const cc = await CoreCrypto.init({ databaseName: "test", key: "test", clientId: "test" });
-     *  const encoder = new TextEncoder();
-     *  if (await cc.conversationExists(encoder.encode("my super chat"))) {
-     *    // Do something
-     *  } else {
-     *    // Do something else
-     *  }
-     * ```
-     */
-    async conversationExists(conversationId: ConversationId): Promise<boolean> {
-        return await CoreCryptoError.asyncMapErr(
-            this.#ctx.conversationExists(conversationId)
-        );
+    /** @internal */
+    async mlsInit(
+        clientId: ClientIdInterface,
+        transport: CoreCryptoFfiTypes.MlsTransport,
+        asyncOpts_?: { signal: AbortSignal }
+    ): Promise<void> {
+        super.mlsInit(clientId, transport, asyncOpts_);
     }
 
     /**
