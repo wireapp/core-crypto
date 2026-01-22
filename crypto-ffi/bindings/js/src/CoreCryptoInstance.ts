@@ -40,7 +40,7 @@ export class CoreCrypto extends CoreCryptoFfi {
      *
      * Calling this will generate proteus prekeys.
      * Then, those keys can be traded for a clientId.
-     * Use this clientId to initialize MLS with {@link CoreCryptoContext.mlsInit}.
+     * Use this clientId to initialize MLS with {@link CoreCryptoContext.mlsInitialize}.
      * @param database - {@link Database}, initialized via {@link _openDatabase}
      */
     static async init(database: DatabaseInterface): Promise<CoreCrypto> {

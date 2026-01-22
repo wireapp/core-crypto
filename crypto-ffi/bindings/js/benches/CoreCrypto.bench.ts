@@ -31,7 +31,7 @@ async function measureDecryption(
     );
     const messageBytes = encoder.encode(message).buffer;
 
-    const encryptedMessages = await cc1.transaction(async (ctx) => {
+    const encryptedMessages = await cc1.newTransaction(async (ctx) => {
         const encryptedMessages: ArrayBuffer[] = [];
         for (let i = 0; i < messageCount; i++) {
             const encryptedMessage = await ctx.encryptMessage(
@@ -46,7 +46,7 @@ async function measureDecryption(
 
     // measure decryption performance
     const cc2 = window.ensureCcDefined(client2);
-    return await cc2.transaction(async (ctx) => {
+    return await cc2.newTransaction(async (ctx) => {
         const start = performance.now();
 
         const decryptedMessages: (Uint8Array | undefined)[] = [];

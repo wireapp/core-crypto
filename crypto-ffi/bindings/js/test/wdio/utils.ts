@@ -214,8 +214,8 @@ export async function ccInit(
             );
 
             const instance = await window.ccModule.CoreCrypto.init(database);
-            await instance.transaction(async (ctx) => {
-                await ctx.mlsInit(clientId, window.deliveryService);
+            await instance.newTransaction(async (ctx) => {
+                await ctx.mlsInitialize(clientId, window.deliveryService);
                 if (withCredential) {
                     await ctx.addCredential(
                         window.ccModule.credentialBasic(cipherSuite, clientId)
@@ -291,7 +291,7 @@ export async function createConversation(
     return await browser.execute(
         async (clientName, conversationId) => {
             const cc = window.ensureCcDefined(clientName);
-            await cc.transaction(async (ctx) => {
+            await cc.newTransaction(async (ctx) => {
                 const conversationIdBytes = new window.ccModule.ConversationId(
                     new TextEncoder().encode(conversationId).buffer
                 );
@@ -333,15 +333,13 @@ export async function invite(
             const conversationIdBytes = new window.ccModule.ConversationId(
                 new TextEncoder().encode(conversationId).buffer
             );
-            const kp = await cc2.transaction(async (ctx) => {
-                const [credentialRef] = await ctx.findCredentials({
+            const kp = await cc2.newTransaction(async (ctx) => {
+                const [credentialRef] = await ctx.getFilteredCredentials({
                     ciphersuite: window.defaultCipherSuite,
                     credentialType: window.ccModule.CredentialType.Basic,
                 });
                 console.log("generated key package");
-                return (
-                    await ctx.generateKeypackage(credentialRef!)
-                ).serialize();
+                return await ctx.generateKeypackage(credentialRef!);
             });
 
             const clients = await cc1.getClientIds(conversationIdBytes);
@@ -349,13 +347,13 @@ export async function invite(
             console.log(clients);
 
             console.log("inviting bob");
-            await cc1.transaction((ctx) =>
+            await cc1.newTransaction((ctx) =>
                 ctx.addClientsToConversation(conversationIdBytes, [kp])
             );
             console.log("processing welcome");
             const commitBundle =
                 await window.deliveryService.getLatestCommitBundle();
-            await cc2.transaction((ctx) =>
+            await cc2.newTransaction((ctx) =>
                 ctx.processWelcomeMessage(
                     new window.ccModule.Welcome(
                         commitBundle.welcome!.copyBytes()
@@ -399,7 +397,7 @@ export async function remove(
             const clientId = new window.ccModule.ClientId(
                 new TextEncoder().encode(client2).buffer
             );
-            await cc1.transaction((ctx) =>
+            await cc1.newTransaction((ctx) =>
                 ctx.removeClientsFromConversation(cid, [clientId])
             );
             const commitBundle =
@@ -435,7 +433,7 @@ export async function consumeLastestCommit(
             );
             const commitBundle =
                 await window.deliveryService.getLatestCommitBundle();
-            await cc1.transaction((ctx) =>
+            await cc1.newTransaction((ctx) =>
                 ctx.decryptMessage(cid, commitBundle.commit)
             );
         },
@@ -475,17 +473,17 @@ export async function roundTripMessage(
             );
             const messageBytes = encoder.encode(message);
 
-            const encryptedByClient1 = await cc1.transaction(async (ctx) => {
+            const encryptedByClient1 = await cc1.newTransaction(async (ctx) => {
                 return await ctx.encryptMessage(cid, messageBytes.buffer);
             });
-            const decryptedByClient2 = await cc2.transaction(async (ctx) => {
+            const decryptedByClient2 = await cc2.newTransaction(async (ctx) => {
                 return await ctx.decryptMessage(cid, encryptedByClient1);
             });
 
-            const encryptedByClient2 = await cc2.transaction(async (ctx) => {
+            const encryptedByClient2 = await cc2.newTransaction(async (ctx) => {
                 return await ctx.encryptMessage(cid, messageBytes.buffer);
             });
-            const decryptedByClient1 = await cc1.transaction(async (ctx) => {
+            const decryptedByClient1 = await cc1.newTransaction(async (ctx) => {
                 return await ctx.decryptMessage(cid, encryptedByClient2);
             });
 
@@ -530,7 +528,7 @@ export async function proteusInit(clientName: string): Promise<void> {
         );
 
         const instance = await window.ccModule.CoreCrypto.init(database);
-        await instance.transaction((ctx) => ctx.proteusInit());
+        await instance.newTransaction((ctx) => ctx.proteusInit());
 
         if (window.cc === undefined) {
             window.cc = new Map();
@@ -563,11 +561,11 @@ export async function newProteusSessionFromPrekey(
             const cc1 = window.ensureCcDefined(client1);
             const cc2 = window.ensureCcDefined(client2);
 
-            const cc2Prekey = await cc2.transaction(async (ctx) => {
+            const cc2Prekey = await cc2.newTransaction(async (ctx) => {
                 return await ctx.proteusNewPrekey(10);
             });
 
-            await cc1.transaction(async (ctx) => {
+            await cc1.newTransaction(async (ctx) => {
                 return await ctx.proteusSessionFromPrekey(sessionId, cc2Prekey);
             });
         },
@@ -607,11 +605,11 @@ export async function newProteusSessionFromMessage(
 
             const encoder = new TextEncoder();
             const messageBytes = encoder.encode(message);
-            const encrypted = await cc1.transaction(async (ctx) => {
+            const encrypted = await cc1.newTransaction(async (ctx) => {
                 return await ctx.proteusEncrypt(sessionId, messageBytes.buffer);
             });
 
-            const decrypted = await cc2.transaction(async (ctx) => {
+            const decrypted = await cc2.newTransaction(async (ctx) => {
                 return await ctx.proteusSessionFromMessage(
                     sessionId,
                     encrypted

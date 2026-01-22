@@ -23,13 +23,15 @@ describe("set_data()", () => {
                 const encoder = new TextEncoder();
                 const data = encoder.encode(text);
                 let dbResultBeforeSet: ArrayBuffer | undefined;
-                await cc.transaction(async (ctx) => {
+                await cc.newTransaction(async (ctx) => {
                     dbResultBeforeSet = await ctx.getData();
                     await ctx.setData(data.buffer);
                 });
-                const dbResultAfterSet = await cc.transaction(async (ctx) => {
-                    return await ctx.getData();
-                });
+                const dbResultAfterSet = await cc.newTransaction(
+                    async (ctx) => {
+                        return await ctx.getData();
+                    }
+                );
                 const decoder = new TextDecoder();
                 return {
                     beforeSet: dbResultBeforeSet,

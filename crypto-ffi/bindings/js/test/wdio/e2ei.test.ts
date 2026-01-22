@@ -108,7 +108,7 @@ describe("end to end identity", () => {
             const handle = "alice_wire";
             const expirySec = 90 * 24 * 3600;
 
-            await cc.transaction(async (ctx) => {
+            await cc.newTransaction(async (ctx) => {
                 let enrollment = await ctx.e2eiNewEnrollment(
                     clientId,
                     displayName,
@@ -336,7 +336,7 @@ describe("end to end identity", () => {
                 const cid = new window.ccModule.ConversationId(
                     new TextEncoder().encode(conversationId).buffer
                 );
-                return await cc.transaction(async (ctx) => {
+                return await cc.newTransaction(async (ctx) => {
                     return await ctx.e2eiConversationState(cid);
                 });
             },
@@ -358,7 +358,7 @@ describe("end to end identity", () => {
                 const cid = new window.ccModule.ConversationId(
                     encoder.encode(conversationId).buffer
                 );
-                const identities = await cc.transaction(async (ctx) => {
+                const identities = await cc.newTransaction(async (ctx) => {
                     return await ctx.getDeviceIdentities(cid, [
                         new window.ccModule.ClientId(
                             encoder.encode(clientName).buffer
@@ -385,7 +385,7 @@ describe("end to end identity", () => {
                 const cid = new window.ccModule.ConversationId(
                     new TextEncoder().encode(conversationId).buffer
                 );
-                const identities = await cc.transaction(async (ctx) => {
+                const identities = await cc.newTransaction(async (ctx) => {
                     return await ctx.getUserIdentities(cid, [
                         "LcksJb74Tm6N12cDjFy7lQ",
                     ]);

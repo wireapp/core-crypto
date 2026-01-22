@@ -81,14 +81,16 @@ describe("database", () => {
 
             let cc = await window.ccModule.CoreCrypto.init(database);
             const clientId = makeClientId();
-            cc.transaction(async (ctx) => {
-                await ctx.mlsInit(makeClientId(), window.deliveryService);
+            cc.newTransaction(async (ctx) => {
+                await ctx.mlsInitialize(makeClientId(), window.deliveryService);
                 await ctx.addCredential(
                     window.ccModule.credentialBasic(cipherSuite, clientId)
                 );
             });
             const pubkey1 = (
-                await cc.transaction((ctx) => ctx.findCredentials({ clientId }))
+                await cc.newTransaction((ctx) =>
+                    ctx.getFilteredCredentials({ clientId })
+                )
             )[0]!.publicKey();
             cc.close();
 
@@ -114,10 +116,10 @@ describe("database", () => {
             );
 
             cc = await window.ccModule.CoreCrypto.init(newDatabase);
-            const pubkey2 = await cc.transaction(async (ctx) => {
-                await ctx.mlsInit(clientId, window.deliveryService);
+            const pubkey2 = await cc.newTransaction(async (ctx) => {
+                await ctx.mlsInitialize(clientId, window.deliveryService);
                 return (
-                    await ctx.findCredentials({ clientId })
+                    await ctx.getFilteredCredentials({ clientId })
                 )[0]!.publicKey();
             });
             cc.close();
@@ -195,7 +197,7 @@ describe("database", () => {
             );
 
             const instance = await window.ccModule.CoreCrypto.init(database);
-            const epoch = await instance.transaction(async (ctx) => {
+            const epoch = await instance.newTransaction(async (ctx) => {
                 return await ctx.conversationEpoch(
                     new window.ccModule.ConversationId(
                         encoder.encode("convId").buffer
@@ -206,6 +208,6 @@ describe("database", () => {
         }, JSON.stringify(stores));
 
         // If the migration succeeded, the epoch has to be 1.
-        expect(result).toEqual(1);
+        expect(result).toEqual(1n);
     });
 });

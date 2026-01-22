@@ -1,11 +1,7 @@
 import { browser, expect } from "@wdio/globals";
 import { ccInit, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import {
-    CoreCryptoError,
-    CoreCryptoContext,
-    ErrorType,
-} from "../../src/CoreCrypto";
+import { CoreCryptoContext } from "../../src/CoreCrypto";
 
 beforeEach(async () => {
     await setup();
@@ -27,7 +23,7 @@ describe("transaction context", () => {
                 async (clientName, expectedMessage) => {
                     const cc = window.ensureCcDefined(clientName);
 
-                    await cc.transaction(async () => {
+                    await cc.newTransaction(async () => {
                         throw new Error(expectedMessage);
                     });
                 },
@@ -44,16 +40,17 @@ describe("transaction context", () => {
         await ccInit(alice);
 
         const result = await browser.execute(async (clientName) => {
-            const isMlsOtherError = window.ccModule.isMlsOtherError;
+            const CoreCryptoError = window.ccModule.CoreCryptoError;
+            const MlsError = window.ccModule.MlsError;
             const cc = window.ensureCcDefined(clientName);
 
             let context: CoreCryptoContext | null = null;
-            await cc.transaction(async (ctx) => {
+            await cc.newTransaction(async (ctx) => {
                 context = ctx;
             });
 
             try {
-                await context!.findCredentials({
+                await context!.getFilteredCredentials({
                     ciphersuite: window.defaultCipherSuite,
                     credentialType: window.ccModule.CredentialType.Basic,
                 });
@@ -61,21 +58,26 @@ describe("transaction context", () => {
                 const e = err as { context?: { context?: { msg?: string } } };
                 return {
                     errorWasThrown: true,
-                    isCorrectInstance: isMlsOtherError(e),
-                    contextMatches:
-                        e.context?.context?.msg ===
-                        "This transaction context has already been finished and can no longer be used.",
+                    isCorrectInstance:
+                        CoreCryptoError.Mls.instanceOf(e) &&
+                        MlsError.Other.instanceOf(e.inner.mlsError),
+                    message:
+                        CoreCryptoError.Mls.instanceOf(e) &&
+                        MlsError.Other.instanceOf(e.inner.mlsError) &&
+                        e.inner.mlsError.inner.msg,
                 };
             }
             return {
                 errorWasThrown: false,
                 isCorrectInstance: false,
-                contextMatches: false,
+                message: false,
             };
         }, alice);
         expect(result.errorWasThrown).toBe(true);
         expect(result.isCorrectInstance).toBe(true);
-        expect(result.contextMatches).toBe(true);
+        expect(result.message).toBe(
+            "This transaction context has already been finished and can no longer be used."
+        );
     });
 
     it("should roll back transaction after error", async () => {
@@ -88,14 +90,16 @@ describe("transaction context", () => {
             const conversationId = new window.ccModule.ConversationId(
                 new TextEncoder().encode("testConversation").buffer
             );
+            const CoreCryptoError = window.ccModule.CoreCryptoError;
+            const MlsError = window.ccModule.MlsError;
 
             const expectedError = new Error("Message of expected error", {
                 cause: "This is expected!",
             });
             let thrownError;
             try {
-                await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
+                await cc.newTransaction(async (ctx) => {
+                    const [credentialRef] = await ctx.getFilteredCredentials({
                         credentialType: basicCredentialType,
                     });
                     await ctx.createConversation(
@@ -113,15 +117,15 @@ describe("transaction context", () => {
             }
 
             // This would fail with a "Conversation already exists" error, if the above transaction hadn't been rolled back.
-            await cc.transaction(async (ctx) => {
-                const [credentialRef] = await ctx.findCredentials({
+            await cc.newTransaction(async (ctx) => {
+                const [credentialRef] = await ctx.getFilteredCredentials({
                     credentialType: basicCredentialType,
                 });
                 await ctx.createConversation(conversationId, credentialRef!);
             });
             try {
-                await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
+                await cc.newTransaction(async (ctx) => {
+                    const [credentialRef] = await ctx.getFilteredCredentials({
                         credentialType: basicCredentialType,
                     });
                     await ctx.createConversation(
@@ -130,8 +134,17 @@ describe("transaction context", () => {
                     );
                 });
             } catch (err) {
-                const error = err as CoreCryptoError<ErrorType>;
-                return { name: error.name, message: error.message };
+                if (
+                    CoreCryptoError.Mls.instanceOf(err) &&
+                    MlsError.ConversationAlreadyExists.instanceOf(
+                        err.inner.mlsError
+                    )
+                ) {
+                    return {
+                        name: err.inner.mlsError.name,
+                        message: err.inner.mlsError.message,
+                    };
+                }
             }
             throw new Error("Expected 'Conversation already exists' error");
         }, alice);

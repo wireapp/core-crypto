@@ -24,11 +24,11 @@ describe("key package", () => {
 
         const cc = await ccInit(clientId);
 
-        const credentialRef = await cc.transaction(async (ctx) => {
+        const credentialRef = await cc.newTransaction(async (ctx) => {
             return await ctx.addCredential(credential);
         });
 
-        const keyPackage = await cc.transaction(async (ctx) => {
+        const keyPackage = await cc.newTransaction(async (ctx) => {
             return await ctx.generateKeypackage(credentialRef);
         });
 
@@ -43,11 +43,11 @@ describe("key package", () => {
 
         const cc = await ccInit(clientId);
 
-        const credentialRef = await cc.transaction(async (ctx) => {
+        const credentialRef = await cc.newTransaction(async (ctx) => {
             return await ctx.addCredential(credential);
         });
 
-        const keyPackage = await cc.transaction(async (ctx) => {
+        const keyPackage = await cc.newTransaction(async (ctx) => {
             return await ctx.generateKeypackage(credentialRef);
         });
 
@@ -71,15 +71,15 @@ describe("key package", () => {
 
         const cc = await ccInit(clientId);
 
-        const credentialRef = await cc.transaction(async (ctx) => {
+        const credentialRef = await cc.newTransaction(async (ctx) => {
             return await ctx.addCredential(credential);
         });
 
-        await cc.transaction(async (ctx) => {
+        await cc.newTransaction(async (ctx) => {
             await ctx.generateKeypackage(credentialRef);
         });
 
-        const keyPackages = await cc.transaction(async (ctx) => {
+        const keyPackages = await cc.newTransaction(async (ctx) => {
             return await ctx.getKeypackages();
         });
 
@@ -96,26 +96,26 @@ describe("key package", () => {
 
         const cc = await ccInit(clientId);
 
-        const credentialRef = await cc.transaction(async (ctx) => {
+        const credentialRef = await cc.newTransaction(async (ctx) => {
             return await ctx.addCredential(credential);
         });
 
         // add a kp which will not be removed, so we have one left over
-        await cc.transaction(async (ctx) => {
+        await cc.newTransaction(async (ctx) => {
             await ctx.generateKeypackage(credentialRef);
         });
 
         // add a kp which will be removed
-        const keyPackage = await cc.transaction(async (ctx) => {
+        const keyPackage = await cc.newTransaction(async (ctx) => {
             return await ctx.generateKeypackage(credentialRef);
         });
 
         // now remove the keypackage
-        await cc.transaction(async (ctx) => {
+        await cc.newTransaction(async (ctx) => {
             await ctx.removeKeypackage(keyPackage.ref());
         });
 
-        const keyPackages = await cc.transaction(async (ctx) => {
+        const keyPackages = await cc.newTransaction(async (ctx) => {
             return await ctx.getKeypackages();
         });
 
@@ -137,7 +137,7 @@ describe("key package", () => {
         );
         const cc = await ccInit(clientId);
 
-        await cc.transaction(async (ctx) => {
+        await cc.newTransaction(async (ctx) => {
             const cref1 = await ctx.addCredential(credential1);
             const cref2 = await ctx.addCredential(credential2);
 

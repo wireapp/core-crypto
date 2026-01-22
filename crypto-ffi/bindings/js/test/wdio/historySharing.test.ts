@@ -50,8 +50,8 @@ describe("history sharing", () => {
                 const cc = window.ensureCcDefined(clientName);
 
                 // create the conversation in one transaction
-                await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
+                await cc.newTransaction(async (ctx) => {
+                    const [credentialRef] = await ctx.getFilteredCredentials({
                         credentialType: window.ccModule.CredentialType.Basic,
                     });
                     await ctx.createConversation(convId, credentialRef!);
@@ -64,7 +64,7 @@ describe("history sharing", () => {
                     await cc.isHistorySharingEnabled(convId);
 
                 // in another transaction, enable history sharing
-                await cc.transaction(async (ctx) => {
+                await cc.newTransaction(async (ctx) => {
                     await ctx.enableHistorySharing(convId);
                 });
 

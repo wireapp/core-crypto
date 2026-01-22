@@ -45,8 +45,8 @@ describe("epoch observer", () => {
                 const cc = window.ensureCcDefined(clientName);
 
                 // create the conversation in one transaction
-                await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
+                await cc.newTransaction(async (ctx) => {
+                    const [credentialRef] = await ctx.getFilteredCredentials({
                         credentialType: window.ccModule.CredentialType.Basic,
                     });
                     await ctx.createConversation(conv_id, credentialRef!);
@@ -56,7 +56,7 @@ describe("epoch observer", () => {
                 await cc.registerEpochObserver(observer);
 
                 // in another transaction, change the epoch
-                await cc.transaction(async (ctx) => {
+                await cc.newTransaction(async (ctx) => {
                     await ctx.updateKeyingMaterial(conv_id);
                 });
 

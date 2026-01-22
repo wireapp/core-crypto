@@ -12,44 +12,6 @@ afterEach(async () => {
 });
 
 describe("core crypto errors", () => {
-    it("should build correctly when constructed manually", async () => {
-        const alice = crypto.randomUUID();
-        await ccInit(alice);
-        const result = await browser.execute(async () => {
-            const CoreCryptoError = window.ccModule.CoreCryptoError;
-            const ErrorType = window.ccModule.ErrorType;
-            const ProteusErrorType = window.ccModule.ProteusErrorType;
-            const isProteusSessionNotFoundError =
-                window.ccModule.isProteusSessionNotFoundError;
-            const richErrorJSON = {
-                error_name: "ErrorTest",
-                message: "Hello world",
-                error_stack: ["test"],
-                type: ErrorType.Proteus,
-                context: {
-                    type: ProteusErrorType.SessionNotFound,
-                    context: {
-                        errorCode: 102,
-                    },
-                },
-            };
-
-            const testStr = JSON.stringify(richErrorJSON);
-
-            const e = new Error(testStr);
-            const ccErr = CoreCryptoError.fromStdError(e);
-            const ccErr2 = CoreCryptoError.build(e.message);
-
-            return {
-                proteusErrorCodeIsCorrect:
-                    isProteusSessionNotFoundError(ccErr) &&
-                    isProteusSessionNotFoundError(ccErr2) &&
-                    ccErr.context.context["errorCode"] === 102,
-            };
-        });
-        expect(result.proteusErrorCodeIsCorrect).toBe(true);
-    });
-
     it("should build correctly when constructed by cc", async () => {
         const alice = crypto.randomUUID();
         const convId = crypto.randomUUID();
@@ -66,16 +28,17 @@ describe("core crypto errors", () => {
                 const conversationId = new window.ccModule.ConversationId(
                     conversationIdBuffer
                 );
-                const isMlsConversationAlreadyExistsError =
-                    window.ccModule.isMlsConversationAlreadyExistsError;
                 const CoreCryptoError = window.ccModule.CoreCryptoError;
+                const MlsError = window.ccModule.MlsError;
 
                 try {
-                    await cc.transaction(async (cx) => {
-                        const [credentialRef] = await cx.findCredentials({
-                            credentialType:
-                                window.ccModule.CredentialType.Basic,
-                        });
+                    await cc.newTransaction(async (cx) => {
+                        const [credentialRef] = await cx.getFilteredCredentials(
+                            {
+                                credentialType:
+                                    window.ccModule.CredentialType.Basic,
+                            }
+                        );
                         await cx.createConversation(
                             conversationId,
                             credentialRef!
@@ -85,21 +48,18 @@ describe("core crypto errors", () => {
                         errorWasThrown: false,
                     };
                 } catch (err) {
-                    if (isMlsConversationAlreadyExistsError(err)) {
+                    if (
+                        CoreCryptoError.Mls.instanceOf(err) &&
+                        MlsError.ConversationAlreadyExists.instanceOf(
+                            err.inner.mlsError
+                        )
+                    ) {
                         const conversationIdFromError = new Uint8Array(
-                            err.context.context.conversationId
+                            err.inner.mlsError.inner.conversationId
                         );
-                        const errorSerialized = JSON.stringify(err);
-                        const standardError = new Error(errorSerialized);
-                        const errorDeserialized =
-                            CoreCryptoError.fromStdError(standardError);
                         return {
                             errorWasThrown: true,
                             isCorrectInstance: true,
-                            errorTypeSurvivesSerialization:
-                                isMlsConversationAlreadyExistsError(
-                                    errorDeserialized
-                                ),
                             errorConvIdMatches:
                                 JSON.stringify(conversationIdFromError) ===
                                 JSON.stringify(
@@ -110,8 +70,6 @@ describe("core crypto errors", () => {
                         return {
                             errorWasThrown: true,
                             isCorrectInstance: false,
-                            errorTypeSurvivesSerialization: false,
-                            stackExsists: false,
                             errorConvIdMatches: false,
                         };
                     }
@@ -122,7 +80,6 @@ describe("core crypto errors", () => {
         );
         expect(result.errorWasThrown).toBe(true);
         expect(result.isCorrectInstance).toBe(true);
-        expect(result.errorTypeSurvivesSerialization).toBe(true);
         expect(result.errorConvIdMatches).toBe(true);
     });
 
@@ -162,22 +119,23 @@ describe("core crypto errors", () => {
                 const conversationId = new window.ccModule.ConversationId(
                     new TextEncoder().encode(convId).buffer
                 );
-                const isMlsMessageRejectedError =
-                    window.ccModule.isMlsMessageRejectedError;
-
+                const CoreCryptoError = window.ccModule.CoreCryptoError;
+                const MlsError = window.ccModule.MlsError;
                 try {
-                    await cc.transaction(async (cx) => {
+                    await cc.newTransaction(async (cx) => {
                         await cx.updateKeyingMaterial(conversationId);
                     });
                     return {
                         errorWasThrown: false,
                     };
                 } catch (err) {
-                    return isMlsMessageRejectedError(err)
+                    return CoreCryptoError.Mls.instanceOf(err) &&
+                        MlsError.MessageRejected.instanceOf(err.inner.mlsError)
                         ? {
                               errorWasThrown: true,
                               errorTypeAndReasonMatch:
-                                  "just testing" === err.context.context.reason,
+                                  "just testing" ===
+                                  err.inner.mlsError.inner.reason,
                           }
                         : {
                               errorWasThrown: true,
@@ -194,19 +152,18 @@ describe("core crypto errors", () => {
     });
 });
 
-it("should build correctly when constructed by wasm bindgen", async () => {
+it("should build correctly when constructed by ubrn", async () => {
     const alice = crypto.randomUUID();
     const convId = crypto.randomUUID();
     await ccInit(alice);
     const result = await browser.execute(
         async (clientName, convId) => {
             const cc = window.ensureCcDefined(clientName);
-            const CoreCryptoError = window.ccModule.CoreCryptoError;
 
             try {
-                await cc.transaction(async (cx) => {
+                await cc.newTransaction(async (cx) => {
                     // pass in a string argument instead of a `ConversationId` instance
-                    const [credentialRef] = await cx.findCredentials({
+                    const [credentialRef] = await cx.getFilteredCredentials({
                         credentialType: window.ccModule.CredentialType.Basic,
                     });
                     await cx.createConversation(
@@ -218,17 +175,10 @@ it("should build correctly when constructed by wasm bindgen", async () => {
                     errorWasThrown: false,
                 };
             } catch (err) {
-                const ccErr = CoreCryptoError.fromStdError(err as Error);
-
-                const errorSerialized = JSON.stringify(err);
-                const standardError = new Error(errorSerialized);
-                const errorDeserialized =
-                    CoreCryptoError.fromStdError(standardError);
                 return {
                     errorWasThrown: true,
-                    isCorrectInstance: ccErr instanceof CoreCryptoError,
-                    errorTypeSurvivesSerialization:
-                        errorDeserialized instanceof CoreCryptoError,
+                    isCorrectInstance: Error.isError(err),
+                    message: Error.isError(err) && err.message,
                 };
             }
         },
@@ -238,7 +188,7 @@ it("should build correctly when constructed by wasm bindgen", async () => {
 
     expect(result.errorWasThrown).toBe(true);
     expect(result.isCorrectInstance).toBe(true);
-    expect(result.errorTypeSurvivesSerialization).toBe(true);
+    expect(result.message).toBe("Cannot lower this object to a pointer");
 });
 
 describe("Error type mapping", () => {
@@ -255,16 +205,21 @@ describe("Error type mapping", () => {
                     new TextEncoder().encode(conversationId).buffer
                 );
                 try {
-                    await cc.transaction(async (ctx) => {
-                        const [credentialRef] = await ctx.findCredentials({
-                            credentialType:
-                                window.ccModule.CredentialType.Basic,
-                        });
+                    await cc.newTransaction(async (ctx) => {
+                        const [credentialRef] =
+                            await ctx.getFilteredCredentials({
+                                credentialType:
+                                    window.ccModule.CredentialType.Basic,
+                            });
                         await ctx.createConversation(cid, credentialRef!);
                     });
                 } catch (e) {
-                    return window.ccModule.isMlsConversationAlreadyExistsError(
-                        e
+                    return (
+                        window.ccModule.CoreCryptoError.Mls.hasInner(e) &&
+                        window.ccModule.MlsError.ConversationAlreadyExists.instanceOf(
+                            e.inner.mlsError
+                        ) &&
+                        e.inner.mlsError.inner.conversationId !== undefined
                     );
                 }
                 return false;

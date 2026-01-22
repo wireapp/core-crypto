@@ -35,8 +35,8 @@ export async function ccNew() {
 
     window.CoreCrypto = CoreCrypto;
     window.cc = await window.CoreCrypto.init(database);
-    await window.cc.transaction(async (ctx) => {
-        await ctx.mlsInit(clientId, ciphersuites, window.deliveryService);
+    await window.cc.newTransaction(async (ctx) => {
+        await ctx.mlsInitialize(clientId, ciphersuites, window.deliveryService);
         for (const ciphersuite of ciphersuites) {
             await ctx.addCredential(credentialBasic(ciphersuite, clientId));
         }
@@ -59,8 +59,8 @@ export async function ccNew() {
 }
 
 export async function getKeypackage() {
-    const kp = await window.cc.transaction(async (ctx) => {
-        const credentials = await ctx.findCredentials({ ciphersuite: window.ciphersuite, credentialType: window.credentialType });
+    const kp = await window.cc.newTransaction(async (ctx) => {
+        const credentials = await ctx.getFilteredCredentials({ ciphersuite: window.ciphersuite, credentialType: window.credentialType });
         const credential = credentials[0]
         return await ctx.generateKeypackage(credential)
     });
@@ -75,13 +75,13 @@ export async function addClient() {
     const keyPackage = new Keypackage(Uint8Array.from(Object.values(kp)).buffer);
 
     if (!window.cc.conversationExists(conversationId)) {
-        await window.cc.transaction(async (ctx) => {
-            const credentials = await ctx.findCredentials({ ciphersuite: window.ciphersuite, credentialType: window.credentialType });
+        await window.cc.newTransaction(async (ctx) => {
+            const credentials = await ctx.getFilteredCredentials({ ciphersuite: window.ciphersuite, credentialType: window.credentialType });
             const credential = credentials[0]
             await ctx.createConversation(conversationId, credential)
         });
     }
-    await window.cc.transaction((ctx) =>
+    await window.cc.newTransaction((ctx) =>
         ctx.addClientsToConversation(conversationId, [keyPackage]));
 }
 
@@ -90,7 +90,7 @@ export async function kickClient() {
     const [cId, clId] = arguments;
     const conversationId = new ConversationId(Uint8Array.from(Object.values(cId)).buffer);
     const clientId = new ClientId(Uint8Array.from(Object.values(clId)).buffer);
-    await window.cc.transaction((ctx) =>
+    await window.cc.newTransaction((ctx) =>
         ctx.removeClientsFromConversation(conversationId, [clientId]));
 }
 
@@ -99,7 +99,7 @@ export async function processWelcome() {
     const [welcome] = arguments;
     const welcomeMessage = new Welcome(Uint8Array.from(Object.values(welcome)).buffer);
 
-    const { id } = await window.cc.transaction((ctx) =>
+    const { id } = await window.cc.newTransaction((ctx) =>
         ctx.processWelcomeMessage(welcomeMessage));
     return new Uint8Array(id.copyBytes());
 }
@@ -110,7 +110,7 @@ export async function encryptMessage() {
     const conversationId = new ConversationId(Uint8Array.from(Object.values(cId)).buffer);
     const message = Uint8Array.from(Object.values(cleartext)).buffer;
 
-    return new Uint8Array(await window.cc.transaction((ctx) =>
+    return new Uint8Array(await window.cc.newTransaction((ctx) =>
         ctx.encryptMessage(conversationId, message)));
 }
 
@@ -120,7 +120,7 @@ export async function decryptMessage() {
     const conversationId = new ConversationId(Uint8Array.from(Object.values(cId)).buffer);
     const encryptedMessage = Uint8Array.from(Object.values(encMessage)).buffer;
 
-    const { message } = await window.cc.transaction((ctx) =>
+    const { message } = await window.cc.newTransaction((ctx) =>
         ctx.decryptMessage(conversationId, encryptedMessage)
     );
     return new Uint8Array(message);

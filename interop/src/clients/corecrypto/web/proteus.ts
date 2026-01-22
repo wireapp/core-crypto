@@ -17,14 +17,14 @@ declare global {
 }
 
 export async function proteusInit() {
-    await window.cc.transaction((ctx) =>
+    await window.cc.newTransaction((ctx) =>
         ctx.proteusInit()
     );
 }
 
 export async function getPrekey() {
     const [prekeyId] = arguments;
-    return new Uint8Array(await window.cc.transaction((ctx) =>
+    return new Uint8Array(await window.cc.newTransaction((ctx) =>
         ctx.proteusNewPrekey(prekeyId)
     ));
 }
@@ -32,7 +32,7 @@ export async function getPrekey() {
 export async function sessionFromPrekey() {
     const [sessionId, prekey] = arguments;
     const prekeyBuffer = Uint8Array.from(Object.values(prekey)).buffer;
-    await window.cc.transaction((ctx) =>
+    await window.cc.newTransaction((ctx) =>
         ctx.proteusSessionFromPrekey(sessionId, prekeyBuffer)
     );
 }
@@ -40,7 +40,7 @@ export async function sessionFromPrekey() {
 export async function sessionFromMessage() {
     const [sessionId, message] = arguments;
     const messageBuffer = Uint8Array.from(Object.values(message)).buffer;
-    return new Uint8Array(await window.cc.transaction((ctx) =>
+    return new Uint8Array(await window.cc.newTransaction((ctx) =>
         ctx.proteusSessionFromMessage(sessionId, messageBuffer)
     ));
 }
@@ -48,7 +48,7 @@ export async function sessionFromMessage() {
 export async function encrypt() {
     const [sessionId, plaintext] = arguments;
     const plaintextBuffer = Uint8Array.from(Object.values(plaintext)).buffer;
-    return new Uint8Array(await window.cc.transaction((ctx) =>
+    return new Uint8Array(await window.cc.newTransaction((ctx) =>
         ctx.proteusEncrypt(sessionId, plaintextBuffer)
     ));
 }
@@ -56,7 +56,7 @@ export async function encrypt() {
 export async function decrypt() {
     const [sessionId, ciphertext] = arguments;
     const ciphertextBuffer = Uint8Array.from(Object.values(ciphertext)).buffer;
-    return new Uint8Array(await window.cc.transaction((ctx) =>
+    return new Uint8Array(await window.cc.newTransaction((ctx) =>
         ctx.proteusDecrypt(sessionId, ciphertextBuffer)
     ));
 }

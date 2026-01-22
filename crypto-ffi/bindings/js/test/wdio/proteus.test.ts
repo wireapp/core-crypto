@@ -23,8 +23,8 @@ describe("proteus", () => {
         const result = await browser.execute(async (clientName) => {
             const cc = window.ensureCcDefined(clientName);
             const lastResortPrekeyId =
-                window.ccModule.CoreCrypto.proteusLastResortPrekeyId();
-            const [prekey1, prekey2] = await cc.transaction(async (ctx) => {
+                window.ccModule.proteusLastResortPrekeyId();
+            const [prekey1, prekey2] = await cc.newTransaction(async (ctx) => {
                 const prekey1 = await ctx.proteusLastResortPrekey();
                 const prekey2 = await ctx.proteusLastResortPrekey();
                 return [prekey1, prekey2];
@@ -96,7 +96,7 @@ describe("proteus", () => {
         ).rejects.toThrow(
             // wdio wraps the error and prepends the original message with
             // the error type as prefix
-            new Error("Error: ProteusError.Other")
+            new Error("Error: CoreCryptoError.Proteus")
         );
     });
 });
