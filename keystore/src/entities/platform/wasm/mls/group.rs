@@ -6,8 +6,8 @@ use wasm_bindgen::JsValue;
 use crate::{
     CryptoKeystoreResult,
     connection::storage::WasmStorageWrapper,
-    entities::{ParentGroupId, PersistedMlsGroup, PersistedMlsGroupExt},
-    traits::{BorrowPrimaryKey as _, Decryptable, Decrypting as _, EntityBase as _, SearchableEntity},
+    entities::{ParentGroupId, PersistedMlsGroup},
+    traits::{Decryptable, Decrypting as _, EntityBase as _, SearchableEntity},
 };
 
 #[async_trait(?Send)]
@@ -68,17 +68,5 @@ impl<'a> SearchableEntity<ParentGroupId<'a>> for PersistedMlsGroup {
                 entities.into_iter().map(decrypt_mls_group).collect()
             }
         }
-    }
-}
-
-#[async_trait(?Send)]
-impl PersistedMlsGroupExt for PersistedMlsGroup {
-    fn parent_id(&self) -> Option<&[u8]> {
-        self.parent_id.as_deref()
-    }
-
-    async fn child_groups(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
-        let parent_id = self.borrow_primary_key().into();
-        Self::find_all_matching(conn, &parent_id).await
     }
 }

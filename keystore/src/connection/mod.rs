@@ -15,7 +15,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 pub use self::platform::*;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
-    entities::{MlsPendingMessage, PersistedMlsGroupExt},
+    entities::{MlsPendingMessage, PersistedMlsGroup},
     traits::{
         BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase,
         KeyType,
@@ -291,11 +291,7 @@ impl Database {
         Ok(())
     }
 
-    pub async fn child_groups<'a, E>(&self, entity: E) -> CryptoKeystoreResult<Vec<E>>
-    where
-        E: Clone + Entity + EntityDatabaseMutation<'a> + BorrowPrimaryKey + PersistedMlsGroupExt + Send + Sync,
-        for<'pk> &'pk <E as BorrowPrimaryKey>::BorrowedPrimaryKey: KeyType,
-    {
+    pub async fn child_groups(&self, entity: PersistedMlsGroup) -> CryptoKeystoreResult<Vec<PersistedMlsGroup>> {
         let mut conn = self.conn().await?;
         let persisted_records = entity.child_groups(conn.deref_mut()).await?;
 
