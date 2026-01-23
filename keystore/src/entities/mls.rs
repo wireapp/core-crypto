@@ -61,23 +61,7 @@ where
         Self::get(conn, &parent_id).await
     }
 
-    async fn child_groups(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
-        // A perfect opportunity for refactoring in WPB-22945
-        // when we do that, we no longer need varying implementations according to wasm or not,
-        // so both `parent_group` and this method should just be implemented directly on `PersistedMlsGroup`.
-        let entities = Self::load_all(conn).await?;
-
-        // for whatever reason rustc needs each of these distinct bindings to prove to itself that the lifetimes work
-        // out
-        let id = self.borrow_primary_key();
-        let id = id.bytes();
-        let id = id.as_ref();
-
-        Ok(entities
-            .into_iter()
-            .filter(|entity| entity.parent_id().map(|parent_id| parent_id == id).unwrap_or_default())
-            .collect())
-    }
+    async fn child_groups(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>>;
 }
 
 /// Entity representing a temporarily persisted `MlsGroup`
