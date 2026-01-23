@@ -20,7 +20,7 @@ internal class E2EITest : HasMockDeliveryService() {
         setupMocks()
     }
 
-    @Ignore("Temporarily broken until PKI environment is decoupled from session initialization implemented with WPB-19578")
+    @Ignore("Temporarily broken until PKI environment is decoupled from session initialization implemented with WPB-22816")
     @Test
     fun sample_e2ei_enrollment_should_succeed() = runTest {
         val aliceId = genClientId()

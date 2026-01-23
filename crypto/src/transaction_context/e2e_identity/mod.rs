@@ -171,7 +171,7 @@ mod tests {
     };
 
     // TODO: This test has to be disabled because of the session rewrite. We have to create a session first right now.
-    // It must be enabled and working again with WPB-19578.
+    // It must be enabled and working again with WPB-22816.
     #[ignore]
     #[apply(all_cred_cipher)]
     async fn e2e_identity_should_work(mut case: TestContext) {
