@@ -85,7 +85,6 @@ export class CoreCryptoContext extends CoreCryptoContextFfi {
         return new E2eiEnrollment(e2ei);
     }
 
-
     /**
      * Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ;
      * that means he cannot initialize with a Basic credential
@@ -94,15 +93,28 @@ export class CoreCryptoContext extends CoreCryptoContextFfi {
      * @param certificateChain - the raw response from ACME server
      * @returns a MlsClient initialized with only a x509 credential
      */
-    async e2eiMlsInitOnly(
-        enrollment: E2eiEnrollment,
+    async e2eiMlsInitializeOnly(
+        enrollment: E2eiEnrollmentInterface,
         certificateChain: string,
         transport: MlsTransport
     ): Promise<CredentialRefInterface> {
-        return await this.#ctx.e2eiMlsInitOnly(
-            enrollment.inner(),
+        return await super.e2eiMlsInitOnly(
+            enrollment,
             certificateChain,
             mlsTransportToFfi(transport)
+        );
+    }
+
+    /** @internal */
+    async e2eiMlsInitOnly(
+        enrollment: E2eiEnrollmentInterface,
+        certificateChain: string,
+        transport: CoreCryptoFfiTypes.MlsTransport
+    ): Promise<CredentialRefInterface> {
+        return await super.e2eiMlsInitOnly(
+            enrollment,
+            certificateChain,
+            transport
         );
     }
 
