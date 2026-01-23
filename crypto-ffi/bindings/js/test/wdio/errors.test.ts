@@ -11,6 +11,12 @@ afterEach(async () => {
     await teardown();
 });
 
+/*
+ * Most if not all tests in this module violate the "don't test the library" principle. However, they're also showing
+ * how to access the errors we're throwing, which isn't trivial (at least not for someone unfamiliar with TS typeguards).
+ * If the access pattern changes, we want to notice so that we can document the migration for library consumers.
+ */
+
 describe("core crypto errors", () => {
     it("should build correctly when constructed by cc", async () => {
         const alice = crypto.randomUUID();
