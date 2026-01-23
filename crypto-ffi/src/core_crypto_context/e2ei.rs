@@ -18,9 +18,9 @@ impl CoreCryptoContext {
         client_id: String,
         display_name: String,
         handle: String,
-        team: Option<String>,
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
+        team: Option<String>,
     ) -> CoreCryptoResult<E2eiEnrollment> {
         self.inner
             .e2ei_new_enrollment(
