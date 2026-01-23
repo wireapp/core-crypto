@@ -68,7 +68,7 @@ struct MlsTransportShim(Arc<dyn MlsTransport>);
 impl std::fmt::Debug for MlsTransportShim {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("MlsTransportShim")
-            .field(&"Arc<dyn MlsTransport>")
+            .field(&fmt::from_fn(|f| write!(f, "{:p}", Arc::as_ptr(&self.0))))
             .finish()
     }
 }
