@@ -2,8 +2,8 @@ use async_trait::async_trait;
 
 use crate::{
     CryptoKeystoreResult,
-    entities::{ParentGroupId, PersistedMlsGroup, PersistedMlsGroupExt},
-    traits::{BorrowPrimaryKey, SearchableEntity},
+    entities::{ParentGroupId, PersistedMlsGroup},
+    traits::SearchableEntity,
 };
 
 #[async_trait]
@@ -25,17 +25,5 @@ impl<'a> SearchableEntity<ParentGroupId<'a>> for PersistedMlsGroup {
                 Ok(PersistedMlsGroup { id, state, parent_id })
             })?
             .collect::<Result<_, _>>()
-    }
-}
-
-#[async_trait]
-impl PersistedMlsGroupExt for PersistedMlsGroup {
-    fn parent_id(&self) -> Option<&[u8]> {
-        self.parent_id.as_deref()
-    }
-
-    async fn child_groups(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
-        let parent_id = self.borrow_primary_key().into();
-        Self::find_all_matching(conn, &parent_id).await
     }
 }

@@ -1,15 +1,11 @@
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-// This trait import is required for the `Entity` macro to work properly.
-// Apparently its use in the macro is hidden from the code which checks whether
-// it's being used.
-// Also we can't use an `expect` attribute here because of the unfulfilled expectation,
-// which is proper as we do in fact use it, so... it's a bit of a mess.
-#[allow(unused_imports)]
-use crate::traits::EntityBase as _;
+// This import is required for the `Entity` macro to work properly.
+#[cfg(not(target_family = "wasm"))]
+use crate::CryptoKeystoreError;
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, KeyType, OwnedKeyType, PrimaryKey},
+    CryptoKeystoreResult,
+    traits::{EntityBase, EntityGetBorrowed as _, KeyType, OwnedKeyType, PrimaryKey, SearchableEntity as _},
 };
 
 /// This type exists so that we can efficiently search for the children of a given group.
@@ -43,25 +39,27 @@ pub struct PersistedMlsGroup {
     pub parent_id: Option<Vec<u8>>,
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait PersistedMlsGroupExt: Entity + BorrowPrimaryKey
-where
-    for<'a> &'a <Self as BorrowPrimaryKey>::BorrowedPrimaryKey: KeyType,
-{
-    fn parent_id(&self) -> Option<&[u8]>;
-
-    async fn parent_group(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>> {
-        let Some(parent_id) = self.parent_id() else {
+impl PersistedMlsGroup {
+    /// Get the parent group of this group.
+    pub async fn parent_group(
+        &self,
+        conn: &mut <Self as EntityBase>::ConnectionType,
+    ) -> CryptoKeystoreResult<Option<Self>> {
+        let Some(parent_id) = self.parent_id.as_deref() else {
             return Ok(None);
         };
 
-        let parent_id = OwnedKeyType::from_bytes(parent_id)
-            .ok_or(CryptoKeystoreError::InvalidPrimaryKeyBytes(Self::COLLECTION_NAME))?;
-        Self::get(conn, &parent_id).await
+        Self::get_borrowed(conn, parent_id).await
     }
 
-    async fn child_groups(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>>;
+    /// Get all children of this group.
+    pub async fn child_groups(
+        &self,
+        conn: &mut <Self as EntityBase>::ConnectionType,
+    ) -> CryptoKeystoreResult<Vec<Self>> {
+        let parent_id = self.id.as_slice();
+        Self::find_all_matching(conn, &parent_id.into()).await
+    }
 }
 
 /// Entity representing a temporarily persisted `MlsGroup`

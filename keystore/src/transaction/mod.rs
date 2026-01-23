@@ -10,7 +10,7 @@ use itertools::Itertools;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     connection::{Database, KeystoreDatabaseConnection},
-    entities::{MlsPendingMessage, MlsPendingMessagePrimaryKey, PersistedMlsGroupExt},
+    entities::{MlsPendingMessage, MlsPendingMessagePrimaryKey, PersistedMlsGroup},
     traits::{BorrowPrimaryKey, Entity, EntityBase as _, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType},
     transaction::dynamic_dispatch::EntityId,
 };
@@ -122,22 +122,19 @@ impl KeystoreTransaction {
         self.remove_by_entity_id::<E>(entity_id).await
     }
 
-    pub(crate) async fn child_groups<E>(
+    pub(crate) async fn child_groups(
         &self,
-        entity: E,
-        persisted_records: impl IntoIterator<Item = E>,
-    ) -> CryptoKeystoreResult<Vec<E>>
-    where
-        E: Clone + Entity + BorrowPrimaryKey + PersistedMlsGroupExt + Send + Sync,
-        for<'pk> &'pk <E as BorrowPrimaryKey>::BorrowedPrimaryKey: KeyType,
-    {
+        entity: PersistedMlsGroup,
+        persisted_records: impl IntoIterator<Item = PersistedMlsGroup>,
+    ) -> CryptoKeystoreResult<Vec<PersistedMlsGroup>> {
         // First get all raw groups from the cache, then filter by their parent id
-        let cached_records = self.find_all_in_cache::<E>().await;
+        let cached_records = self.find_all_in_cache::<PersistedMlsGroup>().await;
         let cached_records = cached_records
             .iter()
             .filter(|maybe_child| {
                 maybe_child
-                    .parent_id()
+                    .parent_id
+                    .as_deref()
                     .map(|parent_id| parent_id == entity.borrow_primary_key().bytes().as_ref())
                     .unwrap_or_default()
             })
