@@ -66,6 +66,30 @@ pub(crate) async fn open_and_migrate(name: &str, key: &DatabaseKey) -> CryptoKey
     }
 }
 
+/// Open an existing idb database with the given name, and migrate it if needed.
+#[cfg(test)]
+async fn open_at(name: &str, key: &DatabaseKey, target_version: u32) -> Database {
+    let factory = Factory::new().unwrap();
+    let existing_db = factory.open(name, None).unwrap().await.unwrap();
+
+    let mut version = existing_db.version().unwrap();
+    if version > target_version {
+        panic!("version is ahead of target version");
+    } else if version == target_version {
+        // Migration is not needed, just return existing db
+        existing_db
+    } else {
+        // Migration is needed
+        existing_db.close();
+
+        while version < target_version {
+            version = do_migration_step(version, name, key).await.unwrap();
+        }
+
+        factory.open(name, Some(target_version)).unwrap().await.unwrap()
+    }
+}
+
 /// The `from` argument represents the version the migration is performed from the function will
 /// return the version number of the DB resulting from the migration.
 ///
@@ -96,18 +120,16 @@ mod tests {
     use std::sync::LazyLock;
 
     use idb::builder::{DatabaseBuilder, ObjectStoreBuilder};
-    use openmls::prelude::{Credential, TlsSerializeTrait as _};
-    use openmls_basic_credential::SignatureKeyPair;
     use rand::Rng as _;
     use serde::Serialize as _;
+    use wasm_bindgen::JsValue;
     use wasm_bindgen_test::wasm_bindgen_test;
 
     use super::*;
     use crate::{
-        connection::{platform::wasm::WasmStorageTransaction, storage::WasmStorageWrapper},
-        entities::StoredCredential,
-        migrations::{StoredSignatureKeypair, V5Credential},
-        traits::{Encrypting as _, Entity, EntityBase as _, EntityDatabaseMutation as _},
+        connection::storage::WasmStorageWrapper,
+        entities::{ProteusPrekey, StoredCredential},
+        traits::{Entity, EntityBase as _, EntityDatabaseMutation as _},
     };
 
     pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(DatabaseKey::generate);
@@ -162,116 +184,6 @@ mod tests {
         let migrated_db = crate::Database::open(crate::ConnectionType::Persistent(name), &TEST_ENCRYPTION_KEY)
             .await
             .expect("completing migrations");
-
-        migrated_db.close().await.expect("closing connection");
-        let factory = Factory::new().expect("factory");
-        factory.delete(name).expect("delete request").await.expect("wiping db");
-    }
-
-    #[wasm_bindgen_test]
-    pub async fn v5_schema_allows_1_cred_per_session() {
-        let name = "test";
-        let factory = Factory::new().expect("factory");
-        factory.delete(name).expect("delete request").await.expect("wiping db");
-
-        let test_builder = |version| -> DatabaseBuilder {
-            v3::get_builder(name)
-                .add_object_store(ObjectStoreBuilder::new("regression_check").auto_increment(false))
-                .version(version)
-        };
-
-        let idb = test_builder(DB_VERSION_3).build().await.expect("DB VERSION 3");
-        idb.close();
-
-        crate::Database::migrate_db_key_type_to_bytes(name, "test1234", &TEST_ENCRYPTION_KEY)
-            .await
-            .unwrap();
-
-        let builder = v5::get_builder(name);
-        let conn_v5 = crate::Database::migration_connection(builder, &TEST_ENCRYPTION_KEY)
-            .await
-            .expect("DB_VERSION_5");
-
-        const LEN_RANGE: std::ops::Range<usize> = 1024..8192;
-
-        let mut rng = rand::thread_rng();
-
-        crate::Database::migration_transaction(conn_v5, async |tx| {
-            use crate::entities::StoredCredential;
-
-            let mut random_vec = || {
-                let len = rng.gen_range(LEN_RANGE);
-                let v: Vec<u8> = (0..len).map(|_| rng.r#gen()).collect();
-                v
-            };
-
-            let session_id = random_vec();
-            let cred = Credential::new_basic(session_id);
-            let cred_a = V5Credential {
-                id: cred.identity().to_vec(),
-                credential: cred.tls_serialize_detached().unwrap(),
-                created_at: 2026,
-            };
-
-            let sign_key = SignatureKeyPair::from_raw(
-                openmls::prelude::SignatureScheme::ECDSA_SECP256R1_SHA256,
-                random_vec(),
-                random_vec(),
-            );
-
-            let sign_key_a = StoredSignatureKeypair {
-                signature_scheme: 0x0403,
-                pk: sign_key.to_public_vec(),
-                keypair: sign_key.tls_serialize_detached().unwrap(),
-                credential_id: cred_a.id.clone(),
-            };
-
-            // Try creating a duplicate of this credential (we can't meaningfully do this for a basic V5Credential - one
-            // could argue that the fact makes this test pointless. Probably it should be rewritten with an x509
-            // credential).
-            let mut cred_b = cred_a.clone();
-            cred_b.created_at += 1;
-
-            let credentials = [cred_a, cred_b];
-            match tx {
-                WasmStorageTransaction::Persistent { tx, cipher } => {
-                    let db_version = tx.database().version().unwrap();
-                    assert_eq!(db_version, DB_VERSION_5);
-                    let serializer = serde_wasm_bindgen::Serializer::json_compatible();
-                    let store = tx.object_store(StoredCredential::COLLECTION_NAME)?;
-                    for credential in credentials {
-                        // Save credentials with session id as key
-                        let key = &js_sys::Uint8Array::from(credential.id.as_slice()).into();
-                        let js_value = credential.encrypt(cipher)?.serialize(&serializer)?;
-                        store.put(&js_value, Some(key))?.await?;
-                    }
-
-                    let store = tx.object_store(StoredSignatureKeypair::COLLECTION_NAME)?;
-                    let key = &js_sys::Uint8Array::from(sign_key_a.pk.as_slice()).into();
-                    let js_value = sign_key_a.encrypt(cipher)?.serialize(&serializer)?;
-                    store.put(&js_value, Some(key))?.await?;
-                }
-                WasmStorageTransaction::InMemory { .. } => {}
-            }
-
-            Ok(())
-        })
-        .await
-        .expect("inserting test data");
-
-        let migrated_db = crate::Database::open(crate::ConnectionType::Persistent(name), &TEST_ENCRYPTION_KEY)
-            .await
-            .expect("completing migrations");
-        let mut conn = migrated_db.conn().await.unwrap();
-        let count = <StoredCredential as Entity>::count(&mut conn)
-            .await
-            .expect("credential count");
-
-        assert_eq!(
-            count, 1,
-            "saving two different credentials by the same session id will result in a single credential"
-        );
-        drop(conn);
 
         migrated_db.close().await.expect("closing connection");
         let factory = Factory::new().expect("factory");
@@ -341,5 +253,85 @@ mod tests {
         migrated_db.close().await.expect("closing connection");
         let factory = Factory::new().expect("factory");
         factory.delete(name).expect("delete request").await.expect("wiping db");
+    }
+
+    #[wasm_bindgen_test]
+    pub async fn data_is_preserved_through_migrations() {
+        const DB_NAME: &str = "test";
+        // this entity type is simple, stable from v0 through v10, and we do not expect
+        // it to change in the future
+        const COLLECTION_NAME: &str = ProteusPrekey::COLLECTION_NAME;
+
+        // clear the factory before beginning
+        let factory = Factory::new().unwrap();
+        factory.delete(DB_NAME).unwrap().await.unwrap();
+
+        const ENTITY_KEY: u16 = 12345;
+        const ENTITY_VALUE: &[u8] = b"here is a test entity, do not mess with it";
+
+        // put some data into a version 4 database
+        {
+            // version 4 is the earliest version that we natively generate anymore
+            let database = open_at(DB_NAME, &TEST_ENCRYPTION_KEY, DB_VERSION_4).await;
+            let transaction = database
+                .transaction(&[COLLECTION_NAME], idb::TransactionMode::ReadWrite)
+                .unwrap();
+            let object_store = transaction.object_store(COLLECTION_NAME).unwrap();
+
+            let serializer = serde_wasm_bindgen::Serializer::json_compatible();
+
+            // this is structurally similar to a proper proteus prekey, but notice we're skipping
+            // all the encryption/decryption steps as those are irrelevant to the storage feature
+            // under test here
+            let js_key = ENTITY_KEY.into();
+            let js_entity = serde_json::json!({
+                "id": ENTITY_KEY,
+                "prekey": ENTITY_VALUE,
+            })
+            .serialize(&serializer)
+            .unwrap();
+            object_store.put(&js_entity, Some(&js_key)).unwrap();
+
+            transaction.commit().unwrap();
+        }
+
+        // get the same data from a current-version database
+        {
+            let database = open_at(DB_NAME, &TEST_ENCRYPTION_KEY, TARGET_VERSION).await;
+            let transaction = database
+                .transaction(&[COLLECTION_NAME], idb::TransactionMode::ReadOnly)
+                .unwrap();
+            let object_store = transaction.object_store(COLLECTION_NAME).unwrap();
+
+            let value = object_store
+                .get(JsValue::from(ENTITY_KEY))
+                .unwrap()
+                .await
+                .unwrap()
+                .expect("object store contains value at entity key");
+            let value = serde_wasm_bindgen::from_value::<serde_json::Value>(value).unwrap();
+
+            let id = value
+                .get("id")
+                .and_then(serde_json::Value::as_number)
+                .and_then(serde_json::Number::as_u64)
+                .expect("id is present in value") as u16;
+            assert_eq!(id, ENTITY_KEY);
+
+            let prekey = value
+                .get("prekey")
+                .and_then(serde_json::Value::as_array)
+                .expect("prekey is present in value")
+                .iter()
+                .map(|value| {
+                    value
+                        .as_number()
+                        .expect("value is a number")
+                        .as_u64()
+                        .expect("value is an integer") as u8
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(prekey, ENTITY_VALUE);
+        }
     }
 }
