@@ -11,11 +11,12 @@ exports.load = function (app) {
 
     function suppressUniffiWarnings(originalFunc, message, ...args) {
         if (
-            typeof message === "string" &&
-            (message.includes("UniffiAbstractObject.uniffiDestroy") ||
-                message.includes("__type.new") ||
-                message.includes("__type.create") ||
-                message.includes("__type.defaults"))
+            (typeof message === "string" &&
+                (message.includes("UniffiAbstractObject.uniffiDestroy") ||
+                    message.includes("__type.new") ||
+                    message.includes("__type.create") ||
+                    message.includes("__type.defaults"))) ||
+            message.includes("PkiEnvironmentHooksError.__type")
         ) {
             // Ignore these specific ubrn warnings
             return;
