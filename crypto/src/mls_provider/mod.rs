@@ -28,8 +28,10 @@ pub type RawEntropySeed = <rand_chacha::ChaCha20Rng as rand::SeedableRng>::Seed;
 pub struct EntropySeed(RawEntropySeed);
 
 impl EntropySeed {
+    /// The expected length of the entopy seed, in bytes.
     pub const EXPECTED_LEN: usize = std::mem::size_of::<EntropySeed>() / std::mem::size_of::<u8>();
 
+    /// Create an entropy seed from the provided slice.
     pub fn try_from_slice(data: &[u8]) -> MlsProviderResult<Self> {
         if data.len() < Self::EXPECTED_LEN {
             return Err(MlsProviderError::EntropySeedLengthError {
@@ -44,6 +46,7 @@ impl EntropySeed {
         Ok(Self(inner))
     }
 
+    /// Create an entropy seed from the provided raw entropy seed.
     pub fn from_raw(raw: RawEntropySeed) -> Self {
         Self(raw)
     }
@@ -62,6 +65,7 @@ impl std::ops::DerefMut for EntropySeed {
     }
 }
 
+/// The MLS crypto provider
 #[derive(Debug, Clone)]
 pub struct MlsCryptoProvider {
     crypto: RustCrypto,
@@ -83,6 +87,7 @@ impl MlsCryptoProvider {
         }
     }
 
+    /// Construct a crypto provider with the given database and the PKI environment.
     pub fn new_with_pki_env(key_store: Database, pki_env: PkiEnvironmentProvider) -> Self {
         Self {
             key_store,
