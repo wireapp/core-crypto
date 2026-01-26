@@ -35,7 +35,6 @@ futures-util.workspace = true
 hex.workspace = true
 log-reload.workspace = true
 log.workspace = true
-mls-crypto-provider.workspace = true
 obfuscate = { workspace = true, features = ["openmls"] }
 proteus-wasm = { workspace = true, optional = true }
 rmp-serde.workspace = true

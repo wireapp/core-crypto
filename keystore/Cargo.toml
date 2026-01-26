@@ -89,7 +89,6 @@ web-time = "1.1.0"
 wasm-bindgen-test = { workspace = true }
 uuid = { workspace = true, features = ["v4", "js"] }
 openmls = { workspace = true, features = ["crypto-subtle"] }
-mls-crypto-provider.workspace = true
 rstest = "0.26"
 rstest_reuse = "0.7"
 futures-lite = "2.6"
