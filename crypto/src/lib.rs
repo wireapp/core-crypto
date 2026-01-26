@@ -21,6 +21,7 @@ mod group_store;
 pub mod e2e_identity;
 /// MLS Abstraction
 pub mod mls;
+mod mls_provider;
 /// Proteus Abstraction
 #[cfg(feature = "proteus")]
 pub mod proteus;
