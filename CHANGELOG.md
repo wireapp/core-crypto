@@ -4,12 +4,22 @@
 
 ### Features
 
+- added PKI Environment API
+
+  - added `PkiEnvironment` constructed via `createPkiEnvironment(database: Database, hooks: PkiEnvironmentHooks)`
+  - added `PkiEnvironmentHooks` interface which has to be implemented by a client and will be used by CoreCrypto during
+    e2ei flow
+  - added `CoreCrypto.setPkiEnvironment()` to set a PkiEnvironment on a `CoreCrypto` instance
+  - added `CoreCrypto.getPkiEnvironment()` to get the PkiEnvironment of a `CoreCrypto` instance
+
 - added `Database.open(location: String, key: DatabaseKey)` as static methods to construct a persistent database
   instance and `Database.open(key: DatabaseKey)` to construct an in-memory database instance.
 
   Removed default Constructor from swift to align with other language bindings.
 
   Affected platforms: android, ios
+
+- `CoreCrypto.e2ei_is_env_setup()` can't throw anymore and will always return a boolean.
 
 - added `Database.getLocation()` to allow getting the location of a persistent database instance. Returns null if the
   database is in-memory.
