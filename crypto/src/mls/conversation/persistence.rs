@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
 use core_crypto_keystore::{CryptoKeystoreMls as _, entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
-use mls_crypto_provider::Database;
 use openmls::group::{InnerState, MlsGroup};
 
 use super::Result;
-use crate::{ConversationId, KeystoreError, MlsConversation, MlsConversationConfiguration};
+use crate::{ConversationId, KeystoreError, MlsConversation, MlsConversationConfiguration, mls_provider::Database};
 
 impl MlsConversation {
     pub(crate) async fn persist_group_when_changed(&mut self, keystore: &Database, force: bool) -> Result<()> {

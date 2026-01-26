@@ -7,11 +7,10 @@ use async_lock::RwLock;
 use core_crypto::{
     CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, ConnectionType, ConversationId, CoreCrypto,
     Credential as CcCredential, CredentialFindFilters, CredentialRef, CredentialType, Database, DatabaseKey,
-    HistorySecret, MlsCommitBundle, MlsConversationConfiguration, MlsGroupInfoBundle, MlsTransport, MlsTransportData,
-    MlsTransportResponse,
+    HistorySecret, MlsCommitBundle, MlsConversationConfiguration, MlsCryptoProvider, MlsGroupInfoBundle, MlsTransport,
+    MlsTransportData, MlsTransportResponse, RustCrypto,
 };
 use criterion::BenchmarkId;
-use mls_crypto_provider::{MlsCryptoProvider, RustCrypto};
 use openmls::{
     framing::{MlsMessageInBody, MlsMessageOut},
     prelude::{

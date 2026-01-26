@@ -1,10 +1,9 @@
 use core_crypto_keystore::{Sha256Hash, entities::StoredCredential, traits::FetchFromDatabase as _};
-use mls_crypto_provider::Database;
 use openmls::prelude::SignaturePublicKey;
 use tls_codec::Serialize as _;
 
 use super::{Error, Result};
-use crate::{Credential, CredentialRef, KeystoreError};
+use crate::{Credential, CredentialRef, KeystoreError, mls_provider::Database};
 
 impl Credential {
     /// Loads a credential with the given public key from the database.

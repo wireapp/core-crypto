@@ -13,9 +13,10 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     use core_crypto_keystore::entities::StoredCredential;
-    use mls_crypto_provider::MlsCryptoProvider;
     use openmls::prelude::TlsSerializeTrait as _;
     use openmls_traits::OpenMlsCryptoProvider as _;
+
+    use crate::mls_provider::MlsCryptoProvider;
 
     #[apply(all_storage_types)]
     pub async fn can_add_read_delete_credential_openmls_traits(context: KeystoreTestContext) {

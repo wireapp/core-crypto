@@ -7,7 +7,7 @@ use openmls_traits::{
 };
 use spki::{SignatureAlgorithmIdentifier, der::referenced::RefToOwned};
 
-use crate::error::{MlsProviderError, MlsProviderResult};
+use super::error::{MlsProviderError, MlsProviderResult};
 
 #[derive(Debug, Clone, Default)]
 pub struct PkiEnvironmentProvider(Arc<RwLock<Option<wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>>>);
@@ -406,7 +406,7 @@ impl PkiKeypair {
                     .map_err(|_| MlsProviderError::CertificateGenerationError)?,
             ))),
             SignatureScheme::ED25519 => Ok(PkiKeypair::Ed25519(Ed25519PkiKeypair(
-                crate::RustCrypto::normalize_ed25519_key(sk.as_slice())
+                super::RustCrypto::normalize_ed25519_key(sk.as_slice())
                     .map_err(|_| MlsProviderError::CertificateGenerationError)?,
             ))),
             _ => Err(MlsProviderError::UnsupportedSignatureScheme),
@@ -708,18 +708,18 @@ impl PkiKeypair {
     }
 
     pub fn rand_unchecked(alg: SignatureScheme) -> Self {
-        let provider = crate::RustCrypto::default();
+        let provider = super::RustCrypto::default();
         use openmls_traits::crypto::OpenMlsCrypto;
         Self::new(alg, provider.signature_key_gen(alg).unwrap().0).unwrap()
     }
 
-    pub fn rand(alg: SignatureScheme, crypto: &crate::RustCrypto) -> crate::MlsProviderResult<Self> {
+    pub fn rand(alg: SignatureScheme, crypto: &super::RustCrypto) -> super::MlsProviderResult<Self> {
         use openmls_traits::crypto::OpenMlsCrypto as _;
         Self::new(
             alg,
             crypto
                 .signature_key_gen(alg)
-                .map_err(|_| crate::MlsProviderError::UnsufficientEntropy)?
+                .map_err(|_| super::MlsProviderError::UnsufficientEntropy)?
                 .0,
         )
     }

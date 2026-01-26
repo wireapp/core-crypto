@@ -1,7 +1,7 @@
 #![allow(non_snake_case, dead_code, unused_macros, unused_imports)]
 
 use getrandom::getrandom;
-use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
+use crate::mls_provider::{EntropySeed, MlsCryptoProvider};
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
 

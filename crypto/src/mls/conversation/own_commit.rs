@@ -1,4 +1,3 @@
-use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
     ConfirmationTag, ContentType, CredentialWithKey, FramedContentBodyIn, MlsMessageIn, MlsMessageInBody, Sender,
 };
@@ -10,6 +9,7 @@ use crate::{
         crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
         ext::CredentialExt,
     },
+    mls_provider::MlsCryptoProvider,
 };
 
 impl MlsConversation {

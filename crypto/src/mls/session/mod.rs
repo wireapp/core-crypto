@@ -14,7 +14,6 @@ use async_lock::RwLock;
 pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
-use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::{
@@ -23,6 +22,7 @@ use crate::{
         self, HasSessionAndCrypto,
         conversation::{ConversationIdRef, ImmutableConversation},
     },
+    mls_provider::{EntropySeed, MlsCryptoProvider},
 };
 
 /// A MLS Session enables a user device to communicate via the MLS protocol.
@@ -115,7 +115,7 @@ impl Session {
             .map_err(Into::into)
     }
 
-    /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
+    /// see [crate::mls_provider::MlsCryptoProvider::reseed]
     pub async fn reseed(&self, seed: Option<EntropySeed>) -> crate::mls::Result<()> {
         self.crypto_provider
             .reseed(seed)
@@ -144,10 +144,11 @@ impl Session {
 #[cfg(test)]
 mod tests {
     use core_crypto_keystore::{entities::*, traits::FetchFromDatabase as _};
-    use mls_crypto_provider::MlsCryptoProvider;
 
     use super::*;
-    use crate::{KeystoreError, test_utils::*, transaction_context::test_utils::EntitiesCount};
+    use crate::{
+        KeystoreError, mls_provider::MlsCryptoProvider, test_utils::*, transaction_context::test_utils::EntitiesCount,
+    };
 
     impl Session {
         // test functions are not held to the same documentation standard as proper functions

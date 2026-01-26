@@ -5,7 +5,6 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn, prelude::LeafNode};
 
 use super::{Error, Result};
@@ -13,6 +12,7 @@ use crate::{
     MlsConversation, MlsError, MlsProposalRef, RecursiveError, Session,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
+    mls_provider::MlsCryptoProvider,
 };
 
 /// Creating proposals

@@ -5,10 +5,9 @@
 //! and it's wasteful to transfer one across the FFI boundary.
 
 use core_crypto_keystore::{Sha256Hash, entities::StoredCredential, traits::FetchFromDatabase as _};
-use mls_crypto_provider::Database;
 
 use super::{Error, Result};
-use crate::{Credential, CredentialRef, KeystoreError, RecursiveError};
+use crate::{Credential, CredentialRef, KeystoreError, RecursiveError, mls_provider::Database};
 
 impl CredentialRef {
     /// Load the credential which matches this ref from the database.

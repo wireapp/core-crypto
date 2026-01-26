@@ -3,13 +3,12 @@ mod crypto;
 pub mod test_utils;
 
 use core_crypto_keystore::CryptoKeystoreMls as _;
-use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::{OpenMlsCryptoProvider as _, random::OpenMlsRand as _};
 use wire_e2e_identity::{RustyE2eIdentity, prelude::E2eiAcmeAuthorization};
 use zeroize::Zeroize as _;
 
 use super::{EnrollmentHandle, Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
-use crate::{Ciphersuite, ClientId, KeystoreError, MlsError};
+use crate::{Ciphersuite, ClientId, KeystoreError, MlsError, mls_provider::MlsCryptoProvider};
 
 /// Wire end to end identity solution for fetching a x509 certificate which identifies a client.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

@@ -1,10 +1,10 @@
 use itertools::Itertools as _;
-use mls_crypto_provider::PkiKeypair;
 use serde_json::json;
 
 use crate::{
     CertificateBundle, CredentialType, RecursiveError,
     e2e_identity::{E2eiEnrollment, Result, id::QualifiedE2eiClientId},
+    mls_provider::PkiKeypair,
     test_utils::{TestContext, context::TEAM, x509::X509TestChain},
     transaction_context::TransactionContext,
 };

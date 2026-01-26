@@ -10,7 +10,7 @@ mod fixtures;
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
+    use crate::mls_provider::{EntropySeed, MlsCryptoProvider};
     use openmls::prelude::Ciphersuite;
     use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, random::OpenMlsRand, types::HpkeKeyPair};
     use rand::Rng;

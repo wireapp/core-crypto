@@ -1,11 +1,10 @@
-use mls_crypto_provider::PkiKeypair;
 use openmls_basic_credential::SignatureKeyPair as OpenMlsSignatureKeyPair;
 use openmls_traits::types::{Ciphersuite as MlsCiphersuite, SignatureScheme};
 use wire_e2e_identity::prelude::JwsAlgorithm;
 use zeroize::Zeroize;
 
 use super::error::*;
-use crate::{Ciphersuite, MlsError};
+use crate::{Ciphersuite, MlsError, mls_provider::PkiKeypair};
 
 impl TryFrom<Ciphersuite> for JwsAlgorithm {
     type Error = Error;

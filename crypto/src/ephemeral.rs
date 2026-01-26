@@ -24,13 +24,13 @@
 use std::{borrow::Borrow, sync::Arc};
 
 use core_crypto_keystore::{ConnectionType, Database};
-use mls_crypto_provider::{DatabaseKey, MlsCryptoProvider};
 use obfuscate::{Obfuscate, Obfuscated};
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
     Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, CoreCryptoTransportNotImplementedProvider,
     Credential, Error, MlsError, RecursiveError, Result, Session,
+    mls_provider::{DatabaseKey, MlsCryptoProvider},
 };
 
 /// We always instantiate history clients with this prefix in their client id, so

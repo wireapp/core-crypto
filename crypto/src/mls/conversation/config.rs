@@ -3,7 +3,6 @@
 //! Either use [MlsConversationConfiguration] when creating a conversation or [MlsCustomConfiguration]
 //! when joining one by Welcome or external commit
 
-use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
     Capabilities, Credential, CredentialType, ExternalSender, OpenMlsSignaturePublicKey,
     PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY, ProtocolVersion,
@@ -17,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
 use super::Result;
-use crate::{Ciphersuite, MlsError, RecursiveError};
+use crate::{Ciphersuite, MlsError, RecursiveError, mls_provider::MlsCryptoProvider};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;

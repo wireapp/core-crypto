@@ -42,7 +42,6 @@ use std::{
 
 use itertools::Itertools as _;
 use log::trace;
-use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
     group::{MlsGroup, QueuedProposal},
     prelude::{LeafNode, LeafNodeIndex, Proposal, Sender},
@@ -61,6 +60,7 @@ use crate::{
     Ciphersuite, ClientId, ClientIdRef, CredentialRef, CredentialType, E2eiConversationState, LeafError, MlsError,
     RecursiveError, UserId, WireIdentity,
     mls::{HasSessionAndCrypto, Session, credential::ext::CredentialExt as _},
+    mls_provider::MlsCryptoProvider,
 };
 
 /// The base layer for [Conversation].

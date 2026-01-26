@@ -19,7 +19,7 @@ use sha2::{Digest, Sha256, Sha384, Sha512};
 use signature::digest::typenum::Unsigned;
 use tls_codec::SecretVLBytes;
 
-use crate::{EntropySeed, MlsProviderError};
+use super::{EntropySeed, MlsProviderError};
 
 #[derive(Debug, Clone)]
 pub struct RustCrypto {

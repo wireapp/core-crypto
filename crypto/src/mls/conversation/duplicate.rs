@@ -2,11 +2,10 @@
 //! in CoreCrypto so as not to return a decryption error to the client. Remove this when this is used
 //! with a DS guaranteeing exactly once delivery semantics since the following degrades the performances
 
-use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{ContentType, FramedContentBodyIn, Proposal, PublicMessageIn, Sender};
 
 use super::{Error, Result};
-use crate::{MlsConversation, MlsError};
+use crate::{MlsConversation, MlsError, mls_provider::MlsCryptoProvider};
 
 impl MlsConversation {
     pub(crate) fn is_duplicate_message(&self, backend: &MlsCryptoProvider, msg: &PublicMessageIn) -> Result<bool> {

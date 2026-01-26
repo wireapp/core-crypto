@@ -11,7 +11,7 @@ const RAND_ARR_LEN: usize = 128;
 #[cfg(test)]
 mod tests {
     use getrandom::getrandom;
-    use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
+    use crate::mls_provider::{EntropySeed, MlsCryptoProvider};
     use openmls::prelude::Ciphersuite;
     use openmls_traits::{OpenMlsCryptoProvider, random::OpenMlsRand};
     use rand::RngCore as _;

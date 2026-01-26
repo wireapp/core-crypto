@@ -11,11 +11,10 @@
 //! | 1+ pend. Proposal | ❌              | ✅              |
 
 use core_crypto_keystore::entities::StoredEncryptionKeyPair;
-use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use super::Result;
-use crate::{MlsError, Session, mls::MlsConversation};
+use crate::{MlsError, Session, mls::MlsConversation, mls_provider::MlsCryptoProvider};
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {

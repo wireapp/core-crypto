@@ -35,7 +35,6 @@ use async_lock::RwLock;
 pub use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
 #[cfg(test)]
 pub use core_crypto_macros::{dispotent, durable, idempotent};
-pub use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed};
 pub use openmls::{
     group::{MlsGroup, MlsGroupConfig},
     prelude::{
@@ -82,6 +81,7 @@ pub use crate::{
             user_id::UserId,
         },
     },
+    mls_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed, RustCrypto},
     transaction_context::e2e_identity::conversation_state::E2eiConversationState,
 };
 

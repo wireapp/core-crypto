@@ -8,7 +8,6 @@ use async_lock::Mutex;
 use async_lock::{RwLock, RwLockWriteGuardArc};
 use core_crypto_keystore::{CryptoKeystoreError, entities::ConsumerData, traits::FetchFromDatabase as _};
 pub use error::{Error, Result};
-use mls_crypto_provider::{Database, MlsCryptoProvider};
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 #[cfg(feature = "proteus")]
@@ -19,6 +18,7 @@ use crate::{
     e2e_identity::pki_env::PkiEnvironment,
     group_store::GroupStore,
     mls::{self, HasSessionAndCrypto},
+    mls_provider::{Database, MlsCryptoProvider},
 };
 pub mod conversation;
 pub mod e2e_identity;

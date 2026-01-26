@@ -7,7 +7,6 @@ use core_crypto_keystore::{
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
 };
 use log::trace;
-use mls_crypto_provider::{Database, MlsCryptoProvider};
 use openmls::{
     credentials::CredentialWithKey,
     prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody},
@@ -27,6 +26,7 @@ use crate::{
             ext::CredentialExt as _,
         },
     },
+    mls_provider::{Database, MlsCryptoProvider},
     transaction_context::TransactionContext,
 };
 

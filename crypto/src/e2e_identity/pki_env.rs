@@ -7,12 +7,14 @@ use core_crypto_keystore::{
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
     traits::FetchFromDatabase,
 };
-use mls_crypto_provider::PkiEnvironmentProvider;
 use wire_e2e_identity::prelude::x509::revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams};
 use x509_cert::der::Decode;
 
 use super::Result;
-use crate::{KeystoreError, RecursiveError, e2e_identity::pki_env_hooks::PkiEnvironmentHooks};
+use crate::{
+    KeystoreError, RecursiveError, e2e_identity::pki_env_hooks::PkiEnvironmentHooks,
+    mls_provider::PkiEnvironmentProvider,
+};
 
 /// New Certificate Revocation List distribution points.
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::DerefMut)]

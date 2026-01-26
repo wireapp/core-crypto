@@ -7,11 +7,10 @@
 
 use std::sync::LazyLock;
 
-use mls_crypto_provider::RustCrypto;
 pub use openmls::prelude::KeyPackage as Keypackage;
 use openmls::prelude::{KeyPackageRef as KpHashRef, Lifetime, SignatureScheme};
 
-use crate::{Ciphersuite, CredentialType, MlsError};
+use crate::{Ciphersuite, CredentialType, MlsError, mls_provider::RustCrypto};
 
 static CRYPTO: LazyLock<RustCrypto> = LazyLock::new(RustCrypto::default);
 

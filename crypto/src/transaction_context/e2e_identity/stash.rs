@@ -44,11 +44,11 @@ impl TransactionContext {
 #[cfg(test)]
 mod tests {
     use core_crypto_keystore::{ConnectionType, DatabaseKey};
-    use mls_crypto_provider::{Database, MlsCryptoProvider};
 
     use crate::{
         CoreCrypto, E2eiEnrollment,
         e2e_identity::{enrollment::test_utils::*, id::WireQualifiedClientId},
+        mls_provider::{Database, MlsCryptoProvider},
         test_utils::{x509::X509TestChain, *},
     };
 
