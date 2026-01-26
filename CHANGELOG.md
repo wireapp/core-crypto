@@ -108,45 +108,93 @@
 - Allow in-memory database instantiation and usage with core crypto. Just call `inMemoryDatabase()` (Android, Web) or
   the `Database` constructor without a path (iOS).
 
-- Web: structural errors
-
-  #### Example Usage
-
-  Extract the abort reason given via an `MlsTransportResponse`
-
-  ```typescript
-  try {
-      // send a commit that is rejected by the DS
-  } catch (err) {
-    if(isMlsMessageRejectedError(err)) {
-      const rejectReason = err.context.context.reason;
-      // other things you want to do with this error...
-    } else {
-        // log error
-    }
-  }
-  ```
-
-  Extract the proteus error code
-
-  ```typescript
-  try {
-      // look for a proteus session that doesn't exist
-  } catch (err) {
-    if(isProteusSessionNotFoundError(err)) {
-      const errorCode = err.context.context.errorCode;
-      // other things you want to do with this error...
-    } else {
-        // log error
-    }
-  }
-  ```
-
 ### Bug Fixes
 
 - Web: fixed the abort reason of an `MlsTransportResponse` not being forwarded to rust.
 
 ### Breaking Changes
+
+- Adjusted TypeScript error structure
+
+  Affected platform: web
+
+  Migration: whenever matching on errors using version `>= 9.1.0` type guards, update their usage as shown in the
+  examples below.
+
+  For more info, see
+  [the corresponding section of ubrn docs](https://jhugman.github.io/uniffi-bindgen-react-native/idioms/errors.html#enums-as-errors).
+
+  ##### Example Usage
+
+  Extract the abort reason given via an `MlsTransportResponse`
+
+  ```typescript
+  import { CoreCryptoError, MlsError } from "core-crypto";
+
+  try {
+      // send a commit that is rejected by the DS
+  } catch (err) {
+    if (CoreCryptoError.Mls.instanceOf(err) &&
+        MlsError.MessageRejected.instanceOf(err.inner.mlsError)) {
+      const rejectReason = err.inner.mlsError.inner.reason;
+      // other things you want to do with this error...
+    } else {
+        // log error
+    }
+  }
+  ```
+
+  Optional: use `switch` to handle multiple errors in one go.
+
+  ```typescript
+  import { CoreCryptoError, MlsError, MlsError_Tags } from "core-crypto";
+
+  try {
+      // send a commit that is rejected by the DS
+    } catch (err) {
+        if (CoreCryptoError.Mls.instanceOf(err)) {
+            switch (err.inner.mlsError.tag) {
+                case MlsError_Tags.MessageRejected: {
+                    const rejectedReason = err.inner.mlsError.inner.reason;
+                    // other things you want to do with this error...
+                    break;
+                }
+
+                // handle other mls errors
+            }
+        }
+    }
+  ```
+
+  Catch a proteus error
+
+  ```typescript
+  import { CoreCryptoError, ProteusError } from "core-crypto";
+
+  try {
+      // look for a proteus session that doesn't exist
+  } catch (err) {
+    if (CoreCryptoError.Proteus.instanceOf(err)
+       && ProteusError.SessionNotFound.instanceOf(err.inner.exception)) {
+       let message = err.inner.exception.message;
+       // other things you want to do with this error...
+    } else {
+        // log error
+    }
+  }
+  ```
+
+- Renamed TypeScript wrapper functions (this should be undone after we upgrade to uniffi 0.30.0). `transaction()` ->
+  `newTransaction()`, `findCredentials()` -> `getFilteredCredentials()`, `mlsInit()` -> `mlsInitialize()`,
+  `e2eiMlsInitOnly()` -> `e2eiMlsInitializeOnly()`.
+
+  Affected platforms: web
+
+- `CoreCryptoContext.generateKeyPackage()` now returns a `Keypackage` instance instead of an `ArrayBuffer`.
+
+  Affected platforms: web
+
+  Migration: if you need the underlying `ArrayBuffer`, call the `buffer` property on the `KeyPackage`.
 
 - Deferred init is now the only way to instantiate core crypto.
 
@@ -166,8 +214,11 @@
 
   Migration: to create key packages after initializing MLS, call `clientKeypackages()` in a transaction.
 
-- `proteusErrorCode` field was removed from the root error type, you can get it from the nested context now (see above).
-  Affected platforms: web
+- `proteusErrorCode` field was removed from the root error type. Affected platforms: web
+
+  Migration: There is deterministic mapping from error code to error type. If you were using the error code, use the
+  error type now instead (see above). Check
+  [here](https://github.com/wireapp/proteus/blob/develop/crates/proteus-traits/src/lib.rs) for the mapping.
 
 - Renamed `CoreCryptoClient` to `CoreCrypto` and moved `historyClient(historySecret: HistorySecret)` into `CoreCrypto`
   Companion functions Affected platforms: jvm, android
