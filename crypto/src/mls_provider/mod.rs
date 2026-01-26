@@ -1,5 +1,3 @@
-#![doc = include_str!("../README.md")]
-
 pub use core_crypto_keystore::{Database, DatabaseKey};
 
 mod crypto_provider;
