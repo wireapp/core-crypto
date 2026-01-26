@@ -47,7 +47,6 @@ async-lock.workspace = true
 schnellru.workspace = true
 zeroize.workspace = true
 wire-e2e-identity.workspace = true
-x509-cert.workspace = true
 pem.workspace = true
 async-recursion.workspace = true
 itertools.workspace = true
@@ -56,15 +55,36 @@ base64.workspace = true
 log.workspace = true
 proteus-wasm = { workspace = true, features = ["hazmat"], optional = true }
 proteus-traits = { workspace = true, optional = true }
-sha2 = "0.10.9"
 core-crypto-keystore.workspace = true
 typed-builder.workspace = true
 core-crypto-macros.workspace = true
-rand.workspace = true
 obfuscate = { workspace = true, features = [
   "openmls",
   "openmls_basic_credential",
 ] }
+aes-gcm = "0.10"
+sha1.workspace = true
+sha2 = { workspace = true, features = ["oid"] }
+chacha20poly1305 = "0.10"
+hmac = "0.12"
+ed25519-dalek = { version = "2.2", features = ["pkcs8"] }
+signature = "2.2"
+ecdsa = { version = "0.16", features = ["der", "pkcs8"] }
+p256 = { version = "0.13", features = ["pkcs8"] }
+p384 = { version = "0.13", features = ["pkcs8"] }
+p521 = { version = "0.13", features = ["pkcs8"] }
+hkdf = "0.12"
+spki = { version = "0.7", features = ["pem", "fingerprint"] }
+x509-cert = { workspace = true, features = ["builder", "hazmat"] }
+web-time = "1.1.0"
+rand = { workspace = true, features = ["getrandom"] }
+getrandom = { version = "0.2", features = ["js"] }
+rand_core = "0.6"
+rand_chacha = "0.3"
+
+[dependencies.hpke]
+version = "0.12"
+features = ["x25519", "p256", "p384", "p521"]
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = { version = "2.2", optional = true }
@@ -75,7 +95,7 @@ serde-wasm-bindgen = "0.6"
 
 [dev-dependencies]
 itertools.workspace = true
-uuid = { workspace = true, features = ["v4", "v5"] }
+uuid = { workspace = true, features = ["v4", "v5", "js"] }
 tempfile = "3.24"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
@@ -93,10 +113,17 @@ rmp-serde = { workspace = true }
 smol.workspace = true
 smol-macros.workspace = true
 macro_rules_attribute.workspace = true
+wasm-bindgen-test = { workspace = true }
+openmls.workspace = true
+hex-literal = "1.1"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
 version = "0.8"
 features = ["async_smol", "async_futures", "html_reports"]
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+smol-macros.workspace = true
+macro_rules_attribute.workspace = true
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = [
