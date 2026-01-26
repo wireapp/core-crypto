@@ -62,6 +62,3 @@ jobs:
         if: always()
         run: |
           ./scripts/delete-ios-sim-device.sh ${{ env.SIMULATOR }}
-          if adb devices | grep -q '^emulator-'; then
-            adb emu kill
-          fi
