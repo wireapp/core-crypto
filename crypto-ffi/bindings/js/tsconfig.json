@@ -33,6 +33,9 @@
     "noImplicitReturns": true,
     "forceConsistentCasingInFileNames": true,
 
+    // exclude items marked with @internal
+    "stripInternal": true,
+
     // Custom types
     "types": ["node", "bun", "@wdio/globals/types", "@types/mocha"]
   }
