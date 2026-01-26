@@ -91,40 +91,51 @@ export class CoreCrypto extends CoreCryptoFfi {
      *
      * @returns the result of the callback will be returned from this call
      */
-    async transaction<R>(
+    async newTransaction<R>(
         callback: (ctx: CoreCryptoContext) => Promise<R>
     ): Promise<R> {
         let result!: R;
-        let error: CoreCryptoError<ErrorType> | Error | null = null;
+        let error: CoreCryptoError | Error | null = null;
+        let needOuterRethrow = false;
         try {
-            await CoreCryptoError.asyncMapErr(
-                this.#cc.transaction({
-                    execute: async (
-                        ctx: CoreCryptoFfiTypes.CoreCryptoContext
-                    ) => {
-                        try {
-                            result = await CoreCryptoError.asyncMapErr(
-                                callback(CoreCryptoContext.fromFfiContext(ctx))
-                            );
-                        } catch (e) {
-                            // We want to catch the error before it gets wrapped by core crypto.
-                            error = e as Error | CoreCryptoError<ErrorType>;
-                            // This is to tell core crypto that there was an error inside the transaction.
-                            throw error;
+            await super.transaction({
+                execute: async (ctx: CoreCryptoFfiTypes.CoreCryptoContext) => {
+                    try {
+                        result = await callback(new CoreCryptoContext(ctx));
+                    } catch (e) {
+                        // We want to catch the error before it gets wrapped by core crypto.
+                        if (CoreCryptoError.instanceOf(e)) {
+                            error = e;
+                        } else if (Error.isError(e)) {
+                            error = e;
+                        } else {
+                            // Something unexpected was thrown
+                            needOuterRethrow = true;
                         }
-                    },
-                })
-            );
+                        // This is to tell core crypto that there was an error inside the transaction.
+                        throw e;
+                    }
+                },
+            });
         } catch (e) {
             // We prefer the closure error if it's available since the transaction will just wrap and re-throw it.
-            if (error === null) {
-                error = e as Error | CoreCryptoError<ErrorType>;
+            // If we caught an object of an unexpected type, we're rethrowing it as a wrapped `CoreCryptoError`.
+            if (needOuterRethrow) {
+                throw e;
             }
         }
         if (error !== null) {
             throw error;
         }
         return result;
+    }
+
+    /** @internal */
+    async transaction(
+        command: CoreCryptoFfiTypes.CoreCryptoCommand,
+        asyncOpts_?: { signal: AbortSignal }
+    ): Promise<void> {
+        super.transaction(command, asyncOpts_);
     }
 
     /** @internal */
