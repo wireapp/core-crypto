@@ -158,11 +158,7 @@ impl Credential {
     /// Create a credential from an identifier
     // currently only used in test code, but generally applicable
     #[cfg_attr(not(test), expect(dead_code))]
-    pub(crate) fn from_identifier(
-        identifier: &ClientIdentifier,
-        ciphersuite: Ciphersuite,
-        crypto: impl OpenMlsCrypto,
-    ) -> Result<Self> {
+    pub(crate) fn from_identifier(identifier: &ClientIdentifier, ciphersuite: Ciphersuite) -> Result<Self> {
         match identifier {
             ClientIdentifier::Basic(client_id) => Self::basic(ciphersuite, client_id.clone()),
             ClientIdentifier::X509(certs) => {

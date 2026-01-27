@@ -148,7 +148,7 @@ impl SessionContext {
 
         let session = transaction.session().await.unwrap();
 
-        let credential = Credential::from_identifier(&identifier, context.ciphersuite(), &session.crypto_provider)
+        let credential = Credential::from_identifier(&identifier, context.ciphersuite())
             .map_err(RecursiveError::mls_credential("creating credential from identifier"))?;
         let initial_credential = session.add_credential(credential).await.unwrap();
 
@@ -189,9 +189,8 @@ impl SessionContext {
         }
 
         let identifier = context.generate_identifier(chain).await;
-        let initial_credential =
-            Credential::from_identifier(&identifier, context.ciphersuite(), &session.crypto_provider)
-                .expect("creating credential from identifier");
+        let initial_credential = Credential::from_identifier(&identifier, context.ciphersuite())
+            .expect("creating credential from identifier");
         let initial_credential = CredentialRef::from_credential(&initial_credential);
 
         Self {

@@ -23,7 +23,6 @@ mod tests {
 
     use crate::{
         CertificateBundle, ClientIdentifier, CoreCrypto, CredentialType,
-        mls::HasSessionAndCrypto,
         test_utils::{x509::X509TestChain, *},
         transaction_context::Error as TransactionError,
     };
@@ -119,12 +118,7 @@ mod tests {
                 .await
                 .unwrap();
 
-            let credential = Credential::from_identifier(
-                &identifier,
-                case.ciphersuite(),
-                &context.crypto_provider().await.unwrap(),
-            )
-            .unwrap();
+            let credential = Credential::from_identifier(&identifier, case.ciphersuite()).unwrap();
             let credential_ref = context
                 .session()
                 .await
