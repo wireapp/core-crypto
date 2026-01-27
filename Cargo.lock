@@ -3350,9 +3350,9 @@ dependencies = [
 
 [[package]]
 name = "mls-rs"
-version = "0.51.0"
+version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f864692d839ad018ba48091973cfeabf8af2d15ec54ed24b9adcd480adeb1d91"
+checksum = "9e9075deca9dae8a6a3675361c501398f32a0931d80ab5aa0f79b9495531797a"
 dependencies = [
  "async-trait",
  "cfg-if",
@@ -3372,6 +3372,7 @@ dependencies = [
  "safer-ffi-gen",
  "serde",
  "spin 0.10.0",
+ "subtle",
  "thiserror 2.0.18",
  "wasm-bindgen",
  "zeroize",
@@ -3403,9 +3404,9 @@ dependencies = [
 
 [[package]]
 name = "mls-rs-core"
-version = "0.24.0"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5b0e168f964a01f3abd9c8d3f9654e63079efce0bc4160467b62519bd210209"
+checksum = "0ab72d0a37c8c7947091a0dbebc051038b2cd306aee9b26a56a19c41c662c12e"
 dependencies = [
  "async-trait",
  "hex",
@@ -3420,9 +3421,9 @@ dependencies = [
 
 [[package]]
 name = "mls-rs-identity-x509"
-version = "0.18.0"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa21eb502d080fffae32ddd6d29de5a5f734387af52897c2fa6846b872b36ee5"
+checksum = "4dc915af05e492e1de8a37ea5aaf4e652f8b56d32c44a312645aeacb312958fb"
 dependencies = [
  "async-trait",
  "maybe-async",
