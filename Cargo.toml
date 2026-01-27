@@ -122,8 +122,8 @@ openmls_traits = { git = "https://github.com/wireapp/openmls", rev = "c9cde17076
 openmls_x509_credential = { git = "https://github.com/wireapp/openmls", rev = "c9cde17076508968c9cbead5728454f0a1f60c4f", version = "0.2" }
 
 # proteus
-proteus-traits = { git = "https://github.com/wireapp/proteus", tag = "v2.1.1" }
-proteus-wasm = { git = "https://github.com/wireapp/proteus", tag = "v2.1.1" }
+proteus-traits = { git = "https://github.com/wireapp/proteus", tag = "v2.1.2" }
+proteus-wasm = { git = "https://github.com/wireapp/proteus", tag = "v2.1.2" }
 
 [profile.release]
 codegen-units = 1
