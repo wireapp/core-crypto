@@ -60,7 +60,7 @@ TOUCH_STAMP = @mkdir -p $(STAMPS) && echo "$$(date)" > $@
 #-------------------------------------------------------------------------------
 
 # Relevant crates for FFI builds
-CRATES := crypto crypto-ffi keystore crypto-macros mls-provider
+CRATES := crypto crypto-ffi keystore crypto-macros
 
 # Workspace-level Cargo config
 WORKSPACE_CARGO_FILES := Cargo.toml Cargo.lock
