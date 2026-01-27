@@ -51,13 +51,20 @@ mod tests {
         test_utils::{x509::X509TestChain, *},
     };
 
-    // TODO: This test has to be disabled because of the session rewrite. We have to create a session first right now.
-    // It must be enabled and working again with WPB-22816.
-    #[ignore]
     #[apply(all_cred_cipher)]
     async fn stash_and_pop_should_not_abort_enrollment(mut case: TestContext) {
+        use std::sync::Arc;
+
+        use crate::e2e_identity::{pki_env::PkiEnvironment, pki_env_hooks::test::DummyPkiEnvironmentHooks};
+
         let db = case.create_in_memory_database().await;
-        let cc = CoreCrypto::new(db);
+        let cc = CoreCrypto::new(db.clone());
+        let hooks = Arc::new(DummyPkiEnvironmentHooks);
+        let pki_env = PkiEnvironment::new(hooks, db).await.expect("creating pki environment");
+        cc.set_pki_environment(Some(pki_env))
+            .await
+            .expect("setting pki environment");
+
         let tx = cc.new_transaction().await.unwrap();
         Box::pin(async move {
             use std::sync::Arc;
