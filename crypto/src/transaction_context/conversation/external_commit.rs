@@ -100,7 +100,7 @@ impl TransactionContext {
         )?;
 
         let crl_new_distribution_points = get_new_crl_distribution_points(
-            &mls_provider,
+            &database,
             extract_crl_uris_from_group(&group)
                 .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
         )

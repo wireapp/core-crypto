@@ -1,15 +1,19 @@
 use std::collections::HashMap;
 
-use core_crypto_keystore::{CryptoKeystoreMls as _, entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{CryptoKeystoreMls, entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
 use openmls::group::{InnerState, MlsGroup};
 
 use super::Result;
 use crate::{ConversationId, KeystoreError, MlsConversation, MlsConversationConfiguration, mls_provider::Database};
 
 impl MlsConversation {
-    pub(crate) async fn persist_group_when_changed(&mut self, keystore: &Database, force: bool) -> Result<()> {
+    pub(crate) async fn persist_group_when_changed(
+        &mut self,
+        database: &impl CryptoKeystoreMls,
+        force: bool,
+    ) -> Result<()> {
         if force || self.group.state_changed() == InnerState::Changed {
-            keystore
+            database
                 .mls_group_persist(
                     &self.id,
                     &core_crypto_keystore::ser(&self.group).map_err(KeystoreError::wrap("serializing group state"))?,

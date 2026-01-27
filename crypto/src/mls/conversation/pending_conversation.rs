@@ -11,7 +11,6 @@ use openmls::{
     credentials::CredentialWithKey,
     prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody},
 };
-use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize as _;
 
 use super::{ConversationWithMls, Error, Result};
@@ -190,7 +189,7 @@ impl PendingConversation {
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         let crl_new_distribution_points = get_new_crl_distribution_points(
-            &backend,
+            &backend.keystore(),
             extract_crl_uris_from_group(&conversation.group)
                 .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
         )
@@ -224,6 +223,7 @@ impl PendingConversation {
     /// Errors resulting from OpenMls, the KeyStore calls and deserialization
     pub(crate) async fn merge(&mut self) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let mls_provider = self.mls_provider().await?;
+        let database = mls_provider.keystore();
         let id = self.id();
         let group = self.inner.state.clone();
         let cfg = self.inner.custom_configuration.clone();
@@ -248,7 +248,7 @@ impl PendingConversation {
 
         // We have to determine the restore policy before we persist the group, because it depends
         // on whether the group already exists.
-        let restore_policy = if mls_provider.key_store().mls_group_exists(id).await {
+        let restore_policy = if database.mls_group_exists(id).await {
             // If the group already exists, it means the external commit is about rejoining the group.
             // This is most of the time a last resort measure (for example when a commit is dropped,
             // and you go out of sync), so there's no point in decrypting buffered messages
@@ -259,7 +259,7 @@ impl PendingConversation {
         };
 
         // Persist the now usable MLS group in the keystore
-        let conversation = MlsConversation::from_mls_group(mls_group, configuration, &mls_provider)
+        let conversation = MlsConversation::from_mls_group(mls_group, configuration, &database)
             .await
             .map_err(RecursiveError::mls_conversation(
                 "constructing conversation from mls group",
@@ -284,8 +284,7 @@ impl PendingConversation {
             .map_err(RecursiveError::mls_conversation("restoring pending messages"))?;
 
         if pending_messages.is_some() {
-            mls_provider
-                .keystore()
+            database
                 .remove_pending_messages_by_conversation_id(id)
                 .await
                 .map_err(KeystoreError::wrap("deleting mls pending messages by conversation id"))?;

@@ -61,6 +61,6 @@ impl MlsConversation {
             return Err(LeafError::ConversationAlreadyExists(id).into());
         }
 
-        Self::from_mls_group(group, configuration, backend).await
+        Self::from_mls_group(group, configuration, &backend.keystore()).await
     }
 }

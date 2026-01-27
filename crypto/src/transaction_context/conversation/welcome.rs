@@ -72,7 +72,7 @@ impl TransactionContext {
 
         // We wait for the group to be created then we iterate through all members
         let crl_new_distribution_points = get_new_crl_distribution_points(
-            &mls_provider,
+            &mls_provider.keystore(),
             extract_crl_uris_from_group(&conversation.group)
                 .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
         )

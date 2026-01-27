@@ -104,7 +104,7 @@ impl MlsConversation {
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         let crl_new_distribution_points = get_new_crl_distribution_points(
-            backend,
+            &backend.keystore(),
             extract_crl_uris_from_group(&self.group)
                 .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
         )

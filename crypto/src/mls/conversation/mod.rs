@@ -40,6 +40,7 @@ use std::{
     sync::Arc,
 };
 
+use core_crypto_keystore::CryptoKeystoreMls;
 use itertools::Itertools as _;
 use log::trace;
 use openmls::{
@@ -343,7 +344,7 @@ impl MlsConversation {
     pub(crate) async fn from_mls_group(
         group: MlsGroup,
         configuration: MlsConversationConfiguration,
-        backend: &MlsCryptoProvider,
+        database: &impl CryptoKeystoreMls,
     ) -> Result<Self> {
         let id = ConversationId::from(group.group_id().as_slice());
 
@@ -354,9 +355,7 @@ impl MlsConversation {
             parent_id: None,
         };
 
-        conversation
-            .persist_group_when_changed(&backend.keystore(), true)
-            .await?;
+        conversation.persist_group_when_changed(database, true).await?;
 
         Ok(conversation)
     }

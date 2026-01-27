@@ -253,9 +253,10 @@ impl ConversationGuard {
                 let mut conversation = self.conversation_mut().await;
                 let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])
                     .map_err(RecursiveError::mls_credential("extracting crl urls from proposals"))?;
-                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
-                    .await
-                    .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
+                let crl_new_distribution_points =
+                    get_new_crl_distribution_points(&backend.keystore(), crl_dps)
+                        .await
+                        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
                 info!(
                     group_id = conversation.id,
@@ -342,9 +343,10 @@ impl ConversationGuard {
                         .map_err(RecursiveError::mls_credential("extracting crl urls from update path"))?,
                 );
 
-                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
-                    .await
-                    .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
+                let crl_new_distribution_points =
+                    get_new_crl_distribution_points(&backend.keystore(), crl_dps)
+                        .await
+                        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
                 // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
                 let pending_commit = conversation.group.pending_commit().cloned();
@@ -427,9 +429,10 @@ impl ConversationGuard {
 
                 let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])
                     .map_err(RecursiveError::mls_credential("extracting crl uris from proposals"))?;
-                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
-                    .await
-                    .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
+                let crl_new_distribution_points =
+                    get_new_crl_distribution_points(&backend.keystore(), crl_dps)
+                        .await
+                        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
                 conversation.group.store_pending_proposal(*proposal);
 
                 // we still support the `has_epoch_changed` field, though we'll remove it later

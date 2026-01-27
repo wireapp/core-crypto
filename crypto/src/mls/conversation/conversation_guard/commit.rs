@@ -122,7 +122,7 @@ impl ConversationGuard {
             matches!(mls_credential, openmls::prelude::MlsCredentialType::X509(_)).then_some(mls_credential)
         }))
         .map_err(RecursiveError::mls_credential("extracting crl uris from credentials"))?;
-        let crl_new_distribution_points = get_new_crl_distribution_points(&backend, crl_dps)
+        let crl_new_distribution_points = get_new_crl_distribution_points(&backend.keystore(), crl_dps)
             .await
             .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 

@@ -32,7 +32,7 @@ impl MlsConversation {
             .signature_key_pair;
 
         let crl_new_distribution_points = get_new_crl_distribution_points(
-            backend,
+            &backend.keystore(),
             extract_crl_uris_from_credentials(std::iter::once(key_package.credential().mls_credential()))
                 .map_err(RecursiveError::mls_credential("extracting crl uris from credentials"))?,
         )

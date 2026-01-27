@@ -146,9 +146,9 @@ impl TransactionContext {
 
         get_new_crl_distribution_points(
             &self
-                .mls_provider()
+                .database()
                 .await
-                .map_err(RecursiveError::transaction("getting mls provider"))?,
+                .map_err(RecursiveError::transaction("getting database"))?,
             crl_new_distribution_points,
         )
         .await
