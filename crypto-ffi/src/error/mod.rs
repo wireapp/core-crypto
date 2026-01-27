@@ -35,7 +35,7 @@ fn log_error(error: &dyn std::error::Error) {
     // even though there exists a `:err` formatter, it only captures the top-level
     // message from the error, so it's still worth building our own inner error formatter
     // and using serde here
-    log::warn!(target: "core-crypto", err:serde; "core-crypto returning this error across ffi; see recent log messages for context");
+    log::error!(target: "core-crypto", err:serde; "core-crypto returning this error across ffi; see recent log messages for context");
 }
 
 #[cfg(test)]
@@ -101,7 +101,7 @@ mod tests {
 
         testing_logger::validate(|captured_logs| {
             assert!(
-                captured_logs.iter().any(|log| log.level == log::Level::Warn
+                captured_logs.iter().any(|log| log.level == log::Level::Error
                     && log.target == "core-crypto"
                     && log.body.contains("returning this error across ffi")),
                 "log message did not appear within the captured logs"
