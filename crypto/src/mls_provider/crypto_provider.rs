@@ -47,23 +47,23 @@ fn normalize_p521_secret_key(sk: &[u8]) -> zeroize::Zeroizing<[u8; 66]> {
 }
 
 impl RustCrypto {
-    pub fn new_with_seed(seed: EntropySeed) -> Self {
+    pub(crate) fn new_with_seed(seed: EntropySeed) -> Self {
         Self {
             rng: Arc::new(rand_chacha::ChaCha20Rng::from_seed(seed.0).into()),
         }
     }
 
-    pub fn reseed(&self, seed: Option<EntropySeed>) -> Result<(), MlsProviderError> {
+    pub(crate) fn reseed(&self, seed: Option<EntropySeed>) -> Result<(), MlsProviderError> {
         let mut val = self.rng.write().map_err(|_| MlsProviderError::RngLockPoison)?;
         *val = rand_chacha::ChaCha20Rng::from_seed(seed.unwrap_or_default().0);
         Ok(())
     }
 
-    pub fn normalize_p521_secret_key(sk: &[u8]) -> zeroize::Zeroizing<[u8; 66]> {
+    pub(crate) fn normalize_p521_secret_key(sk: &[u8]) -> zeroize::Zeroizing<[u8; 66]> {
         normalize_p521_secret_key(sk)
     }
 
-    pub fn normalize_ed25519_key(key: &[u8]) -> Result<ed25519_dalek::SigningKey, CryptoError> {
+    pub(crate) fn normalize_ed25519_key(key: &[u8]) -> Result<ed25519_dalek::SigningKey, CryptoError> {
         let k = match key.len() {
             // Compat layer for legacy keypairs [seed, pk]
             ed25519_dalek::KEYPAIR_LENGTH => {
