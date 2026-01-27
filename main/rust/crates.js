@@ -1,2 +1,2 @@
-window.ALL_CRATES = ["core_crypto","core_crypto_ffi","core_crypto_keystore","core_crypto_macros","decode","interop","keystore_dump","mls_crypto_provider","obfuscate","test_wire_server","wire_e2e_identity"];
-//{"start":21,"fragment_lengths":[13,18,23,21,9,10,16,22,12,19,20]}
+window.ALL_CRATES = ["core_crypto","core_crypto_ffi","core_crypto_keystore","core_crypto_macros","decode","interop","keystore_dump","obfuscate","test_wire_server","wire_e2e_identity"];
+//{"start":21,"fragment_lengths":[13,18,23,21,9,10,16,12,19,20]}
