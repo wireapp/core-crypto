@@ -323,8 +323,7 @@ impl SessionContext {
         match case.credential_type {
             CredentialType::Basic => {
                 identifier = ClientIdentifier::Basic(client_id.clone());
-                credential =
-                    Credential::basic(case.ciphersuite(), client_id, &self.session().await.crypto_provider).unwrap();
+                credential = Credential::basic(case.ciphersuite(), client_id).unwrap();
             }
             CredentialType::X509 => {
                 let signer = signer.expect("Missing intermediate CA").to_owned();

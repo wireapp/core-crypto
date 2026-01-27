@@ -8,7 +8,7 @@ use core_crypto::{
     CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, ConnectionType, ConversationId, CoreCrypto,
     Credential as CcCredential, CredentialFindFilters, CredentialRef, CredentialType, Database, DatabaseKey,
     HistorySecret, MlsCommitBundle, MlsConversationConfiguration, MlsCryptoProvider, MlsGroupInfoBundle, MlsTransport,
-    MlsTransportData, MlsTransportResponse, RustCrypto,
+    MlsTransportData, MlsTransportResponse,
 };
 use criterion::BenchmarkId;
 use openmls::{
@@ -179,7 +179,7 @@ pub async fn new_central(
 
     let credential = match certificate_bundle {
         Some(certificate_bundle) => CcCredential::x509(ciphersuite, certificate_bundle.to_owned()).unwrap(),
-        None => CcCredential::basic(ciphersuite, client_id, RustCrypto::default()).unwrap(),
+        None => CcCredential::basic(ciphersuite, client_id).unwrap(),
     };
     let credential_ref = ctx.add_credential(credential).await.unwrap();
 
