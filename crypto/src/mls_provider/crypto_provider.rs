@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock, RwLockWriteGuard};
+use std::sync::{Arc, LazyLock, RwLock, RwLockWriteGuard};
 
 use aes_gcm::{
     Aes128Gcm, Aes256Gcm, KeyInit,
@@ -20,6 +20,10 @@ use signature::digest::typenum::Unsigned;
 use tls_codec::SecretVLBytes;
 
 use super::{EntropySeed, MlsProviderError};
+
+/// Singleton for `RustCrypto`
+/// Because of the reseed feature we have to use this
+pub(crate) static CRYPTO: LazyLock<Arc<RustCrypto>> = LazyLock::new(|| Arc::new(RustCrypto::default()));
 
 /// The type that implements
 /// - key generation
