@@ -47,7 +47,7 @@ pub struct TransactionContext {
 enum TransactionContextInner {
     Valid {
         pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
-        keystore: Database,
+        database: Database,
         mls_session: Arc<RwLock<Option<Session>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
         #[cfg(feature = "proteus")]
@@ -105,7 +105,7 @@ impl TransactionContext {
         Ok(Self {
             inner: Arc::new(
                 TransactionContextInner::Valid {
-                    keystore,
+                    database: keystore,
                     pki_environment,
                     mls_session: mls_session.clone(),
                     mls_groups,
@@ -176,9 +176,9 @@ impl TransactionContext {
         }
     }
 
-    pub(crate) async fn keystore(&self) -> Result<Database> {
+    pub(crate) async fn database(&self) -> Result<Database> {
         match &*self.inner.read().await {
-            TransactionContextInner::Valid { keystore, .. } => Ok(keystore.clone()),
+            TransactionContextInner::Valid { database, .. } => Ok(database.clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
@@ -225,7 +225,7 @@ impl TransactionContext {
     /// something is called from this object.
     pub async fn finish(&self) -> Result<()> {
         let mut guard = self.inner.write().await;
-        let TransactionContextInner::Valid { keystore, .. } = &*guard else {
+        let TransactionContextInner::Valid { database: keystore, .. } = &*guard else {
             return Err(Error::InvalidTransactionContext);
         };
 
@@ -245,7 +245,7 @@ impl TransactionContext {
     pub async fn abort(&self) -> Result<()> {
         let mut guard = self.inner.write().await;
 
-        let TransactionContextInner::Valid { keystore, .. } = &*guard else {
+        let TransactionContextInner::Valid { database: keystore, .. } = &*guard else {
             return Err(Error::InvalidTransactionContext);
         };
 
@@ -261,7 +261,7 @@ impl TransactionContext {
 
     /// Initializes the MLS client of [super::CoreCrypto].
     pub async fn mls_init(&self, identifier: ClientIdentifier, transport: Arc<dyn MlsTransport>) -> Result<()> {
-        let database = self.keystore().await?;
+        let database = self.database().await?;
         let client_id = identifier
             .get_id()
             .map_err(RecursiveError::mls_client("getting client id"))?
@@ -313,7 +313,7 @@ impl TransactionContext {
     /// This is meant to be used as a check point at the end of a transaction.
     /// The data should be limited to a reasonable size.
     pub async fn set_data(&self, data: Vec<u8>) -> Result<()> {
-        self.keystore()
+        self.database()
             .await?
             .save(ConsumerData::from(data))
             .await
@@ -324,7 +324,7 @@ impl TransactionContext {
     /// Get the data that has previously been set by [TransactionContext::set_data].
     /// This is meant to be used as a check point at the end of a transaction.
     pub async fn get_data(&self) -> Result<Option<Vec<u8>>> {
-        match self.keystore().await?.get_unique::<ConsumerData>().await {
+        match self.database().await?.get_unique::<ConsumerData>().await {
             Ok(maybe_data) => Ok(maybe_data.map(Into::into)),
             Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
             Err(err) => Err(KeystoreError::wrap("finding unique consumer data")(err).into()),

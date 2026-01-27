@@ -140,7 +140,7 @@ pub mod test_utils {
             let id = inner.id();
 
             let (parent_id, group) = context
-                .keystore()
+                .database()
                 .await
                 .unwrap()
                 .mls_groups_restore()
