@@ -14,7 +14,7 @@ use openmls_traits::{
         HpkeKemType, SignatureScheme,
     },
 };
-use rand_core::{RngCore, SeedableRng};
+use rand::{SeedableRng as _, TryRngCore as _};
 use sha2::{Digest, Sha256, Sha384, Sha512};
 use signature::digest::typenum::Unsigned;
 use tls_codec::SecretVLBytes;
@@ -29,7 +29,7 @@ pub struct RustCrypto {
 impl Default for RustCrypto {
     fn default() -> Self {
         Self {
-            rng: Arc::new(rand_chacha::ChaCha20Rng::from_entropy().into()),
+            rng: Arc::new(rand_chacha::ChaCha20Rng::from_os_rng().into()),
         }
     }
 }
@@ -617,7 +617,7 @@ mod hpke_core {
         info: &[u8],
         aad: &[u8],
         plaintext: &[u8],
-        csprng: &mut impl rand_core::CryptoRngCore,
+        csprng: &mut impl rand::CryptoRng,
     ) -> Result<HpkeCiphertext, CryptoError> {
         use hpke::{Deserializable as _, Serializable as _};
         let key = Kem::PublicKey::from_bytes(public_key).map_err(|_| CryptoError::HpkeEncryptionError)?;
@@ -633,7 +633,7 @@ mod hpke_core {
 
     #[allow(dead_code)]
     pub(crate) fn hpke_gen_keypair<Kem: hpke::Kem>(
-        csprng: &mut impl rand_core::CryptoRngCore,
+        csprng: &mut impl rand::CryptoRng,
     ) -> Result<HpkeKeyPair, CryptoError> {
         use hpke::Serializable as _;
         let (sk, pk) = Kem::gen_keypair(csprng);
@@ -676,7 +676,7 @@ mod hpke_core {
         info: &[u8],
         export_info: &[u8],
         export_len: usize,
-        csprng: &mut impl rand_core::CryptoRngCore,
+        csprng: &mut impl rand::CryptoRng,
     ) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
         use hpke::{Deserializable as _, Serializable as _};
         let key = Kem::PublicKey::from_bytes(tx_public_key).map_err(|_| CryptoError::SenderSetupError)?;

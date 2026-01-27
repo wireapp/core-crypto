@@ -38,7 +38,7 @@ p256 = { workspace = true }
 p384 = { workspace = true }
 p521 = { workspace = true }
 pem = { workspace = true }
-getrandom = { workspace = true, features = ["js"] }
+getrandom = { workspace = true, features = ["wasm_js"] }
 web-time = { workspace = true }
 hex = { workspace = true }
 flagset = { workspace = true }
