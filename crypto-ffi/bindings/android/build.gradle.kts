@@ -7,7 +7,7 @@ plugins {
 }
 
 val sharedSources = projectDir.resolve("../shared/src/commonMain")
-val jvmTestSources = projectDir.resolve("../jvm/src")
+val sharedTestSources = projectDir.resolve("../shared/src/commonTest")
 
 val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
     dependsOn(tasks.dokkaGeneratePublicationHtml)
@@ -93,7 +93,7 @@ android {
             }
             androidTest {
                 kotlin {
-                    srcDir(jvmTestSources.resolve("test"))
+                    srcDir(sharedTestSources.resolve("kotlin"))
                 }
             }
         }

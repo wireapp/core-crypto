@@ -37,12 +37,18 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
+            sourceSets {
+                kotlin.srcDir("../shared/src/commonMain/kotlin")
+            }
             dependencies {
                 implementation(libs.coroutines.core)
             }
         }
 
         val commonTest by getting {
+            sourceSets {
+                kotlin.srcDir("../shared/src/commonTest/kotlin")
+            }
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.coroutines.test)
