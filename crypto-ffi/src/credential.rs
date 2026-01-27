@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use core_crypto::{Ciphersuite as CryptoCiphersuite, Credential as CryptoCredential, RustCrypto};
+use core_crypto::{Ciphersuite as CryptoCiphersuite, Credential as CryptoCredential};
 
 use crate::{Ciphersuite, CoreCryptoResult, CredentialType, SignatureScheme, client_id::ClientId};
 
@@ -16,9 +16,8 @@ pub struct Credential(pub(crate) CryptoCredential);
 
 impl Credential {
     fn basic_impl(ciphersuite: Ciphersuite, client_id: &Arc<ClientId>) -> CoreCryptoResult<Self> {
-        let crypto = RustCrypto::default();
         let client_id_ref = client_id.as_ref().as_ref();
-        CryptoCredential::basic(CryptoCiphersuite::from(ciphersuite), client_id_ref.to_owned(), crypto)
+        CryptoCredential::basic(CryptoCiphersuite::from(ciphersuite), client_id_ref.to_owned())
             .map(Into::into)
             .map_err(Into::into)
     }

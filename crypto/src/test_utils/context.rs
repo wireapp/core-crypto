@@ -87,12 +87,11 @@ impl SessionContext {
 
     /// Create, save, and add a new credential of the type relevant to this test
     pub async fn new_credential(&mut self, case: &TestContext, signer: Option<&X509Certificate>) -> Arc<Credential> {
-        let backend = &self.transaction.mls_provider().await.unwrap();
         let session = self.session().await;
         let client_id = session.id();
 
         let credential = match case.credential_type {
-            CredentialType::Basic => Credential::basic(case.ciphersuite(), client_id, backend).unwrap(),
+            CredentialType::Basic => Credential::basic(case.ciphersuite(), client_id).unwrap(),
             CredentialType::X509 => {
                 let cert_bundle = CertificateBundle::rand(&client_id, signer.unwrap());
                 Credential::x509(case.ciphersuite(), cert_bundle).unwrap()

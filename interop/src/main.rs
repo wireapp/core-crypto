@@ -154,11 +154,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     spinner.update("initialized cc...");
 
     let master_client_id = ClientId::from(b"interop master client".as_slice());
-    let credential = Credential::basic(
-        CIPHERSUITE_IN_USE.into(),
-        master_client_id.clone(),
-        core_crypto::RustCrypto::default(),
-    )?;
+    let credential = Credential::basic(CIPHERSUITE_IN_USE.into(), master_client_id.clone())?;
     spinner.update("created credential...");
 
     let transaction = cc.new_transaction().await?;

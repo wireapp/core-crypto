@@ -148,7 +148,7 @@ impl SessionContext {
 
         let session = transaction.session().await.unwrap();
 
-        let credential = Credential::from_identifier(&identifier, context.ciphersuite(), &session.crypto_provider)
+        let credential = Credential::from_identifier(&identifier, context.ciphersuite())
             .map_err(RecursiveError::mls_credential("creating credential from identifier"))?;
         let initial_credential = transaction.add_credential(credential).await.unwrap();
 
@@ -189,9 +189,8 @@ impl SessionContext {
         }
 
         let identifier = context.generate_identifier(chain).await;
-        let initial_credential =
-            Credential::from_identifier(&identifier, context.ciphersuite(), &session.crypto_provider)
-                .expect("creating credential from identifier");
+        let initial_credential = Credential::from_identifier(&identifier, context.ciphersuite())
+            .expect("creating credential from identifier");
         let initial_credential = CredentialRef::from_credential(&initial_credential);
 
         Self {
@@ -331,8 +330,7 @@ impl SessionContext {
         match case.credential_type {
             CredentialType::Basic => {
                 identifier = ClientIdentifier::Basic(client_id.clone());
-                credential =
-                    Credential::basic(case.ciphersuite(), client_id, &self.session().await.crypto_provider).unwrap();
+                credential = Credential::basic(case.ciphersuite(), client_id).unwrap();
             }
             CredentialType::X509 => {
                 let signer = signer.expect("Missing intermediate CA").to_owned();
