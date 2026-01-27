@@ -113,9 +113,8 @@ mod tests {
                     Box::pin(async move {
                         // this restore recreates a partial enrollment
                         let key = DatabaseKey::generate();
-                        let key_store = Database::open(ConnectionType::InMemory, &key).await.unwrap();
-                        let backend = MlsCryptoProvider::new(key_store);
-                        backend.new_transaction().await.unwrap();
+                        let database = Database::open(ConnectionType::InMemory, &key).await.unwrap();
+                        database.new_transaction().await.unwrap();
                         let client_id = e.client_id().parse::<WireQualifiedClientId>().unwrap();
                         E2eiEnrollment::try_new(
                             client_id.into(),
@@ -123,7 +122,6 @@ mod tests {
                             e.handle().to_string(),
                             e.team().map(ToString::to_string),
                             1,
-                            &backend,
                             *e.ciphersuite(),
                             None,
                             false,
