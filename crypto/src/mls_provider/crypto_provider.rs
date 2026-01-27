@@ -21,6 +21,11 @@ use tls_codec::SecretVLBytes;
 
 use super::{EntropySeed, MlsProviderError};
 
+/// The type that implements
+/// - key generation
+/// - AEAD encryption & decryption
+/// - signing & signature verification
+/// - HPKE operations
 #[derive(Debug, Clone)]
 pub struct RustCrypto {
     pub(crate) rng: Arc<RwLock<rand_chacha::ChaCha20Rng>>,
