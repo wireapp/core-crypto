@@ -35,7 +35,7 @@
 <a href=#35 id=35 data-nosnippet>35</a>    <span class="comment">// even though there exists a `:err` formatter, it only captures the top-level
 <a href=#36 id=36 data-nosnippet>36</a>    // message from the error, so it's still worth building our own inner error formatter
 <a href=#37 id=37 data-nosnippet>37</a>    // and using serde here
-<a href=#38 id=38 data-nosnippet>38</a>    </span><span class="macro">log::warn!</span>(target: <span class="string">"core-crypto"</span>, err:serde; <span class="string">"core-crypto returning this error across ffi; see recent log messages for context"</span>);
+<a href=#38 id=38 data-nosnippet>38</a>    </span><span class="macro">log::error!</span>(target: <span class="string">"core-crypto"</span>, err:serde; <span class="string">"returning this error across ffi"</span>);
 <a href=#39 id=39 data-nosnippet>39</a>}
 <a href=#40 id=40 data-nosnippet>40</a>
 <a href=#41 id=41 data-nosnippet>41</a><span class="attr">#[cfg(test)]
@@ -101,7 +101,7 @@
 <a href=#101 id=101 data-nosnippet>101</a>
 <a href=#102 id=102 data-nosnippet>102</a>        testing_logger::validate(|captured_logs| {
 <a href=#103 id=103 data-nosnippet>103</a>            <span class="macro">assert!</span>(
-<a href=#104 id=104 data-nosnippet>104</a>                captured_logs.iter().any(|log| log.level == log::Level::Warn
+<a href=#104 id=104 data-nosnippet>104</a>                captured_logs.iter().any(|log| log.level == log::Level::Error
 <a href=#105 id=105 data-nosnippet>105</a>                    &amp;&amp; log.target == <span class="string">"core-crypto"
 <a href=#106 id=106 data-nosnippet>106</a>                    </span>&amp;&amp; log.body.contains(<span class="string">"returning this error across ffi"</span>)),
 <a href=#107 id=107 data-nosnippet>107</a>                <span class="string">"log message did not appear within the captured logs"
