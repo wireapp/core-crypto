@@ -5,8 +5,7 @@ for crate in crypto-macros \
              crypto \
              interop \
              keystore-dump \
-             keystore \
-             mls-provider; do
+             keystore; do
 
         perl -0777 -pi -e \
             's/^version = "[^"]+"/version = "'"$new_version"'"/m' \
