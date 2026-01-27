@@ -85,22 +85,29 @@ mod tests {
         .await;
     }
 
-    // TODO: This test has to be disabled because of the session rewrite. We have to create a session first right now.
-    // It must be enabled and working again with WPB-22816.
-    #[ignore]
     #[apply(all_cred_cipher)]
     async fn can_2_phase_init_central(mut case: TestContext) {
         let db = case.create_persistent_db().await;
         Box::pin(async move {
             use std::sync::Arc;
 
-            use crate::{ClientId, Credential};
+            use crate::{
+                ClientId, Credential,
+                e2e_identity::{pki_env::PkiEnvironment, pki_env_hooks::test::DummyPkiEnvironmentHooks},
+            };
 
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
             // phase 1: init without initialized mls_client
-            let cc = CoreCrypto::new(db);
+            let cc = CoreCrypto::new(db.clone());
             let context = cc.new_transaction().await.unwrap();
+
+            let hooks = Arc::new(DummyPkiEnvironmentHooks);
+            let pki_env = PkiEnvironment::new(hooks, db).await.expect("creating pki environment");
+            cc.set_pki_environment(Some(pki_env))
+                .await
+                .expect("setting pki environment");
+
             x509_test_chain.register_with_central(&context).await;
 
             // phase 2: init mls_client

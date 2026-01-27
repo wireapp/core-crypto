@@ -12,7 +12,7 @@ use crate::{
 pub(crate) const E2EI_DISPLAY_NAME: &str = "Alice Smith";
 pub(crate) const E2EI_HANDLE: &str = "alice_wire";
 pub(crate) const E2EI_CLIENT_ID: &str = "bd4c7053-1c5a-4020-9559-cd7bf7961954:4959bc6ab12f2846@world.com";
-pub(crate) const E2EI_CLIENT_ID_URI: &str = "vUxwUxxaQCCVWc1795YZVA!4959bc6ab12f2846@world.com";
+pub(crate) const E2EI_CLIENT_ID_URI: &str = "wireapp://vUxwUxxaQCCVWc1795YZVA!4959bc6ab12f2846@world.com";
 pub(crate) const E2EI_EXPIRY: u32 = 90 * 24 * 3600;
 pub(crate) const NEW_HANDLE: &str = "new_alice_wire";
 pub(crate) const NEW_DISPLAY_NAME: &str = "New Alice Smith";
