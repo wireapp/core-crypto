@@ -215,7 +215,7 @@ macro_rules! impl_from_via_recursive_error {
                 fn from(error: $t) -> Self {
                     use core_crypto::ToRecursiveError;
                     error
-                        .construct_recursive("this context string does not matter and gets immediately stripped")
+                        .construct_recursive("converting to ffi error")
                         .into()
                 }
             }
