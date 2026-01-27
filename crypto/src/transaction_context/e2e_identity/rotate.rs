@@ -45,10 +45,6 @@ impl TransactionContext {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> Result<E2eiEnrollment> {
-        let mls_provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
         let client_id = self
             .client_id()
             .await
@@ -62,7 +58,6 @@ impl TransactionContext {
             handle,
             team,
             expiry_sec,
-            &mls_provider,
             ciphersuite,
             Some(sign_keypair),
             false, // no x509 credential yet at this point so no OIDC authn yet so no refresh token to restore
@@ -85,11 +80,6 @@ impl TransactionContext {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> Result<E2eiEnrollment> {
-        let mls_provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
-
         // look for existing credential of type x509. If there isn't, then this method has been misused
         let find_filters = CredentialFindFilters::builder()
             .credential_type(CredentialType::X509)
@@ -133,7 +123,6 @@ impl TransactionContext {
             handle,
             team,
             expiry_sec,
-            &mls_provider,
             ciphersuite,
             Some(sign_keypair),
             true, /* Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST

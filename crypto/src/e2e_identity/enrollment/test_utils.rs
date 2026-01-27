@@ -113,6 +113,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let wrapper = E2eiInitWrapper { context: ctx, case };
     let mut enrollment = init(wrapper).await?;
 
+    println!("HERE");
     if is_renewal {
         assert!(enrollment.has_called_new_oidc_challenge_request);
     } else {

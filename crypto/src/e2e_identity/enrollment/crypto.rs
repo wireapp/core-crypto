@@ -5,12 +5,12 @@ use super::{Error, Result};
 use crate::{
     Ciphersuite, MlsError,
     e2e_identity::crypto::E2eiSignatureKeypair,
-    mls_provider::{MlsCryptoProvider, RustCrypto},
+    mls_provider::{CRYPTO, RustCrypto},
 };
 
 impl super::E2eiEnrollment {
-    pub(crate) fn new_sign_key(ciphersuite: Ciphersuite, backend: &MlsCryptoProvider) -> Result<E2eiSignatureKeypair> {
-        let (sk, _) = backend
+    pub(crate) fn new_sign_key(ciphersuite: Ciphersuite) -> Result<E2eiSignatureKeypair> {
+        let (sk, _) = CRYPTO
             .signature_key_gen(ciphersuite.signature_algorithm())
             .map_err(MlsError::wrap("performing signature keygen"))?;
         E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), sk)

@@ -48,10 +48,6 @@ impl TransactionContext {
             handle,
             team,
             expiry_sec,
-            &self
-                .mls_provider()
-                .await
-                .map_err(RecursiveError::transaction("getting mls provider"))?,
             ciphersuite,
             signature_keypair,
             false, // fresh install so no refresh token registered yet
