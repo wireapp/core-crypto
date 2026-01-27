@@ -15,10 +15,6 @@ use openmls_traits::{
 };
 pub use pki::{CertProfile, CertificateGenerationArgs, PkiEnvironmentProvider, PkiKeypair};
 
-pub mod reexports {
-    pub use rand_core;
-}
-
 /// 32-byte raw entropy seed
 pub type RawEntropySeed = <rand_chacha::ChaCha20Rng as rand::SeedableRng>::Seed;
 
