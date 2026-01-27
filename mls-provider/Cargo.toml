@@ -46,7 +46,7 @@ core-crypto-keystore.workspace = true
 typed-builder.workspace = true
 
 [dependencies.hpke]
-version = "0.12"
+version = "0.13"
 features = ["x25519", "p256", "p384", "p521"]
 
 [dev-dependencies]
