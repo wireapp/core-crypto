@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use argon2::{
     Algorithm, Argon2, ParamsBuilder, Version,
-    password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
+    password_hash::{PasswordHasher, SaltString},
 };
 use http::header;
 use oauth2::{CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};

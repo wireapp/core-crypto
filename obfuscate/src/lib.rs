@@ -18,7 +18,7 @@ pub fn compute_hash(bytes: &[u8]) -> [u8; 10] {
     static SALT: LazyLock<[u8; 32]> = LazyLock::new(|| {
         use rand::Rng as _;
         let mut salt = [0; _];
-        rand::thread_rng().fill(&mut salt);
+        rand::rng().fill(&mut salt);
         salt
     });
 
