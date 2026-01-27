@@ -6,7 +6,8 @@ use crate::{
     CryptoKeystoreResult,
     connection::KeystoreDatabaseConnection,
     traits::{
-        BorrowPrimaryKey, Entity, EntityBase, EntityGetBorrowed, KeyType, PrimaryKey, UniqueEntity, UniqueEntityExt,
+        BorrowPrimaryKey, Entity, EntityBase, EntityGetBorrowed, KeyType, PrimaryKey, SearchableEntity, UniqueEntity,
+        UniqueEntityExt,
     },
 };
 
@@ -59,4 +60,10 @@ pub trait FetchFromDatabase: Send + Sync {
         let count = self.count::<U>().await?;
         Ok(count > 0)
     }
+
+    /// Search for relevant instances of `E` given a search key.
+    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection> + SearchableEntity<SearchKey> + Clone + Send + Sync,
+        SearchKey: KeyType;
 }
