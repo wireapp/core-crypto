@@ -35,7 +35,7 @@ fn log_error(error: &dyn std::error::Error) {
     // even though there exists a `:err` formatter, it only captures the top-level
     // message from the error, so it's still worth building our own inner error formatter
     // and using serde here
-    log::error!(target: "core-crypto", err:serde; "core-crypto returning this error across ffi; see recent log messages for context");
+    log::error!(target: "core-crypto", err:serde; "returning this error across ffi");
 }
 
 #[cfg(test)]
