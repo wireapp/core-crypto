@@ -83,7 +83,9 @@ mod tests {
             .unwrap();
 
             let transport = Arc::new(CoreCryptoTransportSuccessProvider::default());
-            assert!(tx.e2ei_mls_init_only(&mut enrollment, cert, transport).await.is_ok());
+            tx.e2ei_mls_init_only(&mut enrollment, cert, transport)
+                .await
+                .expect("mls init succeeds");
         })
         .await;
     }
