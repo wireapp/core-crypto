@@ -20,14 +20,17 @@ pub fn store_name() -> String {
         .map(|_| rng.sample(rand::distributions::Alphanumeric) as char)
         .collect();
 
+    let store_name = format!("keystore.test.{name}.db");
+
     #[cfg(target_family = "wasm")]
     {
-        format!("corecrypto.test.{}.edb", name)
+        store_name
     }
 
     #[cfg(not(target_family = "wasm"))]
     {
-        format!("./test.{name}.edb")
+        let tempfile = tempfile::NamedTempFile::with_prefix(store_name).unwrap();
+        tempfile.path().to_str().unwrap().to_string()
     }
 }
 
