@@ -135,16 +135,6 @@ impl MlsCryptoProvider {
         self.key_store.close().await?;
         Ok(())
     }
-
-    /// Clone keystore (its an `Arc` internnaly)
-    pub fn keystore(&self) -> Database {
-        self.key_store.clone()
-    }
-
-    /// Allows to retrieve the underlying key store directly
-    pub fn unwrap_keystore(self) -> Database {
-        self.key_store
-    }
 }
 
 impl openmls_traits::OpenMlsCryptoProvider for MlsCryptoProvider {
