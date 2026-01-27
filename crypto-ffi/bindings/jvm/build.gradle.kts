@@ -15,6 +15,7 @@ kotlin {
 }
 
 val sharedSources = projectDir.resolve("../shared/src/commonMain")
+val sharedTestSources = projectDir.resolve("../shared/src/commonTest")
 
 dependencies {
     implementation(platform(kotlin("bom")))
@@ -68,6 +69,11 @@ sourceSets {
         }
         resources {
             srcDirs(ffiLibsBase.resolve(buildType))
+        }
+    }
+    test {
+        kotlin {
+            srcDir(sharedTestSources.resolve("kotlin"))
         }
     }
 }

@@ -6,12 +6,14 @@ import com.wire.crypto.*
 import kotlinx.coroutines.runBlocking
 import java.nio.ByteBuffer
 import java.nio.file.Files
+import java.security.SecureRandom
 import java.util.UUID
+import kotlin.random.Random
 import kotlin.test.*
 
 fun genDatabaseKey(): DatabaseKey {
     val bytes = ByteArray(32)
-    val random = java.security.SecureRandom()
+    val random = SecureRandom()
     random.nextBytes(bytes)
     return DatabaseKey(bytes)
 }
@@ -125,7 +127,7 @@ fun initCc(_instance: HasMockDeliveryService): CoreCrypto = runBlocking {
 fun randomIdentifier(n: Int = 12): String {
     val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
     return (1..n)
-        .map { kotlin.random.Random.nextInt(0, charPool.size).let { charPool[it] } }
+        .map { Random.nextInt(0, charPool.size).let { charPool[it] } }
         .joinToString("")
 }
 

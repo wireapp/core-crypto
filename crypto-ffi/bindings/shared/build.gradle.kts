@@ -17,5 +17,10 @@ kotlin {
                 implementation(kotlin("stdlib"))
             }
         }
+        commonTest {
+            dependencies {
+                implementation(kotlin("stdlib"))
+            }
+        }
     }
 }
