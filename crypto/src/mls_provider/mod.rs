@@ -1,3 +1,5 @@
+// TODO: remove this expect(unreachable_pub) once the E2EI parts have been coupled.
+#![expect(unreachable_pub)]
 pub use core_crypto_keystore::{Database, DatabaseKey};
 
 mod crypto_provider;
@@ -13,6 +15,8 @@ use openmls_traits::{
         KemOutput, SignatureScheme,
     },
 };
+// TODO: remove this allow(unused) once the E2EI parts have been coupled.
+#[allow(unused)]
 pub use pki::{CertProfile, CertificateGenerationArgs, PkiEnvironmentProvider, PkiKeypair};
 
 /// 32-byte raw entropy seed

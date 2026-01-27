@@ -1,3 +1,6 @@
+// TODO: we're allowing unused code here because the E2EI parts haven't been
+// coupled yet; once they are, remove this.
+#![allow(unused)]
 use std::sync::Arc;
 
 use async_lock::{RwLock, RwLockReadGuard};

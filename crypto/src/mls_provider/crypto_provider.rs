@@ -47,6 +47,8 @@ fn normalize_p521_secret_key(sk: &[u8]) -> zeroize::Zeroizing<[u8; 66]> {
 }
 
 impl RustCrypto {
+    // TODO: remove this expect(unused) once reseeding has been restored.
+    #[expect(unused)]
     pub(crate) fn new_with_seed(seed: EntropySeed) -> Self {
         Self {
             rng: Arc::new(rand_chacha::ChaCha20Rng::from_seed(seed.0).into()),
