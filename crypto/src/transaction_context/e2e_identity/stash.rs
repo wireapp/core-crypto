@@ -11,13 +11,13 @@ impl TransactionContext {
     /// # Returns
     /// A handle for retrieving the enrollment later on
     pub async fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> Result<EnrollmentHandle> {
+        let database = self
+            .database()
+            .await
+            .map_err(RecursiveError::transaction("getting database"))?;
+
         enrollment
-            .stash(
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::transaction("getting mls provider"))?,
-            )
+            .stash(database)
             .await
             .map_err(RecursiveError::e2e_identity("stashing enrollment"))
             .map_err(Into::into)
@@ -28,16 +28,15 @@ impl TransactionContext {
     /// # Arguments
     /// * `handle` - returned by [TransactionContext::e2ei_enrollment_stash]
     pub async fn e2ei_enrollment_stash_pop(&self, handle: EnrollmentHandle) -> Result<E2eiEnrollment> {
-        E2eiEnrollment::stash_pop(
-            &self
-                .mls_provider()
-                .await
-                .map_err(RecursiveError::transaction("getting mls provider"))?,
-            handle,
-        )
-        .await
-        .map_err(RecursiveError::e2e_identity("popping stashed enrollment"))
-        .map_err(Into::into)
+        let database = self
+            .database()
+            .await
+            .map_err(RecursiveError::transaction("getting database"))?;
+
+        E2eiEnrollment::stash_pop(database, handle)
+            .await
+            .map_err(RecursiveError::e2e_identity("popping stashed enrollment"))
+            .map_err(Into::into)
     }
 }
 
@@ -48,7 +47,7 @@ mod tests {
     use crate::{
         CoreCrypto, E2eiEnrollment,
         e2e_identity::{enrollment::test_utils::*, id::WireQualifiedClientId},
-        mls_provider::{Database, MlsCryptoProvider},
+        mls_provider::Database,
         test_utils::{x509::X509TestChain, *},
     };
 
