@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_lock::{RwLockReadGuard, RwLockWriteGuard};
-use core_crypto_keystore::CryptoKeystoreMls as _;
+use core_crypto_keystore::{CryptoKeystoreMls as _, Database};
 use openmls::prelude::group_info::GroupInfo;
 use openmls_traits::OpenMlsCryptoProvider as _;
 
@@ -56,6 +56,14 @@ impl ConversationGuard {
     async fn transport(&self) -> Result<Arc<dyn MlsTransport>> {
         let transport = self.session().await?.transport.clone();
         Ok(transport)
+    }
+
+    async fn database(&self) -> Result<Database> {
+        self.central_context
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting database from context"))
+            .map_err(Into::into)
     }
 
     /// Destroys a group locally
