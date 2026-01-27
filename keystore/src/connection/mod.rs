@@ -18,7 +18,7 @@ use crate::{
     entities::{MlsPendingMessage, PersistedMlsGroup},
     traits::{
         BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase,
-        KeyType,
+        KeyType, SearchableEntity,
     },
     transaction::KeystoreTransaction,
 };
@@ -432,5 +432,14 @@ impl FetchFromDatabase for Database {
             return Ok(persisted_records);
         };
         transaction.find_all(persisted_records).await
+    }
+
+    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection> + SearchableEntity<SearchKey> + Clone + Send + Sync,
+        SearchKey: KeyType,
+    {
+        let mut conn = self.conn().await?;
+        E::find_all_matching(&mut conn, search_key).await
     }
 }
