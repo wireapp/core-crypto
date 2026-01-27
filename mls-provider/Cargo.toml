@@ -36,7 +36,6 @@ wire-e2e-identity = { workspace = true }
 web-time = "1.1.0"
 rand = { workspace = true, features = ["os_rng"] }
 getrandom = { version = "0.3", features = ["wasm_js"] }
-rand_core = "0.6"
 rand_chacha = "0.9"
 zeroize.workspace = true
 thiserror.workspace = true
@@ -46,7 +45,7 @@ core-crypto-keystore.workspace = true
 typed-builder.workspace = true
 
 [dependencies.hpke]
-version = "0.12"
+version = "0.13"
 features = ["x25519", "p256", "p384", "p521"]
 
 [dev-dependencies]
