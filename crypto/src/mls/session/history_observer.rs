@@ -16,7 +16,7 @@ pub trait HistoryObserver: Send + Sync {
     async fn history_client_created(&self, conversation_id: ConversationId, secret: &HistorySecret);
 }
 
-impl Session {
+impl<D> Session<D> {
     /// Add an history observer to this session.
     /// (see [HistoryObserver]).
     ///

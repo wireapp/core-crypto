@@ -28,7 +28,10 @@ fn from_stored(stored_keypackage: &StoredKeypackage) -> Result<Keypackage> {
         .map_err(Into::into)
 }
 
-impl Session {
+impl<D> Session<D>
+where
+    D: FetchFromDatabase,
+{
     /// Get an unambiguous credential for the provided ref from the currently-loaded set.
     async fn credential_from_ref(&self, credential_ref: &CredentialRef) -> Result<Arc<Credential>> {
         let signature_public_key = credential_ref.public_key().into();
@@ -46,6 +49,7 @@ impl Session {
     ///
     /// Must not be fully public, only crate-public, because as it mutates the keystore it must only ever happen within
     /// a transaction.
+    // TODO: thus, it should be implemented on the TransactionContext
     pub(crate) async fn generate_keypackage(
         &self,
         credential_ref: &CredentialRef,
@@ -75,8 +79,7 @@ impl Session {
     /// Get all [`Keypackage`]s in the database.
     pub(crate) async fn get_keypackages(&self) -> Result<Vec<Keypackage>> {
         let stored_keypackages: Vec<StoredKeypackage> = self
-            .crypto_provider
-            .keystore()
+            .database
             .load_all()
             .await
             .map_err(KeystoreError::wrap("finding all keypackages"))?;
@@ -103,8 +106,7 @@ impl Session {
 
     /// Load one [`Keypackage`] from its [`KeypackageRef`]
     pub(crate) async fn load_keypackage(&self, kp_ref: &KeypackageRef) -> Result<Option<Keypackage>> {
-        self.crypto_provider
-            .keystore()
+        self.database
             .get_borrowed::<StoredKeypackage>(kp_ref.hash_ref())
             .await
             .map_err(KeystoreError::wrap("loading keypackage from database"))?

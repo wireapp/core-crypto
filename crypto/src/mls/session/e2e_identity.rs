@@ -1,3 +1,4 @@
+use core_crypto_keystore::traits::FetchFromDatabase;
 use openmls::{
     prelude::{Credential, Node, group_info::VerifiableGroupInfo},
     treesync::RatchetTree,
@@ -11,7 +12,7 @@ use crate::{
     mls::{credential::ext::CredentialExt as _, session::Error},
 };
 
-impl Session {
+impl<D> Session<D> {
     /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
         self.crypto_provider.is_pki_env_setup().await
@@ -23,7 +24,10 @@ impl Session {
     /// If there are x509 (and optionally basic) credentials -> Ok(true)
     /// If there are no x509 but basic credentials -> Ok(false)
     /// If there are no credentials for the given ciphersuite -> Err(CredentialNotFound)
-    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> Result<bool> {
+    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> Result<bool>
+    where
+        D: FetchFromDatabase,
+    {
         let credentials = self
             .find_credentials(CredentialFindFilters::builder().ciphersuite(ciphersuite).build())
             .await?;
