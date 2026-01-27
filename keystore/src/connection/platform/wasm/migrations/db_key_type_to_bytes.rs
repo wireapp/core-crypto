@@ -2,7 +2,7 @@ use aes_gcm::KeyInit as _;
 use idb::{Factory, TransactionMode};
 use sha2::Digest as _;
 
-use super::{DB_VERSION_3, DB_VERSION_4, pre_v4};
+use super::{DB_VERSION_3, DB_VERSION_4, pre_v04};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
     connection::platform::wasm::rekey::rekey_entities,
@@ -22,7 +22,7 @@ pub(crate) async fn migrate_db_key_type_to_bytes(
     let old_cipher = aes_gcm::Aes256Gcm::new(&sha2::Sha256::digest(old_key));
     let new_cipher = aes_gcm::Aes256Gcm::new(new_key.as_ref().into());
 
-    let db = pre_v4::open_and_migrate(name).await?;
+    let db = pre_v04::open_and_migrate(name).await?;
 
     // The database could have been originally at version 3, or some older version,
     // but after migration, it has to be at 3.

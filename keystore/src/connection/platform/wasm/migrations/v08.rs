@@ -15,7 +15,7 @@ use crate::{
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
-    let previous_builder = super::v7::get_builder(name);
+    let previous_builder = super::v07::get_builder(name);
     let mut db_during_migration = Database::migration_connection(previous_builder, key).await?;
     let persisted_mls_groups = PersistedMlsGroup::load_all(&mut db_during_migration).await?;
 
@@ -63,7 +63,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
 
 /// Set up the builder for v8.
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
-    super::v7::get_builder(name).version(DB_VERSION_8).add_object_store(
+    super::v07::get_builder(name).version(DB_VERSION_8).add_object_store(
         ObjectStoreBuilder::new(&format!(
             "{collection_name}_new",
             collection_name = StoredCredential::COLLECTION_NAME

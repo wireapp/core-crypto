@@ -1,17 +1,17 @@
 mod db_key_type_to_bytes;
 mod delete_credential_by_session_id;
 mod migration_connection;
-mod pre_v4;
-mod v0;
+mod pre_v04;
+mod v00;
+mod v02;
+mod v03;
+mod v04;
+mod v05;
+mod v06;
+mod v07;
+mod v08;
+mod v09;
 mod v10;
-mod v2;
-mod v3;
-mod v4;
-mod v5;
-mod v6;
-mod v7;
-mod v8;
-mod v9;
 
 pub(super) use db_key_type_to_bytes::migrate_db_key_type_to_bytes;
 pub(super) use delete_credential_by_session_id::delete_credential_by_session_id;
@@ -104,12 +104,12 @@ async fn do_migration_step(from: u32, name: &str, key: &DatabaseKey) -> CryptoKe
     match from {
         // idb returns version 1 for freshly opened databases so here we just
         // need to initialize object stores.
-        1 => v4::migrate(name).await,
-        DB_VERSION_4 => v5::migrate(name).await,
-        DB_VERSION_5 => v6::migrate(name, key).await,
-        DB_VERSION_6 => v7::migrate(name, key).await,
-        DB_VERSION_7 => v8::migrate(name, key).await,
-        DB_VERSION_8 => v9::migrate(name, key).await,
+        1 => v04::migrate(name).await,
+        DB_VERSION_4 => v05::migrate(name).await,
+        DB_VERSION_5 => v06::migrate(name, key).await,
+        DB_VERSION_6 => v07::migrate(name, key).await,
+        DB_VERSION_7 => v08::migrate(name, key).await,
+        DB_VERSION_8 => v09::migrate(name, key).await,
         DB_VERSION_9 => v10::migrate(name, key).await,
         _ => Err(CryptoKeystoreError::MigrationNotSupported(from)),
     }
@@ -143,7 +143,7 @@ mod tests {
         factory.delete(name).expect("delete request").await.expect("wiping db");
 
         let test_builder = |version| -> DatabaseBuilder {
-            v3::get_builder(name)
+            v03::get_builder(name)
                 .add_object_store(ObjectStoreBuilder::new("regression_check").auto_increment(false))
                 .version(version)
         };
@@ -196,7 +196,7 @@ mod tests {
         const LEN_RANGE: std::ops::Range<usize> = 1024..8192;
         let mut rng = rand::thread_rng();
 
-        let builder = v9::get_builder(name);
+        let builder = v09::get_builder(name);
         let conn = crate::Database::migration_connection(builder, &TEST_ENCRYPTION_KEY)
             .await
             .expect("DB_VERSION_9");
@@ -235,7 +235,7 @@ mod tests {
         .await
         .expect("inserting test data");
 
-        let builder = v9::get_builder(name);
+        let builder = v09::get_builder(name);
         let mut conn = crate::Database::migration_connection(builder, &TEST_ENCRYPTION_KEY)
             .await
             .expect("DB_VERSION_9");
