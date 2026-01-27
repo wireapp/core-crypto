@@ -14,7 +14,7 @@ use crate::{
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
-    let previous_builder = super::v5::get_builder(name);
+    let previous_builder = super::v05::get_builder(name);
     let mut db_during_migration = Database::migration_connection(previous_builder, key).await?;
     let signature_keys = StoredSignatureKeypair::load_all(&mut db_during_migration).await?;
     let v5_credentials = V5Credential::load_all(&mut db_during_migration).await?;
@@ -51,7 +51,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
 
 /// Set up the builder for v6.
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
-    super::v5::get_builder(name)
+    super::v05::get_builder(name)
         .version(DB_VERSION_6)
         .remove_object_store(StoredSignatureKeypair::COLLECTION_NAME)
 }

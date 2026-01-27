@@ -13,5 +13,5 @@ pub(super) async fn migrate(name: &str) -> CryptoKeystoreResult<u32> {
 
 /// Just initialize object stores.
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
-    super::v3::get_builder(name).version(DB_VERSION_4)
+    super::v03::get_builder(name).version(DB_VERSION_4)
 }

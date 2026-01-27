@@ -16,7 +16,7 @@ pub(super) async fn migrate(name: &str) -> CryptoKeystoreResult<u32> {
 
 /// Add a new object store for the ConsumerData struct.
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
-    let previous_builder = super::v0::get_builder(name);
+    let previous_builder = super::v00::get_builder(name);
     previous_builder.version(DB_VERSION_2).add_object_store(
         ObjectStoreBuilder::new(ConsumerData::COLLECTION_NAME)
             .auto_increment(false)

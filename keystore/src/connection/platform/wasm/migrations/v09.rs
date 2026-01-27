@@ -14,7 +14,7 @@ use crate::{
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
-    let previous_builder = super::v8::get_builder(name);
+    let previous_builder = super::v08::get_builder(name);
     let mut db_during_migration = Database::migration_connection(previous_builder, key).await?;
     let credentials = StoredCredential::load_all(&mut db_during_migration).await?;
 
@@ -54,7 +54,7 @@ pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
     let collection_name = StoredCredential::COLLECTION_NAME;
     let collection_name_with_prefix = &format!("{collection_name}_new",);
 
-    super::v8::get_builder(name)
+    super::v08::get_builder(name)
         .version(DB_VERSION_9)
         .remove_object_store(collection_name)
         .rename_object_store(collection_name_with_prefix, collection_name)

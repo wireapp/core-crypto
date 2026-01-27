@@ -16,13 +16,12 @@ pub(super) async fn migrate(name: &str, _key: &DatabaseKey) -> CryptoKeystoreRes
 
 /// Set up the builder for v10.
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
-    super::v9::get_builder(name).version(DB_VERSION_10).mutate_object_store(
-        PersistedMlsGroup::COLLECTION_NAME,
-        |builder| {
+    super::v09::get_builder(name)
+        .version(DB_VERSION_10)
+        .mutate_object_store(PersistedMlsGroup::COLLECTION_NAME, |builder| {
             builder.add_index(IndexBuilder::new(
                 "parent_id".into(),
                 idb::KeyPath::Single("parent_id".into()),
             ))
-        },
-    )
+        })
 }
