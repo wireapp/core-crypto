@@ -2,13 +2,13 @@ mod crypto;
 #[cfg(test)]
 pub mod test_utils;
 
-use core_crypto_keystore::CryptoKeystoreMls as _;
-use openmls_traits::{OpenMlsCryptoProvider as _, random::OpenMlsRand as _};
+use core_crypto_keystore::CryptoKeystoreMls;
+use openmls_traits::random::OpenMlsRand as _;
 use wire_e2e_identity::{RustyE2eIdentity, prelude::E2eiAcmeAuthorization};
 use zeroize::Zeroize as _;
 
 use super::{EnrollmentHandle, Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
-use crate::{Ciphersuite, ClientId, KeystoreError, MlsError, mls_provider::MlsCryptoProvider};
+use crate::{Ciphersuite, ClientId, KeystoreError, MlsError, mls_provider::CRYPTO};
 
 /// Wire end to end identity solution for fetching a x509 certificate which identifies a client.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -440,26 +440,23 @@ impl E2eiEnrollment {
         Ok(certificates)
     }
 
-    pub(crate) async fn stash(self, backend: &MlsCryptoProvider) -> Result<EnrollmentHandle> {
+    pub(crate) async fn stash(self, database: impl CryptoKeystoreMls) -> Result<EnrollmentHandle> {
         // should be enough to prevent collisions
         const HANDLE_SIZE: usize = 32;
 
         let content = serde_json::to_vec(&self)?;
-        let handle = backend
-            .crypto()
+        let handle = CRYPTO
             .random_vec(HANDLE_SIZE)
             .map_err(MlsError::wrap("generating random vector of bytes"))?;
-        backend
-            .key_store()
+        database
             .save_e2ei_enrollment(&handle, &content)
             .await
             .map_err(KeystoreError::wrap("saving e2ei enrollment"))?;
         Ok(handle)
     }
 
-    pub(crate) async fn stash_pop(backend: &MlsCryptoProvider, handle: EnrollmentHandle) -> Result<Self> {
-        let content = backend
-            .key_store()
+    pub(crate) async fn stash_pop(database: impl CryptoKeystoreMls, handle: EnrollmentHandle) -> Result<Self> {
+        let content = database
             .pop_e2ei_enrollment(&handle)
             .await
             .map_err(KeystoreError::wrap("popping e2ei enrollment"))?
