@@ -6,7 +6,7 @@ mod crypto_provider;
 mod error;
 mod pki;
 
-pub use crypto_provider::RustCrypto;
+pub use crypto_provider::{CRYPTO, RustCrypto};
 pub use error::{MlsProviderError, MlsProviderResult};
 use openmls_traits::{
     crypto::OpenMlsCrypto,
