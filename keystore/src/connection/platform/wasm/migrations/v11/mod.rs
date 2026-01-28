@@ -8,6 +8,7 @@ mod v10_persisted_mls_group;
 use idb::builder::DatabaseBuilder;
 use serde::Serialize as _;
 
+use self::v10_persisted_mls_group::V10PersistedMlsGroup;
 use super::DB_VERSION_11;
 use crate::{
     CryptoKeystoreResult, Database, DatabaseKey,
@@ -15,7 +16,6 @@ use crate::{
     entities::PersistedMlsGroup,
     traits::{BorrowPrimaryKey as _, Encrypting as _, Entity as _, EntityBase as _, KeyType as _},
 };
-use v10_persisted_mls_group::V10PersistedMlsGroup;
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
