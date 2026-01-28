@@ -18,7 +18,7 @@ impl TransactionContext {
     ///
     /// This helper struct permits mutations on a conversation.
     pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationGuard> {
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
         let inner = self
             .mls_groups()
             .await?
@@ -36,7 +36,7 @@ impl TransactionContext {
     }
 
     pub(crate) async fn pending_conversation(&self, id: &ConversationIdRef) -> Result<PendingConversation> {
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
         let Some(pending_group) = keystore
             .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
             .await
@@ -80,7 +80,7 @@ impl TransactionContext {
     pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
         self.mls_groups()
             .await?
-            .get_fetch(id, &self.keystore().await?, None)
+            .get_fetch(id, &self.database().await?, None)
             .await
             .map(|option| option.is_some())
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))

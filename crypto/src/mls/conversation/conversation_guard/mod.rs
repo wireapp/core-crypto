@@ -60,7 +60,7 @@ impl ConversationGuard {
 
     async fn database(&self) -> Result<Database> {
         self.central_context
-            .keystore()
+            .database()
             .await
             .map_err(RecursiveError::transaction("getting database from context"))
             .map_err(Into::into)
@@ -148,7 +148,7 @@ pub mod test_utils {
             let id = inner.id();
 
             let (parent_id, group) = context
-                .keystore()
+                .database()
                 .await
                 .unwrap()
                 .mls_groups_restore()

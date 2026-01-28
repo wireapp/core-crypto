@@ -10,7 +10,7 @@ use crate::{
 impl TransactionContext {
     /// Initializes the proteus client
     pub async fn proteus_init(&self) -> Result<()> {
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
         let proteus_client = ProteusCentral::try_new(&keystore)
             .await
             .map_err(RecursiveError::root("creating new proteus client"))?;
@@ -35,7 +35,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let Some(proteus) = mutex.as_mut() else { return Ok(()) };
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
         proteus
             .reload_sessions(&keystore)
             .await
@@ -55,7 +55,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
         let session = proteus
             .session_from_prekey(session_id, prekey)
             .await
@@ -79,7 +79,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let mut keystore = self.keystore().await?;
+        let mut keystore = self.database().await?;
         let (session, message) = proteus
             .session_from_message(&mut keystore, session_id, envelope)
             .await
@@ -99,7 +99,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
         proteus
             .session_save(&keystore, session_id)
             .await
@@ -115,7 +115,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
         proteus
             .session_delete(&keystore, session_id)
             .await
@@ -134,7 +134,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
         proteus
             .session(session_id, &keystore)
             .await
@@ -150,7 +150,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
         Ok(proteus.session_exists(session_id, &keystore).await)
     }
 
@@ -162,7 +162,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let mut keystore = self.keystore().await?;
+        let mut keystore = self.database().await?;
         proteus
             .decrypt(&mut keystore, session_id, ciphertext)
             .await
@@ -178,7 +178,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let mut keystore = self.keystore().await?;
+        let mut keystore = self.database().await?;
         proteus
             .encrypt(&mut keystore, session_id, plaintext)
             .await
@@ -199,7 +199,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let mut keystore = self.keystore().await?;
+        let mut keystore = self.database().await?;
         proteus
             .encrypt_batched(&mut keystore, sessions, plaintext)
             .await
@@ -215,7 +215,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
         proteus
             .new_prekey(prekey_id, &keystore)
             .await
@@ -232,7 +232,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
         proteus
             .new_prekey_auto(&keystore)
             .await
@@ -245,7 +245,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
 
         proteus
             .last_resort_prekey(&keystore)
@@ -278,7 +278,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
         proteus
             .fingerprint_local(session_id, &keystore)
             .await
@@ -294,7 +294,7 @@ impl TransactionContext {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self.database().await?;
         proteus
             .fingerprint_remote(session_id, &keystore)
             .await

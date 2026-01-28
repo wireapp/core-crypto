@@ -181,7 +181,7 @@ mod tests {
             // Pending group removed from keystore
             let error = bob
                 .transaction
-                .keystore()
+                .database()
                 .await
                 .unwrap()
                 .mls_pending_groups_load(&id)

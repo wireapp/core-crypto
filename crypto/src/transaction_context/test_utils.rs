@@ -25,7 +25,7 @@ pub struct EntitiesCount {
 impl TransactionContext {
     /// Count the entities
     pub async fn count_entities(&self) -> EntitiesCount {
-        let keystore = self.keystore().await.unwrap();
+        let keystore = self.database().await.unwrap();
         let credential = keystore.count::<StoredCredential>().await.unwrap();
         let encryption_keypair = keystore.count::<StoredEncryptionKeyPair>().await.unwrap();
         let epoch_encryption_keypair = keystore.count::<StoredEpochEncryptionKeypair>().await.unwrap();
