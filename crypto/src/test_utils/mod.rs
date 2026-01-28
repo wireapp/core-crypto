@@ -263,7 +263,7 @@ impl SessionContext {
         *guard = new_transport.clone();
         let session = self.session().await;
         let crypto_provider = session.crypto_provider.clone();
-        let database = self.transaction.keystore().await.unwrap();
+        let database = self.transaction.database().await.unwrap();
         let new_session = Session::new(self.get_client_id().await, crypto_provider, database, new_transport);
         self.set_session(new_session).await;
     }

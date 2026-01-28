@@ -104,7 +104,7 @@ impl TransactionContext {
             RecursiveError::mls_credential("creating credential from certificate bundle in e2ei_mls_init_only"),
         )?;
         let database = &self
-            .keystore()
+            .database()
             .await
             .map_err(RecursiveError::transaction("Getting database from transaction context"))?;
         let credential_ref = credential.save(database).await.map_err(RecursiveError::mls_credential(
