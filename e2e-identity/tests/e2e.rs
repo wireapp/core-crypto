@@ -39,7 +39,6 @@ use wire_e2e_identity::acme::prelude::*;
 mod utils;
 
 /// Tests the nominal case and prints the pretty output with the mermaid chart in this crate README.
-#[cfg(not(ci))]
 #[rstest]
 #[tokio::test]
 async fn demo_should_succeed(test_env: TestEnvironment) {
