@@ -5,6 +5,7 @@ use std::{
     collections::{HashMap, hash_map::RandomState},
     net::SocketAddr,
     str::FromStr,
+    sync::{LazyLock, Mutex},
 };
 
 use base64::Engine;
@@ -15,11 +16,9 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 use crate::utils::cfg::default_http_client;
 
-lazy_static::lazy_static! {
-    // ugly but openidconnect::Client has too many generics and it's a hell to store in a context
-    // to pass between endpoints
-    pub static ref CONTEXT: std::sync::Mutex<HashMap<String, String>> = std::sync::Mutex::new(HashMap::new());
-}
+// ugly but openidconnect::Client has too many generics and it's a hell to store in a context
+// to pass between endpoints
+pub static CONTEXT: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
 pub async fn custom_oauth_client(
     key: &'static str,
