@@ -36,6 +36,7 @@ pub struct PersistedMlsGroup {
     #[entity(id, hex, column = "id_hex")]
     pub id: Vec<u8>,
     pub state: Vec<u8>,
+    #[entity(unencrypted_wasm)]
     pub parent_id: Option<Vec<u8>>,
 }
 
