@@ -62,17 +62,6 @@ uniffi = { workspace = true, features = [
   "wasm-unstable-single-threaded",
 ] }
 
-[package.metadata.wasm-pack.profile.dev]
-wasm-opt = false
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = [
-  "-Os",
-  "--enable-mutable-globals",
-  "--enable-threads",
-  "--detect-features",
-]
-
 [dev-dependencies]
 testing_logger = "0.1.1"
 macro_rules_attribute.workspace = true

@@ -108,11 +108,3 @@ features = ["async_futures", "html_reports"]
 
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
 console_error_panic_hook = "0.1"
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = [
-  "-Os",
-  "--enable-mutable-globals",
-  "--enable-threads",
-  "--detect-features",
-]
