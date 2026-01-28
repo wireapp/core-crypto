@@ -10,7 +10,7 @@
 //! | 0 pend. Proposal  | ❌              | ✅              |
 //! | 1+ pend. Proposal | ❌              | ✅              |
 
-use core_crypto_keystore::entities::StoredEncryptionKeyPair;
+use core_crypto_keystore::{Database, entities::StoredEncryptionKeyPair};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use super::Result;
@@ -19,7 +19,12 @@ use crate::{MlsError, Session, mls::MlsConversation, mls_provider::MlsCryptoProv
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
-    pub(crate) async fn commit_accepted(&mut self, client: &Session, backend: &MlsCryptoProvider) -> Result<()> {
+    pub(crate) async fn commit_accepted(
+        &mut self,
+        session: &Session<Database>,
+        database: &Database,
+        backend: &MlsCryptoProvider,
+    ) -> Result<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
         let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
 
@@ -27,7 +32,7 @@ impl MlsConversation {
             .merge_pending_commit(backend)
             .await
             .map_err(MlsError::wrap("merging pending commit"))?;
-        self.persist_group_when_changed(&backend.keystore(), false).await?;
+        self.persist_group_when_changed(database, false).await?;
 
         // ..so if there's any, we clear them after the commit is merged
         for oln in &previous_own_leaf_nodes {
@@ -35,7 +40,7 @@ impl MlsConversation {
             let _ = backend.key_store().remove_borrowed::<StoredEncryptionKeyPair>(ek).await;
         }
 
-        client
+        session
             .notify_epoch_changed(self.id.clone(), self.group.epoch().as_u64())
             .await;
 
@@ -67,6 +72,7 @@ mod tests {
                     .await
                     .commit_accepted(
                         &alice.transaction.session().await.unwrap(),
+                        &alice.database().await,
                         &alice.session().await.crypto_provider,
                     )
                     .await
@@ -102,6 +108,7 @@ mod tests {
                     .await
                     .commit_accepted(
                         &alice.transaction.session().await.unwrap(),
+                        &alice.database().await,
                         &alice.session().await.crypto_provider,
                     )
                     .await

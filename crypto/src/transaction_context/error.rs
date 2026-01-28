@@ -2,7 +2,7 @@
 #![allow(missing_docs)]
 
 use super::e2e_identity;
-use crate::mls::conversation::pending_conversation::PendingConversation;
+use crate::{ConversationId, mls::conversation::pending_conversation::PendingConversation};
 
 /// A module-specific [Result][core::result::Result] type with a default error variant.
 pub type Result<T, E = Error> = core::result::Result<T, E>;
@@ -38,6 +38,12 @@ pub enum Error {
     Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
     Mls(#[from] crate::MlsError),
+    #[error("Credentials of type {0} are unknown")]
+    UnknownCredential(u16),
+    #[error("this credential is still in use by the conversation with id \"{}\"", hex::encode(.0))]
+    CredentialStillInUse(ConversationId),
+    #[error("The supplied credential does not match the id this CC instance was initialized with")]
+    WrongCredential,
     #[error("{0}")]
     Leaf(#[from] crate::LeafError),
     #[error(transparent)]

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_lock::{RwLockReadGuard, RwLockWriteGuard};
-use core_crypto_keystore::CryptoKeystoreMls as _;
+use core_crypto_keystore::{CryptoKeystoreMls as _, Database};
 use openmls::prelude::group_info::GroupInfo;
 use openmls_traits::OpenMlsCryptoProvider as _;
 
@@ -58,6 +58,14 @@ impl ConversationGuard {
         Ok(transport)
     }
 
+    async fn database(&self) -> Result<Database> {
+        self.central_context
+            .database()
+            .await
+            .map_err(RecursiveError::transaction("getting database from context"))
+            .map_err(Into::into)
+    }
+
     /// Destroys a group locally
     ///
     /// # Errors
@@ -99,12 +107,12 @@ impl ConversationGuard {
     /// Marks this conversation as child of another.
     /// Prerequisite: Must be a member of the parent group, and it must exist in the keystore
     pub async fn mark_as_child_of(&mut self, parent_id: &ConversationIdRef) -> Result<()> {
-        let backend = self.crypto_provider().await?;
-        let keystore = &backend.keystore();
+        let database = &self.database().await?;
+
         let mut conversation = self.conversation_mut().await;
-        if keystore.mls_group_exists(parent_id).await {
+        if database.mls_group_exists(parent_id).await {
             conversation.parent_id = Some(parent_id.to_owned());
-            conversation.persist_group_when_changed(keystore, true).await?;
+            conversation.persist_group_when_changed(database, true).await?;
             Ok(())
         } else {
             Err(Error::ParentGroupNotFound)
@@ -140,7 +148,7 @@ pub mod test_utils {
             let id = inner.id();
 
             let (parent_id, group) = context
-                .keystore()
+                .database()
                 .await
                 .unwrap()
                 .mls_groups_restore()

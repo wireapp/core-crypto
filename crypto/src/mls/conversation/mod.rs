@@ -40,6 +40,7 @@ use std::{
     sync::Arc,
 };
 
+use core_crypto_keystore::Database;
 use itertools::Itertools as _;
 use log::trace;
 use openmls::{
@@ -87,7 +88,7 @@ pub(crate) trait ConversationWithMls<'a> {
             .map_err(Into::into)
     }
 
-    async fn session(&self) -> Result<Session> {
+    async fn session(&self) -> Result<Session<Database>> {
         self.context()
             .await?
             .session()
@@ -180,7 +181,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         let authentication_service = backend.authentication_service();
         authentication_service.refresh_time_of_interest().await;
         let inner = self.conversation().await;
-        let state = Session::compute_conversation_state(
+        let state = Session::<Database>::compute_conversation_state(
             inner.ciphersuite(),
             inner.group.members_credentials(),
             CredentialType::X509,
@@ -296,29 +297,20 @@ pub struct MlsConversation {
 
 impl MlsConversation {
     /// Creates a new group/conversation
-    ///
-    /// # Arguments
-    /// * `id` - group/conversation identifier
-    /// * `author_client` - the client responsible for creating the group
-    /// * `credential_ref` - ref of the credential the creator wants to join the group with
-    /// * `config` - group configuration
-    ///
-    /// # Errors
-    /// Errors can happen from OpenMls or from the KeyStore
     pub async fn create(
         id: ConversationId,
-        author_client: &Session,
+        provider: &MlsCryptoProvider,
+        database: &Database,
         credential_ref: &CredentialRef,
         configuration: MlsConversationConfiguration,
     ) -> Result<Self> {
-        let database = &author_client.crypto_provider.keystore();
         let credential = credential_ref
             .load(database)
             .await
             .map_err(RecursiveError::mls_credential_ref("getting credential"))?;
 
         let group = MlsGroup::new_with_group_id(
-            &author_client.crypto_provider,
+            provider,
             &credential.signature_key_pair,
             &configuration.as_openmls_default_configuration()?,
             openmls::prelude::GroupId::from_slice(id.as_ref()),
@@ -343,7 +335,7 @@ impl MlsConversation {
     pub(crate) async fn from_mls_group(
         group: MlsGroup,
         configuration: MlsConversationConfiguration,
-        backend: &MlsCryptoProvider,
+        database: &Database,
     ) -> Result<Self> {
         let id = ConversationId::from(group.group_id().as_slice());
 
@@ -354,9 +346,7 @@ impl MlsConversation {
             parent_id: None,
         };
 
-        conversation
-            .persist_group_when_changed(&backend.keystore(), true)
-            .await?;
+        conversation.persist_group_when_changed(database, true).await?;
 
         Ok(conversation)
     }
@@ -420,7 +410,11 @@ impl MlsConversation {
             .last()
     }
 
-    async fn find_credential_for_leaf_node(&self, session: &Session, leaf_node: &LeafNode) -> Result<Arc<Credential>> {
+    async fn find_credential_for_leaf_node(
+        &self,
+        session: &Session<Database>,
+        leaf_node: &LeafNode,
+    ) -> Result<Arc<Credential>> {
         let credential = session
             .find_credential_by_public_key(leaf_node.signature_key())
             .await
@@ -428,7 +422,7 @@ impl MlsConversation {
         Ok(credential)
     }
 
-    pub(crate) async fn find_current_credential(&self, client: &Session) -> Result<Arc<Credential>> {
+    pub(crate) async fn find_current_credential(&self, client: &Session<Database>) -> Result<Arc<Credential>> {
         // if the group has pending proposals one of which is an own update proposal, we should take the credential from
         // there.
         let own_leaf = Self::extract_own_updated_node_from_proposals(

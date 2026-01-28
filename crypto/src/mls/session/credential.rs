@@ -1,121 +1,39 @@
 use std::sync::Arc;
 
+use core_crypto_keystore::traits::FetchFromDatabase;
 use openmls::prelude::SignaturePublicKey;
 
-use super::{Error, Result};
-use crate::{Credential, CredentialFindFilters, CredentialRef, MlsConversation, RecursiveError, Session};
+use super::Result;
+use crate::{Credential, CredentialFindFilters, CredentialRef, RecursiveError, Session};
 
-impl Session {
+impl<D> Session<D> {
     /// Find all credentials known by this session which match the specified conditions.
     ///
     /// If no filters are set, this is equivalent to [`Self::get_credentials`].
-    pub async fn find_credentials(&self, find_filters: CredentialFindFilters<'_>) -> Result<Vec<CredentialRef>> {
-        let database = self.crypto_provider.keystore();
-        CredentialRef::find(&database, find_filters)
+    pub async fn find_credentials(&self, find_filters: CredentialFindFilters<'_>) -> Result<Vec<CredentialRef>>
+    where
+        D: FetchFromDatabase,
+    {
+        CredentialRef::find(self.database(), find_filters)
             .await
             .map_err(RecursiveError::mls_credential_ref("finding credentials with filters"))
             .map_err(Into::into)
     }
 
     /// Get all credentials known by this session.
-    pub async fn get_credentials(&self) -> Result<Vec<CredentialRef>> {
+    pub async fn get_credentials(&self) -> Result<Vec<CredentialRef>>
+    where
+        D: FetchFromDatabase,
+    {
         self.find_credentials(Default::default()).await
     }
 
-    /// Add a credential to the database of this session.
-    pub(crate) async fn add_credential(&self, credential: Credential) -> Result<CredentialRef> {
-        let credential = self.add_credential_producing_arc(credential).await?;
-        Ok(CredentialRef::from_credential(&credential))
-    }
-
-    /// Add a credential to the database of this session.
-    ///
-    /// Returns the actual credential instance which was loaded from the DB.
-    /// This is a convenience for internal use and should _not_ be propagated across
-    /// the FFI boundary. Instead, use [`Self::add_credential`] to produce a [`CredentialRef`].
-    pub(crate) async fn add_credential_producing_arc(&self, credential: Credential) -> Result<Arc<Credential>> {
-        if *credential.client_id() != self.id() {
-            return Err(Error::WrongCredential);
-        }
-
-        self.add_credential_without_clientid_check(credential).await
-    }
-
-    /// Add a credential to the database of this session without validating that its client ID matches the session
-    /// client id.
-    ///
-    /// This is rarely useful and should only be used when absolutely necessary. You'll know it if you need it.
-    ///
-    /// Prefer [`Self::add_credential`].
-    pub(crate) async fn add_credential_without_clientid_check(
-        &self,
-        mut credential: Credential,
-    ) -> Result<Arc<Credential>> {
-        let _credential_ref = credential
-            .save(&self.crypto_provider.keystore())
-            .await
-            .map_err(RecursiveError::mls_credential("saving credential"))?;
-
-        Ok(Arc::new(credential))
-    }
-
-    /// Remove a credential from the database of this session.
-    ///
-    /// First checks that the credential is not used in any conversation.
-    /// Removes both the credential itself and also any key packages which were generated from it.
-    pub async fn remove_credential(&self, credential_ref: &CredentialRef) -> Result<()> {
-        // setup
-        if *credential_ref.client_id() != self.id() {
-            return Err(Error::WrongCredential);
-        }
-
-        let database = self.crypto_provider.keystore();
-
-        let credential = credential_ref
-            .load(&database)
-            .await
-            .map_err(RecursiveError::mls_credential_ref(
-                "loading all credentials from ref to remove from session identities",
-            ))?;
-
-        // in a perfect world, we'd pre-cache the mls credentials in a set structure of some sort for faster querying.
-        // unfortunately, `MlsCredential` is `!Hash` and `!Ord`, so both the standard sets are out.
-        // so whatever, linear scan over the credentials every time will have to do.
-
-        // ensure this credential is not in use by any conversation
-        for (conversation_id, conversation) in
-            MlsConversation::load_all(&database)
-                .await
-                .map_err(RecursiveError::mls_conversation(
-                    "loading all conversations to check if the credential to be removed is present",
-                ))?
-        {
-            let converation_credential = conversation
-                .own_mls_credential()
-                .map_err(RecursiveError::mls_conversation("geting conversation credential"))?;
-            if credential.mls_credential() == converation_credential {
-                return Err(Error::CredentialStillInUse(conversation_id));
-            }
-        }
-
-        // remove any key packages generated by this credential
-        self.remove_keypackages_for(credential_ref).await?;
-
-        // finally remove the credentials from the keystore so they won't be loaded on next mls_init
-        credential
-            .delete(&database)
-            .await
-            .map_err(RecursiveError::mls_credential("deleting credential from keystore"))
-            .map_err(Into::into)
-    }
-
     /// convenience function deferring to the implementation on the inner type
-    pub(crate) async fn find_credential_by_public_key(
-        &self,
-        public_key: &SignaturePublicKey,
-    ) -> Result<Arc<Credential>> {
-        let database = self.crypto_provider.keystore();
-        let credential = Credential::find_by_public_key(&database, public_key)
+    pub(crate) async fn find_credential_by_public_key(&self, public_key: &SignaturePublicKey) -> Result<Arc<Credential>>
+    where
+        D: FetchFromDatabase,
+    {
+        let credential = Credential::find_by_public_key(&self.database, public_key)
             .await
             .map_err(RecursiveError::mls_credential("getting credential by public key"))?;
         Ok(Arc::new(credential))

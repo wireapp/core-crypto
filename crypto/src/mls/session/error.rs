@@ -3,8 +3,6 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
-use crate::ConversationId;
-
 pub(crate) type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
@@ -32,12 +30,6 @@ pub enum Error {
     UnexpectedlyReady,
     #[error("The keystore already contains a stored identity. Cannot create a new one!")]
     IdentityAlreadyPresent,
-    #[error("The supplied credential does not match the id this CC instance was initialized with")]
-    WrongCredential,
-    #[error("Credentials of type {0} are unknown")]
-    UnknownCredential(u16),
-    #[error("this credential is still in use by the conversation with id \"{}\"", hex::encode(.0))]
-    CredentialStillInUse(ConversationId),
     #[error("An EpochObserver has already been registered; reregistration is not possible")]
     EpochObserverAlreadyExists,
     #[error("An HistoryHandler has already been registered; reregistration is not possible")]

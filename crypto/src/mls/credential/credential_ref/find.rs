@@ -1,12 +1,9 @@
-use core_crypto_keystore::{entities::StoredCredential, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{entities::StoredCredential, traits::FetchFromDatabase};
 use openmls::prelude::Credential as MlsCredential;
 use tls_codec::Deserialize as _;
 
 use super::{Error, Result};
-use crate::{
-    Ciphersuite, ClientId, CredentialRef, CredentialType, KeystoreError, mls::session::id::ClientIdRef,
-    mls_provider::Database,
-};
+use crate::{Ciphersuite, ClientId, CredentialRef, CredentialType, KeystoreError, mls::session::id::ClientIdRef};
 
 /// Filters to narrow down the set of credentials returned from various credential-finding methods.
 ///
@@ -56,7 +53,7 @@ impl CredentialRef {
     // Our database does not currently support indices or even in-db searching, so this moves all data
     // from the DB to the runtime, decodes everything, and then filters. This is obviously suboptimal,
     // but that's only going to be improved with WPB-20839.
-    pub(crate) async fn find(database: &Database, find_filters: FindFilters<'_>) -> Result<Vec<Self>> {
+    pub(crate) async fn find(database: &impl FetchFromDatabase, find_filters: FindFilters<'_>) -> Result<Vec<Self>> {
         let FindFilters {
             client_id,
             ciphersuite,
@@ -108,7 +105,7 @@ impl CredentialRef {
     }
 
     /// Load all credentials from the database
-    pub async fn get_all(database: &Database) -> Result<Vec<Self>> {
+    pub async fn get_all(database: &impl FetchFromDatabase) -> Result<Vec<Self>> {
         Self::find(database, FindFilters::default()).await
     }
 }

@@ -5,6 +5,7 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
+use core_crypto_keystore::Database;
 use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn, prelude::LeafNode};
 
 use super::{Error, Result};
@@ -21,8 +22,9 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_add_member(
         &mut self,
-        client: &Session,
+        client: &Session<Database>,
         backend: &MlsCryptoProvider,
+        database: &Database,
         key_package: KeyPackageIn,
     ) -> Result<MlsProposalBundle> {
         let signer = &self
@@ -32,7 +34,7 @@ impl MlsConversation {
             .signature_key_pair;
 
         let crl_new_distribution_points = get_new_crl_distribution_points(
-            backend,
+            database,
             extract_crl_uris_from_credentials(std::iter::once(key_package.credential().mls_credential()))
                 .map_err(RecursiveError::mls_credential("extracting crl uris from credentials"))?,
         )
@@ -49,7 +51,7 @@ impl MlsConversation {
             proposal_ref: proposal_ref.into(),
             crl_new_distribution_points,
         };
-        self.persist_group_when_changed(&backend.keystore(), false).await?;
+        self.persist_group_when_changed(database, false).await?;
         Ok(proposal)
     }
 
@@ -57,8 +59,9 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_remove_member(
         &mut self,
-        client: &Session,
-        backend: &MlsCryptoProvider,
+        client: &Session<Database>,
+        provider: &MlsCryptoProvider,
+        database: &Database,
         member: LeafNodeIndex,
     ) -> Result<MlsProposalBundle> {
         let signer = &self
@@ -68,10 +71,10 @@ impl MlsConversation {
             .signature_key_pair;
         let proposal = self
             .group
-            .propose_remove_member(backend, signer, member)
+            .propose_remove_member(provider, signer, member)
             .map_err(MlsError::wrap("propose remove member"))
             .map(MlsProposalBundle::from)?;
-        self.persist_group_when_changed(&backend.keystore(), false).await?;
+        self.persist_group_when_changed(database, false).await?;
         Ok(proposal)
     }
 
@@ -79,18 +82,21 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_self_update(
         &mut self,
-        client: &Session,
-        backend: &MlsCryptoProvider,
+        client: &Session<Database>,
+        provider: &MlsCryptoProvider,
+        database: &Database,
     ) -> Result<MlsProposalBundle> {
-        self.propose_explicit_self_update(client, backend, None).await
+        self.propose_explicit_self_update(client, provider, database, None)
+            .await
     }
 
     /// see [openmls::group::MlsGroup::propose_self_update]
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_explicit_self_update(
         &mut self,
-        client: &Session,
+        client: &Session<Database>,
         backend: &MlsCryptoProvider,
+        database: &Database,
         leaf_node: Option<LeafNode>,
     ) -> Result<MlsProposalBundle> {
         let msg_signer = &self
@@ -110,7 +116,7 @@ impl MlsConversation {
         .map(MlsProposalBundle::from)
         .map_err(MlsError::wrap("proposing explicit self update"))?;
 
-        self.persist_group_when_changed(&backend.keystore(), false).await?;
+        self.persist_group_when_changed(database, false).await?;
         Ok(proposal)
     }
 }

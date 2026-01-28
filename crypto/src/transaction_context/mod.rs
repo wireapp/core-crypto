@@ -13,14 +13,15 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef, KeystoreError,
-    MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
+    ClientId, ClientIdentifier, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsConversation,
+    MlsError, MlsTransport, RecursiveError, Session,
     e2e_identity::pki_env::PkiEnvironment,
     group_store::GroupStore,
     mls::{self, HasSessionAndCrypto},
     mls_provider::{Database, MlsCryptoProvider},
 };
 pub mod conversation;
+mod credential;
 pub mod e2e_identity;
 mod error;
 pub mod key_package;
@@ -47,8 +48,8 @@ pub struct TransactionContext {
 enum TransactionContextInner {
     Valid {
         pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
-        keystore: Database,
-        mls_session: Arc<RwLock<Option<Session>>>,
+        database: Database,
+        mls_session: Arc<RwLock<Option<Session<Database>>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
         #[cfg(feature = "proteus")]
         proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
@@ -75,7 +76,7 @@ impl CoreCrypto {
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl HasSessionAndCrypto for TransactionContext {
-    async fn session(&self) -> crate::mls::Result<Session> {
+    async fn session(&self) -> crate::mls::Result<Session<Database>> {
         self.session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))
@@ -94,7 +95,7 @@ impl TransactionContext {
     async fn new(
         keystore: Database,
         pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
-        mls_session: Arc<RwLock<Option<Session>>>,
+        mls_session: Arc<RwLock<Option<Session<Database>>>>,
         #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     ) -> Result<Self> {
         keystore
@@ -105,7 +106,7 @@ impl TransactionContext {
         Ok(Self {
             inner: Arc::new(
                 TransactionContextInner::Valid {
-                    keystore,
+                    database: keystore,
                     pki_environment,
                     mls_session: mls_session.clone(),
                     mls_groups,
@@ -117,7 +118,7 @@ impl TransactionContext {
         })
     }
 
-    pub(crate) async fn session(&self) -> Result<Session> {
+    pub(crate) async fn session(&self) -> Result<Session<Database>> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { mls_session, .. } => mls_session.read().await.as_ref().cloned().ok_or(
                 RecursiveError::mls_client("Getting mls session from transaction context")(
@@ -130,7 +131,7 @@ impl TransactionContext {
     }
 
     #[cfg(test)]
-    pub(crate) async fn set_session_if_exists(&self, new_session: Session) {
+    pub(crate) async fn set_session_if_exists(&self, new_session: Session<Database>) {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { mls_session, .. } => {
                 let mut guard = mls_session.write().await;
@@ -176,9 +177,9 @@ impl TransactionContext {
         }
     }
 
-    pub(crate) async fn keystore(&self) -> Result<Database> {
+    pub(crate) async fn database(&self) -> Result<Database> {
         match &*self.inner.read().await {
-            TransactionContextInner::Valid { keystore, .. } => Ok(keystore.clone()),
+            TransactionContextInner::Valid { database, .. } => Ok(database.clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
@@ -225,7 +226,7 @@ impl TransactionContext {
     /// something is called from this object.
     pub async fn finish(&self) -> Result<()> {
         let mut guard = self.inner.write().await;
-        let TransactionContextInner::Valid { keystore, .. } = &*guard else {
+        let TransactionContextInner::Valid { database: keystore, .. } = &*guard else {
             return Err(Error::InvalidTransactionContext);
         };
 
@@ -245,7 +246,7 @@ impl TransactionContext {
     pub async fn abort(&self) -> Result<()> {
         let mut guard = self.inner.write().await;
 
-        let TransactionContextInner::Valid { keystore, .. } = &*guard else {
+        let TransactionContextInner::Valid { database: keystore, .. } = &*guard else {
             return Err(Error::InvalidTransactionContext);
         };
 
@@ -261,7 +262,7 @@ impl TransactionContext {
 
     /// Initializes the MLS client of [super::CoreCrypto].
     pub async fn mls_init(&self, identifier: ClientIdentifier, transport: Arc<dyn MlsTransport>) -> Result<()> {
-        let database = self.keystore().await?;
+        let database = self.database().await?;
         let client_id = identifier
             .get_id()
             .map_err(RecursiveError::mls_client("getting client id"))?
@@ -274,14 +275,15 @@ impl TransactionContext {
             .unwrap_or_default();
 
         let crypto_provider = MlsCryptoProvider::new_with_pki_env(database, pki_env_provider);
-        let session = Session::new(client_id.clone(), crypto_provider, transport);
+        let database = self.database().await?;
+        let session = Session::new(client_id.clone(), crypto_provider, database, transport);
         self.set_mls_session(session).await?;
 
         Ok(())
     }
 
     /// Set the `mls_session` Arc (also sets it on the transaction's CoreCrypto instance)
-    pub(crate) async fn set_mls_session(&self, session: Session) -> Result<()> {
+    pub(crate) async fn set_mls_session(&self, session: Session<Database>) -> Result<()> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { mls_session, .. } => {
                 let mut guard = mls_session.write().await;
@@ -313,7 +315,7 @@ impl TransactionContext {
     /// This is meant to be used as a check point at the end of a transaction.
     /// The data should be limited to a reasonable size.
     pub async fn set_data(&self, data: Vec<u8>) -> Result<()> {
-        self.keystore()
+        self.database()
             .await?
             .save(ConsumerData::from(data))
             .await
@@ -324,37 +326,11 @@ impl TransactionContext {
     /// Get the data that has previously been set by [TransactionContext::set_data].
     /// This is meant to be used as a check point at the end of a transaction.
     pub async fn get_data(&self) -> Result<Option<Vec<u8>>> {
-        match self.keystore().await?.get_unique::<ConsumerData>().await {
+        match self.database().await?.get_unique::<ConsumerData>().await {
             Ok(maybe_data) => Ok(maybe_data.map(Into::into)),
             Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
             Err(err) => Err(KeystoreError::wrap("finding unique consumer data")(err).into()),
         }
-    }
-
-    /// Add a credential to the identities of this session.
-    ///
-    /// As a side effect, stores the credential in the keystore.
-    pub async fn add_credential(&self, credential: Credential) -> Result<CredentialRef> {
-        self.session()
-            .await?
-            .add_credential(credential)
-            .await
-            .map_err(RecursiveError::mls_client("adding credential to session"))
-            .map_err(Into::into)
-    }
-
-    /// Remove a credential from the identities of this session.
-    ///
-    /// As a side effect, delete the credential from the keystore.
-    ///
-    /// Removes both the credential itself and also any key packages which were generated from it.
-    pub async fn remove_credential(&self, credential_ref: &CredentialRef) -> Result<()> {
-        self.session()
-            .await?
-            .remove_credential(credential_ref)
-            .await
-            .map_err(RecursiveError::mls_client("removing credential from session"))
-            .map_err(Into::into)
     }
 
     /// Find credentials matching the find filters among the identities of this session

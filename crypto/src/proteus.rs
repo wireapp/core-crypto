@@ -647,10 +647,13 @@ mod tests {
         };
         let transport = Arc::new(CoreCryptoTransportSuccessProvider::default());
         transaction.mls_init(identifier.clone(), transport).await.unwrap();
-        let session = &cc.mls_session().await.unwrap();
-        let credential =
-            Credential::from_identifier(&identifier, case.ciphersuite(), &session.crypto_provider).unwrap();
-        let credential_ref = session.add_credential(credential).await.unwrap();
+        let credential = Credential::from_identifier(
+            &identifier,
+            case.ciphersuite(),
+            &transaction.mls_provider().await.unwrap(),
+        )
+        .unwrap();
+        let credential_ref = transaction.add_credential(credential).await.unwrap();
 
         // expect MLS to work
         assert!(transaction.generate_keypackage(&credential_ref, None).await.is_ok());

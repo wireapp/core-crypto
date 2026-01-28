@@ -11,6 +11,7 @@ pub(crate) mod user_id;
 use std::sync::Arc;
 
 use async_lock::RwLock;
+use core_crypto_keystore::traits::FetchFromDatabase;
 pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
@@ -36,10 +37,11 @@ use crate::{
 ///
 /// [RFC 9720]: https://www.rfc-editor.org/rfc/rfc9420.html
 #[derive(Clone, derive_more::Debug)]
-pub struct Session {
+pub struct Session<D> {
     id: ClientId,
     pub(crate) crypto_provider: MlsCryptoProvider,
     pub(crate) transport: Arc<dyn MlsTransport + 'static>,
+    database: D,
     #[debug("EpochObserver")]
     pub(crate) epoch_observer: Arc<RwLock<Option<Arc<dyn EpochObserver + 'static>>>>,
     #[debug("HistoryObserver")]
@@ -48,8 +50,8 @@ pub struct Session {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl HasSessionAndCrypto for Session {
-    async fn session(&self) -> mls::Result<Session> {
+impl HasSessionAndCrypto for Session<core_crypto_keystore::Database> {
+    async fn session(&self) -> mls::Result<Session<core_crypto_keystore::Database>> {
         Ok(self.clone())
     }
 
@@ -58,13 +60,19 @@ impl HasSessionAndCrypto for Session {
     }
 }
 
-impl Session {
+impl<D: FetchFromDatabase> Session<D> {
     /// Create a new `Session`
-    pub fn new(id: ClientId, crypto_provider: MlsCryptoProvider, transport: Arc<dyn MlsTransport>) -> Self {
+    pub fn new(
+        id: ClientId,
+        crypto_provider: MlsCryptoProvider,
+        database: D,
+        transport: Arc<dyn MlsTransport>,
+    ) -> Self {
         Self {
             id,
             crypto_provider,
             transport,
+            database,
             epoch_observer: Arc::new(RwLock::new(None)),
             history_observer: Arc::new(RwLock::new(None)),
         }
@@ -75,8 +83,11 @@ impl Session {
     /// Because it operates on the raw conversation type, this may be faster than
     /// [crate::transaction_context::TransactionContext::conversation] for transient and immutable
     /// purposes. For long-lived or mutable purposes, prefer the other method.
-    pub async fn get_raw_conversation(&self, id: &ConversationIdRef) -> Result<ImmutableConversation> {
-        let raw_conversation = MlsConversation::load(&self.crypto_provider.keystore(), id)
+    pub async fn get_raw_conversation(&self, id: &ConversationIdRef) -> Result<ImmutableConversation<D>>
+    where
+        D: FetchFromDatabase + Clone,
+    {
+        let raw_conversation = MlsConversation::load(&self.database, id)
             .await
             .map_err(RecursiveError::mls_conversation("getting raw conversation by id"))?
             .ok_or_else(|| LeafError::ConversationNotFound(id.to_owned()))?;
@@ -84,7 +95,10 @@ impl Session {
     }
 
     /// Checks if a given conversation id exists locally
-    pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
+    pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool>
+    where
+        D: Clone + FetchFromDatabase,
+    {
         match self.get_raw_conversation(id).await {
             Ok(_) => Ok(true),
             Err(Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
@@ -115,6 +129,11 @@ impl Session {
             .map_err(Into::into)
     }
 
+    /// Get read-only access to the database.
+    pub fn database(&self) -> &impl FetchFromDatabase {
+        &self.database
+    }
+
     /// see [crate::mls_provider::MlsCryptoProvider::reseed]
     pub async fn reseed(&self, seed: Option<EntropySeed>) -> crate::mls::Result<()> {
         self.crypto_provider
@@ -143,14 +162,14 @@ impl Session {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::{entities::*, traits::FetchFromDatabase as _};
+    use core_crypto_keystore::{entities::*, traits::FetchFromDatabase};
 
     use super::*;
     use crate::{
         KeystoreError, mls_provider::MlsCryptoProvider, test_utils::*, transaction_context::test_utils::EntitiesCount,
     };
 
-    impl Session {
+    impl<D: FetchFromDatabase> Session<D> {
         // test functions are not held to the same documentation standard as proper functions
         #![allow(missing_docs)]
 
@@ -166,7 +185,7 @@ mod tests {
 
         /// Count the entities
         pub async fn count_entities(&self) -> EntitiesCount {
-            let keystore = self.crypto_provider.keystore();
+            let keystore = &self.database;
             let credential = keystore.count::<StoredCredential>().await.unwrap();
             let encryption_keypair = keystore.count::<StoredEncryptionKeyPair>().await.unwrap();
             let epoch_encryption_keypair = keystore.count::<StoredEpochEncryptionKeypair>().await.unwrap();

@@ -104,7 +104,7 @@ impl TransactionContext {
             .ok_or(Error::MissingExistingClient(CredentialType::X509))?;
 
         let database = self
-            .keystore()
+            .database()
             .await
             .map_err(RecursiveError::transaction("getting database"))?;
         let credential = credential_ref
@@ -190,19 +190,15 @@ impl TransactionContext {
             private_key,
             signature_scheme,
         };
-        let client = &self
-            .session()
-            .await
-            .map_err(RecursiveError::transaction("getting session"))?;
 
         let credential = Credential::x509(ciphersuite, cert_bundle).map_err(RecursiveError::mls_credential(
             "creating new x509 credential from certificate bundle in save_x509_credential",
         ))?;
 
-        let credential_ref = client
+        let credential_ref = self
             .add_credential(credential)
             .await
-            .map_err(RecursiveError::mls_client(
+            .map_err(RecursiveError::transaction(
                 "saving and adding credential in save_x509_credential",
             ))?;
 
@@ -343,7 +339,7 @@ mod tests {
                 // Also the old Credential has been removed from the keystore
                 let after_delete = alice.transaction.count_entities().await;
                 assert_eq!(after_delete.credential, 1);
-                let database = alice.transaction.keystore().await.unwrap();
+                let database = alice.transaction.database().await.unwrap();
                 let err = old_credential.load(&database).await.unwrap_err();
                 assert!(matches!(
                     err,
@@ -382,7 +378,7 @@ mod tests {
 
                 let initial_cred_ref = alice.initial_credential.clone();
                 let old_cb = initial_cred_ref
-                    .load(&alice.transaction.keystore().await.unwrap())
+                    .load(&alice.transaction.database().await.unwrap())
                     .await
                     .unwrap();
 
@@ -412,7 +408,7 @@ mod tests {
 
                 // So alice has a new Credential as expected
                 let credential = credential_ref
-                    .load(&alice.transaction.keystore().await.unwrap())
+                    .load(&alice.transaction.database().await.unwrap())
                     .await
                     .unwrap();
                 let identity = credential
@@ -434,14 +430,14 @@ mod tests {
                 assert_eq!(std::sync::Arc::new(old_cb), old_cb_found);
                 let old_nb_identities = {
                     // Let's simulate an app crash, client gets deleted and restored from keystore
-                    let all_credentials = CredentialRef::get_all(&alice.transaction.keystore().await.unwrap())
+                    let all_credentials = CredentialRef::get_all(&alice.transaction.database().await.unwrap())
                         .await
                         .unwrap();
 
                     assert_eq!(all_credentials.len(), 2);
                     all_credentials.len()
                 };
-                let keystore = &alice.transaction.keystore().await.unwrap();
+                let keystore = &alice.transaction.database().await.unwrap();
                 keystore.commit_transaction().await.unwrap();
                 keystore.new_transaction().await.unwrap();
 
@@ -468,10 +464,7 @@ mod tests {
                 );
 
                 assert_eq!(
-                    CredentialRef::get_all(&new_session.crypto_provider.unwrap_keystore())
-                        .await
-                        .unwrap()
-                        .len(),
+                    CredentialRef::get_all(new_session.database()).await.unwrap().len(),
                     old_nb_identities
                 );
             })

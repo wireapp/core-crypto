@@ -53,7 +53,7 @@ impl SessionContext {
 
     pub async fn count_key_package(&self, cs: Ciphersuite, ct: Option<CredentialType>) -> usize {
         self.transaction
-            .keystore()
+            .database()
             .await
             .unwrap()
             .load_all::<StoredKeypackage>()
@@ -103,8 +103,7 @@ impl SessionContext {
         // in the x509 case, `CertificateBundle::rand` just completely invents a new client id in the format that e2ei
         // apparently prefers. We still need to add that credential even so, because this test util code is (meant to
         // be) part of setup, not part of the code under test.
-        self.session()
-            .await
+        self.transaction
             .add_credential_without_clientid_check(credential)
             .await
             .unwrap()
@@ -123,7 +122,7 @@ impl SessionContext {
             .expect("find credentials for ciphersuite and credential type");
         let credential_ref = credentials.first().expect("at least one credential found");
 
-        let database = self.transaction.keystore().await.unwrap();
+        let database = self.transaction.database().await.unwrap();
         credential_ref.load(&database).await.unwrap()
     }
 
@@ -133,7 +132,7 @@ impl SessionContext {
 
     pub async fn find_hpke_private_key_from_keystore(&self, skp: &HpkePublicKey) -> Option<StoredHpkePrivateKey> {
         self.transaction
-            .keystore()
+            .database()
             .await
             .unwrap()
             .get::<StoredHpkePrivateKey>(&skp.tls_serialize_detached().unwrap())
@@ -144,7 +143,7 @@ impl SessionContext {
     pub async fn find_credential_from_keystore(&self, cb: &Credential) -> Option<StoredCredential> {
         let credential = cb.mls_credential.tls_serialize_detached().unwrap();
         self.transaction
-            .keystore()
+            .database()
             .await
             .unwrap()
             .load_all::<StoredCredential>()
@@ -156,7 +155,7 @@ impl SessionContext {
 
     pub async fn count_hpke_private_key(&self) -> u32 {
         self.transaction
-            .keystore()
+            .database()
             .await
             .unwrap()
             .count::<StoredHpkePrivateKey>()
@@ -166,7 +165,7 @@ impl SessionContext {
 
     pub async fn count_encryption_keypairs(&self) -> u32 {
         self.transaction
-            .keystore()
+            .database()
             .await
             .unwrap()
             .count::<StoredEncryptionKeyPair>()
@@ -176,7 +175,7 @@ impl SessionContext {
 
     pub async fn count_credentials_in_keystore(&self) -> u32 {
         self.transaction
-            .keystore()
+            .database()
             .await
             .unwrap()
             .count::<StoredCredential>()
@@ -194,8 +193,7 @@ impl SessionContext {
         let cid = QualifiedE2eiClientId::try_from(self.get_client_id().await.as_slice()).unwrap();
         let new_cert = CertificateBundle::new(handle, display_name, Some(&cid), None, signer);
         let credential = Credential::x509(case.ciphersuite(), new_cert).unwrap();
-        let client = self.session().await;
-        client.add_credential_producing_arc(credential).await.unwrap()
+        self.transaction.add_credential_producing_arc(credential).await.unwrap()
     }
 
     pub(crate) async fn update_credential_in_all_conversations<'a>(
@@ -235,7 +233,7 @@ impl SessionContext {
         expected_credential_ref: &CredentialRef,
         decrypted: &MlsConversationDecryptMessage,
     ) {
-        let database = self.transaction.keystore().await.unwrap();
+        let database = self.transaction.database().await.unwrap();
         let expected_credential = expected_credential_ref.load(&database).await.unwrap();
         if let openmls::prelude::MlsCredentialType::X509(certificate) =
             &expected_credential.mls_credential().mls_credential()

@@ -22,7 +22,7 @@ pub trait EpochObserver: Send + Sync {
     async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64);
 }
 
-impl Session {
+impl<D> Session<D> {
     /// Add an epoch observer to this session.
     /// (see [EpochObserver]).
     ///

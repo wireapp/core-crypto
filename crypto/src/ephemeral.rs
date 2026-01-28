@@ -92,10 +92,10 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
     let credential = Credential::basic(ciphersuite, client_id.clone(), &session.crypto_provider).map_err(
         RecursiveError::mls_credential("generating basic credential for ephemeral client"),
     )?;
-    let credential_ref = session
+    let credential_ref = tx
         .add_credential(credential)
         .await
-        .map_err(RecursiveError::mls_client(
+        .map_err(RecursiveError::transaction(
             "adding basic credential to ephemeral client",
         ))?;
 
@@ -144,9 +144,9 @@ impl CoreCrypto {
             .map_err(RecursiveError::transaction("creating new transaction"))?;
 
         // store the client id (with some other stuff)
-        let mls_backend = MlsCryptoProvider::new(database);
+        let mls_backend = MlsCryptoProvider::new(database.clone());
         let transport = Arc::new(CoreCryptoTransportNotImplementedProvider::default());
-        let session = Session::new(history_secret.client_id.clone(), mls_backend, transport);
+        let session = Session::new(history_secret.client_id.clone(), mls_backend, database, transport);
 
         session
             .restore_from_history_secret(history_secret)

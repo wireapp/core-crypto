@@ -1,3 +1,4 @@
+use core_crypto_keystore::Database;
 use openmls::{messages::group_info::VerifiableGroupInfo, prelude::Node};
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -51,7 +52,13 @@ impl TransactionContext {
         });
 
         let auth_service = auth_service.borrow().await;
-        Ok(Session::compute_conversation_state(cs, credentials, CredentialType::X509, auth_service.as_ref()).await)
+        Ok(Session::<Database>::compute_conversation_state(
+            cs,
+            credentials,
+            CredentialType::X509,
+            auth_service.as_ref(),
+        )
+        .await)
     }
 
     /// See [crate::mls::session::Session::get_credential_in_use].
@@ -80,7 +87,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service().borrow().await;
-        Session::get_credential_in_use_in_ratchet_tree(cs, rt, credential_type, auth_service.as_ref())
+        Session::<Database>::get_credential_in_use_in_ratchet_tree(cs, rt, credential_type, auth_service.as_ref())
             .await
             .map_err(RecursiveError::mls_client("getting credentials in use"))
             .map_err(Into::into)
@@ -169,10 +176,10 @@ mod tests {
             let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
             let cb = Credential::x509(case.ciphersuite(), cert.clone()).unwrap();
 
-            let alice_client = alice.transaction.session().await.unwrap();
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
             let credential = Credential::x509(case.ciphersuite(), cert).unwrap();
-            alice_client
+            alice
+                .transaction
                 .add_credential_without_clientid_check(credential)
                 .await
                 .unwrap();
@@ -231,11 +238,11 @@ mod tests {
             let credential_with_short_expiration_time =
                 Credential::x509(case.ciphersuite(), cert_bundle.clone()).unwrap();
             let credential_ref = CredentialRef::from_credential(&credential_with_short_expiration_time);
-            let session = alice.session().await;
 
             // remove and add so that the existing credential with the long expiration time is replaced in the DB.
-            session.remove_credential(&credential_ref).await.unwrap();
-            session
+            alice.transaction.remove_credential(&credential_ref).await.unwrap();
+            alice
+                .transaction
                 .add_credential(credential_with_short_expiration_time)
                 .await
                 .unwrap();
@@ -251,7 +258,7 @@ mod tests {
 
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
             let credential = Credential::x509(case.ciphersuite(), cert_bundle).unwrap();
-            session.add_credential(credential).await.unwrap();
+            alice.transaction.add_credential(credential).await.unwrap();
 
             let elapsed = start.elapsed();
             // Give time to the certificate to expire

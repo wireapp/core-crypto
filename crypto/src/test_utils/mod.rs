@@ -88,7 +88,7 @@ use crate::{RecursiveError::Test, ephemeral::HistorySecret, test_utils::TestErro
 #[derive(Debug, Clone)]
 pub struct SessionContext {
     pub transaction: TransactionContext,
-    pub session: Arc<RwLock<Session>>,
+    pub session: Arc<RwLock<Session<Database>>>,
     pub identifier: ClientIdentifier,
     pub initial_credential: CredentialRef,
     mls_transport: Arc<RwLock<Arc<dyn MlsTransportTestExt + 'static>>>,
@@ -150,7 +150,7 @@ impl SessionContext {
 
         let credential = Credential::from_identifier(&identifier, context.ciphersuite(), &session.crypto_provider)
             .map_err(RecursiveError::mls_credential("creating credential from identifier"))?;
-        let initial_credential = session.add_credential(credential).await.unwrap();
+        let initial_credential = transaction.add_credential(credential).await.unwrap();
 
         let session_context = Self {
             transaction,
@@ -250,7 +250,14 @@ impl SessionContext {
         self.x509_test_chain = new_chain;
     }
 
-    pub async fn session(&self) -> Session {
+    pub async fn database(&self) -> Database {
+        self.transaction
+            .database()
+            .await
+            .expect("database from transaction context")
+    }
+
+    pub async fn session(&self) -> Session<Database> {
         self.session.read().await.clone()
     }
 
@@ -263,7 +270,8 @@ impl SessionContext {
         *guard = new_transport.clone();
         let session = self.session().await;
         let crypto_provider = session.crypto_provider.clone();
-        let new_session = Session::new(self.get_client_id().await, crypto_provider, new_transport);
+        let database = self.transaction.database().await.unwrap();
+        let new_session = Session::new(self.get_client_id().await, crypto_provider, database, new_transport);
         self.set_session(new_session).await;
     }
 
@@ -278,7 +286,7 @@ impl SessionContext {
         self.set_session(session).await;
     }
 
-    async fn set_session(&self, session: Session) {
+    async fn set_session(&self, session: Session<Database>) {
         let mut guard = self.session.write().await;
         *guard = session.clone();
 
@@ -336,7 +344,7 @@ impl SessionContext {
 
         self.reinit_session(identifier).await;
 
-        self.session().await.add_credential(credential).await.unwrap();
+        self.transaction.add_credential(credential).await.unwrap();
 
         Ok(())
     }

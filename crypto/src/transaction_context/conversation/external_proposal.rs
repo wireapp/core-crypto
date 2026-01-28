@@ -23,18 +23,18 @@ impl TransactionContext {
     ) -> Result<MlsMessageOut> {
         let group_id = GroupId::from_slice(conversation_id.as_ref());
 
-        let client = self
+        let session = self
             .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
-        let kp = client
+        let kp = session
             .generate_keypackage(credential_ref, None)
             .await
             .map_err(RecursiveError::mls_client("generating one keypackage from credential"))?;
 
-        let database = client.crypto_provider.keystore();
+        let database = &self.database().await?;
         let credential = credential_ref
-            .load(&database)
+            .load(database)
             .await
             .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
 
