@@ -115,6 +115,15 @@ jobs:
     uses: ./.github/workflows/docs-jvm.yml
 
   #################
+  # KMP
+
+  test-kmp:
+    needs:
+      - build-jvm-linux
+      - build-jvm-darwin
+    uses: ./.github/workflows/test-kmp.yml
+
+  #################
   # iOS/Swift
 
   build-ios:

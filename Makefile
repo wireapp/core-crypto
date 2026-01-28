@@ -437,6 +437,17 @@ $(STAMPS)/jvm-test: $(jvm-test-deps)
 	$(TOUCH_STAMP)
 
 #-------------------------------------------------------------------------------
+# KMP (Kotlin Multiplatform) builds
+#-------------------------------------------------------------------------------
+
+kmp-jvm-test-deps := $(KT_FILES)
+
+$(STAMPS)/kmp-jvm-test: $(kmp-jvm-test-deps)
+	cd crypto-ffi/bindings && \
+	./gradlew kmp:jvmTest --rerun
+	$(TOUCH_STAMP)
+
+#-------------------------------------------------------------------------------
 # TypeScript / JS tasks
 #-------------------------------------------------------------------------------
 
@@ -746,9 +757,10 @@ check: rust-check swift-check kotlin-check ts-check ## Run all linters
 # Lazy targets
 #-------------------------------------------------------------------------------
 
-LAZY_TARGETS := jvm-test ts-test android-test ios-test interop-test
+LAZY_TARGETS := jvm-test kmp-jvm-test ts-test android-test ios-test interop-test
 
 ts-test: ## Run TypeScript wrapper tests via wdio and bun. Optionally pass TEST=<test> to filter by test name.
+kmp-jvm-test: ## Run Kotlin multi-platform tests on JVM
 jvm-test: ## Run Kotlin tests on JVM
 android-test: ## Run Kotlin tests on Android
 ios-test: ## Run Swift tests on iOS (macOS only)
