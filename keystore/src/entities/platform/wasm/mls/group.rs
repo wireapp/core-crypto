@@ -69,4 +69,8 @@ impl<'a> SearchableEntity<ParentGroupId<'a>> for PersistedMlsGroup {
             }
         }
     }
+
+    fn matches(&self, search_key: &ParentGroupId<'a>) -> bool {
+        self.parent_id.as_deref() == Some(*search_key.as_ref())
+    }
 }
