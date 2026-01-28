@@ -6,7 +6,7 @@
 
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
-use wasm_bindgen_test::wasm_bindgen_test_configure;
+use wasm_bindgen_test::*;
 
 mod common;
 
@@ -14,13 +14,14 @@ wasm_bindgen_test_configure!(run_in_browser);
 
 #[cfg(test)]
 mod persisted_mls_groups {
-    use crate::common::*;
     use core_crypto_keystore::{
         entities::{ParentGroupId, PersistedMlsGroup},
         traits::FetchFromDatabase as _,
     };
     use rand::{Rng, RngCore, distributions::uniform::SampleRange};
     use rstest_reuse::apply;
+
+    use crate::common::*;
 
     fn random_bytes(len: impl SampleRange<usize>) -> Vec<u8> {
         let mut rng = rand::thread_rng();
