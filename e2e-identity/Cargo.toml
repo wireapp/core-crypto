@@ -59,7 +59,6 @@ webbrowser = { workspace = true }
 shlex = "1"
 
 openidconnect = { workspace = true }
-html_parser = { workspace = true }
 scraper = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
