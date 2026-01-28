@@ -93,7 +93,7 @@ jobs:
             jq -r '.packages[] | select (.name == "wasm-bindgen") | .version'
           )"
           cargo install wasm-bindgen-cli --version $wasm_bindgen_version
-      - run: cargo test --target wasm32-unknown-unknown -p core-crypto-keystore
+      - run: cargo test --locked --target wasm32-unknown-unknown -p core-crypto-keystore
 
   keystore-proteus-wasm-test:
     runs-on: ubuntu-latest
@@ -116,7 +116,7 @@ jobs:
             jq -r '.packages[] | select (.name == "wasm-bindgen") | .version'
           )"
           cargo install wasm-bindgen-cli --version $wasm_bindgen_version
-      - run: cargo test --target wasm32-unknown-unknown -p core-crypto-keystore --features proteus-keystore -- proteus
+      - run: cargo test --locked --target wasm32-unknown-unknown -p core-crypto-keystore --features proteus-keystore -- proteus
 
   hack:
     runs-on: ubuntu-latest
