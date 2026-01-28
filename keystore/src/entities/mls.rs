@@ -1,8 +1,5 @@
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-// This import is required for the `Entity` macro to work properly.
-#[cfg(not(target_family = "wasm"))]
-use crate::CryptoKeystoreError;
 use crate::{
     CryptoKeystoreResult,
     traits::{EntityBase, EntityGetBorrowed as _, KeyType, OwnedKeyType, PrimaryKey, SearchableEntity as _},
