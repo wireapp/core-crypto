@@ -440,9 +440,12 @@ $(STAMPS)/jvm-test: $(jvm-test-deps)
 # KMP (Kotlin Multiplatform) builds
 #-------------------------------------------------------------------------------
 
-kmp-jvm-test:
+kmp-jvm-test-deps := $(KT_FILES)
+
+$(STAMPS)/kmp-jvm-test: $(kmp-jvm-test-deps)
 	cd crypto-ffi/bindings && \
 	./gradlew kmp:jvmTest --rerun
+	$(TOUCH_STAMP)
 
 #-------------------------------------------------------------------------------
 # TypeScript / JS tasks
