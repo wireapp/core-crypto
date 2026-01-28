@@ -160,6 +160,7 @@ impl ConversationGuard {
         let session = &self.session().await?;
         let provider = &self.crypto_provider().await?;
         let history_secret = self.generate_history_secret().await?;
+        let database = &self.database().await?;
         let key_package = history_secret.key_package.clone().into();
 
         let mut conversation = self.conversation_mut().await;
@@ -167,12 +168,14 @@ impl ConversationGuard {
         // Propose to remove the old history client
         for history_client in existing_history_clients {
             conversation
-                .propose_remove_member(session, provider, history_client)
+                .propose_remove_member(session, provider, database, history_client)
                 .await?;
         }
 
         // Propose to add a new history client
-        conversation.propose_add_member(session, provider, key_package).await?;
+        conversation
+            .propose_add_member(session, provider, database, key_package)
+            .await?;
 
         // We're getting the proposals we just created from the pending proposals queue, as the previously
         // called `propose_remove()` and `propose_add()` pushed them to that queue as a side effect.

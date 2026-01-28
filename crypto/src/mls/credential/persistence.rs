@@ -1,4 +1,4 @@
-use core_crypto_keystore::{Sha256Hash, entities::StoredCredential, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{Sha256Hash, entities::StoredCredential, traits::FetchFromDatabase};
 use openmls::prelude::SignaturePublicKey;
 use tls_codec::Serialize as _;
 
@@ -9,7 +9,10 @@ impl Credential {
     /// Loads a credential with the given public key from the database.
     ///
     /// Should not be passed over the ffi boundary.
-    pub(crate) async fn find_by_public_key(database: &Database, public_key: &SignaturePublicKey) -> Result<Self> {
+    pub(crate) async fn find_by_public_key(
+        database: &impl FetchFromDatabase,
+        public_key: &SignaturePublicKey,
+    ) -> Result<Self> {
         let stored_credential = &database
             .get::<StoredCredential>(&Sha256Hash::hash_from(public_key.as_slice()))
             .await

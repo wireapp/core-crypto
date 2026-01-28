@@ -103,8 +103,7 @@ impl SessionContext {
         // in the x509 case, `CertificateBundle::rand` just completely invents a new client id in the format that e2ei
         // apparently prefers. We still need to add that credential even so, because this test util code is (meant to
         // be) part of setup, not part of the code under test.
-        self.session()
-            .await
+        self.transaction
             .add_credential_without_clientid_check(credential)
             .await
             .unwrap()
@@ -194,8 +193,7 @@ impl SessionContext {
         let cid = QualifiedE2eiClientId::try_from(self.get_client_id().await.as_slice()).unwrap();
         let new_cert = CertificateBundle::new(handle, display_name, Some(&cid), None, signer);
         let credential = Credential::x509(case.ciphersuite(), new_cert).unwrap();
-        let client = self.session().await;
-        client.add_credential_producing_arc(credential).await.unwrap()
+        self.transaction.add_credential_producing_arc(credential).await.unwrap()
     }
 
     pub(crate) async fn update_credential_in_all_conversations<'a>(

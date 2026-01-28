@@ -126,13 +126,7 @@ mod tests {
                 &context.crypto_provider().await.unwrap(),
             )
             .unwrap();
-            let credential_ref = context
-                .session()
-                .await
-                .unwrap()
-                .add_credential(credential)
-                .await
-                .unwrap();
+            let credential_ref = context.add_credential(credential).await.unwrap();
 
             // expect mls_client to work
             assert!(context.generate_keypackage(&credential_ref, None).await.is_ok());

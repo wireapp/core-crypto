@@ -64,10 +64,12 @@ impl TransactionContext {
         credential_ref: &CredentialRef,
         config: MlsConversationConfiguration,
     ) -> Result<()> {
+        let database = &self.database().await?;
+        let provider = &self.mls_provider().await?;
         if self.conversation_exists(id).await? || self.pending_conversation_exists(id).await? {
             return Err(LeafError::ConversationAlreadyExists(id.to_owned()).into());
         }
-        let conversation = MlsConversation::create(id.to_owned(), &self.session().await?, credential_ref, config)
+        let conversation = MlsConversation::create(id.to_owned(), provider, database, credential_ref, config)
             .await
             .map_err(RecursiveError::mls_conversation("creating conversation"))?;
 

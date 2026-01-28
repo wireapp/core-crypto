@@ -66,9 +66,9 @@ impl TransactionContext {
     ) -> Result<(MlsCommitBundle, WelcomeBundle, PendingConversation)> {
         let ciphersuite = group_info.ciphersuite().into();
         let mls_provider = self.mls_provider().await?;
-        let database = mls_provider.keystore();
+        let database = &self.database().await?;
         let credential = credential_ref
-            .load(&database)
+            .load(database)
             .await
             .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
 
@@ -100,7 +100,7 @@ impl TransactionContext {
         )?;
 
         let crl_new_distribution_points = get_new_crl_distribution_points(
-            &mls_provider,
+            database,
             extract_crl_uris_from_group(&group)
                 .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
         )
@@ -365,7 +365,7 @@ mod tests {
                 // erroneous call
                 let conflict_welcome = bob
                     .transaction
-                    .process_welcome_message(welcome.into() )
+                    .process_welcome_message(welcome.into())
                     .await;
 
                 assert!(matches!(

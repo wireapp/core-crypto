@@ -22,6 +22,7 @@ impl ConversationGuard {
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
         let signer = credential.signature_key();
+        let database = self.database().await?;
         let mut inner = self.conversation_mut().await;
         let encrypted = inner
             .group
@@ -35,7 +36,7 @@ impl ConversationGuard {
             .to_bytes()
             .map_err(MlsError::wrap("constructing byte vector of encrypted message"))?;
 
-        inner.persist_group_when_changed(&backend.keystore(), false).await?;
+        inner.persist_group_when_changed(&database, false).await?;
         Ok(encrypted)
     }
 }

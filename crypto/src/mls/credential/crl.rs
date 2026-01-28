@@ -5,11 +5,10 @@ use openmls::{
     group::MlsGroup,
     prelude::{Certificate, MlsCredentialType, Proposal, StagedCommit},
 };
-use openmls_traits::OpenMlsCryptoProvider;
 use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
 use super::{Error, Result};
-use crate::{KeystoreError, RecursiveError, e2e_identity::NewCrlDistributionPoints, mls_provider::MlsCryptoProvider};
+use crate::{KeystoreError, RecursiveError, e2e_identity::NewCrlDistributionPoints};
 
 pub(crate) fn extract_crl_uris_from_credentials<'a>(
     mut credentials: impl Iterator<Item = &'a MlsCredentialType>,
@@ -65,15 +64,14 @@ pub(crate) fn extract_dp(cert: &Certificate) -> Result<HashSet<String>> {
 }
 
 pub(crate) async fn get_new_crl_distribution_points(
-    backend: &MlsCryptoProvider,
+    database: &impl FetchFromDatabase,
     mut crl_dps: HashSet<String>,
 ) -> Result<NewCrlDistributionPoints> {
     if crl_dps.is_empty() {
         return Ok(None.into());
     }
 
-    let stored_crls = backend
-        .key_store()
+    let stored_crls = database
         .load_all::<E2eiCrl>()
         .await
         .map_err(KeystoreError::wrap("finding all e2e crl"))?;

@@ -24,14 +24,13 @@ pub(crate) enum MessageRestorePolicy {
 
 impl ConversationGuard {
     pub(super) async fn buffer_future_message(&self, message: impl AsRef<[u8]>) -> Result<()> {
-        let backend = self.crypto_provider().await?;
-        let keystore = backend.keystore();
+        let database = self.database().await?;
         let conversation = self.conversation().await;
         let pending_msg = MlsPendingMessage {
             foreign_id: conversation.id().to_bytes(),
             message: message.as_ref().to_vec(),
         };
-        keystore
+        database
             .save::<MlsPendingMessage>(pending_msg)
             .await
             .map_err(KeystoreError::wrap("saving pending mls message"))?;
@@ -39,9 +38,8 @@ impl ConversationGuard {
     }
 
     async fn clear_pending_messages(&self) -> Result<()> {
-        let provider = self.crypto_provider().await?;
-        let keystore = provider.keystore();
-        keystore
+        let database = self.database().await?;
+        database
             .remove_pending_messages_by_conversation_id(self.conversation().await.id())
             .await
             .map_err(KeystoreError::wrap("removing pending mls messages"))
@@ -73,14 +71,13 @@ impl ConversationGuard {
         let result = async move {
             let conversation = self.conversation().await;
             let conversation_id = conversation.id();
-            let backend = self.crypto_provider().await?;
-            let keystore = backend.keystore();
+            let database = self.database().await?;
             if policy == MessageRestorePolicy::ClearOnly {
                 self.clear_pending_messages().await?;
                 return Ok(None);
             }
 
-            let mut pending_messages = keystore
+            let mut pending_messages = database
                 .find_pending_messages_by_conversation_id(conversation_id.as_ref())
                 .await
                 .map_err(KeystoreError::wrap("finding all mls pending messages"))?

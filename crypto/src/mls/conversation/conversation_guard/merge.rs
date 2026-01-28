@@ -14,10 +14,7 @@
 use openmls::prelude::MlsGroupStateError;
 
 use super::{ConversationGuard, Result};
-use crate::{
-    MlsError, MlsProposalRef,
-    mls::conversation::{ConversationWithMls as _, Error},
-};
+use crate::{MlsError, MlsProposalRef, mls::conversation::Error};
 
 impl ConversationGuard {
     /// Allows to remove a pending (uncommitted) proposal. Use this when backend rejects the proposal
@@ -35,17 +32,17 @@ impl ConversationGuard {
     /// When the conversation is not found or the proposal reference does not identify a proposal
     /// in the local pending proposal store
     pub async fn clear_pending_proposal(&mut self, proposal_ref: MlsProposalRef) -> Result<()> {
-        let keystore = self.crypto_provider().await?.keystore();
+        let database = self.database().await?;
         let mut conversation = self.conversation_mut().await;
         conversation
             .group
-            .remove_pending_proposal(&keystore, &proposal_ref)
+            .remove_pending_proposal(&database, &proposal_ref)
             .await
             .map_err(|mls_group_state_error| match mls_group_state_error {
                 MlsGroupStateError::PendingProposalNotFound => Error::PendingProposalNotFound(proposal_ref),
                 _ => MlsError::wrap("removing pending proposal")(mls_group_state_error).into(),
             })?;
-        conversation.persist_group_when_changed(&keystore, true).await?;
+        conversation.persist_group_when_changed(&database, true).await?;
         Ok(())
     }
 
@@ -61,11 +58,12 @@ impl ConversationGuard {
     /// # Errors
     /// When there is no pending commit
     pub(crate) async fn clear_pending_commit(&mut self) -> Result<()> {
-        let keystore = self.crypto_provider().await?.keystore();
+        let database = self.database().await?;
+
         let mut conversation = self.conversation_mut().await;
         if conversation.group.pending_commit().is_some() {
             conversation.group.clear_pending_commit();
-            conversation.persist_group_when_changed(&keystore, true).await?;
+            conversation.persist_group_when_changed(&database, true).await?;
             log::info!(group_id = conversation.id(); "Cleared pending commit.");
             Ok(())
         } else {

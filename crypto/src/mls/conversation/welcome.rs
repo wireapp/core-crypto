@@ -1,4 +1,4 @@
-use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase};
+use core_crypto_keystore::{Database, entities::PersistedMlsPendingGroup, traits::FetchFromDatabase};
 use openmls::prelude::{MlsGroup, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -21,23 +21,16 @@ impl MlsConversation {
     // ? Do we need to provide the ratchet_tree to the MlsGroup? Does everything crumble down if we can't actually get
     // it?
     /// Create the MLS conversation from an MLS Welcome message
-    ///
-    /// # Arguments
-    /// * `welcome` - welcome message to create the group from
-    /// * `config` - group configuration
-    /// * `backend` - the KeyStore to persist the group
-    ///
-    /// # Errors
-    /// Errors can happen from OpenMls or from the KeyStore
     pub(crate) async fn from_welcome_message(
         welcome: Welcome,
         configuration: MlsConversationConfiguration,
-        backend: &MlsCryptoProvider,
+        provider: &MlsCryptoProvider,
+        database: &Database,
         mls_groups: &mut GroupStore<MlsConversation>,
     ) -> Result<Self> {
         let mls_group_config = configuration.as_openmls_default_configuration()?;
 
-        let group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None)
+        let group = MlsGroup::new_from_welcome(provider, &mls_group_config, welcome, None)
             .await
             .map_err(|err| {
                 use openmls::prelude::WelcomeError;
@@ -48,10 +41,10 @@ impl MlsConversation {
             })?;
 
         let id = ConversationId::from(group.group_id().as_slice());
-        let existing_conversation = mls_groups.get_fetch(&id, &backend.keystore(), None).await;
+        let existing_conversation = mls_groups.get_fetch(&id, database, None).await;
         let conversation_exists = existing_conversation.ok().flatten().is_some();
 
-        let pending_group = backend
+        let pending_group = provider
             .key_store()
             .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
             .await;
@@ -61,6 +54,6 @@ impl MlsConversation {
             return Err(LeafError::ConversationAlreadyExists(id).into());
         }
 
-        Self::from_mls_group(group, configuration, backend).await
+        Self::from_mls_group(group, configuration, database).await
     }
 }

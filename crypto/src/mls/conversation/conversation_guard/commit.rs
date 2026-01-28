@@ -49,8 +49,9 @@ impl ConversationGuard {
     pub(super) async fn merge_commit(&mut self) -> Result<()> {
         let client = self.session().await?;
         let provider = self.crypto_provider().await?;
+        let database = self.database().await?;
         let mut conversation = self.inner.write().await;
-        conversation.commit_accepted(&client, &provider).await
+        conversation.commit_accepted(&client, &database, &provider).await
     }
 
     /// Send the commit via [crate::MlsTransport] and handle the response.
@@ -113,6 +114,7 @@ impl ConversationGuard {
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
         let signer = credential.signature_key();
+        let database = self.database().await?;
         let mut conversation = self.conversation_mut().await;
 
         // No need to also check pending proposals since they should already have been scanned while decrypting the
@@ -122,7 +124,7 @@ impl ConversationGuard {
             matches!(mls_credential, openmls::prelude::MlsCredentialType::X509(_)).then_some(mls_credential)
         }))
         .map_err(RecursiveError::mls_credential("extracting crl uris from credentials"))?;
-        let crl_new_distribution_points = get_new_crl_distribution_points(&backend, crl_dps)
+        let crl_new_distribution_points = get_new_crl_distribution_points(&database, crl_dps)
             .await
             .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
@@ -136,9 +138,7 @@ impl ConversationGuard {
         let welcome = Some(welcome);
         let group_info = Self::group_info(group_info)?;
 
-        conversation
-            .persist_group_when_changed(&backend.keystore(), false)
-            .await?;
+        conversation.persist_group_when_changed(&database, false).await?;
 
         let commit = MlsCommitBundle {
             commit,
@@ -160,6 +160,7 @@ impl ConversationGuard {
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
         let signer = credential.signature_key();
+        let database = self.database().await?;
         let mut conversation = self.inner.write().await;
 
         let members = conversation
@@ -181,9 +182,7 @@ impl ConversationGuard {
 
         let group_info = Self::group_info(group_info)?;
 
-        conversation
-            .persist_group_when_changed(&backend.keystore(), false)
-            .await?;
+        conversation.persist_group_when_changed(&database, false).await?;
 
         // we don't need the conversation anymore, but we do need to mutably borrow `self` again
         drop(conversation);
@@ -206,7 +205,7 @@ impl ConversationGuard {
 
     /// Set the referenced credential for this conversation.
     pub async fn set_credential_by_ref(&mut self, credential_ref: &CredentialRef) -> Result<()> {
-        let database = self.crypto_provider().await?.keystore();
+        let database = self.database().await?;
         let credential = credential_ref
             .load(&database)
             .await
@@ -221,6 +220,7 @@ impl ConversationGuard {
     pub(crate) async fn set_credential_inner(&mut self, credential: &Credential) -> Result<MlsCommitBundle> {
         self.ensure_no_pending_commit().await?;
         let backend = &self.crypto_provider().await?;
+        let database = self.database().await?;
         let mut conversation = self.conversation_mut().await;
 
         // If the credential remains the same and we still want to update, we explicitly need to pass `None` to openmls,
@@ -247,9 +247,7 @@ impl ConversationGuard {
         let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
 
-        conversation
-            .persist_group_when_changed(&backend.keystore(), false)
-            .await?;
+        conversation.persist_group_when_changed(&database, false).await?;
 
         Ok(MlsCommitBundle {
             welcome,
@@ -273,6 +271,7 @@ impl ConversationGuard {
         let session = &self.session().await?;
         let provider = &self.crypto_provider().await?;
         let mut inner = self.inner.write().await;
+        let database = self.database().await?;
         if inner.group.pending_proposals().next().is_none() {
             return Ok(None);
         }
@@ -286,7 +285,7 @@ impl ConversationGuard {
             .map_err(MlsError::wrap("group commit to pending proposals"))?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
 
-        inner.persist_group_when_changed(&provider.keystore(), false).await?;
+        inner.persist_group_when_changed(&database, false).await?;
 
         Ok(Some(MlsCommitBundle {
             welcome,
@@ -302,6 +301,7 @@ impl ConversationGuard {
     ) -> Result<Option<MlsCommitBundle>> {
         let session = &self.session().await?;
         let provider = &self.crypto_provider().await?;
+        let database = self.database().await?;
         let mut inner = self.inner.write().await;
         if proposals.is_empty() {
             return Ok(None);
@@ -315,7 +315,7 @@ impl ConversationGuard {
             .map_err(MlsError::wrap("group commit to pending proposals"))?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
 
-        inner.persist_group_when_changed(&provider.keystore(), false).await?;
+        inner.persist_group_when_changed(&database, false).await?;
 
         Ok(Some(MlsCommitBundle {
             welcome,

@@ -148,16 +148,14 @@ impl TransactionContext {
             crl_new_distribution_points.extend(crl_dp);
         }
 
-        get_new_crl_distribution_points(
-            &self
-                .mls_provider()
-                .await
-                .map_err(RecursiveError::transaction("getting mls provider"))?,
-            crl_new_distribution_points,
-        )
-        .await
-        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))
-        .map_err(Into::into)
+        let database = self
+            .database()
+            .await
+            .map_err(RecursiveError::transaction("getting database"))?;
+        get_new_crl_distribution_points(&database, crl_new_distribution_points)
+            .await
+            .map_err(RecursiveError::mls_credential("getting new crl distribution points"))
+            .map_err(Into::into)
     }
 }
 
