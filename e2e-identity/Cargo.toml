@@ -7,9 +7,6 @@ repository = "https://github.com/wireapp/rusty-jwt-tools"
 license = "MPL-2.0"
 publish = false
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [lints]
 workspace = true
 
