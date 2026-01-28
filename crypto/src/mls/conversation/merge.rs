@@ -10,7 +10,7 @@
 //! | 0 pend. Proposal  | ❌              | ✅              |
 //! | 1+ pend. Proposal | ❌              | ✅              |
 
-use core_crypto_keystore::entities::StoredEncryptionKeyPair;
+use core_crypto_keystore::{Database, entities::StoredEncryptionKeyPair};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use super::Result;
@@ -19,7 +19,11 @@ use crate::{MlsError, Session, mls::MlsConversation, mls_provider::MlsCryptoProv
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
-    pub(crate) async fn commit_accepted(&mut self, client: &Session, backend: &MlsCryptoProvider) -> Result<()> {
+    pub(crate) async fn commit_accepted(
+        &mut self,
+        client: &Session<Database>,
+        backend: &MlsCryptoProvider,
+    ) -> Result<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
         let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
 

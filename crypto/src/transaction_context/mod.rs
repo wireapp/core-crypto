@@ -48,7 +48,7 @@ enum TransactionContextInner {
     Valid {
         pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
         keystore: Database,
-        mls_session: Arc<RwLock<Option<Session>>>,
+        mls_session: Arc<RwLock<Option<Session<Database>>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
         #[cfg(feature = "proteus")]
         proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
@@ -75,7 +75,7 @@ impl CoreCrypto {
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl HasSessionAndCrypto for TransactionContext {
-    async fn session(&self) -> crate::mls::Result<Session> {
+    async fn session(&self) -> crate::mls::Result<Session<Database>> {
         self.session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))
@@ -94,7 +94,7 @@ impl TransactionContext {
     async fn new(
         keystore: Database,
         pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
-        mls_session: Arc<RwLock<Option<Session>>>,
+        mls_session: Arc<RwLock<Option<Session<Database>>>>,
         #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     ) -> Result<Self> {
         keystore
@@ -117,7 +117,7 @@ impl TransactionContext {
         })
     }
 
-    pub(crate) async fn session(&self) -> Result<Session> {
+    pub(crate) async fn session(&self) -> Result<Session<Database>> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { mls_session, .. } => mls_session.read().await.as_ref().cloned().ok_or(
                 RecursiveError::mls_client("Getting mls session from transaction context")(
@@ -130,7 +130,7 @@ impl TransactionContext {
     }
 
     #[cfg(test)]
-    pub(crate) async fn set_session_if_exists(&self, new_session: Session) {
+    pub(crate) async fn set_session_if_exists(&self, new_session: Session<Database>) {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { mls_session, .. } => {
                 let mut guard = mls_session.write().await;
@@ -274,14 +274,15 @@ impl TransactionContext {
             .unwrap_or_default();
 
         let crypto_provider = MlsCryptoProvider::new_with_pki_env(database, pki_env_provider);
-        let session = Session::new(client_id.clone(), crypto_provider, transport);
+        let database = self.keystore().await?;
+        let session = Session::new(client_id.clone(), crypto_provider, database, transport);
         self.set_mls_session(session).await?;
 
         Ok(())
     }
 
     /// Set the `mls_session` Arc (also sets it on the transaction's CoreCrypto instance)
-    pub(crate) async fn set_mls_session(&self, session: Session) -> Result<()> {
+    pub(crate) async fn set_mls_session(&self, session: Session<Database>) -> Result<()> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { mls_session, .. } => {
                 let mut guard = mls_session.write().await;

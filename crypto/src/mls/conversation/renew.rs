@@ -1,4 +1,4 @@
-use core_crypto_keystore::entities::StoredEncryptionKeyPair;
+use core_crypto_keystore::{Database, entities::StoredEncryptionKeyPair};
 use openmls::prelude::{LeafNode, LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -93,7 +93,7 @@ impl MlsConversation {
     /// This will also add them to the local proposal store
     pub(crate) async fn renew_proposals_for_current_epoch(
         &mut self,
-        client: &Session,
+        client: &Session<Database>,
         backend: &MlsCryptoProvider,
         proposals: impl Iterator<Item = QueuedProposal>,
         additional_update: Option<&LeafNode>,
@@ -122,7 +122,7 @@ impl MlsConversation {
     /// At this point, we have already verified we are only operating on proposals created by self.
     async fn renew_update(
         &mut self,
-        session: &Session,
+        session: &Session<Database>,
         crypto_provider: &MlsCryptoProvider,
         leaf_node: &LeafNode,
     ) -> Result<MlsProposalBundle> {
