@@ -210,7 +210,7 @@ impl Entity {
             .collect::<TokenStream>();
 
         let sql_map_err = (!upsert).then_some(quote! {
-            .map_err(|_| CryptoKeystoreError::AlreadyExists(Self::COLLECTION_NAME))
+            .map_err(|_| crate::CryptoKeystoreError::AlreadyExists(Self::COLLECTION_NAME))
         });
 
         quote! {
@@ -322,7 +322,7 @@ impl Entity {
             let field_name = &column.field_name;
             let make_decrypt_operation = |accessor: TokenStream| {
                 if column.skip_encryption {
-                    quote!(Ok::<_, CryptoKeystoreError>(#accessor.to_owned()))
+                    quote!(Ok::<_, crate::CryptoKeystoreError>(#accessor.to_owned()))
                 } else {
                     quote!(
                         <#struct_name as crate::traits::DecryptData>::decrypt_data(
@@ -402,7 +402,7 @@ impl Entity {
             let field_name = &column.field_name;
             let make_encrypt_operation = |accessor: TokenStream| {
                 if column.skip_encryption {
-                    quote!(Ok::<_, CryptoKeystoreError>(#accessor.to_owned()))
+                    quote!(Ok::<_, crate::CryptoKeystoreError>(#accessor.to_owned()))
                 } else {
                     quote!(
                         <Self as crate::traits::EncryptData>::encrypt_data(
