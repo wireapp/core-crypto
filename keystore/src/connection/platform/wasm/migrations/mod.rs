@@ -12,6 +12,7 @@ mod v07;
 mod v08;
 mod v09;
 mod v10;
+mod v11;
 
 pub(super) use db_key_type_to_bytes::migrate_db_key_type_to_bytes;
 pub(super) use delete_credential_by_session_id::delete_credential_by_session_id;
@@ -39,9 +40,10 @@ const DB_VERSION_7: u32 = db_version_number(7);
 const DB_VERSION_8: u32 = db_version_number(8);
 const DB_VERSION_9: u32 = db_version_number(9);
 const DB_VERSION_10: u32 = db_version_number(10);
+const DB_VERSION_11: u32 = db_version_number(11);
 
 /// This must always be the latest version. Increment when adding a new migration.
-const TARGET_VERSION: u32 = DB_VERSION_10;
+const TARGET_VERSION: u32 = DB_VERSION_11;
 
 /// Open an existing idb database with the given name, and migrate it if needed.
 pub(crate) async fn open_and_migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Database> {
@@ -111,6 +113,7 @@ async fn do_migration_step(from: u32, name: &str, key: &DatabaseKey) -> CryptoKe
         DB_VERSION_7 => v08::migrate(name, key).await,
         DB_VERSION_8 => v09::migrate(name, key).await,
         DB_VERSION_9 => v10::migrate(name, key).await,
+        DB_VERSION_10 => v11::migrate(name, key).await,
         _ => Err(CryptoKeystoreError::MigrationNotSupported(from)),
     }
 }
