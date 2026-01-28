@@ -95,7 +95,6 @@ anyhow = { version = "1.0", default-features = false }
 
 env_logger = "0.11"
 html_parser = { version = "0.7", default-features = false }
-lazy_static = { version = "1.4", default-features = false }
 openidconnect = { version = "4", default-features = false }
 rstest = { version = "0.26", default-features = false }
 rstest_reuse = { version = "0.7", default-features = false }

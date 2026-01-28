@@ -7390,7 +7390,6 @@ dependencies = [
  "itertools 0.14.0",
  "jwt-simple",
  "keycloak",
- "lazy_static",
  "log",
  "native-tls",
  "oauth2",
