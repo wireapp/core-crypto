@@ -437,6 +437,17 @@ $(STAMPS)/jvm-test: $(jvm-test-deps)
 	$(TOUCH_STAMP)
 
 #-------------------------------------------------------------------------------
+# KMP (Kotlin Multiplatform) builds
+#-------------------------------------------------------------------------------
+
+kmp-jvm-test-deps := $(KT_FILES)
+
+$(STAMPS)/kmp-jvm-test: $(kmp-jvm-test-deps)
+	cd crypto-ffi/bindings && \
+	./gradlew kmp:jvmTest --rerun
+	$(TOUCH_STAMP)
+
+#-------------------------------------------------------------------------------
 # TypeScript / JS tasks
 #-------------------------------------------------------------------------------
 
@@ -584,7 +595,7 @@ $(STAMPS)/docs-rust-wasm: $(RUST_SOURCES)
 docs-rust-wasm: $(STAMPS)/docs-rust-wasm ## Generate Rust docs for wasm32-unknown-unknown
 
 # Kotlin docs
-KOTLIN_SOURCES := $(shell find crypto-ffi/bindings/jvm/src/main/kotlin \
+KOTLIN_SOURCES := $(shell find crypto-ffi/bindings/shared/src/commonMain/kotlin \
 	                           -type f -name '*.kt' 2>/dev/null | LC_ALL=C sort)
 DOCS_KOTLIN := target/kotlin/doc/html/index.html
 $(DOCS_KOTLIN): $(JVM_LIB) $(KOTLIN_SOURCES)
@@ -691,8 +702,8 @@ swift-check: $(STAMPS)/swift-check ## Lint Swift files via swift-format and swif
 
 # Kotlin
 
-KT_WRAPPER = ./crypto-ffi/bindings/jvm/src/main/kotlin
-KT_TESTS = ./crypto-ffi/bindings/jvm/src/test
+KT_WRAPPER = ./crypto-ffi/bindings/shared/src/commonMain/kotlin
+KT_TESTS = ./crypto-ffi/bindings/shared/src/commonTest
 KT_INTEROP = ./interop/src/clients/android-interop/src/main/java
 KT_FILES := $(shell find $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP) -type f -name '*.kt')
 
