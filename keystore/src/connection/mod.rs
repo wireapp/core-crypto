@@ -15,10 +15,10 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 pub use self::platform::*;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
-    entities::{MlsPendingMessage, PersistedMlsGroupExt},
+    entities::{MlsPendingMessage, PersistedMlsGroup},
     traits::{
         BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase,
-        KeyType,
+        KeyType, SearchableEntity,
     },
     transaction::KeystoreTransaction,
 };
@@ -291,11 +291,7 @@ impl Database {
         Ok(())
     }
 
-    pub async fn child_groups<'a, E>(&self, entity: E) -> CryptoKeystoreResult<Vec<E>>
-    where
-        E: Clone + Entity + EntityDatabaseMutation<'a> + BorrowPrimaryKey + PersistedMlsGroupExt + Send + Sync,
-        for<'pk> &'pk <E as BorrowPrimaryKey>::BorrowedPrimaryKey: KeyType,
-    {
+    pub async fn child_groups(&self, entity: PersistedMlsGroup) -> CryptoKeystoreResult<Vec<PersistedMlsGroup>> {
         let mut conn = self.conn().await?;
         let persisted_records = entity.child_groups(conn.deref_mut()).await?;
 
@@ -436,5 +432,21 @@ impl FetchFromDatabase for Database {
             return Ok(persisted_records);
         };
         transaction.find_all(persisted_records).await
+    }
+
+    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
+    where
+        E: Entity<ConnectionType = KeystoreDatabaseConnection> + SearchableEntity<SearchKey> + Clone + Send + Sync,
+        SearchKey: KeyType,
+    {
+        let mut conn = self.conn().await?;
+        let persisted_records = E::find_all_matching(&mut conn, search_key).await?;
+
+        let transaction_guard = self.transaction.lock().await;
+        let Some(transaction) = transaction_guard.as_ref() else {
+            return Ok(persisted_records);
+        };
+
+        transaction.search(persisted_records, search_key).await
     }
 }

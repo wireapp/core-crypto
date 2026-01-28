@@ -78,6 +78,13 @@ mod idempotent;
 /// The `column` value will be used as the SQL column name for this field. If this is unset, the field's name
 /// will be used as the sql column name.
 ///
+/// ### `#[entity(unencrypted_wasm)]`
+///
+/// This is a **field attribute** which can be applied to any number of fields in the struct.
+///
+/// When set, this field is excluded from item-level encryption and is stored in plaintext in wasm.
+/// (Item-level encryption is never applied for non-wasm implementations anyway.)
+///
 /// ## Trait Implementations
 ///
 /// ### Implements

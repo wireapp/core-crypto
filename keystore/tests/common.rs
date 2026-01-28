@@ -91,5 +91,5 @@ impl Drop for KeystoreTestContext {
     not(target_family = "wasm"),
     test_attr(macro_rules_attribute::apply(smol_macros::test))
 )]
-#[cfg_attr(target_family = "wasm", test_attr(wasm_bindgen_test))]
+#[cfg_attr(target_family = "wasm", test_attr(wasm_bindgen_test::wasm_bindgen_test))]
 pub async fn all_storage_types(#[case] context: KeystoreTestContext) {}

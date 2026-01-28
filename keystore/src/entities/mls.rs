@@ -1,16 +1,19 @@
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-// This trait import is required for the `Entity` macro to work properly.
-// Apparently its use in the macro is hidden from the code which checks whether
-// it's being used.
-// Also we can't use an `expect` attribute here because of the unfulfilled expectation,
-// which is proper as we do in fact use it, so... it's a bit of a mess.
-#[allow(unused_imports)]
-use crate::traits::EntityBase as _;
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, KeyType, OwnedKeyType, PrimaryKey},
+    CryptoKeystoreResult,
+    traits::{EntityBase, EntityGetBorrowed as _, KeyType, OwnedKeyType, PrimaryKey, SearchableEntity as _},
 };
+
+/// This type exists so that we can efficiently search for the children of a given group.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::From, derive_more::Into, derive_more::AsRef)]
+pub struct ParentGroupId<'a>(&'a [u8]);
+
+impl<'a> KeyType for ParentGroupId<'a> {
+    fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {
+        self.0.into()
+    }
+}
 
 /// Entity representing a persisted `MlsGroup`
 #[derive(
@@ -30,43 +33,30 @@ pub struct PersistedMlsGroup {
     #[entity(id, hex, column = "id_hex")]
     pub id: Vec<u8>,
     pub state: Vec<u8>,
+    #[entity(unencrypted_wasm)]
     pub parent_id: Option<Vec<u8>>,
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait PersistedMlsGroupExt: Entity + BorrowPrimaryKey
-where
-    for<'a> &'a <Self as BorrowPrimaryKey>::BorrowedPrimaryKey: KeyType,
-{
-    fn parent_id(&self) -> Option<&[u8]>;
-
-    async fn parent_group(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>> {
-        let Some(parent_id) = self.parent_id() else {
+impl PersistedMlsGroup {
+    /// Get the parent group of this group.
+    pub async fn parent_group(
+        &self,
+        conn: &mut <Self as EntityBase>::ConnectionType,
+    ) -> CryptoKeystoreResult<Option<Self>> {
+        let Some(parent_id) = self.parent_id.as_deref() else {
             return Ok(None);
         };
 
-        let parent_id = OwnedKeyType::from_bytes(parent_id)
-            .ok_or(CryptoKeystoreError::InvalidPrimaryKeyBytes(Self::COLLECTION_NAME))?;
-        Self::get(conn, &parent_id).await
+        Self::get_borrowed(conn, parent_id).await
     }
 
-    async fn child_groups(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
-        // A perfect opportunity for refactoring in WPB-22945
-        // when we do that, we no longer need varying implementations according to wasm or not,
-        // so both `parent_group` and this method should just be implemented directly on `PersistedMlsGroup`.
-        let entities = Self::load_all(conn).await?;
-
-        // for whatever reason rustc needs each of these distinct bindings to prove to itself that the lifetimes work
-        // out
-        let id = self.borrow_primary_key();
-        let id = id.bytes();
-        let id = id.as_ref();
-
-        Ok(entities
-            .into_iter()
-            .filter(|entity| entity.parent_id().map(|parent_id| parent_id == id).unwrap_or_default())
-            .collect())
+    /// Get all children of this group.
+    pub async fn child_groups(
+        &self,
+        conn: &mut <Self as EntityBase>::ConnectionType,
+    ) -> CryptoKeystoreResult<Vec<Self>> {
+        let parent_id = self.id.as_slice();
+        Self::find_all_matching(conn, &parent_id.into()).await
     }
 }
 
