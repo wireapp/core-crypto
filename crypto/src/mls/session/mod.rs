@@ -140,6 +140,7 @@ impl<D: FetchFromDatabase> Session<D> {
             .map_err(Into::into)
     }
 
+    /// Get read-only access to the database.
     pub fn database(&self) -> &impl FetchFromDatabase {
         &self.database
     }

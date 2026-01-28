@@ -176,10 +176,10 @@ mod tests {
             let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
             let cb = Credential::x509(case.ciphersuite(), cert.clone()).unwrap();
 
-            let alice_client = alice.transaction.session().await.unwrap();
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
             let credential = Credential::x509(case.ciphersuite(), cert).unwrap();
-            alice_client
+            alice
+                .transaction
                 .add_credential_without_clientid_check(credential)
                 .await
                 .unwrap();
@@ -238,11 +238,11 @@ mod tests {
             let credential_with_short_expiration_time =
                 Credential::x509(case.ciphersuite(), cert_bundle.clone()).unwrap();
             let credential_ref = CredentialRef::from_credential(&credential_with_short_expiration_time);
-            let session = alice.session().await;
 
             // remove and add so that the existing credential with the long expiration time is replaced in the DB.
-            session.remove_credential(&credential_ref).await.unwrap();
-            session
+            alice.transaction.remove_credential(&credential_ref).await.unwrap();
+            alice
+                .transaction
                 .add_credential(credential_with_short_expiration_time)
                 .await
                 .unwrap();
@@ -258,7 +258,7 @@ mod tests {
 
             // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
             let credential = Credential::x509(case.ciphersuite(), cert_bundle).unwrap();
-            session.add_credential(credential).await.unwrap();
+            alice.transaction.add_credential(credential).await.unwrap();
 
             let elapsed = start.elapsed();
             // Give time to the certificate to expire
