@@ -11,7 +11,10 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     connection::{Database, KeystoreDatabaseConnection},
     entities::{MlsPendingMessage, MlsPendingMessagePrimaryKey, PersistedMlsGroup},
-    traits::{BorrowPrimaryKey, Entity, EntityBase as _, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType},
+    traits::{
+        BorrowPrimaryKey, Entity, EntityBase as _, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType,
+        SearchableEntity,
+    },
     transaction::dynamic_dispatch::EntityId,
 };
 
@@ -260,11 +263,53 @@ impl KeystoreTransaction {
             .unwrap_or_default()
     }
 
+    async fn search_in_cache<E, SearchKey>(&self, search_key: &SearchKey) -> Vec<Arc<E>>
+    where
+        E: Entity + SearchableEntity<SearchKey> + Send + Sync,
+        SearchKey: KeyType,
+    {
+        let cache_guard = self.cache.read().await;
+        cache_guard
+            .get(E::COLLECTION_NAME)
+            .map(|table| {
+                table
+                    .values()
+                    .filter_map(|record: &dynamic_dispatch::Entity| {
+                        let entity = record
+                            .downcast::<E>()
+                            .expect("all entries in this table are of this type")
+                            .clone();
+                        entity.matches(search_key).then_some(entity)
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
     pub(crate) async fn find_all<E>(&self, persisted_records: Vec<E>) -> CryptoKeystoreResult<Vec<E>>
     where
         E: Clone + Entity + Send + Sync,
     {
         let cached_records = self.find_all_in_cache().await;
+        let merged_records = self
+            .merge_records(
+                cached_records.iter().map(Arc::as_ref).map(Cow::Borrowed),
+                persisted_records.into_iter().map(Cow::Owned),
+            )
+            .await;
+        Ok(merged_records)
+    }
+
+    pub(crate) async fn search<E, SearchKey>(
+        &self,
+        persisted_records: Vec<E>,
+        search_key: &SearchKey,
+    ) -> CryptoKeystoreResult<Vec<E>>
+    where
+        E: Clone + Entity + SearchableEntity<SearchKey> + Send + Sync,
+        SearchKey: KeyType,
+    {
+        let cached_records = self.search_in_cache(search_key).await;
         let merged_records = self
             .merge_records(
                 cached_records.iter().map(Arc::as_ref).map(Cow::Borrowed),

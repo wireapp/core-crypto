@@ -440,6 +440,13 @@ impl FetchFromDatabase for Database {
         SearchKey: KeyType,
     {
         let mut conn = self.conn().await?;
-        E::find_all_matching(&mut conn, search_key).await
+        let persisted_records = E::find_all_matching(&mut conn, search_key).await?;
+
+        let transaction_guard = self.transaction.lock().await;
+        let Some(transaction) = transaction_guard.as_ref() else {
+            return Ok(persisted_records);
+        };
+
+        transaction.search(persisted_records, search_key).await
     }
 }
