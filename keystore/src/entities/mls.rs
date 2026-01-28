@@ -1,8 +1,5 @@
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-// This import is required for the `Entity` macro to work properly.
-#[cfg(not(target_family = "wasm"))]
-use crate::CryptoKeystoreError;
 use crate::{
     CryptoKeystoreResult,
     traits::{EntityBase, EntityGetBorrowed as _, KeyType, OwnedKeyType, PrimaryKey, SearchableEntity as _},
@@ -36,6 +33,7 @@ pub struct PersistedMlsGroup {
     #[entity(id, hex, column = "id_hex")]
     pub id: Vec<u8>,
     pub state: Vec<u8>,
+    #[entity(unencrypted_wasm)]
     pub parent_id: Option<Vec<u8>>,
 }
 
