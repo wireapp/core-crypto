@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use core_crypto_keystore::{CryptoKeystoreMls as _, entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{CryptoKeystoreMls as _, entities::PersistedMlsGroup, traits::FetchFromDatabase};
 use openmls::group::{InnerState, MlsGroup};
 
 use super::Result;
@@ -43,7 +43,7 @@ impl MlsConversation {
     }
 
     /// Load a conversation from the database
-    pub(crate) async fn load(keystore: &Database, id: impl AsRef<[u8]>) -> Result<Option<Self>> {
+    pub(crate) async fn load(keystore: &impl FetchFromDatabase, id: impl AsRef<[u8]>) -> Result<Option<Self>> {
         let group = keystore
             .get_borrowed::<PersistedMlsGroup>(id.as_ref())
             .await

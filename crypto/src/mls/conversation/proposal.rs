@@ -5,6 +5,7 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
+use core_crypto_keystore::Database;
 use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn, prelude::LeafNode};
 
 use super::{Error, Result};
@@ -21,7 +22,7 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_add_member(
         &mut self,
-        client: &Session,
+        client: &Session<Database>,
         backend: &MlsCryptoProvider,
         key_package: KeyPackageIn,
     ) -> Result<MlsProposalBundle> {
@@ -57,7 +58,7 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_remove_member(
         &mut self,
-        client: &Session,
+        client: &Session<Database>,
         backend: &MlsCryptoProvider,
         member: LeafNodeIndex,
     ) -> Result<MlsProposalBundle> {
@@ -79,7 +80,7 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_self_update(
         &mut self,
-        client: &Session,
+        client: &Session<Database>,
         backend: &MlsCryptoProvider,
     ) -> Result<MlsProposalBundle> {
         self.propose_explicit_self_update(client, backend, None).await
@@ -89,7 +90,7 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_explicit_self_update(
         &mut self,
-        client: &Session,
+        client: &Session<Database>,
         backend: &MlsCryptoProvider,
         leaf_node: Option<LeafNode>,
     ) -> Result<MlsProposalBundle> {

@@ -1,3 +1,4 @@
+use core_crypto_keystore::Database;
 use openmls::prelude::{
     ConfirmationTag, ContentType, CredentialWithKey, FramedContentBodyIn, MlsMessageIn, MlsMessageInBody, Sender,
 };
@@ -48,7 +49,7 @@ impl MlsConversation {
 
     pub(crate) async fn handle_own_commit(
         &mut self,
-        client: &Session,
+        client: &Session<Database>,
         backend: &MlsCryptoProvider,
         ct: &ConfirmationTag,
     ) -> Result<MlsConversationDecryptMessage> {
@@ -84,7 +85,7 @@ impl MlsConversation {
     /// [crate::mls::conversation::ConversationGuard::decrypt_message]
     pub(crate) async fn merge_pending_commit(
         &mut self,
-        client: &Session,
+        client: &Session<Database>,
         backend: &MlsCryptoProvider,
     ) -> Result<MlsConversationDecryptMessage> {
         self.commit_accepted(client, backend).await?;
