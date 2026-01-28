@@ -464,10 +464,7 @@ mod tests {
                 );
 
                 assert_eq!(
-                    CredentialRef::get_all(&new_session.crypto_provider.unwrap_keystore())
-                        .await
-                        .unwrap()
-                        .len(),
+                    CredentialRef::get_all(new_session.database()).await.unwrap().len(),
                     old_nb_identities
                 );
             })

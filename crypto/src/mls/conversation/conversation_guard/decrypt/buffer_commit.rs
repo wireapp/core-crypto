@@ -29,11 +29,10 @@ impl ConversationGuard {
 
     /// Retrieve the bytes of a pending commit.
     pub(super) async fn retrieve_buffered_commit(&self) -> Result<Option<Vec<u8>>> {
+        let database = self.database().await?;
         let conversation = self.conversation().await;
         info!(group_id = conversation.id(); "attempting to retrieve buffered commit");
-        self.crypto_provider()
-            .await?
-            .keystore()
+        database
             .get_borrowed::<StoredBufferedCommit>(conversation.id().as_ref())
             .await
             .map(|option| option.map(StoredBufferedCommit::into_commit_data))
@@ -65,10 +64,9 @@ impl ConversationGuard {
     /// Remove the buffered commit for this conversation; it has been applied.
     pub(super) async fn clear_buffered_commit(&self) -> Result<()> {
         let conversation = self.conversation().await;
+        let database = self.database().await?;
         info!(group_id = conversation.id(); "attempting to delete buffered commit");
-        self.crypto_provider()
-            .await?
-            .keystore()
+        database
             .remove_borrowed::<StoredBufferedCommit>(conversation.id().as_ref())
             .await
             .map_err(KeystoreError::wrap("attempting to clear buffered commit"))

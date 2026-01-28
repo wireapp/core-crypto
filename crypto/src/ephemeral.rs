@@ -92,10 +92,10 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
     let credential = Credential::basic(ciphersuite, client_id.clone(), &session.crypto_provider).map_err(
         RecursiveError::mls_credential("generating basic credential for ephemeral client"),
     )?;
-    let credential_ref = session
+    let credential_ref = tx
         .add_credential(credential)
         .await
-        .map_err(RecursiveError::mls_client(
+        .map_err(RecursiveError::transaction(
             "adding basic credential to ephemeral client",
         ))?;
 

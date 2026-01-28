@@ -68,8 +68,11 @@ impl PendingConversation {
     }
 
     async fn keystore(&self) -> Result<Database> {
-        let backend = self.mls_provider().await?;
-        Ok(backend.keystore())
+        self.context
+            .database()
+            .await
+            .map_err(RecursiveError::transaction("getting database from transaction context"))
+            .map_err(Into::into)
     }
 
     fn id(&self) -> &ConversationIdRef {
@@ -135,9 +138,9 @@ impl PendingConversation {
     /// the external join commit has been accepted by the DS and the pending group can be merged.
     async fn incoming_message_is_own_join_commit(&self, message: impl AsRef<[u8]>) -> Result<bool> {
         let backend = self.mls_provider().await?;
-        let keystore = backend.keystore();
+        let database = self.keystore().await?;
         // Instantiate the pending group
-        let (group, _cfg) = keystore
+        let (group, _cfg) = database
             .mls_pending_groups_load(self.id())
             .await
             .map_err(KeystoreError::wrap("loading mls pending groups"))?
@@ -169,7 +172,6 @@ impl PendingConversation {
     async fn merge_and_restore_messages(&mut self) -> Result<MlsConversationDecryptMessage> {
         let buffered_messages = self.merge().await?;
         let context = &self.context;
-        let backend = self.mls_provider().await?;
         let id = self.id();
 
         // This is the now merged conversation
@@ -190,7 +192,7 @@ impl PendingConversation {
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         let crl_new_distribution_points = get_new_crl_distribution_points(
-            &backend,
+            &self.keystore().await?,
             extract_crl_uris_from_group(&conversation.group)
                 .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
         )
@@ -259,7 +261,7 @@ impl PendingConversation {
         };
 
         // Persist the now usable MLS group in the keystore
-        let conversation = MlsConversation::from_mls_group(mls_group, configuration, &mls_provider)
+        let conversation = MlsConversation::from_mls_group(mls_group, configuration, &self.keystore().await?)
             .await
             .map_err(RecursiveError::mls_conversation(
                 "constructing conversation from mls group",
@@ -284,8 +286,8 @@ impl PendingConversation {
             .map_err(RecursiveError::mls_conversation("restoring pending messages"))?;
 
         if pending_messages.is_some() {
-            mls_provider
-                .keystore()
+            self.keystore()
+                .await?
                 .remove_pending_messages_by_conversation_id(id)
                 .await
                 .map_err(KeystoreError::wrap("deleting mls pending messages by conversation id"))?;

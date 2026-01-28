@@ -297,29 +297,20 @@ pub struct MlsConversation {
 
 impl MlsConversation {
     /// Creates a new group/conversation
-    ///
-    /// # Arguments
-    /// * `id` - group/conversation identifier
-    /// * `author_client` - the client responsible for creating the group
-    /// * `credential_ref` - ref of the credential the creator wants to join the group with
-    /// * `config` - group configuration
-    ///
-    /// # Errors
-    /// Errors can happen from OpenMls or from the KeyStore
     pub async fn create(
         id: ConversationId,
-        author_client: &Session<Database>,
+        provider: &MlsCryptoProvider,
+        database: &Database,
         credential_ref: &CredentialRef,
         configuration: MlsConversationConfiguration,
     ) -> Result<Self> {
-        let database = &author_client.crypto_provider.keystore();
         let credential = credential_ref
             .load(database)
             .await
             .map_err(RecursiveError::mls_credential_ref("getting credential"))?;
 
         let group = MlsGroup::new_with_group_id(
-            &author_client.crypto_provider,
+            provider,
             &credential.signature_key_pair,
             &configuration.as_openmls_default_configuration()?,
             openmls::prelude::GroupId::from_slice(id.as_ref()),
@@ -344,7 +335,7 @@ impl MlsConversation {
     pub(crate) async fn from_mls_group(
         group: MlsGroup,
         configuration: MlsConversationConfiguration,
-        backend: &MlsCryptoProvider,
+        database: &Database,
     ) -> Result<Self> {
         let id = ConversationId::from(group.group_id().as_slice());
 
@@ -355,9 +346,7 @@ impl MlsConversation {
             parent_id: None,
         };
 
-        conversation
-            .persist_group_when_changed(&backend.keystore(), true)
-            .await?;
+        conversation.persist_group_when_changed(database, true).await?;
 
         Ok(conversation)
     }

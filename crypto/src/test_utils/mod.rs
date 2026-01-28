@@ -150,7 +150,7 @@ impl SessionContext {
 
         let credential = Credential::from_identifier(&identifier, context.ciphersuite(), &session.crypto_provider)
             .map_err(RecursiveError::mls_credential("creating credential from identifier"))?;
-        let initial_credential = session.add_credential(credential).await.unwrap();
+        let initial_credential = transaction.add_credential(credential).await.unwrap();
 
         let session_context = Self {
             transaction,
@@ -250,6 +250,13 @@ impl SessionContext {
         self.x509_test_chain = new_chain;
     }
 
+    pub async fn database(&self) -> Database {
+        self.transaction
+            .database()
+            .await
+            .expect("database from transaction context")
+    }
+
     pub async fn session(&self) -> Session<Database> {
         self.session.read().await.clone()
     }
@@ -337,7 +344,7 @@ impl SessionContext {
 
         self.reinit_session(identifier).await;
 
-        self.session().await.add_credential(credential).await.unwrap();
+        self.transaction.add_credential(credential).await.unwrap();
 
         Ok(())
     }

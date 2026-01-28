@@ -22,7 +22,7 @@ impl TransactionContext {
         Ok(Arc::new(credential))
     }
     /// Add a credential to the database of this session.
-    pub(crate) async fn add_credential(&self, credential: Credential) -> Result<CredentialRef> {
+    pub async fn add_credential(&self, credential: Credential) -> Result<CredentialRef> {
         let credential = self.add_credential_producing_arc(credential).await?;
         Ok(CredentialRef::from_credential(&credential))
     }

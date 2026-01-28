@@ -50,7 +50,8 @@ impl MlsConversation {
     pub(crate) async fn handle_own_commit(
         &mut self,
         client: &Session<Database>,
-        backend: &MlsCryptoProvider,
+        database: &Database,
+        provider: &MlsCryptoProvider,
         ct: &ConfirmationTag,
     ) -> Result<MlsConversationDecryptMessage> {
         if self.group.pending_commit().is_none() {
@@ -69,7 +70,7 @@ impl MlsConversation {
 
         // incoming is from ourselves and it's the same as the local pending commit
         // => merge the pending commit & continue
-        self.merge_pending_commit(client, backend).await
+        self.merge_pending_commit(client, database, provider).await
     }
 
     /// Compare incoming commit with local pending commit
@@ -86,9 +87,10 @@ impl MlsConversation {
     pub(crate) async fn merge_pending_commit(
         &mut self,
         client: &Session<Database>,
-        backend: &MlsCryptoProvider,
+        database: &Database,
+        provider: &MlsCryptoProvider,
     ) -> Result<MlsConversationDecryptMessage> {
-        self.commit_accepted(client, backend).await?;
+        self.commit_accepted(client, database, provider).await?;
 
         let own_leaf = self
             .group
@@ -105,7 +107,7 @@ impl MlsConversation {
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         let crl_new_distribution_points = get_new_crl_distribution_points(
-            backend,
+            database,
             extract_crl_uris_from_group(&self.group)
                 .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
         )

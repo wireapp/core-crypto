@@ -41,14 +41,15 @@ impl TransactionContext {
         let mut conversation = self.conversation(id).await?;
         let mut conversation = conversation.conversation_mut().await;
         let client = &self.session().await?;
-        let backend = &self.mls_provider().await?;
+        let provider = &self.mls_provider().await?;
+        let database = &self.database().await?;
         let proposal = match proposal {
             MlsProposal::Add(key_package) => conversation
-                .propose_add_member(client, backend, key_package.into())
+                .propose_add_member(client, provider, database, key_package.into())
                 .await
                 .map_err(RecursiveError::mls_conversation("proposing to add member"))?,
             MlsProposal::Update => conversation
-                .propose_self_update(client, backend)
+                .propose_self_update(client, provider, database)
                 .await
                 .map_err(RecursiveError::mls_conversation("proposing self update"))?,
             MlsProposal::Remove(client_id) => {
@@ -59,7 +60,7 @@ impl TransactionContext {
                     .ok_or(Error::ClientNotFound(client_id))
                     .map(|kp| kp.index)?;
                 (*conversation)
-                    .propose_remove_member(client, backend, index)
+                    .propose_remove_member(client, provider, database, index)
                     .await
                     .map_err(RecursiveError::mls_conversation("proposing to remove member"))?
             }

@@ -47,6 +47,7 @@ impl TransactionContext {
     /// * if the message can't be decrypted
     #[cfg_attr(test, crate::dispotent)]
     pub async fn process_welcome_message(&self, welcome: MlsMessageIn) -> Result<WelcomeBundle> {
+        let database = &self.database().await?;
         let MlsMessageInBody::Welcome(welcome) = welcome.extract() else {
             return Err(Error::CallerError(
                 "the message provided to process_welcome_message was not a welcome message",
@@ -65,14 +66,19 @@ impl TransactionContext {
             .mls_groups()
             .await
             .map_err(RecursiveError::transaction("getting mls groups"))?;
-        let conversation =
-            MlsConversation::from_welcome_message(welcome, configuration, &mls_provider, mls_groups.borrow_mut())
-                .await
-                .map_err(RecursiveError::mls_conversation("creating conversation from welcome"))?;
+        let conversation = MlsConversation::from_welcome_message(
+            welcome,
+            configuration,
+            &mls_provider,
+            database,
+            mls_groups.borrow_mut(),
+        )
+        .await
+        .map_err(RecursiveError::mls_conversation("creating conversation from welcome"))?;
 
         // We wait for the group to be created then we iterate through all members
         let crl_new_distribution_points = get_new_crl_distribution_points(
-            &mls_provider,
+            database,
             extract_crl_uris_from_group(&conversation.group)
                 .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
         )

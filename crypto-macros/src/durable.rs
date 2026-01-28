@@ -22,7 +22,7 @@ pub(crate) fn durable(item: TokenStream) -> TokenStream {
         #vis async fn #name(#inputs) #ret {
             let _result = #body;
             #[cfg(test)] {
-                self.drop_and_restore(backend).await;
+                self.drop_and_restore(database).await;
             }
             _result
         }

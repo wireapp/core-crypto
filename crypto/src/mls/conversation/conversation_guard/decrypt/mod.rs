@@ -173,7 +173,8 @@ impl ConversationGuard {
         recursion_policy: RecursionPolicy,
     ) -> Result<MlsConversationDecryptMessage> {
         let client = &self.session().await?;
-        let backend = &self.crypto_provider().await?;
+        let provider = &self.crypto_provider().await?;
+        let database = self.database().await?;
         let parsed_message = self.parse_message(message.clone()).await?;
 
         let message_result = self.process_message(parsed_message).await;
@@ -187,7 +188,7 @@ impl ConversationGuard {
         {
             let mut conversation = self.conversation_mut().await;
             let ct = conversation.extract_confirmation_tag_from_own_commit(&message)?;
-            let mut decrypted_message = conversation.handle_own_commit(client, backend, ct).await?;
+            let mut decrypted_message = conversation.handle_own_commit(client, &database, provider, ct).await?;
             debug_assert!(
                 decrypted_message.buffered_messages.is_none(),
                 "decrypted message should be constructed with empty buffer"
@@ -220,7 +221,7 @@ impl ConversationGuard {
         let identity = credential
             .extract_identity(
                 self.ciphersuite().await,
-                backend.authentication_service().borrow().await.as_ref(),
+                provider.authentication_service().borrow().await.as_ref(),
             )
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
@@ -254,7 +255,7 @@ impl ConversationGuard {
                 let mut conversation = self.conversation_mut().await;
                 let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])
                     .map_err(RecursiveError::mls_credential("extracting crl urls from proposals"))?;
-                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
+                let crl_new_distribution_points = get_new_crl_distribution_points(&database, crl_dps)
                     .await
                     .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
@@ -343,7 +344,7 @@ impl ConversationGuard {
                         .map_err(RecursiveError::mls_credential("extracting crl urls from update path"))?,
                 );
 
-                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
+                let crl_new_distribution_points = get_new_crl_distribution_points(&database, crl_dps)
                     .await
                     .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
@@ -364,7 +365,7 @@ impl ConversationGuard {
 
                 conversation
                     .group
-                    .merge_staged_commit(backend, *staged_commit.clone())
+                    .merge_staged_commit(provider, *staged_commit.clone())
                     .await
                     .map_err(MlsError::wrap("merge staged commit"))?;
 
@@ -381,7 +382,13 @@ impl ConversationGuard {
                     staged_commit.as_ref(),
                 );
                 let proposals = conversation
-                    .renew_proposals_for_current_epoch(client, backend, proposals_to_renew.into_iter(), needs_update)
+                    .renew_proposals_for_current_epoch(
+                        client,
+                        provider,
+                        &database,
+                        proposals_to_renew.into_iter(),
+                        needs_update,
+                    )
                     .await?;
 
                 // can't use `.then` because async
@@ -428,7 +435,7 @@ impl ConversationGuard {
 
                 let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])
                     .map_err(RecursiveError::mls_credential("extracting crl uris from proposals"))?;
-                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
+                let crl_new_distribution_points = get_new_crl_distribution_points(&database, crl_dps)
                     .await
                     .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
                 conversation.group.store_pending_proposal(*proposal);
@@ -451,9 +458,7 @@ impl ConversationGuard {
 
         let mut conversation = self.conversation_mut().await;
 
-        conversation
-            .persist_group_when_changed(&backend.keystore(), false)
-            .await?;
+        conversation.persist_group_when_changed(&database, false).await?;
 
         Ok(decrypted)
     }
