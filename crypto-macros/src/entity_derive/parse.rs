@@ -28,6 +28,8 @@ pub(super) struct OuterAttributes {
 ///     hex_field: Vec<u8>,
 ///     #[entity(column = "my_column")]
 ///     rename_this_field: Vec<u8>,
+///     #[entity(unencrypted_wasm)]
+///     unencrypted_probably_an_index: Vec<u8>,
 /// }
 /// ```
 #[derive(Default, darling::FromMeta)]
@@ -35,6 +37,7 @@ pub(super) struct FieldAttributes {
     pub(super) id: Flag,
     pub(super) hex: Flag,
     pub(super) column: Option<String>,
+    pub(super) unencrypted_wasm: Flag,
 }
 
 impl FieldAttributes {

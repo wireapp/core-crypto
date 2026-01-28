@@ -17,6 +17,8 @@ pub(super) struct GenericColumn<Type> {
     pub(super) column_name: Option<String>,
     /// If the ID is transformed for storage within the DB
     pub(super) transformation: Option<FieldTransformation>,
+    /// When set, do not encrypt or decrypt this field in wasm.
+    pub(super) skip_encryption: bool,
 }
 
 pub(super) type Column = GenericColumn<ColumnType>;
@@ -36,12 +38,14 @@ where
         let column_type = CType::try_from(value.ty)?;
         let transformation = value.field_attrs.transformation();
         let column_name = value.field_attrs.column;
+        let skip_encryption = value.field_attrs.unencrypted_wasm.is_present();
 
         Ok(Self {
             field_name,
             column_type,
             column_name,
             transformation,
+            skip_encryption,
         })
     }
 }
