@@ -7,10 +7,6 @@ edition = "2024"
 license = "GPL-3.0-only"
 publish = false
 
-[lib]
-name = "core_crypto"
-crate-type = ["lib", "cdylib"]
-
 [lints]
 workspace = true
 
