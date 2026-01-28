@@ -118,4 +118,47 @@ mod persisted_mls_groups {
 
         assert_eq!(found, vec![relevant_entity]);
     }
+
+    #[apply(all_storage_types)]
+    async fn search_can_find_an_uncommitted_entity(context: KeystoreTestContext) {
+        let store = context.store();
+        let _ = env_logger::try_init();
+
+        let entity = random_entity();
+        let search_key = get_search_key(&entity);
+
+        store.save(entity.clone()).await.unwrap();
+
+        let found = store
+            .search::<PersistedMlsGroup, ParentGroupId>(&search_key)
+            .await
+            .unwrap();
+        assert_eq!(found, vec![entity]);
+    }
+
+    #[apply(all_storage_types)]
+    async fn search_does_not_find_uncommitted_deleted_entity(context: KeystoreTestContext) {
+        use core_crypto_keystore::traits::BorrowPrimaryKey as _;
+
+        let store = context.store();
+        let _ = env_logger::try_init();
+
+        let entity = random_entity();
+        let search_key = get_search_key(&entity);
+
+        store.save(entity.clone()).await.unwrap();
+        store.commit_transaction().await.unwrap();
+        store.new_transaction().await.unwrap();
+
+        store
+            .remove_borrowed::<PersistedMlsGroup>(entity.borrow_primary_key())
+            .await
+            .unwrap();
+
+        let found = store
+            .search::<PersistedMlsGroup, ParentGroupId>(&search_key)
+            .await
+            .unwrap();
+        assert!(found.is_empty());
+    }
 }
