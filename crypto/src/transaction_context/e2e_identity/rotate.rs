@@ -190,19 +190,15 @@ impl TransactionContext {
             private_key,
             signature_scheme,
         };
-        let client = &self
-            .session()
-            .await
-            .map_err(RecursiveError::transaction("getting session"))?;
 
         let credential = Credential::x509(ciphersuite, cert_bundle).map_err(RecursiveError::mls_credential(
             "creating new x509 credential from certificate bundle in save_x509_credential",
         ))?;
 
-        let credential_ref = client
+        let credential_ref = self
             .add_credential(credential)
             .await
-            .map_err(RecursiveError::mls_client(
+            .map_err(RecursiveError::transaction(
                 "saving and adding credential in save_x509_credential",
             ))?;
 

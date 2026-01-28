@@ -13,14 +13,15 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    ClientId, ClientIdentifier, CoreCrypto, Credential, CredentialFindFilters, CredentialRef, KeystoreError,
-    MlsConversation, MlsError, MlsTransport, RecursiveError, Session,
+    ClientId, ClientIdentifier, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsConversation,
+    MlsError, MlsTransport, RecursiveError, Session,
     e2e_identity::pki_env::PkiEnvironment,
     group_store::GroupStore,
     mls::{self, HasSessionAndCrypto},
     mls_provider::{Database, MlsCryptoProvider},
 };
 pub mod conversation;
+mod credential;
 pub mod e2e_identity;
 mod error;
 pub mod key_package;
@@ -47,7 +48,7 @@ pub struct TransactionContext {
 enum TransactionContextInner {
     Valid {
         pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
-        keystore: Database,
+        database: Database,
         mls_session: Arc<RwLock<Option<Session<Database>>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
         #[cfg(feature = "proteus")]
@@ -105,7 +106,7 @@ impl TransactionContext {
         Ok(Self {
             inner: Arc::new(
                 TransactionContextInner::Valid {
-                    keystore,
+                    database: keystore,
                     pki_environment,
                     mls_session: mls_session.clone(),
                     mls_groups,
@@ -178,7 +179,7 @@ impl TransactionContext {
 
     pub(crate) async fn database(&self) -> Result<Database> {
         match &*self.inner.read().await {
-            TransactionContextInner::Valid { keystore, .. } => Ok(keystore.clone()),
+            TransactionContextInner::Valid { database, .. } => Ok(database.clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
@@ -225,7 +226,7 @@ impl TransactionContext {
     /// something is called from this object.
     pub async fn finish(&self) -> Result<()> {
         let mut guard = self.inner.write().await;
-        let TransactionContextInner::Valid { keystore, .. } = &*guard else {
+        let TransactionContextInner::Valid { database: keystore, .. } = &*guard else {
             return Err(Error::InvalidTransactionContext);
         };
 
@@ -245,7 +246,7 @@ impl TransactionContext {
     pub async fn abort(&self) -> Result<()> {
         let mut guard = self.inner.write().await;
 
-        let TransactionContextInner::Valid { keystore, .. } = &*guard else {
+        let TransactionContextInner::Valid { database: keystore, .. } = &*guard else {
             return Err(Error::InvalidTransactionContext);
         };
 
@@ -330,32 +331,6 @@ impl TransactionContext {
             Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
             Err(err) => Err(KeystoreError::wrap("finding unique consumer data")(err).into()),
         }
-    }
-
-    /// Add a credential to the identities of this session.
-    ///
-    /// As a side effect, stores the credential in the keystore.
-    pub async fn add_credential(&self, credential: Credential) -> Result<CredentialRef> {
-        self.session()
-            .await?
-            .add_credential(credential)
-            .await
-            .map_err(RecursiveError::mls_client("adding credential to session"))
-            .map_err(Into::into)
-    }
-
-    /// Remove a credential from the identities of this session.
-    ///
-    /// As a side effect, delete the credential from the keystore.
-    ///
-    /// Removes both the credential itself and also any key packages which were generated from it.
-    pub async fn remove_credential(&self, credential_ref: &CredentialRef) -> Result<()> {
-        self.session()
-            .await?
-            .remove_credential(credential_ref)
-            .await
-            .map_err(RecursiveError::mls_client("removing credential from session"))
-            .map_err(Into::into)
     }
 
     /// Find credentials matching the find filters among the identities of this session
