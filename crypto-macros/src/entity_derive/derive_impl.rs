@@ -210,7 +210,7 @@ impl Entity {
             .collect::<TokenStream>();
 
         let sql_map_err = (!upsert).then_some(quote! {
-            .map_err(|_| CryptoKeystoreError::AlreadyExists(Self::COLLECTION_NAME))
+            .map_err(|_| crate::CryptoKeystoreError::AlreadyExists(Self::COLLECTION_NAME))
         });
 
         quote! {
@@ -321,13 +321,17 @@ impl Entity {
         let other_field_assignment = other_columns.iter().map(|column| {
             let field_name = &column.field_name;
             let make_decrypt_operation = |accessor: TokenStream| {
-                quote!(
-                    <#struct_name as crate::traits::DecryptData>::decrypt_data(
-                        cipher,
-                        &self.#id_field_name,
-                        #accessor,
+                if column.skip_encryption {
+                    quote!(Ok::<_, crate::CryptoKeystoreError>(#accessor.to_owned()))
+                } else {
+                    quote!(
+                        <#struct_name as crate::traits::DecryptData>::decrypt_data(
+                            cipher,
+                            &self.#id_field_name,
+                            #accessor,
+                        )
                     )
-                )
+                }
             };
             let field_expr = match column.column_type {
                 ColumnType::Bytes => {
@@ -397,13 +401,17 @@ impl Entity {
         let other_field_assignment = other_columns.iter().map(|column| {
             let field_name = &column.field_name;
             let make_encrypt_operation = |accessor: TokenStream| {
-                quote!(
-                    <Self as crate::traits::EncryptData>::encrypt_data(
-                        self,
-                        cipher,
-                        #accessor,
+                if column.skip_encryption {
+                    quote!(Ok::<_, crate::CryptoKeystoreError>(#accessor.to_owned()))
+                } else {
+                    quote!(
+                        <Self as crate::traits::EncryptData>::encrypt_data(
+                            self,
+                            cipher,
+                            #accessor,
+                        )
                     )
-                )
+                }
             };
             let field_expr = match column.column_type {
                 ColumnType::Bytes => {
