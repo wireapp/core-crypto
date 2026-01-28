@@ -55,7 +55,6 @@ itertools = { workspace = true }
 uuid = { workspace = true }
 wasm-bindgen-test = { workspace = true }
 hex = { workspace = true }
-webbrowser = { workspace = true }
 shlex = "1"
 
 openidconnect = { workspace = true }
