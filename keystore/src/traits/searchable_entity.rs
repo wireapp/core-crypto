@@ -28,4 +28,11 @@ pub trait SearchableEntity<SearchKey: KeyType>: Entity {
         conn: &mut Self::ConnectionType,
         search_key: &SearchKey,
     ) -> CryptoKeystoreResult<Vec<Self>>;
+
+    /// `true` when this entity instance matches the search key.
+    ///
+    /// The specific meaning of "matching" the search key will depend on the entity in question,
+    /// but generally the search key will have one or more fields which must equal some fields
+    /// on the entity.
+    fn matches(&self, search_key: &SearchKey) -> bool;
 }
