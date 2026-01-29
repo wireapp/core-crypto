@@ -7152,6 +7152,7 @@ dependencies = [
  "base64 0.22.1",
  "certval",
  "const-oid",
+ "core-crypto-keystore",
  "der",
  "derive_more",
  "ecdsa",

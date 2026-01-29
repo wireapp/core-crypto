@@ -11,6 +11,12 @@ publish = false
 workspace = true
 
 [dependencies]
+# TODO: we depend on the whole keystore crate, but actually
+# only need keystore traits. Once keystore traits are moved
+# to a standalone crate, we can replace this dependency.
+# See WPB-23172.
+core-crypto-keystore.workspace = true
+
 rusty-jwt-tools = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
