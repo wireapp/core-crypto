@@ -5,13 +5,16 @@ use std::{
 };
 
 use async_trait::async_trait;
-use rusqlite::{OptionalExtension as _, Row, Transaction, params};
+use rusqlite::{OptionalExtension as _, Row, Transaction, named_params, params};
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
-    entities::{StoredCredential, count_helper, count_helper_tx, delete_helper},
-    traits::{BorrowPrimaryKey, Entity, EntityBase, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType, PrimaryKey},
+    entities::{CredentialFindFilters, StoredCredential, count_helper, count_helper_tx, delete_helper},
+    traits::{
+        BorrowPrimaryKey, Entity, EntityBase, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType, PrimaryKey,
+        SearchableEntity,
+    },
 };
 
 impl StoredCredential {
@@ -175,5 +178,74 @@ impl<'a> EntityDatabaseMutation<'a> for StoredCredential {
 
     async fn delete(tx: &Self::Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool> {
         delete_helper::<Self>(tx, "public_key_sha256", id).await
+    }
+}
+
+#[async_trait]
+impl<'a> SearchableEntity<CredentialFindFilters<'a>> for StoredCredential {
+    async fn find_all_matching(
+        conn: &mut Self::ConnectionType,
+        filters: &CredentialFindFilters<'a>,
+    ) -> CryptoKeystoreResult<Vec<Self>> {
+        // if we know something unique to this credential, use a more-efficient search
+        if let Some(hash) = filters.hash.or_else(|| filters.public_key.map(Sha256Hash::hash_from)) {
+            return Self::get(conn, &hash).await.map(|optional| {
+                optional
+                    .into_iter()
+                    .filter(|credential| credential.matches(filters))
+                    .collect()
+            });
+        }
+
+        let CredentialFindFilters {
+            ciphersuite,
+            earliest_validity,
+            ..
+        } = filters;
+
+        let mut query = "SELECT
+                session_id,
+                credential,
+                unixepoch(created_at) AS created_at,
+                ciphersuite,
+                public_key,
+                private_key
+            FROM mls_credentials
+            WHERE (true OR :ciphersuite OR :created_at OR :session_id) "
+            .to_owned();
+
+        if ciphersuite.is_some() {
+            query.push_str("AND ciphersuite = :ciphersuite ");
+        }
+        if earliest_validity.is_some() {
+            query.push_str("AND unixepoch(created_at) = :created_at ");
+        }
+        if session_id.is_some() {
+            query.push_str("AND session_id = :session_id ");
+        }
+
+        let conn = conn.conn().await;
+        let mut stmt = conn.prepare(&query)?;
+        stmt.query_map(
+            named_params![":ciphersuite": ciphersuite, ":created_at": earliest_validity, ":session_id": session_id],
+            Self::from_row,
+        )?
+        .collect::<Result<_, _>>()
+        .map_err(Into::into)
+    }
+
+    fn matches(
+        &self,
+        CredentialFindFilters {
+            hash,
+            public_key,
+            ciphersuite,
+            earliest_validity,
+        }: &CredentialFindFilters<'a>,
+    ) -> bool {
+        hash.is_none_or(|hash| hash == self.primary_key())
+            && public_key.is_none_or(|public_key| public_key == self.public_key)
+            && ciphersuite.is_none_or(|ciphersuite| ciphersuite == self.ciphersuite)
+            && earliest_validity.is_none_or(|earliest_validity| earliest_validity == self.created_at)
     }
 }
