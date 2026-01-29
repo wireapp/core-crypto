@@ -17,6 +17,8 @@ workspace = true
 # See WPB-23172.
 core-crypto-keystore.workspace = true
 
+async-trait.workspace = true
+async-lock.workspace = true
 openmls_traits.workspace = true
 rusty-jwt-tools = { workspace = true }
 serde = { workspace = true }

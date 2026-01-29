@@ -7149,6 +7149,8 @@ version = "0.13.0"
 dependencies = [
  "anyhow",
  "argon2",
+ "async-lock",
+ "async-trait",
  "base64 0.22.1",
  "certval",
  "const-oid",
