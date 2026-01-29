@@ -28,5 +28,12 @@
 <a href=#28 id=28 data-nosnippet>28</a>        conn: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::ConnectionType,
 <a href=#29 id=29 data-nosnippet>29</a>        search_key: <span class="kw-2">&amp;</span>SearchKey,
 <a href=#30 id=30 data-nosnippet>30</a>    ) -&gt; CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt;;
-<a href=#31 id=31 data-nosnippet>31</a>}
+<a href=#31 id=31 data-nosnippet>31</a>
+<a href=#32 id=32 data-nosnippet>32</a>    <span class="doccomment">/// `true` when this entity instance matches the search key.
+<a href=#33 id=33 data-nosnippet>33</a>    ///
+<a href=#34 id=34 data-nosnippet>34</a>    /// The specific meaning of "matching" the search key will depend on the entity in question,
+<a href=#35 id=35 data-nosnippet>35</a>    /// but generally the search key will have one or more fields which must equal some fields
+<a href=#36 id=36 data-nosnippet>36</a>    /// on the entity.
+<a href=#37 id=37 data-nosnippet>37</a>    </span><span class="kw">fn </span>matches(<span class="kw-2">&amp;</span><span class="self">self</span>, search_key: <span class="kw-2">&amp;</span>SearchKey) -&gt; bool;
+<a href=#38 id=38 data-nosnippet>38</a>}
 </code></pre></div></section></main></body></html>

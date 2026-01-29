@@ -210,7 +210,7 @@
 <a href=#210 id=210 data-nosnippet>210</a>            .collect::&lt;TokenStream&gt;();
 <a href=#211 id=211 data-nosnippet>211</a>
 <a href=#212 id=212 data-nosnippet>212</a>        <span class="kw">let </span>sql_map_err = (!upsert).then_some(<span class="macro">quote!</span> {
-<a href=#213 id=213 data-nosnippet>213</a>            .map_err(|<span class="kw">_</span>| CryptoKeystoreError::AlreadyExists(<span class="self">Self</span>::COLLECTION_NAME))
+<a href=#213 id=213 data-nosnippet>213</a>            .map_err(|<span class="kw">_</span>| <span class="kw">crate</span>::CryptoKeystoreError::AlreadyExists(<span class="self">Self</span>::COLLECTION_NAME))
 <a href=#214 id=214 data-nosnippet>214</a>        });
 <a href=#215 id=215 data-nosnippet>215</a>
 <a href=#216 id=216 data-nosnippet>216</a>        <span class="macro">quote!</span> {
@@ -321,127 +321,135 @@
 <a href=#321 id=321 data-nosnippet>321</a>        <span class="kw">let </span>other_field_assignment = other_columns.iter().map(|column| {
 <a href=#322 id=322 data-nosnippet>322</a>            <span class="kw">let </span>field_name = <span class="kw-2">&amp;</span>column.field_name;
 <a href=#323 id=323 data-nosnippet>323</a>            <span class="kw">let </span>make_decrypt_operation = |accessor: TokenStream| {
-<a href=#324 id=324 data-nosnippet>324</a>                <span class="macro">quote!</span>(
-<a href=#325 id=325 data-nosnippet>325</a>                    &lt;#struct_name <span class="kw">as </span><span class="kw">crate</span>::traits::DecryptData&gt;::decrypt_data(
-<a href=#326 id=326 data-nosnippet>326</a>                        cipher,
-<a href=#327 id=327 data-nosnippet>327</a>                        <span class="kw-2">&amp;</span><span class="self">self</span>.#id_field_name,
-<a href=#328 id=328 data-nosnippet>328</a>                        #accessor,
-<a href=#329 id=329 data-nosnippet>329</a>                    )
-<a href=#330 id=330 data-nosnippet>330</a>                )
-<a href=#331 id=331 data-nosnippet>331</a>            };
-<a href=#332 id=332 data-nosnippet>332</a>            <span class="kw">let </span>field_expr = <span class="kw">match </span>column.column_type {
-<a href=#333 id=333 data-nosnippet>333</a>                ColumnType::Bytes =&gt; {
-<a href=#334 id=334 data-nosnippet>334</a>                    <span class="kw">let </span>decrypt_operation = make_decrypt_operation(<span class="macro">quote!</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.#field_name));
-<a href=#335 id=335 data-nosnippet>335</a>                    <span class="macro">quote!</span>(#decrypt_operation<span class="question-mark">?</span>)
-<a href=#336 id=336 data-nosnippet>336</a>                }
-<a href=#337 id=337 data-nosnippet>337</a>                ColumnType::String =&gt; {
+<a href=#324 id=324 data-nosnippet>324</a>                <span class="kw">if </span>column.skip_encryption {
+<a href=#325 id=325 data-nosnippet>325</a>                    <span class="macro">quote!</span>(<span class="prelude-val">Ok</span>::&lt;<span class="kw">_</span>, <span class="kw">crate</span>::CryptoKeystoreError&gt;(#accessor.to_owned()))
+<a href=#326 id=326 data-nosnippet>326</a>                } <span class="kw">else </span>{
+<a href=#327 id=327 data-nosnippet>327</a>                    <span class="macro">quote!</span>(
+<a href=#328 id=328 data-nosnippet>328</a>                        &lt;#struct_name <span class="kw">as </span><span class="kw">crate</span>::traits::DecryptData&gt;::decrypt_data(
+<a href=#329 id=329 data-nosnippet>329</a>                            cipher,
+<a href=#330 id=330 data-nosnippet>330</a>                            <span class="kw-2">&amp;</span><span class="self">self</span>.#id_field_name,
+<a href=#331 id=331 data-nosnippet>331</a>                            #accessor,
+<a href=#332 id=332 data-nosnippet>332</a>                        )
+<a href=#333 id=333 data-nosnippet>333</a>                    )
+<a href=#334 id=334 data-nosnippet>334</a>                }
+<a href=#335 id=335 data-nosnippet>335</a>            };
+<a href=#336 id=336 data-nosnippet>336</a>            <span class="kw">let </span>field_expr = <span class="kw">match </span>column.column_type {
+<a href=#337 id=337 data-nosnippet>337</a>                ColumnType::Bytes =&gt; {
 <a href=#338 id=338 data-nosnippet>338</a>                    <span class="kw">let </span>decrypt_operation = make_decrypt_operation(<span class="macro">quote!</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.#field_name));
-<a href=#339 id=339 data-nosnippet>339</a>                    <span class="macro">quote!</span>(String::from_utf8(#decrypt_operation<span class="question-mark">?</span>).map_err(|err| err.utf8_error())<span class="question-mark">?</span>)
+<a href=#339 id=339 data-nosnippet>339</a>                    <span class="macro">quote!</span>(#decrypt_operation<span class="question-mark">?</span>)
 <a href=#340 id=340 data-nosnippet>340</a>                }
-<a href=#341 id=341 data-nosnippet>341</a>                ColumnType::OptionalBytes =&gt; {
-<a href=#342 id=342 data-nosnippet>342</a>                    <span class="kw">let </span>decrypt_operation = make_decrypt_operation(<span class="macro">quote!</span>(#field_name));
-<a href=#343 id=343 data-nosnippet>343</a>                    <span class="macro">quote!</span>(<span class="self">self</span>.#field_name.as_ref().map(|#field_name| #decrypt_operation).transpose()<span class="question-mark">?</span>)
+<a href=#341 id=341 data-nosnippet>341</a>                ColumnType::String =&gt; {
+<a href=#342 id=342 data-nosnippet>342</a>                    <span class="kw">let </span>decrypt_operation = make_decrypt_operation(<span class="macro">quote!</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.#field_name));
+<a href=#343 id=343 data-nosnippet>343</a>                    <span class="macro">quote!</span>(String::from_utf8(#decrypt_operation<span class="question-mark">?</span>).map_err(|err| err.utf8_error())<span class="question-mark">?</span>)
 <a href=#344 id=344 data-nosnippet>344</a>                }
-<a href=#345 id=345 data-nosnippet>345</a>            };
-<a href=#346 id=346 data-nosnippet>346</a>
-<a href=#347 id=347 data-nosnippet>347</a>            <span class="macro">quote!</span>(#field_name: #field_expr)
-<a href=#348 id=348 data-nosnippet>348</a>        });
-<a href=#349 id=349 data-nosnippet>349</a>
-<a href=#350 id=350 data-nosnippet>350</a>        <span class="comment">// id field gets moved _last_ so that we can borrow `self.id_field` for the `decrypt_data` calls
-<a href=#351 id=351 data-nosnippet>351</a>        </span><span class="kw">let </span>field_assignment = other_field_assignment.chain(std::iter::once(id_field_assignment));
-<a href=#352 id=352 data-nosnippet>352</a>
-<a href=#353 id=353 data-nosnippet>353</a>        <span class="macro">quote!</span> {
-<a href=#354 id=354 data-nosnippet>354</a>            <span class="attr">#[derive(serde::Deserialize)]
-<a href=#355 id=355 data-nosnippet>355</a>            </span>#visibility <span class="kw">struct </span>#decrypt_struct_name {
-<a href=#356 id=356 data-nosnippet>356</a>                #( #field_name: #field_type, )*
-<a href=#357 id=357 data-nosnippet>357</a>            }
-<a href=#358 id=358 data-nosnippet>358</a>
-<a href=#359 id=359 data-nosnippet>359</a>            <span class="kw">impl </span><span class="kw">crate</span>::traits::Decrypting&lt;<span class="lifetime">'static</span>&gt; <span class="kw">for </span>#decrypt_struct_name {
-<a href=#360 id=360 data-nosnippet>360</a>                <span class="kw">type </span>DecryptedForm = #struct_name;
-<a href=#361 id=361 data-nosnippet>361</a>
-<a href=#362 id=362 data-nosnippet>362</a>                <span class="kw">fn </span>decrypt(<span class="self">self</span>, cipher: <span class="kw-2">&amp;</span>aes_gcm::Aes256Gcm) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;#struct_name&gt; {
-<a href=#363 id=363 data-nosnippet>363</a>                    <span class="prelude-val">Ok</span>(#struct_name {
-<a href=#364 id=364 data-nosnippet>364</a>                        #( #field_assignment, )*
-<a href=#365 id=365 data-nosnippet>365</a>                    })
-<a href=#366 id=366 data-nosnippet>366</a>                }
-<a href=#367 id=367 data-nosnippet>367</a>            }
-<a href=#368 id=368 data-nosnippet>368</a>
-<a href=#369 id=369 data-nosnippet>369</a>            <span class="kw">impl </span><span class="kw">crate</span>::traits::Decryptable&lt;<span class="lifetime">'static</span>&gt; <span class="kw">for </span>#struct_name {
-<a href=#370 id=370 data-nosnippet>370</a>                <span class="kw">type </span>DecryptableFrom = #decrypt_struct_name;
+<a href=#345 id=345 data-nosnippet>345</a>                ColumnType::OptionalBytes =&gt; {
+<a href=#346 id=346 data-nosnippet>346</a>                    <span class="kw">let </span>decrypt_operation = make_decrypt_operation(<span class="macro">quote!</span>(#field_name));
+<a href=#347 id=347 data-nosnippet>347</a>                    <span class="macro">quote!</span>(<span class="self">self</span>.#field_name.as_ref().map(|#field_name| #decrypt_operation).transpose()<span class="question-mark">?</span>)
+<a href=#348 id=348 data-nosnippet>348</a>                }
+<a href=#349 id=349 data-nosnippet>349</a>            };
+<a href=#350 id=350 data-nosnippet>350</a>
+<a href=#351 id=351 data-nosnippet>351</a>            <span class="macro">quote!</span>(#field_name: #field_expr)
+<a href=#352 id=352 data-nosnippet>352</a>        });
+<a href=#353 id=353 data-nosnippet>353</a>
+<a href=#354 id=354 data-nosnippet>354</a>        <span class="comment">// id field gets moved _last_ so that we can borrow `self.id_field` for the `decrypt_data` calls
+<a href=#355 id=355 data-nosnippet>355</a>        </span><span class="kw">let </span>field_assignment = other_field_assignment.chain(std::iter::once(id_field_assignment));
+<a href=#356 id=356 data-nosnippet>356</a>
+<a href=#357 id=357 data-nosnippet>357</a>        <span class="macro">quote!</span> {
+<a href=#358 id=358 data-nosnippet>358</a>            <span class="attr">#[derive(serde::Deserialize)]
+<a href=#359 id=359 data-nosnippet>359</a>            </span>#visibility <span class="kw">struct </span>#decrypt_struct_name {
+<a href=#360 id=360 data-nosnippet>360</a>                #( #field_name: #field_type, )*
+<a href=#361 id=361 data-nosnippet>361</a>            }
+<a href=#362 id=362 data-nosnippet>362</a>
+<a href=#363 id=363 data-nosnippet>363</a>            <span class="kw">impl </span><span class="kw">crate</span>::traits::Decrypting&lt;<span class="lifetime">'static</span>&gt; <span class="kw">for </span>#decrypt_struct_name {
+<a href=#364 id=364 data-nosnippet>364</a>                <span class="kw">type </span>DecryptedForm = #struct_name;
+<a href=#365 id=365 data-nosnippet>365</a>
+<a href=#366 id=366 data-nosnippet>366</a>                <span class="kw">fn </span>decrypt(<span class="self">self</span>, cipher: <span class="kw-2">&amp;</span>aes_gcm::Aes256Gcm) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;#struct_name&gt; {
+<a href=#367 id=367 data-nosnippet>367</a>                    <span class="prelude-val">Ok</span>(#struct_name {
+<a href=#368 id=368 data-nosnippet>368</a>                        #( #field_assignment, )*
+<a href=#369 id=369 data-nosnippet>369</a>                    })
+<a href=#370 id=370 data-nosnippet>370</a>                }
 <a href=#371 id=371 data-nosnippet>371</a>            }
-<a href=#372 id=372 data-nosnippet>372</a>        }
-<a href=#373 id=373 data-nosnippet>373</a>    }
-<a href=#374 id=374 data-nosnippet>374</a>
-<a href=#375 id=375 data-nosnippet>375</a>    <span class="kw">fn </span>impl_encrypting(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TokenStream {
-<a href=#376 id=376 data-nosnippet>376</a>        <span class="kw">let </span><span class="self">Self </span>{
-<a href=#377 id=377 data-nosnippet>377</a>            visibility,
-<a href=#378 id=378 data-nosnippet>378</a>            struct_name,
-<a href=#379 id=379 data-nosnippet>379</a>            id_column,
-<a href=#380 id=380 data-nosnippet>380</a>            other_columns,
-<a href=#381 id=381 data-nosnippet>381</a>            ..
-<a href=#382 id=382 data-nosnippet>382</a>        } = <span class="self">self</span>;
-<a href=#383 id=383 data-nosnippet>383</a>
-<a href=#384 id=384 data-nosnippet>384</a>        <span class="kw">let </span>encrypt_struct_name = Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{struct_name}Encrypt"</span>), Span::call_site());
-<a href=#385 id=385 data-nosnippet>385</a>        <span class="kw">let </span>lifetime = Lifetime::new(<span class="string">"'a"</span>, Span::call_site());
-<a href=#386 id=386 data-nosnippet>386</a>        <span class="kw">let </span>field_name =
-<a href=#387 id=387 data-nosnippet>387</a>            std::iter::once(<span class="kw-2">&amp;</span>id_column.field_name).chain(other_columns.iter().map(|column| <span class="kw-2">&amp;</span>column.field_name));
-<a href=#388 id=388 data-nosnippet>388</a>        <span class="kw">let </span>field_type = std::iter::once(id_column.column_type.borrowed_with_sigil(<span class="kw-2">&amp;</span>lifetime)).chain(
-<a href=#389 id=389 data-nosnippet>389</a>            other_columns
-<a href=#390 id=390 data-nosnippet>390</a>                .iter()
-<a href=#391 id=391 data-nosnippet>391</a>                .map(|column| column.column_type.encrypted_form().owned()),
-<a href=#392 id=392 data-nosnippet>392</a>        );
-<a href=#393 id=393 data-nosnippet>393</a>
-<a href=#394 id=394 data-nosnippet>394</a>        <span class="kw">let </span>id_field_name = <span class="kw-2">&amp;</span>id_column.field_name;
-<a href=#395 id=395 data-nosnippet>395</a>        <span class="kw">let </span>id_field_assignment = <span class="macro">quote!</span>(#id_field_name: <span class="kw-2">&amp;</span><span class="self">self</span>.#id_field_name);
-<a href=#396 id=396 data-nosnippet>396</a>
-<a href=#397 id=397 data-nosnippet>397</a>        <span class="kw">let </span>other_field_assignment = other_columns.iter().map(|column| {
-<a href=#398 id=398 data-nosnippet>398</a>            <span class="kw">let </span>field_name = <span class="kw-2">&amp;</span>column.field_name;
-<a href=#399 id=399 data-nosnippet>399</a>            <span class="kw">let </span>make_encrypt_operation = |accessor: TokenStream| {
-<a href=#400 id=400 data-nosnippet>400</a>                <span class="macro">quote!</span>(
-<a href=#401 id=401 data-nosnippet>401</a>                    &lt;<span class="self">Self </span><span class="kw">as </span><span class="kw">crate</span>::traits::EncryptData&gt;::encrypt_data(
-<a href=#402 id=402 data-nosnippet>402</a>                        <span class="self">self</span>,
-<a href=#403 id=403 data-nosnippet>403</a>                        cipher,
-<a href=#404 id=404 data-nosnippet>404</a>                        #accessor,
-<a href=#405 id=405 data-nosnippet>405</a>                    )
-<a href=#406 id=406 data-nosnippet>406</a>                )
-<a href=#407 id=407 data-nosnippet>407</a>            };
-<a href=#408 id=408 data-nosnippet>408</a>            <span class="kw">let </span>field_expr = <span class="kw">match </span>column.column_type {
-<a href=#409 id=409 data-nosnippet>409</a>                ColumnType::Bytes =&gt; {
-<a href=#410 id=410 data-nosnippet>410</a>                    <span class="kw">let </span>encrypt_operation = make_encrypt_operation(<span class="macro">quote!</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.#field_name));
-<a href=#411 id=411 data-nosnippet>411</a>                    <span class="macro">quote!</span>(#encrypt_operation<span class="question-mark">?</span>)
-<a href=#412 id=412 data-nosnippet>412</a>                }
-<a href=#413 id=413 data-nosnippet>413</a>                ColumnType::String =&gt; {
-<a href=#414 id=414 data-nosnippet>414</a>                    <span class="kw">let </span>encrypt_operation = make_encrypt_operation(<span class="macro">quote!</span>(<span class="self">self</span>.#field_name.as_bytes()));
-<a href=#415 id=415 data-nosnippet>415</a>                    <span class="macro">quote!</span>(#encrypt_operation<span class="question-mark">?</span>)
-<a href=#416 id=416 data-nosnippet>416</a>                }
-<a href=#417 id=417 data-nosnippet>417</a>                ColumnType::OptionalBytes =&gt; {
-<a href=#418 id=418 data-nosnippet>418</a>                    <span class="kw">let </span>encrypt_operation = make_encrypt_operation(<span class="macro">quote!</span>(#field_name));
-<a href=#419 id=419 data-nosnippet>419</a>                    <span class="macro">quote!</span>(<span class="self">self</span>.#field_name.as_ref().map(|#field_name| #encrypt_operation).transpose()<span class="question-mark">?</span>)
+<a href=#372 id=372 data-nosnippet>372</a>
+<a href=#373 id=373 data-nosnippet>373</a>            <span class="kw">impl </span><span class="kw">crate</span>::traits::Decryptable&lt;<span class="lifetime">'static</span>&gt; <span class="kw">for </span>#struct_name {
+<a href=#374 id=374 data-nosnippet>374</a>                <span class="kw">type </span>DecryptableFrom = #decrypt_struct_name;
+<a href=#375 id=375 data-nosnippet>375</a>            }
+<a href=#376 id=376 data-nosnippet>376</a>        }
+<a href=#377 id=377 data-nosnippet>377</a>    }
+<a href=#378 id=378 data-nosnippet>378</a>
+<a href=#379 id=379 data-nosnippet>379</a>    <span class="kw">fn </span>impl_encrypting(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TokenStream {
+<a href=#380 id=380 data-nosnippet>380</a>        <span class="kw">let </span><span class="self">Self </span>{
+<a href=#381 id=381 data-nosnippet>381</a>            visibility,
+<a href=#382 id=382 data-nosnippet>382</a>            struct_name,
+<a href=#383 id=383 data-nosnippet>383</a>            id_column,
+<a href=#384 id=384 data-nosnippet>384</a>            other_columns,
+<a href=#385 id=385 data-nosnippet>385</a>            ..
+<a href=#386 id=386 data-nosnippet>386</a>        } = <span class="self">self</span>;
+<a href=#387 id=387 data-nosnippet>387</a>
+<a href=#388 id=388 data-nosnippet>388</a>        <span class="kw">let </span>encrypt_struct_name = Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{struct_name}Encrypt"</span>), Span::call_site());
+<a href=#389 id=389 data-nosnippet>389</a>        <span class="kw">let </span>lifetime = Lifetime::new(<span class="string">"'a"</span>, Span::call_site());
+<a href=#390 id=390 data-nosnippet>390</a>        <span class="kw">let </span>field_name =
+<a href=#391 id=391 data-nosnippet>391</a>            std::iter::once(<span class="kw-2">&amp;</span>id_column.field_name).chain(other_columns.iter().map(|column| <span class="kw-2">&amp;</span>column.field_name));
+<a href=#392 id=392 data-nosnippet>392</a>        <span class="kw">let </span>field_type = std::iter::once(id_column.column_type.borrowed_with_sigil(<span class="kw-2">&amp;</span>lifetime)).chain(
+<a href=#393 id=393 data-nosnippet>393</a>            other_columns
+<a href=#394 id=394 data-nosnippet>394</a>                .iter()
+<a href=#395 id=395 data-nosnippet>395</a>                .map(|column| column.column_type.encrypted_form().owned()),
+<a href=#396 id=396 data-nosnippet>396</a>        );
+<a href=#397 id=397 data-nosnippet>397</a>
+<a href=#398 id=398 data-nosnippet>398</a>        <span class="kw">let </span>id_field_name = <span class="kw-2">&amp;</span>id_column.field_name;
+<a href=#399 id=399 data-nosnippet>399</a>        <span class="kw">let </span>id_field_assignment = <span class="macro">quote!</span>(#id_field_name: <span class="kw-2">&amp;</span><span class="self">self</span>.#id_field_name);
+<a href=#400 id=400 data-nosnippet>400</a>
+<a href=#401 id=401 data-nosnippet>401</a>        <span class="kw">let </span>other_field_assignment = other_columns.iter().map(|column| {
+<a href=#402 id=402 data-nosnippet>402</a>            <span class="kw">let </span>field_name = <span class="kw-2">&amp;</span>column.field_name;
+<a href=#403 id=403 data-nosnippet>403</a>            <span class="kw">let </span>make_encrypt_operation = |accessor: TokenStream| {
+<a href=#404 id=404 data-nosnippet>404</a>                <span class="kw">if </span>column.skip_encryption {
+<a href=#405 id=405 data-nosnippet>405</a>                    <span class="macro">quote!</span>(<span class="prelude-val">Ok</span>::&lt;<span class="kw">_</span>, <span class="kw">crate</span>::CryptoKeystoreError&gt;(#accessor.to_owned()))
+<a href=#406 id=406 data-nosnippet>406</a>                } <span class="kw">else </span>{
+<a href=#407 id=407 data-nosnippet>407</a>                    <span class="macro">quote!</span>(
+<a href=#408 id=408 data-nosnippet>408</a>                        &lt;<span class="self">Self </span><span class="kw">as </span><span class="kw">crate</span>::traits::EncryptData&gt;::encrypt_data(
+<a href=#409 id=409 data-nosnippet>409</a>                            <span class="self">self</span>,
+<a href=#410 id=410 data-nosnippet>410</a>                            cipher,
+<a href=#411 id=411 data-nosnippet>411</a>                            #accessor,
+<a href=#412 id=412 data-nosnippet>412</a>                        )
+<a href=#413 id=413 data-nosnippet>413</a>                    )
+<a href=#414 id=414 data-nosnippet>414</a>                }
+<a href=#415 id=415 data-nosnippet>415</a>            };
+<a href=#416 id=416 data-nosnippet>416</a>            <span class="kw">let </span>field_expr = <span class="kw">match </span>column.column_type {
+<a href=#417 id=417 data-nosnippet>417</a>                ColumnType::Bytes =&gt; {
+<a href=#418 id=418 data-nosnippet>418</a>                    <span class="kw">let </span>encrypt_operation = make_encrypt_operation(<span class="macro">quote!</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.#field_name));
+<a href=#419 id=419 data-nosnippet>419</a>                    <span class="macro">quote!</span>(#encrypt_operation<span class="question-mark">?</span>)
 <a href=#420 id=420 data-nosnippet>420</a>                }
-<a href=#421 id=421 data-nosnippet>421</a>            };
-<a href=#422 id=422 data-nosnippet>422</a>
-<a href=#423 id=423 data-nosnippet>423</a>            <span class="macro">quote!</span>(#field_name: #field_expr)
-<a href=#424 id=424 data-nosnippet>424</a>        });
-<a href=#425 id=425 data-nosnippet>425</a>
-<a href=#426 id=426 data-nosnippet>426</a>        <span class="kw">let </span>field_assignment = std::iter::once(id_field_assignment).chain(other_field_assignment);
-<a href=#427 id=427 data-nosnippet>427</a>
-<a href=#428 id=428 data-nosnippet>428</a>        <span class="macro">quote!</span> {
-<a href=#429 id=429 data-nosnippet>429</a>            <span class="attr">#[derive(serde::Serialize)]
-<a href=#430 id=430 data-nosnippet>430</a>            </span>#visibility <span class="kw">struct </span>#encrypt_struct_name&lt;#lifetime&gt; {
-<a href=#431 id=431 data-nosnippet>431</a>                #( #field_name: #field_type, )*
-<a href=#432 id=432 data-nosnippet>432</a>            }
+<a href=#421 id=421 data-nosnippet>421</a>                ColumnType::String =&gt; {
+<a href=#422 id=422 data-nosnippet>422</a>                    <span class="kw">let </span>encrypt_operation = make_encrypt_operation(<span class="macro">quote!</span>(<span class="self">self</span>.#field_name.as_bytes()));
+<a href=#423 id=423 data-nosnippet>423</a>                    <span class="macro">quote!</span>(#encrypt_operation<span class="question-mark">?</span>)
+<a href=#424 id=424 data-nosnippet>424</a>                }
+<a href=#425 id=425 data-nosnippet>425</a>                ColumnType::OptionalBytes =&gt; {
+<a href=#426 id=426 data-nosnippet>426</a>                    <span class="kw">let </span>encrypt_operation = make_encrypt_operation(<span class="macro">quote!</span>(#field_name));
+<a href=#427 id=427 data-nosnippet>427</a>                    <span class="macro">quote!</span>(<span class="self">self</span>.#field_name.as_ref().map(|#field_name| #encrypt_operation).transpose()<span class="question-mark">?</span>)
+<a href=#428 id=428 data-nosnippet>428</a>                }
+<a href=#429 id=429 data-nosnippet>429</a>            };
+<a href=#430 id=430 data-nosnippet>430</a>
+<a href=#431 id=431 data-nosnippet>431</a>            <span class="macro">quote!</span>(#field_name: #field_expr)
+<a href=#432 id=432 data-nosnippet>432</a>        });
 <a href=#433 id=433 data-nosnippet>433</a>
-<a href=#434 id=434 data-nosnippet>434</a>            <span class="kw">impl</span>&lt;#lifetime&gt; <span class="kw">crate</span>::traits::Encrypting&lt;#lifetime&gt; <span class="kw">for </span>#struct_name {
-<a href=#435 id=435 data-nosnippet>435</a>                <span class="kw">type </span>EncryptedForm = #encrypt_struct_name&lt;#lifetime&gt;;
-<a href=#436 id=436 data-nosnippet>436</a>
-<a href=#437 id=437 data-nosnippet>437</a>                <span class="kw">fn </span>encrypt(<span class="kw-2">&amp;</span>#lifetime <span class="self">self</span>, cipher: <span class="kw-2">&amp;</span>aes_gcm::Aes256Gcm) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;#encrypt_struct_name&gt; {
-<a href=#438 id=438 data-nosnippet>438</a>                    <span class="kw">use </span><span class="kw">crate</span>::traits::EncryptData <span class="kw">as _</span>;
-<a href=#439 id=439 data-nosnippet>439</a>                    <span class="prelude-val">Ok</span>(#encrypt_struct_name {
-<a href=#440 id=440 data-nosnippet>440</a>                        #( #field_assignment, )*
-<a href=#441 id=441 data-nosnippet>441</a>                    })
-<a href=#442 id=442 data-nosnippet>442</a>                }
-<a href=#443 id=443 data-nosnippet>443</a>            }
-<a href=#444 id=444 data-nosnippet>444</a>        }
-<a href=#445 id=445 data-nosnippet>445</a>    }
-<a href=#446 id=446 data-nosnippet>446</a>}
+<a href=#434 id=434 data-nosnippet>434</a>        <span class="kw">let </span>field_assignment = std::iter::once(id_field_assignment).chain(other_field_assignment);
+<a href=#435 id=435 data-nosnippet>435</a>
+<a href=#436 id=436 data-nosnippet>436</a>        <span class="macro">quote!</span> {
+<a href=#437 id=437 data-nosnippet>437</a>            <span class="attr">#[derive(serde::Serialize)]
+<a href=#438 id=438 data-nosnippet>438</a>            </span>#visibility <span class="kw">struct </span>#encrypt_struct_name&lt;#lifetime&gt; {
+<a href=#439 id=439 data-nosnippet>439</a>                #( #field_name: #field_type, )*
+<a href=#440 id=440 data-nosnippet>440</a>            }
+<a href=#441 id=441 data-nosnippet>441</a>
+<a href=#442 id=442 data-nosnippet>442</a>            <span class="kw">impl</span>&lt;#lifetime&gt; <span class="kw">crate</span>::traits::Encrypting&lt;#lifetime&gt; <span class="kw">for </span>#struct_name {
+<a href=#443 id=443 data-nosnippet>443</a>                <span class="kw">type </span>EncryptedForm = #encrypt_struct_name&lt;#lifetime&gt;;
+<a href=#444 id=444 data-nosnippet>444</a>
+<a href=#445 id=445 data-nosnippet>445</a>                <span class="kw">fn </span>encrypt(<span class="kw-2">&amp;</span>#lifetime <span class="self">self</span>, cipher: <span class="kw-2">&amp;</span>aes_gcm::Aes256Gcm) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;#encrypt_struct_name&gt; {
+<a href=#446 id=446 data-nosnippet>446</a>                    <span class="kw">use </span><span class="kw">crate</span>::traits::EncryptData <span class="kw">as _</span>;
+<a href=#447 id=447 data-nosnippet>447</a>                    <span class="prelude-val">Ok</span>(#encrypt_struct_name {
+<a href=#448 id=448 data-nosnippet>448</a>                        #( #field_assignment, )*
+<a href=#449 id=449 data-nosnippet>449</a>                    })
+<a href=#450 id=450 data-nosnippet>450</a>                }
+<a href=#451 id=451 data-nosnippet>451</a>            }
+<a href=#452 id=452 data-nosnippet>452</a>        }
+<a href=#453 id=453 data-nosnippet>453</a>    }
+<a href=#454 id=454 data-nosnippet>454</a>}
 </code></pre></div></section></main></body></html>
