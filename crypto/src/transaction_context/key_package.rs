@@ -3,11 +3,19 @@
 use std::time::Duration;
 
 use core_crypto_keystore::entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage};
+use openmls::prelude::{CryptoConfig, Lifetime};
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    CredentialRef, Keypackage, KeypackageRef, KeystoreError, RecursiveError, mls::key_package::KeypackageExt as _,
+    CredentialRef, Keypackage, KeypackageRef, KeystoreError, MlsConversationConfiguration, RecursiveError,
+    mls::key_package::KeypackageExt as _,
 };
+
+#[cfg(test)]
+pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: u32 = 10;
+
+/// Default lifetime of all generated Keypackages. Matches the limit defined in openmls
+pub const KEYPACKAGE_DEFAULT_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
 
 impl TransactionContext {
     /// Generate a [Keypackage] from the referenced credential.
@@ -15,19 +23,37 @@ impl TransactionContext {
     /// Makes no attempt to look up or prune existing keypackges.
     ///
     /// If `lifetime` is set, the keypackages will expire that span into the future.
-    /// If it is unset, [`KEYPACKAGE_DEFAULT_LIFETIME`][crate::mls::session::key_package::KEYPACKAGE_DEFAULT_LIFETIME]
+    /// If it is unset, [`KEYPACKAGE_DEFAULT_LIFETIME`]
     /// is used.
+    ///
+    /// As a side effect, stores the keypackages and some related data in the keystore.
     pub async fn generate_keypackage(
         &self,
         credential_ref: &CredentialRef,
         lifetime: Option<Duration>,
     ) -> Result<Keypackage> {
-        let session = self.session().await?;
-        session
-            .generate_keypackage(credential_ref, lifetime)
+        let lifetime = Lifetime::new(lifetime.unwrap_or(KEYPACKAGE_DEFAULT_LIFETIME).as_secs());
+        let database = &self.database().await?;
+        let credential = credential_ref
+            .load(database)
             .await
-            .map_err(RecursiveError::mls_client("generating keypackage for transaction"))
-            .map_err(Into::into)
+            .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
+        let config = CryptoConfig {
+            ciphersuite: credential.ciphersuite.into(),
+            version: openmls::versions::ProtocolVersion::default(),
+        };
+
+        Keypackage::builder()
+            .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
+            .key_package_lifetime(lifetime)
+            .build(
+                config,
+                &self.mls_provider().await?,
+                &credential.signature_key_pair,
+                credential.to_mls_credential_with_key(),
+            )
+            .await
+            .map_err(Error::keypackage_new())
     }
 
     /// Get all [`KeypackageRef`]s known to the keystore.
@@ -81,11 +107,11 @@ impl TransactionContext {
     /// if removing one returns an error. In that case, only the first produced error is returned.
     /// This helps ensure that as many keypackages for the given credential ref are removed as possible.
     pub async fn remove_keypackages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
-        let session = self.session().await?;
-        let credential = session
-            .credential_from_ref(credential_ref)
+        let database = &self.database().await?;
+        let credential = credential_ref
+            .load(database)
             .await
-            .map_err(RecursiveError::mls_client("loading credential from session"))?;
+            .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
         let signature_public_key = credential.signature_key_pair.public();
 
         let mut first_err = None;
@@ -103,6 +129,7 @@ impl TransactionContext {
             };
         }
 
+        let session = self.session().await?;
         for keypackage in session
             .get_keypackages()
             .await

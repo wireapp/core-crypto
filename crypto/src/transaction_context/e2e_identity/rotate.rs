@@ -213,8 +213,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        INITIAL_KEYING_MATERIAL_COUNT, e2e_identity::enrollment::test_utils as e2ei_utils,
-        mls::credential::ext::CredentialExt, test_utils::*,
+        e2e_identity::enrollment::test_utils as e2ei_utils, mls::credential::ext::CredentialExt, test_utils::*,
+        transaction_context::key_package::INITIAL_KEYING_MATERIAL_COUNT,
     };
 
     pub(crate) mod all {

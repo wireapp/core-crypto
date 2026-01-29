@@ -77,12 +77,13 @@ pub use crate::{
             EpochObserver, HistoryObserver, Session,
             id::{ClientId, ClientIdRef},
             identifier::ClientIdentifier,
-            key_package::{INITIAL_KEYING_MATERIAL_COUNT, KEYPACKAGE_DEFAULT_LIFETIME},
             user_id::UserId,
         },
     },
     mls_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed, RustCrypto},
-    transaction_context::e2e_identity::conversation_state::E2eiConversationState,
+    transaction_context::{
+        e2e_identity::conversation_state::E2eiConversationState, key_package::KEYPACKAGE_DEFAULT_LIFETIME,
+    },
 };
 
 /// Response from the delivery service

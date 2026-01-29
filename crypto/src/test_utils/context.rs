@@ -44,8 +44,7 @@ impl SessionContext {
     ) -> KeyPackage {
         let credential = self.find_any_credential(case.ciphersuite(), case.credential_type).await;
         let credential_ref = CredentialRef::from_credential(&credential);
-        self.session()
-            .await
+        self.transaction
             .generate_keypackage(&credential_ref, lifetime)
             .await
             .unwrap()

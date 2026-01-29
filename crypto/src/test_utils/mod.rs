@@ -32,7 +32,7 @@ use crate::{
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     transaction_context::TransactionContext,
 };
-pub use crate::{ClientIdentifier, CredentialType, INITIAL_KEYING_MATERIAL_COUNT};
+pub use crate::{ClientIdentifier, CredentialType};
 
 pub const GROUP_SAMPLE_SIZE: usize = 9;
 

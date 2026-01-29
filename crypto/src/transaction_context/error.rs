@@ -44,6 +44,8 @@ pub enum Error {
     CredentialStillInUse(ConversationId),
     #[error("The supplied credential does not match the id this CC instance was initialized with")]
     WrongCredential,
+    #[error("something went wrong when generating and storing a new keypackage: {0}")]
+    KeypackageNew(String),
     #[error("{0}")]
     Leaf(#[from] crate::LeafError),
     #[error(transparent)]
@@ -57,5 +59,9 @@ impl Error {
 
     pub fn tls_deserialize(item: &'static str) -> impl FnOnce(tls_codec::Error) -> Self {
         move |source| Self::TlsDeserialize { item, source }
+    }
+
+    pub fn keypackage_new<E: std::error::Error>() -> impl FnOnce(E) -> Self {
+        move |source| Self::KeypackageNew(source.to_string())
     }
 }

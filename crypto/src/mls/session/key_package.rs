@@ -1,23 +1,7 @@
-use std::{sync::Arc, time::Duration};
-
 use core_crypto_keystore::{entities::StoredKeypackage, traits::FetchFromDatabase};
-use openmls::prelude::{CryptoConfig, Lifetime};
 
-use super::{Error, Result};
-use crate::{
-    Credential, CredentialRef, Keypackage, KeypackageRef, KeystoreError, MlsConversationConfiguration, Session,
-    mls::key_package::KeypackageExt,
-};
-
-/// Default number of Keypackages a client generates the first time it's created
-#[cfg(not(test))]
-pub const INITIAL_KEYING_MATERIAL_COUNT: u32 = 100;
-/// Default number of Keypackages a client generates the first time it's created
-#[cfg(test)]
-pub const INITIAL_KEYING_MATERIAL_COUNT: u32 = 10;
-
-/// Default lifetime of all generated Keypackages. Matches the limit defined in openmls
-pub const KEYPACKAGE_DEFAULT_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
+use super::Result;
+use crate::{Keypackage, KeypackageRef, KeystoreError, Session, mls::key_package::KeypackageExt};
 
 fn from_stored(stored_keypackage: &StoredKeypackage) -> Result<Keypackage> {
     core_crypto_keystore::deser::<Keypackage>(&stored_keypackage.keypackage)
@@ -29,50 +13,6 @@ impl<D> Session<D>
 where
     D: FetchFromDatabase,
 {
-    /// Get an unambiguous credential for the provided ref from the currently-loaded set.
-    pub(crate) async fn credential_from_ref(&self, credential_ref: &CredentialRef) -> Result<Arc<Credential>> {
-        let signature_public_key = credential_ref.public_key().into();
-        self.find_credential_by_public_key(&signature_public_key).await
-    }
-
-    /// Generate a [Keypackage] from the referenced credential.
-    ///
-    /// Makes no attempt to look up or prune existing keypackges.
-    ///
-    /// If `lifetime` is set, the keypackages will expire that span into the future.
-    /// If it is unset, [`KEYPACKAGE_DEFAULT_LIFETIME`] is used.
-    ///
-    /// As a side effect, stores the keypackages and some related data in the keystore.
-    ///
-    /// Must not be fully public, only crate-public, because as it mutates the keystore it must only ever happen within
-    /// a transaction.
-    // TODO: thus, it should be implemented on the TransactionContext
-    pub(crate) async fn generate_keypackage(
-        &self,
-        credential_ref: &CredentialRef,
-        lifetime: Option<Duration>,
-    ) -> Result<Keypackage> {
-        let lifetime = Lifetime::new(lifetime.unwrap_or(KEYPACKAGE_DEFAULT_LIFETIME).as_secs());
-        let credential = self.credential_from_ref(credential_ref).await?;
-
-        let config = CryptoConfig {
-            ciphersuite: credential.ciphersuite.into(),
-            version: openmls::versions::ProtocolVersion::default(),
-        };
-
-        Keypackage::builder()
-            .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
-            .key_package_lifetime(lifetime)
-            .build(
-                config,
-                &self.crypto_provider,
-                &credential.signature_key_pair,
-                credential.to_mls_credential_with_key(),
-            )
-            .await
-            .map_err(Error::keypackage_new())
-    }
-
     /// Get all [`Keypackage`]s in the database.
     pub(crate) async fn get_keypackages(&self) -> Result<Vec<Keypackage>> {
         let stored_keypackages: Vec<StoredKeypackage> = self
