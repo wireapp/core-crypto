@@ -7172,6 +7172,7 @@ dependencies = [
  "native-tls",
  "oauth2",
  "openidconnect",
+ "openmls_traits",
  "p256",
  "p384",
  "p521",
