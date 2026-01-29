@@ -18,7 +18,7 @@
 <a href=#18 id=18 data-nosnippet>18</a>    ///
 <a href=#19 id=19 data-nosnippet>19</a>    /// This helper struct permits mutations on a conversation.
 <a href=#20 id=20 data-nosnippet>20</a>    </span><span class="kw">pub async fn </span>conversation(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationIdRef) -&gt; <span class="prelude-ty">Result</span>&lt;ConversationGuard&gt; {
-<a href=#21 id=21 data-nosnippet>21</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.keystore().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#21 id=21 data-nosnippet>21</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#22 id=22 data-nosnippet>22</a>        <span class="kw">let </span>inner = <span class="self">self
 <a href=#23 id=23 data-nosnippet>23</a>            </span>.mls_groups()
 <a href=#24 id=24 data-nosnippet>24</a>            .<span class="kw">await</span><span class="question-mark">?
@@ -36,7 +36,7 @@
 <a href=#36 id=36 data-nosnippet>36</a>    }
 <a href=#37 id=37 data-nosnippet>37</a>
 <a href=#38 id=38 data-nosnippet>38</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>pending_conversation(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationIdRef) -&gt; <span class="prelude-ty">Result</span>&lt;PendingConversation&gt; {
-<a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.keystore().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#40 id=40 data-nosnippet>40</a>        <span class="kw">let </span><span class="prelude-val">Some</span>(pending_group) = keystore
 <a href=#41 id=41 data-nosnippet>41</a>            .get_borrowed::&lt;PersistedMlsPendingGroup&gt;(id.as_ref())
 <a href=#42 id=42 data-nosnippet>42</a>            .<span class="kw">await
@@ -64,27 +64,29 @@
 <a href=#64 id=64 data-nosnippet>64</a>        credential_ref: <span class="kw-2">&amp;</span>CredentialRef,
 <a href=#65 id=65 data-nosnippet>65</a>        config: MlsConversationConfiguration,
 <a href=#66 id=66 data-nosnippet>66</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#67 id=67 data-nosnippet>67</a>        <span class="kw">if </span><span class="self">self</span>.conversation_exists(id).<span class="kw">await</span><span class="question-mark">? </span>|| <span class="self">self</span>.pending_conversation_exists(id).<span class="kw">await</span><span class="question-mark">? </span>{
-<a href=#68 id=68 data-nosnippet>68</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(LeafError::ConversationAlreadyExists(id.to_owned()).into());
-<a href=#69 id=69 data-nosnippet>69</a>        }
-<a href=#70 id=70 data-nosnippet>70</a>        <span class="kw">let </span>conversation = MlsConversation::create(id.to_owned(), <span class="kw-2">&amp;</span><span class="self">self</span>.session().<span class="kw">await</span><span class="question-mark">?</span>, credential_ref, config)
-<a href=#71 id=71 data-nosnippet>71</a>            .<span class="kw">await
-<a href=#72 id=72 data-nosnippet>72</a>            </span>.map_err(RecursiveError::mls_conversation(<span class="string">"creating conversation"</span>))<span class="question-mark">?</span>;
-<a href=#73 id=73 data-nosnippet>73</a>
-<a href=#74 id=74 data-nosnippet>74</a>        <span class="self">self</span>.mls_groups().<span class="kw">await</span><span class="question-mark">?</span>.insert(id, conversation);
+<a href=#67 id=67 data-nosnippet>67</a>        <span class="kw">let </span>database = <span class="kw-2">&amp;</span><span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#68 id=68 data-nosnippet>68</a>        <span class="kw">let </span>provider = <span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">if </span><span class="self">self</span>.conversation_exists(id).<span class="kw">await</span><span class="question-mark">? </span>|| <span class="self">self</span>.pending_conversation_exists(id).<span class="kw">await</span><span class="question-mark">? </span>{
+<a href=#70 id=70 data-nosnippet>70</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(LeafError::ConversationAlreadyExists(id.to_owned()).into());
+<a href=#71 id=71 data-nosnippet>71</a>        }
+<a href=#72 id=72 data-nosnippet>72</a>        <span class="kw">let </span>conversation = MlsConversation::create(id.to_owned(), provider, database, credential_ref, config)
+<a href=#73 id=73 data-nosnippet>73</a>            .<span class="kw">await
+<a href=#74 id=74 data-nosnippet>74</a>            </span>.map_err(RecursiveError::mls_conversation(<span class="string">"creating conversation"</span>))<span class="question-mark">?</span>;
 <a href=#75 id=75 data-nosnippet>75</a>
-<a href=#76 id=76 data-nosnippet>76</a>        <span class="prelude-val">Ok</span>(())
-<a href=#77 id=77 data-nosnippet>77</a>    }
-<a href=#78 id=78 data-nosnippet>78</a>
-<a href=#79 id=79 data-nosnippet>79</a>    <span class="doccomment">/// Checks if a given conversation id exists locally
-<a href=#80 id=80 data-nosnippet>80</a>    </span><span class="kw">pub async fn </span>conversation_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationIdRef) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
-<a href=#81 id=81 data-nosnippet>81</a>        <span class="self">self</span>.mls_groups()
-<a href=#82 id=82 data-nosnippet>82</a>            .<span class="kw">await</span><span class="question-mark">?
-<a href=#83 id=83 data-nosnippet>83</a>            </span>.get_fetch(id, <span class="kw-2">&amp;</span><span class="self">self</span>.keystore().<span class="kw">await</span><span class="question-mark">?</span>, <span class="prelude-val">None</span>)
-<a href=#84 id=84 data-nosnippet>84</a>            .<span class="kw">await
-<a href=#85 id=85 data-nosnippet>85</a>            </span>.map(|option| option.is_some())
-<a href=#86 id=86 data-nosnippet>86</a>            .map_err(RecursiveError::root(<span class="string">"fetching conversation from mls groups by id"</span>))
-<a href=#87 id=87 data-nosnippet>87</a>            .map_err(Into::into)
-<a href=#88 id=88 data-nosnippet>88</a>    }
-<a href=#89 id=89 data-nosnippet>89</a>}
+<a href=#76 id=76 data-nosnippet>76</a>        <span class="self">self</span>.mls_groups().<span class="kw">await</span><span class="question-mark">?</span>.insert(id, conversation);
+<a href=#77 id=77 data-nosnippet>77</a>
+<a href=#78 id=78 data-nosnippet>78</a>        <span class="prelude-val">Ok</span>(())
+<a href=#79 id=79 data-nosnippet>79</a>    }
+<a href=#80 id=80 data-nosnippet>80</a>
+<a href=#81 id=81 data-nosnippet>81</a>    <span class="doccomment">/// Checks if a given conversation id exists locally
+<a href=#82 id=82 data-nosnippet>82</a>    </span><span class="kw">pub async fn </span>conversation_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationIdRef) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
+<a href=#83 id=83 data-nosnippet>83</a>        <span class="self">self</span>.mls_groups()
+<a href=#84 id=84 data-nosnippet>84</a>            .<span class="kw">await</span><span class="question-mark">?
+<a href=#85 id=85 data-nosnippet>85</a>            </span>.get_fetch(id, <span class="kw-2">&amp;</span><span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>, <span class="prelude-val">None</span>)
+<a href=#86 id=86 data-nosnippet>86</a>            .<span class="kw">await
+<a href=#87 id=87 data-nosnippet>87</a>            </span>.map(|option| option.is_some())
+<a href=#88 id=88 data-nosnippet>88</a>            .map_err(RecursiveError::root(<span class="string">"fetching conversation from mls groups by id"</span>))
+<a href=#89 id=89 data-nosnippet>89</a>            .map_err(Into::into)
+<a href=#90 id=90 data-nosnippet>90</a>    }
+<a href=#91 id=91 data-nosnippet>91</a>}
 </code></pre></div></section></main></body></html>

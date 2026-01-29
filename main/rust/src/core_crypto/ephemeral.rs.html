@@ -92,10 +92,10 @@
 <a href=#92 id=92 data-nosnippet>92</a>    <span class="kw">let </span>credential = Credential::basic(ciphersuite, client_id.clone(), <span class="kw-2">&amp;</span>session.crypto_provider).map_err(
 <a href=#93 id=93 data-nosnippet>93</a>        RecursiveError::mls_credential(<span class="string">"generating basic credential for ephemeral client"</span>),
 <a href=#94 id=94 data-nosnippet>94</a>    )<span class="question-mark">?</span>;
-<a href=#95 id=95 data-nosnippet>95</a>    <span class="kw">let </span>credential_ref = session
+<a href=#95 id=95 data-nosnippet>95</a>    <span class="kw">let </span>credential_ref = tx
 <a href=#96 id=96 data-nosnippet>96</a>        .add_credential(credential)
 <a href=#97 id=97 data-nosnippet>97</a>        .<span class="kw">await
-<a href=#98 id=98 data-nosnippet>98</a>        </span>.map_err(RecursiveError::mls_client(
+<a href=#98 id=98 data-nosnippet>98</a>        </span>.map_err(RecursiveError::transaction(
 <a href=#99 id=99 data-nosnippet>99</a>            <span class="string">"adding basic credential to ephemeral client"</span>,
 <a href=#100 id=100 data-nosnippet>100</a>        ))<span class="question-mark">?</span>;
 <a href=#101 id=101 data-nosnippet>101</a>
@@ -144,9 +144,9 @@
 <a href=#144 id=144 data-nosnippet>144</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"creating new transaction"</span>))<span class="question-mark">?</span>;
 <a href=#145 id=145 data-nosnippet>145</a>
 <a href=#146 id=146 data-nosnippet>146</a>        <span class="comment">// store the client id (with some other stuff)
-<a href=#147 id=147 data-nosnippet>147</a>        </span><span class="kw">let </span>mls_backend = MlsCryptoProvider::new(database);
+<a href=#147 id=147 data-nosnippet>147</a>        </span><span class="kw">let </span>mls_backend = MlsCryptoProvider::new(database.clone());
 <a href=#148 id=148 data-nosnippet>148</a>        <span class="kw">let </span>transport = Arc::new(CoreCryptoTransportNotImplementedProvider::default());
-<a href=#149 id=149 data-nosnippet>149</a>        <span class="kw">let </span>session = Session::new(history_secret.client_id.clone(), mls_backend, transport);
+<a href=#149 id=149 data-nosnippet>149</a>        <span class="kw">let </span>session = Session::new(history_secret.client_id.clone(), mls_backend, database, transport);
 <a href=#150 id=150 data-nosnippet>150</a>
 <a href=#151 id=151 data-nosnippet>151</a>        session
 <a href=#152 id=152 data-nosnippet>152</a>            .restore_from_history_secret(history_secret)

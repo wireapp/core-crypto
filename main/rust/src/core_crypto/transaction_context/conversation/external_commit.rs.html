@@ -66,9 +66,9 @@
 <a href=#66 id=66 data-nosnippet>66</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(MlsCommitBundle, WelcomeBundle, PendingConversation)&gt; {
 <a href=#67 id=67 data-nosnippet>67</a>        <span class="kw">let </span>ciphersuite = group_info.ciphersuite().into();
 <a href=#68 id=68 data-nosnippet>68</a>        <span class="kw">let </span>mls_provider = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">let </span>database = mls_provider.keystore();
+<a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">let </span>database = <span class="kw-2">&amp;</span><span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#70 id=70 data-nosnippet>70</a>        <span class="kw">let </span>credential = credential_ref
-<a href=#71 id=71 data-nosnippet>71</a>            .load(<span class="kw-2">&amp;</span>database)
+<a href=#71 id=71 data-nosnippet>71</a>            .load(database)
 <a href=#72 id=72 data-nosnippet>72</a>            .<span class="kw">await
 <a href=#73 id=73 data-nosnippet>73</a>            </span>.map_err(RecursiveError::mls_credential_ref(<span class="string">"loading credential"</span>))<span class="question-mark">?</span>;
 <a href=#74 id=74 data-nosnippet>74</a>
@@ -100,7 +100,7 @@
 <a href=#100 id=100 data-nosnippet>100</a>        )<span class="question-mark">?</span>;
 <a href=#101 id=101 data-nosnippet>101</a>
 <a href=#102 id=102 data-nosnippet>102</a>        <span class="kw">let </span>crl_new_distribution_points = get_new_crl_distribution_points(
-<a href=#103 id=103 data-nosnippet>103</a>            <span class="kw-2">&amp;</span>mls_provider,
+<a href=#103 id=103 data-nosnippet>103</a>            database,
 <a href=#104 id=104 data-nosnippet>104</a>            extract_crl_uris_from_group(<span class="kw-2">&amp;</span>group)
 <a href=#105 id=105 data-nosnippet>105</a>                .map_err(RecursiveError::mls_credential(<span class="string">"extracting crl uris from group"</span>))<span class="question-mark">?</span>,
 <a href=#106 id=106 data-nosnippet>106</a>        )
@@ -181,7 +181,7 @@
 <a href=#181 id=181 data-nosnippet>181</a>            <span class="comment">// Pending group removed from keystore
 <a href=#182 id=182 data-nosnippet>182</a>            </span><span class="kw">let </span>error = bob
 <a href=#183 id=183 data-nosnippet>183</a>                .transaction
-<a href=#184 id=184 data-nosnippet>184</a>                .keystore()
+<a href=#184 id=184 data-nosnippet>184</a>                .database()
 <a href=#185 id=185 data-nosnippet>185</a>                .<span class="kw">await
 <a href=#186 id=186 data-nosnippet>186</a>                </span>.unwrap()
 <a href=#187 id=187 data-nosnippet>187</a>                .mls_pending_groups_load(<span class="kw-2">&amp;</span>id)
@@ -365,7 +365,7 @@
 <a href=#365 id=365 data-nosnippet>365</a>                <span class="comment">// erroneous call
 <a href=#366 id=366 data-nosnippet>366</a>                </span><span class="kw">let </span>conflict_welcome = bob
 <a href=#367 id=367 data-nosnippet>367</a>                    .transaction
-<a href=#368 id=368 data-nosnippet>368</a>                    .process_welcome_message(welcome.into() )
+<a href=#368 id=368 data-nosnippet>368</a>                    .process_welcome_message(welcome.into())
 <a href=#369 id=369 data-nosnippet>369</a>                    .<span class="kw">await</span>;
 <a href=#370 id=370 data-nosnippet>370</a>
 <a href=#371 id=371 data-nosnippet>371</a>                <span class="macro">assert!</span>(<span class="macro">matches!</span>(

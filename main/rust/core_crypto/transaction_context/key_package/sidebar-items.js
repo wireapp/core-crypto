@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {};
+window.SIDEBAR_ITEMS = {"constant":["KEYPACKAGE_DEFAULT_LIFETIME"]};
