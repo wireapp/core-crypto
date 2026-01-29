@@ -73,7 +73,9 @@ impl WasmStorageTransaction<'_> {
     where
         E: Entity<ConnectionType = WasmConnection> + Encrypting<'a>,
     {
-        let serializer = serde_wasm_bindgen::Serializer::json_compatible();
+        let serializer = serde_wasm_bindgen::Serializer::json_compatible()
+            .serialize_missing_as_null(true)
+            .serialize_bytes_as_arrays(false);
         let encrypted = entity.encrypt(self.cipher())?;
         let js_value = encrypted.serialize(&serializer)?;
 

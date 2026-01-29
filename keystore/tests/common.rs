@@ -14,22 +14,25 @@ pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(Dat
 
 #[fixture]
 pub fn store_name() -> String {
-    use rand::Rng as _;
-    let mut rng = rand::thread_rng();
-    let name: String = (0usize..12)
-        .map(|_| rng.sample(rand::distributions::Alphanumeric) as char)
-        .collect();
-
-    let store_name = format!("keystore.test.{name}.db");
-
     #[cfg(target_family = "wasm")]
     {
-        store_name
+        // we may sometimes want to disable this for manual debugging
+        if true {
+            use rand::{
+                Rng as _,
+                distributions::{Alphanumeric, DistString},
+            };
+            let mut rng = rand::thread_rng();
+            let dynamism = Alphanumeric.sample_string(&mut rng, 12);
+            format!("corecrypto.{dynamism}.test")
+        } else {
+            "corecrypto.test".to_owned()
+        }
     }
 
     #[cfg(not(target_family = "wasm"))]
     {
-        let tempfile = tempfile::NamedTempFile::with_prefix(store_name).unwrap();
+        let tempfile = tempfile::NamedTempFile::with_prefix("corecrypto.test.edb.").unwrap();
         tempfile.path().to_str().unwrap().to_string()
     }
 }
