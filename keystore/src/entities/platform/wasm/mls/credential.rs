@@ -4,10 +4,10 @@ use web_time::SystemTime;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash,
     connection::{KeystoreDatabaseConnection, TransactionWrapper},
-    entities::StoredCredential,
+    entities::{CredentialFindFilters, StoredCredential},
     traits::{
         DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity, EntityBase, EntityDatabaseMutation,
-        KeyType as _, PrimaryKey,
+        KeyType as _, PrimaryKey, SearchableEntity,
     },
 };
 
@@ -145,4 +145,48 @@ impl Decrypting<'static> for StoredCredentialDecrypt {
 
 impl Decryptable<'static> for StoredCredential {
     type DecryptableFrom = StoredCredentialDecrypt;
+}
+
+#[async_trait(?Send)]
+impl<'a> SearchableEntity<CredentialFindFilters<'a>> for StoredCredential {
+    async fn find_all_matching(
+        conn: &mut Self::ConnectionType,
+        filters: &CredentialFindFilters<'a>,
+    ) -> CryptoKeystoreResult<Vec<Self>> {
+        // if we know something unique to this credential, use a more-efficient search
+        if let Some(hash) = filters.hash.or_else(|| filters.public_key.map(Sha256Hash::hash_from)) {
+            return Self::get(conn, &hash).await.map(|optional| {
+                optional
+                    .into_iter()
+                    .filter(|credential| credential.matches(filters))
+                    .collect()
+            });
+        }
+
+        // We intentionally are using a kind of dumb filtering method here.
+        // This is OK because we are intentionally not adding big fancy heavy compound indices
+        // for this type. But what this means is that we end up doing a linear scan here (just
+        // like Sqlite is doing under the hood).
+        //
+        // It's fine though; at least this lets us skip the cost of deserializing all the credentials
+        // which have been filtered out.
+        let mut credentials = Self::load_all(conn).await?;
+        credentials.retain(|credential| credential.matches(filters));
+        Ok(credentials)
+    }
+
+    fn matches(
+        &self,
+        CredentialFindFilters {
+            hash,
+            public_key,
+            ciphersuite,
+            earliest_validity,
+        }: &CredentialFindFilters<'a>,
+    ) -> bool {
+        hash.is_none_or(|hash| hash == self.primary_key())
+            && public_key.is_none_or(|public_key| public_key == self.public_key)
+            && ciphersuite.is_none_or(|ciphersuite| ciphersuite == self.ciphersuite)
+            && earliest_validity.is_none_or(|earliest_validity| earliest_validity == self.created_at)
+    }
 }
