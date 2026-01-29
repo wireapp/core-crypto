@@ -1,5 +1,7 @@
 // TODO: remove this expect(unreachable_pub) once the E2EI parts have been coupled.
 #![expect(unreachable_pub)]
+use std::sync::Arc;
+
 pub use core_crypto_keystore::{Database, DatabaseKey};
 
 mod crypto_provider;
@@ -69,7 +71,7 @@ impl std::ops::DerefMut for EntropySeed {
 /// The MLS crypto provider
 #[derive(Debug, Clone)]
 pub struct MlsCryptoProvider {
-    crypto: RustCrypto,
+    crypto: Arc<RustCrypto>,
     key_store: Database,
     pki_env: PkiEnvironmentProvider,
 }
@@ -83,7 +85,7 @@ impl MlsCryptoProvider {
     pub fn new(key_store: Database) -> Self {
         Self {
             key_store,
-            crypto: Default::default(),
+            crypto: Arc::clone(&CRYPTO),
             pki_env: Default::default(),
         }
     }
@@ -92,7 +94,7 @@ impl MlsCryptoProvider {
     pub fn new_with_pki_env(key_store: Database, pki_env: PkiEnvironmentProvider) -> Self {
         Self {
             key_store,
-            crypto: Default::default(),
+            crypto: Arc::clone(&CRYPTO),
             pki_env,
         }
     }

@@ -5,14 +5,10 @@
 //!
 //! On the other hand, the `KeyPackage` API isn't strictly ideal, so we improve on it here.
 
-use std::sync::LazyLock;
-
 pub use openmls::prelude::KeyPackage as Keypackage;
 use openmls::prelude::{KeyPackageRef as KpHashRef, Lifetime, SignatureScheme};
 
-use crate::{Ciphersuite, CredentialType, MlsError, mls_provider::RustCrypto};
-
-static CRYPTO: LazyLock<RustCrypto> = LazyLock::new(RustCrypto::default);
+use crate::{Ciphersuite, CredentialType, MlsError, mls_provider::CRYPTO};
 
 /// Extensions on the `KeyPackage` type for nicer usage patterns.
 pub trait KeypackageExt {
@@ -36,7 +32,7 @@ pub trait KeypackageExt {
 impl KeypackageExt for Keypackage {
     fn make_ref(&self) -> Result<KeypackageRef, MlsError> {
         let hash_ref = self
-            .hash_ref(&*CRYPTO)
+            .hash_ref(CRYPTO.as_ref())
             .map_err(MlsError::wrap("computing keypackage hash ref"))?;
 
         let ciphersuite = <Self as KeypackageExt>::ciphersuite(self);

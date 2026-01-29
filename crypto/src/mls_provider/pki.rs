@@ -11,6 +11,7 @@ use openmls_traits::{
 use spki::{SignatureAlgorithmIdentifier, der::referenced::RefToOwned};
 
 use super::error::{MlsProviderError, MlsProviderResult};
+use crate::mls_provider::CRYPTO;
 
 #[derive(Debug, Clone, Default)]
 pub struct PkiEnvironmentProvider(Arc<RwLock<Option<wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>>>);
@@ -711,9 +712,8 @@ impl PkiKeypair {
     }
 
     pub fn rand_unchecked(alg: SignatureScheme) -> Self {
-        let provider = super::RustCrypto::default();
         use openmls_traits::crypto::OpenMlsCrypto;
-        Self::new(alg, provider.signature_key_gen(alg).unwrap().0).unwrap()
+        Self::new(alg, CRYPTO.signature_key_gen(alg).unwrap().0).unwrap()
     }
 
     pub fn rand(alg: SignatureScheme, crypto: &super::RustCrypto) -> super::MlsProviderResult<Self> {

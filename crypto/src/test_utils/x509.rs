@@ -7,7 +7,7 @@ use crate::{
     CertificateBundle,
     e2e_identity::id::QualifiedE2eiClientId,
     mls::session::identifier::ClientIdentifier,
-    mls_provider::{CertProfile, CertificateGenerationArgs, MlsCryptoProvider, PkiKeypair, RustCrypto},
+    mls_provider::{CRYPTO, CertProfile, CertificateGenerationArgs, MlsCryptoProvider, PkiKeypair},
     transaction_context::TransactionContext,
 };
 
@@ -451,12 +451,11 @@ pub struct X509Certificate {
 
 impl X509Certificate {
     pub fn create_root_cert_ta(params: CertificateParams, signature_scheme: SignatureScheme) -> Self {
-        let crypto = RustCrypto::default();
-        let serial = u16::from_le_bytes(crypto.random_array().unwrap());
+        let serial = u16::from_le_bytes(CRYPTO.random_array().unwrap());
 
         let crl_dps = vec![params.get_crl_dp()];
         let pki_keypair = params.cert_keypair.unwrap_or_else(|| {
-            let (sk, _) = crypto.signature_key_gen(signature_scheme).unwrap();
+            let (sk, _) = CRYPTO.signature_key_gen(signature_scheme).unwrap();
             PkiKeypair::new(signature_scheme, sk).unwrap()
         });
 
@@ -489,14 +488,13 @@ impl X509Certificate {
     }
 
     pub fn create_and_sign_intermediate(&self, params: CertificateParams) -> X509Certificate {
-        let crypto = RustCrypto::default();
         let signature_scheme = self.signature_scheme;
 
-        let serial = u16::from_le_bytes(crypto.random_array().unwrap());
+        let serial = u16::from_le_bytes(CRYPTO.random_array().unwrap());
 
         let crl_dps = vec![params.get_crl_dp()];
         let pki_keypair = params.cert_keypair.unwrap_or_else(|| {
-            let (sk, _) = crypto.signature_key_gen(signature_scheme).unwrap();
+            let (sk, _) = CRYPTO.signature_key_gen(signature_scheme).unwrap();
             PkiKeypair::new(signature_scheme, sk).unwrap()
         });
 
@@ -556,13 +554,12 @@ impl X509Certificate {
     }
 
     pub fn create_and_sign_end_identity(&self, params: CertificateParams) -> X509Certificate {
-        let crypto = RustCrypto::default();
         let signature_scheme = self.signature_scheme;
-        let serial = u64::from_le_bytes(crypto.random_array().unwrap());
+        let serial = u64::from_le_bytes(CRYPTO.random_array().unwrap());
 
         let crl_dps = vec![params.get_crl_dp()];
         let pki_keypair = params.cert_keypair.unwrap_or_else(|| {
-            let (sk, _) = crypto.signature_key_gen(signature_scheme).unwrap();
+            let (sk, _) = CRYPTO.signature_key_gen(signature_scheme).unwrap();
             PkiKeypair::new(signature_scheme, sk).unwrap()
         });
 
