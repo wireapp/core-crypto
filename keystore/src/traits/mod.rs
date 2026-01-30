@@ -23,5 +23,5 @@ pub use item_encryption::{
 };
 pub use key_type::{KeyType, OwnedKeyType};
 pub use primary_key::{BorrowPrimaryKey, PrimaryKey};
-pub use searchable_entity::SearchableEntity;
+pub use searchable_entity::{DeletableBySearchKey, SearchableEntity};
 pub use unique_entity::{UniqueEntity, UniqueEntityExt, UniqueEntityImplementationHelper};
