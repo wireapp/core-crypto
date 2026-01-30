@@ -73,6 +73,21 @@ pub struct PersistedMlsPendingGroup {
     pub custom_configuration: Vec<u8>,
 }
 
+/// Typesafe reference to a conversation id.
+///
+/// [`MlsPendingMessage`]s have no distinct primary key; they must always be accessed via
+/// collective accessors. This type makes that possible.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, derive_more::AsRef, derive_more::Deref, derive_more::From,
+)]
+pub struct ConversationId<'a>(&'a [u8]);
+
+impl<'a> KeyType for ConversationId<'a> {
+    fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {
+        self.0.into()
+    }
+}
+
 /// [`MlsPendingMessage`]s have no distinct primary key;
 /// they must always be accessed via [`MlsPendingMessage::find_all_by_conversation_id`] and
 /// cleaned up with [`MlsPendingMessage::delete_by_conversation_id`]
