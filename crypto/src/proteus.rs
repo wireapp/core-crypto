@@ -637,15 +637,19 @@ mod tests {
         // proteus is initialized, prekeys can be generated
         assert!(transaction.proteus_new_prekey(1).await.is_ok());
         // 👇 and so a unique 'client_id' can be fetched from wire-server
-        let client_id = ClientId::from("alice");
+        let session_id = ClientId::from("alice");
+        let transport = Arc::new(CoreCryptoTransportSuccessProvider::default());
         let identifier = match case.credential_type {
-            CredentialType::Basic => ClientIdentifier::Basic(client_id),
+            CredentialType::Basic => ClientIdentifier::Basic(session_id),
             CredentialType::X509 => {
-                CertificateBundle::rand_identifier(&client_id, &[x509_test_chain.find_local_intermediate_ca()])
+                CertificateBundle::rand_identifier(&session_id, &[x509_test_chain.find_local_intermediate_ca()])
             }
         };
-        let transport = Arc::new(CoreCryptoTransportSuccessProvider::default());
-        transaction.mls_init(identifier.clone(), transport).await.unwrap();
+        let session_id = identifier
+            .get_id()
+            .expect("Getting session id from identifier")
+            .into_owned();
+        transaction.mls_init(session_id, transport).await.unwrap();
         let credential = Credential::from_identifier(&identifier, case.ciphersuite()).unwrap();
         let credential_ref = transaction.add_credential(credential).await.unwrap();
 

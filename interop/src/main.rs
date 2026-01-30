@@ -160,7 +160,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     let transaction = cc.new_transaction().await?;
     let success_provider = Arc::new(MlsTransportSuccessProvider::default());
     transaction
-        .mls_init(master_client_id.clone().into(), success_provider.clone())
+        .mls_init(master_client_id.clone(), success_provider.clone())
         .await?;
     let credential_ref = transaction.add_credential(credential).await?;
     transaction

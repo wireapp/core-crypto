@@ -110,16 +110,20 @@ mod tests {
             x509_test_chain.register_with_central(&context).await;
 
             // phase 2: init mls_client
-            let client_id = ClientId::from("alice");
+            let session_id = ClientId::from("alice");
             let identifier = match case.credential_type {
-                CredentialType::Basic => ClientIdentifier::Basic(client_id.clone()),
+                CredentialType::Basic => ClientIdentifier::Basic(session_id),
                 CredentialType::X509 => {
-                    CertificateBundle::rand_identifier(&client_id, &[x509_test_chain.find_local_intermediate_ca()])
+                    CertificateBundle::rand_identifier(&session_id, &[x509_test_chain.find_local_intermediate_ca()])
                 }
             };
+            let session_id = identifier
+                .get_id()
+                .expect("get session_id from identifier")
+                .into_owned();
             context
                 .mls_init(
-                    identifier.clone(),
+                    session_id.clone(),
                     Arc::new(CoreCryptoTransportSuccessProvider::default()),
                 )
                 .await

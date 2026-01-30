@@ -5,10 +5,10 @@ use std::{
 
 use async_lock::RwLock;
 use core_crypto::{
-    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, ConnectionType, ConversationId, CoreCrypto,
-    Credential as CcCredential, CredentialFindFilters, CredentialRef, CredentialType, Database, DatabaseKey,
-    HistorySecret, MlsCommitBundle, MlsConversationConfiguration, MlsCryptoProvider, MlsGroupInfoBundle, MlsTransport,
-    MlsTransportData, MlsTransportResponse,
+    CertificateBundle, Ciphersuite, ClientId, ConnectionType, ConversationId, CoreCrypto, Credential as CcCredential,
+    CredentialFindFilters, CredentialRef, CredentialType, Database, DatabaseKey, HistorySecret, MlsCommitBundle,
+    MlsConversationConfiguration, MlsCryptoProvider, MlsGroupInfoBundle, MlsTransport, MlsTransportData,
+    MlsTransportResponse,
 };
 use criterion::BenchmarkId;
 use openmls::{
@@ -165,21 +165,20 @@ pub(crate) async fn new_central(
     } else {
         ConnectionType::Persistent(&path)
     };
-    let client_id = ClientId::from(Alphanumeric.sample_string(&mut rand::thread_rng(), 10).into_bytes());
-    let client_identifier = ClientIdentifier::from(client_id.clone());
+    let session_id = ClientId::from(Alphanumeric.sample_string(&mut rand::thread_rng(), 10).into_bytes());
     let db = Database::open(connection_type, &DatabaseKey::generate()).await.unwrap();
 
     let cc = CoreCrypto::new(db);
     let delivery_service = Arc::<CoreCryptoTransportSuccessProvider>::default();
     let tx = cc.new_transaction().await.unwrap();
-    tx.mls_init(client_identifier, delivery_service.clone()).await.unwrap();
+    tx.mls_init(session_id.clone(), delivery_service.clone()).await.unwrap();
     tx.finish().await.unwrap();
 
     let ctx = cc.new_transaction().await.unwrap();
 
     let credential = match certificate_bundle {
         Some(certificate_bundle) => CcCredential::x509(ciphersuite, certificate_bundle.to_owned()).unwrap(),
-        None => CcCredential::basic(ciphersuite, client_id).unwrap(),
+        None => CcCredential::basic(ciphersuite, session_id).unwrap(),
     };
     let credential_ref = ctx.add_credential(credential).await.unwrap();
 

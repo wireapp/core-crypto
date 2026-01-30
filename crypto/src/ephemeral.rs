@@ -28,8 +28,8 @@ use obfuscate::{Obfuscate, Obfuscated};
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
-    Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, CoreCrypto, CoreCryptoTransportNotImplementedProvider,
-    Credential, Error, MlsError, RecursiveError, Result, Session,
+    Ciphersuite, ClientId, ClientIdRef, CoreCrypto, CoreCryptoTransportNotImplementedProvider, Credential, Error,
+    MlsError, RecursiveError, Result, Session,
     mls_provider::{DatabaseKey, MlsCryptoProvider},
 };
 
@@ -66,10 +66,9 @@ impl Obfuscate for HistorySecret {
 /// This implementation lives here instead of there for organizational reasons.
 pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<HistorySecret> {
     // generate a new completely arbitrary client id
-    let client_id = uuid::Uuid::new_v4();
-    let client_id = format!("{HISTORY_CLIENT_ID_PREFIX}-{client_id}");
-    let client_id = ClientId::from(client_id.into_bytes());
-    let identifier = ClientIdentifier::Basic(client_id.clone());
+    let session_id = uuid::Uuid::new_v4();
+    let session_id = format!("{HISTORY_CLIENT_ID_PREFIX}-{session_id}");
+    let session_id = ClientId::from(session_id.into_bytes());
 
     let database = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
         .await
@@ -82,14 +81,14 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
         .map_err(RecursiveError::transaction("creating new transaction"))?;
 
     let transport = Arc::new(CoreCryptoTransportNotImplementedProvider::default());
-    tx.mls_init(identifier, transport)
+    tx.mls_init(session_id.clone(), transport)
         .await
         .map_err(RecursiveError::transaction("initializing ephemeral cc"))?;
     let session = tx
         .session()
         .await
         .map_err(RecursiveError::transaction("Getting mls session"))?;
-    let credential = Credential::basic(ciphersuite, client_id.clone()).map_err(RecursiveError::mls_credential(
+    let credential = Credential::basic(ciphersuite, session_id.clone()).map_err(RecursiveError::mls_credential(
         "generating basic credential for ephemeral client",
     ))?;
     let credential_ref = tx
@@ -112,7 +111,10 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
     // there
     let _ = tx.abort().await;
 
-    Ok(HistorySecret { client_id, key_package })
+    Ok(HistorySecret {
+        client_id: session_id,
+        key_package,
+    })
 }
 
 pub(crate) fn is_history_client(client_id: impl Borrow<ClientIdRef>) -> bool {

@@ -1,9 +1,8 @@
 use std::{sync::Arc, time::Duration};
 
 use core_crypto::{
-    Ciphersuite as CryptoCiphersuite, ClientIdentifier, CredentialFindFilters, MlsConversationConfiguration,
-    RecursiveError, VerifiableGroupInfo, mls::conversation::Conversation as _,
-    transaction_context::Error as TransactionError,
+    Ciphersuite as CryptoCiphersuite, CredentialFindFilters, MlsConversationConfiguration, RecursiveError,
+    VerifiableGroupInfo, mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
 };
 use tls_codec::Deserialize as _;
 
@@ -49,10 +48,7 @@ impl CoreCryptoContext {
     pub async fn mls_init(&self, client_id: &Arc<ClientId>, transport: Arc<dyn MlsTransport>) -> CoreCryptoResult<()> {
         let transport = callback_shim(transport);
         self.inner
-            .mls_init(
-                ClientIdentifier::Basic(client_id.as_ref().as_ref().to_owned()),
-                transport,
-            )
+            .mls_init(client_id.as_ref().as_ref().to_owned(), transport)
             .await?;
         Ok(())
     }

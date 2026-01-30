@@ -129,8 +129,12 @@ impl SessionContext {
 
         let transaction = core_crypto.new_transaction().await.unwrap();
 
+        let session_id = identifier
+            .get_id()
+            .map_err(RecursiveError::mls_client("getting client id"))?
+            .into_owned();
         transaction
-            .mls_init(identifier.clone(), context.transport.clone())
+            .mls_init(session_id, context.transport.clone())
             .await
             .map_err(RecursiveError::transaction("mls init"))?;
 
@@ -275,9 +279,9 @@ impl SessionContext {
         self.set_session(new_session).await;
     }
 
-    pub async fn reinit_session(&self, identifier: ClientIdentifier) {
+    pub async fn reinit_session(&self, session_id: ClientId) {
         self.transaction
-            .mls_init(identifier, self.mls_transport().await)
+            .mls_init(session_id, self.mls_transport().await)
             .await
             .unwrap();
 
@@ -323,28 +327,31 @@ impl SessionContext {
     ) -> Result<()> {
         let user_uuid = uuid::Uuid::new_v4();
         let rnd_id = rand::random::<usize>();
-        let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated());
-        let client_id = ClientId(client_id.into_bytes());
+        let session_id = ClientId(format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated()).into_bytes());
 
-        let credential;
-        let identifier;
-        match case.credential_type {
+        let (session_id, credential) = match case.credential_type {
             CredentialType::Basic => {
-                identifier = ClientIdentifier::Basic(client_id.clone());
-                credential = Credential::basic(case.ciphersuite(), client_id).unwrap();
+                let credential =
+                    Credential::basic(case.ciphersuite(), session_id.clone()).expect("creating basic credential ");
+
+                (session_id, credential)
             }
             CredentialType::X509 => {
-                let signer = signer.expect("Missing intermediate CA").to_owned();
-                let cert = CertificateBundle::rand(&client_id, &signer);
-                identifier = ClientIdentifier::X509([(case.signature_scheme(), cert.clone())].into());
-                credential = Credential::x509(case.ciphersuite(), cert).unwrap();
+                let signer = signer.expect("Missing intermediate CA");
+                let cert = CertificateBundle::rand(&session_id, signer);
+                let session_id = cert.get_client_id().expect("Getting client id from certificate bundle");
+
+                let credential = Credential::x509(case.ciphersuite(), cert).expect("creating  x509 credential");
+
+                (session_id, credential)
             }
         };
 
-        self.reinit_session(identifier).await;
-
-        self.transaction.add_credential(credential).await.unwrap();
-
+        self.reinit_session(session_id).await;
+        self.transaction
+            .add_credential(credential)
+            .await
+            .expect("adding credential");
         Ok(())
     }
 }

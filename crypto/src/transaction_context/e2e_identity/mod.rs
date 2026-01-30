@@ -7,18 +7,14 @@ mod init_certificates;
 mod rotate;
 mod stash;
 
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::{collections::HashSet, sync::Arc};
 
 pub use error::{Error, Result};
 use wire_e2e_identity::x509_check::extract_crl_uris;
 
 use super::TransactionContext;
 use crate::{
-    CertificateBundle, Ciphersuite, ClientId, ClientIdentifier, Credential, CredentialRef, E2eiEnrollment,
-    MlsTransport, RecursiveError,
+    CertificateBundle, Ciphersuite, ClientId, Credential, CredentialRef, E2eiEnrollment, MlsTransport, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{crl::get_new_crl_distribution_points, x509::CertificatePrivateKey},
 };
@@ -106,9 +102,10 @@ impl TransactionContext {
         let credential_ref = credential.save(database).await.map_err(RecursiveError::mls_credential(
             "saving credential in e2ei_mls_init_only",
         ))?;
-
-        let identifier = ClientIdentifier::X509(HashMap::from([(ciphersuite.signature_algorithm(), cert_bundle)]));
-        self.mls_init(identifier, transport)
+        let session_id = cert_bundle.get_client_id().map_err(RecursiveError::mls_credential(
+            "Getting session id from certificate bundle",
+        ))?;
+        self.mls_init(session_id, transport)
             .await
             .map_err(RecursiveError::transaction("initializing mls"))?;
         Ok((credential_ref, crl_new_distribution_points))

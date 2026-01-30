@@ -14,8 +14,8 @@ use wire_e2e_identity::pki_env::PkiEnvironment;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    ClientId, ClientIdentifier, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsConversation,
-    MlsError, MlsTransport, RecursiveError, Session,
+    ClientId, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsConversation, MlsError, MlsTransport,
+    RecursiveError, Session,
     group_store::GroupStore,
     mls::{self, HasSessionAndCrypto},
     mls_provider::{Database, MlsCryptoProvider},
@@ -261,12 +261,8 @@ impl TransactionContext {
     }
 
     /// Initializes the MLS client of [super::CoreCrypto].
-    pub async fn mls_init(&self, identifier: ClientIdentifier, transport: Arc<dyn MlsTransport>) -> Result<()> {
+    pub async fn mls_init(&self, session_id: ClientId, transport: Arc<dyn MlsTransport>) -> Result<()> {
         let database = self.database().await?;
-        let client_id = identifier
-            .get_id()
-            .map_err(RecursiveError::mls_client("getting client id"))?
-            .into_owned();
 
         let pki_env_provider = self
             .pki_environment_option()
@@ -276,7 +272,7 @@ impl TransactionContext {
 
         let crypto_provider = MlsCryptoProvider::new_with_pki_env(database, pki_env_provider);
         let database = self.database().await?;
-        let session = Session::new(client_id.clone(), crypto_provider, database, transport);
+        let session = Session::new(session_id.clone(), crypto_provider, database, transport);
         self.set_mls_session(session).await?;
 
         Ok(())
