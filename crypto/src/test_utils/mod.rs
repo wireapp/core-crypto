@@ -19,6 +19,7 @@ use std::{collections::HashMap, sync::Arc};
 use async_lock::RwLock;
 use openmls::framing::MlsMessageOut;
 pub use openmls_traits::types::SignatureScheme;
+use wire_e2e_identity::pki_env::PkiEnvironment;
 
 use self::error::Result;
 pub(crate) use self::{epoch_observer::TestEpochObserver, history_observer::TestHistoryObserver};
@@ -27,7 +28,7 @@ use crate::{
     CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Credential, CredentialRef, Database,
     DatabaseKey, Error, MlsCommitBundle, MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse,
     RecursiveError, Session,
-    e2e_identity::{id::QualifiedE2eiClientId, pki_env::PkiEnvironment, pki_env_hooks::test::DummyPkiEnvironmentHooks},
+    e2e_identity::id::QualifiedE2eiClientId,
     mls::HistoryObserver,
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     transaction_context::TransactionContext,
@@ -626,5 +627,48 @@ impl MlsTransportTestExt for CoreCryptoTransportRetrySuccessProvider {
 
     async fn latest_message(&self) -> Vec<u8> {
         self.latest_message.read().await.clone().expect("latest_message")
+    }
+}
+
+use wire_e2e_identity::pki_env_hooks::{
+    HttpHeader, HttpMethod, HttpResponse, PkiEnvironmentHooks, PkiEnvironmentHooksError,
+};
+
+/// Dummy struct for tests
+#[derive(Debug, Default)]
+pub struct DummyPkiEnvironmentHooks;
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl PkiEnvironmentHooks for DummyPkiEnvironmentHooks {
+    async fn http_request(
+        &self,
+        _method: HttpMethod,
+        _url: String,
+        _headers: Vec<HttpHeader>,
+        _body: Vec<u8>,
+    ) -> HttpResponse {
+        HttpResponse {
+            status: 200,
+            headers: vec![],
+            body: vec![],
+        }
+    }
+
+    async fn authenticate(
+        &self,
+        _idp: String,
+        _key_auth: String,
+        _acme_aud: String,
+    ) -> Result<String, PkiEnvironmentHooksError> {
+        Ok("dummy-id-token".to_string())
+    }
+
+    async fn get_backend_nonce(&self) -> Result<String, PkiEnvironmentHooksError> {
+        Ok("dummy-backend-nonce".to_string())
+    }
+
+    async fn fetch_backend_access_token(&self, _dpop: String) -> Result<String, PkiEnvironmentHooksError> {
+        Ok("dummy-backend-token".to_string())
     }
 }
