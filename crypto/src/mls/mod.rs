@@ -91,10 +91,9 @@ mod tests {
         Box::pin(async move {
             use std::sync::Arc;
 
-            use crate::{
-                ClientId, Credential,
-                e2e_identity::{pki_env::PkiEnvironment, pki_env_hooks::test::DummyPkiEnvironmentHooks},
-            };
+            use wire_e2e_identity::pki_env::PkiEnvironment;
+
+            use crate::{ClientId, Credential, test_utils::DummyPkiEnvironmentHooks};
 
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 

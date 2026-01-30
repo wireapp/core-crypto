@@ -1,5 +1,7 @@
 use std::{fmt, sync::Arc};
 
+use wire_e2e_identity::pki_env_hooks;
+
 use crate::{CoreCryptoFfi, CoreCryptoResult, Database};
 
 /// HttpMethod used for pki hooks
@@ -19,15 +21,15 @@ pub enum HttpMethod {
     Head,
 }
 
-impl From<core_crypto::e2e_identity::pki_env_hooks::HttpMethod> for HttpMethod {
-    fn from(inner: core_crypto::e2e_identity::pki_env_hooks::HttpMethod) -> Self {
+impl From<pki_env_hooks::HttpMethod> for HttpMethod {
+    fn from(inner: pki_env_hooks::HttpMethod) -> Self {
         match inner {
-            core_crypto::e2e_identity::pki_env_hooks::HttpMethod::Get => Self::Get,
-            core_crypto::e2e_identity::pki_env_hooks::HttpMethod::Post => Self::Post,
-            core_crypto::e2e_identity::pki_env_hooks::HttpMethod::Put => Self::Put,
-            core_crypto::e2e_identity::pki_env_hooks::HttpMethod::Delete => Self::Delete,
-            core_crypto::e2e_identity::pki_env_hooks::HttpMethod::Patch => Self::Patch,
-            core_crypto::e2e_identity::pki_env_hooks::HttpMethod::Head => Self::Head,
+            pki_env_hooks::HttpMethod::Get => Self::Get,
+            pki_env_hooks::HttpMethod::Post => Self::Post,
+            pki_env_hooks::HttpMethod::Put => Self::Put,
+            pki_env_hooks::HttpMethod::Delete => Self::Delete,
+            pki_env_hooks::HttpMethod::Patch => Self::Patch,
+            pki_env_hooks::HttpMethod::Head => Self::Head,
         }
     }
 }
@@ -41,8 +43,8 @@ pub struct HttpHeader {
     pub value: String,
 }
 
-impl From<core_crypto::e2e_identity::pki_env_hooks::HttpHeader> for HttpHeader {
-    fn from(inner: core_crypto::e2e_identity::pki_env_hooks::HttpHeader) -> Self {
+impl From<pki_env_hooks::HttpHeader> for HttpHeader {
+    fn from(inner: pki_env_hooks::HttpHeader) -> Self {
         Self {
             name: inner.name,
             value: inner.value,
@@ -50,7 +52,7 @@ impl From<core_crypto::e2e_identity::pki_env_hooks::HttpHeader> for HttpHeader {
     }
 }
 
-impl From<HttpHeader> for core_crypto::e2e_identity::pki_env_hooks::HttpHeader {
+impl From<HttpHeader> for pki_env_hooks::HttpHeader {
     fn from(ffi: HttpHeader) -> Self {
         Self {
             name: ffi.name,
@@ -70,7 +72,7 @@ pub struct HttpResponse {
     pub body: Vec<u8>,
 }
 
-impl From<HttpResponse> for core_crypto::e2e_identity::pki_env_hooks::HttpResponse {
+impl From<HttpResponse> for pki_env_hooks::HttpResponse {
     fn from(ffi: HttpResponse) -> Self {
         Self {
             status: ffi.status,
@@ -87,12 +89,10 @@ pub enum PkiEnvironmentHooksError {
 }
 
 // Convert to a "flat" struct in another module
-impl From<PkiEnvironmentHooksError> for core_crypto::e2e_identity::pki_env_hooks::PkiEnvironmentHooksError {
+impl From<PkiEnvironmentHooksError> for pki_env_hooks::PkiEnvironmentHooksError {
     fn from(err: PkiEnvironmentHooksError) -> Self {
         match err {
-            PkiEnvironmentHooksError::Error { reason } => {
-                core_crypto::e2e_identity::pki_env_hooks::PkiEnvironmentHooksError { reason }
-            }
+            PkiEnvironmentHooksError::Error { reason } => pki_env_hooks::PkiEnvironmentHooksError { reason },
         }
     }
 }
@@ -180,14 +180,14 @@ impl std::fmt::Debug for PkiEnvironmentHooksShim {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl core_crypto::e2e_identity::pki_env_hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
+impl pki_env_hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
     async fn http_request(
         &self,
-        method: core_crypto::e2e_identity::pki_env_hooks::HttpMethod,
+        method: pki_env_hooks::HttpMethod,
         url: String,
-        headers: Vec<core_crypto::e2e_identity::pki_env_hooks::HttpHeader>,
+        headers: Vec<pki_env_hooks::HttpHeader>,
         body: Vec<u8>,
-    ) -> core_crypto::e2e_identity::pki_env_hooks::HttpResponse {
+    ) -> pki_env_hooks::HttpResponse {
         let headers = headers.into_iter().map(Into::into).collect();
         self.0.http_request(method.into(), url, headers, body).await.into()
     }
@@ -197,33 +197,30 @@ impl core_crypto::e2e_identity::pki_env_hooks::PkiEnvironmentHooks for PkiEnviro
         idp: String,
         key_auth: String,
         acme_aud: String,
-    ) -> Result<String, core_crypto::e2e_identity::pki_env_hooks::PkiEnvironmentHooksError> {
+    ) -> Result<String, pki_env_hooks::PkiEnvironmentHooksError> {
         self.0.authenticate(idp, key_auth, acme_aud).await.map_err(Into::into)
     }
 
-    async fn get_backend_nonce(
-        &self,
-    ) -> Result<String, core_crypto::e2e_identity::pki_env_hooks::PkiEnvironmentHooksError> {
+    async fn get_backend_nonce(&self) -> Result<String, pki_env_hooks::PkiEnvironmentHooksError> {
         self.0.get_backend_nonce().await.map_err(Into::into)
     }
 
     async fn fetch_backend_access_token(
         &self,
         dpop: String,
-    ) -> Result<String, core_crypto::e2e_identity::pki_env_hooks::PkiEnvironmentHooksError> {
+    ) -> Result<String, pki_env_hooks::PkiEnvironmentHooksError> {
         self.0.fetch_backend_access_token(dpop).await.map_err(Into::into)
     }
 }
 
 /// A PkiEnvironment
 #[derive(derive_more::From, derive_more::Into, Clone, uniffi::Object)]
-pub struct PkiEnvironment(core_crypto::e2e_identity::pki_env::PkiEnvironment);
+pub struct PkiEnvironment(wire_e2e_identity::pki_env::PkiEnvironment);
 
 impl PkiEnvironment {
     async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Arc<Database>) -> CoreCryptoResult<Self> {
         let shim = Arc::new(PkiEnvironmentHooksShim::new(hooks));
-        let pki_env =
-            core_crypto::e2e_identity::pki_env::PkiEnvironment::new(shim, database.as_ref().clone().into()).await?;
+        let pki_env = wire_e2e_identity::pki_env::PkiEnvironment::new(shim, database.as_ref().clone().into()).await?;
         Ok(pki_env.into())
     }
 }

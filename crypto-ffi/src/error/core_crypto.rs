@@ -33,6 +33,14 @@ impl From<uniffi::UnexpectedUniFFICallbackError> for CoreCryptoError {
     }
 }
 
+impl From<wire_e2e_identity::pki_env::Error> for CoreCryptoError {
+    fn from(value: wire_e2e_identity::pki_env::Error) -> Self {
+        Self::E2ei {
+            e2ei_error: value.to_string(),
+        }
+    }
+}
+
 impl From<RecursiveError> for CoreCryptoError {
     fn from(error: RecursiveError) -> Self {
         log_error(&error);

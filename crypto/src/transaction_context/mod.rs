@@ -9,13 +9,13 @@ use async_lock::{RwLock, RwLockWriteGuardArc};
 use core_crypto_keystore::{CryptoKeystoreError, entities::ConsumerData, traits::FetchFromDatabase as _};
 pub use error::{Error, Result};
 use openmls_traits::OpenMlsCryptoProvider as _;
+use wire_e2e_identity::pki_env::PkiEnvironment;
 
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
     ClientId, ClientIdentifier, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsConversation,
     MlsError, MlsTransport, RecursiveError, Session,
-    e2e_identity::pki_env::PkiEnvironment,
     group_store::GroupStore,
     mls::{self, HasSessionAndCrypto},
     mls_provider::{Database, MlsCryptoProvider},

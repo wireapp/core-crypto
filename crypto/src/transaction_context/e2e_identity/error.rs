@@ -32,5 +32,7 @@ pub enum Error {
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
+    PkiEnvironmentEror(#[from] wire_e2e_identity::pki_env::Error),
+    #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
 }

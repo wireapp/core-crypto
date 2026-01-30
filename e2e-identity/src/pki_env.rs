@@ -79,19 +79,17 @@ async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<Optio
 
     let intermediates = data_provider
         .load_all::<E2eiIntermediateCert>()
-        .await
-        .map_err(KeystoreError::wrap("finding intermediate certificates"))?
+        .await?
         .into_iter()
         .map(|inter| x509_cert::Certificate::from_der(&inter.content))
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<core::result::Result<Vec<_>, _>>()?;
 
     let crls = data_provider
         .load_all::<E2eiCrl>()
-        .await
-        .map_err(KeystoreError::wrap("finding crls"))?
+        .await?
         .into_iter()
         .map(|crl| x509_cert::crl::CertificateList::from_der(&crl.content))
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<core::result::Result<Vec<_>, _>>()?;
 
     let params = PkiEnvironmentParams {
         trust_roots: &trust_roots,
@@ -122,8 +120,7 @@ impl PkiEnvironment {
     /// Create a new PKI Environment
     pub async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Database) -> Result<PkiEnvironment> {
         let mls_pki_env_provider = restore_pki_env(&database)
-            .await
-            .map_err(RecursiveError::e2e_identity("restoring pki env"))?
+            .await?
             .map(PkiEnvironmentProvider::from)
             .unwrap_or_default();
         Ok(Self {

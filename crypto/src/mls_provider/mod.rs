@@ -20,7 +20,8 @@ use openmls_traits::{
 };
 // TODO: remove this allow(unused) once the E2EI parts have been coupled.
 #[allow(unused)]
-pub use pki::{CertProfile, CertificateGenerationArgs, PkiEnvironmentProvider, PkiKeypair};
+pub use pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
+use wire_e2e_identity::PkiEnvironmentProvider;
 
 /// 32-byte raw entropy seed
 pub type RawEntropySeed = <rand_chacha::ChaCha20Rng as rand::SeedableRng>::Seed;

@@ -612,10 +612,9 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn cc_can_2_phase_init(case: TestContext) {
-        use crate::{
-            ClientId, Credential,
-            e2e_identity::{pki_env::PkiEnvironment, pki_env_hooks::test::DummyPkiEnvironmentHooks},
-        };
+        use wire_e2e_identity::pki_env::PkiEnvironment;
+
+        use crate::{ClientId, Credential, test_utils::DummyPkiEnvironmentHooks};
 
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();

@@ -42,7 +42,10 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use core_crypto_keystore::{ConnectionType, DatabaseKey};
+    use wire_e2e_identity::pki_env::PkiEnvironment;
 
     use crate::{
         CoreCrypto, E2eiEnrollment,
@@ -53,10 +56,6 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn stash_and_pop_should_not_abort_enrollment(mut case: TestContext) {
-        use std::sync::Arc;
-
-        use crate::e2e_identity::{pki_env::PkiEnvironment, pki_env_hooks::test::DummyPkiEnvironmentHooks};
-
         let db = case.create_in_memory_database().await;
         let cc = CoreCrypto::new(db.clone());
         let hooks = Arc::new(DummyPkiEnvironmentHooks);
@@ -67,8 +66,6 @@ mod tests {
 
         let tx = cc.new_transaction().await.unwrap();
         Box::pin(async move {
-            use std::sync::Arc;
-
             let chain = X509TestChain::init_empty(case.signature_scheme());
 
             let is_renewal = false;
@@ -97,10 +94,6 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn should_fail_when_restoring_invalid(mut case: TestContext) {
-        use std::sync::Arc;
-
-        use crate::e2e_identity::{pki_env::PkiEnvironment, pki_env_hooks::test::DummyPkiEnvironmentHooks};
-
         let db = case.create_in_memory_database().await;
         let cc = CoreCrypto::new(db.clone());
         let hooks = Arc::new(DummyPkiEnvironmentHooks);

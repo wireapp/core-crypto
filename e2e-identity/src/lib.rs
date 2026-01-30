@@ -142,6 +142,10 @@ pub mod acme;
 mod error;
 mod types;
 
+pub mod pki_env;
+pub mod pki_env_hooks;
+pub use pki_env::{NewCrlDistributionPoints, PkiEnvironmentProvider};
+
 pub mod prelude {
     #[cfg(feature = "builder")]
     pub use rusty_jwt_tools::prelude::generate_jwk;

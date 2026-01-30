@@ -3,10 +3,7 @@ pub(crate) mod device_status;
 mod error;
 pub(crate) mod id;
 pub(crate) mod identity;
-pub mod pki_env;
-pub mod pki_env_hooks;
 pub(crate) use crypto::E2eiSignatureKeypair;
-pub use pki_env::NewCrlDistributionPoints;
 #[cfg(not(test))]
 mod enrollment;
 #[cfg(test)]
@@ -17,6 +14,8 @@ pub use enrollment::E2eiEnrollment;
 pub use error::{Error, Result};
 
 type Json = Vec<u8>;
+
+pub use wire_e2e_identity::pki_env::NewCrlDistributionPoints;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Supporting struct for CRL registration result

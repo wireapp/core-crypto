@@ -65,10 +65,7 @@ impl TransactionContext {
             .map_err(KeystoreError::wrap("saving acme ca"))?;
 
         // To do that, tear down and recreate the inner pki env
-        pki_environment
-            .update_pki_environment_provider()
-            .await
-            .map_err(RecursiveError::e2e_identity("updating pki environment"))?;
+        pki_environment.update_pki_environment_provider().await?;
         Ok(())
     }
 
@@ -141,10 +138,7 @@ impl TransactionContext {
             .await
             .map_err(KeystoreError::wrap("saving intermediate ca"))?;
 
-        pki_environment
-            .update_pki_environment_provider()
-            .await
-            .map_err(RecursiveError::e2e_identity("updating pki environment"))?;
+        pki_environment.update_pki_environment_provider().await?;
 
         Ok(intermediate_crl.into())
     }
@@ -200,10 +194,7 @@ impl TransactionContext {
             .await
             .map_err(KeystoreError::wrap("saving crl"))?;
 
-        pki_environment
-            .update_pki_environment_provider()
-            .await
-            .map_err(RecursiveError::e2e_identity("updating pki environment"))?;
+        pki_environment.update_pki_environment_provider().await?;
         Ok(CrlRegistration { expiration, dirty })
     }
 }

@@ -42,8 +42,8 @@ pub use openmls::{
         group_info::VerifiableGroupInfo,
     },
 };
+use wire_e2e_identity::pki_env::PkiEnvironment;
 
-use crate::e2e_identity::pki_env::PkiEnvironment;
 pub use crate::{
     build_metadata::{BUILD_METADATA, BuildMetadata},
     e2e_identity::{
