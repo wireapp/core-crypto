@@ -49,7 +49,7 @@ pub type TestResult<T> = Result<T, TestError>;
 #[derive(Debug, thiserror::Error)]
 pub enum TestError {
     #[error(transparent)]
-    Acme(#[from] wire_e2e_identity::acme::prelude::RustyAcmeError),
+    Acme(#[from] wire_e2e_identity::acme::RustyAcmeError),
     #[error(transparent)]
     Jwt(#[from] rusty_jwt_tools::prelude::RustyJwtError),
     #[cfg(not(target_family = "wasm"))]

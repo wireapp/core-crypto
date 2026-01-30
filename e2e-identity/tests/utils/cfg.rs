@@ -4,7 +4,7 @@ use jwt_simple::prelude::*;
 use rand::random;
 use rusty_jwt_tools::{jwk::TryIntoJwk, prelude::*};
 use scraper::Html;
-use wire_e2e_identity::acme::prelude::{AcmeAccount, AcmeAuthz, AcmeChallenge, AcmeDirectory, AcmeFinalize, AcmeOrder};
+use wire_e2e_identity::acme::{AcmeAccount, AcmeAuthz, AcmeChallenge, AcmeDirectory, AcmeFinalize, AcmeOrder};
 
 use crate::utils::{
     TestResult,

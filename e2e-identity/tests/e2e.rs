@@ -33,7 +33,7 @@ use utils::{
     rand_base64_str, rand_client_id,
     stepca::CaCfg,
 };
-use wire_e2e_identity::acme::prelude::*;
+use wire_e2e_identity::acme::*;
 
 #[path = "utils/mod.rs"]
 mod utils;

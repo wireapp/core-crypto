@@ -1,4 +1,4 @@
-use crate::acme::prelude::*;
+use crate::acme::*;
 
 impl RustyAcme {
     /// First, call the directory endpoint `GET /acme/{provisioner_name}/directory`.

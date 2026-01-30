@@ -1,4 +1,4 @@
-/// Wrapper over a [Result] with a [`RustyAcmeError`](crate::acme::prelude::RustyAcmeError) error
+/// Wrapper over a [Result] with a [`RustyAcmeError`](crate::acme::RustyAcmeError) error
 pub type E2eIdentityResult<T> = Result<T, E2eIdentityError>;
 
 /// All e2e identity related errors
@@ -12,7 +12,7 @@ pub enum E2eIdentityError {
     JsonError(#[from] serde_json::Error),
     /// Acme error
     #[error(transparent)]
-    AcmeError(#[from] crate::acme::prelude::RustyAcmeError),
+    AcmeError(#[from] crate::acme::RustyAcmeError),
     /// Error creating the client Dpop token
     #[error(transparent)]
     JwtError(#[from] rusty_jwt_tools::prelude::RustyJwtError),

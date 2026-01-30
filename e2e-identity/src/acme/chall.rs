@@ -1,6 +1,6 @@
 use rusty_jwt_tools::prelude::*;
 
-use crate::acme::prelude::*;
+use crate::acme::*;
 
 impl RustyAcme {
     /// client id challenge request to `POST /acme/challenge/{token}`

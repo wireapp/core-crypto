@@ -134,7 +134,7 @@ use rusty_jwt_tools::{
 use zeroize::Zeroize;
 
 use crate::{
-    acme::prelude::{AcmeChallenge, AcmeIdentifier},
+    acme::{AcmeChallenge, AcmeIdentifier},
     x509_check::revocation::PkiEnvironment,
 };
 
@@ -163,7 +163,7 @@ pub mod prelude {
         },
     };
     pub use crate::{
-        acme::prelude::{
+        acme::{
             AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader, compute_raw_key_thumbprint,
         },
         x509_check::IdentityStatus,

@@ -1,6 +1,6 @@
 use rusty_jwt_tools::prelude::*;
 
-use crate::acme::prelude::*;
+use crate::acme::*;
 
 /// Represent an identifier in an ACME Order
 #[derive(Debug, Clone, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
