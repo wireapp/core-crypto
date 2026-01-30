@@ -10,7 +10,7 @@ use itertools::Itertools;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     connection::{Database, KeystoreDatabaseConnection},
-    entities::{MlsPendingMessage, MlsPendingMessagePrimaryKey, PersistedMlsGroup},
+    entities::{MlsPendingMessage, PersistedMlsGroup},
     traits::{
         BorrowPrimaryKey, Entity, EntityBase as _, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType,
         SearchableEntity,
@@ -165,10 +165,8 @@ impl KeystoreTransaction {
 
         let mut deleted_set = self.deleted.write().await;
         deleted_set.insert(
-            EntityId::from_primary_key::<MlsPendingMessage>(&MlsPendingMessagePrimaryKey::from_conversation_id(
-                conversation_id,
-            ))
-            .expect("mls pending messages are proper entities which can be parsed"),
+            EntityId::from_key::<MlsPendingMessage>(conversation_id.into())
+                .expect("mls pending messages are proper entities which can be parsed"),
         );
     }
 

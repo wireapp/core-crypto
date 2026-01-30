@@ -13,7 +13,7 @@ use crate::{
         StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment, StoredEncryptionKeyPair,
         StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
-    traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, KeyType, OwnedKeyType as _},
+    traits::{BorrowPrimaryKey, DeletableBySearchKey as _, Entity, EntityDatabaseMutation, KeyType, OwnedKeyType as _},
     transaction::dynamic_dispatch::EntityType,
 };
 
@@ -39,7 +39,7 @@ impl EntityId {
             .ok_or(CryptoKeystoreError::InvalidPrimaryKeyBytes(self.typ.collection_name()))
     }
 
-    fn from_key<E>(primary_key: Cow<'_, [u8]>) -> Option<Self>
+    pub(crate) fn from_key<E>(primary_key: Cow<'_, [u8]>) -> Option<Self>
     where
         E: Entity,
     {
@@ -98,10 +98,9 @@ impl EntityId {
             EntityType::PersistedMlsPendingGroup => {
                 PersistedMlsPendingGroup::delete(tx, &self.primary_key::<PersistedMlsPendingGroup>()?).await
             }
-            EntityType::MlsPendingMessage => {
-                let primary_key = self.primary_key::<MlsPendingMessage>()?;
-                MlsPendingMessage::delete_by_conversation_id(tx, &primary_key.foreign_id).await
-            }
+            EntityType::MlsPendingMessage => MlsPendingMessage::delete_all_matching(tx, &self.id.as_slice().into())
+                .await
+                .map(|_| false),
             EntityType::StoredE2eiEnrollment => {
                 StoredE2eiEnrollment::delete(tx, &self.primary_key::<StoredE2eiEnrollment>()?).await
             }
