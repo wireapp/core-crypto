@@ -34,14 +34,6 @@ pub enum Error {
     JsonError(#[from] serde_json::Error),
     #[error(transparent)]
     X509CertDerError(#[from] x509_cert::der::Error),
-    #[error("{context}: {upstream}")]
-    CertificateValidation {
-        context: &'static str,
-        // We the programmer know that this error type comes from the `certval` crate,
-        // but that is not in scope at this point and doesn't implement `std::error::Error`,
-        // so ¯\_(ツ)_/¯
-        upstream: String,
-    },
     #[error(transparent)]
     KeystoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
 }
