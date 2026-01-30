@@ -2,19 +2,49 @@
 
 use std::{collections::HashSet, sync::Arc};
 
+use async_lock::{RwLock, RwLockReadGuard};
 use core_crypto_keystore::{
     connection::Database,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
     traits::FetchFromDatabase,
 };
-use wire_e2e_identity::prelude::x509::revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams};
-use x509_cert::der::Decode;
+use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
+use x509_cert::der::Decode as _;
 
-use super::Result;
 use crate::{
-    KeystoreError, RecursiveError, e2e_identity::pki_env_hooks::PkiEnvironmentHooks,
-    mls_provider::PkiEnvironmentProvider,
+    acme::prelude::x509::{
+        RustyX509CheckError,
+        revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams},
+    },
+    error::E2eIdentityError,
+    pki_env_hooks::PkiEnvironmentHooks,
 };
+
+pub type Result<T> = core::result::Result<T, Error>;
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error(transparent)]
+    IdentityError(#[from] E2eIdentityError),
+    #[error(transparent)]
+    X509Error(#[from] RustyX509CheckError),
+    #[error(transparent)]
+    UrlError(#[from] url::ParseError),
+    #[error(transparent)]
+    JsonError(#[from] serde_json::Error),
+    #[error(transparent)]
+    X509CertDerError(#[from] x509_cert::der::Error),
+    #[error("{context}: {upstream}")]
+    CertificateValidation {
+        context: &'static str,
+        // We the programmer know that this error type comes from the `certval` crate,
+        // but that is not in scope at this point and doesn't implement `std::error::Error`,
+        // so ¯\_(ツ)_/¯
+        upstream: String,
+    },
+    #[error(transparent)]
+    KeystoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
+}
 
 /// New Certificate Revocation List distribution points.
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::DerefMut)]
@@ -108,18 +138,112 @@ impl PkiEnvironment {
         self.mls_pki_env_provider.is_env_setup().await
     }
 
-    pub(crate) fn mls_pki_env_provider(&self) -> PkiEnvironmentProvider {
+    pub fn mls_pki_env_provider(&self) -> PkiEnvironmentProvider {
         self.mls_pki_env_provider.clone()
     }
 
-    pub(crate) async fn update_pki_environment_provider(&self) -> Result<()> {
+    pub async fn update_pki_environment_provider(&self) -> Result<()> {
         if let Some(rjt_pki_environment) = restore_pki_env(&self.database).await? {
             self.mls_pki_env_provider.update_env(Some(rjt_pki_environment)).await;
         }
         Ok(())
     }
 
-    pub(crate) fn database(&self) -> &Database {
+    pub fn database(&self) -> &Database {
         &self.database
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct PkiEnvironmentProvider(Arc<RwLock<Option<RjtPkiEnvironment>>>);
+
+impl From<RjtPkiEnvironment> for PkiEnvironmentProvider {
+    fn from(value: RjtPkiEnvironment) -> Self {
+        Self(Arc::new(Some(value).into()))
+    }
+}
+
+impl PkiEnvironmentProvider {
+    pub async fn refresh_time_of_interest(&self) {
+        if let Some(pki) = self.0.write().await.as_mut() {
+            let _ = pki.refresh_time_of_interest();
+        }
+    }
+
+    pub async fn borrow(&self) -> RwLockReadGuard<'_, Option<RjtPkiEnvironment>> {
+        self.0.read().await
+    }
+
+    pub async fn is_env_setup(&self) -> bool {
+        self.0.read().await.is_some()
+    }
+
+    pub async fn update_env(&self, env: Option<RjtPkiEnvironment>) {
+        let mut guard = self.0.write().await;
+        *guard = env;
+    }
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl openmls_traits::authentication_service::AuthenticationServiceDelegate for PkiEnvironmentProvider {
+    async fn validate_credential<'a>(&'a self, credential: CredentialRef<'a>) -> CredentialAuthenticationStatus {
+        match credential {
+            // We assume that Basic credentials are always valid
+            CredentialRef::Basic { identity: _ } => CredentialAuthenticationStatus::Valid,
+
+            CredentialRef::X509 { certificates } => {
+                self.refresh_time_of_interest().await;
+
+                let binding = self.0.read().await;
+                let Some(pki_env) = binding.as_ref() else {
+                    // This implies that we have a Basic client without a PKI environment setup. Hence they cannot
+                    // validate X509 credentials they see. So we consider it as always valid as we
+                    // have no way to assert the validity
+                    return CredentialAuthenticationStatus::Valid;
+                };
+
+                use x509_cert::der::Decode as _;
+                let Some(cert) = certificates
+                    .first()
+                    .and_then(|cert_raw| x509_cert::Certificate::from_der(cert_raw).ok())
+                else {
+                    return CredentialAuthenticationStatus::Invalid;
+                };
+
+                if let Err(validation_error) = pki_env.validate_cert_and_revocation(&cert) {
+                    use crate::acme::x509_check::{
+                        RustyX509CheckError,
+                        reexports::certval::{Error as CertvalError, PathValidationStatus},
+                    };
+
+                    if let RustyX509CheckError::CertValError(CertvalError::PathValidation(
+                        certificate_validation_error,
+                    )) = validation_error
+                    {
+                        match certificate_validation_error {
+                            PathValidationStatus::Valid
+                            | PathValidationStatus::RevocationStatusNotAvailable
+                            | PathValidationStatus::RevocationStatusNotDetermined => {}
+                            PathValidationStatus::CertificateRevoked
+                            | PathValidationStatus::CertificateRevokedEndEntity
+                            | PathValidationStatus::CertificateRevokedIntermediateCa => {
+                                // ? Revoked credentials are A-OK. They still degrade conversations though.
+                                // return CredentialAuthenticationStatus::Revoked;
+                            }
+                            PathValidationStatus::InvalidNotAfterDate => {
+                                // ? Expired credentials are A-OK. They still degrade conversations though.
+                                // return CredentialAuthenticationStatus::Expired;
+                            }
+                            _ => return CredentialAuthenticationStatus::Invalid,
+                        }
+                    } else {
+                        return CredentialAuthenticationStatus::Unknown;
+                    }
+                }
+
+                CredentialAuthenticationStatus::Valid
+            }
+        }
     }
 }
