@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["acme","prelude"],"struct":["RustyE2eIdentity"],"type":["Json"]};
+window.SIDEBAR_ITEMS = {"mod":["acme","pki_env","pki_env_hooks","prelude"],"struct":["RustyE2eIdentity"],"type":["Json"]};
