@@ -2,7 +2,7 @@ use core_crypto_keystore::{
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
     traits::FetchFromDatabase,
 };
-use wire_e2e_identity::prelude::x509::{
+use wire_e2e_identity::x509_check::{
     extract_crl_uris, extract_expiration_from_crl,
     revocation::{PkiEnvironment, PkiEnvironmentParams},
 };

@@ -1,9 +1,8 @@
 use rusty_jwt_tools::prelude::*;
 use x509_cert::der::Decode as _;
 
-use crate::acme::{
-    error::CertificateError,
-    prelude::*,
+use crate::{
+    acme::{error::CertificateError, prelude::*},
     x509_check::{IdentityStatus, revocation::PkiEnvironment},
 };
 
@@ -164,7 +163,7 @@ pub mod tests {
     use wasm_bindgen_test::*;
 
     use super::*;
-    use crate::acme::x509_check::revocation::PkiEnvironmentParams;
+    use crate::x509_check::revocation::PkiEnvironmentParams;
 
     wasm_bindgen_test_configure!(run_in_browser);
 

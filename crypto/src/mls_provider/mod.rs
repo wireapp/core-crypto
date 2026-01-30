@@ -107,7 +107,7 @@ impl MlsCryptoProvider {
     }
 
     /// Replaces the PKI env currently in place
-    pub async fn update_pki_env(&self, pki_env: Option<wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>) {
+    pub async fn update_pki_env(&self, pki_env: Option<wire_e2e_identity::x509_check::revocation::PkiEnvironment>) {
         self.pki_env.update_env(pki_env).await
     }
 

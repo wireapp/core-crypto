@@ -5,7 +5,7 @@ use openmls::{
     group::MlsGroup,
     prelude::{Certificate, MlsCredentialType, Proposal, StagedCommit},
 };
-use wire_e2e_identity::prelude::x509::extract_crl_uris;
+use wire_e2e_identity::x509_check::extract_crl_uris;
 
 use super::{Error, Result};
 use crate::{KeystoreError, RecursiveError, e2e_identity::NewCrlDistributionPoints};

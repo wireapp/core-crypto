@@ -135,12 +135,13 @@ use zeroize::Zeroize;
 
 use crate::{
     acme::prelude::{AcmeChallenge, AcmeIdentifier},
-    prelude::x509::revocation::PkiEnvironment,
+    x509_check::revocation::PkiEnvironment,
 };
 
 pub mod acme;
 mod error;
 mod types;
+pub mod x509_check;
 
 pub mod pki_env;
 pub mod pki_env_hooks;
@@ -161,9 +162,11 @@ pub mod prelude {
             E2eiNewAcmeOrder,
         },
     };
-    pub use crate::acme::prelude::{
-        AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader, compute_raw_key_thumbprint, x509,
-        x509::IdentityStatus,
+    pub use crate::{
+        acme::prelude::{
+            AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader, compute_raw_key_thumbprint,
+        },
+        x509_check::IdentityStatus,
     };
 }
 

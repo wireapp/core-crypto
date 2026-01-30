@@ -177,7 +177,7 @@ mod alg {
 
 /// Since the acme server is a fork, verify its invariants are respected
 mod acme_server {
-    use wire_e2e_identity::acme::prelude::x509::{
+    use wire_e2e_identity::x509_check::{
         RustyX509CheckError,
         reexports::{certval, certval::PathValidationStatus},
         revocation::{PkiEnvironment, PkiEnvironmentParams},

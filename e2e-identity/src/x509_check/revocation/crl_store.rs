@@ -7,7 +7,7 @@ use certval::{CrlScope, CrlSource, ExtensionProcessing, PDVCertificate, PDVExten
 use const_oid::db::rfc5912::ID_CE_AUTHORITY_KEY_IDENTIFIER;
 use x509_cert::{crl::CertificateList, der::Encode};
 
-use crate::acme::x509_check::{
+use crate::x509_check::{
     RustyX509CheckError, RustyX509CheckResult,
     revocation::{
         crl_info::CrlInfo,

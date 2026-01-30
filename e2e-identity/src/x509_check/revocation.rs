@@ -15,7 +15,7 @@ use x509_cert::{
     ext::pkix::AuthorityKeyIdentifier,
 };
 
-use crate::acme::x509_check::{RustyX509CheckError, RustyX509CheckResult, revocation::cache::RevocationCache};
+use super::{RustyX509CheckError, RustyX509CheckResult, revocation::cache::RevocationCache};
 
 mod cache;
 mod crl_info;

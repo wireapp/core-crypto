@@ -102,7 +102,7 @@ impl<D> Session<D> {
         ciphersuite: Ciphersuite,
         ratchet_tree: RatchetTree,
         credential_type: CredentialType,
-        env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
+        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
     ) -> Result<E2eiConversationState> {
         let credentials = ratchet_tree.iter().filter_map(|n| match n {
             Some(Node::LeafNode(ln)) => Some(ln.credential()),
@@ -117,7 +117,7 @@ impl<D> Session<D> {
         ciphersuite: Ciphersuite,
         credentials: impl Iterator<Item = &'a Credential>,
         _credential_type: CredentialType,
-        env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
+        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
     ) -> E2eiConversationState {
         let mut is_e2ei = false;
         let mut state = E2eiConversationState::Verified;

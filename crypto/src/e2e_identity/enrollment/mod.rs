@@ -425,7 +425,7 @@ impl E2eiEnrollment {
     pub(crate) async fn certificate_response(
         &mut self,
         certificate_chain: String,
-        env: &wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
+        env: &wire_e2e_identity::x509_check::revocation::PkiEnvironment,
     ) -> Result<Vec<Vec<u8>>> {
         let order = self.valid_order.take().ok_or(Error::OutOfOrderEnrollment(
             "You must first call 'checkOrderResponse()'",

@@ -15,7 +15,7 @@ use rusty_jwt_tools::{
 };
 use serde_json::{Value, json};
 use url::Url;
-use wire_e2e_identity::acme::prelude::{x509::revocation::PkiEnvironment, *};
+use wire_e2e_identity::{acme::prelude::*, x509_check::revocation::PkiEnvironment};
 use x509_cert::{
     Certificate,
     der::{Decode as _, DecodePem, Encode as _, asn1::Ia5String},

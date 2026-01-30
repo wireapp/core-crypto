@@ -13,7 +13,7 @@ pub(crate) trait CredentialExt {
     fn extract_identity(
         &self,
         cs: Ciphersuite,
-        env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
+        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
     ) -> Result<WireIdentity>;
     fn extract_public_key(&self) -> Result<Option<Vec<u8>>>;
     fn is_basic(&self) -> bool;
@@ -31,7 +31,7 @@ impl CredentialExt for CredentialWithKey {
     fn extract_identity(
         &self,
         cs: Ciphersuite,
-        env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
+        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
     ) -> Result<WireIdentity> {
         match self.credential.mls_credential() {
             openmls::prelude::MlsCredentialType::X509(cert) => cert.extract_identity(cs, env),
@@ -79,7 +79,7 @@ impl CredentialExt for Credential {
     fn extract_identity(
         &self,
         _cs: Ciphersuite,
-        _env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
+        _env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
     ) -> Result<WireIdentity> {
         // This should not be called directly because one does not have the signature public key and hence
         // cannot compute the MLS thumbprint for a Basic credential.
@@ -113,7 +113,7 @@ impl CredentialExt for openmls::prelude::Certificate {
     fn extract_identity(
         &self,
         cs: Ciphersuite,
-        env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
+        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
     ) -> Result<WireIdentity> {
         let leaf = self.certificates.first().ok_or(Error::InvalidIdentity)?;
         let leaf = leaf.as_slice();

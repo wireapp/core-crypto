@@ -370,14 +370,14 @@ impl X509TestChain {
             .map(|intermediate| intermediate.certificate.clone())
             .collect();
         let crls: Vec<_> = self.crls.values().cloned().collect();
-        let params = wire_e2e_identity::prelude::x509::revocation::PkiEnvironmentParams {
+        let params = wire_e2e_identity::x509_check::revocation::PkiEnvironmentParams {
             trust_roots: &trust_roots,
             intermediates: &intermediates,
             crls: &crls,
             time_of_interest: None,
         };
 
-        let pki_env = wire_e2e_identity::prelude::x509::revocation::PkiEnvironment::init(params).unwrap();
+        let pki_env = wire_e2e_identity::x509_check::revocation::PkiEnvironment::init(params).unwrap();
         backend.update_pki_env(Some(pki_env)).await;
     }
 

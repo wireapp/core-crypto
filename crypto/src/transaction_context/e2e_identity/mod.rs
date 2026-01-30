@@ -13,7 +13,7 @@ use std::{
 };
 
 pub use error::{Error, Result};
-use wire_e2e_identity::prelude::x509::extract_crl_uris;
+use wire_e2e_identity::x509_check::extract_crl_uris;
 
 use super::TransactionContext;
 use crate::{

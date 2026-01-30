@@ -15,7 +15,7 @@ pub enum RustyAcmeError {
     JwtError(#[from] rusty_jwt_tools::prelude::RustyJwtError),
     /// Error related to various X509 processing facilities/tools/checks
     #[error(transparent)]
-    X509CheckError(#[from] crate::acme::x509_check::RustyX509CheckError),
+    X509CheckError(#[from] crate::x509_check::RustyX509CheckError),
     /// Failed mapping an ASN.1 ObjectIdentifier
     #[error(transparent)]
     OidError(#[from] x509_cert::der::oid::Error),

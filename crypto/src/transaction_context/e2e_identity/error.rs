@@ -24,7 +24,7 @@ pub enum Error {
     #[error("{0} not found")]
     NotFound(&'static str),
     #[error(transparent)]
-    X509Error(#[from] wire_e2e_identity::prelude::x509::RustyX509CheckError),
+    X509Error(#[from] wire_e2e_identity::x509_check::RustyX509CheckError),
     #[error(transparent)]
     X509CertDerError(#[from] x509_cert::der::Error),
     #[error(transparent)]

@@ -12,12 +12,12 @@ use openmls_traits::authentication_service::{CredentialAuthenticationStatus, Cre
 use x509_cert::der::Decode as _;
 
 use crate::{
-    acme::prelude::x509::{
+    error::E2eIdentityError,
+    pki_env_hooks::PkiEnvironmentHooks,
+    x509_check::{
         RustyX509CheckError,
         revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams},
     },
-    error::E2eIdentityError,
-    pki_env_hooks::PkiEnvironmentHooks,
 };
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -201,7 +201,7 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for P
                 };
 
                 if let Err(validation_error) = pki_env.validate_cert_and_revocation(&cert) {
-                    use crate::acme::x509_check::{
+                    use crate::x509_check::{
                         RustyX509CheckError,
                         reexports::certval::{Error as CertvalError, PathValidationStatus},
                     };

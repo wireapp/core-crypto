@@ -24,7 +24,7 @@ pub enum Error {
     #[error(transparent)]
     IdentityError(#[from] wire_e2e_identity::prelude::E2eIdentityError),
     #[error(transparent)]
-    X509Error(#[from] wire_e2e_identity::prelude::x509::RustyX509CheckError),
+    X509Error(#[from] wire_e2e_identity::x509_check::RustyX509CheckError),
     #[error(transparent)]
     UrlError(#[from] url::ParseError),
     #[error(transparent)]
