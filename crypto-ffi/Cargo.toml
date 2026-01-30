@@ -30,6 +30,7 @@ async-trait.workspace = true
 core-crypto-keystore.workspace = true
 core-crypto-macros.workspace = true
 core-crypto.workspace = true
+wire-e2e-identity.workspace = true
 derive_more.workspace = true
 futures-util.workspace = true
 hex.workspace = true

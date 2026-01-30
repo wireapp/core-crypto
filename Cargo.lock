@@ -1119,6 +1119,7 @@ dependencies = [
  "tls_codec",
  "uniffi",
  "web-sys",
+ "wire-e2e-identity",
 ]
 
 [[package]]
