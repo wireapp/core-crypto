@@ -107,7 +107,7 @@
 <a href=#107 id=107 data-nosnippet>107</a>    }
 <a href=#108 id=108 data-nosnippet>108</a>
 <a href=#109 id=109 data-nosnippet>109</a>    <span class="doccomment">/// Replaces the PKI env currently in place
-<a href=#110 id=110 data-nosnippet>110</a>    </span><span class="kw">pub async fn </span>update_pki_env(<span class="kw-2">&amp;</span><span class="self">self</span>, pki_env: <span class="prelude-ty">Option</span>&lt;wire_e2e_identity::prelude::x509::revocation::PkiEnvironment&gt;) {
+<a href=#110 id=110 data-nosnippet>110</a>    </span><span class="kw">pub async fn </span>update_pki_env(<span class="kw-2">&amp;</span><span class="self">self</span>, pki_env: <span class="prelude-ty">Option</span>&lt;wire_e2e_identity::x509_check::revocation::PkiEnvironment&gt;) {
 <a href=#111 id=111 data-nosnippet>111</a>        <span class="self">self</span>.pki_env.update_env(pki_env).<span class="kw">await
 <a href=#112 id=112 data-nosnippet>112</a>    </span>}
 <a href=#113 id=113 data-nosnippet>113</a>

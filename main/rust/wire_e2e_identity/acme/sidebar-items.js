@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["prelude","x509_check"],"struct":["RustyAcme"]};
+window.SIDEBAR_ITEMS = {"mod":["prelude"],"struct":["RustyAcme"]};

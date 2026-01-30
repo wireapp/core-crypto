@@ -172,7 +172,7 @@ on wire-server.</p>
 <li><code>account</code> - you got from <a href="struct.E2eiEnrollment.html#method.new_account_response" title="method core_crypto::e2e_identity::E2eiEnrollment::new_account_response">Self::new_account_response</a></li>
 <li><code>previous_nonce</code> - <code>replay-nonce</code> response header from <code>POST /acme/{provisioner-name}/order/{order-id}/finalize</code></li>
 </ul>
-</div></details></div></details></div><details class="toggle big-toggle" open><summary><h2 id="deref-methods-RustyE2eIdentity" class="section-header"><span>Methods from <a class="trait" href="https://doc.rust-lang.org/1.93.0/core/ops/deref/trait.Deref.html" title="trait core::ops::deref::Deref">Deref</a>&lt;Target = <a class="struct" href="../../wire_e2e_identity/struct.RustyE2eIdentity.html" title="struct wire_e2e_identity::RustyE2eIdentity">RustyE2eIdentity</a>&gt;</span><a href="#deref-methods-RustyE2eIdentity" class="anchor">§</a></h2></summary><div id="deref-methods-RustyE2eIdentity-1" class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.acme_directory_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#233">Source</a><h4 class="code-header">pub fn <a href="#method.acme_directory_response" class="fn">acme_directory_response</a>(
+</div></details></div></details></div><details class="toggle big-toggle" open><summary><h2 id="deref-methods-RustyE2eIdentity" class="section-header"><span>Methods from <a class="trait" href="https://doc.rust-lang.org/1.93.0/core/ops/deref/trait.Deref.html" title="trait core::ops::deref::Deref">Deref</a>&lt;Target = <a class="struct" href="../../wire_e2e_identity/struct.RustyE2eIdentity.html" title="struct wire_e2e_identity::RustyE2eIdentity">RustyE2eIdentity</a>&gt;</span><a href="#deref-methods-RustyE2eIdentity" class="anchor">§</a></h2></summary><div id="deref-methods-RustyE2eIdentity-1" class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.acme_directory_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#236">Source</a><h4 class="code-header">pub fn <a href="#method.acme_directory_response" class="fn">acme_directory_response</a>(
     &amp;self,
     directory: <a class="enum" href="https://docs.rs/serde_json/1.0.149/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.93.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../../wire_e2e_identity/acme/directory/struct.AcmeDirectory.html" title="struct wire_e2e_identity::acme::directory::AcmeDirectory">AcmeDirectory</a>, <a class="enum" href="../../wire_e2e_identity/error/enum.E2eIdentityError.html" title="enum wire_e2e_identity::error::E2eIdentityError">E2eIdentityError</a>&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>GET /acme/{provisioner-name}/directory</code>.
@@ -183,7 +183,7 @@ Use this <a href="../../wire_e2e_identity/acme/directory/struct.AcmeDirectory.ht
 <ul>
 <li><code>directory</code> - http response body</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_account_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#246-250">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_account_request" class="fn">acme_new_account_request</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_account_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#249-253">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_account_request" class="fn">acme_new_account_request</a>(
     &amp;self,
     directory: &amp;<a class="struct" href="../../wire_e2e_identity/acme/directory/struct.AcmeDirectory.html" title="struct wire_e2e_identity::acme::directory::AcmeDirectory">AcmeDirectory</a>,
     previous_nonce: <a class="struct" href="https://doc.rust-lang.org/1.93.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
@@ -195,7 +195,7 @@ Use this <a href="../../wire_e2e_identity/acme/directory/struct.AcmeDirectory.ht
 <li><code>directory</code> - you got from <a href="../../wire_e2e_identity/struct.RustyE2eIdentity.html#method.acme_directory_response" title="method wire_e2e_identity::RustyE2eIdentity::acme_directory_response">Self::acme_directory_response</a></li>
 <li><code>previous_nonce</code> - you got from calling <code>HEAD {directory.new_nonce}</code></li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_account_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#261">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_account_response" class="fn">acme_new_account_response</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_account_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#264">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_account_response" class="fn">acme_new_account_response</a>(
     &amp;self,
     account: <a class="enum" href="https://docs.rs/serde_json/1.0.149/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.93.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../../wire_e2e_identity/types/struct.E2eiAcmeAccount.html" title="struct wire_e2e_identity::types::E2eiAcmeAccount">E2eiAcmeAccount</a>, <a class="enum" href="../../wire_e2e_identity/error/enum.E2eIdentityError.html" title="enum wire_e2e_identity::error::E2eIdentityError">E2eIdentityError</a>&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/new-account</code>.</p>
@@ -204,7 +204,7 @@ Use this <a href="../../wire_e2e_identity/acme/directory/struct.AcmeDirectory.ht
 <ul>
 <li><code>account</code> - http response body</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_order_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#280-289">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_order_request" class="fn">acme_new_order_request</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_order_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#283-292">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_order_request" class="fn">acme_new_order_request</a>(
     &amp;self,
     display_name: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.93.0/std/primitive.str.html">str</a>,
     client_id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.93.0/std/primitive.str.html">str</a>,
@@ -227,7 +227,7 @@ Use this <a href="../../wire_e2e_identity/acme/directory/struct.AcmeDirectory.ht
 <li><code>account</code> - you got from <a href="../../wire_e2e_identity/struct.RustyE2eIdentity.html#method.acme_new_account_response" title="method wire_e2e_identity::RustyE2eIdentity::acme_new_account_response">Self::acme_new_account_response</a></li>
 <li><code>previous_nonce</code> - “replay-nonce” response header from <code>POST /acme/{provisioner-name}/new-account</code></li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_order_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#312">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_order_response" class="fn">acme_new_order_response</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_order_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#315">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_order_response" class="fn">acme_new_order_response</a>(
     &amp;self,
     new_order: <a class="enum" href="https://docs.rs/serde_json/1.0.149/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.93.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../../wire_e2e_identity/types/struct.E2eiNewAcmeOrder.html" title="struct wire_e2e_identity::types::E2eiNewAcmeOrder">E2eiNewAcmeOrder</a>, <a class="enum" href="../../wire_e2e_identity/error/enum.E2eIdentityError.html" title="enum wire_e2e_identity::error::E2eIdentityError">E2eIdentityError</a>&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/new-order</code>.</p>
@@ -236,7 +236,7 @@ Use this <a href="../../wire_e2e_identity/acme/directory/struct.AcmeDirectory.ht
 <ul>
 <li><code>new_order</code> - http response body</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_authz_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#330-335">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_authz_request" class="fn">acme_new_authz_request</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_authz_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#333-338">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_authz_request" class="fn">acme_new_authz_request</a>(
     &amp;self,
     url: &amp;<a class="struct" href="https://docs.rs/url/2.5.4/url/struct.Url.html" title="struct url::Url">Url</a>,
     account: &amp;<a class="struct" href="../../wire_e2e_identity/types/struct.E2eiAcmeAccount.html" title="struct wire_e2e_identity::types::E2eiAcmeAccount">E2eiAcmeAccount</a>,
@@ -250,7 +250,7 @@ Use this <a href="../../wire_e2e_identity/acme/directory/struct.AcmeDirectory.ht
 <li><code>previous_nonce</code> - “replay-nonce” response header from <code>POST /acme/{provisioner-name}/new-order</code> (or from the
 previous to this method if you are creating the second authorization)</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_authz_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#351">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_authz_response" class="fn">acme_new_authz_response</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_authz_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#354">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_authz_response" class="fn">acme_new_authz_response</a>(
     &amp;self,
     new_authz: <a class="enum" href="https://docs.rs/serde_json/1.0.149/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.93.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="../../wire_e2e_identity/types/enum.E2eiAcmeAuthorization.html" title="enum wire_e2e_identity::types::E2eiAcmeAuthorization">E2eiAcmeAuthorization</a>, <a class="enum" href="../../wire_e2e_identity/error/enum.E2eIdentityError.html" title="enum wire_e2e_identity::error::E2eIdentityError">E2eIdentityError</a>&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/authz/{authz-id}</code></p>
@@ -262,7 +262,7 @@ the other will be your <code>handle_challenge</code>.</p>
 <ul>
 <li><code>new_authz</code> - http response body</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.new_dpop_token" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#391-400">Source</a><h4 class="code-header">pub fn <a href="#method.new_dpop_token" class="fn">new_dpop_token</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.new_dpop_token" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#394-403">Source</a><h4 class="code-header">pub fn <a href="#method.new_dpop_token" class="fn">new_dpop_token</a>(
     &amp;self,
     client_id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.93.0/std/primitive.str.html">str</a>,
     display_name: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.93.0/std/primitive.str.html">str</a>,
@@ -287,7 +287,7 @@ on wire-server.</p>
 <li><code>handle</code> - user handle e.g. <code>alice.smith.qa@example.com</code> See endpoint <a href="https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce">definition</a></li>
 <li><code>expiry</code> - token expiry</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_dpop_challenge_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#434-440">Source</a><h4 class="code-header">pub fn <a href="#method.acme_dpop_challenge_request" class="fn">acme_dpop_challenge_request</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_dpop_challenge_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#437-443">Source</a><h4 class="code-header">pub fn <a href="#method.acme_dpop_challenge_request" class="fn">acme_dpop_challenge_request</a>(
     &amp;self,
     access_token: <a class="struct" href="https://doc.rust-lang.org/1.93.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
     dpop_challenge: &amp;<a class="struct" href="../../wire_e2e_identity/types/struct.E2eiAcmeChallenge.html" title="struct wire_e2e_identity::types::E2eiAcmeChallenge">E2eiAcmeChallenge</a>,
@@ -302,7 +302,7 @@ on wire-server.</p>
 <li><code>account</code> - you got from <a href="../../wire_e2e_identity/struct.RustyE2eIdentity.html#method.acme_new_account_response" title="method wire_e2e_identity::RustyE2eIdentity::acme_new_account_response">Self::acme_new_account_response</a></li>
 <li><code>previous_nonce</code> - “replay-nonce” response header from <code>POST /acme/{provisioner-name}/authz/{authz-id}</code></li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_oidc_challenge_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#463-469">Source</a><h4 class="code-header">pub fn <a href="#method.acme_oidc_challenge_request" class="fn">acme_oidc_challenge_request</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_oidc_challenge_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#466-472">Source</a><h4 class="code-header">pub fn <a href="#method.acme_oidc_challenge_request" class="fn">acme_oidc_challenge_request</a>(
     &amp;self,
     id_token: <a class="struct" href="https://doc.rust-lang.org/1.93.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
     oidc_challenge: &amp;<a class="struct" href="../../wire_e2e_identity/types/struct.E2eiAcmeChallenge.html" title="struct wire_e2e_identity::types::E2eiAcmeChallenge">E2eiAcmeChallenge</a>,
@@ -317,7 +317,7 @@ on wire-server.</p>
 <li><code>account</code> - you got from <a href="../../wire_e2e_identity/struct.RustyE2eIdentity.html#method.acme_new_account_response" title="method wire_e2e_identity::RustyE2eIdentity::acme_new_account_response">Self::acme_new_account_response</a></li>
 <li><code>previous_nonce</code> - “replay-nonce” response header from <code>POST /acme/{provisioner-name}/authz/{authz-id}</code></li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_challenge_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#489">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_challenge_response" class="fn">acme_new_challenge_response</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_challenge_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#492">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_challenge_response" class="fn">acme_new_challenge_response</a>(
     &amp;self,
     challenge: <a class="enum" href="https://docs.rs/serde_json/1.0.149/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.93.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.93.0/std/primitive.unit.html">()</a>, <a class="enum" href="../../wire_e2e_identity/error/enum.E2eIdentityError.html" title="enum wire_e2e_identity::error::E2eIdentityError">E2eIdentityError</a>&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/challenge/{challenge-id}</code>.</p>
@@ -326,7 +326,7 @@ on wire-server.</p>
 <ul>
 <li><code>challenge</code> - http response body</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_check_order_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#504-509">Source</a><h4 class="code-header">pub fn <a href="#method.acme_check_order_request" class="fn">acme_check_order_request</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_check_order_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#507-512">Source</a><h4 class="code-header">pub fn <a href="#method.acme_check_order_request" class="fn">acme_check_order_request</a>(
     &amp;self,
     order_url: <a class="struct" href="https://docs.rs/url/2.5.4/url/struct.Url.html" title="struct url::Url">Url</a>,
     account: &amp;<a class="struct" href="../../wire_e2e_identity/types/struct.E2eiAcmeAccount.html" title="struct wire_e2e_identity::types::E2eiAcmeAccount">E2eiAcmeAccount</a>,
@@ -339,7 +339,7 @@ on wire-server.</p>
 <li><code>account</code> - you got from <a href="../../wire_e2e_identity/struct.RustyE2eIdentity.html#method.acme_new_account_response" title="method wire_e2e_identity::RustyE2eIdentity::acme_new_account_response">Self::acme_new_account_response</a></li>
 <li><code>previous_nonce</code> - “replay-nonce” response header from <code>POST /acme/{provisioner-name}/challenge/{challenge-id}</code></li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_check_order_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#522">Source</a><h4 class="code-header">pub fn <a href="#method.acme_check_order_response" class="fn">acme_check_order_response</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_check_order_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#525">Source</a><h4 class="code-header">pub fn <a href="#method.acme_check_order_response" class="fn">acme_check_order_response</a>(
     &amp;self,
     order: <a class="enum" href="https://docs.rs/serde_json/1.0.149/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.93.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../../wire_e2e_identity/types/struct.E2eiAcmeOrder.html" title="struct wire_e2e_identity::types::E2eiAcmeOrder">E2eiAcmeOrder</a>, <a class="enum" href="../../wire_e2e_identity/error/enum.E2eIdentityError.html" title="enum wire_e2e_identity::error::E2eIdentityError">E2eIdentityError</a>&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/order/{order-id}</code>.</p>
@@ -348,7 +348,7 @@ on wire-server.</p>
 <ul>
 <li><code>order</code> - http response body</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_finalize_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#535-540">Source</a><h4 class="code-header">pub fn <a href="#method.acme_finalize_request" class="fn">acme_finalize_request</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_finalize_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#538-543">Source</a><h4 class="code-header">pub fn <a href="#method.acme_finalize_request" class="fn">acme_finalize_request</a>(
     &amp;self,
     order: &amp;<a class="struct" href="../../wire_e2e_identity/types/struct.E2eiAcmeOrder.html" title="struct wire_e2e_identity::types::E2eiAcmeOrder">E2eiAcmeOrder</a>,
     account: &amp;<a class="struct" href="../../wire_e2e_identity/types/struct.E2eiAcmeAccount.html" title="struct wire_e2e_identity::types::E2eiAcmeAccount">E2eiAcmeAccount</a>,
@@ -362,7 +362,7 @@ on wire-server.</p>
 <li><code>account</code> - you got from <a href="../../wire_e2e_identity/struct.RustyE2eIdentity.html#method.acme_new_account_response" title="method wire_e2e_identity::RustyE2eIdentity::acme_new_account_response">Self::acme_new_account_response</a></li>
 <li><code>previous_nonce</code> - “replay-nonce” response header from <code>POST /acme/{provisioner-name}/order/{order-id}</code></li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_finalize_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#560">Source</a><h4 class="code-header">pub fn <a href="#method.acme_finalize_response" class="fn">acme_finalize_response</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_finalize_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#563">Source</a><h4 class="code-header">pub fn <a href="#method.acme_finalize_response" class="fn">acme_finalize_response</a>(
     &amp;self,
     finalize: <a class="enum" href="https://docs.rs/serde_json/1.0.149/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.93.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../../wire_e2e_identity/types/struct.E2eiAcmeFinalize.html" title="struct wire_e2e_identity::types::E2eiAcmeFinalize">E2eiAcmeFinalize</a>, <a class="enum" href="../../wire_e2e_identity/error/enum.E2eIdentityError.html" title="enum wire_e2e_identity::error::E2eIdentityError">E2eIdentityError</a>&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/order/{order-id}/finalize</code>.</p>
@@ -371,7 +371,7 @@ on wire-server.</p>
 <ul>
 <li><code>finalize</code> - http response body</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_x509_certificate_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#573-578">Source</a><h4 class="code-header">pub fn <a href="#method.acme_x509_certificate_request" class="fn">acme_x509_certificate_request</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_x509_certificate_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#576-581">Source</a><h4 class="code-header">pub fn <a href="#method.acme_x509_certificate_request" class="fn">acme_x509_certificate_request</a>(
     &amp;self,
     finalize: <a class="struct" href="../../wire_e2e_identity/types/struct.E2eiAcmeFinalize.html" title="struct wire_e2e_identity::types::E2eiAcmeFinalize">E2eiAcmeFinalize</a>,
     account: <a class="struct" href="../../wire_e2e_identity/types/struct.E2eiAcmeAccount.html" title="struct wire_e2e_identity::types::E2eiAcmeAccount">E2eiAcmeAccount</a>,
@@ -385,11 +385,11 @@ on wire-server.</p>
 <li><code>account</code> - you got from <a href="../../wire_e2e_identity/struct.RustyE2eIdentity.html#method.acme_new_account_response" title="method wire_e2e_identity::RustyE2eIdentity::acme_new_account_response">Self::acme_new_account_response</a></li>
 <li><code>previous_nonce</code> - “replay-nonce” response header from <code>POST /acme/{provisioner-name}/order/{order-id}</code></li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_x509_certificate_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#592-597">Source</a><h4 class="code-header">pub fn <a href="#method.acme_x509_certificate_response" class="fn">acme_x509_certificate_response</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.acme_x509_certificate_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/lib.rs.html#595-600">Source</a><h4 class="code-header">pub fn <a href="#method.acme_x509_certificate_response" class="fn">acme_x509_certificate_response</a>(
     &amp;self,
     response: <a class="struct" href="https://doc.rust-lang.org/1.93.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
     order: <a class="struct" href="../../wire_e2e_identity/types/struct.E2eiAcmeOrder.html" title="struct wire_e2e_identity::types::E2eiAcmeOrder">E2eiAcmeOrder</a>,
-    env: <a class="enum" href="https://doc.rust-lang.org/1.93.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="struct" href="../../wire_e2e_identity/acme/x509_check/revocation/struct.PkiEnvironment.html" title="struct wire_e2e_identity::acme::x509_check::revocation::PkiEnvironment">PkiEnvironment</a>&gt;,
+    env: <a class="enum" href="https://doc.rust-lang.org/1.93.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="struct" href="../../wire_e2e_identity/x509_check/revocation/struct.PkiEnvironment.html" title="struct wire_e2e_identity::x509_check::revocation::PkiEnvironment">PkiEnvironment</a>&gt;,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.93.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.93.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.93.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.93.0/std/primitive.u8.html">u8</a>&gt;&gt;, <a class="enum" href="../../wire_e2e_identity/error/enum.E2eIdentityError.html" title="enum wire_e2e_identity::error::E2eIdentityError">E2eIdentityError</a>&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/certificate/{certificate-id}</code>.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2">RFC 8555 Section 7.4.2</a></p>
 <h5 id="parameters-34"><a class="doc-anchor" href="#parameters-34">§</a>Parameters</h5>

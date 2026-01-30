@@ -12,12 +12,12 @@
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>x509_cert::der::Decode <span class="kw">as _</span>;
 <a href=#13 id=13 data-nosnippet>13</a>
 <a href=#14 id=14 data-nosnippet>14</a><span class="kw">use crate</span>::{
-<a href=#15 id=15 data-nosnippet>15</a>    acme::prelude::x509::{
-<a href=#16 id=16 data-nosnippet>16</a>        RustyX509CheckError,
-<a href=#17 id=17 data-nosnippet>17</a>        revocation::{PkiEnvironment <span class="kw">as </span>RjtPkiEnvironment, PkiEnvironmentParams},
-<a href=#18 id=18 data-nosnippet>18</a>    },
-<a href=#19 id=19 data-nosnippet>19</a>    error::E2eIdentityError,
-<a href=#20 id=20 data-nosnippet>20</a>    pki_env_hooks::PkiEnvironmentHooks,
+<a href=#15 id=15 data-nosnippet>15</a>    error::E2eIdentityError,
+<a href=#16 id=16 data-nosnippet>16</a>    pki_env_hooks::PkiEnvironmentHooks,
+<a href=#17 id=17 data-nosnippet>17</a>    x509_check::{
+<a href=#18 id=18 data-nosnippet>18</a>        RustyX509CheckError,
+<a href=#19 id=19 data-nosnippet>19</a>        revocation::{PkiEnvironment <span class="kw">as </span>RjtPkiEnvironment, PkiEnvironmentParams},
+<a href=#20 id=20 data-nosnippet>20</a>    },
 <a href=#21 id=21 data-nosnippet>21</a>};
 <a href=#22 id=22 data-nosnippet>22</a>
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">pub type </span><span class="prelude-ty">Result</span>&lt;T&gt; = core::result::Result&lt;T, Error&gt;;
@@ -201,7 +201,7 @@
 <a href=#201 id=201 data-nosnippet>201</a>                };
 <a href=#202 id=202 data-nosnippet>202</a>
 <a href=#203 id=203 data-nosnippet>203</a>                <span class="kw">if let </span><span class="prelude-val">Err</span>(validation_error) = pki_env.validate_cert_and_revocation(<span class="kw-2">&amp;</span>cert) {
-<a href=#204 id=204 data-nosnippet>204</a>                    <span class="kw">use </span><span class="kw">crate</span>::acme::x509_check::{
+<a href=#204 id=204 data-nosnippet>204</a>                    <span class="kw">use </span><span class="kw">crate</span>::x509_check::{
 <a href=#205 id=205 data-nosnippet>205</a>                        RustyX509CheckError,
 <a href=#206 id=206 data-nosnippet>206</a>                        reexports::certval::{Error <span class="kw">as </span>CertvalError, PathValidationStatus},
 <a href=#207 id=207 data-nosnippet>207</a>                    };

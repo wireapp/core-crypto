@@ -15,7 +15,7 @@
 <a href=#15 id=15 data-nosnippet>15</a>    </span>JwtError(<span class="attr">#[from] </span>rusty_jwt_tools::prelude::RustyJwtError),
 <a href=#16 id=16 data-nosnippet>16</a>    <span class="doccomment">/// Error related to various X509 processing facilities/tools/checks
 <a href=#17 id=17 data-nosnippet>17</a>    </span><span class="attr">#[error(transparent)]
-<a href=#18 id=18 data-nosnippet>18</a>    </span>X509CheckError(<span class="attr">#[from] </span><span class="kw">crate</span>::acme::x509_check::RustyX509CheckError),
+<a href=#18 id=18 data-nosnippet>18</a>    </span>X509CheckError(<span class="attr">#[from] </span><span class="kw">crate</span>::x509_check::RustyX509CheckError),
 <a href=#19 id=19 data-nosnippet>19</a>    <span class="doccomment">/// Failed mapping an ASN.1 ObjectIdentifier
 <a href=#20 id=20 data-nosnippet>20</a>    </span><span class="attr">#[error(transparent)]
 <a href=#21 id=21 data-nosnippet>21</a>    </span>OidError(<span class="attr">#[from] </span>x509_cert::der::oid::Error),
