@@ -89,9 +89,9 @@
 <a href=#89 id=89 data-nosnippet>89</a>        .session()
 <a href=#90 id=90 data-nosnippet>90</a>        .<span class="kw">await
 <a href=#91 id=91 data-nosnippet>91</a>        </span>.map_err(RecursiveError::transaction(<span class="string">"Getting mls session"</span>))<span class="question-mark">?</span>;
-<a href=#92 id=92 data-nosnippet>92</a>    <span class="kw">let </span>credential = Credential::basic(ciphersuite, client_id.clone(), <span class="kw-2">&amp;</span>session.crypto_provider).map_err(
-<a href=#93 id=93 data-nosnippet>93</a>        RecursiveError::mls_credential(<span class="string">"generating basic credential for ephemeral client"</span>),
-<a href=#94 id=94 data-nosnippet>94</a>    )<span class="question-mark">?</span>;
+<a href=#92 id=92 data-nosnippet>92</a>    <span class="kw">let </span>credential = Credential::basic(ciphersuite, client_id.clone()).map_err(RecursiveError::mls_credential(
+<a href=#93 id=93 data-nosnippet>93</a>        <span class="string">"generating basic credential for ephemeral client"</span>,
+<a href=#94 id=94 data-nosnippet>94</a>    ))<span class="question-mark">?</span>;
 <a href=#95 id=95 data-nosnippet>95</a>    <span class="kw">let </span>credential_ref = tx
 <a href=#96 id=96 data-nosnippet>96</a>        .add_credential(credential)
 <a href=#97 id=97 data-nosnippet>97</a>        .<span class="kw">await
