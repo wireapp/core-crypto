@@ -6,10 +6,12 @@ use rusqlite::{Row, params};
 use crate::{
     CryptoKeystoreResult,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
-    entities::{MlsPendingMessage, count_helper, count_helper_tx, delete_helper, get_helper, load_all_helper},
+    entities::{
+        ConversationId, MlsPendingMessage, count_helper, count_helper_tx, delete_helper, get_helper, load_all_helper,
+    },
     traits::{
-        BorrowPrimaryKey, Entity, EntityBase, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, KeyType,
-        OwnedKeyType, PrimaryKey,
+        BorrowPrimaryKey, DeletableBySearchKey, Entity, EntityBase, EntityDatabaseMutation, EntityDeleteBorrowed,
+        EntityGetBorrowed, KeyType, OwnedKeyType, PrimaryKey, SearchableEntity,
     },
 };
 
@@ -83,5 +85,38 @@ impl<'a> EntityDatabaseMutation<'a> for MlsPendingMessage {
 
     async fn delete(tx: &Self::Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool> {
         panic!("cannot delete `MlsPendingMessage` by primary key as it has no distinct primary key")
+    }
+}
+
+#[async_trait]
+impl<'a> SearchableEntity<ConversationId<'a>> for MlsPendingMessage {
+    async fn find_all_matching(
+        conn: &mut Self::ConnectionType,
+        conversation_id: &ConversationId<'a>,
+    ) -> CryptoKeystoreResult<Vec<Self>> {
+        let conversation_id = *conversation_id.as_ref();
+        let conn = conn.conn().await;
+        let mut stmt = conn.prepare_cached("SELECT * FROM mls_pending_messages WHERE id = ?")?;
+        let values = stmt
+            .query_map([conversation_id], Self::from_row)?
+            .collect::<Result<_, _>>()?;
+        Ok(values)
+    }
+
+    fn matches(&self, conversation_id: &ConversationId<'a>) -> bool {
+        *conversation_id.as_ref() == self.foreign_id.as_slice()
+    }
+}
+
+#[async_trait]
+impl<'a> DeletableBySearchKey<'a, ConversationId<'a>> for MlsPendingMessage {
+    async fn delete_all_matching(
+        tx: &Self::Transaction,
+        conversation_id: &ConversationId<'a>,
+    ) -> CryptoKeystoreResult<()> {
+        // a slight misuse of this helper, but SQL doesn't care if we end up deleting N rows instead of 1
+        // with this query
+        delete_helper::<Self>(tx, "id", *conversation_id.as_ref()).await?;
+        Ok(())
     }
 }

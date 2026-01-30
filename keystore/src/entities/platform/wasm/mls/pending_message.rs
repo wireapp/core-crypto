@@ -6,10 +6,11 @@ use wasm_bindgen::JsValue;
 use crate::{
     CryptoKeystoreResult,
     connection::{KeystoreDatabaseConnection, TransactionWrapper},
-    entities::MlsPendingMessage,
+    entities::{ConversationId, MlsPendingMessage},
     traits::{
-        DecryptWithExplicitEncryptionKey as _, Decryptable, Decrypting, EncryptWithExplicitEncryptionKey as _,
-        Encrypting, EncryptionKey, Entity, EntityBase, EntityDatabaseMutation,
+        DecryptWithExplicitEncryptionKey as _, Decryptable, Decrypting, DeletableBySearchKey,
+        EncryptWithExplicitEncryptionKey as _, Encrypting, EncryptionKey, Entity, EntityBase, EntityDatabaseMutation,
+        SearchableEntity,
     },
 };
 
@@ -117,4 +118,32 @@ impl Decrypting<'static> for MlsPendingMessageDecrypt {
 
 impl Decryptable<'static> for MlsPendingMessage {
     type DecryptableFrom = MlsPendingMessageDecrypt;
+}
+
+#[async_trait(?Send)]
+impl<'a> SearchableEntity<ConversationId<'a>> for MlsPendingMessage {
+    async fn find_all_matching(
+        conn: &mut Self::ConnectionType,
+        conversation_id: &ConversationId<'a>,
+    ) -> CryptoKeystoreResult<Vec<Self>> {
+        let conversation_id = *conversation_id.as_ref();
+        let storage = conn.storage();
+        let id = JsValue::from(Uint8Array::from(conversation_id));
+        storage.get_all_with_query(Some(id.into())).await
+    }
+
+    fn matches(&self, conversation_id: &ConversationId<'a>) -> bool {
+        *conversation_id.as_ref() == self.foreign_id.as_slice()
+    }
+}
+
+#[async_trait(?Send)]
+impl<'a> DeletableBySearchKey<'a, ConversationId<'a>> for MlsPendingMessage {
+    async fn delete_all_matching(
+        tx: &Self::Transaction,
+        conversation_id: &ConversationId<'a>,
+    ) -> CryptoKeystoreResult<()> {
+        tx.delete::<Self>(*conversation_id.as_ref()).await?;
+        Ok(())
+    }
 }
