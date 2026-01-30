@@ -1,4 +1,7 @@
-use core_crypto_keystore::{entities::StoredCredential, traits::FetchFromDatabase};
+use core_crypto_keystore::{
+    entities::{CredentialFindFilters as KeystoreFindFilters, StoredCredential},
+    traits::FetchFromDatabase,
+};
 use openmls::prelude::Credential as MlsCredential;
 use tls_codec::Deserialize as _;
 
@@ -63,30 +66,30 @@ impl CredentialRef {
         } = find_filters;
 
         let partial_credentials = database
-            .load_all::<StoredCredential>()
-            .await
-            .map_err(KeystoreError::wrap("finding all credentials"))?
-            .into_iter()
-            .filter(|stored| {
-                client_id.is_none_or(|client_id| client_id.as_ref() == stored.session_id)
-                    && earliest_validity.is_none_or(|earliest_validity| earliest_validity == stored.created_at)
-                    && ciphersuite.is_none_or(|ciphersuite| u16::from(ciphersuite) == stored.ciphersuite)
-                    && public_key.is_none_or(|public_key| public_key == stored.public_key)
+            .search::<StoredCredential, _>(&KeystoreFindFilters {
+                public_key,
+                earliest_validity,
+                session_id: client_id.map(AsRef::as_ref),
+                ciphersuite: ciphersuite.map(Into::into),
+                ..Default::default()
             })
-            .map(|stored| -> Result<_> {
-                let mls_credential = MlsCredential::tls_deserialize_exact(&stored.credential)
-                    .map_err(Error::tls_deserialize("Credential"))?;
-                Ok((mls_credential, stored))
+            .await
+            .map_err(KeystoreError::wrap("searching for credentials"))?
+            .into_iter()
+            .map(|stored| {
+                MlsCredential::tls_deserialize_exact(&stored.credential)
+                    .map_err(Error::tls_deserialize("Credential"))
+                    .map(|mls_credential| (mls_credential, stored))
+            })
+            .filter(|maybe_credential| {
+                maybe_credential.as_ref().ok().is_none_or(|(mls_credential, _)| {
+                    credential_type.is_none_or(|credential_type| credential_type == mls_credential.credential_type())
+                })
             });
 
         let mut out = Vec::new();
         for partial in partial_credentials {
             let (ref mls_credential, ref stored_credential) = partial?;
-
-            if credential_type.is_some_and(|credential_type| credential_type != mls_credential.credential_type()) {
-                // credential type did not match
-                continue;
-            }
 
             if let Ok(r#type) = mls_credential.credential_type().try_into()
                 && let Ok(ciphersuite) = stored_credential.ciphersuite.try_into()
