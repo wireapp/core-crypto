@@ -202,12 +202,13 @@ mod stored_credential {
 
             // don't generate hash or public key; those are unique to a credential
             // but ciphersuite and earliest validity are fair game
+            // we could in principle do this with session id but two parameters are sufficient to demonstrate
+            // that ultimately this works
             if ciphersuite.is_some() || earliest_validity.is_some() {
                 return CredentialFindFilters {
-                    hash: None,
-                    public_key: None,
                     ciphersuite,
                     earliest_validity,
+                    ..Default::default()
                 };
             }
         }

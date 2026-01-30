@@ -182,10 +182,12 @@ impl<'a> SearchableEntity<CredentialFindFilters<'a>> for StoredCredential {
             public_key,
             ciphersuite,
             earliest_validity,
+            session_id,
         }: &CredentialFindFilters<'a>,
     ) -> bool {
         hash.is_none_or(|hash| hash == self.primary_key())
             && public_key.is_none_or(|public_key| public_key == self.public_key)
+            && session_id.is_none_or(|session_id| session_id == self.session_id)
             && ciphersuite.is_none_or(|ciphersuite| ciphersuite == self.ciphersuite)
             && earliest_validity.is_none_or(|earliest_validity| earliest_validity == self.created_at)
     }

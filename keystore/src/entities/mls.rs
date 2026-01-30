@@ -211,12 +211,14 @@ impl StoredBufferedCommit {
 ///
 /// This includes some but not all of the fields in `core_crypto::CredentialFindFilters`: those that are actually stored
 /// in the database, and do not require deserializing the `credential` field.
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Default, Clone, Copy, serde::Serialize)]
 pub struct CredentialFindFilters<'a> {
     /// Hash of public key to search for.
     pub hash: Option<Sha256Hash>,
     /// Public key to search for
     pub public_key: Option<&'a [u8]>,
+    /// Session / Client id to search for
+    pub session_id: Option<&'a [u8]>,
     /// Ciphersuite to search for
     pub ciphersuite: Option<u16>,
     /// unix timestamp (seconds) of point of earliest validity to search for
