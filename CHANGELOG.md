@@ -4,6 +4,10 @@
 
 ### Features
 
+- replaced `CoreCrypto.init(database: Database)` with class constructor `new CoreCrypto(database: Database)`
+
+  Affected platforms: web
+
 - added PKI Environment API
 
   - added `PkiEnvironment` constructed via `createPkiEnvironment(database: Database, hooks: PkiEnvironmentHooks)`
