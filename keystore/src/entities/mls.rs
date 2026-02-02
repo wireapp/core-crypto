@@ -1,4 +1,4 @@
-use zeroize::{Zeroize, ZeroizeOnDrop};
+use zeroize::Zeroize;
 
 use crate::{
     CryptoKeystoreResult, Sha256Hash,
@@ -89,59 +89,36 @@ impl<'a> KeyType for ConversationId<'a> {
 }
 
 /// [`MlsPendingMessage`]s have no distinct primary key;
-/// they must always be accessed via [`MlsPendingMessage::find_all_by_conversation_id`] and
-/// cleaned up with [`MlsPendingMessage::delete_by_conversation_id`]
+/// they must always be accessed via the [`SearchableEntity`][crate::traits::SearchableEntity] and
+/// [`DeletableBySearchKey`][crate::traits::DeletableBySearchKey] traits.
 ///
-/// However, we have to fake a primary key type in order to support
-/// `KeystoreTransaction::remove_pending_messages_by_conversation_id`. Additionally we need the same one in WASM, where
-/// it's necessary for item-level encryption.
+/// However the keystore's support of internal transactions demands a primary key:
+/// ultimately that structure boils down to `Map<CollectionName, Map<PrimaryKey, Entity>>`, so anything other
+/// than a full primary key just breaks things.
 ///
-/// This implementation is fairly inefficient and hopefully temporary. But it at least implements the correct semantics.
-#[derive(ZeroizeOnDrop)]
-pub struct MlsPendingMessagePrimaryKey {
-    pub(crate) foreign_id: Vec<u8>,
-    message: Vec<u8>,
-}
+/// We use `xxhash3` as a fast hash implementation, and take 128 bits of hash to ensure
+/// that the chance of a collision is effectively 0.
+pub struct MlsPendingMessagePrimaryKey(u128);
 
 impl From<&MlsPendingMessage> for MlsPendingMessagePrimaryKey {
     fn from(value: &MlsPendingMessage) -> Self {
-        Self {
-            foreign_id: value.foreign_id.clone(),
-            message: value.message.clone(),
-        }
+        let mut hasher = twox_hash::xxhash3_128::Hasher::new();
+        hasher.write(&value.foreign_id);
+        hasher.write(&value.message);
+        Self(hasher.finish_128())
     }
 }
 
 impl KeyType for MlsPendingMessagePrimaryKey {
     fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {
-        // run-length encoding: 32 bits of size for each field, followed by the field
-        let fields = [&self.foreign_id, &self.message];
-        let mut key = Vec::with_capacity(
-            ((u32::BITS / u8::BITS) as usize * fields.len()) + self.foreign_id.len() + self.message.len(),
-        );
-        for field in fields {
-            key.extend((field.len() as u32).to_le_bytes());
-            key.extend(field.as_slice());
-        }
-        key.into()
+        self.0.to_be_bytes().as_slice().to_owned().into()
     }
 }
 
 impl OwnedKeyType for MlsPendingMessagePrimaryKey {
     fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        // run-length decoding: 32 bits of size for each field, followed by the field
-        let (len, bytes) = bytes.split_at_checked(4)?;
-        let len = u32::from_le_bytes(len.try_into().ok()?);
-        let (foreign_id, bytes) = bytes.split_at_checked(len as _)?;
-
-        let (len, bytes) = bytes.split_at_checked(4)?;
-        let len = u32::from_le_bytes(len.try_into().ok()?);
-        let (message, bytes) = bytes.split_at_checked(len as _)?;
-
-        bytes.is_empty().then(|| Self {
-            foreign_id: foreign_id.to_owned(),
-            message: message.to_owned(),
-        })
+        let array = bytes.try_into().ok()?;
+        Some(Self(u128::from_be_bytes(array)))
     }
 }
 
