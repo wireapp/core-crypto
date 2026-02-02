@@ -105,10 +105,10 @@ export async function setup() {
         window.deliveryService = {
             async sendCommitBundle(commitBundle: CommitBundle) {
                 window._latestCommitBundle = commitBundle;
-                return "success";
+                return window.ccModule.MlsTransportResponse.Success.new();
             },
             async sendMessage() {
-                return "success";
+                return window.ccModule.MlsTransportResponse.Success.new();
             },
             async prepareForTransport(
                 secret: HistorySecret
@@ -215,7 +215,7 @@ export async function ccInit(
 
             const instance = new window.ccModule.CoreCrypto(database);
             await instance.newTransaction(async (ctx) => {
-                await ctx.mlsInitialize(clientId, window.deliveryService);
+                await ctx.mlsInit(clientId, window.deliveryService);
                 if (withCredential) {
                     await ctx.addCredential(
                         window.ccModule.credentialBasic(cipherSuite, clientId)

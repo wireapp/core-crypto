@@ -96,7 +96,9 @@ describe("core crypto errors", () => {
         browser.execute((_) => {
             const transport_override = {
                 async sendCommitBundle(_: CommitBundle) {
-                    return { abort: { reason: "just testing" } };
+                    return window.ccModule.MlsTransportResponse.Abort.new({
+                        reason: "just testing",
+                    });
                 },
             };
 
@@ -117,7 +119,9 @@ describe("core crypto errors", () => {
                     ...window.deliveryService,
                     ...{
                         async sendCommitBundle(_: CommitBundle) {
-                            return { abort: { reason: "just testing" } };
+                            return window.ccModule.MlsTransportResponse.Abort.new(
+                                { reason: "just testing" }
+                            );
                         },
                     },
                 };

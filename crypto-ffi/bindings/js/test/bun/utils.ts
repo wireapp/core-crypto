@@ -10,11 +10,11 @@ import {
     CoreCryptoLogLevel,
     CredentialType,
     DatabaseKey,
+    MlsTransportResponse,
     type HistorySecret,
     type MlsTransportData,
     type GroupInfoBundle,
     type MlsTransport,
-    type MlsTransportResponse,
     setLogger,
     setMaxLogLevel,
     initWasmModule,
@@ -44,11 +44,11 @@ class TestDeliveryService implements DeliveryService {
         commitBundle: CommitBundle
     ): Promise<MlsTransportResponse> {
         this.latestCommitBundle = commitBundle;
-        return "success";
+        return MlsTransportResponse.Success.new();
     }
 
     async sendMessage(): Promise<MlsTransportResponse> {
-        return "success";
+        return MlsTransportResponse.Success.new();
     }
 
     prepareForTransport(secret: HistorySecret): Promise<MlsTransportData> {
@@ -104,7 +104,7 @@ export async function ccInit(clientId?: ClientId): Promise<CoreCrypto> {
 
     if (clientId) {
         await cc.newTransaction(async (ctx) => {
-            await ctx.mlsInitialize(clientId, DELIVERY_SERVICE);
+            await ctx.mlsInit(clientId, DELIVERY_SERVICE);
         });
     }
 

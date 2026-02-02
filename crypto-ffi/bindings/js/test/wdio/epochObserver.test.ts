@@ -17,6 +17,7 @@ describe("epoch observer", () => {
         await ccInit(alice);
         const { length, first_id_hex } = await browser.execute(
             async (clientName, conv_id_str) => {
+                console.log("HERE");
                 const conv_id = new window.ccModule.ConversationId(
                     new TextEncoder().encode(conv_id_str).buffer
                 );
