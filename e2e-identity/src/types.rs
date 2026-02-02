@@ -1,8 +1,9 @@
-use super::Json;
 use crate::{
     acme::AcmeChallenge,
     prelude::{E2eIdentityError, E2eIdentityResult},
 };
+
+pub(crate) type Json = serde_json::Value;
 
 #[derive(
     Debug, Clone, derive_more::From, derive_more::Into, derive_more::Deref, serde::Serialize, serde::Deserialize,

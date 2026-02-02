@@ -135,8 +135,6 @@ pub mod pki_env_hooks;
 pub use e2e_identity::RustyE2eIdentity;
 pub use pki_env::{NewCrlDistributionPoints, PkiEnvironmentProvider};
 
-pub type Json = serde_json::Value;
-
 pub mod prelude {
     #[cfg(feature = "builder")]
     pub use rusty_jwt_tools::prelude::generate_jwk;

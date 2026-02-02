@@ -16,8 +16,6 @@ use crate::{
     x509_check::revocation::PkiEnvironment,
 };
 
-pub type Json = serde_json::Value;
-
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct RustyE2eIdentity {
     pub sign_alg: JwsAlgorithm,
