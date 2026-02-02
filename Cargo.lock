@@ -1054,7 +1054,7 @@ dependencies = [
  "p384",
  "p521",
  "pem",
- "proteus-traits",
+ "proteus-traits 2.1.0 (git+https://github.com/wireapp/proteus?tag=v2.1.2)",
  "proteus-wasm",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
@@ -1152,7 +1152,7 @@ dependencies = [
  "openmls_traits",
  "openmls_x509_credential",
  "postcard",
- "proteus-traits",
+ "proteus-traits 2.1.0 (git+https://github.com/wireapp/proteus?tag=v2.1.2)",
  "proteus-wasm",
  "rand 0.8.5",
  "refinery",
@@ -4261,6 +4261,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "proteus-traits"
+version = "2.1.0"
+source = "git+https://github.com/wireapp/proteus?tag=v2.1.2#0d9a2f80f0e0a71ffdd57f1924bad71e2ec52001"
+dependencies = [
+ "async-trait",
+]
+
+[[package]]
 name = "proteus-wasm"
 version = "2.1.0"
 source = "git+https://github.com/wireapp/proteus?tag=v2.1.1#b92dbc2d0c77105cae3911a7388acba05450a06d"
@@ -4275,7 +4283,7 @@ dependencies = [
  "hex",
  "hkdf",
  "hmac",
- "proteus-traits",
+ "proteus-traits 2.1.0 (git+https://github.com/wireapp/proteus?tag=v2.1.1)",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
