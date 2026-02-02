@@ -21,27 +21,6 @@ impl MlsPendingMessage {
         let message = row.get("message")?;
         Ok(Self { foreign_id, message })
     }
-
-    pub async fn find_all_by_conversation_id(
-        conn: &mut <Self as EntityBase>::ConnectionType,
-        conversation_id: &[u8],
-    ) -> CryptoKeystoreResult<Vec<Self>> {
-        let conn = conn.conn().await;
-        let mut stmt = conn.prepare_cached("SELECT * FROM mls_pending_messages WHERE id = ?")?;
-        let values = stmt
-            .query_map([conversation_id], Self::from_row)?
-            .collect::<Result<_, _>>()?;
-        Ok(values)
-    }
-
-    pub async fn delete_by_conversation_id(
-        tx: &TransactionWrapper<'_>,
-        conversation_id: &[u8],
-    ) -> CryptoKeystoreResult<bool> {
-        // a slight misuse of this helper, but SQL doesn't care if we end up deleting N rows instead of 1
-        // with this query
-        delete_helper::<Self>(tx, "id", conversation_id).await
-    }
 }
 
 impl EntityBase for MlsPendingMessage {

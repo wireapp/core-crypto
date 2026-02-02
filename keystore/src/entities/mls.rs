@@ -103,20 +103,6 @@ pub struct MlsPendingMessagePrimaryKey {
     message: Vec<u8>,
 }
 
-impl MlsPendingMessagePrimaryKey {
-    /// Construct a partial mls pending message primary key from only the conversation id.
-    ///
-    /// This does not in fact uniquely identify a single pending message--it should always uniquely
-    /// identify exactly 0 pending messages--but we have to have it so that we can search and delete
-    /// by conversation id within transactions.
-    pub(crate) fn from_conversation_id(conversation_id: impl AsRef<[u8]>) -> Self {
-        Self {
-            foreign_id: conversation_id.as_ref().to_owned(),
-            message: Vec::new(),
-        }
-    }
-}
-
 impl From<&MlsPendingMessage> for MlsPendingMessagePrimaryKey {
     fn from(value: &MlsPendingMessage) -> Self {
         Self {
