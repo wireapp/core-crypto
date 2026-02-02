@@ -9,7 +9,6 @@ $dokka.location:com.wire.crypto//buildMetadata/#/PointingToDeclaration/-core-cr
 $dokka.location:com.wire.crypto//ciphersuiteDefault/#/PointingToDeclaration/-core-crypto/com.wire.crypto/ciphersuite-default.html
 $dokka.location:com.wire.crypto//ciphersuiteFromU16/#kotlin.UShort/PointingToDeclaration/-core-crypto/com.wire.crypto/ciphersuite-from-u16.html
 $dokka.location:com.wire.crypto//coreCryptoHistoryClient/#com.wire.crypto.HistorySecret/PointingToDeclaration/-core-crypto/com.wire.crypto/core-crypto-history-client.html
-$dokka.location:com.wire.crypto//coreCryptoNew/#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/core-crypto-new.html
 $dokka.location:com.wire.crypto//createPkiEnvironment/#com.wire.crypto.PkiEnvironmentHooks#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/create-pki-environment.html
 $dokka.location:com.wire.crypto//credentialBasic/#com.wire.crypto.Ciphersuite#com.wire.crypto.ClientId/PointingToDeclaration/-core-crypto/com.wire.crypto/credential-basic.html
 $dokka.location:com.wire.crypto//inMemoryDatabase/#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/in-memory-database.html
@@ -305,6 +304,7 @@ $dokka.location:com.wire.crypto/CoreCryptoException///PointingToDeclaration/-co
 $dokka.location:com.wire.crypto/CoreCryptoFfi.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/-companion/index.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/index.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/CoreCryptoFfi/#com.sun.jna.Pointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/-core-crypto-ffi.html
+$dokka.location:com.wire.crypto/CoreCryptoFfi/CoreCryptoFfi/#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/-core-crypto-ffi.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/CoreCryptoFfi/#com.wire.crypto.NoPointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/-core-crypto-ffi.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/close.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/conversationCiphersuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/conversation-ciphersuite.html
