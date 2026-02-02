@@ -118,6 +118,14 @@
 
 ### Breaking Changes
 
+- `MlsTransportResponse` is no longer a union type. `MlsTransport` should return one of the following:
+
+  - `MlsTransportResponse.Success.new()`
+  - `MlsTransportResponse.Retry.new()`
+  - `MlsTransportResponse.Abort.new({reason: "any reason"})`
+
+  Affected platforms: web
+
 - Adjusted TypeScript error structure
 
   Affected platform: web
@@ -189,8 +197,7 @@
   ```
 
 - Renamed TypeScript wrapper functions (this should be undone after we upgrade to uniffi 0.30.0). `transaction()` ->
-  `newTransaction()`, `findCredentials()` -> `getFilteredCredentials()`, `mlsInit()` -> `mlsInitialize()`,
-  `e2eiMlsInitOnly()` -> `e2eiMlsInitializeOnly()`.
+  `newTransaction()`, `findCredentials()` -> `getFilteredCredentials()`
 
   Affected platforms: web
 
