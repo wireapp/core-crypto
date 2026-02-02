@@ -25,7 +25,8 @@ exports.load = function (app) {
                 message.includes("ProteusError.__type") ||
                 message.includes("EpochChangedReportingError.__type") ||
                 message.includes("LoggingError.__type") ||
-                message.includes("NewHistoryClientReportingError.__type"))
+                message.includes("NewHistoryClientReportingError.__type") ||
+                message.includes("MlsTransportResponse.__type"))
         ) {
             // Ignore these specific ubrn warnings
             return;
