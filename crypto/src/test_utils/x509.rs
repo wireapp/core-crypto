@@ -566,7 +566,7 @@ impl X509Certificate {
         let mut alternative_names = vec![];
         if let Some(handle) = &params.handle {
             if let Some(domain) = &params.domain {
-                let qualified_handle = wire_e2e_identity::prelude::Handle::from(handle.as_str())
+                let qualified_handle = wire_e2e_identity::Handle::from(handle.as_str())
                     .try_to_qualified(domain.as_str())
                     .unwrap();
 
@@ -577,7 +577,7 @@ impl X509Certificate {
         }
 
         if let Some(client_id) = &params.client_id {
-            let qualified_client_id = wire_e2e_identity::prelude::E2eiClientId::try_from_qualified(client_id)
+            let qualified_client_id = wire_e2e_identity::E2eiClientId::try_from_qualified(client_id)
                 .unwrap()
                 .to_uri();
 

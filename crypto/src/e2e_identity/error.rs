@@ -22,7 +22,7 @@ pub enum Error {
     #[error("No enrollment was found")]
     NotFound,
     #[error(transparent)]
-    IdentityError(#[from] wire_e2e_identity::prelude::E2eIdentityError),
+    IdentityError(#[from] wire_e2e_identity::E2eIdentityError),
     #[error(transparent)]
     X509Error(#[from] wire_e2e_identity::x509_check::RustyX509CheckError),
     #[error(transparent)]

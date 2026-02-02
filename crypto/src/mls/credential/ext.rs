@@ -1,6 +1,6 @@
 use openmls::prelude::{Credential, CredentialWithKey};
 use openmls_traits::types::{HashType, SignatureScheme};
-use wire_e2e_identity::prelude::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint};
+use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint};
 use x509_cert::{Certificate, der::Decode};
 
 use super::{Error, Result};
@@ -117,7 +117,7 @@ impl CredentialExt for openmls::prelude::Certificate {
     ) -> Result<WireIdentity> {
         let leaf = self.certificates.first().ok_or(Error::InvalidIdentity)?;
         let leaf = leaf.as_slice();
-        use wire_e2e_identity::prelude::WireIdentityReader as _;
+        use wire_e2e_identity::WireIdentityReader as _;
         let identity = leaf
             .extract_identity(env, cs.e2ei_hash_alg())
             .map_err(|_| Error::InvalidIdentity)?;
@@ -128,7 +128,7 @@ impl CredentialExt for openmls::prelude::Certificate {
 
     fn extract_public_key(&self) -> Result<Option<Vec<u8>>> {
         let leaf = self.certificates.first().ok_or(Error::InvalidIdentity)?;
-        use wire_e2e_identity::prelude::WireIdentityReader as _;
+        use wire_e2e_identity::WireIdentityReader as _;
         let pk = leaf
             .as_slice()
             .extract_public_key()

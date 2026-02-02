@@ -1,4 +1,4 @@
-use wire_e2e_identity::prelude::IdentityStatus;
+use wire_e2e_identity::IdentityStatus;
 
 /// Indicates the standalone status of a device Credential in a MLS group at a moment T.
 /// This does not represent the states where a device is not using MLS or is not using end-to-end identity

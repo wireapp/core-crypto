@@ -1,5 +1,5 @@
 use openmls_traits::types::HashType;
-use wire_e2e_identity::prelude::HashAlgorithm;
+use wire_e2e_identity::HashAlgorithm;
 
 use super::{Error, Result};
 use crate::MlsCiphersuite;

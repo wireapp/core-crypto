@@ -124,36 +124,27 @@
 //! - [RFC9449: OAuth 2.0 Demonstrating Proof of Possession (DPoP)](https://www.rfc-editor.org/rfc/rfc9449)
 //! - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 
-pub mod acme;
 mod e2e_identity;
 mod error;
 mod types;
-pub mod x509_check;
 
+pub mod acme;
 pub mod pki_env;
 pub mod pki_env_hooks;
+pub mod x509_check;
+
+pub use acme::{
+    AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader, compute_raw_key_thumbprint,
+};
 pub use e2e_identity::RustyE2eIdentity;
+pub use error::{E2eIdentityError, E2eIdentityResult};
 pub use pki_env::{NewCrlDistributionPoints, PkiEnvironmentProvider};
-
-pub mod prelude {
-    #[cfg(feature = "builder")]
-    pub use rusty_jwt_tools::prelude::generate_jwk;
-    pub use rusty_jwt_tools::prelude::{
-        ClientId as E2eiClientId, Handle, HashAlgorithm, JwsAlgorithm, RustyJwtError, parse_json_jwk,
-    };
-
-    pub use super::{
-        RustyE2eIdentity,
-        error::{E2eIdentityError, E2eIdentityResult},
-        types::{
-            E2eiAcmeAccount, E2eiAcmeAuthorization, E2eiAcmeChallenge, E2eiAcmeFinalize, E2eiAcmeOrder,
-            E2eiNewAcmeOrder,
-        },
-    };
-    pub use crate::{
-        acme::{
-            AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader, compute_raw_key_thumbprint,
-        },
-        x509_check::IdentityStatus,
-    };
-}
+#[cfg(feature = "builder")]
+pub use rusty_jwt_tools::prelude::generate_jwk;
+pub use rusty_jwt_tools::prelude::{
+    ClientId as E2eiClientId, Handle, HashAlgorithm, JwsAlgorithm, RustyJwtError, parse_json_jwk,
+};
+pub use types::{
+    E2eiAcmeAccount, E2eiAcmeAuthorization, E2eiAcmeChallenge, E2eiAcmeFinalize, E2eiAcmeOrder, E2eiNewAcmeOrder,
+};
+pub use x509_check::IdentityStatus;

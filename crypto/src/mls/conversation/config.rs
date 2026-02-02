@@ -13,7 +13,7 @@ use openmls_traits::{
     types::{Ciphersuite as MlsCiphersuite, SignatureScheme},
 };
 use serde::{Deserialize, Serialize};
-use wire_e2e_identity::prelude::parse_json_jwk;
+use wire_e2e_identity::parse_json_jwk;
 
 use super::Result;
 use crate::{Ciphersuite, MlsError, RecursiveError, mls_provider::MlsCryptoProvider};
@@ -128,7 +128,7 @@ impl MlsConversationConfiguration {
     /// This expects a raw json serialized JWK. It works with any Signature scheme
     pub(crate) fn parse_external_sender(jwk: &[u8]) -> Result<ExternalSender> {
         let pk = parse_json_jwk(jwk)
-            .map_err(wire_e2e_identity::prelude::E2eIdentityError::from)
+            .map_err(wire_e2e_identity::E2eIdentityError::from)
             .map_err(crate::e2e_identity::Error::from)
             .map_err(RecursiveError::e2e_identity("parsing jwk"))?;
         Ok(ExternalSender::new(
@@ -213,7 +213,7 @@ mod tests {
         crypto::OpenMlsCrypto,
         types::{SignatureScheme, VerifiableCiphersuite},
     };
-    use wire_e2e_identity::prelude::JwsAlgorithm;
+    use wire_e2e_identity::JwsAlgorithm;
 
     use crate::{MlsConversationConfiguration, mls::conversation::ConversationWithMls as _, test_utils::*};
 
@@ -317,7 +317,7 @@ mod tests {
                 SignatureScheme::ED448 => unreachable!(),
             };
 
-            let jwk = wire_e2e_identity::prelude::generate_jwk(alg);
+            let jwk = wire_e2e_identity::generate_jwk(alg);
             assert!(
                 case.cfg
                     .clone()

@@ -1,6 +1,6 @@
 use openmls_basic_credential::SignatureKeyPair as OpenMlsSignatureKeyPair;
 use openmls_traits::types::{Ciphersuite as MlsCiphersuite, SignatureScheme};
-use wire_e2e_identity::prelude::JwsAlgorithm;
+use wire_e2e_identity::JwsAlgorithm;
 use zeroize::Zeroize;
 
 use super::error::*;

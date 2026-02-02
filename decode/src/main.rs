@@ -14,7 +14,7 @@ use proteus_wasm::{
     keys::{PreKeyBundle, Signature},
     message::{CipherMessage, Envelope, Message, PreKeyMessage},
 };
-use wire_e2e_identity::prelude::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint};
+use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint};
 
 #[derive(Debug)]
 #[allow(dead_code)]

@@ -450,9 +450,9 @@ mod tests {
     }
 
     /// In order to be WASM-compatible
-    // pub fn now() -> wire_e2e_identity::prelude::OffsetDateTime {
+    // pub fn now() -> wire_e2e_identity::OffsetDateTime {
     //     let now_since_epoch = now_std().as_secs() as i64;
-    //     wire_e2e_identity::prelude::OffsetDateTime::from_unix_timestamp(now_since_epoch).unwrap()
+    //     wire_e2e_identity::OffsetDateTime::from_unix_timestamp(now_since_epoch).unwrap()
     // }
     pub(crate) fn now_std() -> std::time::Duration {
         let now = web_time::SystemTime::now();

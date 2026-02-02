@@ -7,7 +7,7 @@ use core_crypto_keystore::{
 use openmls::prelude::{Credential as MlsCredential, ExternalSender, HpkePublicKey, KeyPackage, SignaturePublicKey};
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto};
 use tls_codec::Serialize;
-use wire_e2e_identity::prelude::WireIdentityReader;
+use wire_e2e_identity::WireIdentityReader;
 use x509_cert::der::Encode;
 
 use super::{
@@ -211,11 +211,11 @@ impl SessionContext {
         Ok(RotateAllResult { commits })
     }
 
-    pub async fn get_e2ei_client_id(&self) -> wire_e2e_identity::prelude::E2eiClientId {
+    pub async fn get_e2ei_client_id(&self) -> wire_e2e_identity::E2eiClientId {
         let cid = self.get_client_id().await;
         let cid = std::str::from_utf8(&cid.0).unwrap();
         let cid: String = cid.parse::<QualifiedE2eiClientId>().unwrap().try_into().unwrap();
-        wire_e2e_identity::prelude::E2eiClientId::try_from_qualified(&cid).unwrap()
+        wire_e2e_identity::E2eiClientId::try_from_qualified(&cid).unwrap()
     }
 
     pub fn get_intermediate_ca(&self) -> Option<&X509Certificate> {

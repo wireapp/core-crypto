@@ -4,7 +4,7 @@ use openmls::{
     treesync::RatchetTree,
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
-use wire_e2e_identity::prelude::WireIdentityReader as _;
+use wire_e2e_identity::WireIdentityReader as _;
 
 use super::{Result, Session};
 use crate::{

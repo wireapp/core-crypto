@@ -4,7 +4,7 @@ pub mod test_utils;
 
 use core_crypto_keystore::CryptoKeystoreMls;
 use openmls_traits::random::OpenMlsRand as _;
-use wire_e2e_identity::{RustyE2eIdentity, prelude::E2eiAcmeAuthorization};
+use wire_e2e_identity::{E2eiAcmeAuthorization, RustyE2eIdentity};
 use zeroize::Zeroize as _;
 
 use super::{EnrollmentHandle, Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
@@ -21,11 +21,11 @@ pub struct E2eiEnrollment {
     pub(super) team: Option<String>,
     expiry: core::time::Duration,
     directory: Option<types::E2eiAcmeDirectory>,
-    account: Option<wire_e2e_identity::prelude::E2eiAcmeAccount>,
+    account: Option<wire_e2e_identity::E2eiAcmeAccount>,
     user_authz: Option<E2eiAcmeAuthorization>,
     device_authz: Option<E2eiAcmeAuthorization>,
-    valid_order: Option<wire_e2e_identity::prelude::E2eiAcmeOrder>,
-    finalize: Option<wire_e2e_identity::prelude::E2eiAcmeFinalize>,
+    valid_order: Option<wire_e2e_identity::E2eiAcmeOrder>,
+    finalize: Option<wire_e2e_identity::E2eiAcmeFinalize>,
     pub(super) ciphersuite: Ciphersuite,
     has_called_new_oidc_challenge_request: bool,
 }

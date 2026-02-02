@@ -6,7 +6,7 @@ use derive_more::derive;
 use openmls::prelude::Credential as MlsCredential;
 use openmls_traits::types::SignatureScheme;
 use openmls_x509_credential::CertificateKeyPair;
-use wire_e2e_identity::prelude::{HashAlgorithm, WireIdentityReader};
+use wire_e2e_identity::{HashAlgorithm, WireIdentityReader};
 #[cfg(test)]
 use x509_cert::der::Encode;
 use zeroize::Zeroize;
@@ -130,7 +130,7 @@ fn new_rand_client(domain: Option<String>) -> (String, String) {
     };
     let user_id = uuid::Uuid::new_v4().to_string();
     let domain = domain.unwrap_or_else(|| format!("{}.com", rand_str(6)));
-    let client_id = wire_e2e_identity::prelude::E2eiClientId::try_new(user_id, rand::random::<u64>(), &domain)
+    let client_id = wire_e2e_identity::E2eiClientId::try_new(user_id, rand::random::<u64>(), &domain)
         .unwrap()
         .to_qualified();
     (client_id, domain)

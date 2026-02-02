@@ -46,10 +46,10 @@ pub struct X509Identity {
     pub not_after: u64,
 }
 
-impl<'a> TryFrom<(wire_e2e_identity::prelude::WireIdentity, &'a [u8])> for WireIdentity {
+impl<'a> TryFrom<(wire_e2e_identity::WireIdentity, &'a [u8])> for WireIdentity {
     type Error = Error;
 
-    fn try_from((i, cert): (wire_e2e_identity::prelude::WireIdentity, &'a [u8])) -> Result<Self> {
+    fn try_from((i, cert): (wire_e2e_identity::WireIdentity, &'a [u8])) -> Result<Self> {
         use x509_cert::der::Decode as _;
         let document = x509_cert::der::Document::from_der(cert)?;
         let certificate = document.to_pem("CERTIFICATE", LineEnding::LF)?;
