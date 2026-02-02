@@ -62,7 +62,7 @@ describe("PKI environment", () => {
                 new window.ccModule.DatabaseKey(key.buffer)
             );
 
-            const cc = await window.ccModule.CoreCrypto.init(database);
+            const cc = new window.ccModule.CoreCrypto(database);
             window.cc = new Map();
             window.cc.set(alice, cc);
             const pki_env = await cc.getPkiEnvironment();

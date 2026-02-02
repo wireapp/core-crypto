@@ -100,7 +100,7 @@ export async function ccInit(clientId?: ClientId): Promise<CoreCrypto> {
     const key = new DatabaseKey(keyBytes.buffer);
     const db = await inMemoryDatabase(key);
 
-    const cc = await CoreCrypto.init(db);
+    const cc = new CoreCrypto(db);
 
     if (clientId) {
         await cc.newTransaction(async (ctx) => {
@@ -248,7 +248,7 @@ export async function proteusInit(clientName: string): Promise<CoreCrypto> {
         new DatabaseKey(key.buffer)
     );
 
-    const instance = await CoreCrypto.init(database);
+    const instance = new CoreCrypto(database);
     await instance.newTransaction(async (ctx) => {
         await ctx.proteusInit();
     });

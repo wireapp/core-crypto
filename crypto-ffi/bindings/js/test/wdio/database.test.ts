@@ -79,7 +79,7 @@ describe("database", () => {
                 key
             );
 
-            let cc = await window.ccModule.CoreCrypto.init(database);
+            let cc = new window.ccModule.CoreCrypto(database);
             const clientId = makeClientId();
             cc.newTransaction(async (ctx) => {
                 await ctx.mlsInitialize(makeClientId(), window.deliveryService);
@@ -115,7 +115,7 @@ describe("database", () => {
                 newKey
             );
 
-            cc = await window.ccModule.CoreCrypto.init(newDatabase);
+            cc = new window.ccModule.CoreCrypto(newDatabase);
             const pubkey2 = await cc.newTransaction(async (ctx) => {
                 await ctx.mlsInitialize(clientId, window.deliveryService);
                 return (
@@ -196,7 +196,7 @@ describe("database", () => {
                 new_key
             );
 
-            const instance = await window.ccModule.CoreCrypto.init(database);
+            const instance = new window.ccModule.CoreCrypto(database);
             const epoch = await instance.newTransaction(async (ctx) => {
                 return await ctx.conversationEpoch(
                     new window.ccModule.ConversationId(
