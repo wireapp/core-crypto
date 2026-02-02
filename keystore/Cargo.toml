@@ -42,6 +42,10 @@ log = { workspace = true }
 proteus-traits = { workspace = true, optional = true }
 itertools.workspace = true
 aes-gcm = "0.10"
+twox-hash = { version = "2.1.2", default-features = false, features = [
+  "alloc",
+  "xxhash3_128",
+] }
 
 [target.'cfg(target_os = "ios")'.dependencies]
 security-framework = "3.5"
