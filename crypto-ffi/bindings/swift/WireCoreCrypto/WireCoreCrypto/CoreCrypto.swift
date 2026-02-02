@@ -79,11 +79,8 @@ public final class CoreCrypto: CoreCryptoProtocol {
     /// - Parameter keystorePath: path to the encrypted key store
     /// - Parameter key: secret key to unlock the encrypted key store
     ///
-    public convenience init(database: Database) async throws {
-        let coreCrypto =
-            try await WireCoreCryptoUniffi.coreCryptoNew(
-                database: database
-            )
+    public convenience init(database: Database) throws {
+        let coreCrypto = try CoreCryptoFfi(database: database)
         self.init(coreCrypto, database: database)
     }
 

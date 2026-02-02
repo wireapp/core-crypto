@@ -33,7 +33,7 @@ export class CoreCryptoContext extends CoreCryptoContextFfi {
     }
 
     /**
-     * Use this after {@link CoreCrypto.init} when you have a clientId. It initializes MLS.
+     * Use this after initializing {@link CoreCrypto} when you have a clientId. It initializes MLS.
      * Registers the transport callbacks for core crypto to give it access to backend endpoints for sending
      * a commit bundle or a message, respectively.
      *

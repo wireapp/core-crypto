@@ -20,10 +20,10 @@ fun CoreCryptoFfi.lift() = CoreCrypto(this)
 class CoreCrypto(private val cc: CoreCryptoFfi) {
     companion object {
         /** Opens a core crypto client with the specified database, previously instantiated via [openDatabase].  */
-        suspend operator fun invoke(
+        operator fun invoke(
             database: Database,
         ) =
-            CoreCrypto(coreCryptoNew(database))
+            CoreCrypto(CoreCryptoFfi(database))
 
         /**
          * Instantiate a history client.
