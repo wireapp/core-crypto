@@ -340,7 +340,7 @@
 <a href=#340 id=340 data-nosnippet>340</a>        conversation_id: <span class="kw-2">&amp;</span>[u8],
 <a href=#341 id=341 data-nosnippet>341</a>    ) -&gt; CryptoKeystoreResult&lt;Vec&lt;MlsPendingMessage&gt;&gt; {
 <a href=#342 id=342 data-nosnippet>342</a>        <span class="kw">let </span><span class="kw-2">mut </span>conn = <span class="self">self</span>.conn().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#343 id=343 data-nosnippet>343</a>        <span class="kw">let </span>persisted_records = MlsPendingMessage::find_all_by_conversation_id(<span class="kw-2">&amp;mut </span>conn, conversation_id).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#343 id=343 data-nosnippet>343</a>        <span class="kw">let </span>persisted_records = MlsPendingMessage::find_all_matching(<span class="kw-2">&amp;mut </span>conn, <span class="kw-2">&amp;</span>conversation_id.into()).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#344 id=344 data-nosnippet>344</a>
 <a href=#345 id=345 data-nosnippet>345</a>        <span class="kw">let </span>transaction_guard = <span class="self">self</span>.transaction.lock().<span class="kw">await</span>;
 <a href=#346 id=346 data-nosnippet>346</a>        <span class="kw">let </span><span class="prelude-val">Some</span>(transaction) = transaction_guard.as_ref() <span class="kw">else </span>{
