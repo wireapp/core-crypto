@@ -13,7 +13,7 @@
 <a href=#13 id=13 data-nosnippet>13</a>    types::{Ciphersuite <span class="kw">as </span>MlsCiphersuite, SignatureScheme},
 <a href=#14 id=14 data-nosnippet>14</a>};
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span>serde::{Deserialize, Serialize};
-<a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span>wire_e2e_identity::prelude::parse_json_jwk;
+<a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span>wire_e2e_identity::parse_json_jwk;
 <a href=#17 id=17 data-nosnippet>17</a>
 <a href=#18 id=18 data-nosnippet>18</a><span class="kw">use </span><span class="kw">super</span>::Result;
 <a href=#19 id=19 data-nosnippet>19</a><span class="kw">use crate</span>::{Ciphersuite, MlsError, RecursiveError, mls_provider::MlsCryptoProvider};
@@ -128,7 +128,7 @@
 <a href=#128 id=128 data-nosnippet>128</a>    <span class="doccomment">/// This expects a raw json serialized JWK. It works with any Signature scheme
 <a href=#129 id=129 data-nosnippet>129</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>parse_external_sender(jwk: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;ExternalSender&gt; {
 <a href=#130 id=130 data-nosnippet>130</a>        <span class="kw">let </span>pk = parse_json_jwk(jwk)
-<a href=#131 id=131 data-nosnippet>131</a>            .map_err(wire_e2e_identity::prelude::E2eIdentityError::from)
+<a href=#131 id=131 data-nosnippet>131</a>            .map_err(wire_e2e_identity::E2eIdentityError::from)
 <a href=#132 id=132 data-nosnippet>132</a>            .map_err(<span class="kw">crate</span>::e2e_identity::Error::from)
 <a href=#133 id=133 data-nosnippet>133</a>            .map_err(RecursiveError::e2e_identity(<span class="string">"parsing jwk"</span>))<span class="question-mark">?</span>;
 <a href=#134 id=134 data-nosnippet>134</a>        <span class="prelude-val">Ok</span>(ExternalSender::new(
@@ -213,7 +213,7 @@
 <a href=#213 id=213 data-nosnippet>213</a>        crypto::OpenMlsCrypto,
 <a href=#214 id=214 data-nosnippet>214</a>        types::{SignatureScheme, VerifiableCiphersuite},
 <a href=#215 id=215 data-nosnippet>215</a>    };
-<a href=#216 id=216 data-nosnippet>216</a>    <span class="kw">use </span>wire_e2e_identity::prelude::JwsAlgorithm;
+<a href=#216 id=216 data-nosnippet>216</a>    <span class="kw">use </span>wire_e2e_identity::JwsAlgorithm;
 <a href=#217 id=217 data-nosnippet>217</a>
 <a href=#218 id=218 data-nosnippet>218</a>    <span class="kw">use crate</span>::{MlsConversationConfiguration, mls::conversation::ConversationWithMls <span class="kw">as _</span>, test_utils::<span class="kw-2">*</span>};
 <a href=#219 id=219 data-nosnippet>219</a>
@@ -317,7 +317,7 @@
 <a href=#317 id=317 data-nosnippet>317</a>                SignatureScheme::ED448 =&gt; <span class="macro">unreachable!</span>(),
 <a href=#318 id=318 data-nosnippet>318</a>            };
 <a href=#319 id=319 data-nosnippet>319</a>
-<a href=#320 id=320 data-nosnippet>320</a>            <span class="kw">let </span>jwk = wire_e2e_identity::prelude::generate_jwk(alg);
+<a href=#320 id=320 data-nosnippet>320</a>            <span class="kw">let </span>jwk = wire_e2e_identity::generate_jwk(alg);
 <a href=#321 id=321 data-nosnippet>321</a>            <span class="macro">assert!</span>(
 <a href=#322 id=322 data-nosnippet>322</a>                case.cfg
 <a href=#323 id=323 data-nosnippet>323</a>                    .clone()

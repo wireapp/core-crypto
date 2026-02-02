@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>core_crypto_keystore::CryptoKeystoreMls;
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span>openmls_traits::random::OpenMlsRand <span class="kw">as _</span>;
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>wire_e2e_identity::{RustyE2eIdentity, prelude::E2eiAcmeAuthorization};
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>wire_e2e_identity::{E2eiAcmeAuthorization, RustyE2eIdentity};
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>zeroize::Zeroize <span class="kw">as _</span>;
 <a href=#9 id=9 data-nosnippet>9</a>
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use super</span>::{EnrollmentHandle, Error, Json, <span class="prelude-ty">Result</span>, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
@@ -21,11 +21,11 @@
 <a href=#21 id=21 data-nosnippet>21</a>    <span class="kw">pub</span>(<span class="kw">super</span>) team: <span class="prelude-ty">Option</span>&lt;String&gt;,
 <a href=#22 id=22 data-nosnippet>22</a>    expiry: core::time::Duration,
 <a href=#23 id=23 data-nosnippet>23</a>    directory: <span class="prelude-ty">Option</span>&lt;types::E2eiAcmeDirectory&gt;,
-<a href=#24 id=24 data-nosnippet>24</a>    account: <span class="prelude-ty">Option</span>&lt;wire_e2e_identity::prelude::E2eiAcmeAccount&gt;,
+<a href=#24 id=24 data-nosnippet>24</a>    account: <span class="prelude-ty">Option</span>&lt;wire_e2e_identity::E2eiAcmeAccount&gt;,
 <a href=#25 id=25 data-nosnippet>25</a>    user_authz: <span class="prelude-ty">Option</span>&lt;E2eiAcmeAuthorization&gt;,
 <a href=#26 id=26 data-nosnippet>26</a>    device_authz: <span class="prelude-ty">Option</span>&lt;E2eiAcmeAuthorization&gt;,
-<a href=#27 id=27 data-nosnippet>27</a>    valid_order: <span class="prelude-ty">Option</span>&lt;wire_e2e_identity::prelude::E2eiAcmeOrder&gt;,
-<a href=#28 id=28 data-nosnippet>28</a>    finalize: <span class="prelude-ty">Option</span>&lt;wire_e2e_identity::prelude::E2eiAcmeFinalize&gt;,
+<a href=#27 id=27 data-nosnippet>27</a>    valid_order: <span class="prelude-ty">Option</span>&lt;wire_e2e_identity::E2eiAcmeOrder&gt;,
+<a href=#28 id=28 data-nosnippet>28</a>    finalize: <span class="prelude-ty">Option</span>&lt;wire_e2e_identity::E2eiAcmeFinalize&gt;,
 <a href=#29 id=29 data-nosnippet>29</a>    <span class="kw">pub</span>(<span class="kw">super</span>) ciphersuite: Ciphersuite,
 <a href=#30 id=30 data-nosnippet>30</a>    has_called_new_oidc_challenge_request: bool,
 <a href=#31 id=31 data-nosnippet>31</a>}
