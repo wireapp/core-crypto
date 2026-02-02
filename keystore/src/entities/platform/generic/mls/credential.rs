@@ -5,7 +5,7 @@ use std::{
 };
 
 use async_trait::async_trait;
-use rusqlite::{OptionalExtension as _, Row, Transaction, named_params, params};
+use rusqlite::{OptionalExtension as _, Row, Transaction, named_params};
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash,
@@ -157,16 +157,24 @@ impl<'a> EntityDatabaseMutation<'a> for StoredCredential {
                 created_at,
                 ciphersuite,
                 private_key
-            ) VALUES (?, ?, ?, ?, datetime(?, 'unixepoch'), ?, ?)",
+            ) VALUES (
+                :public_key_sha256,
+                :public_key,
+                :session_id,
+                :credential,
+                datetime(:created_at, 'unixepoch'),
+                :ciphersuite,
+                :private_key
+            )",
         )?;
-        stmt.execute(params![
-            self.primary_key(),
-            self.public_key,
-            self.session_id,
-            self.credential,
-            self.created_at,
-            self.ciphersuite,
-            self.private_key,
+        stmt.execute(named_params![
+            ":public_key_sha256": self.primary_key(),
+            ":public_key": self.public_key,
+            ":session_id": self.session_id,
+            ":credential": self.credential,
+            ":created_at": self.created_at,
+            ":ciphersuite": self.ciphersuite,
+            ":private_key": self.private_key,
         ])?;
 
         Ok(())
