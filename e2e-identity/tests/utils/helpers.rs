@@ -3,7 +3,7 @@ use itertools::Itertools;
 
 use crate::utils::TestResult;
 
-pub trait ClientHelper {
+pub(crate) trait ClientHelper {
     fn acme_req<T: serde::Serialize>(&self, url: &url::Url, body: &T) -> TestResult<reqwest::Request>;
 }
 
@@ -14,7 +14,7 @@ impl ClientHelper for reqwest::Client {
     }
 }
 
-pub trait RespHelper {
+pub(crate) trait RespHelper {
     fn replay_nonce(&self) -> String;
     fn location_url(&self) -> url::Url;
 }
@@ -37,7 +37,7 @@ impl RespHelper for reqwest::Response {
     }
 }
 
-pub trait ReqHelper {
+pub(crate) trait ReqHelper {
     fn content_type_jose(self) -> Self;
 }
 
@@ -47,7 +47,7 @@ impl ReqHelper for reqwest::RequestBuilder {
     }
 }
 
-pub trait AcmeAsserter {
+pub(crate) trait AcmeAsserter {
     fn expect_status(&mut self, status: http::status::StatusCode) -> &mut Self;
     fn expect_status_success(&mut self) -> &mut Self;
     fn expect_header_present(&mut self, name: impl AsHeaderName) -> &mut Self;

@@ -26,6 +26,7 @@ impl Credential {
 /// Generate a basic credential.
 ///
 /// The result is independent of any client instance and the database; it lives in memory only.
+#[cfg_attr(target_family = "wasm", expect(unreachable_pub))]
 #[uniffi::export]
 pub fn credential_basic(ciphersuite: Ciphersuite, client_id: &Arc<ClientId>) -> CoreCryptoResult<Credential> {
     Credential::basic_impl(ciphersuite, client_id)

@@ -19,8 +19,8 @@ const WIRE_SERVICE_NAME: &str = "wire.com";
 //
 // SAFETY: we promise that these symbols will appear when we link this
 unsafe extern "C" {
-    pub static kSecAttrAccessibleAfterFirstUnlock: CFStringRef;
-    pub static kSecAttrAccessible: CFStringRef;
+    pub(crate) static kSecAttrAccessibleAfterFirstUnlock: CFStringRef;
+    pub(crate) static kSecAttrAccessible: CFStringRef;
 }
 
 macro_rules! wrap_under_get_rule {
@@ -46,7 +46,7 @@ macro_rules! wrap_under_get_rule {
 // and when it does so, it treats this file "specially" and avoids killing the app
 // when doing background work
 // See more: https://github.com/sqlcipher/sqlcipher/issues/255
-pub fn handle_ios_wal_compat(conn: &rusqlite::Connection, path: &str) -> CryptoKeystoreResult<()> {
+pub(crate) fn handle_ios_wal_compat(conn: &rusqlite::Connection, path: &str) -> CryptoKeystoreResult<()> {
     let digest = sha2::Sha256::digest(path);
     let keychain_key = format!("keystore_salt_{}", hex::encode(digest));
 

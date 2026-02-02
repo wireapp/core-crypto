@@ -3,38 +3,38 @@
 use rusty_jwt_tools::prelude::ClientId;
 
 #[cfg(not(target_family = "wasm"))]
-pub mod cfg;
+pub(crate) mod cfg;
 #[cfg(not(target_family = "wasm"))]
-pub mod ctx;
+pub(crate) mod ctx;
 #[cfg(not(target_family = "wasm"))]
-pub mod display;
+pub(crate) mod display;
 #[cfg(not(target_family = "wasm"))]
-pub mod fmk;
+pub(crate) mod fmk;
 #[cfg(not(target_family = "wasm"))]
-pub mod helpers;
+pub(crate) mod helpers;
 #[cfg(not(target_family = "wasm"))]
-pub mod idp;
-pub mod keys;
+pub(crate) mod idp;
+pub(crate) mod keys;
 #[cfg(not(target_family = "wasm"))]
-pub mod stepca;
+pub(crate) mod stepca;
 
 /// Container network name.
-pub const NETWORK: &str = "wire";
+pub(crate) const NETWORK: &str = "wire";
 
 /// Container shared memory size in bytes. By default Docker allocates 64MB.
-pub const SHM: u64 = 8 * 1000 * 1000; // 8MB
+pub(crate) const SHM: u64 = 8 * 1000 * 1000; // 8MB
 
 pub(crate) fn rand_str(size: usize) -> String {
     use rand::distributions::{Alphanumeric, DistString};
     Alphanumeric.sample_string(&mut rand::thread_rng(), size)
 }
 
-pub fn rand_base64_str(size: usize) -> String {
+pub(crate) fn rand_base64_str(size: usize) -> String {
     use base64::Engine as _;
     base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(rand_str(size))
 }
 
-pub fn rand_client_id(device_id: Option<u64>) -> ClientId {
+pub(crate) fn rand_client_id(device_id: Option<u64>) -> ClientId {
     let device_id = device_id.unwrap_or_else(rand::random::<u64>);
     ClientId::try_from_raw_parts(
         uuid::Uuid::new_v4().as_ref(),
@@ -44,10 +44,10 @@ pub fn rand_client_id(device_id: Option<u64>) -> ClientId {
     .unwrap()
 }
 
-pub type TestResult<T> = Result<T, TestError>;
+pub(crate) type TestResult<T> = Result<T, TestError>;
 
 #[derive(Debug, thiserror::Error)]
-pub enum TestError {
+pub(crate) enum TestError {
     #[error(transparent)]
     Acme(#[from] wire_e2e_identity::acme::RustyAcmeError),
     #[error(transparent)]

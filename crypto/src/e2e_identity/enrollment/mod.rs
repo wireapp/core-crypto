@@ -1,6 +1,6 @@
 mod crypto;
 #[cfg(test)]
-pub mod test_utils;
+pub(crate) mod test_utils;
 
 use core_crypto_keystore::CryptoKeystoreMls;
 use openmls_traits::random::OpenMlsRand as _;

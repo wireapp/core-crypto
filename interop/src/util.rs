@@ -66,7 +66,7 @@ impl RunningProcess {
 }
 
 #[async_trait::async_trait]
-pub trait MlsTransportTestExt: MlsTransport {
+pub(crate) trait MlsTransportTestExt: MlsTransport {
     async fn latest_commit_bundle(&self) -> MlsCommitBundle;
     async fn latest_welcome_message(&self) -> MlsMessageOut {
         self.latest_commit_bundle().await.welcome.unwrap().clone()
@@ -74,7 +74,7 @@ pub trait MlsTransportTestExt: MlsTransport {
 }
 
 #[derive(Debug, Default)]
-pub struct MlsTransportSuccessProvider {
+pub(crate) struct MlsTransportSuccessProvider {
     latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
     latest_message: RwLock<Option<Vec<u8>>>,
 }

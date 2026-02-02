@@ -152,7 +152,7 @@ pub enum AuthzStatus {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use serde_json::json;
     use wasm_bindgen_test::*;
 

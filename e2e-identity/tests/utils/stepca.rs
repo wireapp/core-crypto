@@ -10,7 +10,7 @@ use testcontainers::{
 
 use crate::utils::{NETWORK, SHM, rand_str};
 
-pub struct AcmeServer {
+pub(crate) struct AcmeServer {
     pub uri: String,
     pub ca_cert: reqwest::Certificate,
     pub node: ContainerAsync<GenericImage>,
@@ -18,7 +18,7 @@ pub struct AcmeServer {
 }
 
 #[derive(Debug, Clone)]
-pub struct CaCfg {
+pub(crate) struct CaCfg {
     pub sign_key: String,
     pub issuer: String,
     pub audience: String,
@@ -119,7 +119,7 @@ const INTERMEDIATE_CERT_TEMPLATE: &str = r#"
     }
 "#;
 
-pub const ACME_PROVISIONER: &str = "wire";
+pub(crate) const ACME_PROVISIONER: &str = "wire";
 const PORT: ContainerPort = ContainerPort::Tcp(9000);
 
 /// This returns the Smallstep certificate template for leaf certificates, i.e. the ones
@@ -167,7 +167,7 @@ async fn run_command_with_ready_conditions(
     node.exec(cmd).await.unwrap();
 }
 
-pub async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
+pub(crate) async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
     let host_volume = std::env::temp_dir().join(rand_str(12));
     std::fs::create_dir(&host_volume).unwrap();
 

@@ -224,7 +224,7 @@ impl Image for KeycloakImage {
     }
 }
 
-pub async fn start_server(config: &IdpServerConfig, port: u16) -> IdpServer {
+pub(super) async fn start_server(config: &IdpServerConfig, port: u16) -> IdpServer {
     KeycloakImage::build(port);
 
     let instance = KeycloakImage::new(port.tcp());

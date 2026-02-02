@@ -140,7 +140,7 @@ mod tests {
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
     #[wasm_bindgen_test]
-    pub async fn can_run_migrations() {
+    pub(crate) async fn can_run_migrations() {
         let name = "test";
         let factory = Factory::new().expect("factory");
         factory.delete(name).expect("delete request").await.expect("wiping db");
@@ -194,7 +194,7 @@ mod tests {
     }
 
     #[wasm_bindgen_test]
-    pub async fn v9_schema_allows_multiple_creds_per_session() {
+    pub(crate) async fn v9_schema_allows_multiple_creds_per_session() {
         let name = "test";
         const LEN_RANGE: std::ops::Range<usize> = 1024..8192;
         let mut rng = rand::thread_rng();
@@ -259,7 +259,7 @@ mod tests {
     }
 
     #[wasm_bindgen_test]
-    pub async fn data_is_preserved_through_migrations() {
+    pub(crate) async fn data_is_preserved_through_migrations() {
         const DB_NAME: &str = "test";
         // this entity type is simple, stable from v0 through v10, and we do not expect
         // it to change in the future

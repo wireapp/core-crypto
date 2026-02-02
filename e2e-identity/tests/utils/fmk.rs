@@ -65,11 +65,11 @@ fn jws_algorithm_to_x509_oids(alg: JwsAlgorithm) -> (ObjectIdentifier, Option<Ob
 
 impl E2eTest {
     // @SF.PROVISIONING @TSFI.E2EI-PKI-Admin @S8
-    pub async fn nominal_enrollment(self) -> TestResult<Self> {
+    pub(crate) async fn nominal_enrollment(self) -> TestResult<Self> {
         self.enrollment(EnrollmentFlow::default()).await
     }
 
-    pub async fn enrollment(self, f: EnrollmentFlow) -> TestResult<Self> {
+    pub(crate) async fn enrollment(self, f: EnrollmentFlow) -> TestResult<Self> {
         let (t, directory) = (f.acme_directory)(self, ()).await?;
         let (t, previous_nonce) = (f.get_acme_nonce)(t, directory.clone()).await?;
         let (t, (account, previous_nonce)) = (f.new_account)(t, (directory.clone(), previous_nonce)).await?;
@@ -110,7 +110,7 @@ impl E2eTest {
     }
 
     /// GET http://acme-server/directory
-    pub async fn get_acme_directory(&mut self) -> TestResult<AcmeDirectory> {
+    pub(crate) async fn get_acme_directory(&mut self) -> TestResult<AcmeDirectory> {
         let ca_url = self.acme_server.as_ref().ok_or(TestError::Internal)?.uri.clone();
         self.display_chapter("Initial setup with ACME server");
         // see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
@@ -131,7 +131,7 @@ impl E2eTest {
     }
 
     /// GET http://acme-server/new-nonce
-    pub async fn get_acme_nonce(&mut self, directory: &AcmeDirectory) -> TestResult<String> {
+    pub(crate) async fn get_acme_nonce(&mut self, directory: &AcmeDirectory) -> TestResult<String> {
         // see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.2
         self.display_step("fetch a new nonce for the very first request");
         let new_nonce_url = directory.new_nonce.as_str();
@@ -155,7 +155,7 @@ impl E2eTest {
     }
 
     /// POST http://acme-server/new-account
-    pub async fn new_account(
+    pub(crate) async fn new_account(
         &mut self,
         directory: &AcmeDirectory,
         previous_nonce: String,
@@ -190,7 +190,7 @@ impl E2eTest {
     }
 
     /// POST http://acme-server/new-order
-    pub async fn new_order(
+    pub(crate) async fn new_order(
         &mut self,
         directory: &AcmeDirectory,
         account: &AcmeAccount,
@@ -236,7 +236,7 @@ impl E2eTest {
     }
 
     /// POST http://acme-server/authz
-    pub async fn new_authorization(
+    pub(crate) async fn new_authorization(
         &mut self,
         account: &AcmeAccount,
         order: AcmeOrder,
@@ -287,7 +287,7 @@ impl E2eTest {
     }
 
     /// extract challenges
-    pub fn extract_challenges(
+    pub(crate) fn extract_challenges(
         &mut self,
         authz_a: AcmeAuthz,
         authz_b: AcmeAuthz,
@@ -298,7 +298,7 @@ impl E2eTest {
     }
 
     /// HEAD http://wire-server/nonce
-    pub async fn get_wire_server_nonce(&mut self) -> TestResult<BackendNonce> {
+    pub(crate) async fn get_wire_server_nonce(&mut self) -> TestResult<BackendNonce> {
         self.display_chapter("Client fetches JWT DPoP access token (with wire-server)");
         self.display_step("fetch a nonce from wire-server");
         let nonce_url = format!("{}/clients/{:x}/nonce", self.env.wire_server.uri(), self.sub.device_id);
@@ -316,7 +316,7 @@ impl E2eTest {
     }
 
     /// POST http://wire-server/client-dpop-token
-    pub async fn create_dpop_token(
+    pub(crate) async fn create_dpop_token(
         &mut self,
         dpop_chall: &AcmeChallenge,
         backend_nonce: BackendNonce,
@@ -355,7 +355,7 @@ impl E2eTest {
     }
 
     /// POST http://wire-server/client-dpop-token
-    pub async fn get_access_token(
+    pub(crate) async fn get_access_token(
         &mut self,
         dpop_chall: &AcmeChallenge,
         client_dpop_token: String,
@@ -414,7 +414,7 @@ impl E2eTest {
 
     /// client id (dpop) challenge
     /// POST http://acme-server/challenge
-    pub async fn verify_dpop_challenge(
+    pub(crate) async fn verify_dpop_challenge(
         &mut self,
         account: &AcmeAccount,
         dpop_chall: AcmeChallenge,
@@ -463,7 +463,7 @@ impl E2eTest {
 
     /// handle (oidc) challenge
     /// POST http://acme-server/challenge
-    pub async fn verify_oidc_challenge(
+    pub(crate) async fn verify_oidc_challenge(
         &mut self,
         account: &AcmeAccount,
         oidc_chall: AcmeChallenge,
@@ -510,7 +510,7 @@ impl E2eTest {
         Ok(previous_nonce)
     }
 
-    pub async fn fetch_id_token(&mut self, oidc_chall: &AcmeChallenge, keyauth: String) -> TestResult<String> {
+    pub(crate) async fn fetch_id_token(&mut self, oidc_chall: &AcmeChallenge, keyauth: String) -> TestResult<String> {
         let oidc_target = oidc_chall.target.to_string();
         let mut oidc_target = url::Url::parse(&oidc_target).unwrap();
         oidc_target.set_port(Some(self.env.idp_server.addr.port())).unwrap();
@@ -530,7 +530,7 @@ impl E2eTest {
     }
 
     /// POST http://acme-server/order (verify status)
-    pub async fn verify_order_status(
+    pub(crate) async fn verify_order_status(
         &mut self,
         account: &AcmeAccount,
         order_url: Url,
@@ -565,7 +565,7 @@ impl E2eTest {
     }
 
     /// POST http://acme-server/finalize
-    pub async fn finalize(
+    pub(crate) async fn finalize(
         &mut self,
         account: &AcmeAccount,
         order: &AcmeOrder,
@@ -606,7 +606,7 @@ impl E2eTest {
     }
 
     /// GET http://acme-server/certificate
-    pub async fn get_x509_certificates(
+    pub(crate) async fn get_x509_certificates(
         &mut self,
         account: AcmeAccount,
         finalize: AcmeFinalize,
@@ -723,7 +723,7 @@ impl E2eTest {
         );
     }
 
-    pub async fn fetch_idp_public_key(&self) -> String {
+    pub(crate) async fn fetch_idp_public_key(&self) -> String {
         let jwks_uri = self.oidc_cfg.as_ref().unwrap().jwks_uri.clone();
         let jwks_req = self.client.get(jwks_uri);
         let jwks = jwks_req.send().await.unwrap().json::<Value>().await.unwrap();
@@ -758,7 +758,7 @@ impl E2eTest {
             .transpose()?)
     }
 
-    pub fn new_jwks_uri_mock(&self) -> (Value, RS256KeyPair, String) {
+    pub(crate) fn new_jwks_uri_mock(&self) -> (Value, RS256KeyPair, String) {
         let kid = rand_base64_str(40);
         let new_kp = RS256KeyPair::generate(2048).unwrap();
         let jwk = new_kp.public_key().try_into_jwk().unwrap();

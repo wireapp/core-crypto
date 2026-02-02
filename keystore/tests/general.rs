@@ -30,7 +30,7 @@ mod tests {
 
     #[cfg(target_family = "wasm")]
     #[wasm_bindgen_test]
-    pub async fn can_migrate_new_idb_db_versions() {
+    pub(crate) async fn can_migrate_new_idb_db_versions() {
         let store_name = store_name();
         let idb = DatabaseBuilder::new(&store_name)
             .version(10_002_001) // DB_VERSION_1

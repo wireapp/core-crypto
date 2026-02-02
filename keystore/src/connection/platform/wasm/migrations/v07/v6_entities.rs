@@ -73,6 +73,7 @@ impl<'a> EntityDatabaseMutation<'a> for V6Credential {
 }
 
 /// The encrypted form of a stored credential
+#[expect(unreachable_pub)]
 #[derive(ZeroizeOnDrop, serde::Deserialize, serde::Serialize)]
 pub struct EncryptedV6Credential {
     signature_scheme: u16,

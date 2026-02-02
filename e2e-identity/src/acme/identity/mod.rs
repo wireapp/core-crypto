@@ -159,7 +159,7 @@ fn try_extract_san(cert: &x509_cert::TbsCertificate) -> RustyAcmeResult<(String,
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use wasm_bindgen_test::*;
 
     use super::*;

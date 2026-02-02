@@ -18,9 +18,9 @@ use crate::utils::cfg::default_http_client;
 
 // ugly but openidconnect::Client has too many generics and it's a hell to store in a context
 // to pass between endpoints
-pub static CONTEXT: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+pub(crate) static CONTEXT: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
-pub async fn custom_oauth_client(
+pub(crate) async fn custom_oauth_client(
     key: &'static str,
     client: reqwest::Client,
     request: oauth2::HttpRequest,
@@ -41,7 +41,7 @@ pub async fn custom_oauth_client(
     resp
 }
 
-pub async fn proxy_http_client(
+pub(crate) async fn proxy_http_client(
     client: reqwest::Client,
     req: oauth2::HttpRequest,
 ) -> Result<oauth2::HttpResponse, oauth2::reqwest::Error> {
@@ -62,14 +62,14 @@ pub async fn proxy_http_client(
 }
 
 // store args for callback endpoint because openidconnect::Client is a mess to handle
-pub fn ctx_store(key: impl AsRef<str>, value: impl AsRef<str>) {
+pub(crate) fn ctx_store(key: impl AsRef<str>, value: impl AsRef<str>) {
     CONTEXT
         .lock()
         .unwrap()
         .insert(key.as_ref().to_string(), value.as_ref().to_string());
 }
 
-pub fn ctx_store_request(key: &'static str, req: &oauth2::HttpRequest) {
+pub(crate) fn ctx_store_request(key: &'static str, req: &oauth2::HttpRequest) {
     ctx_store(format!("{key}-request-method"), req.method().as_str());
     ctx_store(format!("{key}-request-uri"), req.uri().to_string());
     let headers = req
@@ -82,7 +82,7 @@ pub fn ctx_store_request(key: &'static str, req: &oauth2::HttpRequest) {
     ctx_store(format!("{key}-request-body"), body);
 }
 
-pub fn ctx_store_reqwest_request(key: &'static str, req: &reqwest::Request) {
+pub(crate) fn ctx_store_reqwest_request(key: &'static str, req: &reqwest::Request) {
     ctx_store(format!("{key}-request-method"), req.method().as_str());
     ctx_store(format!("{key}-request-uri"), req.url().as_str());
     let headers = req
@@ -97,7 +97,7 @@ pub fn ctx_store_reqwest_request(key: &'static str, req: &reqwest::Request) {
     }
 }
 
-pub fn ctx_store_http_request(key: &'static str, req: &Request<Incoming>) {
+pub(crate) fn ctx_store_http_request(key: &'static str, req: &Request<Incoming>) {
     ctx_store(format!("{key}-request-method"), req.method().as_str());
     ctx_store(format!("{key}-request-uri"), req.uri().to_string());
     let headers = req
@@ -108,7 +108,7 @@ pub fn ctx_store_http_request(key: &'static str, req: &Request<Incoming>) {
     ctx_store(format!("{key}-request-headers"), headers);
 }
 
-pub async fn ctx_store_reqwest_response(key: &'static str, resp: reqwest::Response) -> Option<Vec<u8>> {
+pub(crate) async fn ctx_store_reqwest_response(key: &'static str, resp: reqwest::Response) -> Option<Vec<u8>> {
     ctx_store(format!("{key}-response-status"), resp.status().as_str());
     ctx_store(format!("{key}-response-uri"), resp.url().as_str());
     let headers = resp
@@ -127,11 +127,11 @@ pub async fn ctx_store_reqwest_response(key: &'static str, resp: reqwest::Respon
     None
 }
 
-pub fn ctx_get(key: impl AsRef<str>) -> Option<String> {
+pub(crate) fn ctx_get(key: impl AsRef<str>) -> Option<String> {
     CONTEXT.lock().unwrap().get(key.as_ref()).map(|v| v.to_string())
 }
 
-pub fn ctx_get_request(key: &'static str) -> reqwest::Request {
+pub(crate) fn ctx_get_request(key: &'static str) -> reqwest::Request {
     let method = ctx_get(format!("{key}-request-method")).unwrap();
     let method = reqwest::Method::from_str(&method).unwrap();
     let uri: url::Url = ctx_get(format!("{key}-request-uri")).unwrap().parse().unwrap();
@@ -158,7 +158,7 @@ pub fn ctx_get_request(key: &'static str) -> reqwest::Request {
     req.build().unwrap()
 }
 
-pub fn ctx_get_resp(key: &'static str, as_html: bool) -> String {
+pub(crate) fn ctx_get_resp(key: &'static str, as_html: bool) -> String {
     let status = ctx_get(format!("{key}-response-status"))
         .unwrap()
         .parse::<u16>()
@@ -205,13 +205,13 @@ pub fn ctx_get_resp(key: &'static str, as_html: bool) -> String {
 
 const DNS_MAPPING_PREFIX: &str = "dns-mapping-";
 
-pub fn ctx_store_http_client(mappings: &HashMap<String, SocketAddr>) {
+pub(crate) fn ctx_store_http_client(mappings: &HashMap<String, SocketAddr>) {
     for (host, socket) in mappings {
         ctx_store(format!("{DNS_MAPPING_PREFIX}{host}"), socket.to_string())
     }
 }
 
-pub fn ctx_get_http_client_builder() -> reqwest::ClientBuilder {
+pub(crate) fn ctx_get_http_client_builder() -> reqwest::ClientBuilder {
     let ctx = CONTEXT.lock().unwrap();
     let mappings = ctx
         .iter()
@@ -232,6 +232,6 @@ pub fn ctx_get_http_client_builder() -> reqwest::ClientBuilder {
     builder
 }
 
-pub fn ctx_get_http_client() -> reqwest::Client {
+pub(crate) fn ctx_get_http_client() -> reqwest::Client {
     ctx_get_http_client_builder().build().unwrap()
 }

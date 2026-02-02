@@ -139,7 +139,7 @@ fn not_found() -> http::Result<Response<Full<Bytes>>> {
         .body(Default::default())
 }
 
-pub async fn bind_socket() -> TcpListener {
+pub(crate) async fn bind_socket() -> TcpListener {
     let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0);
     let listener = TcpListener::bind(&addr).await.unwrap();
     let addr = listener.local_addr().unwrap();
@@ -147,7 +147,7 @@ pub async fn bind_socket() -> TcpListener {
     listener
 }
 
-pub async fn run_server(listener: TcpListener) {
+pub(crate) async fn run_server(listener: TcpListener) {
     let nonces: Arc<Mutex<Nonces>> = Mutex::new(HashMap::new()).into();
     while let Ok((stream, _)) = listener.accept().await {
         let io = TokioIo::new(stream);

@@ -70,7 +70,7 @@ fn authelia_config(hostname: &str, redirect_uri: &str, port: u16) -> String {
     )
 }
 
-pub async fn start_server(config: &IdpServerConfig, port: u16) -> IdpServer {
+pub(super) async fn start_server(config: &IdpServerConfig, port: u16) -> IdpServer {
     let host_volume = std::env::temp_dir().join(format!("authelia-{}", rand_str(12)));
     std::fs::create_dir_all(host_volume.join("config")).unwrap();
     std::fs::write(host_volume.join("config/users.yml"), authelia_users(&config.user)).unwrap();

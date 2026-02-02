@@ -12,7 +12,7 @@ const OAUTH_CLIENT_ID: &str = "wireapp";
 const OAUTH_CLIENT_NAME: &str = "Wire";
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
-pub enum OidcProvider {
+pub(crate) enum OidcProvider {
     Authelia,
     Keycloak,
 }
@@ -27,7 +27,7 @@ pub struct User {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct IdpServer {
+pub(crate) struct IdpServer {
     pub provider: OidcProvider,
     pub hostname: String,
     pub addr: SocketAddr,
@@ -50,7 +50,11 @@ fn free_tcp_port() -> Option<u16> {
     Some(port)
 }
 
-pub async fn start_idp_server(provider: OidcProvider, wire_server_hostname: &str, redirect_uri: &str) -> IdpServer {
+pub(crate) async fn start_idp_server(
+    provider: OidcProvider,
+    wire_server_hostname: &str,
+    redirect_uri: &str,
+) -> IdpServer {
     let user = User {
         username: format!("alice_wire@{wire_server_hostname}"),
         password: "foo".to_string(),
@@ -79,7 +83,7 @@ pub async fn start_idp_server(provider: OidcProvider, wire_server_hostname: &str
     server
 }
 
-pub async fn fetch_id_token(
+pub(crate) async fn fetch_id_token(
     idp_server: &IdpServer,
     oauth_cfg: &OauthCfg,
     oidc_target: &Url,

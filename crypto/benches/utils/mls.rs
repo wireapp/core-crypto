@@ -24,7 +24,7 @@ use tls_codec::Deserialize;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
-pub enum MlsTestCase {
+pub(crate) enum MlsTestCase {
     Basic_Ciphersuite1,
     #[cfg(feature = "test-all-cipher")]
     Basic_Ciphersuite2,
@@ -35,7 +35,7 @@ pub enum MlsTestCase {
 }
 
 impl MlsTestCase {
-    pub fn get(&self) -> (Self, Ciphersuite, Option<CertificateBundle>) {
+    pub(crate) fn get(&self) -> (Self, Ciphersuite, Option<CertificateBundle>) {
         match self {
             MlsTestCase::Basic_Ciphersuite1 => (
                 *self,
@@ -63,7 +63,7 @@ impl MlsTestCase {
         }
     }
 
-    pub fn values() -> impl Iterator<Item = (Self, Ciphersuite, Option<CertificateBundle>, bool)> {
+    pub(crate) fn values() -> impl Iterator<Item = (Self, Ciphersuite, Option<CertificateBundle>, bool)> {
         [
             MlsTestCase::Basic_Ciphersuite1,
             #[cfg(feature = "test-all-cipher")]
@@ -86,11 +86,11 @@ impl MlsTestCase {
         })
     }
 
-    pub fn benchmark_id(&self, i: usize, in_memory: bool) -> BenchmarkId {
+    pub(crate) fn benchmark_id(&self, i: usize, in_memory: bool) -> BenchmarkId {
         BenchmarkId::new(self.ciphersuite_name(in_memory), i)
     }
 
-    pub const fn ciphersuite_name(&self, in_memory: bool) -> &'static str {
+    pub(crate) const fn ciphersuite_name(&self, in_memory: bool) -> &'static str {
         match (self, in_memory) {
             (MlsTestCase::Basic_Ciphersuite1, true) => "cs1/mem",
             #[cfg(feature = "test-all-cipher")]
@@ -124,7 +124,7 @@ impl Display for MlsTestCase {
     }
 }
 
-pub async fn setup_mls(
+pub(crate) async fn setup_mls(
     ciphersuite: Ciphersuite,
     certificate_bundle: Option<&CertificateBundle>,
     in_memory: bool,
@@ -149,7 +149,7 @@ pub async fn setup_mls(
     (core_crypto, id, delivery_service, credential_ref)
 }
 
-pub async fn new_central(
+pub(crate) async fn new_central(
     ciphersuite: Ciphersuite,
     certificate_bundle: Option<&CertificateBundle>,
     in_memory: bool,
@@ -196,12 +196,12 @@ pub(crate) fn tmp_db_file() -> (String, tempfile::TempDir) {
     (path, tmp_dir)
 }
 
-pub fn conversation_id() -> ConversationId {
+pub(crate) fn conversation_id() -> ConversationId {
     let uuid = uuid::Uuid::new_v4();
     ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()).as_bytes())
 }
 
-pub async fn add_clients(
+pub(crate) async fn add_clients(
     core_crypto: &CoreCrypto,
     id: &ConversationId,
     ciphersuite: Ciphersuite,
@@ -237,7 +237,7 @@ pub async fn add_clients(
     (client_ids, group_info)
 }
 
-pub async fn setup_mls_and_add_clients(
+pub(crate) async fn setup_mls_and_add_clients(
     cipher_suite: Ciphersuite,
     credential: Option<&CertificateBundle>,
     in_memory: bool,
@@ -268,7 +268,7 @@ fn create_signature_keypair(backend: &MlsCryptoProvider, ciphersuite: MlsCiphers
     SignatureKeyPair::new(ciphersuite.signature_algorithm(), &mut *rng).unwrap()
 }
 
-pub async fn rand_key_package(ciphersuite: Ciphersuite) -> (KeyPackage, ClientId) {
+pub(crate) async fn rand_key_package(ciphersuite: Ciphersuite) -> (KeyPackage, ClientId) {
     let client_id = Alphanumeric
         .sample_string(&mut rand::thread_rng(), 16)
         .as_bytes()
@@ -297,7 +297,7 @@ pub async fn rand_key_package(ciphersuite: Ciphersuite) -> (KeyPackage, ClientId
     (kp, client_id.into())
 }
 
-pub async fn invite(
+pub(crate) async fn invite(
     from: &CoreCrypto,
     other: &CoreCrypto,
     id: &ConversationId,
@@ -331,7 +331,7 @@ pub async fn invite(
 }
 
 #[async_trait::async_trait]
-pub trait MlsTransportTestExt: MlsTransport {
+pub(crate) trait MlsTransportTestExt: MlsTransport {
     async fn latest_commit_bundle(&self) -> MlsCommitBundle;
     async fn latest_welcome_message(&self) -> MlsMessageOut {
         self.latest_commit_bundle().await.welcome.unwrap().clone()
@@ -349,7 +349,7 @@ pub trait MlsTransportTestExt: MlsTransport {
 }
 
 #[derive(Debug, Default)]
-pub struct CoreCryptoTransportSuccessProvider {
+pub(crate) struct CoreCryptoTransportSuccessProvider {
     latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
     latest_message: RwLock<Option<Vec<u8>>>,
 }

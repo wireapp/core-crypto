@@ -8,7 +8,7 @@ use rusty_jwt_tools::prelude::*;
 use crate::utils::rand_base64_str;
 
 #[derive(Debug, Clone, Default)]
-pub struct TestDisplay {
+pub(crate) struct TestDisplay {
     pub title: String,
     pub events: Vec<Event>,
     pub markdown: Vec<String>,
@@ -18,12 +18,12 @@ pub struct TestDisplay {
 }
 
 impl TestDisplay {
-    pub fn clear() {
+    pub(crate) fn clear() {
         let readme = Self::readme();
         std::fs::write(readme, "# Wire end to end identity example").unwrap();
     }
 
-    pub fn new(title: String, is_active: bool) -> Self {
+    pub(crate) fn new(title: String, is_active: bool) -> Self {
         Self {
             title,
             events: vec![],
@@ -34,11 +34,11 @@ impl TestDisplay {
         }
     }
 
-    pub fn set_active(&mut self) {
+    pub(crate) fn set_active(&mut self) {
         self.is_active = true;
     }
 
-    pub fn display_step(&mut self, label: &str) {
+    pub(crate) fn display_step(&mut self, label: &str) {
         self.ctr += 1;
         let event = Event::Step {
             number: self.ctr,
@@ -49,7 +49,7 @@ impl TestDisplay {
         self.events.push(event);
     }
 
-    pub fn display_chapter(&mut self, comment: &str) {
+    pub(crate) fn display_chapter(&mut self, comment: &str) {
         let event = Event::Chapter {
             comment: comment.to_string(),
         };
@@ -58,7 +58,7 @@ impl TestDisplay {
         self.events.push(event);
     }
 
-    pub fn display_token(&mut self, label: &str, token: &str, alg: Option<JwsAlgorithm>, keypair: &str) {
+    pub(crate) fn display_token(&mut self, label: &str, token: &str, alg: Option<JwsAlgorithm>, keypair: &str) {
         let event = Event::Token {
             label: label.to_string(),
             token: token.to_string(),
@@ -70,7 +70,7 @@ impl TestDisplay {
         self.events.push(event);
     }
 
-    pub fn display_cert(&mut self, label: &str, cert: &[u8], csr: bool) {
+    pub(crate) fn display_cert(&mut self, label: &str, cert: &[u8], csr: bool) {
         let event = if !csr {
             let cert = pem::Pem::new("CERTIFICATE", cert);
             let cert = pem::encode(&cert);
@@ -91,7 +91,7 @@ impl TestDisplay {
         self.events.push(event);
     }
 
-    pub fn display_req(
+    pub(crate) fn display_req(
         &mut self,
         from: Actor,
         to: Actor,
@@ -109,7 +109,7 @@ impl TestDisplay {
         self.events.push(event);
     }
 
-    pub fn display_operation(&mut self, actor: Actor, msg: &str) {
+    pub(crate) fn display_operation(&mut self, actor: Actor, msg: &str) {
         let event = Event::Operation {
             actor,
             msg: msg.to_string(),
@@ -120,7 +120,7 @@ impl TestDisplay {
         self.events.push(event);
     }
 
-    pub fn display_resp(&mut self, from: Actor, to: Actor, resp: Option<&reqwest::Response>) {
+    pub(crate) fn display_resp(&mut self, from: Actor, to: Actor, resp: Option<&reqwest::Response>) {
         let event = Event::Response {
             from,
             to,
@@ -132,7 +132,7 @@ impl TestDisplay {
         self.events.push(event);
     }
 
-    pub fn display_body<T: serde::Serialize>(&mut self, body: &T) {
+    pub(crate) fn display_body<T: serde::Serialize>(&mut self, body: &T) {
         let body = serde_json::to_string_pretty(body).unwrap();
         let acme_payload = serde_json::from_str::<wire_e2e_identity::acme::AcmeJws>(&body)
             .ok()
@@ -161,7 +161,7 @@ impl TestDisplay {
         self.events.push(event);
     }
 
-    pub fn display_str(&mut self, value: &str, raw: bool) {
+    pub(crate) fn display_str(&mut self, value: &str, raw: bool) {
         let event = Event::Str {
             value: value.to_string(),
             raw,
@@ -171,7 +171,7 @@ impl TestDisplay {
         self.events.push(event);
     }
 
-    pub fn display_note(&mut self, value: &str) {
+    pub(crate) fn display_note(&mut self, value: &str) {
         let event = Event::Note {
             value: value.to_string(),
         };
@@ -180,7 +180,7 @@ impl TestDisplay {
         self.events.push(event);
     }
 
-    pub fn display(&mut self) {
+    pub(crate) fn display(&mut self) {
         if self.is_active {
             let readme = Self::readme();
             let mermaid = self.mermaid.join("\n");
@@ -193,7 +193,7 @@ impl TestDisplay {
         }
     }
 
-    pub fn verify_cert_chain(&mut self) {
+    pub(crate) fn verify_cert_chain(&mut self) {
         let mut chain = self
             .events
             .iter()
@@ -231,7 +231,7 @@ impl TestDisplay {
 }
 
 #[derive(Debug, Clone)]
-pub enum Event {
+pub(crate) enum Event {
     Step {
         number: u32,
         title: String,
@@ -282,7 +282,7 @@ pub enum Event {
 }
 
 impl Event {
-    pub fn println(&self) {
+    pub(crate) fn println(&self) {
         match self {
             Self::Step { number, title } => println!("{number}. {title}"),
             Self::Chapter { comment } => println!("----- {comment} -----\n"),
@@ -304,7 +304,7 @@ impl Event {
         }
     }
 
-    pub fn markdown(&self) -> String {
+    pub(crate) fn markdown(&self) -> String {
         match self {
             Self::Chapter { comment } => format!("### {comment}"),
             Self::Step { number, title } => format!("#### {number}. {title}"),
@@ -407,7 +407,7 @@ Decoded:
         }
     }
 
-    pub fn mermaid(&self) -> String {
+    pub(crate) fn mermaid(&self) -> String {
         match self {
             Self::Request { from, to, req, .. } => {
                 let lock = req.as_ref().filter(|r| r.2).map(|_| "🔒").unwrap_or_default();
@@ -469,10 +469,10 @@ Decoded:
 const EXCEPT_HEADERS: [&str; 2] = ["date", "content-length"];
 
 #[derive(Clone)]
-pub struct Req(String, String, bool);
+pub(crate) struct Req(String, String, bool);
 
 impl Req {
-    pub fn new(req: &reqwest::Request, url_pattern: Option<impl Into<String>>) -> Self {
+    pub(crate) fn new(req: &reqwest::Request, url_pattern: Option<impl Into<String>>) -> Self {
         let is_tls = matches!(req.url().scheme(), "https");
         let method = req.method().as_str();
         let url = req.url().as_str();
@@ -515,7 +515,7 @@ impl std::fmt::Display for Req {
 }
 
 #[derive(Clone)]
-pub struct Resp(String, String);
+pub(crate) struct Resp(String, String);
 
 impl From<&reqwest::Response> for Resp {
     fn from(resp: &reqwest::Response) -> Self {
@@ -546,7 +546,7 @@ impl std::fmt::Display for Resp {
 }
 
 #[derive(Debug, Clone)]
-pub enum Actor {
+pub(crate) enum Actor {
     WireClient,
     WireServer,
     AcmeServer,

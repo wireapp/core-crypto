@@ -135,7 +135,7 @@ impl ConversationGuard {
 }
 
 #[cfg(test)]
-pub mod test_utils {
+mod test_utils {
     use super::ConversationGuard;
     use crate::{MlsConversation, mls::conversation::ConversationWithMls as _};
 

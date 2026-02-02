@@ -15,7 +15,7 @@ use crate::utils::{
     stepca::{AcmeServer, CaCfg},
 };
 
-pub fn scrap_login(html: String) -> String {
+pub(crate) fn scrap_login(html: String) -> String {
     let html = Html::parse_document(&html);
     let selector = scraper::Selector::parse("form").unwrap();
     let form = html.select(&selector).find(|_| true).unwrap();
@@ -23,13 +23,13 @@ pub fn scrap_login(html: String) -> String {
 }
 
 #[derive(Debug, Clone)]
-pub struct OauthCfg {
+pub(crate) struct OauthCfg {
     pub client_id: String,
     pub redirect_uri: String,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct OidcCfg {
+pub(crate) struct OidcCfg {
     pub issuer: String,
     pub authorization_endpoint: String,
     pub token_endpoint: String,
@@ -39,14 +39,14 @@ pub struct OidcCfg {
 }
 
 impl OidcCfg {
-    pub fn set_issuer_uri(&mut self, base: &str) {
+    pub(crate) fn set_issuer_uri(&mut self, base: &str) {
         let issuer_uri = url::Url::parse(&self.issuer).unwrap();
         let issuer_uri = format!("{base}{}", issuer_uri.path());
         self.issuer_uri = Some(issuer_uri)
     }
 }
 
-pub struct E2eTest {
+pub(crate) struct E2eTest {
     pub display_name: String,
     pub domain: String,
     pub team: Option<String>,
@@ -70,25 +70,25 @@ pub struct E2eTest {
 }
 
 #[derive(Debug, Clone)]
-pub struct WireServer {
+pub(crate) struct WireServer {
     pub hostname: String,
     pub addr: SocketAddr,
 }
 
 impl WireServer {
-    pub fn uri(&self) -> String {
+    pub(crate) fn uri(&self) -> String {
         format!("http://{}:{}", self.hostname, self.addr.port())
     }
 
     /// Returns the Wire server-owned URI which the IdP server is supposed to redirect
     /// the user to after successful authentication.
-    pub fn oauth_redirect_uri(&self) -> String {
+    pub(crate) fn oauth_redirect_uri(&self) -> String {
         format!("http://{}:{}/callback", self.hostname, self.addr.port())
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct TestEnvironment {
+pub(crate) struct TestEnvironment {
     pub wire_server: WireServer,
     pub idp_server: IdpServer,
 }
@@ -100,15 +100,15 @@ impl std::fmt::Debug for E2eTest {
 }
 
 impl E2eTest {
-    pub fn new(env: TestEnvironment) -> Self {
+    pub(crate) fn new(env: TestEnvironment) -> Self {
         Self::new_internal(false, JwsAlgorithm::Ed25519, env)
     }
 
-    pub fn new_demo(env: TestEnvironment) -> Self {
+    pub(crate) fn new_demo(env: TestEnvironment) -> Self {
         Self::new_internal(true, JwsAlgorithm::Ed25519, env)
     }
 
-    pub fn new_internal(is_demo: bool, alg: JwsAlgorithm, env: TestEnvironment) -> Self {
+    pub(crate) fn new_internal(is_demo: bool, alg: JwsAlgorithm, env: TestEnvironment) -> Self {
         let ca_host = format!("{}.stepca", rand_str(6).to_lowercase());
         let domain = env.wire_server.hostname.clone();
         let (firstname, lastname) = ("Alice", "Smith");
@@ -211,7 +211,7 @@ impl E2eTest {
         }
     }
 
-    pub async fn start(mut self) -> E2eTest {
+    pub(crate) async fn start(mut self) -> E2eTest {
         if self.is_demo {
             TestDisplay::clear();
             self.display.set_active();
@@ -253,7 +253,7 @@ impl E2eTest {
         self
     }
 
-    pub async fn fetch_oidc_cfg(&self) -> OidcCfg {
+    pub(crate) async fn fetch_oidc_cfg(&self) -> OidcCfg {
         let hostname = &self.env.idp_server.hostname;
 
         let uri = format!(
@@ -277,7 +277,7 @@ impl E2eTest {
         }
     }
 
-    pub fn issuer_uri(&self) -> String {
+    pub(crate) fn issuer_uri(&self) -> String {
         self.oidc_cfg
             .as_ref()
             .and_then(|c| c.issuer_uri.as_ref())
@@ -285,7 +285,7 @@ impl E2eTest {
             .to_string()
     }
 
-    pub async fn fetch_acme_root_ca(&self) -> String {
+    pub(crate) async fn fetch_acme_root_ca(&self) -> String {
         #[derive(serde::Deserialize)]
         struct SmallStepRootsResponse {
             crts: Vec<String>,
@@ -313,7 +313,7 @@ impl std::ops::DerefMut for E2eTest {
     }
 }
 
-pub fn default_http_client() -> reqwest::ClientBuilder {
+pub(crate) fn default_http_client() -> reqwest::ClientBuilder {
     let timeout = core::time::Duration::from_secs(5);
     reqwest::ClientBuilder::new()
         .timeout(timeout)
@@ -322,10 +322,10 @@ pub fn default_http_client() -> reqwest::ClientBuilder {
         .danger_accept_invalid_certs(true)
 }
 
-pub type FlowResp<T> = std::pin::Pin<Box<dyn std::future::Future<Output = TestResult<(E2eTest, T)>>>>;
-pub type Flow<P, R> = Box<dyn FnOnce(E2eTest, P) -> FlowResp<R>>;
+pub(crate) type FlowResp<T> = std::pin::Pin<Box<dyn std::future::Future<Output = TestResult<(E2eTest, T)>>>>;
+pub(crate) type Flow<P, R> = Box<dyn FnOnce(E2eTest, P) -> FlowResp<R>>;
 
-pub struct EnrollmentFlow {
+pub(crate) struct EnrollmentFlow {
     pub acme_directory: Flow<(), AcmeDirectory>,
     pub get_acme_nonce: Flow<AcmeDirectory, String>,
     pub new_account: Flow<(AcmeDirectory, String), (AcmeAccount, String)>,

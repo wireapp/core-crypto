@@ -3,7 +3,7 @@ use rusty_jwt_tools::prelude::*;
 use wire_e2e_identity::RustyE2eIdentity;
 
 #[allow(clippy::type_complexity)]
-pub fn enrollments() -> Vec<(RustyE2eIdentity, Pem, Pem, HashAlgorithm)> {
+pub(crate) fn enrollments() -> Vec<(RustyE2eIdentity, Pem, Pem, HashAlgorithm)> {
     let ed25519_enrollment = {
         let ed25519_client_kp = Ed25519KeyPair::generate().to_bytes();
         let ed25519_backend_kp = Ed25519KeyPair::generate();
