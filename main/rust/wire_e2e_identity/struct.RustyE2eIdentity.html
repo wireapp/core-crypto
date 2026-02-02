@@ -18,9 +18,9 @@ enrollment process then dropped to clear secret key material.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.acme_directory_response" class="method"><a class="src rightside" href="../src/wire_e2e_identity/lib.rs.html#236-239">Source</a><h4 class="code-header">pub fn <a href="#method.acme_directory_response" class="fn">acme_directory_response</a>(
     &amp;self,
     directory: <a class="type" href="type.Json.html" title="type wire_e2e_identity::Json">Json</a>,
-) -&gt; <a class="type" href="prelude/type.E2eIdentityResult.html" title="type wire_e2e_identity::prelude::E2eIdentityResult">E2eIdentityResult</a>&lt;<a class="struct" href="acme/prelude/struct.AcmeDirectory.html" title="struct wire_e2e_identity::acme::prelude::AcmeDirectory">AcmeDirectory</a>&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>GET /acme/{provisioner-name}/directory</code>.
-Use this <a href="acme/prelude/struct.AcmeDirectory.html" title="struct wire_e2e_identity::acme::prelude::AcmeDirectory">AcmeDirectory</a> in the next step to fetch the first nonce from the acme server. Use
-<a href="acme/prelude/struct.AcmeDirectory.html#structfield.new_nonce" title="field wire_e2e_identity::acme::prelude::AcmeDirectory::new_nonce">AcmeDirectory::new_nonce</a>.</p>
+) -&gt; <a class="type" href="prelude/type.E2eIdentityResult.html" title="type wire_e2e_identity::prelude::E2eIdentityResult">E2eIdentityResult</a>&lt;<a class="struct" href="acme/struct.AcmeDirectory.html" title="struct wire_e2e_identity::acme::AcmeDirectory">AcmeDirectory</a>&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>GET /acme/{provisioner-name}/directory</code>.
+Use this <a href="acme/struct.AcmeDirectory.html" title="struct wire_e2e_identity::acme::AcmeDirectory">AcmeDirectory</a> in the next step to fetch the first nonce from the acme server. Use
+<a href="acme/struct.AcmeDirectory.html#structfield.new_nonce" title="field wire_e2e_identity::acme::AcmeDirectory::new_nonce">AcmeDirectory::new_nonce</a>.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1">RFC 8555 Section 7.1.1</a></p>
 <h5 id="parameters-1"><a class="doc-anchor" href="#parameters-1">§</a>Parameters</h5>
 <ul>
@@ -28,7 +28,7 @@ Use this <a href="acme/prelude/struct.AcmeDirectory.html" title="struct wire_e2e
 </ul>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_account_request" class="method"><a class="src rightside" href="../src/wire_e2e_identity/lib.rs.html#249-256">Source</a><h4 class="code-header">pub fn <a href="#method.acme_new_account_request" class="fn">acme_new_account_request</a>(
     &amp;self,
-    directory: &amp;<a class="struct" href="acme/prelude/struct.AcmeDirectory.html" title="struct wire_e2e_identity::acme::prelude::AcmeDirectory">AcmeDirectory</a>,
+    directory: &amp;<a class="struct" href="acme/struct.AcmeDirectory.html" title="struct wire_e2e_identity::acme::AcmeDirectory">AcmeDirectory</a>,
     previous_nonce: <a class="struct" href="https://doc.rust-lang.org/1.93.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
 ) -&gt; <a class="type" href="prelude/type.E2eIdentityResult.html" title="type wire_e2e_identity::prelude::E2eIdentityResult">E2eIdentityResult</a>&lt;<a class="type" href="type.Json.html" title="type wire_e2e_identity::Json">Json</a>&gt;</h4></section></summary><div class="docblock"><p>For creating a new acme account. This returns a signed JWS-alike request body to send to
 <code>POST /acme/{provisioner-name}/new-account</code>.</p>
@@ -53,7 +53,7 @@ Use this <a href="acme/prelude/struct.AcmeDirectory.html" title="struct wire_e2e
     client_id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.93.0/std/primitive.str.html">str</a>,
     handle: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.93.0/std/primitive.str.html">str</a>,
     expiry: <a class="struct" href="https://doc.rust-lang.org/1.93.0/core/time/struct.Duration.html" title="struct core::time::Duration">Duration</a>,
-    directory: &amp;<a class="struct" href="acme/prelude/struct.AcmeDirectory.html" title="struct wire_e2e_identity::acme::prelude::AcmeDirectory">AcmeDirectory</a>,
+    directory: &amp;<a class="struct" href="acme/struct.AcmeDirectory.html" title="struct wire_e2e_identity::acme::AcmeDirectory">AcmeDirectory</a>,
     account: &amp;<a class="struct" href="prelude/struct.E2eiAcmeAccount.html" title="struct wire_e2e_identity::prelude::E2eiAcmeAccount">E2eiAcmeAccount</a>,
     previous_nonce: <a class="struct" href="https://doc.rust-lang.org/1.93.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
 ) -&gt; <a class="type" href="prelude/type.E2eIdentityResult.html" title="type wire_e2e_identity::prelude::E2eIdentityResult">E2eIdentityResult</a>&lt;<a class="type" href="type.Json.html" title="type wire_e2e_identity::Json">Json</a>&gt;</h4></section></summary><div class="docblock"><p>Creates a new acme order for the handle (userId + display name) and the clientId.</p>
