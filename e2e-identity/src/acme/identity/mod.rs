@@ -1,8 +1,8 @@
-use rusty_jwt_tools::prelude::*;
+use rusty_jwt_tools::prelude::{ClientId, HashAlgorithm, QualifiedHandle};
 use x509_cert::der::Decode as _;
 
 use crate::{
-    acme::{error::CertificateError, *},
+    acme::{RustyAcmeResult, error::CertificateError},
     x509_check::{IdentityStatus, revocation::PkiEnvironment},
 };
 
