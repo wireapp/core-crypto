@@ -1,9 +1,8 @@
 name: benchmarks
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
 
 jobs:
   benchmarks_with_bencher:
