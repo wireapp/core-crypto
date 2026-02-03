@@ -8,3 +8,5 @@ web:
   wasmCrateName: core-crypto-ffi-wasm
   features: ["wasm"]
 
+bindings:
+  uniffiToml: ../../uniffi.toml
