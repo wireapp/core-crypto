@@ -33,7 +33,7 @@ export class CoreCrypto extends CoreCryptoFfi {
         return super.instanceOf(obj);
     }
 
-    constructor(database: CoreCryptoFfiTypes.DatabaseInterface) {
+    constructor(database: CoreCryptoFfiTypes.Database) {
         super(database);
     }
 
