@@ -8,7 +8,7 @@ license = "GPL-3.0-only"
 workspace = true
 
 [dependencies]
-clap = { version = "4.5.55", features = ["derive"] }
+clap = { version = "4.5.57", features = ["derive"] }
 clap-stdin = "0.8.0"
 mls-rs = "0.52.0"
 proteus-wasm = { workspace = true, features = ["serde"] }
