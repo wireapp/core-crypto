@@ -484,10 +484,18 @@ WASM_GEN := $(wildcard $(GEN_DIR)/wasm-bindgen/*) $(GEN_DIR)/core_crypto_ffi.ts
 
 # As soon as ubrn allows reusage of an existing ffi lib, we need to depend on it here.
 wasm-build-deps := $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES) $(PACKAGE_JSON) $(BUNFIG)
+# index.web.ts is generated but unused so we remove it
+# We remove library files because wasm-only symbols cause errors when running ios/jvm tests with these files
+# Note that ubrn always generates these in debug mode
 $(WASM_GEN): $(wasm-build-deps)
 	cd $(JS_DIR) && \
 	RUSTFLAGS="" bun ubrn build web $(CARGO_BUILD_ARGS) && \
-	rm src/index.web.ts # This file is generated but we don't use it
+	rm src/index.web.ts && \
+	cd ../../../target/debug && \
+	rm libcore_crypto_ffi.a && \
+	rm libcore_crypto_ffi.d && \
+	rm libcore_crypto_ffi.$(LIBRARY_EXTENSION) && \
+	rm libcore_crypto_ffi.rlib
 wasm-build: $(WASM_GEN)
 
 # generate TypeScript defs only when corecrypto.js changed
@@ -636,7 +644,7 @@ docs: docs-rust-generic docs-rust-wasm docs-kotlin docs-ts $(if $(filter Darwin,
 
 .PHONY: wasm bindings local all clean
 wasm: ts  ## Alias for ts
-bindings: bindings-kotlin ts $(if $(filter Darwin,$(UNAME_S)),bindings-swift) ## Generate all bindings
+bindings: bindings-kotlin $(if $(filter Darwin,$(UNAME_S)),bindings-swift) ts ## Generate all bindings
 local: bindings ts-fmt ## Generate and format all bindings
 all: android wasm jvm $(if $(filter Darwin,$(UNAME_S)),ios) docs ## Generate bindings for all platforms (android, iOS, wasm) and generate docs
 clean: ts-clean ## Run cargo clean and the ts-clean target, remove all stamps
