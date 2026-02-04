@@ -219,3 +219,6 @@ dist
 
 # Make stampfile directory for timestamp comparisons
 .stamps
+
+crypto-ffi/bindings/build
+interop/src/clients/build
