@@ -1,8 +1,8 @@
-use core_crypto::RecursiveError;
+use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{Ciphersuite, CoreCrypto, CoreCryptoResult};
+use crate::{Ciphersuite, ConversationId, CoreCrypto, CoreCryptoResult, E2eiConversationState};
 
 pub(crate) mod identities;
 
@@ -24,6 +24,21 @@ impl CoreCrypto {
             .e2ei_is_enabled(signature_scheme)
             .await
             .map_err(RecursiveError::mls_client("checking if e2ei is enabled"))
+            .map_err(Into::into)
+    }
+
+    /// See [core_crypto::mls::conversation::Conversation::e2ei_conversation_state]
+    pub async fn e2ei_conversation_state(
+        &self,
+        conversation_id: &ConversationId,
+    ) -> CoreCryptoResult<E2eiConversationState> {
+        self.inner
+            .get_raw_conversation(conversation_id)
+            .await
+            .map_err(RecursiveError::mls_client("getting conversation by id"))?
+            .e2ei_conversation_state()
+            .await
+            .map(Into::into)
             .map_err(Into::into)
     }
 }
