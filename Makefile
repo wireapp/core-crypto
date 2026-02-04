@@ -91,6 +91,15 @@ RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
 	echo "$$hash"
 
 #-------------------------------------------------------------------------------
+# Kotlin file-based heuristics
+#-------------------------------------------------------------------------------
+
+KT_WRAPPER = ./crypto-ffi/bindings/shared/src/commonMain/kotlin
+KT_TESTS = ./crypto-ffi/bindings/shared/src/commonTest
+KT_INTEROP = ./interop/src/clients/android-interop/src/main/java
+KT_FILES := $(shell find $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP) -type f -name '*.kt')
+
+#-------------------------------------------------------------------------------
 # Build FFI artifacts
 #-------------------------------------------------------------------------------
 
@@ -709,11 +718,6 @@ $(STAMPS)/swift-check: $(SWIFT_FILES)
 swift-check: $(STAMPS)/swift-check ## Lint Swift files via swift-format and swift-lint
 
 # Kotlin
-
-KT_WRAPPER = ./crypto-ffi/bindings/shared/src/commonMain/kotlin
-KT_TESTS = ./crypto-ffi/bindings/shared/src/commonTest
-KT_INTEROP = ./interop/src/clients/android-interop/src/main/java
-KT_FILES := $(shell find $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP) -type f -name '*.kt')
 
 $(STAMPS)/kotlin-fmt: $(KT_FILES)
 	ktlint --format $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP)
