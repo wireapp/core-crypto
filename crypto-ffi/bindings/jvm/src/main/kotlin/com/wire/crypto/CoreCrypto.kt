@@ -30,7 +30,7 @@ suspend fun historyClient(historySecret: HistorySecret) = coreCryptoHistoryClien
  * This wrapper should be largely transparent to end users. It exists to improve the
  * callback interfaces: `.transaction(...)`, `.registerFooObserver(...)`, etc.
  */
-class CoreCryptoClient(private val cc: CoreCrypto) {
+class CoreCryptoClient(private val cc: CoreCrypto) : CoreCryptoInterface by cc {
     companion object
 
     /**
@@ -75,14 +75,6 @@ class CoreCryptoClient(private val cc: CoreCrypto) {
         return@withContext result as R
     }
 
-    /** Provide an implementation of the MlsTransport interface.
-     * See [MlsTransport].
-     * @param transport the transport to be used
-     */
-    suspend fun provideTransport(transport: MlsTransport) {
-        cc.provideTransport(transport)
-    }
-
     /**
      * Register an Epoch Observer which will be notified every time a conversation's epoch changes.
      *
@@ -117,14 +109,6 @@ class CoreCryptoClient(private val cc: CoreCrypto) {
         }
         return cc.registerHistoryObserver(observerIndirector)
     }
-
-    /**
-     * See [CoreCryptoContext.isHistorySharingEnabled]
-     *
-     * @param id conversation identifier
-     * @return true if history sharing is enabled
-     */
-    suspend fun isHistorySharingEnabled(id: ConversationId): Boolean = cc.isHistorySharingEnabled(id)
 
     /**
      * Closes this [CoreCrypto] instance and deallocates all loaded resources.
