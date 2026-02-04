@@ -4,6 +4,9 @@
 
 ### Features
 
+- expose enitre read-only API in Kotlin on the `CoreCrypto` type. This allows reading data without opening a
+  transaction.
+
 - replaced `CoreCrypto.init(database: Database)` with class constructor `new CoreCrypto(database: Database)`
 
   Affected platforms: web
