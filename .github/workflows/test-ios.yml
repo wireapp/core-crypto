@@ -50,4 +50,4 @@ jobs:
       - name: Delete simulator
         if: always()
         run: |
-          ./scripts/delete-ios-sim-device.sh ${{ env.SIMULATOR }}
+          xcrun simctl delete all

@@ -61,4 +61,4 @@ jobs:
       - name: delete ios simulator and kill android emulator
         if: always()
         run: |
-          ./scripts/delete-ios-sim-device.sh ${{ env.SIMULATOR }}
+          xcrun simctl delete all
