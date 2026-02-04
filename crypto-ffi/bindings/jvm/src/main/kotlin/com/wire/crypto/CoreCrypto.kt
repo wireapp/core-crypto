@@ -17,7 +17,7 @@ fun CoreCryptoFfi.lift() = CoreCrypto(this)
  * This wrapper should be largely transparent to end users. It exists to improve the
  * callback interfaces: `.transaction(...)`, `.registerFooObserver(...)`, etc.
  */
-class CoreCrypto(private val cc: CoreCryptoFfi) {
+class CoreCrypto(private val cc: CoreCryptoFfi) : CoreCryptoFfiInterface by cc {
     companion object {
         /** Opens a core crypto client with the specified database, previously instantiated via [openDatabase].  */
         operator fun invoke(
@@ -127,26 +127,6 @@ class CoreCrypto(private val cc: CoreCryptoFfi) {
         }
         return cc.registerHistoryObserver(observerIndirector)
     }
-
-    /**
-     * See [CoreCryptoContext.isHistorySharingEnabled]
-     *
-     * @param conversationId conversation identifier
-     * @return true if history sharing is enabled
-     */
-    suspend fun isHistorySharingEnabled(conversationId: ConversationId): Boolean = cc.isHistorySharingEnabled(conversationId)
-
-    /**
-     * Set the PkiEnvironment of the CoreCrypto instance
-     * @param pkiEnvironment the pki environment to set
-     */
-    suspend fun setPkiEnvironment(pkiEnvironment: PkiEnvironment?) = cc.setPkiEnvironment(pkiEnvironment)
-
-    /**
-     * Get the Pki Environment of the CoreCrypto instance
-     * @return the pki environment or null if not set
-     */
-    suspend fun getPkiEnvironment(): PkiEnvironment? = cc.getPkiEnvironment()
 
     /**
      * Closes this [CoreCrypto] instance and deallocates all loaded resources.
