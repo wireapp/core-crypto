@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 #[cfg(feature = "proteus")]
 use async_lock::Mutex;
-use async_lock::{RwLock, RwLockWriteGuardArc};
+use async_lock::RwLock;
 use core_crypto_keystore::{CryptoKeystoreError, entities::ConsumerData, traits::FetchFromDatabase as _};
 pub use error::{Error, Result};
 use openmls_traits::OpenMlsCryptoProvider as _;
@@ -14,9 +14,8 @@ use wire_e2e_identity::pki_env::PkiEnvironment;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    ClientId, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsConversation, MlsError, MlsTransport,
-    RecursiveError, Session,
-    group_store::GroupStore,
+    ClientId, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsError, MlsTransport, RecursiveError,
+    Session,
     mls::{self, HasSessionAndCrypto},
     mls_provider::{Database, MlsCryptoProvider},
 };
@@ -50,7 +49,6 @@ enum TransactionContextInner {
         pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
         database: Database,
         mls_session: Arc<RwLock<Option<Session<Database>>>>,
-        mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
         #[cfg(feature = "proteus")]
         proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     },
@@ -102,14 +100,12 @@ impl TransactionContext {
             .new_transaction()
             .await
             .map_err(MlsError::wrap("creating new transaction"))?;
-        let mls_groups = Arc::new(RwLock::new(Default::default()));
         Ok(Self {
             inner: Arc::new(
                 TransactionContextInner::Valid {
                     database: keystore,
                     pki_environment,
                     mls_session: mls_session.clone(),
-                    mls_groups,
                     #[cfg(feature = "proteus")]
                     proteus_central,
                 }
@@ -202,13 +198,6 @@ impl TransactionContext {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { pki_environment, .. } => Ok(pki_environment.read().await.clone()),
 
-            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
-        }
-    }
-
-    pub(crate) async fn mls_groups(&self) -> Result<RwLockWriteGuardArc<GroupStore<MlsConversation>>> {
-        match &*self.inner.read().await {
-            TransactionContextInner::Valid { mls_groups, .. } => Ok(mls_groups.write_arc().await),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
