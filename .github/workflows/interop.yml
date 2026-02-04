@@ -62,3 +62,4 @@ jobs:
         if: always()
         run: |
           xcrun simctl delete all
+          rm -rf ~/Library/Developer/CoreSimulator
