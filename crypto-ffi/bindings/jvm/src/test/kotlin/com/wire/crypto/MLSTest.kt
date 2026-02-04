@@ -412,6 +412,42 @@ class MLSTest : HasMockDeliveryService() {
     }
 
     @Test
+    fun epochObserverEvent_shouldAllowReadingData(): TestResult {
+        val scope = TestScope()
+        return scope.runTest {
+            val (alice) = newClients(this@MLSTest, genClientId())
+
+            data class ObserverEvent(val eventEpoch: ULong, val conversationEpoch: ULong)
+
+            class Observer : EpochObserver {
+                val observedEvents = emptyList<ObserverEvent>().toMutableList()
+
+                override suspend fun epochChanged(conversationId: ConversationId, epoch: ULong) {
+                    val conversationEpoch = alice.conversationEpoch(conversationId)
+                    observedEvents.add(ObserverEvent(epoch, conversationEpoch))
+                }
+            }
+
+            val aliceObserver = Observer()
+
+            alice.transaction { it.createConversationShort(id) }
+            val initialEpoch = alice.conversationEpoch(id)
+
+            alice.registerEpochObserver(scope, aliceObserver)
+
+            alice.transaction { it.updateKeyingMaterial(id) }
+            val laterEpoch = alice.conversationEpoch(id)
+
+            assertEquals(initialEpoch + 1U, laterEpoch)
+            assertEquals(1, aliceObserver.observedEvents.size, "we triggered exactly 1 epoch change and must have observed that")
+            assertTrue(
+                aliceObserver.observedEvents.all { it.eventEpoch == it.conversationEpoch && it.eventEpoch == laterEpoch },
+                "event epoch must equal the epoch read during the event"
+            )
+        }
+    }
+
+    @Test
     fun registerHistoryObserver_should_notify_observer_on_new_secret(): TestResult {
         val scope = TestScope()
         return scope.runTest {
