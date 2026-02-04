@@ -1,12 +1,12 @@
 package com.wire.androidinterop
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
-class MainActivity : ComponentActivity() {
+class MainActivity : Activity() {
     val actionHandler = runBlocking {
         InteropActionHandler(InteropActionHandler.defaultCoreCryptoClient())
     }
