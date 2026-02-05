@@ -279,6 +279,10 @@
 - up-to-date conversation data can be accessed without new transaction
   ([be5e27d](https://github.com/wireapp/core-crypto/commit/be5e27d3dc18cabae1b5031ce75a1ee691488305))
 
+## v9.1.3 - 2025-12-18
+
+Upgrades the binding generator (uniffi 0.29.5) to include a crash fix for Android
+
 ## v9.1.2 - 2025-11-05
 
 This release fixes a bug in the TypeScript bindings where the commit delay could in some situations be undefined when
