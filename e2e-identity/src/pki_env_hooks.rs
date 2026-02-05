@@ -75,7 +75,7 @@ pub trait PkiEnvironmentHooks: std::fmt::Debug + Send + Sync {
         url: String,
         headers: Vec<HttpHeader>,
         body: Vec<u8>,
-    ) -> HttpResponse;
+    ) -> Result<HttpResponse, PkiEnvironmentHooksError>;
 
     /// Authenticate with the user's identity provider (IdP)
     ///
