@@ -137,7 +137,7 @@ pub trait PkiEnvironmentHooks: Send + Sync {
         url: String,
         headers: Vec<HttpHeader>,
         body: Vec<u8>,
-    ) -> HttpResponse;
+    ) -> Result<HttpResponse, PkiEnvironmentHooksError>;
 
     /// Authenticate with the user's identity provider (IdP)
     ///
@@ -187,9 +187,13 @@ impl pki_env_hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
         url: String,
         headers: Vec<pki_env_hooks::HttpHeader>,
         body: Vec<u8>,
-    ) -> pki_env_hooks::HttpResponse {
+    ) -> Result<pki_env_hooks::HttpResponse, pki_env_hooks::PkiEnvironmentHooksError> {
         let headers = headers.into_iter().map(Into::into).collect();
-        self.0.http_request(method.into(), url, headers, body).await.into()
+        self.0
+            .http_request(method.into(), url, headers, body)
+            .await
+            .map(Into::into)
+            .map_err(Into::into)
     }
 
     async fn authenticate(
