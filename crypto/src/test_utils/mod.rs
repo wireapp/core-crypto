@@ -654,12 +654,12 @@ impl PkiEnvironmentHooks for DummyPkiEnvironmentHooks {
         _url: String,
         _headers: Vec<HttpHeader>,
         _body: Vec<u8>,
-    ) -> HttpResponse {
-        HttpResponse {
+    ) -> Result<HttpResponse, PkiEnvironmentHooksError> {
+        Ok(HttpResponse {
             status: 200,
             headers: vec![],
             body: vec![],
-        }
+        })
     }
 
     async fn authenticate(
