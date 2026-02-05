@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+## v9.2.0 - 2026-02-05
+
+### Highlights
+
+- Kotlin: expose the enitre read-only API on the `CoreCrypto` type. This allows performing arbitrary read-only
+  operations on data while a transaction is running (e.g., in an `EpochObserver` event).
+- Kotlin: Introduce `KotlinInstant` type
+
+### Features
+
+- expose entire `CoreCryptoFfiInterface` API via `CoreCrypto` [WPB-22282]
+  ([a02f430](https://github.com/wireapp/core-crypto/commit/a02f4308641c6076c8464bf43d2619b6f946aae0))
+- expose `e2ei_conversation_state()` on `CoreCrypto` [WPB-22282]
+  ([08996e0](https://github.com/wireapp/core-crypto/commit/08996e07290c5f3dd88b466ec8c2ef506bd524e4))
+- introduce KotlinInstant type for Kotlin bindings
+  ([f2c56ae](https://github.com/wireapp/core-crypto/commit/f2c56ae4f6118d9935cb67ac17d8af4b555d86dd))
+
+### Testing
+
+- up-to-date conversation data can be accessed without new transaction
+  ([be5e27d](https://github.com/wireapp/core-crypto/commit/be5e27d3dc18cabae1b5031ce75a1ee691488305))
+
 ## v9.1.3 - 2025-12-18
 
 Upgrades the binding generator (uniffi 0.29.5) to include a crash fix for Android
