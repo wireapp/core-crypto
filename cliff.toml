@@ -20,6 +20,10 @@ filter_commits = true
 tag_pattern = "v[0-9]*"
 date_order = true
 sort_commits = "newest"
+commit_preprocessors = [
+  # Move scope from parentheses into message (scope is optional)
+  { pattern = '^(feat|fix|doc|perf|test)\(([^)]+)\):\s*(.+)$', replace = "${1}: ${2}: ${3}" },
+]
 commit_parsers = [
   { message = "^feat", group = "<!-- 0 -->Features" },
   { message = "^fix", group = "<!-- 1 -->Bug Fixes" },
