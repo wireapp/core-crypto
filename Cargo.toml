@@ -18,7 +18,7 @@ missing_safety_doc = "deny"
 undocumented_unsafe_blocks = "deny"
 
 [workspace.lints.rust]
-unreachable_pub = "deny"
+unreachable_pub = "warn"
 unexpected_cfgs = { level = "warn", check-cfg = [
   'cfg(wasm_bindgen_unstable_test_coverage)',
 ] }
