@@ -53,23 +53,6 @@ pub(crate) fn init_enrollment(wrapper: E2eiInitWrapper<'_>) -> InitFnReturn<'_> 
     })
 }
 
-pub(crate) fn init_activation(wrapper: E2eiInitWrapper<'_>) -> InitFnReturn<'_> {
-    Box::pin(async move {
-        let E2eiInitWrapper { context: cc, case } = wrapper;
-        let cs = case.ciphersuite();
-        cc.e2ei_new_activation_enrollment(
-            NEW_DISPLAY_NAME.to_string(),
-            NEW_HANDLE.to_string(),
-            Some(TEAM.to_string()),
-            E2EI_EXPIRY,
-            cs,
-        )
-        .await
-        .map_err(RecursiveError::transaction("creating new enrollment"))
-        .map_err(Into::into)
-    })
-}
-
 pub(crate) type RestoreFnReturn<'a> = std::pin::Pin<Box<dyn std::future::Future<Output = E2eiEnrollment> + 'a>>;
 
 pub(crate) fn noop_restore(e: E2eiEnrollment, _cc: &TransactionContext) -> RestoreFnReturn<'_> {
