@@ -11,9 +11,6 @@ use crate::{
     mls::key_package::KeypackageExt as _,
 };
 
-#[cfg(test)]
-pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: u32 = 10;
-
 /// Default lifetime of all generated Keypackages. Matches the limit defined in openmls
 pub const KEYPACKAGE_DEFAULT_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
 
