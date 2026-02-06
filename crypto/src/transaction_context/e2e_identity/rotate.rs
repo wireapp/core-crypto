@@ -167,7 +167,7 @@ mod tests {
                     x509_test_chain,
                     &alice.get_e2ei_client_id().await.to_uri(),
                     is_renewal,
-                    e2ei_utils::init_activation_or_rotation,
+                    e2ei_utils::init_activation,
                     e2ei_utils::noop_restore,
                 )
                 .await

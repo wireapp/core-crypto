@@ -61,7 +61,7 @@ mod tests {
 
     use crate::{
         MlsConversationConfiguration,
-        e2e_identity::enrollment::test_utils::{e2ei_enrollment, init_activation_or_rotation, noop_restore},
+        e2e_identity::enrollment::test_utils::{e2ei_enrollment, init_activation, noop_restore},
         mls::key_package::KeypackageExt as _,
         test_utils::*,
     };
@@ -110,7 +110,7 @@ mod tests {
                 test_chain,
                 &session_context.get_e2ei_client_id().await.to_uri(),
                 false,
-                init_activation_or_rotation,
+                init_activation,
                 noop_restore,
             )
             .await
