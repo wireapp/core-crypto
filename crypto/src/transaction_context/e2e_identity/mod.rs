@@ -174,14 +174,11 @@ mod tests {
         Box::pin(async move {
             let chain = X509TestChain::init_empty(case.signature_scheme());
 
-            let is_renewal = false;
-
             let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
                 &tx,
                 &case,
                 &chain,
                 E2EI_CLIENT_ID_URI,
-                is_renewal,
                 e2ei_utils::init_enrollment,
                 e2ei_utils::noop_restore,
             )

@@ -159,14 +159,11 @@ mod tests {
                 // we only have a precision of 1 second for the `created_at` field of the Credential
                 smol::Timer::after(core::time::Duration::from_secs(1)).await;
 
-                let is_renewal = case.credential_type == CredentialType::X509;
-
                 let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
                     &alice.transaction,
                     &case,
                     x509_test_chain,
                     &alice.get_e2ei_client_id().await.to_uri(),
-                    is_renewal,
                     e2ei_utils::init_activation,
                     e2ei_utils::noop_restore,
                 )

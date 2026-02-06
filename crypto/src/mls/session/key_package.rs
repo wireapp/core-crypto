@@ -109,7 +109,6 @@ mod tests {
                 &case,
                 test_chain,
                 &session_context.get_e2ei_client_id().await.to_uri(),
-                false,
                 init_activation,
                 noop_restore,
             )

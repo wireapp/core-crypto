@@ -68,23 +68,15 @@ mod tests {
         Box::pin(async move {
             let chain = X509TestChain::init_empty(case.signature_scheme());
 
-            let is_renewal = false;
-            let (mut enrollment, cert) = e2ei_enrollment(
-                &tx,
-                &case,
-                &chain,
-                E2EI_CLIENT_ID_URI,
-                is_renewal,
-                init_enrollment,
-                |e, cc| {
+            let (mut enrollment, cert) =
+                e2ei_enrollment(&tx, &case, &chain, E2EI_CLIENT_ID_URI, init_enrollment, |e, cc| {
                     Box::pin(async move {
                         let handle = cc.e2ei_enrollment_stash(e).await.unwrap();
                         cc.e2ei_enrollment_stash_pop(handle).await.unwrap()
                     })
-                },
-            )
-            .await
-            .unwrap();
+                })
+                .await
+                .unwrap();
 
             let transport = Arc::new(CoreCryptoTransportSuccessProvider::default());
             assert!(tx.e2ei_mls_init_only(&mut enrollment, cert, transport).await.is_ok());
@@ -105,13 +97,11 @@ mod tests {
         Box::pin(async move {
             let chain = X509TestChain::init_empty(case.signature_scheme());
 
-            let is_renewal = false;
             let result = e2ei_enrollment(
                 &tx,
                 &case,
                 &chain,
                 E2EI_CLIENT_ID_URI,
-                is_renewal,
                 init_enrollment,
                 move |e, _cc| {
                     Box::pin(async move {
