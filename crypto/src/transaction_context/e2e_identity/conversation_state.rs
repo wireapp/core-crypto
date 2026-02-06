@@ -176,7 +176,6 @@ mod tests {
             let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
             let cb = Credential::x509(case.ciphersuite(), cert.clone()).unwrap();
 
-            // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
             let credential = Credential::x509(case.ciphersuite(), cert).unwrap();
             alice
                 .transaction
@@ -256,7 +255,6 @@ mod tests {
             // (our DB has a timestamp resolution of 1s)
             smol::Timer::after(std::time::Duration::from_secs(1)).await;
 
-            // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
             let credential = Credential::x509(case.ciphersuite(), cert_bundle).unwrap();
             alice.transaction.add_credential(credential).await.unwrap();
 
