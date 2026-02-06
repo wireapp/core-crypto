@@ -1,7 +1,7 @@
 //! This module contains the primitives to enable transactional support on a higher level within the
 //! [Session]. All mutating operations need to be done through a [TransactionContext].
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 #[cfg(feature = "proteus")]
 use async_lock::Mutex;
@@ -14,8 +14,8 @@ use wire_e2e_identity::pki_env::PkiEnvironment;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    ClientId, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsError, MlsTransport, RecursiveError,
-    Session,
+    ClientId, ConversationId, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsConversation,
+    MlsError, MlsTransport, RecursiveError, Session,
     mls::{self, HasSessionAndCrypto},
     mls_provider::{Database, MlsCryptoProvider},
 };
@@ -28,6 +28,8 @@ pub mod key_package;
 pub mod proteus;
 #[cfg(test)]
 pub mod test_utils;
+
+type ConversationCache = Arc<RwLock<HashMap<ConversationId, Arc<RwLock<MlsConversation>>>>>;
 
 /// This struct provides transactional support for Core Crypto.
 ///
@@ -49,6 +51,7 @@ enum TransactionContextInner {
         pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
         database: Database,
         mls_session: Arc<RwLock<Option<Session<Database>>>>,
+        conversation_cache: ConversationCache,
         #[cfg(feature = "proteus")]
         proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     },
@@ -106,6 +109,7 @@ impl TransactionContext {
                     database: keystore,
                     pki_environment,
                     mls_session: mls_session.clone(),
+                    conversation_cache: Default::default(),
                     #[cfg(feature = "proteus")]
                     proteus_central,
                 }
@@ -198,6 +202,13 @@ impl TransactionContext {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { pki_environment, .. } => Ok(pki_environment.read().await.clone()),
 
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
+        }
+    }
+
+    async fn conversation_cache(&self) -> Result<ConversationCache> {
+        match &*self.inner.read().await {
+            TransactionContextInner::Valid { conversation_cache, .. } => Ok(conversation_cache.clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }

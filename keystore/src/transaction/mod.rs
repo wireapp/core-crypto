@@ -1,6 +1,7 @@
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet, hash_map::Entry},
+    iter::Cloned,
     sync::Arc,
 };
 
@@ -21,7 +22,10 @@ use crate::{
 pub(crate) mod dynamic_dispatch;
 
 /// table: primary key -> entity reference
-type InMemoryTable = HashMap<EntityId, dynamic_dispatch::Entity>;
+///
+/// The inner value is an option: `None` represents a deletion, `Some()` represents an upsert. Accordingly, those
+/// operations will be executed when the transaction is finished.
+type InMemoryTable = HashMap<EntityId, Arc<RwLock<Option<dynamic_dispatch::Entity>>>>;
 /// collection: collection name -> table
 type InMemoryCollection = Arc<RwLock<HashMap<&'static str, InMemoryTable>>>;
 
@@ -30,7 +34,6 @@ type InMemoryCollection = Arc<RwLock<HashMap<&'static str, InMemoryTable>>>;
 #[derive(Debug, Clone)]
 pub(crate) struct KeystoreTransaction {
     cache: InMemoryCollection,
-    deleted: Arc<RwLock<HashSet<EntityId>>>,
     _semaphore_guard: Arc<SemaphoreGuardArc>,
 }
 
@@ -41,7 +44,6 @@ impl KeystoreTransaction {
     pub(crate) async fn new(semaphore_guard: SemaphoreGuardArc) -> CryptoKeystoreResult<Self> {
         Ok(Self {
             cache: Default::default(),
-            deleted: Arc::new(Default::default()),
             _semaphore_guard: Arc::new(semaphore_guard),
         })
     }
@@ -62,18 +64,8 @@ impl KeystoreTransaction {
 
         let entity_id =
             EntityId::from_entity(&entity).ok_or(CryptoKeystoreError::UnknownCollectionName(E::COLLECTION_NAME))?;
-        {
-            // start by adding the entity
-            let mut cache_guard = self.cache.write().await;
-            let table = cache_guard.entry(E::COLLECTION_NAME).or_default();
-            table.insert(entity_id.clone(), entity.to_transaction_entity());
-        }
-        {
-            // at this point remove the entity from the set of deleted entities to ensure that
-            // this new data gets propagated
-            let mut cache_guard = self.deleted.write().await;
-            cache_guard.remove(&entity_id);
-        }
+
+        self.delete_or_save(entity_id, Some(entity)).await?;
 
         Ok(auto_generated_fields)
     }
@@ -84,16 +76,25 @@ impl KeystoreTransaction {
     {
         // rm this entity from the set of added/modified items
         // it might never touch the real db at all
-        let mut cache_guard = self.cache.write().await;
-        if let Entry::Occupied(mut table) = cache_guard.entry(E::COLLECTION_NAME)
-            && let Entry::Occupied(cached_record) = table.get_mut().entry(entity_id.clone())
-        {
-            cached_record.remove_entry();
-        };
+        // start by adding the entity
+        self.delete_or_save::<E>(entity_id, None).await
+    }
 
-        // add this entity to the set of items which should be deleted from the persisted db
-        let mut deleted_set = self.deleted.write().await;
-        deleted_set.insert(entity_id);
+    async fn delete_or_save<'a, E>(&self, entity_id: EntityId, entity: Option<E>) -> CryptoKeystoreResult<()>
+    where
+        E: Entity + EntityDatabaseMutation<'a>,
+    {
+        let mut cache_guard = self.cache.write().await;
+        let table = cache_guard.entry(E::COLLECTION_NAME).or_default();
+        let transaction_entity = entity.map(|e| e.to_transaction_entity());
+
+        if let Some(entity_lock) = table.get(&entity_id).cloned() {
+            let mut guard = entity_lock.write().await;
+            *guard = transaction_entity;
+        } else {
+            let entry = Arc::new(RwLock::new(transaction_entity));
+            table.insert(entity_id.clone(), entry);
+        };
         Ok(())
     }
 

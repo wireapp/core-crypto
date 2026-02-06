@@ -7,7 +7,7 @@ pub mod welcome;
 
 use std::sync::Arc;
 
-use async_lock::RwLock;
+use async_lock::{RwLock, RwLockUpgradableReadGuard};
 use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
 
 use super::{Error, Result, TransactionContext};
@@ -22,15 +22,28 @@ impl TransactionContext {
     /// This helper struct permits mutations on a conversation.
     pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationGuard> {
         let database = self.database().await?;
-        let inner = MlsConversation::load(&database, id)
-            .await
-            .map_err(RecursiveError::mls_conversation("loading conversation from database"))?
-            .map(RwLock::new)
-            .map(Arc::new);
+        let conversation_cache = self.conversation_cache().await?;
+        let conversation_cache = conversation_cache.upgradable_read().await;
 
-        if let Some(inner) = inner {
-            return Ok(ConversationGuard::new(inner, self.clone()));
+        let maybe_conversation = if let Some(conversation_from_cache) = conversation_cache.get(id) {
+            Some(conversation_from_cache.clone())
+        } else {
+            let conversation_from_db = MlsConversation::load(&database, id)
+                .await
+                .map_err(RecursiveError::mls_conversation("loading conversation from database"))?
+                .map(RwLock::new)
+                .map(Arc::new);
+            if let Some(conversation) = &conversation_from_db {
+                let mut conversation_cache = RwLockUpgradableReadGuard::upgrade(conversation_cache).await;
+                conversation_cache.insert(id.to_owned(), conversation.clone());
+            }
+            conversation_from_db
+        };
+
+        if let Some(conversation) = maybe_conversation {
+            return Ok(ConversationGuard::new(conversation, self.clone()));
         }
+
         // Check if there is a pending conversation with
         // the same id
         let pending = self.pending_conversation(id).await.map(Error::PendingConversation)?;
