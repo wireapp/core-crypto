@@ -52,6 +52,121 @@ impl TransactionContext {
         .map_err(Into::into)
     }
 
+    async fn new_sign_keypair(&self, ciphersuite: Ciphersuite) -> Result<E2eiSignatureKeypair> {
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
+
+        let sign_keypair = &SignatureKeyPair::new(
+            ciphersuite.signature_algorithm(),
+            &mut *mls_provider
+                .rand()
+                .borrow_rand()
+                .map_err(MlsError::wrap("borrowing rng"))?,
+        )
+        .map_err(MlsError::wrap("generating new sign keypair"))?;
+
+        sign_keypair
+            .try_into()
+            .map_err(RecursiveError::e2e_identity("creating E2eiSignatureKeypair"))
+            .map_err(Into::into)
+    }
+
+    /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential)
+    /// willing to migrate to E2EI. As a consequence, this method does not support changing the
+    /// ClientId which should remain the same as the Basic one.
+    /// Once the enrollment is finished, use the instance in [TransactionContext::save_x509_credential]
+    /// to save the new credential.
+    pub async fn e2ei_new_activation_enrollment(
+        &self,
+        display_name: String,
+        handle: String,
+        team: Option<String>,
+        expiry_sec: u32,
+        ciphersuite: Ciphersuite,
+    ) -> Result<E2eiEnrollment> {
+        let client_id = self
+            .client_id()
+            .await
+            .map_err(RecursiveError::transaction("getting client id"))?;
+
+        let sign_keypair = self.new_sign_keypair(ciphersuite).await?;
+
+        E2eiEnrollment::try_new(
+            client_id,
+            display_name,
+            handle,
+            team,
+            expiry_sec,
+            ciphersuite,
+            Some(sign_keypair),
+            false, // no x509 credential yet at this point so no OIDC authn yet so no refresh token to restore
+        )
+        .map_err(RecursiveError::e2e_identity("creating new enrollment"))
+        .map_err(Into::into)
+    }
+
+    /// Saves a new X509 credential. Requires first having enrolled a new X509 certificate
+    /// with [TransactionContext::e2ei_new_activation_enrollment].
+    ///
+    /// # Expected actions to perform after this function (in this order)
+    /// 1. Set the credential to the return value of this function for each conversation via
+    ///    [crate::mls::conversation::ConversationGuard::set_credential_by_ref]
+    /// 2. Generate new key packages with [Self::generate_keypackage]
+    /// 3. Use these to replace the stale ones the in the backend
+    /// 4. Delete the old credentials and keypackages locally using [Self::remove_credential]
+    pub async fn save_x509_credential(
+        &self,
+        enrollment: &mut E2eiEnrollment,
+        certificate_chain: String,
+    ) -> Result<(CredentialRef, NewCrlDistributionPoints)> {
+        let sk = enrollment
+            .get_sign_key_for_mls()
+            .map_err(RecursiveError::e2e_identity("getting sign key for mls"))?;
+        let ciphersuite = *enrollment.ciphersuite();
+        let signature_scheme = ciphersuite.signature_algorithm();
+
+        let pki_environment = self
+            .pki_environment()
+            .await
+            .map_err(RecursiveError::transaction("getting pki environment"))?;
+        let certificate_chain = enrollment
+            .certificate_response(
+                certificate_chain,
+                pki_environment
+                    .mls_pki_env_provider()
+                    .borrow()
+                    .await
+                    .as_ref()
+                    .ok_or(Error::PkiEnvironmentUnset)?,
+            )
+            .await
+            .map_err(RecursiveError::e2e_identity("getting certificate response"))?;
+
+        let private_key = CertificatePrivateKey::new(sk);
+
+        let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
+
+        let cert_bundle = CertificateBundle {
+            certificate_chain,
+            private_key,
+            signature_scheme,
+        };
+
+        let credential = Credential::x509(ciphersuite, cert_bundle).map_err(RecursiveError::mls_credential(
+            "creating new x509 credential from certificate bundle in save_x509_credential",
+        ))?;
+
+        let credential_ref = self
+            .add_credential(credential)
+            .await
+            .map_err(RecursiveError::transaction(
+                "saving and adding credential in save_x509_credential",
+            ))?;
+
+        Ok((credential_ref, crl_new_distribution_points))
+    }
     /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it
     /// to initialize the MLS client with a certificate
     pub async fn e2ei_mls_init_only(
