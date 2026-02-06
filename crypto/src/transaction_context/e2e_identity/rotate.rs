@@ -65,9 +65,8 @@ impl TransactionContext {
         .map_err(Into::into)
     }
 
-    /// Saves a new X509 credential. Requires first
-    /// having enrolled a new X509 certificate with either [TransactionContext::e2ei_new_activation_enrollment]
-    /// or [TransactionContext::e2ei_new_rotate_enrollment].
+    /// Saves a new X509 credential. Requires first having enrolled a new X509 certificate
+    /// with [TransactionContext::e2ei_new_activation_enrollment].
     ///
     /// # Expected actions to perform after this function (in this order)
     /// 1. Set the credential to the return value of this function for each conversation via
