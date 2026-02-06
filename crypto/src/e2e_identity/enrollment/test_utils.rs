@@ -89,7 +89,6 @@ pub(crate) async fn e2ei_enrollment<'a>(
     case: &TestContext,
     x509_test_chain: &X509TestChain,
     e2ei_client_id_uri: &str,
-    is_renewal: bool,
     init: impl Fn(E2eiInitWrapper) -> InitFnReturn<'_>,
     // used to verify persisting the instance actually does restore it entirely
     restore: impl Fn(E2eiEnrollment, &'a TransactionContext) -> RestoreFnReturn<'a>,
@@ -99,11 +98,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let wrapper = E2eiInitWrapper { context: ctx, case };
     let mut enrollment = init(wrapper).await?;
 
-    if is_renewal {
-        assert!(enrollment.has_called_new_oidc_challenge_request);
-    } else {
-        assert!(!enrollment.has_called_new_oidc_challenge_request);
-    }
+    assert!(!enrollment.has_called_new_oidc_challenge_request);
 
     let (display_name, handle) = (enrollment.display_name.clone(), enrollment.handle.clone());
 
