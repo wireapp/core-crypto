@@ -10,10 +10,6 @@ use tls_codec::Serialize;
 use wire_e2e_identity::WireIdentityReader;
 use x509_cert::der::Encode;
 
-use super::{
-    Result, TestConversation,
-    test_conversation::operation_guard::{Commit, OperationGuard},
-};
 use crate::{
     CertificateBundle, Ciphersuite, CredentialFindFilters, CredentialRef, CredentialType,
     MlsConversationDecryptMessage, WireIdentity,
@@ -27,10 +23,6 @@ use crate::{
 
 #[allow(clippy::redundant_static_lifetimes)]
 pub const TEAM: &'static str = "world";
-
-pub struct RotateAllResult<'a> {
-    pub(crate) commits: Vec<OperationGuard<'a, Commit>>,
-}
 
 impl SessionContext {
     pub async fn new_keypackage(&self, case: &TestContext) -> KeyPackage {
@@ -192,23 +184,6 @@ impl SessionContext {
         let new_cert = CertificateBundle::new(handle, display_name, Some(&cid), None, signer);
         let credential = Credential::x509(case.ciphersuite(), new_cert).unwrap();
         self.transaction.add_credential_producing_arc(credential).await.unwrap()
-    }
-
-    pub(crate) async fn update_credential_in_all_conversations<'a>(
-        &self,
-        all_conversations: Vec<TestConversation<'a>>,
-        credential_ref: &CredentialRef,
-        cipher_suite: Ciphersuite,
-    ) -> Result<RotateAllResult<'a>> {
-        assert_eq!(cipher_suite, credential_ref.ciphersuite());
-
-        let mut commits = Vec::with_capacity(all_conversations.len());
-        for conv in all_conversations {
-            let commit_guard = conv.acting_as(self).await.set_credential_by_ref(credential_ref).await;
-            commits.push(commit_guard);
-        }
-
-        Ok(RotateAllResult { commits })
     }
 
     pub async fn get_e2ei_client_id(&self) -> wire_e2e_identity::E2eiClientId {
