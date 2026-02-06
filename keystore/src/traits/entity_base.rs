@@ -24,6 +24,11 @@ pub trait EntityBase: 'static + Sized {
         as_dyn_any.downcast_ref()
     }
 
+    fn downcast_mut_arc<T: EntityBase>(option: &mut Option<Self>) -> &mut Option<T> {
+        let as_dyn_any = option as &mut Option<dyn std::any::Any>;
+        as_dyn_any.downcast_mut()
+    }
+
     fn downcast_arc<T>(self: Arc<Self>) -> Option<Arc<T>>
     where
         Self: Send + Sync,

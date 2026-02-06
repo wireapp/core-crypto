@@ -5,8 +5,9 @@ use std::{
     sync::Arc,
 };
 
-use async_lock::{RwLock, SemaphoreGuardArc};
+use async_lock::SemaphoreGuardArc;
 use itertools::Itertools;
+use tokio::sync::{OwnedRwLockWriteGuard, RwLock, RwLockMappedWriteGuard, RwLockWriteGuard};
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
@@ -154,21 +155,25 @@ impl KeystoreTransaction {
         let conversation_id = conversation_id.as_ref();
 
         let mut cache_guard = self.cache.write().await;
-        if let Entry::Occupied(mut table) = cache_guard.entry(MlsPendingMessage::COLLECTION_NAME) {
-            table.get_mut().retain(|_key, entity| {
-                let pending_message = entity
-                    .downcast::<MlsPendingMessage>()
-                    .expect("table for MlsPendingMessage contains only that type");
-                pending_message.foreign_id != conversation_id
-            });
-        }
-        drop(cache_guard);
+        if let Entry::Occupied(mut pending_messages_table) = cache_guard.entry(MlsPendingMessage::COLLECTION_NAME) {
+            for (_, dyn_entity) in pending_messages_table.get_mut().iter() {
+                let entity_guard = dyn_entity.read().await;
+                let pending_message = entity_guard.as_ref().map(|entity| {
+                    entity
+                        .downcast::<MlsPendingMessage>()
+                        .expect("table for MlsPendingMessage contains only that type")
+                });
 
-        let mut deleted_set = self.deleted.write().await;
-        deleted_set.insert(
-            EntityId::from_key::<MlsPendingMessage>(conversation_id.into())
-                .expect("mls pending messages are proper entities which can be parsed"),
-        );
+                if let Some(pending_message) = pending_message
+                    && pending_message.foreign_id == conversation_id
+                {
+                    // upgrade lock
+                    drop(entity_guard);
+                    let mut pending_message = dyn_entity.write().await;
+                    *pending_message = None;
+                }
+            }
+        }
     }
 
     pub(crate) async fn find_pending_messages_by_conversation_id(
@@ -189,32 +194,20 @@ impl KeystoreTransaction {
         Ok(merged_records)
     }
 
-    async fn find_in_cache<E>(&self, entity_id: &EntityId) -> Option<Arc<E>>
-    where
-        E: Entity + Send + Sync,
-    {
-        let cache_guard = self.cache.read().await;
-        cache_guard
-            .get(E::COLLECTION_NAME)
-            .and_then(|table| table.get(entity_id).and_then(|entity| entity.downcast()))
-    }
-
     /// The result of this function will have different contents for different scenarios:
     /// * `Some(Some(E))` - the transaction cache contains the record
     /// * `Some(None)` - the deletion of the record has been cached
     /// * `None` - there is no information about the record in the cache
-    async fn get_by_entity_id<E>(&self, entity_id: &EntityId) -> Option<Option<Arc<E>>>
+    async fn get_by_entity_id<E>(&self, entity_id: &EntityId) -> Option<RwLockMappedWriteGuard<Option<E>>>
     where
         E: Entity + Send + Sync,
     {
-        // when applying our transaction to the real database, we delete after inserting,
-        // so here we have to check for deletion before we check for existing values
-        let deleted_list = self.deleted.read().await;
-        if deleted_list.contains(entity_id) {
-            return Some(None);
+        let cache_guard = self.cache.read().await;
+        let table = cache_guard.get(E::COLLECTION_NAME)?;
+        if let Some(entity) = table.get(entity_id) {
+            let entity_guard = entity.write().await;
+            RwLockWriteGuard::map(entity_guard, |e| {})
         }
-
-        self.find_in_cache::<E>(entity_id).await.map(Some)
     }
 
     /// The result of this function will have different contents for different scenarios:

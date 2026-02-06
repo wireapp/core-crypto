@@ -81,6 +81,45 @@ impl Entity {
         }
     }
 
+    pub(crate) fn downcast_option_mut<E>(option: &mut Option<Self>) -> &mut Option<E> {
+        option.replace(value)
+    }
+
+    pub(crate) fn downcast_mut<E>(&mut self) -> Option<&mut Arc<E>>
+    where
+        E: EntityBase + Send + Sync,
+    {
+        match self {
+            Entity::ConsumerData(consumer_data) => consumer_data.downcast_mut_arc(),
+            Entity::HpkePrivateKey(stored_hpke_private_key) => stored_hpke_private_key.downcast_mut_arc(),
+            Entity::StoredKeypackage(stored_keypackage) => stored_keypackage.downcast_mut_arc(),
+            Entity::PskBundle(stored_psk_bundle) => stored_psk_bundle.downcast_mut_arc(),
+            Entity::EncryptionKeyPair(stored_encryption_key_pair) => stored_encryption_key_pair.downcast_mut_arc(),
+            Entity::StoredEpochEncryptionKeypair(stored_epoch_encryption_keypair) => {
+                stored_epoch_encryption_keypair.downcast_mut_arc()
+            }
+            Entity::StoredCredential(stored_credential) => stored_credential.downcast_mut_arc(),
+            Entity::StoredBufferedCommit(stored_buffered_commit) => stored_buffered_commit.downcast_mut_arc(),
+            Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.downcast_mut_arc(),
+            Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => {
+                persisted_mls_pending_group.downcast_mut_arc()
+            }
+            Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.downcast_mut_arc(),
+            Entity::StoredE2eiEnrollment(stored_e2ei_enrollment) => stored_e2ei_enrollment.downcast_mut_arc(),
+            Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.downcast_mut_arc(),
+            Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.downcast_mut_arc(),
+            Entity::E2eiCrl(e2ei_crl) => e2ei_crl.downcast_mut_arc(),
+            #[cfg(target_family = "wasm")]
+            Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.downcast_mut_arc(),
+            #[cfg(feature = "proteus-keystore")]
+            Entity::ProteusIdentity(proteus_identity) => proteus_identity.downcast_mut_arc(),
+            #[cfg(feature = "proteus-keystore")]
+            Entity::ProteusPrekey(proteus_prekey) => proteus_prekey.downcast_mut_arc(),
+            #[cfg(feature = "proteus-keystore")]
+            Entity::ProteusSession(proteus_session) => proteus_session.downcast_mut_arc(),
+        }
+    }
+
     pub(crate) async fn execute_save(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         match self {
             Entity::ConsumerData(consumer_data) => consumer_data.set_and_replace(tx).await.map(|_| ()),
