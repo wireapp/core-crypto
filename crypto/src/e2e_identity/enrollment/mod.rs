@@ -57,13 +57,10 @@ impl E2eiEnrollment {
         team: Option<String>,
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
-        sign_keypair: Option<E2eiSignatureKeypair>,
         has_called_new_oidc_challenge_request: bool,
     ) -> Result<Self> {
         let alg = ciphersuite.try_into()?;
-        let sign_sk = sign_keypair
-            .map(Ok)
-            .unwrap_or_else(|| Self::new_sign_key(ciphersuite))?;
+        let sign_sk = Self::new_sign_key(ciphersuite)?;
 
         let client_id = QualifiedE2eiClientId::try_from(client_id.as_slice())?;
         let client_id = String::try_from(client_id)?;
