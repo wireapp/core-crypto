@@ -35,7 +35,6 @@ impl TransactionContext {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> Result<E2eiEnrollment> {
-        let signature_keypair = None; // fresh install without a Basic client. Supplying None will generate a new keypair
         E2eiEnrollment::try_new(
             client_id,
             display_name,
@@ -43,7 +42,6 @@ impl TransactionContext {
             team,
             expiry_sec,
             ciphersuite,
-            signature_keypair,
             false, // fresh install so no refresh token registered yet
         )
         .map_err(RecursiveError::e2e_identity("creating new enrollment"))
