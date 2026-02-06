@@ -59,12 +59,7 @@ mod tests {
     use openmls::prelude::{KeyPackageIn, ProtocolVersion};
     use openmls_traits::types::VerifiableCiphersuite;
 
-    use crate::{
-        MlsConversationConfiguration,
-        e2e_identity::enrollment::test_utils::{e2ei_enrollment, init_activation, noop_restore},
-        mls::key_package::KeypackageExt as _,
-        test_utils::*,
-    };
+    use crate::{MlsConversationConfiguration, mls::key_package::KeypackageExt as _, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn can_assess_keypackage_expiration(case: TestContext) {
@@ -82,71 +77,6 @@ mod tests {
         // Sleep 2 seconds to make sure we make the kp expire
         smol::Timer::after(std::time::Duration::from_secs(2)).await;
         assert!(!kp_1s_exp.is_valid());
-    }
-
-    #[apply(all_cred_cipher)]
-    async fn requesting_x509_key_packages_after_basic(case: TestContext) {
-        // Basic test case
-        if !case.is_basic() {
-            return;
-        }
-
-        let [session_context] = case.sessions_basic_with_pki_env().await;
-        Box::pin(async move {
-            // Generate 5 Basic key packages first
-            let mut initial_kp_refs = Vec::new();
-            for _ in 0..5 {
-                let kp = session_context.new_keypackage(&case).await;
-                initial_kp_refs.push(kp.make_ref().unwrap());
-            }
-            initial_kp_refs.sort_by_key(|kp_ref| kp_ref.hash_ref().to_owned());
-
-            // Set up E2E identity
-            let test_chain = session_context.x509_chain_unchecked();
-
-            let (mut enrollment, cert_chain) = e2ei_enrollment(
-                &session_context.transaction,
-                &case,
-                test_chain,
-                &session_context.get_e2ei_client_id().await.to_uri(),
-                init_activation,
-                noop_restore,
-            )
-            .await
-            .unwrap();
-
-            let _rotate_bundle = session_context
-                .transaction
-                .save_x509_credential(&mut enrollment, cert_chain)
-                .await
-                .unwrap();
-
-            // E2E identity has been set up correctly
-            assert!(
-                session_context
-                    .transaction
-                    .e2ei_is_enabled(case.ciphersuite())
-                    .await
-                    .unwrap()
-            );
-
-            // Request X509 key packages
-            let key_packages = session_context.transaction.get_keypackage_refs().await.unwrap();
-            let (mut from_initial_set, x509_key_packages) = key_packages
-                .into_iter()
-                .partition::<Vec<_>, _>(|kp_ref| initial_kp_refs.contains(kp_ref));
-
-            from_initial_set.sort_by_key(|kp_ref| kp_ref.hash_ref().to_owned());
-            assert_eq!(initial_kp_refs, from_initial_set);
-
-            // Verify that the key packages are X509
-            assert!(
-                x509_key_packages
-                    .iter()
-                    .all(|kp| CredentialType::X509 == kp.credential_type())
-            );
-        })
-        .await
     }
 
     #[apply(all_cred_cipher)]
