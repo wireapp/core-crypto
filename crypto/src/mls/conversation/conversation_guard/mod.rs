@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_lock::{RwLockReadGuard, RwLockWriteGuard};
+use async_lock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use core_crypto_keystore::{CryptoKeystoreMls as _, Database};
 use openmls::prelude::group_info::GroupInfo;
 use openmls_traits::OpenMlsCryptoProvider as _;
@@ -45,7 +45,7 @@ impl<'inner> ConversationWithMls<'inner> for ConversationGuard {
 }
 
 impl ConversationGuard {
-    pub(crate) fn new(inner: GroupStoreValue<MlsConversation>, central_context: TransactionContext) -> Self {
+    pub(crate) fn new(inner: Arc<RwLock<MlsConversation>>, central_context: TransactionContext) -> Self {
         Self { inner, central_context }
     }
 
@@ -72,11 +72,6 @@ impl ConversationGuard {
     /// KeyStore errors, such as IO
     pub async fn wipe(&mut self) -> Result<()> {
         let provider = self.crypto_provider().await?;
-        let mut group_store = self
-            .central_context
-            .mls_groups()
-            .await
-            .map_err(RecursiveError::transaction("getting mls groups"))?;
         let mut conversation = self.conversation_mut().await;
         conversation.wipe_associated_entities(&provider).await?;
         provider
@@ -84,7 +79,6 @@ impl ConversationGuard {
             .mls_group_delete(conversation.id())
             .await
             .map_err(KeystoreError::wrap("deleting mls group"))?;
-        let _ = group_store.remove(conversation.id());
         Ok(())
     }
 
@@ -137,7 +131,7 @@ impl ConversationGuard {
 #[cfg(test)]
 mod test_utils {
     use super::ConversationGuard;
-    use crate::{MlsConversation, mls::conversation::ConversationWithMls as _};
+    use crate::mls::conversation::ConversationWithMls as _;
 
     impl ConversationGuard {
         /// Replaces the MLS group in memory with the one from keystore.
@@ -147,7 +141,7 @@ mod test_utils {
             let inner = self.conversation().await;
             let id = inner.id();
 
-            let (parent_id, group) = context
+            let _ = context
                 .database()
                 .await
                 .unwrap()
@@ -155,8 +149,6 @@ mod test_utils {
                 .await
                 .map(|mut groups| groups.remove(id.as_ref()).unwrap())
                 .unwrap();
-            let group = MlsConversation::from_serialized_state(group, parent_id.map(Into::into)).unwrap();
-            context.mls_groups().await.unwrap().insert(id, group);
         }
     }
 }

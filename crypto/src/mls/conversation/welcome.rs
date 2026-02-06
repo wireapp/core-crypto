@@ -1,11 +1,10 @@
 use core_crypto_keystore::{Database, entities::PersistedMlsPendingGroup, traits::FetchFromDatabase};
 use openmls::prelude::{MlsGroup, Welcome};
-use openmls_traits::OpenMlsCryptoProvider;
 
 use super::{Error, Result};
 use crate::{
     ConversationId, LeafError, MlsConversation, MlsConversationConfiguration, MlsError,
-    e2e_identity::NewCrlDistributionPoints, group_store::GroupStore, mls_provider::MlsCryptoProvider,
+    e2e_identity::NewCrlDistributionPoints, mls_provider::MlsCryptoProvider,
 };
 
 /// Contains everything client needs to know after decrypting an (encrypted) Welcome message
@@ -26,7 +25,6 @@ impl MlsConversation {
         configuration: MlsConversationConfiguration,
         provider: &MlsCryptoProvider,
         database: &Database,
-        mls_groups: &mut GroupStore<MlsConversation>,
     ) -> Result<Self> {
         let mls_group_config = configuration.as_openmls_default_configuration()?;
 
@@ -41,13 +39,10 @@ impl MlsConversation {
             })?;
 
         let id = ConversationId::from(group.group_id().as_slice());
-        let existing_conversation = mls_groups.get_fetch(&id, database, None).await;
+        let existing_conversation = MlsConversation::load(database, id.clone()).await;
         let conversation_exists = existing_conversation.ok().flatten().is_some();
 
-        let pending_group = provider
-            .key_store()
-            .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
-            .await;
+        let pending_group = database.get_borrowed::<PersistedMlsPendingGroup>(id.as_ref()).await;
         let pending_group_exists = pending_group.ok().flatten().is_some();
 
         if conversation_exists || pending_group_exists {

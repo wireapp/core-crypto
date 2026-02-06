@@ -188,14 +188,13 @@ mod tests {
                 .await;
             assert!(matches!(error, Ok(None)));
 
-            // Ensure it's durable i.e. MLS group has been persisted
-            bob.transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .drop_and_restore()
-                .await;
-            assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
+            assert!(
+                conversation
+                    .acting_as(&bob)
+                    .await
+                    .is_functional_and_contains([&alice, &bob])
+                    .await
+            );
         })
         .await
     }

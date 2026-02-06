@@ -261,19 +261,13 @@ impl PendingConversation {
         };
 
         // Persist the now usable MLS group in the keystore
-        let conversation = MlsConversation::from_mls_group(mls_group, configuration, &self.keystore().await?)
+        let _ = MlsConversation::from_mls_group(mls_group, configuration, &self.keystore().await?)
             .await
             .map_err(RecursiveError::mls_conversation(
                 "constructing conversation from mls group",
             ))?;
 
         let context = &self.context;
-
-        context
-            .mls_groups()
-            .await
-            .map_err(RecursiveError::transaction("getting mls groups"))?
-            .insert(id, conversation);
 
         // This is the now merged conversation
         let mut conversation = context

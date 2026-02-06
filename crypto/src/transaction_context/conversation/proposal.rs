@@ -65,6 +65,10 @@ impl TransactionContext {
                     .map_err(RecursiveError::mls_conversation("proposing to remove member"))?
             }
         };
+        conversation
+            .persist_group_when_changed(database, false)
+            .await
+            .map_err(RecursiveError::mls_conversation("persisting conversation"))?;
         Ok(proposal)
     }
 }

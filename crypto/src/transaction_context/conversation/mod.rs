@@ -5,6 +5,9 @@ mod external_proposal;
 pub(crate) mod proposal;
 pub mod welcome;
 
+use std::sync::Arc;
+
+use async_lock::RwLock;
 use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
 
 use super::{Error, Result, TransactionContext};
@@ -18,13 +21,12 @@ impl TransactionContext {
     ///
     /// This helper struct permits mutations on a conversation.
     pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationGuard> {
-        let keystore = self.database().await?;
-        let inner = self
-            .mls_groups()
-            .await?
-            .get_fetch(id, &keystore, None)
+        let database = self.database().await?;
+        let inner = MlsConversation::load(&database, id)
             .await
-            .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?;
+            .map_err(RecursiveError::mls_conversation("loading conversation from database"))?
+            .map(RwLock::new)
+            .map(Arc::new);
 
         if let Some(inner) = inner {
             return Ok(ConversationGuard::new(inner, self.clone()));
@@ -69,23 +71,20 @@ impl TransactionContext {
         if self.conversation_exists(id).await? || self.pending_conversation_exists(id).await? {
             return Err(LeafError::ConversationAlreadyExists(id.to_owned()).into());
         }
-        let conversation = MlsConversation::create(id.to_owned(), provider, database, credential_ref, config)
+        let _ = MlsConversation::create(id.to_owned(), provider, database, credential_ref, config)
             .await
             .map_err(RecursiveError::mls_conversation("creating conversation"))?;
-
-        self.mls_groups().await?.insert(id, conversation);
 
         Ok(())
     }
 
     /// Checks if a given conversation id exists locally
     pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
-        self.mls_groups()
-            .await?
-            .get_fetch(id, &self.database().await?, None)
+        let database = &self.database().await?;
+        MlsConversation::load(database, id)
             .await
             .map(|option| option.is_some())
-            .map_err(RecursiveError::root("fetching conversation from mls groups by id"))
+            .map_err(RecursiveError::mls_conversation("loading conversation from database"))
             .map_err(Into::into)
     }
 }

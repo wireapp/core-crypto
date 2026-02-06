@@ -1,7 +1,5 @@
 //! This module contains transactional conversation operations that produce a [WelcomeBundle].
 
-use std::borrow::BorrowMut as _;
-
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize as _;
 
@@ -62,19 +60,9 @@ impl TransactionContext {
             .mls_provider()
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
-        let mut mls_groups = self
-            .mls_groups()
+        let conversation = MlsConversation::from_welcome_message(welcome, configuration, &mls_provider, database)
             .await
-            .map_err(RecursiveError::transaction("getting mls groups"))?;
-        let conversation = MlsConversation::from_welcome_message(
-            welcome,
-            configuration,
-            &mls_provider,
-            database,
-            mls_groups.borrow_mut(),
-        )
-        .await
-        .map_err(RecursiveError::mls_conversation("creating conversation from welcome"))?;
+            .map_err(RecursiveError::mls_conversation("creating conversation from welcome"))?;
 
         // We wait for the group to be created then we iterate through all members
         let crl_new_distribution_points = get_new_crl_distribution_points(
@@ -86,7 +74,6 @@ impl TransactionContext {
         .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
         let id = conversation.id.clone();
-        mls_groups.insert(&id, conversation);
 
         Ok(WelcomeBundle {
             id,

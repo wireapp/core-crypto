@@ -185,6 +185,7 @@ impl ConversationGuard {
             .cloned()
             .collect();
 
+        conversation.persist_group_when_changed(database, false).await?;
         drop(conversation);
 
         let inline_proposals = [pending_proposals, remove_and_add].concat();

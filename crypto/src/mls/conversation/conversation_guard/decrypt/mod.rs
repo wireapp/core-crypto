@@ -193,6 +193,7 @@ impl ConversationGuard {
                 decrypted_message.buffered_messages.is_none(),
                 "decrypted message should be constructed with empty buffer"
             );
+            conversation.persist_group_when_changed(&database, false).await?;
             if recursion_policy == RecursionPolicy::AsNecessary {
                 drop(conversation);
                 decrypted_message.buffered_messages = self.restore_and_clear_pending_messages().await?;
@@ -393,6 +394,7 @@ impl ConversationGuard {
 
                 // can't use `.then` because async
                 let mut buffered_messages = None;
+                conversation.persist_group_when_changed(&database, false).await?;
                 // drop conversation to allow borrowing `self` again
                 drop(conversation);
                 if recursion_policy == RecursionPolicy::AsNecessary {
@@ -439,7 +441,7 @@ impl ConversationGuard {
                     .await
                     .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
                 conversation.group.store_pending_proposal(*proposal);
-
+                conversation.persist_group_when_changed(&database, false).await?;
                 // we still support the `has_epoch_changed` field, though we'll remove it later
                 #[expect(deprecated)]
                 MlsConversationDecryptMessage {
@@ -507,6 +509,7 @@ impl ConversationGuard {
     ) -> Result<ProcessedMessage> {
         let msg_epoch = protocol_message.epoch().as_u64();
         let backend = self.crypto_provider().await?;
+        let database = self.database().await?;
         let mut conversation = self.conversation_mut().await;
         let group_epoch = conversation.group.epoch().as_u64();
         let processed_msg = conversation
@@ -553,6 +556,7 @@ impl ConversationGuard {
         if is_duplicate {
             return Err(Error::DuplicateMessage);
         }
+        conversation.persist_group_when_changed(&database, false).await?;
         Ok(processed_msg)
     }
 
