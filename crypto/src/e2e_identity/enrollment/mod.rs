@@ -1,14 +1,17 @@
-mod crypto;
-#[cfg(test)]
-pub(crate) mod test_utils;
-
 use core_crypto_keystore::CryptoKeystoreMls;
-use openmls_traits::random::OpenMlsRand as _;
+use openmls::prelude::SignatureScheme;
+use openmls_traits::{crypto::OpenMlsCrypto as _, random::OpenMlsRand as _};
 use wire_e2e_identity::{E2eiAcmeAuthorization, RustyE2eIdentity};
 use zeroize::Zeroize as _;
 
+#[cfg(test)]
+pub(crate) mod test_utils;
+
 use super::{EnrollmentHandle, Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
-use crate::{Ciphersuite, ClientId, KeystoreError, MlsError, mls_provider::CRYPTO};
+use crate::{
+    Ciphersuite, ClientId, KeystoreError, MlsError,
+    mls_provider::{CRYPTO, RustCrypto},
+};
 
 /// Wire end to end identity solution for fetching a x509 certificate which identifies a client.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -84,6 +87,26 @@ impl E2eiEnrollment {
             ciphersuite,
             has_called_new_oidc_challenge_request,
         })
+    }
+
+    pub(crate) fn new_sign_key(ciphersuite: Ciphersuite) -> Result<E2eiSignatureKeypair> {
+        let (sk, _) = CRYPTO
+            .signature_key_gen(ciphersuite.signature_algorithm())
+            .map_err(MlsError::wrap("performing signature keygen"))?;
+        E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), sk)
+    }
+
+    pub(crate) fn get_sign_key_for_mls(&self) -> Result<Vec<u8>> {
+        let sk = match self.ciphersuite.signature_algorithm() {
+            SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ECDSA_SECP384R1_SHA384 => self.sign_sk.to_vec(),
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => RustCrypto::normalize_p521_secret_key(&self.sign_sk).to_vec(),
+            SignatureScheme::ED25519 => RustCrypto::normalize_ed25519_key(self.sign_sk.as_slice())
+                .map_err(MlsError::wrap("normalizing ed25519 key"))?
+                .to_bytes()
+                .to_vec(),
+            SignatureScheme::ED448 => return Err(Error::NotYetSupported),
+        };
+        Ok(sk)
     }
 
     pub(crate) fn ciphersuite(&self) -> &Ciphersuite {
