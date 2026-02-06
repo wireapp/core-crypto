@@ -1169,6 +1169,7 @@ dependencies = [
  "smol-macros",
  "tempfile",
  "thiserror 2.0.18",
+ "tokio",
  "twox-hash",
  "uuid",
  "wasm-bindgen",

@@ -24,7 +24,6 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 ] }
 
 [workspace.dependencies]
-async-channel = "2.5.0"
 async-lock = "3.4"
 async-recursion = "1"
 async-trait = "0.1"
@@ -98,7 +97,6 @@ anyhow = { version = "1.0", default-features = false }
 env_logger = "0.11"
 openidconnect = { version = "4", default-features = false }
 rstest = { version = "0.26", default-features = false }
-rstest_reuse = { version = "0.7", default-features = false }
 scraper = { version = "0.25", default-features = false }
 tokio = { version = "1.49", default-features = false }
 wasm-bindgen-test = { version = "0.3" }
@@ -130,7 +128,3 @@ opt-level = "s"
 # ! This will cause the FFI to stop working because UniFFI stores the Rust <-> cdylib mapping
 # ! in the `.strtab` section of the executable. Stripping this causes everything to stop functioning.
 strip = false
-# panic = "abort"
-
-[profile.dev.package.backtrace]
-opt-level = 3

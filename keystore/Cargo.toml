@@ -46,6 +46,7 @@ twox-hash = { version = "2.1.2", default-features = false, features = [
   "alloc",
   "xxhash3_128",
 ] }
+tokio = { workspace = true, features = ["sync"] }
 
 [target.'cfg(target_os = "ios")'.dependencies]
 security-framework = "3.5"
