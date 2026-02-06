@@ -9,15 +9,12 @@ mod stash;
 use std::{collections::HashSet, sync::Arc};
 
 pub use error::{Error, Result};
-use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::{OpenMlsCryptoProvider as _, random::OpenMlsRand as _};
 use wire_e2e_identity::x509_check::extract_crl_uris;
 
 use super::TransactionContext;
 use crate::{
-    CertificateBundle, Ciphersuite, ClientId, Credential, CredentialRef, E2eiEnrollment, MlsError, MlsTransport,
-    RecursiveError,
-    e2e_identity::{E2eiSignatureKeypair, NewCrlDistributionPoints},
+    CertificateBundle, Ciphersuite, ClientId, Credential, CredentialRef, E2eiEnrollment, MlsTransport, RecursiveError,
+    e2e_identity::NewCrlDistributionPoints,
     mls::credential::{crl::get_new_crl_distribution_points, x509::CertificatePrivateKey},
 };
 
@@ -49,61 +46,6 @@ impl TransactionContext {
             ciphersuite,
             signature_keypair,
             false, // fresh install so no refresh token registered yet
-        )
-        .map_err(RecursiveError::e2e_identity("creating new enrollment"))
-        .map_err(Into::into)
-    }
-
-    async fn new_sign_keypair(&self, ciphersuite: Ciphersuite) -> Result<E2eiSignatureKeypair> {
-        let mls_provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
-
-        let sign_keypair = &SignatureKeyPair::new(
-            ciphersuite.signature_algorithm(),
-            &mut *mls_provider
-                .rand()
-                .borrow_rand()
-                .map_err(MlsError::wrap("borrowing rng"))?,
-        )
-        .map_err(MlsError::wrap("generating new sign keypair"))?;
-
-        sign_keypair
-            .try_into()
-            .map_err(RecursiveError::e2e_identity("creating E2eiSignatureKeypair"))
-            .map_err(Into::into)
-    }
-
-    /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential)
-    /// willing to migrate to E2EI. As a consequence, this method does not support changing the
-    /// ClientId which should remain the same as the Basic one.
-    /// Once the enrollment is finished, use the instance in [TransactionContext::save_x509_credential]
-    /// to save the new credential.
-    pub async fn e2ei_new_activation_enrollment(
-        &self,
-        display_name: String,
-        handle: String,
-        team: Option<String>,
-        expiry_sec: u32,
-        ciphersuite: Ciphersuite,
-    ) -> Result<E2eiEnrollment> {
-        let client_id = self
-            .client_id()
-            .await
-            .map_err(RecursiveError::transaction("getting client id"))?;
-
-        let sign_keypair = self.new_sign_keypair(ciphersuite).await?;
-
-        E2eiEnrollment::try_new(
-            client_id,
-            display_name,
-            handle,
-            team,
-            expiry_sec,
-            ciphersuite,
-            Some(sign_keypair),
-            false, // no x509 credential yet at this point so no OIDC authn yet so no refresh token to restore
         )
         .map_err(RecursiveError::e2e_identity("creating new enrollment"))
         .map_err(Into::into)
