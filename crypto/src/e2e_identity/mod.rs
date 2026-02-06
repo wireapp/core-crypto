@@ -1,13 +1,12 @@
 mod crypto;
 pub(crate) mod device_status;
-mod error;
-pub(crate) mod id;
-pub(crate) mod identity;
-pub(crate) use crypto::E2eiSignatureKeypair;
 #[cfg(not(test))]
 mod enrollment;
 #[cfg(test)]
 pub(crate) mod enrollment;
+mod error;
+pub(crate) mod id;
+pub(crate) mod identity;
 pub mod types;
 
 pub use enrollment::E2eiEnrollment;
