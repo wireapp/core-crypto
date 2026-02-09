@@ -730,7 +730,7 @@ ts-fmt: $(STAMPS)/ts-fmt ## Format TypeScript files via eslint
 
 $(STAMPS)/ts-check: $(TS_SRCS) $(TS_TEST_FILES)
 	cd $(JS_DIR) && bun eslint --max-warnings=0 && \
-	tsc --noEmit
+	bun x tsc --noEmit
 	$(TOUCH_STAMP)
 
 .PHONY: ts-check
