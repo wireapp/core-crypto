@@ -81,42 +81,44 @@ impl Entity {
         }
     }
 
-    pub(crate) fn downcast_option_mut<E>(option: &mut Option<Self>) -> &mut Option<E> {
-        option.replace(value)
-    }
-
-    pub(crate) fn downcast_mut<E>(&mut self) -> Option<&mut Arc<E>>
+    pub(crate) fn downcast_option_mut<E>(option: &mut Option<Self>) -> &mut Option<E>
     where
         E: EntityBase + Send + Sync,
     {
-        match self {
-            Entity::ConsumerData(consumer_data) => consumer_data.downcast_mut_arc(),
-            Entity::HpkePrivateKey(stored_hpke_private_key) => stored_hpke_private_key.downcast_mut_arc(),
-            Entity::StoredKeypackage(stored_keypackage) => stored_keypackage.downcast_mut_arc(),
-            Entity::PskBundle(stored_psk_bundle) => stored_psk_bundle.downcast_mut_arc(),
-            Entity::EncryptionKeyPair(stored_encryption_key_pair) => stored_encryption_key_pair.downcast_mut_arc(),
-            Entity::StoredEpochEncryptionKeypair(stored_epoch_encryption_keypair) => {
-                stored_epoch_encryption_keypair.downcast_mut_arc()
+        let is_some_of_e = match option {
+            Some(Entity::ConsumerData(consumer_data)) => consumer_data.is::<E>(),
+            Some(Entity::HpkePrivateKey(stored_hpke_private_key)) => stored_hpke_private_key.is::<E>(),
+            Some(Entity::StoredKeypackage(stored_keypackage)) => stored_keypackage.is::<E>(),
+            Some(Entity::PskBundle(stored_psk_bundle)) => stored_psk_bundle.is::<E>(),
+            Some(Entity::EncryptionKeyPair(stored_encryption_key_pair)) => stored_encryption_key_pair.is::<E>(),
+            Some(Entity::StoredEpochEncryptionKeypair(stored_epoch_encryption_keypair)) => {
+                stored_epoch_encryption_keypair.is::<E>()
             }
-            Entity::StoredCredential(stored_credential) => stored_credential.downcast_mut_arc(),
-            Entity::StoredBufferedCommit(stored_buffered_commit) => stored_buffered_commit.downcast_mut_arc(),
-            Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.downcast_mut_arc(),
-            Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => {
-                persisted_mls_pending_group.downcast_mut_arc()
+            Some(Entity::StoredCredential(stored_credential)) => stored_credential.is::<E>(),
+            Some(Entity::StoredBufferedCommit(stored_buffered_commit)) => stored_buffered_commit.is::<E>(),
+            Some(Entity::PersistedMlsGroup(persisted_mls_group)) => persisted_mls_group.is::<E>(),
+            Some(Entity::PersistedMlsPendingGroup(persisted_mls_pending_group)) => {
+                persisted_mls_pending_group.is::<E>()
             }
-            Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.downcast_mut_arc(),
-            Entity::StoredE2eiEnrollment(stored_e2ei_enrollment) => stored_e2ei_enrollment.downcast_mut_arc(),
-            Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.downcast_mut_arc(),
-            Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.downcast_mut_arc(),
-            Entity::E2eiCrl(e2ei_crl) => e2ei_crl.downcast_mut_arc(),
+            Some(Entity::MlsPendingMessage(mls_pending_message)) => mls_pending_message.is::<E>(),
+            Some(Entity::StoredE2eiEnrollment(stored_e2ei_enrollment)) => stored_e2ei_enrollment.is::<E>(),
+            Some(Entity::E2eiAcmeCA(e2ei_acme_ca)) => e2ei_acme_ca.is::<E>(),
+            Some(Entity::E2eiIntermediateCert(e2ei_intermediate_cert)) => e2ei_intermediate_cert.is::<E>(),
+            Some(Entity::E2eiCrl(e2ei_crl)) => e2ei_crl.is::<E>(),
             #[cfg(target_family = "wasm")]
-            Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.downcast_mut_arc(),
+            Some(Entity::E2eiRefreshToken(e2ei_refresh_token)) => e2ei_refresh_token.is::<E>(),
             #[cfg(feature = "proteus-keystore")]
-            Entity::ProteusIdentity(proteus_identity) => proteus_identity.downcast_mut_arc(),
+            Some(Entity::ProteusIdentity(proteus_identity)) => proteus_identity.is::<E>(),
             #[cfg(feature = "proteus-keystore")]
-            Entity::ProteusPrekey(proteus_prekey) => proteus_prekey.downcast_mut_arc(),
+            Some(Entity::ProteusPrekey(proteus_prekey)) => proteus_prekey.is::<E>(),
             #[cfg(feature = "proteus-keystore")]
-            Entity::ProteusSession(proteus_session) => proteus_session.downcast_mut_arc(),
+            Some(Entity::ProteusSession(proteus_session)) => proteus_session.is::<E>(),
+            None => false,
+        };
+        if is_some_of_e {
+            unsafe { std::mem::transmute(option) }
+        } else {
+            unsafe { std::mem::transmute(std::ptr::null::<E>()) }
         }
     }
 

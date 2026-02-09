@@ -7,7 +7,9 @@ use std::{
 
 use async_lock::SemaphoreGuardArc;
 use itertools::Itertools;
-use tokio::sync::{OwnedRwLockWriteGuard, RwLock, RwLockMappedWriteGuard, RwLockWriteGuard};
+use tokio::sync::{
+    OwnedRwLockMappedWriteGuard, OwnedRwLockWriteGuard, RwLock, RwLockMappedWriteGuard, RwLockWriteGuard,
+};
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
@@ -198,15 +200,23 @@ impl KeystoreTransaction {
     /// * `Some(Some(E))` - the transaction cache contains the record
     /// * `Some(None)` - the deletion of the record has been cached
     /// * `None` - there is no information about the record in the cache
-    async fn get_by_entity_id<E>(&self, entity_id: &EntityId) -> Option<RwLockMappedWriteGuard<Option<E>>>
+    async fn get_by_entity_id<E>(
+        &self,
+        entity_id: &EntityId,
+    ) -> Option<OwnedRwLockMappedWriteGuard<Option<dynamic_dispatch::Entity>, Option<E>>>
     where
         E: Entity + Send + Sync,
     {
         let cache_guard = self.cache.read().await;
         let table = cache_guard.get(E::COLLECTION_NAME)?;
         if let Some(entity) = table.get(entity_id) {
-            let entity_guard = entity.write().await;
-            RwLockWriteGuard::map(entity_guard, |e| {})
+            let entity = entity.clone();
+            let entity_guard = entity.write_owned().await;
+            Some(OwnedRwLockWriteGuard::map(entity_guard, |e| {
+                dynamic_dispatch::Entity::downcast_option_mut(e)
+            }))
+        } else {
+            None
         }
     }
 
@@ -214,12 +224,13 @@ impl KeystoreTransaction {
     /// * `Some(Some(E))` - the transaction cache contains the record
     /// * `Some(None)` - the deletion of the record has been cached
     /// * `None` - there is no information about the record in the cache
-    pub(crate) async fn get<E>(&self, id: &E::PrimaryKey) -> Option<Option<Arc<E>>>
+    pub(crate) async fn get<E>(&self, id: &E::PrimaryKey) -> Option<Option<E>>
     where
         E: Entity + Send + Sync,
     {
         let entity_id = EntityId::from_primary_key::<E>(id)?;
-        self.get_by_entity_id(&entity_id).await
+        let entity = self.get_by_entity_id(&entity_id).await;
+        entity.map(|guard| OwnedRwLockMappedWriteGuard::rwlock(&guard)).cloned()
     }
 
     /// The result of this function will have different contents for different scenarios:
