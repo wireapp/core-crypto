@@ -103,31 +103,6 @@ impl CoreCryptoContext {
         Ok(credential.into())
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::e2ei_enrollment_stash]
-    ///
-    /// Note that this can only succeed if the enrollment is unique and there are no other hard refs to it.
-    pub async fn e2ei_enrollment_stash(&self, enrollment: EnrollmentParameter) -> CoreCryptoResult<Vec<u8>> {
-        let enrollment = enrollment.take().await.ok_or(CoreCryptoError::ad_hoc(
-            "attempted to take enrollment from already moved value",
-        ))?;
-
-        self.inner
-            .e2ei_enrollment_stash(enrollment)
-            .await
-            .map_err(Into::<TransactionError>::into)
-            .map_err(Into::into)
-    }
-
-    /// See [core_crypto::transaction_context::TransactionContext::e2ei_enrollment_stash_pop]
-    pub async fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CoreCryptoResult<E2eiEnrollment> {
-        self.inner
-            .e2ei_enrollment_stash_pop(handle)
-            .await
-            .map(E2eiEnrollment::new)
-            .map_err(Into::<TransactionError>::into)
-            .map_err(Into::into)
-    }
-
     /// See [core_crypto::mls::conversation::Conversation::e2ei_conversation_state]
     pub async fn e2ei_conversation_state(
         &self,
