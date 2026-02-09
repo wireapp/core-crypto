@@ -70,12 +70,6 @@ impl E2eiEnrollment {
         Self(RwLock::new(Some(inner)))
     }
 
-    /// Extract the inner enrollment, leaving `None` internally.
-    pub(crate) async fn take(&self) -> Option<core_crypto::E2eiEnrollment> {
-        let mut guard = self.0.write().await;
-        guard.take()
-    }
-
     /// Get access to a readable view of the contained enrollment
     pub(crate) async fn read(&self) -> CoreCryptoResult<ReadGuard<'_>> {
         self.0.read().await.try_into()
