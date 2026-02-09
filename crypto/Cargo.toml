@@ -146,7 +146,7 @@ name = "transaction"
 harness = false
 
 [build-dependencies]
-anyhow = "1.0.100"
+anyhow = "1.0.101"
 # this is appropriate if we always and only build in environments where `git`
 # is available on the command line. If not, we should replace this with
 # `vergen-gix` or `vergen-git2`.
