@@ -16,20 +16,8 @@ pub(crate) const E2EI_CLIENT_ID_URI: &str = "wireapp://vUxwUxxaQCCVWc1795YZVA!49
 pub(crate) const E2EI_EXPIRY: u32 = 90 * 24 * 3600;
 
 impl E2eiEnrollment {
-    pub(crate) fn display_name(&self) -> &str {
-        &self.display_name
-    }
-
-    pub(crate) fn handle(&self) -> &str {
-        &self.handle
-    }
-
     pub(crate) fn client_id(&self) -> &str {
         &self.client_id
-    }
-
-    pub(crate) fn team(&self) -> Option<&str> {
-        self.team.as_deref()
     }
 }
 
