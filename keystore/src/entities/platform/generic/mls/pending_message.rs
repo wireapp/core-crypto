@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use std::{borrow::Borrow, sync::OnceLock};
 
 use async_trait::async_trait;
 use rusqlite::{Row, params};
@@ -13,6 +13,7 @@ use crate::{
         BorrowPrimaryKey, DeletableBySearchKey, Entity, EntityBase, EntityDatabaseMutation, EntityDeleteBorrowed,
         EntityGetBorrowed, KeyType, OwnedKeyType, PrimaryKey, SearchableEntity,
     },
+    transaction::{InMemoryTable, InMemoryTableReadGuard},
 };
 
 impl MlsPendingMessage {
@@ -30,6 +31,12 @@ impl EntityBase for MlsPendingMessage {
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self.into())
+    }
+
+    async fn get_in_memory_table() -> InMemoryTableReadGuard<Self> {
+        static IN_MEMORY_TABLE: OnceLock<InMemoryTable<MlsPendingMessage>> = OnceLock::new();
+        let table = IN_MEMORY_TABLE.get_or_init(Default::default);
+        table.upgradable_read_arc().await
     }
 }
 

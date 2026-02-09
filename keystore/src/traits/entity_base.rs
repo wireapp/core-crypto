@@ -1,6 +1,10 @@
 use std::{any::Any, sync::Arc};
 
-use crate::connection::DatabaseConnection;
+use crate::{
+    CryptoKeystoreResult,
+    connection::DatabaseConnection,
+    transaction::{InMemoryTable, InMemoryTableGuard},
+};
 
 /// A supertrait that all entities must implement. This handles multiplexing over the two different database backends.
 ///
@@ -28,6 +32,8 @@ pub trait EntityBase: 'static + Sized {
         let option_dyn_any: &dyn Any = self;
         option_dyn_any.is::<Arc<T>>()
     }
+
+    fn get_in_memory_table() -> InMemoryTableGuard<Self>;
 
     fn downcast_arc<T>(self: Arc<Self>) -> Option<Arc<T>>
     where

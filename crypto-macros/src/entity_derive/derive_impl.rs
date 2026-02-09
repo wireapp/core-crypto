@@ -40,6 +40,12 @@ impl Entity {
                 fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
                     crate::transaction::dynamic_dispatch::Entity::#struct_name(self.into())
                 }
+
+                fn get_in_memory_table() -> crate::transaction::InMemoryTableGuard<Self> {
+                    static IN_MEMORY_TABLE: std::sync::OnceLock<crate::transaction::InMemoryTable<#struct_name>> = std::sync::OnceLock::new();
+                    let table = IN_MEMORY_TABLE.get_or_init(Default::default);
+                    table.upgradable_read_arc().await
+                }
             }
         }
     }

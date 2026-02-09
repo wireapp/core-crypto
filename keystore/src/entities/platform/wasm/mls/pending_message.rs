@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use async_trait::async_trait;
 use js_sys::Uint8Array;
 use serde::{Deserialize, Serialize};
@@ -12,6 +14,7 @@ use crate::{
         EncryptWithExplicitEncryptionKey as _, Encrypting, EncryptionKey, Entity, EntityBase, EntityDatabaseMutation,
         SearchableEntity,
     },
+    transaction::InMemoryTable,
 };
 
 impl EntityBase for MlsPendingMessage {
@@ -21,6 +24,11 @@ impl EntityBase for MlsPendingMessage {
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self.into())
+    }
+
+    fn get_in_memory_table() -> InMemoryTable<Self> {
+        static IN_MEMORY_TABLE: OnceLock<InMemoryTable<MlsPendingMessage>> = OnceLock::new();
+        IN_MEMORY_TABLE.get_or_init(Default::default).clone()
     }
 }
 

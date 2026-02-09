@@ -1,15 +1,17 @@
 use std::{
+    any::TypeId,
     borrow::Cow,
     collections::{HashMap, HashSet, hash_map::Entry},
     iter::Cloned,
-    sync::Arc,
+    ops::Deref,
+    sync::{Arc, LazyLock, OnceLock},
 };
 
-use async_lock::SemaphoreGuardArc;
-use itertools::Itertools;
-use tokio::sync::{
-    OwnedRwLockMappedWriteGuard, OwnedRwLockWriteGuard, RwLock, RwLockMappedWriteGuard, RwLockWriteGuard,
+use async_lock::{
+    RwLock, RwLockReadGuard, RwLockReadGuardArc, RwLockUpgradableReadGuard, RwLockUpgradableReadGuardArc,
+    RwLockWriteGuardArc, SemaphoreGuardArc,
 };
+use itertools::Itertools;
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
@@ -19,24 +21,32 @@ use crate::{
         BorrowPrimaryKey, Entity, EntityBase as _, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType,
         SearchableEntity,
     },
-    transaction::dynamic_dispatch::EntityId,
+    transaction::dynamic_dispatch::{EntityId, EntityType},
 };
 
 pub(crate) mod dynamic_dispatch;
+
+struct EntityReadRef<E>(Arc<RwLock<Option<E>>>);
+
+impl<E> EntityReadRef<E> {
+    pub(crate) async fn guard(&self, mut f: impl AsyncFnMut(&E)) {
+        let guard = self.0.as_ref().read().await;
+        let e = guard.as_ref().expect("this is always Some");
+        f(&e).await
+    }
+}
 
 /// table: primary key -> entity reference
 ///
 /// The inner value is an option: `None` represents a deletion, `Some()` represents an upsert. Accordingly, those
 /// operations will be executed when the transaction is finished.
-type InMemoryTable = HashMap<EntityId, Arc<RwLock<Option<dynamic_dispatch::Entity>>>>;
-/// collection: collection name -> table
-type InMemoryCollection = Arc<RwLock<HashMap<&'static str, InMemoryTable>>>;
+pub(crate) type InMemoryTable<E> = Arc<RwLock<HashMap<Vec<u8>, Arc<RwLock<Option<E>>>>>>;
+pub(crate) type InMemoryTableGuard<E> = RwLockUpgradableReadGuardArc<HashMap<Vec<u8>, Arc<RwLock<Option<E>>>>>;
 
 /// This represents a transaction, where all operations will be done in memory and committed at the
 /// end
 #[derive(Debug, Clone)]
 pub(crate) struct KeystoreTransaction {
-    cache: InMemoryCollection,
     _semaphore_guard: Arc<SemaphoreGuardArc>,
 }
 
@@ -46,7 +56,6 @@ impl KeystoreTransaction {
     /// Requires a semaphore guard to ensure that only one exists at a time.
     pub(crate) async fn new(semaphore_guard: SemaphoreGuardArc) -> CryptoKeystoreResult<Self> {
         Ok(Self {
-            cache: Default::default(),
             _semaphore_guard: Arc::new(semaphore_guard),
         })
     }
@@ -65,39 +74,36 @@ impl KeystoreTransaction {
     {
         let auto_generated_fields = entity.pre_save().await?;
 
-        let entity_id =
-            EntityId::from_entity(&entity).ok_or(CryptoKeystoreError::UnknownCollectionName(E::COLLECTION_NAME))?;
-
-        self.delete_or_save(entity_id, Some(entity)).await?;
+        self.delete_or_save(entity.primary_key().bytes(), Some(entity)).await?;
 
         Ok(auto_generated_fields)
     }
 
-    async fn remove_by_entity_id<'a, E>(&self, entity_id: EntityId) -> CryptoKeystoreResult<()>
+    async fn remove_by_entity_id<'a, E>(&self, id: Cow<'_, [u8]>) -> CryptoKeystoreResult<()>
     where
         E: Entity + EntityDatabaseMutation<'a>,
     {
         // rm this entity from the set of added/modified items
         // it might never touch the real db at all
         // start by adding the entity
-        self.delete_or_save::<E>(entity_id, None).await
+        self.delete_or_save::<E>(id, None).await
     }
 
-    async fn delete_or_save<'a, E>(&self, entity_id: EntityId, entity: Option<E>) -> CryptoKeystoreResult<()>
+    async fn delete_or_save<'a, E>(&self, id: Cow<'_, [u8]>, entity: Option<E>) -> CryptoKeystoreResult<()>
     where
         E: Entity + EntityDatabaseMutation<'a>,
     {
-        let mut cache_guard = self.cache.write().await;
-        let table = cache_guard.entry(E::COLLECTION_NAME).or_default();
-        let transaction_entity = entity.map(|e| e.to_transaction_entity());
+        let table = E::get_in_memory_table();
 
-        if let Some(entity_lock) = table.get(&entity_id).cloned() {
+        if let Some(entity_lock) = table.get(&id.to_vec()).cloned() {
             let mut guard = entity_lock.write().await;
-            *guard = transaction_entity;
+            *guard = entity;
         } else {
-            let entry = Arc::new(RwLock::new(transaction_entity));
-            table.insert(entity_id.clone(), entry);
-        };
+            let entry = Arc::new(RwLock::new(entity));
+            let mut table = RwLockUpgradableReadGuardArc::upgrade(table).await;
+            table.insert(id.to_vec(), entry);
+        }
+
         Ok(())
     }
 
@@ -111,9 +117,7 @@ impl KeystoreTransaction {
     where
         E: Entity + EntityDatabaseMutation<'a>,
     {
-        let entity_id = EntityId::from_primary_key::<E>(id)
-            .ok_or(CryptoKeystoreError::UnknownCollectionName(E::COLLECTION_NAME))?;
-        self.remove_by_entity_id::<E>(entity_id).await
+        self.remove_by_entity_id::<E>(id.bytes()).await
     }
 
     /// Remove an entity by the borrowed form of its primary key.
@@ -124,56 +128,41 @@ impl KeystoreTransaction {
     where
         E: EntityDeleteBorrowed<'a> + BorrowPrimaryKey,
     {
-        let entity_id = EntityId::from_borrowed_primary_key::<E>(id)
-            .ok_or(CryptoKeystoreError::UnknownCollectionName(E::COLLECTION_NAME))?;
-        self.remove_by_entity_id::<E>(entity_id).await
+        self.remove_by_entity_id::<E>(id.to_owned().bytes()).await
     }
 
     pub(crate) async fn child_groups(
         &self,
         entity: PersistedMlsGroup,
         persisted_records: impl IntoIterator<Item = PersistedMlsGroup>,
-    ) -> CryptoKeystoreResult<Vec<PersistedMlsGroup>> {
-        // First get all raw groups from the cache, then filter by their parent id
-        let cached_records = self.find_all_in_cache::<PersistedMlsGroup>().await;
-        let cached_records = cached_records
-            .iter()
+    ) -> Vec<RwLockReadGuardArc<Option<PersistedMlsGroup>>> {
+        self.extend_cache::<PersistedMlsGroup>(persisted_records).await;
+
+        self.find_all_in_cache::<PersistedMlsGroup>()
+            .await
+            .into_iter()
             .filter(|maybe_child| {
                 maybe_child
-                    .parent_id
-                    .as_deref()
-                    .map(|parent_id| parent_id == entity.borrow_primary_key().bytes().as_ref())
+                    .as_ref()
+                    .and_then(|child| child.parent_id.as_deref())
+                    .map(|pid| pid == entity.borrow_primary_key().bytes().as_ref())
                     .unwrap_or_default()
             })
-            .map(Arc::as_ref)
-            .map(Cow::Borrowed);
-
-        let persisted_records = persisted_records.into_iter().map(Cow::Owned);
-
-        Ok(self.merge_records(cached_records, persisted_records).await)
+            .collect()
     }
 
     pub(crate) async fn remove_pending_messages_by_conversation_id(&self, conversation_id: impl AsRef<[u8]> + Send) {
         let conversation_id = conversation_id.as_ref();
+        let pending_messages_table = MlsPendingMessage::get_in_memory_table();
+        for (_, pending_message_lock) in pending_messages_table.iter() {
+            let pending_message_guard = pending_message_lock.upgradable_read().await;
 
-        let mut cache_guard = self.cache.write().await;
-        if let Entry::Occupied(mut pending_messages_table) = cache_guard.entry(MlsPendingMessage::COLLECTION_NAME) {
-            for (_, dyn_entity) in pending_messages_table.get_mut().iter() {
-                let entity_guard = dyn_entity.read().await;
-                let pending_message = entity_guard.as_ref().map(|entity| {
-                    entity
-                        .downcast::<MlsPendingMessage>()
-                        .expect("table for MlsPendingMessage contains only that type")
-                });
-
-                if let Some(pending_message) = pending_message
-                    && pending_message.foreign_id == conversation_id
-                {
-                    // upgrade lock
-                    drop(entity_guard);
-                    let mut pending_message = dyn_entity.write().await;
-                    *pending_message = None;
-                }
+            if let Some(pending_message) = pending_message_guard.as_ref()
+                && pending_message.foreign_id == conversation_id
+            {
+                // upgrade lock
+                let mut pending_message = RwLockUpgradableReadGuard::upgrade(pending_message_guard).await;
+                *pending_message = None;
             }
         }
     }
@@ -182,39 +171,34 @@ impl KeystoreTransaction {
         &self,
         conversation_id: &[u8],
         persisted_records: impl IntoIterator<Item = MlsPendingMessage>,
-    ) -> CryptoKeystoreResult<Vec<MlsPendingMessage>> {
-        let persisted_records = persisted_records.into_iter().map(Cow::Owned);
+    ) -> Vec<RwLockReadGuardArc<Option<MlsPendingMessage>>> {
+        self.extend_cache::<MlsPendingMessage>(persisted_records).await;
 
-        let cached_records = self.find_all_in_cache::<MlsPendingMessage>().await;
-        let cached_records = cached_records
-            .iter()
-            .filter(|pending_message| pending_message.foreign_id == conversation_id)
-            .map(Arc::as_ref)
-            .map(Cow::Borrowed);
-
-        let merged_records = self.merge_records(cached_records, persisted_records).await;
-        Ok(merged_records)
+        self.find_all_in_cache::<MlsPendingMessage>()
+            .await
+            .into_iter()
+            .filter(|pending_message| {
+                pending_message
+                    .as_ref()
+                    .map(|id| id.foreign_id == conversation_id)
+                    .unwrap_or_default()
+            })
+            .collect()
     }
 
     /// The result of this function will have different contents for different scenarios:
     /// * `Some(Some(E))` - the transaction cache contains the record
     /// * `Some(None)` - the deletion of the record has been cached
     /// * `None` - there is no information about the record in the cache
-    async fn get_by_entity_id<E>(
-        &self,
-        entity_id: &EntityId,
-    ) -> Option<OwnedRwLockMappedWriteGuard<Option<dynamic_dispatch::Entity>, Option<E>>>
+    pub(crate) async fn get<'a, E>(&'a self, id: &E::PrimaryKey) -> Option<RwLockReadGuardArc<Option<E>>>
     where
         E: Entity + Send + Sync,
     {
-        let cache_guard = self.cache.read().await;
-        let table = cache_guard.get(E::COLLECTION_NAME)?;
-        if let Some(entity) = table.get(entity_id) {
-            let entity = entity.clone();
-            let entity_guard = entity.write_owned().await;
-            Some(OwnedRwLockWriteGuard::map(entity_guard, |e| {
-                dynamic_dispatch::Entity::downcast_option_mut(e)
-            }))
+        let table = E::get_in_memory_table();
+        let id = id.bytes();
+
+        if let Some(entity) = table.get(id.as_ref()).cloned() {
+            Some(entity.read_arc().await)
         } else {
             None
         }
@@ -224,130 +208,81 @@ impl KeystoreTransaction {
     /// * `Some(Some(E))` - the transaction cache contains the record
     /// * `Some(None)` - the deletion of the record has been cached
     /// * `None` - there is no information about the record in the cache
-    pub(crate) async fn get<E>(&self, id: &E::PrimaryKey) -> Option<Option<E>>
-    where
-        E: Entity + Send + Sync,
-    {
-        let entity_id = EntityId::from_primary_key::<E>(id)?;
-        let entity = self.get_by_entity_id(&entity_id).await;
-        entity.map(|guard| OwnedRwLockMappedWriteGuard::rwlock(&guard)).cloned()
-    }
-
-    /// The result of this function will have different contents for different scenarios:
-    /// * `Some(Some(E))` - the transaction cache contains the record
-    /// * `Some(None)` - the deletion of the record has been cached
-    /// * `None` - there is no information about the record in the cache
-    pub(crate) async fn get_borrowed<E>(&self, id: &E::BorrowedPrimaryKey) -> Option<Option<Arc<E>>>
+    pub(crate) async fn get_borrowed<E>(&self, id: &E::BorrowedPrimaryKey) -> Option<RwLockReadGuardArc<Option<E>>>
     where
         E: Entity + BorrowPrimaryKey + Send + Sync,
+        <E as BorrowPrimaryKey>::BorrowedPrimaryKey: KeyType,
     {
-        let entity_id = EntityId::from_borrowed_primary_key::<E>(id)?;
-        self.get_by_entity_id(&entity_id).await
+        let table = E::get_in_memory_table();
+        let id = id.bytes();
+
+        if let Some(entity) = table.get(id.as_ref()).cloned() {
+            Some(entity.read_arc().await)
+        } else {
+            None
+        }
     }
 
-    async fn find_all_in_cache<E>(&self) -> Vec<Arc<E>>
+    async fn find_all_in_cache<E>(&self) -> Vec<RwLockReadGuardArc<Option<E>>>
     where
         E: Entity + Send + Sync,
     {
-        let cache_guard = self.cache.read().await;
-        cache_guard
-            .get(E::COLLECTION_NAME)
-            .map(|table| {
-                table
-                    .values()
-                    .map(|record: &dynamic_dispatch::Entity| {
-                        record
-                            .downcast::<E>()
-                            .expect("all entries in this table are of this type")
-                            .clone()
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default()
+        let table = E::get_in_memory_table();
+        let mut records = Vec::with_capacity(table.values().len());
+        for record in table.values().cloned() {
+            records.push(record.read_arc().await);
+        }
+        records
     }
 
-    async fn search_in_cache<E, SearchKey>(&self, search_key: &SearchKey) -> Vec<Arc<E>>
+    async fn search_in_cache<E, SearchKey>(&self, search_key: &SearchKey) -> Vec<RwLockReadGuardArc<Option<E>>>
     where
         E: Entity + SearchableEntity<SearchKey> + Send + Sync,
         SearchKey: KeyType,
     {
-        let cache_guard = self.cache.read().await;
-        cache_guard
-            .get(E::COLLECTION_NAME)
-            .map(|table| {
-                table
-                    .values()
-                    .filter_map(|record: &dynamic_dispatch::Entity| {
-                        let entity = record
-                            .downcast::<E>()
-                            .expect("all entries in this table are of this type")
-                            .clone();
-                        entity.matches(search_key).then_some(entity)
-                    })
-                    .collect()
-            })
-            .unwrap_or_default()
+        self.find_all_in_cache::<E>()
+            .await
+            .into_iter()
+            .map(|record| record)
+            .filter(|record| record.as_ref().is_some_and(|e| e.matches(search_key)))
+            .collect()
     }
 
-    pub(crate) async fn find_all<E>(&self, persisted_records: Vec<E>) -> CryptoKeystoreResult<Vec<E>>
+    pub(crate) async fn find_all<E>(&self, persisted_records: Vec<E>) -> Vec<RwLockReadGuardArc<Option<E>>>
     where
         E: Clone + Entity + Send + Sync,
     {
-        let cached_records = self.find_all_in_cache().await;
-        let merged_records = self
-            .merge_records(
-                cached_records.iter().map(Arc::as_ref).map(Cow::Borrowed),
-                persisted_records.into_iter().map(Cow::Owned),
-            )
-            .await;
-        Ok(merged_records)
+        self.extend_cache(persisted_records).await;
+        self.find_all_in_cache::<E>().await
     }
 
     pub(crate) async fn search<E, SearchKey>(
         &self,
         persisted_records: Vec<E>,
         search_key: &SearchKey,
-    ) -> CryptoKeystoreResult<Vec<E>>
+    ) -> Vec<RwLockReadGuardArc<Option<E>>>
     where
         E: Clone + Entity + SearchableEntity<SearchKey> + Send + Sync,
         SearchKey: KeyType,
     {
-        let cached_records = self.search_in_cache(search_key).await;
-        let merged_records = self
-            .merge_records(
-                cached_records.iter().map(Arc::as_ref).map(Cow::Borrowed),
-                persisted_records.into_iter().map(Cow::Owned),
-            )
-            .await;
-        Ok(merged_records)
+        self.extend_cache(persisted_records);
+        self.search_in_cache(search_key).await
     }
 
-    /// Build a single list of unique records from two potentially overlapping lists.
-    /// In case of overlap, records in `records_a` are prioritized.
-    /// Identity from the perspective of this function is determined by the output of
-    /// [Entity::merge_key].
-    ///
-    /// Further, the output list of records is built with respect to the provided [EntityFindParams]
-    /// and the deleted records cached in this [Self] instance.
-    async fn merge_records<'a, E>(
-        &self,
-        records_a: impl IntoIterator<Item = Cow<'a, E>>,
-        records_b: impl IntoIterator<Item = Cow<'a, E>>,
-    ) -> Vec<E>
+    /// Put each of the given items into the cache if the cache doesn't contain its id yet.
+    async fn extend_cache<'a, E>(&self, records: impl IntoIterator<Item = E>)
     where
-        E: Clone + Entity,
+        E: Entity,
     {
-        let deleted_records = self.deleted.read().await;
+        let table = E::get_in_memory_table();
+        let mut table = RwLockUpgradableReadGuardArc::upgrade(table).await;
 
-        records_a
-            .into_iter()
-            .chain(records_b)
-            .unique_by(|e| e.primary_key().bytes().into_owned())
-            .filter_map(|record| {
-                let id = EntityId::from_entity(record.as_ref())?;
-                (!deleted_records.contains(&id)).then_some(record.into_owned())
-            })
-            .collect()
+        for record in records {
+            let record_id = record.primary_key().bytes().to_vec();
+            if !table.contains_key(&record_id) {
+                table.insert(record_id, Arc::new(RwLock::new(Some(record))));
+            }
+        }
     }
 
     /// Persists all the operations in the database. It will effectively open a transaction
@@ -392,6 +327,8 @@ impl KeystoreTransaction {
 
         // and commit everything
         tx.commit_tx().await?;
+
+        // TODO: purge all hashmaps after committing
 
         Ok(())
     }
