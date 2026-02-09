@@ -24,7 +24,3 @@ pub struct CrlRegistration {
     /// Optional expiration timestamp
     pub expiration: Option<u64>,
 }
-
-/// A unique identifier for an enrollment a consumer can use to fetch it from the keystore when he
-/// wants to resume the process
-pub(crate) type EnrollmentHandle = Vec<u8>;

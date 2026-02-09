@@ -4,7 +4,6 @@ pub(crate) mod conversation_state;
 pub mod enabled;
 mod error;
 mod init_certificates;
-mod stash;
 
 use std::{collections::HashSet, sync::Arc};
 

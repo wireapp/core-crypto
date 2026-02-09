@@ -1,15 +1,14 @@
-use core_crypto_keystore::CryptoKeystoreMls;
 use openmls::prelude::SignatureScheme;
-use openmls_traits::{crypto::OpenMlsCrypto as _, random::OpenMlsRand as _};
+use openmls_traits::crypto::OpenMlsCrypto as _;
 use wire_e2e_identity::{E2eiAcmeAuthorization, RustyE2eIdentity};
 use zeroize::Zeroize as _;
 
 #[cfg(test)]
 pub(crate) mod test_utils;
 
-use super::{EnrollmentHandle, Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
+use super::{Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
 use crate::{
-    Ciphersuite, ClientId, KeystoreError, MlsError,
+    Ciphersuite, ClientId, MlsError,
     mls_provider::{CRYPTO, RustCrypto},
 };
 
@@ -461,29 +460,5 @@ impl E2eiEnrollment {
         self.delegate.acme_kp.zeroize();
 
         Ok(certificates)
-    }
-
-    pub(crate) async fn stash(self, database: impl CryptoKeystoreMls) -> Result<EnrollmentHandle> {
-        // should be enough to prevent collisions
-        const HANDLE_SIZE: usize = 32;
-
-        let content = serde_json::to_vec(&self)?;
-        let handle = CRYPTO
-            .random_vec(HANDLE_SIZE)
-            .map_err(MlsError::wrap("generating random vector of bytes"))?;
-        database
-            .save_e2ei_enrollment(&handle, &content)
-            .await
-            .map_err(KeystoreError::wrap("saving e2ei enrollment"))?;
-        Ok(handle)
-    }
-
-    pub(crate) async fn stash_pop(database: impl CryptoKeystoreMls, handle: EnrollmentHandle) -> Result<Self> {
-        let content = database
-            .pop_e2ei_enrollment(&handle)
-            .await
-            .map_err(KeystoreError::wrap("popping e2ei enrollment"))?
-            .ok_or(Error::NotFound)?;
-        Ok(serde_json::from_slice(&content)?)
     }
 }
