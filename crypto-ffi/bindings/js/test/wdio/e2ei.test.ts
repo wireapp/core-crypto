@@ -109,7 +109,7 @@ describe("end to end identity", () => {
             const expirySec = 90 * 24 * 3600;
 
             await cc.newTransaction(async (ctx) => {
-                let enrollment = await ctx.e2eiNewEnrollment(
+                const enrollment = await ctx.e2eiNewEnrollment(
                     clientId,
                     displayName,
                     handle,
@@ -241,9 +241,6 @@ describe("end to end identity", () => {
                     jsonToByteArrayBuffer(dpopChallengeResp)
                 );
 
-                // simulate the OAuth redirect
-                const storeHandle = await ctx.e2eiEnrollmentStash(enrollment);
-                enrollment = await ctx.e2eiEnrollmentStashPop(storeHandle);
                 const idToken =
                     "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ";
                 await enrollment.newOidcChallengeRequest(
