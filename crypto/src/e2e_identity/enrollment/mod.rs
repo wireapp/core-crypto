@@ -3,9 +3,6 @@ use openmls_traits::crypto::OpenMlsCrypto as _;
 use wire_e2e_identity::{E2eiAcmeAuthorization, RustyE2eIdentity};
 use zeroize::Zeroize as _;
 
-#[cfg(test)]
-pub(crate) mod test_utils;
-
 use super::{Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
 use crate::{
     Ciphersuite, ClientId, MlsError,
