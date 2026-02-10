@@ -3288,9 +3288,9 @@ dependencies = [
 
 [[package]]
 name = "mls-rs"
-version = "0.52.0"
+version = "0.53.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e9075deca9dae8a6a3675361c501398f32a0931d80ab5aa0f79b9495531797a"
+checksum = "a719b5a7478a45d15336b2aa3310b5e4982ce0514af4967b61eb2563608a766a"
 dependencies = [
  "async-trait",
  "cfg-if",
