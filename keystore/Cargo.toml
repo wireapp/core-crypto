@@ -96,7 +96,7 @@ proteus-wasm = { workspace = true }
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 smol-macros.workspace = true
 macro_rules_attribute.workspace = true
-tempfile = "3.24.0"
+tempfile = "3.25.0"
 smol.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
