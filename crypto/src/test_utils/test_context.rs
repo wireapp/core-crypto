@@ -326,51 +326,6 @@ impl TestContext {
         sessions.try_into().expect("Vector should be of length N.")
     }
 
-    /// Use this to create sessions with a test chain that has cross-signed another
-    pub async fn sessions_x509_cross_signed<const N: usize, const M: usize>(
-        &self,
-    ) -> ([SessionContext; N], [SessionContext; M]) {
-        let client_ids1 = self.x509_client_ids();
-        let client_ids2 = self.x509_client_ids();
-        self.sessions_x509_cross_signed_with_client_ids(client_ids1, client_ids2)
-            .await
-    }
-
-    pub async fn sessions_x509_cross_signed_with_client_ids<const N: usize, const M: usize>(
-        &self,
-        client_ids1: [ClientId; N],
-        client_ids2: [ClientId; M],
-    ) -> ([SessionContext; N], [SessionContext; M]) {
-        self.sessions_x509_cross_signed_with_client_ids_and_revocation(client_ids1, client_ids2, &[])
-            .await
-    }
-
-    pub async fn sessions_x509_cross_signed_with_client_ids_and_revocation<const N: usize, const M: usize>(
-        &self,
-        client_ids1: [ClientId; N],
-        client_ids2: [ClientId; M],
-        revoked_display_names: &[String],
-    ) -> ([SessionContext; N], [SessionContext; M]) {
-        let mut chain1 = self.test_chain(&client_ids1, revoked_display_names, None).await;
-        let sessions2 = if M == 0 {
-            core::array::from_fn(|_| unreachable!())
-        } else {
-            let params = CertificateParams {
-                org: "federated-with-wire.com".into(),
-                domain: Some("federated-with-wire.com".into()),
-                ..CertificateParams::default()
-            };
-            let mut chain2 = self.test_chain(&client_ids2, revoked_display_names, Some(params)).await;
-            chain1.cross_sign(&mut chain2);
-            self.sessions_inner(client_ids2, Some(&chain2), CredentialType::X509)
-                .await
-        };
-        let sessions1 = self
-            .sessions_inner(client_ids1, Some(&chain1), CredentialType::X509)
-            .await;
-        (sessions1, sessions2)
-    }
-
     /// Create a test conversation.
     ///
     /// The first member is required, and is the conversation's creator.

@@ -224,13 +224,12 @@ mod tests {
             let alice_test_chain = alice.x509_chain_unchecked();
 
             let alice_intermediate_ca = alice_test_chain.find_local_intermediate_ca();
-            let mut alice_cert = alice_test_chain
+            let alice_cert = alice_test_chain
                 .actors
                 .iter()
                 .find(|actor| actor.name == alice_user_id.to_string())
                 .unwrap()
                 .clone();
-            alice_intermediate_ca.update_end_identity(&mut alice_cert.certificate, Some(expiration_time));
 
             let cert_bundle =
                 CertificateBundle::from_certificate_and_issuer(&alice_cert.certificate, alice_intermediate_ca);

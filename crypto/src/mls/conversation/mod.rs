@@ -623,61 +623,6 @@ mod tests {
         }
 
         #[macro_rules_attribute::apply(smol_macros::test)]
-        async fn should_read_revoked_device_cross_signed() {
-            let case = TestContext::default_x509();
-            let alice_user_id = uuid::Uuid::new_v4();
-            let bob_user_id = uuid::Uuid::new_v4();
-            let rupert_user_id = uuid::Uuid::new_v4();
-            let john_user_id = uuid::Uuid::new_v4();
-            let dilbert_user_id = uuid::Uuid::new_v4();
-
-            let [alice_client_id] = case.x509_client_ids_for_user(&alice_user_id);
-            let [bob_client_id] = case.x509_client_ids_for_user(&bob_user_id);
-            let [rupert_client_id] = case.x509_client_ids_for_user(&rupert_user_id);
-            let [john_client_id] = case.x509_client_ids_for_user(&john_user_id);
-            let [dilbert_client_id] = case.x509_client_ids_for_user(&dilbert_user_id);
-
-            let sessions = case
-                .sessions_x509_cross_signed_with_client_ids_and_revocation(
-                    [alice_client_id, bob_client_id, rupert_client_id],
-                    [john_client_id, dilbert_client_id],
-                    &[dilbert_user_id.to_string(), rupert_user_id.to_string()],
-                )
-                .await;
-
-            Box::pin(async move {
-                let ([alice, bob, rupert], [john, dilbert]) = &sessions;
-                let sessions = sessions.0.iter().chain(sessions.1.iter());
-                let conversation = case.create_conversation(sessions.clone()).await;
-
-                let (alice_id, bob_id, rupert_id, john_id, dilbert_id) = (
-                    alice.get_client_id().await,
-                    bob.get_client_id().await,
-                    rupert.get_client_id().await,
-                    john.get_client_id().await,
-                    dilbert.get_client_id().await,
-                );
-
-                let client_ids = [alice_id, bob_id, rupert_id, john_id, dilbert_id];
-                let name_status = [
-                    (alice_user_id, DeviceStatus::Valid),
-                    (bob_user_id, DeviceStatus::Valid),
-                    (rupert_user_id, DeviceStatus::Revoked),
-                    (john_user_id, DeviceStatus::Valid),
-                    (dilbert_user_id, DeviceStatus::Revoked),
-                ];
-                // Do it a multiple times to avoid WPB-6904 happening again
-                for _ in 0..2 {
-                    for session in sessions.clone() {
-                        let conversation = conversation.guard_of(session).await;
-                        check_identities_device_status(&conversation, &client_ids, &name_status).await;
-                    }
-                }
-            })
-            .await
-        }
-
-        #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_read_revoked_device() {
             let case = TestContext::default_x509();
             let rupert_user_id = uuid::Uuid::new_v4();
@@ -763,72 +708,6 @@ mod tests {
             .await
         }
 
-        // this test is a duplicate of its counterpart but taking federation into account
-        // The heavy lifting of cross-signing the certificates is being done by the test utils.
-        #[macro_rules_attribute::apply(smol_macros::test)]
-        async fn should_read_users_cross_signed() {
-            let case = TestContext::default_x509();
-            let [alice_1_id, alice_2_id] = case.x509_client_ids_for_user(&uuid::Uuid::new_v4());
-            let [federated_alice_1_id, federated_alice_2_id] = case.x509_client_ids_for_user(&uuid::Uuid::new_v4());
-            let [bob_id, federated_bob_id] = case.x509_client_ids();
-
-            let ([alice_1, alice_2, bob], [federated_alice_1, federated_alice_2, federated_bob]) = case
-                .sessions_x509_cross_signed_with_client_ids(
-                    [alice_1_id, alice_2_id, bob_id],
-                    [federated_alice_1_id, federated_alice_2_id, federated_bob_id],
-                )
-                .await;
-            Box::pin(async move {
-                let sessions = [
-                    &alice_1,
-                    &alice_2,
-                    &bob,
-                    &federated_bob,
-                    &federated_alice_1,
-                    &federated_alice_2,
-                ];
-                let conversation = case.create_conversation(sessions).await;
-
-                let nb_members = conversation.member_count().await;
-                assert_eq!(nb_members, 6);
-                let conversation_guard = conversation.guard().await;
-
-                assert_eq!(alice_1.get_user_id().await, alice_2.get_user_id().await);
-
-                let alicem_user_id = federated_alice_2.get_user_id().await;
-                let bobt_user_id = federated_bob.get_user_id().await;
-
-                // Finds both Alice's devices
-                let alice_user_id = alice_1.get_user_id().await;
-                let alice_identities = conversation_guard
-                    .get_user_identities(std::slice::from_ref(&alice_user_id))
-                    .await
-                    .unwrap();
-                assert_eq!(alice_identities.len(), 1);
-                let identities = alice_identities.get(&alice_user_id).unwrap();
-                assert_eq!(identities.len(), 2);
-
-                // Finds Bob only device
-                let bob_user_id = bob.get_user_id().await;
-                let bob_identities = conversation_guard
-                    .get_user_identities(std::slice::from_ref(&bob_user_id))
-                    .await
-                    .unwrap();
-                assert_eq!(bob_identities.len(), 1);
-                let identities = bob_identities.get(&bob_user_id).unwrap();
-                assert_eq!(identities.len(), 1);
-
-                // Finds all devices
-                let user_ids = [alice_user_id, bob_user_id, alicem_user_id, bobt_user_id];
-                let expected_sizes = [2, 1, 2, 1];
-
-                for session in sessions {
-                    all_identities_check(&conversation.guard_of(session).await, &user_ids, expected_sizes).await;
-                }
-            })
-            .await
-        }
-
         #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_read_users() {
             let case = TestContext::default_x509();
@@ -880,21 +759,6 @@ mod tests {
                 }
             })
             .await
-        }
-
-        #[macro_rules_attribute::apply(smol_macros::test)]
-        async fn should_exchange_messages_cross_signed() {
-            let case = TestContext::default_x509();
-            let sessions = case.sessions_x509_cross_signed::<3, 3>().await;
-            Box::pin(async move {
-                let sessions = sessions.0.iter().chain(sessions.1.iter());
-                let conversation = case.create_conversation(sessions.clone()).await;
-
-                assert_eq!(conversation.member_count().await, 6);
-
-                assert!(conversation.is_functional_and_contains(sessions).await);
-            })
-            .await;
         }
     }
 

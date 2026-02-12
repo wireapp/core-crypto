@@ -297,37 +297,6 @@ impl X509TestChain {
         }
     }
 
-    /// Mutually cross-sign intermediate certificates from both chains.
-    /// re-signed by the root of the other and added to its chain and vice-versa
-    pub fn cross_sign(&mut self, other_chain: &mut Self) {
-        self.crls.extend(other_chain.crls.drain());
-        other_chain.crls = self.crls.clone();
-
-        let mut self_new_intermediates = vec![];
-        for intermediate in &other_chain.intermediates {
-            let cross_signed_intermediate = self.trust_anchor.cross_sign_intermediate(intermediate);
-            self_new_intermediates.push(cross_signed_intermediate);
-        }
-
-        let mut other_new_intermediates = vec![];
-        for intermediate in &self.intermediates {
-            let cross_signed_intermediate = other_chain.trust_anchor.cross_sign_intermediate(intermediate);
-            other_new_intermediates.push(cross_signed_intermediate);
-        }
-
-        self.intermediates.append(&mut self_new_intermediates);
-        other_chain.intermediates.append(&mut other_new_intermediates);
-
-        for actor in self.actors.iter_mut().chain(other_chain.actors.iter_mut()) {
-            actor.certificate.is_federated = true;
-        }
-        let self_actors = self.actors.clone();
-
-        // doing this way to preserve the ordering of the actors
-        self.actors.extend(other_chain.actors.iter().cloned());
-        other_chain.actors.extend(self_actors);
-    }
-
     pub async fn register_with_central(&self, context: &TransactionContext) {
         use x509_cert::der::{Encode as _, EncodePem as _};
         match context
@@ -527,30 +496,6 @@ impl X509Certificate {
             is_federated: false,
             crl_dps,
         }
-    }
-
-    pub fn cross_sign_intermediate(&self, intermediate: &X509Certificate) -> X509Certificate {
-        let cross_signed_cert = self
-            .pki_keypair
-            .re_sign(&self.certificate, &intermediate.certificate, None)
-            .unwrap();
-
-        Self {
-            certificate: cross_signed_cert,
-            pki_keypair: intermediate.pki_keypair.clone(),
-            cert_type: intermediate.cert_type,
-            signature_scheme: intermediate.signature_scheme,
-            is_federated: true,
-            crl_dps: vec![],
-        }
-    }
-
-    pub fn update_end_identity(&self, target: &mut X509Certificate, expiration: Option<std::time::Duration>) {
-        let new_cert = self
-            .pki_keypair
-            .re_sign(&self.certificate, &target.certificate, expiration)
-            .unwrap();
-        target.certificate = new_cert;
     }
 
     pub fn create_and_sign_end_identity(&self, params: CertificateParams) -> X509Certificate {

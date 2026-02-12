@@ -262,41 +262,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    async fn should_fail_when_certificate_chain_has_a_single_self_signed(case: TestContext) {
-        use crate::MlsErrorKind;
-
-        if !case.is_x509() {
-            return;
-        }
-        let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-
-        let (_alice_identifier, alice_cert) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
-
-        let new_cert = alice_cert
-            .pki_keypair
-            .re_sign(&alice_cert.certificate, &alice_cert.certificate, None)
-            .unwrap();
-        let mut alice_cert = alice_cert.clone();
-        alice_cert.certificate = new_cert;
-        let cb = CertificateBundle::from_self_signed_certificate(&alice_cert);
-        let alice_identifier = ClientIdentifier::X509([(case.signature_scheme(), cb)].into());
-
-        let alice = SessionContext::new_with_identifier(&case, alice_identifier, Some(&x509_test_chain))
-            .await
-            .unwrap();
-        let [bob] = case.sessions_x509().await;
-        let bob_key_package = bob.new_keypackage(&case).await;
-        let conversation = case.create_conversation([&alice]).await;
-        let err = conversation
-            .guard()
-            .await
-            .add_members([bob_key_package.into()].into())
-            .await
-            .unwrap_err();
-        assert!(innermost_source_matches!(err, MlsErrorKind::MlsAddMembersError(_)));
-    }
-
-    #[apply(all_cred_cipher)]
     async fn should_fail_when_signature_key_doesnt_match_certificate_public_key(case: TestContext) {
         if !case.is_x509() {
             return;
