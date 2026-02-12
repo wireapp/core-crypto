@@ -101,15 +101,6 @@ pub struct SessionContext {
     _db: Option<(Database, Arc<tempfile::TempDir>)>,
 }
 
-#[derive(Default, Clone, Copy)]
-pub enum TestCertificateSource {
-    /// Can be used in all x509 tests that don't use cross-signed certificate chains
-    #[default]
-    Generated,
-    /// Must be used in contexts where using cross-signed certificate chains
-    TestChainActor(usize),
-}
-
 impl SessionContext {
     /// Use this if you want to instantiate a session with a credential different from
     /// the default one of the test context
