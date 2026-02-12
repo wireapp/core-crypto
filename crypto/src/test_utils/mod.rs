@@ -250,10 +250,6 @@ impl SessionContext {
         self.x509_chain().expect("No x509 test chain setup")
     }
 
-    pub fn replace_x509_chain(&mut self, new_chain: std::sync::Arc<Option<X509TestChain>>) {
-        self.x509_test_chain = new_chain;
-    }
-
     pub async fn database(&self) -> Database {
         self.transaction
             .database()
