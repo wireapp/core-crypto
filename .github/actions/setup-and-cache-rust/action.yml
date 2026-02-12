@@ -7,7 +7,7 @@ inputs:
   rustflags:
     description: Set the value of RUSTFLAGS (set to empty string to avoid overwriting existing flags)
     required: false
-    default: -D warnings
+    default: ''
   components:
     description: Additional components to install that don't come with the toolchain by default.
     required: false
