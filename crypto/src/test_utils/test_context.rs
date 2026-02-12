@@ -6,8 +6,8 @@ pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
 use super::{
-    ClientIdentifier, CoreCryptoTransportSuccessProvider, MlsTransportTestExt, TestCertificateSource, TestConversation,
-    init_x509_test_chain, tmp_db_file,
+    ClientIdentifier, CoreCryptoTransportSuccessProvider, MlsTransportTestExt, TestConversation, init_x509_test_chain,
+    tmp_db_file,
     x509::{CertificateParams, X509TestChain},
 };
 pub use crate::{Ciphersuite, CredentialType, MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy};
@@ -199,13 +199,8 @@ impl TestContext {
     ) -> [ClientIdentifier; N] {
         let mut x509_identifiers = Vec::with_capacity(N);
         let signature_scheme = self.signature_scheme();
-        for (i, client_id) in client_ids.iter().enumerate() {
-            x509_identifiers.push(SessionContext::x509_client_id(
-                client_id,
-                signature_scheme,
-                &TestCertificateSource::TestChainActor(i),
-                chain,
-            ))
+        for client_id in &client_ids {
+            x509_identifiers.push(SessionContext::x509_client_id(client_id, signature_scheme, chain))
         }
         x509_identifiers.try_into().expect("Vector should be of length N.")
     }

@@ -214,31 +214,10 @@ impl SessionContext {
     fn x509_client_id(
         client_id: &ClientId,
         signature_scheme: SignatureScheme,
-        cert_source: &TestCertificateSource,
         chain: &X509TestChain,
     ) -> ClientIdentifier {
-        // Take bundle from chain or generate a new one
-        let bundle = match cert_source {
-            TestCertificateSource::Generated => {
-                crate::CertificateBundle::rand(client_id, chain.find_local_intermediate_ca())
-            }
-            TestCertificateSource::TestChainActor(i) => {
-                use x509_cert::der::Encode as _;
-                let actor = chain
-                                .actors
-                                .get(*i)
-                                .expect("if using test chain actors, you must have enough actors in the list. Did you mean to generate a certificate?");
-                let actor_cert = &actor.certificate;
-                let cert_der = actor_cert.certificate.to_der().unwrap();
-                CertificateBundle {
-                    certificate_chain: vec![cert_der],
-                    private_key: crate::mls::credential::x509::CertificatePrivateKey::new(
-                        actor_cert.pki_keypair.signing_key_bytes(),
-                    ),
-                    signature_scheme,
-                }
-            }
-        };
+        // Generate a new bundle
+        let bundle = crate::CertificateBundle::rand(client_id, chain.find_local_intermediate_ca());
         ClientIdentifier::X509(HashMap::from([(signature_scheme, bundle)]))
     }
 
