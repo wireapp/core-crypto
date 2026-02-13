@@ -3,13 +3,15 @@ use std::{any::Any, sync::Arc};
 use crate::{
     CryptoKeystoreResult,
     connection::DatabaseConnection,
-    transaction::{InMemoryTable, InMemoryTableGuard},
+    transaction::{InMemoryTable, InMemoryTableGuard, TRANSACTION_CACHES},
 };
 
 /// A supertrait that all entities must implement. This handles multiplexing over the two different database backends.
 ///
 /// This trait should be removed once the persistence layers are unified. See WPB-16241.
-pub trait EntityBase: 'static + Sized {
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+pub trait EntityBase: 'static + Sized + Send + Sync {
     type ConnectionType: for<'a> DatabaseConnection<'a>;
 
     /// Entities which implement `EntityDatabaseMutation` have a `pre_save` method which might generate or
@@ -33,7 +35,13 @@ pub trait EntityBase: 'static + Sized {
         option_dyn_any.is::<Arc<T>>()
     }
 
-    fn get_in_memory_table() -> InMemoryTableGuard<Self>;
+    async fn get_in_memory_table() -> InMemoryTableGuard<Self>
+    where
+        Self: Send + Sync + 'static,
+    {
+        let table = TRANSACTION_CACHES.table::<Self>().await;
+        table.upgradable_read_arc().await
+    }
 
     fn downcast_arc<T>(self: Arc<Self>) -> Option<Arc<T>>
     where

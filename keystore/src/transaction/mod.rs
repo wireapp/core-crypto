@@ -1,8 +1,9 @@
 use std::{
-    any::TypeId,
+    any::{Any, TypeId},
     borrow::Cow,
     collections::{HashMap, HashSet, hash_map::Entry},
     iter::Cloned,
+    marker::PhantomData,
     ops::Deref,
     sync::{Arc, LazyLock, OnceLock},
 };
@@ -18,23 +19,13 @@ use crate::{
     connection::{Database, KeystoreDatabaseConnection},
     entities::{MlsPendingMessage, PersistedMlsGroup},
     traits::{
-        BorrowPrimaryKey, Entity, EntityBase as _, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType,
+        BorrowPrimaryKey, Entity, EntityBase, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType, PrimaryKey,
         SearchableEntity,
     },
     transaction::dynamic_dispatch::{EntityId, EntityType},
 };
 
 pub(crate) mod dynamic_dispatch;
-
-struct EntityReadRef<E>(Arc<RwLock<Option<E>>>);
-
-impl<E> EntityReadRef<E> {
-    pub(crate) async fn guard(&self, mut f: impl AsyncFnMut(&E)) {
-        let guard = self.0.as_ref().read().await;
-        let e = guard.as_ref().expect("this is always Some");
-        f(&e).await
-    }
-}
 
 /// table: primary key -> entity reference
 ///
@@ -43,6 +34,56 @@ impl<E> EntityReadRef<E> {
 pub(crate) type InMemoryTable<E> = Arc<RwLock<HashMap<Vec<u8>, Arc<RwLock<Option<E>>>>>>;
 pub(crate) type InMemoryTableGuard<E> = RwLockUpgradableReadGuardArc<HashMap<Vec<u8>, Arc<RwLock<Option<E>>>>>;
 
+type RawTable = Arc<dyn Any + Send + Sync>;
+
+pub struct InMemoryStore {
+    tables: RwLock<HashMap<&'static str, RawTable>>,
+}
+
+pub(crate) static TRANSACTION_CACHES: LazyLock<InMemoryStore> = LazyLock::new(|| InMemoryStore {
+    tables: RwLock::new(HashMap::new()),
+});
+
+impl InMemoryStore {
+    pub async fn table<E: EntityBase>(&self) -> InMemoryTable<E> {
+        let tables = self.tables.read().await;
+        if let Some(existing) = tables.get(E::COLLECTION_NAME) {
+            return existing
+                .clone()
+                .downcast::<RwLock<HashMap<Vec<u8>, Arc<RwLock<Option<E>>>>>>()
+                .ok()
+                .expect("Type mismatch in table registry");
+        }
+
+        // Insert if missing
+        let mut tables = self.tables.write().await;
+
+        let table: InMemoryTable<E> = Arc::new(RwLock::new(HashMap::new()));
+
+        tables.insert(E::COLLECTION_NAME, table.clone());
+        table
+    }
+}
+
+#[async_trait::async_trait]
+pub trait InMemoryTableHandler: Send + Sync {
+    async fn process_table(&self);
+}
+pub struct TableHandler<E: Entity>(std::marker::PhantomData<E>);
+
+#[async_trait::async_trait]
+impl<E> InMemoryTableHandler for TableHandler<E>
+where
+    E: Entity + 'static,
+{
+    async fn process_table(&self) {
+        let table = E::get_in_memory_table().await;
+    }
+}
+
+fn all_table_handlers() -> Vec<Box<dyn InMemoryTableHandler>> {
+    vec![Box::new(TableHandler::<MlsPendingMessage>(PhantomData))]
+}
 /// This represents a transaction, where all operations will be done in memory and committed at the
 /// end
 #[derive(Debug, Clone)]
@@ -93,7 +134,7 @@ impl KeystoreTransaction {
     where
         E: Entity + EntityDatabaseMutation<'a>,
     {
-        let table = E::get_in_memory_table();
+        let table = E::get_in_memory_table().await;
 
         if let Some(entity_lock) = table.get(&id.to_vec()).cloned() {
             let mut guard = entity_lock.write().await;
@@ -153,7 +194,7 @@ impl KeystoreTransaction {
 
     pub(crate) async fn remove_pending_messages_by_conversation_id(&self, conversation_id: impl AsRef<[u8]> + Send) {
         let conversation_id = conversation_id.as_ref();
-        let pending_messages_table = MlsPendingMessage::get_in_memory_table();
+        let pending_messages_table = MlsPendingMessage::get_in_memory_table().await;
         for (_, pending_message_lock) in pending_messages_table.iter() {
             let pending_message_guard = pending_message_lock.upgradable_read().await;
 
@@ -194,7 +235,7 @@ impl KeystoreTransaction {
     where
         E: Entity + Send + Sync,
     {
-        let table = E::get_in_memory_table();
+        let table = E::get_in_memory_table().await;
         let id = id.bytes();
 
         if let Some(entity) = table.get(id.as_ref()).cloned() {
@@ -213,7 +254,7 @@ impl KeystoreTransaction {
         E: Entity + BorrowPrimaryKey + Send + Sync,
         <E as BorrowPrimaryKey>::BorrowedPrimaryKey: KeyType,
     {
-        let table = E::get_in_memory_table();
+        let table = E::get_in_memory_table().await;
         let id = id.bytes();
 
         if let Some(entity) = table.get(id.as_ref()).cloned() {
@@ -227,7 +268,7 @@ impl KeystoreTransaction {
     where
         E: Entity + Send + Sync,
     {
-        let table = E::get_in_memory_table();
+        let table = E::get_in_memory_table().await;
         let mut records = Vec::with_capacity(table.values().len());
         for record in table.values().cloned() {
             records.push(record.read_arc().await);
@@ -274,7 +315,7 @@ impl KeystoreTransaction {
     where
         E: Entity,
     {
-        let table = E::get_in_memory_table();
+        let table = E::get_in_memory_table().await;
         let mut table = RwLockUpgradableReadGuardArc::upgrade(table).await;
 
         for record in records {
@@ -288,43 +329,28 @@ impl KeystoreTransaction {
     /// Persists all the operations in the database. It will effectively open a transaction
     /// internally, perform all the buffered operations and commit.
     pub(crate) async fn commit(&self, db: &Database) -> Result<(), CryptoKeystoreError> {
-        let conn = db.conn().await?;
-        let mut conn = conn.conn().await;
-
-        let cache = self.cache.read().await;
-        let deleted_ids = self.deleted.read().await;
-
-        let table_names_with_deletion = deleted_ids.iter().map(|entity_id| entity_id.collection_name());
-        let table_names_with_save = cache
-            .values()
-            .flat_map(|table| table.keys())
-            .map(|entity_id| entity_id.collection_name());
-        let mut tables = table_names_with_deletion
-            .chain(table_names_with_save)
-            .collect::<Vec<_>>();
+        let tables = TRANSACTION_CACHES.tables.write().await;
 
         if tables.is_empty() {
             log::debug!("Empty transaction was committed.");
             return Ok(());
         }
 
-        tables.sort_unstable();
-        tables.dedup();
+        let conn = db.conn().await?;
+        let mut conn = conn.conn().await;
 
         // open a database transaction
         #[cfg(target_family = "wasm")]
-        let tx = conn.new_transaction(&tables).await?;
+        {
+            let tables_names = tables.keys().collect();
+            let tx = conn.new_transaction(&table_names).await?;
+        }
         #[cfg(not(target_family = "wasm"))]
         let tx = conn.transaction()?.into();
 
-        for entity in cache.values().flat_map(|table| table.values()) {
-            entity.execute_save(&tx).await?;
+        for handler in all_table_handlers() {
+            handler.process_table().await;
         }
-
-        for deleted_id in deleted_ids.iter() {
-            deleted_id.execute_delete(&tx).await?;
-        }
-
         // and commit everything
         tx.commit_tx().await?;
 
