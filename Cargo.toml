@@ -82,7 +82,7 @@ certval = { git = "https://github.com/wireapp/rust-pki.git", branch = "wire/stab
   "revocation",
 ] }
 const-oid = { version = "0.9", default-features = false, features = ["std"] }
-der = { version = "0.7", default-features = false, features = ["std"] }
+der = { version = "0.8", default-features = false, features = ["std"] }
 ecdsa = { version = "0.16", default-features = false }
 ed25519-dalek = { version = "2.2", default-features = false }
 flagset = { version = "0.4", default-features = false }
