@@ -153,6 +153,21 @@ impl CertificateBundle {
         Self::new(&handle, &display_name, None, None, signer)
     }
 
+    pub fn new_with_exact_client_id(client_id: &ClientId, signer: &crate::test_utils::x509::X509Certificate) -> Self {
+        // Unlike Self::rand() above, this uses the provided client ID and does not generate a new
+        // one.
+        // TODO: this should all be reworked by the time WPB-19540 is done.
+        let rand_str = |n: usize| {
+            use rand::distributions::{Alphanumeric, DistString as _};
+            Alphanumeric.sample_string(&mut rand::thread_rng(), n)
+        };
+        let name = rand_str(10);
+        let handle = format!("{name}_wire");
+        let display_name = format!("{name} Smith");
+        let client_id = crate::e2e_identity::id::QualifiedE2eiClientId::from(client_id.clone());
+        Self::new(&handle, &display_name, Some(&client_id), None, signer)
+    }
+
     /// Generates a certificate that is later turned into a [Credential]
     pub fn new(
         handle: &str,
