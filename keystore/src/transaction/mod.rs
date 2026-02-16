@@ -7,6 +7,7 @@ use std::{
 use async_lock::{RwLock, SemaphoreGuardArc};
 use itertools::Itertools;
 
+use crate::transaction::transaction_store::TransactionStore;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     connection::{Database, KeystoreDatabaseConnection},
@@ -18,19 +19,15 @@ use crate::{
     transaction::dynamic_dispatch::EntityId,
 };
 
+pub(crate) mod cache_record;
 pub(crate) mod dynamic_dispatch;
-
-/// table: primary key -> entity reference
-type InMemoryTable = HashMap<EntityId, dynamic_dispatch::Entity>;
-/// collection: collection name -> table
-type InMemoryCollection = Arc<RwLock<HashMap<&'static str, InMemoryTable>>>;
+pub(crate) mod transaction_store;
 
 /// This represents a transaction, where all operations will be done in memory and committed at the
 /// end
 #[derive(Debug, Clone)]
 pub(crate) struct KeystoreTransaction {
-    cache: InMemoryCollection,
-    deleted: Arc<RwLock<HashSet<EntityId>>>,
+    transaction_store: Arc<TransactionStore>,
     _semaphore_guard: Arc<SemaphoreGuardArc>,
 }
 
@@ -40,8 +37,7 @@ impl KeystoreTransaction {
     /// Requires a semaphore guard to ensure that only one exists at a time.
     pub(crate) async fn new(semaphore_guard: SemaphoreGuardArc) -> CryptoKeystoreResult<Self> {
         Ok(Self {
-            cache: Default::default(),
-            deleted: Arc::new(Default::default()),
+            transaction_store: Arc::new(TransactionStore::new()),
             _semaphore_guard: Arc::new(semaphore_guard),
         })
     }
