@@ -13,7 +13,6 @@ use crate::{
 };
 
 pub(crate) mod cache_record;
-pub(crate) mod dynamic_dispatch;
 pub(crate) mod transaction_store;
 
 /// This represents a transaction, where all operations will be done in memory and committed at the
