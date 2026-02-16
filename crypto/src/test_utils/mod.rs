@@ -208,7 +208,7 @@ impl SessionContext {
         chain: &X509TestChain,
     ) -> ClientIdentifier {
         // Generate a new bundle
-        let bundle = crate::CertificateBundle::rand(client_id, chain.find_local_intermediate_ca());
+        let bundle = crate::CertificateBundle::new_with_exact_client_id(client_id, chain.find_local_intermediate_ca());
         ClientIdentifier::X509(HashMap::from([(signature_scheme, bundle)]))
     }
 
