@@ -19,6 +19,8 @@ core-crypto-keystore.workspace = true
 
 async-trait.workspace = true
 async-lock.workspace = true
+sha1.workspace = true
+spki = { version = "0.7", features = ["pem", "fingerprint"] }
 openmls_traits.workspace = true
 rusty-jwt-tools = { workspace = true }
 serde = { workspace = true }
@@ -36,7 +38,7 @@ time = { workspace = true, features = [
   "wasm-bindgen",
 ] }
 rand = { workspace = true, optional = true }
-ed25519-dalek = { workspace = true, optional = true }
+ed25519-dalek = { workspace = true }
 signature = { workspace = true }
 log.workspace = true
 ecdsa = { workspace = true }
