@@ -28,7 +28,7 @@ jwt-simple = { workspace = true }
 derive_more = { workspace = true, features = ["deref", "from", "into"] }
 url = { workspace = true }
 zeroize = { workspace = true }
-uuid = { workspace = true, optional = true }
+uuid = { workspace = true }
 x509-cert = { workspace = true }
 time = { workspace = true, features = [
   "serde",
