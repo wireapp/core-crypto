@@ -4,6 +4,7 @@ use core_crypto::{
     Ciphersuite as CryptoCiphersuite, CredentialFindFilters, MlsConversationConfiguration, RecursiveError,
     VerifiableGroupInfo, mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
 };
+use core_crypto_keystore::Sha256Hash;
 use tls_codec::Deserialize as _;
 
 use crate::{
@@ -343,7 +344,7 @@ impl CoreCryptoContext {
 
         let find_filters = CredentialFindFilters {
             client_id,
-            public_key: public_key.as_deref(),
+            public_key_hash: public_key.map(Sha256Hash::hash_from),
             ciphersuite,
             credential_type,
             earliest_validity,

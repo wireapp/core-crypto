@@ -1,4 +1,5 @@
 use core_crypto_keystore::{
+    Sha256Hash,
     entities::{CredentialFindFilters as KeystoreFindFilters, StoredCredential},
     traits::FetchFromDatabase,
 };
@@ -36,9 +37,9 @@ pub struct FindFilters<'a> {
     /// Client ID to search for
     #[builder(default, setter(strip_option))]
     pub client_id: Option<&'a ClientIdRef>,
-    /// Public key to search for
+    /// SHA256 hash of a public key to search for
     #[builder(default, setter(strip_option))]
-    pub public_key: Option<&'a [u8]>,
+    pub public_key_hash: Option<Sha256Hash>,
     /// Ciphersuite to search for
     #[builder(default, setter(strip_option))]
     pub ciphersuite: Option<Ciphersuite>,
@@ -61,13 +62,13 @@ impl CredentialRef {
             client_id,
             ciphersuite,
             credential_type,
-            public_key,
+            public_key_hash,
             earliest_validity,
         } = find_filters;
 
         let partial_credentials = database
             .search::<StoredCredential, _>(&KeystoreFindFilters {
-                public_key,
+                hash: public_key_hash,
                 earliest_validity,
                 session_id: client_id.map(AsRef::as_ref),
                 ciphersuite: ciphersuite.map(Into::into),
