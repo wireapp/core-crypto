@@ -4,8 +4,7 @@
 
 - [Rust](/core-crypto/main/rust/core_crypto/)
 
-These docs are most useful for Core-Crypto developers working internally, but may be useful for client developers
-looking for additional insights on implementation.
+These docs are most useful for Core-Crypto developers working internally, but may be useful for client developers looking for additional insights on implementation.
 
 ## Bindings Docs
 
