@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v9.2.1 - 2026-02-17
+
+Upgrades openssl to version 3.5.5 (used on Android and iOS for encryption at rest).
+
 ## v9.2.0 - 2026-02-05
 
 ### Highlights
