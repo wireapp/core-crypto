@@ -1,43 +1,35 @@
-use openmls_basic_credential::SignatureKeyPair as OpenMlsSignatureKeyPair;
-use openmls_traits::types::{Ciphersuite as MlsCiphersuite, SignatureScheme};
-use wire_e2e_identity::JwsAlgorithm;
+use openmls_traits::types::{Ciphersuite, SignatureScheme};
 use zeroize::Zeroize;
 
-use super::error::*;
-use crate::{Ciphersuite, MlsError, mls_provider::PkiKeypair};
+use crate::{
+    JwsAlgorithm,
+    error::{E2eIdentityError, E2eIdentityResult},
+    pki::PkiKeypair,
+};
 
 impl TryFrom<Ciphersuite> for JwsAlgorithm {
-    type Error = Error;
+    type Error = E2eIdentityError;
 
-    fn try_from(cs: Ciphersuite) -> Result<Self> {
-        let cs = MlsCiphersuite::from(cs);
+    fn try_from(cs: Ciphersuite) -> E2eIdentityResult<Self> {
         Ok(match cs {
-            MlsCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-            | MlsCiphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 => JwsAlgorithm::Ed25519,
-            MlsCiphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 => JwsAlgorithm::P256,
-            MlsCiphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => JwsAlgorithm::P384,
-            MlsCiphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 => JwsAlgorithm::P521,
-            MlsCiphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
-            | MlsCiphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 => return Err(Error::NotYetSupported),
+            Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+            | Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 => JwsAlgorithm::Ed25519,
+            Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 => JwsAlgorithm::P256,
+            Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => JwsAlgorithm::P384,
+            Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 => JwsAlgorithm::P521,
+            Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
+            | Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 => return Err(Self::Error::NotSupported),
         })
     }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Zeroize, derive_more::From, derive_more::Deref)]
 #[zeroize(drop)]
-pub(crate) struct E2eiSignatureKeypair(Vec<u8>);
+pub struct E2eiSignatureKeypair(Vec<u8>);
 
 impl E2eiSignatureKeypair {
-    pub(crate) fn try_new(sc: SignatureScheme, sk: Vec<u8>) -> Result<Self> {
-        let keypair = PkiKeypair::new(sc, sk).map_err(MlsError::wrap("creating new pki keypair"))?;
+    pub fn try_new(sc: SignatureScheme, sk: Vec<u8>) -> E2eIdentityResult<Self> {
+        let keypair = PkiKeypair::new(sc, sk)?;
         Ok(Self(keypair.signing_key_bytes()))
-    }
-}
-
-impl TryFrom<&OpenMlsSignatureKeyPair> for E2eiSignatureKeypair {
-    type Error = Error;
-
-    fn try_from(kp: &OpenMlsSignatureKeyPair) -> Result<Self> {
-        Self::try_new(kp.signature_scheme(), kp.private().to_vec())
     }
 }

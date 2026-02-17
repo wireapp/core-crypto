@@ -16,9 +16,8 @@ mod build_metadata;
 mod ephemeral;
 mod error;
 mod group_store;
+mod identity;
 
-/// re-export [rusty-jwt-tools](https://github.com/wireapp/rusty-jwt-tools) API
-pub mod e2e_identity;
 /// MLS Abstraction
 pub mod mls;
 mod mls_provider;
@@ -42,21 +41,19 @@ pub use openmls::{
         group_info::VerifiableGroupInfo,
     },
 };
-use wire_e2e_identity::pki_env::PkiEnvironment;
+use wire_e2e_identity::{
+    legacy::{E2eiEnrollment, device_status::DeviceStatus},
+    pki_env::PkiEnvironment,
+};
 
 pub use crate::{
     build_metadata::{BUILD_METADATA, BuildMetadata},
-    e2e_identity::{
-        E2eiEnrollment,
-        device_status::DeviceStatus,
-        identity::{WireIdentity, X509Identity},
-        types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
-    },
     ephemeral::{HISTORY_CLIENT_ID_PREFIX, HistorySecret},
     error::{
         Error, InnermostErrorMessage, KeystoreError, LeafError, MlsError, MlsErrorKind, ProteusError, ProteusErrorKind,
         RecursiveError, Result, ToRecursiveError,
     },
+    identity::{WireIdentity, X509Identity},
     mls::{
         ciphersuite::Ciphersuite,
         conversation::{

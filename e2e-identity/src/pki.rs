@@ -6,12 +6,12 @@ use std::sync::Arc;
 use async_lock::{RwLock, RwLockReadGuard};
 use openmls_traits::{
     authentication_service::{CredentialAuthenticationStatus, CredentialRef},
+    crypto::OpenMlsCrypto,
     types::SignatureScheme,
 };
 use spki::{SignatureAlgorithmIdentifier, der::referenced::RefToOwned};
 
 use super::error::{MlsProviderError, MlsProviderResult};
-use crate::mls_provider::CRYPTO;
 
 pub struct Ed25519PkiSignature(ed25519_dalek::Signature);
 impl spki::SignatureBitStringEncoding for Ed25519PkiSignature {
@@ -540,8 +540,7 @@ impl PkiKeypair {
         Ok(cert)
     }
 
-    pub fn rand(alg: SignatureScheme, crypto: &super::RustCrypto) -> super::MlsProviderResult<Self> {
-        use openmls_traits::crypto::OpenMlsCrypto as _;
+    pub fn rand(alg: SignatureScheme, crypto: &impl OpenMlsCrypto) -> super::E2eIdentityResult<Self> {
         Self::new(
             alg,
             crypto

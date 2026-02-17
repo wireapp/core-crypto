@@ -1,6 +1,6 @@
 //! We only expose byte arrays through the FFI so we do all the conversions here
 
-use super::{Error, Result};
+use crate::error::{E2eIdentityError as Error, E2eIdentityResult as Result};
 
 /// See [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -16,8 +16,8 @@ pub struct E2eiAcmeDirectory {
     pub revoke_cert: String,
 }
 
-impl From<wire_e2e_identity::AcmeDirectory> for E2eiAcmeDirectory {
-    fn from(directory: wire_e2e_identity::AcmeDirectory) -> Self {
+impl From<crate::AcmeDirectory> for E2eiAcmeDirectory {
+    fn from(directory: crate::AcmeDirectory) -> Self {
         Self {
             new_nonce: directory.new_nonce.to_string(),
             new_account: directory.new_account.to_string(),
@@ -27,7 +27,7 @@ impl From<wire_e2e_identity::AcmeDirectory> for E2eiAcmeDirectory {
     }
 }
 
-impl TryFrom<&E2eiAcmeDirectory> for wire_e2e_identity::AcmeDirectory {
+impl TryFrom<&E2eiAcmeDirectory> for crate::AcmeDirectory {
     type Error = Error;
 
     fn try_from(directory: &E2eiAcmeDirectory) -> Result<Self> {
@@ -51,10 +51,10 @@ pub struct E2eiNewAcmeOrder {
     pub authorizations: Vec<String>,
 }
 
-impl TryFrom<wire_e2e_identity::E2eiNewAcmeOrder> for E2eiNewAcmeOrder {
+impl TryFrom<crate::E2eiNewAcmeOrder> for E2eiNewAcmeOrder {
     type Error = Error;
 
-    fn try_from(new_order: wire_e2e_identity::E2eiNewAcmeOrder) -> Result<Self> {
+    fn try_from(new_order: crate::E2eiNewAcmeOrder) -> Result<Self> {
         Ok(Self {
             authorizations: new_order.authorizations.iter().map(url::Url::to_string).collect(),
             delegate: serde_json::to_vec(&new_order.delegate)?,
@@ -62,15 +62,15 @@ impl TryFrom<wire_e2e_identity::E2eiNewAcmeOrder> for E2eiNewAcmeOrder {
     }
 }
 
-impl TryFrom<E2eiNewAcmeOrder> for wire_e2e_identity::E2eiNewAcmeOrder {
+impl TryFrom<E2eiNewAcmeOrder> for crate::E2eiNewAcmeOrder {
     type Error = Error;
 
     fn try_from(new_order: E2eiNewAcmeOrder) -> Result<Self> {
         let authorizations = new_order
             .authorizations
             .iter()
-            .map(|a| a.parse())
-            .collect::<Result<Vec<url::Url>, url::ParseError>>()?
+            .map(|a| a.parse().map_err(Error::UrlError))
+            .collect::<Result<Vec<url::Url>>>()?
             .try_into()
             .map_err(|_| Error::ImplementationError)?;
 
@@ -94,12 +94,12 @@ pub struct E2eiNewAcmeAuthz {
     pub challenge: E2eiAcmeChallenge,
 }
 
-impl TryFrom<wire_e2e_identity::E2eiAcmeAuthorization> for E2eiNewAcmeAuthz {
+impl TryFrom<crate::E2eiAcmeAuthorization> for E2eiNewAcmeAuthz {
     type Error = Error;
 
-    fn try_from(authz: wire_e2e_identity::E2eiAcmeAuthorization) -> Result<Self> {
+    fn try_from(authz: crate::E2eiAcmeAuthorization) -> Result<Self> {
         Ok(match authz {
-            wire_e2e_identity::E2eiAcmeAuthorization::User {
+            crate::E2eiAcmeAuthorization::User {
                 identifier,
                 keyauth,
                 challenge,
@@ -108,7 +108,7 @@ impl TryFrom<wire_e2e_identity::E2eiAcmeAuthorization> for E2eiNewAcmeAuthz {
                 keyauth: Some(keyauth),
                 challenge: challenge.try_into()?,
             },
-            wire_e2e_identity::E2eiAcmeAuthorization::Device { identifier, challenge } => Self {
+            crate::E2eiAcmeAuthorization::Device { identifier, challenge } => Self {
                 identifier,
                 keyauth: None,
                 challenge: challenge.try_into()?,
@@ -117,7 +117,7 @@ impl TryFrom<wire_e2e_identity::E2eiAcmeAuthorization> for E2eiNewAcmeAuthz {
     }
 }
 
-impl TryFrom<&E2eiNewAcmeAuthz> for wire_e2e_identity::E2eiAcmeAuthorization {
+impl TryFrom<&E2eiNewAcmeAuthz> for crate::E2eiAcmeAuthorization {
     type Error = Error;
 
     fn try_from(authz: &E2eiNewAcmeAuthz) -> Result<Self> {
@@ -150,10 +150,10 @@ pub struct E2eiAcmeChallenge {
     pub target: String,
 }
 
-impl TryFrom<wire_e2e_identity::E2eiAcmeChallenge> for E2eiAcmeChallenge {
+impl TryFrom<crate::E2eiAcmeChallenge> for E2eiAcmeChallenge {
     type Error = Error;
 
-    fn try_from(chall: wire_e2e_identity::E2eiAcmeChallenge) -> Result<Self> {
+    fn try_from(chall: crate::E2eiAcmeChallenge) -> Result<Self> {
         Ok(Self {
             delegate: serde_json::to_vec(&chall.delegate)?,
             url: chall.url.to_string(),
@@ -162,7 +162,7 @@ impl TryFrom<wire_e2e_identity::E2eiAcmeChallenge> for E2eiAcmeChallenge {
     }
 }
 
-impl TryFrom<&E2eiAcmeChallenge> for wire_e2e_identity::E2eiAcmeChallenge {
+impl TryFrom<&E2eiAcmeChallenge> for crate::E2eiAcmeChallenge {
     type Error = Error;
 
     fn try_from(chall: &E2eiAcmeChallenge) -> Result<Self> {
