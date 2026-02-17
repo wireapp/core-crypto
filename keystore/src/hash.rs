@@ -36,6 +36,7 @@ pub(crate) fn sha256(data: &[u8]) -> String {
     derive_more::From,
     derive_more::Into,
     serde::Serialize,
+    serde::Deserialize,
 )]
 #[as_ref(forward)]
 pub struct Sha256Hash([u8; 32]);
