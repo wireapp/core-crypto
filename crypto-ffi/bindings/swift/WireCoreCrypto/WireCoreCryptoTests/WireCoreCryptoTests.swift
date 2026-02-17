@@ -95,7 +95,7 @@ final class WireCoreCryptoTests: XCTestCase {
             try await $0.mlsInit(
                 clientId: clientId, transport: self.mockMlsTransport)
             let credentialRef = try await $0.addCredential(credential: credential)
-            return credentialRef.publicKey()
+            return credentialRef.publicKeyHash()
         }
 
         let key2 = genDatabaseKey()
@@ -111,7 +111,7 @@ final class WireCoreCryptoTests: XCTestCase {
             return try await $0.findCredentials(
                 clientId: clientId, publicKey: nil, ciphersuite: nil, credentialType: nil,
                 earliestValidity: nil
-            ).first?.publicKey()
+            ).first?.publicKeyHash()
 
         }
         XCTAssertEqual(pubkey1, pubkey2)
@@ -383,7 +383,7 @@ final class WireCoreCryptoTests: XCTestCase {
                 clientId: nil, publicKey: nil, ciphersuite: nil,
                 credentialType: .basic, earliestValidity: nil
             )
-        }.first!.publicKey()
+        }.first!.publicKeyHash()
         XCTAssertNotNil(publicKey)
     }
 
@@ -477,7 +477,7 @@ final class WireCoreCryptoTests: XCTestCase {
 
         XCTAssertEqual(results1.count, 1)
         XCTAssertEqual(results2.count, 1)
-        XCTAssertNotEqual(results1[0].publicKey(), results2[0].publicKey())
+        XCTAssertNotEqual(results1[0].publicKeyHash(), results2[0].publicKeyHash())
     }
 
     func testConversationExistsShouldReturnTrue() async throws {

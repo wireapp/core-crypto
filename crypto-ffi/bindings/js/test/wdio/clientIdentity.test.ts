@@ -20,7 +20,7 @@ describe("client identity", () => {
                 await cc.newTransaction(async (ctx) => {
                     return await ctx.getCredentials();
                 })
-            )[0]!.publicKey().byteLength;
+            )[0]!.publicKeyHash().byteLength;
         }, alice);
         expect(result).toBe(32);
     });

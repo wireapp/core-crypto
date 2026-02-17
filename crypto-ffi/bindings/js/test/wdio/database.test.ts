@@ -91,7 +91,7 @@ describe("database", () => {
                 await cc.newTransaction((ctx) =>
                     ctx.getFilteredCredentials({ clientId })
                 )
-            )[0]!.publicKey();
+            )[0]!.publicKeyHash();
             cc.close();
 
             const newKeyBytes = new Uint8Array(32);
@@ -120,7 +120,7 @@ describe("database", () => {
                 await ctx.mlsInit(clientId, window.deliveryService);
                 return (
                     await ctx.getFilteredCredentials({ clientId })
-                )[0]!.publicKey();
+                )[0]!.publicKeyHash();
             });
             cc.close();
 

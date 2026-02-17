@@ -130,7 +130,7 @@ class DatabaseKeyTest {
             it.findCredentials(clientId, null, null, null, null)
         }.first()
         cc.close()
-        assertContentEquals(credentialRef1.publicKey(), credentialRef2.publicKey())
+        assertContentEquals(credentialRef1.publicKeyHash(), credentialRef2.publicKeyHash())
 
         tmpdir.toFile().deleteRecursively()
     }
