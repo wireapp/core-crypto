@@ -25,10 +25,10 @@ impl TryFrom<Ciphersuite> for JwsAlgorithm {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Zeroize, derive_more::From, derive_more::Deref)]
 #[zeroize(drop)]
-pub struct E2eiSignatureKeypair(Vec<u8>);
+pub(crate) struct E2eiSignatureKeypair(Vec<u8>);
 
 impl E2eiSignatureKeypair {
-    pub fn try_new(sc: SignatureScheme, sk: Vec<u8>) -> Result<Self> {
+    pub(crate) fn try_new(sc: SignatureScheme, sk: Vec<u8>) -> Result<Self> {
         let keypair = PkiKeypair::new(sc, sk).map_err(MlsError::wrap("creating new pki keypair"))?;
         Ok(Self(keypair.signing_key_bytes()))
     }
