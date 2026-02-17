@@ -6,7 +6,7 @@ use derive_more::derive;
 use openmls::prelude::Credential as MlsCredential;
 use openmls_traits::types::SignatureScheme;
 use openmls_x509_credential::CertificateKeyPair;
-use wire_e2e_identity::{HashAlgorithm, WireIdentityReader};
+use wire_e2e_identity::{HashAlgorithm, WireIdentityReader, legacy::id::WireQualifiedClientId};
 #[cfg(test)]
 use x509_cert::der::Encode;
 use zeroize::Zeroize;
@@ -16,10 +16,7 @@ use super::{Error, Result};
 use crate::mls_provider::PkiKeypair;
 #[cfg(test)]
 use crate::test_utils::x509::X509Certificate;
-use crate::{
-    Ciphersuite, ClientId, Credential, CredentialType, MlsError, RecursiveError,
-    e2e_identity::id::WireQualifiedClientId,
-};
+use crate::{Ciphersuite, ClientId, Credential, CredentialType, MlsError, RecursiveError};
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, derive::Constructor)]
 #[zeroize(drop)]
@@ -84,10 +81,15 @@ impl CertificateBundle {
         let identity = leaf
             .extract_identity(None, hash_alg)
             .map_err(|_| Error::InvalidIdentity)?;
-        let client_id = identity
+
+        use wire_e2e_identity::legacy::id as legacy_id;
+
+        let client_id: legacy_id::ClientId = identity
             .client_id
             .parse::<WireQualifiedClientId>()
-            .map_err(RecursiveError::e2e_identity("parsing wire qualified client id"))?;
+            .map_err(RecursiveError::e2e_identity("parsing wire qualified client id"))?
+            .into();
+        let client_id: Vec<u8> = client_id.into();
         Ok(client_id.into())
     }
 

@@ -7,11 +7,11 @@
 
 use core_crypto_keystore::Database;
 use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn, prelude::LeafNode};
+use wire_e2e_identity::NewCrlDistributionPoints;
 
 use super::{Error, Result};
 use crate::{
     MlsConversation, MlsError, MlsProposalRef, RecursiveError, Session,
-    e2e_identity::NewCrlDistributionPoints,
     mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
     mls_provider::MlsCryptoProvider,
 };

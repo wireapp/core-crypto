@@ -8,12 +8,13 @@ mod init_certificates;
 use std::{collections::HashSet, sync::Arc};
 
 pub use error::{Error, Result};
-use wire_e2e_identity::x509_check::extract_crl_uris;
+use openmls_traits::types::SignatureScheme;
+use wire_e2e_identity::{NewCrlDistributionPoints, x509_check::extract_crl_uris};
 
 use super::TransactionContext;
 use crate::{
     CertificateBundle, Ciphersuite, ClientId, Credential, CredentialRef, E2eiEnrollment, MlsTransport, RecursiveError,
-    e2e_identity::NewCrlDistributionPoints,
+    RustCrypto,
     mls::credential::{crl::get_new_crl_distribution_points, x509::CertificatePrivateKey},
 };
 
@@ -35,14 +36,16 @@ impl TransactionContext {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> Result<E2eiEnrollment> {
-        E2eiEnrollment::try_new(
+        let client_id = wire_e2e_identity::legacy::id::ClientId::from(client_id.0);
+        E2eiEnrollment::try_new::<RustCrypto>(
             client_id,
             display_name,
             handle,
             team,
             expiry_sec,
-            ciphersuite,
+            ciphersuite.into(),
             false, // fresh install so no refresh token registered yet
+            crate::mls_provider::CRYPTO.as_ref(),
         )
         .map_err(RecursiveError::e2e_identity("creating new enrollment"))
         .map_err(Into::into)
@@ -62,9 +65,7 @@ impl TransactionContext {
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
     ) -> Result<(CredentialRef, NewCrlDistributionPoints)> {
-        let sk = enrollment
-            .get_sign_key_for_mls()
-            .map_err(RecursiveError::e2e_identity("getting sign key for mls"))?;
+        let sk = get_sign_key_for_mls(enrollment)?;
         let ciphersuite = *enrollment.ciphersuite();
         let signature_scheme = ciphersuite.signature_algorithm();
 
@@ -95,7 +96,7 @@ impl TransactionContext {
             signature_scheme,
         };
 
-        let credential = Credential::x509(ciphersuite, cert_bundle).map_err(RecursiveError::mls_credential(
+        let credential = Credential::x509(ciphersuite.into(), cert_bundle).map_err(RecursiveError::mls_credential(
             "creating new x509 credential from certificate bundle in save_x509_credential",
         ))?;
 
@@ -121,9 +122,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting pki environment"))?;
 
-        let sk = enrollment
-            .get_sign_key_for_mls()
-            .map_err(RecursiveError::e2e_identity("creating new enrollment"))?;
+        let sk = get_sign_key_for_mls(enrollment)?;
         let ciphersuite = *enrollment.ciphersuite();
         let certificate_chain = enrollment
             .certificate_response(
@@ -148,7 +147,7 @@ impl TransactionContext {
             signature_scheme: ciphersuite.signature_algorithm(),
         };
 
-        let mut credential = Credential::x509(ciphersuite, cert_bundle.clone()).map_err(
+        let mut credential = Credential::x509(ciphersuite.into(), cert_bundle.clone()).map_err(
             RecursiveError::mls_credential("creating credential from certificate bundle in e2ei_mls_init_only"),
         )?;
         let database = &self

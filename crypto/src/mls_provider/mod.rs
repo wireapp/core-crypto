@@ -6,7 +6,6 @@ pub use core_crypto_keystore::{Database, DatabaseKey};
 
 mod crypto_provider;
 mod error;
-mod pki;
 
 pub(crate) use crypto_provider::CRYPTO;
 pub use crypto_provider::RustCrypto;
@@ -18,10 +17,10 @@ use openmls_traits::{
         KemOutput, SignatureScheme,
     },
 };
+use wire_e2e_identity::PkiEnvironmentProvider;
 // TODO: remove this allow(unused) once the E2EI parts have been coupled.
 #[allow(unused)]
-pub use pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
-use wire_e2e_identity::PkiEnvironmentProvider;
+pub use wire_e2e_identity::pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
 
 /// 32-byte raw entropy seed
 pub type RawEntropySeed = <rand_chacha::ChaCha20Rng as rand::SeedableRng>::Seed;

@@ -1,11 +1,13 @@
 use base64::Engine;
 
 use super::{Error, Result};
-use crate::ClientId;
 
 #[cfg(test)]
 const DOMAIN: &str = "wire.com";
 const COLON: u8 = b':';
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::Into, derive_more::Deref)]
+pub struct ClientId(Vec<u8>);
 
 /// This format: 'bd4c7053-1c5a-4020-9559-cd7bf7961954:4959bc6ab12f2846@wire.com'
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::Into, derive_more::Deref)]

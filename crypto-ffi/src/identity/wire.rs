@@ -1,3 +1,5 @@
+use wire_e2e_identity::legacy::device_status;
+
 use crate::{CredentialType, X509Identity};
 
 /// Represents the identity claims identifying a client
@@ -42,12 +44,12 @@ pub enum DeviceStatus {
     Revoked = 3,
 }
 
-impl From<core_crypto::DeviceStatus> for DeviceStatus {
-    fn from(value: core_crypto::DeviceStatus) -> Self {
+impl From<device_status::DeviceStatus> for DeviceStatus {
+    fn from(value: device_status::DeviceStatus) -> Self {
         match value {
-            core_crypto::DeviceStatus::Valid => Self::Valid,
-            core_crypto::DeviceStatus::Expired => Self::Expired,
-            core_crypto::DeviceStatus::Revoked => Self::Revoked,
+            device_status::DeviceStatus::Valid => Self::Valid,
+            device_status::DeviceStatus::Expired => Self::Expired,
+            device_status::DeviceStatus::Revoked => Self::Revoked,
         }
     }
 }
