@@ -49,7 +49,7 @@ twox-hash = { version = "2.1.2", default-features = false, features = [
 
 [target.'cfg(target_os = "ios")'.dependencies]
 security-framework = "3.5"
-security-framework-sys = "2.15"
+security-framework-sys = "2.16"
 core-foundation = "0.10"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
