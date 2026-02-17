@@ -540,11 +540,6 @@ impl PkiKeypair {
         Ok(cert)
     }
 
-    pub fn rand_unchecked(alg: SignatureScheme) -> Self {
-        use openmls_traits::crypto::OpenMlsCrypto;
-        Self::new(alg, CRYPTO.signature_key_gen(alg).unwrap().0).unwrap()
-    }
-
     pub fn rand(alg: SignatureScheme, crypto: &super::RustCrypto) -> super::MlsProviderResult<Self> {
         use openmls_traits::crypto::OpenMlsCrypto as _;
         Self::new(
