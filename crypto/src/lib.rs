@@ -17,8 +17,6 @@ mod ephemeral;
 mod error;
 mod group_store;
 
-/// re-export [rusty-jwt-tools](https://github.com/wireapp/rusty-jwt-tools) API
-pub mod e2e_identity;
 /// MLS Abstraction
 pub mod mls;
 mod mls_provider;

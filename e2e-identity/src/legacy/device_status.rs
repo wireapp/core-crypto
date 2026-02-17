@@ -1,4 +1,4 @@
-use wire_e2e_identity::IdentityStatus;
+use crate::x509_check::IdentityStatus;
 
 /// Indicates the standalone status of a device Credential in a MLS group at a moment T.
 /// This does not represent the states where a device is not using MLS or is not using end-to-end identity
