@@ -270,7 +270,7 @@ mod tests {
         let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
 
         let certs = CertificateBundle::rand(&"alice".into(), x509_intermediate);
-        let new_pki_kp = PkiKeypair::rand_unchecked(case.signature_scheme());
+        let new_pki_kp = PkiKeypair::rand(case.signature_scheme(), &CRYPTO).unwrap();
 
         let eve_key = CertificatePrivateKey::new(new_pki_kp.signing_key_bytes());
         let cb = CertificateBundle {
