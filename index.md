@@ -5,6 +5,8 @@
 - [Keystore Implementation](./KEYSTORE_IMPLEMENTATION.md)
 - [FFI](./FFI.md)
 - [Crypto Dependencies](./CRYPTO_DEPENDENCIES.md)
+- [CI/CD](./CI.md)
+- [Publish Manually](./MANUAL_PUBLISH.md)
 
 ## API Documentation
 
