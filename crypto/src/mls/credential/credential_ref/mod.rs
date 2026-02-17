@@ -4,6 +4,7 @@ mod error;
 mod find;
 mod persistence;
 
+use core_crypto_keystore::Sha256Hash;
 use openmls::prelude::SignatureScheme;
 
 pub(crate) use self::error::{Error, Result};
@@ -26,7 +27,7 @@ use crate::{Ciphersuite, ClientId, ClientIdRef, CredentialType};
 )]
 pub struct CredentialRef {
     client_id: ClientId,
-    public_key: Vec<u8>,
+    public_key_hash: Sha256Hash,
     r#type: CredentialType,
     ciphersuite: Ciphersuite,
     // first unix timestamp at which the credential is valid
@@ -39,7 +40,7 @@ impl CredentialRef {
     pub(crate) fn from_credential(credential: &super::Credential) -> Self {
         Self {
             client_id: credential.client_id().to_owned(),
-            public_key: credential.signature_key_pair.public().to_owned(),
+            public_key_hash: Sha256Hash::hash_from(credential.signature_key_pair.public()),
             r#type: credential.credential_type(),
             ciphersuite: credential.ciphersuite(),
             earliest_validity: credential.earliest_validity,
@@ -51,9 +52,9 @@ impl CredentialRef {
         self.client_id.as_ref()
     }
 
-    /// Get the public key associated with this credential
-    pub fn public_key(&self) -> &[u8] {
-        &self.public_key
+    /// Get the SHA256 hash of the public key associated with this credential
+    pub fn public_key_hash(&self) -> Sha256Hash {
+        self.public_key_hash
     }
 
     /// Get the credential type associated with this credential

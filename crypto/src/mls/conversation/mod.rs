@@ -827,13 +827,18 @@ mod tests {
         pub async fn should_fetch_ext_sender(mut case: TestContext) {
             let [alice, external_sender] = case.sessions().await;
             Box::pin(async move {
+                use core_crypto_keystore::Sha256Hash;
+
                 let conversation = case
                     .create_conversation_with_external_sender(&external_sender, [&alice])
                     .await;
 
                 let alice_ext_sender = conversation.guard().await.get_external_sender().await.unwrap();
                 assert!(!alice_ext_sender.is_empty());
-                assert_eq!(alice_ext_sender, external_sender.initial_credential.public_key());
+                assert_eq!(
+                    Sha256Hash::hash_from(alice_ext_sender),
+                    external_sender.initial_credential.public_key_hash()
+                );
             })
             .await
         }

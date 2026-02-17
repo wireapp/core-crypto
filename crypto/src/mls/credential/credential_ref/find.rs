@@ -100,7 +100,7 @@ impl CredentialRef {
                     r#type,
                     ciphersuite,
                     earliest_validity: stored_credential.created_at,
-                    public_key: stored_credential.public_key.to_owned(),
+                    public_key_hash: Sha256Hash::hash_from(&stored_credential.public_key),
                 })
             }
         }

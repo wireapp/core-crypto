@@ -24,9 +24,9 @@ impl CredentialRef {
         self.0.client_id().to_owned().into()
     }
 
-    /// Get the public key associated with this credential ref
-    pub fn public_key(&self) -> Vec<u8> {
-        self.0.public_key().to_owned()
+    /// Get the SHA256 hash of the public key associated with this credential ref
+    pub fn public_key_hash(&self) -> Vec<u8> {
+        self.0.public_key_hash().to_vec()
     }
 
     /// Get the type of this credential ref.

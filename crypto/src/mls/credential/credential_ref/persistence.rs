@@ -4,7 +4,7 @@
 //! useful to end users. Clients building on the CC API can't do anything useful with a full [`Credential`],
 //! and it's wasteful to transfer one across the FFI boundary.
 
-use core_crypto_keystore::{Sha256Hash, entities::StoredCredential, traits::FetchFromDatabase};
+use core_crypto_keystore::{entities::StoredCredential, traits::FetchFromDatabase};
 
 use super::{Error, Result};
 use crate::{Credential, CredentialRef, KeystoreError, RecursiveError};
@@ -15,7 +15,7 @@ impl CredentialRef {
     /// Note that this does not attach the credential to any Session; it just does the data manipulation.
     pub(crate) async fn load(&self, database: &impl FetchFromDatabase) -> Result<Credential> {
         database
-            .get::<StoredCredential>(&Sha256Hash::hash_from(self.public_key()))
+            .get::<StoredCredential>(&self.public_key_hash())
             .await
             .map_err(KeystoreError::wrap("finding credential"))?
             .ok_or(Error::CredentialNotFound)
