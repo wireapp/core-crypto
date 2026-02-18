@@ -3,7 +3,7 @@
 
 use super::super::error::CredentialValidationError;
 
-pub(crate) type Result<T, E = Error> = core::result::Result<T, E>;
+pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

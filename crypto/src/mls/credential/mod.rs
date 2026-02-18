@@ -2,7 +2,7 @@
 //!
 //! Credentials can be basic, or based on an x509 certificate chain.
 
-pub(crate) mod credential_ref;
+pub mod credential_ref;
 pub(crate) mod credential_type;
 pub(crate) mod crl;
 mod error;

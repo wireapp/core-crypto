@@ -13,7 +13,7 @@ impl CredentialRef {
     /// Load the credential which matches this ref from the database.
     ///
     /// Note that this does not attach the credential to any Session; it just does the data manipulation.
-    pub(crate) async fn load(&self, database: &impl FetchFromDatabase) -> Result<Credential> {
+    pub async fn load(&self, database: &impl FetchFromDatabase) -> Result<Credential> {
         database
             .get::<StoredCredential>(&self.public_key_hash())
             .await
