@@ -1,5 +1,6 @@
 import gobley.gradle.GobleyHost
 import gobley.gradle.cargo.dsl.*
+import gobley.gradle.cargo.tasks.CargoBuildTask
 import org.gradle.api.tasks.bundling.Jar
 
 plugins {
@@ -140,6 +141,9 @@ cargo {
     // Point to the crypto-ffi crate directory
     packageDirectory = layout.projectDirectory.dir("../..")
 
+    // Don't automatically install missing rust targets
+    installTargetBeforeBuild = false
+
     // Only build JVM native libraries for the current host platform
     // This disables cross-compilation for other JVM targets (e.g., Linux ARM64 on macOS)
     builds.jvm {
@@ -180,4 +184,17 @@ tasks.withType<Sign>().configureEach {
     if (System.getenv("CI") == null) {
         enabled = false
     }
+}
+
+// Provide our own cinterop defs files since we aren't building the ffi libraries with the cargo
+// plugin, which would otherwise generate them.
+val copyDefs = tasks.register("copyCinteropDefinitions",Copy::class) {
+    from(layout.projectDirectory.file("defs"))
+    into(layout.buildDirectory.file("taskOutputCache"))
+}
+
+// Disable building ffi libraries since they are already built & cached else in the build system.
+tasks.withType<CargoBuildTask>().configureEach {
+    dependsOn(copyDefs)
+    enabled = false
 }
