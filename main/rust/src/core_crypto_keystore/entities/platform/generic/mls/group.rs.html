@@ -14,20 +14,19 @@
 <a href=#14 id=14 data-nosnippet>14</a>    ) -&gt; CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
 <a href=#15 id=15 data-nosnippet>15</a>        <span class="kw">let </span>parent_id = <span class="kw-2">*</span>parent_id.as_ref();
 <a href=#16 id=16 data-nosnippet>16</a>        <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
-<a href=#17 id=17 data-nosnippet>17</a>        <span class="kw">let </span><span class="kw-2">mut </span>stmt = conn.prepare_cached(<span class="string">"SELECT id_hex, parent_id, state FROM mls_groups WHERE parent_id = ?"</span>)<span class="question-mark">?</span>;
+<a href=#17 id=17 data-nosnippet>17</a>        <span class="kw">let </span><span class="kw-2">mut </span>stmt = conn.prepare_cached(<span class="string">"SELECT id, parent_id, state FROM mls_groups WHERE parent_id = ?"</span>)<span class="question-mark">?</span>;
 <a href=#18 id=18 data-nosnippet>18</a>        stmt.query_and_then([parent_id], |row| {
-<a href=#19 id=19 data-nosnippet>19</a>            <span class="kw">let </span>id = row.get::&lt;<span class="kw">_</span>, String&gt;(<span class="string">"id_hex"</span>)<span class="question-mark">?</span>;
-<a href=#20 id=20 data-nosnippet>20</a>            <span class="kw">let </span>id = hex::decode(id)<span class="question-mark">?</span>;
-<a href=#21 id=21 data-nosnippet>21</a>            <span class="kw">let </span>parent_id = row.get(<span class="string">"parent_id"</span>)<span class="question-mark">?</span>;
-<a href=#22 id=22 data-nosnippet>22</a>            <span class="kw">let </span>state = row.get(<span class="string">"state"</span>)<span class="question-mark">?</span>;
-<a href=#23 id=23 data-nosnippet>23</a>
-<a href=#24 id=24 data-nosnippet>24</a>            <span class="prelude-val">Ok</span>(PersistedMlsGroup { id, state, parent_id })
-<a href=#25 id=25 data-nosnippet>25</a>        })<span class="question-mark">?
-<a href=#26 id=26 data-nosnippet>26</a>        </span>.collect()
-<a href=#27 id=27 data-nosnippet>27</a>    }
-<a href=#28 id=28 data-nosnippet>28</a>
-<a href=#29 id=29 data-nosnippet>29</a>    <span class="kw">fn </span>matches(<span class="kw-2">&amp;</span><span class="self">self</span>, search_key: <span class="kw-2">&amp;</span>ParentGroupId&lt;<span class="lifetime">'a</span>&gt;) -&gt; bool {
-<a href=#30 id=30 data-nosnippet>30</a>        <span class="self">self</span>.parent_id.as_deref() == <span class="prelude-val">Some</span>(<span class="kw-2">*</span>search_key.as_ref())
-<a href=#31 id=31 data-nosnippet>31</a>    }
-<a href=#32 id=32 data-nosnippet>32</a>}
+<a href=#19 id=19 data-nosnippet>19</a>            <span class="kw">let </span>id = row.get(<span class="string">"id"</span>)<span class="question-mark">?</span>;
+<a href=#20 id=20 data-nosnippet>20</a>            <span class="kw">let </span>parent_id = row.get(<span class="string">"parent_id"</span>)<span class="question-mark">?</span>;
+<a href=#21 id=21 data-nosnippet>21</a>            <span class="kw">let </span>state = row.get(<span class="string">"state"</span>)<span class="question-mark">?</span>;
+<a href=#22 id=22 data-nosnippet>22</a>
+<a href=#23 id=23 data-nosnippet>23</a>            <span class="prelude-val">Ok</span>(PersistedMlsGroup { id, state, parent_id })
+<a href=#24 id=24 data-nosnippet>24</a>        })<span class="question-mark">?
+<a href=#25 id=25 data-nosnippet>25</a>        </span>.collect()
+<a href=#26 id=26 data-nosnippet>26</a>    }
+<a href=#27 id=27 data-nosnippet>27</a>
+<a href=#28 id=28 data-nosnippet>28</a>    <span class="kw">fn </span>matches(<span class="kw-2">&amp;</span><span class="self">self</span>, search_key: <span class="kw-2">&amp;</span>ParentGroupId&lt;<span class="lifetime">'a</span>&gt;) -&gt; bool {
+<a href=#29 id=29 data-nosnippet>29</a>        <span class="self">self</span>.parent_id.as_deref() == <span class="prelude-val">Some</span>(<span class="kw-2">*</span>search_key.as_ref())
+<a href=#30 id=30 data-nosnippet>30</a>    }
+<a href=#31 id=31 data-nosnippet>31</a>}
 </code></pre></div></section></main></body></html>
