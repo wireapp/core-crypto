@@ -1,6 +1,6 @@
 use core_crypto::CredentialRef as CryptoCredentialRef;
 
-use crate::{Ciphersuite, ClientId, CredentialType, SignatureScheme};
+use crate::{Ciphersuite, ClientId, CoreCryptoResult, Credential, CredentialType, Database, SignatureScheme};
 
 /// A reference to a credential which has been persisted in CC.
 ///
@@ -49,5 +49,10 @@ impl CredentialRef {
     /// Basic credentials have no defined earliest validity and will always return 0.
     pub fn earliest_validity(&self) -> u64 {
         self.0.earliest_validity()
+    }
+
+    /// Load the credential which matches this ref from the database.
+    pub async fn load(&self, database: &Database) -> CoreCryptoResult<Credential> {
+        self.0.load(&database.0).await.map(Credential).map_err(Into::into)
     }
 }
