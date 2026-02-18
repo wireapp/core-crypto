@@ -1,7 +1,4 @@
-use openmls_traits::{
-    crypto::OpenMlsCrypto as _,
-    types::{Ciphersuite, SignatureScheme},
-};
+use openmls_traits::{crypto::OpenMlsCrypto, types::Ciphersuite};
 use zeroize::Zeroize as _;
 
 use crate::{E2eiAcmeAuthorization, RustyE2eIdentity};
@@ -31,7 +28,7 @@ pub struct CrlRegistration {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct E2eiEnrollment {
     delegate: RustyE2eIdentity,
-    pub(crate) sign_sk: E2eiSignatureKeypair,
+    pub sign_sk: E2eiSignatureKeypair,
     pub(super) client_id: String,
     pub(super) display_name: String,
     pub(super) handle: String,
@@ -73,9 +70,10 @@ impl E2eiEnrollment {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
         has_called_new_oidc_challenge_request: bool,
+        crypto: impl OpenMlsCrypto,
     ) -> Result<Self> {
         let alg = ciphersuite.try_into()?;
-        let sign_sk = Self::new_sign_key(ciphersuite)?;
+        let sign_sk = Self::new_sign_key(crypto, ciphersuite)?;
 
         let client_id = QualifiedE2eiClientId::try_from(client_id.as_slice())?;
         let client_id = String::try_from(client_id)?;
@@ -100,21 +98,9 @@ impl E2eiEnrollment {
         })
     }
 
-    pub(crate) fn new_sign_key(ciphersuite: Ciphersuite) -> Result<E2eiSignatureKeypair> {
-        let (sk, _) = CRYPTO.signature_key_gen(ciphersuite.signature_algorithm())?;
+    pub(crate) fn new_sign_key(crypto: impl OpenMlsCrypto, ciphersuite: Ciphersuite) -> Result<E2eiSignatureKeypair> {
+        let (sk, _) = crypto.signature_key_gen(ciphersuite.signature_algorithm())?;
         E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), sk)
-    }
-
-    pub(crate) fn get_sign_key_for_mls(&self) -> Result<Vec<u8>> {
-        let sk = match self.ciphersuite.signature_algorithm() {
-            SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ECDSA_SECP384R1_SHA384 => self.sign_sk.to_vec(),
-            SignatureScheme::ECDSA_SECP521R1_SHA512 => RustCrypto::normalize_p521_secret_key(&self.sign_sk).to_vec(),
-            SignatureScheme::ED25519 => RustCrypto::normalize_ed25519_key(self.sign_sk.as_slice())?
-                .to_bytes()
-                .to_vec(),
-            SignatureScheme::ED448 => return Err(Error::NotYetSupported),
-        };
-        Ok(sk)
     }
 
     pub(crate) fn ciphersuite(&self) -> &Ciphersuite {

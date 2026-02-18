@@ -40,6 +40,8 @@ pub enum E2eIdentityError {
     #[error("No enrollment was found")]
     NotFound,
     #[error(transparent)]
+    CryptoError(#[from] openmls_traits::types::CryptoError),
+    #[error(transparent)]
     X509Error(#[from] crate::x509_check::RustyX509CheckError),
     #[error(transparent)]
     UrlError(#[from] url::ParseError),
