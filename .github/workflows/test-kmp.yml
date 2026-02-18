@@ -25,19 +25,14 @@ jobs:
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v5
 
-      - name: download linux library
-        uses: ./.github/actions/make/jvm
+      - name: download ffi library
+        uses: ./.github/actions/make/ffi-library
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # The specific jvm action uses `uname -s` to determine which `jvm` make rule to call.
-      # Because this workflow runs on ubuntu, we're using the generic action
-      - name: download aarch64 apple darwin artifact
-        uses: ./.github/actions/make
+      - name: download linux library
+        uses: ./.github/actions/make/jvm
         with:
-          key: jvm-darwin
-          make-rule: jvm-darwin
-          target-path: target/aarch64-apple-darwin/release/libcore_crypto_ffi.dylib
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: build and test kmp package

@@ -1,0 +1,2 @@
+linkerOpts.osx = -liconv -lSystem -lc -lm
+staticLibraries = libcore_crypto_ffi.a
