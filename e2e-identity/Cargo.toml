@@ -29,7 +29,7 @@ derive_more = { workspace = true, features = ["deref", "from", "into"] }
 url = { workspace = true }
 zeroize = { workspace = true }
 uuid = { workspace = true }
-x509-cert = { workspace = true }
+x509-cert = { workspace = true, features = ["builder", "hazmat"] }
 time = { workspace = true, features = [
   "serde",
   "serde-well-known",
