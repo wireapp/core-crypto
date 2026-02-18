@@ -1,6 +1,8 @@
+import gobley.gradle.Variant
 import gobley.gradle.GobleyHost
 import gobley.gradle.cargo.dsl.*
 import gobley.gradle.cargo.tasks.CargoBuildTask
+import gobley.gradle.uniffi.tasks.BuildUniffiBindingsTask
 import org.gradle.api.tasks.bundling.Jar
 
 plugins {
@@ -17,6 +19,8 @@ val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
     from(tasks.dokkaGeneratePublicationHtml.flatMap { it.outputDirectory })
     archiveClassifier.set("html-docs")
 }
+
+val buildVariant = if (System.getenv("RELEASE") == "1") Variant.Release else Variant.Debug
 
 kotlin {
     jvmToolchain(17)
@@ -144,6 +148,8 @@ cargo {
     // Don't automatically install missing rust targets
     installTargetBeforeBuild = false
 
+    jvmVariant = buildVariant
+
     // Only build JVM native libraries for the current host platform
     // This disables cross-compilation for other JVM targets (e.g., Linux ARM64 on macOS)
     builds.jvm {
@@ -163,6 +169,10 @@ afterEvaluate {
             }
             additionalEnvironment.put(target, "16.0")
         }
+    }
+
+    tasks.withType<BuildUniffiBindingsTask>().configureEach {
+        source.set(layout.projectDirectory.dir("../../../target/debug/libcore_crypto_ffi.so").asFile)
     }
 }
 
