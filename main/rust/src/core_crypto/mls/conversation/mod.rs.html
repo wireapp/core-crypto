@@ -827,16 +827,21 @@
 <a href=#827 id=827 data-nosnippet>827</a>        </span><span class="kw">pub async fn </span>should_fetch_ext_sender(<span class="kw-2">mut </span>case: TestContext) {
 <a href=#828 id=828 data-nosnippet>828</a>            <span class="kw">let </span>[alice, external_sender] = case.sessions().<span class="kw">await</span>;
 <a href=#829 id=829 data-nosnippet>829</a>            Box::pin(<span class="kw">async move </span>{
-<a href=#830 id=830 data-nosnippet>830</a>                <span class="kw">let </span>conversation = case
-<a href=#831 id=831 data-nosnippet>831</a>                    .create_conversation_with_external_sender(<span class="kw-2">&amp;</span>external_sender, [<span class="kw-2">&amp;</span>alice])
-<a href=#832 id=832 data-nosnippet>832</a>                    .<span class="kw">await</span>;
-<a href=#833 id=833 data-nosnippet>833</a>
-<a href=#834 id=834 data-nosnippet>834</a>                <span class="kw">let </span>alice_ext_sender = conversation.guard().<span class="kw">await</span>.get_external_sender().<span class="kw">await</span>.unwrap();
-<a href=#835 id=835 data-nosnippet>835</a>                <span class="macro">assert!</span>(!alice_ext_sender.is_empty());
-<a href=#836 id=836 data-nosnippet>836</a>                <span class="macro">assert_eq!</span>(alice_ext_sender, external_sender.initial_credential.public_key());
-<a href=#837 id=837 data-nosnippet>837</a>            })
-<a href=#838 id=838 data-nosnippet>838</a>            .<span class="kw">await
-<a href=#839 id=839 data-nosnippet>839</a>        </span>}
-<a href=#840 id=840 data-nosnippet>840</a>    }
-<a href=#841 id=841 data-nosnippet>841</a>}
+<a href=#830 id=830 data-nosnippet>830</a>                <span class="kw">use </span>core_crypto_keystore::Sha256Hash;
+<a href=#831 id=831 data-nosnippet>831</a>
+<a href=#832 id=832 data-nosnippet>832</a>                <span class="kw">let </span>conversation = case
+<a href=#833 id=833 data-nosnippet>833</a>                    .create_conversation_with_external_sender(<span class="kw-2">&amp;</span>external_sender, [<span class="kw-2">&amp;</span>alice])
+<a href=#834 id=834 data-nosnippet>834</a>                    .<span class="kw">await</span>;
+<a href=#835 id=835 data-nosnippet>835</a>
+<a href=#836 id=836 data-nosnippet>836</a>                <span class="kw">let </span>alice_ext_sender = conversation.guard().<span class="kw">await</span>.get_external_sender().<span class="kw">await</span>.unwrap();
+<a href=#837 id=837 data-nosnippet>837</a>                <span class="macro">assert!</span>(!alice_ext_sender.is_empty());
+<a href=#838 id=838 data-nosnippet>838</a>                <span class="macro">assert_eq!</span>(
+<a href=#839 id=839 data-nosnippet>839</a>                    Sha256Hash::hash_from(alice_ext_sender),
+<a href=#840 id=840 data-nosnippet>840</a>                    external_sender.initial_credential.public_key_hash()
+<a href=#841 id=841 data-nosnippet>841</a>                );
+<a href=#842 id=842 data-nosnippet>842</a>            })
+<a href=#843 id=843 data-nosnippet>843</a>            .<span class="kw">await
+<a href=#844 id=844 data-nosnippet>844</a>        </span>}
+<a href=#845 id=845 data-nosnippet>845</a>    }
+<a href=#846 id=846 data-nosnippet>846</a>}
 </code></pre></div></section></main></body></html>

@@ -391,7 +391,7 @@ $dokka.location:com.wire.crypto/CredentialRef/clientId/#/PointingToDeclaration/
 $dokka.location:com.wire.crypto/CredentialRef/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/close.html
 $dokka.location:com.wire.crypto/CredentialRef/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/destroy.html
 $dokka.location:com.wire.crypto/CredentialRef/earliestValidity/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/earliest-validity.html
-$dokka.location:com.wire.crypto/CredentialRef/publicKey/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/public-key.html
+$dokka.location:com.wire.crypto/CredentialRef/publicKeyHash/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/public-key-hash.html
 $dokka.location:com.wire.crypto/CredentialRef/signatureScheme/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/signature-scheme.html
 $dokka.location:com.wire.crypto/CredentialRef/type/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/type.html
 $dokka.location:com.wire.crypto/CredentialRef/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/uniffi-clone-pointer.html
@@ -400,7 +400,7 @@ $dokka.location:com.wire.crypto/CredentialRefInterface///PointingToDeclaration/
 $dokka.location:com.wire.crypto/CredentialRefInterface/ciphersuite/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/ciphersuite.html
 $dokka.location:com.wire.crypto/CredentialRefInterface/clientId/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/client-id.html
 $dokka.location:com.wire.crypto/CredentialRefInterface/earliestValidity/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/earliest-validity.html
-$dokka.location:com.wire.crypto/CredentialRefInterface/publicKey/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/public-key.html
+$dokka.location:com.wire.crypto/CredentialRefInterface/publicKeyHash/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/public-key-hash.html
 $dokka.location:com.wire.crypto/CredentialRefInterface/signatureScheme/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/signature-scheme.html
 $dokka.location:com.wire.crypto/CredentialRefInterface/type/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/type.html
 $dokka.location:com.wire.crypto/CredentialType.BASIC///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto/-credential-type/-b-a-s-i-c/index.html
