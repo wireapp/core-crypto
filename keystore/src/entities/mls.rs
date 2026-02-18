@@ -30,7 +30,6 @@ impl<'a> KeyType for ParentGroupId<'a> {
 #[entity(collection_name = "mls_groups")]
 #[sensitive]
 pub struct PersistedMlsGroup {
-    #[entity(id, hex, column = "id_hex")]
     pub id: Vec<u8>,
     pub state: Vec<u8>,
     #[entity(unencrypted_wasm)]
@@ -157,7 +156,7 @@ impl PrimaryKey for MlsPendingMessage {
 )]
 #[entity(collection_name = "mls_buffered_commits")]
 pub struct StoredBufferedCommit {
-    #[entity(id, hex, column = "conversation_id_hex")]
+    #[entity(id)]
     #[sensitive]
     conversation_id: Vec<u8>,
     commit_data: Vec<u8>,
@@ -260,7 +259,6 @@ pub struct StoredEncryptionKeyPair {
 #[zeroize(drop)]
 #[entity(collection_name = "mls_epoch_encryption_keypairs")]
 pub struct StoredEpochEncryptionKeypair {
-    #[entity(hex, column = "id_hex")]
     pub id: Vec<u8>,
     #[sensitive]
     pub keypairs: Vec<u8>,
@@ -289,7 +287,7 @@ pub struct StoredPskBundle {
 #[zeroize(drop)]
 #[entity(collection_name = "mls_keypackages")]
 pub struct StoredKeypackage {
-    #[entity(id, hex, column = "keypackage_ref_hex")]
+    #[entity(id)]
     pub keypackage_ref: Vec<u8>,
     #[sensitive]
     pub keypackage: Vec<u8>,

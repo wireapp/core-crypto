@@ -14,10 +14,9 @@ impl<'a> SearchableEntity<ParentGroupId<'a>> for PersistedMlsGroup {
     ) -> CryptoKeystoreResult<Vec<Self>> {
         let parent_id = *parent_id.as_ref();
         let mut conn = conn.conn().await;
-        let mut stmt = conn.prepare_cached("SELECT id_hex, parent_id, state FROM mls_groups WHERE parent_id = ?")?;
+        let mut stmt = conn.prepare_cached("SELECT id, parent_id, state FROM mls_groups WHERE parent_id = ?")?;
         stmt.query_and_then([parent_id], |row| {
-            let id = row.get::<_, String>("id_hex")?;
-            let id = hex::decode(id)?;
+            let id = row.get("id")?;
             let parent_id = row.get("parent_id")?;
             let state = row.get("state")?;
 
