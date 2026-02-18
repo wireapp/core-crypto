@@ -24,15 +24,17 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v5
-      - name: Setup Android SDK
+      - name: Setup Android SDK & NDK
         uses: android-actions/setup-android@v3
       - name: set ndk_home
         run: |
           ndk_version=$(cat crypto-ffi/bindings/android/ndk.version)
           ANDROID_NDK_HOME="$ANDROID_HOME/ndk/$ndk_version"
           echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$ANDROID_NDK_HOME" >> $GITHUB_ENV
           if [ ! -d "$ANDROID_NDK_HOME" ]; then
-            echo "::warning file=.github/workflows/interop.yml,title=ANDROID_NDK_HOME does not exist::$ANDROID_NDK_HOME is not a directory"
+            echo "::warning file=.github/workflows/interop.yml,title=ANDROID_NDK_HOME does not exist::Installing NDK $ndk_version to $ANDROID_NDK_HOME"
+            yes | sdkmanager "ndk;$ndk_version"
           fi
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1

@@ -1,0 +1,2 @@
+linkerOpts.ios = -framework Security -framework CoreFoundation -liconv -lSystem -lc -lm
+staticLibraries = libcore_crypto_ffi.a
