@@ -10,7 +10,7 @@ use crate::{CoreCryptoError, CoreCryptoResult};
 
 /// The database acting as a core crypto keystore.
 #[derive(Debug, derive_more::From, derive_more::Into, Clone, derive_more::Deref, uniffi::Object)]
-pub struct Database(core_crypto_keystore::Database);
+pub struct Database(pub(crate) core_crypto_keystore::Database);
 
 impl Database {
     /// Open or create a [Database].
