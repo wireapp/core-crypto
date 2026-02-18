@@ -1,12 +1,10 @@
 mod column;
 mod column_type;
 mod derive_impl;
-mod field_transformation;
 mod is_id;
 mod parse;
 
 use darling::FromDeriveInput;
-use field_transformation::FieldTransformation;
 use heck::ToSnakeCase;
 use proc_macro2::Ident;
 use syn::Visibility;

@@ -3,7 +3,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{Ident, Lifetime};
 
-use crate::entity_derive::{Entity, FieldTransformation, column_type::ColumnType};
+use crate::entity_derive::{Entity, column_type::ColumnType};
 
 impl quote::ToTokens for Entity {
     fn to_tokens(&self, tokens: &mut TokenStream) {
@@ -148,16 +148,6 @@ impl Entity {
         let field_assignments = std::iter::once(id_column.field_assignment())
             .chain(other_columns.iter().map(|column| column.field_assignment()));
 
-        // if we ever add a second field transformation, we'll want this match pattern
-        #[allow(clippy::manual_map)]
-        let key_transform = match id_column.transformation {
-            None => None,
-            Some(FieldTransformation::Hex) => Some(quote! {
-                #[cfg(not(target_family = "wasm"))]
-                let key = hex::encode(key);
-            }),
-        };
-
         quote! {
             #[cfg_attr(target_family = "wasm", ::async_trait::async_trait(?Send))]
             #[cfg_attr(not(target_family = "wasm"), ::async_trait::async_trait)]
@@ -167,7 +157,7 @@ impl Entity {
                 {
                     let key = <&Self::BorrowedPrimaryKey as crate::traits::KeyType>::bytes(&key);
                     let key = key.as_ref();
-                    #key_transform
+
                     #[cfg(target_family = "wasm")]
                     {
                         conn.storage().get(key).await
@@ -258,15 +248,6 @@ impl Entity {
         } = self;
 
         let id_column_name = id_column.sql_name();
-        // if we ever add a second field transformation, we'll want this match pattern
-        #[allow(clippy::manual_map)]
-        let key_transform = match id_column.transformation {
-            None => None,
-            Some(FieldTransformation::Hex) => Some(quote! {
-                #[cfg(not(target_family = "wasm"))]
-                let key = hex::encode(key);
-            }),
-        };
 
         quote! {
             #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -281,7 +262,7 @@ impl Entity {
                 {
                     let key = <&<Self as crate::traits::BorrowPrimaryKey>::BorrowedPrimaryKey as crate::traits::KeyType>::bytes(&id);
                     let key = key.as_ref();
-                    #key_transform
+
                     #[cfg(target_family = "wasm")]
                     {
                         tx.delete::<Self>(key).await

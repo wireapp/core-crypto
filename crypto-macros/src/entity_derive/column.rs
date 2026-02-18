@@ -4,10 +4,7 @@ use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::Type;
 
-use super::{
-    FieldTransformation,
-    column_type::{ColumnType, IdColumnType},
-};
+use super::column_type::{ColumnType, IdColumnType};
 use crate::entity_derive::column_type::EmitGetExpression;
 
 pub(super) struct GenericColumn<Type> {
@@ -15,8 +12,6 @@ pub(super) struct GenericColumn<Type> {
     pub(super) column_type: Type,
     /// Only present if it differs from the field name
     pub(super) column_name: Option<String>,
-    /// If the ID is transformed for storage within the DB
-    pub(super) transformation: Option<FieldTransformation>,
     /// When set, do not encrypt or decrypt this field in wasm.
     pub(super) skip_encryption: bool,
 }
@@ -36,7 +31,6 @@ where
             .ident
             .expect("we have nice error messages from `supports(struct_named)");
         let column_type = CType::try_from(value.ty)?;
-        let transformation = value.field_attrs.transformation();
         let column_name = value.field_attrs.column;
         let skip_encryption = value.field_attrs.unencrypted_wasm.is_present();
 
@@ -44,7 +38,6 @@ where
             field_name,
             column_type,
             column_name,
-            transformation,
             skip_encryption,
         })
     }
@@ -61,18 +54,8 @@ where
     pub(super) fn load_expression(&self) -> TokenStream {
         let column_name = self.sql_name();
 
-        let sql_data_type = match self.transformation {
-            None => self.column_type.get_as_type(),
-            Some(FieldTransformation::Hex) => quote!(String),
-        };
-        let expr = quote!(row.get::<_, #sql_data_type>(#column_name)?);
-
-        match self.transformation {
-            None => expr,
-            Some(FieldTransformation::Hex) => {
-                quote!(hex::decode(#expr).map_err(|err| rusqlite::Error::UserFunctionError(err.into()))?)
-            }
-        }
+        let sql_data_type = self.column_type.get_as_type();
+        quote!(row.get::<_, #sql_data_type>(#column_name)?)
     }
 
     /// Emit a field assignment.
@@ -103,10 +86,6 @@ impl<Type> GenericColumn<Type> {
     /// automatically borrowed.
     pub(super) fn store_expression(&self) -> TokenStream {
         let Self { field_name, .. } = self;
-        let expr = quote!(self.#field_name);
-        match self.transformation {
-            None => expr,
-            Some(FieldTransformation::Hex) => quote!(hex::encode(&#expr)),
-        }
+        quote!(self.#field_name)
     }
 }

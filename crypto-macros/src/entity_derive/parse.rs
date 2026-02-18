@@ -35,19 +35,8 @@ pub(super) struct OuterAttributes {
 #[derive(Default, darling::FromMeta)]
 pub(super) struct FieldAttributes {
     pub(super) id: Flag,
-    pub(super) hex: Flag,
     pub(super) column: Option<String>,
     pub(super) unencrypted_wasm: Flag,
-}
-
-impl FieldAttributes {
-    pub(super) fn transformation(&self) -> Option<super::FieldTransformation> {
-        if self.hex.is_present() {
-            Some(super::FieldTransformation::Hex)
-        } else {
-            None
-        }
-    }
 }
 
 /// Parse the column

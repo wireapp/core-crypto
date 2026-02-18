@@ -36,7 +36,7 @@ mod idempotent;
 /// The attribute itself appears in the following parenthesis.
 ///
 /// It is acceptable to combine multiple entity attributes together, simply by combining them
-/// within the parenthesis, separated by commas: `#[entity(id, hex)]`, for example.
+/// within the parenthesis, separated by commas: `#[entity(id, column_name="column")]`, for example.
 ///
 /// ### `#[entity(collection_name = "my_collection")]`
 ///
@@ -56,20 +56,6 @@ mod idempotent;
 /// that is an implicit id.
 ///
 /// This attribute does not accept a value.
-///
-/// ### `#[entity(hex)]`
-///
-/// This is a **field attribute** which can be applied to any number of fields in the struct.
-///
-/// When set, this indicates that the actual data in the database is hex-encoded.
-/// The encoding and decoding will be applied transparently when storing or loading this field.
-///
-/// This may only be applied to fields of type `Vec<u8>`.
-///
-/// This attribute does not accept a value.
-///
-/// **NOTE**: this is mainly intended for backwards compatibility. It is not recommended that new fields be
-/// hex-encoded; doing so provides no safety but adds slight serialization costs on store/load.
 ///
 /// ### `#[entity(column = "my_column")]`
 ///
