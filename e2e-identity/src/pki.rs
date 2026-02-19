@@ -314,8 +314,11 @@ impl PkiKeypair {
                     .map_err(|_| MlsProviderError::CertificateGenerationError)?,
             ))),
             SignatureScheme::ED25519 => Ok(PkiKeypair::Ed25519(Ed25519PkiKeypair(
-                super::RustCrypto::normalize_ed25519_key(sk.as_slice())
-                    .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                ed25519_dalek::SigningKey::from_bytes(
+                    sk.as_slice()
+                        .try_into()
+                        .expect("private key must be exactly {ed25519_dalek::SECRET_KEY_LENGTH} bytes"),
+                ),
             ))),
             _ => Err(MlsProviderError::UnsupportedSignatureScheme),
         }
