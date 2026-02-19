@@ -7,19 +7,15 @@ use crate::{
     pki::PkiKeypair,
 };
 
-impl TryFrom<Ciphersuite> for JwsAlgorithm {
-    type Error = E2eIdentityError;
-
-    fn try_from(cs: Ciphersuite) -> E2eIdentityResult<Self> {
-        Ok(match cs {
-            Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-            | Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 => JwsAlgorithm::Ed25519,
-            Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 => JwsAlgorithm::P256,
-            Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => JwsAlgorithm::P384,
-            Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 => JwsAlgorithm::P521,
-            Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
-            | Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 => return Err(Self::Error::NotSupported),
-        })
+pub(crate) fn ciphersuite_to_jws_algo(cs: Ciphersuite) -> E2eIdentityResult<JwsAlgorithm> {
+    match cs {
+        Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        | Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 => Ok(JwsAlgorithm::Ed25519),
+        Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 => Ok(JwsAlgorithm::P256),
+        Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => Ok(JwsAlgorithm::P384),
+        Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 => Ok(JwsAlgorithm::P521),
+        Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
+        | Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 => Err(E2eIdentityError::NotSupported),
     }
 }
 
