@@ -3,7 +3,8 @@ import org.gradle.api.tasks.bundling.Jar
 plugins {
     alias(libs.plugins.android.library)
     kotlin("android")
-    id("com.vanniktech.maven.publish.base")
+    id("maven-publish")
+    id("signing")
 }
 
 val jvmSources = projectDir.resolve("../jvm/src")
@@ -28,12 +29,6 @@ dependencies {
     androidTestImplementation(libs.espresso)
     androidTestImplementation(libs.coroutines.test)
     androidTestImplementation(libs.assertj.core)
-}
-
-mavenPublishing {
-    publishToMavenCentral(automaticRelease = true)
-    pomFromGradleProperties()
-    signAllPublications()
 }
 
 val targets = listOf(
@@ -145,5 +140,13 @@ afterEvaluate {
                 artifact(tasks.named("dokkaHtmlJar"))
             }
         }
+    }
+    signing {
+        useInMemoryPgpKeys(
+            System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyId"),
+            System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey"),
+            System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyPassword")
+        )
+        sign(publishing.publications)
     }
 }
