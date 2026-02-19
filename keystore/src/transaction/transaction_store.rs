@@ -63,6 +63,19 @@ macro_rules! define_transaction_store {
             )*
         }
 
+        impl $struct_name {
+            fn caches(&self) -> Vec<&dyn Flush> {
+                let mut v: Vec<&dyn Flush> = Vec::new();
+                $(
+                    $(#[$meta])*
+                    {
+                        v.push(&self.$field);
+                    }
+                )*
+                v
+            }
+        }
+
         $(
             $(#[$meta])*
             impl CachedEntity for $entity {
@@ -104,6 +117,69 @@ define_transaction_store!(
 impl TransactionStore {
     pub async fn cache<E: CachedEntity>(&self) -> TransactionCacheGuard<E> {
         E::get_cache(&self).upgradable_read_arc().await
+    }
+
+    pub async fn flush(&self, tx: &TransactionWrapper<'_>) {
+        for cache in self.caches() {
+            cache.flush(tx).await;
+        }
+    }
+
+    #[cfg(target_family = "wasm")]
+    async fn dirty_caches_names(&self) -> Vec<&'static str> {
+        let mut table_names = Vec::new();
+        for cache in self.caches() {
+            if cache.is_dirty().await {
+                table_names.push(cache.collection_name())
+            }
+        }
+        table_names
+    }
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+pub(crate) trait Flush {
+    async fn flush(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()>;
+
+    #[cfg(target_family = "wasm")]
+    async fn is_dirty(&self) -> bool;
+
+    #[cfg(target_family = "wasm")]
+    fn collection_name(&self) -> &'static str;
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl<E> Flush for TransactionCache<E>
+where
+    E: CachedEntity + for<'a> EntityDatabaseMutation<'a, Transaction = TransactionWrapper<'a>> + 'static,
+{
+    async fn flush(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        let mut records = self.0.write().await;
+        for (id, record) in records.drain() {
+            if record.is_dirty() {
+                let mut guard = record.write().await;
+                if let Some(record) = guard.take() {
+                    record.into().save(tx).await?;
+                } else {
+                    let key = E::PrimaryKey::from_bytes(&id).expect("Couldn't create PrimaryKey from bytes");
+                    E::delete(tx, &key).await?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[cfg(target_family = "wasm")]
+    async fn is_dirty(&self) -> bool {
+        let table = E::get_cache().await;
+        table.values().any(|r| r.is_dirty())
+    }
+
+    #[cfg(target_family = "wasm")]
+    fn collection_name(&self) -> &'static str {
+        E::COLLECTION_NAME
     }
 }
 
