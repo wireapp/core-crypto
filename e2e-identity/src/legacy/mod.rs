@@ -8,7 +8,7 @@ pub mod device_status;
 pub mod id;
 pub mod types;
 
-use crypto::E2eiSignatureKeypair;
+use crypto::{E2eiSignatureKeypair, ciphersuite_to_jws_algo};
 use id::{ClientId, QualifiedE2eiClientId};
 
 use super::error::{E2eIdentityError as Error, E2eIdentityResult as Result};
@@ -72,7 +72,7 @@ impl E2eiEnrollment {
         has_called_new_oidc_challenge_request: bool,
         crypto: &impl OpenMlsCrypto,
     ) -> Result<Self> {
-        let alg = ciphersuite.try_into()?;
+        let alg = ciphersuite_to_jws_algo(ciphersuite)?;
         let sign_sk = Self::new_sign_key(crypto, ciphersuite)?;
 
         let client_id = QualifiedE2eiClientId::try_from(client_id.as_slice())?;
