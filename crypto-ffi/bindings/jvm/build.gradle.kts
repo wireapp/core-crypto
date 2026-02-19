@@ -1,7 +1,8 @@
 plugins {
     kotlin("jvm")
     id("java-library")
-    id("com.vanniktech.maven.publish")
+    id("maven-publish")
+    id("signing")
     id(libs.plugins.detekt.get().pluginId) version libs.versions.detekt
 }
 
@@ -18,9 +19,7 @@ val sharedSources = projectDir.resolve("../shared/src/commonMain")
 val sharedTestSources = projectDir.resolve("../shared/src/commonTest")
 
 dependencies {
-    implementation(platform(kotlin("bom")))
     implementation(platform(libs.coroutines.bom))
-    implementation(kotlin("stdlib-jdk7"))
     implementation(libs.jna)
     implementation(libs.coroutines.core)
     implementation(libs.kotlinx.datetime)
@@ -89,4 +88,63 @@ project.afterEvaluate {
 
 detekt {
     config.setFrom(files("detekt.yml"))
+}
+
+val sourcesJar = tasks.register<Jar>("sourcesJar") {
+    archiveClassifier.set("sources")
+    from(sourceSets.main.get().allSource)
+}
+
+val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
+    dependsOn(tasks.named("dokkaGeneratePublicationHtml"))
+    archiveClassifier.set("javadoc")
+    from(tasks.named("dokkaGeneratePublicationHtml"))
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+            artifactId = findProperty("POM_ARTIFACT_ID") as String
+            groupId = findProperty("GROUP") as String
+            version = findProperty("VERSION_NAME") as String
+            artifact(sourcesJar)
+            artifact(dokkaHtmlJar)
+            pom {
+                name.set(findProperty("POM_NAME") as String)
+                description.set(findProperty("POM_DESCRIPTION") as String)
+                url.set(findProperty("POM_URL") as String)
+
+                licenses {
+                    license {
+                        name.set(findProperty("POM_LICENSE_NAME") as String)
+                        url.set(findProperty("POM_LICENSE_URL") as String)
+                        distribution.set(findProperty("POM_LICENSE_DIST") as String)
+                    }
+                }
+
+                scm {
+                    url.set(findProperty("POM_SCM_URL") as String)
+                    connection.set(findProperty("POM_SCM_CONNECTION") as String)
+                    developerConnection.set(findProperty("POM_SCM_DEV_CONNECTION") as String)
+                }
+
+                developers {
+                    developer {
+                        name.set(findProperty("POM_DEVELOPER_NAME") as String)
+                        email.set(findProperty("POM_DEVELOPER_EMAIL") as String)
+                    }
+                }
+            }
+        }
+    }
+}
+
+signing {
+    useInMemoryPgpKeys(
+        System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyId"),
+        System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey"),
+        System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyPassword")
+    )
+    sign(publishing.publications)
 }
