@@ -1,0 +1,65 @@
+name: prepare publish
+
+on:
+  workflow_call:
+    secrets:
+      SONATYPE_USERNAME:
+        required: true
+      SONATYPE_PASSWORD:
+        required: true
+      PGP_KEY_ID:
+        required: true
+      PGP_SIGNING_KEY:
+        required: true
+      PGP_PASSPHRASE:
+        required: true
+
+env:
+  RELEASE: 1
+
+jobs:
+  verify-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.set-tag.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set tag name
+        id: set-tag
+        run: echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Force fetch the tag
+        run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}
+
+      - name: Ensure the tag is signed
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          if ! git cat-file tag "$TAG_NAME" | grep -q -- '-----BEGIN PGP SIGNATURE-----'; then
+            echo "Tag $TAG_NAME is not signed!"
+            exit 1
+          fi
+
+  jvm:
+    needs: verify-tag
+    uses: ./.github/workflows/publish-jvm.yml
+    with:
+      prepare: true
+    secrets:
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+
+  android:
+    needs: verify-tag
+    uses: ./.github/workflows/publish-android.yml
+    with:
+      prepare: true
+    secrets:
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
