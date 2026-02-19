@@ -256,9 +256,23 @@ jobs:
       - name: ensure the tag is signed
         run: git cat-file tag ${{ github.ref_name }} | grep -q -- '-----BEGIN PGP SIGNATURE-----'
 
+      - name: prepare jvm
+        uses: ./.github/workflows/publish-jvm.yml
+        with:
+            prepare: true
+        secrets:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+          PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+
+
   publish-jvm:
     needs: prepare-publish
     uses: ./.github/workflows/publish-jvm.yml
+    with:
+        release: true
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
