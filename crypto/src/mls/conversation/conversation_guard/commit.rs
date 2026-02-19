@@ -3,11 +3,11 @@
 use std::borrow::Borrow;
 
 use openmls::prelude::KeyPackageIn;
+use wire_e2e_identity::NewCrlDistributionPoints;
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
     ClientIdRef, CredentialRef, LeafError, MlsError, MlsGroupInfoBundle, MlsTransportResponse, RecursiveError,
-    e2e_identity::NewCrlDistributionPoints,
     mls::{
         conversation::{
             Conversation as _, ConversationGuard, ConversationWithMls as _, Error, Result, commit::MlsCommitBundle,

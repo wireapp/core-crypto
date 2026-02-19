@@ -16,7 +16,7 @@ pub enum RecursiveError {
     },
     E2e {
         context: &'static str,
-        source: Box<crate::e2e_identity::Error>,
+        source: Box<wire_e2e_identity::E2eIdentityError>,
     },
     Mls {
         context: &'static str,
@@ -57,7 +57,7 @@ impl RecursiveError {
         }
     }
 
-    pub fn e2e_identity<E: Into<crate::e2e_identity::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
+    pub fn e2e_identity<E: Into<wire_e2e_identity::E2eIdentityError>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::E2e {
             context,
             source: Box::new(into_source.into()),
@@ -164,7 +164,7 @@ macro_rules! impl_to_recursive_error_for {
 
 impl_to_recursive_error_for!(
     crate::Error => Root,
-    crate::e2e_identity::Error => E2e,
+    wire_e2e_identity::E2eIdentityError => E2e,
     crate::mls::Error => Mls,
     crate::mls::session::Error => MlsClient,
     crate::mls::conversation::Error => MlsConversation,

@@ -1,11 +1,12 @@
 use core_crypto_keystore::{Database, entities::PersistedMlsPendingGroup, traits::FetchFromDatabase};
 use openmls::prelude::{MlsGroup, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
+use wire_e2e_identity::NewCrlDistributionPoints;
 
 use super::{Error, Result};
 use crate::{
-    ConversationId, LeafError, MlsConversation, MlsConversationConfiguration, MlsError,
-    e2e_identity::NewCrlDistributionPoints, group_store::GroupStore, mls_provider::MlsCryptoProvider,
+    ConversationId, LeafError, MlsConversation, MlsConversationConfiguration, MlsError, group_store::GroupStore,
+    mls_provider::MlsCryptoProvider,
 };
 
 /// Contains everything client needs to know after decrypting an (encrypted) Welcome message

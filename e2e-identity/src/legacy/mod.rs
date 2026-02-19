@@ -3,10 +3,10 @@ use zeroize::Zeroize as _;
 
 use crate::{E2eiAcmeAuthorization, RustyE2eIdentity};
 
-mod crypto;
-mod device_status;
-mod id;
-mod types;
+pub mod crypto;
+pub mod device_status;
+pub mod id;
+pub mod types;
 
 use crypto::{E2eiSignatureKeypair, ciphersuite_to_jws_algo};
 use id::{ClientId, QualifiedE2eiClientId};
@@ -62,7 +62,7 @@ impl E2eiEnrollment {
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// * `expiry_sec` - generated x509 certificate expiry in seconds
     #[allow(clippy::too_many_arguments)]
-    pub fn try_new(
+    pub fn try_new<T>(
         client_id: ClientId,
         display_name: String,
         handle: String,
@@ -70,10 +70,12 @@ impl E2eiEnrollment {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
         has_called_new_oidc_challenge_request: bool,
-        crypto: impl OpenMlsCrypto,
-    ) -> Result<Self> {
+        crypto: &T,
+    ) -> Result<Self>
+        where T: OpenMlsCrypto + Clone,
+    {
         let alg = ciphersuite_to_jws_algo(ciphersuite)?;
-        let sign_sk = Self::new_sign_key(crypto, ciphersuite)?;
+        let sign_sk = Self::new_sign_key(crypto.clone(), ciphersuite)?;
 
         let client_id = QualifiedE2eiClientId::try_from(client_id.as_slice())?;
         let client_id = String::try_from(client_id)?;
@@ -103,7 +105,7 @@ impl E2eiEnrollment {
         E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), sk)
     }
 
-    pub(crate) fn ciphersuite(&self) -> &Ciphersuite {
+    pub fn ciphersuite(&self) -> &Ciphersuite {
         &self.ciphersuite
     }
 
@@ -439,7 +441,7 @@ impl E2eiEnrollment {
         Ok(certificate)
     }
 
-    pub(crate) async fn certificate_response(
+    pub async fn certificate_response(
         &mut self,
         certificate_chain: String,
         env: &crate::x509_check::revocation::PkiEnvironment,

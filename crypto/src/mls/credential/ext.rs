@@ -4,7 +4,7 @@ use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint}
 use x509_cert::{Certificate, der::Decode};
 
 use super::{Error, Result};
-use crate::{Ciphersuite, CredentialType, DeviceStatus, RecursiveError, WireIdentity};
+use crate::{Ciphersuite, CredentialType, DeviceStatus, WireIdentity};
 
 #[allow(dead_code)]
 pub(crate) trait CredentialExt {
@@ -121,8 +121,7 @@ impl CredentialExt for openmls::prelude::Certificate {
         let identity = leaf
             .extract_identity(env, cs.e2ei_hash_alg())
             .map_err(|_| Error::InvalidIdentity)?;
-        let identity = WireIdentity::try_from((identity, leaf))
-            .map_err(RecursiveError::e2e_identity("converting identity to WireIdentity"))?;
+        let identity = WireIdentity::try_from((identity, leaf)).map_err(|_| Error::InvalidIdentity)?;
         Ok(identity)
     }
 
