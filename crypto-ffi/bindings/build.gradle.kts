@@ -15,7 +15,7 @@ buildscript {
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
     alias(libs.plugins.android.library) apply false
-    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
+    id("io.github.gradle-nexus.publish-plugin")
     id(libs.plugins.dokka.get().pluginId) version libs.versions.dokka
 }
 
