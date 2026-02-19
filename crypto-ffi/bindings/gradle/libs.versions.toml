@@ -10,21 +10,21 @@ android-tools = "8.12.1"
 sdk-compile = "35"
 sdk-min = "26"
 gradle = "8.8"
-vanniktech-publish = "0.34.0"
 dokka = "2.0.0"
 detekt = "1.23.8"
 agp = "8.12.3"
 gobley = "0.3.7"
+nexus = "2.0.0"
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }
-vanniktech-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech-publish" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 gobley-cargo = { id = "dev.gobley.cargo", version.ref = "gobley" }
 gobley-uniffi = { id = "dev.gobley.uniffi", version.ref = "gobley" }
 gobley-rust = { id = "dev.gobley.rust", version.ref = "gobley" }
 kotlin-atomicfu = { id = "org.jetbrains.kotlin.plugin.atomicfu", version.ref = "kotlin" }
+nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus" }
 
 [libraries]
 coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version.ref = "coroutines" }
