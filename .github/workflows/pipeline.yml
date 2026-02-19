@@ -245,36 +245,36 @@ jobs:
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
 
-  publish-jvm:
-    needs: prepare-publish
-    uses: ./.github/workflows/publish-jvm.yml
-    with:
-        release: true
-    secrets:
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
-      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
-      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+  # publish-jvm:
+  #   needs: prepare-publish
+  #   uses: ./.github/workflows/publish-jvm.yml
+  #   with:
+  #       release: true
+  #   secrets:
+  #     SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+  #     SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+  #     PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+  #     PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+  #     PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
 
-  publish-android:
-    needs: prepare-publish
-    uses: ./.github/workflows/publish-android.yml
-    with:
-        release: true
-    secrets:
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
-      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
-      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+  # publish-android:
+  #   needs: prepare-publish
+  #   uses: ./.github/workflows/publish-android.yml
+  #   with:
+  #       release: true
+  #   secrets:
+  #     SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+  #     SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+  #     PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+  #     PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+  #     PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
 
-  publish-ios:
-    needs: prepare-publish
-    uses: ./.github/workflows/publish-swift.yml
+  # publish-ios:
+  #   needs: prepare-publish
+  #   uses: ./.github/workflows/publish-swift.yml
 
-  publish-web:
-    needs: prepare-publish
-    uses: ./.github/workflows/publish-wasm.yml
-    permissions:
-      id-token: write
+  # publish-web:
+  #   needs: prepare-publish
+  #   uses: ./.github/workflows/publish-wasm.yml
+  #   permissions:
+  #     id-token: write
