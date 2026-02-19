@@ -1,7 +1,8 @@
 plugins {
     kotlin("jvm")
     id("java-library")
-    id("com.vanniktech.maven.publish")
+    id("maven-publish")
+    id("signing")
     id(libs.plugins.detekt.get().pluginId) version libs.versions.detekt
 }
 
@@ -81,4 +82,25 @@ project.afterEvaluate {
 
 detekt {
     config.setFrom(files("detekt.yml"))
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+
+            groupId = "com.wire"
+            artifactId = "core-crypto"
+            version = project.version.toString()
+        }
+    }
+}
+
+signing {
+    useInMemoryPgpKeys(
+        System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyId"),
+        System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey"),
+        System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyPassword")
+    )
+    sign(publishing.publications)
 }
