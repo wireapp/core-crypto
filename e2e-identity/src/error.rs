@@ -47,6 +47,14 @@ pub enum E2eIdentityError {
     UrlError(#[from] url::ParseError),
     #[error(transparent)]
     X509CertDerError(#[from] x509_cert::der::Error),
+    #[error("An error occured while generating an X509 certificate")]
+    CertificateGenerationError,
+    #[error("Unsupported signature scheme")]
+    UnsupportedSignatureScheme,
+    #[error("Signature key generation failed")]
+    SignatureKeyGenerationFailed,
+    #[error("Signing failed")]
+    SigningFailed(#[from] signature::Error),
     #[error("{context}: {upstream}")]
     CertificateValidation {
         context: &'static str,
