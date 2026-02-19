@@ -3,7 +3,8 @@ import org.gradle.api.tasks.bundling.Jar
 plugins {
     alias(libs.plugins.android.library)
     kotlin("android")
-    id("com.vanniktech.maven.publish.base")
+    id("maven-publish")
+    id("signing")
 }
 
 val sharedSources = projectDir.resolve("../shared/src/commonMain")
@@ -29,12 +30,6 @@ dependencies {
     androidTestImplementation(libs.espresso)
     androidTestImplementation(libs.coroutines.test)
     androidTestImplementation(libs.assertj.core)
-}
-
-mavenPublishing {
-    publishToMavenCentral(automaticRelease = true)
-    pomFromGradleProperties()
-    signAllPublications()
 }
 
 val targets = listOf(
@@ -144,7 +139,42 @@ afterEvaluate {
                 // We replace regular javadoc with dokka html docs since we are running into this bug:
                 // https://youtrack.jetbrains.com/issue/KT-60197/Dokka-JDK-17-PermittedSubclasses-requires-ASM9-during-compilation
                 artifact(tasks.named("dokkaHtmlJar"))
+
+                pom {
+                    name.set(findProperty("POM_NAME") as String)
+                    description.set(findProperty("POM_DESCRIPTION") as String)
+                    url.set(findProperty("POM_URL") as String)
+
+                    licenses {
+                        license {
+                            name.set(findProperty("POM_LICENSE_NAME") as String)
+                            url.set(findProperty("POM_LICENSE_URL") as String)
+                            distribution.set(findProperty("POM_LICENSE_DIST") as String)
+                        }
+                    }
+
+                    scm {
+                        url.set(findProperty("POM_SCM_URL") as String)
+                        connection.set(findProperty("POM_SCM_CONNECTION") as String)
+                        developerConnection.set(findProperty("POM_SCM_DEV_CONNECTION") as String)
+                    }
+
+                    developers {
+                        developer {
+                            name.set(findProperty("POM_DEVELOPER_NAME") as String)
+                            email.set(findProperty("POM_DEVELOPER_EMAIL") as String)
+                        }
+                    }
+                }
             }
         }
+    }
+    signing {
+        useInMemoryPgpKeys(
+            System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyId"),
+            System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey"),
+            System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyPassword")
+        )
+        sign(publishing.publications)
     }
 }
