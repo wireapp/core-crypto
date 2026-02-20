@@ -53,6 +53,8 @@ impl BorrowPrimaryKey for PersistedMlsPendingGroup {
 
 #[async_trait]
 impl Entity for PersistedMlsPendingGroup {
+    type Target = Self;
+
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         Self::get_borrowed(conn, key).await
     }

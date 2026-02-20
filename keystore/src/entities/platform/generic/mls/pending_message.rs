@@ -31,6 +31,8 @@ impl EntityBase for MlsPendingMessage {
 
 #[async_trait]
 impl Entity for MlsPendingMessage {
+    type Target = Self;
+
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         panic!("cannot get `MlsPendingMessage` by primary key as it has no distinct primary key")
     }

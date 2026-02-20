@@ -32,6 +32,8 @@ impl PrimaryKey for ProteusPrekey {
 
 #[async_trait]
 impl Entity for ProteusPrekey {
+    type Target = Self;
+
     async fn get(conn: &mut Self::ConnectionType, key: &u16) -> CryptoKeystoreResult<Option<Self>> {
         get_helper::<Self, _>(conn, "id", *key, Self::from_row).await
     }

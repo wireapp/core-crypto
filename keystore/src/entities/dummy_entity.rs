@@ -31,6 +31,8 @@ impl BorrowPrimaryKey for DummyStoreValue {
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl Entity for DummyStoreValue {
+    type Target = Self;
+
     async fn get(_conn: &mut Self::ConnectionType, _key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         Ok(None)
     }

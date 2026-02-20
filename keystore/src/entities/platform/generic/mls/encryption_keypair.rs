@@ -48,6 +48,8 @@ impl BorrowPrimaryKey for StoredEncryptionKeyPair {
 
 #[async_trait]
 impl Entity for StoredEncryptionKeyPair {
+    type Target = Self;
+
     async fn get(conn: &mut Self::ConnectionType, id: &Vec<u8>) -> CryptoKeystoreResult<Option<Self>> {
         Self::get_borrowed(conn, id.as_slice()).await
     }

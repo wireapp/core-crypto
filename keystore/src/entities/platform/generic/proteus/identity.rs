@@ -33,6 +33,8 @@ impl PrimaryKey for ProteusIdentity {
 
 #[async_trait]
 impl Entity for ProteusIdentity {
+    type Target = Self;
+
     async fn get(conn: &mut Self::ConnectionType, _key: &()) -> CryptoKeystoreResult<Option<Self>> {
         let conn = conn.conn().await;
         let mut stmt = conn.prepare_cached("SELECT sk, pk FROM proteus_identities ORDER BY rowid ASC LIMIT 1")?;
