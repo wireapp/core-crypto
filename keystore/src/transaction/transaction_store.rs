@@ -15,7 +15,7 @@ use std::{collections::HashMap, sync::Arc};
 use crate::entities::E2eiRefreshToken;
 
 use crate::{
-    CryptoKeystoreResult,
+    CryptoKeystoreError, CryptoKeystoreResult,
     connection::TransactionWrapper,
     entities::{
         ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
@@ -36,8 +36,16 @@ use crate::transaction::cache_record::CacheRecord;
 ///
 /// The inner value is an option: `None` represents a deletion, `Some()` represents an upsert. Accordingly, those
 /// operations will be executed when the transaction is finished.
-pub(crate) type TransactionCache<E> = Arc<RwLock<HashMap<Vec<u8>, CacheRecord<E>>>>;
-pub(crate) type TransactionCacheGuard<E> = RwLockUpgradableReadGuardArc<HashMap<Vec<u8>, CacheRecord<E>>>;
+#[derive(Debug, derive_more::Deref, Clone)]
+pub struct TransactionCache<E: CachedEntity>(pub Arc<RwLock<HashMap<Vec<u8>, CacheRecord<E::Target>>>>);
+
+impl<E: CachedEntity> Default for TransactionCache<E> {
+    fn default() -> Self {
+        Self(Arc::new(RwLock::new(HashMap::new())))
+    }
+}
+pub(crate) type TransactionCacheGuard<E: CachedEntity> =
+    RwLockUpgradableReadGuardArc<HashMap<Vec<u8>, CacheRecord<E::Target>>>;
 
 macro_rules! define_transaction_store {
     (
@@ -148,13 +156,17 @@ where
     E: CachedEntity + for<'a> EntityDatabaseMutation<'a, Transaction = TransactionWrapper<'a>> + 'static,
 {
     async fn flush(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
-        let records = self.read().await;
-        for (id, record) in records.iter() {
+        let mut records = self.0.write().await;
+        for (id, record) in records.drain() {
             if record.is_dirty() {
-                if let Some(record) = record.read_arc().await.as_ref().clone() {
-                    record.save(tx).await?;
+                let mut guard = record.write().await;
+                if let Some(record) = guard.take() {
+                    E::try_from(record)
+                        .map_err(|_| CryptoKeystoreError::NotImplemented)?
+                        .save(tx)
+                        .await?;
                 } else {
-                    let key = E::PrimaryKey::from_bytes(id).expect("Couldn't create PrimaryKey from bytes");
+                    let key = E::PrimaryKey::from_bytes(&id).expect("Couldn't create PrimaryKey from bytes");
                     E::delete(tx, &key).await?;
                 }
             }

@@ -89,6 +89,9 @@ impl PrimaryKey for StoredCredential {
 
 #[async_trait]
 impl Entity for StoredCredential {
+    type Target = Self;
+    type TryFromTarget = Self;
+
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         let conn = conn.conn().await;
         let mut stmt = conn.prepare_cached(

@@ -1,9 +1,10 @@
-use std::borrow::Borrow;
+use std::{borrow::Borrow, convert::Infallible};
 
 use async_trait::async_trait;
+use openmls::prelude::CryptoError;
 
 use crate::{
-    CryptoKeystoreResult,
+    CryptoKeystoreError, CryptoKeystoreMls, CryptoKeystoreResult,
     traits::{
         EntityBase, KeyType, OwnedKeyType,
         primary_key::{BorrowPrimaryKey, PrimaryKey},
@@ -15,7 +16,16 @@ use crate::{
 /// It has a primary key, which uniquely identifies it.
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
-pub trait Entity: EntityBase + PrimaryKey {
+pub trait Entity: EntityBase + PrimaryKey
+where
+    Self: TryFrom<Self::Target>,
+    <Self as TryFrom<Self::Target>>::Error: Into<CryptoKeystoreError>,
+    Self::Target: TryFrom<Self> + Send + Sync,
+    <Self::Target as TryFrom<Self>>::Error: Into<CryptoKeystoreError>,
+{
+    /// The domain type, for openmls types this will not be Self
+    type Target;
+
     /// Get an entity by its primary key.
     ///
     /// For entites whose primary key has a distinct borrowed type, it is best to implement this as a direct

@@ -85,6 +85,8 @@ impl Entity {
             #[cfg(not(target_family = "wasm"))]
             #[::async_trait::async_trait]
             impl crate::traits::Entity for #struct_name {
+                type Target = Self;
+
                 async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<Option<Self>> {
                     <Self as crate::traits::EntityGetBorrowed>::get_borrowed(conn, key).await
                 }
@@ -112,6 +114,8 @@ impl Entity {
             #[cfg(target_family = "wasm")]
             #[::async_trait::async_trait(?Send)]
             impl crate::traits::Entity for #struct_name {
+                type Target = Self;
+
                 async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<Option<Self>> {
                     <Self as crate::traits::EntityGetBorrowed>::get_borrowed(conn, key).await
                 }

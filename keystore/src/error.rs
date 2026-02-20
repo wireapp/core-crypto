@@ -108,6 +108,15 @@ pub enum CryptoKeystoreError {
     UnknownCollectionName(&'static str),
 }
 
+/// This Infallible is returned by blanket impls for TryFrom<T>
+/// we only implement this conversion so that we don't have to map errors
+/// from Error to CryptoKeystoreError whenever we map an Entity to its Target
+impl From<std::convert::Infallible> for CryptoKeystoreError {
+    fn from(_: std::convert::Infallible) -> Self {
+        unreachable!("Infallible conversion should never happen")
+    }
+}
+
 #[cfg(target_family = "wasm")]
 impl From<wasm_bindgen::JsValue> for CryptoKeystoreError {
     fn from(jsv: wasm_bindgen::JsValue) -> Self {
