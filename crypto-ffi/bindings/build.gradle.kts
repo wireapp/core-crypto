@@ -1,6 +1,9 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
+group = findProperty("GROUP") as String
+version = findProperty("VERSION_NAME") as String
+
 buildscript {
     repositories {
         google()
@@ -15,7 +18,7 @@ buildscript {
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
     alias(libs.plugins.android.library) apply false
-    id(libs.plugins.vanniktech.publish.get().pluginId) version libs.versions.vanniktech.publish
+    id("io.github.gradle-nexus.publish-plugin")
     id(libs.plugins.dokka.get().pluginId) version libs.versions.dokka
 }
 
@@ -62,4 +65,15 @@ allprojects {
 tasks.withType<Wrapper>().configureEach {
     version = libs.versions.gradle.get()
     distributionType = Wrapper.DistributionType.BIN
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
+            username.set(System.getenv("ORG_GRADLE_PROJECT_mavenCentralUsername"))
+            password.set(System.getenv("ORG_GRADLE_PROJECT_mavenCentralPassword"))
+        }
+    }
 }
