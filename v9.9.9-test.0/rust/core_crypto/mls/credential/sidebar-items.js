@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["CredentialType","Error"],"struct":["Credential","CredentialRef","FindFilters"]};

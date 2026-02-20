@@ -1,0 +1,343 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Core Crypto is a wrapper on top of OpenMLS aimed to provide an ergonomic API for usage in web through Web Assembly and in mobile devices through FFI."><title>core_crypto - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="core_crypto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.93.1 (01f6ddf75 2026-02-11)" data-channel="1.93.1" data-search-js="search-9e2438ea.js" data-stringdex-js="stringdex-a3946164.js" data-settings-js="settings-c38705f0.js" ><script src="../static.files/storage-e2aeef58.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-a410ff4d.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate core_crypto</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../core_crypto/index.html">core_<wbr>crypto</a><span class="version">9.9.9-test.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#wire-corecrypto" title="Wire CoreCrypto">Wire CoreCrypto</a><ul><li><a href="#documentation" title="Documentation">Documentation</a></li><li><a href="#building" title="Building">Building</a></li><li><a href="#testing" title="Testing">Testing</a></li><li><a href="#formatting-and-linting" title="Formatting and Linting">Formatting and Linting</a></li><li><a href="#benchmarks" title="Benchmarks">Benchmarks</a></li><li><a href="#git-workflow" title="Git workflow">Git workflow</a></li><li><a href="#publishing" title="Publishing">Publishing</a></li></ul></li></ul><h3><a href="#reexports">Crate Items</a></h3><ul class="block"><li><a href="#reexports" title="Re-exports">Re-exports</a></li><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#enums" title="Enums">Enums</a></li><li><a href="#constants" title="Constants">Constants</a></li><li><a href="#traits" title="Traits">Traits</a></li><li><a href="#types" title="Type Aliases">Type Aliases</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>core_<wbr>crypto</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/core_crypto/lib.rs.html#1-228">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Core Crypto is a wrapper on top of OpenMLS aimed to provide an ergonomic API for usage in web
+through Web Assembly and in mobile devices through FFI.</p>
+<p>The goal is provide a easier and less verbose API to create, manage and interact with MLS
+groups.</p>
+<h2 id="wire-corecrypto"><a class="doc-anchor" href="#wire-corecrypto">§</a>Wire CoreCrypto<a name="wire-corecrypto"></a></h2>
+<p>This repository is part of the source code of Wire. You can find more information at <a href="https://wire.com">wire.com</a> or by
+contacting opensource@wire.com.</p>
+<p>You can find the published source code at <a href="https://github.com/wireapp/wire">github.com/wireapp/wire</a>.</p>
+<p>For licensing information, see the attached LICENSE file and the list of third-party licenses at
+<a href="https://wire.com/legal/licenses/">wire.com/legal/licenses/</a>.</p>
+<p>No license is granted to the Wire trademark and its associated logos, all of which will continue to be owned exclusively
+by Wire Swiss GmbH. Any use of the Wire trademark and/or its associated logos is expressly prohibited without the
+express prior written consent of Wire Swiss GmbH.</p>
+<h3 id="documentation"><a class="doc-anchor" href="#documentation">§</a>Documentation<a name="documentation"></a></h3>
+<ul>
+<li><a href="https://wireapp.github.io/core-crypto/">Docs home</a></li>
+<li><a href="https://wireapp.github.io/core-crypto/ARCHITECTURE.html">Architecture</a></li>
+<li><a href="https://wireapp.github.io/core-crypto/MANUAL_PUBLISH.html">Publish Manually</a></li>
+</ul>
+<h3 id="building"><a class="doc-anchor" href="#building">§</a>Building<a name="building"></a></h3><h4 id="general-requirements"><a class="doc-anchor" href="#general-requirements">§</a>General Requirements<a name="general-requirements"></a></h4>
+<ul>
+<li>rust: <a href="https://rustup.rs/">https://rustup.rs/</a></li>
+<li>GNU make: <a href="https://www.gnu.org/software/make/">https://www.gnu.org/software/make/</a> (min version: 4.3)</li>
+<li>nextest: <a href="https://nexte.st/">https://nexte.st/</a>: <code>cargo install --locked cargo-nextest</code></li>
+<li>Ensure your git is configured to
+<a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits">sign commits</a></li>
+</ul>
+<h5 id="pre-commit"><a class="doc-anchor" href="#pre-commit">§</a>Pre-commit<a name="pre-commit"></a></h5>
+<ul>
+<li>Install the <a href="https://pre-commit.com/"><code>pre-commit</code> framework</a></li>
+<li>Run <code>pre-commit install</code> to initialize the pre-commit hooks</li>
+</ul>
+<h4 id="jvm"><a class="doc-anchor" href="#jvm">§</a>JVM<a name="jvm"></a></h4>
+<ul>
+<li>Install <a href="https://sdkman.io/">SDKMAN!</a>: <code>curl -s "https://get.sdkman.io" | bash</code></li>
+<li>Install Java 17: <code>sdk install java 17.0.17-tem</code></li>
+<li>Install Kotlin: <code>sdk install kotlin</code></li>
+</ul>
+<div class="example-wrap"><pre class="language-sh"><code>make jvm       # make the JVM target
+make jvm-test  # make and test the JVM target</code></pre></div><h4 id="android"><a class="doc-anchor" href="#android">§</a>Android<a name="android"></a></h4>
+<p><a href="https://developer.android.com/studio">Install Android SDK</a> and Build-Tools for API level 30+</p>
+<blockquote>
+<p>If you are building on macOS you’ll need to setup <code>$ANDROID_SDK_ROOT</code> path variable manually:</p>
+<div class="example-wrap"><pre class="language-sh"><code>export ANDROID_SDK_ROOT=~/Android/Sdk</code></pre></div></blockquote>
+<p><a href="https://developer.android.com/studio/projects/install-ndk">Install the Android NDK</a>. Make sure to set the
+<code>ANDROID_NDK_HOME</code> variable to point to the NDK installation.</p>
+<p>Install android rust targets:</p>
+<div class="example-wrap"><pre class="language-sh"><code>rustup target add x86_64-linux-android aarch64-linux-android armv7-linux-androideabi</code></pre></div>
+<p>Build:</p>
+<div class="example-wrap"><pre class="language-sh"><code>make android</code></pre></div><h4 id="ios"><a class="doc-anchor" href="#ios">§</a>iOS<a name="ios"></a></h4>
+<p>Install Xcode &amp; its command-line tools: <a href="https://developer.apple.com/xcode/">https://developer.apple.com/xcode/</a>.</p>
+<p>Install iOS rust targets:</p>
+<div class="example-wrap"><pre class="language-sh"><code>rustup target add aarch64-apple-ios aarch64-apple-ios-sim</code></pre></div>
+<p>Build:</p>
+<div class="example-wrap"><pre class="language-sh"><code>make ios
+# Additionally, if you want to export a .XCFramework:
+make ios-create-xcframework</code></pre></div><h4 id="macos"><a class="doc-anchor" href="#macos">§</a>MacOS<a name="macos"></a></h4>
+<p>Install macOS rust targets:</p>
+<div class="example-wrap"><pre class="language-sh"><code>rustup target add aarch64-apple-darwin</code></pre></div><h4 id="linux"><a class="doc-anchor" href="#linux">§</a>Linux<a name="linux"></a></h4>
+<blockquote>
+<p>If cross-compiling from macOS, you’ll need to install
+<a href="https://github.com/messense/homebrew-macos-cross-toolchains">https://github.com/messense/homebrew-macos-cross-toolchains</a>.</p>
+</blockquote>
+<p>Install Linux targets:</p>
+<div class="example-wrap"><pre class="language-sh"><code>rustup target add x86_64-unknown-linux-gnu</code></pre></div><h4 id="wasm"><a class="doc-anchor" href="#wasm">§</a>WASM<a name="wasm"></a></h4>
+<p>Make sure you have all prerequisites:</p>
+<ul>
+<li>
+<p>Install the <code>wasm32-unknown-unknown</code> toolchain: <code>rustup target add wasm32-unknown-unknown</code></p>
+</li>
+<li>
+<p>Install node.js (recommended way is via <a href="https://volta.sh/">Volta</a>)</p>
+</li>
+<li>
+<p>Install Bun (follow the instructions on <a href="https://bun.sh/">Bun’s website</a>)</p>
+</li>
+<li>
+<p>Install <a href="https://github.com/wasm-bindgen/wasm-bindgen">wasm-bindgen-cli</a>:</p>
+<div class="example-wrap"><pre class="language-sh"><code>wasm_bindgen_version=&quot;$(
+  cargo metadata --format-version 1 |
+  jq -r &#39;.packages[] | select (.name == &quot;wasm-bindgen&quot;) | .version&#39;
+)&quot;
+cargo install wasm-bindgen-cli --version $wasm_bindgen_version</code></pre></div>
+<p>It is important to ensure that the <code>wasm-bindgen-cli</code> version always precisely matches the <code>wasm-bindgen</code> version in
+<code>Cargo.lock</code> (as shown by <code>cargo info wasm-bindgen</code>), because otherwise the wasm tests will not run.</p>
+</li>
+<li>
+<p>Install <a href="https://getwebdriver.com/chromedriver">chromedriver</a></p>
+<div class="example-wrap"><pre class="language-sh"><code>bunx @puppeteer/browsers install --path ~/bin chrome-headless-shell
+bunx @puppeteer/browsers install --path ~/bin chromedriver</code></pre></div></li>
+</ul>
+<p>Build:</p>
+<div class="example-wrap"><pre class="language-sh"><code>make ts       # make the typescript target
+make ts-test  # make the typescript target and run tests</code></pre></div><h4 id="bindings"><a class="doc-anchor" href="#bindings">§</a>Bindings<a name="bindings"></a></h4>
+<p>Build bindings for Android, JVM, iOS and WASM</p>
+<div class="example-wrap"><pre class="language-sh"><code># builds bindings and targets for the JVM (macOS / Linux)
+make jvm
+
+# builds bindings and targets for Android
+make android
+
+# builds iOS framework
+make ios-create-xcframework
+
+# builds wasm binary &amp; TS bindings
+make ts</code></pre></div><h3 id="testing"><a class="doc-anchor" href="#testing">§</a>Testing<a name="testing"></a></h3><h4 id="rust-unitintegration-tests"><a class="doc-anchor" href="#rust-unitintegration-tests">§</a>Rust Unit/Integration Tests<a name="rust-unitintegration-tests"></a></h4><div class="example-wrap"><pre class="language-sh"><code>cargo nextest run</code></pre></div><h5 id="all-ciphersuites"><a class="doc-anchor" href="#all-ciphersuites">§</a>All Ciphersuites<a name="all-ciphersuites"></a></h5>
+<blockquote>
+<p>This takes quite a while.</p>
+</blockquote>
+<div class="example-wrap"><pre class="language-sh"><code>cargo nextest run --features test-all-cipher</code></pre></div><h5 id="keystore-wasm-tests"><a class="doc-anchor" href="#keystore-wasm-tests">§</a>Keystore Wasm tests<a name="keystore-wasm-tests"></a></h5>
+<p>Sometimes for the Keystore it is valuable to run Rust unit/integration tests on the WASM target.</p>
+<ul>
+<li>Ensure you are set up to <a href="#wasm">build wasm</a></li>
+</ul>
+<p>Then, just use <code>cargo test</code>:</p>
+<div class="example-wrap"><pre class="language-sh"><code>cargo test --target wasm32-unknown-unknown -p core-crypto-keystore</code></pre></div>
+<p>Unfortunately it appears that nextest doesn’t work well with the wasm runner, so we’re stuck with the basic test runner.</p>
+<h4 id="platform-specific-tests-for-wasmweb"><a class="doc-anchor" href="#platform-specific-tests-for-wasmweb">§</a>Platform-specific tests for WASM/Web<a name="platform-specific-tests-for-wasmweb"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make ts-test</code></pre></div>
+<p>Note the <code>CC_TEST_LOG_LEVEL</code> environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto
+logs.</p>
+<h4 id="platform-specific-tests-for-kotlinjvm"><a class="doc-anchor" href="#platform-specific-tests-for-kotlinjvm">§</a>Platform-specific tests for Kotlin/JVM<a name="platform-specific-tests-for-kotlinjvm"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make jvm-test</code></pre></div><h4 id="platform-specific-tests-for-android"><a class="doc-anchor" href="#platform-specific-tests-for-android">§</a>Platform-specific tests for Android<a name="platform-specific-tests-for-android"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make android-test</code></pre></div><h4 id="swiftios"><a class="doc-anchor" href="#swiftios">§</a>Swift/iOS<a name="swiftios"></a></h4>
+<p>Currently works on macOS only.</p>
+<div class="example-wrap"><pre class="language-sh"><code>make ios-test</code></pre></div><h4 id="interop"><a class="doc-anchor" href="#interop">§</a>Interop<a name="interop"></a></h4>
+<ol>
+<li>Make sure you’ve successfully run each platform-specific test suite that is supported on your machine, since the
+setup required for this test is a superset of the requirements for each platform.</li>
+<li>Install Chrome and <code>chromedriver</code></li>
+<li><code>make interop-test</code></li>
+</ol>
+<h4 id="end-to-end-identity-e2ei-testing"><a class="doc-anchor" href="#end-to-end-identity-e2ei-testing">§</a>End-to-end-identity (E2EI) testing<a name="end-to-end-identity-e2ei-testing"></a></h4><h5 id="preparing-the-container-runtime-environment"><a class="doc-anchor" href="#preparing-the-container-runtime-environment">§</a>Preparing the container runtime environment<a name="preparing-the-container-runtime-environment"></a></h5>
+<p>Some tests require a working container runtime, so make sure to prepare one before running all tests. Platform-specific
+instructions follow below.</p>
+<h6 id="on-linux-with-docker"><a class="doc-anchor" href="#on-linux-with-docker">§</a>On Linux with Docker<a name="on-linux-with-docker"></a></h6>
+<p>Make sure to start the Docker service if it is not already running:</p>
+<div class="example-wrap"><pre class="language-sh"><code>systemctl start docker.service</code></pre></div><h6 id="on-linux-with-podman"><a class="doc-anchor" href="#on-linux-with-podman">§</a>On Linux with Podman<a name="on-linux-with-podman"></a></h6><div class="example-wrap"><pre class="language-sh"><code># start socket activation, which will cause Podman to start once
+# anything connects to the socket:
+systemctl --user start podman.socket
+
+# check that socket activation works
+podman version
+
+# if the above didn&#39;t work, depending on the distribution and installed packages,
+# it may be necessary to configure the DOCKER_HOST variable to point to Podman&#39;s socket
+export DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock</code></pre></div><h6 id="on-macos-with-docker"><a class="doc-anchor" href="#on-macos-with-docker">§</a>On macOS with Docker<a name="on-macos-with-docker"></a></h6>
+<p>Note: Docker under macOS requires Docker Desktop, which must run as a GUI application.</p>
+<div class="example-wrap"><pre class="language-sh"><code># install docker and docker-desktop
+brew install docker docker-desktop
+
+# start the Docker daemon by launching docker-desktop as a GUI application
+
+# check if everything went fine
+docker version</code></pre></div><h6 id="on-macos-with-podman"><a class="doc-anchor" href="#on-macos-with-podman">§</a>On macOS with Podman<a name="on-macos-with-podman"></a></h6><div class="example-wrap"><pre class="language-sh"><code># install Podman
+brew install podman
+
+# install podman-mac-helper
+sudo podman-mac-helper install
+
+# create new VM based on machine-os:5.5; note that we&#39;re explicitly specifying
+# an older image version because the newest one seems to be broken
+podman machine init --image docker://quay.io/podman/machine-os:5.5
+
+# start the machine
+podman machine start
+
+# if everything went well, this should print server version `5.5.x`
+podman version
+
+# symlink docker to podman (test scripts and code assume existence
+# of the `docker` command)
+ln -s /opt/homebrew/bin/podman /opt/homebrew/bin/docker</code></pre></div><h5 id="choosing-the-oidc-identity-provider"><a class="doc-anchor" href="#choosing-the-oidc-identity-provider">§</a>Choosing the OIDC identity provider<a name="choosing-the-oidc-identity-provider"></a></h5>
+<p>Choose the OIDC identity provider to use in tests by setting the <code>TEST_IDP</code> variable:</p>
+<div class="example-wrap"><pre class="language-sh"><code># use Keycloak
+export TEST_IDP=keycloak
+
+# or Authelia
+export TEST_IDP=authelia</code></pre></div><h5 id="running-all-tests-at-once"><a class="doc-anchor" href="#running-all-tests-at-once">§</a>Running all tests at once<a name="running-all-tests-at-once"></a></h5>
+<p>Simply execute the <code>run-e2ei-tests.sh</code> script:</p>
+<div class="example-wrap"><pre class="language-sh"><code>bash scripts/run-e2ei-tests.sh</code></pre></div>
+<p>The script will take care of cleaning up processes and containers that are started during tests.</p>
+<h5 id="running-specific-tests"><a class="doc-anchor" href="#running-specific-tests">§</a>Running specific tests<a name="running-specific-tests"></a></h5>
+<p><code>run-e2ei-tests.sh</code> forwards its arguments to <code>cargo nextest</code>, which can be used to run a specific test, or any subset
+of tests, e.g.</p>
+<div class="example-wrap"><pre class="language-sh"><code>bash scripts/run-e2ei-tests.sh alg::p256</code></pre></div><h5 id="manually-invoking-tests"><a class="doc-anchor" href="#manually-invoking-tests">§</a>Manually invoking tests<a name="manually-invoking-tests"></a></h5>
+<p>First, you need to start <code>test-wire-server</code>:</p>
+<div class="example-wrap"><pre class="language-sh"><code>$ cargo run --locked --bin test-wire-server
+[...]
+127.0.0.1:20530</code></pre></div>
+<p>Note the IP and port printed by <code>test-wire-server</code> and export that as <code>TEST_WIRE_SERVER_ADDR</code>:</p>
+<div class="example-wrap"><pre class="language-sh"><code>export TEST_WIRE_SERVER_ADDR=127.0.0.1:20530</code></pre></div>
+<p>Now that the environment is ready, you can run a specific test, or any subset of tests, e.g.</p>
+<div class="example-wrap"><pre class="language-sh"><code>cargo nextest run --locked --ignore-default-filter -p wire-e2e-identity alg::p256</code></pre></div>
+<p>Once you are done with testing, terminate the IdP container that has been started:</p>
+<div class="example-wrap"><pre class="language-sh"><code># if you&#39;re using Keycloak
+docker kill keycloak &amp;&amp; docker rm keycloak
+
+# if you&#39;re using Authelia
+docker kill authelia.local &amp;&amp; docker rm authelia.local</code></pre></div>
+<p>as well as the <code>test-wire-server</code> instance.</p>
+<h3 id="formatting-and-linting"><a class="doc-anchor" href="#formatting-and-linting">§</a>Formatting and Linting<a name="formatting-and-linting"></a></h3>
+<p>For all languages we provide make rules for formatting and checking.</p>
+<ul>
+<li><code>make fmt</code>
+<ul>
+<li><code>make rust-fmt</code></li>
+<li><code>make swift-fmt</code></li>
+<li><code>make kotlin-fmt</code></li>
+<li><code>make ts-fmt</code></li>
+</ul>
+</li>
+<li><code>make check</code>
+<ul>
+<li><code>make rust-check</code></li>
+<li><code>make swift-check</code></li>
+<li><code>make kotlin-check</code></li>
+<li><code>make ts-check</code></li>
+</ul>
+</li>
+</ul>
+<h4 id="requirements"><a class="doc-anchor" href="#requirements">§</a>Requirements<a name="requirements"></a></h4><h5 id="swift"><a class="doc-anchor" href="#swift">§</a>Swift<a name="swift"></a></h5>
+<p>We’re using <a href="https://github.com/swiftlang/swift-format">swift-format</a> to format swift files and use
+<a href="https://github.com/realm/SwiftLint">swiftlint</a> for linting.</p>
+<h5 id="kotlin"><a class="doc-anchor" href="#kotlin">§</a>Kotlin<a name="kotlin"></a></h5>
+<p>We’re using <a href="https://github.com/pinterest/ktlint">ktlint</a> to format and lint kotlin files.</p>
+<h5 id="markdown"><a class="doc-anchor" href="#markdown">§</a>Markdown<a name="markdown"></a></h5>
+<p>We’re using <code>mdformat</code> for consistent formatting of our markdown files. Install it with the following extensions</p>
+<ul>
+<li><code>mdformat-gfm</code></li>
+<li><code>mdformat-frontmatter</code></li>
+<li><code>mdformat-footnote</code></li>
+<li><code>mdformat-gfm-alerts</code></li>
+<li><code>mdformat-toc</code></li>
+</ul>
+<h5 id="toml"><a class="doc-anchor" href="#toml">§</a>Toml<a name="toml"></a></h5>
+<p>We’re using <a href="https://taplo.tamasfe.dev/">taplo</a> to format .toml files.</p>
+<h3 id="benchmarks"><a class="doc-anchor" href="#benchmarks">§</a>Benchmarks<a name="benchmarks"></a></h3>
+<p>There are benches implemented in <a href="crypto/benches/"><code>crypto/benches</code></a> for several operations on mls groups with varying
+sizes or proteus. Parameters like minimum or maximum group sizes and step sizes are defined in
+<a href="crypto/benches/utils/mod.rs"><code>crypto/benches/utils/mod.rs</code></a>.</p>
+<h4 id="executing-benches"><a class="doc-anchor" href="#executing-benches">§</a>Executing Benches<a name="executing-benches"></a></h4>
+<p>To execute the benches, e.g. for creating commits, run</p>
+<div class="example-wrap"><pre class="language-bash"><code>cargo bench --bench=commit -- --quick</code></pre></div>
+<p>where <code>commit</code> is the name of the bench specified in <a href="crypto/Cargo.toml"><code>crypto/Cargo.toml</code></a>, and the corresponding
+file in <a href="crypto/benches/"><code>crypto/benches</code></a>. In case you’re interested in higher accuracy, and willing to trade it for
+execution speed, omit the <code>--quick</code> flag. If you need reporting plots, remove the <code>.without_plots()</code> call in
+<a href="crypto/benches/utils/mod.rs"><code>crypto/benches/utils/mod.rs</code></a>. The reports generated by criterion will be located in
+<code>target/criterion</code>.</p>
+<h3 id="git-workflow"><a class="doc-anchor" href="#git-workflow">§</a>Git workflow<a name="git-workflow"></a></h3>
+<ul>
+<li>The <code>main</code> branch is used as the everyday development branch.</li>
+<li>No merge commits. Always rebase on top of <code>main</code>.</li>
+<li>Release branches are named <code>release/&lt;series&gt;</code>, e.g. <code>release/1.x</code>, <code>release/2.x</code>.</li>
+<li>Release branches contain fixes relevant to their specific release series and are never merged to <code>main</code>.</li>
+<li>Release branches always branch off their first major release tag. For example, the output of
+<code>git merge-base main release/2.x</code> must be a commit pointed to by tag <code>v2.0.0</code>.</li>
+<li>Release branches are created lazily, that is, only when the first fix needs to be applied and released for a specific
+release series.</li>
+<li>Use <a href="https://www.conventionalcommits.org/en/v1.0.0/">conventional commits</a> – those are picked up by the changelog
+generator.</li>
+<li>If there is a JIRA ticket related to the change, you should mention it in either the PR title or the commit(s), with
+the following format: <code>[TICKET_ID]</code>.</li>
+<li>Sign your <a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits">commits</a>
+and <a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-tags">tags</a>.</li>
+<li>Remove branches from the remote once you don’t need them anymore.</li>
+</ul>
+<h3 id="publishing"><a class="doc-anchor" href="#publishing">§</a>Publishing<a name="publishing"></a></h3><h4 id="versioning"><a class="doc-anchor" href="#versioning">§</a>Versioning<a name="versioning"></a></h4>
+<p>The versioning scheme used is <a href="https://semver.org">SemVer AKA Semantic Versioning</a>.</p>
+<h4 id="making-a-new-release"><a class="doc-anchor" href="#making-a-new-release">§</a>Making a new release<a name="making-a-new-release"></a></h4>
+<ol>
+<li>Make a branch based on <code>main</code> to prepare for release (<code>git checkout -b prepare-release/X.Y.Z</code>)</li>
+<li>Run <code>sh scripts/update-versions.sh X.Y.Z</code> to update the versions of
+<ul>
+<li>all workspace member crates</li>
+<li><code>package.json</code></li>
+<li><code>crypto-ffi/bindings/gradle.properties</code> Make sure the result of the script run is correct.</li>
+</ul>
+</li>
+<li>Generate a fresh <code>e2e-identity/README.md.test</code>:<div class="example-wrap"><pre class="language-bash"><code>TEST_IDP=authelia bash scripts/run-e2ei-tests.sh demo_should_succeed</code></pre></div>If there are non-trivial differences between <code>e2e-identity/README.md</code> and the generated file, update
+<code>e2e-identity/README.md</code> and commit the changes.</li>
+<li>Generate the relevant changelog section:<div class="example-wrap"><pre class="language-bash"><code>git cliff --bump --unreleased</code></pre></div>and add it to the top of <code>CHANGELOG.md</code>. Make sure the version number generated by <code>git cliff</code> matches the release
+version.</li>
+<li>If there are any release highlights, add them as the first subsection below release title:<div class="example-wrap"><pre class="language-markdown"><code>## v1.0.2 - 2024-08-16
+
+### Highlights
+
+- foo
+- bar
+- baz</code></pre></div></li>
+<li>In <a href="docs/index.md">index.md</a>, copy the commented-out table row from the bottom of the file to the appropriate place
+in the table, ordering by version number, descending. Search and replace the first 5 occurrences of <code>x.x.x</code> with
+<code>X.Y.Z</code>.</li>
+<li>Make sure the changes look reasonable and complete; you can use the previous release as a reference</li>
+<li>Push your <code>prepare-release/X.Y.Z</code> branch and create a PR for it</li>
+<li>Get it reviewed, then merge it into <code>main</code> and remove the <code>prepare-release/X.Y.Z</code> branch from the remote</li>
+<li>Now, pull your local <code>main</code>: <code>git checkout main &amp;&amp; git pull</code></li>
+<li>Create the release tag: <code>git tag -s vX.Y.Z</code></li>
+<li>Push the new tag: <code>git push origin tag vX.Y.Z</code></li>
+<li>Create a new release on github, copying the relevant section from <code>CHANGELOG.md</code></li>
+<li>Voilà!</li>
+</ol>
+<h5 id="consider-when-making-a-release-from-a-release-branch"><a class="doc-anchor" href="#consider-when-making-a-release-from-a-release-branch">§</a>Consider when making a release from a release branch<a name="consider-when-making-a-release-from-a-release-branch"></a></h5>
+<ol>
+<li>Isolate the changes to <a href="docs/index.md">index.md</a> and <code>CHANGELOG.md</code> from the release commit itself</li>
+<li>After the release is finished, cherry-pick the changes to <a href="docs/index.md">index.md</a> and <code>CHANGELOG.md</code> and get them
+into <code>main</code></li>
+<li>For release series <code>4.x</code> and newer, docs upload happens automatically. If you released from the series <code>3.x</code> or
+older, you need to trigger docs upload manually:
+<ol>
+<li>On GitHub, go to the <a href="https://github.com/wireapp/core-crypto/actions/workflows/docs.yml">docs workflow</a></li>
+<li>Click the <code>Run workflow</code> button</li>
+<li>In the <code>Use workflow from</code> dropdown, choose <code>release/5.x</code>, in <code>Tag to checkout</code> provide your release tag</li>
+</ol>
+</li>
+</ol>
+</div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><dl class="item-table reexports"><dt id="reexport.E2eiEnrollment"><code>pub use crate::e2e_identity::<a class="struct" href="e2e_identity/struct.E2eiEnrollment.html" title="struct core_crypto::e2e_identity::E2eiEnrollment">E2eiEnrollment</a>;</code></dt><dt id="reexport.E2eiAcmeChallenge"><code>pub use crate::e2e_identity::types::<a class="struct" href="e2e_identity/types/struct.E2eiAcmeChallenge.html" title="struct core_crypto::e2e_identity::types::E2eiAcmeChallenge">E2eiAcmeChallenge</a>;</code></dt><dt id="reexport.E2eiAcmeDirectory"><code>pub use crate::e2e_identity::types::<a class="struct" href="e2e_identity/types/struct.E2eiAcmeDirectory.html" title="struct core_crypto::e2e_identity::types::E2eiAcmeDirectory">E2eiAcmeDirectory</a>;</code></dt><dt id="reexport.E2eiNewAcmeAuthz"><code>pub use crate::e2e_identity::types::<a class="struct" href="e2e_identity/types/struct.E2eiNewAcmeAuthz.html" title="struct core_crypto::e2e_identity::types::E2eiNewAcmeAuthz">E2eiNewAcmeAuthz</a>;</code></dt><dt id="reexport.E2eiNewAcmeOrder"><code>pub use crate::e2e_identity::types::<a class="struct" href="e2e_identity/types/struct.E2eiNewAcmeOrder.html" title="struct core_crypto::e2e_identity::types::E2eiNewAcmeOrder">E2eiNewAcmeOrder</a>;</code></dt><dt id="reexport.ConversationId"><code>pub use crate::mls::conversation::<a class="struct" href="mls/conversation/struct.ConversationId.html" title="struct core_crypto::mls::conversation::ConversationId">ConversationId</a>;</code></dt><dt id="reexport.MlsConversation"><code>pub use crate::mls::conversation::<a class="struct" href="mls/conversation/struct.MlsConversation.html" title="struct core_crypto::mls::conversation::MlsConversation">MlsConversation</a>;</code></dt><dt id="reexport.Credential"><code>pub use crate::mls::credential::<a class="struct" href="mls/credential/struct.Credential.html" title="struct core_crypto::mls::credential::Credential">Credential</a>;</code></dt><dt id="reexport.CredentialRef"><code>pub use crate::mls::credential::<a class="struct" href="mls/credential/struct.CredentialRef.html" title="struct core_crypto::mls::credential::CredentialRef">CredentialRef</a>;</code></dt><dt id="reexport.CredentialType"><code>pub use crate::mls::credential::<a class="enum" href="mls/credential/enum.CredentialType.html" title="enum core_crypto::mls::credential::CredentialType">CredentialType</a>;</code></dt><dt id="reexport.CredentialFindFilters"><code>pub use crate::mls::credential::<a class="struct" href="mls/credential/struct.FindFilters.html" title="struct core_crypto::mls::credential::FindFilters">FindFilters</a> as CredentialFindFilters;</code></dt><dt id="reexport.KeypackageRef"><code>pub use crate::mls::key_package::<a class="struct" href="mls/key_package/struct.KeypackageRef.html" title="struct core_crypto::mls::key_package::KeypackageRef">KeypackageRef</a>;</code></dt><dt id="reexport.KEYPACKAGE_DEFAULT_LIFETIME"><code>pub use crate::transaction_context::key_package::<a class="constant" href="transaction_context/key_package/constant.KEYPACKAGE_DEFAULT_LIFETIME.html" title="constant core_crypto::transaction_context::key_package::KEYPACKAGE_DEFAULT_LIFETIME">KEYPACKAGE_DEFAULT_LIFETIME</a>;</code></dt></dl><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="e2e_identity/index.html" title="mod core_crypto::e2e_identity">e2e_<wbr>identity</a></dt><dd>re-export <a href="https://github.com/wireapp/rusty-jwt-tools">rusty-jwt-tools</a> API</dd><dt><a class="mod" href="mls/index.html" title="mod core_crypto::mls">mls</a></dt><dd>MLS Abstraction</dd><dt><a class="mod" href="proteus/index.html" title="mod core_crypto::proteus">proteus</a></dt><dd>Proteus Abstraction</dd><dt><a class="mod" href="transaction_context/index.html" title="mod core_crypto::transaction_context">transaction_<wbr>context</a></dt><dd>This module contains the primitives to enable transactional support on a higher level within the
+<a href="struct.Session.html" title="struct core_crypto::Session">Session</a>. All mutating operations need to be done through a <a href="transaction_context/struct.TransactionContext.html" title="struct core_crypto::transaction_context::TransactionContext">TransactionContext</a>.</dd></dl><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.BuildMetadata.html" title="struct core_crypto::BuildMetadata">Build<wbr>Metadata</a></dt><dd>Metadata describing the conditions of the build of this software.</dd><dt><a class="struct" href="struct.CertificateBundle.html" title="struct core_crypto::CertificateBundle">Certificate<wbr>Bundle</a></dt><dd>Represents a x509 certificate chain supplied by the client
+It can fetch it after an end-to-end identity process where it can get back a certificate
+from the Authentication Service</dd><dt><a class="struct" href="struct.Ciphersuite.html" title="struct core_crypto::Ciphersuite">Ciphersuite</a></dt><dd>A wrapper for the OpenMLS Ciphersuite, so that we are able to provide a default value.</dd><dt><a class="struct" href="struct.ClientId.html" title="struct core_crypto::ClientId">Client<wbr>Id</a></dt><dd>A Client identifier</dd><dt><a class="struct" href="struct.ClientIdRef.html" title="struct core_crypto::ClientIdRef">Client<wbr>IdRef</a></dt><dd>Reference to a <a href="struct.ClientId.html" title="struct core_crypto::ClientId"><code>ClientId</code></a>.</dd><dt><a class="struct" href="struct.CoreCrypto.html" title="struct core_crypto::CoreCrypto">Core<wbr>Crypto</a></dt><dd>Wrapper superstruct for both <a href="struct.Session.html" title="struct core_crypto::Session">mls::session::Session</a> and <a href="proteus/struct.ProteusCentral.html" title="struct core_crypto::proteus::ProteusCentral">proteus::ProteusCentral</a></dd><dt><a class="struct" href="struct.CoreCryptoTransportNotImplementedProvider.html" title="struct core_crypto::CoreCryptoTransportNotImplementedProvider">Core<wbr>Crypto<wbr>Transport<wbr>NotImplemented<wbr>Provider</a></dt><dd>This provider is mainly used for the initialization of the history client session, the only case where transport
+doesn’t need to be implemented.</dd><dt><a class="struct" href="struct.Database.html" title="struct core_crypto::Database">Database</a></dt><dt><a class="struct" href="struct.DatabaseKey.html" title="struct core_crypto::DatabaseKey">Database<wbr>Key</a></dt><dd>The key used to encrypt the database.</dd><dt><a class="struct" href="struct.EntropySeed.html" title="struct core_crypto::EntropySeed">Entropy<wbr>Seed</a></dt><dd>Wrapped 32-byte entropy seed with bounds check</dd><dt><a class="struct" href="struct.GroupEpoch.html" title="struct core_crypto::GroupEpoch">Group<wbr>Epoch</a></dt><dd>Group epoch. Internally this is stored as a <code>u64</code>.
+The group epoch is incremented with every valid Commit that is merged into the group state.</dd><dt><a class="struct" href="struct.HistorySecret.html" title="struct core_crypto::HistorySecret">History<wbr>Secret</a></dt><dd>A <code>HistorySecret</code> encodes sufficient client state that it can be used to instantiate an
+ephemeral client.</dd><dt><a class="struct" href="struct.KeyPackageIn.html" title="struct core_crypto::KeyPackageIn">KeyPackage<wbr>In</a></dt><dd>The key package struct.</dd><dt><a class="struct" href="struct.Keypackage.html" title="struct core_crypto::Keypackage">Keypackage</a></dt><dd>The key package struct.</dd><dt><a class="struct" href="struct.KeystoreError.html" title="struct core_crypto::KeystoreError">Keystore<wbr>Error</a></dt><dd>A key store operation failed</dd><dt><a class="struct" href="struct.MlsBufferedConversationDecryptMessage.html" title="struct core_crypto::MlsBufferedConversationDecryptMessage">MlsBuffered<wbr>Conversation<wbr>Decrypt<wbr>Message</a></dt><dd>Type safe recursion of <a href="struct.MlsConversationDecryptMessage.html" title="struct core_crypto::MlsConversationDecryptMessage">MlsConversationDecryptMessage</a></dd><dt><a class="struct" href="struct.MlsCommitBundle.html" title="struct core_crypto::MlsCommitBundle">MlsCommit<wbr>Bundle</a></dt><dd>Returned when a commit is created</dd><dt><a class="struct" href="struct.MlsConversationConfiguration.html" title="struct core_crypto::MlsConversationConfiguration">MlsConversation<wbr>Configuration</a></dt><dd>The configuration parameters for a group/conversation</dd><dt><a class="struct" href="struct.MlsConversationDecryptMessage.html" title="struct core_crypto::MlsConversationDecryptMessage">MlsConversation<wbr>Decrypt<wbr>Message</a></dt><dd>Represents the potential items a consumer might require after passing us an encrypted message we
+have decrypted for him</dd><dt><a class="struct" href="struct.MlsCryptoProvider.html" title="struct core_crypto::MlsCryptoProvider">MlsCrypto<wbr>Provider</a></dt><dd>The MLS crypto provider</dd><dt><a class="struct" href="struct.MlsCustomConfiguration.html" title="struct core_crypto::MlsCustomConfiguration">MlsCustom<wbr>Configuration</a></dt><dd>The configuration parameters for a group/conversation which are not handled natively by openmls</dd><dt><a class="struct" href="struct.MlsGroup.html" title="struct core_crypto::MlsGroup">MlsGroup</a></dt><dd>A <code>MlsGroup</code> represents an MLS group with a high-level API. The API exposes
+high level functions to manage a group by adding/removing members, get the
+current member list, etc.</dd><dt><a class="struct" href="struct.MlsGroupConfig.html" title="struct core_crypto::MlsGroupConfig">MlsGroup<wbr>Config</a></dt><dd>Specifies the configuration parameters for a <a href="struct.MlsGroup.html" title="struct core_crypto::MlsGroup"><code>MlsGroup</code></a>. Refer to
+the <a href="https://openmls.tech/book/user_manual/group_config.html">User Manual</a> for more information about the different configuration values.</dd><dt><a class="struct" href="struct.MlsGroupInfoBundle.html" title="struct core_crypto::MlsGroupInfoBundle">MlsGroup<wbr>Info<wbr>Bundle</a></dt><dd>A [GroupInfo] with metadata</dd><dt><a class="struct" href="struct.MlsMessageIn.html" title="struct core_crypto::MlsMessageIn">MlsMessage<wbr>In</a></dt><dd>Before use with the <a href="struct.MlsGroup.html" title="struct core_crypto::MlsGroup"><code>MlsGroup</code></a> API, the message has to be unpacked via
+<code>extract</code> to yield its [<code>MlsMessageInBody</code>].</dd><dt><a class="struct" href="struct.MlsProposalBundle.html" title="struct core_crypto::MlsProposalBundle">MlsProposal<wbr>Bundle</a></dt><dd>Returned when a Proposal is created. Helps roll backing a local proposal</dd><dt><a class="struct" href="struct.MlsProposalRef.html" title="struct core_crypto::MlsProposalRef">MlsProposal<wbr>Ref</a></dt><dd>Abstraction over a [openmls::prelude::hash_ref::ProposalRef] to deal with conversions</dd><dt><a class="struct" href="struct.MlsTransportData.html" title="struct core_crypto::MlsTransportData">MlsTransport<wbr>Data</a></dt><dd>An entity / data which has been packaged by the application to be encrypted
+and transmitted in an application message.</dd><dt><a class="struct" href="struct.RustCrypto.html" title="struct core_crypto::RustCrypto">Rust<wbr>Crypto</a></dt><dd>The type that implements</dd><dt><a class="struct" href="struct.Session.html" title="struct core_crypto::Session">Session</a></dt><dd>A MLS Session enables a user device to communicate via the MLS protocol.</dd><dt><a class="struct" href="struct.UserId.html" title="struct core_crypto::UserId">UserId</a></dt><dd>Unique identifier of a User (human person holding some devices).
+This contradicts the initial design requirements of this project since it was supposed to be
+agnostic from Wire.
+End-to-end Identity re-shuffled that… But we still want to keep this isolated from the rest
+of the crate that’s why this should remain here and be used cautiously, having the context quoted
+above in mind.
+For example in <code>wireapp://LcksJb74Tm6N12cDjFy7lQ!8e6424430d3b28be@wire.com</code> the <a href="struct.UserId.html" title="struct core_crypto::UserId">UserId</a> is <code>LcksJb74Tm6N12cDjFy7lQ</code></dd><dt><a class="struct" href="struct.VerifiableGroupInfo.html" title="struct core_crypto::VerifiableGroupInfo">Verifiable<wbr>Group<wbr>Info</a></dt><dd>A type that represents a group info of which the signature has not been
+verified. It implements the [<code>Verifiable</code>] trait and can be turned into a
+group info by calling <code>verify(...)</code> with the signature key of the
+<a href="crate::credentials::Credential"><code>Credential</code></a>. When receiving a serialized
+group info, it can only be deserialized into a <a href="struct.VerifiableGroupInfo.html" title="struct core_crypto::VerifiableGroupInfo"><code>VerifiableGroupInfo</code></a>,
+which can then be turned into a group info as described above.</dd><dt><a class="struct" href="struct.WelcomeBundle.html" title="struct core_crypto::WelcomeBundle">Welcome<wbr>Bundle</a></dt><dd>Contains everything client needs to know after decrypting an (encrypted) Welcome message</dd><dt><a class="struct" href="struct.WireIdentity.html" title="struct core_crypto::WireIdentity">Wire<wbr>Identity</a></dt><dd>Represents the identity claims identifying a client
+Those claims are verifiable by any member in the group</dd><dt><a class="struct" href="struct.X509Identity.html" title="struct core_crypto::X509Identity">X509<wbr>Identity</a></dt><dd>Represents the parts of <a href="struct.WireIdentity.html" title="struct core_crypto::WireIdentity">WireIdentity</a> that are specific to a X509 certificate (and not a Basic one).</dd></dl><h2 id="enums" class="section-header">Enums<a href="#enums" class="anchor">§</a></h2><dl class="item-table"><dt><a class="enum" href="enum.ClientIdentifier.html" title="enum core_crypto::ClientIdentifier">Client<wbr>Identifier</a></dt><dd>Used by consumers to initializes a MLS client. Encompasses all the client types available.
+Could be enriched later with Verifiable Presentations.</dd><dt><a class="enum" href="enum.ConnectionType.html" title="enum core_crypto::ConnectionType">Connection<wbr>Type</a></dt><dd>Where to open a connection</dd><dt><a class="enum" href="enum.DeviceStatus.html" title="enum core_crypto::DeviceStatus">Device<wbr>Status</a></dt><dd>Indicates the standalone status of a device Credential in a MLS group at a moment T.
+This does not represent the states where a device is not using MLS or is not using end-to-end identity</dd><dt><a class="enum" href="enum.E2eiConversationState.html" title="enum core_crypto::E2eiConversationState">E2ei<wbr>Conversation<wbr>State</a></dt><dd>Indicates the state of a Conversation regarding end-to-end identity.</dd><dt><a class="enum" href="enum.Error.html" title="enum core_crypto::Error">Error</a></dt><dd>Errors produced by the root module group</dd><dt><a class="enum" href="enum.GroupInfoPayload.html" title="enum core_crypto::GroupInfoPayload">Group<wbr>Info<wbr>Payload</a></dt><dd>Represents the byte array in <a href="struct.MlsGroupInfoBundle.html" title="struct core_crypto::MlsGroupInfoBundle">MlsGroupInfoBundle</a></dd><dt><a class="enum" href="enum.LeafError.html" title="enum core_crypto::LeafError">Leaf<wbr>Error</a></dt><dd>These errors can be raised from several different modules, so we centralize the definitions here
+to ease error-handling.</dd><dt><a class="enum" href="enum.MlsCiphersuite.html" title="enum core_crypto::MlsCiphersuite">MlsCiphersuite</a></dt><dd>MLS ciphersuites.</dd><dt><a class="enum" href="enum.MlsErrorKind.html" title="enum core_crypto::MlsErrorKind">MlsError<wbr>Kind</a></dt><dd>Openmls produces these kinds of error</dd><dt><a class="enum" href="enum.MlsGroupInfoEncryptionType.html" title="enum core_crypto::MlsGroupInfoEncryptionType">MlsGroup<wbr>Info<wbr>Encryption<wbr>Type</a></dt><dd>GroupInfoEncryptionType</dd><dt><a class="enum" href="enum.MlsProposal.html" title="enum core_crypto::MlsProposal">MlsProposal</a></dt><dd>Internal representation of proposal to ease further additions</dd><dt><a class="enum" href="enum.MlsRatchetTreeType.html" title="enum core_crypto::MlsRatchetTreeType">MlsRatchet<wbr>Tree<wbr>Type</a></dt><dd>RatchetTreeType</dd><dt><a class="enum" href="enum.MlsTransportResponse.html" title="enum core_crypto::MlsTransportResponse">MlsTransport<wbr>Response</a></dt><dd>Response from the delivery service</dd><dt><a class="enum" href="enum.MlsWirePolicy.html" title="enum core_crypto::MlsWirePolicy">MlsWire<wbr>Policy</a></dt><dd>Wrapper over [WireFormatPolicy]</dd><dt><a class="enum" href="enum.Node.html" title="enum core_crypto::Node">Node</a></dt><dd>Container enum for leaf and parent nodes.</dd><dt><a class="enum" href="enum.ProteusErrorKind.html" title="enum core_crypto::ProteusErrorKind">Proteus<wbr>Error<wbr>Kind</a></dt><dd>Proteus produces these kinds of error</dd><dt><a class="enum" href="enum.RecursiveError.html" title="enum core_crypto::RecursiveError">Recursive<wbr>Error</a></dt><dd>These errors wrap each of the module-specific errors in CoreCrypto.</dd><dt><a class="enum" href="enum.SignatureScheme.html" title="enum core_crypto::SignatureScheme">Signature<wbr>Scheme</a></dt><dd>SignatureScheme according to IANA TLS parameters</dd></dl><h2 id="constants" class="section-header">Constants<a href="#constants" class="anchor">§</a></h2><dl class="item-table"><dt><a class="constant" href="constant.BUILD_METADATA.html" title="constant core_crypto::BUILD_METADATA">BUILD_<wbr>METADATA</a></dt><dd>Metadata describing the conditions of the build of this software.</dd><dt><a class="constant" href="constant.HISTORY_CLIENT_ID_PREFIX.html" title="constant core_crypto::HISTORY_CLIENT_ID_PREFIX">HISTORY_<wbr>CLIENT_<wbr>ID_<wbr>PREFIX</a></dt><dd>We always instantiate history clients with this prefix in their client id, so
+we can use prefix testing to determine with some accuracy whether or not something is a history client.</dd></dl><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><dl class="item-table"><dt><a class="trait" href="trait.EpochObserver.html" title="trait core_crypto::EpochObserver">Epoch<wbr>Observer</a></dt><dd>An <code>EpochObserver</code> is notified whenever a conversation’s epoch changes.</dd><dt><a class="trait" href="trait.HistoryObserver.html" title="trait core_crypto::HistoryObserver">History<wbr>Observer</a></dt><dd>The <code>HistoryObserver</code> will be called when updating the history client in a conversation</dd><dt><a class="trait" href="trait.InnermostErrorMessage.html" title="trait core_crypto::InnermostErrorMessage">Innermost<wbr>Error<wbr>Message</a></dt><dd>Produce the error message from the innermost wrapped error.</dd><dt><a class="trait" href="trait.MlsTransport.html" title="trait core_crypto::MlsTransport">MlsTransport</a></dt><dd>Client callbacks to allow communication with the delivery service.
+There are two different endpoints, one for messages and one for commit bundles.</dd><dt><a class="trait" href="trait.ToRecursiveError.html" title="trait core_crypto::ToRecursiveError">ToRecursive<wbr>Error</a></dt><dd>Like <a href="https://doc.rust-lang.org/1.93.1/core/convert/trait.Into.html" title="trait core::convert::Into"><code>Into</code></a>, but different, because we don’t actually want to implement <code>Into</code> for our subordinate error types.</dd></dl><h2 id="types" class="section-header">Type Aliases<a href="#types" class="anchor">§</a></h2><dl class="item-table"><dt><a class="type" href="type.MlsError.html" title="type core_crypto::MlsError">MlsError</a></dt><dd>A MLS operation failed, but we captured some context about how it did so</dd><dt><a class="type" href="type.ProteusError.html" title="type core_crypto::ProteusError">Proteus<wbr>Error</a></dt><dd>A Proteus operation failed, but we captured some context about how it did so</dd><dt><a class="type" href="type.RawEntropySeed.html" title="type core_crypto::RawEntropySeed">RawEntropy<wbr>Seed</a></dt><dd>32-byte raw entropy seed</dd><dt><a class="type" href="type.Result.html" title="type core_crypto::Result">Result</a></dt><dd>A module-specific <a href="https://doc.rust-lang.org/1.93.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a> type with a default error variant.</dd></dl><script type="text/json" id="notable-traits-data">{"&[u8]":"<h3>Notable traits for <code>&amp;[<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.93.1/std/primitive.u8.html\">u8</a>]</code></h3><pre><code><div class=\"where\">impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.93.1/std/io/trait.Read.html\" title=\"trait std::io::Read\">Read</a> for &amp;[<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.93.1/std/primitive.u8.html\">u8</a>]</div>","&mut Vec<u8>":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.93.1/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.93.1/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.93.1/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.93.1/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.93.1/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.93.1/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>","Vec<u8>":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.93.1/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.93.1/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.93.1/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.93.1/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.93.1/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.93.1/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>"}</script></section></div></main></body></html>
