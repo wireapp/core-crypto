@@ -50,4 +50,46 @@
 <a href=#50 id=50 data-nosnippet>50</a></span><span class="kw">pub async fn </span>in_memory_database(key: Arc&lt;DatabaseKey&gt;) -&gt; CoreCryptoResult&lt;Database&gt; {
 <a href=#51 id=51 data-nosnippet>51</a>    Database::in_memory(key).<span class="kw">await
 <a href=#52 id=52 data-nosnippet>52</a></span>}
+<a href=#53 id=53 data-nosnippet>53</a>
+<a href=#54 id=54 data-nosnippet>54</a><span class="doccomment">/// Export a copy of the database to the specified path.
+<a href=#55 id=55 data-nosnippet>55</a>///
+<a href=#56 id=56 data-nosnippet>56</a>/// This creates a fully vacuumed and optimized copy of the database using SQLite's VACUUM INTO command.
+<a href=#57 id=57 data-nosnippet>57</a>/// The copy will be encrypted with the same key as the source database.
+<a href=#58 id=58 data-nosnippet>58</a>///
+<a href=#59 id=59 data-nosnippet>59</a>/// # Platform Support
+<a href=#60 id=60 data-nosnippet>60</a>/// This method is only useful on platforms using SQLCipher (iOS, Android, JVM, native).
+<a href=#61 id=61 data-nosnippet>61</a>/// On WASM platforms, this function will return an error.
+<a href=#62 id=62 data-nosnippet>62</a>///
+<a href=#63 id=63 data-nosnippet>63</a>/// # Arguments
+<a href=#64 id=64 data-nosnippet>64</a>/// * `database` - The database instance to export
+<a href=#65 id=65 data-nosnippet>65</a>/// * `destination_path` - The file path where the database copy should be created
+<a href=#66 id=66 data-nosnippet>66</a></span><span class="comment">//
+<a href=#67 id=67 data-nosnippet>67</a>// These feature flags are ugly, but here's how they work:
+<a href=#68 id=68 data-nosnippet>68</a>//
+<a href=#69 id=69 data-nosnippet>69</a>// - If the `wasm` feature is enabled, exlude this; we don't want it.
+<a href=#70 id=70 data-nosnippet>70</a>// - If we're compiling for wasm without the `wasm` feature, we have to have a function body, so just return an error
+<a href=#71 id=71 data-nosnippet>71</a>// - If we're compiling for non-wasm, we have the real impl
+<a href=#72 id=72 data-nosnippet>72</a>//
+<a href=#73 id=73 data-nosnippet>73</a>// This works out because we only ever build real wasm builds with the `wasm` feature flag enabled.
+<a href=#74 id=74 data-nosnippet>74</a>// The error could therefore be an `unimplemented!` but it's harmless to return a real error in this case.
+<a href=#75 id=75 data-nosnippet>75</a></span><span class="attr">#[cfg(not(feature = <span class="string">"wasm"</span>))]
+<a href=#76 id=76 data-nosnippet>76</a>#[cfg_attr(all(not(feature = <span class="string">"wasm"</span>), target_family = <span class="string">"wasm"</span>), expect(unused_variables))]
+<a href=#77 id=77 data-nosnippet>77</a>#[uniffi::export]
+<a href=#78 id=78 data-nosnippet>78</a></span><span class="kw">pub async fn </span>export_database_copy(database: <span class="kw-2">&amp;</span>Database, destination_path: <span class="kw-2">&amp;</span>str) -&gt; CoreCryptoResult&lt;()&gt; {
+<a href=#79 id=79 data-nosnippet>79</a>    <span class="comment">// we need a noop here for the case where we're compiling for wasm but without feature wasm
+<a href=#80 id=80 data-nosnippet>80</a>    </span><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
+<a href=#81 id=81 data-nosnippet>81</a>    </span>{
+<a href=#82 id=82 data-nosnippet>82</a>        <span class="prelude-val">Err</span>(CoreCryptoError::ad_hoc(
+<a href=#83 id=83 data-nosnippet>83</a>            <span class="string">"export_database_copy is not implemented for wasm"</span>,
+<a href=#84 id=84 data-nosnippet>84</a>        ))
+<a href=#85 id=85 data-nosnippet>85</a>    }
+<a href=#86 id=86 data-nosnippet>86</a>    <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
+<a href=#87 id=87 data-nosnippet>87</a>    </span>{
+<a href=#88 id=88 data-nosnippet>88</a>        database
+<a href=#89 id=89 data-nosnippet>89</a>            .<span class="number">0
+<a href=#90 id=90 data-nosnippet>90</a>            </span>.export_copy(destination_path)
+<a href=#91 id=91 data-nosnippet>91</a>            .<span class="kw">await
+<a href=#92 id=92 data-nosnippet>92</a>            </span>.map_err(CoreCryptoError::generic())
+<a href=#93 id=93 data-nosnippet>93</a>    }
+<a href=#94 id=94 data-nosnippet>94</a>}
 </code></pre></div></section></main></body></html>

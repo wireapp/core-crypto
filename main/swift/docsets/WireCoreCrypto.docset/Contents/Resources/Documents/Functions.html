@@ -187,6 +187,9 @@
                 <a href="Functions.html#/s:20WireCoreCryptoUniffi15credentialBasic11ciphersuite8clientIdAA10CredentialCAA11CiphersuiteO_AA06ClientI0CtKF">credentialBasic(ciphersuite:clientId:)</a>
               </li>
               <li class="nav-group-task">
+                <a href="Functions.html#/s:20WireCoreCryptoUniffi18exportDatabaseCopy8database15destinationPathyAA0F0C_SStYaKF">exportDatabaseCopy(database:destinationPath:)</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="Functions.html#/s:20WireCoreCryptoUniffi16inMemoryDatabase3keyAA0G0CAA0G3KeyC_tYaKF">inMemoryDatabase(key:)</a>
               </li>
               <li class="nav-group-task">
@@ -583,6 +586,50 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">credentialBasic</span><span class="p">(</span><span class="nv">ciphersuite</span><span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Enums/Ciphersuite.html">Ciphersuite</a></span><span class="p">,</span> <span class="nv">clientId</span><span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="WireCoreCryptoUniffi/Classes/Credential.html">Credential</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi18exportDatabaseCopy8database15destinationPathyAA0F0C_SStYaKF"></a>
+                    <a name="//apple_ref/swift/Function/exportDatabaseCopy(database:destinationPath:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi18exportDatabaseCopy8database15destinationPathyAA0F0C_SStYaKF">exportDatabaseCopy(database:<wbr>destinationPath:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous, from WireCoreCryptoUniffi
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Export a copy of the database to the specified path.</p>
+
+<p>This creates a fully vacuumed and optimized copy of the database using SQLite&rsquo;s VACUUM INTO command.
+ The copy will be encrypted with the same key as the source database.</p>
+
+<p># Platform Support
+ This method is only useful on platforms using SQLCipher (iOS, Android, JVM, native).
+ On WASM platforms, this function will return an error.</p>
+
+<p># Arguments</p>
+
+<ul>
+<li><code>database</code> - The database instance to export</li>
+<li><code>destination_path</code> - The file path where the database copy should be created</li>
+</ul>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">exportDatabaseCopy</span><span class="p">(</span><span class="nv">database</span><span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Classes/Database.html">Database</a></span><span class="p">,</span> <span class="nv">destinationPath</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>

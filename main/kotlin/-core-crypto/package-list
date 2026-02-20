@@ -11,6 +11,7 @@ $dokka.location:com.wire.crypto//ciphersuiteFromU16/#kotlin.UShort/PointingToDec
 $dokka.location:com.wire.crypto//coreCryptoHistoryClient/#com.wire.crypto.HistorySecret/PointingToDeclaration/-core-crypto/com.wire.crypto/core-crypto-history-client.html
 $dokka.location:com.wire.crypto//createPkiEnvironment/#com.wire.crypto.PkiEnvironmentHooks#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/create-pki-environment.html
 $dokka.location:com.wire.crypto//credentialBasic/#com.wire.crypto.Ciphersuite#com.wire.crypto.ClientId/PointingToDeclaration/-core-crypto/com.wire.crypto/credential-basic.html
+$dokka.location:com.wire.crypto//exportDatabaseCopy/#com.wire.crypto.Database#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/export-database-copy.html
 $dokka.location:com.wire.crypto//inMemoryDatabase/#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/in-memory-database.html
 $dokka.location:com.wire.crypto//lift/com.wire.crypto.CoreCryptoFfi#/PointingToDeclaration/-core-crypto/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//migrateDatabaseKeyTypeToBytes/#kotlin.String#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/migrate-database-key-type-to-bytes.html
