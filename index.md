@@ -5,8 +5,6 @@
 - [Keystore Implementation](./KEYSTORE_IMPLEMENTATION.md)
 - [FFI](./FFI.md)
 - [Crypto Dependencies](./CRYPTO_DEPENDENCIES.md)
-- [CI/CD](./CI.md)
-- [Publish Manually](./MANUAL_PUBLISH.md)
 
 ## API Documentation
 
@@ -23,6 +21,7 @@ input, and confirm by "run workflow" below the input. Note that deployment depen
 |            | TypeScript                                                 | Kotlin                                                  | Swift                                            | Rust                                   |
 | ---------- | ---------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------ | -------------------------------------- |
 | **main**   | [TypeScript](./main/typescript/)                           | [Kotlin](./main/kotlin/)                                | [Swift](./main/swift/)                           | [Rust](./main/rust/core_crypto/)       |
+| **v9.3.0** | [TypeScript](./v9.3.0/typescript)                          | [Kotlin](./v9.3.0/kotlin/)                              | [Swift](./v9.3.0/swift)                          | [Rust](./v9.3.0/rust/core_crypto)      |
 | **v9.2.1** | [TypeScript](./v9.2.1/typescript)                          | [Kotlin](./v9.2.1/kotlin/)                              | [Swift](./v9.2.1/swift)                          | [Rust](./v9.2.1/rust/core_crypto)      |
 | **v9.2.0** | [TypeScript](./v9.2.0/typescript)                          | [Kotlin](./v9.2.0/kotlin/)                              | [Swift](./v9.2.0/swift)                          | [Rust](./v9.2.0/rust/core_crypto)      |
 | **v9.1.3** | [TypeScript](./v9.1.3/typescript)                          | [Kotlin](./v9.1.3/kotlin/)                              | [Swift](./v9.1.3/swift)                          | [Rust](./v9.1.3/rust/core_crypto)      |
