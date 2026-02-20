@@ -136,6 +136,10 @@ afterEvaluate {
         publications {
             create<MavenPublication>("library") {
                 from(components["release"])
+                groupId = "com.wire"
+                artifactId = "core-crypto"
+                version = project.version.toString()
+
                 // We replace regular javadoc with dokka html docs since we are running into this bug:
                 // https://youtrack.jetbrains.com/issue/KT-60197/Dokka-JDK-17-PermittedSubclasses-requires-ASM9-during-compilation
                 artifact(tasks.named("dokkaHtmlJar"))
