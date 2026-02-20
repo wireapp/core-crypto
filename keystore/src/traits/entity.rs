@@ -18,7 +18,7 @@ use crate::{
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
 pub trait Entity: EntityBase + PrimaryKey {
     /// The domain type, for openmls types this will not be Self
-    type Target: From<Self> + Into<Self> + Send + Sync;
+    type Target: From<Self> + Into<Self> + Send + Sync + Clone;
 
     /// Get an entity by its primary key.
     ///

@@ -1,15 +1,17 @@
+use std::ops::Deref;
 use std::{borrow::Cow, sync::Arc};
 
 use async_lock::{RwLockReadGuardArc, RwLockUpgradableReadGuard, RwLockUpgradableReadGuardArc, SemaphoreGuardArc};
 
 use crate::connection::KeystoreDatabaseConnection;
+use crate::traits::SearchableEntity;
 use crate::transaction::cache_record::CacheRecord;
 use crate::transaction::transaction_store::{CachedEntity, TransactionStore};
+use crate::{CryptoKeystoreError, Database};
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
-    connection::Database,
+    CryptoKeystoreResult,
     entities::{MlsPendingMessage, PersistedMlsGroup},
-    traits::{BorrowPrimaryKey, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType, SearchableEntity},
+    traits::{BorrowPrimaryKey, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType},
 };
 
 pub(crate) mod cache_record;
@@ -48,7 +50,8 @@ impl KeystoreTransaction {
     {
         let auto_generated_fields = entity.pre_save().await?;
 
-        self.delete_or_save(entity.primary_key().bytes(), Some(entity)).await?;
+        self.delete_or_save::<E>(entity.primary_key().bytes(), Some(entity.into()))
+            .await?;
 
         Ok(auto_generated_fields)
     }
@@ -63,7 +66,7 @@ impl KeystoreTransaction {
         self.delete_or_save::<E>(id, None).await
     }
 
-    async fn delete_or_save<'a, E>(&self, id: Cow<'_, [u8]>, entity: Option<E>) -> CryptoKeystoreResult<()>
+    async fn delete_or_save<'a, E>(&self, id: Cow<'_, [u8]>, entity: Option<E::Target>) -> CryptoKeystoreResult<()>
     where
         E: CachedEntity + EntityDatabaseMutation<'a>,
     {
@@ -73,7 +76,7 @@ impl KeystoreTransaction {
             let mut guard = record.write().await;
             *guard = entity;
         } else {
-            let entry = CacheRecord::<E>::new(entity, true);
+            let entry = CacheRecord::<E::Target>::new(entity, true);
             let mut cache = RwLockUpgradableReadGuardArc::upgrade(cache).await;
             cache.insert(id.to_vec(), entry);
         }
@@ -165,7 +168,7 @@ impl KeystoreTransaction {
     /// * `Some(Some(E))` - the transaction cache contains the record
     /// * `Some(None)` - the deletion of the record has been cached
     /// * `None` - there is no information about the record in the cache
-    pub(crate) async fn get<'a, E>(&'a self, id: &E::PrimaryKey) -> Option<RwLockReadGuardArc<Option<E>>>
+    pub(crate) async fn get<'a, E>(&'a self, id: &E::PrimaryKey) -> Option<RwLockReadGuardArc<Option<E::Target>>>
     where
         E: CachedEntity + Send + Sync,
     {
@@ -183,7 +186,10 @@ impl KeystoreTransaction {
     /// * `Some(Some(E))` - the transaction cache contains the record
     /// * `Some(None)` - the deletion of the record has been cached
     /// * `None` - there is no information about the record in the cache
-    pub(crate) async fn get_borrowed<E>(&self, id: &E::BorrowedPrimaryKey) -> Option<RwLockReadGuardArc<Option<E>>>
+    pub(crate) async fn get_borrowed<E>(
+        &self,
+        id: &E::BorrowedPrimaryKey,
+    ) -> Option<RwLockReadGuardArc<Option<E::Target>>>
     where
         E: CachedEntity + BorrowPrimaryKey + Send + Sync,
         <E as BorrowPrimaryKey>::BorrowedPrimaryKey: KeyType,
@@ -198,7 +204,7 @@ impl KeystoreTransaction {
         }
     }
 
-    async fn find_all_in_cache<E>(&self) -> Vec<RwLockReadGuardArc<Option<E>>>
+    async fn find_all_in_cache<E>(&self) -> Vec<RwLockReadGuardArc<Option<E::Target>>>
     where
         E: CachedEntity + Send + Sync,
     {
@@ -210,7 +216,7 @@ impl KeystoreTransaction {
         records
     }
 
-    async fn search_in_cache<E, SearchKey>(&self, search_key: &SearchKey) -> Vec<RwLockReadGuardArc<Option<E>>>
+    async fn search_in_cache<E, SearchKey>(&self, search_key: &SearchKey) -> Vec<impl Deref<Target = Option<E::Target>>>
     where
         E: CachedEntity + SearchableEntity<SearchKey> + Send + Sync,
         SearchKey: KeyType,
@@ -219,11 +225,16 @@ impl KeystoreTransaction {
             .await
             .into_iter()
             .map(|record| record)
-            .filter(|record| record.as_ref().is_some_and(|e| e.matches(search_key)))
+            .filter(|record| {
+                record.as_ref().map_or(false, |e| {
+                    let entity: E = e.clone().into();
+                    entity.matches(search_key)
+                })
+            })
             .collect()
     }
 
-    pub(crate) async fn find_all<E>(&self, persisted_records: Vec<E>) -> Vec<RwLockReadGuardArc<Option<E>>>
+    pub(crate) async fn find_all<E>(&self, persisted_records: Vec<E>) -> Vec<impl Deref<Target = Option<E::Target>>>
     where
         E: Clone + CachedEntity + Send + Sync,
     {
@@ -235,13 +246,13 @@ impl KeystoreTransaction {
         &self,
         persisted_records: Vec<E>,
         search_key: &SearchKey,
-    ) -> Vec<RwLockReadGuardArc<Option<E>>>
+    ) -> Vec<impl Deref<Target = Option<E::Target>>>
     where
         E: Clone + CachedEntity + SearchableEntity<SearchKey> + Send + Sync,
         SearchKey: KeyType,
     {
         self.extend_cache(persisted_records);
-        self.search_in_cache(search_key).await
+        self.search_in_cache::<E, SearchKey>(search_key).await
     }
 
     /// Put each of the given items into the cache if the cache doesn't contain its id yet.
@@ -255,7 +266,7 @@ impl KeystoreTransaction {
         for record in records {
             let record_id = record.primary_key().bytes().to_vec();
             if !table.contains_key(&record_id) {
-                table.insert(record_id, CacheRecord::<E>::new(Some(record), false));
+                table.insert(record_id, CacheRecord::<E::Target>::new(Some(record.into()), false));
             }
         }
     }

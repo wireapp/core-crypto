@@ -17,8 +17,8 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     entities::{MlsPendingMessage, PersistedMlsGroup},
     traits::{
-        BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase,
-        KeyType, SearchableEntity,
+        BorrowPrimaryKey, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase, KeyType,
+        SearchableEntity,
     },
     transaction::{KeystoreTransaction, transaction_store::CachedEntity},
 };
@@ -369,14 +369,14 @@ impl Database {
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
 impl FetchFromDatabase for Database {
-    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E::Target>>
     where
         E: CachedEntity<ConnectionType = KeystoreDatabaseConnection> + Clone + Send + Sync,
     {
         // If a transaction is in progress...
         if let Some(transaction) = self.transaction.lock().await.as_ref()
             //... and it has information about this entity, ...
-            && let Some(cached_record) = transaction.get(id).await
+            && let Some(cached_record) = transaction.get::<E>(id).await
         {
             return Ok(cached_record.map(Arc::unwrap_or_clone));
         }
@@ -420,7 +420,7 @@ impl FetchFromDatabase for Database {
         }
     }
 
-    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<E>>
+    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<E::Target>>
     where
         E: CachedEntity<ConnectionType = KeystoreDatabaseConnection> + Clone + Send + Sync,
     {
