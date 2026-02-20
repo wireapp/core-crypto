@@ -257,6 +257,18 @@
 
   Affected platforms: all
 
+## v9.3.0 - 2026-02-20
+
+### Highlights
+
+Lidl compat: Ios and Android can now export a compacted version of the CC database, retaining its encryption. This is
+only relevant for Lidl builds and should be ignored by everyone else.
+
+### Features
+
+- export a compact version of the database
+  ([8fc81af](https://github.com/wireapp/core-crypto/commit/8fc81afce4732f5b028563ca7c338c8964c4dfd7))
+
 ## v9.2.1 - 2026-02-17
 
 Upgrades openssl to version 3.5.5 (used on Android and iOS for encryption at rest).
