@@ -68,7 +68,7 @@ sha1 = "0.10"
 sha2 = "0.10"
 smol = "2.0"
 smol-macros = "0.1"
-strum = { version = "0.27", features = ["derive"] }
+strum = { version = "0.28", features = ["derive"] }
 thiserror = "2.0"
 tls_codec = "0.4.2"
 typed-builder = "0.23.2"
