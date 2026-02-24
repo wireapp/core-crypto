@@ -92,7 +92,7 @@ serde-wasm-bindgen = "0.6"
 [dev-dependencies]
 itertools.workspace = true
 uuid = { workspace = true, features = ["v4", "v5", "js"] }
-tempfile = "3.25"
+tempfile = "3.26"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
