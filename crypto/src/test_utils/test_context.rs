@@ -8,14 +8,10 @@ pub use rstest_reuse::{self, *};
 use super::{
     ClientIdentifier, CoreCryptoTransportSuccessProvider, MlsTransportTestExt, TestConversation, init_x509_test_chain,
     tmp_db_file,
-    x509::{CertificateParams, X509TestChain},
+    x509::{CertificateParams, X509TestChain, qualified_e2ei_cid, qualified_e2ei_cid_from_user_id},
 };
 pub use crate::{Ciphersuite, CredentialType, MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy};
-use crate::{
-    ClientId, ConnectionType, CredentialRef, Database, DatabaseKey,
-    e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId},
-    test_utils::SessionContext,
-};
+use crate::{ClientId, ConnectionType, CredentialRef, Database, DatabaseKey, test_utils::SessionContext};
 
 #[template]
 #[rstest(
@@ -155,15 +151,20 @@ impl TestContext {
     }
 
     pub fn x509_client_ids<const N: usize>(&self) -> [ClientId; N] {
-        std::array::from_fn(|_| QualifiedE2eiClientId::generate().into())
+        std::array::from_fn(|_| qualified_e2ei_cid().as_ref().into())
     }
 
     pub fn basic_client_ids<const N: usize>(&self) -> [ClientId; N] {
-        std::array::from_fn(|_| WireQualifiedClientId::generate().into())
+        fn generate() -> ClientId {
+            let user_id = uuid::Uuid::new_v4();
+            let device_id = rand::random::<u64>();
+            format!("{user_id}:{device_id:x}@wire.com").into_bytes().into()
+        }
+        std::array::from_fn(|_| generate())
     }
 
     pub fn x509_client_ids_for_user<const N: usize>(&self, user: &uuid::Uuid) -> [ClientId; N] {
-        std::array::from_fn(|_| QualifiedE2eiClientId::generate_from_user_id(user).into())
+        std::array::from_fn(|_| qualified_e2ei_cid_from_user_id(user).as_ref().into())
     }
 
     async fn test_chain(

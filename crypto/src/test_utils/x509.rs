@@ -1,17 +1,40 @@
 use std::{fmt::Display, time::Duration};
 
 use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
+use wire_e2e_identity::legacy::id::QualifiedE2eiClientId;
 use x509_cert::der::EncodePem;
 
 use crate::{
     CertificateBundle,
-    e2e_identity::id::QualifiedE2eiClientId,
     mls::session::identifier::ClientIdentifier,
     mls_provider::{CRYPTO, CertProfile, CertificateGenerationArgs, MlsCryptoProvider, PkiKeypair},
     transaction_context::TransactionContext,
 };
 
+const DOMAIN: &str = "wire.com";
 const DEFAULT_CRL_DOMAIN: &str = "localhost";
+
+pub(crate) fn qualified_e2ei_cid() -> QualifiedE2eiClientId {
+    qualified_e2ei_cid_from_user_id(&uuid::Uuid::new_v4())
+}
+
+pub(crate) fn qualified_e2ei_cid_with_domain(domain: &str) -> QualifiedE2eiClientId {
+    qualified_e2ei_cid_from_user_id_and_domain(&uuid::Uuid::new_v4(), domain)
+}
+
+pub(crate) fn qualified_e2ei_cid_from_user_id(user_id: &uuid::Uuid) -> QualifiedE2eiClientId {
+    qualified_e2ei_cid_from_user_id_and_domain(user_id, DOMAIN)
+}
+
+pub(crate) fn qualified_e2ei_cid_from_user_id_and_domain(user_id: &uuid::Uuid, domain: &str) -> QualifiedE2eiClientId {
+    use base64::Engine as _;
+
+    let user_id = base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(user_id.as_bytes());
+
+    let device_id = rand::random::<u64>();
+    let client_id = format!("{user_id}:{device_id:x}@{domain}");
+    QualifiedE2eiClientId::from(wire_e2e_identity::legacy::id::ClientId::from(client_id.into_bytes()))
+}
 
 /// Params for generating the Certificate chain
 #[derive(Debug, Clone)]
@@ -187,7 +210,7 @@ impl X509TestChain {
             .map(|first_name| X509TestChainActorArg {
                 name: first_name.to_string(),
                 handle: format!("{}_wire", first_name.to_lowercase()),
-                client_id: QualifiedE2eiClientId::generate_with_domain(local_ca_params.domain.as_ref().unwrap())
+                client_id: qualified_e2ei_cid_with_domain(local_ca_params.domain.as_ref().unwrap())
                     .try_into()
                     .unwrap(),
                 is_revoked: false,
@@ -366,9 +389,7 @@ impl X509TestChain {
 
         let common_name = format!("{name} Smith");
         let handle = format!("{}_wire", name.to_lowercase());
-        let client_id: String = QualifiedE2eiClientId::generate_with_domain("world.com")
-            .try_into()
-            .unwrap();
+        let client_id: String = qualified_e2ei_cid_with_domain("world.com").try_into().unwrap();
         let mut cert_params = CertificateParams {
             common_name: Some(common_name.clone()),
             handle: Some(handle.clone()),

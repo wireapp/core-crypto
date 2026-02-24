@@ -7,16 +7,18 @@ use core_crypto_keystore::{
 use openmls::prelude::{Credential as MlsCredential, ExternalSender, HpkePublicKey, KeyPackage, SignaturePublicKey};
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto};
 use tls_codec::Serialize;
-use wire_e2e_identity::WireIdentityReader;
+use wire_e2e_identity::{
+    WireIdentityReader,
+    legacy::{
+        device_status::DeviceStatus,
+        id::{QualifiedE2eiClientId, WireQualifiedClientId},
+    },
+};
 use x509_cert::der::Encode;
 
 use crate::{
     CertificateBundle, Ciphersuite, CredentialFindFilters, CredentialRef, CredentialType,
     MlsConversationDecryptMessage, WireIdentity,
-    e2e_identity::{
-        device_status::DeviceStatus,
-        id::{QualifiedE2eiClientId, WireQualifiedClientId},
-    },
     mls::credential::{Credential, ext::CredentialExt},
     test_utils::{SessionContext, TestContext, x509::X509Certificate},
 };
@@ -74,7 +76,10 @@ impl SessionContext {
     }
 
     pub async fn get_user_id(&self) -> String {
-        WireQualifiedClientId::from(self.get_client_id().await).get_user_id()
+        let client_id = self.get_client_id().await;
+        let client_id: Vec<u8> = client_id.into();
+        let client_id = wire_e2e_identity::legacy::id::ClientId::from(client_id);
+        WireQualifiedClientId::from(client_id).get_user_id()
     }
 
     /// Create, save, and add a new credential of the type relevant to this test
@@ -189,8 +194,7 @@ impl SessionContext {
     pub async fn get_e2ei_client_id(&self) -> wire_e2e_identity::E2eiClientId {
         let cid = self.get_client_id().await;
         let cid = std::str::from_utf8(&cid.0).unwrap();
-        let cid: String = cid.parse::<QualifiedE2eiClientId>().unwrap().try_into().unwrap();
-        wire_e2e_identity::E2eiClientId::try_from_qualified(&cid).unwrap()
+        wire_e2e_identity::E2eiClientId::try_from_qualified(cid).unwrap()
     }
 
     pub fn get_intermediate_ca(&self) -> Option<&X509Certificate> {

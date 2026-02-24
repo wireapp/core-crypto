@@ -13,14 +13,16 @@ pub struct ClientId(Vec<u8>);
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::Into, derive_more::Deref)]
 pub struct WireQualifiedClientId(ClientId);
 
-#[cfg(test)]
 impl WireQualifiedClientId {
     pub fn get_user_id(&self) -> String {
         let mut split = self.0.split(|b| b == &COLON);
         let user_id = split.next().unwrap();
         uuid::Uuid::try_parse_ascii(user_id).unwrap().to_string()
     }
+}
 
+#[cfg(test)]
+impl WireQualifiedClientId {
     pub fn generate() -> Self {
         let user_id = uuid::Uuid::new_v4();
         Self::generate_from_user_id(&user_id)
@@ -135,7 +137,12 @@ impl<'a> TryFrom<&'a [u8]> for QualifiedE2eiClientId {
     }
 }
 
-#[cfg(test)]
+impl AsRef<[u8]> for QualifiedE2eiClientId {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 impl std::str::FromStr for QualifiedE2eiClientId {
     type Err = Error;
 

@@ -28,9 +28,10 @@ use crate::{
     CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Credential, CredentialRef, Database,
     DatabaseKey, Error, MlsCommitBundle, MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse,
     RecursiveError, Session,
-    e2e_identity::id::QualifiedE2eiClientId,
     mls::HistoryObserver,
-    test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
+    test_utils::x509::{
+        CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs, qualified_e2ei_cid_with_domain,
+    },
     transaction_context::TransactionContext,
 };
 pub use crate::{ClientIdentifier, CredentialType};
@@ -353,7 +354,7 @@ fn init_x509_test_chain(
                 handle.to_string()
             },
             client_id: if client_id.is_empty() {
-                QualifiedE2eiClientId::generate_with_domain(local_ca_params.domain.as_ref().unwrap())
+                qualified_e2ei_cid_with_domain(local_ca_params.domain.as_ref().unwrap())
                     .try_into()
                     .unwrap()
             } else {
