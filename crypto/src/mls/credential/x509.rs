@@ -166,7 +166,8 @@ impl CertificateBundle {
         let name = rand_str(10);
         let handle = format!("{name}_wire");
         let display_name = format!("{name} Smith");
-        let client_id = crate::e2e_identity::id::QualifiedE2eiClientId::from(client_id.clone());
+        let client_id = wire_e2e_identity::legacy::id::ClientId::from(client_id.clone());
+        let client_id = wire_e2e_identity::legacy::id::QualifiedE2eiClientId::from(client_id);
         Self::new(&handle, &display_name, Some(&client_id), None, signer)
     }
 
@@ -174,7 +175,7 @@ impl CertificateBundle {
     pub fn new(
         handle: &str,
         display_name: &str,
-        client_id: Option<&crate::e2e_identity::id::QualifiedE2eiClientId>,
+        client_id: Option<&wire_e2e_identity::legacy::id::QualifiedE2eiClientId>,
         cert_keypair: Option<PkiKeypair>,
         signer: &crate::test_utils::x509::X509Certificate,
     ) -> Self {
@@ -184,7 +185,7 @@ impl CertificateBundle {
     pub fn new_with_expiration(
         handle: &str,
         display_name: &str,
-        client_id: Option<&crate::e2e_identity::id::QualifiedE2eiClientId>,
+        client_id: Option<&wire_e2e_identity::legacy::id::QualifiedE2eiClientId>,
         cert_keypair: Option<PkiKeypair>,
         signer: &crate::test_utils::x509::X509Certificate,
         expiration: Option<std::time::Duration>,
