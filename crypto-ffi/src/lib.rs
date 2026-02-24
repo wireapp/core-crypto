@@ -61,10 +61,7 @@ pub use database::{
     Database, DatabaseKey, in_memory_database, migrate_database_key_type_to_bytes, open_database, update_database_key,
 };
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
-pub use e2ei::{
-    E2eiConversationState, acme_challenge::AcmeChallenge, acme_directory::AcmeDirectory, enrollment::E2eiEnrollment,
-    new_acme_authz::NewAcmeAuthz, new_acme_order::NewAcmeOrder,
-};
+pub use e2ei::E2eiConversationState;
 pub use ephemeral::{HistorySecret, core_crypto_history_client};
 #[cfg(feature = "proteus")]
 pub use error::proteus::ProteusError;
