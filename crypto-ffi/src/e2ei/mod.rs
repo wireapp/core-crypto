@@ -1,9 +1,3 @@
-pub(crate) mod acme_challenge;
-pub(crate) mod acme_directory;
-pub(crate) mod enrollment;
-pub(crate) mod new_acme_authz;
-pub(crate) mod new_acme_order;
-
 /// Indicates the state of a Conversation regarding end-to-end identity.
 ///
 /// Note: this does not check pending state (pending commit, pending proposals) so it does not
