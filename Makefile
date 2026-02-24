@@ -98,6 +98,7 @@ KT_WRAPPER = ./crypto-ffi/bindings/shared/src/commonMain/kotlin
 KT_TESTS = ./crypto-ffi/bindings/shared/src/commonTest
 KT_INTEROP = ./interop/src/clients/android-interop/src/main/java
 KT_FILES := $(shell find $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP) -type f -name '*.kt')
+KT_GRADLE_FILES = $(shell find . -type f -name '*.kts')
 
 #-------------------------------------------------------------------------------
 # Build FFI artifacts
@@ -719,15 +720,15 @@ swift-check: $(STAMPS)/swift-check ## Lint Swift files via swift-format and swif
 
 # Kotlin
 
-$(STAMPS)/kotlin-fmt: $(KT_FILES)
-	ktlint --format $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP)
+$(STAMPS)/kotlin-fmt: $(KT_FILES) $(KT_GRADLE_FILES)
+	ktlint --format $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP) $(KT_GRADLE_FILES)
 	$(TOUCH_STAMP)
 
 .PHONY: kotlin-fmt
 kotlin-fmt: $(STAMPS)/kotlin-fmt ## Format Kotlin files via ktlint
 
-$(STAMPS)/kotlin-check: $(KT_FILES)
-	ktlint $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP)
+$(STAMPS)/kotlin-check: $(KT_FILES) $(KT_GRADLE_FILES)
+	ktlint $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP) $(KT_GRADLE_FILES)
 	$(TOUCH_STAMP)
 
 .PHONY: kotlin-check
