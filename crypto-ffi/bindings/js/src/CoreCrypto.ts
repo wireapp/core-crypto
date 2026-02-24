@@ -47,7 +47,6 @@ export {
     EpochChangedReportingError_Tags,
     E2eiEnrollment,
     E2eiConversationState,
-    CrlRegistration,
     ciphersuiteFromU16,
     ciphersuiteDefault,
     ClientId,
