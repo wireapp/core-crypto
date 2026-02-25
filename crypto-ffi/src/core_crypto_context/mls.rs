@@ -10,7 +10,7 @@ use tls_codec::Deserialize as _;
 use crate::{
     Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, Credential, CredentialRef,
     CredentialType, DecryptedMessage, Keypackage, KeypackageRef, MlsTransport, WelcomeBundle,
-    bytes_wrapper::bytes_wrapper, core_crypto::mls_transport::callback_shim, crl::NewCrlDistributionPoints,
+    bytes_wrapper::bytes_wrapper, core_crypto::mls_transport::callback_shim,
 };
 
 bytes_wrapper!(
@@ -183,7 +183,7 @@ impl CoreCryptoContext {
         &self,
         conversation_id: &ConversationId,
         key_packages: Vec<Arc<Keypackage>>,
-    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
+    ) -> CoreCryptoResult<()> {
         let keypackages = key_packages
             .into_iter()
             .map(std::sync::Arc::unwrap_or_clone)
@@ -191,8 +191,8 @@ impl CoreCryptoContext {
             .collect();
 
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
-        let distribution_points = conversation.add_members(keypackages).await?.into();
-        Ok(distribution_points)
+        let _ = conversation.add_members(keypackages).await?;
+        Ok(())
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::remove_members]

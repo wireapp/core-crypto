@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use core_crypto::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage};
 
-use crate::{ClientId, WireIdentity, crl::NewCrlDistributionPoints};
+use crate::{ClientId, WireIdentity};
 
 /// A decrypted message and various associated metadata
 #[derive(Debug, uniffi::Record)]
@@ -34,8 +34,6 @@ pub struct DecryptedMessage {
     /// Contains buffered messages for next epoch which were received before the commit creating the epoch
     /// because the DS did not fan them out in order.
     pub buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
-    /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
 impl From<MlsConversationDecryptMessage> for DecryptedMessage {
@@ -53,7 +51,6 @@ impl From<MlsConversationDecryptMessage> for DecryptedMessage {
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.into(),
             buffered_messages,
-            crl_new_distribution_points: from.crl_new_distribution_points.into(),
         }
     }
 }
@@ -80,8 +77,6 @@ pub struct BufferedDecryptedMessage {
     pub has_epoch_changed: bool,
     /// Identity claims present in the sender credential
     pub identity: WireIdentity,
-    /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
 impl From<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage {
@@ -94,7 +89,6 @@ impl From<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage {
             sender_client_id: from.sender_client_id.map(Into::into).map(Arc::new),
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.into(),
-            crl_new_distribution_points: from.crl_new_distribution_points.into(),
         }
     }
 }
