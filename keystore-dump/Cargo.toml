@@ -15,6 +15,7 @@ anyhow = "1.0"
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 core-crypto-keystore = { workspace = true }
 core-crypto = { path = "../crypto" }
+wire-e2e-identity.workspace = true
 
 clap = { version = "4", features = ["derive"] }
 serde_json.workspace = true
