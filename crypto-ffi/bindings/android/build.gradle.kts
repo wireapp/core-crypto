@@ -10,6 +10,9 @@ plugins {
 val sharedSources = projectDir.resolve("../shared/src/commonMain")
 val sharedTestSources = projectDir.resolve("../shared/src/commonTest")
 
+version = findProperty("VERSION_NAME") as String
+group = findProperty("GROUP") as String
+
 val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
     dependsOn(tasks.dokkaGeneratePublicationHtml)
     from(tasks.dokkaGeneratePublicationHtml.flatMap { it.outputDirectory })
@@ -136,9 +139,7 @@ afterEvaluate {
         publications {
             create<MavenPublication>("library") {
                 from(components["release"])
-                groupId = "com.wire"
-                artifactId = "core-crypto"
-                version = project.version.toString()
+                artifactId = findProperty("POM_ARTIFACT_ID") as String
 
                 // We replace regular javadoc with dokka html docs since we are running into this bug:
                 // https://youtrack.jetbrains.com/issue/KT-60197/Dokka-JDK-17-PermittedSubclasses-requires-ASM9-during-compilation

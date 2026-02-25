@@ -1,9 +1,6 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
-group = findProperty("GROUP") as String
-version = findProperty("VERSION_NAME") as String
-
 buildscript {
     repositories {
         google()

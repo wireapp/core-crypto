@@ -6,6 +6,9 @@ plugins {
     id(libs.plugins.detekt.get().pluginId) version libs.versions.detekt
 }
 
+version = findProperty("VERSION_NAME") as String
+group = findProperty("GROUP") as String
+
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -107,10 +110,7 @@ publishing {
     publications {
         create<MavenPublication>("maven") {
             from(components["java"])
-
-            groupId = "com.wire"
-            artifactId = "core-crypto"
-            version = project.version.toString()
+            artifactId = findProperty("POM_ARTIFACT_ID") as String
             artifact(sourcesJar)
             artifact(dokkaHtmlJar)
             pom {
