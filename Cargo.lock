@@ -3077,6 +3077,7 @@ dependencies = [
  "serde_json",
  "smol-macros",
  "tls_codec",
+ "wire-e2e-identity",
 ]
 
 [[package]]
