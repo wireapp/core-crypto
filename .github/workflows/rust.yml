@@ -86,13 +86,8 @@ jobs:
         with:
           chrome-version: stable
       - run: echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
-      - name: install wasm-bindgen-cli (for test runner)
-        run: |
-          wasm_bindgen_version="$(
-            cargo metadata --format-version 1 |
-            jq -r '.packages[] | select (.name == "wasm-bindgen") | .version'
-          )"
-          cargo install wasm-bindgen-cli --version $wasm_bindgen_version
+      - name: Install wasm-bindgen-cli
+        uses: ./.github/actions/setup-wasm-bindgen
       - run: cargo test --locked --target wasm32-unknown-unknown -p core-crypto-keystore
 
   keystore-proteus-wasm-test:
@@ -109,13 +104,8 @@ jobs:
         with:
           chrome-version: stable
       - run: echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
-      - name: install wasm-bindgen-cli (for test runner)
-        run: |
-          wasm_bindgen_version="$(
-            cargo metadata --format-version 1 |
-            jq -r '.packages[] | select (.name == "wasm-bindgen") | .version'
-          )"
-          cargo install wasm-bindgen-cli --version $wasm_bindgen_version
+      - name: Install wasm-bindgen-cli
+        uses: ./.github/actions/setup-wasm-bindgen
       - run: cargo test --locked --target wasm32-unknown-unknown -p core-crypto-keystore --features proteus-keystore -- proteus
 
   hack:

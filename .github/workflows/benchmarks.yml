@@ -39,7 +39,7 @@ jobs:
         with:
           bun-version: latest
       - name: Install wasm-bindgen-cli
-        uses: jetli/wasm-bindgen-action@v0.2.0
+        uses: ./.github/actions/setup-wasm-bindgen
       - name: bench wasm/js
         run: |
           make ts-bench RELEASE=1
