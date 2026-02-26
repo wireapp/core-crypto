@@ -17,20 +17,20 @@ describe("PKI environment", () => {
         await ccInit(alice);
 
         // Get unset pki environment
-        let pki_env = await browser.execute(async (alice) => {
+        const pki_env = await browser.execute(async (alice) => {
             const cc = window.ensureCcDefined(alice);
             return await cc.getPkiEnvironment();
         }, alice);
 
-        expect(pki_env == undefined);
+        expect(pki_env).toBe(undefined);
 
         // set pki environment
-        pki_env = await browser.execute(async (alice) => {
+        const success = await browser.execute(async (alice) => {
             const cc = window.ensureCcDefined(alice);
             const key = new Uint8Array(32);
             window.crypto.getRandomValues(key);
             const database = await window.ccModule.openDatabase(
-                alice,
+                crypto.randomUUID(),
                 new window.ccModule.DatabaseKey(key.buffer)
             );
             const pki_env = await window.ccModule.createPkiEnvironment(
@@ -38,23 +38,21 @@ describe("PKI environment", () => {
                 database
             );
             await cc.setPkiEnvironment(pki_env);
+            // We cannot compare the result of getPkiEnvironment()
+            // with `pki_env`, due to uniffi hiding everything,
+            // so just make sure it's not undefined.
+            if ((await cc.getPkiEnvironment()) == undefined) return false;
 
-            return await cc.getPkiEnvironment();
-        }, alice);
-        expect(pki_env != undefined);
-
-        pki_env = await browser.execute(async (alice) => {
-            const cc = window.ensureCcDefined(alice);
             await cc.setPkiEnvironment(undefined);
-            return await cc.getPkiEnvironment();
+            return (await cc.getPkiEnvironment()) == undefined;
         }, alice);
-        expect(pki_env == undefined);
+        expect(success).toBe(true);
     });
 
     it("should be settable before mls init", async () => {
         const alice = crypto.randomUUID();
 
-        let pki_env = await browser.execute(async (alice) => {
+        const pki_env = await browser.execute(async (alice) => {
             const key = new Uint8Array(32);
             window.crypto.getRandomValues(key);
             const database = await window.ccModule.openDatabase(
@@ -69,7 +67,7 @@ describe("PKI environment", () => {
             return pki_env;
         }, alice);
 
-        expect(pki_env == undefined);
+        expect(pki_env).toBe(undefined);
 
         pki_env = await browser.execute(async (alice) => {
             const key = new Uint8Array(32);
@@ -88,7 +86,7 @@ describe("PKI environment", () => {
 
             return await cc.getPkiEnvironment();
         }, alice);
-        expect(pki_env != undefined);
+        expect(pki_env).toExist();
     });
 });
 
