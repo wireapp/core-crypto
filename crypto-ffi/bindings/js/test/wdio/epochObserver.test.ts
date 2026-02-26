@@ -75,7 +75,7 @@ describe("epoch observer", () => {
             convId
         );
 
-        expect(length).toEqual(1);
-        expect(first_id_hex).toEqual(convId);
+        await expect(length).toEqual(1);
+        await expect(first_id_hex).toEqual(convId);
     });
 });

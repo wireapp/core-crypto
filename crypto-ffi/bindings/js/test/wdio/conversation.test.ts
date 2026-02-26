@@ -27,10 +27,10 @@ describe("conversation", () => {
         await ccInit(bob);
         await createConversation(alice, convId);
         const groupInfo = await invite(alice, bob, convId);
-        expect(groupInfo.encryptionType).toBe(
+        await expect(groupInfo.encryptionType).toBe(
             GroupInfoEncryptionType.Plaintext
         );
-        expect(groupInfo.ratchetTreeType).toBe(RatchetTreeType.Full);
+        await expect(groupInfo.ratchetTreeType).toBe(RatchetTreeType.Full);
     });
 
     it("should allow sending messages", async () => {
@@ -48,7 +48,7 @@ describe("conversation", () => {
             convId,
             messageText
         );
-        expect(decryptedByAlice).toBe(messageText);
-        expect(decryptedByBob).toBe(messageText);
+        await expect(decryptedByAlice).toBe(messageText);
+        await expect(decryptedByBob).toBe(messageText);
     });
 });

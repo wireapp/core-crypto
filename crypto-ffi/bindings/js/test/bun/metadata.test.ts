@@ -12,11 +12,11 @@ afterEach(async () => {
 
 describe("metadata", () => {
     test("metadata can be retrieved and contains key 'gitDescribe'", async () => {
-        expect(buildMetadata()).toHaveProperty("gitDescribe");
+        await expect(buildMetadata()).toHaveProperty("gitDescribe");
     });
 
     test("version can be retrieved and is a semantic version number", async () => {
-        expect(version()).toMatch(
+        await expect(version()).toMatch(
             RegExp(
                 // Regex for matching semantic versions from https://semver.org
                 "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"

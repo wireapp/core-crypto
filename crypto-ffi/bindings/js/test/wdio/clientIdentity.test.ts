@@ -22,7 +22,7 @@ describe("client identity", () => {
                 })
             )[0]!.publicKeyHash().byteLength;
         }, alice);
-        expect(result).toBe(32);
+        await expect(result).toBe(32);
     });
 
     it("requesting client key package should work", async () => {
@@ -45,6 +45,6 @@ describe("client identity", () => {
             }
             return threwError;
         }, alice);
-        expect(threwError).toBe(false);
+        await expect(threwError).toBe(false);
     });
 });

@@ -32,7 +32,7 @@ describe("key package", () => {
             return await ctx.generateKeypackage(credentialRef);
         });
 
-        expect(keyPackage).toBeDefined();
+        await expect(keyPackage).toBeDefined();
     });
 
     test("can be serialized", async () => {
@@ -53,14 +53,14 @@ describe("key package", () => {
 
         const bytes = new Uint8Array(keyPackage.serialize());
 
-        expect(bytes).toBeDefined();
-        expect(bytes).not.toBeEmpty();
+        await expect(bytes).toBeDefined();
+        await expect(bytes).not.toBeEmpty();
 
         // roundtrip
         const kp2 = new Keypackage(bytes.buffer);
         const bytes2 = new Uint8Array(kp2.serialize());
 
-        expect(bytes2).toEqual(bytes);
+        await expect(bytes2).toEqual(bytes);
     });
 
     test("can be retrieved in bulk", async () => {
@@ -83,9 +83,9 @@ describe("key package", () => {
             return await ctx.getKeypackages();
         });
 
-        expect(keyPackages).toBeDefined();
-        expect(keyPackages).toBeArrayOfSize(1);
-        expect(keyPackages[0]).toBeDefined();
+        await expect(keyPackages).toBeDefined();
+        await expect(keyPackages).toBeArrayOfSize(1);
+        await expect(keyPackages[0]).toBeDefined();
     });
 
     test("can be removed", async () => {
@@ -119,8 +119,8 @@ describe("key package", () => {
             return await ctx.getKeypackages();
         });
 
-        expect(keyPackages).toBeDefined();
-        expect(keyPackages).toBeArrayOfSize(1);
+        await expect(keyPackages).toBeDefined();
+        await expect(keyPackages).toBeArrayOfSize(1);
     });
 
     test("can be removed by credentialref", async () => {
@@ -152,7 +152,7 @@ describe("key package", () => {
 
             const kpsBeforeRemoval = await ctx.getKeypackages();
             // 2 credentials with the same n keypackages each
-            expect(kpsBeforeRemoval).toBeArrayOfSize(
+            await expect(kpsBeforeRemoval).toBeArrayOfSize(
                 KEYPACKAGES_PER_CREDENTIAL * 2
             );
 
@@ -160,7 +160,7 @@ describe("key package", () => {
             await ctx.removeKeypackagesFor(cref1);
 
             const kps = await ctx.getKeypackages();
-            expect(kps).toBeArrayOfSize(KEYPACKAGES_PER_CREDENTIAL);
+            await expect(kps).toBeArrayOfSize(KEYPACKAGES_PER_CREDENTIAL);
         });
     });
 });

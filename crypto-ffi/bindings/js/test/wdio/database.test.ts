@@ -53,7 +53,7 @@ describe("database", () => {
     });
 
     it("key must have correct length", async () => {
-        expect(() =>
+        await expect(() =>
             browser.execute(async () => {
                 new window.ccModule.DatabaseKey(new Uint8Array(11).buffer);
             })
@@ -126,7 +126,7 @@ describe("database", () => {
 
             return [JSON.stringify(pubkey1), JSON.stringify(pubkey2)];
         });
-        expect(JSON.parse(pubkey1)).toEqual(JSON.parse(pubkey2));
+        await expect(JSON.parse(pubkey1)).toEqual(JSON.parse(pubkey2));
     });
 
     it("migrating key type to bytes works", async () => {
@@ -208,6 +208,6 @@ describe("database", () => {
         }, JSON.stringify(stores));
 
         // If the migration succeeded, the epoch has to be 1.
-        expect(result).toEqual(1n);
+        await expect(result).toEqual(1n);
     });
 });

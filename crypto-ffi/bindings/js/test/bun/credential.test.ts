@@ -22,8 +22,8 @@ describe("credentials", () => {
             ciphersuiteDefault(),
             new ClientId(Buffer.from("any random client id here").buffer)
         );
-        expect(credential.type()).toEqual(CredentialType.Basic);
-        expect(credential.earliestValidity()).toEqual(0n);
+        await expect(credential.type()).toEqual(CredentialType.Basic);
+        await expect(credential.earliestValidity()).toEqual(0n);
     });
 
     test("credential can be added", async () => {
@@ -38,15 +38,15 @@ describe("credentials", () => {
             return await ctx.addCredential(credential);
         });
 
-        expect(ref).toBeDefined();
-        expect(ref.type()).toEqual(CredentialType.Basic);
+        await expect(ref).toBeDefined();
+        await expect(ref.type()).toEqual(CredentialType.Basic);
         // saving causes the earliest validity to be updated
-        expect(ref.earliestValidity()).not.toEqual(0n);
+        await expect(ref.earliestValidity()).not.toEqual(0n);
 
         const allCredentials = await cc.newTransaction(async (ctx) => {
             return await ctx.getCredentials();
         });
-        expect(allCredentials.length).toBe(1);
+        await expect(allCredentials.length).toBe(1);
     });
 
     test("credential can be removed", async () => {
@@ -68,7 +68,7 @@ describe("credentials", () => {
         const allCredentials = await cc.newTransaction(async (ctx) => {
             return await ctx.getCredentials();
         });
-        expect(allCredentials.length).toBe(0);
+        await expect(allCredentials.length).toBe(0);
     });
 
     test("credentials can be searched", async () => {
@@ -100,8 +100,8 @@ describe("credentials", () => {
             });
         });
 
-        expect(results1.length).toBe(1);
-        expect(results2.length).toBe(1);
-        expect(results1[0]).not.toEqual(results2[0]);
+        await expect(results1.length).toBe(1);
+        await expect(results2.length).toBe(1);
+        await expect(results1[0]).not.toEqual(results2[0]);
     });
 });

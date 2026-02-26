@@ -94,10 +94,10 @@ describe("history sharing", () => {
             convId
         );
 
-        expect(result.length).toBe(1);
-        expect(result.enabledBeforeEnabling).toBe(false);
-        expect(result.enabledAfterEnabling).toBe(true);
-        expect(result.firstIdString).toBe(convId);
-        expect(result.commitHasEncryptedMessage).toBe(true);
+        await expect(result.length).toBe(1);
+        await expect(result.enabledBeforeEnabling).toBe(false);
+        await expect(result.enabledAfterEnabling).toBe(true);
+        await expect(result.firstIdString).toBe(convId);
+        await expect(result.commitHasEncryptedMessage).toBe(true);
     });
 });

@@ -22,7 +22,7 @@ describe("PKI environment", () => {
             return await cc.getPkiEnvironment();
         }, alice);
 
-        expect(pki_env).toBe(undefined);
+        await expect(pki_env).toBe(undefined);
 
         // set pki environment
         const success = await browser.execute(async (alice) => {
@@ -46,7 +46,7 @@ describe("PKI environment", () => {
             await cc.setPkiEnvironment(undefined);
             return (await cc.getPkiEnvironment()) == undefined;
         }, alice);
-        expect(success).toBe(true);
+        await expect(success).toBe(true);
     });
 
     it("should be settable before mls init", async () => {
@@ -67,7 +67,7 @@ describe("PKI environment", () => {
             return pki_env;
         }, alice);
 
-        expect(pki_env).toBe(undefined);
+        await expect(pki_env).toBe(undefined);
 
         pki_env = await browser.execute(async (alice) => {
             const key = new Uint8Array(32);
@@ -86,7 +86,7 @@ describe("PKI environment", () => {
 
             return await cc.getPkiEnvironment();
         }, alice);
-        expect(pki_env).toExist();
+        await expect(pki_env).toExist();
     });
 });
 
@@ -338,7 +338,7 @@ describe("end to end identity", () => {
             alice,
             convId
         );
-        expect(conversationState).toBe(E2eiConversationState.NotEnabled);
+        await expect(conversationState).toBe(E2eiConversationState.NotEnabled);
     });
 
     it("identities can be queried by client id", async () => {
@@ -366,7 +366,7 @@ describe("end to end identity", () => {
             alice,
             convId
         );
-        expect(identities).toBe(alice);
+        await expect(identities).toBe(alice);
     });
 
     it("identities can be queried by user id", async () => {
@@ -391,6 +391,6 @@ describe("end to end identity", () => {
             alice,
             convId
         );
-        expect(identities).toBe(alice);
+        await expect(identities).toBe(alice);
     });
 });

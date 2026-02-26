@@ -60,7 +60,7 @@ describe("logger", () => {
             convId
         );
 
-        expect(result.length).toBeGreaterThan(0);
+        await expect(result.length).toBeGreaterThan(0);
     });
 
     it("can be replaced", async () => {
@@ -100,7 +100,7 @@ describe("logger", () => {
             convId
         );
 
-        expect(result.length).toBeGreaterThan(0);
+        await expect(result.length).toBeGreaterThan(0);
     });
 
     it("doesn't forward logs below log level when registered", async () => {
@@ -135,7 +135,7 @@ describe("logger", () => {
             convId
         );
 
-        expect(result.length).toBe(0);
+        await expect(result.length).toBe(0);
     });
 
     it("when throwing errors they're reported as errors", async () => {
@@ -179,8 +179,8 @@ describe("logger", () => {
             );
         });
 
-        expect(errorLogs.length).toBeGreaterThan(0);
-        expect(errorLogs[0]!.message).toEqual(
+        await expect(errorLogs.length).toBeGreaterThan(0);
+        await expect(errorLogs[0]!.message).toEqual(
             expect.stringContaining(expectedErrorMessage)
         );
     });
@@ -244,7 +244,7 @@ describe("logger", () => {
             (element) => element.message === "Application message"
         )!.context;
 
-        expect(JSON.parse(proteusErrorLog)).toMatchObject({
+        await expect(JSON.parse(proteusErrorLog)).toMatchObject({
             group_id: expect.anything(),
             sender_client_id: expect.anything(),
             epoch: expect.anything(),
@@ -275,13 +275,13 @@ describe("logger", () => {
             (element) => element.message === "Epoch advanced"
         )!.context;
 
-        expect(JSON.parse(epochChangedContext1)).toMatchObject({
+        await expect(JSON.parse(epochChangedContext1)).toMatchObject({
             group_id: expect.anything(),
             epoch: expect.anything(),
             removed: "[]",
             added: expect.stringContaining("Member"),
         });
-        expect(JSON.parse(epochChangedContext2)).toMatchObject({
+        await expect(JSON.parse(epochChangedContext2)).toMatchObject({
             group_id: expect.anything(),
             epoch: expect.anything(),
             removed: expect.stringContaining("Member"),

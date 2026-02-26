@@ -42,7 +42,7 @@ describe("set_data()", () => {
             text
         );
 
-        expect(result.beforeSet).toBeUndefined();
-        expect(result.afterSet).toBe(text);
+        await expect(result.beforeSet).toBeUndefined();
+        await expect(result.afterSet).toBe(text);
     });
 });
