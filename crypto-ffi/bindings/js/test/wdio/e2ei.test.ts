@@ -69,7 +69,7 @@ describe("PKI environment", () => {
 
         await expect(pki_env).toBe(undefined);
 
-        pki_env = await browser.execute(async (alice) => {
+        const success = await browser.execute(async (alice) => {
             const key = new Uint8Array(32);
             window.crypto.getRandomValues(key);
             const database = await window.ccModule.openDatabase(
@@ -84,9 +84,9 @@ describe("PKI environment", () => {
             );
             await cc.setPkiEnvironment(pki_env);
 
-            return await cc.getPkiEnvironment();
+            return (await cc.getPkiEnvironment()) != undefined;
         }, alice);
-        await expect(pki_env).toExist();
+        await expect(success).toBe(true);
     });
 });
 
