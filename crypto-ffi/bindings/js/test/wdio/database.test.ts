@@ -92,7 +92,7 @@ describe("database", () => {
                     ctx.getFilteredCredentials({ clientId })
                 )
             )[0]!.publicKeyHash();
-            cc.close();
+            await cc.close();
 
             const newKeyBytes = new Uint8Array(32);
             window.crypto.getRandomValues(newKeyBytes);
@@ -122,7 +122,7 @@ describe("database", () => {
                     await ctx.getFilteredCredentials({ clientId })
                 )[0]!.publicKeyHash();
             });
-            cc.close();
+            await cc.close();
 
             return [JSON.stringify(pubkey1), JSON.stringify(pubkey2)];
         });
