@@ -1,0 +1,19 @@
+name: "Setup wasm-bindgen"
+description: "Gets the wasm-bindgen version from Cargo and installs wasm-bindgen-cli"
+runs:
+  using: "composite"
+  steps:
+    - name: Fetch wasm-bindgen version
+      id: cargo_metadata
+      shell: bash
+      run: |
+        version=$(
+          cargo metadata --format-version 1 |
+          jq -r '.packages[] | select(.name == "wasm-bindgen") | .version'
+        )
+        echo "wasm_bindgen_version=$version" >> "$GITHUB_OUTPUT"
+
+    - name: Install wasm-bindgen-cli
+      uses: taiki-e/install-action@v2
+      with:
+        tool: wasm-bindgen-cli@${{ steps.cargo_metadata.outputs.wasm_bindgen_version }}
