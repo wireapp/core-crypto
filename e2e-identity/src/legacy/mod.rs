@@ -28,7 +28,7 @@ pub struct CrlRegistration {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct E2eiEnrollment {
     delegate: RustyE2eIdentity,
-    pub(crate) sign_sk: E2eiSignatureKeypair,
+    pub sign_sk: E2eiSignatureKeypair,
     pub(super) client_id: String,
     pub(super) display_name: String,
     pub(super) handle: String,
@@ -101,18 +101,6 @@ impl E2eiEnrollment {
     pub(crate) fn new_sign_key(crypto: &impl OpenMlsCrypto, ciphersuite: Ciphersuite) -> Result<E2eiSignatureKeypair> {
         let (sk, _) = crypto.signature_key_gen(ciphersuite.signature_algorithm())?;
         E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), sk)
-    }
-
-    pub fn get_sign_key_for_mls(&self) -> Result<Vec<u8>> {
-        let sk = match self.ciphersuite.signature_algorithm() {
-            SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ECDSA_SECP384R1_SHA384 => self.sign_sk.to_vec(),
-            SignatureScheme::ECDSA_SECP521R1_SHA512 => RustCrypto::normalize_p521_secret_key(&self.sign_sk).to_vec(),
-            SignatureScheme::ED25519 => RustCrypto::normalize_ed25519_key(self.sign_sk.as_slice())?
-                .to_bytes()
-                .to_vec(),
-            SignatureScheme::ED448 => return Err(Error::NotYetSupported),
-        };
-        Ok(sk)
     }
 
     pub fn ciphersuite(&self) -> &Ciphersuite {

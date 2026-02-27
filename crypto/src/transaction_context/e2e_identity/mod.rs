@@ -18,6 +18,24 @@ use crate::{
     mls::credential::{crl::get_new_crl_distribution_points, x509::CertificatePrivateKey},
 };
 
+fn get_sign_key_for_mls(enrollment: &E2eiEnrollment) -> Result<Vec<u8>> {
+    let sk = match enrollment.ciphersuite().signature_algorithm() {
+        SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ECDSA_SECP384R1_SHA384 => {
+            enrollment.sign_sk.to_vec()
+        }
+        SignatureScheme::ECDSA_SECP521R1_SHA512 => RustCrypto::normalize_p521_secret_key(&enrollment.sign_sk).to_vec(),
+        SignatureScheme::ED25519 => RustCrypto::normalize_ed25519_key(enrollment.sign_sk.as_slice())
+            .map_err(RecursiveError::e2e_identity("normalizing ed25519 key"))?
+            .to_bytes()
+            .to_vec(),
+        SignatureScheme::ED448 => {
+            return Err(wire_e2e_identity::E2eIdentityError::NotSupported)
+                .map_err(RecursiveError::e2e_identity("normalizing ed25519 key"))?;
+        }
+    };
+    Ok(sk)
+}
+
 impl TransactionContext {
     /// Creates an enrollment instance with private key material you can use in order to fetch
     /// a new x509 certificate from the acme server.
