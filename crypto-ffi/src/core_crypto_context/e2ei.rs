@@ -3,106 +3,12 @@ use std::{collections::HashMap, sync::Arc};
 use core_crypto::{mls::conversation::Conversation as _, transaction_context::Error as TransactionError};
 
 use crate::{
-    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CredentialRef,
-    CrlRegistration, E2eiConversationState, E2eiEnrollment, MlsTransport, UserIdentities, WireIdentity,
-    core_crypto::mls_transport::callback_shim, crl::NewCrlDistributionPoints,
+    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, E2eiConversationState, UserIdentities,
+    WireIdentity,
 };
-
-type EnrollmentParameter = Arc<E2eiEnrollment>;
 
 #[uniffi::export]
 impl CoreCryptoContext {
-    /// See [core_crypto::transaction_context::TransactionContext::e2ei_new_enrollment]
-    pub async fn e2ei_new_enrollment(
-        &self,
-        client_id: String,
-        display_name: String,
-        handle: String,
-        expiry_sec: u32,
-        ciphersuite: Ciphersuite,
-        team: Option<String>,
-    ) -> CoreCryptoResult<E2eiEnrollment> {
-        self.inner
-            .e2ei_new_enrollment(
-                client_id.into_bytes().into(),
-                display_name,
-                handle,
-                team,
-                expiry_sec,
-                ciphersuite.into(),
-            )
-            .await
-            .map(E2eiEnrollment::new)
-            .map_err(Into::<TransactionError>::into)
-            .map_err(Into::into)
-    }
-
-    /// See [core_crypto::transaction_context::TransactionContext::e2ei_register_acme_ca]
-    pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CoreCryptoResult<()> {
-        self.inner
-            .e2ei_register_acme_ca(trust_anchor_pem)
-            .await
-            .map_err(Into::<TransactionError>::into)
-            .map_err(Into::into)
-    }
-
-    /// See [core_crypto::transaction_context::TransactionContext::e2ei_register_intermediate_ca_pem]
-    pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        self.inner
-            .e2ei_register_intermediate_ca_pem(cert_pem)
-            .await
-            .map(Into::into)
-            .map_err(Into::<TransactionError>::into)
-            .map_err(Into::into)
-    }
-
-    /// See [core_crypto::transaction_context::TransactionContext::e2ei_register_crl]
-    pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> CoreCryptoResult<CrlRegistration> {
-        self.inner
-            .e2ei_register_crl(crl_dp, crl_der)
-            .await
-            .map(Into::into)
-            .map_err(Into::<TransactionError>::into)
-            .map_err(Into::into)
-    }
-
-    /// See [core_crypto::transaction_context::TransactionContext::e2ei_mls_init_only]
-    pub async fn e2ei_mls_init_only(
-        &self,
-        enrollment: EnrollmentParameter,
-        certificate_chain: String,
-        transport: Arc<dyn MlsTransport>,
-    ) -> CoreCryptoResult<CredentialRef> {
-        let mut enrollment = enrollment.write().await?;
-
-        let transport = callback_shim(transport);
-        let (credential, _) = self
-            .inner
-            .e2ei_mls_init_only(&mut enrollment, certificate_chain, transport)
-            .await
-            .map_err(Into::<TransactionError>::into)
-            .map_err(Into::<CoreCryptoError>::into)?;
-
-        Ok(credential.into())
-    }
-
-    /// See [core_crypto::transaction_context::TransactionContext::save_x509_credential]
-    pub async fn save_x509_credential(
-        &self,
-        enrollment: EnrollmentParameter,
-        certificate_chain: String,
-    ) -> CoreCryptoResult<CredentialRef> {
-        let mut enrollment = enrollment.write().await?;
-        let (credential, _) = self
-            .inner
-            .save_x509_credential(&mut enrollment, certificate_chain)
-            .await
-            .map_err(Into::<TransactionError>::into)
-            .map_err(Into::<CoreCryptoError>::into)?;
-
-        Ok(credential.into())
-    }
-
     /// See [core_crypto::mls::conversation::Conversation::e2ei_conversation_state]
     pub async fn e2ei_conversation_state(
         &self,

@@ -6,12 +6,12 @@ use std::sync::Arc;
 use async_lock::{RwLock, RwLockReadGuard};
 use openmls_traits::{
     authentication_service::{CredentialAuthenticationStatus, CredentialRef},
+    crypto::OpenMlsCrypto,
     types::SignatureScheme,
 };
 use spki::{SignatureAlgorithmIdentifier, der::referenced::RefToOwned};
 
-use super::error::{MlsProviderError, MlsProviderResult};
-use crate::mls_provider::CRYPTO;
+use crate::error::{E2eIdentityError, E2eIdentityResult};
 
 pub struct Ed25519PkiSignature(ed25519_dalek::Signature);
 impl spki::SignatureBitStringEncoding for Ed25519PkiSignature {
@@ -189,17 +189,17 @@ macro_rules! impl_certgen {
             $own_spki,
             $signer_keypair,
         )
-        .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+        .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
 
         if add_akid {
             builder
                 .add_extension(&$signer.akid()?)
-                .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
         }
 
         builder
             .add_extension(&get_extended_keyusage($is_ca))
-            .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+            .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
 
         if !$is_ca {
             if let Some(alt_names) = $alt_names {
@@ -209,25 +209,25 @@ macro_rules! impl_certgen {
                         alt_name
                             .to_string()
                             .try_into()
-                            .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                            .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
                     ));
                 }
 
                 builder
                     .add_extension(&x509_cert::ext::pkix::SubjectAltName(alt_names_list))
-                    .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+                    .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
             }
         } else {
             let mut permitted_subtrees = vec![
                 x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
                     format!(".{}", $org)
                         .try_into()
-                        .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                        .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
                 ),
                 x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
                     format!("{}", $org)
                         .try_into()
-                        .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                        .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
                 ),
             ];
 
@@ -239,16 +239,16 @@ macro_rules! impl_certgen {
                             domain
                                 .to_string()
                                 .try_into()
-                                .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                                .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
                         ),
                     ]))
-                    .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+                    .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
 
                 permitted_subtrees.push(x509_cert::ext::pkix::name::GeneralName::DnsName(
                     domain
                         .to_string()
                         .try_into()
-                        .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                        .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
                 ));
             }
 
@@ -268,7 +268,7 @@ macro_rules! impl_certgen {
 
                         excluded_subtrees: None,
                     })
-                    .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+                    .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
             }
         }
 
@@ -280,7 +280,7 @@ macro_rules! impl_certgen {
                         x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
                             dp.to_string()
                                 .try_into()
-                                .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                                .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
                         ),
                     ])),
                     crl_issuer: None,
@@ -289,35 +289,38 @@ macro_rules! impl_certgen {
             }
             builder
                 .add_extension(&x509_cert::ext::pkix::CrlDistributionPoints(crl_distribution_points))
-                .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
         }
 
         builder
             .build::<$sig_type>()
-            .map_err(|_| MlsProviderError::CertificateGenerationError)?
+            .map_err(|_| E2eIdentityError::CertificateGenerationError)?
     }};
 }
 
 impl PkiKeypair {
-    pub fn new(signature_scheme: SignatureScheme, sk: Vec<u8>) -> MlsProviderResult<Self> {
+    pub fn new(signature_scheme: SignatureScheme, sk: Vec<u8>) -> E2eIdentityResult<Self> {
         match signature_scheme {
             SignatureScheme::ECDSA_SECP256R1_SHA256 => Ok(PkiKeypair::P256(
                 p256::ecdsa::SigningKey::from_slice(sk.as_slice())
-                    .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                    .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
             )),
             SignatureScheme::ECDSA_SECP384R1_SHA384 => Ok(PkiKeypair::P384(
                 p384::ecdsa::SigningKey::from_slice(sk.as_slice())
-                    .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                    .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
             )),
             SignatureScheme::ECDSA_SECP521R1_SHA512 => Ok(PkiKeypair::P521(P521PkiKeypair(
                 ecdsa::SigningKey::<p521::NistP521>::from_slice(sk.as_slice())
-                    .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                    .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
             ))),
             SignatureScheme::ED25519 => Ok(PkiKeypair::Ed25519(Ed25519PkiKeypair(
-                super::RustCrypto::normalize_ed25519_key(sk.as_slice())
-                    .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                ed25519_dalek::SigningKey::from_bytes(
+                    sk.as_slice()
+                        .try_into()
+                        .expect("private key must be exactly {ed25519_dalek::SECRET_KEY_LENGTH} bytes"),
+                ),
             ))),
-            _ => Err(MlsProviderError::UnsupportedSignatureScheme),
+            _ => Err(E2eIdentityError::UnsupportedSignatureScheme),
         }
     }
 
@@ -333,24 +336,24 @@ impl PkiKeypair {
         }
     }
 
-    pub fn spki(&self) -> MlsProviderResult<spki::SubjectPublicKeyInfoOwned> {
+    pub fn spki(&self) -> E2eIdentityResult<spki::SubjectPublicKeyInfoOwned> {
         match self {
             Self::P256(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(*sk.verifying_key())
-                .map_err(|_| MlsProviderError::CertificateGenerationError)?),
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?),
             Self::P384(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(*sk.verifying_key())
-                .map_err(|_| MlsProviderError::CertificateGenerationError)?),
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?),
             Self::P521(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(*sk.0.verifying_key())
-                .map_err(|_| MlsProviderError::CertificateGenerationError)?),
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?),
             Self::Ed25519(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(sk.0.verifying_key())
-                .map_err(|_| MlsProviderError::CertificateGenerationError)?),
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?),
         }
     }
 
-    pub fn akid(&self) -> MlsProviderResult<x509_cert::ext::pkix::AuthorityKeyIdentifier> {
+    pub fn akid(&self) -> E2eIdentityResult<x509_cert::ext::pkix::AuthorityKeyIdentifier> {
         Ok(x509_cert::ext::pkix::AuthorityKeyIdentifier {
             key_identifier: Some(
                 spki::der::asn1::OctetString::new(self.public_key_identifier())
-                    .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                    .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
             ),
             authority_cert_issuer: None,
             authority_cert_serial_number: None,
@@ -361,13 +364,13 @@ impl PkiKeypair {
         &self,
         issuer_cert: &x509_cert::Certificate,
         revoked_cert_serial_numbers: Vec<Vec<u8>>,
-    ) -> MlsProviderResult<x509_cert::crl::CertificateList> {
+    ) -> E2eIdentityResult<x509_cert::crl::CertificateList> {
         let signature_algorithm = self.signature_algorithm();
         let now = web_time::SystemTime::now()
             .duration_since(web_time::UNIX_EPOCH)
-            .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+            .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
         let now = x509_cert::der::asn1::GeneralizedTime::from_unix_duration(now)
-            .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+            .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
         let now = x509_cert::time::Time::GeneralTime(now);
 
         let revoked_certificates = revoked_cert_serial_numbers
@@ -394,30 +397,30 @@ impl PkiKeypair {
 
         let tbs = tbs_cert_list
             .to_der()
-            .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+            .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
 
         use signature::Signer as _;
 
         let signature: Vec<u8> = match self {
             PkiKeypair::P256(sk) => signature::Signer::<p256::ecdsa::DerSignature>::try_sign(sk, &tbs)?
                 .to_der()
-                .map_err(|_| MlsProviderError::CertificateGenerationError),
+                .map_err(|_| E2eIdentityError::CertificateGenerationError),
             PkiKeypair::P384(sk) => signature::Signer::<p384::ecdsa::DerSignature>::try_sign(sk, &tbs)?
                 .to_der()
-                .map_err(|_| MlsProviderError::CertificateGenerationError),
+                .map_err(|_| E2eIdentityError::CertificateGenerationError),
             PkiKeypair::P521(sk) => {
                 let sk = p521::ecdsa::SigningKey::from(sk.0.clone());
                 let signature: p521::ecdsa::DerSignature = sk.try_sign(&tbs)?.to_der();
 
                 signature
                     .to_der()
-                    .map_err(|_| MlsProviderError::CertificateGenerationError)
+                    .map_err(|_| E2eIdentityError::CertificateGenerationError)
             }
             PkiKeypair::Ed25519(sk) => Ok(sk.try_sign(&tbs)?.0.to_vec()),
         }?;
 
         let signature =
-            spki::der::asn1::BitString::new(0, signature).map_err(|_| MlsProviderError::CertificateGenerationError)?;
+            spki::der::asn1::BitString::new(0, signature).map_err(|_| E2eIdentityError::CertificateGenerationError)?;
 
         Ok(x509_cert::crl::CertificateList {
             tbs_cert_list,
@@ -426,7 +429,7 @@ impl PkiKeypair {
         })
     }
 
-    pub fn generate_cert(&self, args: CertificateGenerationArgs) -> MlsProviderResult<x509_cert::Certificate> {
+    pub fn generate_cert(&self, args: CertificateGenerationArgs) -> E2eIdentityResult<x509_cert::Certificate> {
         use std::str::FromStr as _;
 
         use x509_cert::builder::Builder as _;
@@ -436,23 +439,23 @@ impl PkiKeypair {
         }
 
         let subject =
-            x509_cert::name::Name::from_str(&subject_fmt).map_err(|_| MlsProviderError::CertificateGenerationError)?;
+            x509_cert::name::Name::from_str(&subject_fmt).map_err(|_| E2eIdentityError::CertificateGenerationError)?;
 
         let validity_start = if let Some(validity_start) = args.validity_start {
             validity_start
         } else {
             web_time::SystemTime::now()
                 .duration_since(web_time::UNIX_EPOCH)
-                .map_err(|_| MlsProviderError::CertificateGenerationError)?
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?
         } - std::time::Duration::from_secs(1); // to prevent time clipping
 
         let validity = {
             let not_before = x509_cert::der::asn1::GeneralizedTime::from_unix_duration(validity_start)
-                .map_err(|_| MlsProviderError::CertificateGenerationError)?
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?
                 .into();
             let not_after =
                 x509_cert::der::asn1::GeneralizedTime::from_unix_duration(validity_start + args.validity_from_start)
-                    .map_err(|_| MlsProviderError::CertificateGenerationError)?
+                    .map_err(|_| E2eIdentityError::CertificateGenerationError)?
                     .into();
             x509_cert::time::Validity { not_before, not_after }
         };
@@ -540,13 +543,12 @@ impl PkiKeypair {
         Ok(cert)
     }
 
-    pub fn rand(alg: SignatureScheme, crypto: &super::RustCrypto) -> super::MlsProviderResult<Self> {
-        use openmls_traits::crypto::OpenMlsCrypto as _;
+    pub fn rand(alg: SignatureScheme, crypto: &impl OpenMlsCrypto) -> super::E2eIdentityResult<Self> {
         Self::new(
             alg,
             crypto
                 .signature_key_gen(alg)
-                .map_err(|_| super::MlsProviderError::UnsufficientEntropy)?
+                .map_err(|_| super::E2eIdentityError::SignatureKeyGenerationFailed)?
                 .0,
         )
     }

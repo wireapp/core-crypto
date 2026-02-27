@@ -59,7 +59,6 @@ obfuscate = { workspace = true, features = [
   "openmls_basic_credential",
 ] }
 aes-gcm = "0.10"
-sha1.workspace = true
 sha2 = { workspace = true, features = ["oid"] }
 chacha20poly1305 = "0.10"
 hmac = "0.12"
@@ -70,7 +69,6 @@ p256 = { version = "0.13", features = ["pkcs8"] }
 p384 = { version = "0.13", features = ["pkcs8"] }
 p521 = { version = "0.13", features = ["pkcs8"] }
 hkdf = "0.12"
-spki = { version = "0.7", features = ["pem", "fingerprint"] }
 x509-cert = { workspace = true, features = ["builder", "hazmat"] }
 web-time = "1.1.0"
 rand = { workspace = true, features = ["getrandom"] }

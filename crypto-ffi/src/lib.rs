@@ -17,7 +17,6 @@ mod core_crypto_context;
 mod credential;
 mod credential_ref;
 mod credential_type;
-mod crl;
 mod database;
 mod decrypted_message;
 mod e2ei;
@@ -54,17 +53,13 @@ pub use credential::Credential;
 pub use credential::credential_basic;
 pub use credential_ref::CredentialRef;
 pub use credential_type::CredentialType;
-pub use crl::CrlRegistration;
 #[cfg(not(feature = "wasm"))]
 pub use database::export_database_copy;
 pub use database::{
     Database, DatabaseKey, in_memory_database, migrate_database_key_type_to_bytes, open_database, update_database_key,
 };
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
-pub use e2ei::{
-    E2eiConversationState, acme_challenge::AcmeChallenge, acme_directory::AcmeDirectory, enrollment::E2eiEnrollment,
-    new_acme_authz::NewAcmeAuthz, new_acme_order::NewAcmeOrder,
-};
+pub use e2ei::E2eiConversationState;
 pub use ephemeral::{HistorySecret, core_crypto_history_client};
 #[cfg(feature = "proteus")]
 pub use error::proteus::ProteusError;

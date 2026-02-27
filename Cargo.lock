@@ -1063,12 +1063,10 @@ dependencies = [
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
- "sha1",
  "sha2",
  "signature",
  "smol",
  "smol-macros",
- "spki",
  "strum",
  "tempfile",
  "thiserror 2.0.18",
@@ -3079,6 +3077,7 @@ dependencies = [
  "serde_json",
  "smol-macros",
  "tls_codec",
+ "wire-e2e-identity",
 ]
 
 [[package]]
@@ -7271,8 +7270,10 @@ dependencies = [
  "scraper",
  "serde",
  "serde_json",
+ "sha1",
  "shlex",
  "signature",
+ "spki",
  "testcontainers",
  "thiserror 2.0.18",
  "time",

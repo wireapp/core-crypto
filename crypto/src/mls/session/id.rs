@@ -261,17 +261,25 @@ impl fmt::Debug for ClientIdRef {
     }
 }
 
+type LegacyClientId = wire_e2e_identity::legacy::id::ClientId;
+
+impl From<ClientId> for LegacyClientId {
+    fn from(value: ClientId) -> Self {
+        Self::from(value.0)
+    }
+}
 #[cfg(test)]
 impl ClientId {
     pub(crate) fn to_user_id(&self) -> String {
         let self_bytes: &[u8] = &self.0;
-        crate::e2e_identity::id::WireQualifiedClientId::try_from(self_bytes)
+        wire_e2e_identity::legacy::id::WireQualifiedClientId::try_from(self_bytes)
             .unwrap()
             .get_user_id()
     }
 
     pub(crate) fn to_string_triple(&self) -> [String; 3] {
-        let qualified_id = crate::e2e_identity::id::QualifiedE2eiClientId::from(self.clone());
+        let cid = wire_e2e_identity::legacy::id::ClientId::from(self.0.clone());
+        let qualified_id = wire_e2e_identity::legacy::id::QualifiedE2eiClientId::from(cid);
         let id_string: String = qualified_id.try_into().unwrap();
         [id_string, "".into(), self.to_user_id()]
     }

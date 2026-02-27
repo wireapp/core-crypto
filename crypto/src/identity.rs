@@ -1,12 +1,10 @@
 use std::str::FromStr;
 
+use wire_e2e_identity::legacy::{device_status::DeviceStatus, id::WireQualifiedClientId};
 use x509_cert::der::pem::LineEnding;
 
 use super::{Error, Result};
-use crate::{
-    CredentialType,
-    e2e_identity::{device_status::DeviceStatus, id::WireQualifiedClientId},
-};
+use crate::CredentialType;
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
@@ -51,8 +49,11 @@ impl<'a> TryFrom<(wire_e2e_identity::WireIdentity, &'a [u8])> for WireIdentity {
 
     fn try_from((i, cert): (wire_e2e_identity::WireIdentity, &'a [u8])) -> Result<Self> {
         use x509_cert::der::Decode as _;
-        let document = x509_cert::der::Document::from_der(cert)?;
-        let certificate = document.to_pem("CERTIFICATE", LineEnding::LF)?;
+        let document =
+            x509_cert::der::Document::from_der(cert).map_err(wire_e2e_identity::E2eIdentityError::X509CertDerError)?;
+        let certificate = document
+            .to_pem("CERTIFICATE", LineEnding::LF)
+            .map_err(wire_e2e_identity::E2eIdentityError::X509CertDerError)?;
 
         let client_id = WireQualifiedClientId::from_str(&i.client_id)?;
 

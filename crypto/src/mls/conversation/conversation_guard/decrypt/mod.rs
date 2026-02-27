@@ -27,11 +27,11 @@ use openmls::{
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
+use wire_e2e_identity::NewCrlDistributionPoints;
 
 use super::{ConversationGuard, Result};
 use crate::{
     ClientId, E2eiConversationState, MlsError, MlsProposalBundle, RecursiveError, Session, WireIdentity,
-    e2e_identity::NewCrlDistributionPoints,
     mls::{
         conversation::{Conversation, ConversationWithMls, Error, renew::Renew},
         credential::{

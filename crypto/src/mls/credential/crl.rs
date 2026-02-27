@@ -5,10 +5,10 @@ use openmls::{
     group::MlsGroup,
     prelude::{Certificate, MlsCredentialType, Proposal, StagedCommit},
 };
-use wire_e2e_identity::x509_check::extract_crl_uris;
+use wire_e2e_identity::{NewCrlDistributionPoints, x509_check::extract_crl_uris};
 
 use super::{Error, Result};
-use crate::{KeystoreError, RecursiveError, e2e_identity::NewCrlDistributionPoints};
+use crate::{KeystoreError, RecursiveError};
 
 pub(crate) fn extract_crl_uris_from_credentials<'a>(
     mut credentials: impl Iterator<Item = &'a MlsCredentialType>,

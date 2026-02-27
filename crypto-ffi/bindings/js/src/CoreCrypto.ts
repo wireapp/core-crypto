@@ -22,7 +22,6 @@ export {
 export { CoreCrypto } from "./CoreCryptoInstance";
 
 export {
-    AcmeChallenge,
     BuildMetadata,
     Credential,
     MlsRatchetTreeType as RatchetTreeType,
@@ -45,9 +44,7 @@ export {
     EpochChangedReportingError,
     NewHistoryClientReportingError,
     EpochChangedReportingError_Tags,
-    E2eiEnrollment,
     E2eiConversationState,
-    CrlRegistration,
     ciphersuiteFromU16,
     ciphersuiteDefault,
     ClientId,
@@ -57,8 +54,6 @@ export {
     type MlsTransportData,
     migrateDatabaseKeyTypeToBytes,
     updateDatabaseKey,
-    NewAcmeAuthz,
-    NewAcmeOrder,
     ExternalSenderKey,
     GroupInfo,
     ConversationId,
@@ -78,7 +73,6 @@ export {
     credentialBasic,
     type DecryptedMessage,
     CoreCryptoLogLevel,
-    type AcmeDirectory,
     ProteusAutoPrekeyBundle,
     BufferedDecryptedMessage,
     Keypackage,

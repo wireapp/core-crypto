@@ -2,18 +2,18 @@ use core_crypto_keystore::{
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
     traits::FetchFromDatabase,
 };
-use wire_e2e_identity::x509_check::{
-    extract_crl_uris, extract_expiration_from_crl,
-    revocation::{PkiEnvironment, PkiEnvironmentParams},
+use wire_e2e_identity::{
+    NewCrlDistributionPoints,
+    legacy::CrlRegistration,
+    x509_check::{
+        extract_crl_uris, extract_expiration_from_crl,
+        revocation::{PkiEnvironment, PkiEnvironmentParams},
+    },
 };
 use x509_cert::der::Decode;
 
 use super::{Error, Result};
-use crate::{
-    KeystoreError, RecursiveError,
-    e2e_identity::{CrlRegistration, NewCrlDistributionPoints},
-    transaction_context::TransactionContext,
-};
+use crate::{KeystoreError, RecursiveError, transaction_context::TransactionContext};
 
 impl TransactionContext {
     /// See [crate::mls::session::Session::e2ei_is_pki_env_setup].

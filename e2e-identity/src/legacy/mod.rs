@@ -1,30 +1,45 @@
-use openmls::prelude::SignatureScheme;
-use openmls_traits::crypto::OpenMlsCrypto as _;
-use wire_e2e_identity::{E2eiAcmeAuthorization, RustyE2eIdentity};
+use openmls_traits::{crypto::OpenMlsCrypto, types::Ciphersuite};
 use zeroize::Zeroize as _;
 
-use super::{Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
-use crate::{
-    Ciphersuite, ClientId, MlsError,
-    mls_provider::{CRYPTO, RustCrypto},
-};
+use crate::{E2eiAcmeAuthorization, RustyE2eIdentity};
+
+pub mod crypto;
+pub mod device_status;
+pub mod id;
+pub mod types;
+
+use crypto::{E2eiSignatureKeypair, ciphersuite_to_jws_algo};
+use id::{ClientId, QualifiedE2eiClientId};
+
+use super::error::{E2eIdentityError as Error, E2eIdentityResult as Result};
+
+type Json = Vec<u8>;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Supporting struct for CRL registration result
+pub struct CrlRegistration {
+    /// Whether this CRL modifies the old CRL (i.e. has a different revocated cert list)
+    pub dirty: bool,
+    /// Optional expiration timestamp
+    pub expiration: Option<u64>,
+}
 
 /// Wire end to end identity solution for fetching a x509 certificate which identifies a client.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct E2eiEnrollment {
     delegate: RustyE2eIdentity,
-    pub(crate) sign_sk: E2eiSignatureKeypair,
+    pub sign_sk: E2eiSignatureKeypair,
     pub(super) client_id: String,
     pub(super) display_name: String,
     pub(super) handle: String,
     pub(super) team: Option<String>,
     expiry: core::time::Duration,
     directory: Option<types::E2eiAcmeDirectory>,
-    account: Option<wire_e2e_identity::E2eiAcmeAccount>,
+    account: Option<crate::E2eiAcmeAccount>,
     user_authz: Option<E2eiAcmeAuthorization>,
     device_authz: Option<E2eiAcmeAuthorization>,
-    valid_order: Option<wire_e2e_identity::E2eiAcmeOrder>,
-    finalize: Option<wire_e2e_identity::E2eiAcmeFinalize>,
+    valid_order: Option<crate::E2eiAcmeOrder>,
+    finalize: Option<crate::E2eiAcmeFinalize>,
     pub(super) ciphersuite: Ciphersuite,
     has_called_new_oidc_challenge_request: bool,
 }
@@ -47,7 +62,7 @@ impl E2eiEnrollment {
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// * `expiry_sec` - generated x509 certificate expiry in seconds
     #[allow(clippy::too_many_arguments)]
-    pub fn try_new(
+    pub fn try_new<T>(
         client_id: ClientId,
         display_name: String,
         handle: String,
@@ -55,14 +70,15 @@ impl E2eiEnrollment {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
         has_called_new_oidc_challenge_request: bool,
+        crypto: &impl OpenMlsCrypto,
     ) -> Result<Self> {
-        let alg = ciphersuite.try_into()?;
-        let sign_sk = Self::new_sign_key(ciphersuite)?;
+        let alg = ciphersuite_to_jws_algo(ciphersuite)?;
+        let sign_sk = Self::new_sign_key(crypto, ciphersuite)?;
 
         let client_id = QualifiedE2eiClientId::try_from(client_id.as_slice())?;
         let client_id = String::try_from(client_id)?;
         let expiry = core::time::Duration::from_secs(u64::from(expiry_sec));
-        let delegate = RustyE2eIdentity::try_new(alg, sign_sk.clone()).map_err(Error::from)?;
+        let delegate = RustyE2eIdentity::try_new(alg, sign_sk.clone())?;
         Ok(Self {
             delegate,
             sign_sk,
@@ -82,27 +98,12 @@ impl E2eiEnrollment {
         })
     }
 
-    pub(crate) fn new_sign_key(ciphersuite: Ciphersuite) -> Result<E2eiSignatureKeypair> {
-        let (sk, _) = CRYPTO
-            .signature_key_gen(ciphersuite.signature_algorithm())
-            .map_err(MlsError::wrap("performing signature keygen"))?;
+    pub(crate) fn new_sign_key(crypto: &impl OpenMlsCrypto, ciphersuite: Ciphersuite) -> Result<E2eiSignatureKeypair> {
+        let (sk, _) = crypto.signature_key_gen(ciphersuite.signature_algorithm())?;
         E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), sk)
     }
 
-    pub(crate) fn get_sign_key_for_mls(&self) -> Result<Vec<u8>> {
-        let sk = match self.ciphersuite.signature_algorithm() {
-            SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ECDSA_SECP384R1_SHA384 => self.sign_sk.to_vec(),
-            SignatureScheme::ECDSA_SECP521R1_SHA512 => RustCrypto::normalize_p521_secret_key(&self.sign_sk).to_vec(),
-            SignatureScheme::ED25519 => RustCrypto::normalize_ed25519_key(self.sign_sk.as_slice())
-                .map_err(MlsError::wrap("normalizing ed25519 key"))?
-                .to_bytes()
-                .to_vec(),
-            SignatureScheme::ED448 => return Err(Error::NotYetSupported),
-        };
-        Ok(sk)
-    }
-
-    pub(crate) fn ciphersuite(&self) -> &Ciphersuite {
+    pub fn ciphersuite(&self) -> &Ciphersuite {
         &self.ciphersuite
     }
 
@@ -247,7 +248,7 @@ impl E2eiEnrollment {
             E2eiAcmeAuthorization::Device { challenge, .. } => challenge,
             E2eiAcmeAuthorization::User { .. } => return Err(Error::ImplementationError),
         };
-        Ok(self.new_dpop_token(
+        self.new_dpop_token(
             &self.client_id,
             self.display_name.as_str(),
             challenge,
@@ -255,7 +256,7 @@ impl E2eiEnrollment {
             self.handle.as_str(),
             self.team.clone(),
             expiry,
-        )?)
+        )
     }
 
     /// Creates a new challenge request.
@@ -292,7 +293,7 @@ impl E2eiEnrollment {
     /// * `challenge` - http response body
     pub fn new_dpop_challenge_response(&self, challenge: Json) -> Result<()> {
         let challenge = serde_json::from_slice(&challenge[..])?;
-        Ok(self.acme_new_challenge_response(challenge)?)
+        self.acme_new_challenge_response(challenge)
     }
 
     /// Creates a new challenge request.
@@ -438,10 +439,10 @@ impl E2eiEnrollment {
         Ok(certificate)
     }
 
-    pub(crate) async fn certificate_response(
+    pub async fn certificate_response(
         &mut self,
         certificate_chain: String,
-        env: &wire_e2e_identity::x509_check::revocation::PkiEnvironment,
+        env: &crate::x509_check::revocation::PkiEnvironment,
     ) -> Result<Vec<Vec<u8>>> {
         let order = self.valid_order.take().ok_or(Error::OutOfOrderEnrollment(
             "You must first call 'checkOrderResponse()'",
