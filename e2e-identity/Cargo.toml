@@ -22,15 +22,15 @@ async-lock.workspace = true
 sha1.workspace = true
 spki = { version = "0.7", features = ["pem", "fingerprint"] }
 openmls_traits.workspace = true
-rusty-jwt-tools = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
-jwt-simple = { workspace = true }
+rusty-jwt-tools.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+jwt-simple.workspace = true
 derive_more = { workspace = true, features = ["deref", "from", "into"] }
-url = { workspace = true }
-zeroize = { workspace = true }
-uuid = { workspace = true }
+url.workspace = true
+zeroize.workspace = true
+uuid.workspace = true
 x509-cert = { workspace = true, features = ["builder", "hazmat"] }
 time = { workspace = true, features = [
   "serde",
@@ -38,22 +38,22 @@ time = { workspace = true, features = [
   "wasm-bindgen",
 ] }
 rand = { workspace = true, optional = true }
-ed25519-dalek = { workspace = true }
-signature = { workspace = true }
+ed25519-dalek.workspace = true
+signature.workspace = true
 log.workspace = true
-ecdsa = { workspace = true }
-p256 = { workspace = true }
-p384 = { workspace = true }
-p521 = { workspace = true }
-pem = { workspace = true }
+ecdsa.workspace = true
+p256.workspace = true
+p384.workspace = true
+p521.workspace = true
+pem.workspace = true
 getrandom = { workspace = true, features = ["js"] }
-web-time = { workspace = true }
-hex = { workspace = true }
-flagset = { workspace = true }
-certval = { workspace = true }
-der = { workspace = true }
+web-time.workspace = true
+hex.workspace = true
+flagset.workspace = true
+certval.workspace = true
+der.workspace = true
 const-oid.workspace = true
-base64 = { workspace = true }
+base64.workspace = true
 
 [dev-dependencies]
 argon2 = "0.5"
@@ -61,20 +61,20 @@ password-hash = { version = "0.5", features = ["getrandom"] }
 env_logger.workspace = true
 wire-e2e-identity = { version = "0.13.0", path = ".", features = ["builder"] }
 rusty-jwt-tools = { workspace = true, features = ["test-utils", "rsa"] }
-url = { workspace = true }
-itertools = { workspace = true }
-uuid = { workspace = true }
-wasm-bindgen-test = { workspace = true }
-hex = { workspace = true }
+url.workspace = true
+itertools.workspace = true
+uuid.workspace = true
+wasm-bindgen-test.workspace = true
+hex.workspace = true
 shlex = "1"
 
-openidconnect = { workspace = true }
-scraper = { workspace = true }
-anyhow = { workspace = true }
+openidconnect.workspace = true
+scraper.workspace = true
+anyhow.workspace = true
 tokio = { workspace = true, features = ["macros"] }
-pem = { workspace = true }
-rand = { workspace = true }
-rstest = { workspace = true }
+pem.workspace = true
+rand.workspace = true
+rstest.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 reqwest = { workspace = true, features = ["json", "cookies"] }
@@ -82,8 +82,8 @@ tokio = { workspace = true, features = ["macros"] }
 hyper = { workspace = true, features = ["server"] }
 native-tls = { workspace = true, features = ["vendored"] }
 oauth2 = { workspace = true, features = ["reqwest"] }
-http = { workspace = true }
-keycloak = { workspace = true }
+http.workspace = true
+keycloak.workspace = true
 http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["full"] }
 testcontainers = { workspace = true, features = ["reusable-containers"] }
@@ -91,7 +91,6 @@ testcontainers = { workspace = true, features = ["reusable-containers"] }
 [target.'cfg(target_family = "wasm")'.dependencies.uuid]
 workspace = true
 features = ["std", "js"]
-
 
 [features]
 default = []
