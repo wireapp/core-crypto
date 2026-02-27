@@ -203,23 +203,4 @@ impl CoreCrypto {
     pub fn database(&self) -> Database {
         self.database.clone()
     }
-
-    /// Closes the database
-    /// indexdb connections must be closed explicitly while rusqlite implements drop which suffices.
-    pub async fn close(&self) -> Result<()> {
-        self.database
-            .close()
-            .await
-            .map_err(crate::KeystoreError::wrap("Closing database"))?;
-
-        if let Some(pki_env) = self.get_pki_environment().await {
-            pki_env
-                .database()
-                .close()
-                .await
-                .map_err(crate::KeystoreError::wrap("Closing PKI environment database"))?;
-        }
-
-        Ok(())
-    }
 }
