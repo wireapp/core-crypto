@@ -16,12 +16,23 @@ on:
         required: true
       PGP_PASSPHRASE:
         required: true
+    inputs:
+        prepare:
+          description: "If true, stage and validate artifacts."
+          required: false
+          type: boolean
+          default: false
+        release:
+          description: "If true, release staged artifacts."
+          required: false
+          type: boolean
+          default: false
 
 env:
   RELEASE: 1
 
 jobs:
-  publish-android:
+  android:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
     steps:
@@ -59,15 +70,32 @@ jobs:
             files: android.zip
             fail_on_unmatched_files: true
 
-      # For Android, we're not deleting the release artifacts after this step succeds,
-      # because publishing may still fail later.
-      - name: publish package
+      - name: stage artifact
+        if: ${{ inputs.prepare == true }}
         run: |
           cd crypto-ffi/bindings
-          ./gradlew android:publishAllPublicationsToMavenCentralRepository --no-configuration-cache
+          ./gradlew :android:publishToSonatype closeSonatypeStagingRepository --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.PGP_KEY_ID }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.PGP_SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.PGP_PASSPHRASE }}
+
+      - name: release artifact
+        if: ${{ inputs.release == true }}
+        run: |
+          cd crypto-ffi/bindings
+          ./gradlew :android:releaseSonatypeStagingRepository --no-configuration-cache
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.PGP_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.PGP_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.PGP_PASSPHRASE }}
+
+      - name: delete package from gh release
+        if: ${{ inputs.release == true }}
+        run: gh release delete-asset $GITHUB_REF_NAME "android.zip" --yes
+        env:
+          GH_TOKEN: ${{ github.token }}

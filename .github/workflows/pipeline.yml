@@ -245,20 +245,8 @@ jobs:
       - build-jvm-linux
       - build-jvm-darwin
       - bindings-jvm
-    runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: force-fetch the tag to work around actions/checkout#290
-        run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}
-
-      - name: ensure the tag is signed
-        run: git cat-file tag ${{ github.ref_name }} | grep -q -- '-----BEGIN PGP SIGNATURE-----'
-
-  publish-jvm:
-    needs: prepare-publish
-    uses: ./.github/workflows/publish-jvm.yml
+    uses: ./.github/workflows/prepare-publish.yml
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -266,22 +254,36 @@ jobs:
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
 
-  publish-android:
-    needs: prepare-publish
-    uses: ./.github/workflows/publish-android.yml
-    secrets:
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
-      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
-      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+  # publish-jvm:
+  #   needs: prepare-publish
+  #   uses: ./.github/workflows/publish-jvm.yml
+  #   with:
+  #       release: true
+  #   secrets:
+  #     SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+  #     SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+  #     PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+  #     PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+  #     PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
 
-  publish-ios:
-    needs: prepare-publish
-    uses: ./.github/workflows/publish-swift.yml
+  # publish-android:
+  #   needs: prepare-publish
+  #   uses: ./.github/workflows/publish-android.yml
+  #   with:
+  #       release: true
+  #   secrets:
+  #     SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+  #     SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+  #     PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+  #     PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+  #     PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
 
-  publish-web:
-    needs: prepare-publish
-    uses: ./.github/workflows/publish-wasm.yml
-    permissions:
-      id-token: write
+  # publish-ios:
+  #   needs: prepare-publish
+  #   uses: ./.github/workflows/publish-swift.yml
+
+  # publish-web:
+  #   needs: prepare-publish
+  #   uses: ./.github/workflows/publish-wasm.yml
+  #   permissions:
+  #     id-token: write

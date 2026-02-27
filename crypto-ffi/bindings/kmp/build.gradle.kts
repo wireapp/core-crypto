@@ -9,11 +9,15 @@ import org.gradle.api.tasks.bundling.Jar
 plugins {
     kotlin("multiplatform")
     id("com.android.library")
+    id("maven-publish")
+    id("signing")
     alias(libs.plugins.gobley.cargo)
     alias(libs.plugins.gobley.uniffi)
-    id("com.vanniktech.maven.publish.base")
     alias(libs.plugins.kotlin.atomicfu)
 }
+
+version = findProperty("VERSION_NAME") as String
+group = findProperty("GROUP") as String
 
 val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
     dependsOn(tasks.dokkaGeneratePublicationHtml)
@@ -29,6 +33,7 @@ kotlin {
     // Android target
     androidTarget {
         publishLibraryVariants("release")
+
     }
 
     // JVM target
@@ -179,6 +184,52 @@ afterEvaluate {
                 ?: throw GradleException("ffi library not defined on this platform")
         source.set(layout.projectDirectory.dir("../../../target/$buildVariant/$ffiFile").asFile)
     }
+
+    publishing {
+        publications {
+            create<MavenPublication>("library") {
+                // We replace regular javadoc with dokka html docs since we are running into this bug:
+                // https://youtrack.jetbrains.com/issue/KT-60197/Dokka-JDK-17-PermittedSubclasses-requires-ASM9-during-compilation
+                artifact(tasks.named("dokkaHtmlJar"))
+
+                pom {
+                    name.set(findProperty("POM_NAME") as String)
+                    description.set(findProperty("POM_DESCRIPTION") as String)
+                    url.set(findProperty("POM_URL") as String)
+
+                    licenses {
+                        license {
+                            name.set(findProperty("POM_LICENSE_NAME") as String)
+                            url.set(findProperty("POM_LICENSE_URL") as String)
+                            distribution.set(findProperty("POM_LICENSE_DIST") as String)
+                        }
+                    }
+
+                    scm {
+                        url.set(findProperty("POM_SCM_URL") as String)
+                        connection.set(findProperty("POM_SCM_CONNECTION") as String)
+                        developerConnection.set(findProperty("POM_SCM_DEV_CONNECTION") as String)
+                    }
+
+                    developers {
+                        developer {
+                            name.set(findProperty("POM_DEVELOPER_NAME") as String)
+                            email.set(findProperty("POM_DEVELOPER_EMAIL") as String)
+                        }
+                    }
+                }
+            }
+        }
+
+        signing {
+            useInMemoryPgpKeys(
+                System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyId"),
+                System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey"),
+                System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyPassword")
+            )
+            sign(publishing.publications)
+        }
+    }
 }
 
 uniffi {
@@ -186,12 +237,6 @@ uniffi {
         namespace = "core_crypto_ffi"
         packageName = "com.wire.crypto"
     }
-}
-
-mavenPublishing {
-    publishToMavenCentral(automaticRelease = true)
-    pomFromGradleProperties()
-    signAllPublications()
 }
 
 // Allows skipping signing jars published to 'MavenLocal' repository
@@ -204,23 +249,23 @@ tasks.withType<Sign>().configureEach {
 // Provide our own cinterop defs files since we aren't building the ffi libraries with the cargo
 // plugin, which would otherwise generate them.
 val copyCinterop = tasks.register("copyCinteropDefinitions", Copy::class) {
-    val variant = if (buildVariant == Variant.Release) "Release" else "Debug"
+    listOf("Release", "Debug").forEach { variant ->
+        listOf("AndroidArmV7", "AndroidArm64", "AndroidX86", "AndroidX64",  "IosArm64", "IosSimulatorArm64", "LinuxX64", "MacOSArm64").forEach { target ->
+            val outDir = "cargoBuild$target$variant"
 
-    listOf("AndroidArmV7", "AndroidArm64", "AndroidX86", "IosArm64", "IosSimulatorArm64", "LinuxX64", "MacOSArm64").forEach { target ->
-        val outDir = "cargoBuild$target$variant"
+            from(layout.projectDirectory.file("cinterop/$target.def")) {
+                rename { "nativeStaticLibsDef" }
+                into(outDir)
+            }
 
-        from(layout.projectDirectory.file("cinterop/$target.def")) {
-            rename { "nativeStaticLibsDef" }
-            into(outDir)
+            // Generate the empty buildScriptOutputDirectories file because the cargo plugin expects it to exist
+            from(resources.text.fromString("")) {
+                rename { "buildScriptOutputDirectories" }
+                into(outDir)
+            }
         }
-
-        // Generate the empty buildScriptOutputDirectories file because the cargo plugin expects it to exist
-        from(resources.text.fromString("")) {
-            rename { "buildScriptOutputDirectories" }
-            into(outDir)
-        }
+        into(layout.buildDirectory.file("taskOutputCache"))
     }
-    into(layout.buildDirectory.file("taskOutputCache"))
 }
 
 // Disable building ffi libraries since they are already built & cached elsewhere in the build system.
