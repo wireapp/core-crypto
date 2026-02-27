@@ -454,7 +454,7 @@ kmp-jvm-test-deps := $(FFI_LIBRARY) $(JVM_LIB) $(KT_FILES)
 
 $(STAMPS)/kmp-jvm-test: $(kmp-jvm-test-deps)
 	cd crypto-ffi/bindings && \
-	./gradlew kmp:jvmTest --rerun
+	./gradlew core-crypto-kmp:jvmTest --rerun
 	$(TOUCH_STAMP)
 
 #-------------------------------------------------------------------------------
