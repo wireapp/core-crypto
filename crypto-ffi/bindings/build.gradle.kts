@@ -67,6 +67,7 @@ tasks.withType<Wrapper>().configureEach {
 nexusPublishing {
     repositories {
         sonatype {
+            packageGroup.set("com.wire")
             nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
             snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
             username.set(System.getenv("ORG_GRADLE_PROJECT_mavenCentralUsername"))
