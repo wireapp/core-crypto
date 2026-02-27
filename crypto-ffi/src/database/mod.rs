@@ -39,6 +39,16 @@ impl Database {
     }
 }
 
+#[cfg_attr(feature = "wasm", uniffi::export)]
+impl Database {
+    /// Close the database.
+    /// Closing the database makes any PkiEnvironment and CoreCrypto instance created with that database unusable.
+    #[cfg(feature = "wasm")]
+    pub async fn close(&self) -> CoreCryptoResult<()> {
+        self.0.close().await.map_err(CoreCryptoError::generic())
+    }
+}
+
 /// Open or create a [Database].
 #[uniffi::export]
 pub async fn open_database(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Database> {
