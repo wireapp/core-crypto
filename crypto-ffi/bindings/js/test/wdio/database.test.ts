@@ -60,6 +60,29 @@ describe("database", () => {
         ).rejects.toThrow();
     });
 
+    it("throws an error if used after close", async () => {
+        await expect(
+            await browser.execute(async () => {
+                const databaseName = crypto.randomUUID();
+                const key = new Uint8Array(32);
+                window.crypto.getRandomValues(key);
+
+                const database = await window.ccModule.openDatabase(
+                    databaseName,
+                    new window.ccModule.DatabaseKey(key.buffer)
+                );
+
+                await database.close();
+                try {
+                    await database.getLocation();
+                    return false;
+                } catch (e) {
+                    return window.ccModule.CoreCryptoError.Other.instanceOf(e);
+                }
+            })
+        ).toBe(true);
+    });
+
     it("key update works", async () => {
         const [pubkey1, pubkey2] = await browser.execute(async () => {
             const cipherSuite = window.defaultCipherSuite;
