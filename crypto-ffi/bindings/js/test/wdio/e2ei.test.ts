@@ -41,10 +41,10 @@ describe("PKI environment", () => {
             // We cannot compare the result of getPkiEnvironment()
             // with `pki_env`, due to uniffi hiding everything,
             // so just make sure it's not undefined.
-            if ((await cc.getPkiEnvironment()) == undefined) return false;
+            if ((await cc.getPkiEnvironment()) === undefined) return false;
 
             await cc.setPkiEnvironment(undefined);
-            return (await cc.getPkiEnvironment()) == undefined;
+            return (await cc.getPkiEnvironment()) !== undefined;
         }, alice);
         await expect(success).toBe(true);
     });
