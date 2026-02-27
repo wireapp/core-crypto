@@ -65,7 +65,6 @@ describe("database", () => {
             await browser.execute(async () => {
                 const databaseName = crypto.randomUUID();
                 const key = new Uint8Array(32);
-                window.crypto.getRandomValues(key);
 
                 const database = await window.ccModule.openDatabase(
                     databaseName,
@@ -115,7 +114,7 @@ describe("database", () => {
                     ctx.getFilteredCredentials({ clientId })
                 )
             )[0]!.publicKeyHash();
-            await cc.close();
+            await database.close();
 
             const newKeyBytes = new Uint8Array(32);
             window.crypto.getRandomValues(newKeyBytes);
@@ -145,7 +144,7 @@ describe("database", () => {
                     await ctx.getFilteredCredentials({ clientId })
                 )[0]!.publicKeyHash();
             });
-            await cc.close();
+            await newDatabase.close();
 
             return [JSON.stringify(pubkey1), JSON.stringify(pubkey2)];
         });
