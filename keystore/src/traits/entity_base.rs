@@ -32,6 +32,4 @@ pub trait EntityBase: 'static + Sized {
         let as_dyn_any = self as Arc<dyn Any + Send + Sync>;
         as_dyn_any.downcast().ok()
     }
-
-    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity;
 }
