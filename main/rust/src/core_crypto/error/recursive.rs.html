@@ -16,7 +16,7 @@
 <a href=#16 id=16 data-nosnippet>16</a>    },
 <a href=#17 id=17 data-nosnippet>17</a>    E2e {
 <a href=#18 id=18 data-nosnippet>18</a>        context: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
-<a href=#19 id=19 data-nosnippet>19</a>        source: Box&lt;<span class="kw">crate</span>::e2e_identity::Error&gt;,
+<a href=#19 id=19 data-nosnippet>19</a>        source: Box&lt;wire_e2e_identity::E2eIdentityError&gt;,
 <a href=#20 id=20 data-nosnippet>20</a>    },
 <a href=#21 id=21 data-nosnippet>21</a>    Mls {
 <a href=#22 id=22 data-nosnippet>22</a>        context: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
@@ -57,7 +57,7 @@
 <a href=#57 id=57 data-nosnippet>57</a>        }
 <a href=#58 id=58 data-nosnippet>58</a>    }
 <a href=#59 id=59 data-nosnippet>59</a>
-<a href=#60 id=60 data-nosnippet>60</a>    <span class="kw">pub fn </span>e2e_identity&lt;E: Into&lt;<span class="kw">crate</span>::e2e_identity::Error&gt;&gt;(context: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(E) -&gt; <span class="self">Self </span>{
+<a href=#60 id=60 data-nosnippet>60</a>    <span class="kw">pub fn </span>e2e_identity&lt;E: Into&lt;wire_e2e_identity::E2eIdentityError&gt;&gt;(context: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(E) -&gt; <span class="self">Self </span>{
 <a href=#61 id=61 data-nosnippet>61</a>        <span class="kw">move </span>|into_source| <span class="self">Self</span>::E2e {
 <a href=#62 id=62 data-nosnippet>62</a>            context,
 <a href=#63 id=63 data-nosnippet>63</a>            source: Box::new(into_source.into()),
@@ -164,7 +164,7 @@
 <a href=#164 id=164 data-nosnippet>164</a>
 <a href=#165 id=165 data-nosnippet>165</a><span class="macro">impl_to_recursive_error_for!</span>(
 <a href=#166 id=166 data-nosnippet>166</a>    <span class="kw">crate</span>::Error =&gt; Root,
-<a href=#167 id=167 data-nosnippet>167</a>    <span class="kw">crate</span>::e2e_identity::Error =&gt; E2e,
+<a href=#167 id=167 data-nosnippet>167</a>    wire_e2e_identity::E2eIdentityError =&gt; E2e,
 <a href=#168 id=168 data-nosnippet>168</a>    <span class="kw">crate</span>::mls::Error =&gt; Mls,
 <a href=#169 id=169 data-nosnippet>169</a>    <span class="kw">crate</span>::mls::session::Error =&gt; MlsClient,
 <a href=#170 id=170 data-nosnippet>170</a>    <span class="kw">crate</span>::mls::conversation::Error =&gt; MlsConversation,

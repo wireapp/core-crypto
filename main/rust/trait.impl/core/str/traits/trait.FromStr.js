@@ -1,9 +1,9 @@
 (function() {
-    var implementors = Object.fromEntries([["core_crypto",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.93.1/core/str/traits/trait.FromStr.html\" title=\"trait core::str::traits::FromStr\">FromStr</a> for <a class=\"struct\" href=\"core_crypto/struct.ClientId.html\" title=\"struct core_crypto::ClientId\">ClientId</a>"]]]]);
+    var implementors = Object.fromEntries([["core_crypto",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.93.1/core/str/traits/trait.FromStr.html\" title=\"trait core::str::traits::FromStr\">FromStr</a> for <a class=\"struct\" href=\"core_crypto/struct.ClientId.html\" title=\"struct core_crypto::ClientId\">ClientId</a>"]]],["wire_e2e_identity",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.93.1/core/str/traits/trait.FromStr.html\" title=\"trait core::str::traits::FromStr\">FromStr</a> for <a class=\"struct\" href=\"wire_e2e_identity/legacy/id/struct.QualifiedE2eiClientId.html\" title=\"struct wire_e2e_identity::legacy::id::QualifiedE2eiClientId\">QualifiedE2eiClientId</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.93.1/core/str/traits/trait.FromStr.html\" title=\"trait core::str::traits::FromStr\">FromStr</a> for <a class=\"struct\" href=\"wire_e2e_identity/legacy/id/struct.WireQualifiedClientId.html\" title=\"struct wire_e2e_identity::legacy::id::WireQualifiedClientId\">WireQualifiedClientId</a>"]]]]);
     if (window.register_implementors) {
         window.register_implementors(implementors);
     } else {
         window.pending_implementors = implementors;
     }
 })()
-//{"start":57,"fragment_lengths":[295]}
+//{"start":57,"fragment_lengths":[295,726]}
