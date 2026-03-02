@@ -2,6 +2,8 @@ name: Fetch or make kotlin bindings for jvm
 inputs:
   gh-token:
     required: true
+  artifact-generation:
+    description: suffix for artifact names that allows us to easily invalidate artifacts
 
 runs:
   using: composite
@@ -11,11 +13,13 @@ runs:
       uses: ./.github/actions/make/uniffi-bindgen
       with:
         gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
 
     - name: fetch ffi library
       uses: ./.github/actions/make/ffi-library
       with:
         gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
 
     - uses: ./.github/actions/make
       with:
@@ -25,3 +29,4 @@ runs:
         gh-token: ${{ inputs.gh-token }}
         uses-rust: true
         rust-target: x86_64-unknown-linux-gnu
+        artifact-generation: ${{ inputs.artifact-generation }}

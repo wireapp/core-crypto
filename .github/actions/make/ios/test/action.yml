@@ -5,6 +5,8 @@ inputs:
   always-run:
     description: Run the test even if dependencies haven't changed
     required: false
+  artifact-generation:
+    description: suffix for artifact names that allows us to easily invalidate artifacts
 
 runs:
   using: composite
@@ -14,28 +16,33 @@ runs:
       uses: ./.github/actions/make/uniffi-bindgen
       with:
         gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
 
     - name: fetch ffi library
       uses: ./.github/actions/make/ffi-library
       with:
         gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
 
     - name: download artifacts for ios device
       uses: ./.github/actions/make/ios/build
       with:
         gh-token: ${{ inputs.gh-token }}
         task: ios-device
+        artifact-generation: ${{ inputs.artifact-generation }}
 
     - name: download artifacts for ios simulator
       uses: ./.github/actions/make/ios/build
       with:
         gh-token: ${{ inputs.gh-token }}
         task: ios-simulator-arm
+        artifact-generation: ${{ inputs.artifact-generation }}
 
     - name: download swift bindings
       uses: ./.github/actions/make/bindings-swift
       with:
         gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
 
     - uses: ./.github/actions/make
       with:
@@ -43,3 +50,4 @@ runs:
         make-rule: ios-test
         always-run: ${{ inputs.always-run }}
         gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}

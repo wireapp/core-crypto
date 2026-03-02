@@ -27,6 +27,7 @@ jobs:
         uses: ./.github/actions/make/web/ts
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: package tarball
         id: package

@@ -2,6 +2,8 @@ name: Fetch or make swift bindings
 inputs:
   gh-token:
     required: true
+  artifact-generation:
+    description: suffix for artifact names that allows us to easily invalidate artifacts
 
 runs:
   using: composite
@@ -11,11 +13,13 @@ runs:
         uses: ./.github/actions/make/uniffi-bindgen
         with:
           gh-token: ${{ inputs.gh-token }}
+          artifact-generation: ${{ inputs.artifact-generation }}
 
       - name: fetch ffi library
         uses: ./.github/actions/make/ffi-library
         with:
           gh-token: ${{ inputs.gh-token }}
+          artifact-generation: ${{ inputs.artifact-generation }}
 
       - uses: ./.github/actions/make
         with:
@@ -24,3 +28,4 @@ runs:
           target-path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
           gh-token: ${{ inputs.gh-token }}
           uses-rust: true
+          artifact-generation: ${{ inputs.artifact-generation }}

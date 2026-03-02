@@ -32,3 +32,4 @@ jobs:
       - uses: ./.github/actions/make/android/package
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}

@@ -26,6 +26,7 @@ jobs:
         uses: ./.github/actions/make/web/ts
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
       - name: lint
         run: make ts-check
 
@@ -36,3 +37,4 @@ jobs:
           make-rule: ts-test
           always-run: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'main' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}

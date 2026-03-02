@@ -29,6 +29,7 @@ jobs:
       - uses: ./.github/actions/make/uniffi-bindgen
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
   ffi-library-linux:
     runs-on: ubuntu-latest
@@ -37,6 +38,7 @@ jobs:
       - uses: ./.github/actions/make/ffi-library
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
   #################
   # Android
@@ -54,6 +56,7 @@ jobs:
       - uses: ./.github/actions/make/android/bindings
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
   package-android:
     needs:
@@ -78,6 +81,7 @@ jobs:
       - uses: ./.github/actions/make/jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
   #################
   # JVM Linux
@@ -89,6 +93,7 @@ jobs:
       - uses: ./.github/actions/make/jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
   bindings-jvm:
     needs:
@@ -100,6 +105,7 @@ jobs:
       - uses: ./.github/actions/make/bindings-kotlin-jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
   test-jvm:
     needs:
@@ -137,6 +143,7 @@ jobs:
       - uses: ./.github/actions/make/bindings-swift
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
   package-ios:
     needs:
@@ -170,6 +177,7 @@ jobs:
         uses: ./.github/actions/make/web/ts
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
   test-ts:
     needs: bindings-ts
@@ -216,6 +224,7 @@ jobs:
       - uses: ./.github/actions/make/interop/build
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
   e2e-interop-test:
     needs:
