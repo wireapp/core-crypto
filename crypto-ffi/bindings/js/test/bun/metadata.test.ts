@@ -1,13 +1,9 @@
-import { setup, teardown } from "./utils";
-import { afterEach, test, beforeEach, describe, expect } from "bun:test";
+import { setup } from "./utils";
+import { test, beforeEach, describe, expect } from "bun:test";
 import { buildMetadata, version } from "../../src/CoreCrypto";
 
 beforeEach(async () => {
     await setup();
-});
-
-afterEach(async () => {
-    await teardown();
 });
 
 describe("metadata", () => {

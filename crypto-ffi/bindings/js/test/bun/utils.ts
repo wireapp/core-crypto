@@ -22,8 +22,6 @@ import {
     openDatabase,
 } from "../../src/CoreCrypto";
 
-const CC_INSTANCES: CoreCrypto[] = [];
-
 // Logging can be adjusted via the CC_TEST_LOG_LEVEL variable:
 // 0 = no logs
 // 1 = browser logs
@@ -74,17 +72,6 @@ export async function setup() {
             },
         });
         setMaxLogLevel(CoreCryptoLogLevel.Debug);
-    }
-}
-
-export async function teardown() {
-    // Delete all core crypto instances.
-    while (CC_INSTANCES.length > 0) {
-        const cc = CC_INSTANCES.pop();
-        if (cc === undefined) {
-            continue;
-        }
-        await cc.close();
     }
 }
 
