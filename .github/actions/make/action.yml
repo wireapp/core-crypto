@@ -27,6 +27,8 @@ inputs:
     description: Set the value of RUSTFLAGS via setup-and-cache-rust
     required: false
     default: -D warnings
+  artifact-rotation:
+    description: suffix for artifact names that allows us to easily rotate artifacts
 
 runs:
   using: composite
@@ -39,8 +41,8 @@ runs:
       id: compute-key
       run: |
         files_hash=$($MAKE "${{ inputs.make-rule }}"-hash-deps)
-        echo "key=${{ inputs.key }}-$files_hash" >> "$GITHUB_OUTPUT"
-
+        # Change the ARTIFACT_GENERATION repository variable to force fresh artifacts
+        echo "key=${{ inputs.key }}-$files_hash-${{ inputs.artifact-generation }}" >> "$GITHUB_OUTPUT"
     - name: branch name
       id: branch-name
       run: |
