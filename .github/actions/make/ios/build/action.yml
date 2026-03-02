@@ -6,6 +6,8 @@ inputs:
     required: true
   gh-token:
     required: true
+  artifact-rotation:
+    description: suffix for artifact names that allows us to easily rotate artifacts
 
 runs:
   using: composite
@@ -37,3 +39,4 @@ runs:
         gh-token: ${{ inputs.gh-token }}
         uses-rust: true
         rust-target: ${{ env.IOS_TARGET }}
+        artifact-rotation: ${{ inputs.artifact-rotation }}

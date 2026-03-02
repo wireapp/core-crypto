@@ -2,6 +2,8 @@ name: Fetch or make interop test binary
 inputs:
   gh-token:
     required: true
+  artifact-rotation:
+    description: suffix for artifact names that allows us to easily rotate artifacts
 
 runs:
   using: composite
@@ -15,3 +17,4 @@ runs:
         target-path: target/debug/interop
         gh-token: ${{ inputs.gh-token }}
         uses-rust: true
+        artifact-rotation: ${{ inputs.artifact-rotation }}

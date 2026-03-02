@@ -25,6 +25,7 @@ jobs:
       uses: ./.github/actions/make/web/ts
       with:
         gh-token: ${{ secrets.GITHUB_TOKEN }}
+        artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
     - name: make ts docs
       run: make docs-ts

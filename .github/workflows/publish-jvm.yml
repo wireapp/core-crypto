@@ -37,6 +37,7 @@ jobs:
         uses: ./.github/actions/make/bindings-kotlin-jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: gradle setup
         uses: gradle/actions/setup-gradle@v5
@@ -48,11 +49,13 @@ jobs:
         uses: ./.github/actions/make/bindings-kotlin-jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: download x86_64 linux artifact
         uses: ./.github/actions/make/jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       # The specific jvm action uses `uname -s` to determine which `jvm` make rule to call.
       # Because this workflow runs on ubuntu, we're using the generic action
@@ -63,6 +66,7 @@ jobs:
           make-rule: jvm-darwin
           target-path: target/aarch64-apple-darwin/release/libcore_crypto_ffi.dylib
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: zip package
         run: |

@@ -29,6 +29,7 @@ jobs:
         uses: ./.github/actions/make/jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       # The specific jvm action uses `uname -s` to determine which `jvm` make rule to call.
       # Because this workflow runs on ubuntu, we're using the generic action
@@ -39,11 +40,13 @@ jobs:
           make-rule: jvm-darwin
           target-path: target/aarch64-apple-darwin/release/libcore_crypto_ffi.dylib
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: download kotlin bindings
         uses: ./.github/actions/make/bindings-kotlin-jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: run detekt
         run: |
@@ -57,3 +60,4 @@ jobs:
           make-rule: jvm-test
           always-run: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'main' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}

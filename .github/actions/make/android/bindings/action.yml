@@ -2,6 +2,8 @@ name: Fetch or make kotlin bindings for android
 inputs:
   gh-token:
     required: true
+  artifact-rotation:
+    description: suffix for artifact names that allows us to easily rotate artifacts
 
 runs:
   using: composite
@@ -10,11 +12,13 @@ runs:
       uses: ./.github/actions/make/ffi-library
       with:
         gh-token: ${{ inputs.gh-token }}
+        artifact-rotation: ${{ inputs.artifact-rotation }}
 
     - name: fetch uniffi bindgen artifact
       uses: ./.github/actions/make/uniffi-bindgen
       with:
         gh-token: ${{ inputs.gh-token }}
+        artifact-rotation: ${{ inputs.artifact-rotation }}
 
     - name: make android bindings
       uses: ./.github/actions/make
@@ -24,3 +28,4 @@ runs:
         target-path: |
           crypto-ffi/bindings/android/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt
         gh-token: ${{ inputs.gh-token }}
+        artifact-rotation: ${{ inputs.artifact-rotation }}

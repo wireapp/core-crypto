@@ -21,17 +21,20 @@ jobs:
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           task: ios-device
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: download artifacts for ios simulator
         uses: ./.github/actions/make/ios/build
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           task: ios-simulator-arm
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: download swift bindings
         uses: ./.github/actions/make/bindings-swift
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: download xcframework
         uses: ./.github/actions/make
@@ -42,6 +45,7 @@ jobs:
               crypto-ffi/bindings/swift/WireCoreCrypto.xcframework.zip
               crypto-ffi/bindings/swift/WireCoreCryptoUniffi.xcframework.zip
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: upload xcframework
         uses: softprops/action-gh-release@v2

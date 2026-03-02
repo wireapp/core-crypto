@@ -27,11 +27,13 @@ jobs:
         uses: ./.github/actions/make/bindings-swift
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: download artifacts for ios device
         uses: ./.github/actions/make/ios/build
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
           task: ios-device
       - name: download artifacts for ios simulator
@@ -39,6 +41,7 @@ jobs:
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           task: ios-simulator-arm
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1

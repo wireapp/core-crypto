@@ -41,3 +41,4 @@ jobs:
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           task: ${{ matrix.task }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}

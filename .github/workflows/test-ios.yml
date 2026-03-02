@@ -46,6 +46,7 @@ jobs:
         with:
           always-run: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'main' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-rotation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: Delete simulator
         if: always()

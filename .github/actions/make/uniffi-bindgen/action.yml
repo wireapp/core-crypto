@@ -2,6 +2,8 @@ name: Fetch or make uniffi-bindgen binary
 inputs:
   gh-token:
     required: true
+  artifact-rotation:
+    description: suffix for artifact names that allows us to easily rotate artifacts
 
 runs:
   using: composite
@@ -29,6 +31,7 @@ runs:
         gh-token: ${{ inputs.gh-token }}
         uses-rust: true
         rust-target: x86_64-unknown-linux-gnu
+        artifact-rotation: ${{ inputs.artifact-rotation }}
 
     - run: chmod +x target/release/uniffi-bindgen
       shell: bash -euo pipefail {0}

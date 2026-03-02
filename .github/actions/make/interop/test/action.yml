@@ -5,6 +5,8 @@ inputs:
   always-run:
     description: Run the test even if dependencies haven't changed
     required: false
+  artifact-rotation:
+    description: suffix for artifact names that allows us to easily rotate artifacts
 
 runs:
   using: composite
@@ -14,33 +16,39 @@ runs:
       uses: ./.github/actions/make/web/ts
       with:
         gh-token: ${{ inputs.gh-token }}
+        artifact-rotation: ${{ inputs.artifact-rotation }}
 
     - name: download artifacts for ios device
       uses: ./.github/actions/make/ios/build
       with:
         gh-token: ${{ inputs.gh-token }}
         task: ios-device
+        artifact-rotation: ${{ inputs.artifact-rotation }}
 
     - name: download artifacts for ios simulator
       uses: ./.github/actions/make/ios/build
       with:
         gh-token: ${{ inputs.gh-token }}
         task: ios-simulator-arm
+        artifact-rotation: ${{ inputs.artifact-rotation }}
 
     - name: download swift bindings
       uses: ./.github/actions/make/bindings-swift
       with:
         gh-token: ${{ inputs.gh-token }}
+        artifact-rotation: ${{ inputs.artifact-rotation }}
 
     - name: download android package
       uses: ./.github/actions/make/android/package
       with:
         gh-token: ${{ inputs.gh-token }}
+        artifact-rotation: ${{ inputs.artifact-rotation }}
 
     - name: download interop test binary
       uses: ./.github/actions/make/interop/build
       with:
         gh-token: ${{ inputs.gh-token }}
+        artifact-rotation: ${{ inputs.artifact-rotation }}
 
     - uses: ./.github/actions/make
       env:
@@ -50,3 +58,4 @@ runs:
         make-rule: interop-test
         always-run: ${{ inputs.always-run }}
         gh-token: ${{ inputs.gh-token }}
+        artifact-rotation: ${{ inputs.artifact-rotation }}
