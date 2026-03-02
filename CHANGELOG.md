@@ -121,6 +121,13 @@
 
 ### Breaking Changes
 
+- added `.close()` to `Database` and removed `.close()` from `CoreCrypto`.
+
+  A database should be closed if it is not used anymore. Closing a database makes any `PkiEnvironment` or `CoreCrypto`
+  instance unusable and return a `CoreCryptoError.Other`. `CoreCrypto` instances do not need to be closed anymore.
+
+  Affected platforms: web
+
 - `MlsTransportResponse` is no longer a union type. `MlsTransport` should return one of the following:
 
   - `MlsTransportResponse.Success.new()`
