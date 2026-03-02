@@ -22,8 +22,8 @@ jq "setpath([\"version\"]; \"${new_version}\")" ${js_path}/package.json > ${js_p
 mv ${js_path}/package.json.new ${js_path}/package.json
 
 # Update Maven package version.
-perl -pi -e 's/^VERSION_NAME=[0-9.]+/VERSION_NAME='"$new_version"'/' crypto-ffi/bindings/gradle.properties
+perl -pi -e 's/^VERSION_NAME=[0-9A-Za-z._-]+/VERSION_NAME='"$new_version"'/' crypto-ffi/bindings/gradle.properties
 
 # Update Swift package version.
-perl -pi -e 's/^MARKETING_VERSION=[0-9.]+/MARKETING_VERSION='"$new_version"'/' crypto-ffi/bindings/swift/BuildSettings.xcconfig
-perl -pi -e 's/^CURRENT_PROJECT_VERSION=[0-9.]+/CURRENT_PROJECT_VERSION='"$new_version"'/' crypto-ffi/bindings/swift/BuildSettings.xcconfig
+perl -pi -e 's/^MARKETING_VERSION=[0-9A-Za-z._-]+/MARKETING_VERSION='"$new_version"'/' crypto-ffi/bindings/swift/BuildSettings.xcconfig
+perl -pi -e 's/^CURRENT_PROJECT_VERSION=[0-9A-Za-z._-]+/CURRENT_PROJECT_VERSION='"$new_version"'/' crypto-ffi/bindings/swift/BuildSettings.xcconfig
