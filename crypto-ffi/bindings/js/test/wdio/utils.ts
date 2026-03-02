@@ -165,22 +165,6 @@ export async function setup() {
 }
 
 export async function teardown() {
-    await browser.execute(async () => {
-        function promiseForIDBRequest(tx: IDBRequest) {
-            return new Promise<void>((resolve, reject) => {
-                tx.onsuccess = () => resolve();
-                tx.onerror = () => reject(tx.error);
-            });
-        }
-
-        // Delete all core crypto instances.
-        for (const ccKey of window.cc?.keys() ?? []) {
-            const cc = window.ensureCcDefined(ccKey);
-            await cc.close();
-            await promiseForIDBRequest(window.indexedDB.deleteDatabase(ccKey));
-            window.cc.delete(ccKey);
-        }
-    });
     browser.off("log.entryAdded", logEvents);
 }
 
