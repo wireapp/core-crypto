@@ -5755,7 +5755,6 @@ dependencies = [
  "hyper-util",
  "rusty-jwt-tools",
  "serde_json",
- "tokio",
  "smol",
  "smol-hyper",
  "url",
