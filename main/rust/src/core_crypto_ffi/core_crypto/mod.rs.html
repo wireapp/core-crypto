@@ -35,13 +35,4 @@
 <a href=#35 id=35 data-nosnippet>35</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ inner })
 <a href=#36 id=36 data-nosnippet>36</a>    }
 <a href=#37 id=37 data-nosnippet>37</a>}
-<a href=#38 id=38 data-nosnippet>38</a>
-<a href=#39 id=39 data-nosnippet>39</a><span class="attr">#[cfg_attr(feature = <span class="string">"wasm"</span>, uniffi::export)]
-<a href=#40 id=40 data-nosnippet>40</a></span><span class="kw">impl </span>CoreCryptoFfi {
-<a href=#41 id=41 data-nosnippet>41</a>    <span class="doccomment">/// Closes the database
-<a href=#42 id=42 data-nosnippet>42</a>    /// indexdb connections must be closed explicitly while rusqlite implements drop which suffices.
-<a href=#43 id=43 data-nosnippet>43</a>    </span><span class="kw">pub async fn </span>close(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;()&gt; {
-<a href=#44 id=44 data-nosnippet>44</a>        <span class="self">self</span>.inner.close().<span class="kw">await</span>.map_err(Into::into)
-<a href=#45 id=45 data-nosnippet>45</a>    }
-<a href=#46 id=46 data-nosnippet>46</a>}
 </code></pre></div></section></main></body></html>
