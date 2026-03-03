@@ -7,11 +7,15 @@
 <a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">mod </span>non_wasm;
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-<a href=#10 id=10 data-nosnippet>10</a>#[tokio::main(flavor = <span class="string">"current_thread"</span>)]
-<a href=#11 id=11 data-nosnippet>11</a></span><span class="kw">pub async fn </span>main() {
-<a href=#12 id=12 data-nosnippet>12</a>    <span class="kw">use </span><span class="kw">crate</span>::non_wasm::{bind_socket, run_server};
-<a href=#13 id=13 data-nosnippet>13</a>
-<a href=#14 id=14 data-nosnippet>14</a>    <span class="kw">let </span>listener = bind_socket().<span class="kw">await</span>;
-<a href=#15 id=15 data-nosnippet>15</a>    run_server(listener).<span class="kw">await</span>;
-<a href=#16 id=16 data-nosnippet>16</a>}
+<a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">fn </span>main() {
+<a href=#11 id=11 data-nosnippet>11</a>    <span class="kw">use </span><span class="kw">crate</span>::non_wasm::{bind_socket, run_server};
+<a href=#12 id=12 data-nosnippet>12</a>    <span class="comment">// smol single-threaded executor
+<a href=#13 id=13 data-nosnippet>13</a>    </span>smol::block_on(<span class="kw">async </span>{
+<a href=#14 id=14 data-nosnippet>14</a>        <span class="comment">// bind to a local socket
+<a href=#15 id=15 data-nosnippet>15</a>        </span><span class="kw">let </span>listener = bind_socket().<span class="kw">await</span>;
+<a href=#16 id=16 data-nosnippet>16</a>
+<a href=#17 id=17 data-nosnippet>17</a>        <span class="comment">// run the test Wire server
+<a href=#18 id=18 data-nosnippet>18</a>        </span>run_server(listener).<span class="kw">await</span>;
+<a href=#19 id=19 data-nosnippet>19</a>    });
+<a href=#20 id=20 data-nosnippet>20</a>}
 </code></pre></div></section></main></body></html>
