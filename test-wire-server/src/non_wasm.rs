@@ -14,9 +14,9 @@ use hyper::{
     body::{Bytes, Incoming},
     server::conn::http1,
 };
-use hyper_util::rt::TokioIo;
 use rusty_jwt_tools::prelude::*;
-use tokio::net::TcpListener;
+use smol::net::TcpListener;
+use smol_hyper::rt::FuturesIo;
 
 fn generate_nonce() -> String {
     let nonce = uuid::Uuid::new_v4();
@@ -150,13 +150,14 @@ pub(crate) async fn bind_socket() -> TcpListener {
 pub(crate) async fn run_server(listener: TcpListener) {
     let nonces: Arc<Mutex<Nonces>> = Mutex::new(HashMap::new()).into();
     while let Ok((stream, _)) = listener.accept().await {
-        let io = TokioIo::new(stream);
+        let io = FuturesIo::new(stream);
         let cloned = Arc::clone(&nonces);
-        tokio::spawn(async move {
+        smol::spawn(async move {
             let service = hyper::service::service_fn(|req| wire_api(&cloned, req));
             if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
                 eprintln!("server error: {err}");
             }
-        });
+        })
+        .detach();
     }
 }

@@ -7,10 +7,14 @@ fn main() {
 mod non_wasm;
 
 #[cfg(not(target_family = "wasm"))]
-#[tokio::main(flavor = "current_thread")]
-pub async fn main() {
+fn main() {
     use crate::non_wasm::{bind_socket, run_server};
+    // smol single-threaded executor
+    smol::block_on(async {
+        // bind to a local socket
+        let listener = bind_socket().await;
 
-    let listener = bind_socket().await;
-    run_server(listener).await;
+        // run the test Wire server
+        run_server(listener).await;
+    });
 }
