@@ -43,6 +43,7 @@ pub use core_crypto::{
     CoreCryptoFfi,
     command::CoreCryptoCommand,
     conversation::ConversationId,
+    core_crypto_new,
     epoch_observer::EpochObserver,
     logger::{CoreCryptoLogLevel, CoreCryptoLogger, set_logger, set_max_log_level},
     mls_transport::{MlsTransport, MlsTransportData, MlsTransportResponse},

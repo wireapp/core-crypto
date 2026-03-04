@@ -21,17 +21,23 @@ pub struct CoreCryptoFfi {
 }
 
 #[uniffi::export]
-impl CoreCryptoFfi {
-    /// Construct a new `CoreCryptoFfi` instance.
-    /// MLS or proteus can be initialized  with [core_crypto::transaction_context::TransactionContext::mls_init] or
-    /// [core_crypto::transaction_context::TransactionContext::proteus_init], respectively.
-    #[uniffi::constructor]
-    pub fn new(database: &Arc<Database>) -> CoreCryptoResult<Self> {
-        #[cfg(target_family = "wasm")]
-        console_error_panic_hook::set_once();
-        let db = database.as_ref().clone().into();
-        let inner = core_crypto::CoreCrypto::new(db);
+/// Construct a new `CoreCryptoFfi` instance.
+/// MLS or proteus can be initialized  with [core_crypto::transaction_context::TransactionContext::mls_init] or
+/// [core_crypto::transaction_context::TransactionContext::proteus_init], respectively.
+pub fn core_crypto_new(database: &Arc<Database>) -> CoreCryptoResult<CoreCryptoFfi> {
+    #[cfg(target_family = "wasm")]
+    console_error_panic_hook::set_once();
+    let db = database.as_ref().clone().into();
+    let inner = core_crypto::CoreCrypto::new(db);
 
-        Ok(Self { inner })
+    Ok(CoreCryptoFfi { inner })
+}
+
+#[cfg_attr(feature = "wasm", uniffi::export)]
+impl CoreCryptoFfi {
+    /// This is only needed to allow TS inheritance and should be hidden from library consumers.
+    #[uniffi::constructor]
+    pub fn new(instance: Arc<Self>) -> Arc<Self> {
+        instance
     }
 }
