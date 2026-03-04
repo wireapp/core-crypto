@@ -3,7 +3,7 @@ import System
 
 /// Defines the protocol for a client.
 ///
-public protocol CoreCryptoProtocol {
+public protocol CoreCryptoProtocol: CoreCryptoFfiProtocol {
 
     /// Instantiate a history client.
     ///
@@ -22,55 +22,20 @@ public protocol CoreCryptoProtocol {
     func transaction<Result>(
         _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
     ) async throws -> Result
-
-    ///
-    /// Register an Epoch Observer which will be notified every time a conversation's epoch changes.
-    ///
-    /// - Parameter epochObserver: epoch observer to register
-    ///
-    /// This function should be called 0 or 1 times in the lifetime of CoreCrypto,
-    /// regardless of the number of transactions.
-    ///
-    func registerEpochObserver(_ epochObserver: EpochObserver) async throws
-
-    ///
-    /// Register a History Observer which will be notified every time a new history secret is created locally.
-    ///
-    /// - Parameter historyObserver: history observer to register
-    ///
-    /// This function should be called 0 or 1 times in the lifetime of CoreCrypto,
-    /// regardless of the number of transactions.
-    ///
-    func registerHistoryObserver(_ historyObserver: HistoryObserver) async throws
-
-    /// Check if history sharing is enabled, i.e., if any of the conversation members have a ``ClientId`` starting
-    /// with the specific history client prefix.
-    func isHistorySharingEnabled(conversationId: ConversationId) async throws -> Bool
-
-    ///
-    /// Set the PkiEnvironment of the CoreCrypto instance
-    /// - Parameter pkiEnvironment: the pki environment to set
-    ///
-    func setPkiEnvironment(_ pkiEnvironment: PkiEnvironment?) async throws
-
-    ///
-    /// Get the Pki Environment of the CoreCrypto instance
-    /// - Returns: the pki environment or null if not set
-    ///
-    func getPkiEnvironment() async throws -> PkiEnvironment?
 }
 
 /// CoreCrypto client which manages one cryptographic client for proteus and MLS.
 ///
-public final class CoreCrypto: CoreCryptoProtocol {
-
-    let coreCrypto: WireCoreCryptoUniffi.CoreCryptoFfi
+public final class CoreCrypto: CoreCryptoFfi, CoreCryptoProtocol, @unchecked Sendable {
     let database: Database?
 
-    /// Initialize CoreCrypto with a Ffi instance
+    /// Initialize CoreCrypto with an Ffi instance
     private init(_ coreCrypto: WireCoreCryptoUniffi.CoreCryptoFfi, database: Database? = nil) {
-        self.coreCrypto = coreCrypto
         self.database = database
+        // Due to Swift limitations, we can't use the `super` convenience intializer inside a child initializer, we
+        // have to call the default `super` initializer. Luckily, we can do this meaningfully by cloning the pointer of
+        // the instance that is passed in here.
+        super.init(unsafeFromRawPointer: coreCrypto.uniffiClonePointer())
     }
 
     ///
@@ -80,8 +45,15 @@ public final class CoreCrypto: CoreCryptoProtocol {
     /// - Parameter key: secret key to unlock the encrypted key store
     ///
     public convenience init(database: Database) throws {
-        let coreCrypto = try CoreCryptoFfi(database: database)
+        let coreCrypto = try coreCryptoNew(database: database)
         self.init(coreCrypto, database: database)
+    }
+
+    @_documentation(visibility: private) required init(
+        unsafeFromRawPointer pointer: UnsafeMutableRawPointer
+    ) {
+        self.database = nil
+        super.init(unsafeFromRawPointer: pointer)
     }
 
     /// Instantiate a history client.
@@ -102,7 +74,7 @@ public final class CoreCrypto: CoreCryptoProtocol {
         let transactionExecutor = try TransactionExecutor<Result>(
             keystorePath: filePath, block)
         do {
-            try await coreCrypto.transaction(command: transactionExecutor)
+            try await self.transaction(command: transactionExecutor)
         } catch {
             throw await transactionExecutor.innerError ?? error
         }
@@ -112,27 +84,15 @@ public final class CoreCrypto: CoreCryptoProtocol {
     public func registerEpochObserver(_ epochObserver: EpochObserver) async throws {
         // we want to wrap the observer here to provide async indirection, so that no matter what
         // the observer that makes its way to the Rust side of things doesn't end up blocking
-        try await coreCrypto.registerEpochObserver(
+        try await self.registerEpochObserver(
             epochObserver: EpochObserverIndirector(epochObserver))
     }
 
     public func registerHistoryObserver(_ historyObserver: HistoryObserver) async throws {
         // we want to wrap the observer here to provide async indirection, so that no matter what
         // the observer that makes its way to the Rust side of things doesn't end up blocking
-        try await coreCrypto.registerHistoryObserver(
+        try await self.registerHistoryObserver(
             historyObserver: HistoryObserverIndirector(historyObserver))
-    }
-
-    public func isHistorySharingEnabled(conversationId: ConversationId) async throws -> Bool {
-        try await coreCrypto.isHistorySharingEnabled(conversationId: conversationId)
-    }
-
-    public func setPkiEnvironment(_ pkiEnvironment: PkiEnvironment?) async throws {
-        try await coreCrypto.setPkiEnvironment(pkiEnvironment: pkiEnvironment)
-    }
-
-    public func getPkiEnvironment() async -> PkiEnvironment? {
-        return await coreCrypto.getPkiEnvironment()
     }
 
     /// Returns the last resort PreKey id
