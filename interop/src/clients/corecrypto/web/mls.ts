@@ -35,7 +35,7 @@ export async function ccNew() {
     const database = await openDatabase(clientConfig.databaseName, key);
 
     window.CoreCrypto = CoreCrypto;
-    window.cc = new window.CoreCrypto(database);
+    window.cc = window.CoreCrypto.new(database);
     window.database = database;
     await window.cc.newTransaction(async (ctx) => {
         await ctx.mlsInit(clientId, ciphersuites, window.deliveryService);

@@ -197,7 +197,7 @@ export async function ccInit(
                 new window.ccModule.DatabaseKey(key.buffer)
             );
 
-            const instance = new window.ccModule.CoreCrypto(database);
+            const instance = window.ccModule.CoreCrypto.new(database);
             await instance.newTransaction(async (ctx) => {
                 await ctx.mlsInit(clientId, window.deliveryService);
                 if (withCredential) {
@@ -511,7 +511,7 @@ export async function proteusInit(clientName: string): Promise<void> {
             new window.ccModule.DatabaseKey(key.buffer)
         );
 
-        const instance = new window.ccModule.CoreCrypto(database);
+        const instance = window.ccModule.CoreCrypto.new(database);
         await instance.newTransaction((ctx) => ctx.proteusInit());
 
         if (window.cc === undefined) {
