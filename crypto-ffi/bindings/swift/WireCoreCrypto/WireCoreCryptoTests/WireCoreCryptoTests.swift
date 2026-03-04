@@ -84,7 +84,7 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let key1 = genDatabaseKey()
         let database1 = try await Database.open(location: keystore.path, key: key1)
-        var coreCrypto = try await CoreCrypto(database: database1)
+        var coreCrypto = try CoreCrypto(database: database1)
 
         let clientId = ClientId(bytes: UUID().uuidString.data(using: .utf8)!)
         let ciphersuite = Ciphersuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
@@ -104,7 +104,7 @@ final class WireCoreCryptoTests: XCTestCase {
         try await updateDatabaseKey(name: keystore.path, oldKey: key1, newKey: key2)
         let database2 = try await Database.open(location: keystore.path, key: key2)
 
-        coreCrypto = try await CoreCrypto(database: database2)
+        coreCrypto = try CoreCrypto(database: database2)
         let pubkey2 = try await coreCrypto.transaction {
             try await $0.mlsInit(
                 clientId: clientId, transport: self.mockMlsTransport)
@@ -165,7 +165,7 @@ final class WireCoreCryptoTests: XCTestCase {
             location: targetPath.lastPathComponent, key: newKey)
 
         // Check if we can read the conversation from the migrated database
-        let alice = try await CoreCrypto(database: database)
+        let alice = try CoreCrypto(database: database)
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let epoch = try await alice.transaction {
             try await $0.conversationEpoch(conversationId: conversationId)
@@ -178,7 +178,6 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     func testInteractionWithInvalidContextThrowsError() async throws {
-        let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
         let aliceId = ClientId(bytes: Data("alice1".utf8))
         let coreCrypto = try await createCoreCrypto()
         var context: CoreCryptoContextProtocol?
@@ -376,7 +375,6 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     func testFindCredentialsShouldReturnNonEmptyResult() async throws {
-        let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
         let alice = try await createClients("alice1")[0]
         let publicKey = try await alice.transaction {
             try await $0.findCredentials(
@@ -848,7 +846,6 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     func testCanSetPkiEnvironment() async throws {
-        let clientId = genClientId()
         let root = FileManager.default.temporaryDirectory.appending(path: "mls")
         let keystore = root.appending(path: "pki-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -856,12 +853,12 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let pkiEnvironment: PkiEnvironment = try await createPkiEnvironment(
             hooks: MockPkiEnvironmentHooks(), database: database)
-        let coreCrypto = try await CoreCrypto(database: database)
-        try await coreCrypto.setPkiEnvironment(pkiEnvironment)
+        let coreCrypto = try CoreCrypto(database: database)
+        try await coreCrypto.setPkiEnvironment(pkiEnvironment: pkiEnvironment)
         let pkiEnvironment2 = await coreCrypto.getPkiEnvironment()
         XCTAssertNotNil(pkiEnvironment2)
 
-        try await coreCrypto.setPkiEnvironment(nil)
+        try await coreCrypto.setPkiEnvironment(pkiEnvironment: nil)
         let pkiEnvironment3 = await coreCrypto.getPkiEnvironment()
         XCTAssertNil(pkiEnvironment3)
     }
@@ -929,7 +926,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let database = try await Database.open(location: keystore.path, key: genDatabaseKey())
-        let coreCrypto = try await CoreCrypto(
+        let coreCrypto = try CoreCrypto(
             database: database
         )
         return coreCrypto
