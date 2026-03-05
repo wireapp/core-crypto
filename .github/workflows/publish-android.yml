@@ -49,6 +49,7 @@ jobs:
       - name: setup android sdk
         uses: android-actions/setup-android@v3
       - uses: ./.github/actions/make/android/package
+        if: ${{ inputs.prepare == true }}
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
