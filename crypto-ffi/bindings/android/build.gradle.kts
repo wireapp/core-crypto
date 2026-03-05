@@ -37,10 +37,10 @@ mavenPublishing {
     signAllPublications()
 }
 
-val targets = listOf(
-    "aarch64-linux-android" to "arm64-v8a",
-    "armv7-linux-androideabi" to "armeabi-v7a",
-    "x86_64-linux-android" to "x86_64"
+val rustTargetsByAndroidAbi = mapOf(
+    "arm64-v8a" to "aarch64-linux-android",
+    "armeabi-v7a" to "armv7-linux-androideabi",
+    "x86_64" to "x86_64-linux-android"
 )
 
 // This is the base directory under `build` that holds all libraries, organized by
