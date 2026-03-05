@@ -46,7 +46,7 @@ jobs:
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: upload kotlin docs
-        uses: actions/upload-artifact@v6.0.0
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: kotlin
           path: target/kotlin/doc/html
