@@ -43,6 +43,14 @@ val rustTargetsByAndroidAbi = mapOf(
     "x86_64" to "x86_64-linux-android"
 )
 
+val buildAllAbis = providers.systemProperty("coreCryptoAndroidBuildAllAbis")
+    .map {
+        it.toBooleanStrictOrNull()
+            ?: throw GradleException("Invalid coreCryptoAndroidBuildAllAbis='$it'. Expected true or false.")
+    }
+    .orElse(true)
+    .get()
+
 // This is the base directory under `build` that holds all libraries, organized by
 // the build type (debug or release) and the Android target (arm64-v8a etc.).
 // Libraries are copied there during the preDebugBuild and preReleaseBuild tasks.
