@@ -25,7 +25,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun set_client_data_persists() = runTest {
-        val cc = initCc(this@MLSTest)
+        val cc = initCc()
 
         val data = "my message processing checkpoint".toByteArray()
 
@@ -39,7 +39,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun interaction_with_invalid_context_throws_error() = runTest {
-        val cc = initCc(this@MLSTest)
+        val cc = initCc()
         var context: CoreCryptoContext? = null
 
         cc.transaction { ctx -> context = ctx }
@@ -54,7 +54,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun error_is_propagated_by_transaction() = runTest {
-        val cc = initCc(this@MLSTest)
+        val cc = initCc()
         val expectedException = RuntimeException("Expected Exception")
 
         val actualException =
@@ -303,7 +303,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun givenTransactionRunsSuccessfully_thenShouldBeAbleToFinishOtherTransactions() = runTest {
-        val coreCrypto = initCc(this@MLSTest)
+        val coreCrypto = initCc()
         val someWork = Job()
         val firstTransactionJob = launch {
             coreCrypto.transaction {
@@ -324,7 +324,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun givenTransactionIsCancelled_thenShouldBeAbleToFinishOtherTransactions() = runTest {
-        val coreCrypto = initCc(this@MLSTest)
+        val coreCrypto = initCc()
 
         val firstTransactionJob = launch {
             coreCrypto.transaction {
@@ -529,7 +529,7 @@ class MLSTest : HasMockDeliveryService() {
             val clientId = genClientId()
             val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
 
-            val cc = initCc(this@MLSTest)
+            val cc = initCc()
             val ref = cc.transaction { ctx ->
                 ctx.mlsInitShort(clientId)
                 ctx.addCredential(credential)
@@ -550,7 +550,7 @@ class MLSTest : HasMockDeliveryService() {
             val clientId = genClientId()
             val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
 
-            val cc = initCc(this@MLSTest)
+            val cc = initCc()
             val ref = cc.transaction { ctx ->
                 ctx.mlsInitShort(clientId)
                 ctx.addCredential(credential)
@@ -577,7 +577,7 @@ class MLSTest : HasMockDeliveryService() {
                 Ciphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519
             val credential2 = Credential.basic(ciphersuite2, clientId)
 
-            val cc = initCc(this@MLSTest)
+            val cc = initCc()
             cc.transaction { ctx ->
                 ctx.mlsInitShort(clientId)
                 ctx.addCredential(credential1)
@@ -616,7 +616,7 @@ class MLSTest : HasMockDeliveryService() {
             val clientId = genClientId()
             val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
 
-            val cc = initCc(this@MLSTest)
+            val cc = initCc()
             val credentialRef = cc.transaction { ctx ->
                 ctx.mlsInitShort(clientId)
                 ctx.addCredential(credential)
@@ -637,7 +637,7 @@ class MLSTest : HasMockDeliveryService() {
             val clientId = genClientId()
             val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
 
-            val cc = initCc(this@MLSTest)
+            val cc = initCc()
             val credentialRef = cc.transaction { ctx ->
                 ctx.mlsInitShort(clientId)
                 ctx.addCredential(credential)
@@ -666,7 +666,7 @@ class MLSTest : HasMockDeliveryService() {
             val clientId = genClientId()
             val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
 
-            val cc = initCc(this@MLSTest)
+            val cc = initCc()
             val credentialRef = cc.transaction { ctx ->
                 ctx.mlsInitShort(clientId)
                 ctx.addCredential(credential)
@@ -693,7 +693,7 @@ class MLSTest : HasMockDeliveryService() {
             val clientId = genClientId()
             val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
 
-            val cc = initCc(this@MLSTest)
+            val cc = initCc()
             val credentialRef = cc.transaction { ctx ->
                 ctx.mlsInitShort(clientId)
                 ctx.addCredential(credential)
@@ -737,7 +737,7 @@ class MLSTest : HasMockDeliveryService() {
                 clientId
             )
 
-            val cc = initCc(this@MLSTest)
+            val cc = initCc()
 
             cc.transaction { ctx ->
                 ctx.mlsInitShort(clientId)
