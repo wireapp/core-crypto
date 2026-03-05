@@ -73,9 +73,16 @@ val selectedRustTargetsByAndroidAbi = if (buildAllAbis) {
 val ffiLibsBase = layout.buildDirectory.dir("ffiLibs").get().asFile
 
 fun copyFfiLibraries(buildType: String) {
-    for ((rustTarget, androidTarget) in targets) {
+    val buildTypeOutputDir = ffiLibsBase.resolve(buildType)
+    if (buildTypeOutputDir.exists()) {
+        buildTypeOutputDir.deleteRecursively()
+    }
+
+    for ((androidAbi, rustTarget) in selectedRustTargetsByAndroidAbi) {
         val src = projectDir.resolve("../../../target/$rustTarget/$buildType/libcore_crypto_ffi.so")
-        val dest = ffiLibsBase.resolve("$buildType/$androidTarget/libcore_crypto_ffi.so")
+        val dest = ffiLibsBase.resolve("$buildType/$androidAbi/libcore_crypto_ffi.so")
+        check(src.exists()) { "Missing FFI library: $src" }
+        dest.parentFile.mkdirs()
         src.copyTo(dest, overwrite = true)
     }
 }
