@@ -180,6 +180,9 @@
                 <a href="../../Functions.html#/s:20WireCoreCryptoUniffi04coreC13HistoryClient13historySecretAA0bC3FfiCAA0fI0V_tYaKF">coreCryptoHistoryClient(historySecret:)</a>
               </li>
               <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi04coreC3New8databaseAA0bC3FfiCAA8DatabaseC_tKF">coreCryptoNew(database:)</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="../../Functions.html#/s:20WireCoreCryptoUniffi20createPkiEnvironment5hooks8databaseAA0fG0CAA0fG5Hooks_p_AA8DatabaseCtYaKF">createPkiEnvironment(hooks:database:)</a>
               </li>
               <li class="nav-group-task">
@@ -355,7 +358,7 @@
               <div class="declaration">
                 <div class="language">
                   
-                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">CoreCrypto</span> <span class="p">:</span> <span class="kt"><a href="../../WireCoreCrypto/Protocols/CoreCryptoProtocol.html">CoreCryptoProtocol</a></span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">CoreCrypto</span> <span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CoreCryptoFfi.html">CoreCryptoFfi</a></span><span class="p">,</span> <span class="kt"><a href="../../WireCoreCrypto/Protocols/CoreCryptoProtocol.html">CoreCryptoProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
 
                 </div>
               </div>
@@ -490,9 +493,9 @@ Other use is a logic error.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:14WireCoreCrypto0bC8ProtocolP21registerEpochObserveryy0abC6Uniffi0fG0_pYaKF"></a>
+                    <a name="/s:14WireCoreCrypto0bC0C21registerEpochObserveryy0abC6Uniffi0eF0_pYaKF"></a>
                     <a name="//apple_ref/swift/Method/registerEpochObserver(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:14WireCoreCrypto0bC8ProtocolP21registerEpochObserveryy0abC6Uniffi0fG0_pYaKF">registerEpochObserver(_:<wbr>)</a>
+                    <a class="token" href="#/s:14WireCoreCrypto0bC0C21registerEpochObserveryy0abC6Uniffi0eF0_pYaKF">registerEpochObserver(_:<wbr>)</a>
                     </code>
                       <span class="declaration-note">
                         Asynchronous
@@ -503,7 +506,8 @@ Other use is a logic error.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        
+                        <p>Undocumented</p>
+
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
@@ -519,9 +523,9 @@ Other use is a logic error.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:14WireCoreCrypto0bC8ProtocolP23registerHistoryObserveryy0abC6Uniffi0fG0_pYaKF"></a>
+                    <a name="/s:14WireCoreCrypto0bC0C23registerHistoryObserveryy0abC6Uniffi0eF0_pYaKF"></a>
                     <a name="//apple_ref/swift/Method/registerHistoryObserver(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:14WireCoreCrypto0bC8ProtocolP23registerHistoryObserveryy0abC6Uniffi0fG0_pYaKF">registerHistoryObserver(_:<wbr>)</a>
+                    <a class="token" href="#/s:14WireCoreCrypto0bC0C23registerHistoryObserveryy0abC6Uniffi0eF0_pYaKF">registerHistoryObserver(_:<wbr>)</a>
                     </code>
                       <span class="declaration-note">
                         Asynchronous
@@ -532,100 +536,14 @@ Other use is a logic error.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        
+                        <p>Undocumented</p>
+
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">registerHistoryObserver</span><span class="p">(</span><span class="n">_</span> <span class="nv">historyObserver</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Protocols/HistoryObserver.html">HistoryObserver</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:14WireCoreCrypto0bC8ProtocolP23isHistorySharingEnabled14conversationIdSb0abC6Uniffi012ConversationJ0C_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/isHistorySharingEnabled(conversationId:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:14WireCoreCrypto0bC8ProtocolP23isHistorySharingEnabled14conversationIdSb0abC6Uniffi012ConversationJ0C_tYaKF">isHistorySharingEnabled(conversationId:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">isHistorySharingEnabled</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Bool</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:14WireCoreCrypto0bC8ProtocolP17setPkiEnvironmentyy0abC6Uniffi0fG0CSgYaKF"></a>
-                    <a name="//apple_ref/swift/Method/setPkiEnvironment(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:14WireCoreCrypto0bC8ProtocolP17setPkiEnvironmentyy0abC6Uniffi0fG0CSgYaKF">setPkiEnvironment(_:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">setPkiEnvironment</span><span class="p">(</span><span class="n">_</span> <span class="nv">pkiEnvironment</span><span class="p">:</span> <span class="kt"><a href="../../Classes.html#/s:20WireCoreCryptoUniffi14PkiEnvironmentC">PkiEnvironment</a></span><span class="p">?)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:14WireCoreCrypto0bC8ProtocolP17getPkiEnvironment0abC6Uniffi0fG0CSgyYaKF"></a>
-                    <a name="//apple_ref/swift/Method/getPkiEnvironment()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:14WireCoreCrypto0bC8ProtocolP17getPkiEnvironment0abC6Uniffi0fG0CSgyYaKF">getPkiEnvironment()</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">getPkiEnvironment</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../Classes.html#/s:20WireCoreCryptoUniffi14PkiEnvironmentC">PkiEnvironment</a></span><span class="p">?</span></code></pre>
 
                         </div>
                       </div>
@@ -694,7 +612,7 @@ It&rsquo;s basically the public key encoded as an hex string</p>
           </section>
         </section>
         <section id="footer">
-          <p>&copy; 2026 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2026-03-03)</p>
+          <p>&copy; 2026 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2026-03-05)</p>
           <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.4</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
         </section>
       </article>

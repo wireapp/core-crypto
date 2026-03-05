@@ -180,6 +180,9 @@
                 <a href="../../Functions.html#/s:20WireCoreCryptoUniffi04coreC13HistoryClient13historySecretAA0bC3FfiCAA0fI0V_tYaKF">coreCryptoHistoryClient(historySecret:)</a>
               </li>
               <li class="nav-group-task">
+                <a href="../../Functions.html#/s:20WireCoreCryptoUniffi04coreC3New8databaseAA0bC3FfiCAA8DatabaseC_tKF">coreCryptoNew(database:)</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="../../Functions.html#/s:20WireCoreCryptoUniffi20createPkiEnvironment5hooks8databaseAA0fG0CAA0fG5Hooks_p_AA8DatabaseCtYaKF">createPkiEnvironment(hooks:database:)</a>
               </li>
               <li class="nav-group-task">
@@ -355,7 +358,7 @@
               <div class="declaration">
                 <div class="language">
                   
-                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">CoreCryptoProtocol</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">CoreCryptoProtocol</span> <span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Protocols/CoreCryptoFfiProtocol.html">CoreCryptoFfiProtocol</a></span></code></pre>
 
                 </div>
               </div>
@@ -455,230 +458,12 @@ A <code><a href="../../WireCoreCryptoUniffi/Classes/CoreCryptoContext.html">Core
                     </section>
                   </div>
                 </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:14WireCoreCrypto0bC8ProtocolP21registerEpochObserveryy0abC6Uniffi0fG0_pYaKF"></a>
-                    <a name="//apple_ref/swift/Method/registerEpochObserver(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:14WireCoreCrypto0bC8ProtocolP21registerEpochObserveryy0abC6Uniffi0fG0_pYaKF">registerEpochObserver(_:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Register an Epoch Observer which will be notified every time a conversation&rsquo;s epoch changes.</p>
-
-<p>This function should be called 0 or 1 times in the lifetime of CoreCrypto,
-regardless of the number of transactions.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">registerEpochObserver</span><span class="p">(</span><span class="n">_</span> <span class="nv">epochObserver</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Protocols/EpochObserver.html">EpochObserver</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>epochObserver</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>epoch observer to register</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:14WireCoreCrypto0bC8ProtocolP23registerHistoryObserveryy0abC6Uniffi0fG0_pYaKF"></a>
-                    <a name="//apple_ref/swift/Method/registerHistoryObserver(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:14WireCoreCrypto0bC8ProtocolP23registerHistoryObserveryy0abC6Uniffi0fG0_pYaKF">registerHistoryObserver(_:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Register a History Observer which will be notified every time a new history secret is created locally.</p>
-
-<p>This function should be called 0 or 1 times in the lifetime of CoreCrypto,
-regardless of the number of transactions.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">registerHistoryObserver</span><span class="p">(</span><span class="n">_</span> <span class="nv">historyObserver</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Protocols/HistoryObserver.html">HistoryObserver</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>historyObserver</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>history observer to register</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:14WireCoreCrypto0bC8ProtocolP23isHistorySharingEnabled14conversationIdSb0abC6Uniffi012ConversationJ0C_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/isHistorySharingEnabled(conversationId:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:14WireCoreCrypto0bC8ProtocolP23isHistorySharingEnabled14conversationIdSb0abC6Uniffi012ConversationJ0C_tYaKF">isHistorySharingEnabled(conversationId:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Check if history sharing is enabled, i.e., if any of the conversation members have a <code><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></code> starting
-with the specific history client prefix.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">isHistorySharingEnabled</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Bool</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:14WireCoreCrypto0bC8ProtocolP17setPkiEnvironmentyy0abC6Uniffi0fG0CSgYaKF"></a>
-                    <a name="//apple_ref/swift/Method/setPkiEnvironment(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:14WireCoreCrypto0bC8ProtocolP17setPkiEnvironmentyy0abC6Uniffi0fG0CSgYaKF">setPkiEnvironment(_:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Set the PkiEnvironment of the CoreCrypto instance</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">setPkiEnvironment</span><span class="p">(</span><span class="n">_</span> <span class="nv">pkiEnvironment</span><span class="p">:</span> <span class="kt"><a href="../../Classes.html#/s:20WireCoreCryptoUniffi14PkiEnvironmentC">PkiEnvironment</a></span><span class="p">?)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>pkiEnvironment</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>the pki environment to set</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:14WireCoreCrypto0bC8ProtocolP17getPkiEnvironment0abC6Uniffi0fG0CSgyYaKF"></a>
-                    <a name="//apple_ref/swift/Method/getPkiEnvironment()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:14WireCoreCrypto0bC8ProtocolP17getPkiEnvironment0abC6Uniffi0fG0CSgyYaKF">getPkiEnvironment()</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Get the Pki Environment of the CoreCrypto instance</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getPkiEnvironment</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../Classes.html#/s:20WireCoreCryptoUniffi14PkiEnvironmentC">PkiEnvironment</a></span><span class="p">?</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p>the pki environment or null if not set</p>
-                      </div>
-                    </section>
-                  </div>
-                </li>
               </ul>
             </div>
           </section>
         </section>
         <section id="footer">
-          <p>&copy; 2026 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2026-03-03)</p>
+          <p>&copy; 2026 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2026-03-05)</p>
           <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.4</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
         </section>
       </article>
