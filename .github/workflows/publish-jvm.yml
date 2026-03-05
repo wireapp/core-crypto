@@ -44,6 +44,7 @@ jobs:
           distribution: "adopt"
 
       - name: download bindings artifact
+        if: ${{ inputs.prepare == true }}
         uses: ./.github/actions/make/bindings-kotlin-jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
@@ -56,12 +57,14 @@ jobs:
         uses: gradle/actions/wrapper-validation@v5
 
       - name: download jvm bindings
+        if: ${{ inputs.prepare == true }}
         uses: ./.github/actions/make/bindings-kotlin-jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: download x86_64 linux artifact
+        if: ${{ inputs.prepare == true }}
         uses: ./.github/actions/make/jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
@@ -70,6 +73,7 @@ jobs:
       # The specific jvm action uses `uname -s` to determine which `jvm` make rule to call.
       # Because this workflow runs on ubuntu, we're using the generic action
       - name: download aarch64 apple darwin artifact
+        if: ${{ inputs.prepare == true }}
         uses: ./.github/actions/make
         with:
           key: jvm-darwin
