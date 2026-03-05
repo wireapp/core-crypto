@@ -87,39 +87,6 @@ kotlin {
                 implementation(libs.assertj.core)
             }
         }
-
-        // Native targets share sources
-        val nativeMain by creating {
-            dependsOn(commonMain)
-        }
-
-        val nativeTest by creating {
-            dependsOn(commonTest)
-        }
-
-        val iosArm64Main by getting {
-            dependsOn(nativeMain)
-        }
-
-        val iosArm64Test by getting {
-            dependsOn(nativeTest)
-        }
-
-        val iosSimulatorArm64Main by getting {
-            dependsOn(nativeMain)
-        }
-
-        val iosSimulatorArm64Test by getting {
-            dependsOn(nativeTest)
-        }
-
-        val macosArm64Main by getting {
-            dependsOn(nativeMain)
-        }
-
-        val macosArm64Test by getting {
-            dependsOn(nativeTest)
-        }
     }
 }
 
