@@ -51,6 +51,22 @@ val buildAllAbis = providers.systemProperty("coreCryptoAndroidBuildAllAbis")
     .orElse(true)
     .get()
 
+val hostAndroidAbi = when (System.getProperty("os.arch").lowercase()) {
+    "aarch64", "arm64" -> "arm64-v8a"
+    "x86_64", "amd64" -> "x86_64"
+    else -> if (buildAllAbis) {
+        "this is not going to be used."
+    } else {
+        throw GradleException("Unable to infer host Android ABI from os.arch='${System.getProperty("os.arch")}'. ")
+    }
+}
+
+val selectedRustTargetsByAndroidAbi = if (buildAllAbis) {
+    rustTargetsByAndroidAbi.toList()
+} else {
+    listOf(hostAndroidAbi to rustTargetsByAndroidAbi.getValue(hostAndroidAbi))
+}
+
 // This is the base directory under `build` that holds all libraries, organized by
 // the build type (debug or release) and the Android target (arm64-v8a etc.).
 // Libraries are copied there during the preDebugBuild and preReleaseBuild tasks.
