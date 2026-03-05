@@ -231,7 +231,8 @@ jobs:
       - build-ios
       - bindings-swift
       - bindings-ts
-      - package-android
+      - bindings-android
+      - build-android
       - build-interop
     uses: ./.github/workflows/interop.yml
 
