@@ -121,6 +121,10 @@
 
 ### Breaking Changes
 
+- TypeScript: To construct `CoreCrypto`, call the static function `CoreCrypto.new()`.
+
+  Affected platforms: web
+
 - added `.close()` to `Database` and removed `.close()` from `CoreCrypto`.
 
   A database should be closed if it is not used anymore. Closing a database makes any `PkiEnvironment` or `CoreCrypto`
