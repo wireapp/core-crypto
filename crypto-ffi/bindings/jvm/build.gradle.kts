@@ -4,6 +4,7 @@ plugins {
     id("maven-publish")
     id("signing")
     id(libs.plugins.detekt.get().pluginId) version libs.versions.detekt
+    id("me.champeau.jmh") version "0.7.3"
 }
 
 java {
@@ -75,6 +76,12 @@ sourceSets {
             srcDir(sharedTestSources.resolve("kotlin"))
         }
     }
+}
+
+jmh {
+    fork.set(1)
+    resultFormat.set("CSV")
+    resultsFile.set(layout.buildDirectory.file("reports/jmh/results.csv").get().asFile)
 }
 
 // Allows skipping signing jars published to 'MavenLocal' repository
