@@ -1,8 +1,7 @@
 [versions]
-kotlin = "2.0.21"
+kotlin = "2.3.10"
 coroutines = "1.10.2"
 android-tools = "8.12.3"
-kotlin-gradle = "2.0.21"
 agp = "8.12.3"
 ktx-serialization = "1.8.0"
 activity = "1.12.2"
@@ -17,6 +16,6 @@ coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", vers
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 android-tools = { module = "com.android.tools.build:gradle", version.ref = "android-tools" }
-kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle" }
+kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 ktxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "ktx-serialization" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }

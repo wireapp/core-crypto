@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.0.21"
+kotlin = "2.3.10"
 coroutines = "1.7.3"
 kotlinx-datetime = "0.6.1"
 jna = "5.17.0"
@@ -11,7 +11,6 @@ sdk-compile = "35"
 sdk-min = "26"
 gradle = "8.8"
 vanniktech-publish = "0.34.0"
-kotlin-gradle = "2.0.21"
 dokka = "2.0.0"
 detekt = "1.23.8"
 agp = "8.12.3"
@@ -36,5 +35,5 @@ assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 espresso = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 android-junit = { module = "androidx.test.ext:junit", version.ref = "android-junit" }
 android-tools = { module = "com.android.tools.build:gradle", version.ref = "android-tools" }
-kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle" }
+kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
