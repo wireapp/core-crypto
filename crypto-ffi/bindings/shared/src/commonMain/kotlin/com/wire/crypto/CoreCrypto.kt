@@ -8,7 +8,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.ByteArray
 
-/** Wrap a `CoreCrypto` instance in a `CoreCryptoClient` instance. Should largely be invisible to end-users. */
+/** Wrap a [CoreCryptoFfi] instance in a [CoreCrypto] instance. Should largely be invisible to end-users. */
 fun CoreCryptoFfi.lift() = CoreCrypto(this)
 
 /**
@@ -23,7 +23,7 @@ class CoreCrypto(private val cc: CoreCryptoFfi) : CoreCryptoFfiInterface by cc {
         operator fun invoke(
             database: Database,
         ) =
-            CoreCrypto(CoreCryptoFfi(database))
+            CoreCrypto(coreCryptoNew(database))
 
         /**
          * Instantiate a history client.
