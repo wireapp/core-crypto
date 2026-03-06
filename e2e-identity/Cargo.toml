@@ -76,7 +76,7 @@ pem.workspace = true
 rand.workspace = true
 rstest.workspace = true
 
-[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+[target.'cfg(not(target_os = "unknown"))'.dev-dependencies]
 reqwest = { workspace = true, features = ["json", "cookies"] }
 tokio = { workspace = true, features = ["macros"] }
 hyper = { workspace = true, features = ["server"] }
@@ -88,7 +88,7 @@ http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["full"] }
 testcontainers = { workspace = true, features = ["reusable-containers"] }
 
-[target.'cfg(target_family = "wasm")'.dependencies.uuid]
+[target.'cfg(target_os = "unknown")'.dependencies.uuid]
 workspace = true
 features = ["std", "js"]
 

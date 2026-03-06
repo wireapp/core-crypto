@@ -66,8 +66,8 @@ use crate::{
 
 /// The base layer for [Conversation].
 /// The trait is only exposed internally.
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub(crate) trait ConversationWithMls<'a> {
     /// [`Session`] and [`TransactionContext`][crate::transaction_context::TransactionContext] both implement
     /// [`HasSessionAndCrypto`].
@@ -103,8 +103,8 @@ pub(crate) trait ConversationWithMls<'a> {
 // We keep the super trait internal intentionally, as it is not meant to be used by the public API,
 // hence #[expect(private_bounds)].
 #[expect(private_bounds)]
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait Conversation<'a>: ConversationWithMls<'a> {
     /// Returns the epoch of a given conversation
     async fn epoch(&'a self) -> u64 {

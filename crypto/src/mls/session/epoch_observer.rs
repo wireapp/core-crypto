@@ -6,8 +6,8 @@ use super::{Error, Result, Session};
 use crate::ConversationId;
 
 /// An `EpochObserver` is notified whenever a conversation's epoch changes.
-#[cfg_attr(target_family = "wasm", async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait)]
 pub trait EpochObserver: Send + Sync {
     /// This function will be called every time a conversation's epoch changes.
     ///

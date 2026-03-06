@@ -262,7 +262,7 @@ mod stored_credential {
     }
 
     // we don't have a good way to just delay for a second in wasm, so skip this test which relies on that behavior
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(not(target_os = "unknown"))]
     #[apply(all_storage_types)]
     async fn search_finds_only_entities_with_matching_search_key(context: KeystoreTestContext) {
         let store = context.store();

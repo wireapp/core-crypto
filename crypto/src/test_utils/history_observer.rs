@@ -63,7 +63,7 @@ impl TestHistoryObserver {
 }
 
 #[cfg_attr(target_family="wasm", async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(not(target_os = "unknown"), async_trait)]
 impl HistoryObserver for TestHistoryObserver {
     async fn history_client_created(&self, conversation_id: ConversationId, secret: &HistorySecret) {
         let mut guard = self.0.lock().await;

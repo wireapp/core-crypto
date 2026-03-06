@@ -38,7 +38,7 @@ spinoff = { version = "0.8", features = [
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
+[target.'cfg(not(target_os = "unknown"))'.dependencies]
 async-fs = "2.2"
 tokio = { version = "1.50", features = ["full"] }
 # Http Server
@@ -49,5 +49,5 @@ which = "8.0.0"
 tree-sitter = "0.26.6"
 tree-sitter-typescript = "0.23.2"
 
-[target.'cfg(not(target_family = "wasm"))'.build-dependencies]
+[target.'cfg(not(target_os = "unknown"))'.build-dependencies]
 cc = "1.2.56"

@@ -12,7 +12,7 @@ workspace = true
 [dependencies]
 anyhow = "1.0"
 
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
+[target.'cfg(not(target_os = "unknown"))'.dependencies]
 core-crypto-keystore = { workspace = true }
 core-crypto = { path = "../crypto" }
 wire-e2e-identity.workspace = true
@@ -37,6 +37,6 @@ chrono = { version = "0.4", default-features = false, features = [
   "serde",
 ] }
 
-[target.'cfg(not(target_family = "wasm"))'.dependencies.proteus-wasm]
+[target.'cfg(not(target_os = "unknown"))'.dependencies.proteus-wasm]
 workspace = true
 features = ["hazmat", "serde"]

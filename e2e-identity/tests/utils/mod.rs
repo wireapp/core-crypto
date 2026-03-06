@@ -2,20 +2,20 @@
 
 use rusty_jwt_tools::prelude::ClientId;
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 pub(crate) mod cfg;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 pub(crate) mod ctx;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 pub(crate) mod display;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 pub(crate) mod fmk;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 pub(crate) mod helpers;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 pub(crate) mod idp;
 pub(crate) mod keys;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 pub(crate) mod stepca;
 
 /// Container network name.
@@ -52,7 +52,7 @@ pub(crate) enum TestError {
     Acme(#[from] wire_e2e_identity::acme::RustyAcmeError),
     #[error(transparent)]
     Jwt(#[from] rusty_jwt_tools::prelude::RustyJwtError),
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(not(target_os = "unknown"))]
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
     #[error(transparent)]

@@ -80,11 +80,11 @@ rand_chacha = "0.3"
 version = "0.12"
 features = ["x25519", "p256", "p384", "p521"]
 
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
+[target.'cfg(not(target_os = "unknown"))'.dependencies]
 async-fs = { version = "2.2", optional = true }
 futures-lite = { version = "2.6", optional = true }
 
-[target.'cfg(target_family = "wasm")'.dependencies]
+[target.'cfg(target_os = "unknown")'.dependencies]
 serde-wasm-bindgen = "0.6"
 
 [dev-dependencies]
@@ -111,11 +111,11 @@ wasm-bindgen-test = { workspace = true }
 openmls.workspace = true
 hex-literal = "1.1"
 
-[target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
+[target.'cfg(not(target_os = "unknown"))'.dev-dependencies.criterion]
 version = "0.8"
 features = ["async_smol", "async_futures", "html_reports"]
 
-[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+[target.'cfg(not(target_os = "unknown"))'.dev-dependencies]
 smol-macros.workspace = true
 macro_rules_attribute.workspace = true
 

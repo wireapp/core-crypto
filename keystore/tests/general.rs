@@ -5,7 +5,7 @@ mod common;
 
 #[cfg(test)]
 mod tests {
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     use idb::builder::{DatabaseBuilder, ObjectStoreBuilder};
     use wasm_bindgen_test::*;
 
@@ -19,7 +19,7 @@ mod tests {
     }
 
     #[cfg(target_os = "ios")]
-    #[cfg_attr(not(target_family = "wasm"), macro_rules_attribute::apply(smol_macros::test))]
+    #[cfg_attr(not(target_os = "unknown"), macro_rules_attribute::apply(smol_macros::test))]
     async fn can_preserve_wal_compat_for_ios() {
         let store1 = setup("ios-wal-compat", false).await;
         drop(store1);
@@ -28,7 +28,7 @@ mod tests {
         let _store1 = setup("ios-wal-compat", false).await;
     }
 
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     #[wasm_bindgen_test]
     pub(crate) async fn can_migrate_new_idb_db_versions() {
         let store_name = store_name();

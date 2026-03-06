@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, LazyLock, Once},
 };
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 use js_sys::wasm_bindgen::JsValue;
 use log::{
     Level, LevelFilter, Metadata, Record,
@@ -130,20 +130,20 @@ impl log::Log for LogShim {
         let context = serde_json::to_string(&visitor.0).ok();
 
         // adjust the loglevel for sqlite migrations
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         let loglevel = CoreCryptoLogLevel::from(self.adjusted_log_level(record.metadata()));
 
         // no adjustment needed for wasm/idb
-        #[cfg(target_family = "wasm")]
+        #[cfg(target_os = "unknown")]
         let loglevel = record.metadata().level().into();
 
         let log_result = self.logger.log(loglevel, message.clone(), context);
 
         if let Err(LoggingError::Ffi(meta_err @ uniffi::UnexpectedUniFFICallbackError { .. })) = log_result {
-            #[cfg(not(target_family = "wasm"))]
+            #[cfg(not(target_os = "unknown"))]
             eprintln!("{meta_err} while attempting to produce {message}");
 
-            #[cfg(target_family = "wasm")]
+            #[cfg(target_os = "unknown")]
             web_sys::console::error_1(&JsValue::from(format!(
                 "{meta_err} while attempting to produce {message}"
             )));

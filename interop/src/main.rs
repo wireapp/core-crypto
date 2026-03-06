@@ -1,19 +1,19 @@
-#![cfg_attr(target_family = "wasm", allow(dead_code, unused_imports))]
+#![cfg_attr(target_os = "unknown", allow(dead_code, unused_imports))]
 
 use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 use core_crypto::DatabaseKey;
 use core_crypto::MlsCiphersuite;
 use tls_codec::Serialize;
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 use crate::util::{MlsTransportSuccessProvider, MlsTransportTestExt};
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 mod clients;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 mod util;
 
 const MLS_CONVERSATION_ID: &[u8] = b"test_conversation";
@@ -25,7 +25,7 @@ fn main() -> Result<()> {
     run_test()
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 async fn create_mls_clients<'a>(
     chrome_driver_addr: &'a std::net::SocketAddr,
     web_server: &'a std::net::SocketAddr,
@@ -46,7 +46,7 @@ async fn create_mls_clients<'a>(
     ]
 }
 
-#[cfg(all(not(target_family = "wasm"), feature = "proteus"))]
+#[cfg(all(not(target_os = "unknown"), feature = "proteus"))]
 async fn create_proteus_clients<'a>(
     chrome_driver_addr: &'a std::net::SocketAddr,
     web_server: &'a std::net::SocketAddr,
@@ -69,7 +69,7 @@ async fn create_proteus_clients<'a>(
 
 // need to be handled like this because https://github.com/rust-lang/cargo/issues/5220, otherwise
 // it complains over a lacking main function
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 fn run_test() -> Result<()> {
     use std::time::{Duration, Instant};
 
@@ -126,12 +126,12 @@ fn run_test() -> Result<()> {
     })
 }
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 fn run_test() -> Result<()> {
     panic!("E2E tests cannot be run on WASM")
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &std::net::SocketAddr) -> Result<()> {
     use core_crypto::*;
     use rand::distributions::DistString;
@@ -284,7 +284,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     Ok(())
 }
 
-#[cfg(all(not(target_family = "wasm"), feature = "proteus"))]
+#[cfg(all(not(target_os = "unknown"), feature = "proteus"))]
 async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &std::net::SocketAddr) -> Result<()> {
     use core_crypto::*;
 

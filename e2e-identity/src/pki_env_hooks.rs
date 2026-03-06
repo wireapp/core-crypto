@@ -64,8 +64,8 @@ pub struct PkiEnvironmentHooksError {
 ///    |                           |  (excluded several calls for brevity)             |
 ///    | return Success(Credential) [X509CredentialAcquisition().finalize()]           |
 ///    |<--------------------------|                          |                        |
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait PkiEnvironmentHooks: std::fmt::Debug + Send + Sync {
     /// Make an HTTP request
     /// Used for requests to ACME servers, CRL distributors etc.

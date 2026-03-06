@@ -1,12 +1,12 @@
 use async_trait::async_trait;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 use rusqlite::{OptionalExtension as _, ToSql, params};
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 use serde::de::DeserializeOwned;
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 use crate::entities::{count_helper, count_helper_tx, delete_helper, load_all_helper};
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 use crate::traits::{Decryptable, Decrypting, Encrypting, KeyType as _};
 use crate::{
     CryptoKeystoreResult,
@@ -23,8 +23,8 @@ pub trait UniqueEntity:
 }
 
 /// Unique entities get some convenience methods implemented automatically.
-#[cfg_attr(target_family = "wasm", async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait)]
 pub trait UniqueEntityExt<'a>: UniqueEntity + EntityDatabaseMutation<'a> {
     /// Get this unique entity from the database.
     async fn get_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>>;
@@ -46,7 +46,7 @@ pub trait UniqueEntityExt<'a>: UniqueEntity + EntityDatabaseMutation<'a> {
 
 // unfortunately we have to implement this trait twice, with nearly-identical but distinct bounds
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 #[async_trait(?Send)]
 impl<'a, E> UniqueEntityExt<'a> for E
 where
@@ -85,7 +85,7 @@ where
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 #[async_trait]
 impl<'a, E> UniqueEntityExt<'a> for E
 where
@@ -161,9 +161,9 @@ where
     // The old keystore trait used usize as the primary key type, but that would vary
     // in width across various implementations and so is intentionally not a `KeyType`.
     // So we distinguish betwen `u32` and `u64` according to whether or not we're on wasm.
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     type PrimaryKey = u32;
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(not(target_os = "unknown"))]
     type PrimaryKey = u64;
 
     fn primary_key(&self) -> Self::PrimaryKey {
@@ -171,7 +171,7 @@ where
     }
 }
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 impl<T> UniqueEntity for T
 where
     T: EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection>
@@ -181,7 +181,7 @@ where
     const KEY: u32 = 0;
 }
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 #[async_trait(?Send)]
 impl<T> Entity for T
 where
@@ -206,7 +206,7 @@ where
     }
 }
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 #[async_trait(?Send)]
 impl<'a, T> EntityDatabaseMutation<'a> for T
 where
@@ -231,7 +231,7 @@ where
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 impl<T> UniqueEntity for T
 where
     T: EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection>
@@ -241,7 +241,7 @@ where
     const KEY: u64 = 0;
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 #[async_trait]
 impl<T> Entity for T
 where
@@ -273,7 +273,7 @@ where
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 #[async_trait]
 impl<'a, T> EntityDatabaseMutation<'a> for T
 where

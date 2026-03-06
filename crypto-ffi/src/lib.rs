@@ -36,7 +36,7 @@ pub use bundles::{
 };
 pub use ciphersuite::{Ciphersuite, ciphersuite_default, ciphersuite_from_u16};
 pub use client_id::ClientId;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 pub use core_crypto::command::transaction_helper::TransactionHelper;
 pub(crate) use core_crypto::e2ei::identities::UserIdentities;
 pub use core_crypto::{
@@ -50,7 +50,7 @@ pub use core_crypto::{
 };
 pub use core_crypto_context::CoreCryptoContext;
 pub use credential::Credential;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 pub use credential::credential_basic;
 pub use credential_ref::CredentialRef;
 pub use credential_type::CredentialType;

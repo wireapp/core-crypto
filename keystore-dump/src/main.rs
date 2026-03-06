@@ -1,13 +1,13 @@
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 use anyhow::{anyhow, bail};
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 fn main() -> anyhow::Result<()> {
     println!("the keystore dump tool is not available for WASM");
     Ok(())
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 #[macro_rules_attribute::apply(smol_macros::main)]
 async fn main() -> anyhow::Result<()> {
     #[derive(Debug, clap::Parser)]

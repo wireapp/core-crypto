@@ -6,8 +6,8 @@ use super::{Error, Session};
 use crate::{ConversationId, HistorySecret, ToRecursiveError as _};
 
 /// The `HistoryObserver` will be called when updating the history client in a conversation
-#[cfg_attr(target_family = "wasm", async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait)]
 pub trait HistoryObserver: Send + Sync {
     /// This function will be called when a new history client has been created and accepted
     /// by the delivery service.

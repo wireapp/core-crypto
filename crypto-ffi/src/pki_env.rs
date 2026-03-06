@@ -126,8 +126,8 @@ impl From<uniffi::UnexpectedUniFFICallbackError> for PkiEnvironmentHooksError {
 ///    | return Success(Credential) [X509CredentialAcquisition().finalize()]           |
 ///    |<--------------------------|                          |                        |
 #[uniffi::export(with_foreign)]
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait PkiEnvironmentHooks: Send + Sync {
     /// Make an HTTP request
     /// Used for requests to ACME servers, CRL distributors etc.
@@ -178,8 +178,8 @@ impl std::fmt::Debug for PkiEnvironmentHooksShim {
     }
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl pki_env_hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
     async fn http_request(
         &self,

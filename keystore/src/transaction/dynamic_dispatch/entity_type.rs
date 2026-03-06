@@ -1,4 +1,4 @@
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 use crate::entities::E2eiRefreshToken;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
@@ -24,7 +24,7 @@ pub(crate) enum EntityType {
     PersistedMlsPendingGroup,
     MlsPendingMessage,
     StoredE2eiEnrollment,
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     E2eiRefreshToken,
     E2eiAcmeCA,
     E2eiIntermediateCert,
@@ -54,7 +54,7 @@ impl EntityType {
             StoredE2eiEnrollment::COLLECTION_NAME => Some(Self::StoredE2eiEnrollment),
             E2eiCrl::COLLECTION_NAME => Some(Self::E2eiCrl),
             E2eiAcmeCA::COLLECTION_NAME => Some(Self::E2eiAcmeCA),
-            #[cfg(target_family = "wasm")]
+            #[cfg(target_os = "unknown")]
             E2eiRefreshToken::COLLECTION_NAME => Some(Self::E2eiRefreshToken),
             E2eiIntermediateCert::COLLECTION_NAME => Some(Self::E2eiIntermediateCert),
             #[cfg(feature = "proteus-keystore")]
@@ -80,7 +80,7 @@ impl EntityType {
             Self::PersistedMlsPendingGroup => PersistedMlsPendingGroup::COLLECTION_NAME,
             Self::MlsPendingMessage => MlsPendingMessage::COLLECTION_NAME,
             Self::StoredE2eiEnrollment => StoredE2eiEnrollment::COLLECTION_NAME,
-            #[cfg(target_family = "wasm")]
+            #[cfg(target_os = "unknown")]
             Self::E2eiRefreshToken => E2eiRefreshToken::COLLECTION_NAME,
             Self::E2eiAcmeCA => E2eiAcmeCA::COLLECTION_NAME,
             Self::E2eiIntermediateCert => E2eiIntermediateCert::COLLECTION_NAME,

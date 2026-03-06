@@ -13,8 +13,8 @@ use crate::{
 /// Something which can be stored in our database.
 ///
 /// It has a primary key, which uniquely identifies it.
-#[cfg_attr(target_family = "wasm", async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait)]
 pub trait Entity: EntityBase + PrimaryKey {
     /// Get an entity by its primary key.
     ///
@@ -35,8 +35,8 @@ pub trait Entity: EntityBase + PrimaryKey {
     async fn load_all(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>>;
 }
 
-#[cfg_attr(target_family = "wasm", async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait)]
 pub trait EntityGetBorrowed: Entity + BorrowPrimaryKey {
     /// Get an entity by a borrowed form of its primary key.
     async fn get_borrowed(

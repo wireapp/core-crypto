@@ -12,8 +12,8 @@ use core_crypto_keystore::Database;
 pub use error::{Error, Result};
 pub use session::{EpochObserver, HistoryObserver};
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub(crate) trait HasSessionAndCrypto: Send {
     async fn session(&self) -> Result<Session<Database>>;
     async fn crypto_provider(&self) -> Result<MlsCryptoProvider>;

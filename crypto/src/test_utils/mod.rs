@@ -373,7 +373,7 @@ fn init_x509_test_chain(
     })
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 pub fn tmp_db_file() -> (String, tempfile::TempDir) {
     let tmp_dir = tempfile::tempdir().unwrap();
     let path = tmp_dir.path().join("store.edb");
@@ -382,7 +382,7 @@ pub fn tmp_db_file() -> (String, tempfile::TempDir) {
     (path.to_str().unwrap().to_string(), tmp_dir)
 }
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 pub fn tmp_db_file() -> (String, ()) {
     use rand::distributions::{Alphanumeric, DistString};
     let path = format!("{}.idb", Alphanumeric.sample_string(&mut rand::thread_rng(), 16));
@@ -394,8 +394,8 @@ pub fn conversation_id() -> ConversationId {
     ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()).as_bytes())
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait MlsTransportTestExt: MlsTransport {
     async fn latest_commit_bundle(&self) -> MlsCommitBundle;
     async fn latest_welcome_message(&self) -> MlsMessageOut {
@@ -419,8 +419,8 @@ pub struct CoreCryptoTransportSuccessProvider {
     latest_message: RwLock<Option<Vec<u8>>>,
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportSuccessProvider {
     async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> crate::Result<MlsTransportResponse> {
         self.latest_commit_bundle.write().await.replace(commit_bundle);
@@ -437,8 +437,8 @@ impl MlsTransport for CoreCryptoTransportSuccessProvider {
     }
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransportTestExt for CoreCryptoTransportSuccessProvider {
     async fn latest_commit_bundle(&self) -> MlsCommitBundle {
         self.latest_commit_bundle
@@ -456,8 +456,8 @@ impl MlsTransportTestExt for CoreCryptoTransportSuccessProvider {
 #[derive(Debug, Default)]
 pub struct CoreCryptoTransportAbortProvider;
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportAbortProvider {
     async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> crate::Result<MlsTransportResponse> {
         Ok(MlsTransportResponse::Abort {
@@ -476,8 +476,8 @@ impl MlsTransport for CoreCryptoTransportAbortProvider {
     }
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransportTestExt for CoreCryptoTransportAbortProvider {
     async fn latest_commit_bundle(&self) -> MlsCommitBundle {
         unreachable!("abort provider never stores a commit bundle")
@@ -532,8 +532,8 @@ impl CoreCryptoTransportRetrySuccessProvider {
     }
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportRetrySuccessProvider {
     async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> crate::Result<MlsTransportResponse> {
         let mut just_returned_retry = self.just_returned_retry.write().await;
@@ -588,8 +588,8 @@ impl MlsTransport for CoreCryptoTransportRetrySuccessProvider {
     }
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransportTestExt for CoreCryptoTransportRetrySuccessProvider {
     async fn latest_commit_bundle(&self) -> MlsCommitBundle {
         self.latest_commit_bundle
@@ -612,8 +612,8 @@ use wire_e2e_identity::pki_env_hooks::{
 #[derive(Debug, Default)]
 pub struct DummyPkiEnvironmentHooks;
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl PkiEnvironmentHooks for DummyPkiEnvironmentHooks {
     async fn http_request(
         &self,

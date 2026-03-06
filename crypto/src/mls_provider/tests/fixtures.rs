@@ -12,12 +12,12 @@ pub(crate) fn store_name() -> String {
         .map(|_| rng.sample(rand::distributions::Alphanumeric) as char)
         .collect();
 
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     {
         format!("corecrypto.test.{}.edb", name)
     }
 
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(not(target_os = "unknown"))]
     {
         format!("./test.{name}.edb")
     }
@@ -40,10 +40,10 @@ pub(crate) async fn setup(#[default(false)] in_memory: bool) -> MlsCryptoProvide
 #[template]
 #[rstest]
 #[cfg_attr(
-    not(target_family = "wasm"),
+    not(target_os = "unknown"),
     test_attr(macro_rules_attribute::apply(smol_macros::test))
 )]
-#[cfg_attr(target_family = "wasm", test_attr(wasm_bindgen_test))]
+#[cfg_attr(target_os = "unknown", test_attr(wasm_bindgen_test))]
 async fn use_provider(
     #[from(setup)]
     #[with(true)]
@@ -162,10 +162,10 @@ pub fn entropy() -> EntropySeed {
     Some(entropy())
 )]
 #[cfg_attr(
-    not(target_family = "wasm"),
+    not(target_os = "unknown"),
     test_attr(macro_rules_attribute::apply(smol_macros::test))
 )]
-#[cfg_attr(target_family = "wasm", test_attr(wasm_bindgen_test))]
+#[cfg_attr(target_os = "unknown", test_attr(wasm_bindgen_test))]
 pub fn all_storage_types_and_ciphersuites(
     #[case]
     #[future]

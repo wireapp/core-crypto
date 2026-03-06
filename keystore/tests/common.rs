@@ -14,7 +14,7 @@ pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(Dat
 
 #[fixture]
 pub fn store_name() -> String {
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     {
         // we may sometimes want to disable this for manual debugging
         if true {
@@ -30,7 +30,7 @@ pub fn store_name() -> String {
         }
     }
 
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(not(target_os = "unknown"))]
     {
         let tempfile = tempfile::NamedTempFile::with_prefix("corecrypto.test.edb.").unwrap();
         tempfile.path().to_str().unwrap().to_string()
@@ -44,7 +44,7 @@ pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> KeystoreTestContex
     } else {
         ConnectionType::Persistent(name.as_ref())
     };
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     console_error_panic_hook::set_once();
     let store = core_crypto_keystore::Database::open(location, &TEST_ENCRYPTION_KEY)
         .await
@@ -78,9 +78,9 @@ impl Drop for KeystoreTestContext {
                 store.wipe().await.expect("Could not wipe store");
             };
 
-            #[cfg(not(target_family = "wasm"))]
+            #[cfg(not(target_os = "unknown"))]
             futures_lite::future::block_on(rollback_and_wipe);
-            #[cfg(target_family = "wasm")]
+            #[cfg(target_os = "unknown")]
             wasm_bindgen_futures::spawn_local(rollback_and_wipe);
         }
     }
@@ -91,8 +91,8 @@ impl Drop for KeystoreTestContext {
 #[case::persistent(setup(store_name(), false).await)]
 #[case::in_memory(setup(store_name(), true).await)]
 #[cfg_attr(
-    not(target_family = "wasm"),
+    not(target_os = "unknown"),
     test_attr(macro_rules_attribute::apply(smol_macros::test))
 )]
-#[cfg_attr(target_family = "wasm", test_attr(wasm_bindgen_test::wasm_bindgen_test))]
+#[cfg_attr(target_os = "unknown", test_attr(wasm_bindgen_test::wasm_bindgen_test))]
 pub async fn all_storage_types(#[case] context: KeystoreTestContext) {}

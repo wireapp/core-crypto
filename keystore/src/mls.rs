@@ -12,8 +12,8 @@ use crate::{
 };
 
 /// An interface for the specialized queries in the KeyStore
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait CryptoKeystoreMls: Sized {
     /// Fetches Keypackages
     ///
@@ -120,8 +120,8 @@ pub trait CryptoKeystoreMls: Sized {
     async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Option<Vec<u8>>>;
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl CryptoKeystoreMls for crate::Database {
     async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
         let keypackages = self.load_all::<StoredKeypackage>().await?;
@@ -237,8 +237,8 @@ pub fn ser<T: MlsEntity>(value: &T) -> Result<Vec<u8>, CryptoKeystoreError> {
     Ok(postcard::to_stdvec(value)?)
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Database {
     type Error = CryptoKeystoreError;
 

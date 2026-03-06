@@ -13,8 +13,8 @@ pub enum NewHistoryClientReportingError {
 
 /// An `HistoryObserver` is notified whenever a new history client is created.
 #[uniffi::export(with_foreign)]
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait HistoryObserver: Send + Sync {
     /// This function will be called every time a new history client is created.
     ///
@@ -44,8 +44,8 @@ pub trait HistoryObserver: Send + Sync {
 /// together directly, so this is the straightforward way to accomplish that.
 struct ObserverShim(Arc<dyn HistoryObserver>);
 
-#[cfg_attr(target_family = "wasm", async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait)]
 impl core_crypto::mls::HistoryObserver for ObserverShim {
     async fn history_client_created(
         &self,

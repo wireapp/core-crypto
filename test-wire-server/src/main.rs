@@ -1,12 +1,12 @@
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 fn main() {
     panic!("Don't run this on wasm!")
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 mod non_wasm;
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 fn main() {
     use crate::non_wasm::{bind_socket, run_server};
     // smol single-threaded executor

@@ -372,9 +372,9 @@ impl KeystoreTransaction {
         tables.dedup();
 
         // open a database transaction
-        #[cfg(target_family = "wasm")]
+        #[cfg(target_os = "unknown")]
         let tx = conn.new_transaction(&tables).await?;
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         let tx = conn.transaction()?.into();
 
         for entity in cache.values().flat_map(|table| table.values()) {

@@ -25,7 +25,7 @@ pub struct CoreCryptoFfi {
 /// MLS or proteus can be initialized  with [core_crypto::transaction_context::TransactionContext::mls_init] or
 /// [core_crypto::transaction_context::TransactionContext::proteus_init], respectively.
 pub fn core_crypto_new(database: &Arc<Database>) -> CoreCryptoResult<CoreCryptoFfi> {
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     console_error_panic_hook::set_once();
     let db = database.as_ref().clone().into();
     let inner = core_crypto::CoreCrypto::new(db);

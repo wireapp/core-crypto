@@ -1,7 +1,7 @@
 use core::fmt;
 use std::borrow::Cow;
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 use crate::entities::E2eiRefreshToken;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
@@ -104,7 +104,7 @@ impl EntityId {
             EntityType::StoredE2eiEnrollment => {
                 StoredE2eiEnrollment::delete(tx, &self.primary_key::<StoredE2eiEnrollment>()?).await
             }
-            #[cfg(target_family = "wasm")]
+            #[cfg(target_os = "unknown")]
             EntityType::E2eiRefreshToken => {
                 E2eiRefreshToken::delete(tx, &self.primary_key::<E2eiRefreshToken>()?).await
             }

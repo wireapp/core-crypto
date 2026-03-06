@@ -16,8 +16,8 @@ use crate::{
 ///
 /// Fundamentally these are convenience methods, allowing you to do `let n_foos = database.count::<Foo>()`
 /// instead of `Foo::count(&mut database.conn)`.
-#[cfg_attr(target_family = "wasm", async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait)]
 pub trait FetchFromDatabase: Send + Sync {
     /// Get an instance of `E` from the database by its primary key.
     async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>

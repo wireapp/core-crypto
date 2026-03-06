@@ -13,7 +13,7 @@ pub mod traits;
 pub mod transaction;
 
 pub use hash::Sha256Hash;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 pub(crate) use hash::sha256;
 
 #[cfg(feature = "dummy-entity")]

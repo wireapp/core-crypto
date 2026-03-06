@@ -62,8 +62,8 @@ impl ProteusConversationSession {
     }
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl GroupStoreEntity for ProteusConversationSession {
     type RawStoreValue = core_crypto_keystore::entities::ProteusSession;
     type IdentityType = Arc<proteus_wasm::keys::IdentityKeyPair>;
@@ -593,9 +593,9 @@ mod tests {
     };
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn cc_can_init() {
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         let (path, db_file) = tmp_db_file();
-        #[cfg(target_family = "wasm")]
+        #[cfg(target_os = "unknown")]
         let (path, _) = tmp_db_file();
         let db = Database::open(ConnectionType::Persistent(&path), &DatabaseKey::generate())
             .await
@@ -606,7 +606,7 @@ mod tests {
         assert!(context.proteus_init().await.is_ok());
         assert!(context.proteus_new_prekey(1).await.is_ok());
         context.finish().await.unwrap();
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         drop(db_file);
     }
 
@@ -616,9 +616,9 @@ mod tests {
 
         use crate::{ClientId, Credential, test_utils::DummyPkiEnvironmentHooks};
 
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         let (path, db_file) = tmp_db_file();
-        #[cfg(target_family = "wasm")]
+        #[cfg(target_os = "unknown")]
         let (path, _) = tmp_db_file();
         let db = Database::open(ConnectionType::Persistent(&path), &DatabaseKey::generate())
             .await
@@ -656,15 +656,15 @@ mod tests {
         // expect MLS to work
         assert!(transaction.generate_keypackage(&credential_ref, None).await.is_ok());
 
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         drop(db_file);
     }
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn can_init() {
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         let (path, db_file) = tmp_db_file();
-        #[cfg(target_family = "wasm")]
+        #[cfg(target_os = "unknown")]
         let (path, _) = tmp_db_file();
         let key = DatabaseKey::generate();
         let keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
@@ -684,15 +684,15 @@ mod tests {
         assert_eq!(identity, *central.proteus_identity);
 
         keystore.wipe().await.unwrap();
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         drop(db_file);
     }
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn can_talk_with_proteus() {
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         let (path, db_file) = tmp_db_file();
-        #[cfg(target_family = "wasm")]
+        #[cfg(target_os = "unknown")]
         let (path, _) = tmp_db_file();
 
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
@@ -725,15 +725,15 @@ mod tests {
 
         keystore.commit_transaction().await.unwrap();
         keystore.wipe().await.unwrap();
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         drop(db_file);
     }
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn can_produce_proteus_consumed_prekeys() {
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         let (path, db_file) = tmp_db_file();
-        #[cfg(target_family = "wasm")]
+        #[cfg(target_os = "unknown")]
         let (path, _) = tmp_db_file();
 
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
@@ -766,7 +766,7 @@ mod tests {
         assert_eq!(message, decrypted.as_slice());
         keystore.commit_transaction().await.unwrap();
         keystore.wipe().await.unwrap();
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         drop(db_file);
     }
 
@@ -776,9 +776,9 @@ mod tests {
         const GAP_AMOUNT: u16 = 5;
         const ID_TEST_RANGE: std::ops::RangeInclusive<u16> = 1..=30;
 
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         let (path, db_file) = tmp_db_file();
-        #[cfg(target_family = "wasm")]
+        #[cfg(target_os = "unknown")]
         let (path, _) = tmp_db_file();
 
         let key = DatabaseKey::generate();
@@ -840,7 +840,7 @@ mod tests {
         }
         keystore.commit_transaction().await.unwrap();
         keystore.wipe().await.unwrap();
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         drop(db_file);
     }
 }

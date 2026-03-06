@@ -21,7 +21,7 @@
 // They are marked with @SF and similar.
 // DO NOT REMOVE OR CHANGE THESE OR THE TESTS WITHOUT TALKING TO SECURITY FIRST!
 
-#![cfg(not(target_family = "wasm"))]
+#![cfg(not(target_os = "unknown"))]
 
 use jwt_simple::prelude::*;
 use rstest::rstest;

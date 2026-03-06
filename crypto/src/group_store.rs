@@ -4,8 +4,8 @@ use core_crypto_keystore::traits::FetchFromDatabase;
 
 use crate::{ConversationId, KeystoreError, MlsConversation, RecursiveError, Result};
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub(crate) trait GroupStoreEntity: std::fmt::Debug {
     type RawStoreValue: core_crypto_keystore::traits::Entity;
     type IdentityType;
@@ -19,8 +19,8 @@ pub(crate) trait GroupStoreEntity: std::fmt::Debug {
         Self: Sized;
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl GroupStoreEntity for MlsConversation {
     type RawStoreValue = core_crypto_keystore::entities::PersistedMlsGroup;
     type IdentityType = ();
@@ -229,8 +229,8 @@ mod tests {
 
     use super::*;
 
-    #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-    #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+    #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+    #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
     impl GroupStoreEntity for DummyValue {
         type RawStoreValue = DummyStoreValue;
 

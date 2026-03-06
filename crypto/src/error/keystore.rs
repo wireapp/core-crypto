@@ -13,7 +13,7 @@ pub struct KeystoreError {
 }
 
 impl KeystoreError {
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(not(target_os = "unknown"))]
     pub(crate) fn wrap<E>(context: &'static str) -> impl FnOnce(E) -> Self
     where
         E: 'static + std::error::Error + Send + Sync,
@@ -27,7 +27,7 @@ impl KeystoreError {
     /// Some of the error variants for WASM are not thread-safe at all
     /// (looking at you, [idb::Error]), so we have to construct an approximation
     /// of them instead.
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     pub(crate) fn wrap<E>(context: &'static str) -> impl FnOnce(E) -> Self
     where
         E: std::error::Error,
@@ -42,7 +42,7 @@ impl KeystoreError {
     }
 }
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 mod threadsafe_error {
     #[derive(Debug, thiserror::Error)]
     #[error("{message}")]

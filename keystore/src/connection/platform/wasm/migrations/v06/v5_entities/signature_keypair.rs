@@ -1,2 +1,2 @@
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 mod wasm;

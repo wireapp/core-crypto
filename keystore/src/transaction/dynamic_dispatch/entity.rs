@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 use crate::entities::E2eiRefreshToken;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
@@ -29,7 +29,7 @@ pub enum Entity {
     PersistedMlsPendingGroup(Arc<PersistedMlsPendingGroup>),
     MlsPendingMessage(Arc<MlsPendingMessage>),
     StoredE2eiEnrollment(Arc<StoredE2eiEnrollment>),
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     E2eiRefreshToken(Arc<E2eiRefreshToken>),
     E2eiAcmeCA(Arc<E2eiAcmeCA>),
     E2eiIntermediateCert(Arc<E2eiIntermediateCert>),
@@ -70,7 +70,7 @@ impl Entity {
             Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.clone().downcast_arc(),
             Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.clone().downcast_arc(),
             Entity::E2eiCrl(e2ei_crl) => e2ei_crl.clone().downcast_arc(),
-            #[cfg(target_family = "wasm")]
+            #[cfg(target_os = "unknown")]
             Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.clone().downcast_arc(),
             #[cfg(feature = "proteus-keystore")]
             Entity::ProteusIdentity(proteus_identity) => proteus_identity.clone().downcast_arc(),
@@ -99,7 +99,7 @@ impl Entity {
             Entity::StoredE2eiEnrollment(e2ei_enrollment) => e2ei_enrollment.save(tx).await,
             Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.set_and_replace(tx).await.map(|_| ()),
             Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.save(tx).await,
-            #[cfg(target_family = "wasm")]
+            #[cfg(target_os = "unknown")]
             Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.set_and_replace(tx).await.map(|_| ()),
             Entity::E2eiCrl(e2ei_crl) => e2ei_crl.save(tx).await,
             #[cfg(feature = "proteus-keystore")]

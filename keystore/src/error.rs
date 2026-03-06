@@ -27,24 +27,24 @@ pub enum CryptoKeystoreError {
     KeyStoreValueTransformError(#[from] postcard::Error),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(not(target_os = "unknown"))]
     #[error(transparent)]
     TimeError(#[from] std::time::SystemTimeError),
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     #[error(transparent)]
     ChannelError(#[from] std::sync::mpsc::TryRecvError),
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     #[error("The task has been canceled")]
     WasmExecutorError,
     #[error("aead::Error")]
     AesGcmError,
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     #[error("{0}")]
     SerdeWasmBindgenError(String),
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(not(target_os = "unknown"))]
     #[error(transparent)]
     DbError(#[from] rusqlite::Error),
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(not(target_os = "unknown"))]
     #[error(transparent)]
     DbMigrationError(#[from] Box<refinery::Error>),
     #[cfg(test)]
@@ -80,7 +80,7 @@ pub enum CryptoKeystoreError {
     #[cfg(target_os = "ios")]
     #[error(transparent)]
     SecurityFrameworkError(#[from] security_framework::base::Error),
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     #[error("{0}")]
     JsError(String),
     #[error("Not implemented (and probably never will)")]
@@ -91,13 +91,13 @@ pub enum CryptoKeystoreError {
     NotFound(&'static str, String),
     #[error(transparent)]
     SerdeJsonError(#[from] serde_json::Error),
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     #[error(transparent)]
     IdbError(#[from] idb::Error),
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     #[error(transparent)]
     IdbErrorCryptoKeystoreV1_0_0(idb::Error),
-    #[cfg(target_family = "wasm")]
+    #[cfg(target_os = "unknown")]
     #[error("Migration from version {0} is not supported")]
     MigrationNotSupported(u32),
     #[error("The migration failed: {0}")]
@@ -108,14 +108,14 @@ pub enum CryptoKeystoreError {
     UnknownCollectionName(&'static str),
 }
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 impl From<wasm_bindgen::JsValue> for CryptoKeystoreError {
     fn from(jsv: wasm_bindgen::JsValue) -> Self {
         Self::JsError(jsv.as_string().unwrap())
     }
 }
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 #[allow(clippy::from_over_into)]
 impl Into<wasm_bindgen::JsValue> for CryptoKeystoreError {
     fn into(self) -> wasm_bindgen::JsValue {
@@ -123,7 +123,7 @@ impl Into<wasm_bindgen::JsValue> for CryptoKeystoreError {
     }
 }
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 impl From<serde_wasm_bindgen::Error> for CryptoKeystoreError {
     fn from(jsv: serde_wasm_bindgen::Error) -> Self {
         Self::SerdeWasmBindgenError(jsv.to_string())
@@ -141,9 +141,9 @@ impl proteus_traits::ProteusErrorCode for CryptoKeystoreError {
             CryptoKeystoreError::BlobTooBig => ProteusErrorKind::IoError,
             CryptoKeystoreError::KeyStoreValueTransformError(_) => ProteusErrorKind::DecodeError,
             CryptoKeystoreError::IoError(_) => ProteusErrorKind::IoError,
-            #[cfg(not(target_family = "wasm"))]
+            #[cfg(not(target_os = "unknown"))]
             CryptoKeystoreError::DbError(_) => ProteusErrorKind::IoError,
-            #[cfg(not(target_family = "wasm"))]
+            #[cfg(not(target_os = "unknown"))]
             CryptoKeystoreError::DbMigrationError(_) => ProteusErrorKind::IoError,
             CryptoKeystoreError::InvalidKeySize { .. } => ProteusErrorKind::InvalidArrayLen,
             CryptoKeystoreError::ParseIntError(_) => ProteusErrorKind::DecodeError,

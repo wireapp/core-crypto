@@ -11,8 +11,8 @@ pub struct ImmutableConversation<D> {
     client: Session<D>,
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl<'inner> ConversationWithMls<'inner> for ImmutableConversation<Database> {
     type Context = Session<Database>;
 

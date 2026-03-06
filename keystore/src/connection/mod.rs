@@ -33,10 +33,10 @@ use crate::{
 /// See: [IndexedDB limits](https://stackoverflow.com/a/63019999/1934177)
 pub const MAX_BLOB_LEN: usize = 1_000_000_000;
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 // ? Because of UniFFI async requirements, we need our keystore to be Send as well now
 pub trait DatabaseConnectionRequirements: Sized + Send {}
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 // ? On the other hand, things cannot be Send on WASM because of platform restrictions (all things are copied across the
 // FFI)
 pub trait DatabaseConnectionRequirements: Sized {}
@@ -92,8 +92,8 @@ impl TryFrom<&[u8]> for DatabaseKey {
     }
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
     type Connection: 'a;
 
@@ -107,7 +107,7 @@ pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
     async fn wipe(self) -> CryptoKeystoreResult<()>;
 
     fn check_buffer_size(size: usize) -> CryptoKeystoreResult<()> {
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         if size > i32::MAX as usize {
             return Err(CryptoKeystoreError::BlobTooBig);
         }
@@ -200,7 +200,7 @@ impl Database {
         })
     }
 
-    #[cfg(all(test, not(target_family = "wasm")))]
+    #[cfg(all(test, not(target_os = "unknown")))]
     pub(crate) async fn open_at_schema_version(
         name: &str,
         key: &DatabaseKey,
@@ -236,10 +236,10 @@ impl Database {
 
     // Close this database connection
     pub async fn close(&self) -> CryptoKeystoreResult<()> {
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(not(target_os = "unknown"))]
         self.take().await?;
 
-        #[cfg(target_family = "wasm")]
+        #[cfg(target_os = "unknown")]
         {
             let conn = self.take().await?;
             conn.close().await?;
@@ -267,7 +267,7 @@ impl Database {
     /// - The database is in-memory (cannot export in-memory databases)
     /// - The destination path is invalid
     /// - The export operation fails
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(not(target_os = "unknown"))]
     pub async fn export_copy(&self, destination_path: &str) -> CryptoKeystoreResult<()> {
         let conn = self.conn().await?;
         conn.export_copy(destination_path).await
@@ -387,8 +387,8 @@ impl Database {
     }
 }
 
-#[cfg_attr(target_family = "wasm", async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait)]
 impl FetchFromDatabase for Database {
     async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
     where

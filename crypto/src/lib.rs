@@ -103,8 +103,8 @@ pub struct MlsTransportData(pub Vec<u8>);
 
 /// Client callbacks to allow communication with the delivery service.
 /// There are two different endpoints, one for messages and one for commit bundles.
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait MlsTransport: std::fmt::Debug + Send + Sync {
     /// Send a commit bundle to the corresponding endpoint.
     async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> Result<MlsTransportResponse>;
@@ -125,8 +125,8 @@ pub trait MlsTransport: std::fmt::Debug + Send + Sync {
 #[derive(Debug, Default)]
 pub struct CoreCryptoTransportNotImplementedProvider();
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
     async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> crate::Result<MlsTransportResponse> {
         Err(Error::MlsTransportNotProvided)

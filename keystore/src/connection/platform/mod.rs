@@ -1,13 +1,13 @@
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 mod generic;
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 mod wasm;
 
-#[cfg(all(test, not(target_family = "wasm")))]
+#[cfg(all(test, not(target_os = "unknown")))]
 pub(crate) use self::generic::MigrationTarget;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "unknown"))]
 pub use self::generic::{SqlCipherConnection as KeystoreDatabaseConnection, TransactionWrapper};
-#[cfg(target_family = "wasm")]
+#[cfg(target_os = "unknown")]
 pub use self::wasm::{
     WasmConnection as KeystoreDatabaseConnection,
     storage::{self, WasmStorageTransaction as TransactionWrapper},

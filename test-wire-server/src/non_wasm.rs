@@ -1,4 +1,4 @@
-#![cfg(not(target_family = "wasm"))]
+#![cfg(not(target_os = "unknown"))]
 
 use std::{
     collections::HashMap,

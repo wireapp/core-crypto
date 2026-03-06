@@ -6,7 +6,7 @@ edition = "2024"
 license = "MPL-2.0"
 publish = false
 
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
+[target.'cfg(not(target_os = "unknown"))'.dependencies]
 base64 = { workspace = true }
 hyper = { workspace = true, features = ["server"] }
 http = { workspace = true }
@@ -19,7 +19,7 @@ smol-hyper = { workspace = true }
 url = { workspace = true }
 uuid = { workspace = true }
 
-[target.'cfg(target_family = "wasm")'.dependencies]
+[target.'cfg(target_os = "unknown")'.dependencies]
 
 [lints]
 workspace = true

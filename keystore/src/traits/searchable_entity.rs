@@ -16,8 +16,8 @@ use crate::{
 ///
 /// While the trait design does not require it, implementations should take advantage of
 /// database features such as indices to ensure that searching by a search key is efficient.
-#[cfg_attr(target_family = "wasm", async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait)]
 pub trait SearchableEntity<SearchKey: KeyType>: Entity {
     /// Find all entities matching the search key.
     ///
@@ -46,8 +46,8 @@ pub trait SearchableEntity<SearchKey: KeyType>: Entity {
 ///
 /// While the trait design does not require it, implementations should take advantage of
 /// database features such as indices to ensure that deletion by a search key is efficient.
-#[cfg_attr(target_family = "wasm", async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait)]
 pub trait DeletableBySearchKey<'a, SearchKey: KeyType>:
     SearchableEntity<SearchKey> + EntityDatabaseMutation<'a>
 {

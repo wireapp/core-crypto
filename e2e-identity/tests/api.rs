@@ -10,7 +10,7 @@ wasm_bindgen_test_configure!(run_in_browser);
 #[path = "utils/mod.rs"]
 mod utils;
 
-#[cfg_attr(target_family = "wasm", expect(dead_code))]
+#[cfg_attr(target_os = "unknown", expect(dead_code))]
 fn parse_public_key_pem(pem: String) -> (JwsAlgorithm, Pem) {
     let alg = if Ed25519PublicKey::from_pem(&pem).is_ok() {
         JwsAlgorithm::Ed25519
@@ -31,7 +31,7 @@ fn parse_public_key_pem(pem: String) -> (JwsAlgorithm, Pem) {
 fn e2e_api() {
     let prev_nonce = || utils::rand_base64_str(32);
 
-    #[cfg_attr(target_family = "wasm", expect(unused_variables))]
+    #[cfg_attr(target_os = "unknown", expect(unused_variables))]
     for (enrollment, backend_kp, backend_pk, hash_algorithm) in enrollments() {
         let (user_id, device_id) = ("obakjPOHQ2CkNb0rOrNM3A", "ba54e8ace8b4c90d");
         let domain = "wire.org";
@@ -247,7 +247,7 @@ fn e2e_api() {
                 .acme_dpop_challenge_request(access_token.clone(), &dpop_chall, &account, previous_nonce)
                 .unwrap();
 
-            #[cfg(not(target_family = "wasm"))]
+            #[cfg(not(target_os = "unknown"))]
             {
                 let access_token_file = std::env::temp_dir().join("access-token.txt");
                 std::fs::write(&access_token_file, &access_token).unwrap();

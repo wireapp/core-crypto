@@ -59,8 +59,8 @@ pub struct Session<D> {
     pub(crate) history_observer: Arc<RwLock<Option<Arc<dyn HistoryObserver + 'static>>>>,
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl HasSessionAndCrypto for Session<core_crypto_keystore::Database> {
     async fn session(&self) -> mls::Result<Session<core_crypto_keystore::Database>> {
         Ok(self.clone())

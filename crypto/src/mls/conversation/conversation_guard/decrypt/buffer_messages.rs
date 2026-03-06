@@ -62,8 +62,8 @@ impl ConversationGuard {
         Ok(Some(pending_messages))
     }
 
-    #[cfg_attr(target_family = "wasm", async_recursion::async_recursion(?Send))]
-    #[cfg_attr(not(target_family = "wasm"), async_recursion::async_recursion)]
+    #[cfg_attr(target_os = "unknown", async_recursion::async_recursion(?Send))]
+    #[cfg_attr(not(target_os = "unknown"), async_recursion::async_recursion)]
     pub(crate) async fn restore_pending_messages(
         &mut self,
         policy: MessageRestorePolicy,
