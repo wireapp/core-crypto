@@ -96,8 +96,9 @@ RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
 
 KT_WRAPPER = ./crypto-ffi/bindings/shared/src/commonMain/kotlin
 KT_TESTS = ./crypto-ffi/bindings/shared/src/commonTest
+KT_BENCHMARKS = ./crypto-ffi/bindings/jvm/src/jmh/
 KT_INTEROP = ./interop/src/clients/android-interop/src/main/java
-KT_FILES := $(shell find $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP) -type f -name '*.kt')
+KT_FILES := $(shell find $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP) $(KT_BENCHMARKS) -type f -name '*.kt')
 KT_GRADLE_FILES = $(shell find . -type f -name '*.kts')
 
 #-------------------------------------------------------------------------------
@@ -446,6 +447,11 @@ $(STAMPS)/jvm-test: $(jvm-test-deps)
 	./gradlew jvm:test --rerun
 	$(TOUCH_STAMP)
 
+$(STAMPS)/jvm-bench: $(jvm-test-deps) $(KT_BENCHMARKS)
+	cd crypto-ffi/bindings && \
+	./gradlew :jvm:jmh
+	$(TOUCH_STAMP)
+
 #-------------------------------------------------------------------------------
 # KMP (Kotlin Multiplatform) builds
 #-------------------------------------------------------------------------------
@@ -728,7 +734,7 @@ swift-check: $(STAMPS)/swift-check ## Lint Swift files via swift-format and swif
 # Kotlin
 
 $(STAMPS)/kotlin-fmt: $(KT_FILES) $(KT_GRADLE_FILES)
-	ktlint --format $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP) $(KT_GRADLE_FILES)
+	ktlint --format $(KT_FILES) $(KT_GRADLE_FILES)
 	$(TOUCH_STAMP)
 
 .PHONY: kotlin-fmt
@@ -769,11 +775,12 @@ check: rust-check swift-check kotlin-check ts-check ## Run all linters
 # Lazy targets
 #-------------------------------------------------------------------------------
 
-LAZY_TARGETS := jvm-test kmp-jvm-test ts-test android-test ios-test interop-test
+LAZY_TARGETS := jvm-test kmp-jvm-test ts-test android-test ios-test interop-test jvm-bench
 
 ts-test: ## Run TypeScript wrapper tests via wdio and bun. Optionally pass TEST=<test> to filter by test name.
 kmp-jvm-test: ## Run Kotlin multi-platform tests on JVM
 jvm-test: ## Run Kotlin tests on JVM
+jvm-bench: ## Run the JVM benchmarks
 android-test: ## Run Kotlin tests on Android
 ios-test: ## Run Swift tests on iOS (macOS only)
 interop-test: ## Run e2e interop test

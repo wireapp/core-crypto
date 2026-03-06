@@ -106,7 +106,7 @@ abstract class HasMockDeliveryService {
 
 fun newClients(instance: HasMockDeliveryService, vararg clientIds: ClientId) = runBlocking {
     clientIds.map { clientID ->
-        val cc = initCc(instance)
+        val cc = initCc()
         cc.transaction { ctx ->
             ctx.mlsInitShort(clientID)
             ctx.addCredential(Credential.basic(CIPHERSUITE_DEFAULT, clientID))
@@ -115,7 +115,7 @@ fun newClients(instance: HasMockDeliveryService, vararg clientIds: ClientId) = r
     }
 }
 
-fun initCc(_instance: HasMockDeliveryService): CoreCrypto = runBlocking {
+fun initCc(): CoreCrypto = runBlocking {
     val root = Files.createTempDirectory("mls").toFile()
     val path = root.resolve("keystore-${randomIdentifier()}")
     val key = genDatabaseKey()
