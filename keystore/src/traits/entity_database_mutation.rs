@@ -13,7 +13,8 @@ use crate::{
 pub trait EntityDatabaseMutation<'a>: Entity<ConnectionType = crate::connection::KeystoreDatabaseConnection> {
     type Transaction: 'a;
 
-    /// The `pre_save` method might generate or update some fields of the item. The canonical example is an `updated_at` field.
+    /// The `pre_save` method might generate or update some fields of the item. The canonical example is an `updated_at`
+    /// field.
     ///
     /// This type must contain a copy of each modification to the item, so that the caller of a `.save(entity)`
     /// function can know what has changed and what the new values are.
