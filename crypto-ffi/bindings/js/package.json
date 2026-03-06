@@ -25,6 +25,7 @@
         "eslint-plugin-prettier": "^5.5.1",
         "eslint-plugin-wdio": "^9.16.2",
         "prettier": "^3.6.2",
+        "tinybench": "^6.0.0",
         "ts-loader": "^9.5.2",
         "typedoc": "0.28.17",
         "typescript": "^5.8.3",
