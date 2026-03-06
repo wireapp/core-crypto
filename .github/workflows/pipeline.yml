@@ -297,3 +297,5 @@ jobs:
     uses: ./.github/workflows/publish-wasm.yml
     permissions:
       id-token: write
+    with:
+      release: true

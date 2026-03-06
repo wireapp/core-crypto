@@ -63,3 +63,9 @@ jobs:
       PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+
+  ts:
+    needs: verify-tag
+    uses: ./.github/workflows/publish-wasm.yml
+    with:
+      prepare: true
