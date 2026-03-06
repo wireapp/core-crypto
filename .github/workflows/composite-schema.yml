@@ -1,0 +1,25 @@
+name: composite-schema
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: install compile-schema
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/wireapp/compile-schema/releases/latest/download/compile-schema-installer.sh | sh
+      - name: check composite schema is up to date
+        run: |
+          generated=$(compile-schema keystore/src/connection/platform/generic/migrations)
+          # -w ignores all whitespace differences; only non-whitespace diffs cause failure
+          if diff -w <(echo "$generated") keystore/src/connection/platform/generic/composite-schema.sql > /dev/null; then
+            echo "composite-schema.sql is up to date"
+          else
+            echo "::error file=keystore/src/connection/platform/generic/composite-schema.sql,title=composite schema is stale::composite-schema.sql is out of date. Please regenerate it using the compile-schema tool: https://github.com/wireapp/compile-schema"
+            exit 1
+          fi
