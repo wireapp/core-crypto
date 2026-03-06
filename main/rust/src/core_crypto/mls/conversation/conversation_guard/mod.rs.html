@@ -29,8 +29,8 @@
 <a href=#29 id=29 data-nosnippet>29</a>    central_context: TransactionContext,
 <a href=#30 id=30 data-nosnippet>30</a>}
 <a href=#31 id=31 data-nosnippet>31</a>
-<a href=#32 id=32 data-nosnippet>32</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#33 id=33 data-nosnippet>33</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+<a href=#32 id=32 data-nosnippet>32</a><span class="attr">#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#33 id=33 data-nosnippet>33</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
 <a href=#34 id=34 data-nosnippet>34</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'inner</span>&gt; ConversationWithMls&lt;<span class="lifetime">'inner</span>&gt; <span class="kw">for </span>ConversationGuard {
 <a href=#35 id=35 data-nosnippet>35</a>    <span class="kw">type </span>Context = TransactionContext;
 <a href=#36 id=36 data-nosnippet>36</a>    <span class="kw">type </span>Conversation = RwLockReadGuard&lt;<span class="lifetime">'inner</span>, MlsConversation&gt;;

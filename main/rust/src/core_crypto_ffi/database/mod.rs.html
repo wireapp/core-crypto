@@ -83,17 +83,17 @@
 <a href=#83 id=83 data-nosnippet>83</a>// This works out because we only ever build real wasm builds with the `wasm` feature flag enabled.
 <a href=#84 id=84 data-nosnippet>84</a>// The error could therefore be an `unimplemented!` but it's harmless to return a real error in this case.
 <a href=#85 id=85 data-nosnippet>85</a></span><span class="attr">#[cfg(not(feature = <span class="string">"wasm"</span>))]
-<a href=#86 id=86 data-nosnippet>86</a>#[cfg_attr(all(not(feature = <span class="string">"wasm"</span>), target_family = <span class="string">"wasm"</span>), expect(unused_variables))]
+<a href=#86 id=86 data-nosnippet>86</a>#[cfg_attr(all(not(feature = <span class="string">"wasm"</span>), target_os = <span class="string">"unknown"</span>), expect(unused_variables))]
 <a href=#87 id=87 data-nosnippet>87</a>#[uniffi::export]
 <a href=#88 id=88 data-nosnippet>88</a></span><span class="kw">pub async fn </span>export_database_copy(database: <span class="kw-2">&amp;</span>Database, destination_path: <span class="kw-2">&amp;</span>str) -&gt; CoreCryptoResult&lt;()&gt; {
 <a href=#89 id=89 data-nosnippet>89</a>    <span class="comment">// we need a noop here for the case where we're compiling for wasm but without feature wasm
-<a href=#90 id=90 data-nosnippet>90</a>    </span><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
+<a href=#90 id=90 data-nosnippet>90</a>    </span><span class="attr">#[cfg(target_os = <span class="string">"unknown"</span>)]
 <a href=#91 id=91 data-nosnippet>91</a>    </span>{
 <a href=#92 id=92 data-nosnippet>92</a>        <span class="prelude-val">Err</span>(CoreCryptoError::ad_hoc(
 <a href=#93 id=93 data-nosnippet>93</a>            <span class="string">"export_database_copy is not implemented for wasm"</span>,
 <a href=#94 id=94 data-nosnippet>94</a>        ))
 <a href=#95 id=95 data-nosnippet>95</a>    }
-<a href=#96 id=96 data-nosnippet>96</a>    <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
+<a href=#96 id=96 data-nosnippet>96</a>    <span class="attr">#[cfg(not(target_os = <span class="string">"unknown"</span>))]
 <a href=#97 id=97 data-nosnippet>97</a>    </span>{
 <a href=#98 id=98 data-nosnippet>98</a>        database
 <a href=#99 id=99 data-nosnippet>99</a>            .<span class="number">0

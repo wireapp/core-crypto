@@ -12,8 +12,8 @@
 <a href=#12 id=12 data-nosnippet>12</a>};
 <a href=#13 id=13 data-nosnippet>13</a>
 <a href=#14 id=14 data-nosnippet>14</a><span class="doccomment">/// An interface for the specialized queries in the KeyStore
-<a href=#15 id=15 data-nosnippet>15</a></span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#16 id=16 data-nosnippet>16</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+<a href=#15 id=15 data-nosnippet>15</a></span><span class="attr">#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#16 id=16 data-nosnippet>16</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
 <a href=#17 id=17 data-nosnippet>17</a></span><span class="kw">pub trait </span>CryptoKeystoreMls: Sized {
 <a href=#18 id=18 data-nosnippet>18</a>    <span class="doccomment">/// Fetches Keypackages
 <a href=#19 id=19 data-nosnippet>19</a>    ///
@@ -120,8 +120,8 @@
 <a href=#120 id=120 data-nosnippet>120</a>    </span><span class="kw">async fn </span>pop_e2ei_enrollment(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>[u8]) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;&gt;;
 <a href=#121 id=121 data-nosnippet>121</a>}
 <a href=#122 id=122 data-nosnippet>122</a>
-<a href=#123 id=123 data-nosnippet>123</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#124 id=124 data-nosnippet>124</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+<a href=#123 id=123 data-nosnippet>123</a><span class="attr">#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#124 id=124 data-nosnippet>124</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
 <a href=#125 id=125 data-nosnippet>125</a></span><span class="kw">impl </span>CryptoKeystoreMls <span class="kw">for </span><span class="kw">crate</span>::Database {
 <a href=#126 id=126 data-nosnippet>126</a>    <span class="kw">async fn </span>mls_fetch_keypackages&lt;V: MlsEntity&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, count: u32) -&gt; CryptoKeystoreResult&lt;Vec&lt;V&gt;&gt; {
 <a href=#127 id=127 data-nosnippet>127</a>        <span class="kw">let </span>keypackages = <span class="self">self</span>.load_all::&lt;StoredKeypackage&gt;().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -237,8 +237,8 @@
 <a href=#237 id=237 data-nosnippet>237</a>    <span class="prelude-val">Ok</span>(postcard::to_stdvec(value)<span class="question-mark">?</span>)
 <a href=#238 id=238 data-nosnippet>238</a>}
 <a href=#239 id=239 data-nosnippet>239</a>
-<a href=#240 id=240 data-nosnippet>240</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#241 id=241 data-nosnippet>241</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+<a href=#240 id=240 data-nosnippet>240</a><span class="attr">#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#241 id=241 data-nosnippet>241</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
 <a href=#242 id=242 data-nosnippet>242</a></span><span class="kw">impl </span>openmls_traits::key_store::OpenMlsKeyStore <span class="kw">for </span><span class="kw">crate</span>::connection::Database {
 <a href=#243 id=243 data-nosnippet>243</a>    <span class="kw">type </span>Error = CryptoKeystoreError;
 <a href=#244 id=244 data-nosnippet>244</a>

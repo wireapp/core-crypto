@@ -51,8 +51,8 @@
 <a href=#51 id=51 data-nosnippet>51</a><span class="doccomment">/// Used by core crypto to send commits or application messages to the delivery service.
 <a href=#52 id=52 data-nosnippet>52</a>/// This trait must be implemented before calling any functions that produce commits.
 <a href=#53 id=53 data-nosnippet>53</a></span><span class="attr">#[uniffi::export(with_foreign)]
-<a href=#54 id=54 data-nosnippet>54</a>#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#55 id=55 data-nosnippet>55</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+<a href=#54 id=54 data-nosnippet>54</a>#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#55 id=55 data-nosnippet>55</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
 <a href=#56 id=56 data-nosnippet>56</a></span><span class="kw">pub trait </span>MlsTransport: Send + Sync {
 <a href=#57 id=57 data-nosnippet>57</a>    <span class="doccomment">/// Send a commit bundle to the corresponding endpoint.
 <a href=#58 id=58 data-nosnippet>58</a>    </span><span class="kw">async fn </span>send_commit_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>, commit_bundle: CommitBundle) -&gt; MlsTransportResponse;
@@ -73,8 +73,8 @@
 <a href=#73 id=73 data-nosnippet>73</a>    }
 <a href=#74 id=74 data-nosnippet>74</a>}
 <a href=#75 id=75 data-nosnippet>75</a>
-<a href=#76 id=76 data-nosnippet>76</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#77 id=77 data-nosnippet>77</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+<a href=#76 id=76 data-nosnippet>76</a><span class="attr">#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#77 id=77 data-nosnippet>77</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
 <a href=#78 id=78 data-nosnippet>78</a></span><span class="kw">impl </span>core_crypto::MlsTransport <span class="kw">for </span>MlsTransportShim {
 <a href=#79 id=79 data-nosnippet>79</a>    <span class="kw">async fn </span>send_commit_bundle(
 <a href=#80 id=80 data-nosnippet>80</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,

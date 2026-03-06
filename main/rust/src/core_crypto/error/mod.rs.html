@@ -20,14 +20,14 @@
 <a href=#20 id=20 data-nosnippet>20</a>    <span class="doccomment">/// Invalid [crate::transaction_context::TransactionContext]. This context has been finished and can no longer be
 <a href=#21 id=21 data-nosnippet>21</a>    /// used.
 <a href=#22 id=22 data-nosnippet>22</a>    </span><span class="attr">#[cfg_attr(
-<a href=#23 id=23 data-nosnippet>23</a>        target_family = <span class="string">"wasm"</span>,
+<a href=#23 id=23 data-nosnippet>23</a>        target_os = <span class="string">"unknown"</span>,
 <a href=#24 id=24 data-nosnippet>24</a>        error(
 <a href=#25 id=25 data-nosnippet>25</a>            <span class="string">"This transaction context has already been finished. You most likely used the context outside the callback
 <a href=#26 id=26 data-nosnippet>26</a>            or you forget to `await` a Promise inside the transaction callback."
 <a href=#27 id=27 data-nosnippet>27</a>        </span>)
 <a href=#28 id=28 data-nosnippet>28</a>    )]
 <a href=#29 id=29 data-nosnippet>29</a>    #[cfg_attr(
-<a href=#30 id=30 data-nosnippet>30</a>        not(target_family = <span class="string">"wasm"</span>),
+<a href=#30 id=30 data-nosnippet>30</a>        not(target_os = <span class="string">"unknown"</span>),
 <a href=#31 id=31 data-nosnippet>31</a>        error(<span class="string">"This transaction context has already been finished and can no longer be used."</span>)
 <a href=#32 id=32 data-nosnippet>32</a>    )]
 <a href=#33 id=33 data-nosnippet>33</a>    </span>InvalidTransactionContext,

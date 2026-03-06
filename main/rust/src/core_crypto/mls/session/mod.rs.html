@@ -59,8 +59,8 @@
 <a href=#59 id=59 data-nosnippet>59</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) history_observer: Arc&lt;RwLock&lt;<span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>HistoryObserver + <span class="lifetime">'static</span>&gt;&gt;&gt;&gt;,
 <a href=#60 id=60 data-nosnippet>60</a>}
 <a href=#61 id=61 data-nosnippet>61</a>
-<a href=#62 id=62 data-nosnippet>62</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#63 id=63 data-nosnippet>63</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+<a href=#62 id=62 data-nosnippet>62</a><span class="attr">#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#63 id=63 data-nosnippet>63</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
 <a href=#64 id=64 data-nosnippet>64</a></span><span class="kw">impl </span>HasSessionAndCrypto <span class="kw">for </span>Session&lt;core_crypto_keystore::Database&gt; {
 <a href=#65 id=65 data-nosnippet>65</a>    <span class="kw">async fn </span>session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; mls::Result&lt;Session&lt;core_crypto_keystore::Database&gt;&gt; {
 <a href=#66 id=66 data-nosnippet>66</a>        <span class="prelude-val">Ok</span>(<span class="self">self</span>.clone())

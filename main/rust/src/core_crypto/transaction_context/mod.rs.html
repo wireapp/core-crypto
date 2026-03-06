@@ -73,8 +73,8 @@
 <a href=#73 id=73 data-nosnippet>73</a>    </span>}
 <a href=#74 id=74 data-nosnippet>74</a>}
 <a href=#75 id=75 data-nosnippet>75</a>
-<a href=#76 id=76 data-nosnippet>76</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#77 id=77 data-nosnippet>77</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+<a href=#76 id=76 data-nosnippet>76</a><span class="attr">#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#77 id=77 data-nosnippet>77</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
 <a href=#78 id=78 data-nosnippet>78</a></span><span class="kw">impl </span>HasSessionAndCrypto <span class="kw">for </span>TransactionContext {
 <a href=#79 id=79 data-nosnippet>79</a>    <span class="kw">async fn </span>session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">crate</span>::mls::Result&lt;Session&lt;Database&gt;&gt; {
 <a href=#80 id=80 data-nosnippet>80</a>        <span class="self">self</span>.session()

@@ -173,8 +173,8 @@
 <a href=#173 id=173 data-nosnippet>173</a>    }
 <a href=#174 id=174 data-nosnippet>174</a>}
 <a href=#175 id=175 data-nosnippet>175</a>
-<a href=#176 id=176 data-nosnippet>176</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#177 id=177 data-nosnippet>177</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+<a href=#176 id=176 data-nosnippet>176</a><span class="attr">#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#177 id=177 data-nosnippet>177</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
 <a href=#178 id=178 data-nosnippet>178</a></span><span class="kw">impl </span>openmls_traits::authentication_service::AuthenticationServiceDelegate <span class="kw">for </span>PkiEnvironmentProvider {
 <a href=#179 id=179 data-nosnippet>179</a>    <span class="kw">async fn </span>validate_credential&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>, credential: CredentialRef&lt;<span class="lifetime">'a</span>&gt;) -&gt; CredentialAuthenticationStatus {
 <a href=#180 id=180 data-nosnippet>180</a>        <span class="kw">match </span>credential {

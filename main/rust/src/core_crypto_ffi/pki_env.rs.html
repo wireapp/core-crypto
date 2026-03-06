@@ -126,8 +126,8 @@
 <a href=#126 id=126 data-nosnippet>126</a>///    | return Success(Credential) [X509CredentialAcquisition().finalize()]           |
 <a href=#127 id=127 data-nosnippet>127</a>///    |&lt;--------------------------|                          |                        |
 <a href=#128 id=128 data-nosnippet>128</a></span><span class="attr">#[uniffi::export(with_foreign)]
-<a href=#129 id=129 data-nosnippet>129</a>#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#130 id=130 data-nosnippet>130</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+<a href=#129 id=129 data-nosnippet>129</a>#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#130 id=130 data-nosnippet>130</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
 <a href=#131 id=131 data-nosnippet>131</a></span><span class="kw">pub trait </span>PkiEnvironmentHooks: Send + Sync {
 <a href=#132 id=132 data-nosnippet>132</a>    <span class="doccomment">/// Make an HTTP request
 <a href=#133 id=133 data-nosnippet>133</a>    /// Used for requests to ACME servers, CRL distributors etc.
@@ -178,8 +178,8 @@
 <a href=#178 id=178 data-nosnippet>178</a>    }
 <a href=#179 id=179 data-nosnippet>179</a>}
 <a href=#180 id=180 data-nosnippet>180</a>
-<a href=#181 id=181 data-nosnippet>181</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#182 id=182 data-nosnippet>182</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+<a href=#181 id=181 data-nosnippet>181</a><span class="attr">#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#182 id=182 data-nosnippet>182</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
 <a href=#183 id=183 data-nosnippet>183</a></span><span class="kw">impl </span>pki_env_hooks::PkiEnvironmentHooks <span class="kw">for </span>PkiEnvironmentHooksShim {
 <a href=#184 id=184 data-nosnippet>184</a>    <span class="kw">async fn </span>http_request(
 <a href=#185 id=185 data-nosnippet>185</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,

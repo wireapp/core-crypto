@@ -372,9 +372,9 @@
 <a href=#372 id=372 data-nosnippet>372</a>        tables.dedup();
 <a href=#373 id=373 data-nosnippet>373</a>
 <a href=#374 id=374 data-nosnippet>374</a>        <span class="comment">// open a database transaction
-<a href=#375 id=375 data-nosnippet>375</a>        </span><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
+<a href=#375 id=375 data-nosnippet>375</a>        </span><span class="attr">#[cfg(target_os = <span class="string">"unknown"</span>)]
 <a href=#376 id=376 data-nosnippet>376</a>        </span><span class="kw">let </span>tx = conn.new_transaction(<span class="kw-2">&amp;</span>tables).<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#377 id=377 data-nosnippet>377</a>        <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
+<a href=#377 id=377 data-nosnippet>377</a>        <span class="attr">#[cfg(not(target_os = <span class="string">"unknown"</span>))]
 <a href=#378 id=378 data-nosnippet>378</a>        </span><span class="kw">let </span>tx = conn.transaction()<span class="question-mark">?</span>.into();
 <a href=#379 id=379 data-nosnippet>379</a>
 <a href=#380 id=380 data-nosnippet>380</a>        <span class="kw">for </span>entity <span class="kw">in </span>cache.values().flat_map(|table| table.values()) {
