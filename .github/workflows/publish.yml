@@ -1,0 +1,141 @@
+name: publish packages (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v1.2.3)"
+        required: true
+        type: string
+      registry:
+        description: "Which registry to publish to"
+        required: false
+        type: choice
+        default: all
+        options:
+          - all
+          - npm
+          - jvm
+          - android
+      sonatype-action:
+        description: >
+          For JVM/Android: 'release' promotes an existing closed staging repository.
+          'prepare-and-release' re-stages from scratch first (requires workflow
+          artifacts from the original run to still be available).
+        required: false
+        type: choice
+        default: release
+        options:
+          - release
+          - prepare-and-release
+
+env:
+  RELEASE: 1
+
+jobs:
+  # For JVM/Android we use Sonatype's two-phase staging model.
+  # 'prepare' uploads to a staging repo and closes it (validation happens here).
+  # 'release' finds the closed staging repo and promotes it to Maven Central.
+  # In the normal failure-retry case only the 'release' step is needed.
+
+  prepare-jvm:
+    if: >
+      (inputs.registry == 'all' || inputs.registry == 'jvm') &&
+      inputs.sonatype-action == 'prepare-and-release'
+    uses: ./.github/workflows/publish-jvm.yml
+    with:
+      prepare: true
+    secrets:
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+
+  release-jvm:
+    needs: prepare-jvm
+    # always() lets this run even when prepare-jvm was skipped (sonatype-action == 'release').
+    # The result check ensures we don't run if prepare-jvm actually failed.
+    if: >
+      always() &&
+      (inputs.registry == 'all' || inputs.registry == 'jvm') &&
+      (needs.prepare-jvm.result == 'success' || needs.prepare-jvm.result == 'skipped')
+    uses: ./.github/workflows/publish-jvm.yml
+    with:
+      release: true
+    secrets:
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+
+  prepare-android:
+    if: >
+      (inputs.registry == 'all' || inputs.registry == 'android') &&
+      inputs.sonatype-action == 'prepare-and-release'
+    uses: ./.github/workflows/publish-android.yml
+    with:
+      prepare: true
+    secrets:
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+
+  release-android:
+    needs: prepare-android
+    if: >
+      always() &&
+      (inputs.registry == 'all' || inputs.registry == 'android') &&
+      (needs.prepare-android.result == 'success' || needs.prepare-android.result == 'skipped')
+    uses: ./.github/workflows/publish-android.yml
+    with:
+      release: true
+    secrets:
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+
+  publish-npm:
+    # The npm tarball is uploaded to the GH release during the automatic pipeline run.
+    # Its presence means "not yet published"; we publish then delete it.
+    # If it is absent the version was already published to npm — skip silently.
+    if: inputs.registry == 'all' || inputs.registry == 'npm'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: download npm tarball from release
+        id: download
+        run: |
+          gh release download "${{ inputs.tag }}" --pattern "*.tgz" --dir . 2>/dev/null || true
+          filename=$(ls *.tgz 2>/dev/null | head -n 1)
+          if [[ -z "$filename" ]]; then
+            echo "No npm tarball found in release '${{ inputs.tag }}' — already published or never uploaded"
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "filename=$filename" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: set up node
+        if: steps.download.outputs.found == 'true'
+        uses: actions/setup-node@v6
+
+      - name: publish to npm (Trusted Publishers)
+        if: steps.download.outputs.found == 'true'
+        run: npm publish "./${{ steps.download.outputs.filename }}"
+
+      - name: delete tarball from release
+        if: steps.download.outputs.found == 'true'
+        run: gh release delete-asset "${{ inputs.tag }}" "${{ steps.download.outputs.filename }}" --yes
+        env:
+          GH_TOKEN: ${{ github.token }}

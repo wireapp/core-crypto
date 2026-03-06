@@ -5,7 +5,17 @@ concurrency:
 
 on:
   workflow_call:
-
+    inputs:
+        prepare:
+          description: "If true, stage and validate artifacts."
+          required: false
+          type: boolean
+          default: false
+        release:
+          description: "If true, release staged artifacts."
+          required: false
+          type: boolean
+          default: false
 env:
   RELEASE: 1
 
@@ -30,6 +40,7 @@ jobs:
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: package tarball
+        if: ${{ inputs.prepare == true }}
         id: package
         run: |
           filename=$(make web-package | tail -n 1)
@@ -37,17 +48,43 @@ jobs:
           echo "path=crypto-ffi/bindings/js/$filename" >> "$GITHUB_OUTPUT"
 
       - name: upload artifacts
+        if: ${{ inputs.prepare == true }}
         uses: softprops/action-gh-release@v2
         with:
           files: "${{ steps.package.outputs.path }}"
           fail_on_unmatched_files: true
 
+      - name: download artifacts
+        id: download
+        if: ${{ inputs.prepare == false && inputs.release == true }}
+        run: |
+          gh release download "${{ github.ref_name }}" --pattern "*.tgz" --dir . 2>/dev/null || true
+          filename=$(ls *.tgz 2>/dev/null | head -n 1)
+          if [[ -z "$filename" ]]; then
+            echo "::error ::No npm tarball found in release '${{ github.ref_name }}'"
+            exit 1
+          else
+            echo "filename=$filename" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: resolve tarball filename
+        id: tarball
+        if: ${{ inputs.release == true }}
+        run: |
+          # the output from each step which didn't run is the empty string, and only one of those
+          # two steps will ever run, so simple concatenation should suffice here
+          echo "filename=${{ steps.package.outputs.filename || steps.download.outputs.filename }}" >> "$GITHUB_OUTPUT"
+
       - name: publish package to npm (Trusted Publishers)
+        if: ${{ inputs.release == true }}
         run: |
           cd crypto-ffi/bindings/js
-          npm publish "./${{ steps.package.outputs.filename }}"
+          npm publish "./${{ steps.tarball.outputs.filename }}"
 
       - name: delete package from gh release
-        run: gh release delete-asset $GITHUB_REF_NAME "${{ steps.package.outputs.filename }}" --yes
+        if: ${{ inputs.release == true }}
+        run: gh release delete-asset $GITHUB_REF_NAME "${{ steps.tarball.outputs.filename }}" --yes
         env:
           GH_TOKEN: ${{ github.token }}
