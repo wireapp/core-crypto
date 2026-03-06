@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crypto/src/mls/conversation/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core_crypto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.93.1 (01f6ddf75 2026-02-11)" data-channel="1.93.1" data-search-js="search-9e2438ea.js" data-stringdex-js="stringdex-a3946164.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-a410ff4d.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core_crypto/mls/conversation/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! MLS groups (aka conversation) are the actual entities cementing all the participants in a
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crypto/src/mls/conversation/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-77263533.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core_crypto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.94.0 (4a4ef493e 2026-03-02)" data-channel="1.94.0" data-search-js="search-9e2438ea.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-7bab91a1.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-ffcac47a.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core_crypto/mls/conversation/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! MLS groups (aka conversation) are the actual entities cementing all the participants in a
 <a href=#2 id=2 data-nosnippet>2</a>//! conversation.
 <a href=#3 id=3 data-nosnippet>3</a>//!
 <a href=#4 id=4 data-nosnippet>4</a>//! This table summarizes what operations are permitted on a group depending its state:
@@ -50,14 +50,14 @@
 <a href=#50 id=50 data-nosnippet>50</a><span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider;
 <a href=#51 id=51 data-nosnippet>51</a>
 <a href=#52 id=52 data-nosnippet>52</a><span class="kw">use </span><span class="self">self</span>::config::MlsConversationConfiguration;
-<a href=#53 id=53 data-nosnippet>53</a><span class="kw">pub use </span><span class="self">self</span>::{
+<a href=#53 id=53 data-nosnippet>53</a><span class="kw">pub use </span>self::{
 <a href=#54 id=54 data-nosnippet>54</a>    conversation_guard::ConversationGuard,
 <a href=#55 id=55 data-nosnippet>55</a>    error::{Error, <span class="prelude-ty">Result</span>},
 <a href=#56 id=56 data-nosnippet>56</a>    id::{ConversationId, ConversationIdRef},
 <a href=#57 id=57 data-nosnippet>57</a>    immutable_conversation::ImmutableConversation,
 <a href=#58 id=58 data-nosnippet>58</a>};
 <a href=#59 id=59 data-nosnippet>59</a><span class="kw">use </span><span class="kw">super</span>::credential::Credential;
-<a href=#60 id=60 data-nosnippet>60</a><span class="kw">use crate</span>::{
+<a href=#60 id=60 data-nosnippet>60</a><span class="kw">use </span>crate::{
 <a href=#61 id=61 data-nosnippet>61</a>    Ciphersuite, ClientId, ClientIdRef, CredentialRef, CredentialType, E2eiConversationState, LeafError, MlsError,
 <a href=#62 id=62 data-nosnippet>62</a>    RecursiveError, UserId, WireIdentity,
 <a href=#63 id=63 data-nosnippet>63</a>    mls::{HasSessionAndCrypto, Session, credential::ext::CredentialExt <span class="kw">as _</span>},
@@ -439,7 +439,7 @@
 <a href=#439 id=439 data-nosnippet>439</a></span><span class="kw">pub mod </span>test_utils {
 <a href=#440 id=440 data-nosnippet>440</a>    <span class="kw">use </span>openmls::prelude::SignaturePublicKey;
 <a href=#441 id=441 data-nosnippet>441</a>
-<a href=#442 id=442 data-nosnippet>442</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#442 id=442 data-nosnippet>442</a>    <span class="kw">use </span>super::<span class="kw-2">*</span>;
 <a href=#443 id=443 data-nosnippet>443</a>
 <a href=#444 id=444 data-nosnippet>444</a>    <span class="kw">impl </span>MlsConversation {
 <a href=#445 id=445 data-nosnippet>445</a>        <span class="kw">pub fn </span>signature_keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = SignaturePublicKey&gt; + <span class="lifetime">'_ </span>{
@@ -461,7 +461,7 @@
 <a href=#461 id=461 data-nosnippet>461</a>
 <a href=#462 id=462 data-nosnippet>462</a><span class="attr">#[cfg(test)]
 <a href=#463 id=463 data-nosnippet>463</a></span><span class="kw">mod </span>tests {
-<a href=#464 id=464 data-nosnippet>464</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#464 id=464 data-nosnippet>464</a>    <span class="kw">use </span>super::<span class="kw-2">*</span>;
 <a href=#465 id=465 data-nosnippet>465</a>    <span class="kw">use </span><span class="kw">crate</span>::test_utils::<span class="kw-2">*</span>;
 <a href=#466 id=466 data-nosnippet>466</a>
 <a href=#467 id=467 data-nosnippet>467</a>    <span class="attr">#[apply(all_cred_cipher)]
@@ -506,7 +506,7 @@
 <a href=#506 id=506 data-nosnippet>506</a>
 <a href=#507 id=507 data-nosnippet>507</a>    <span class="kw">mod </span>wire_identity_getters {
 <a href=#508 id=508 data-nosnippet>508</a>        <span class="kw">use </span><span class="kw">super</span>::Error;
-<a href=#509 id=509 data-nosnippet>509</a>        <span class="kw">use crate</span>::{
+<a href=#509 id=509 data-nosnippet>509</a>        <span class="kw">use </span>crate::{
 <a href=#510 id=510 data-nosnippet>510</a>            ClientId, CredentialType, DeviceStatus, E2eiConversationState, mls::conversation::Conversation,
 <a href=#511 id=511 data-nosnippet>511</a>            test_utils::<span class="kw-2">*</span>,
 <a href=#512 id=512 data-nosnippet>512</a>        };
@@ -767,7 +767,7 @@
 <a href=#767 id=767 data-nosnippet>767</a>    <span class="kw">mod </span>export_secret {
 <a href=#768 id=768 data-nosnippet>768</a>        <span class="kw">use </span>openmls::prelude::ExportSecretError;
 <a href=#769 id=769 data-nosnippet>769</a>
-<a href=#770 id=770 data-nosnippet>770</a>        <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#770 id=770 data-nosnippet>770</a>        <span class="kw">use </span>super::<span class="kw-2">*</span>;
 <a href=#771 id=771 data-nosnippet>771</a>        <span class="kw">use </span><span class="kw">crate</span>::MlsErrorKind;
 <a href=#772 id=772 data-nosnippet>772</a>
 <a href=#773 id=773 data-nosnippet>773</a>        <span class="attr">#[apply(all_cred_cipher)]
@@ -802,7 +802,7 @@
 <a href=#802 id=802 data-nosnippet>802</a>    }
 <a href=#803 id=803 data-nosnippet>803</a>
 <a href=#804 id=804 data-nosnippet>804</a>    <span class="kw">mod </span>get_client_ids {
-<a href=#805 id=805 data-nosnippet>805</a>        <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#805 id=805 data-nosnippet>805</a>        <span class="kw">use </span>super::<span class="kw-2">*</span>;
 <a href=#806 id=806 data-nosnippet>806</a>
 <a href=#807 id=807 data-nosnippet>807</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#808 id=808 data-nosnippet>808</a>        </span><span class="kw">pub async fn </span>can_get_client_ids(case: TestContext) {
@@ -821,7 +821,7 @@
 <a href=#821 id=821 data-nosnippet>821</a>    }
 <a href=#822 id=822 data-nosnippet>822</a>
 <a href=#823 id=823 data-nosnippet>823</a>    <span class="kw">mod </span>external_sender {
-<a href=#824 id=824 data-nosnippet>824</a>        <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#824 id=824 data-nosnippet>824</a>        <span class="kw">use </span>super::<span class="kw-2">*</span>;
 <a href=#825 id=825 data-nosnippet>825</a>
 <a href=#826 id=826 data-nosnippet>826</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#827 id=827 data-nosnippet>827</a>        </span><span class="kw">pub async fn </span>should_fetch_ext_sender(<span class="kw-2">mut </span>case: TestContext) {

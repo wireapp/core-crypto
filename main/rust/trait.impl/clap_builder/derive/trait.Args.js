@@ -1,9 +1,9 @@
 (function() {
-    var implementors = Object.fromEntries([["decode",[["impl Args for <a class=\"struct\" href=\"decode/struct.App.html\" title=\"struct decode::App\">App</a>"]]]]);
+    const implementors = Object.fromEntries([["decode",[["impl Args for <a class=\"struct\" href=\"decode/struct.App.html\" title=\"struct decode::App\">App</a>",0]]]]);
     if (window.register_implementors) {
         window.register_implementors(implementors);
     } else {
         window.pending_implementors = implementors;
     }
 })()
-//{"start":57,"fragment_lengths":[119]}
+//{"start":59,"fragment_lengths":[121]}
