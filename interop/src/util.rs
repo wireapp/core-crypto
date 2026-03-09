@@ -137,7 +137,7 @@ pub(crate) async fn cp_wasm_files(wasm_deploy_path: PathBuf) -> Result<()> {
     let spinner = RunningProcess::new("Copying data into WASM bundle...", false);
 
     std::fs::copy(
-        cwd.join("crypto-ffi/bindings/js/test/wdio/index.html"),
+        cwd.join("crypto-ffi/bindings/js/html/index.html"),
         wasm_deploy_path.join("index.html"),
     )?;
 
