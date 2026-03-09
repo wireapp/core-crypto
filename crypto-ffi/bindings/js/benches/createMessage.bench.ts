@@ -1,0 +1,102 @@
+import { beforeEach, describe } from "mocha";
+import { browser } from "@wdio/globals";
+import { setup, benchmarkParameters } from "./utils";
+
+beforeEach(async () => {
+    await setup();
+});
+
+describe("benchmark", () => {
+    it(`create messages`, async () => {
+        // 1. Initialize the benchmark in the browser, but don't block
+        // For long runnning tasks we can't synchronously wait for `browser.execute()` to finish.
+        // If the function runs longer than 60s the browser will timeout unrelated to wdio/mocha timeout configs.
+
+        const parameters = await benchmarkParameters();
+        await browser.execute((parameters) => {
+            window.benchRunning = true;
+            (async (parameters) => {
+                window.bench = new window.tinybench.Bench({
+                    name: "create message",
+                    time: 1000,
+                    iterations: 5,
+                    warmupIterations: 1,
+                });
+                for (const { count, size, cipherSuite } of parameters) {
+                    const message = new Uint8Array(size);
+                    const alice = window.crypto.randomUUID();
+                    const conversationIdStr = window.crypto.randomUUID();
+                    const encoder = new TextEncoder();
+                    const clientId = new window.ccModule.ClientId(
+                        encoder.encode(alice).buffer
+                    );
+                    const key = new Uint8Array(32);
+                    window.crypto.getRandomValues(key);
+                    const database = await window.ccModule.openDatabase(
+                        alice,
+                        new window.ccModule.DatabaseKey(key.buffer)
+                    );
+                    const cc = window.ccModule.CoreCrypto.new(database);
+
+                    await cc.newTransaction(async (ctx) => {
+                        await ctx.mlsInit(clientId, window.deliveryService);
+                        await ctx.addCredential(
+                            window.ccModule.credentialBasic(
+                                cipherSuite,
+                                clientId
+                            )
+                        );
+                    });
+
+                    const conversationId = new window.ccModule.ConversationId(
+                        new TextEncoder().encode(conversationIdStr).buffer
+                    );
+
+                    await cc.newTransaction(async (ctx) => {
+                        const [credentialRef] = await ctx.getCredentials();
+                        await ctx.createConversation(
+                            conversationId,
+                            credentialRef!
+                        );
+                    });
+
+                    window.bench.add(
+                        `cipherSuite=${cipherSuite} size=${size}B count=${count}`,
+                        async () => {
+                            await cc.newTransaction(async (ctx) => {
+                                for (let i = 0; i < count; i++) {
+                                    await ctx.encryptMessage(
+                                        conversationId,
+                                        message!.buffer
+                                    );
+                                }
+                            });
+                        }
+                    );
+                }
+
+                await window.bench.run();
+                window.benchRunning = false;
+            })(parameters);
+        }, parameters);
+
+        // 2. Poll until benchmark is done
+        await browser.waitUntil(
+            async () => {
+                return !(await browser.execute(() => window.benchRunning));
+            },
+            {
+                timeout: 1_800_000, // 30 min
+                timeoutMsg: "Benchmark did not finish in time",
+            }
+        );
+
+        // 3. Retrieve results
+        const results = await browser.execute(() => {
+            return { name: window.bench.name, table: window.bench.table() };
+        });
+
+        console.log(results.name);
+        console.log(results.table);
+    });
+});
