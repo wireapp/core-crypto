@@ -563,10 +563,10 @@ $(STAMPS)/ts-test: $(ts-test-deps)
 	@set -euo pipefail; \
 	cd $(JS_DIR) && \
 	if [ -n "$(TEST)" ]; then \
-		bun x wdio run wdio.conf.ts --mochaOpts.grep "$(TEST)"; \
+		bun x wdio run ./wdio.test.conf.ts --mochaOpts.grep "$(TEST)"; \
 		bun test --filter "$(TEST)"; \
 	else \
-		bun x wdio run wdio.conf.ts --spec test/wdio/*.test.ts; \
+		bun x wdio run ./wdio.test.conf.ts; \
 		bun test; \
 	fi
 	$(TOUCH_STAMP)
@@ -575,7 +575,7 @@ $(STAMPS)/ts-test: $(ts-test-deps)
 .PHONY: ts-bench
 ts-bench: $(TS_OUT) ## Run TypeScript wrapper benches in Chrome via wdio
 	cd $(JS_DIR) && \
-	bun x wdio run wdio.conf.ts --spec benches/**/*.bench.ts --log-level warn
+	bun x wdio run ./wdio.bench.conf.ts --log-level warn
 
 web-package: $(TS_OUT)  ## Package the ready-to-release tarball
 	@cd $(JS_DIR) && \
