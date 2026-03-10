@@ -2353,11 +2353,11 @@ dependencies = [
 
 [[package]]
 name = "hashlink"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7382cf6263419f2d8df38c55d7da83da5c18aef87fc7a7fc1fb1e344edfe14c1"
+checksum = "ea0b22561a9c04a7cb1a302c013e0259cd3b4bb619f145b32f72b8b4bcbed230"
 dependencies = [
- "hashbrown 0.15.2",
+ "hashbrown 0.16.1",
 ]
 
 [[package]]
@@ -3213,9 +3213,9 @@ dependencies = [
 
 [[package]]
 name = "libsqlite3-sys"
-version = "0.35.0"
+version = "0.36.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "133c182a6a2c87864fe97778797e46c7e999672690dc9fa3ee8e241aa4a9c13f"
+checksum = "95b4103cffefa72eb8428cb6b47d6627161e51c2739fc5e3b734584157bc642a"
 dependencies = [
  "cc",
  "openssl-sys",
@@ -4631,8 +4631,7 @@ dependencies = [
 [[package]]
 name = "refinery"
 version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52c427f2572afe5c6cbfa2b1bf40071c89bf1a8539e958ea582842f6f38dcfae"
+source = "git+https://github.com/rust-db/refinery?rev=3abf61ec3836e835012346336fe144ca7fe9e9b7#3abf61ec3836e835012346336fe144ca7fe9e9b7"
 dependencies = [
  "refinery-core",
  "refinery-macros",
@@ -4641,8 +4640,7 @@ dependencies = [
 [[package]]
 name = "refinery-core"
 version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "702655abfc67f93a6f735e9fa4ace7d2e580633f8961f28acbfd7583ddce936c"
+source = "git+https://github.com/rust-db/refinery?rev=3abf61ec3836e835012346336fe144ca7fe9e9b7#3abf61ec3836e835012346336fe144ca7fe9e9b7"
 dependencies = [
  "async-trait",
  "cfg-if",
@@ -4659,8 +4657,7 @@ dependencies = [
 [[package]]
 name = "refinery-macros"
 version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5145756cdf293b5089dc6b4f103f1a1229cc55d67082c866f8c8289531c4b983"
+source = "git+https://github.com/rust-db/refinery?rev=3abf61ec3836e835012346336fe144ca7fe9e9b7#3abf61ec3836e835012346336fe144ca7fe9e9b7"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4859,9 +4856,9 @@ dependencies = [
 
 [[package]]
 name = "rusqlite"
-version = "0.37.0"
+version = "0.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "165ca6e57b20e1351573e3729b958bc62f0e48025386970b6e4d29e7a7e71f3f"
+checksum = "f1c93dd1c9683b438c392c492109cb702b8090b2bfc8fed6f6e4eb4523f17af3"
 dependencies = [
  "bitflags",
  "fallible-iterator",
@@ -4869,6 +4866,7 @@ dependencies = [
  "hashlink",
  "libsqlite3-sys",
  "smallvec",
+ "sqlite-wasm-rs",
  "uuid",
 ]
 

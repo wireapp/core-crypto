@@ -19,6 +19,11 @@ serde = []
 dummy-entity = []
 
 [dependencies]
+# we should depend on a real release instead of a git tag again once refinery
+# releases a version containing https://github.com/rust-db/refinery/commit/3abf61ec3836e835012346336fe144ca7fe9e9b7
+refinery = { version = "0.9", git = "https://github.com/rust-db/refinery", rev = "3abf61ec3836e835012346336fe144ca7fe9e9b7", default-features = false, features = [
+  "rusqlite",
+] }
 thiserror.workspace = true
 derive_more.workspace = true
 hex.workspace = true
@@ -37,10 +42,7 @@ x509-cert = { workspace = true }
 openmls_traits = { workspace = true }
 openmls_basic_credential = { workspace = true }
 openmls_x509_credential = { workspace = true }
-refinery = { version = "0.9", default-features = false, features = [
-  "rusqlite",
-] }
-rusqlite = { version = "0.37", default-features = false, features = [
+rusqlite = { version = "0.38", default-features = false, features = [
   "blob",
   "limits",
   "unlock_notify",
@@ -65,7 +67,7 @@ core-foundation = "0.10"
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
 async-fs = "2.2"
 blocking = "1.6"
-rusqlite = { version = "0.37", default-features = false, features = [
+rusqlite = { version = "0.38", default-features = false, features = [
   "bundled-sqlcipher-vendored-openssl",
 ] }
 
