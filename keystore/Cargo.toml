@@ -55,23 +55,17 @@ core-foundation = "0.10"
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
 async-fs = "2.2"
 blocking = "1.6"
-
-[target.'cfg(not(target_os = "unknown"))'.dependencies.rusqlite]
-version = "0.37"
-default-features = false
-features = [
+rusqlite = { version = "0.37", default-features = false, features = [
   "bundled-sqlcipher-vendored-openssl",
   "blob",
   "limits",
   "unlock_notify",
   "uuid",
   "functions",
-]
-
-[target.'cfg(not(target_os = "unknown"))'.dependencies.refinery]
-version = "0.9"
-default-features = false
-features = ["rusqlite"]
+] }
+refinery = { version = "0.9", default-features = false, features = [
+  "rusqlite",
+] }
 
 [target.'cfg(target_os = "unknown")'.dependencies]
 idb.workspace = true
@@ -98,10 +92,7 @@ smol-macros.workspace = true
 macro_rules_attribute.workspace = true
 tempfile = "3.26.0"
 smol.workspace = true
-
-[target.'cfg(not(target_os = "unknown"))'.dev-dependencies.criterion]
-version = "0.8"
-features = ["async_futures", "html_reports"]
+criterion = { version = "0.8", features = ["async_futures", "html_reports"] }
 
 [target.'cfg(target_os = "unknown")'.dev-dependencies]
 console_error_panic_hook = "0.1"
