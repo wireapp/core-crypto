@@ -48,6 +48,7 @@ rusqlite = { version = "0.38", default-features = false, features = [
   "unlock_notify",
   "uuid",
   "functions",
+  "fallible_uint",
 ] }
 serde = { workspace = true, features = ["derive"] }
 log = { workspace = true }
