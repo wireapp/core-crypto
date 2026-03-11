@@ -2,6 +2,7 @@
 #![doc = include_str!("../../docs/KEYSTORE_IMPLEMENTATION.md")]
 
 pub mod connection;
+mod database_key;
 pub mod entities;
 mod error;
 mod hash;
@@ -21,7 +22,8 @@ pub use self::entities::{DummyStoreValue, DummyValue};
 #[cfg(feature = "proteus-keystore")]
 pub use self::proteus::CryptoKeystoreProteus;
 pub use self::{
-    connection::{ConnectionType, Database, DatabaseKey},
+    connection::{ConnectionType, Database},
+    database_key::DatabaseKey,
     error::{CryptoKeystoreError, CryptoKeystoreResult},
     mls::{CryptoKeystoreMls, deser, ser},
 };
