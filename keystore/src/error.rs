@@ -41,10 +41,8 @@ pub enum CryptoKeystoreError {
     #[cfg(target_os = "unknown")]
     #[error("{0}")]
     SerdeWasmBindgenError(String),
-    #[cfg(not(target_os = "unknown"))]
     #[error(transparent)]
     DbError(#[from] rusqlite::Error),
-    #[cfg(not(target_os = "unknown"))]
     #[error(transparent)]
     DbMigrationError(#[from] Box<refinery::Error>),
     #[cfg(test)]
