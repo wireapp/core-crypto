@@ -19,4 +19,4 @@ ffi_module_filename = "core_crypto_ffiFFI"
 generate_module_map = false
 
 [bindings.typescript]
-optOutInterface = true
+strictObjectTypes = true
