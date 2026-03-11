@@ -104,6 +104,22 @@ pub enum CryptoKeystoreError {
     InvalidPrimaryKeyBytes(&'static str),
     #[error("the collection name {0} is unknown and could not be found")]
     UnknownCollectionName(&'static str),
+    #[cfg(target_os = "unknown")]
+    #[error("{context}")]
+    RelaxedIdbError {
+        context: &'static str,
+        #[source]
+        error: sqlite_wasm_vfs::relaxed_idb::RelaxedIdbError,
+    },
+}
+
+impl CryptoKeystoreError {
+    #[cfg(target_os = "unknown")]
+    pub(crate) fn relaxed_idb(
+        context: &'static str,
+    ) -> impl FnOnce(sqlite_wasm_vfs::relaxed_idb::RelaxedIdbError) -> Self {
+        move |error| Self::RelaxedIdbError { context, error }
+    }
 }
 
 #[cfg(target_os = "unknown")]
