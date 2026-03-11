@@ -82,9 +82,8 @@ pub async fn in_memory_database(key: Arc<DatabaseKey>) -> CoreCryptoResult<Datab
 //
 // This works out because we only ever build real wasm builds with the `wasm` feature flag enabled.
 // The error could therefore be an `unimplemented!` but it's harmless to return a real error in this case.
-#[cfg(not(feature = "wasm"))]
+#[cfg_attr(not(any(feature = "wasm", feature = "nodejs")), uniffi::export)]
 #[cfg_attr(all(not(feature = "wasm"), target_os = "unknown"), expect(unused_variables))]
-#[uniffi::export]
 pub async fn export_database_copy(database: &Database, destination_path: &str) -> CoreCryptoResult<()> {
     // we need a noop here for the case where we're compiling for wasm but without feature wasm
     #[cfg(target_os = "unknown")]

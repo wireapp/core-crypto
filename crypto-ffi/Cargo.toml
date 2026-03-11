@@ -23,6 +23,7 @@ workspace = true
 default = ["proteus"]
 proteus = ["core-crypto/proteus", "dep:proteus-wasm"]
 wasm = []
+nodejs = []
 
 [dependencies]
 async-lock.workspace = true
