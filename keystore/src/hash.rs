@@ -10,7 +10,6 @@ use crate::{
 /// Used to calculate ID hashes for some MlsEntities' SQLite tables (not used on wasm).
 /// We only use sha256 on platforms where we use SQLite.
 /// On wasm, we use IndexedDB, a key-value store, via the idb crate.
-#[cfg(not(target_os = "unknown"))]
 pub(crate) fn sha256(data: &[u8]) -> String {
     Sha256Hash::hash_from(data).to_string()
 }
