@@ -222,3 +222,4 @@ dist
 
 crypto-ffi/bindings/build
 interop/src/clients/build
+/crypto-ffi/bindings/js/node/generated
