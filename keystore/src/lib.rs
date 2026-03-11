@@ -12,6 +12,7 @@ pub(crate) mod mls;
 pub(crate) mod proteus;
 pub mod traits;
 pub mod transaction;
+pub mod unified_connection;
 
 pub use hash::Sha256Hash;
 pub(crate) use hash::sha256;
