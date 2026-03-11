@@ -61,7 +61,7 @@ describe("benchmark", () => {
                     });
 
                     window.bench.add(
-                        `cipherSuite=${cipherSuite} size=${size}B count=${count}`,
+                        `cipherSuite=${window.ccModule.Ciphersuite[cipherSuite]} size=${size}B count=${count}`,
                         async () => {
                             await cc.newTransaction(async (ctx) => {
                                 for (let i = 0; i < count; i++) {
