@@ -1,7 +1,7 @@
 import { browser, expect } from "@wdio/globals";
 import { ccInit, createConversation, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { E2eiConversationState } from "../../src/CoreCrypto";
+import { DeviceStatus, E2eiConversationState } from "../../src/CoreCrypto";
 
 beforeEach(async () => {
     await setup();
@@ -117,7 +117,7 @@ describe("end to end identity", () => {
         const convId = crypto.randomUUID();
         await ccInit(alice);
         await createConversation(alice, convId);
-        const identities = await browser.execute(
+        const identity = await browser.execute(
             async (clientName, conversationId) => {
                 const cc = window.ensureCcDefined(clientName);
                 const encoder = new TextEncoder();
@@ -132,12 +132,19 @@ describe("end to end identity", () => {
                     ]);
                 });
 
-                return identities.pop()?.clientId;
+                const identity = identities.pop()!;
+                return {
+                    clientId: identity.clientId,
+                    status: identity.status
+                };
             },
             alice,
             convId
         );
-        await expect(identities).toBe(alice);
+        await expect(identity.clientId).toBe(alice);
+        await expect(identity.status).toBe(DeviceStatus.Valid);
+        // Enum is represented as a number.
+        await expect(identity.status).toBe(1);
     });
 
     it("identities can be queried by user id", async () => {
