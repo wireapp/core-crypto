@@ -579,8 +579,13 @@ $(STAMPS)/ts-test: $(ts-test-deps)
 # run WebDriver benches
 .PHONY: ts-bench
 ts-bench: $(BROWSER_OUT) ## Run TypeScript wrapper benches in Chrome via wdio
+	@set -euo pipefail; \
 	cd $(JS_DIR) && \
-	bun x wdio run ./wdio.bench.conf.ts --log-level warn
+	if [ -n "$(BENCH)" ]; then \
+		bun x wdio run ./wdio.bench.conf.ts --mochaOpts.grep "$(BENCH)"; \
+	else \
+		bun x wdio run ./wdio.bench.conf.ts --log-level warn; \
+	fi
 
 ts-package: $(TS_OUT)  ## Package the ready-to-release tarball
 	@cd $(JS_DIR) && \
