@@ -43,7 +43,7 @@ jobs:
         if: ${{ inputs.prepare == true }}
         id: package
         run: |
-          filename=$(make web-package | tail -n 1)
+          filename=$(make ts-package | tail -n 1)
           echo "filename=$filename" >> "$GITHUB_OUTPUT"
           echo "path=crypto-ffi/bindings/js/$filename" >> "$GITHUB_OUTPUT"
 
