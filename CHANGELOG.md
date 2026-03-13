@@ -121,6 +121,11 @@
 
 ### Breaking Changes
 
+- Typescript: to set the ground for a native module, the browser module is now exported as
+  `@wireapp/core-crypto/browser`. Update your imports from `@wireapp/core-crypto` to `@wireapp/core-crypto/browser`.
+
+  Affected platforms: web
+
 - TypeScript: To construct `CoreCrypto`, call the static function `CoreCrypto.new()`.
 
   Affected platforms: web
