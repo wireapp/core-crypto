@@ -78,10 +78,14 @@ sourceSets {
     }
 }
 
+val jmhIncludes: String? = project.findProperty("jmhIncludes") as? String
 jmh {
     fork.set(1)
     resultFormat.set("CSV")
     resultsFile.set(layout.buildDirectory.file("reports/jmh/results.csv").get().asFile)
+    jmhIncludes?.let {
+        includes.set(listOf(it))
+    }
 }
 
 // Allows skipping signing jars published to 'MavenLocal' repository
