@@ -1,6 +1,7 @@
 #[cfg(feature = "dummy-entity")]
 mod dummy_entity;
 pub(crate) mod general;
+pub(crate) mod helpers;
 pub(crate) mod mls;
 pub(crate) mod platform;
 

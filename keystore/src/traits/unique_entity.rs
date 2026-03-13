@@ -1,20 +1,20 @@
 use async_trait::async_trait;
-use rusqlite::{Connection, Transaction};
-#[cfg(not(target_os = "unknown"))]
-use rusqlite::{OptionalExtension as _, ToSql, params};
+use rusqlite::{Connection, OptionalExtension as _, ToSql, Transaction, params};
 #[cfg(target_os = "unknown")]
 use serde::de::DeserializeOwned;
 
 #[cfg(not(target_os = "unknown"))]
-use crate::entities::{
-    count_helper, count_helper_tx, delete_helper, load_all_helper, unified_count_helper, unified_load_all_helper,
-};
+use crate::entities::{count_helper, count_helper_tx, delete_helper, load_all_helper};
 #[cfg(target_os = "unknown")]
 use crate::traits::{Decryptable, Decrypting, Encrypting, KeyType as _};
 use crate::{
     CryptoKeystoreResult,
     connection::{KeystoreDatabaseConnection, TransactionWrapper},
-    entities::{unified_count_helper_tx, unified_delete_helper},
+    entities::helpers::{
+        count_helper as unified_count_helper, count_helper_tx as unified_count_helper_tx,
+        delete_helper as unified_delete_helper, get_helper as unified_get_helper,
+        load_all_helper as unified_load_all_helper,
+    },
     traits::{
         Entity, EntityBase, PrimaryKey, UnifiedEntity,
         entity_database_mutation::{EntityDatabaseMutation, UnifiedEntityDatabaseMutation},
