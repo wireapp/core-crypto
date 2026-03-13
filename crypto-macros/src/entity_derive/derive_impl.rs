@@ -14,6 +14,10 @@ impl quote::ToTokens for Entity {
         tokens.extend(self.impl_entity_get_borrowed());
         tokens.extend(self.impl_entity_database_mutation());
         tokens.extend(self.impl_entity_delete_borrowed());
+        tokens.extend(self.impl_unified_entity());
+        tokens.extend(self.impl_unified_entity_get_borrowed());
+        tokens.extend(self.impl_unified_entity_database_mutation());
+        tokens.extend(self.impl_unified_entity_delete_borrowed());
         tokens.extend(self.impl_decrypting());
         tokens.extend(self.impl_encrypting());
     }
@@ -175,11 +179,11 @@ impl Entity {
         }
     }
 
-    fn impl_entity_database_mutation(&self) -> TokenStream {
+    /// Returns `(sql_statement, fields_params, sql_map_err)` shared by both the async and unified save impls.
+    fn sql_insert_parts(&self) -> (String, TokenStream, Option<TokenStream>) {
         let Self {
             upsert,
             collection_name,
-            struct_name,
             id_column,
             other_columns,
             ..
@@ -201,6 +205,14 @@ impl Entity {
         let sql_map_err = (!upsert).then_some(quote! {
             .map_err(|_| crate::CryptoKeystoreError::AlreadyExists(Self::COLLECTION_NAME))
         });
+
+        (sql_statement, fields, sql_map_err)
+    }
+
+    fn impl_entity_database_mutation(&self) -> TokenStream {
+        let Self { struct_name, .. } = self;
+
+        let (sql_statement, fields, sql_map_err) = self.sql_insert_parts();
 
         quote! {
             #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
@@ -272,6 +284,130 @@ impl Entity {
                     {
                         crate::entities::platform::delete_helper::<Self>(tx, #id_column_name, key).await
                     }
+                }
+            }
+        }
+    }
+
+    /// `impl UnifiedEntity for MyEntity`
+    fn impl_unified_entity(&self) -> TokenStream {
+        let Self {
+            collection_name,
+            struct_name,
+            id_column,
+            other_columns,
+            ..
+        } = self;
+
+        let field_assignments = std::iter::once(id_column.field_assignment())
+            .chain(other_columns.iter().map(|column| column.field_assignment()));
+
+        quote! {
+            impl crate::traits::UnifiedEntity for #struct_name {
+                const COLLECTION_NAME: &'static str = #collection_name;
+
+                fn get(conn: &rusqlite::Connection, key: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<Option<Self>> {
+                    <Self as crate::traits::UnifiedEntityGetBorrowed>::get_borrowed(conn, key)
+                }
+
+                fn count(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<u32> {
+                    crate::entities::helpers::count_helper::<Self>(conn)
+                }
+
+                fn load_all(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
+                    crate::entities::helpers::load_all_helper::<Self, _>(conn, |row| {
+                        Ok(Self {
+                            #( #field_assignments, )*
+                        })
+                    })
+                }
+            }
+        }
+    }
+
+    /// `impl UnifiedEntityGetBorrowed for MyEntity`
+    fn impl_unified_entity_get_borrowed(&self) -> TokenStream {
+        let Self {
+            struct_name,
+            id_column,
+            other_columns,
+            ..
+        } = self;
+
+        let pk_column_name = id_column
+            .column_name
+            .clone()
+            .unwrap_or_else(|| id_column.field_name.to_string());
+
+        let field_assignments = std::iter::once(id_column.field_assignment())
+            .chain(other_columns.iter().map(|column| column.field_assignment()));
+
+        quote! {
+            impl crate::traits::UnifiedEntityGetBorrowed for #struct_name {
+                fn get_borrowed(conn: &rusqlite::Connection, key: &Self::BorrowedPrimaryKey)
+                    -> crate::CryptoKeystoreResult<Option<Self>>
+                where
+                    for<'pk> &'pk Self::BorrowedPrimaryKey: crate::traits::KeyType,
+                {
+                    let key = <&Self::BorrowedPrimaryKey as crate::traits::KeyType>::bytes(&key);
+                    let key = key.as_ref();
+                    crate::entities::helpers::get_helper::<Self, _>(conn, #pk_column_name, key, |row| {
+                        Ok(Self {
+                            #( #field_assignments, )*
+                        })
+                    })
+                }
+            }
+        }
+    }
+
+    /// `impl UnifiedEntityDatabaseMutation for MyEntity`
+    fn impl_unified_entity_database_mutation(&self) -> TokenStream {
+        let Self { struct_name, .. } = self;
+
+        let (sql_statement, fields, sql_map_err) = self.sql_insert_parts();
+
+        quote! {
+            impl crate::traits::UnifiedEntityDatabaseMutation for #struct_name {
+                type AutoGeneratedFields = ();
+
+                fn save(&self, tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<()> {
+                    let mut stmt = tx.prepare_cached(#sql_statement)?;
+                    stmt.execute(rusqlite::params![#fields])#sql_map_err?;
+                    Ok(())
+                }
+
+                fn count(tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<u32> {
+                    crate::entities::helpers::count_helper_tx::<Self>(tx)
+                }
+
+                fn delete(tx: &rusqlite::Transaction, id: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<bool> {
+                    <Self as crate::traits::UnifiedEntityDeleteBorrowed>::delete_borrowed(tx, id)
+                }
+            }
+        }
+    }
+
+    /// `impl UnifiedEntityDeleteBorrowed for MyEntity`
+    fn impl_unified_entity_delete_borrowed(&self) -> TokenStream {
+        let Self {
+            struct_name, id_column, ..
+        } = self;
+
+        let id_column_name = id_column.sql_name();
+
+        quote! {
+            impl crate::traits::UnifiedEntityDeleteBorrowed for #struct_name {
+                fn delete_borrowed(
+                    tx: &rusqlite::Transaction,
+                    id: &<Self as crate::traits::BorrowPrimaryKey>::BorrowedPrimaryKey,
+                ) -> crate::CryptoKeystoreResult<bool>
+                where
+                    for<'pk> &'pk <Self as crate::traits::BorrowPrimaryKey>::BorrowedPrimaryKey: crate::traits::KeyType,
+                {
+                    let key = <&<Self as crate::traits::BorrowPrimaryKey>::BorrowedPrimaryKey as crate::traits::KeyType>::bytes(&id);
+                    let key = key.as_ref();
+                    crate::entities::helpers::delete_helper::<Self>(tx, #id_column_name, key)
                 }
             }
         }
