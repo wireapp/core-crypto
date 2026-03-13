@@ -16,3 +16,13 @@ impl From<ConsumerData> for Vec<u8> {
         consumer_data.content
     }
 }
+
+impl crate::traits::UnifiedUniqueEntityImplementationHelper for ConsumerData {
+    const COLLECTION_NAME: &str = "consumer_data";
+    fn new(content: Vec<u8>) -> Self {
+        Self { content }
+    }
+    fn content(&self) -> &[u8] {
+        &self.content
+    }
+}
