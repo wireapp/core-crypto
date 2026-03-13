@@ -19,6 +19,7 @@ declare global {
         tinybench: typeof import("tinybench");
         benchRunning: boolean;
         bench: Bench;
+        helpers: BenchmarkHelpers;
     }
 }
 
@@ -78,11 +79,47 @@ export async function setup() {
                 },
             };
         }
+
+        class BenchmarkHelpers {
+            static async setupCc(
+                cipherSuite: Ciphersuite
+            ): Promise<CoreCrypto> {
+                const encoder = new TextEncoder();
+
+                const clientIdStr = window.crypto.randomUUID();
+                const id = new window.ccModule.ClientId(
+                    encoder.encode(clientIdStr).buffer
+                );
+
+                const key = new Uint8Array(32);
+                crypto.getRandomValues(key);
+
+                const db = await window.ccModule.openDatabase(
+                    clientIdStr,
+                    new window.ccModule.DatabaseKey(key.buffer)
+                );
+
+                const cc = window.ccModule.CoreCrypto.new(db);
+
+                await cc.newTransaction(async (ctx) => {
+                    await ctx.mlsInit(id, window.deliveryService);
+                    await ctx.addCredential(
+                        window.ccModule.credentialBasic(cipherSuite, id)
+                    );
+                });
+                return cc;
+            }
+        }
+        window.helpers = BenchmarkHelpers;
     }, logLevel);
 }
 
 interface DeliveryService extends MlsTransport {
     getLatestCommitBundle: () => Promise<CommitBundle>;
+}
+
+interface BenchmarkHelpers {
+    setupCc: (cipherSuite: Ciphersuite) => Promise<CoreCrypto>;
 }
 
 type ParameterSet = {
