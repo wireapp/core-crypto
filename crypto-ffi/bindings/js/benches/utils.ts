@@ -1,7 +1,7 @@
 import { browser } from "@wdio/globals";
 import type { Bench } from "tinybench";
-import { Ciphersuite } from "../src/CoreCrypto";
-type ccModuleType = typeof import("../src/CoreCrypto");
+import { Ciphersuite } from "../src/browser/CoreCrypto";
+type ccModuleType = typeof import("../src/browser/CoreCrypto");
 declare global {
     interface Window {
         ccModule: ccModuleType;

@@ -117,7 +117,7 @@ export const config: WebdriverIO.Config = {
             "static-server",
             {
                 folders: [
-                    { mount: "/", path: "./out" },
+                    { mount: "/", path: "./out/browser" },
                     { mount: "/html", path: "./html" },
                 ],
                 port: 3000,

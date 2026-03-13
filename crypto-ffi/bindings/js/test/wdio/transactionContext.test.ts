@@ -1,7 +1,7 @@
 import { browser, expect } from "@wdio/globals";
 import { ccInit, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { CoreCryptoContext } from "../../src/CoreCrypto";
+import { CoreCryptoContext } from "../../src/browser/CoreCrypto";
 
 beforeEach(async () => {
     await setup();

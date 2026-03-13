@@ -1,7 +1,10 @@
 import { browser, expect } from "@wdio/globals";
 import { ccInit, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { ConversationId, type HistorySecret } from "../../src/CoreCrypto";
+import {
+    ConversationId,
+    type HistorySecret,
+} from "../../src/browser/CoreCrypto";
 
 beforeEach(async () => {
     await setup();

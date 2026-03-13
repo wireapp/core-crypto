@@ -1,7 +1,10 @@
 import { browser, expect } from "@wdio/globals";
 import { ccInit, createConversation, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { ConversationId, type CommitBundle } from "../../src/CoreCrypto";
+import {
+    ConversationId,
+    type CommitBundle,
+} from "../../src/browser/CoreCrypto";
 
 beforeEach(async () => {
     await setup();
