@@ -448,8 +448,13 @@ $(STAMPS)/jvm-test: $(jvm-test-deps)
 	$(TOUCH_STAMP)
 
 $(STAMPS)/jvm-bench: $(jvm-test-deps) $(KT_BENCHMARKS)
+	@set -euo pipefail; \
 	cd crypto-ffi/bindings && \
-	./gradlew :jvm:jmh
+	if [ -n "$(BENCH)" ]; then \
+		./gradlew :jvm:jmh -PjmhIncludes=$(BENCH); \
+	else \
+		./gradlew :jvm:jmh; \
+	fi
 	$(TOUCH_STAMP)
 
 #-------------------------------------------------------------------------------
