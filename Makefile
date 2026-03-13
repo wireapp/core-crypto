@@ -754,8 +754,9 @@ kotlin-check: $(STAMPS)/kotlin-check ## Lint Kotlin files via ktlint
 
 # TypeScript
 TS_TEST_FILES := $(shell find $(JS_DIR)/test -type f -name '*.ts' 2>/dev/null | LC_ALL=C sort)
+TS_BENCH_FILES := $(shell find $(JS_DIR)/benches -type f -name '*.ts' 2>/dev/null | LC_ALL=C sort)
 
-$(STAMPS)/ts-fmt: $(TS_SRCS) $(TS_TEST_FILES)
+$(STAMPS)/ts-fmt: $(TS_SRCS) $(TS_TEST_FILES) $(TS_BENCH_FILES)
 	cd $(JS_DIR) && bun eslint --max-warnings=0 --fix
 	$(TOUCH_STAMP)
 
