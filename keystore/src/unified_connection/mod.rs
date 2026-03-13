@@ -25,8 +25,10 @@ fn log_query(event: TraceEvent) {
 
 // Intentionally not `Clone`; outer users should wrap this entire thing in an `Arc` (or `Arc<Mutex<Option<Self>>>`
 // etc) as required for their desired semantics.
-#[derive(Debug)]
+#[derive(Debug, derive_more::Deref, derive_more::DerefMut)]
 pub struct Database {
+    #[deref]
+    #[deref_mut]
     pub(crate) conn: Connection,
     pub(crate) fs_abstraction: Box<dyn FilesystemAbstraction>,
     pub(crate) transaction: Mutex<Option<KeystoreTransaction>>,
