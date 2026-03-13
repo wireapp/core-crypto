@@ -5,6 +5,7 @@ mod ios_wal_compat;
 mod migrations;
 #[cfg(target_os = "unknown")]
 mod os_unknown;
+mod transaction;
 
 use async_lock::{Mutex, Semaphore};
 use rusqlite::Connection;
