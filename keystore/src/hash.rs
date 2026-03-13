@@ -79,7 +79,6 @@ impl OwnedKeyType for Sha256Hash {
     }
 }
 
-#[cfg(not(target_os = "unknown"))]
 impl rusqlite::ToSql for Sha256Hash {
     fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
         self.as_ref().to_sql()
