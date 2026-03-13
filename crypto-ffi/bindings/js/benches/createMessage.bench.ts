@@ -24,30 +24,9 @@ describe("benchmark", () => {
                 });
                 for (const { count, size, cipherSuite } of parameters) {
                     const message = new Uint8Array(size);
-                    const alice = window.crypto.randomUUID();
+                    const cc = await window.helpers.setupCc(cipherSuite);
+
                     const conversationIdStr = window.crypto.randomUUID();
-                    const encoder = new TextEncoder();
-                    const clientId = new window.ccModule.ClientId(
-                        encoder.encode(alice).buffer
-                    );
-                    const key = new Uint8Array(32);
-                    window.crypto.getRandomValues(key);
-                    const database = await window.ccModule.openDatabase(
-                        alice,
-                        new window.ccModule.DatabaseKey(key.buffer)
-                    );
-                    const cc = window.ccModule.CoreCrypto.new(database);
-
-                    await cc.newTransaction(async (ctx) => {
-                        await ctx.mlsInit(clientId, window.deliveryService);
-                        await ctx.addCredential(
-                            window.ccModule.credentialBasic(
-                                cipherSuite,
-                                clientId
-                            )
-                        );
-                    });
-
                     const conversationId = new window.ccModule.ConversationId(
                         new TextEncoder().encode(conversationIdStr).buffer
                     );
