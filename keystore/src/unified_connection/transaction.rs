@@ -7,7 +7,8 @@ impl super::Database {
     pub async fn new_transaction(&self) -> CryptoKeystoreResult<()> {
         let semaphore = self.transaction_semaphore.acquire().await;
         let mut transaction_guard = self.transaction.lock().await;
-        // we'll need to adjust the `KeystoreTransaction` constructor not to require an Arc version of the semaphore guard
+        // we'll need to adjust the `KeystoreTransaction` constructor not to require an Arc version of the semaphore
+        // guard
         let transaction = todo!(); // KeystoreTransaction::new(semaphore).await?
         *transaction_guard = Some(transaction);
         Ok(())

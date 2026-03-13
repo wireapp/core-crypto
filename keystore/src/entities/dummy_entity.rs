@@ -67,10 +67,7 @@ impl UniqueEntity for DummyStoreValue {
 impl crate::traits::UnifiedEntity for DummyStoreValue {
     const COLLECTION_NAME: &'static str = "";
 
-    fn get(
-        _conn: &rusqlite::Connection,
-        _key: &Vec<u8>,
-    ) -> CryptoKeystoreResult<Option<Self>> {
+    fn get(_conn: &rusqlite::Connection, _key: &Vec<u8>) -> CryptoKeystoreResult<Option<Self>> {
         Ok(None)
     }
 
@@ -84,10 +81,7 @@ impl crate::traits::UnifiedEntity for DummyStoreValue {
 }
 
 impl crate::traits::UnifiedEntityGetBorrowed for DummyStoreValue {
-    fn get_borrowed(
-        _conn: &rusqlite::Connection,
-        _key: &[u8],
-    ) -> CryptoKeystoreResult<Option<Self>>
+    fn get_borrowed(_conn: &rusqlite::Connection, _key: &[u8]) -> CryptoKeystoreResult<Option<Self>>
     where
         for<'pk> &'pk [u8]: crate::traits::KeyType,
     {
