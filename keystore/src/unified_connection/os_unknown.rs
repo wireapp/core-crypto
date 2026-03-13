@@ -2,18 +2,13 @@
 //!
 //! This gives us a place to put idb-specific items.
 
-use std::sync::LazyLock;
-
+use async_trait::async_trait;
+use rusqlite::Connection;
 use sqlite_wasm_rs::WasmOsCallback;
 use sqlite_wasm_vfs::relaxed_idb::{self, RelaxedIdbCfgBuilder, RelaxedIdbUtil};
 
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
 
-static RUSQLITE_FLAGS: LazyLock<rusqlite::OpenFlags> = LazyLock::new(|| {
-    rusqlite::OpenFlags::SQLITE_OPEN_CREATE
-        | rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
-        | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX
-});
 const VFS_NAME: &str = "multipleciphers-relaxed-idb";
 
 /// Get the VFS utility by reinstalling the VFS
@@ -28,51 +23,45 @@ async fn get_vfs_util() -> CryptoKeystoreResult<RelaxedIdbUtil> {
         .map_err(CryptoKeystoreError::relaxed_idb("installing relaxed-idb vfs"))
 }
 
-/// A database connection
+/// Open the encrypted database at the specified location, creating the database if necessary.
 ///
-/// This delegates to a normal [`rusqlite::Connection`], but also contains the idb
-/// utilities which give access to the VFS used to run the sqlite database.
-#[derive(derive_more::Debug, derive_more::Deref, derive_more::DerefMut)]
-pub(super) struct Connection {
-    /// The connection itself
-    #[deref]
-    #[deref_mut]
-    sqlite: rusqlite::Connection,
-    /// VFS tools
-    //
-    // This will be unused until/unless we implement things like database vacuum/download
-    #[expect(unused)]
-    #[debug("<RelaxedIdbUtil>")]
-    vfs_util: RelaxedIdbUtil,
-    /// The name of the database
-    //
-    // This will be unused until/unless we implement things like database vacuum/download
-    #[expect(unused)]
-    name: String,
+/// Encryption: if the database exists, it is assumed to be already encrypted, and decrypted with the provided key.
+/// If it does not yet exist, the provided key is set.
+///
+/// Does not migrate the database.
+pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<(Connection, FsAbstraction)> {
+    let vfs_util = FsAbstraction(get_vfs_util().await?);
+    let already_exists = vfs_util.exists(name);
+    // the flags we use here are equivalent to the defaults, except we don't engage uri handling
+    // https://docs.rs/rusqlite/latest/rusqlite/struct.Connection.html#method.open
+    let mut conn = rusqlite::Connection::open_with_flags_and_vfs(
+        name,
+        rusqlite::OpenFlags::SQLITE_OPEN_CREATE
+            | rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
+            | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+        VFS_NAME,
+    )?;
+
+    if already_exists {
+        super::encryption::decrypt(&mut conn, key)?;
+    } else {
+        super::encryption::rekey(&mut conn, key)?;
+    }
+
+    Ok((conn, vfs_util))
 }
 
-impl Connection {
-    /// Open the encrypted database at the specified location, creating the database if necessary.
-    ///
-    /// Encryption: if the database exists, it is assumed to be already encrypted, and decrypted with the provided key.
-    /// If it does not yet exist, the provided key is set.
-    ///
-    /// Does not migrate the database.
-    pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
-        let vfs_util = get_vfs_util().await?;
-        let already_exists = vfs_util.exists(name);
-        let mut sqlite = rusqlite::Connection::open_with_flags_and_vfs(name, *RUSQLITE_FLAGS, VFS_NAME)?;
+#[derive(derive_more::Debug, derive_more::Deref, derive_more::DerefMut)]
+#[debug("RelaxedIdbUtil")]
+pub(super) struct FsAbstraction(RelaxedIdbUtil);
 
-        if already_exists {
-            super::encryption::decrypt(&mut sqlite, key)?;
-        } else {
-            super::encryption::rekey(&mut sqlite, key)?;
-        }
-
-        Ok(Self {
-            vfs_util,
-            sqlite,
-            name: name.to_owned(),
-        })
+#[async_trait(?Send)]
+impl super::FilesystemAbstraction for FsAbstraction {
+    async fn delete(&self, path: &str) -> CryptoKeystoreResult<()> {
+        self.delete_db(path)
+            .map_err(CryptoKeystoreError::relaxed_idb("preparing file deletion future"))?
+            .await
+            .map_err(CryptoKeystoreError::relaxed_idb("deleting file"))?;
+        Ok(())
     }
 }
