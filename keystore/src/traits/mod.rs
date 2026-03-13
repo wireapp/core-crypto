@@ -13,9 +13,11 @@ mod primary_key;
 mod searchable_entity;
 mod unique_entity;
 
-pub use entity::{Entity, EntityGetBorrowed};
+pub use entity::{Entity, EntityGetBorrowed, UnifiedEntity, UnifiedEntityGetBorrowed};
 pub use entity_base::EntityBase;
-pub use entity_database_mutation::{EntityDatabaseMutation, EntityDeleteBorrowed};
+pub use entity_database_mutation::{
+    EntityDatabaseMutation, EntityDeleteBorrowed, UnifiedEntityDatabaseMutation, UnifiedEntityDeleteBorrowed,
+};
 pub use fetch_from_database::FetchFromDatabase;
 pub use item_encryption::{
     DecryptData, DecryptWithExplicitEncryptionKey, Decryptable, Decrypting, EncryptData,
@@ -23,5 +25,10 @@ pub use item_encryption::{
 };
 pub use key_type::{KeyType, OwnedKeyType};
 pub use primary_key::{BorrowPrimaryKey, PrimaryKey};
-pub use searchable_entity::{DeletableBySearchKey, SearchableEntity};
-pub use unique_entity::{UniqueEntity, UniqueEntityExt, UniqueEntityImplementationHelper};
+pub use searchable_entity::{
+    DeletableBySearchKey, SearchableEntity, UnifiedDeletableBySearchKey, UnifiedSearchableEntity,
+};
+pub use unique_entity::{
+    UnifiedUniqueEntity, UnifiedUniqueEntityExt, UnifiedUniqueEntityImplementationHelper, UniqueEntity,
+    UniqueEntityExt, UniqueEntityImplementationHelper,
+};
