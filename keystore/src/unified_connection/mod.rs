@@ -121,4 +121,17 @@ impl Database {
         }
         Ok(())
     }
+
+    /// Export a copy of the database to the specified path using VACUUM INTO.
+    ///
+    /// This creates a fully vacuumed and optimized copy of the database.
+    /// The copy will be encrypted with the same key as the source database.
+    ///
+    /// # Arguments
+    /// * `destination_path` - The file path where the database copy should be created
+    #[cfg(not(target_os = "unknown"))]
+    pub async fn export_copy(&self, destination_path: &str) -> CryptoKeystoreResult<()> {
+        self.conn.execute("VACUUM INTO ?1", [destination_path])?;
+        Ok(())
+    }
 }
