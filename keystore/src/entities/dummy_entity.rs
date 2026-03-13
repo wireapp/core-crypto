@@ -64,6 +64,41 @@ impl UniqueEntity for DummyStoreValue {
     const KEY: Self::PrimaryKey = Vec::new();
 }
 
+impl crate::traits::UnifiedEntity for DummyStoreValue {
+    const COLLECTION_NAME: &'static str = "";
+
+    fn get(
+        _conn: &rusqlite::Connection,
+        _key: &Vec<u8>,
+    ) -> CryptoKeystoreResult<Option<Self>> {
+        Ok(None)
+    }
+
+    fn count(_conn: &rusqlite::Connection) -> CryptoKeystoreResult<u32> {
+        Ok(0)
+    }
+
+    fn load_all(_conn: &rusqlite::Connection) -> CryptoKeystoreResult<Vec<Self>> {
+        Ok(Vec::new())
+    }
+}
+
+impl crate::traits::UnifiedEntityGetBorrowed for DummyStoreValue {
+    fn get_borrowed(
+        _conn: &rusqlite::Connection,
+        _key: &[u8],
+    ) -> CryptoKeystoreResult<Option<Self>>
+    where
+        for<'pk> &'pk [u8]: crate::traits::KeyType,
+    {
+        Ok(None)
+    }
+}
+
+impl crate::traits::UnifiedUniqueEntity for DummyStoreValue {
+    const KEY: Vec<u8> = Vec::new();
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DummyValue(Vec<u8>);
 
