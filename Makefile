@@ -574,8 +574,13 @@ $(STAMPS)/ts-test: $(ts-test-deps)
 # run WebDriver benches
 .PHONY: ts-bench
 ts-bench: $(TS_OUT) ## Run TypeScript wrapper benches in Chrome via wdio
+	@set -euo pipefail; \
 	cd $(JS_DIR) && \
-	bun x wdio run ./wdio.bench.conf.ts --log-level warn
+	if [ -n "$(BENCH)" ]; then \
+		bun x wdio run ./wdio.bench.conf.ts --mochaOpts.grep "$(BENCH)"; \
+	else \
+		bun x wdio run ./wdio.bench.conf.ts --log-level warn; \
+	fi
 
 web-package: $(TS_OUT)  ## Package the ready-to-release tarball
 	@cd $(JS_DIR) && \
@@ -749,8 +754,9 @@ kotlin-check: $(STAMPS)/kotlin-check ## Lint Kotlin files via ktlint
 
 # TypeScript
 TS_TEST_FILES := $(shell find $(JS_DIR)/test -type f -name '*.ts' 2>/dev/null | LC_ALL=C sort)
+TS_BENCH_FILES := $(shell find $(JS_DIR)/benches -type f -name '*.ts' 2>/dev/null | LC_ALL=C sort)
 
-$(STAMPS)/ts-fmt: $(TS_SRCS) $(TS_TEST_FILES)
+$(STAMPS)/ts-fmt: $(TS_SRCS) $(TS_TEST_FILES) $(TS_BENCH_FILES)
 	cd $(JS_DIR) && bun eslint --max-warnings=0 --fix
 	$(TOUCH_STAMP)
 
