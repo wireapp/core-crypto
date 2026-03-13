@@ -519,10 +519,6 @@ $(WASM_GEN): $(wasm-build-deps)
 
 	cd $(JS_DIR) && \
 	bun ubrn build web --no-wasm-pack && \
-	cp ../../../Cargo.lock ./rust_modules/wasm/Cargo.lock && \
-	cd ./rust_modules/wasm && \
-	cargo check && \
-	cd ../../ && \
 	RUSTFLAGS="" bun ubrn build web $(CARGO_BUILD_ARGS) --no-cargo && \
 	rm src/index.web.ts && \
 	cd ../../../target/debug && \

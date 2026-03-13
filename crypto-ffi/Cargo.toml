@@ -22,7 +22,7 @@ workspace = true
 [features]
 default = ["proteus"]
 proteus = ["core-crypto/proteus", "dep:proteus-wasm"]
-wasm = []
+wasm = ["dep:wasm-bindgen"]
 
 [dependencies]
 async-lock.workspace = true
@@ -42,6 +42,7 @@ rmp-serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tls_codec.workspace = true
+wasm-bindgen = { version = "0.2.105", optional = true }
 
 # UniFFI - Android + iOS bindings - Runtime support
 uniffi.workspace = true

@@ -1131,6 +1131,7 @@ dependencies = [
  "thiserror 2.0.18",
  "tls_codec",
  "uniffi",
+ "wasm-bindgen",
  "web-sys",
  "wire-e2e-identity",
 ]
