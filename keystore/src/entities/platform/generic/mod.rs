@@ -2,7 +2,7 @@
 // but won't actually be used until it's time to use those new traits.
 #![expect(unused)]
 
-mod general;
+mod consumer_data;
 mod mls;
 #[cfg(feature = "proteus-keystore")]
 mod proteus;
