@@ -26,7 +26,11 @@ exports.load = function (app) {
                 message.includes("EpochChangedReportingError.__type") ||
                 message.includes("LoggingError.__type") ||
                 message.includes("NewHistoryClientReportingError.__type") ||
-                message.includes("MlsTransportResponse.__type"))
+                message.includes("MlsTransportResponse.__type") ||
+                message.includes("ClientIdLike") ||
+                message.includes("WelcomeLike") ||
+                message.includes("ConversationIdLike") ||
+                message.includes("GroupInfoLike"))
         ) {
             // Ignore these specific ubrn warnings
             return;
