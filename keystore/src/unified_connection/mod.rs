@@ -14,7 +14,10 @@ use rusqlite::trace::{TraceEvent, TraceEventCodes};
 
 pub(crate) use self::fs_abstraction::FilesystemAbstraction;
 pub use self::migrations::migrate_db_key_type_to_bytes;
-use crate::{CryptoKeystoreResult, DatabaseKey, transaction::KeystoreTransaction};
+use crate::{
+    CryptoKeystoreResult, DatabaseKey, transaction::KeystoreTransaction,
+    unified_connection::migrations::MigrationTarget,
+};
 
 #[cfg(feature = "log-queries")]
 fn log_query(event: TraceEvent) {
@@ -36,12 +39,42 @@ pub struct Database {
 }
 
 impl Database {
+    /// Open an encrypted `Database` at the provided location.
+    ///
+    /// This function is the internal implementation for [`Self::open`]; that method should be generally preferred.
+    async fn open_internal(
+        path: &str,
+        database_key: &DatabaseKey,
+    ) -> CryptoKeystoreResult<(Connection, Box<dyn FilesystemAbstraction>)> {
+        #[cfg(target_os = "unknown")]
+        let (conn, fs_abstraction) = { os_unknown::open(path, database_key).await? };
+
+        #[cfg(not(target_os = "unknown"))]
+        let (conn, fs_abstraction) = {
+            let exists = std::fs::exists(path)?;
+            let mut conn = Connection::open(path)?;
+            if exists {
+                encryption::decrypt(&mut conn, database_key)?;
+            } else {
+                encryption::rekey(&mut conn, database_key)?;
+            }
+            (conn, fs_abstraction::NativeFs)
+        };
+
+        let fs_abstraction = Box::new(fs_abstraction);
+        Ok((conn, fs_abstraction))
+    }
+
     /// Set up the database from a connection
     ///
     /// The connection must already be configured for encryption if appropriate.
     ///
     /// Sets appropriate pragmas and performs migrations and general initialization work.
-    fn init(mut conn: Connection, fs_abstraction: Box<dyn FilesystemAbstraction>) -> CryptoKeystoreResult<Self> {
+    fn init(
+        mut conn: Connection,
+        fs_abstraction: Box<dyn FilesystemAbstraction>,
+        migration_target: MigrationTarget,
+    ) -> CryptoKeystoreResult<Self> {
         const ALLOWED_CONCURRENT_TRANSACTIONS_COUNT: usize = 1;
 
         #[cfg(feature = "log-queries")]
@@ -58,7 +91,7 @@ impl Database {
             conn.pragma_update(None, "journal_mode", "wal")?;
         }
 
-        migrations::run_migrations(&mut conn, Default::default())?;
+        migrations::run_migrations(&mut conn, migration_target)?;
 
         Ok(Self {
             conn,
@@ -77,23 +110,8 @@ impl Database {
     /// When compiled normally, this opens a database encrypted via sqlcipher at a path in the
     /// local filesystem.
     pub async fn open(path: &str, database_key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
-        #[cfg(target_os = "unknown")]
-        let (conn, fs_abstraction) = { os_unknown::open(path, database_key).await? };
-
-        #[cfg(not(target_os = "unknown"))]
-        let (conn, fs_abstraction) = {
-            let exists = std::fs::exists(path)?;
-            let mut conn = Connection::open(path)?;
-            if exists {
-                encryption::decrypt(&mut conn, database_key)?;
-            } else {
-                encryption::rekey(&mut conn, database_key)?;
-            }
-            (conn, fs_abstraction::NativeFs)
-        };
-
-        let fs_abstraction = Box::new(fs_abstraction);
-        Self::init(conn, fs_abstraction)
+        let (conn, fs_abstraction) = Self::open_internal(path, database_key).await?;
+        Self::init(conn, fs_abstraction, MigrationTarget::Latest)
     }
 
     /// Open an in-memory `Database`.
@@ -101,7 +119,20 @@ impl Database {
     /// In-memory databases are never encrypted.
     pub fn open_in_memory() -> CryptoKeystoreResult<Self> {
         let connection = Connection::open_in_memory()?;
-        Self::init(connection, Box::new(fs_abstraction::Nop))
+        Self::init(connection, Box::new(fs_abstraction::Nop), MigrationTarget::Latest)
+    }
+
+    /// Open an encrypted `Database` at the provided location.
+    ///
+    /// Acts as `open`, but only migrates to the specified schema version.
+    #[cfg(all(test, not(target_os = "unknown")))]
+    pub(crate) async fn open_at_schema_version(
+        path: &str,
+        database_key: &DatabaseKey,
+        migration_target: MigrationTarget,
+    ) -> CryptoKeystoreResult<Self> {
+        let (conn, fs_abstraction) = Self::open_internal(path, database_key).await?;
+        Self::init(conn, fs_abstraction, migration_target)
     }
 
     /// Change the database key for this connection.
