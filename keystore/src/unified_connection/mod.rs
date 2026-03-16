@@ -1,5 +1,7 @@
 mod encryption;
 mod filesystem;
+#[cfg(target_os = "unknown")]
+mod idb_migration;
 #[cfg(target_os = "ios")]
 mod ios_wal_compat;
 mod migrations;
@@ -13,6 +15,8 @@ use rusqlite::Connection;
 use rusqlite::trace::{TraceEvent, TraceEventCodes};
 
 pub(crate) use self::filesystem::Filesystem;
+#[cfg(target_os = "unknown")]
+pub use self::idb_migration::legacy_idb_exists;
 pub use self::migrations::migrate_db_key_type_to_bytes;
 use crate::{
     CryptoKeystoreResult, DatabaseKey, transaction::KeystoreTransaction,
