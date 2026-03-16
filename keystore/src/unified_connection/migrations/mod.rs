@@ -75,7 +75,7 @@ pub async fn migrate_db_key_type_to_bytes(
 
     // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
     #[cfg(target_os = "ios")]
-    ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
+    super::ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
 
     /// This is the latest schema version our test db dump is compatible with.
     const MAX_SUPPORTED_SCHEMA_VERSION: u8 = 15;
