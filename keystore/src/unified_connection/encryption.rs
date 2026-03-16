@@ -17,7 +17,7 @@ pub(super) fn decrypt(conn: &mut rusqlite::Connection, key: &DatabaseKey) -> Cry
     set_key_pragma(conn, key, "key")
 }
 
-///
+/// Reencrypt the database with a new key.
 pub(super) fn rekey(conn: &mut rusqlite::Connection, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
     set_key_pragma(conn, new_key, "rekey")
 }

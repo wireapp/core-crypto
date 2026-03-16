@@ -1,6 +1,5 @@
 use zeroize::Zeroize;
 
-#[cfg(not(target_os = "unknown"))]
 use crate::traits::EntityBase as _;
 
 /// Entity representing an enrollment instance used to fetch a x509 certificate and persisted when
