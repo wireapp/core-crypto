@@ -8,6 +8,8 @@ use syn::{Data, DeriveInput, Fields, FieldsNamed, FieldsUnnamed, Ident, Type, pa
 pub(crate) fn derive_debug(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
+    let generics = &input.generics;
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let struct_sensitive = input.attrs.iter().any(|attr| attr.path().is_ident("sensitive"));
 
     let debug_body = match input.data {
@@ -22,13 +24,13 @@ pub(crate) fn derive_debug(input: TokenStream) -> TokenStream {
     };
 
     let expanded = quote! {
-        impl core::fmt::Debug for #name {
+        impl #impl_generics core::fmt::Debug for #name #ty_generics #where_clause {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 #debug_body
             }
         }
 
-        impl log::kv::ToValue for #name {
+        impl #impl_generics log::kv::ToValue for #name #ty_generics #where_clause {
             fn to_value(&self) -> log::kv::Value<'_> {
                 log::kv::Value::from_debug(self)
             }
