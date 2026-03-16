@@ -11,7 +11,7 @@ mod jws;
 mod order;
 
 pub use account::AcmeAccount;
-pub use authz::AcmeAuthz;
+pub use authz::{AcmeAuthz, AcmeAuthzError};
 pub use chall::{AcmeChallError, AcmeChallenge, AcmeChallengeType};
 pub use directory::AcmeDirectory;
 pub use error::{RustyAcmeError, RustyAcmeResult};
