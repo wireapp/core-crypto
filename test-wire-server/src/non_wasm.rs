@@ -67,9 +67,9 @@ async fn wire_api(nonces: &Mutex<Nonces>, req: Request<Incoming>) -> http::Resul
                     let body = serde_json::to_vec(&body).unwrap().into();
                     Response::builder().status(StatusCode::OK).body(body).unwrap()
                 }
-                Err(_) => Response::builder()
+                Err(err) => Response::builder()
                     .status(StatusCode::UNAUTHORIZED)
-                    .body("".into())
+                    .body(format!("{err}").into())
                     .unwrap(),
             }
         }
