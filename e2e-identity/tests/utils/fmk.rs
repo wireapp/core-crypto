@@ -480,7 +480,7 @@ impl E2eTest {
         self.display_note("The ACME provisioner is configured with rules for transforming values received in the token into a Wire handle and display name.");
 
         let oidc_chall_req =
-            RustyAcme::oidc_chall_request(id_token, oidc_chall, account, self.alg, &self.acme_kp, previous_nonce)?;
+            RustyAcme::oidc_chall_request(id_token, &oidc_chall, account, self.alg, &self.acme_kp, previous_nonce)?;
         let req = self.client.acme_req(&oidc_chall_url, &oidc_chall_req)?;
         self.display_req(
             Actor::WireClient,

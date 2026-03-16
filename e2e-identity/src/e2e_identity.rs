@@ -318,7 +318,7 @@ impl RustyE2eIdentity {
         let oidc_chall: AcmeChallenge = oidc_challenge.clone().try_into()?;
         let new_challenge_req = RustyAcme::oidc_chall_request(
             id_token,
-            oidc_chall,
+            &oidc_chall,
             &account,
             self.sign_alg,
             &self.acme_kp,

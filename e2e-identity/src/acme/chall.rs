@@ -29,7 +29,7 @@ impl RustyAcme {
     #[allow(clippy::too_many_arguments)]
     pub fn oidc_chall_request(
         id_token: String,
-        oidc_chall: AcmeChallenge,
+        oidc_chall: &AcmeChallenge,
         account: &AcmeAccount,
         alg: JwsAlgorithm,
         kp: &Pem,
