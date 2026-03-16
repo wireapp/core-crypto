@@ -1,6 +1,6 @@
 use zeroize::Zeroize;
 
-/// Entity representing a list of [StoredEncryptionKeyPair]
+/// Entity representing a list of [StoredEncryptionKeyPair][super::StoredEncryptionKeyPair]
 #[derive(
     core_crypto_macros::Debug,
     Clone,
