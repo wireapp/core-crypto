@@ -10,6 +10,7 @@ use testcontainers::{
 
 use crate::utils::{NETWORK, SHM, rand_str};
 
+#[derive(Debug)]
 pub(crate) struct AcmeServer {
     pub uri: String,
     pub ca_cert: reqwest::Certificate,
