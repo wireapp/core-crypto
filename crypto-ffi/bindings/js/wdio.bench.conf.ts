@@ -14,7 +14,7 @@ export const config: WebdriverIO.Config = {
             {
                 port: 3000,
                 folders: [
-                    { mount: "/", path: "./out" },
+                    { mount: "/", path: "./out/browser" },
                     { mount: "/html", path: "./html" },
                     {
                         mount: "/node_modules/tinybench",
