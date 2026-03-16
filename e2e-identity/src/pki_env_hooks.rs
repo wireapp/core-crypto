@@ -52,7 +52,7 @@ impl HttpResponse {
 }
 
 /// Error type for PKI environment hooks
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, derive_more::From)]
 #[error("reason: {reason}")]
 pub struct PkiEnvironmentHooksError {
     /// the error reason
