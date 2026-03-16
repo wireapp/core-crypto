@@ -97,8 +97,6 @@ async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<Optio
 #[derive(Debug, Clone)]
 pub struct PkiEnvironment {
     /// Implemented by the clients and used by us to make external calls during e2e flow
-    // TODO: remove this config with further implementation of RFC CC2, as soon as hooks are actually used
-    #[expect(dead_code)]
     hooks: Arc<dyn PkiEnvironmentHooks>,
     /// The database in which X509 Credentials are stored.
     database: Database,
@@ -136,6 +134,10 @@ impl PkiEnvironment {
             self.mls_pki_env_provider.update_env(Some(rjt_pki_environment)).await;
         }
         Ok(())
+    }
+
+    pub fn hooks(&self) -> Arc<dyn PkiEnvironmentHooks> {
+        self.hooks.clone()
     }
 
     pub fn database(&self) -> &Database {
