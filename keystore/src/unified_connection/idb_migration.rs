@@ -5,7 +5,11 @@
 
 use idb::Factory;
 
-use crate::{CryptoKeystoreResult, DatabaseKey};
+use crate::{
+    CryptoKeystoreResult, DatabaseKey,
+    connection::{DatabaseConnection as _, KeystoreDatabaseConnection},
+    unified_connection::{Database, migrations::MigrationTarget},
+};
 
 /// Returns `true` if a legacy IndexedDB database with the given name exists and contains data.
 ///
@@ -42,10 +46,25 @@ pub async fn delete_legacy_idb(name: &str) -> CryptoKeystoreResult<()> {
 /// This is a no-op when:
 /// - the unified rusqlite database already exists (already migrated or native platform), or
 /// - no legacy IDB database exists at `name` (fresh install).
-pub(super) async fn maybe_migrate(name: &str, _key: &DatabaseKey, _vfs_name: &str) -> CryptoKeystoreResult<()> {
+pub(super) async fn maybe_migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<()> {
+    /// This SQL database version corresponds to the final IDB version,
+    /// so is what we need to perform the migration from IDB
+    const SQL_DATABASE_VERSION_AS_OF_FINAL_IDB_VERSION: u16 = 22;
+
     if !legacy_idb_exists(name).await {
         return Ok(());
     }
+
+    // open the legacy IDB, running all IDB migrations (v0 → v11) in the process.
+    let legacy_conn = KeystoreDatabaseConnection::open(name, key).await?;
+
+    // open the new `Database` at the version corresponding to the final IDB migration version
+    let database = Database::open_at_schema_version(
+        name,
+        key,
+        MigrationTarget::Version(SQL_DATABASE_VERSION_AS_OF_FINAL_IDB_VERSION),
+    )
+    .await?;
 
     todo!("IDB -> rusqlite data migration not yet implemented")
 }
