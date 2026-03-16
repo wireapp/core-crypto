@@ -616,7 +616,7 @@ impl E2eTest {
     ) -> TestResult<Vec<Vec<u8>>> {
         self.display_step("fetch the certificate");
         let certificate_url = finalize.certificate.clone();
-        let certificate_req = RustyAcme::certificate_req(finalize, account, self.alg, &self.acme_kp, previous_nonce)?;
+        let certificate_req = RustyAcme::certificate_req(finalize, &account, self.alg, &self.acme_kp, previous_nonce)?;
         let req = self.client.acme_req(&certificate_url, &certificate_req)?;
         self.display_req(
             Actor::WireClient,

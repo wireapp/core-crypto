@@ -14,7 +14,7 @@ impl RustyAcme {
     /// see [RFC 8555 Section 7.4.2](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2)
     pub fn certificate_req(
         finalize: AcmeFinalize,
-        account: AcmeAccount,
+        account: &AcmeAccount,
         alg: JwsAlgorithm,
         kp: &Pem,
         previous_nonce: String,
