@@ -37,6 +37,20 @@ pub struct HttpResponse {
     pub body: Vec<u8>,
 }
 
+impl HttpResponse {
+    /// Deserialize the body of the response into a JSON value.
+    pub fn json(&self) -> Result<serde_json::Value, serde_json::Error> {
+        serde_json::from_slice(&self.body)
+    }
+
+    /// Return the value of the first header with the given name.
+    pub fn first_header(&self, name: &str) -> Option<String> {
+        self.headers
+            .iter()
+            .find_map(|h| (h.name == name).then(|| h.value.clone()))
+    }
+}
+
 /// Error type for PKI environment hooks
 #[derive(Debug, thiserror::Error)]
 #[error("reason: {reason}")]
