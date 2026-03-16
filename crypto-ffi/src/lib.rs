@@ -6,6 +6,9 @@
 // No public item in this crate should lack documentation.
 #![cfg_attr(not(test), deny(missing_docs))]
 
+#[cfg(feature = "wasm")]
+extern crate uniffi_wasm as uniffi;
+
 uniffi::setup_scaffolding!("core_crypto_ffi");
 
 mod bundles;
