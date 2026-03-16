@@ -93,11 +93,11 @@ futures-lite = "2.6"
 core-crypto-keystore = { path = ".", features = ["log-queries"] }
 env_logger = "0.11"
 proteus-wasm = { workspace = true }
+tempfile = "3.26.0"
 
 [target.'cfg(not(target_os = "unknown"))'.dev-dependencies]
 smol-macros.workspace = true
 macro_rules_attribute.workspace = true
-tempfile = "3.26.0"
 smol.workspace = true
 criterion = { version = "0.8", features = ["async_futures", "html_reports"] }
 
