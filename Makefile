@@ -526,12 +526,14 @@ wasm-build-deps := $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES) $(PACKAGE_JSON) $
 # We remove library files because wasm-only symbols cause errors when running ios/jvm tests with these files
 # Note that ubrn always generates these in debug mode
 # We run ubrn in separated steps and copy our lock file and run cargo check to ensure rust_modules uses our wasm-bindgen version
+#
+# We are accepting warnings on the generated code when running `cargo check`, this is consistent with the ubrn config.
 $(WASM_GEN): $(wasm-build-deps)
 	cd $(JS_DIR) && \
 	bun ubrn build web --no-wasm-pack && \
 	cp ../../../Cargo.lock ./rust_modules/wasm/Cargo.lock && \
 	cd ./rust_modules/wasm && \
-	cargo check && \
+	RUSTFLAGS="$(RUSTFLAGS) -Awarnings" cargo check && \
 	cd ../../ && \
 	RUSTFLAGS="" bun ubrn build web $(CARGO_BUILD_ARGS) --no-cargo && \
 	rm src/index.web.ts && \
