@@ -1,6 +1,7 @@
 //! PKI Environment API Hooks
 
 /// An http method
+#[derive(Debug)]
 pub enum HttpMethod {
     /// GET
     Get,
@@ -17,6 +18,7 @@ pub enum HttpMethod {
 }
 
 /// An http header
+#[derive(Debug)]
 pub struct HttpHeader {
     /// header name
     pub name: String,
@@ -25,6 +27,7 @@ pub struct HttpHeader {
 }
 
 /// An HTTP Response
+#[derive(Debug)]
 pub struct HttpResponse {
     /// Response status code
     pub status: u16,
