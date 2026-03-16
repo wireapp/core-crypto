@@ -19,29 +19,28 @@ serde = []
 dummy-entity = []
 
 [dependencies]
+aes-gcm = "0.10"
+async-lock.workspace = true
+async-trait.workspace = true
+core-crypto-macros.workspace = true
+derive_more.workspace = true
+getrandom = { version = "0.2", features = ["js"] }
+hex.workspace = true
+itertools.workspace = true
+log = { workspace = true }
+obfuscate = { workspace = true, features = ["openmls"] }
+openmls = { workspace = true }
+openmls_basic_credential = { workspace = true }
+openmls_traits = { workspace = true }
+openmls_x509_credential = { workspace = true }
+postcard = { version = "1.1", default-features = false, features = ["use-std"] }
+proteus-traits = { workspace = true, optional = true }
+rand = { workspace = true, features = ["getrandom"] }
 # we should depend on a real release instead of a git tag again once refinery
 # releases a version containing https://github.com/rust-db/refinery/commit/3abf61ec3836e835012346336fe144ca7fe9e9b7
 refinery = { version = "0.9", git = "https://github.com/rust-db/refinery", rev = "3abf61ec3836e835012346336fe144ca7fe9e9b7", default-features = false, features = [
   "rusqlite",
 ] }
-thiserror.workspace = true
-derive_more.workspace = true
-hex.workspace = true
-zeroize = { workspace = true, features = ["zeroize_derive"] }
-async-trait.workspace = true
-async-lock.workspace = true
-postcard = { version = "1.1", default-features = false, features = ["use-std"] }
-sha2.workspace = true
-serde_json.workspace = true
-core-crypto-macros.workspace = true
-rand = { workspace = true, features = ["getrandom"] }
-getrandom = { version = "0.2", features = ["js"] }
-obfuscate = { workspace = true, features = ["openmls"] }
-openmls = { workspace = true }
-x509-cert = { workspace = true }
-openmls_traits = { workspace = true }
-openmls_basic_credential = { workspace = true }
-openmls_x509_credential = { workspace = true }
 rusqlite = { version = "0.38", default-features = false, features = [
   "blob",
   "limits",
@@ -51,19 +50,20 @@ rusqlite = { version = "0.38", default-features = false, features = [
   "fallible_uint",
 ] }
 serde = { workspace = true, features = ["derive"] }
-log = { workspace = true }
-proteus-traits = { workspace = true, optional = true }
-itertools.workspace = true
-aes-gcm = "0.10"
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
 twox-hash = { version = "2.1.2", default-features = false, features = [
   "alloc",
   "xxhash3_128",
 ] }
+x509-cert = { workspace = true }
+zeroize = { workspace = true, features = ["zeroize_derive"] }
 
 [target.'cfg(target_os = "ios")'.dependencies]
+core-foundation = "0.10"
 security-framework = "3.7"
 security-framework-sys = "2.16"
-core-foundation = "0.10"
 
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
 async-fs = "2.2"
@@ -84,22 +84,22 @@ web-sys = { version = "0.3", features = ["console"] }
 web-time = "1.1.0"
 
 [dev-dependencies]
-wasm-bindgen-test = { workspace = true }
-uuid = { workspace = true, features = ["v4", "js"] }
-openmls = { workspace = true, features = ["crypto-subtle"] }
-rstest = "0.26"
-rstest_reuse = "0.7"
-futures-lite = "2.6"
 core-crypto-keystore = { path = ".", features = ["log-queries"] }
 env_logger = "0.11"
+futures-lite = "2.6"
+openmls = { workspace = true, features = ["crypto-subtle"] }
 proteus-wasm = { workspace = true }
+rstest = "0.26"
+rstest_reuse = "0.7"
 tempfile = "3.26.0"
+uuid = { workspace = true, features = ["v4", "js"] }
+wasm-bindgen-test = { workspace = true }
 
 [target.'cfg(not(target_os = "unknown"))'.dev-dependencies]
-smol-macros.workspace = true
-macro_rules_attribute.workspace = true
-smol.workspace = true
 criterion = { version = "0.8", features = ["async_futures", "html_reports"] }
+macro_rules_attribute.workspace = true
+smol-macros.workspace = true
+smol.workspace = true
 
 [target.'cfg(target_os = "unknown")'.dev-dependencies]
 console_error_panic_hook = "0.1"
