@@ -426,7 +426,7 @@ impl RustyE2eIdentity {
         let finalize = finalize.try_into()?;
         let account = account.try_into()?;
         let certificate_req =
-            RustyAcme::certificate_req(finalize, &account, self.sign_alg, &self.acme_kp, previous_nonce)?;
+            RustyAcme::certificate_req(&finalize, &account, self.sign_alg, &self.acme_kp, previous_nonce)?;
         Ok(serde_json::to_value(certificate_req)?)
     }
 
