@@ -3736,6 +3736,7 @@ dependencies = [
  "openmls",
  "openmls_basic_credential",
  "rand 0.8.5",
+ "rusty-jwt-tools",
  "sha2",
 ]
 
