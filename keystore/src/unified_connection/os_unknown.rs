@@ -9,7 +9,10 @@ use sqlite_wasm_vfs::relaxed_idb::{self, RelaxedIdbCfgBuilder, RelaxedIdbUtil};
 
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
 
-const VFS_NAME: &str = "multipleciphers-relaxed-idb";
+// To use sqlite3-multiple-ciphers, you have to prepend the VFS name with `multipleciphers-`.
+// This is true even if you use a non-default VFS name.
+const VFS_NAME: &str = "core-crypto";
+const VFS_NAME_WITH_ENCRYPTION: &str = "multipleciphers-core-crypto";
 
 /// Get the VFS utility by reinstalling the VFS
 // note: `RelaxedIdbCfg` sets values including the name, which gets used as the IDB database name
@@ -17,7 +20,7 @@ async fn get_vfs_util() -> CryptoKeystoreResult<RelaxedIdbUtil> {
     // the virtual file system is named `core-crypto` no matter what databases get contained within it
     // this is the name of the indexeddb database
     // internally, items in this VFS get named with the name of the database as well as their offset
-    let cfg = RelaxedIdbCfgBuilder::new().vfs_name("core-crypto").build();
+    let cfg = RelaxedIdbCfgBuilder::new().vfs_name(VFS_NAME).build();
     relaxed_idb::install::<WasmOsCallback>(&cfg, false)
         .await
         .map_err(CryptoKeystoreError::relaxed_idb("installing relaxed-idb vfs"))
@@ -40,7 +43,7 @@ pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<
         rusqlite::OpenFlags::SQLITE_OPEN_CREATE
             | rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
             | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
-        VFS_NAME,
+        VFS_NAME_WITH_ENCRYPTION,
     )?;
 
     if already_exists {
