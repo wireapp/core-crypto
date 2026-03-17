@@ -17,6 +17,8 @@ workspace = true
 # See WPB-23172.
 core-crypto-keystore.workspace = true
 
+obfuscate.workspace = true
+core-crypto-macros.workspace = true
 async-trait.workspace = true
 async-lock.workspace = true
 sha1.workspace = true
