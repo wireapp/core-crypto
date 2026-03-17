@@ -1,14 +1,22 @@
 //! Migration of data from the legacy IndexedDB-based storage to the unified rusqlite connection.
 //!
-//! On WASM, this is called during [`super::Database::open`] to detect and migrate legacy data
-//! before the new connection is initialised.
+//! On WASM, this is called during [`super::Database::open_internal`] via [`super::os_unknown::open`]
+//! to detect and migrate legacy data before the new connection is initialised.
 
 use idb::Factory;
 use rusqlite::{Connection, OptionalExtension as _};
 
+#[cfg(feature = "proteus-keystore")]
+use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
 use crate::{
     CryptoKeystoreResult, DatabaseKey,
     connection::{DatabaseConnection as _, KeystoreDatabaseConnection},
+    entities::{
+        ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
+        PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
+        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+    },
+    traits::{Entity as _, UnifiedEntityDatabaseMutation as _},
     unified_connection::migrations::MigrationTarget,
 };
 
@@ -46,6 +54,11 @@ pub async fn delete_legacy_idb(name: &str) -> CryptoKeystoreResult<()> {
 ///
 /// Precondition: `new_conn` has not yet had migrations applied, but has been decrypted.
 ///
+/// Postconditions:
+/// - all data from the legacy IDB database is moved to `new_conn`
+/// - the legacy IDB database is deleted
+/// - `new_conn` is _not_ fully migrated and requires a further migration to the latest version
+///
 /// This is a no-op when:
 /// - the unified rusqlite database already exists (already migrated or native platform), or
 /// - no legacy IDB database exists at `name` (fresh install).
@@ -70,7 +83,7 @@ pub(super) async fn maybe_migrate(
     }
 
     // open the legacy IDB, running all IDB migrations (v0 → v11) in the process.
-    let legacy_conn = KeystoreDatabaseConnection::open(name, database_key).await?;
+    let mut legacy_conn = KeystoreDatabaseConnection::open(name, database_key).await?;
 
     // migrate the new connection to the version corresponding to the final IDB migration version
     super::migrations::run_migrations(
@@ -78,5 +91,62 @@ pub(super) async fn maybe_migrate(
         MigrationTarget::Version(SQL_DATABASE_VERSION_AS_OF_FINAL_IDB_VERSION),
     )?;
 
-    todo!("IDB -> rusqlite data migration not yet implemented")
+    macro_rules! migrate_entities {
+        ($( $(#[$attribute:meta])* $entity:ty ),* $(,)?) => {
+            paste::paste! {
+                // load all entities into memory -- probably fine, but we could consider interweaving
+                // a bit and dropping each entity's list after it's saved to the transaction
+                // if memory usage proves to be an issue
+                $(
+                    $(#[$attribute])*
+                    let [<$entity:lower>] = $entity::load_all(&mut legacy_conn).await?;
+                )*
+                drop(legacy_conn);
+
+                // write all entities into the rusqlite database
+                let tx = new_conn.transaction()?;
+                $(
+                    $(#[$attribute])*
+                    for row in [<$entity:lower>] {
+                        // note: no pre-save; preserve creation times etc
+                        row.save(&tx)?;
+                    }
+                )*
+                tx.commit()?;
+            }
+        };
+    }
+
+    // E2eiRefreshToken is intentionally not migrated: it was dropped in SQL migration V15.
+    migrate_entities!(
+        ConsumerData,
+        E2eiAcmeCA,
+        E2eiCrl,
+        E2eiIntermediateCert,
+        MlsPendingMessage,
+        PersistedMlsGroup,
+        PersistedMlsPendingGroup,
+        StoredBufferedCommit,
+        StoredCredential,
+        StoredE2eiEnrollment,
+        StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey,
+        StoredKeypackage,
+        StoredPskBundle,
+        #[cfg(feature = "proteus-keystore")]
+        ProteusIdentity,
+        #[cfg(feature = "proteus-keystore")]
+        ProteusPrekey,
+        #[cfg(feature = "proteus-keystore")]
+        ProteusSession,
+    );
+
+    // clients can recover independently from this; the migrations all succeeded, so no need to
+    // propagate an error
+    if let Err(err) = delete_legacy_idb(name).await {
+        log::warn!(err:err; "failed to delete legacy IDB database during migration to rusqlite");
+    }
+
+    Ok(())
 }
