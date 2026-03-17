@@ -1165,6 +1165,7 @@ dependencies = [
  "openmls_basic_credential",
  "openmls_traits",
  "openmls_x509_credential",
+ "paste",
  "postcard",
  "proteus-traits",
  "proteus-wasm",

@@ -75,6 +75,7 @@ rusqlite = { version = "0.38", default-features = false, features = [
 [target.'cfg(target_os = "unknown")'.dependencies]
 idb.workspace = true
 js-sys = "0.3"
+paste = "1.0.5"
 serde-wasm-bindgen = "0.6"
 sqlite-wasm-rs = { version = "0.5.2", features = ["sqlite3mc"] }
 sqlite-wasm-vfs = "0.2.0"
