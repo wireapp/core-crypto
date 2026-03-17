@@ -162,6 +162,31 @@ impl Database {
         })
     }
 
+    #[cfg(all(test, target_os = "unknown"))]
+    pub(crate) async fn open_at_schema_version(
+        name: &str,
+        key: &DatabaseKey,
+        version: Option<u32>,
+    ) -> CryptoKeystoreResult<Self> {
+        use crate::connection::{
+            storage::{WasmEncryptedStorage, WasmStorageWrapper},
+            wasm::migrations::{TARGET_VERSION, open_at},
+        };
+
+        let version = version.unwrap_or(TARGET_VERSION);
+        let idb_database = open_at(name, key, version).await;
+        let wasm_connection = KeystoreDatabaseConnection::from_inner(WasmEncryptedStorage::new(
+            key,
+            WasmStorageWrapper::Persistent(idb_database),
+        ));
+        let conn = Arc::new(Mutex::new(Some(wasm_connection)));
+        Ok(Self {
+            conn,
+            transaction: Default::default(),
+            transaction_semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
+        })
+    }
+
     pub async fn location(&self) -> CryptoKeystoreResult<Option<String>> {
         return Ok(self.conn().await?.location().map(ToString::to_string));
     }

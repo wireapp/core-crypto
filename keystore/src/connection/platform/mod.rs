@@ -1,7 +1,7 @@
 #[cfg(not(target_os = "unknown"))]
 mod generic;
 #[cfg(target_os = "unknown")]
-mod wasm;
+pub(crate) mod wasm;
 
 #[cfg(all(test, not(target_os = "unknown")))]
 pub(crate) use self::generic::MigrationTarget;

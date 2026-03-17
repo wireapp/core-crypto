@@ -13,7 +13,7 @@ use crate::{
     },
 };
 
-mod migrations;
+pub(crate) mod migrations;
 mod rekey;
 pub mod storage;
 

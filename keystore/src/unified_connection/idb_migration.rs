@@ -78,7 +78,7 @@ pub(super) async fn maybe_migrate(
         .query_row("PRAGMA user_version;", [], |row| row.get::<_, i32>(0))
         .optional()?;
     if version.is_some_and(|version| version != 0) {
-        // a migration has been applied, so the rusqlite databse exists, so we're done
+        // a migration has been applied, so the rusqlite database exists, so we're done
         return Ok(());
     }
 
@@ -149,4 +149,65 @@ pub(super) async fn maybe_migrate(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::LazyLock;
+
+    use wasm_bindgen_test::wasm_bindgen_test;
+
+    use super::*;
+    use crate::{
+        connection::{Database as OldDatabase, platform::wasm::migrations::DB_VERSION_4},
+        entities::ProteusPrekey,
+        traits::UnifiedEntity,
+        unified_connection::Database as NewDatabase,
+    };
+
+    pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(DatabaseKey::generate);
+
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    pub(crate) async fn data_is_preserved_through_migrations() {
+        const DB_NAME: &str = "test";
+
+        // clear the factory before beginning
+        let factory = Factory::new().unwrap();
+        factory.delete(DB_NAME).unwrap().await.unwrap();
+
+        const ENTITY_KEY: u16 = 12345;
+        const ENTITY_VALUE: &[u8] = b"here is a test entity, do not mess with it";
+
+        // put some data into a version 4 database
+        {
+            // version 4 is the earliest version that we natively generate anymore
+            let database = OldDatabase::open_at_schema_version(DB_NAME, &TEST_ENCRYPTION_KEY, Some(DB_VERSION_4))
+                .await
+                .unwrap();
+
+            // this entity type is simple, stable from v0 through v10, and we do not expect
+            // it to change in the future
+            let prekey = ProteusPrekey::from_raw(ENTITY_KEY, ENTITY_VALUE.into());
+
+            database.new_transaction().await.unwrap();
+            database.save(prekey).await.unwrap();
+            database.commit_transaction().await.unwrap();
+        }
+
+        // now migrate to Rusqlite, open the DB, and retrieve the data
+        {
+            let database = NewDatabase::open(DB_NAME, &TEST_ENCRYPTION_KEY).await.unwrap();
+            let value = <ProteusPrekey as UnifiedEntity>::get(&database.conn, &ENTITY_KEY)
+                .expect("no db failure")
+                .expect("entity present in the db");
+
+            assert_eq!(value.id, ENTITY_KEY);
+            assert_eq!(value.prekey, ENTITY_VALUE);
+        }
+
+        // cleanup
+        factory.delete(DB_NAME).unwrap().await.unwrap();
+    }
 }

@@ -29,21 +29,21 @@ const fn db_version_number(counter: u32) -> u32 {
 }
 
 // Note that we no longer support migration to DB_VERSION_1.
-const DB_VERSION_0: u32 = db_version_number(0);
-const DB_VERSION_1: u32 = db_version_number(1);
-const DB_VERSION_2: u32 = db_version_number(2);
-const DB_VERSION_3: u32 = db_version_number(3);
-const DB_VERSION_4: u32 = db_version_number(4);
-const DB_VERSION_5: u32 = db_version_number(5);
-const DB_VERSION_6: u32 = db_version_number(6);
-const DB_VERSION_7: u32 = db_version_number(7);
-const DB_VERSION_8: u32 = db_version_number(8);
-const DB_VERSION_9: u32 = db_version_number(9);
-const DB_VERSION_10: u32 = db_version_number(10);
-const DB_VERSION_11: u32 = db_version_number(11);
+pub(crate) const DB_VERSION_0: u32 = db_version_number(0);
+pub(crate) const DB_VERSION_1: u32 = db_version_number(1);
+pub(crate) const DB_VERSION_2: u32 = db_version_number(2);
+pub(crate) const DB_VERSION_3: u32 = db_version_number(3);
+pub(crate) const DB_VERSION_4: u32 = db_version_number(4);
+pub(crate) const DB_VERSION_5: u32 = db_version_number(5);
+pub(crate) const DB_VERSION_6: u32 = db_version_number(6);
+pub(crate) const DB_VERSION_7: u32 = db_version_number(7);
+pub(crate) const DB_VERSION_8: u32 = db_version_number(8);
+pub(crate) const DB_VERSION_9: u32 = db_version_number(9);
+pub(crate) const DB_VERSION_10: u32 = db_version_number(10);
+pub(crate) const DB_VERSION_11: u32 = db_version_number(11);
 
 /// This must always be the latest version. Increment when adding a new migration.
-const TARGET_VERSION: u32 = DB_VERSION_11;
+pub(crate) const TARGET_VERSION: u32 = DB_VERSION_11;
 
 /// Open an existing idb database with the given name, and migrate it if needed.
 pub(crate) async fn open_and_migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Database> {
@@ -68,9 +68,9 @@ pub(crate) async fn open_and_migrate(name: &str, key: &DatabaseKey) -> CryptoKey
     }
 }
 
-/// Open an existing idb database with the given name, and migrate it if needed.
+/// Open an existing idb database with the given name, and migrate it if needed to the specified target version.
 #[cfg(test)]
-async fn open_at(name: &str, key: &DatabaseKey, target_version: u32) -> Database {
+pub(crate) async fn open_at(name: &str, key: &DatabaseKey, target_version: u32) -> Database {
     let factory = Factory::new().unwrap();
     let existing_db = factory.open(name, None).unwrap().await.unwrap();
 
