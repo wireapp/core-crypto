@@ -56,7 +56,7 @@ pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<
 pub(super) struct FsAbstraction(RelaxedIdbUtil);
 
 #[async_trait(?Send)]
-impl super::FilesystemAbstraction for FsAbstraction {
+impl super::Filesystem for FsAbstraction {
     async fn delete(&self, path: &str) -> CryptoKeystoreResult<()> {
         self.delete_db(path)
             .map_err(CryptoKeystoreError::relaxed_idb("preparing file deletion future"))?

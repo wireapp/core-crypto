@@ -5,7 +5,7 @@ use crate::CryptoKeystoreResult;
 
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]
-pub(crate) trait FilesystemAbstraction: std::fmt::Debug {
+pub(crate) trait Filesystem: std::fmt::Debug {
     /// Remove the file at the specified location.
     async fn delete(&self, path: &str) -> CryptoKeystoreResult<()>;
 }
@@ -17,7 +17,7 @@ pub(super) struct NativeFs;
 
 #[cfg(not(target_os = "unknown"))]
 #[async_trait]
-impl FilesystemAbstraction for NativeFs {
+impl Filesystem for NativeFs {
     async fn delete(&self, path: &str) -> CryptoKeystoreResult<()> {
         async_fs::remove_file(path).await.map_err(Into::into)
     }
@@ -30,7 +30,7 @@ pub(super) struct Nop;
 
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]
-impl FilesystemAbstraction for Nop {
+impl Filesystem for Nop {
     async fn delete(&self, _path: &str) -> CryptoKeystoreResult<()> {
         Ok(())
     }

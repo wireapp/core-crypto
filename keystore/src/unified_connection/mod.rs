@@ -1,5 +1,5 @@
 mod encryption;
-mod fs_abstraction;
+mod filesystem;
 #[cfg(target_os = "ios")]
 mod ios_wal_compat;
 mod migrations;
@@ -12,7 +12,7 @@ use rusqlite::Connection;
 #[cfg(feature = "log-queries")]
 use rusqlite::trace::{TraceEvent, TraceEventCodes};
 
-pub(crate) use self::fs_abstraction::FilesystemAbstraction;
+pub(crate) use self::filesystem::Filesystem;
 pub use self::migrations::migrate_db_key_type_to_bytes;
 use crate::{
     CryptoKeystoreResult, DatabaseKey, transaction::KeystoreTransaction,
@@ -33,7 +33,7 @@ pub struct Database {
     #[deref]
     #[deref_mut]
     pub(crate) conn: Connection,
-    pub(crate) fs_abstraction: Box<dyn FilesystemAbstraction>,
+    pub(crate) filesystem: Box<dyn Filesystem>,
     pub(crate) transaction: Mutex<Option<KeystoreTransaction>>,
     transaction_semaphore: Semaphore,
 }
@@ -45,12 +45,12 @@ impl Database {
     async fn open_internal(
         path: &str,
         database_key: &DatabaseKey,
-    ) -> CryptoKeystoreResult<(Connection, Box<dyn FilesystemAbstraction>)> {
+    ) -> CryptoKeystoreResult<(Connection, Box<dyn Filesystem>)> {
         #[cfg(target_os = "unknown")]
-        let (conn, fs_abstraction) = { os_unknown::open(path, database_key).await? };
+        let (conn, filesystem) = { os_unknown::open(path, database_key).await? };
 
         #[cfg(not(target_os = "unknown"))]
-        let (conn, fs_abstraction) = {
+        let (conn, filesystem) = {
             let exists = std::fs::exists(path)?;
             let mut conn = Connection::open(path)?;
             if exists {
@@ -58,11 +58,11 @@ impl Database {
             } else {
                 encryption::rekey(&mut conn, database_key)?;
             }
-            (conn, fs_abstraction::NativeFs)
+            (conn, filesystem::NativeFs)
         };
 
-        let fs_abstraction = Box::new(fs_abstraction);
-        Ok((conn, fs_abstraction))
+        let filesystem = Box::new(filesystem);
+        Ok((conn, filesystem))
     }
 
     /// Set up the database from a connection
@@ -72,7 +72,7 @@ impl Database {
     /// Sets appropriate pragmas and performs migrations and general initialization work.
     fn init(
         mut conn: Connection,
-        fs_abstraction: Box<dyn FilesystemAbstraction>,
+        filesystem: Box<dyn Filesystem>,
         migration_target: MigrationTarget,
     ) -> CryptoKeystoreResult<Self> {
         const ALLOWED_CONCURRENT_TRANSACTIONS_COUNT: usize = 1;
@@ -95,7 +95,7 @@ impl Database {
 
         Ok(Self {
             conn,
-            fs_abstraction,
+            filesystem,
             transaction: Default::default(),
             transaction_semaphore: Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT),
         })
@@ -110,8 +110,8 @@ impl Database {
     /// When compiled normally, this opens a database encrypted via sqlcipher at a path in the
     /// local filesystem.
     pub async fn open(path: &str, database_key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
-        let (conn, fs_abstraction) = Self::open_internal(path, database_key).await?;
-        Self::init(conn, fs_abstraction, MigrationTarget::Latest)
+        let (conn, filesystem) = Self::open_internal(path, database_key).await?;
+        Self::init(conn, filesystem, MigrationTarget::Latest)
     }
 
     /// Open an in-memory `Database`.
@@ -119,7 +119,7 @@ impl Database {
     /// In-memory databases are never encrypted.
     pub fn open_in_memory() -> CryptoKeystoreResult<Self> {
         let connection = Connection::open_in_memory()?;
-        Self::init(connection, Box::new(fs_abstraction::Nop), MigrationTarget::Latest)
+        Self::init(connection, Box::new(filesystem::Nop), MigrationTarget::Latest)
     }
 
     /// Open an encrypted `Database` at the provided location.
@@ -131,8 +131,8 @@ impl Database {
         database_key: &DatabaseKey,
         migration_target: MigrationTarget,
     ) -> CryptoKeystoreResult<Self> {
-        let (conn, fs_abstraction) = Self::open_internal(path, database_key).await?;
-        Self::init(conn, fs_abstraction, migration_target)
+        let (conn, filesystem) = Self::open_internal(path, database_key).await?;
+        Self::init(conn, filesystem, migration_target)
     }
 
     /// Change the database key for this connection.
@@ -150,7 +150,7 @@ impl Database {
         self.conn.close().map_err(|(_conn, err)| err)?;
         if let Some(path) = location {
             // not in-memory
-            self.fs_abstraction.delete(&path).await?;
+            self.filesystem.delete(&path).await?;
         }
         Ok(())
     }
