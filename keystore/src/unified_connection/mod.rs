@@ -129,6 +129,10 @@ impl Database {
     /// Open an encrypted `Database` at the provided location.
     ///
     /// Acts as `open`, but only migrates to the specified schema version.
+    ///
+    /// Note: this is known to work because `Self::open_internal` will only ever perform
+    /// a partial migration when `target_os = "unknown"`, where this function is not defined.
+    /// Use caution when adjusting the cfg flags here!
     #[cfg(all(test, not(target_os = "unknown")))]
     pub(crate) async fn open_at_schema_version(
         path: &str,
