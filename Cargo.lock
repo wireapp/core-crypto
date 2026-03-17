@@ -1186,6 +1186,7 @@ dependencies = [
  "sqlite-wasm-vfs",
  "tempfile",
  "thiserror 2.0.18",
+ "time",
  "twox-hash",
  "uuid",
  "wasm-bindgen",
