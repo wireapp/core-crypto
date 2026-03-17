@@ -47,7 +47,11 @@ impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
 ///
 /// This does not represent the states where a device is not using MLS or is not using end-to-end identity
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    target_family = "wasm",
+    wasm_bindgen,
+    derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr)
+)]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
 #[repr(u8)]
 pub enum DeviceStatus {

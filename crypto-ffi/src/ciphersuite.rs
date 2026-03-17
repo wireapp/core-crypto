@@ -16,7 +16,11 @@ use crate::{CoreCryptoError, CoreCryptoResult};
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::TryFrom)]
 #[try_from(repr)]
 #[repr(u16)]
-#[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    target_family = "wasm",
+    wasm_bindgen,
+    derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr)
+)]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
 pub enum Ciphersuite {
     /// DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
