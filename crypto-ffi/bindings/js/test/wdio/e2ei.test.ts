@@ -320,4 +320,42 @@ describe("end to end identity", () => {
         );
         expect(identities).toBe(alice);
     });
+
+    it("identity enums remain numeric discriminants", async () => {
+        const alice = "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com";
+        const convId = crypto.randomUUID();
+        await ccInit(alice);
+        await createConversation(alice, convId);
+        const identity = await browser.execute(
+            async (clientName, conversationId) => {
+                const cc = window.ensureCcDefined(clientName);
+                const cid = new window.ccModule.ConversationId(
+                    new TextEncoder().encode(conversationId)
+                );
+                const identities = await cc.transaction(async (ctx) => {
+                    return await ctx.getUserIdentities(cid, [
+                        "LcksJb74Tm6N12cDjFy7lQ",
+                    ]);
+                });
+                const wireIdentity = identities.values().next().value?.pop();
+
+                return {
+                    status: wireIdentity?.status,
+                    credentialType: wireIdentity?.credentialType,
+                    statusType: typeof wireIdentity?.status,
+                    credentialTypeType: typeof wireIdentity?.credentialType,
+                    expectedStatus: window.ccModule.DeviceStatus.Valid,
+                    expectedCredentialType:
+                        window.ccModule.CredentialType.Basic,
+                };
+            },
+            alice,
+            convId
+        );
+
+        expect(identity.statusType).toBe("number");
+        expect(identity.credentialTypeType).toBe("number");
+        expect(identity.status).toBe(identity.expectedStatus);
+        expect(identity.credentialType).toBe(identity.expectedCredentialType);
+    });
 });
