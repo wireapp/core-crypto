@@ -1,0 +1,84 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `keystore/src/entities/mls/stored_encryption_key_pair.rs`."><title>stored_encryption_key_pair.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-77263533.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core_crypto_keystore" data-themes="" data-resource-suffix="" data-rustdoc-version="1.94.0 (4a4ef493e 2026-03-02)" data-channel="1.94.0" data-search-js="search-9e2438ea.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-7bab91a1.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-ffcac47a.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core_crypto_keystore/entities/mls/</div>stored_encryption_key_pair.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-2"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>zeroize::Zeroize;
+<a href=#2 id=2 data-nosnippet>2</a>
+<a href=#3 id=3 data-nosnippet>3</a><span class="doccomment">/// Entity representing a stored encryption keypair
+<a href=#4 id=4 data-nosnippet>4</a></span><span class="attr">#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+<a href=#5 id=5 data-nosnippet>5</a>#[zeroize(drop)]
+<a href=#6 id=6 data-nosnippet>6</a>#[sensitive]
+<a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">pub struct </span>StoredEncryptionKeyPair {
+<a href=#8 id=8 data-nosnippet>8</a>    <span class="kw">pub </span>sk: Vec&lt;u8&gt;,
+<a href=#9 id=9 data-nosnippet>9</a>    <span class="kw">pub </span>pk: Vec&lt;u8&gt;,
+<a href=#10 id=10 data-nosnippet>10</a>}
+<a href=#11 id=11 data-nosnippet>11</a>
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">impl </span><span class="kw">crate</span>::traits::UnifiedEntity <span class="kw">for </span>StoredEncryptionKeyPair {
+<a href=#13 id=13 data-nosnippet>13</a>    <span class="kw">const </span>COLLECTION_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"mls_encryption_keypairs"</span>;
+<a href=#14 id=14 data-nosnippet>14</a>
+<a href=#15 id=15 data-nosnippet>15</a>    <span class="kw">fn </span>get(conn: <span class="kw-2">&amp;</span>rusqlite::Connection, key: <span class="kw-2">&amp;</span>Vec&lt;u8&gt;) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
+<a href=#16 id=16 data-nosnippet>16</a>        <span class="kw">let </span>hash = <span class="kw">crate</span>::Sha256Hash::hash_from(key);
+<a href=#17 id=17 data-nosnippet>17</a>        <span class="kw">crate</span>::entities::helpers::get_helper(conn, <span class="string">"pk_sha256"</span>, hash, |row| {
+<a href=#18 id=18 data-nosnippet>18</a>            <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+<a href=#19 id=19 data-nosnippet>19</a>                pk: row.get(<span class="string">"pk"</span>)<span class="question-mark">?</span>,
+<a href=#20 id=20 data-nosnippet>20</a>                sk: row.get(<span class="string">"sk"</span>)<span class="question-mark">?</span>,
+<a href=#21 id=21 data-nosnippet>21</a>            })
+<a href=#22 id=22 data-nosnippet>22</a>        })
+<a href=#23 id=23 data-nosnippet>23</a>    }
+<a href=#24 id=24 data-nosnippet>24</a>
+<a href=#25 id=25 data-nosnippet>25</a>    <span class="kw">fn </span>count(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;u32&gt; {
+<a href=#26 id=26 data-nosnippet>26</a>        <span class="kw">crate</span>::entities::helpers::count_helper::&lt;<span class="self">Self</span>&gt;(conn)
+<a href=#27 id=27 data-nosnippet>27</a>    }
+<a href=#28 id=28 data-nosnippet>28</a>
+<a href=#29 id=29 data-nosnippet>29</a>    <span class="kw">fn </span>load_all(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
+<a href=#30 id=30 data-nosnippet>30</a>        <span class="kw">crate</span>::entities::helpers::load_all_helper(conn, |row| {
+<a href=#31 id=31 data-nosnippet>31</a>            <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+<a href=#32 id=32 data-nosnippet>32</a>                pk: row.get(<span class="string">"pk"</span>)<span class="question-mark">?</span>,
+<a href=#33 id=33 data-nosnippet>33</a>                sk: row.get(<span class="string">"sk"</span>)<span class="question-mark">?</span>,
+<a href=#34 id=34 data-nosnippet>34</a>            })
+<a href=#35 id=35 data-nosnippet>35</a>        })
+<a href=#36 id=36 data-nosnippet>36</a>    }
+<a href=#37 id=37 data-nosnippet>37</a>}
+<a href=#38 id=38 data-nosnippet>38</a>
+<a href=#39 id=39 data-nosnippet>39</a><span class="kw">impl </span><span class="kw">crate</span>::traits::UnifiedEntityGetBorrowed <span class="kw">for </span>StoredEncryptionKeyPair {
+<a href=#40 id=40 data-nosnippet>40</a>    <span class="kw">fn </span>get_borrowed(conn: <span class="kw-2">&amp;</span>rusqlite::Connection, key: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt;
+<a href=#41 id=41 data-nosnippet>41</a>    <span class="kw">where
+<a href=#42 id=42 data-nosnippet>42</a>        for</span>&lt;<span class="lifetime">'pk</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">'pk </span>[u8]: <span class="kw">crate</span>::traits::KeyType,
+<a href=#43 id=43 data-nosnippet>43</a>    {
+<a href=#44 id=44 data-nosnippet>44</a>        <span class="kw">let </span>hash = <span class="kw">crate</span>::Sha256Hash::hash_from(key);
+<a href=#45 id=45 data-nosnippet>45</a>        <span class="kw">crate</span>::entities::helpers::get_helper(conn, <span class="string">"pk_sha256"</span>, hash, |row| {
+<a href=#46 id=46 data-nosnippet>46</a>            <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+<a href=#47 id=47 data-nosnippet>47</a>                pk: row.get(<span class="string">"pk"</span>)<span class="question-mark">?</span>,
+<a href=#48 id=48 data-nosnippet>48</a>                sk: row.get(<span class="string">"sk"</span>)<span class="question-mark">?</span>,
+<a href=#49 id=49 data-nosnippet>49</a>            })
+<a href=#50 id=50 data-nosnippet>50</a>        })
+<a href=#51 id=51 data-nosnippet>51</a>    }
+<a href=#52 id=52 data-nosnippet>52</a>}
+<a href=#53 id=53 data-nosnippet>53</a>
+<a href=#54 id=54 data-nosnippet>54</a><span class="kw">impl </span><span class="kw">crate</span>::traits::UnifiedEntityDatabaseMutation <span class="kw">for </span>StoredEncryptionKeyPair {
+<a href=#55 id=55 data-nosnippet>55</a>    <span class="kw">type </span>AutoGeneratedFields = ();
+<a href=#56 id=56 data-nosnippet>56</a>
+<a href=#57 id=57 data-nosnippet>57</a>    <span class="kw">fn </span>save(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>rusqlite::Transaction) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;()&gt; {
+<a href=#58 id=58 data-nosnippet>58</a>        <span class="kw">let </span>hash = <span class="kw">crate</span>::Sha256Hash::hash_from(<span class="kw-2">&amp;</span><span class="self">self</span>.pk);
+<a href=#59 id=59 data-nosnippet>59</a>        <span class="kw">let </span><span class="kw-2">mut </span>stmt =
+<a href=#60 id=60 data-nosnippet>60</a>            tx.prepare_cached(<span class="string">"INSERT OR REPLACE INTO mls_encryption_keypairs (pk_sha256, pk, sk) VALUES (?, ?, ?)"</span>)<span class="question-mark">?</span>;
+<a href=#61 id=61 data-nosnippet>61</a>        stmt.execute(<span class="macro">rusqlite::params!</span>[hash, <span class="self">self</span>.pk, <span class="self">self</span>.sk])<span class="question-mark">?</span>;
+<a href=#62 id=62 data-nosnippet>62</a>        <span class="prelude-val">Ok</span>(())
+<a href=#63 id=63 data-nosnippet>63</a>    }
+<a href=#64 id=64 data-nosnippet>64</a>
+<a href=#65 id=65 data-nosnippet>65</a>    <span class="kw">fn </span>count(tx: <span class="kw-2">&amp;</span>rusqlite::Transaction) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;u32&gt; {
+<a href=#66 id=66 data-nosnippet>66</a>        <span class="kw">crate</span>::entities::helpers::count_helper_tx::&lt;<span class="self">Self</span>&gt;(tx)
+<a href=#67 id=67 data-nosnippet>67</a>    }
+<a href=#68 id=68 data-nosnippet>68</a>
+<a href=#69 id=69 data-nosnippet>69</a>    <span class="kw">fn </span>delete(tx: <span class="kw-2">&amp;</span>rusqlite::Transaction, id: <span class="kw-2">&amp;</span>Vec&lt;u8&gt;) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;bool&gt; {
+<a href=#70 id=70 data-nosnippet>70</a>        <span class="kw">let </span>hash = <span class="kw">crate</span>::Sha256Hash::hash_from(id);
+<a href=#71 id=71 data-nosnippet>71</a>        <span class="kw">crate</span>::entities::helpers::delete_helper::&lt;<span class="self">Self</span>&gt;(tx, <span class="string">"pk_sha256"</span>, hash)
+<a href=#72 id=72 data-nosnippet>72</a>    }
+<a href=#73 id=73 data-nosnippet>73</a>}
+<a href=#74 id=74 data-nosnippet>74</a>
+<a href=#75 id=75 data-nosnippet>75</a><span class="kw">impl </span><span class="kw">crate</span>::traits::UnifiedEntityDeleteBorrowed <span class="kw">for </span>StoredEncryptionKeyPair {
+<a href=#76 id=76 data-nosnippet>76</a>    <span class="kw">fn </span>delete_borrowed(tx: <span class="kw-2">&amp;</span>rusqlite::Transaction, id: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;bool&gt;
+<a href=#77 id=77 data-nosnippet>77</a>    <span class="kw">where
+<a href=#78 id=78 data-nosnippet>78</a>        for</span>&lt;<span class="lifetime">'pk</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">'pk </span>[u8]: <span class="kw">crate</span>::traits::KeyType,
+<a href=#79 id=79 data-nosnippet>79</a>    {
+<a href=#80 id=80 data-nosnippet>80</a>        <span class="kw">let </span>hash = <span class="kw">crate</span>::Sha256Hash::hash_from(id);
+<a href=#81 id=81 data-nosnippet>81</a>        <span class="kw">crate</span>::entities::helpers::delete_helper::&lt;<span class="self">Self</span>&gt;(tx, <span class="string">"pk_sha256"</span>, hash)
+<a href=#82 id=82 data-nosnippet>82</a>    }
+<a href=#83 id=83 data-nosnippet>83</a>}
+</code></pre></div></section></main></body></html>
