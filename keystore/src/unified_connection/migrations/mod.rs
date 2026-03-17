@@ -47,7 +47,7 @@ pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationT
         // If the version has been updated by the runner, first run the meta migration, then update the schema
         // version.
         run_meta_migration(updated_version, conn)?;
-        conn.pragma_update(None, "schema_version", updated_version)?;
+        conn.pragma_update(None, "user_version", updated_version)?;
     }
 
     Ok(())
@@ -80,7 +80,7 @@ pub async fn migrate_db_key_type_to_bytes(
     /// This is the latest schema version our test db dump is compatible with.
     const MAX_SUPPORTED_SCHEMA_VERSION: u8 = 15;
 
-    let version = conn.query_row("PRAGMA schema_version;", [], |row| row.get::<_, i32>(0))?;
+    let version = conn.query_row("PRAGMA user_version;", [], |row| row.get::<_, i32>(0))?;
     if version >= MAX_SUPPORTED_SCHEMA_VERSION as i32 {
         return Err(CryptoKeystoreError::MigrationFailed(
             "key type migration from string to bytes can and should only be done once and on database versions
