@@ -121,9 +121,8 @@ class DatabaseKeyTest {
         val newKey = genDatabaseKey()
         assertNotEquals(oldKey, newKey)
 
-        updateDatabaseKey(path.absolutePathString(), oldKey, newKey)
-        val newDb = openDatabase(path.absolutePathString(), newKey)
-        cc = CoreCrypto(newDb)
+        db.updateKey(newKey)
+        cc = CoreCrypto(db)
         val credentialRef2 = cc.transaction {
             it.mlsInit(clientId = clientId, transport)
             it.findCredentials(clientId, null, null, null, null)
