@@ -21,7 +21,7 @@ fn encrypt_with_nonce_and_aad(
 
     let mut encrypted = cipher
         .encrypt(nonce, payload)
-        .map_err(|_| CryptoKeystoreError::AesGcmError)?;
+        .map_err(|_| CryptoKeystoreError::AesGcmError("encrypting with nonce and aad"))?;
     let mut message = Vec::with_capacity(nonce.len() + encrypted.len());
     message.extend_from_slice(nonce);
     message.append(&mut encrypted);

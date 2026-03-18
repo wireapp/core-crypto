@@ -17,7 +17,7 @@ fn decrypt_with_nonce_and_aad(
 
     let cleartext = cipher
         .decrypt(nonce, payload)
-        .map_err(|_| CryptoKeystoreError::AesGcmError)?;
+        .map_err(|_| CryptoKeystoreError::AesGcmError("decrypting with nonce and aad"))?;
 
     Ok(cleartext)
 }
@@ -43,7 +43,7 @@ impl<E: Entity> DecryptData for E {
         let aad = Aad::from_primary_key::<E>(primary_key).serialize()?;
         let (nonce, msg) = data
             .split_at_checked(AES_GCM_256_NONCE_SIZE)
-            .ok_or(CryptoKeystoreError::AesGcmError)?;
+            .ok_or(CryptoKeystoreError::AesGcmError("splitting nonce from ciphertext"))?;
         decrypt_with_nonce_and_aad(cipher, msg, nonce, &aad)
     }
 }
@@ -72,7 +72,7 @@ where
         let aad = Aad::from_encryption_key_bytes::<E>(encryption_key).serialize()?;
         let (nonce, msg) = data
             .split_at_checked(AES_GCM_256_NONCE_SIZE)
-            .ok_or(CryptoKeystoreError::AesGcmError)?;
+            .ok_or(CryptoKeystoreError::AesGcmError("splitting nonce from ciphertext"))?;
         decrypt_with_nonce_and_aad(cipher, msg, nonce, &aad)
     }
 }

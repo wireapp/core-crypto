@@ -36,8 +36,8 @@ pub enum CryptoKeystoreError {
     #[cfg(target_os = "unknown")]
     #[error("The task has been canceled")]
     WasmExecutorError,
-    #[error("aead::Error")]
-    AesGcmError,
+    #[error("aead::Error: {0}")]
+    AesGcmError(&'static str),
     #[cfg(target_os = "unknown")]
     #[error("{0}")]
     SerdeWasmBindgenError(String),
