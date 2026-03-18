@@ -83,8 +83,8 @@ final class WireCoreCryptoTests: XCTestCase {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 
         let key1 = genDatabaseKey()
-        let database1 = try await Database.open(location: keystore.path, key: key1)
-        var coreCrypto = try CoreCrypto(database: database1)
+        let database = try await Database.open(location: keystore.path, key: key1)
+        var coreCrypto = try CoreCrypto(database: database)
 
         let clientId = ClientId(bytes: UUID().uuidString.data(using: .utf8)!)
         let ciphersuite = Ciphersuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
@@ -101,10 +101,9 @@ final class WireCoreCryptoTests: XCTestCase {
         let key2 = genDatabaseKey()
         XCTAssertNotEqual(key1, key2)
 
-        try await updateDatabaseKey(name: keystore.path, oldKey: key1, newKey: key2)
-        let database2 = try await Database.open(location: keystore.path, key: key2)
+        try await database.updateKey(key: key2)
 
-        coreCrypto = try CoreCrypto(database: database2)
+        coreCrypto = try CoreCrypto(database: database)
         let pubkey2 = try await coreCrypto.transaction {
             try await $0.mlsInit(
                 clientId: clientId, transport: self.mockMlsTransport)
