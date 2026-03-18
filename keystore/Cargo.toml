@@ -93,7 +93,7 @@ openmls = { workspace = true, features = ["crypto-subtle"] }
 proteus-wasm = { workspace = true }
 rstest = "0.26"
 rstest_reuse = "0.7"
-tempfile = "3.26.0"
+tempfile = "3.27.0"
 uuid = { workspace = true, features = ["v4", "js"] }
 wasm-bindgen-test = { workspace = true }
 
