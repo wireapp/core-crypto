@@ -19,10 +19,8 @@
 ## CSPRNG
 
 - We use [rand] in combination with [rand-chacha] to achieve a proper CSPRNG
-  - No audits are known of this crate, but it is the de facto for the Rust ecosystem and is used by pretty much any
-    crate needing a randomness source.
-  - Note: We use [getrandom] under the hood to retrieve random data. Other than de facto OS entropy sources, we can
-    inject entropy at will
+  - No audits are known of this crate, but it is the de facto for the Rust ecosystem and is used by pretty much any crate needing a randomness source.
+  - Note: We use [getrandom] under the hood to retrieve random data. Other than de facto OS entropy sources, we can inject entropy at will
     - On this topic, the entropy sources per platform are detailed [here][getrandom-entropy]
 
 [aes-gcm]: https://github.com/RustCrypto/AEADs/tree/master/aes-gcm
