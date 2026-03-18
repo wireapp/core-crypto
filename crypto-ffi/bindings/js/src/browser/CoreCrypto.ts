@@ -53,7 +53,6 @@ export {
     DatabaseKey,
     type MlsTransportData,
     migrateDatabaseKeyTypeToBytes,
-    updateDatabaseKey,
     ExternalSenderKey,
     GroupInfo,
     ConversationId,
