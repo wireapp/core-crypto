@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## v9.3.1 - 2026-03-18
+
+### Highlights
+
+Fixes an enum representation bug on web.
+
+### Bug Fixes
+
+- ffi/wasm: use `serde_repr` for enum serialization [WPB-24102]
+  ([23a2f75](https://github.com/wireapp/core-crypto/commit/23a2f751b27453d9541f96915f1039a5bc2a2e69))
+
+### Testing
+
+- `getUserIdentities()` result should contain enums as numbers
+  ([15c4b01](https://github.com/wireapp/core-crypto/commit/15c4b0194f6e6ed8f6ced3907d8e7ff0a43cddfe))
+
 ## v9.3.0 - 2026-02-20
 
 ### Highlights
