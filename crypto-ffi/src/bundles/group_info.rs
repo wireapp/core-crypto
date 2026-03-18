@@ -81,6 +81,7 @@ impl From<MlsRatchetTreeType> for core_crypto::prelude::MlsRatchetTreeType {
     wasm_bindgen(getter_with_clone),
     derive(serde::Serialize, serde::Deserialize)
 )]
+#[cfg_attr(target_family = "wasm", serde(rename_all = "camelCase"))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct GroupInfoBundle {
     /// How the group info is encrypetd

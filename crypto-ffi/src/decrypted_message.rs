@@ -17,6 +17,7 @@ use crate::{
     wasm_bindgen(getter_with_clone),
     derive(serde::Serialize, serde::Deserialize)
 )]
+#[cfg_attr(target_family = "wasm", serde(rename_all = "camelCase"))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct DecryptedMessage {
     /// Decrypted plaintext
@@ -88,6 +89,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
     wasm_bindgen(getter_with_clone),
     derive(serde::Serialize, serde::Deserialize)
 )]
+#[cfg_attr(target_family = "wasm", serde(rename_all = "camelCase"))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct BufferedDecryptedMessage {
     /// Decrypted plaintext

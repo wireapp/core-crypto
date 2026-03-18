@@ -46,6 +46,7 @@ impl From<WirePolicy> for core_crypto::prelude::MlsWirePolicy {
 /// see [core_crypto::prelude::MlsCustomConfiguration]
 #[derive(Debug, Default, Clone, Copy)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(target_family = "wasm", serde(rename_all = "camelCase"))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct CustomConfiguration {
     ///  Duration in seconds after which we will automatically force a self-update commit
@@ -108,6 +109,7 @@ impl CustomConfiguration {
     wasm_bindgen(getter_with_clone),
     derive(serde::Serialize, serde::Deserialize)
 )]
+#[cfg_attr(target_family = "wasm", serde(rename_all = "camelCase"))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct ConversationConfiguration {
     /// The ciphersuite used in the group

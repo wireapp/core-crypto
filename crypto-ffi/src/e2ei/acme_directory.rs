@@ -12,6 +12,7 @@ use wasm_bindgen::prelude::*;
     derive(serde::Serialize, serde::Deserialize)
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
+#[cfg_attr(target_family = "wasm", serde(rename_all = "camelCase"))]
 pub struct AcmeDirectory {
     /// URL for fetching a new nonce. Use this only for creating a new account.
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = newNonce))]
