@@ -117,6 +117,8 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
                         ProteusSession
                     ]
                 );
+
+                self.conn.cipher = new_cipher;
             }
             WasmStorageWrapper::InMemory(_) => return Err(CryptoKeystoreError::NotImplemented),
         }
