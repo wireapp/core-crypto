@@ -1,4 +1,5 @@
 //! PKI Environment API Hooks
+use std::fmt;
 
 /// An http method
 #[derive(Debug)]
@@ -27,7 +28,6 @@ pub struct HttpHeader {
 }
 
 /// An HTTP Response
-#[derive(Debug)]
 pub struct HttpResponse {
     /// Response status code
     pub status: u16,
@@ -48,6 +48,33 @@ impl HttpResponse {
         self.headers
             .iter()
             .find_map(|h| (h.name == name).then(|| h.value.clone()))
+    }
+}
+
+impl std::fmt::Debug for HttpResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if f.alternate() {
+            writeln!(f, "BEGIN HttpResponse")?;
+            writeln!(f, "Status: {}", self.status)?;
+            for header in &self.headers {
+                writeln!(f, "{}: {}", header.name, header.value)?;
+            }
+            writeln!(f)?;
+            match std::str::from_utf8(&self.body) {
+                Ok(body) => match serde_json::from_str::<serde_json::Value>(body) {
+                    Ok(body) => writeln!(f, "{body:#}")?,
+                    Err(_) => writeln!(f, "{body}")?,
+                },
+                Err(_) => writeln!(f, "{:#?}", self.body)?,
+            }
+            writeln!(f, "END HttpResponse")
+        } else {
+            f.debug_struct("HttpResponse")
+                .field("status", &self.status)
+                .field("headers", &self.headers)
+                .field("body", &self.body)
+                .finish()
+        }
     }
 }
 
