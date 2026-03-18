@@ -23,17 +23,25 @@
 
 #![cfg(not(target_os = "unknown"))]
 
+use std::{collections::HashMap, net::SocketAddr, sync::Arc};
+
+use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
 use jwt_simple::prelude::*;
 use rstest::rstest;
 use rusty_jwt_tools::prelude::*;
 use utils::{
     TestError,
     cfg::{E2eTest, EnrollmentFlow, TestEnvironment, WireServer},
+    ctx::ctx_store_http_client,
+    hooks::TestPkiEnvironmentHooks,
     idp::{IdpServer, OidcProvider, start_idp_server},
     rand_base64_str, rand_client_id,
     stepca::CaCfg,
 };
-use wire_e2e_identity::acme::*;
+use wire_e2e_identity::{
+    X509CredentialAcquisition, acme::*, acquisition::X509CredentialConfiguration, pki_env::PkiEnvironment,
+};
+use x509_cert::der::Decode as _;
 
 #[path = "utils/mod.rs"]
 mod utils;
@@ -891,4 +899,91 @@ mod oidc_challenge {
             TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
         ));
     }
+}
+
+#[rstest]
+#[tokio::test]
+async fn x509_cert_acquisition_works(test_env: TestEnvironment) {
+    let wire_server_keypair = ES256KeyPair::generate();
+    let template = r#"{{.DeviceID}}"#;
+    let wire_server_uri = test_env.wire_server.uri();
+    let dpop_target_uri = format!("{wire_server_uri}/clients/{template}/access-token");
+    let issuer = test_env.idp_server.issuer.clone();
+    let discovery_base_url = test_env.idp_server.discovery_base_url.clone();
+
+    let ca_cfg = CaCfg {
+        sign_key: wire_server_keypair.public_key().to_pem().unwrap(),
+        issuer,
+        audience: "wireapp".to_string(),
+        discovery_base_url,
+        dpop_target_uri: Some(dpop_target_uri),
+        domain: "wire.localhost".to_string(),
+        host: "ca".to_string(),
+    };
+
+    let acme = utils::stepca::start_acme_server(&ca_cfg).await;
+    let acme_url = acme.socket.to_string();
+
+    // configure DNS mappings
+    let mut dns_mappings = HashMap::<String, SocketAddr>::new();
+    dns_mappings.insert(ca_cfg.host.clone(), acme.socket);
+    dns_mappings.insert(test_env.wire_server.hostname.clone(), test_env.wire_server.addr);
+    dns_mappings.insert(test_env.idp_server.hostname.clone(), test_env.idp_server.addr);
+
+    ctx_store_http_client(&dns_mappings);
+
+    let client_id = ClientId::try_new("e1299f1d-180e-4339-b7c7-2715e1e6897f", 1234, "wire.localhost").unwrap();
+    let device_id = format!("{:x}", client_id.device_id);
+
+    let config = X509CredentialConfiguration {
+        acme_url,
+        idp_url: test_env.idp_server.discovery_base_url.clone(),
+        sign_alg: JwsAlgorithm::P256,
+        hash_alg: HashAlgorithm::SHA256,
+        display_name: "Alice Smith".into(),
+        handle: "alice_wire".into(),
+        client_id: client_id.clone(),
+        team: Some("team".into()),
+        validity_period: std::time::Duration::from_hours(1),
+    };
+    let wire_server_context = serde_json::json!({
+        "client-id": client_id.to_uri(),
+        "backend-kp": wire_server_keypair.to_pem().unwrap(),
+        "hash-alg": config.hash_alg.to_string(),
+        "wire-server-uri": format!("{wire_server_uri}/clients/{}/access-token", device_id),
+        "handle": Handle::from(config.handle.clone()).try_to_qualified(&client_id.domain).unwrap(),
+        "display_name": config.display_name,
+        "team": config.team.as_ref().unwrap(),
+    });
+
+    let wire_server = test_env.wire_server;
+    let idp_server = test_env.idp_server;
+    let hooks = Arc::new(TestPkiEnvironmentHooks {
+        acme,
+        wire_server,
+        idp_server,
+        device_id,
+        wire_server_context,
+    });
+
+    let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
+        .await
+        .unwrap();
+
+    let pki_env = Arc::new(PkiEnvironment::new(hooks, db).await.unwrap());
+    let acq = X509CredentialAcquisition::try_new(pki_env, config).unwrap();
+    let (sign_kp, certs) = acq
+        .complete_dpop_challenge()
+        .await
+        .unwrap()
+        .complete_oidc_challenge()
+        .await
+        .unwrap();
+
+    // Verify that the public key in our certificate matches the one
+    // from our signing keypair.
+    let cert = x509_cert::Certificate::from_der(&certs[0]).unwrap();
+    let spk = &cert.tbs_certificate.subject_public_key_info.subject_public_key;
+    let pubkey = ES256KeyPair::from_pem(&sign_kp).unwrap().public_key();
+    assert_eq!(&pubkey.public_key().to_bytes_uncompressed(), spk.as_bytes().unwrap());
 }
