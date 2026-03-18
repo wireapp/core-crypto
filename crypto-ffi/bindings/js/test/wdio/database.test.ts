@@ -103,7 +103,7 @@ describe("database", () => {
 
             let cc = window.ccModule.CoreCrypto.new(database);
             const clientId = makeClientId();
-            cc.newTransaction(async (ctx) => {
+            await cc.newTransaction(async (ctx) => {
                 await ctx.mlsInit(makeClientId(), window.deliveryService);
                 await ctx.addCredential(
                     window.ccModule.credentialBasic(cipherSuite, clientId)
@@ -114,40 +114,31 @@ describe("database", () => {
                     ctx.getFilteredCredentials({ clientId })
                 )
             )[0]!.publicKeyHash();
-            await database.close();
 
             const newKeyBytes = new Uint8Array(32);
             window.crypto.getRandomValues(newKeyBytes);
             const newKey = new window.ccModule.DatabaseKey(newKeyBytes.buffer);
 
             try {
-                await window.ccModule.updateDatabaseKey(
-                    databaseName,
-                    key,
-                    newKey
-                );
+                await database.updateKey(newKey);
             } catch (e) {
                 console.error("updating database key caught:", e);
                 console.error(JSON.stringify(e));
                 throw e;
             }
 
-            const newDatabase = await window.ccModule.openDatabase(
-                databaseName,
-                newKey
-            );
-
-            cc = window.ccModule.CoreCrypto.new(newDatabase);
+            cc = window.ccModule.CoreCrypto.new(database);
             const pubkey2 = await cc.newTransaction(async (ctx) => {
                 await ctx.mlsInit(clientId, window.deliveryService);
                 return (
                     await ctx.getFilteredCredentials({ clientId })
                 )[0]!.publicKeyHash();
             });
-            await newDatabase.close();
+            await database.close();
 
             return [JSON.stringify(pubkey1), JSON.stringify(pubkey2)];
         });
+
         await expect(JSON.parse(pubkey1)).toEqual(JSON.parse(pubkey2));
     });
 
