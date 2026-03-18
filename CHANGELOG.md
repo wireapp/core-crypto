@@ -64,6 +64,10 @@
 
   Affected platforms: web
 
+- The `update_database_key` function has been moved; it is now a static function `Database::update_key`.
+
+  Affected platforms: all
+
 #### New Credential API
 
 - `Credential` is a first-class type representing a cryptographic identity.

@@ -252,7 +252,7 @@ impl Database {
         KeystoreDatabaseConnection::migrate_db_key_type_to_bytes(name, old_key, new_key).await
     }
 
-    pub async fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
+    pub async fn update_key(&self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
         self.conn().await?.update_key(new_key).await
     }
 

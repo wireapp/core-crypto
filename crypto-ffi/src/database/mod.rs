@@ -4,7 +4,7 @@ mod key;
 
 use std::sync::Arc;
 
-pub use key::{DatabaseKey, migrate_database_key_type_to_bytes, update_database_key};
+pub use key::{DatabaseKey, migrate_database_key_type_to_bytes};
 
 use crate::{CoreCryptoError, CoreCryptoResult};
 
@@ -36,6 +36,13 @@ impl Database {
     /// Returns null if in-memory
     pub async fn get_location(&self) -> CoreCryptoResult<Option<String>> {
         self.location().await.map_err(CoreCryptoError::generic())
+    }
+
+    /// Updates the key of the database.
+    ///
+    /// This reencrypts it with the new key.
+    pub async fn update_key(&self, key: Arc<DatabaseKey>) -> CoreCryptoResult<()> {
+        self.0.update_key(&key).await.map_err(CoreCryptoError::generic())
     }
 }
 

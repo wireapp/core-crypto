@@ -1,4 +1,4 @@
-use core_crypto_keystore::{ConnectionType, Database};
+use core_crypto_keystore::Database;
 
 use crate::{CoreCryptoError, CoreCryptoResult};
 
@@ -29,15 +29,4 @@ pub async fn migrate_database_key_type_to_bytes(
     Database::migrate_db_key_type_to_bytes(path, old_key, &new_key.0)
         .await
         .map_err(CoreCryptoError::generic())
-}
-
-/// Updates the key of the CoreCrypto database.
-#[uniffi::export]
-pub async fn update_database_key(name: &str, old_key: &DatabaseKey, new_key: &DatabaseKey) -> CoreCryptoResult<()> {
-    let mut db = Database::open(ConnectionType::Persistent(name), &old_key.0)
-        .await
-        .map_err(CoreCryptoError::generic())?;
-    db.update_key(&new_key.0).await.map_err(CoreCryptoError::generic())?;
-    db.close().await.map_err(CoreCryptoError::generic())?;
-    Ok(())
 }
