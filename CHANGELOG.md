@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v9.3.2 - 2026-03-18
+
+### Bug Fixes
+
+- serialize structs into camelCase [WPB-24102]
+  ([d8adcb5](https://github.com/wireapp/core-crypto/commit/d8adcb53669c0d5c216ca559d955ad979549c584))
+
 ## v9.3.1 - 2026-03-18
 
 ### Highlights
