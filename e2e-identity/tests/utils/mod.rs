@@ -13,6 +13,8 @@ pub(crate) mod fmk;
 #[cfg(not(target_os = "unknown"))]
 pub(crate) mod helpers;
 #[cfg(not(target_os = "unknown"))]
+pub(crate) mod hooks;
+#[cfg(not(target_os = "unknown"))]
 pub(crate) mod idp;
 pub(crate) mod keys;
 #[cfg(not(target_os = "unknown"))]
