@@ -23,7 +23,7 @@ workspace = true
 default = ["proteus"]
 proteus = ["core-crypto/proteus", "dep:proteus-wasm"]
 wasm = ["dep:uniffi_wasm"]
-nodejs = []
+nodejs = ["dep:uniffi_wasm"]
 
 [dependencies]
 async-lock.workspace = true
@@ -48,7 +48,7 @@ tls_codec.workspace = true
 uniffi.workspace = true
 
 # Needed to use the latest ubrn version when building the web bindings.
-uniffi_wasm = { package = "uniffi", version = "0.30", optional = true, features = [
+uniffi_wasm = { package = "uniffi", version = "0.31", optional = true, features = [
   "wasm-unstable-single-threaded",
 ] }
 
