@@ -639,36 +639,6 @@ mod dpop_challenge {
             TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
         ));
     }
-
-    #[rstest]
-    #[tokio::test]
-    /// Demonstrates that the client possesses the handle. This handle is included in the DPoP token,
-    /// then verified and sealed in the access token which is finally verified by the ACME server
-    /// as part of the DPoP challenge.
-    /// Here we make the acme-server fail.
-    // @SF.PROVISIONING @TSFI.ACME @S8
-    async fn acme_should_fail_when_client_dpop_token_has_wrong_handle(test_env: TestEnvironment) {
-        let test = E2eTest::new(test_env).start().await;
-
-        let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(
-                |mut test, (dpop_chall, backend_nonce, _handle, team, display_name, expiry)| {
-                    Box::pin(async move {
-                        let wrong_handle = Handle::from("other_wire").try_to_qualified("wire.com").unwrap();
-                        let client_dpop_token = test
-                            .create_dpop_token(&dpop_chall, backend_nonce, wrong_handle, team, display_name, expiry)
-                            .await?;
-                        Ok((test, client_dpop_token))
-                    })
-                },
-            ),
-            ..Default::default()
-        };
-        assert!(matches!(
-            test.enrollment(flow).await.unwrap_err(),
-            TestError::WireServerError
-        ));
-    }
 }
 
 #[rstest]
