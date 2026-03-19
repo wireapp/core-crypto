@@ -33,7 +33,7 @@ pub fn core_crypto_new(database: &Arc<Database>) -> CoreCryptoResult<CoreCryptoF
     Ok(CoreCryptoFfi { inner })
 }
 
-#[cfg_attr(feature = "wasm", uniffi::export)]
+#[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]
 impl CoreCryptoFfi {
     /// This is only needed to allow TS inheritance and should be hidden from library consumers.
     #[uniffi::constructor]

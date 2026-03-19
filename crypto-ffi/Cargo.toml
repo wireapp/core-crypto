@@ -22,8 +22,8 @@ workspace = true
 [features]
 default = ["proteus"]
 proteus = ["core-crypto/proteus", "dep:proteus-wasm"]
-wasm = ["dep:uniffi_wasm"]
-nodejs = ["dep:uniffi_wasm"]
+wasm = ["dep:uniffi_ubrn"]
+napi = ["dep:uniffi_ubrn"]
 
 [dependencies]
 async-lock.workspace = true
@@ -47,8 +47,8 @@ tls_codec.workspace = true
 # UniFFI - Android + iOS bindings - Runtime support
 uniffi.workspace = true
 
-# Needed to use the latest ubrn version when building the web bindings.
-uniffi_wasm = { package = "uniffi", version = "0.31", optional = true, features = [
+# Needed to use the latest ubrn version when building.
+uniffi_ubrn = { package = "uniffi", version = "0.31", optional = true, features = [
   "wasm-unstable-single-threaded",
 ] }
 

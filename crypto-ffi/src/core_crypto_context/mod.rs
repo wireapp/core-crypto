@@ -28,7 +28,7 @@ impl Deref for CoreCryptoContext {
     }
 }
 
-#[cfg_attr(feature = "wasm", uniffi::export)]
+#[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]
 impl CoreCryptoContext {
     /// This is only needed to allow TS inheritance and should be hidden from library consumers.
     #[uniffi::constructor]
