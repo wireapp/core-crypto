@@ -53,8 +53,6 @@ pub use core_crypto::{
 };
 pub use core_crypto_context::CoreCryptoContext;
 pub use credential::Credential;
-#[cfg(not(target_os = "unknown"))]
-pub use credential::credential_basic;
 pub use credential_ref::CredentialRef;
 pub use credential_type::CredentialType;
 #[cfg(not(feature = "wasm"))]

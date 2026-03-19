@@ -14,26 +14,19 @@ use crate::{Ciphersuite, CoreCryptoResult, CredentialType, SignatureScheme, clie
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, uniffi::Object)]
 pub struct Credential(pub(crate) CryptoCredential);
 
+#[uniffi::export]
 impl Credential {
-    fn basic_impl(ciphersuite: Ciphersuite, client_id: &Arc<ClientId>) -> CoreCryptoResult<Self> {
+    /// Generate a basic credential.
+    ///
+    /// The result is independent of any client instance and the database; it lives in memory only.
+    #[uniffi::constructor(name = "basic")]
+    fn basic(ciphersuite: Ciphersuite, client_id: &Arc<ClientId>) -> CoreCryptoResult<Self> {
         let client_id_ref = client_id.as_ref().as_ref();
         CryptoCredential::basic(CryptoCiphersuite::from(ciphersuite), client_id_ref.to_owned())
             .map(Into::into)
             .map_err(Into::into)
     }
-}
 
-/// Generate a basic credential.
-///
-/// The result is independent of any client instance and the database; it lives in memory only.
-#[cfg_attr(target_os = "unknown", expect(unreachable_pub))]
-#[uniffi::export]
-pub fn credential_basic(ciphersuite: Ciphersuite, client_id: &Arc<ClientId>) -> CoreCryptoResult<Credential> {
-    Credential::basic_impl(ciphersuite, client_id)
-}
-
-#[uniffi::export]
-impl Credential {
     /// Get the type of this credential.
     pub fn r#type(&self) -> CredentialType {
         self.0.credential_type().into()
