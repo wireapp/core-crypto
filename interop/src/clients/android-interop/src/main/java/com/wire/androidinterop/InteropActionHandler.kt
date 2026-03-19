@@ -4,6 +4,7 @@ import com.wire.crypto.ClientId
 import com.wire.crypto.CommitBundle
 import com.wire.crypto.ConversationId
 import com.wire.crypto.CoreCrypto
+import com.wire.crypto.Credential
 import com.wire.crypto.DatabaseKey
 import com.wire.crypto.HistorySecret
 import com.wire.crypto.Keypackage
@@ -12,7 +13,6 @@ import com.wire.crypto.MlsTransportData
 import com.wire.crypto.MlsTransportResponse
 import com.wire.crypto.Welcome
 import com.wire.crypto.ciphersuiteFromU16
-import com.wire.crypto.credentialBasic
 import com.wire.crypto.openDatabase
 import java.nio.file.Files
 import java.security.SecureRandom
@@ -46,7 +46,7 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
                     )
 
                     context.addCredential(
-                        credentialBasic(
+                        Credential.basic(
                             clientId = ClientId(action.clientId),
                             ciphersuite = ciphersuiteFromU16(action.ciphersuite.toUShort())
                         )
