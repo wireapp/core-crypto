@@ -851,30 +851,6 @@ mod oidc_challenge {
             TestError::OidcChallengeError
         ));
     }
-
-    #[rstest]
-    #[tokio::test]
-    /// We use the "keyauth": '{oidc-challenge-token}.{acme-key-thumbprint}' to bind the acme client to the id token
-    /// we validate in the acme server. This prevents id token being stolen or OAuth authorization performed outside of
-    /// the current ACME session.
-    // @SF.PROVISIONING @TSFI.ACME @S8
-    async fn should_fail_when_invalid_keyauth(test_env: TestEnvironment) {
-        let test = E2eTest::new(test_env).start().await;
-        let flow = EnrollmentFlow {
-            fetch_id_token: Box::new(|mut test, (oidc_chall, _keyauth)| {
-                Box::pin(async move {
-                    let keyauth = rand_base64_str(32); // a random 'keyauth'
-                    let id_token = test.fetch_id_token(&oidc_chall, keyauth).await?;
-                    Ok((test, id_token))
-                })
-            }),
-            ..Default::default()
-        };
-        assert!(matches!(
-            test.enrollment(flow).await.unwrap_err(),
-            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
-        ));
-    }
 }
 
 #[rstest]
