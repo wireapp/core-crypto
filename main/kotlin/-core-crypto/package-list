@@ -4,14 +4,12 @@ $dokka.location:com.wire.crypto////PointingToDeclaration/-core-crypto/com.wire.
 $dokka.location:com.wire.crypto//CIPHERSUITES_DEFAULT/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-c-i-p-h-e-r-s-u-i-t-e-s_-d-e-f-a-u-l-t.html
 $dokka.location:com.wire.crypto//CIPHERSUITE_DEFAULT/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-c-i-p-h-e-r-s-u-i-t-e_-d-e-f-a-u-l-t.html
 $dokka.location:com.wire.crypto//CREDENTIAL_TYPE_DEFAULT/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-c-r-e-d-e-n-t-i-a-l_-t-y-p-e_-d-e-f-a-u-l-t.html
-$dokka.location:com.wire.crypto//basic/com.wire.crypto.Credential.Companion#com.wire.crypto.Ciphersuite#com.wire.crypto.ClientId/PointingToDeclaration/-core-crypto/com.wire.crypto/basic.html
 $dokka.location:com.wire.crypto//buildMetadata/#/PointingToDeclaration/-core-crypto/com.wire.crypto/build-metadata.html
 $dokka.location:com.wire.crypto//ciphersuiteDefault/#/PointingToDeclaration/-core-crypto/com.wire.crypto/ciphersuite-default.html
 $dokka.location:com.wire.crypto//ciphersuiteFromU16/#kotlin.UShort/PointingToDeclaration/-core-crypto/com.wire.crypto/ciphersuite-from-u16.html
 $dokka.location:com.wire.crypto//coreCryptoHistoryClient/#com.wire.crypto.HistorySecret/PointingToDeclaration/-core-crypto/com.wire.crypto/core-crypto-history-client.html
 $dokka.location:com.wire.crypto//coreCryptoNew/#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/core-crypto-new.html
 $dokka.location:com.wire.crypto//createPkiEnvironment/#com.wire.crypto.PkiEnvironmentHooks#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/create-pki-environment.html
-$dokka.location:com.wire.crypto//credentialBasic/#com.wire.crypto.Ciphersuite#com.wire.crypto.ClientId/PointingToDeclaration/-core-crypto/com.wire.crypto/credential-basic.html
 $dokka.location:com.wire.crypto//exportDatabaseCopy/#com.wire.crypto.Database#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/export-database-copy.html
 $dokka.location:com.wire.crypto//inMemoryDatabase/#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/in-memory-database.html
 $dokka.location:com.wire.crypto//lift/com.wire.crypto.CoreCryptoFfi#/PointingToDeclaration/-core-crypto/com.wire.crypto/lift.html
@@ -342,6 +340,7 @@ $dokka.location:com.wire.crypto/CoreCryptoLoggerImpl/destroy/#/PointingToDeclara
 $dokka.location:com.wire.crypto/CoreCryptoLoggerImpl/log/#com.wire.crypto.CoreCryptoLogLevel#kotlin.String#kotlin.String?/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-logger-impl/log.html
 $dokka.location:com.wire.crypto/CoreCryptoLoggerImpl/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-logger-impl/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/Credential.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-credential/-companion/index.html
+$dokka.location:com.wire.crypto/Credential.Companion/basic/#com.wire.crypto.Ciphersuite#com.wire.crypto.ClientId/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential/-companion/basic.html
 $dokka.location:com.wire.crypto/Credential///PointingToDeclaration/-core-crypto/com.wire.crypto/-credential/index.html
 $dokka.location:com.wire.crypto/Credential/Credential/#com.sun.jna.Pointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential/-credential.html
 $dokka.location:com.wire.crypto/Credential/Credential/#com.wire.crypto.NoPointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential/-credential.html

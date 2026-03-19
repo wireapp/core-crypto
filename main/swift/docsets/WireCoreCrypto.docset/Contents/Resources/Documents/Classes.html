@@ -184,9 +184,6 @@
                 <a href="Functions.html#/s:20WireCoreCryptoUniffi20createPkiEnvironment5hooks8databaseAA0fG0CAA0fG5Hooks_p_AA8DatabaseCtYaKF">createPkiEnvironment(hooks:database:)</a>
               </li>
               <li class="nav-group-task">
-                <a href="Functions.html#/s:20WireCoreCryptoUniffi15credentialBasic11ciphersuite8clientIdAA10CredentialCAA11CiphersuiteO_AA06ClientI0CtKF">credentialBasic(ciphersuite:clientId:)</a>
-              </li>
-              <li class="nav-group-task">
                 <a href="Functions.html#/s:20WireCoreCryptoUniffi18exportDatabaseCopy8database15destinationPathyAA0F0C_SStYaKF">exportDatabaseCopy(database:destinationPath:)</a>
               </li>
               <li class="nav-group-task">
@@ -378,40 +375,6 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">CoreCrypto</span> <span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Classes/CoreCryptoFfi.html">CoreCryptoFfi</a></span><span class="p">,</span> <span class="kt"><a href="WireCoreCrypto/Protocols/CoreCryptoProtocol.html">CoreCryptoProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi10CredentialC"></a>
-                    <a name="//apple_ref/swift/Class/Credential" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi10CredentialC">Credential</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>A cryptographic credential.</p>
-
-<p>This is tied to a particular client via either its client id or certificate bundle,
- depending on its credential type, but is independent of any client instance or storage.</p>
-
-<p>To attach to a particular client instance and store, see
- [<code>CoreCryptoContext::add_credential</code>][crate::CoreCryptoContext::add_credential].</p>
-
-                        <a href="WireCoreCryptoUniffi/Classes/Credential.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">Credential</span> <span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Protocols/CredentialProtocol.html">CredentialProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
 
                         </div>
                       </div>
@@ -627,6 +590,40 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">CoreCryptoLoggerImpl</span> <span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Protocols/CoreCryptoLogger.html">CoreCryptoLogger</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi10CredentialC"></a>
+                    <a name="//apple_ref/swift/Class/Credential" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi10CredentialC">Credential</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A cryptographic credential.</p>
+
+<p>This is tied to a particular client via either its client id or certificate bundle,
+ depending on its credential type, but is independent of any client instance or storage.</p>
+
+<p>To attach to a particular client instance and store, see
+ [<code>CoreCryptoContext::add_credential</code>][crate::CoreCryptoContext::add_credential].</p>
+
+                        <a href="WireCoreCryptoUniffi/Classes/Credential.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">Credential</span> <span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Protocols/CredentialProtocol.html">CredentialProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
 
                         </div>
                       </div>
