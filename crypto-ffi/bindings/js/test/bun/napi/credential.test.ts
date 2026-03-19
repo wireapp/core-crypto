@@ -1,5 +1,5 @@
-import { ccInit, setup } from "./utils";
-import { test, beforeEach, describe, expect } from "bun:test";
+import { ccInit, setup, teardown } from "./utils";
+import { test, beforeEach, describe, expect, afterAll } from "bun:test";
 import {
     Ciphersuite,
     ciphersuiteDefault,
@@ -10,6 +10,10 @@ import {
 
 beforeEach(async () => {
     await setup();
+});
+
+afterAll(async () => {
+    await teardown();
 });
 
 describe("credentials", () => {

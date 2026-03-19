@@ -1,3 +1,5 @@
+import { rm } from "node:fs/promises";
+import assert from "node:assert";
 import {
     Ciphersuite,
     type CommitBundle,
@@ -25,6 +27,8 @@ const logLevel = Number(process.env["CC_TEST_LOG_LEVEL"] || "0");
 
 const DEFAULT_CIPHERSUITE =
     Ciphersuite.Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519;
+const SQLITE_SIDE_CAR_SUFFIXES = ["", "-journal", "-shm", "-wal"] as const;
+const DATABASE_LOCATIONS = new Set<string>();
 
 interface DeliveryService extends MlsTransport {
     getLatestCommitBundle: () => Promise<CommitBundle>;
@@ -70,20 +74,49 @@ export async function setup() {
 }
 
 /**
- * Initialize a {@link CoreCrypto} with an in-memory database
+ * Open a database that gets wiped after tests run.
+ */
+async function openTestDatabase(databaseName?: string) {
+    const keyBytes = new Uint8Array(32);
+    crypto.getRandomValues(keyBytes);
+    const key = new DatabaseKey(keyBytes.buffer);
+    const location = databaseName ?? `bun-test-db-${crypto.randomUUID()}`;
+
+    const database = await openDatabase(location, key);
+
+    const resolvedLocation = await database.getLocation();
+    assert(resolvedLocation !== undefined);
+    DATABASE_LOCATIONS.add(resolvedLocation);
+    return database;
+}
+
+export async function teardown() {
+    const locations = [...DATABASE_LOCATIONS];
+    DATABASE_LOCATIONS.clear();
+
+    await Promise.all(
+        locations.map((location) =>
+            Promise.all(
+                SQLITE_SIDE_CAR_SUFFIXES.map((suffix) =>
+                    rm(`${location}${suffix}`, { force: true })
+                )
+            )
+        )
+    );
+}
+
+/**
+ * Initialize a {@link CoreCrypto} with a database.
  * @param clientName The client name used to initialize.
  *
  * @returns {Promise<CoreCrypto>}
  */
-export async function ccInit(clientId: ClientId): Promise<CoreCrypto> {
-    const keyBytes = new Uint8Array(32);
-    crypto.getRandomValues(keyBytes);
-    const uuid = crypto.randomUUID();
-    const location = `bun-test-db-${uuid}`;
-    const key = new DatabaseKey(keyBytes.buffer);
-    const db = await openDatabase(location, key);
-
-    const cc = CoreCrypto.new(db);
+export async function ccInit(
+    clientId: ClientId,
+    databaseName?: string
+): Promise<CoreCrypto> {
+    const database = await openTestDatabase(databaseName);
+    const cc = CoreCrypto.new(database);
 
     if (clientId) {
         await cc.newTransaction(async (ctx) => {
@@ -222,14 +255,11 @@ export async function roundTripMessage(
  *
  * @returns {Promise<CoreCrypto>}
  */
-export async function proteusInit(clientName: string): Promise<CoreCrypto> {
-    const key = new Uint8Array(32);
-    crypto.getRandomValues(key);
-
-    const database = await openDatabase(
-        clientName,
-        new DatabaseKey(key.buffer)
-    );
+export async function proteusInit(
+    clientName: string,
+    databaseName?: string
+): Promise<CoreCrypto> {
+    const database = await openTestDatabase(databaseName ?? clientName);
 
     const instance = CoreCrypto.new(database);
     await instance.newTransaction(async (ctx) => {
