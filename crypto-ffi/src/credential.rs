@@ -32,6 +32,20 @@ pub fn credential_basic(ciphersuite: Ciphersuite, client_id: &Arc<ClientId>) -> 
     Credential::basic_impl(ciphersuite, client_id)
 }
 
+#[cfg(feature = "wasm")]
+#[uniffi::export]
+impl Credential {
+    /// Construct a Credential given an instance of a Credential
+    ///
+    /// This is obviously silly and pointless, but by exposing a public constructor,
+    /// this enables our FFI layer to extend the Credential type, which in turn means
+    /// we can expose the `Credential.basic` static function which is an actual constructor.
+    #[uniffi::constructor]
+    pub fn new(credential: Arc<Credential>) -> Arc<Credential> {
+        credential
+    }
+}
+
 #[uniffi::export]
 impl Credential {
     /// Get the type of this credential.
