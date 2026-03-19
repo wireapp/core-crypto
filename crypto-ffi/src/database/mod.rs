@@ -74,8 +74,7 @@ pub async fn in_memory_database(key: Arc<DatabaseKey>) -> CoreCryptoResult<Datab
 /// The copy will be encrypted with the same key as the source database.
 ///
 /// # Platform Support
-/// This method is only useful on platforms using SQLCipher (iOS, Android, JVM, native).
-/// On WASM platforms, this function will return an error.
+/// This method is only available on platforms using SQLCipher (iOS, Android, JVM, native).
 ///
 /// # Arguments
 /// * `database` - The database instance to export
@@ -83,24 +82,11 @@ pub async fn in_memory_database(key: Arc<DatabaseKey>) -> CoreCryptoResult<Datab
 //
 // These feature flags are ugly, but here's how they work:
 //
-// - If the `wasm` feature is enabled, exlude this; we don't want it.
-// - If we're compiling for wasm without the `wasm` feature, we have to have a function body, so just return an error
-// - If we're compiling for non-wasm, we have the real impl
-//
-// This works out because we only ever build real wasm builds with the `wasm` feature flag enabled.
-// The error could therefore be an `unimplemented!` but it's harmless to return a real error in this case.
-#[cfg(not(feature = "wasm"))]
-#[cfg_attr(all(not(feature = "wasm"), target_os = "unknown"), expect(unused_variables))]
+// - If the `wasm` feature is enabled or we're building for wasm, exlude this; we don't want it.
+#[cfg(not(any(feature = "wasm", target_os = "unknown")))]
 #[uniffi::export]
 pub async fn export_database_copy(database: &Database, destination_path: &str) -> CoreCryptoResult<()> {
     // we need a noop here for the case where we're compiling for wasm but without feature wasm
-    #[cfg(target_os = "unknown")]
-    {
-        Err(CoreCryptoError::ad_hoc(
-            "export_database_copy is not implemented for wasm",
-        ))
-    }
-    #[cfg(not(target_os = "unknown"))]
     {
         database
             .0

@@ -55,7 +55,7 @@ pub use core_crypto_context::CoreCryptoContext;
 pub use credential::Credential;
 pub use credential_ref::CredentialRef;
 pub use credential_type::CredentialType;
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(any(feature = "wasm", target_os = "unknown")))]
 pub use database::export_database_copy;
 pub use database::{Database, DatabaseKey, in_memory_database, migrate_database_key_type_to_bytes, open_database};
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
