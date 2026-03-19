@@ -3,10 +3,10 @@ import { test, beforeEach, describe, expect } from "bun:test";
 import {
     Ciphersuite,
     ciphersuiteDefault,
+    Credential,
     ClientId,
     CredentialType,
-    Credential,
-} from "../../src/browser/CoreCrypto";
+} from "../../../src/browser/CoreCrypto";
 
 beforeEach(async () => {
     await setup();
