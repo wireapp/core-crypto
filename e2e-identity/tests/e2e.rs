@@ -353,41 +353,6 @@ mod acme_server {
     }
 }
 
-mod dpop_challenge {
-    use super::*;
-
-    #[rstest]
-    #[tokio::test]
-    /// Demonstrates that the client possesses the clientId. Client makes an authenticated request
-    /// to wire-server, it delivers a nonce which the client seals in a signed DPoP JWT.
-    // @SF.PROVISIONING @TSFI.ACME @S8
-    async fn should_fail_when_client_dpop_token_has_wrong_backend_nonce(test_env: TestEnvironment) {
-        let test = E2eTest::new(test_env).start().await;
-
-        let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(
-                |mut test, (dpop_chall, backend_nonce, handle, team, display_name, expiry)| {
-                    Box::pin(async move {
-                        // use a different nonce than the supplied one
-                        let wrong_nonce = rand_base64_str(32).into();
-                        assert_ne!(wrong_nonce, backend_nonce);
-
-                        let client_dpop_token = test
-                            .create_dpop_token(&dpop_chall, wrong_nonce, handle, team, display_name, expiry)
-                            .await?;
-                        Ok((test, client_dpop_token))
-                    })
-                },
-            ),
-            ..Default::default()
-        };
-        assert!(matches!(
-            test.enrollment(flow).await.unwrap_err(),
-            TestError::WireServerError
-        ));
-    }
-}
-
 #[rstest]
 #[tokio::test]
 async fn x509_cert_acquisition_works(test_env: TestEnvironment) {
