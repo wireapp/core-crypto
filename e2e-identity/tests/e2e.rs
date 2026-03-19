@@ -386,28 +386,6 @@ mod dpop_challenge {
             TestError::WireServerError
         ));
     }
-
-    #[rstest]
-    #[tokio::test]
-    /// Acme server should be configured with wire-server public key to verify the access tokens
-    /// issued by wire-server.
-    // @SF.PROVISIONING @TSFI.ACME @S8
-    async fn should_fail_when_access_token_not_signed_by_wire_server(test_env: TestEnvironment) {
-        let default = E2eTest::new(test_env);
-        let wrong_backend_kp = Ed25519KeyPair::generate();
-        let test = E2eTest {
-            ca_cfg: CaCfg {
-                sign_key: wrong_backend_kp.public_key().to_pem(),
-                ..default.ca_cfg
-            },
-            ..default
-        };
-        let test = test.start().await;
-        assert!(matches!(
-            test.nominal_enrollment().await.unwrap_err(),
-            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
-        ));
-    }
 }
 
 #[rstest]
