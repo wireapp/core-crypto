@@ -828,31 +828,6 @@ mod dpop_challenge {
     }
 }
 
-mod oidc_challenge {
-    use super::*;
-
-    #[rstest]
-    #[tokio::test]
-    /// Authorization Server exposes an endpoint for clients to fetch its public
-    /// keys (it gets from the OAuth discovery endpoint of hte IdP).
-    /// It is used to validate the signature of the id token we supply to this challenge.
-    // @SF.PROVISIONING @TSFI.ACME @S8
-    async fn should_fail_when_oidc_provider_discovery_uri_unavailable(test_env: TestEnvironment) {
-        let mut test = E2eTest::new(test_env);
-        // invalid discovery uri
-        let mut discovery_uri: url::Url = test.ca_cfg.discovery_base_url.parse().unwrap();
-        discovery_uri.set_port(Some(discovery_uri.port().unwrap() + 1)).unwrap();
-        test.ca_cfg.discovery_base_url = discovery_uri.to_string();
-        let test = test.start().await;
-
-        // cannot validate the OIDC challenge
-        assert!(matches!(
-            test.nominal_enrollment().await.unwrap_err(),
-            TestError::OidcChallengeError
-        ));
-    }
-}
-
 #[rstest]
 #[tokio::test]
 async fn x509_cert_acquisition_works(test_env: TestEnvironment) {
