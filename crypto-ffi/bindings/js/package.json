@@ -29,7 +29,7 @@
         "typedoc": "0.28.17",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.37.0",
-        "uniffi-bindgen-react-native": "github:wireapp/uniffi-bindgen-react-native#c3bf9f59d8d73c6fa0a4462628ea65d8b05f973b",
+        "uniffi-bindgen-react-native": "github:wireapp/uniffi-bindgen-react-native#313e60d13921e7d7789ab4d3daf4a1a8d1a26fb7",
         "yarn": "^1.22.22"
     },
     "bugs": {
