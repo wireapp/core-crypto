@@ -104,7 +104,7 @@ export async function setup() {
                 await cc.newTransaction(async (ctx) => {
                     await ctx.mlsInit(id, window.deliveryService);
                     await ctx.addCredential(
-                        window.ccModule.credentialBasic(cipherSuite, id)
+                        window.ccModule.Credential.basic(cipherSuite, id)
                     );
                 });
                 return cc;

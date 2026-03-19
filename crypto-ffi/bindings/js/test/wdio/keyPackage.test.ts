@@ -24,7 +24,7 @@ describe("key package", () => {
 
                 const cc = window.cc.get(clientIdBytes)!;
 
-                const credential = window.ccModule.credentialBasic(
+                const credential = window.ccModule.Credential.basic(
                     window.ccModule.ciphersuiteDefault(),
                     clientId
                 );
@@ -68,7 +68,7 @@ describe("key package", () => {
 
                 const cc = window.cc.get(clientIdBytes)!;
 
-                const credential = window.ccModule.credentialBasic(
+                const credential = window.ccModule.Credential.basic(
                     window.ccModule.ciphersuiteDefault(),
                     clientId
                 );
@@ -119,7 +119,7 @@ describe("key package", () => {
 
                 const cc = window.cc.get(clientIdBytes)!;
 
-                const credential = window.ccModule.credentialBasic(
+                const credential = window.ccModule.Credential.basic(
                     window.ccModule.ciphersuiteDefault(),
                     clientId
                 );
@@ -159,7 +159,7 @@ describe("key package", () => {
 
                 const cc = window.cc.get(clientIdBytes)!;
 
-                const credential = window.ccModule.credentialBasic(
+                const credential = window.ccModule.Credential.basic(
                     window.ccModule.ciphersuiteDefault(),
                     clientId
                 );
@@ -206,12 +206,12 @@ describe("key package", () => {
                         encoder.encode(clientIdBytes).buffer
                     );
 
-                    const credential1 = window.ccModule.credentialBasic(
+                    const credential1 = window.ccModule.Credential.basic(
                         window.ccModule.Ciphersuite
                             .Mls128Dhkemx25519Aes128gcmSha256Ed25519,
                         clientId
                     );
-                    const credential2 = window.ccModule.credentialBasic(
+                    const credential2 = window.ccModule.Credential.basic(
                         window.ccModule.Ciphersuite
                             .Mls128Dhkemp256Aes128gcmSha256P256,
                         clientId

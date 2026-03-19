@@ -106,7 +106,7 @@ describe("database", () => {
             await cc.newTransaction(async (ctx) => {
                 await ctx.mlsInit(makeClientId(), window.deliveryService);
                 await ctx.addCredential(
-                    window.ccModule.credentialBasic(cipherSuite, clientId)
+                    window.ccModule.Credential.basic(cipherSuite, clientId)
                 );
             });
             const pubkey1 = (
