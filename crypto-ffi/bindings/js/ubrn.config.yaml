@@ -9,5 +9,8 @@ web:
   features: ["wasm"]
   cargoExtras: ["--locked"]
 
+nodejs:
+  features: ["napi"]
+
 bindings:
   uniffiToml: ../../uniffi.toml
