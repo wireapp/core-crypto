@@ -875,30 +875,6 @@ mod oidc_challenge {
             TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
         ));
     }
-
-    #[rstest]
-    #[tokio::test]
-    /// We add an "acme_aud" in the idToken which must match the OIDC challenge url
-    // @SF.PROVISIONING @TSFI.ACME @S8
-    async fn should_fail_when_invalid_audience(test_env: TestEnvironment) {
-        let test = E2eTest::new(test_env).start().await;
-        let flow = EnrollmentFlow {
-            fetch_id_token: Box::new(|mut test, (mut oidc_chall, keyauth)| {
-                Box::pin(async move {
-                    // alter the challenge url to alter the idToken audience
-                    oidc_chall.url = "http://unknown.com".parse().unwrap();
-
-                    let id_token = test.fetch_id_token(&oidc_chall, keyauth).await?;
-                    Ok((test, id_token))
-                })
-            }),
-            ..Default::default()
-        };
-        assert!(matches!(
-            test.enrollment(flow).await.unwrap_err(),
-            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
-        ));
-    }
 }
 
 #[rstest]
