@@ -69,7 +69,6 @@ export {
     type GroupInfoBundle,
     type HistorySecret,
     CredentialRef,
-    credentialBasic,
     type DecryptedMessage,
     CoreCryptoLogLevel,
     ProteusAutoPrekeyBundle,
