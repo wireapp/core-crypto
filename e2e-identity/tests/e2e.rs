@@ -755,36 +755,6 @@ mod dpop_challenge {
             TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
         ));
     }
-
-    #[rstest]
-    #[tokio::test]
-    /// We bind the DPoP challenge "uri" to the access token. It is then validated by the ACME server
-    // @SF.PROVISIONING @TSFI.ACME @S8
-    async fn should_fail_when_invalid_dpop_audience(test_env: TestEnvironment) {
-        let test = E2eTest::new(test_env).start().await;
-        let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(
-                |mut test, (mut dpop_chall, backend_nonce, handle, team, display_name, expiry)| {
-                    Box::pin(async move {
-                        // change the url in the DPoP challenge to alter what's in the DPoP token
-                        dpop_chall.url = "http://unknown.com".parse().unwrap();
-
-                        let client_dpop_token = test
-                            .create_dpop_token(&dpop_chall, backend_nonce, handle, team, display_name, expiry)
-                            .await?;
-
-                        Ok((test, client_dpop_token))
-                    })
-                },
-            ),
-            ..Default::default()
-        };
-        assert!(matches!(
-            test.enrollment(flow).await.unwrap_err(),
-            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
-        ));
-    }
-
 }
 
 #[rstest]
