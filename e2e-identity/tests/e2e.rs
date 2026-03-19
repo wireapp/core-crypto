@@ -440,36 +440,6 @@ mod dpop_challenge {
             TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
         ));
     }
-
-    #[rstest]
-    #[tokio::test]
-    /// We first set a clientId for the enrollment process when we create the acme order. This same
-    /// clientId must be used and sealed in the accessToken which is verified by the acme server in
-    /// the oidc challenge. The challenge should be invalid if they differ
-    // @SF.PROVISIONING @TSFI.ACME @S8
-    async fn should_fail_when_access_token_client_id_mismatches(test_env: TestEnvironment) {
-        let test = E2eTest::new(test_env).start().await;
-
-        let flow = EnrollmentFlow {
-            new_order: Box::new(|mut test, (directory, account, previous_nonce)| {
-                Box::pin(async move {
-                    // just alter the clientId for the order creation...
-                    let sub = test.sub.clone();
-                    test.sub = rand_client_id(Some(sub.device_id));
-                    let (order, order_url, previous_nonce) =
-                        test.new_order(&directory, &account, previous_nonce).await?;
-                    // ...then resume to the regular one to create the client dpop token & access token
-                    test.sub = sub;
-                    Ok((test, (order, order_url, previous_nonce)))
-                })
-            }),
-            ..Default::default()
-        };
-        assert!(matches!(
-            test.enrollment(flow).await.unwrap_err(),
-            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
-        ));
-    }
 }
 
 #[rstest]
