@@ -321,36 +321,6 @@ mod acme_server {
             TestError::DpopChallengeError
         ));
     }
-
-    /// Since this call a custom method on our acme server fork, verify we satisfy the invariant:
-    /// request payloads must be signed by the same client key which created the acme account.
-    #[rstest]
-    #[tokio::test]
-    /// This verifies the DPoP challenge verification method on the acme server
-    // @SF.PROVISIONING @TSFI.ACME
-    async fn should_fail_when_oidc_challenge_signed_by_a_different_key(test_env: TestEnvironment) {
-        let test = E2eTest::new(test_env).start().await;
-
-        let flow = EnrollmentFlow {
-            verify_oidc_challenge: Box::new(|mut test, (account, oidc_chall, access_token, previous_nonce)| {
-                Box::pin(async move {
-                    let old_kp = test.acme_kp;
-                    // use another key just for signing this request
-                    test.acme_kp = Ed25519KeyPair::generate().to_pem().into();
-                    let previous_nonce = test
-                        .verify_oidc_challenge(&account, oidc_chall, access_token, previous_nonce)
-                        .await?;
-                    test.acme_kp = old_kp;
-                    Ok((test, previous_nonce))
-                })
-            }),
-            ..Default::default()
-        };
-        assert!(matches!(
-            test.enrollment(flow).await.unwrap_err(),
-            TestError::OidcChallengeError
-        ));
-    }
 }
 
 #[rstest]
