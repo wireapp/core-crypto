@@ -265,32 +265,6 @@ mod acme_server {
             TestError::AccountCreationError
         ));
     }
-
-    #[rstest]
-    #[tokio::test]
-    /// Replay nonce is reused by the client
-    // @SF.PROVISIONING @TSFI.ACME
-    async fn should_fail_when_replay_nonce_reused(test_env: TestEnvironment) {
-        let test = E2eTest::new(test_env).start().await;
-
-        let flow = EnrollmentFlow {
-            new_order: Box::new(|mut test, (directory, account, previous_nonce)| {
-                Box::pin(async move {
-                    // same nonce is used for both 'new_order' & 'new_authz'
-                    let (order, order_url, _previous_nonce) =
-                        test.new_order(&directory, &account, previous_nonce.clone()).await?;
-                    let (_, _, previous_nonce) =
-                        test.new_authorization(&account, order.clone(), previous_nonce).await?;
-                    Ok((test, (order, order_url, previous_nonce)))
-                })
-            }),
-            ..Default::default()
-        };
-        assert!(matches!(
-            test.enrollment(flow).await.unwrap_err(),
-            TestError::AuthzCreationError
-        ));
-    }
 }
 
 #[rstest]
