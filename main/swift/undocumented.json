@@ -16,462 +16,462 @@
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 6932,
+      "line": 6961,
       "symbol": "BufferedDecryptedMessage.init(message:isActive:commitDelay:senderClientId:hasEpochChanged:identity:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 7057,
+      "line": 7086,
       "symbol": "BuildMetadata.init(timestamp:cargoDebug:cargoFeatures:optLevel:targetTriple:gitBranch:gitDescribe:gitSha:gitDirty:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 7220,
+      "line": 7249,
       "symbol": "CommitBundle.init(welcome:commit:groupInfo:encryptedMessage:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 7328,
+      "line": 7357,
       "symbol": "DecryptedMessage.init(message:isActive:commitDelay:senderClientId:hasEpochChanged:identity:bufferedMessages:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 7438,
+      "line": 7467,
       "symbol": "GroupInfoBundle.init(encryptionType:ratchetTreeType:payload:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 7512,
+      "line": 7541,
       "symbol": "HistorySecret.init(clientId:data:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 7579,
+      "line": 7608,
       "symbol": "HttpHeader.init(name:value:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 7668,
+      "line": 7697,
       "symbol": "HttpResponse.init(status:headers:body:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 7763,
+      "line": 7792,
       "symbol": "ProteusAutoPrekeyBundle.init(id:pkb:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 7844,
+      "line": 7873,
       "symbol": "WelcomeBundle.init(id:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 7918,
+      "line": 7947,
       "symbol": "WireIdentity.init(clientId:status:thumbprint:credentialType:x509Identity:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8057,
+      "line": 8086,
       "symbol": "X509Identity.init(handle:displayName:domain:certificate:serialNumber:notBefore:notAfter:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8306,
+      "line": 8335,
       "symbol": "CoreCryptoError",
       "symbol_kind": "source.lang.swift.decl.enum",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8310,
+      "line": 8339,
       "symbol": "CoreCryptoError.Mls(mlsError:)",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8312,
+      "line": 8341,
       "symbol": "CoreCryptoError.Proteus(exception:)",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8314,
+      "line": 8343,
       "symbol": "CoreCryptoError.E2ei(e2eiError:)",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8316,
+      "line": 8345,
       "symbol": "CoreCryptoError.TransactionFailed(error:)",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8318,
+      "line": 8347,
       "symbol": "CoreCryptoError.Other(msg:)",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8407,
+      "line": 8436,
       "symbol": "CoreCryptoError",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8412,
+      "line": 8441,
       "symbol": "CoreCryptoError",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8429,
+      "line": 8458,
       "symbol": "CoreCryptoLogLevel.off",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8430,
+      "line": 8459,
       "symbol": "CoreCryptoLogLevel.trace",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8431,
+      "line": 8460,
       "symbol": "CoreCryptoLogLevel.debug",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8432,
+      "line": 8461,
       "symbol": "CoreCryptoLogLevel.info",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8433,
+      "line": 8462,
       "symbol": "CoreCryptoLogLevel.warn",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8434,
+      "line": 8463,
       "symbol": "CoreCryptoLogLevel.error",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8786,
+      "line": 8815,
       "symbol": "EpochChangedReportingError",
       "symbol_kind": "source.lang.swift.decl.enum",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8790,
+      "line": 8819,
       "symbol": "EpochChangedReportingError.Ffi(message:)",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8847,
+      "line": 8876,
       "symbol": "EpochChangedReportingError",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8852,
+      "line": 8881,
       "symbol": "EpochChangedReportingError",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8981,
+      "line": 9010,
       "symbol": "LoggingError",
       "symbol_kind": "source.lang.swift.decl.enum",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 8985,
+      "line": 9014,
       "symbol": "LoggingError.Ffi(message:)",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9042,
+      "line": 9071,
       "symbol": "LoggingError",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9047,
+      "line": 9076,
       "symbol": "LoggingError",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9072,
+      "line": 9101,
       "symbol": "MlsError.DuplicateMessage",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9073,
+      "line": 9102,
       "symbol": "MlsError.BufferedFutureMessage",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9074,
+      "line": 9103,
       "symbol": "MlsError.WrongEpoch",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9075,
+      "line": 9104,
       "symbol": "MlsError.BufferedCommit",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9076,
+      "line": 9105,
       "symbol": "MlsError.MessageEpochTooOld",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9077,
+      "line": 9106,
       "symbol": "MlsError.SelfCommitIgnored",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9078,
+      "line": 9107,
       "symbol": "MlsError.UnmergedPendingGroup",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9079,
+      "line": 9108,
       "symbol": "MlsError.StaleProposal",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9080,
+      "line": 9109,
       "symbol": "MlsError.StaleCommit",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9088,
+      "line": 9117,
       "symbol": "MlsError.MessageRejected(reason:)",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9090,
+      "line": 9119,
       "symbol": "MlsError.Other(msg:)",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9230,
+      "line": 9259,
       "symbol": "MlsGroupInfoEncryptionType",
       "symbol_kind": "source.lang.swift.decl.enum",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9244,
+      "line": 9273,
       "symbol": "MlsGroupInfoEncryptionType",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9296,
+      "line": 9325,
       "symbol": "MlsGroupInfoEncryptionType",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9306,
+      "line": 9335,
       "symbol": "MlsRatchetTreeType",
       "symbol_kind": "source.lang.swift.decl.enum",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9317,
+      "line": 9346,
       "symbol": "MlsRatchetTreeType.byRef",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9322,
+      "line": 9351,
       "symbol": "MlsRatchetTreeType",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9380,
+      "line": 9409,
       "symbol": "MlsRatchetTreeType",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9483,
+      "line": 9512,
       "symbol": "NewHistoryClientReportingError",
       "symbol_kind": "source.lang.swift.decl.enum",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9487,
+      "line": 9516,
       "symbol": "NewHistoryClientReportingError.Ffi(message:)",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9544,
+      "line": 9573,
       "symbol": "NewHistoryClientReportingError",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9549,
+      "line": 9578,
       "symbol": "NewHistoryClientReportingError",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9559,
+      "line": 9588,
       "symbol": "PkiEnvironmentHooksError",
       "symbol_kind": "source.lang.swift.decl.enum",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9563,
+      "line": 9592,
       "symbol": "PkiEnvironmentHooksError.Error(reason:)",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9620,
+      "line": 9649,
       "symbol": "PkiEnvironmentHooksError",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9625,
+      "line": 9654,
       "symbol": "PkiEnvironmentHooksError",
       "symbol_kind": "source.lang.swift.decl.extension",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9642,
+      "line": 9671,
       "symbol": "ProteusError.SessionNotFound",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9643,
+      "line": 9672,
       "symbol": "ProteusError.DuplicateMessage",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9644,
+      "line": 9673,
       "symbol": "ProteusError.RemoteIdentityChanged",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 9645,
+      "line": 9674,
       "symbol": "ProteusError.Other(errorCode:)",
       "symbol_kind": "source.lang.swift.decl.enumelement",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 10593,
+      "line": 10622,
       "symbol": "uniffiForeignFutureHandleCountCoreCryptoFfi()",
       "symbol_kind": "source.lang.swift.decl.function.free",
       "warning": "undocumented"
     },
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
-      "line": 11265,
+      "line": 11277,
       "symbol": "uniffiEnsureCoreCryptoFfiInitialized()",
       "symbol_kind": "source.lang.swift.decl.function.free",
       "warning": "undocumented"

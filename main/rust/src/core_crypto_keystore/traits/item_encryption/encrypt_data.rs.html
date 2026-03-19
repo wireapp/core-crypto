@@ -21,7 +21,7 @@
 <a href=#21 id=21 data-nosnippet>21</a>
 <a href=#22 id=22 data-nosnippet>22</a>    <span class="kw">let </span><span class="kw-2">mut </span>encrypted = cipher
 <a href=#23 id=23 data-nosnippet>23</a>        .encrypt(nonce, payload)
-<a href=#24 id=24 data-nosnippet>24</a>        .map_err(|<span class="kw">_</span>| CryptoKeystoreError::AesGcmError)<span class="question-mark">?</span>;
+<a href=#24 id=24 data-nosnippet>24</a>        .map_err(|<span class="kw">_</span>| CryptoKeystoreError::AesGcmError(<span class="string">"encrypting with nonce and aad"</span>))<span class="question-mark">?</span>;
 <a href=#25 id=25 data-nosnippet>25</a>    <span class="kw">let </span><span class="kw-2">mut </span>message = Vec::with_capacity(nonce.len() + encrypted.len());
 <a href=#26 id=26 data-nosnippet>26</a>    message.extend_from_slice(nonce);
 <a href=#27 id=27 data-nosnippet>27</a>    message.append(<span class="kw-2">&amp;mut </span>encrypted);

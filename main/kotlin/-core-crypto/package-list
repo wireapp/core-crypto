@@ -30,7 +30,6 @@ $dokka.location:com.wire.crypto//toGroupInfo/kotlin.ByteArray#/PointingToDeclara
 $dokka.location:com.wire.crypto//toMLSKeyPackage/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-m-l-s-key-package.html
 $dokka.location:com.wire.crypto//toWelcome/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-welcome.html
 $dokka.location:com.wire.crypto//uniffiForeignFutureHandleCount/#/PointingToDeclaration/-core-crypto/com.wire.crypto/uniffi-foreign-future-handle-count.html
-$dokka.location:com.wire.crypto//updateDatabaseKey/#kotlin.String#com.wire.crypto.DatabaseKey#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/update-database-key.html
 $dokka.location:com.wire.crypto//version/#/PointingToDeclaration/-core-crypto/com.wire.crypto/version.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-companion/index.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage///PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/index.html
@@ -394,9 +393,11 @@ $dokka.location:com.wire.crypto/Database/close/#/PointingToDeclaration/-core-cr
 $dokka.location:com.wire.crypto/Database/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-database/destroy.html
 $dokka.location:com.wire.crypto/Database/getLocation/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-database/get-location.html
 $dokka.location:com.wire.crypto/Database/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-database/uniffi-clone-pointer.html
+$dokka.location:com.wire.crypto/Database/updateKey/#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/-database/update-key.html
 $dokka.location:com.wire.crypto/DatabaseInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-database-interface/-companion/index.html
 $dokka.location:com.wire.crypto/DatabaseInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-database-interface/index.html
 $dokka.location:com.wire.crypto/DatabaseInterface/getLocation/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-database-interface/get-location.html
+$dokka.location:com.wire.crypto/DatabaseInterface/updateKey/#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/-database-interface/update-key.html
 $dokka.location:com.wire.crypto/DatabaseKey.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-database-key/-companion/index.html
 $dokka.location:com.wire.crypto/DatabaseKey///PointingToDeclaration/-core-crypto/com.wire.crypto/-database-key/index.html
 $dokka.location:com.wire.crypto/DatabaseKey/DatabaseKey/#com.sun.jna.Pointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-database-key/-database-key.html
