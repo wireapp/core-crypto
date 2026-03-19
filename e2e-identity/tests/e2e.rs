@@ -35,7 +35,6 @@ use utils::{
     ctx::ctx_store_http_client,
     hooks::TestPkiEnvironmentHooks,
     idp::{IdpServer, OidcProvider, start_idp_server},
-    rand_base64_str, rand_client_id,
     stepca::CaCfg,
 };
 use wire_e2e_identity::{
