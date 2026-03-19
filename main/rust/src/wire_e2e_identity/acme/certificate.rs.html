@@ -13,8 +13,8 @@
 <a href=#13 id=13 data-nosnippet>13</a>    <span class="doccomment">/// For fetching the generated certificate
 <a href=#14 id=14 data-nosnippet>14</a>    /// see [RFC 8555 Section 7.4.2](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2)
 <a href=#15 id=15 data-nosnippet>15</a>    </span><span class="kw">pub fn </span>certificate_req(
-<a href=#16 id=16 data-nosnippet>16</a>        finalize: AcmeFinalize,
-<a href=#17 id=17 data-nosnippet>17</a>        account: AcmeAccount,
+<a href=#16 id=16 data-nosnippet>16</a>        finalize: <span class="kw-2">&amp;</span>AcmeFinalize,
+<a href=#17 id=17 data-nosnippet>17</a>        account: <span class="kw-2">&amp;</span>AcmeAccount,
 <a href=#18 id=18 data-nosnippet>18</a>        alg: JwsAlgorithm,
 <a href=#19 id=19 data-nosnippet>19</a>        kp: <span class="kw-2">&amp;</span>Pem,
 <a href=#20 id=20 data-nosnippet>20</a>        previous_nonce: String,

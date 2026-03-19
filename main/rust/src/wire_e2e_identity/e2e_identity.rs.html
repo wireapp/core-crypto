@@ -318,7 +318,7 @@
 <a href=#318 id=318 data-nosnippet>318</a>        <span class="kw">let </span>oidc_chall: AcmeChallenge = oidc_challenge.clone().try_into()<span class="question-mark">?</span>;
 <a href=#319 id=319 data-nosnippet>319</a>        <span class="kw">let </span>new_challenge_req = RustyAcme::oidc_chall_request(
 <a href=#320 id=320 data-nosnippet>320</a>            id_token,
-<a href=#321 id=321 data-nosnippet>321</a>            oidc_chall,
+<a href=#321 id=321 data-nosnippet>321</a>            <span class="kw-2">&amp;</span>oidc_chall,
 <a href=#322 id=322 data-nosnippet>322</a>            <span class="kw-2">&amp;</span>account,
 <a href=#323 id=323 data-nosnippet>323</a>            <span class="self">self</span>.sign_alg,
 <a href=#324 id=324 data-nosnippet>324</a>            <span class="kw-2">&amp;</span><span class="self">self</span>.acme_kp,
@@ -426,7 +426,7 @@
 <a href=#426 id=426 data-nosnippet>426</a>        <span class="kw">let </span>finalize = finalize.try_into()<span class="question-mark">?</span>;
 <a href=#427 id=427 data-nosnippet>427</a>        <span class="kw">let </span>account = account.try_into()<span class="question-mark">?</span>;
 <a href=#428 id=428 data-nosnippet>428</a>        <span class="kw">let </span>certificate_req =
-<a href=#429 id=429 data-nosnippet>429</a>            RustyAcme::certificate_req(finalize, account, <span class="self">self</span>.sign_alg, <span class="kw-2">&amp;</span><span class="self">self</span>.acme_kp, previous_nonce)<span class="question-mark">?</span>;
+<a href=#429 id=429 data-nosnippet>429</a>            RustyAcme::certificate_req(<span class="kw-2">&amp;</span>finalize, <span class="kw-2">&amp;</span>account, <span class="self">self</span>.sign_alg, <span class="kw-2">&amp;</span><span class="self">self</span>.acme_kp, previous_nonce)<span class="question-mark">?</span>;
 <a href=#430 id=430 data-nosnippet>430</a>        <span class="prelude-val">Ok</span>(serde_json::to_value(certificate_req)<span class="question-mark">?</span>)
 <a href=#431 id=431 data-nosnippet>431</a>    }
 <a href=#432 id=432 data-nosnippet>432</a>

@@ -20,8 +20,8 @@ see <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5">RFC 8555 S
 </div></details><details class="toggle method-toggle" open><summary><section id="method.new_authz_response" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/acme/authz.rs.html#29-48">Source</a><h4 class="code-header">pub fn <a href="#method.new_authz_response" class="fn">new_authz_response</a>(response: <a class="enum" href="https://docs.rs/serde_json/1.0.149/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>) -&gt; <a class="type" href="type.RustyAcmeResult.html" title="type wire_e2e_identity::acme::RustyAcmeResult">RustyAcmeResult</a>&lt;<a class="struct" href="struct.AcmeAuthz.html" title="struct wire_e2e_identity::acme::AcmeAuthz">AcmeAuthz</a>&gt;</h4></section></summary><div class="docblock"><p>parse the response from <code>POST /acme/authz/{authz_id}</code>
 <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5">RFC 8555 Section 7.5</a></p>
 </div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-RustyAcme-2" class="impl"><a class="src rightside" href="../../src/wire_e2e_identity/acme/certificate.rs.html#12-124">Source</a><a href="#impl-RustyAcme-2" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.RustyAcme.html" title="struct wire_e2e_identity::acme::RustyAcme">RustyAcme</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.certificate_req" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/acme/certificate.rs.html#15-29">Source</a><h4 class="code-header">pub fn <a href="#method.certificate_req" class="fn">certificate_req</a>(
-    finalize: <a class="struct" href="struct.AcmeFinalize.html" title="struct wire_e2e_identity::acme::AcmeFinalize">AcmeFinalize</a>,
-    account: <a class="struct" href="struct.AcmeAccount.html" title="struct wire_e2e_identity::acme::AcmeAccount">AcmeAccount</a>,
+    finalize: &amp;<a class="struct" href="struct.AcmeFinalize.html" title="struct wire_e2e_identity::acme::AcmeFinalize">AcmeFinalize</a>,
+    account: &amp;<a class="struct" href="struct.AcmeAccount.html" title="struct wire_e2e_identity::acme::AcmeAccount">AcmeAccount</a>,
     alg: <a class="enum" href="../enum.JwsAlgorithm.html" title="enum wire_e2e_identity::JwsAlgorithm">JwsAlgorithm</a>,
     kp: &amp;Pem,
     previous_nonce: <a class="struct" href="https://doc.rust-lang.org/1.94.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
@@ -44,7 +44,7 @@ see <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2">RFC 8555
 see <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1">RFC 8555 Section 7.5.1</a></p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.oidc_chall_request" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/acme/chall.rs.html#30-45">Source</a><h4 class="code-header">pub fn <a href="#method.oidc_chall_request" class="fn">oidc_chall_request</a>(
     id_token: <a class="struct" href="https://doc.rust-lang.org/1.94.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
-    oidc_chall: <a class="struct" href="struct.AcmeChallenge.html" title="struct wire_e2e_identity::acme::AcmeChallenge">AcmeChallenge</a>,
+    oidc_chall: &amp;<a class="struct" href="struct.AcmeChallenge.html" title="struct wire_e2e_identity::acme::AcmeChallenge">AcmeChallenge</a>,
     account: &amp;<a class="struct" href="struct.AcmeAccount.html" title="struct wire_e2e_identity::acme::AcmeAccount">AcmeAccount</a>,
     alg: <a class="enum" href="../enum.JwsAlgorithm.html" title="enum wire_e2e_identity::JwsAlgorithm">JwsAlgorithm</a>,
     kp: &amp;Pem,

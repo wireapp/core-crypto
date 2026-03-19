@@ -67,9 +67,9 @@
 <a href=#67 id=67 data-nosnippet>67</a>                    <span class="kw">let </span>body = serde_json::to_vec(<span class="kw-2">&amp;</span>body).unwrap().into();
 <a href=#68 id=68 data-nosnippet>68</a>                    Response::builder().status(StatusCode::OK).body(body).unwrap()
 <a href=#69 id=69 data-nosnippet>69</a>                }
-<a href=#70 id=70 data-nosnippet>70</a>                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; Response::builder()
+<a href=#70 id=70 data-nosnippet>70</a>                <span class="prelude-val">Err</span>(err) =&gt; Response::builder()
 <a href=#71 id=71 data-nosnippet>71</a>                    .status(StatusCode::UNAUTHORIZED)
-<a href=#72 id=72 data-nosnippet>72</a>                    .body(<span class="string">""</span>.into())
+<a href=#72 id=72 data-nosnippet>72</a>                    .body(<span class="macro">format!</span>(<span class="string">"{err}"</span>).into())
 <a href=#73 id=73 data-nosnippet>73</a>                    .unwrap(),
 <a href=#74 id=74 data-nosnippet>74</a>            }
 <a href=#75 id=75 data-nosnippet>75</a>        }
