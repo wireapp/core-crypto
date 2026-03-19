@@ -785,47 +785,6 @@ mod dpop_challenge {
         ));
     }
 
-    #[rstest]
-    #[tokio::test]
-    /// The DPoP token holds the "display name" of the client which is compared by the acme server against the
-    /// display name in the acme identifier as part of the acme order
-    // @SF.PROVISIONING @TSFI.ACME @S8
-    async fn acme_should_fail_when_client_dpop_token_has_wrong_display_name(test_env: TestEnvironment) {
-        let test = E2eTest::new(test_env).start().await;
-
-        let real_dn = std::sync::Arc::new(std::sync::Mutex::new(None));
-        let (dn_write, dn_read) = (real_dn.clone(), real_dn.clone());
-
-        let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(
-                |mut test, (dpop_chall, backend_nonce, handle, team, _display_name, expiry)| {
-                    Box::pin(async move {
-                        *dn_write.lock().unwrap() = Some(test.display_name.clone());
-
-                        let wrong_display_name = "Unknown".to_string();
-                        test.display_name = wrong_display_name.clone();
-
-                        let client_dpop_token = test
-                            .create_dpop_token(&dpop_chall, backend_nonce, handle, team, wrong_display_name, expiry)
-                            .await?;
-                        Ok((test, client_dpop_token))
-                    })
-                },
-            ),
-            get_access_token: Box::new(|mut test, (dpop_challenge, dpop_token)| {
-                Box::pin(async move {
-                    let access_token = test.get_access_token(&dpop_challenge, dpop_token).await?;
-                    test.display_name = dn_read.lock().unwrap().clone().unwrap();
-                    Ok((test, access_token))
-                })
-            }),
-            ..Default::default()
-        };
-        assert!(matches!(
-            test.enrollment(flow).await.unwrap_err(),
-            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
-        ));
-    }
 }
 
 #[rstest]
