@@ -27,6 +27,12 @@ jobs:
         gh-token: ${{ secrets.GITHUB_TOKEN }}
         artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
+    - name: download native files
+      uses: ./.github/actions/make/ts/native
+      with:
+        gh-token: ${{ secrets.GITHUB_TOKEN }}
+        artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
     - name: make ts docs
       run: make docs-ts
 

@@ -22,11 +22,19 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
       - name: download web files
         uses: ./.github/actions/make/ts/browser
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: download native files
+        uses: ./.github/actions/make/ts/native
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
       - name: lint
         run: make ts-check
 

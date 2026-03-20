@@ -166,7 +166,7 @@ jobs:
   #################
   # Web
 
-  bindings-ts:
+  bindings-ts-browser:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -179,12 +179,29 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
+  bindings-ts-native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: build ts
+        uses: ./.github/actions/make/ts/native
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
   test-ts:
-    needs: bindings-ts
+    needs:
+      - bindings-ts-browser
+      - bindings-ts-native
     uses: ./.github/workflows/test-ts.yml
 
   docs-ts:
-    needs: bindings-ts
+    needs:
+      - bindings-ts-browser
+      - bindings-ts-native
     uses: ./.github/workflows/docs-ts.yml
 
   #################
@@ -230,7 +247,7 @@ jobs:
     needs:
       - build-ios
       - bindings-swift
-      - bindings-ts
+      - bindings-ts-browser
       - bindings-android
       - build-android
       - build-interop
@@ -251,7 +268,7 @@ jobs:
     needs:
       - package-ios
       - package-android
-      - bindings-ts
+      - bindings-ts-browser
       - build-jvm-linux
       - build-jvm-darwin
       - bindings-jvm
