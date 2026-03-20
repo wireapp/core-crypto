@@ -1,0 +1,11 @@
+:platform: ios
+
+= Migrating from v9.x to v10.0
+
+include::ROOT:partial$cc10-migration.adoc[]
+
+include::ROOT:partial$cc10-migration-other.adoc[]
+
+. We *removed* static methods from `CoreCrypto` that are globally available:
+  * removed `version()`
+  * removed `buildMetadata()`

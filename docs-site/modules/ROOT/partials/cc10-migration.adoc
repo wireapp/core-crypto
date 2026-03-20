@@ -1,0 +1,38 @@
+== CoreCrypto Instantiation
+
+. The `CoreCrypto` constructor now takes a `Database` instance instead of a `DatabaseKey` and a path.
+  To instantiate a database, call
+ifeval::[{platform} == browser]
+  `openDatabase()`
+endif::[]
+ifeval::[{platform} != browser]
+  the `Database.new()` static method.
+endif::[]
+
+. Deferred init is now the only way to instantiate `CoreCrypto`.
+ifeval::[{platform} == browser]
+  We *replaced* `CoreCrypto.init(database: Database)` with the static function `CoreCrypto.new(database: Database)`
+  Instead of calling `CoreCrypto.deferredInit()`, call `CoreCrypto.new()`.
+endif::[]
+ifeval::[{platform} != browser]
+  Instead of calling `deferredInit()`, call the `CoreCrypto` constructor.
+endif::[]
+  As before with `deferredInit()`, call `mlsInit()` in a transaction to initialize MLS.
+
+== MLS Initialization.
+
+. `mlsInit()` was decoupled from key package creation.
+  To create key packages after initializing MLS, call `clientKeypackages()` in a transaction.
+
+. removed `CoreCrypto.provideTransport()`, added `transport` parameter to `CoreCryptoContext.mlsInit()`
+  Instead of providing transport separately from MLS initialization provide it when calling `mlsInit()``.
+
+== Logging
+
+. We *removed* `CoreCrypto.setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)`
+ifeval::[{platform} != jvm]
+  and `CoreCrypto.setMaxLogLevel(level: CoreCryptoLogLevel)`.
+endif::[]
+  as logging is configured globally and not tied to a `CoreCrypto` instance.
+  To set the log level use the free function `setMaxLogLevel(level: CoreCryptoLogLevel)`.
+. We *renamed* `setLoggerOnly(logger: CoreCryptoLogger)` to `setLogger(logger: CoreCryptoLogger)`.

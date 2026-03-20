@@ -1,0 +1,18 @@
+:platform:
+
+= What's New!
+
+== New APIs
+With CC10 we introduce multiple new types that provide their own new API.
+
+include::database-api.adoc[]
+
+include::pki-api.adoc[]
+
+include::credential-api.adoc[]
+
+[NOTE]
+====
+CC v10.0 introduces lots of changes.
+We provide a migration guide xref:{platform}:cc10-migration.adoc[here].
+====

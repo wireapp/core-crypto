@@ -1,0 +1,7 @@
+=== PKI Environment API
+
+* added `PkiEnvironment` constructed via `createPkiEnvironment(database: Database, hooks: PkiEnvironmentHooks)`
+* added `PkiEnvironmentHooks` interface which has to be implemented by a client and will be used by CoreCrypto during
+    e2ei flow
+* added `CoreCrypto.setPkiEnvironment()` to set a PkiEnvironment on a `CoreCrypto` instance
+* added `CoreCrypto.getPkiEnvironment()` to get the PkiEnvironment of a `CoreCrypto` instance

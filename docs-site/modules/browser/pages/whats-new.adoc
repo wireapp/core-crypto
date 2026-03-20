@@ -1,0 +1,7 @@
+:platform: browser
+
+include::ROOT:partial$whats-new.adoc[]
+
+== Bug Fixes
+
+* Abort reasons of `MlsTransportResponse` are now forwarded to rust.

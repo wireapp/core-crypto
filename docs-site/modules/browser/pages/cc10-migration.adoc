@@ -1,0 +1,116 @@
+:platform: browser
+
+= Migrating from v9.x to v10.0
+
+== Browser Module Location
+We want to set the ground for a native module.
+Therefore, the browser module is now exported as `@wireapp/core-crypto/browser`.
+Update your imports from `@wireapp/core-crypto` to `@wireapp/core-crypto/browser`.
+
+include::ROOT:partial$cc10-migration.adoc[]
+
+== Passing ByteArray Arguments
+
+* We now generate the ts bindings from the same uniffi code that swift and kotlin use.
+** Arrays are now passed as ArrayBuffer between client and the FFI layer, changing parameter and return types.
+   Use `.buffer()` to get `ArrayBuffer` from `Uint8Array`.
+   Use `new Uint8Array(buffer)` to get a Uint8Array from an `ArrayBuffer`.
+
+
+== MlsTransportResponse
+* `MlsTransportResponse` is no longer a union type. `MlsTransport` should return one of the following:
+
+** `MlsTransportResponse.Success.new()`
+** `MlsTransportResponse.Retry.new()`
+** `MlsTransportResponse.Abort.new({reason: "any reason"})`
+
+== Errors
+=== Error Structure
+We adjusted TypeScript error structure
+Whenever matching on errors using version `>= 9.1.0` type guards, update their usage as shown in the examples below.
+
+[NOTE]
+====
+For more info, see
+https://jhugman.github.io/uniffi-bindgen-react-native/idioms/errors.html#enums-as-errors[the corresponding section of ubrn docs]
+====
+
+==== Example Usage
+
+.Extracting the abort reason given via an `MlsTransportResponse`
+[source, typescript]
+----
+  import { CoreCryptoError, MlsError } from "core-crypto";
+
+  try {
+      // send a commit that is rejected by the DS
+  } catch (err) {
+    if (CoreCryptoError.Mls.instanceOf(err) &&
+        MlsError.MessageRejected.instanceOf(err.inner.mlsError)) {
+      const rejectReason = err.inner.mlsError.inner.reason;
+      // other things you want to do with this error...
+    } else {
+        // log error
+    }
+  }
+----
+
+.Optional: use `switch` to handle multiple errors in one go
+[source, typescript]
+----
+  import { CoreCryptoError, MlsError, MlsError_Tags } from "core-crypto";
+
+  try {
+      // send a commit that is rejected by the DS
+    } catch (err) {
+        if (CoreCryptoError.Mls.instanceOf(err)) {
+            switch (err.inner.mlsError.tag) {
+                case MlsError_Tags.MessageRejected: {
+                    const rejectedReason = err.inner.mlsError.inner.reason;
+                    // other things you want to do with this error...
+                    break;
+                }
+
+                // handle other mls errors
+            }
+        }
+    }
+----
+
+.Catch a proteus error
+[source, typescript]
+----
+  import { CoreCryptoError, ProteusError } from "core-crypto";
+
+  try {
+      // look for a proteus session that doesn't exist
+  } catch (err) {
+    if (CoreCryptoError.Proteus.instanceOf(err)
+       && ProteusError.SessionNotFound.instanceOf(err.inner.exception)) {
+       let message = err.inner.exception.message;
+       // other things you want to do with this error...
+    } else {
+        // log error
+    }
+  }
+----
+
+=== Proteus Error Codes
+The `proteusErrorCode` field was removed from the root error type.
+There is a deterministic mapping from error code to error type. If you were using the error code, use the
+error type now instead (see above). Check https://github.com/wireapp/proteus/blob/develop/crates/proteus-traits/src/lib.rs[here] for the mapping.
+
+include::ROOT:partial$cc10-migration-other.adoc[]
+
+====
+TODO
+. Renamed TypeScript wrapper functions (this should be undone after we upgrade to uniffi 0.30.0). `transaction()` ->
+  `newTransaction()`, `findCredentials()` -> `getFilteredCredentials()`
+====
+
+. `CoreCryptoContext.generateKeyPackage()` now returns a `Keypackage` instance instead of an `ArrayBuffer`.
+  Migration: if you need the underlying `ArrayBuffer`, call the `buffer` property on the `KeyPackage`.
+
+. renamed `CoreCrypto.reseedRng()` to `CoreCrypto.reseed()`
+
+. `CustomConfiguration.keyRotationSpan` now defines milliseconds instead of seconds

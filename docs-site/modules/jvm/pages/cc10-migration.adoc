@@ -1,0 +1,13 @@
+:platform: jvm
+
+= Migrating from v9.x to v10.0
+
+== CoreCrypto
+. We renamed `CoreCryptoClient` to `CoreCrypto`
+. `historyClient(historySecret: HistorySecret)` has been moved into `CoreCrypto`
+  Companion functions
+
+. We now expose the entire read-only API in Kotlin on the `CoreCrypto` type.
+  This allows reading data without opening a transaction.
+
+include::ROOT:partial$cc10-migration.adoc[]
