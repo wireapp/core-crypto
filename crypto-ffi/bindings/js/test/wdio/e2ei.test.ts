@@ -29,7 +29,7 @@ describe("PKI environment", () => {
             const cc = window.ensureCcDefined(alice);
             const key = new Uint8Array(32);
             window.crypto.getRandomValues(key);
-            const database = await window.ccModule.openDatabase(
+            const database = await window.ccModule.Database.open(
                 crypto.randomUUID(),
                 new window.ccModule.DatabaseKey(key.buffer)
             );
@@ -55,7 +55,7 @@ describe("PKI environment", () => {
         const pki_env = await browser.execute(async (alice) => {
             const key = new Uint8Array(32);
             window.crypto.getRandomValues(key);
-            const database = await window.ccModule.openDatabase(
+            const database = await window.ccModule.Database.open(
                 alice,
                 new window.ccModule.DatabaseKey(key.buffer)
             );
@@ -72,7 +72,7 @@ describe("PKI environment", () => {
         const success = await browser.execute(async (alice) => {
             const key = new Uint8Array(32);
             window.crypto.getRandomValues(key);
-            const database = await window.ccModule.openDatabase(
+            const database = await window.ccModule.Database.open(
                 alice,
                 new window.ccModule.DatabaseKey(key.buffer)
             );
