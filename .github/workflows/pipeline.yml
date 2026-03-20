@@ -174,7 +174,7 @@ jobs:
         with:
           bun-version: latest
       - name: build ts
-        uses: ./.github/actions/make/web/ts
+        uses: ./.github/actions/make/ts/browser
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
