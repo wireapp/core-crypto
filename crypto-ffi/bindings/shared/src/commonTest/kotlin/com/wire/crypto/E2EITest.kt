@@ -27,8 +27,8 @@ internal class E2EITest : HasMockDeliveryService() {
         val path = root.resolve("pki-$aliceId")
         val key = genDatabaseKey()
         val hooks = MockPkiEnvironmentHooks()
-        val db = openDatabase(path.absolutePath, key)
-        val pkiEnv = createPkiEnvironment(hooks, db)
+        val db = Database.open(path.absolutePath, key)
+        val pkiEnv = PkiEnvironment.new(hooks, db)
 
         val cc = CoreCrypto(db)
         cc.setPkiEnvironment(pkiEnv)
