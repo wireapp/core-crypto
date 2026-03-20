@@ -4,6 +4,7 @@
   "workspaces": {
     "": {
       "devDependencies": {
+        "@antora/epub-extension": "^1.0.0-beta.20",
         "@antora/pdf-extension": "^1.0.0-beta.20",
         "antora": "3.1.14",
       },
@@ -21,6 +22,8 @@
     "@antora/content-classifier": ["@antora/content-classifier@3.1.14", "", { "dependencies": { "@antora/asciidoc-loader": "3.1.14", "@antora/logger": "3.1.14", "mime-types": "~2.1", "vinyl": "~3.0" } }, "sha512-y8Fk+KU1lqD3aawOu3ZFK92YfOZ1k3YBJhLI9QIFM6Ck4STPnf7AwYbhfOtjODlwer5/OhFmfhjUB2hn7onGnA=="],
 
     "@antora/document-converter": ["@antora/document-converter@3.1.14", "", { "dependencies": { "@antora/asciidoc-loader": "3.1.14" } }, "sha512-f6wFnL+489DI0ZDgoxYWzbxxWqPviRiJ56OHS1NixEfvJ7OpRBDPEbX1xnsIeiyFBgqX4+nY92MsCWKTa+Gf3w=="],
+
+    "@antora/epub-extension": ["@antora/epub-extension@1.0.0-beta.20", "", { "dependencies": { "@antora/assembler": "1.0.0-beta.20" } }, "sha512-Xr8aVLCp82gW4MfQO2AmhKNZsw5l2SkklgSglMrPK6tU5I6WSUPA/HZ178Bd9Bw1FNENPSZfcS0gnt3tiknHcA=="],
 
     "@antora/expand-path-helper": ["@antora/expand-path-helper@3.0.0", "", {}, "sha512-7PdEIhk97v85/CSm3HynCsX14TR6oIVz1s233nNLsiWubE8tTnpPt4sNRJR+hpmIZ6Bx9c6QDp3XIoiyu/WYYA=="],
 
