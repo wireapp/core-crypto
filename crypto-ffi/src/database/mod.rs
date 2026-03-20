@@ -32,6 +32,16 @@ impl Database {
 
 #[uniffi::export]
 impl Database {
+    /// Construct a Database given an instance of a Database
+    ///
+    /// By exposing a public constructor,
+    /// this enables our FFI layer to extend this type, which in turn means
+    /// we can expose a static function which is an actual constructor.
+    #[uniffi::constructor]
+    pub fn new(database: Arc<Self>) -> Arc<Self> {
+        database
+    }
+
     /// Get the location of the database
     /// Returns null if in-memory
     pub async fn get_location(&self) -> CoreCryptoResult<Option<String>> {

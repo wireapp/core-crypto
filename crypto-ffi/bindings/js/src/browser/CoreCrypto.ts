@@ -21,6 +21,8 @@ export {
 
 export { CoreCrypto } from "./CoreCryptoInstance";
 
+export { Database } from "./Database";
+
 export {
     BuildMetadata,
     Credential,
@@ -48,8 +50,6 @@ export {
     ciphersuiteFromU16,
     ciphersuiteDefault,
     ClientId,
-    openDatabase,
-    Database,
     DatabaseKey,
     type MlsTransportData,
     migrateDatabaseKeyTypeToBytes,
