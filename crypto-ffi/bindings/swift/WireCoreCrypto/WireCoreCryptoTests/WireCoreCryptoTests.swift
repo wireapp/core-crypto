@@ -850,7 +850,7 @@ final class WireCoreCryptoTests: XCTestCase {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let database = try await Database.open(location: keystore.path, key: genDatabaseKey())
 
-        let pkiEnvironment: PkiEnvironment = try await createPkiEnvironment(
+        let pkiEnvironment = try await PkiEnvironment(
             hooks: MockPkiEnvironmentHooks(), database: database)
         let coreCrypto = try CoreCrypto(database: database)
         try await coreCrypto.setPkiEnvironment(pkiEnvironment: pkiEnvironment)
