@@ -223,3 +223,6 @@ dist
 
 crypto-ffi/bindings/build
 interop/src/clients/build
+
+# Antora builds
+docs-site/build
