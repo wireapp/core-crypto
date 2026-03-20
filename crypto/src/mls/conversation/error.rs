@@ -84,6 +84,10 @@ pub enum Error {
         "Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit"
     )]
     OrphanWelcome,
+    #[error("Operation couldn't be performed due to duplicate signature for clients: {affected_clients:?}")]
+    DuplicateSignature {
+        affected_clients: Vec<(crate::ClientId, crate::ClientId)>,
+    },
     #[error("Serializing {item} for TLS")]
     TlsSerialize {
         item: &'static str,

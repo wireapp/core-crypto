@@ -1,13 +1,14 @@
 //! The methods in this module all produce or handle commits.
 
-use std::borrow::Borrow;
+use std::{borrow::Borrow, collections::HashMap};
 
 use openmls::prelude::KeyPackageIn;
 use wire_e2e_identity::NewCrlDistributionPoints;
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
-    ClientIdRef, CredentialRef, LeafError, MlsError, MlsGroupInfoBundle, MlsTransportResponse, RecursiveError,
+    ClientId, ClientIdRef, CredentialRef, LeafError, MlsError, MlsGroupInfoBundle, MlsTransportResponse,
+    RecursiveError,
     mls::{
         conversation::{
             Conversation as _, ConversationGuard, ConversationWithMls as _, Error, Result, commit::MlsCommitBundle,
@@ -130,9 +131,16 @@ impl ConversationGuard {
 
         let (commit, welcome, group_info) = conversation
             .group
-            .add_members(&backend, signer, key_packages)
+            .add_members(&backend, signer, key_packages.clone())
             .await
-            .map_err(MlsError::wrap("group add members"))?;
+            .map_err(|err| {
+                if Self::err_is_duplicate_signature_key(&err) {
+                    let affected_clients = Self::clients_with_duplicate_signature_keys(key_packages.as_ref());
+                    Error::DuplicateSignature { affected_clients }
+                } else {
+                    MlsError::wrap("group add members")(err).into()
+                }
+            })?;
 
         // commit requires an optional welcome
         let welcome = Some(welcome);
@@ -148,6 +156,36 @@ impl ConversationGuard {
         };
 
         Ok((crl_new_distribution_points, commit))
+    }
+
+    fn err_is_duplicate_signature_key(
+        err: &openmls::prelude::AddMembersError<core_crypto_keystore::CryptoKeystoreError>,
+    ) -> bool {
+        matches!(
+            err,
+            openmls::prelude::AddMembersError::CreateCommitError(
+                openmls::prelude::CreateCommitError::ProposalValidationError(
+                    openmls::prelude::ProposalValidationError::DuplicateSignatureKey
+                )
+            )
+        )
+    }
+
+    fn clients_with_duplicate_signature_keys(key_packages: &[KeyPackageIn]) -> Vec<(ClientId, ClientId)> {
+        let mut seen_signature_keys = HashMap::new();
+        let mut duplicate_pairs = Vec::new();
+
+        for key_package in key_packages {
+            let signature_key = key_package.unverified_credential().signature_key.as_slice().to_vec();
+
+            let client_id: ClientId = key_package.credential().identity().to_vec().into();
+
+            if let Some(previous_client_id) = seen_signature_keys.insert(signature_key, client_id.clone()) {
+                duplicate_pairs.push((previous_client_id, client_id));
+            }
+        }
+
+        duplicate_pairs
     }
 
     /// Removes clients from the group/conversation.
