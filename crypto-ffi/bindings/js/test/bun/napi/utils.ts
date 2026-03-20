@@ -16,8 +16,9 @@ import {
     setLogger,
     setMaxLogLevel,
     ClientId,
+    Credential,
     openDatabase,
-} from "../../../src/native/CoreCrypto";
+} from "@wireapp/core-crypto/native";
 
 // Logging can be adjusted via the CC_TEST_LOG_LEVEL variable:
 // 0 = no logs
@@ -152,7 +153,7 @@ export async function createConversation(
     conversationId: ConversationId
 ): Promise<void> {
     await cc.newTransaction(async (ctx) => {
-        const credential = credentialBasic(
+        const credential = Credential.basic(
             window.ccModule.ciphersuiteDefault(),
             randomClientId()
         );

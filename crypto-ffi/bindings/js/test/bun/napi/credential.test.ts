@@ -6,7 +6,7 @@ import {
     ClientId,
     Credential,
     CredentialType,
-} from "../../../src/native/CoreCrypto";
+} from "@wireapp/core-crypto/native";
 
 beforeEach(async () => {
     await setup();

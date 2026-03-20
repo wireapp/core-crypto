@@ -1,6 +1,6 @@
 import { setup } from "./utils";
 import { test, beforeEach, describe, expect } from "bun:test";
-import { buildMetadata, version } from "../../../src/native/CoreCrypto";
+import { buildMetadata, version } from "@wireapp/core-crypto/native";
 
 beforeEach(async () => {
     await setup();
