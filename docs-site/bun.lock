@@ -4,12 +4,15 @@
   "workspaces": {
     "": {
       "devDependencies": {
+        "@antora/pdf-extension": "^1.0.0-beta.20",
         "antora": "3.1.14",
       },
     },
   },
   "packages": {
     "@antora/asciidoc-loader": ["@antora/asciidoc-loader@3.1.14", "", { "dependencies": { "@antora/logger": "3.1.14", "@antora/user-require-helper": "~3.0", "@asciidoctor/core": "~2.2" } }, "sha512-4xxisnoBFrlLNY6f3xZtyyfgm+tBLsqesTcEStfc8jtXUMYJ4b2DWIzo1vULmxvZ7yY5+Q7YqEvS5o6kIWAG0A=="],
+
+    "@antora/assembler": ["@antora/assembler@1.0.0-beta.20", "", { "dependencies": { "@antora/expand-path-helper": "~3.0", "@antora/run-command-helper": "~1.0", "@asciidoctor/reducer": "~1.1", "braces": "~3.0", "js-yaml": "~4.1", "picomatch": "~3.0" } }, "sha512-s+rCLoDjklkQiGE7twu5hx5EZ8o65tMzPBDimjSSLsau0kaEHYvVqwxUX7sAKnksYlarb1x0dDFSpQQ/Im0X+g=="],
 
     "@antora/cli": ["@antora/cli@3.1.14", "", { "dependencies": { "@antora/logger": "3.1.14", "@antora/playbook-builder": "3.1.14", "@antora/user-require-helper": "~3.0", "commander": "~11.1" }, "bin": { "antora": "bin/antora" } }, "sha512-I6WcygMU2bFInjdURJjkYjo7K5M8B3lBB53v9OO0IcY0LhEY8Wa7IlZ7wVinf5qEjHvaYzRGTZVl6RsJtVt7Sw=="],
 
@@ -29,9 +32,13 @@
 
     "@antora/page-composer": ["@antora/page-composer@3.1.14", "", { "dependencies": { "@antora/logger": "3.1.14", "handlebars": "~4.7", "require-from-string": "~2.0" } }, "sha512-RfA+67TxCqUPrQbZdrfjgLpHh8MR2z2du7cyF3HGX4N6DpqEBvz81NHHl3rA3fj6BQZPQbGm2OYAMU6wzJ6Pog=="],
 
+    "@antora/pdf-extension": ["@antora/pdf-extension@1.0.0-beta.20", "", { "dependencies": { "@antora/assembler": "1.0.0-beta.20" } }, "sha512-nVdqJ4HvJv25iE58jZNdHdc/ltDkjO7flCuDLVyodBf8Gp3pI04dsboZGUJT/YpOkY2QHf9kLokPC+nD4gKsYw=="],
+
     "@antora/playbook-builder": ["@antora/playbook-builder@3.1.14", "", { "dependencies": { "@iarna/toml": "~2.2", "convict": "~6.2", "js-yaml": "~4.1", "json5": "~2.2" } }, "sha512-Ss2r7In00u/n9Da+JOxEqIE8NeRosf+f+agzH3Te09JV/mpgZKxEOE5V/VuP+TNNq4ww1eu5aOS8DiU2PYwj4Q=="],
 
     "@antora/redirect-producer": ["@antora/redirect-producer@3.1.14", "", { "dependencies": { "vinyl": "~3.0" } }, "sha512-5koAwRk1cZrvE/qfOWKXqb3jtxrZbWA5EYHYGFEoato5By3cbC42blH4Bre9/48pjyS6znFpbZhYUBpT7PRhZA=="],
+
+    "@antora/run-command-helper": ["@antora/run-command-helper@1.0.2", "", {}, "sha512-fb8t6IQwQvP3Wsmd1pd9rk2R0wJcseY+2qTnhBhqjtM+N43/mT9OnqepRsPqtzzqAcLA1kp4x9SQvAi9QZgjrA=="],
 
     "@antora/site-generator": ["@antora/site-generator@3.1.14", "", { "dependencies": { "@antora/asciidoc-loader": "3.1.14", "@antora/content-aggregator": "3.1.14", "@antora/content-classifier": "3.1.14", "@antora/document-converter": "3.1.14", "@antora/file-publisher": "3.1.14", "@antora/logger": "3.1.14", "@antora/navigation-builder": "3.1.14", "@antora/page-composer": "3.1.14", "@antora/playbook-builder": "3.1.14", "@antora/redirect-producer": "3.1.14", "@antora/site-mapper": "3.1.14", "@antora/site-publisher": "3.1.14", "@antora/ui-loader": "3.1.14", "@antora/user-require-helper": "~3.0" } }, "sha512-hQIUVtM9+xwleYWc4fIRZmiKl2p+ItOJuUm2+Hkdh07BZsySxkMOxxCyZsvTn9rc+4R94CYqDQCYElwFwdB2WA=="],
 
@@ -44,6 +51,8 @@
     "@antora/user-require-helper": ["@antora/user-require-helper@3.0.0", "", { "dependencies": { "@antora/expand-path-helper": "~3.0" } }, "sha512-KIXb8WYhnrnwH7Jj21l1w+et9k5GvcgcqvLOwxqWLEd0uVZOiMFdqFjqbVm3M+zcrs1JXWMeh2LLvxBbQs3q/Q=="],
 
     "@asciidoctor/core": ["@asciidoctor/core@2.2.8", "", { "dependencies": { "asciidoctor-opal-runtime": "0.3.3", "unxhr": "1.0.1" } }, "sha512-oozXk7ZO1RAd/KLFLkKOhqTcG4GO3CV44WwOFg2gMcCsqCUTarvMT7xERIoWW2WurKbB0/ce+98r01p8xPOlBw=="],
+
+    "@asciidoctor/reducer": ["@asciidoctor/reducer@1.1.2", "", {}, "sha512-TlCkQJZU5TGts6kwUrpmE4R6FkoDPPe+DaW/GYF2BdOSbdmL8f6t7D4hPZRAb4fMMGKhSNHcZv1aYGR64QIVnA=="],
 
     "@iarna/toml": ["@iarna/toml@2.2.5", "", {}, "sha512-trnsAYxU3xnS1gPHPyU961coFyLkh4gAD/0zQ5mymY4yOZ+CYvsPqUbOFSw0aDM4y0tV7tiFxL/1XfXPNC6IPg=="],
 
@@ -235,7 +244,7 @@
 
     "pend": ["pend@1.2.0", "", {}, "sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg=="],
 
-    "picomatch": ["picomatch@4.0.3", "", {}, "sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q=="],
+    "picomatch": ["picomatch@3.0.1", "", {}, "sha512-I3EurrIQMlRc9IaAZnqRR044Phh2DXY+55o7uJ0V+hYZAcQYSuFWsc9q5PvyDHUSCe1Qxn/iBz+78s86zWnGag=="],
 
     "pify": ["pify@4.0.1", "", {}, "sha512-uB80kBFb/tfd68bVleG9T5GGsGPjJrLAUpR5PZIrhBnIaRTQRjqdJSsIKkOP6OAIFbj7GOrcudc5pNjZ+geV2g=="],
 
@@ -336,6 +345,10 @@
     "yauzl": ["yauzl@3.1.3", "", { "dependencies": { "buffer-crc32": "~0.2.3", "pend": "~1.2.0" } }, "sha512-JCCdmlJJWv7L0q/KylOekyRaUrdEoUxWkWVcgorosTROCFWiS9p2NNPE9Yb91ak7b1N5SxAZEliWpspbZccivw=="],
 
     "yazl": ["yazl@2.5.1", "", { "dependencies": { "buffer-crc32": "~0.2.3" } }, "sha512-phENi2PLiHnHb6QBVot+dJnaAZ0xosj7p3fWl+znIjBDlnMI2PsZCJZ306BPTFOaHf5qdDEI8x5qFrSOBN5vrw=="],
+
+    "@antora/content-aggregator/picomatch": ["picomatch@4.0.3", "", {}, "sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q=="],
+
+    "@antora/ui-loader/picomatch": ["picomatch@4.0.3", "", {}, "sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q=="],
 
     "isomorphic-git/readable-stream": ["readable-stream@3.6.2", "", { "dependencies": { "inherits": "^2.0.3", "string_decoder": "^1.1.1", "util-deprecate": "^1.0.1" } }, "sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA=="],
 
