@@ -94,7 +94,7 @@ export async function setup() {
                 const key = new Uint8Array(32);
                 crypto.getRandomValues(key);
 
-                const db = await window.ccModule.openDatabase(
+                const db = await window.ccModule.Database.open(
                     clientIdStr,
                     new window.ccModule.DatabaseKey(key.buffer)
                 );

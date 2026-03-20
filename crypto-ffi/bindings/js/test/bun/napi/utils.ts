@@ -19,6 +19,7 @@ import {
     Credential,
     openDatabase,
 } from "@wireapp/core-crypto/native";
+import { Database } from "@wireapp/core-crypto/native";
 
 // Logging can be adjusted via the CC_TEST_LOG_LEVEL variable:
 // 0 = no logs
