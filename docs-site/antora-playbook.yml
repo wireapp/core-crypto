@@ -14,3 +14,4 @@ ui:
 antora:
   extensions:
   - '@antora/pdf-extension'
+  - '@antora/epub-extension'
