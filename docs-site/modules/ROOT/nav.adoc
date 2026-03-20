@@ -1,9 +1,11 @@
 * Browser - TypeScript
 ** xref:browser:whats-new.adoc[]
 ** xref:browser:cc10-migration.adoc[]
+** xref:browser:attachment$doc/index.html[TypeScript API]
 * iOS - Swift
 ** xref:ios:whats-new.adoc[]
 ** xref:ios:cc10-migration.adoc[]
 * JVM - Kotlin
 ** xref:jvm:whats-new.adoc[]
 ** xref:jvm:cc10-migration.adoc[]
+** xref:jvm:attachment$doc/index.html[Kotlin API]
