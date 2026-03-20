@@ -707,11 +707,12 @@ docs-kotlin-deps := $(jvm-deps) $(KOTLIN_SOURCES)
 docs-kotlin: $(DOCS_KOTLIN) ## Generate Kotlin docs
 
 # TypeScript docs via Typedoc
-$(STAMPS)/docs-ts: $(BROWSER_OUT)
+$(STAMPS)/docs-ts: $(BROWSER_OUT) $(TS_NATIVE_OUT)
 	cd crypto-ffi/bindings/js && \
 	bun typedoc \
 	  --basePath ./ \
 	  --entryPoints src/browser/CoreCrypto.ts \
+	  --entryPoints src/native/CoreCrypto.ts \
 	  --tsconfig tsconfig.json \
 	  --out ../../../target/typescript/doc \
 	  --readme none \
@@ -827,7 +828,7 @@ $(STAMPS)/ts-fmt: $(TS_SRCS) $(TS_TEST_FILES) $(TS_BENCH_FILES)
 .PHONY: ts-fmt
 ts-fmt: $(STAMPS)/ts-fmt ## Format TypeScript files via eslint
 
-$(STAMPS)/ts-check: $(TS_SRCS) $(TS_TEST_FILES)
+$(STAMPS)/ts-check: $(TS_SRCS) $(TS_TEST_FILES) $(BROWSER_OUT) $(TS_NATIVE_OUT)
 	cd $(JS_DIR) && bun eslint --max-warnings=0 && \
 	bun x tsc --noEmit
 	$(TOUCH_STAMP)
