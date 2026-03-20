@@ -1,0 +1,5 @@
+name: core-crypto
+version: 10.0
+title: CoreCrypto
+nav:
+- modules/ROOT/nav.adoc
