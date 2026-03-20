@@ -723,15 +723,14 @@ docs-rust-wasm: $(STAMPS)/docs-rust-wasm ## Generate Rust docs for wasm32-unknow
 # Kotlin docs
 KOTLIN_SOURCES := $(shell find crypto-ffi/bindings/shared/src/commonMain/kotlin \
 	                           -type f -name '*.kt' 2>/dev/null | LC_ALL=C sort)
-DOCS_KOTLIN := target/kotlin/doc/html/index.html
-$(DOCS_KOTLIN): $(JVM_LIB) $(KOTLIN_SOURCES)
+$(STAMPS)/docs-kotlin: $(JVM_LIB) $(jvm-deps) $(KOTLIN_SOURCES)
 	cd crypto-ffi/bindings && ./gradlew jvm:dokkaGeneratePublicationHtml
 	mkdir -p target/kotlin/doc
 	cp -R crypto-ffi/bindings/jvm/build/dokka/html/ target/kotlin/doc
+	$(TOUCH_STAMP)
 
 .PHONY: docs-kotlin
-docs-kotlin-deps := $(jvm-deps) $(KOTLIN_SOURCES)
-docs-kotlin: $(DOCS_KOTLIN) ## Generate Kotlin docs
+docs-kotlin: $(STAMPS)/docs-kotlin ## Generate Kotlin docs
 
 # TypeScript docs via Typedoc
 $(STAMPS)/docs-ts: $(BROWSER_OUT) $(TS_NATIVE_OUT)
@@ -769,6 +768,34 @@ docs-swift: $(STAMPS)/docs-swift ## Generate Swift iOS docs (macOS only)
 .PHONY: docs
 docs: docs-rust-generic docs-rust-wasm docs-kotlin docs-ts $(if $(filter Darwin,$(UNAME_S)),docs-swift) ## Generate all docs (excluding Swift on non-Darwin platforms)
 
+$(STAMPS)/antora-browser-attachments: $(STAMPS)/docs-ts
+	rm -rf docs-site/modules/browser/attachments/doc
+	mkdir -p docs-site/modules/browser/attachments
+	cp -r target/typescript/doc docs-site/modules/browser/attachments/
+	$(TOUCH_STAMP)
+
+# Copy ts docs into antora browser attachments
+.PHONY: antora-browser-attachments
+antora-browser-attachments: $(STAMPS)/antora-browser-attachments
+
+$(STAMPS)/antora-jvm-attachments: $(STAMPS)/docs-kotlin
+	rm -rf docs-site/modules/jvm/attachments/doc
+	mkdir -p docs-site/modules/jvm/attachments
+	cp -r target/kotlin/doc docs-site/modules/jvm/attachments/
+	$(TOUCH_STAMP)
+
+.PHONY: antora-jvm-attachments
+antora-jvm-attachments: $(STAMPS)/antora-jvm-attachments
+
+# Pulls the different API docs into the corresponding antora attachment dirs
+.PHONY: antora-attachments
+antora-attachments: antora-browser-attachments antora-jvm-attachments
+
+# Build the CC docs using Antora
+.PHONY: antora
+antora:
+	cd docs-site && \
+	bunx antora antora-playbook.yml
 #-------------------------------------------------------------------------------
 # Aggregate targets
 #-------------------------------------------------------------------------------
