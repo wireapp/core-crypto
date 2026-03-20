@@ -18,12 +18,12 @@ describe("database", () => {
                 const key = new Uint8Array(32);
                 window.crypto.getRandomValues(key);
 
-                await window.ccModule.openDatabase(
+                await window.ccModule.Database.open(
                     databaseName,
                     new window.ccModule.DatabaseKey(key.buffer)
                 );
 
-                const db = await window.ccModule.openDatabase(
+                const db = await window.ccModule.Database.open(
                     databaseName,
                     new window.ccModule.DatabaseKey(key.buffer)
                 );
@@ -40,7 +40,7 @@ describe("database", () => {
                 const key = new Uint8Array(32);
                 window.crypto.getRandomValues(key);
 
-                const db = await window.ccModule.openDatabase(
+                const db = await window.ccModule.Database.open(
                     databaseName,
                     new window.ccModule.DatabaseKey(key.buffer)
                 );
@@ -66,7 +66,7 @@ describe("database", () => {
                 const databaseName = crypto.randomUUID();
                 const key = new Uint8Array(32);
 
-                const database = await window.ccModule.openDatabase(
+                const database = await window.ccModule.Database.open(
                     databaseName,
                     new window.ccModule.DatabaseKey(key.buffer)
                 );
@@ -96,7 +96,7 @@ describe("database", () => {
             window.crypto.getRandomValues(keyBytes);
             const key = new window.ccModule.DatabaseKey(keyBytes.buffer);
 
-            const database = await window.ccModule.openDatabase(
+            const database = await window.ccModule.Database.open(
                 databaseName,
                 key
             );
@@ -204,7 +204,7 @@ describe("database", () => {
 
             // Reconstruct the client based on the migrated database and fetch the epoch.
             const encoder = new TextEncoder();
-            const database = await window.ccModule.openDatabase(
+            const database = await window.ccModule.Database.open(
                 clientName,
                 new_key
             );
