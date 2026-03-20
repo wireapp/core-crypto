@@ -37,3 +37,6 @@ suspend fun Database.Companion.open(
 suspend fun Database.Companion.open(
     key: DatabaseKey
 ) = inMemoryDatabase(key)
+
+/** Create a new PKI environment */
+suspend fun PkiEnvironment.Companion.new(hooks: PkiEnvironmentHooks, database: Database) = createPkiEnvironment(hooks, database)
