@@ -1,6 +1,7 @@
 site:
   title: CoreCrypto
   start_page: core-crypto::index.adoc
+  url: https://docs.example.org # TODO: set this, this is important for printed docs like pdf
 content:
   sources:
   - url: ../
@@ -10,3 +11,6 @@ ui:
   bundle:
     url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
     snapshot: true
+antora:
+  extensions:
+  - '@antora/pdf-extension'
