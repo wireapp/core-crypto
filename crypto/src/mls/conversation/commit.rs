@@ -110,6 +110,7 @@ mod tests {
         use std::sync::Arc;
 
         use super::*;
+        use crate::Credential;
 
         #[apply(all_cred_cipher)]
         async fn can_add_members_to_conversation(case: TestContext) {
@@ -154,6 +155,50 @@ mod tests {
                 );
                 assert_eq!(conversation.member_count().await, 2);
                 assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
+            })
+            .await
+        }
+
+        #[apply(all_cred_cipher)]
+        async fn should_fail_on_duplicate_signatures(case: TestContext) {
+            let [alice, bob, carol] = case.sessions().await;
+            Box::pin(async move {
+                let conversation = case.create_conversation([&alice]).await;
+                let id = conversation.id.clone();
+                let bob_keypackage = bob.new_keypackage(&case).await;
+                let signature_key_pair = bob
+                    .find_any_credential(case.ciphersuite(), case.credential_type)
+                    .await
+                    .signature_key_pair
+                    .clone();
+                let credential = Credential {
+                    ciphersuite: case.ciphersuite(),
+                    credential_type: CredentialType::Basic,
+                    mls_credential: openmls::credentials::Credential::new_basic(
+                        carol.get_client_id().await.into_inner(),
+                    ),
+                    signature_key_pair,
+                    earliest_validity: 0,
+                };
+                let cred_ref = carol.add_credential(credential).await.unwrap();
+                let carol_key_package = carol.new_keypackage_from_ref(cred_ref, None).await;
+                let _affected_clients = [(carol.get_client_id().await, bob.get_client_id().await)];
+
+                let error = alice
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .add_members(vec![bob_keypackage.clone().into(), carol_key_package.clone().into()])
+                    .await
+                    .unwrap_err();
+
+                assert!(matches!(
+                    error,
+                    Error::DuplicateSignature {
+                        affected_clients: _affected_clients
+                    }
+                ));
             })
             .await
         }

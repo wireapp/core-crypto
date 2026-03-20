@@ -44,6 +44,17 @@ impl SessionContext {
             .unwrap()
     }
 
+    pub async fn new_keypackage_from_ref(
+        &self,
+        credential_ref: CredentialRef,
+        lifetime: Option<std::time::Duration>,
+    ) -> KeyPackage {
+        self.transaction
+            .generate_keypackage(&credential_ref, lifetime)
+            .await
+            .unwrap()
+    }
+
     pub async fn count_key_package(&self, cs: Ciphersuite, ct: Option<CredentialType>) -> usize {
         self.transaction
             .database()
@@ -123,6 +134,10 @@ impl SessionContext {
 
     pub async fn find_credential(&self, pk: &SignaturePublicKey) -> Option<Arc<Credential>> {
         self.session().await.find_credential_by_public_key(pk).await.ok()
+    }
+
+    pub async fn add_credential(&self, credential: Credential) -> Option<CredentialRef> {
+        self.transaction.add_credential(credential).await.ok()
     }
 
     pub async fn find_hpke_private_key_from_keystore(&self, skp: &HpkePublicKey) -> Option<StoredHpkePrivateKey> {
