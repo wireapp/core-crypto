@@ -203,6 +203,17 @@ final actor TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand 
 
 }
 
+extension PkiEnvironment {
+    /// Create a new PKI environment.
+    ///
+    /// - Parameter hooks: implementation of the PKI environment hooks
+    /// - Parameter database: the database to use for this environment
+    public convenience init(hooks: PkiEnvironmentHooks, database: Database) async throws {
+        let instance = try await createPkiEnvironment(hooks: hooks, database: database)
+        self.init(pkiEnvironment: instance)
+    }
+}
+
 extension Database {
     /// Initialise or open a Database.
     ///
