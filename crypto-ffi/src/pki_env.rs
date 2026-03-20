@@ -222,10 +222,22 @@ impl pki_env_hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
 pub struct PkiEnvironment(wire_e2e_identity::pki_env::PkiEnvironment);
 
 impl PkiEnvironment {
-    async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Arc<Database>) -> CoreCryptoResult<Self> {
+    async fn new_internal(hooks: Arc<dyn PkiEnvironmentHooks>, database: Arc<Database>) -> CoreCryptoResult<Self> {
         let shim = Arc::new(PkiEnvironmentHooksShim::new(hooks));
         let pki_env = wire_e2e_identity::pki_env::PkiEnvironment::new(shim, database.as_ref().clone().into()).await?;
         Ok(pki_env.into())
+    }
+}
+
+#[uniffi::export]
+impl PkiEnvironment {
+    /// Construct a Pki Environment given an instance of the same
+    ///
+    /// By exposing a public constructor, this enables our FFI layer to extend this type,
+    /// which in turn means that we can expose a static function which is an actual constructor.
+    #[uniffi::constructor]
+    pub fn new(pki_environment: Arc<Self>) -> Arc<Self> {
+        pki_environment
     }
 }
 
@@ -235,7 +247,7 @@ pub async fn create_pki_environment(
     hooks: Arc<dyn PkiEnvironmentHooks>,
     database: Arc<Database>,
 ) -> CoreCryptoResult<PkiEnvironment> {
-    PkiEnvironment::new(hooks, database).await
+    PkiEnvironment::new_internal(hooks, database).await
 }
 
 #[uniffi::export]

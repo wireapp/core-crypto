@@ -23,6 +23,8 @@ export { CoreCrypto } from "./CoreCryptoInstance";
 
 export { Database } from "./Database";
 
+export { PkiEnvironment } from "./PkiEnvironment";
+
 export {
     BuildMetadata,
     Credential,
@@ -76,8 +78,6 @@ export {
     Keypackage,
     KeypackageRef,
     SignatureScheme,
-    PkiEnvironment,
-    createPkiEnvironment,
     type PkiEnvironmentHooks,
     PkiEnvironmentHooksError,
     HttpHeader,
