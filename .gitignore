@@ -226,3 +226,6 @@ interop/src/clients/build
 
 # Antora builds
 docs-site/build
+
+# Ruby dependencies
+**/.bundle
