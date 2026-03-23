@@ -14,6 +14,7 @@ $dokka.location:com.wire.crypto//exportDatabaseCopy/#com.wire.crypto.Database#ko
 $dokka.location:com.wire.crypto//inMemoryDatabase/#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/in-memory-database.html
 $dokka.location:com.wire.crypto//lift/com.wire.crypto.CoreCryptoFfi#/PointingToDeclaration/-core-crypto/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//migrateDatabaseKeyTypeToBytes/#kotlin.String#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/migrate-database-key-type-to-bytes.html
+$dokka.location:com.wire.crypto//new/com.wire.crypto.PkiEnvironment.Companion#com.wire.crypto.PkiEnvironmentHooks#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/new.html
 $dokka.location:com.wire.crypto//open/com.wire.crypto.Database.Companion#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/open.html
 $dokka.location:com.wire.crypto//open/com.wire.crypto.Database.Companion#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/open.html
 $dokka.location:com.wire.crypto//openDatabase/#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/open-database.html

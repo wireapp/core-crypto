@@ -55,9 +55,9 @@
 <a href=#55 id=55 data-nosnippet>55</a><span class="kw">pub use </span>credential::Credential;
 <a href=#56 id=56 data-nosnippet>56</a><span class="kw">pub use </span>credential_ref::CredentialRef;
 <a href=#57 id=57 data-nosnippet>57</a><span class="kw">pub use </span>credential_type::CredentialType;
-<a href=#58 id=58 data-nosnippet>58</a><span class="attr">#[cfg(not(any(feature = <span class="string">"wasm"</span>, target_os = <span class="string">"unknown"</span>)))]
-<a href=#59 id=59 data-nosnippet>59</a></span><span class="kw">pub use </span>database::export_database_copy;
-<a href=#60 id=60 data-nosnippet>60</a><span class="kw">pub use </span>database::{Database, DatabaseKey, in_memory_database, migrate_database_key_type_to_bytes, open_database};
+<a href=#58 id=58 data-nosnippet>58</a><span class="kw">pub use </span>database::{Database, DatabaseKey, migrate_database_key_type_to_bytes};
+<a href=#59 id=59 data-nosnippet>59</a><span class="attr">#[cfg(not(any(feature = <span class="string">"wasm"</span>, target_os = <span class="string">"unknown"</span>)))]
+<a href=#60 id=60 data-nosnippet>60</a></span><span class="kw">pub use </span>database::{export_database_copy, in_memory_database, open_database};
 <a href=#61 id=61 data-nosnippet>61</a><span class="kw">pub use </span>decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 <a href=#62 id=62 data-nosnippet>62</a><span class="kw">pub use </span>e2ei::E2eiConversationState;
 <a href=#63 id=63 data-nosnippet>63</a><span class="kw">pub use </span>ephemeral::{HistorySecret, core_crypto_history_client};
@@ -70,7 +70,9 @@
 <a href=#70 id=70 data-nosnippet>70</a>};
 <a href=#71 id=71 data-nosnippet>71</a><span class="kw">pub use </span>key_package::{Keypackage, KeypackageRef};
 <a href=#72 id=72 data-nosnippet>72</a><span class="kw">pub use </span>metadata::{BuildMetadata, build_metadata, version};
-<a href=#73 id=73 data-nosnippet>73</a><span class="kw">pub use </span>pki_env::{HttpHeader, HttpMethod, HttpResponse, PkiEnvironment, PkiEnvironmentHooks, create_pki_environment};
-<a href=#74 id=74 data-nosnippet>74</a><span class="kw">pub use </span>signature_scheme::SignatureScheme;
-<a href=#75 id=75 data-nosnippet>75</a><span class="kw">pub use </span>timestamp::Timestamp;
+<a href=#73 id=73 data-nosnippet>73</a><span class="attr">#[cfg(not(any(feature = <span class="string">"wasm"</span>, target_os = <span class="string">"unknown"</span>)))]
+<a href=#74 id=74 data-nosnippet>74</a></span><span class="kw">pub use </span>pki_env::create_pki_environment;
+<a href=#75 id=75 data-nosnippet>75</a><span class="kw">pub use </span>pki_env::{HttpHeader, HttpMethod, HttpResponse, PkiEnvironment, PkiEnvironmentHooks};
+<a href=#76 id=76 data-nosnippet>76</a><span class="kw">pub use </span>signature_scheme::SignatureScheme;
+<a href=#77 id=77 data-nosnippet>77</a><span class="kw">pub use </span>timestamp::Timestamp;
 </code></pre></div></section></main></body></html>
