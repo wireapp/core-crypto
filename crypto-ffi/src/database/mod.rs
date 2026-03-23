@@ -12,8 +12,10 @@ use crate::{CoreCryptoError, CoreCryptoResult};
 #[derive(Debug, derive_more::From, derive_more::Into, Clone, derive_more::Deref, uniffi::Object)]
 pub struct Database(core_crypto_keystore::Database);
 
+#[cfg_attr(feature = "wasm", uniffi::export)]
 impl Database {
     /// Open or create a [Database].
+    #[cfg_attr(feature = "wasm", uniffi::constructor(name = "open"))]
     pub async fn open(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
         core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::Persistent(location), key.as_ref())
             .await
@@ -22,6 +24,7 @@ impl Database {
     }
 
     /// Create an in-memory [Database] whose data will be lost when the instance is dropped.
+    #[cfg_attr(feature = "wasm", uniffi::constructor(name = "inMemory"))]
     pub async fn in_memory(key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
         core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::InMemory, key.as_ref())
             .await
@@ -57,12 +60,14 @@ impl Database {
 }
 
 /// Open or create a [Database].
+#[cfg(not(feature = "wasm"))]
 #[uniffi::export]
 pub async fn open_database(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Database> {
     Database::open(location, key).await
 }
 
 /// Create an in-memory [Database] whose data will be lost when the instance is dropped.
+#[cfg(not(feature = "wasm"))]
 #[uniffi::export]
 pub async fn in_memory_database(key: Arc<DatabaseKey>) -> CoreCryptoResult<Database> {
     Database::in_memory(key).await
