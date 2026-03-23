@@ -142,11 +142,6 @@
 
   Affected platforms: web
 
-- TypeScript: The free function `createPkiEnvironment()` is no longer exported. Use the static method
-  `PkiEnvironment.new()` instead.
-
-  Affected platforms: web
-
 - added `.close()` to `Database` and removed `.close()` from `CoreCrypto`.
 
   A database should be closed if it is not used anymore. Closing a database makes any `PkiEnvironment` or `CoreCrypto`
