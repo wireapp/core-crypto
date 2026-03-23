@@ -53,7 +53,7 @@ describe("database", () => {
     });
 
     it("key must have correct length", async () => {
-        await expect(() =>
+        await expect(
             browser.execute(async () => {
                 new window.ccModule.DatabaseKey(new Uint8Array(11).buffer);
             })
