@@ -17,7 +17,6 @@ import {
     setMaxLogLevel,
     ClientId,
     Credential,
-    openDatabase,
 } from "@wireapp/core-crypto/native";
 import { Database } from "@wireapp/core-crypto/native";
 
@@ -84,7 +83,7 @@ async function openTestDatabase(databaseName?: string) {
     const key = new DatabaseKey(keyBytes.buffer);
     const location = databaseName ?? `bun-test-db-${crypto.randomUUID()}`;
 
-    const database = await openDatabase(location, key);
+    const database = await Database.open(location, key);
 
     const resolvedLocation = await database.getLocation();
     assert(resolvedLocation !== undefined);
