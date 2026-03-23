@@ -13,18 +13,21 @@
 
 - added PKI Environment API
 
-  - added `PkiEnvironment` constructed via `createPkiEnvironment(database: Database, hooks: PkiEnvironmentHooks)`
+  - added `PkiEnvironment` struct/class with language-specific constructor
   - added `PkiEnvironmentHooks` interface which has to be implemented by a client and will be used by CoreCrypto during
     e2ei flow
   - added `CoreCrypto.setPkiEnvironment()` to set a PkiEnvironment on a `CoreCrypto` instance
   - added `CoreCrypto.getPkiEnvironment()` to get the PkiEnvironment of a `CoreCrypto` instance
 
-- added `Database.open(location: String, key: DatabaseKey)` as static methods to construct a persistent database
-  instance and `Database.open(key: DatabaseKey)` to construct an in-memory database instance.
+  Affected platforms: android, ios, web
+
+- added `Database.open(location: String, key: DatabaseKey)` as a static method to construct a persistent database
+  instance, and `Database.open(key: DatabaseKey)` / `Database.inMemory(key: DatabaseKey)` to construct an in-memory
+  database instance.
 
   Removed default Constructor from swift to align with other language bindings.
 
-  Affected platforms: android, ios
+  Affected platforms: android, ios, web
 
 - `CoreCrypto.e2ei_is_env_setup()` can't throw anymore and will always return a boolean.
 
@@ -116,8 +119,8 @@
 
 - Decode: support decoding and displaying mls key packages
 
-- Allow in-memory database instantiation and usage with core crypto. Just call `inMemoryDatabase()` (Android, Web) or
-  the `Database` constructor without a path (iOS).
+- Allow in-memory database instantiation and usage with core crypto. Just call `Database.inMemory()` (Web),
+  `Database.open` without a path (Android, iOS)
 
 ### Bug Fixes
 
@@ -131,6 +134,16 @@
   Affected platforms: web
 
 - TypeScript: To construct `CoreCrypto`, call the static function `CoreCrypto.new()`.
+
+  Affected platforms: web
+
+- TypeScript: The free functions `openDatabase()` and `inMemoryDatabase()` are no longer exported. Use the static
+  methods `Database.open()` and `Database.inMemory()` instead.
+
+  Affected platforms: web
+
+- TypeScript: The free function `createPkiEnvironment()` is no longer exported. Use the static method
+  `PkiEnvironment.new()` instead.
 
   Affected platforms: web
 
