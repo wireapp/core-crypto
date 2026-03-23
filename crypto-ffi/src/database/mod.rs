@@ -12,6 +12,30 @@ use crate::{CoreCryptoError, CoreCryptoResult};
 #[derive(Debug, derive_more::From, derive_more::Into, Clone, derive_more::Deref, uniffi::Object)]
 pub struct Database(core_crypto_keystore::Database);
 
+#[cfg(any(feature = "wasm", feature = "napi"))]
+#[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]
+impl Database {
+    /// Open or create a [Database].
+    #[uniffi::constructor(name = "open")]
+    pub async fn open(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
+        core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::Persistent(location), key.as_ref())
+            .await
+            .map(Database)
+            .map_err(CoreCryptoError::generic())
+    }
+
+    /// Create an in-memory [Database] whose data will be lost when the instance is dropped.
+    #[uniffi::constructor(name = "inMemory")]
+    pub async fn in_memory(key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
+        core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::InMemory, key.as_ref())
+            .await
+            .map(Database)
+            .map_err(CoreCryptoError::generic())
+    }
+}
+
+// Note: no uniffi::export, because static functions are not supported yet by uniffi version 0.29.
+#[cfg(not(any(feature = "wasm", feature = "napi")))]
 impl Database {
     /// Open or create a [Database].
     pub async fn open(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
@@ -57,12 +81,14 @@ impl Database {
 }
 
 /// Open or create a [Database].
+#[cfg(not(any(feature = "wasm", target_os = "unknown")))]
 #[uniffi::export]
 pub async fn open_database(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Database> {
     Database::open(location, key).await
 }
 
 /// Create an in-memory [Database] whose data will be lost when the instance is dropped.
+#[cfg(not(any(feature = "wasm", target_os = "unknown")))]
 #[uniffi::export]
 pub async fn in_memory_database(key: Arc<DatabaseKey>) -> CoreCryptoResult<Database> {
     Database::in_memory(key).await
