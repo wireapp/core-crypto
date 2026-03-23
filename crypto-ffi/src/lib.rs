@@ -55,9 +55,9 @@ pub use core_crypto_context::CoreCryptoContext;
 pub use credential::Credential;
 pub use credential_ref::CredentialRef;
 pub use credential_type::CredentialType;
+pub use database::{Database, DatabaseKey, migrate_database_key_type_to_bytes};
 #[cfg(not(any(feature = "wasm", target_os = "unknown")))]
-pub use database::export_database_copy;
-pub use database::{Database, DatabaseKey, in_memory_database, migrate_database_key_type_to_bytes, open_database};
+pub use database::{export_database_copy, in_memory_database, open_database};
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 pub use e2ei::E2eiConversationState;
 pub use ephemeral::{HistorySecret, core_crypto_history_client};
@@ -70,6 +70,8 @@ pub use identity::{
 };
 pub use key_package::{Keypackage, KeypackageRef};
 pub use metadata::{BuildMetadata, build_metadata, version};
-pub use pki_env::{HttpHeader, HttpMethod, HttpResponse, PkiEnvironment, PkiEnvironmentHooks, create_pki_environment};
+#[cfg(not(any(feature = "wasm", target_os = "unknown")))]
+pub use pki_env::create_pki_environment;
+pub use pki_env::{HttpHeader, HttpMethod, HttpResponse, PkiEnvironment, PkiEnvironmentHooks};
 pub use signature_scheme::SignatureScheme;
 pub use timestamp::Timestamp;
