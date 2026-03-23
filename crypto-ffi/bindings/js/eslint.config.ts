@@ -17,6 +17,7 @@ export default tseslint.config(
     eslint.configs.recommended,
     tseslint.configs.recommended,
     prettier,
+    // @ts-expect-error TS2345
     wdioConfig["flat/recommended"],
     {
         rules: {
