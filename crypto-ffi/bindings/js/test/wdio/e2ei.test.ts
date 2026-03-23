@@ -33,7 +33,7 @@ describe("PKI environment", () => {
                 crypto.randomUUID(),
                 new window.ccModule.DatabaseKey(key.buffer)
             );
-            const pki_env = await window.ccModule.createPkiEnvironment(
+            const pki_env = await new window.ccModule.PkiEnvironment(
                 window.pkiEnvironmentHooks,
                 database
             );
@@ -78,7 +78,7 @@ describe("PKI environment", () => {
             );
 
             const cc = window.ensureCcDefined(alice);
-            const pki_env = await window.ccModule.createPkiEnvironment(
+            const pki_env = await new window.ccModule.PkiEnvironment(
                 window.pkiEnvironmentHooks,
                 database
             );
