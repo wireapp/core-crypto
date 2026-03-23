@@ -48,7 +48,6 @@ export {
     ciphersuiteFromU16,
     ciphersuiteDefault,
     ClientId,
-    openDatabase,
     Database,
     DatabaseKey,
     type MlsTransportData,
