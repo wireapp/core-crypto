@@ -221,8 +221,11 @@ impl pki_env_hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
 #[derive(derive_more::From, derive_more::Into, Clone, uniffi::Object)]
 pub struct PkiEnvironment(wire_e2e_identity::pki_env::PkiEnvironment);
 
+#[cfg_attr(feature = "wasm", uniffi::export)]
 impl PkiEnvironment {
-    async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Arc<Database>) -> CoreCryptoResult<Self> {
+    /// Create a new PKI environment
+    #[cfg_attr(feature = "wasm", uniffi::constructor)]
+    pub async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Arc<Database>) -> CoreCryptoResult<Self> {
         let shim = Arc::new(PkiEnvironmentHooksShim::new(hooks));
         let pki_env = wire_e2e_identity::pki_env::PkiEnvironment::new(shim, database.as_ref().clone().into()).await?;
         Ok(pki_env.into())
@@ -230,6 +233,7 @@ impl PkiEnvironment {
 }
 
 /// Create a new PKI environment
+#[cfg(not(feature = "wasm"))]
 #[uniffi::export]
 pub async fn create_pki_environment(
     hooks: Arc<dyn PkiEnvironmentHooks>,
