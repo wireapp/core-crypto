@@ -18,7 +18,7 @@ import {
     ClientId,
     Credential,
 } from "@wireapp/core-crypto/native";
-import { Database } from "../../../src/browser/CoreCrypto";
+import { Database } from "../../../src/native/CoreCrypto";
 
 // Logging can be adjusted via the CC_TEST_LOG_LEVEL variable:
 // 0 = no logs
