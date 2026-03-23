@@ -21,6 +21,10 @@ export {
 
 export { CoreCrypto } from "./CoreCryptoInstance";
 
+export { Database } from "./Database";
+
+export { PkiEnvironment } from "./PkiEnvironment";
+
 export {
     BuildMetadata,
     Credential,
@@ -48,8 +52,6 @@ export {
     ciphersuiteFromU16,
     ciphersuiteDefault,
     ClientId,
-    openDatabase,
-    Database,
     DatabaseKey,
     type MlsTransportData,
     migrateDatabaseKeyTypeToBytes,
@@ -76,8 +78,6 @@ export {
     Keypackage,
     KeypackageRef,
     SignatureScheme,
-    PkiEnvironment,
-    createPkiEnvironment,
     type PkiEnvironmentHooks,
     PkiEnvironmentHooksError,
     HttpHeader,
