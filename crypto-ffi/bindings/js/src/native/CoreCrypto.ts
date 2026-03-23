@@ -76,7 +76,6 @@ export {
     KeypackageRef,
     SignatureScheme,
     PkiEnvironment,
-    createPkiEnvironment,
     type PkiEnvironmentHooks,
     PkiEnvironmentHooksError,
     HttpHeader,
