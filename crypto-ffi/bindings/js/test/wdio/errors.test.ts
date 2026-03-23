@@ -96,7 +96,7 @@ describe("core crypto errors", () => {
         const alice = crypto.randomUUID();
         const convId = crypto.randomUUID();
 
-        browser.execute((_) => {
+        await browser.execute((_) => {
             const transport_override = {
                 async sendCommitBundle(_: CommitBundle) {
                     return window.ccModule.MlsTransportResponse.Abort.new({

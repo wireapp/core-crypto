@@ -126,8 +126,8 @@ export async function createConversation(
         );
 
         const credentialRef = await ctx.addCredential(credential);
-        ctx.createConversation(conversationId, credentialRef, undefined);
-        ctx.createConversation(conversationId, credentialRef);
+        await ctx.createConversation(conversationId, credentialRef, undefined);
+        await ctx.createConversation(conversationId, credentialRef);
     });
 }
 

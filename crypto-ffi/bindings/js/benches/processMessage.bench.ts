@@ -13,7 +13,7 @@ describe("benchmark", () => {
         await browser.execute(async (parameters) => {
             window.benchRunning = true;
 
-            (async (parameters) => {
+            await (async (parameters) => {
                 window.bench = new window.tinybench.Bench({
                     name: "process message",
                     time: 1000,

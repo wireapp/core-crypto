@@ -13,9 +13,9 @@ describe("benchmark", () => {
         // If the function runs longer than 60s the browser will timeout unrelated to wdio/mocha timeout configs.
 
         const parameters = await benchmarkParameters();
-        await browser.execute((parameters) => {
+        await browser.execute(async (parameters) => {
             window.benchRunning = true;
-            (async (parameters) => {
+            await (async (parameters) => {
                 window.bench = new window.tinybench.Bench({
                     name: "create message",
                     time: 1000,
