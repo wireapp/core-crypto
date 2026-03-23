@@ -110,11 +110,13 @@ export class CoreCrypto extends CoreCryptoFfi {
         return result;
     }
 
-    /** @internal */
+    /** @internal
+     *  We're overriding this just to hide it from the docs
+     */
     async transaction(
         command: CoreCryptoFfiTypes.CoreCryptoCommand,
         asyncOpts_?: { signal: AbortSignal }
     ): Promise<void> {
-        super.transaction(command, asyncOpts_);
+        return super.transaction(command, asyncOpts_);
     }
 }
