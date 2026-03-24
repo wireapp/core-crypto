@@ -1,0 +1,36 @@
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-check-ts"
+  cancel-in-progress: true
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+env:
+  RELEASE: 1
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: download web files
+        uses: ./.github/actions/make/ts/browser
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: download native files
+        uses: ./.github/actions/make/ts/native
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: lint
+        run: make ts-check
