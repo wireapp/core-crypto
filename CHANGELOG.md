@@ -122,6 +122,9 @@
 - Allow in-memory database instantiation and usage with core crypto. Just call `Database.inMemory()` (Web),
   `Database.open` without a path (Android, iOS)
 
+- The duplicate signature error when adding members to a conversation now contain debug information about which members
+  had duplicate signatures.
+
 ### Bug Fixes
 
 - Web: fixed the abort reason of an `MlsTransportResponse` not being forwarded to rust.
