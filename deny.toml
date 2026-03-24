@@ -32,10 +32,6 @@ ignore = [
   # rustls-pemfile crate is no longer maintained, but we depend on it:
   # testcontainers v0.26.0 -> bollard v0.19.4 -> rustls-pemfile v2.2.0
   "RUSTSEC-2025-0134",
-  # astral-tokio-tar is an indirect dependency of a dev dependency
-  # which means simultaneously that we can't upgrade it, but also it
-  # would take a very weird attack vector; it could only happen within our tests.
-  "RUSTSEC-2026-0066",
 ]
 
 [bans]
