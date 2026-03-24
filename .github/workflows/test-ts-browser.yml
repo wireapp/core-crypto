@@ -1,5 +1,5 @@
 concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}-test-ts"
+  group: "${{ github.workflow }}-${{ github.ref }}-test-ts-browser"
   cancel-in-progress: true
 
 on:
@@ -10,11 +10,12 @@ env:
   RELEASE: 1
 
 jobs:
-  test-ts:
+  test:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v6
+
       - uses: wireapp/setup-chrome@master
         id: setup-chrome
         with:
@@ -29,20 +30,11 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
-      - name: download native files
-        uses: ./.github/actions/make/ts/native
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
-
-      - name: lint
-        run: make ts-check
-
       - name: test
         uses: ./.github/actions/make
         with:
-          key: ts-test
-          make-rule: ts-test
+          key: ts-browser-test
+          make-rule: ts-browser-test
           always-run: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'main' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
