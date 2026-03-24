@@ -53,5 +53,10 @@ name = "pkiprocmacros"
 expression = "Apache-2.0 OR MIT"
 license-files = []
 
+[sources]
+unknown-git = "deny"
+unknown-registry = "deny"
+allow-git = ["https://github.com/rust-db/refinery"]
+
 [sources.allow-org]
 github = ["wireapp"]
