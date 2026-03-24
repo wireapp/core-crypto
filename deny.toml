@@ -46,7 +46,6 @@ allow = [
   "Zlib",
   "Unicode-3.0",
 ]
-exceptions = [{ allow = ["Unicode-DFS-2016"], name = "unicode-ident" }]
 
 [[licenses.clarify]]
 name = "pkiprocmacros"
