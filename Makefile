@@ -564,7 +564,7 @@ $(WASM_GEN): $(wasm-build-deps)
 wasm-build: $(WASM_GEN)
 
 # generate TypeScript defs only when corecrypto.js changed
-ts-browser-deps := $(TS_SRCS) $(WASM_GEN)
+ts-browser-deps := $(TS_BROWSER_SRCS) $(WASM_GEN)
 $(BROWSER_OUT): $(ts-browser-deps)
 	cd $(JS_DIR) && \
 	bun build src/browser/CoreCrypto.ts \
@@ -587,7 +587,7 @@ $(BROWSER_OUT): $(ts-browser-deps)
 .PHONY: ts-browser
 ts-browser: $(BROWSER_OUT) ## Build the TypeScript wrapper for the browser
 
-ts-native-deps := $(TS_SRCS) $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES) $(PACKAGE_JSON) $(BUNFIG)
+ts-native-deps := $(TS_NATIVE_SRCS) $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES) $(PACKAGE_JSON) $(BUNFIG)
 $(TS_NATIVE_OUT): $(ts-native-deps)
 	cd $(JS_DIR) && \
 	rm -rf out/native && \
@@ -624,19 +624,37 @@ ts-native-linux: ## Build the native TypeScript wrapper for x86_64-unknown-linux
 .PHONY: ts-native
 ts-native: $(TS_NATIVE_OUT) ## Build the native TypeScript wrapper (automatically select the target based on the host machine)
 
-ts-test-deps := $(BROWSER_OUT) $(TS_NATIVE_OUT) $(TS_TEST_FILES)
+ts-browser-test-deps := $(BROWSER_OUT) $(TS_BROWSER_TEST_FILES)
 
-# run WebDriver tests + bun’s built-in tests
-$(STAMPS)/ts-test: $(ts-test-deps)
+# run browser-oriented TypeScript tests (WebDriver + Bun wasm)
+$(STAMPS)/ts-browser-test: $(ts-browser-test-deps)
 	@set -euo pipefail; \
 	cd $(JS_DIR) && \
 	if [ -n "$(TEST)" ]; then \
 		bun x wdio run ./wdio.test.conf.ts --mochaOpts.grep "$(TEST)"; \
-		bun test --filter "$(TEST)"; \
+		bun test --filter "$(TEST)" ./test/bun/wasm; \
 	else \
 		bun x wdio run ./wdio.test.conf.ts; \
-		bun test; \
+		bun test ./test/bun/wasm; \
 	fi
+	$(TOUCH_STAMP)
+
+ts-native-test-deps := $(TS_NATIVE_OUT) $(TS_NATIVE_TEST_FILES)
+
+# run native TypeScript tests (Bun napi)
+$(STAMPS)/ts-native-test: $(ts-native-test-deps)
+	@set -euo pipefail; \
+	cd $(JS_DIR) && \
+	if [ -n "$(TEST)" ]; then \
+		bun test --filter "$(TEST)" ./test/bun/napi; \
+	else \
+		bun test ./test/bun/napi; \
+	fi
+	$(TOUCH_STAMP)
+
+$(STAMPS)/ts-test:
+	@$(MAKE) LAZY_MAKE= ts-browser-test TEST="$(TEST)"
+	@$(MAKE) LAZY_MAKE= ts-native-test TEST="$(TEST)"
 	$(TOUCH_STAMP)
 
 # run WebDriver benches
@@ -855,9 +873,11 @@ check: rust-check swift-check kotlin-check ts-check ## Run all linters
 # Lazy targets
 #-------------------------------------------------------------------------------
 
-LAZY_TARGETS := jvm-test kmp-jvm-test ts-test android-test ios-test interop-test jvm-bench
+LAZY_TARGETS := jvm-test kmp-jvm-test ts-browser-test ts-native-test ts-test android-test ios-test interop-test jvm-bench
 
-ts-test: ## Run TypeScript wrapper tests via wdio and bun. Optionally pass TEST=<test> to filter by test name.
+ts-browser-test: ## Run browser TypeScript wrapper tests via wdio and bun/wasm. Optionally pass TEST=<test> to filter by test name.
+ts-native-test: ## Run native TypeScript wrapper tests via bun/napi. Optionally pass TEST=<test> to filter by test name.
+ts-test: ## Run all TypeScript wrapper tests. Optionally pass TEST=<test> to filter by test name.
 kmp-jvm-test: ## Run Kotlin multi-platform tests on JVM
 jvm-test: ## Run Kotlin tests on JVM
 jvm-bench: ## Run the JVM benchmarks
