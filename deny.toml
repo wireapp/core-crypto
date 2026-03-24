@@ -20,8 +20,6 @@ targets = [
 [advisories]
 version = 2
 ignore = [
-  # `sodiumoxide` is only used in tests
-  "RUSTSEC-2021-0137",
   # `paste` is no longer maintained and its repo is archived,
   # however `uniffi` still depends on it.
   "RUSTSEC-2024-0436",
@@ -29,9 +27,6 @@ ignore = [
   # and will be in rsa v0.10, once that comes out of the eternal
   # pre-release state. We need to update it via our rusty-jwt-simple.
   "RUSTSEC-2023-0071",
-  # rustls-pemfile crate is no longer maintained, but we depend on it:
-  # testcontainers v0.26.0 -> bollard v0.19.4 -> rustls-pemfile v2.2.0
-  "RUSTSEC-2025-0134",
 ]
 
 [bans]
