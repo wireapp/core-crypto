@@ -1,0 +1,35 @@
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-test-ts-native"
+  cancel-in-progress: true
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+env:
+  RELEASE: 1
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: download native files
+        uses: ./.github/actions/make/ts/native
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: test
+        uses: ./.github/actions/make
+        with:
+          key: ts-native-test
+          make-rule: ts-native-test
+          always-run: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'main' }}
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
