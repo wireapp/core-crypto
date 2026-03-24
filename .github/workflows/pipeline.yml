@@ -192,11 +192,21 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
-  test-ts:
+  test-ts-browser:
+    needs:
+      - bindings-ts-browser
+    uses: ./.github/workflows/test-ts-browser.yml
+
+  test-ts-native:
+    needs:
+      - bindings-ts-native
+    uses: ./.github/workflows/test-ts-native.yml
+
+  check-ts:
     needs:
       - bindings-ts-browser
       - bindings-ts-native
-    uses: ./.github/workflows/test-ts.yml
+    uses: ./.github/workflows/check-ts.yml
 
   docs-ts:
     needs:
