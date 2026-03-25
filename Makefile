@@ -769,9 +769,9 @@ docs-swift: $(STAMPS)/docs-swift ## Generate Swift iOS docs (macOS only)
 docs: docs-rust-generic docs-rust-wasm docs-kotlin docs-ts $(if $(filter Darwin,$(UNAME_S)),docs-swift) ## Generate all docs (excluding Swift on non-Darwin platforms)
 
 $(STAMPS)/antora-browser-attachments: $(STAMPS)/docs-ts
-	rm -rf docs-site/modules/browser/attachments/doc
-	mkdir -p docs-site/modules/browser/attachments
-	cp -r target/typescript/doc docs-site/modules/browser/attachments/
+	rm -rf cc-book/modules/browser/attachments/doc
+	mkdir -p cc-book/modules/browser/attachments
+	cp -r target/typescript/doc cc-book/modules/browser/attachments/
 	$(TOUCH_STAMP)
 
 # Copy ts docs into antora browser attachments
@@ -779,9 +779,9 @@ $(STAMPS)/antora-browser-attachments: $(STAMPS)/docs-ts
 antora-browser-attachments: $(STAMPS)/antora-browser-attachments
 
 $(STAMPS)/antora-jvm-attachments: $(STAMPS)/docs-kotlin
-	rm -rf docs-site/modules/jvm/attachments/doc
-	mkdir -p docs-site/modules/jvm/attachments
-	cp -r target/kotlin/doc docs-site/modules/jvm/attachments/
+	rm -rf cc-book/modules/jvm/attachments/doc
+	mkdir -p cc-book/modules/jvm/attachments
+	cp -r target/kotlin/doc cc-book/modules/jvm/attachments/
 	$(TOUCH_STAMP)
 
 .PHONY: antora-jvm-attachments
@@ -794,7 +794,7 @@ antora-attachments: antora-browser-attachments antora-jvm-attachments
 # Build the CC docs using Antora
 .PHONY: antora
 antora:
-	cd docs-site && \
+	cd cc-book && \
 	bunx antora antora-playbook.yml
 #-------------------------------------------------------------------------------
 # Aggregate targets

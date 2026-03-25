@@ -225,8 +225,8 @@ crypto-ffi/bindings/build
 interop/src/clients/build
 
 # Antora builds
-docs-site/build
-docs-site/**/attachments/doc/*
+cc-book/build
+cc-book/**/attachments/doc/*
 
 # Ruby dependencies
 **/.bundle
