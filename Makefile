@@ -773,32 +773,19 @@ docs-swift: $(STAMPS)/docs-swift ## Generate Swift iOS docs (macOS only)
 .PHONY: docs
 docs: docs-rust-generic docs-rust-wasm docs-kotlin docs-ts $(if $(filter Darwin,$(UNAME_S)),docs-swift) ## Generate all docs (excluding Swift on non-Darwin platforms)
 
-$(STAMPS)/antora-browser-attachments: $(STAMPS)/docs-ts
-	rm -rf cc-book/modules/browser/attachments/doc
+$(STAMPS)/cc-book-browser-attachments: $(STAMPS)/docs-ts
 	mkdir -p cc-book/modules/browser/attachments
 	cp -r target/typescript/doc cc-book/modules/browser/attachments/
 	$(TOUCH_STAMP)
 
-# Copy ts docs into antora browser attachments
-.PHONY: antora-browser-attachments
-antora-browser-attachments: $(STAMPS)/antora-browser-attachments
-
-$(STAMPS)/antora-jvm-attachments: $(STAMPS)/docs-kotlin
-	rm -rf cc-book/modules/jvm/attachments/doc
+$(STAMPS)/cc-book-jvm-attachments: $(STAMPS)/docs-kotlin
 	mkdir -p cc-book/modules/jvm/attachments
 	cp -r target/kotlin/doc cc-book/modules/jvm/attachments/
 	$(TOUCH_STAMP)
 
-.PHONY: antora-jvm-attachments
-antora-jvm-attachments: $(STAMPS)/antora-jvm-attachments
-
-# Pulls the different API docs into the corresponding antora attachment dirs
-.PHONY: antora-attachments
-antora-attachments: antora-browser-attachments antora-jvm-attachments
-
-# Build the CC docs using Antora
-.PHONY: antora
-antora:
+# Build the CC book using Antora
+.PHONY: cc-book
+cc-book: $(STAMPS)/cc-book-browser-attachments $(STAMPS)/cc-book-jvm-attachments
 	cd cc-book && \
 	bunx antora antora-playbook.yml
 #-------------------------------------------------------------------------------
