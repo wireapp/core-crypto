@@ -1,7 +1,7 @@
 name: publish node packages
 
 concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}-publish-wasm"
+  group: "${{ github.workflow }}-${{ github.ref }}-publish-npm"
 
 on:
   workflow_call:
@@ -20,7 +20,7 @@ env:
   RELEASE: 1
 
 jobs:
-  publish-wasm:
+  publish:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
     steps:
@@ -33,9 +33,25 @@ jobs:
       - name: Setup Node for npm publish
         uses: actions/setup-node@v6
 
-      - name: download ts artifacts
+      - name: download ts browser artifacts
         uses: ./.github/actions/make/ts/browser
         with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: download ts native linux artifacts
+        uses: ./.github/actions/make/ts/native
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      # We're just using the make action to download the previously produced artifact.
+      - name: download ts native aarch64 apple darwin artifacts
+        uses: ./.github/actions/make
+        with:
+          key: ts-native-darwin-arm64
+          make-rule: ts-native
+          target-path: crypto-ffi/bindings/js/out/native/darwin-arm64.node
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 

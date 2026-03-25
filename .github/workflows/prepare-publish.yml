@@ -66,6 +66,6 @@ jobs:
 
   ts:
     needs: verify-tag
-    uses: ./.github/workflows/publish-wasm.yml
+    uses: ./.github/workflows/publish-npm.yml
     with:
       prepare: true

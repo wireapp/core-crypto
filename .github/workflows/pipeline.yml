@@ -179,8 +179,21 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
-  bindings-ts-native:
+  bindings-ts-native-linux:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: build ts
+        uses: ./.github/actions/make/ts/native
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+  bindings-ts-native-darwin:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6
       - uses: oven-sh/setup-bun@v2
@@ -199,19 +212,19 @@ jobs:
 
   test-ts-native:
     needs:
-      - bindings-ts-native
+      - bindings-ts-native-linux
     uses: ./.github/workflows/test-ts-native.yml
 
   check-ts:
     needs:
       - bindings-ts-browser
-      - bindings-ts-native
+      - bindings-ts-native-linux
     uses: ./.github/workflows/check-ts.yml
 
   docs-ts:
     needs:
       - bindings-ts-browser
-      - bindings-ts-native
+      - bindings-ts-native-linux
     uses: ./.github/workflows/docs-ts.yml
 
   #################
@@ -279,6 +292,8 @@ jobs:
       - package-ios
       - package-android
       - bindings-ts-browser
+      - bindings-ts-native-linux
+      - bindings-ts-native-darwin
       - build-jvm-linux
       - build-jvm-darwin
       - bindings-jvm
@@ -319,9 +334,9 @@ jobs:
     needs: prepare-publish
     uses: ./.github/workflows/publish-swift.yml
 
-  publish-web:
+  publish-npm:
     needs: prepare-publish
-    uses: ./.github/workflows/publish-wasm.yml
+    uses: ./.github/workflows/publish-npm.yml
     permissions:
       id-token: write
     with:
