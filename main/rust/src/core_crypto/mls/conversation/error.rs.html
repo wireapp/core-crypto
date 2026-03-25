@@ -84,35 +84,39 @@
 <a href=#84 id=84 data-nosnippet>84</a>        <span class="string">"Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit"
 <a href=#85 id=85 data-nosnippet>85</a>    </span>)]
 <a href=#86 id=86 data-nosnippet>86</a>    </span>OrphanWelcome,
-<a href=#87 id=87 data-nosnippet>87</a>    <span class="attr">#[error(<span class="string">"Serializing {item} for TLS"</span>)]
-<a href=#88 id=88 data-nosnippet>88</a>    </span>TlsSerialize {
-<a href=#89 id=89 data-nosnippet>89</a>        item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
-<a href=#90 id=90 data-nosnippet>90</a>        <span class="attr">#[source]
-<a href=#91 id=91 data-nosnippet>91</a>        </span>source: tls_codec::Error,
-<a href=#92 id=92 data-nosnippet>92</a>    },
-<a href=#93 id=93 data-nosnippet>93</a>    <span class="attr">#[error(<span class="string">"Deserializing {item} for TLS"</span>)]
-<a href=#94 id=94 data-nosnippet>94</a>    </span>TlsDeserialize {
-<a href=#95 id=95 data-nosnippet>95</a>        item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
-<a href=#96 id=96 data-nosnippet>96</a>        <span class="attr">#[source]
-<a href=#97 id=97 data-nosnippet>97</a>        </span>source: tls_codec::Error,
-<a href=#98 id=98 data-nosnippet>98</a>    },
-<a href=#99 id=99 data-nosnippet>99</a>    <span class="attr">#[error(transparent)]
-<a href=#100 id=100 data-nosnippet>100</a>    </span>Mls(<span class="attr">#[from] </span><span class="kw">crate</span>::MlsError),
-<a href=#101 id=101 data-nosnippet>101</a>    <span class="attr">#[error(transparent)]
-<a href=#102 id=102 data-nosnippet>102</a>    </span>Keystore(<span class="attr">#[from] </span><span class="kw">crate</span>::KeystoreError),
-<a href=#103 id=103 data-nosnippet>103</a>    <span class="attr">#[error(<span class="string">"{0}"</span>)]
-<a href=#104 id=104 data-nosnippet>104</a>    </span>Leaf(<span class="attr">#[from] </span><span class="kw">crate</span>::LeafError),
+<a href=#87 id=87 data-nosnippet>87</a>    <span class="attr">#[error(<span class="string">"Operation couldn't be performed due to duplicate signature for clients: {affected_clients:?}"</span>)]
+<a href=#88 id=88 data-nosnippet>88</a>    </span>DuplicateSignature {
+<a href=#89 id=89 data-nosnippet>89</a>        affected_clients: Vec&lt;(<span class="kw">crate</span>::ClientId, <span class="kw">crate</span>::ClientId)&gt;,
+<a href=#90 id=90 data-nosnippet>90</a>    },
+<a href=#91 id=91 data-nosnippet>91</a>    <span class="attr">#[error(<span class="string">"Serializing {item} for TLS"</span>)]
+<a href=#92 id=92 data-nosnippet>92</a>    </span>TlsSerialize {
+<a href=#93 id=93 data-nosnippet>93</a>        item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+<a href=#94 id=94 data-nosnippet>94</a>        <span class="attr">#[source]
+<a href=#95 id=95 data-nosnippet>95</a>        </span>source: tls_codec::Error,
+<a href=#96 id=96 data-nosnippet>96</a>    },
+<a href=#97 id=97 data-nosnippet>97</a>    <span class="attr">#[error(<span class="string">"Deserializing {item} for TLS"</span>)]
+<a href=#98 id=98 data-nosnippet>98</a>    </span>TlsDeserialize {
+<a href=#99 id=99 data-nosnippet>99</a>        item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+<a href=#100 id=100 data-nosnippet>100</a>        <span class="attr">#[source]
+<a href=#101 id=101 data-nosnippet>101</a>        </span>source: tls_codec::Error,
+<a href=#102 id=102 data-nosnippet>102</a>    },
+<a href=#103 id=103 data-nosnippet>103</a>    <span class="attr">#[error(transparent)]
+<a href=#104 id=104 data-nosnippet>104</a>    </span>Mls(<span class="attr">#[from] </span><span class="kw">crate</span>::MlsError),
 <a href=#105 id=105 data-nosnippet>105</a>    <span class="attr">#[error(transparent)]
-<a href=#106 id=106 data-nosnippet>106</a>    </span>Recursive(<span class="attr">#[from] </span><span class="kw">crate</span>::RecursiveError),
-<a href=#107 id=107 data-nosnippet>107</a>}
-<a href=#108 id=108 data-nosnippet>108</a>
-<a href=#109 id=109 data-nosnippet>109</a><span class="kw">impl </span>Error {
-<a href=#110 id=110 data-nosnippet>110</a>    <span class="kw">pub fn </span>tls_serialize(item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(tls_codec::Error) -&gt; <span class="self">Self </span>{
-<a href=#111 id=111 data-nosnippet>111</a>        <span class="kw">move </span>|source| <span class="self">Self</span>::TlsSerialize { item, source }
-<a href=#112 id=112 data-nosnippet>112</a>    }
-<a href=#113 id=113 data-nosnippet>113</a>
-<a href=#114 id=114 data-nosnippet>114</a>    <span class="kw">pub fn </span>tls_deserialize(item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(tls_codec::Error) -&gt; <span class="self">Self </span>{
-<a href=#115 id=115 data-nosnippet>115</a>        <span class="kw">move </span>|source| <span class="self">Self</span>::TlsDeserialize { item, source }
+<a href=#106 id=106 data-nosnippet>106</a>    </span>Keystore(<span class="attr">#[from] </span><span class="kw">crate</span>::KeystoreError),
+<a href=#107 id=107 data-nosnippet>107</a>    <span class="attr">#[error(<span class="string">"{0}"</span>)]
+<a href=#108 id=108 data-nosnippet>108</a>    </span>Leaf(<span class="attr">#[from] </span><span class="kw">crate</span>::LeafError),
+<a href=#109 id=109 data-nosnippet>109</a>    <span class="attr">#[error(transparent)]
+<a href=#110 id=110 data-nosnippet>110</a>    </span>Recursive(<span class="attr">#[from] </span><span class="kw">crate</span>::RecursiveError),
+<a href=#111 id=111 data-nosnippet>111</a>}
+<a href=#112 id=112 data-nosnippet>112</a>
+<a href=#113 id=113 data-nosnippet>113</a><span class="kw">impl </span>Error {
+<a href=#114 id=114 data-nosnippet>114</a>    <span class="kw">pub fn </span>tls_serialize(item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(tls_codec::Error) -&gt; <span class="self">Self </span>{
+<a href=#115 id=115 data-nosnippet>115</a>        <span class="kw">move </span>|source| <span class="self">Self</span>::TlsSerialize { item, source }
 <a href=#116 id=116 data-nosnippet>116</a>    }
-<a href=#117 id=117 data-nosnippet>117</a>}
+<a href=#117 id=117 data-nosnippet>117</a>
+<a href=#118 id=118 data-nosnippet>118</a>    <span class="kw">pub fn </span>tls_deserialize(item: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(tls_codec::Error) -&gt; <span class="self">Self </span>{
+<a href=#119 id=119 data-nosnippet>119</a>        <span class="kw">move </span>|source| <span class="self">Self</span>::TlsDeserialize { item, source }
+<a href=#120 id=120 data-nosnippet>120</a>    }
+<a href=#121 id=121 data-nosnippet>121</a>}
 </code></pre></div></section></main></body></html>
