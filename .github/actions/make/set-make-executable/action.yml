@@ -7,7 +7,7 @@ runs:
     - name: set make executable based on OS
       shell: bash
       run: |
-        if [ "$RUNNER_OS" = "macOS" ]; then
+        if [ "$RUNNER_OS" = "macOS" ] && [ "$RUNNER_ENVIRONMENT" = "self-hosted" ]; then
           MAKE_CMD="gmake"
         else
           MAKE_CMD="make"
