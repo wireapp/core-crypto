@@ -23,7 +23,7 @@ jobs:
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v5
       - name: setup android sdk
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
       - name: install ndk and set up environment
         run: |
           ndk_version=$(cat crypto-ffi/bindings/android/ndk.version)

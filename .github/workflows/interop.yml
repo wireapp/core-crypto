@@ -26,7 +26,7 @@ jobs:
         uses: gradle/actions/wrapper-validation@v5
 
       - name: setup android sdk
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           # Don't download unnecessary packages.
           # We only need sdkmanager for the next step.
