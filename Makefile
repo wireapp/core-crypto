@@ -734,6 +734,7 @@ $(STAMPS)/docs-ts: $(BROWSER_OUT) $(TS_NATIVE_OUT)
 	cd crypto-ffi/bindings/js && \
 	bun typedoc \
 	  --basePath ./ \
+	  --displayBasePath ./src \
 	  --entryPoints src/browser/CoreCrypto.ts \
 	  --entryPoints src/native/CoreCrypto.ts \
 	  --tsconfig tsconfig.json \
