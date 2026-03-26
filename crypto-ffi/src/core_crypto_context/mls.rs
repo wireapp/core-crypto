@@ -328,6 +328,13 @@ impl CoreCryptoContext {
     ///
     /// Parameters which are unset or `None` match anything. Those with a particular value find only credentials
     /// matching that value.
+    #[uniffi::method(default(
+        client_id = None,
+        public_key = None,
+        ciphersuite = None,
+        credential_type = None,
+        earliest_validity = None,
+    ))]
     pub async fn find_credentials(
         &self,
         client_id: Option<Arc<ClientId>>,
