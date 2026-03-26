@@ -324,46 +324,6 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// Get all credentials from this client which match the provided parameters.
-    ///
-    /// Parameters which are unset or `None` match anything. Those with a particular value find only credentials
-    /// matching that value.
-    #[uniffi::method(default(
-        client_id = None,
-        public_key = None,
-        ciphersuite = None,
-        credential_type = None,
-        earliest_validity = None,
-    ))]
-    pub async fn find_credentials(
-        &self,
-        client_id: Option<Arc<ClientId>>,
-        public_key: Option<Vec<u8>>,
-        ciphersuite: Option<Ciphersuite>,
-        credential_type: Option<CredentialType>,
-        earliest_validity: Option<u64>,
-    ) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
-        let client_id = client_id.as_ref().map(|c| c.as_ref().as_ref());
-
-        let ciphersuite = ciphersuite.map(CryptoCiphersuite::from);
-
-        let credential_type = credential_type.map(core_crypto::CredentialType::from);
-
-        let find_filters = CredentialFindFilters {
-            client_id,
-            public_key_hash: public_key.map(Sha256Hash::hash_from),
-            ciphersuite,
-            credential_type,
-            earliest_validity,
-        };
-
-        self.inner
-            .find_credentials(find_filters)
-            .await
-            .map(|credentials| credentials.into_iter().map(CredentialRef::from).map(Arc::new).collect())
-            .map_err(Into::into)
-    }
-
     /// Generate a `KeyPackage` from the referenced credential.
     ///
     /// Makes no attempt to look up or prune existing keypackges.
@@ -403,6 +363,93 @@ impl CoreCryptoContext {
         self.inner
             .remove_keypackages_for(&credential_ref.0)
             .await
+            .map_err(Into::into)
+    }
+}
+
+#[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]
+impl CoreCryptoContext {
+    /// Get all credentials from this client which match the provided parameters.
+    ///
+    /// Parameters which are unset or `None` match anything. Those with a particular value find only credentials
+    /// matching that value.
+    #[uniffi::method(default(
+        client_id = None,
+        public_key = None,
+        ciphersuite = None,
+        credential_type = None,
+        earliest_validity = None,
+    ))]
+    pub async fn find_credentials_ffi(
+        &self,
+        client_id: Option<Arc<ClientId>>,
+        public_key: Option<Vec<u8>>,
+        ciphersuite: Option<Ciphersuite>,
+        credential_type: Option<CredentialType>,
+        earliest_validity: Option<u64>,
+    ) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
+        self.find_credentials_inner(client_id, public_key, ciphersuite, credential_type, earliest_validity)
+            .await
+    }
+}
+
+#[cfg_attr(not(any(feature = "wasm", feature = "napi")), uniffi::export)]
+impl CoreCryptoContext {
+    /// Get all credentials from this client which match the provided parameters.
+    ///
+    /// Parameters which are unset or `None` match anything. Those with a particular value find only credentials
+    /// matching that value.
+    #[uniffi::method(default(
+        client_id = None,
+        public_key = None,
+        ciphersuite = None,
+        credential_type = None,
+        earliest_validity = None,
+    ))]
+    pub async fn find_credentials(
+        &self,
+        client_id: Option<Arc<ClientId>>,
+        public_key: Option<Vec<u8>>,
+        ciphersuite: Option<Ciphersuite>,
+        credential_type: Option<CredentialType>,
+        earliest_validity: Option<u64>,
+    ) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
+        self.find_credentials_inner(client_id, public_key, ciphersuite, credential_type, earliest_validity)
+            .await
+    }
+}
+
+impl CoreCryptoContext {
+    /// Get all credentials from this client which match the provided parameters.
+    ///
+    /// Parameters which are unset or `None` match anything. Those with a particular value find only credentials
+    /// matching that value.
+    async fn find_credentials_inner(
+        &self,
+        client_id: Option<Arc<ClientId>>,
+        public_key: Option<Vec<u8>>,
+        ciphersuite: Option<Ciphersuite>,
+        credential_type: Option<CredentialType>,
+        earliest_validity: Option<u64>,
+    ) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
+        let client_id = client_id.as_ref().map(|c| c.as_ref().as_ref());
+
+        let ciphersuite = ciphersuite.map(CryptoCiphersuite::from);
+
+        let credential_type = credential_type.map(core_crypto::CredentialType::from);
+
+        let find_filters = CredentialFindFilters {
+            client_id,
+            public_key_hash: public_key.map(Sha256Hash::hash_from),
+            ciphersuite,
+            credential_type,
+            earliest_validity,
+        };
+
+        self.inner
+            .find_credentials(find_filters)
+            .await
+            .map(|credentials| credentials.into_iter().map(CredentialRef::from).map(Arc::new).collect())
             .map_err(Into::into)
     }
 }
