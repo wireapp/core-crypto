@@ -1,6 +1,6 @@
 :platform:
 
-= What's New!
+= What's New in CC 10
 
 == New APIs
 With CC10 we introduce multiple new types that provide their own new API.
