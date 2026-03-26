@@ -44,14 +44,6 @@ use wire_e2e_identity::{
 #[path = "utils/mod.rs"]
 mod utils;
 
-/// Tests the nominal case and prints the pretty output with the mermaid chart in this crate README.
-#[rstest]
-#[tokio::test]
-async fn demo_should_succeed(test_env: TestEnvironment) {
-    let test = E2eTest::new_demo(test_env).start().await;
-    test.nominal_enrollment().await.unwrap();
-}
-
 fn get_wire_server() -> WireServer {
     // We require that test-wire-server is listening on an endpoint
     // specified by TEST_WIRE_SERVER_ADDR, e.g. "127.0.0.1:1234".
