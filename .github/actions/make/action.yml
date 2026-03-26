@@ -40,10 +40,14 @@ runs:
     - name: compute artifact key
       shell: bash -euo pipefail {0}
       id: compute-key
+      env:
+        ARTIFACT_KEY: ${{ inputs.key }}
+        MAKE_RULE: ${{ inputs.make-rule }}
+        ARTIFACT_GENERATION: ${{ inputs.artifact-generation }}
       run: |
-        files_hash=$($MAKE "${{ inputs.make-rule }}"-hash-deps)
+        files_hash=$($MAKE "${MAKE_RULE}"-hash-deps)
         # Change the ARTIFACT_GENERATION repository variable to force fresh artifacts
-        echo "key=${{ inputs.key }}-$files_hash-${{ inputs.artifact-generation }}" >> "$GITHUB_OUTPUT"
+        echo "key=${ARTIFACT_KEY}-$files_hash-${ARTIFACT_GENERATION}" >> "$GITHUB_OUTPUT"
     - name: branch name
       id: branch-name
       run: |
