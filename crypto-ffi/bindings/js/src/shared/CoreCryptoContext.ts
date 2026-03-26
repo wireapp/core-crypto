@@ -30,10 +30,10 @@ export class CoreCryptoContext extends CoreCryptoContextFfi {
      *
      * @param findFilters a set of filters defining which credentials are of interest.
      */
-    async getFilteredCredentials(
+    async findCredentials(
         findFilters: CredentialFindFilters
     ): Promise<CredentialRef[]> {
-        return await super.findCredentials(
+        return await super.findCredentialsFfi(
             findFilters.clientId,
             findFilters.publicKey,
             findFilters.ciphersuite,
@@ -42,10 +42,10 @@ export class CoreCryptoContext extends CoreCryptoContextFfi {
         );
     }
 
-    /**
-     * You should use {@link CoreCryptoContext.getFilteredCredentials} instead, since it provides a nicer interface.
+    /** @internal
+     *  We're overriding this just to hide it from the docs
      */
-    async findCredentials(
+    async findCredentialsFfi(
         clientId?: ClientId,
         publicKey?: ArrayBuffer,
         ciphersuite?: Ciphersuite,
@@ -53,7 +53,7 @@ export class CoreCryptoContext extends CoreCryptoContextFfi {
         earliestValidity?: bigint,
         asyncOpts_?: { signal: AbortSignal }
     ): Promise<Array<CredentialRef>> {
-        return await super.findCredentials(
+        return await super.findCredentialsFfi(
             clientId,
             publicKey,
             ciphersuite,

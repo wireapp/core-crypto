@@ -103,16 +103,14 @@ describe("database", () => {
 
             let cc = window.ccModule.CoreCrypto.new(database);
             const clientId = makeClientId();
-            await cc.newTransaction(async (ctx) => {
+            await cc.transaction(async (ctx) => {
                 await ctx.mlsInit(makeClientId(), window.deliveryService);
                 await ctx.addCredential(
                     window.ccModule.Credential.basic(cipherSuite, clientId)
                 );
             });
             const pubkey1 = (
-                await cc.newTransaction((ctx) =>
-                    ctx.getFilteredCredentials({ clientId })
-                )
+                await cc.transaction((ctx) => ctx.findCredentials({ clientId }))
             )[0]!.publicKeyHash();
 
             const newKeyBytes = new Uint8Array(32);
@@ -128,10 +126,10 @@ describe("database", () => {
             }
 
             cc = window.ccModule.CoreCrypto.new(database);
-            const pubkey2 = await cc.newTransaction(async (ctx) => {
+            const pubkey2 = await cc.transaction(async (ctx) => {
                 await ctx.mlsInit(clientId, window.deliveryService);
                 return (
-                    await ctx.getFilteredCredentials({ clientId })
+                    await ctx.findCredentials({ clientId })
                 )[0]!.publicKeyHash();
             });
             await database.close();
@@ -210,7 +208,7 @@ describe("database", () => {
             );
 
             const instance = window.ccModule.CoreCrypto.new(database);
-            const epoch = await instance.newTransaction(async (ctx) => {
+            const epoch = await instance.transaction(async (ctx) => {
                 return await ctx.conversationEpoch(
                     new window.ccModule.ConversationId(
                         encoder.encode("convId").buffer

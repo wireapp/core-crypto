@@ -24,7 +24,7 @@ describe("proteus", () => {
             const cc = window.ensureCcDefined(clientName);
             const lastResortPrekeyId =
                 window.ccModule.proteusLastResortPrekeyId();
-            const [prekey1, prekey2] = await cc.newTransaction(async (ctx) => {
+            const [prekey1, prekey2] = await cc.transaction(async (ctx) => {
                 const prekey1 = await ctx.proteusLastResortPrekey();
                 const prekey2 = await ctx.proteusLastResortPrekey();
                 return [prekey1, prekey2];

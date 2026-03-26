@@ -30,7 +30,7 @@ describe("credentials", () => {
 
         const cc = await ccInit(clientId);
 
-        const ref = await cc.newTransaction(async (ctx) => {
+        const ref = await cc.transaction(async (ctx) => {
             return await ctx.addCredential(credential);
         });
 
@@ -39,7 +39,7 @@ describe("credentials", () => {
         // saving causes the earliest validity to be updated
         await expect(ref.earliestValidity()).not.toEqual(0n);
 
-        const allCredentials = await cc.newTransaction(async (ctx) => {
+        const allCredentials = await cc.transaction(async (ctx) => {
             return await ctx.getCredentials();
         });
         await expect(allCredentials.length).toBe(1);
@@ -53,15 +53,15 @@ describe("credentials", () => {
 
         const cc = await ccInit(clientId);
 
-        const ref = await cc.newTransaction(async (ctx) => {
+        const ref = await cc.transaction(async (ctx) => {
             return await ctx.addCredential(credential);
         });
 
-        await cc.newTransaction(async (ctx) => {
+        await cc.transaction(async (ctx) => {
             return await ctx.removeCredential(ref);
         });
 
-        const allCredentials = await cc.newTransaction(async (ctx) => {
+        const allCredentials = await cc.transaction(async (ctx) => {
             return await ctx.getCredentials();
         });
         await expect(allCredentials.length).toBe(0);
@@ -80,18 +80,18 @@ describe("credentials", () => {
 
         const cc = await ccInit(clientId);
 
-        await cc.newTransaction(async (ctx) => {
+        await cc.transaction(async (ctx) => {
             await ctx.addCredential(credential1);
             await ctx.addCredential(credential2);
         });
 
-        const results1 = await cc.newTransaction(async (ctx) => {
-            return await ctx.getFilteredCredentials({
+        const results1 = await cc.transaction(async (ctx) => {
+            return await ctx.findCredentials({
                 ciphersuite: ciphersuite1,
             });
         });
-        const results2 = await cc.newTransaction(async (ctx) => {
-            return await ctx.getFilteredCredentials({
+        const results2 = await cc.transaction(async (ctx) => {
+            return await ctx.findCredentials({
                 ciphersuite: ciphersuite2,
             });
         });

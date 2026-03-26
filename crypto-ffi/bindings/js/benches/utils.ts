@@ -98,7 +98,7 @@ export async function setup() {
 
                 const cc = window.ccModule.CoreCrypto.new(db);
 
-                await cc.newTransaction(async (ctx) => {
+                await cc.transaction(async (ctx) => {
                     await ctx.mlsInit(id, window.deliveryService);
                     await ctx.addCredential(
                         window.ccModule.Credential.basic(cipherSuite, id)

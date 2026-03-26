@@ -31,7 +31,7 @@ describe("benchmark", () => {
                         new TextEncoder().encode(conversationIdStr).buffer
                     );
 
-                    await cc.newTransaction(async (ctx) => {
+                    await cc.transaction(async (ctx) => {
                         const [credentialRef] = await ctx.getCredentials();
                         await ctx.createConversation(
                             conversationId,
@@ -42,7 +42,7 @@ describe("benchmark", () => {
                     window.bench.add(
                         `cipherSuite=${window.ccModule.Ciphersuite[cipherSuite]} size=${size}B count=${count}`,
                         async () => {
-                            await cc.newTransaction(async (ctx) => {
+                            await cc.transaction(async (ctx) => {
                                 for (let i = 0; i < count; i++) {
                                     await ctx.encryptMessage(
                                         conversationId,

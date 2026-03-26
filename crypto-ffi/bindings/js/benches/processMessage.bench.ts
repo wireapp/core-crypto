@@ -29,7 +29,7 @@ describe("benchmark", () => {
                         new TextEncoder().encode(conversationIdStr).buffer
                     );
 
-                    await aliceCc.newTransaction(async (ctx) => {
+                    await aliceCc.transaction(async (ctx) => {
                         const [credentialRef] = await ctx.getCredentials();
                         await ctx.createConversation(
                             conversationId,
@@ -37,17 +37,16 @@ describe("benchmark", () => {
                         );
                     });
 
-                    const kp = await bobCc.newTransaction(async (ctx) => {
-                        const [credentialRef] =
-                            await ctx.getFilteredCredentials({
-                                ciphersuite: cipherSuite,
-                                credentialType:
-                                    window.ccModule.CredentialType.Basic,
-                            });
+                    const kp = await bobCc.transaction(async (ctx) => {
+                        const [credentialRef] = await ctx.findCredentials({
+                            ciphersuite: cipherSuite,
+                            credentialType:
+                                window.ccModule.CredentialType.Basic,
+                        });
                         return await ctx.generateKeypackage(credentialRef!);
                     });
 
-                    await aliceCc.newTransaction(
+                    await aliceCc.transaction(
                         async (ctx) =>
                             await ctx.addClientsToConversation(conversationId, [
                                 kp,
@@ -56,7 +55,7 @@ describe("benchmark", () => {
                     const commitBundle =
                         await window.deliveryService.getLatestCommitBundle();
 
-                    await bobCc.newTransaction(
+                    await bobCc.transaction(
                         async (ctx) =>
                             await ctx.processWelcomeMessage(
                                 commitBundle.welcome!
@@ -69,8 +68,8 @@ describe("benchmark", () => {
                     window.bench.add(
                         `cipherSuite=${window.ccModule.Ciphersuite[cipherSuite]} size=${size}B count=${count}`,
                         async () => {
-                            const encryptedMessages =
-                                await aliceCc.newTransaction(async (ctx) => {
+                            const encryptedMessages = await aliceCc.transaction(
+                                async (ctx) => {
                                     const encryptedMessages: ArrayBuffer[] = [];
                                     for (let i = 0; i < count; i++) {
                                         const encryptedMessage =
@@ -84,9 +83,10 @@ describe("benchmark", () => {
                                         );
                                     }
                                     return encryptedMessages;
-                                });
+                                }
+                            );
                             const start = window.bench.now();
-                            await bobCc.newTransaction(async (ctx) => {
+                            await bobCc.transaction(async (ctx) => {
                                 for (const message of encryptedMessages) {
                                     await ctx.decryptMessage(
                                         conversationId,

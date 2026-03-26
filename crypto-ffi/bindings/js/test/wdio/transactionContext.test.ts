@@ -23,7 +23,7 @@ describe("transaction context", () => {
                 async (clientName, expectedMessage) => {
                     const cc = window.ensureCcDefined(clientName);
 
-                    await cc.newTransaction(async () => {
+                    await cc.transaction(async () => {
                         throw new Error(expectedMessage);
                     });
                 },
@@ -45,12 +45,12 @@ describe("transaction context", () => {
             const cc = window.ensureCcDefined(clientName);
 
             let context: CoreCryptoContext | null = null;
-            await cc.newTransaction(async (ctx) => {
+            await cc.transaction(async (ctx) => {
                 context = ctx;
             });
 
             try {
-                await context!.getFilteredCredentials({
+                await context!.findCredentials({
                     ciphersuite: window.defaultCipherSuite,
                     credentialType: window.ccModule.CredentialType.Basic,
                 });
@@ -98,8 +98,8 @@ describe("transaction context", () => {
             });
             let thrownError;
             try {
-                await cc.newTransaction(async (ctx) => {
-                    const [credentialRef] = await ctx.getFilteredCredentials({
+                await cc.transaction(async (ctx) => {
+                    const [credentialRef] = await ctx.findCredentials({
                         credentialType: basicCredentialType,
                     });
                     await ctx.createConversation(
@@ -117,15 +117,15 @@ describe("transaction context", () => {
             }
 
             // This would fail with a "Conversation already exists" error, if the above transaction hadn't been rolled back.
-            await cc.newTransaction(async (ctx) => {
-                const [credentialRef] = await ctx.getFilteredCredentials({
+            await cc.transaction(async (ctx) => {
+                const [credentialRef] = await ctx.findCredentials({
                     credentialType: basicCredentialType,
                 });
                 await ctx.createConversation(conversationId, credentialRef!);
             });
             try {
-                await cc.newTransaction(async (ctx) => {
-                    const [credentialRef] = await ctx.getFilteredCredentials({
+                await cc.transaction(async (ctx) => {
+                    const [credentialRef] = await ctx.findCredentials({
                         credentialType: basicCredentialType,
                     });
                     await ctx.createConversation(

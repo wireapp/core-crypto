@@ -17,7 +17,7 @@ describe("client identity", () => {
         const result = await browser.execute(async (clientName) => {
             const cc = window.ensureCcDefined(clientName);
             return (
-                await cc.newTransaction(async (ctx) => {
+                await cc.transaction(async (ctx) => {
                     return await ctx.getCredentials();
                 })
             )[0]!.publicKeyHash().byteLength;
@@ -32,8 +32,8 @@ describe("client identity", () => {
             const cc = window.ensureCcDefined(clientName);
             let threwError = false;
             try {
-                const keypackage = await cc.newTransaction(async (ctx) => {
-                    const [credentialRef] = await ctx.getFilteredCredentials({
+                const keypackage = await cc.transaction(async (ctx) => {
+                    const [credentialRef] = await ctx.findCredentials({
                         ciphersuite: window.defaultCipherSuite,
                         credentialType: window.ccModule.CredentialType.Basic,
                     });

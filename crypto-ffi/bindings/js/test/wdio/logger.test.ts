@@ -48,8 +48,8 @@ describe("logger", () => {
                 const cid = new window.ccModule.ConversationId(
                     new TextEncoder().encode(conversationId).buffer
                 );
-                await cc.newTransaction(async (ctx) => {
-                    const [credentialRef] = await ctx.getFilteredCredentials({
+                await cc.transaction(async (ctx) => {
+                    const [credentialRef] = await ctx.findCredentials({
                         credentialType: window.ccModule.CredentialType.Basic,
                     });
                     await ctx.createConversation(cid, credentialRef!);
@@ -88,8 +88,8 @@ describe("logger", () => {
                 const cid = new window.ccModule.ConversationId(
                     new TextEncoder().encode(conversationId).buffer
                 );
-                await cc.newTransaction(async (ctx) => {
-                    const [credentialRef] = await ctx.getFilteredCredentials({
+                await cc.transaction(async (ctx) => {
+                    const [credentialRef] = await ctx.findCredentials({
                         credentialType: window.ccModule.CredentialType.Basic,
                     });
                     await ctx.createConversation(cid, credentialRef!);
@@ -123,8 +123,8 @@ describe("logger", () => {
                 const cid = new window.ccModule.ConversationId(
                     new TextEncoder().encode(conversationId).buffer
                 );
-                await cc.newTransaction(async (ctx) => {
-                    const [credentialRef] = await ctx.getFilteredCredentials({
+                await cc.transaction(async (ctx) => {
+                    const [credentialRef] = await ctx.findCredentials({
                         credentialType: window.ccModule.CredentialType.Basic,
                     });
                     await ctx.createConversation(cid, credentialRef!);
@@ -158,8 +158,8 @@ describe("logger", () => {
                 const cid = new window.ccModule.ConversationId(
                     new TextEncoder().encode(conversationId).buffer
                 );
-                await cc.newTransaction(async (ctx) => {
-                    const [credentialRef] = await ctx.getFilteredCredentials({
+                await cc.transaction(async (ctx) => {
+                    const [credentialRef] = await ctx.findCredentials({
                         credentialType: window.ccModule.CredentialType.Basic,
                     });
                     await ctx.createConversation(cid, credentialRef!);
@@ -223,12 +223,12 @@ describe("logger", () => {
                 );
                 const messageBytes = encoder.encode(messageText);
 
-                const encryptedMessage = await alice.newTransaction(
+                const encryptedMessage = await alice.transaction(
                     async (ctx) =>
                         await ctx.encryptMessage(cid, messageBytes.buffer)
                 );
 
-                await bob.newTransaction(
+                await bob.transaction(
                     async (ctx) =>
                         await ctx.decryptMessage(cid, encryptedMessage)
                 );

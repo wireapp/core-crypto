@@ -41,13 +41,11 @@ describe("core crypto errors", () => {
                 const MlsError = window.ccModule.MlsError;
 
                 try {
-                    await cc.newTransaction(async (cx) => {
-                        const [credentialRef] = await cx.getFilteredCredentials(
-                            {
-                                credentialType:
-                                    window.ccModule.CredentialType.Basic,
-                            }
-                        );
+                    await cc.transaction(async (cx) => {
+                        const [credentialRef] = await cx.findCredentials({
+                            credentialType:
+                                window.ccModule.CredentialType.Basic,
+                        });
                         await cx.createConversation(
                             conversationId,
                             credentialRef!
@@ -135,7 +133,7 @@ describe("core crypto errors", () => {
                 const CoreCryptoError = window.ccModule.CoreCryptoError;
                 const MlsError = window.ccModule.MlsError;
                 try {
-                    await cc.newTransaction(async (cx) => {
+                    await cc.transaction(async (cx) => {
                         await cx.updateKeyingMaterial(conversationId);
                     });
                     return {
@@ -174,9 +172,9 @@ it("should build correctly when constructed by ubrn", async () => {
             const cc = window.ensureCcDefined(clientName);
 
             try {
-                await cc.newTransaction(async (cx) => {
+                await cc.transaction(async (cx) => {
                     // pass in a string argument instead of a `ConversationId` instance
-                    const [credentialRef] = await cx.getFilteredCredentials({
+                    const [credentialRef] = await cx.findCredentials({
                         credentialType: window.ccModule.CredentialType.Basic,
                     });
                     await cx.createConversation(
@@ -218,12 +216,11 @@ describe("Error type mapping", () => {
                     new TextEncoder().encode(conversationId).buffer
                 );
                 try {
-                    await cc.newTransaction(async (ctx) => {
-                        const [credentialRef] =
-                            await ctx.getFilteredCredentials({
-                                credentialType:
-                                    window.ccModule.CredentialType.Basic,
-                            });
+                    await cc.transaction(async (ctx) => {
+                        const [credentialRef] = await ctx.findCredentials({
+                            credentialType:
+                                window.ccModule.CredentialType.Basic,
+                        });
                         await ctx.createConversation(cid, credentialRef!);
                     });
                 } catch (e) {

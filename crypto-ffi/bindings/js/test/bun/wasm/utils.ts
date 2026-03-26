@@ -87,7 +87,7 @@ export async function ccInit(clientId?: ClientId): Promise<CoreCrypto> {
     const cc = CoreCrypto.new(db);
 
     if (clientId) {
-        await cc.newTransaction(async (ctx) => {
+        await cc.transaction(async (ctx) => {
             await ctx.mlsInit(clientId, DELIVERY_SERVICE);
         });
     }
@@ -119,7 +119,7 @@ export async function createConversation(
     cc: CoreCrypto,
     conversationId: ConversationId
 ): Promise<void> {
-    await cc.newTransaction(async (ctx) => {
+    await cc.transaction(async (ctx) => {
         const credential = Credential.basic(
             window.ccModule.ciphersuiteDefault(),
             randomClientId()
@@ -148,20 +148,20 @@ export async function invite(
     cc2: CoreCrypto,
     conversationId: ConversationId
 ): Promise<GroupInfoBundle> {
-    const kp = await cc2.newTransaction(async (ctx) => {
-        const [credentialRef] = await ctx.getFilteredCredentials({
+    const kp = await cc2.transaction(async (ctx) => {
+        const [credentialRef] = await ctx.findCredentials({
             ciphersuite: DEFAULT_CIPHERSUITE,
             credentialType: CredentialType.Basic,
         });
         return await ctx.generateKeypackage(credentialRef!);
     });
-    await cc1.newTransaction((ctx) =>
+    await cc1.transaction((ctx) =>
         ctx.addClientsToConversation(conversationId, [kp])
     );
     const { groupInfo, welcome } =
         await DELIVERY_SERVICE.getLatestCommitBundle();
 
-    await cc2.newTransaction((ctx) =>
+    await cc2.transaction((ctx) =>
         ctx.processWelcomeMessage(
             new window.ccModule.Welcome(welcome!.copyBytes())
         )
@@ -190,17 +190,17 @@ export async function roundTripMessage(
     conversationId: ConversationId,
     message: ArrayBuffer
 ): Promise<(ArrayBuffer | null)[]> {
-    const encryptedByClient1 = await cc1.newTransaction(async (ctx) => {
+    const encryptedByClient1 = await cc1.transaction(async (ctx) => {
         return await ctx.encryptMessage(conversationId, message);
     });
-    const decryptedByClient2 = await cc2.newTransaction(async (ctx) => {
+    const decryptedByClient2 = await cc2.transaction(async (ctx) => {
         return await ctx.decryptMessage(conversationId, encryptedByClient1);
     });
 
-    const encryptedByClient2 = await cc2.newTransaction(async (ctx) => {
+    const encryptedByClient2 = await cc2.transaction(async (ctx) => {
         return await ctx.encryptMessage(conversationId, message);
     });
-    const decryptedByClient1 = await cc1.newTransaction(async (ctx) => {
+    const decryptedByClient1 = await cc1.transaction(async (ctx) => {
         return await ctx.decryptMessage(conversationId, encryptedByClient2);
     });
 
@@ -233,7 +233,7 @@ export async function proteusInit(clientName: string): Promise<CoreCrypto> {
     );
 
     const instance = CoreCrypto.new(database);
-    await instance.newTransaction(async (ctx) => {
+    await instance.transaction(async (ctx) => {
         await ctx.proteusInit();
     });
 
@@ -257,11 +257,11 @@ export async function newProteusSessionFromPrekey(
     cc2: CoreCrypto,
     sessionId: string
 ): Promise<void> {
-    const cc2Prekey = await cc2.newTransaction(async (ctx) => {
+    const cc2Prekey = await cc2.transaction(async (ctx) => {
         return await ctx.proteusNewPrekey(10);
     });
 
-    await cc1.newTransaction(async (ctx) => {
+    await cc1.transaction(async (ctx) => {
         return await ctx.proteusSessionFromPrekey(sessionId, cc2Prekey);
     });
 }
@@ -287,11 +287,11 @@ export async function newProteusSessionFromMessage(
     sessionId: string,
     messageBytes: ArrayBuffer
 ): Promise<ArrayBuffer> {
-    const encrypted = await cc1.newTransaction(async (ctx) => {
+    const encrypted = await cc1.transaction(async (ctx) => {
         return await ctx.proteusEncrypt(sessionId, messageBytes);
     });
 
-    const decrypted = await cc2.newTransaction(async (ctx) => {
+    const decrypted = await cc2.transaction(async (ctx) => {
         return await ctx.proteusSessionFromMessage(sessionId, encrypted);
     });
 
