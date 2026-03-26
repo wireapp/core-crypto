@@ -8,4 +8,4 @@
 * JVM - Kotlin
 ** xref:jvm:whats-new.adoc[]
 ** xref:jvm:cc10-migration.adoc[]
-** xref:jvm:attachment$doc/index.html[Kotlin API]
+** xref:jvm:attachment$doc/html/index.html[Kotlin API]
