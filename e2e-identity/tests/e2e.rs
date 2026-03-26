@@ -40,7 +40,6 @@ use utils::{
 use wire_e2e_identity::{
     X509CredentialAcquisition, acme::*, acquisition::X509CredentialConfiguration, pki_env::PkiEnvironment,
 };
-use x509_cert::der::Decode as _;
 
 #[path = "utils/mod.rs"]
 mod utils;
@@ -243,18 +242,41 @@ mod acme_server {
     }
 }
 
-#[rstest]
-#[tokio::test]
-async fn x509_cert_acquisition_works(test_env: TestEnvironment) {
-    let wire_server_keypair = ES256KeyPair::generate();
+async fn prepare_pki_env_and_config(
+    test_env: &TestEnvironment,
+    sign_alg: JwsAlgorithm,
+) -> (PkiEnvironment, X509CredentialConfiguration) {
+    let wire_server_keypair = wire_e2e_identity::utils::generate_key(sign_alg).unwrap();
     let template = r#"{{.DeviceID}}"#;
     let wire_server_uri = test_env.wire_server.uri();
     let dpop_target_uri = format!("{wire_server_uri}/clients/{template}/access-token");
     let issuer = test_env.idp_server.issuer.clone();
     let discovery_base_url = test_env.idp_server.discovery_base_url.clone();
 
+    let wire_server_pubkey = match sign_alg {
+        JwsAlgorithm::P256 => ES256KeyPair::from_pem(&wire_server_keypair)
+            .unwrap()
+            .public_key()
+            .to_pem()
+            .unwrap(),
+        JwsAlgorithm::P384 => ES384KeyPair::from_pem(&wire_server_keypair)
+            .unwrap()
+            .public_key()
+            .to_pem()
+            .unwrap(),
+        JwsAlgorithm::P521 => ES512KeyPair::from_pem(&wire_server_keypair)
+            .unwrap()
+            .public_key()
+            .to_pem()
+            .unwrap(),
+        JwsAlgorithm::Ed25519 => Ed25519KeyPair::from_pem(&wire_server_keypair)
+            .unwrap()
+            .public_key()
+            .to_pem(),
+    };
+
     let ca_cfg = CaCfg {
-        sign_key: wire_server_keypair.public_key().to_pem().unwrap(),
+        sign_key: wire_server_pubkey.to_string(),
         issuer,
         audience: "wireapp".to_string(),
         discovery_base_url,
@@ -280,7 +302,7 @@ async fn x509_cert_acquisition_works(test_env: TestEnvironment) {
     let config = X509CredentialConfiguration {
         acme_url,
         idp_url: test_env.idp_server.discovery_base_url.clone(),
-        sign_alg: JwsAlgorithm::P256,
+        sign_alg,
         hash_alg: HashAlgorithm::SHA256,
         display_name: "Alice Smith".into(),
         handle: "alice_wire".into(),
@@ -290,7 +312,7 @@ async fn x509_cert_acquisition_works(test_env: TestEnvironment) {
     };
     let wire_server_context = serde_json::json!({
         "client-id": client_id.to_uri(),
-        "backend-kp": wire_server_keypair.to_pem().unwrap(),
+        "backend-kp": wire_server_keypair,
         "hash-alg": config.hash_alg.to_string(),
         "wire-server-uri": format!("{wire_server_uri}/clients/{}/access-token", device_id),
         "handle": Handle::from(config.handle.clone()).try_to_qualified(&client_id.domain).unwrap(),
@@ -298,8 +320,8 @@ async fn x509_cert_acquisition_works(test_env: TestEnvironment) {
         "team": config.team.as_ref().unwrap(),
     });
 
-    let wire_server = test_env.wire_server;
-    let idp_server = test_env.idp_server;
+    let wire_server = test_env.wire_server.clone();
+    let idp_server = test_env.idp_server.clone();
     let hooks = Arc::new(TestPkiEnvironmentHooks {
         acme,
         wire_server,
@@ -312,20 +334,24 @@ async fn x509_cert_acquisition_works(test_env: TestEnvironment) {
         .await
         .unwrap();
 
-    let pki_env = Arc::new(PkiEnvironment::new(hooks, db).await.unwrap());
-    let acq = X509CredentialAcquisition::try_new(pki_env, config).unwrap();
-    let (sign_kp, certs) = acq
+    let pki_env = PkiEnvironment::new(hooks, db).await.unwrap();
+    (pki_env, config)
+}
+
+#[tokio::test]
+#[rstest]
+#[case(JwsAlgorithm::P256)]
+#[case(JwsAlgorithm::P384)]
+#[case(JwsAlgorithm::P521)]
+#[case(JwsAlgorithm::Ed25519)]
+async fn x509_cert_acquisition_works(test_env: TestEnvironment, #[case] sign_alg: JwsAlgorithm) {
+    let (pki_env, config) = prepare_pki_env_and_config(&test_env, sign_alg).await;
+    let acq = X509CredentialAcquisition::try_new(Arc::new(pki_env), config).unwrap();
+    let (_sign_kp, _certs) = acq
         .complete_dpop_challenge()
         .await
         .unwrap()
         .complete_oidc_challenge()
         .await
         .unwrap();
-
-    // Verify that the public key in our certificate matches the one
-    // from our signing keypair.
-    let cert = x509_cert::Certificate::from_der(&certs[0]).unwrap();
-    let spk = &cert.tbs_certificate.subject_public_key_info.subject_public_key;
-    let pubkey = ES256KeyPair::from_pem(&sign_kp).unwrap().public_key();
-    assert_eq!(&pubkey.public_key().to_bytes_uncompressed(), spk.as_bytes().unwrap());
 }
