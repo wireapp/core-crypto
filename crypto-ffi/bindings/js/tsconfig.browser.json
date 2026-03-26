@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "customConditions": ["cc-browser"]
+  },
+  "include": [
+    "src/shared/**/*.ts",
+    "src/browser/**/*.ts",
+    "test/bun/wasm/**/*.ts",
+    "test/wdio/**/*.ts",
+    "benches/**/*.ts",
+    "wdio.test.conf.ts",
+    "wdio.bench.conf.ts"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "customConditions": ["cc-native"]
+  },
+  "include": [
+    "src/shared/**/*.ts",
+    "src/native/**/*.ts",
+    "test/bun/napi/**/*.ts"
+  ]
+}
