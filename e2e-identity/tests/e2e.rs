@@ -133,54 +133,6 @@ fn test_env() -> TestEnvironment {
     setup_test_environment()
 }
 
-/// Verify that it works for all MLS ciphersuites
-mod alg {
-    use super::*;
-
-    // This and the following tests in this module test nominal enrollment with various key types
-    // (Ed25519, P256, P384, P521). For each key type, a comprehensive set of checks is done,
-    // including:
-    // - a check that the key type in the leaf certificate matches what was requested
-    // - a check that the key usage in the leaf certificate is signing only
-    // - a check that the intermediate CA cert has expected name constraints
-    // - a check that all certificates in the chain parse successfully
-    // - a check that invokes `openssl verify` to verify the entire certificate chain
-    //
-    // @SF.PROVISIONING @TSFI.E2EI-PKI-Admin @S8
-    #[rstest]
-    #[tokio::test]
-    async fn ed25519_should_succeed(test_env: TestEnvironment) {
-        let test = E2eTest::new_internal(false, JwsAlgorithm::Ed25519, test_env)
-            .start()
-            .await;
-        assert!(test.nominal_enrollment().await.is_ok());
-    }
-
-    // @SF.PROVISIONING @TSFI.E2EI-PKI-Admin @S8
-    #[rstest]
-    #[tokio::test]
-    async fn p256_should_succeed(test_env: TestEnvironment) {
-        let test = E2eTest::new_internal(false, JwsAlgorithm::P256, test_env).start().await;
-        assert!(test.nominal_enrollment().await.is_ok());
-    }
-
-    // @SF.PROVISIONING @TSFI.E2EI-PKI-Admin @S8
-    #[rstest]
-    #[tokio::test]
-    async fn p384_should_succeed(test_env: TestEnvironment) {
-        let test = E2eTest::new_internal(false, JwsAlgorithm::P384, test_env).start().await;
-        assert!(test.nominal_enrollment().await.is_ok());
-    }
-
-    // @SF.PROVISIONING @TSFI.E2EI-PKI-Admin @S8
-    #[rstest]
-    #[tokio::test]
-    async fn p521_should_succeed(test_env: TestEnvironment) {
-        let test = E2eTest::new_internal(false, JwsAlgorithm::P521, test_env).start().await;
-        assert!(test.nominal_enrollment().await.is_ok());
-    }
-}
-
 /// Since the acme server is a fork, verify its invariants are respected
 mod acme_server {
     use wire_e2e_identity::x509_check::{
@@ -338,6 +290,15 @@ async fn prepare_pki_env_and_config(
     (pki_env, config)
 }
 
+// This test checks that certificate acquisition works for all key types
+// (Ed25519, P256, P384, P521). For each key type, a comprehensive set of
+// checks is done, including:
+// - a check that the key type in the leaf certificate matches what was requested
+// - a check that the key usage in the leaf certificate is signing only
+// - a check that the intermediate CA cert has expected name constraints
+// - a check that all certificates in the chain parse successfully
+//
+// @SF.PROVISIONING @TSFI.E2EI-PKI-Admin @S8
 #[tokio::test]
 #[rstest]
 #[case(JwsAlgorithm::P256)]
