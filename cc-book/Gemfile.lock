@@ -27,6 +27,7 @@ GEM
     css_parser (1.21.1)
       addressable
     ffi (1.17.3-arm64-darwin)
+    ffi (1.17.3-x86_64-linux-gnu)
     gepub (1.0.17)
       nokogiri (>= 1.8.2, < 2.0)
       rubyzip (> 1.1.1, < 2.4)
@@ -38,6 +39,8 @@ GEM
       mime-types-data (~> 3.2025, >= 3.2025.0507)
     mime-types-data (3.2026.0317)
     nokogiri (1.19.2-arm64-darwin)
+      racc (~> 1.4)
+    nokogiri (1.19.2-x86_64-linux-gnu)
       racc (~> 1.4)
     pdf-core (0.9.0)
     pdf-reader (2.15.1)
@@ -82,6 +85,7 @@ GEM
 
 PLATFORMS
   arm64-darwin-24
+  x86_64-linux-gnu
 
 DEPENDENCIES
   asciidoctor-epub3
@@ -101,6 +105,7 @@ CHECKSUMS
   concurrent-ruby (1.3.6) sha256=6b56837e1e7e5292f9864f34b69c5a2cbc75c0cf5338f1ce9903d10fa762d5ab
   css_parser (1.21.1) sha256=6cfd3ffc0a97333b39d2b1b49c95397b05e0e3b684d68f77ec471ba4ec2ef7c7
   ffi (1.17.3-arm64-darwin) sha256=0c690555d4cee17a7f07c04d59df39b2fba74ec440b19da1f685c6579bb0717f
+  ffi (1.17.3-x86_64-linux-gnu) sha256=3746b01f677aae7b16dc1acb7cb3cc17b3e35bdae7676a3f568153fb0e2c887f
   gepub (1.0.17) sha256=8c72dd33f47a437bddde1cef6d8d6a9d5cd4721c79bb8d2df70f66bf9fb33c3a
   hashery (2.1.2) sha256=d239cc2310401903f6b79d458c2bbef5bf74c46f3f974ae9c1061fb74a404862
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
@@ -108,6 +113,7 @@ CHECKSUMS
   mime-types (3.7.0) sha256=dcebf61c246f08e15a4de34e386ebe8233791e868564a470c3fe77c00eed5e56
   mime-types-data (3.2026.0317) sha256=77f078a4d8631d52b842ba77099734b06eddb7ad339d792e746d2272b67e511b
   nokogiri (1.19.2-arm64-darwin) sha256=58d8ea2e31a967b843b70487a44c14c8ba1866daa1b9da9be9dbdf1b43dee205
+  nokogiri (1.19.2-x86_64-linux-gnu) sha256=fa8feca882b73e871a9845f3817a72e9734c8e974bdc4fbad6e4bc6e8076b94f
   pdf-core (0.9.0) sha256=4f368b2f12b57ec979872d4bf4bd1a67e8648e0c81ab89801431d2fc89f4e0bb
   pdf-reader (2.15.1) sha256=18c6a986a84a3117fa49f4279fc2de51f5d2399b71833df5d2bccd595c7068ce
   polyglot (0.3.5) sha256=59d66ef5e3c166431c39cb8b7c1d02af419051352f27912f6a43981b3def16af
