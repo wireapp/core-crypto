@@ -17,6 +17,8 @@ import {
     setMaxLogLevel,
     ClientId,
     Credential,
+    ciphersuiteDefault,
+    Welcome,
 } from "@wireapp/core-crypto/native";
 import { Database } from "@wireapp/core-crypto/native";
 
@@ -154,7 +156,7 @@ export async function createConversation(
 ): Promise<void> {
     await cc.newTransaction(async (ctx) => {
         const credential = Credential.basic(
-            window.ccModule.ciphersuiteDefault(),
+            ciphersuiteDefault(),
             randomClientId()
         );
 
@@ -195,9 +197,7 @@ export async function invite(
         await DELIVERY_SERVICE.getLatestCommitBundle();
 
     await cc2.newTransaction((ctx) =>
-        ctx.processWelcomeMessage(
-            new window.ccModule.Welcome(welcome!.copyBytes())
-        )
+        ctx.processWelcomeMessage(new Welcome(welcome!.copyBytes()))
     );
 
     return groupInfo;
