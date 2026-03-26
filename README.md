@@ -1,12 +1,14 @@
 # Wire CoreCrypto<a name="wire-corecrypto"></a>
 
 [![scheduled](https://github.com/wireapp/core-crypto/actions/workflows/scheduled.yml/badge.svg)](https://github.com/wireapp/core-crypto/actions/workflows/scheduled.yml)
+[![benchmarks](https://github.com/wireapp/core-crypto/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/wireapp/core-crypto/actions/workflows/benchmarks.yml)
 [![🚀 pipeline](https://github.com/wireapp/core-crypto/actions/workflows/pipeline.yml/badge.svg)](https://github.com/wireapp/core-crypto/actions/workflows/pipeline.yml)
 [![.github/workflows/interop.yml](https://github.com/wireapp/core-crypto/actions/workflows/interop.yml/badge.svg?event=workflow_dispatch)](https://github.com/wireapp/core-crypto/actions/workflows/interop.yml)
 [![.github/workflows/test-android.yml](https://github.com/wireapp/core-crypto/actions/workflows/test-android.yml/badge.svg?event=workflow_dispatch)](https://github.com/wireapp/core-crypto/actions/workflows/test-android.yml)
 [![.github/workflows/test-ios.yml](https://github.com/wireapp/core-crypto/actions/workflows/test-ios.yml/badge.svg?event=workflow_dispatch)](https://github.com/wireapp/core-crypto/actions/workflows/test-ios.yml)
 [![.github/workflows/test-jvm.yml](https://github.com/wireapp/core-crypto/actions/workflows/test-jvm.yml/badge.svg?event=workflow_dispatch)](https://github.com/wireapp/core-crypto/actions/workflows/test-jvm.yml)
-[![.github/workflows/test-ts.yml](https://github.com/wireapp/core-crypto/actions/workflows/test-ts.yml/badge.svg?event=workflow_dispatch)](https://github.com/wireapp/core-crypto/actions/workflows/test-ts.yml)
+[![.github/workflows/test-ts-native.yml](https://github.com/wireapp/core-crypto/actions/workflows/test-ts-native.yml/badge.svg?event=workflow_dispatch)](https://github.com/wireapp/core-crypto/actions/workflows/test-ts-native.yml)
+[![.github/workflows/test-ts-browser.yml](https://github.com/wireapp/core-crypto/actions/workflows/test-ts-browser.yml/badge.svg?event=workflow_dispatch)](https://github.com/wireapp/core-crypto/actions/workflows/test-ts-browser.yml)
 
 This repository is part of the source code of Wire. You can find more information at [wire.com](https://wire.com) or by
 contacting opensource@wire.com.
