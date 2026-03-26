@@ -1,0 +1,9 @@
+= Transactions and the TransactionContext
+
+// Why mutations are buffered: atomicity and consistency guarantees
+// The transaction lifecycle: new_transaction() → mutations → finish()
+// What happens on finish(): memory → keystore, single DB transaction
+// What happens on drop without finish(): rollback / no-op
+// Single-concurrency constraint: why only one transaction can be in flight
+// ConversationGuard: acquiring mutable access to a conversation within a transaction
+// Error recovery: what to do when a transaction fails

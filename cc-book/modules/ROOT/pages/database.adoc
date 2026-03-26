@@ -1,0 +1,8 @@
+= The Database
+
+// What the keystore stores: group state, credentials, key packages, Proteus sessions, prekeys
+// Platform backends: SQLCipher (native) vs. IndexedDB (WASM/browser)
+// What the caller is responsible for: providing the path and the DatabaseKey
+// DatabaseKey provenance: how to derive/store it (the caller's problem, but worth noting)
+// In-memory mode: testing use case
+// Single-transaction-at-a-time semantics and why that matters for app architecture

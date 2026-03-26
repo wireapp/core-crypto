@@ -1,0 +1,8 @@
+= The Client
+
+// What a "client" means in MLS (RFC 9420): one device, one identity
+// The Session type: read-only view of the MLS state
+// ClientId format and meaning
+// What Session owns vs. what TransactionContext mutates
+// The MlsTransport callback: what it is, what it must do, why it's separate from the library
+// Observers: EpochObserver and HistoryObserver — what they fire and when

@@ -1,0 +1,16 @@
+= Proteus
+
+// What the Signal Protocol is (double ratchet, forward secrecy, break-in recovery)
+// Why Wire built Proteus: a Signal-compatible implementation for the Wire protocol
+// The prekey model: how a recipient's prekeys allow a sender to open a session without them being online
+// One-to-one only: each conversation is a bilateral session; group messaging is n*(n-1) sessions
+// Why that doesn't scale: O(n²) messages per group update, no forward secrecy for large groups
+// Why Proteus is being deprecated in favor of MLS
+
+// == CoreCrypto's Proteus Interface
+
+// ProteusCentral and what it owns (identity, session cache)
+// Session lifecycle: proteus_session_from_prekey vs. proteus_session_from_message
+// Encrypt/decrypt, fingerprints, last-resort prekey
+// How Proteus state lives inside the same TransactionContext as MLS
+// Migration note: pointing users toward the CC9→CC10 migration guide

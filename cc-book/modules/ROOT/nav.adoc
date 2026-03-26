@@ -1,11 +1,18 @@
-* Browser - TypeScript
-** xref:browser:whats-new.adoc[]
-** xref:browser:cc10-migration.adoc[]
-** xref:browser:attachment$doc/index.html[TypeScript API]
-* iOS - Swift
-** xref:ios:whats-new.adoc[]
-** xref:ios:cc10-migration.adoc[]
-* JVM - Kotlin
-** xref:jvm:whats-new.adoc[]
-** xref:jvm:cc10-migration.adoc[]
-** xref:jvm:attachment$doc/html/index.html[Kotlin API]
+* Concepts
+** xref:proteus.adoc[]
+** xref:mls.adoc[]
+** xref:database.adoc[]
+** xref:client.adoc[]
+** xref:transactions.adoc[]
+* Platform-specific Documentation
+** Browser - TypeScript
+*** xref:browser:whats-new.adoc[]
+*** xref:browser:cc10-migration.adoc[]
+*** xref:browser:attachment$doc/index.html[TypeScript API]
+** iOS - Swift
+*** xref:ios:whats-new.adoc[]
+*** xref:ios:cc10-migration.adoc[]
+** JVM - Kotlin
+*** xref:jvm:whats-new.adoc[]
+*** xref:jvm:cc10-migration.adoc[]
+*** xref:jvm:attachment$doc/html/index.html[Kotlin API]

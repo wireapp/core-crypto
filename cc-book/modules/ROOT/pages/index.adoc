@@ -4,4 +4,4 @@
 This library is a simplified abstraction over the MLS and Proteus cryptographic protocols for end-to-end encrypted commmunication.
 In addition, it provides end-to-end identity (E2EI) support.
 
-It is available for a number of platforms and languages. For detailed documentation for a given platform/language pair, use the index to the left. Alternatively, consult the language references for a given version directly at https://wireapp.github.io/core-crypto.
+This book describes both core concepts and some platform-specific implementation notes. For detailed documentation for a given platform/language pair, use the index to the left. Alternatively, consult the language references for a given release directly at https://wireapp.github.io/core-crypto.
