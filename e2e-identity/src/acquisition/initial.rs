@@ -1,13 +1,11 @@
 use std::sync::Arc;
 
-use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair, Jwk};
-use rusty_jwt_tools::{
-    jwk::TryIntoJwk,
-    prelude::{JwsAlgorithm, Pem},
-};
-
 use super::{X509CredentialAcquisition, X509CredentialConfiguration, states};
-use crate::{error::E2eIdentityResult, pki_env::PkiEnvironment};
+use crate::{
+    error::E2eIdentityResult,
+    pki_env::PkiEnvironment,
+    utils::{generate_key, public_jwk_from_pem_keypair},
+};
 
 impl X509CredentialAcquisition<states::Initialized> {
     /// Create the acquisition object.
@@ -15,7 +13,9 @@ impl X509CredentialAcquisition<states::Initialized> {
     /// Generates the signing and ACME keypairs, but does not perform
     /// any network I/O.
     pub fn try_new(pki_env: Arc<PkiEnvironment>, config: X509CredentialConfiguration) -> E2eIdentityResult<Self> {
-        let (sign_kp, acme_kp, acme_jwk) = Self::generate_keys(config.sign_alg)?;
+        let sign_kp = generate_key(config.sign_alg)?;
+        let acme_kp = generate_key(config.sign_alg)?;
+        let acme_jwk = public_jwk_from_pem_keypair(config.sign_alg, &acme_kp)?;
 
         Ok(Self {
             pki_env,
@@ -25,47 +25,5 @@ impl X509CredentialAcquisition<states::Initialized> {
             acme_jwk,
             data: states::Initialized,
         })
-    }
-
-    fn generate_keys(sign_alg: JwsAlgorithm) -> E2eIdentityResult<(Pem, Pem, Jwk)> {
-        let (sign_kp, acme_kp, acme_jwk) = match sign_alg {
-            JwsAlgorithm::Ed25519 => {
-                let sign_kp = Ed25519KeyPair::generate();
-                let acme_kp = Ed25519KeyPair::generate();
-                (
-                    sign_kp.to_pem().into(),
-                    acme_kp.to_pem().into(),
-                    acme_kp.public_key().try_into_jwk()?,
-                )
-            }
-            JwsAlgorithm::P256 => {
-                let sign_kp = ES256KeyPair::generate();
-                let acme_kp = ES256KeyPair::generate();
-                (
-                    sign_kp.to_pem()?.into(),
-                    acme_kp.to_pem()?.into(),
-                    acme_kp.public_key().try_into_jwk()?,
-                )
-            }
-            JwsAlgorithm::P384 => {
-                let sign_kp = ES384KeyPair::generate();
-                let acme_kp = ES384KeyPair::generate();
-                (
-                    sign_kp.to_pem()?.into(),
-                    acme_kp.to_pem()?.into(),
-                    acme_kp.public_key().try_into_jwk()?,
-                )
-            }
-            JwsAlgorithm::P521 => {
-                let sign_kp = ES512KeyPair::generate();
-                let acme_kp = ES512KeyPair::generate();
-                (
-                    sign_kp.to_pem()?.into(),
-                    acme_kp.to_pem()?.into(),
-                    acme_kp.public_key().try_into_jwk()?,
-                )
-            }
-        };
-        Ok((sign_kp, acme_kp, acme_jwk))
     }
 }
