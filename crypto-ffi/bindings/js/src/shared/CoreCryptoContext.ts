@@ -1,11 +1,9 @@
 import {
     Ciphersuite,
     ClientId,
-    ConversationId,
     CoreCryptoContext as CoreCryptoContextFfi,
     CredentialRef,
     CredentialType,
-    ExternalSenderKey,
 } from "#core-crypto-ffi";
 
 export interface CredentialFindFilters {
@@ -61,20 +59,6 @@ export class CoreCryptoContext extends CoreCryptoContextFfi {
             ciphersuite,
             credentialType,
             earliestValidity,
-            asyncOpts_
-        );
-    }
-
-    async createConversation(
-        conversationId: ConversationId,
-        credentialRef: CredentialRef,
-        externalSender?: ExternalSenderKey,
-        asyncOpts_?: { signal: AbortSignal }
-    ): Promise<void> {
-        return await super.createConversation(
-            conversationId,
-            credentialRef,
-            externalSender,
             asyncOpts_
         );
     }

@@ -142,6 +142,7 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::new_conversation]
+    #[uniffi::method(default(external_sender = None))]
     pub async fn create_conversation(
         &self,
         conversation_id: &ConversationId,
