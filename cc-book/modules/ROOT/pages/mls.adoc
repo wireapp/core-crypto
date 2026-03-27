@@ -9,6 +9,10 @@ Each epoch has a distinct shared secret; when membership changes (or when keys a
 This is MLS's forward secrecy guarantee: compromise of the current epoch does not expose messages from any prior epoch.
 The two-phase _proposal / commit_ model makes this safe in asynchronous networks: proposals accumulate from multiple senders, and a single commit bundles them into an atomic epoch transition.
 
+== Efficiency
+
+While changes in the group structure require O(log n) key operations, application messages are more efficient. Because each group has a shared group state governing its current shared secret, application messages encrypt in O(1). A significant improvement over Proteus!
+
 == Initialization
 
 Before any MLS operation, MLS must be explicitly initialized within a transaction:
