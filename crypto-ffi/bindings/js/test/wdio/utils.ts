@@ -109,9 +109,6 @@ export async function setup() {
                 window._latestCommitBundle = commitBundle;
                 return window.ccModule.MlsTransportResponse.Success.new();
             },
-            async sendMessage() {
-                return window.ccModule.MlsTransportResponse.Success.new();
-            },
             async prepareForTransport(
                 secret: HistorySecret
             ): Promise<MlsTransportData> {
