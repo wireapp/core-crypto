@@ -50,4 +50,4 @@ tree-sitter = "0.26.7"
 tree-sitter-typescript = "0.23.2"
 
 [target.'cfg(not(target_os = "unknown"))'.build-dependencies]
-cc = "1.2.57"
+cc = "1.2.58"
