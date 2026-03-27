@@ -641,7 +641,6 @@ $dokka.location:com.wire.crypto/MlsTransport.Companion///PointingToDeclaration/
 $dokka.location:com.wire.crypto/MlsTransport///PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport/index.html
 $dokka.location:com.wire.crypto/MlsTransport/prepareForTransport/#com.wire.crypto.HistorySecret/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport/prepare-for-transport.html
 $dokka.location:com.wire.crypto/MlsTransport/sendCommitBundle/#com.wire.crypto.CommitBundle/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport/send-commit-bundle.html
-$dokka.location:com.wire.crypto/MlsTransport/sendMessage/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport/send-message.html
 $dokka.location:com.wire.crypto/MlsTransportData///PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport-data/index.html
 $dokka.location:com.wire.crypto/MlsTransportImpl.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport-impl/-companion/index.html
 $dokka.location:com.wire.crypto/MlsTransportImpl///PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport-impl/index.html
@@ -651,7 +650,6 @@ $dokka.location:com.wire.crypto/MlsTransportImpl/close/#/PointingToDeclaration/
 $dokka.location:com.wire.crypto/MlsTransportImpl/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport-impl/destroy.html
 $dokka.location:com.wire.crypto/MlsTransportImpl/prepareForTransport/#com.wire.crypto.HistorySecret/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport-impl/prepare-for-transport.html
 $dokka.location:com.wire.crypto/MlsTransportImpl/sendCommitBundle/#com.wire.crypto.CommitBundle/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport-impl/send-commit-bundle.html
-$dokka.location:com.wire.crypto/MlsTransportImpl/sendMessage/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport-impl/send-message.html
 $dokka.location:com.wire.crypto/MlsTransportImpl/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport-impl/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/MlsTransportResponse.Abort.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport-response/-abort/-companion/index.html
 $dokka.location:com.wire.crypto/MlsTransportResponse.Abort///PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-transport-response/-abort/index.html
