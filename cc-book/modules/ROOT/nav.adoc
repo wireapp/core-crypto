@@ -1,9 +1,10 @@
 * Concepts
 ** xref:proteus.adoc[]
-** xref:mls.adoc[]
-** xref:database.adoc[]
-** xref:client.adoc[]
-** xref:transactions.adoc[]
+** MLS
+*** xref:mls.adoc[Overview]
+*** xref:database.adoc[]
+*** xref:client.adoc[]
+*** xref:transactions.adoc[]
 * Platform-specific Documentation
 ** Browser - TypeScript
 *** xref:browser:whats-new.adoc[]
