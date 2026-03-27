@@ -70,14 +70,14 @@ export class CoreCrypto extends CoreCryptoFfi {
      *
      * @returns the result of the callback will be returned from this call
      */
-    async newTransaction<R>(
+    async transaction<R>(
         callback: (ctx: CoreCryptoContext) => Promise<R>
     ): Promise<R> {
         let result!: R;
         let error: CoreCryptoError | Error | null = null;
         let needOuterRethrow = false;
         try {
-            await super.transaction({
+            await super.transactionFfi({
                 execute: async (ctx: CoreCryptoFfiTypes.CoreCryptoContext) => {
                     try {
                         result = await callback(new CoreCryptoContext(ctx));
@@ -112,10 +112,10 @@ export class CoreCrypto extends CoreCryptoFfi {
     /** @internal
      *  We're overriding this just to hide it from the docs
      */
-    async transaction(
+    async transactionFfi(
         command: CoreCryptoFfiTypes.CoreCryptoCommand,
         asyncOpts_?: { signal: AbortSignal }
     ): Promise<void> {
-        return super.transaction(command, asyncOpts_);
+        return super.transactionFfi(command, asyncOpts_);
     }
 }

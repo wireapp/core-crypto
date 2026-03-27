@@ -47,10 +47,10 @@ impl CoreCryptoFfi {
     ///     Ok(())
     /// }))?;
     /// ```
-    pub async fn transaction(&self, command: Command) -> CoreCryptoResult<()> {
-        log::info!(scope = "CoreCryptoFfi::transaction", stage = 1; "awaiting transaction semaphore");
+    pub async fn transaction_ffi(&self, command: Command) -> CoreCryptoResult<()> {
+        log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 1; "awaiting transaction semaphore");
         let inner_context = Arc::new(self.inner.new_transaction().await?);
-        log::info!(scope = "CoreCryptoFfi::transaction", stage = 2; "acquired semaphore; creating context");
+        log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 2; "acquired semaphore; creating context");
 
         let context = CoreCryptoContext {
             inner: inner_context.clone(),
@@ -61,19 +61,19 @@ impl CoreCryptoFfi {
         // to reuse the code in both target contexts.
         let context = Arc::new(context);
 
-        log::info!(scope = "CoreCryptoFfi::transaction", stage = 3; "created context; executing command");
+        log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 3; "created context; executing command");
         let result = command.execute(context).await;
         match result {
             Ok(()) => {
-                log::info!(scope = "CoreCryptoFfi::transaction", stage = 4, command_success = true; "command succeeded; committing transaction");
+                log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 4, command_success = true; "command succeeded; committing transaction");
                 inner_context.finish().await?;
-                log::info!(scope = "CoreCryptoFfi::transaction", stage = 5, command_success = true; "exiting successfully");
+                log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 5, command_success = true; "exiting successfully");
                 Ok(())
             }
             Err(err) => {
-                log::info!(scope = "CoreCryptoFfi::transaction", stage = 4, command_success = false; "command failed; aborting transaction");
+                log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 4, command_success = false; "command failed; aborting transaction");
                 inner_context.abort().await?;
-                log::info!(scope = "CoreCryptoFfi::transaction", stage = 5, command_success = false, err:err; "exiting propagating error");
+                log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 5, command_success = false, err:err; "exiting propagating error");
                 Err(err)
             }
         }
