@@ -76,7 +76,6 @@ pub(crate) trait MlsTransportTestExt: MlsTransport {
 #[derive(Debug, Default)]
 pub(crate) struct MlsTransportSuccessProvider {
     latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
-    latest_message: RwLock<Option<Vec<u8>>>,
 }
 
 #[async_trait::async_trait]
@@ -86,11 +85,6 @@ impl MlsTransport for MlsTransportSuccessProvider {
         commit_bundle: MlsCommitBundle,
     ) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
         self.latest_commit_bundle.write().await.replace(commit_bundle);
-        Ok(core_crypto::MlsTransportResponse::Success)
-    }
-
-    async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
-        self.latest_message.write().await.replace(mls_message);
         Ok(core_crypto::MlsTransportResponse::Success)
     }
 
@@ -116,11 +110,6 @@ impl MlsTransportTestExt for MlsTransportSuccessProvider {
 #[async_trait::async_trait]
 impl core_crypto_ffi::MlsTransport for MlsTransportSuccessProvider {
     async fn send_commit_bundle(&self, _commit_bundle: CommitBundle) -> core_crypto_ffi::MlsTransportResponse {
-        core_crypto_ffi::MlsTransportResponse::Success
-    }
-
-    async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto_ffi::MlsTransportResponse {
-        self.latest_message.write().await.replace(mls_message);
         core_crypto_ffi::MlsTransportResponse::Success
     }
 
