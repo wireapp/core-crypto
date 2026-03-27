@@ -6,10 +6,29 @@ Membership changes are managed through a _ratchet tree_ — a binary tree struct
 
 The fundamental unit of time in an MLS group is the _epoch_.
 Each epoch has a distinct shared secret; when membership changes (or when keys are rotated for other reasons), the group advances to a new epoch and new keys are computed.
-This is MLS's forward secrecy guarantee: compromise of the current epoch does not expose messages from any prior epoch.
 The two-phase _proposal / commit_ model makes this safe in asynchronous networks: proposals accumulate from multiple senders, and a single commit bundles them into an atomic epoch transition.
 
-== Efficiency
+== Cryptographic Properties
+
+=== Security Guarantees
+
+MLS provides two complementary security properties that together defend against both historical and future exposure of messages.
+
+==== Forward Secrecy
+
+Because each epoch derives a distinct shared secret and prior epoch secrets are deleted after use, compromise of the current epoch does not expose messages from any prior epoch.
+An attacker who obtains today's keys learns nothing about yesterday's conversations.
+
+==== Post-Compromise Security
+
+Forward secrecy protects the past; post-compromise security (PCS) protects the future.
+If an attacker obtains a member's key material — for example by compromising a device — they gain access to the current epoch.
+MLS limits this exposure: once any member contributes a commit that includes a fresh path secret (an Update proposal, or any commit authored by the compromised member), new randomness is injected into the key schedule.
+The attacker's copy of the old keys cannot be used to derive the new epoch's secrets, so the group heals automatically as conversation continues.
+
+Together, these guarantees mean that an MLS group is resilient over time: past messages remain private even after compromise, and future messages recover privacy as soon as keys are rotated.
+
+=== Efficiency
 
 While changes in the group structure require O(log n) key operations, application messages are more efficient. Because each group has a shared group state governing its current shared secret, application messages encrypt in O(1). A significant improvement over Proteus!
 
