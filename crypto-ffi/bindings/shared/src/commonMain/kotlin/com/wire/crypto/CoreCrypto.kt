@@ -69,7 +69,7 @@ class CoreCrypto(private val cc: CoreCryptoFfi) : CoreCryptoFfiInterface by cc {
         var result: R? = null
         var error: Throwable? = null
         try {
-            this@CoreCrypto.cc.transaction(object : CoreCryptoCommand {
+            this@CoreCrypto.cc.transactionFfi(object : CoreCryptoCommand {
                 override suspend fun execute(context: CoreCryptoContext) {
                     try {
                         result = block(context)
@@ -92,6 +92,10 @@ class CoreCrypto(private val cc: CoreCryptoFfi) : CoreCryptoFfiInterface by cc {
         // Since we know that the transaction will either succeed or throw it's safe to do an unchecked cast here
         return@withContext result as R
     }
+
+    @Deprecated("Use transaction(block) instead", level = DeprecationLevel.HIDDEN)
+    @JvmSynthetic
+    override suspend fun transactionFfi(command: CoreCryptoCommand) = cc.transactionFfi(command)
 
     /**
      * Register an Epoch Observer which will be notified every time a conversation's epoch changes.

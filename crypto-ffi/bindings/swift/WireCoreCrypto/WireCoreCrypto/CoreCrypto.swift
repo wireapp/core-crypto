@@ -74,11 +74,16 @@ public final class CoreCrypto: CoreCryptoFfi, CoreCryptoProtocol, @unchecked Sen
         let transactionExecutor = try TransactionExecutor<Result>(
             keystorePath: filePath, block)
         do {
-            try await self.transaction(command: transactionExecutor)
+            try await super.transactionFfi(command: transactionExecutor)
         } catch {
             throw await transactionExecutor.innerError ?? error
         }
         return await transactionExecutor.result!
+    }
+
+    @available(*, unavailable, message: "Use transaction(_:) instead.")
+    public override func transactionFfi(command: CoreCryptoCommand) async throws {
+        try await super.transactionFfi(command: command)
     }
 
     public func registerEpochObserver(_ epochObserver: EpochObserver) async throws {
