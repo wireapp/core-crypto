@@ -237,11 +237,6 @@
   }
   ```
 
-- Renamed TypeScript wrapper functions (this should be undone after we upgrade to uniffi 0.30.0). `transaction()` ->
-  `newTransaction()`, `findCredentials()` -> `getFilteredCredentials()`
-
-  Affected platforms: web
-
 - `CoreCryptoContext.generateKeyPackage()` now returns a `Keypackage` instance instead of an `ArrayBuffer`.
 
   Affected platforms: web
