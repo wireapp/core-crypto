@@ -1,6 +1,6 @@
 = The Database
 
-The `Database` is CoreCrypto's keystore: the persistent store for all key material and cryptographic state.
+The `Database` is CoreCrypto's keystore: the persistent store for all key material and cryptographic state, as well as some non-cryptographic internal data.
 It is opened before constructing a `CoreCrypto` instance and passed in as an argument, making the storage layer an explicit dependency rather than something CoreCrypto manages internally.
 
 == What the Database Stores
