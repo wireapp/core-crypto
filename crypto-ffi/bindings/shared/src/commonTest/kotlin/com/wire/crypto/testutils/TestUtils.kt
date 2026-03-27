@@ -42,9 +42,6 @@ interface MockDeliveryService : MlsTransport {
 class MockMlsTransportSuccessProvider : MockDeliveryService {
     private var latestCommitBundle: CommitBundle? = null
 
-    override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse =
-        MlsTransportResponse.Success
-
     override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
         latestCommitBundle = commitBundle
         return MlsTransportResponse.Success
