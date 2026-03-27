@@ -108,8 +108,6 @@ pub struct MlsTransportData(pub Vec<u8>);
 pub trait MlsTransport: std::fmt::Debug + Send + Sync {
     /// Send a commit bundle to the corresponding endpoint.
     async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> Result<MlsTransportResponse>;
-    /// Send a message to the corresponding endpoint.
-    async fn send_message(&self, mls_message: Vec<u8>) -> Result<MlsTransportResponse>;
 
     /// This function will be called before a history secret is sent to the mls transport to allow
     /// the application to package it in a suitable transport container (json, protobuf, ...).
