@@ -32,10 +32,9 @@ $dokka.location:com.wire.crypto//uniffiForeignFutureHandleCount/#/PointingToDecl
 $dokka.location:com.wire.crypto//version/#/PointingToDeclaration/-core-crypto/com.wire.crypto/version.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-companion/index.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage///PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/index.html
-$dokka.location:com.wire.crypto/BufferedDecryptedMessage/BufferedDecryptedMessage/#kotlin.ByteArray?#kotlin.Boolean#kotlin.ULong?#com.wire.crypto.ClientId?#kotlin.Boolean#com.wire.crypto.WireIdentity/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-buffered-decrypted-message.html
+$dokka.location:com.wire.crypto/BufferedDecryptedMessage/BufferedDecryptedMessage/#kotlin.ByteArray?#kotlin.Boolean#kotlin.ULong?#com.wire.crypto.ClientId?#com.wire.crypto.WireIdentity/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-buffered-decrypted-message.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/commitDelay/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/commit-delay.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/destroy.html
-$dokka.location:com.wire.crypto/BufferedDecryptedMessage/hasEpochChanged/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/has-epoch-changed.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/identity/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/identity.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/isActive/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/is-active.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/message.html
@@ -411,11 +410,10 @@ $dokka.location:com.wire.crypto/DatabaseKeyInterface.Companion///PointingToDecla
 $dokka.location:com.wire.crypto/DatabaseKeyInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-database-key-interface/index.html
 $dokka.location:com.wire.crypto/DecryptedMessage.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-companion/index.html
 $dokka.location:com.wire.crypto/DecryptedMessage///PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/index.html
-$dokka.location:com.wire.crypto/DecryptedMessage/DecryptedMessage/#kotlin.ByteArray?#kotlin.Boolean#kotlin.ULong?#com.wire.crypto.ClientId?#kotlin.Boolean#com.wire.crypto.WireIdentity#kotlin.collections.List[com.wire.crypto.BufferedDecryptedMessage]?/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-decrypted-message.html
+$dokka.location:com.wire.crypto/DecryptedMessage/DecryptedMessage/#kotlin.ByteArray?#kotlin.Boolean#kotlin.ULong?#com.wire.crypto.ClientId?#com.wire.crypto.WireIdentity#kotlin.collections.List[com.wire.crypto.BufferedDecryptedMessage]?/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-decrypted-message.html
 $dokka.location:com.wire.crypto/DecryptedMessage/bufferedMessages/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/buffered-messages.html
 $dokka.location:com.wire.crypto/DecryptedMessage/commitDelay/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/commit-delay.html
 $dokka.location:com.wire.crypto/DecryptedMessage/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/destroy.html
-$dokka.location:com.wire.crypto/DecryptedMessage/hasEpochChanged/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/has-epoch-changed.html
 $dokka.location:com.wire.crypto/DecryptedMessage/identity/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/identity.html
 $dokka.location:com.wire.crypto/DecryptedMessage/isActive/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/is-active.html
 $dokka.location:com.wire.crypto/DecryptedMessage/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/message.html

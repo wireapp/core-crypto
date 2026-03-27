@@ -478,35 +478,6 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi16DecryptedMessageV15hasEpochChangedSbvp"></a>
-                    <a name="//apple_ref/swift/Property/hasEpochChanged" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi16DecryptedMessageV15hasEpochChangedSbvp">hasEpochChanged</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>true when the decrypted message resulted in an epoch change i.e. it was a commit</p>
-
-<p>Deprecated: this member will be removed in the future. Prefer using the <code><a href="../../WireCoreCryptoUniffi/Protocols/EpochObserver.html">EpochObserver</a></code> interface.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">hasEpochChanged</span><span class="p">:</span> <span class="kt">Bool</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
                     <a name="/s:20WireCoreCryptoUniffi16DecryptedMessageV8identityAA0A8IdentityVvp"></a>
                     <a name="//apple_ref/swift/Property/identity" class="dashAnchor"></a>
                     <a class="token" href="#/s:20WireCoreCryptoUniffi16DecryptedMessageV8identityAA0A8IdentityVvp">identity</a>
@@ -564,9 +535,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi16DecryptedMessageV7message8isActive11commitDelay14senderClientId15hasEpochChanged8identity16bufferedMessagesAC10Foundation4DataVSg_Sbs6UInt64VSgAA0mN0CSgSbAA0A8IdentityVSayAA08BufferedeF0VGSgtcfc"></a>
-                    <a name="//apple_ref/swift/Method/init(message:isActive:commitDelay:senderClientId:hasEpochChanged:identity:bufferedMessages:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi16DecryptedMessageV7message8isActive11commitDelay14senderClientId15hasEpochChanged8identity16bufferedMessagesAC10Foundation4DataVSg_Sbs6UInt64VSgAA0mN0CSgSbAA0A8IdentityVSayAA08BufferedeF0VGSgtcfc">init(message:<wbr>isActive:<wbr>commitDelay:<wbr>senderClientId:<wbr>hasEpochChanged:<wbr>identity:<wbr>bufferedMessages:<wbr>)</a>
+                    <a name="/s:20WireCoreCryptoUniffi16DecryptedMessageV7message8isActive11commitDelay14senderClientId8identity16bufferedMessagesAC10Foundation4DataVSg_Sbs6UInt64VSgAA0mN0CSgAA0A8IdentityVSayAA08BufferedeF0VGSgtcfc"></a>
+                    <a name="//apple_ref/swift/Method/init(message:isActive:commitDelay:senderClientId:identity:bufferedMessages:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi16DecryptedMessageV7message8isActive11commitDelay14senderClientId8identity16bufferedMessagesAC10Foundation4DataVSg_Sbs6UInt64VSgAA0mN0CSgAA0A8IdentityVSayAA08BufferedeF0VGSgtcfc">init(message:<wbr>isActive:<wbr>commitDelay:<wbr>senderClientId:<wbr>identity:<wbr>bufferedMessages:<wbr>)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -598,11 +569,6 @@
     <span class="cm">/**
      * [ClientId] of the sender of the message being decrypted. Only present for application messages.
      */</span><span class="nv">senderClientId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">?,</span> 
-    <span class="cm">/**
-     * true when the decrypted message resulted in an epoch change i.e. it was a commit
-     *
-     * Deprecated: this member will be removed in the future. Prefer using the `EpochObserver` interface.
-     */</span><span class="nv">hasEpochChanged</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">,</span> 
     <span class="cm">/**
      * Identity claims present in the sender credential
      */</span><span class="nv">identity</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a></span><span class="p">,</span> 
