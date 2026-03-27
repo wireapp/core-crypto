@@ -188,7 +188,6 @@ class MLSTest : HasMockDeliveryService() {
         assertThat(decrypted.message).isNull()
         assertThat(decrypted.commitDelay).isNull()
         assertThat(decrypted.senderClientId).isNull()
-        assertThat(decrypted.hasEpochChanged).isTrue()
     }
 
     @Test

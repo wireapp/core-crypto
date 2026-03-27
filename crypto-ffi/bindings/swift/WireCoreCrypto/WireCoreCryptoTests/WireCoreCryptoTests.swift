@@ -552,7 +552,6 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertNil(decrypted.message)
         XCTAssertNil(decrypted.commitDelay)
         XCTAssertNil(decrypted.senderClientId)
-        XCTAssertTrue(decrypted.hasEpochChanged)
     }
 
     // swiftlint:disable:next function_body_length

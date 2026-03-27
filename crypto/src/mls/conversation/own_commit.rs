@@ -114,15 +114,12 @@ impl MlsConversation {
         .await
         .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
-        // we still support the `has_epoch_changed` field, though we'll remove it later
-        #[expect(deprecated)]
         Ok(MlsConversationDecryptMessage {
             app_msg: None,
             proposals: vec![],
             is_active: self.group.is_active(),
             delay: self.compute_next_commit_delay(),
             sender_client_id: None,
-            has_epoch_changed: true,
             identity,
             buffered_messages: None,
             crl_new_distribution_points,

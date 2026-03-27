@@ -22,11 +22,6 @@ pub struct DecryptedMessage {
     pub commit_delay: Option<u64>,
     /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
     pub sender_client_id: Option<Arc<ClientId>>,
-    /// true when the decrypted message resulted in an epoch change i.e. it was a commit
-    ///
-    /// Deprecated: this member will be removed in the future. Prefer using the `EpochObserver` interface.
-    #[deprecated = "This member will be removed in the future. Prefer using the `EpochObserver` interface."]
-    pub has_epoch_changed: bool,
     /// Identity claims present in the sender credential
     pub identity: WireIdentity,
     /// Only set when the decrypted message is a commit.
@@ -42,13 +37,11 @@ impl From<MlsConversationDecryptMessage> for DecryptedMessage {
             .buffered_messages
             .map(|bm| bm.into_iter().map(Into::into).collect::<Vec<_>>());
 
-        #[expect(deprecated)]
         Self {
             message: from.app_msg,
             is_active: from.is_active,
             commit_delay: from.delay,
             sender_client_id: from.sender_client_id.map(Into::into).map(Arc::new),
-            has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.into(),
             buffered_messages,
         }
@@ -70,24 +63,17 @@ pub struct BufferedDecryptedMessage {
     pub commit_delay: Option<u64>,
     /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
     pub sender_client_id: Option<Arc<ClientId>>,
-    /// true when the decrypted message resulted in an epoch change i.e. it was a commit
-    ///
-    /// Deprecated: this member will be removed in the future. Prefer using the `EpochObserver` interface.
-    #[deprecated = "This member will be removed in the future. Prefer using the `EpochObserver` interface."]
-    pub has_epoch_changed: bool,
     /// Identity claims present in the sender credential
     pub identity: WireIdentity,
 }
 
 impl From<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage {
     fn from(from: MlsBufferedConversationDecryptMessage) -> Self {
-        #[expect(deprecated)]
         Self {
             message: from.app_msg,
             is_active: from.is_active,
             commit_delay: from.delay,
             sender_client_id: from.sender_client_id.map(Into::into).map(Arc::new),
-            has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.into(),
         }
     }
