@@ -732,7 +732,7 @@ docs-kotlin-deps := $(JVM_LIB) $(jvm-deps) $(KOTLIN_SOURCES)
 $(STAMPS)/docs-kotlin: $(docs-kotlin-deps)
 	cd crypto-ffi/bindings && ./gradlew jvm:dokkaGeneratePublicationHtml
 	mkdir -p target/kotlin/doc
-	cp -R crypto-ffi/bindings/jvm/build/dokka/html/ target/kotlin/doc
+	cp -R crypto-ffi/bindings/jvm/build/dokka/html target/kotlin/doc
 	$(TOUCH_STAMP)
 
 .PHONY: docs-kotlin
