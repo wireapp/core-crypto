@@ -56,8 +56,6 @@ impl From<MlsTransportResponse> for core_crypto::MlsTransportResponse {
 pub trait MlsTransport: Send + Sync {
     /// Send a commit bundle to the corresponding endpoint.
     async fn send_commit_bundle(&self, commit_bundle: CommitBundle) -> MlsTransportResponse;
-    /// Send a message to the corresponding endpoint.
-    async fn send_message(&self, mls_message: Vec<u8>) -> MlsTransportResponse;
     /// Prepare a history secret before being sent
     async fn prepare_for_transport(&self, history_secret: HistorySecretFfi) -> MlsTransportData;
 }
