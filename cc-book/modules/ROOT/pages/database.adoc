@@ -1,8 +1,91 @@
 = The Database
 
-// What the keystore stores: group state, credentials, key packages, Proteus sessions, prekeys
-// Platform backends: SQLCipher (native) vs. IndexedDB (WASM/browser)
-// What the caller is responsible for: providing the path and the DatabaseKey
-// DatabaseKey provenance: how to derive/store it (the caller's problem, but worth noting)
-// In-memory mode: testing use case
-// Single-transaction-at-a-time semantics and why that matters for app architecture
+The `Database` is CoreCrypto's keystore: the persistent store for all key material and cryptographic state.
+It is opened before constructing a `CoreCrypto` instance and passed in as an argument, making the storage layer an explicit dependency rather than something CoreCrypto manages internally.
+
+== What the Database Stores
+
+The database holds all state that must survive process restarts:
+
+* **MLS group state** — the serialized ratchet tree and secrets for every conversation the device participates in
+* **Credentials and key packages** — the device's identity material and the key packages it has published to the delivery service
+* **Pending messages** — application messages and commits that arrived during an epoch transition and are waiting to be merged
+* **Proteus identity and sessions** — the device's long-lived Proteus identity keypair and the state of every active Proteus session
+* **Proteus prekeys** — including the last-resort prekey
+
+All entries are encrypted at rest using the `DatabaseKey` provided at open time.
+
+== Backing Storage
+
+On platforms with an operating system the database is backed by https://www.zetetic.net/sqlcipher/[SQLCipher], an encrypted SQLite variant.
+On the browser, the database sits atop IndexedDB and uses item-level encryption managed by CoreCrypto.
+In both cases, data is encrypted at rest.
+
+Future work on the database is intended to unify the backing storages, such that CoreCrypto will internally see an encrypted SQLite connection for all platforms. That work will be part of CC 11, but not CC 10. This change should be invisible to clients.
+
+
+== The Database Key
+
+The `DatabaseKey` is a 32-byte symmetric key used to encrypt all data at rest.
+Construct it from a byte array:
+
+[source]
+----
+key = DatabaseKey.new(bytes)    // bytes must be exactly 32 bytes
+----
+
+CoreCrypto does not generate or store the key — that is entirely the client's responsibility.
+The key should be kept in the platform's secure credential storage.
+
+[NOTE]
+====
+The database key is never written to disk by CoreCrypto.
+If the key is lost, the database contents are unrecoverable.
+====
+
+== Opening the Database
+
+All platforms define an async `Database.open` static method accepting a location and key. On platforms with an OS, the location is a filesystem path. On WASM, the location is the IndexedDB store naem.
+
+All platforms define an async static method to open a transient database in memory. On WASM, this is `Database.inMemory`. For Kotlin and Swift, this is an overload of `Database.open`.
+
+== Key Rotation
+
+The database can be re-encrypted with a new key without closing and reopening it:
+
+[source]
+----
+db.updateKey(newKey)
+----
+
+This re-encrypts all stored data in place.
+
+== Lifetime and Closing
+
+On browser platforms, explicitly close the database when tearing down:
+
+[source]
+----
+db.close()
+----
+
+== Single-Transaction Constraint
+
+Only one transaction may write to the database at a time.
+If `newTransaction()` is called while another transaction is open, the call will block until the first transaction calls `finish()` or `abort()`.
+
+This has a direct consequence for application architecture: long-running transactions (for example, processing a large backlog of incoming messages) can block other operations that need to write, such as sending a new message.
+Keep transactions short-lived — acquire, mutate, finish, release.
+
+== Exporting a Copy
+
+On native platforms, a fully vacuumed copy of the database can be written to a new file:
+
+[source]
+----
+exportDatabaseCopy(db, destinationPath)
+----
+
+The copy is encrypted with the same key as the source.
+This is useful for backup or for migrating the database to a new location.
+This function is not available on browser platforms.
