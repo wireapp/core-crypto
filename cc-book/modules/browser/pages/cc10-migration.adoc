@@ -102,12 +102,6 @@ error type now instead (see above). Check https://github.com/wireapp/proteus/blo
 
 include::ROOT:partial$cc10-migration-other.adoc[]
 
-====
-TODO
-. Renamed TypeScript wrapper functions (this should be undone after we upgrade to uniffi 0.30.0). `transaction()` ->
-  `newTransaction()`, `findCredentials()` -> `getFilteredCredentials()`
-====
-
 . `CoreCryptoContext.generateKeyPackage()` now returns a `Keypackage` instance instead of an `ArrayBuffer`.
   Migration: if you need the underlying `ArrayBuffer`, call the `buffer` property on the `KeyPackage`.
 
