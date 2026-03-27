@@ -152,6 +152,13 @@
 
   Affected platforms: web
 
+- Removed `send_message` method from `MlsTransport` interface
+
+  This wasn't well-documented and wasn't being used in any case. We remove it for the purpose of making life easier for
+  everyone.
+
+  Affected platforms: all
+
 - `MlsTransportResponse` is no longer a union type. `MlsTransport` should return one of the following:
 
   - `MlsTransportResponse.Success.new()`
