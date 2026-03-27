@@ -152,6 +152,12 @@
 
   Affected platforms: web
 
+- Removed previously deprecated field `has_epoch_changed` from `DecryptedMessage`.
+
+  Migration: use the `EpochObserver` interface.
+
+  Affected platforms: all
+
 - Removed `send_message` method from `MlsTransport` interface
 
   This wasn't well-documented and wasn't being used in any case. We remove it for the purpose of making life easier for
