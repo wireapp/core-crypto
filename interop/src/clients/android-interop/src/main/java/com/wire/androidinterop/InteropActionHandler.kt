@@ -25,10 +25,6 @@ class DummyTransport : MlsTransport {
         return MlsTransportResponse.Success
     }
 
-    override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse {
-        return MlsTransportResponse.Success
-    }
-
     override suspend fun prepareForTransport(historySecret: HistorySecret): MlsTransportData {
         return historySecret.data
     }
