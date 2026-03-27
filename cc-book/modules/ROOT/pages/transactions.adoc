@@ -79,3 +79,5 @@ The context provides two methods for storing a single blob of arbitrary bytes in
 await ctx.setData(bytes)
 const bytes = await ctx.getData()
 ----
+
+These were implemented for the purpose of checkpointing during initial sync / batch decryption, but are not limited to that use.
