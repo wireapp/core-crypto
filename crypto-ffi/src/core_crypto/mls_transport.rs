@@ -83,10 +83,6 @@ impl core_crypto::MlsTransport for MlsTransportShim {
         Ok(self.0.send_commit_bundle(commit_bundle).await.into())
     }
 
-    async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
-        Ok(self.0.send_message(mls_message).await.into())
-    }
-
     async fn prepare_for_transport(
         &self,
         secret: &HistorySecret,
