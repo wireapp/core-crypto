@@ -291,7 +291,7 @@ $dokka.location:com.wire.crypto/CoreCryptoFfi/proteusSessionExists/#kotlin.Strin
 $dokka.location:com.wire.crypto/CoreCryptoFfi/registerEpochObserver/#com.wire.crypto.EpochObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/register-epoch-observer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/registerHistoryObserver/#com.wire.crypto.HistoryObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/register-history-observer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/setPkiEnvironment/#com.wire.crypto.PkiEnvironment?/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/set-pki-environment.html
-$dokka.location:com.wire.crypto/CoreCryptoFfi/transaction/#com.wire.crypto.CoreCryptoCommand/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/transaction.html
+$dokka.location:com.wire.crypto/CoreCryptoFfi/transactionFfi/#com.wire.crypto.CoreCryptoCommand/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/transaction-ffi.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/-companion/index.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/index.html
@@ -316,7 +316,7 @@ $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/proteusSessionExists/#kot
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/registerEpochObserver/#com.wire.crypto.EpochObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/register-epoch-observer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/registerHistoryObserver/#com.wire.crypto.HistoryObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/register-history-observer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/setPkiEnvironment/#com.wire.crypto.PkiEnvironment?/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/set-pki-environment.html
-$dokka.location:com.wire.crypto/CoreCryptoFfiInterface/transaction/#com.wire.crypto.CoreCryptoCommand/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/transaction.html
+$dokka.location:com.wire.crypto/CoreCryptoFfiInterface/transactionFfi/#com.wire.crypto.CoreCryptoCommand/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/transaction-ffi.html
 $dokka.location:com.wire.crypto/CoreCryptoLogLevel.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-log-level/-companion/index.html
 $dokka.location:com.wire.crypto/CoreCryptoLogLevel.DEBUG///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto/-core-crypto-log-level/-d-e-b-u-g/index.html
 $dokka.location:com.wire.crypto/CoreCryptoLogLevel.ERROR///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto/-core-crypto-log-level/-e-r-r-o-r/index.html
