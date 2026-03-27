@@ -409,14 +409,11 @@ pub trait MlsTransportTestExt: MlsTransport {
     async fn latest_group_info(&self) -> MlsGroupInfoBundle {
         self.latest_commit_bundle().await.group_info.clone()
     }
-
-    async fn latest_message(&self) -> Vec<u8>;
 }
 
 #[derive(Debug, Default)]
 pub struct CoreCryptoTransportSuccessProvider {
     latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
-    latest_message: RwLock<Option<Vec<u8>>>,
 }
 
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
@@ -424,11 +421,6 @@ pub struct CoreCryptoTransportSuccessProvider {
 impl MlsTransport for CoreCryptoTransportSuccessProvider {
     async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> crate::Result<MlsTransportResponse> {
         self.latest_commit_bundle.write().await.replace(commit_bundle);
-        Ok(MlsTransportResponse::Success)
-    }
-
-    async fn send_message(&self, mls_message: Vec<u8>) -> crate::Result<MlsTransportResponse> {
-        self.latest_message.write().await.replace(mls_message);
         Ok(MlsTransportResponse::Success)
     }
 
@@ -447,10 +439,6 @@ impl MlsTransportTestExt for CoreCryptoTransportSuccessProvider {
             .clone()
             .expect("latest_commit_bundle")
     }
-
-    async fn latest_message(&self) -> Vec<u8> {
-        self.latest_message.read().await.clone().expect("latest_message")
-    }
 }
 
 #[derive(Debug, Default)]
@@ -460,12 +448,6 @@ pub struct CoreCryptoTransportAbortProvider;
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportAbortProvider {
     async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> crate::Result<MlsTransportResponse> {
-        Ok(MlsTransportResponse::Abort {
-            reason: "abort provider always aborts!".to_string(),
-        })
-    }
-
-    async fn send_message(&self, _mls_message: Vec<u8>) -> crate::Result<MlsTransportResponse> {
         Ok(MlsTransportResponse::Abort {
             reason: "abort provider always aborts!".to_string(),
         })
@@ -482,17 +464,12 @@ impl MlsTransportTestExt for CoreCryptoTransportAbortProvider {
     async fn latest_commit_bundle(&self) -> MlsCommitBundle {
         unreachable!("abort provider never stores a commit bundle")
     }
-
-    async fn latest_message(&self) -> Vec<u8> {
-        unreachable!("abort provider never stores a message")
-    }
 }
 
 /// This alternates between retry and success responses (starts with retry).
 #[derive(Debug, Default)]
 pub struct CoreCryptoTransportRetrySuccessProvider {
     latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
-    latest_message: RwLock<Option<Vec<u8>>>,
     just_returned_retry: RwLock<bool>,
     retry_count: RwLock<u32>,
     success_count: RwLock<u32>,
@@ -569,20 +546,6 @@ impl MlsTransport for CoreCryptoTransportRetrySuccessProvider {
         }
     }
 
-    async fn send_message(&self, mls_message: Vec<u8>) -> crate::Result<MlsTransportResponse> {
-        let mut just_returned_retry = self.just_returned_retry.write().await;
-        if *just_returned_retry {
-            self.latest_message.write().await.replace(mls_message);
-            *just_returned_retry = false;
-            *self.success_count.write().await += 1;
-            Ok(MlsTransportResponse::Success)
-        } else {
-            *just_returned_retry = true;
-            *self.retry_count.write().await += 1;
-            Ok(MlsTransportResponse::Retry)
-        }
-    }
-
     async fn prepare_for_transport(&self, secret: &HistorySecret) -> crate::Result<MlsTransportData> {
         Ok(format!("history_secret: {}", secret.client_id).into_bytes().into())
     }
@@ -597,10 +560,6 @@ impl MlsTransportTestExt for CoreCryptoTransportRetrySuccessProvider {
             .await
             .clone()
             .expect("latest_commit_bundle")
-    }
-
-    async fn latest_message(&self) -> Vec<u8> {
-        self.latest_message.read().await.clone().expect("latest_message")
     }
 }
 

@@ -130,10 +130,6 @@ impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
         Err(Error::MlsTransportNotProvided)
     }
 
-    async fn send_message(&self, _mls_message: Vec<u8>) -> crate::Result<MlsTransportResponse> {
-        Err(Error::MlsTransportNotProvided)
-    }
-
     async fn prepare_for_transport(&self, _secret: &HistorySecret) -> crate::Result<MlsTransportData> {
         Err(Error::MlsTransportNotProvided)
     }

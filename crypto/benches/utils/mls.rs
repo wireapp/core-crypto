@@ -343,25 +343,17 @@ pub(crate) trait MlsTransportTestExt: MlsTransport {
     async fn latest_group_info(&self) -> MlsGroupInfoBundle {
         self.latest_commit_bundle().await.group_info.clone()
     }
-
-    async fn latest_message(&self) -> Vec<u8>;
 }
 
 #[derive(Debug, Default)]
 pub(crate) struct CoreCryptoTransportSuccessProvider {
     latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
-    latest_message: RwLock<Option<Vec<u8>>>,
 }
 
 #[async_trait::async_trait]
 impl MlsTransport for CoreCryptoTransportSuccessProvider {
     async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> core_crypto::Result<MlsTransportResponse> {
         self.latest_commit_bundle.write().await.replace(commit_bundle);
-        Ok(MlsTransportResponse::Success)
-    }
-
-    async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto::Result<MlsTransportResponse> {
-        self.latest_message.write().await.replace(mls_message);
         Ok(MlsTransportResponse::Success)
     }
 
@@ -378,9 +370,5 @@ impl MlsTransportTestExt for CoreCryptoTransportSuccessProvider {
             .await
             .clone()
             .expect("latest_commit_bundle")
-    }
-
-    async fn latest_message(&self) -> Vec<u8> {
-        self.latest_message.read().await.clone().expect("latest_message")
     }
 }
