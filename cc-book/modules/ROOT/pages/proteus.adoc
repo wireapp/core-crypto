@@ -9,7 +9,7 @@ This effect is compounded by the fact that a logical user in the sense of a huma
 This O(n²) overhead is manageable for small groups, but becomes expensive as they scale, and it was the primary motivation for adopting MLS.
 
 Proteus remains supported for backwards compatibility, but has not received direct development work in some time.
-Its implementaion is already feature-gated for easy removal, and is intended to be removed as soon as we can confirm that a sufficiency of clients have upgraded their conversations to MLS.
+Its implementation is already feature-gated for easy removal, and is intended to be removed as soon as we can confirm that a sufficiency of clients have upgraded their conversations to MLS.
 
 == Initialization
 
@@ -26,7 +26,7 @@ All other Proteus methods will return an error if called before `proteusInit()` 
 == Identity and Fingerprints
 
 A Proteus identity is a long-lived Ed25519 keypair tied to the device.
-CoreCrypto exposes three fingerprint accessors, each returning a lowercase hex string:
+CoreCrypto exposes several fingerprint accessors, each returning a hex string:
 
 `proteusFingerprint()`::
   The local device's public key.

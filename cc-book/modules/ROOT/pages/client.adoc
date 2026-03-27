@@ -19,7 +19,8 @@ This means `CoreCrypto` can be freely passed to background tasks or across threa
 == Read-Only Operations
 
 Most MLS work happens inside a transaction (see xref:transactions.adoc[]), but a handful of read-only operations are available directly on `CoreCrypto` without opening one.
-These operations are intentionally narrow.
+The set of read-only operations available on `CoreCrypto` is intentionally kept narrow.
+
 Any operation that might change state — creating or deleting a conversation, adding members, encrypting or decrypting a message — requires a transaction.
 
 == Lifecycle
@@ -27,7 +28,7 @@ Any operation that might change state — creating or deleting a conversation, a
 A `CoreCrypto` instance is typically created once at application startup and kept alive for the life of the process.
 The initialization sequence is:
 
-[source]
+[source,typescript]
 ----
 const db = await Database.open(path, key);       // open the keystore
 const cc = CoreCrypto.new(db);                   // construct CoreCrypto

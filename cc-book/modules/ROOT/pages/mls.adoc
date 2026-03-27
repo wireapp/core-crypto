@@ -26,7 +26,7 @@ Wire's convention is to encode the client ID as a UTF-8 string of the form `user
 
 === `MlsTransport`
 
-CoreCrypto does not know how to innately send data over the network; instead, the caller provides an implementation of this interface that CoreCrypto calls on demand.
+CoreCrypto intentionally abstains from communication with the Wire backend; instead, the caller provides an implementation of this interface that CoreCrypto calls on demand.
 
 `sendCommitBundle(commitBundle)`::
   Called whenever a commit is produced — for example when creating a conversation, adding or removing members, or rotating keys.
@@ -99,7 +99,7 @@ Key packages::
 
 == Ciphersuites
 
-A MLS ciphersuite is a composite designation which specifies the KEM, AEAD, hash, and signature algorithms.
+An MLS ciphersuite is a composite designation which specifies the KEM, AEAD, hash, and signature algorithms.
 CoreCrypto formally supports any of the ciphersuites specified in the RFC, but is primarily tested on ciphersuite 1 (MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519).
 
 The ciphersuite is fixed per conversation at the conversation's creation.

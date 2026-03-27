@@ -3,7 +3,7 @@
 = Migrating from v9.x to v10.0
 
 == Browser Module Location
-We want to set the ground for a native module.
+We want to prepare the ground for a native module, which runs on node or bun.
 Therefore, the browser module is now exported as `@wireapp/core-crypto/browser`.
 Update your imports from `@wireapp/core-crypto` to `@wireapp/core-crypto/browser`.
 
@@ -38,7 +38,7 @@ https://jhugman.github.io/uniffi-bindgen-react-native/idioms/errors.html#enums-a
 ==== Example Usage
 
 .Extracting the abort reason given via an `MlsTransportResponse`
-[source, typescript]
+[source,typescript]
 ----
   import { CoreCryptoError, MlsError } from "core-crypto";
 
@@ -56,7 +56,7 @@ https://jhugman.github.io/uniffi-bindgen-react-native/idioms/errors.html#enums-a
 ----
 
 .Optional: use `switch` to handle multiple errors in one go
-[source, typescript]
+[source,typescript]
 ----
   import { CoreCryptoError, MlsError, MlsError_Tags } from "core-crypto";
 
@@ -78,7 +78,7 @@ https://jhugman.github.io/uniffi-bindgen-react-native/idioms/errors.html#enums-a
 ----
 
 .Catch a proteus error
-[source, typescript]
+[source,typescript]
 ----
   import { CoreCryptoError, ProteusError } from "core-crypto";
 

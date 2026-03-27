@@ -19,13 +19,13 @@ ifeval::[{platform} != browser]
 endif::[]
   As before with `deferredInit()`, call `mlsInit()` in a transaction to initialize MLS.
 
-== MLS Initialization.
+== MLS Initialization
 
 . `mlsInit()` was decoupled from key package creation.
   To create key packages after initializing MLS, call `clientKeypackages()` in a transaction.
 
 . removed `CoreCrypto.provideTransport()`, added `transport` parameter to `CoreCryptoContext.mlsInit()`
-  Instead of providing transport separately from MLS initialization provide it when calling `mlsInit()``.
+  Instead of providing transport separately from MLS initialization provide it when calling `mlsInit()`.
 
 == Logging
 

@@ -17,7 +17,7 @@ All entries are encrypted at rest using the `DatabaseKey` provided at open time.
 
 == Backing Storage
 
-On platforms with an operating system the database is backed by https://www.zetetic.net/sqlcipher/[SQLCipher], an encrypted SQLite variant.
+On non-browser platforms the database is backed by https://www.zetetic.net/sqlcipher/[SQLCipher], an encrypted SQLite variant.
 On the browser, the database sits atop IndexedDB and uses item-level encryption managed by CoreCrypto.
 In both cases, data is encrypted at rest.
 
@@ -45,7 +45,7 @@ If the key is lost, the database contents are unrecoverable.
 
 == Opening the Database
 
-All platforms define an async `Database.open` static method accepting a location and key. On platforms with an OS, the location is a filesystem path. On WASM, the location is the IndexedDB store naem.
+All platforms define an async `Database.open` static method accepting a location and key. On platforms with an OS, the location is a filesystem path. On WASM, the location is the IndexedDB store name.
 
 All platforms define an async static method to open a transient database in memory. On WASM, this is `Database.inMemory`. For Kotlin and Swift, this is an overload of `Database.open`.
 
@@ -72,10 +72,9 @@ db.close()
 == Single-Transaction Constraint
 
 Only one transaction may write to the database at a time.
-If `newTransaction()` is called while another transaction is open, the call will block until the first transaction calls `finish()` or `abort()`.
+If a transaction is requested while another transaction is in flight, the call will block until the first transaction concludes.
 
-This has a direct consequence for application architecture: long-running transactions (for example, processing a large backlog of incoming messages) can block other operations that need to write, such as sending a new message.
-Keep transactions short-lived — acquire, mutate, finish, release.
+For more detail, see xref:transactions.adoc#_concurrency[Transactions -> Concurrency].
 
 == Exporting a Copy
 
