@@ -1,22 +1,12 @@
 use core_crypto_keystore::{Database, entities::PersistedMlsPendingGroup, traits::FetchFromDatabase};
 use openmls::prelude::{MlsGroup, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
-use wire_e2e_identity::NewCrlDistributionPoints;
 
 use super::{Error, Result};
 use crate::{
     ConversationId, LeafError, MlsConversation, MlsConversationConfiguration, MlsError, group_store::GroupStore,
     mls_provider::MlsCryptoProvider,
 };
-
-/// Contains everything client needs to know after decrypting an (encrypted) Welcome message
-#[derive(Debug)]
-pub struct WelcomeBundle {
-    /// MLS Group Id
-    pub id: ConversationId,
-    /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: NewCrlDistributionPoints,
-}
 
 impl MlsConversation {
     // ? Do we need to provide the ratchet_tree to the MlsGroup? Does everything crumble down if we can't actually get

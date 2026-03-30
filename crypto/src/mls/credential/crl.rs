@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use core_crypto_keystore::{Database, entities::E2eiCrl, traits::FetchFromDatabase};
+use core_crypto_keystore::{entities::E2eiCrl, traits::FetchFromDatabase};
 use openmls::{
     group::MlsGroup,
     prelude::{Certificate, MlsCredentialType},

@@ -180,7 +180,7 @@ class MLSTest : HasMockDeliveryService() {
         val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
         bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
         val welcome = mockDeliveryService.getLatestWelcome()
-        val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome).id }
+        val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
         bob.transaction { ctx -> ctx.updateKeyingMaterial(id) }
         val commit = mockDeliveryService.getLatestCommit()
 
@@ -202,7 +202,7 @@ class MLSTest : HasMockDeliveryService() {
         val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
 
         // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
-        assertThat(groupId.id).isEqualTo(id)
+        assertThat(groupId).isEqualTo(id)
     }
 
     @Test
@@ -214,7 +214,7 @@ class MLSTest : HasMockDeliveryService() {
         val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
         bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
         val welcome = mockDeliveryService.getLatestWelcome()
-        val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome).id }
+        val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
 
         val msg = "Hello World !".toByteArray()
         val ciphertextMsg = alice.transaction { ctx -> ctx.encryptMessage(groupId, msg) }
@@ -267,7 +267,7 @@ class MLSTest : HasMockDeliveryService() {
 
         val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
         // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
-        assertThat(groupId.id).isEqualTo(id)
+        assertThat(groupId).isEqualTo(id)
     }
 
     @Test
@@ -281,7 +281,7 @@ class MLSTest : HasMockDeliveryService() {
         val carolKp = carol.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
         bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp, carolKp)) }
         val welcome = mockDeliveryService.getLatestWelcome()
-        val conversationId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome).id }
+        val conversationId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
 
         val carolMember = listOf(carolId)
         bob.transaction { ctx -> ctx.removeClientsFromConversation(conversationId, carolMember) }
@@ -387,7 +387,7 @@ class MLSTest : HasMockDeliveryService() {
             val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
             bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
             val welcome = mockDeliveryService.getLatestWelcome()
-            val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome).id }
+            val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
 
             // Change the epoch again, this should be seen by both observers
             bob.transaction { ctx -> ctx.updateKeyingMaterial(id) }
@@ -476,7 +476,7 @@ class MLSTest : HasMockDeliveryService() {
 
             // Alice joins the group
             val welcome = mockDeliveryService.getLatestWelcome()
-            val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome).id }
+            val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
 
             // Register observers
             bob.registerHistoryObserver(scope, bobObserver)

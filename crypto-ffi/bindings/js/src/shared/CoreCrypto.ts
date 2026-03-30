@@ -29,7 +29,6 @@ export {
     DeviceStatus,
     CredentialType,
     WireIdentity,
-    WelcomeBundle,
     X509Identity,
     Ciphersuite,
     CoreCryptoError,

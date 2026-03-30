@@ -9,8 +9,8 @@ use tls_codec::Deserialize as _;
 
 use crate::{
     Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, Credential, CredentialRef,
-    CredentialType, DecryptedMessage, Keypackage, KeypackageRef, MlsTransport, WelcomeBundle,
-    bytes_wrapper::bytes_wrapper, core_crypto::mls_transport::callback_shim,
+    CredentialType, DecryptedMessage, Keypackage, KeypackageRef, MlsTransport, bytes_wrapper::bytes_wrapper,
+    core_crypto::mls_transport::callback_shim,
 };
 
 bytes_wrapper!(
@@ -170,7 +170,7 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::process_raw_welcome_message]
-    pub async fn process_welcome_message(&self, welcome_message: Arc<Welcome>) -> CoreCryptoResult<WelcomeBundle> {
+    pub async fn process_welcome_message(&self, welcome_message: Arc<Welcome>) -> CoreCryptoResult<ConversationId> {
         let result = self
             .inner
             .process_raw_welcome_message(welcome_message.as_slice())
@@ -192,8 +192,7 @@ impl CoreCryptoContext {
             .collect();
 
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
-        let _ = conversation.add_members(keypackages).await?;
-        Ok(())
+        conversation.add_members(keypackages).await.map_err(Into::into)
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::remove_members]
@@ -271,17 +270,17 @@ impl CoreCryptoContext {
         &self,
         group_info: Arc<GroupInfo>,
         credential_ref: Arc<CredentialRef>,
-    ) -> CoreCryptoResult<WelcomeBundle> {
+    ) -> CoreCryptoResult<ConversationId> {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
             .map_err(core_crypto::mls::conversation::Error::tls_deserialize(
                 "verifiable group info",
             ))
             .map_err(RecursiveError::mls_conversation("joining by external commmit"))?;
-        let welcome_bundle = self
+        let conversation_id = self
             .inner
             .join_by_external_commit(group_info, &credential_ref.0)
             .await?;
-        Ok(welcome_bundle.into())
+        Ok(conversation_id.into())
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::enable_history_sharing]

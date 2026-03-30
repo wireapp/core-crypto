@@ -194,13 +194,13 @@ struct InteropClientApp: App {
             guard let coreCrypto else { throw InteropError.notInitialised }
 
             let welcomeMessage = try Welcome(bytes: Data(contentsOf: welcomePath))
-            let bundle = try await coreCrypto.transaction {
+            let conversationId = try await coreCrypto.transaction {
                 try await $0.processWelcomeMessage(
                     welcomeMessage: welcomeMessage
                 )
             }
 
-            return bundle.id.copyBytes().base64EncodedString()
+            return conversationId.copyBytes().base64EncodedString()
 
         case .encryptMessage(let conversationId, let message):
             guard let coreCrypto else { throw InteropError.notInitialised }

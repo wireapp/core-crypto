@@ -1,4 +1,4 @@
-//! This module contains transactional conversation operations that produce a [WelcomeBundle].
+//! This module contains transactional conversation operations that are related to processing welcome messages.
 
 use std::borrow::BorrowMut as _;
 
@@ -6,10 +6,7 @@ use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize as _;
 
 use super::{Error, Result, TransactionContext};
-use crate::{
-    ConversationId, MlsConversation, MlsConversationConfiguration, RecursiveError,
-    mls::credential::crl::extract_crl_uris_from_group,
-};
+use crate::{ConversationId, MlsConversation, MlsConversationConfiguration, RecursiveError};
 
 impl TransactionContext {
     /// Create a conversation from a TLS serialized MLS Welcome message. The `MlsConversationConfiguration` used in this
@@ -17,7 +14,6 @@ impl TransactionContext {
     ///
     /// # Arguments
     /// * `welcome` - a TLS serialized welcome message
-    /// * `configuration` - configuration of the MLS conversation fetched from the Delivery Service
     ///
     /// # Return type
     /// This function will return the conversation/group id
@@ -25,7 +21,7 @@ impl TransactionContext {
     /// # Errors
     /// see [TransactionContext::process_welcome_message]
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn process_raw_welcome_message(&self, welcome: &[u8]) -> Result<WelcomeBundle> {
+    pub async fn process_raw_welcome_message(&self, welcome: &[u8]) -> Result<ConversationId> {
         let mut cursor = std::io::Cursor::new(welcome);
         let welcome =
             MlsMessageIn::tls_deserialize(&mut cursor).map_err(Error::tls_deserialize("mls message in (welcome)"))?;
@@ -36,7 +32,6 @@ impl TransactionContext {
     ///
     /// # Arguments
     /// * `welcome` - a `Welcome` message received as a result of a commit adding new members to a group
-    /// * `configuration` - configuration of the group/conversation
     ///
     /// # Return type
     /// This function will return the conversation/group id
@@ -46,7 +41,7 @@ impl TransactionContext {
     /// * if no [openmls::key_packages::KeyPackage] can be read from the KeyStore
     /// * if the message can't be decrypted
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn process_welcome_message(&self, welcome: MlsMessageIn) -> Result<WelcomeBundle> {
+    pub async fn process_welcome_message(&self, welcome: MlsMessageIn) -> Result<ConversationId> {
         let database = &self.database().await?;
         let MlsMessageInBody::Welcome(welcome) = welcome.extract() else {
             return Err(Error::CallerError(
@@ -79,10 +74,7 @@ impl TransactionContext {
         let id = conversation.id.clone();
         mls_groups.insert(&id, conversation);
 
-        Ok(WelcomeBundle {
-            id,
-            crl_new_distribution_points,
-        })
+        Ok(id)
     }
 }
 

@@ -33,10 +33,7 @@ mod proteus;
 mod signature_scheme;
 mod timestamp;
 
-pub use bundles::{
-    commit::CommitBundle, group_info::GroupInfoBundle, proteus_auto_prekey::ProteusAutoPrekeyBundle,
-    welcome::WelcomeBundle,
-};
+pub use bundles::{commit::CommitBundle, group_info::GroupInfoBundle, proteus_auto_prekey::ProteusAutoPrekeyBundle};
 pub use ciphersuite::{Ciphersuite, ciphersuite_default, ciphersuite_from_u16};
 pub use client_id::ClientId;
 #[cfg(not(target_os = "unknown"))]

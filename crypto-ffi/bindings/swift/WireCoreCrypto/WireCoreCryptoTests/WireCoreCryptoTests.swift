@@ -540,7 +540,7 @@ final class WireCoreCryptoTests: XCTestCase {
         _ = try await alice.transaction {
             try await $0.processWelcomeMessage(
                 welcomeMessage: welcome!
-            ).id
+            )
         }
         try await bob.transaction {
             try await $0.updateKeyingMaterial(conversationId: conversationId)
@@ -591,7 +591,7 @@ final class WireCoreCryptoTests: XCTestCase {
         _ = try await alice.transaction {
             try await $0.processWelcomeMessage(
                 welcomeMessage: welcome!
-            ).id
+            )
         }
         let message = Data("Hello World !".utf8)
         let ciphertext = try await alice.transaction {

@@ -5,7 +5,7 @@ use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 use super::{Error, Result};
 use crate::{
     ConversationId, CredentialRef, LeafError, MlsCommitBundle, MlsConversationConfiguration, MlsError,
-    MlsGroupInfoBundle, RecursiveError, WelcomeBundle,
+    MlsGroupInfoBundle, RecursiveError,
     mls::{
         self,
         conversation::{ConversationIdRef, pending_conversation::PendingConversation},
@@ -28,7 +28,7 @@ impl TransactionContext {
     ///   `GroupInfo` object
     /// * `credential_ref` - reference to the [crate::Credential] to use for joining this group.
     ///
-    /// # Returns [WelcomeBundle]
+    /// # Returns [ConversationId]
     ///
     /// # Errors
     /// Errors resulting from OpenMls, the KeyStore calls and serialization
@@ -36,8 +36,8 @@ impl TransactionContext {
         &self,
         group_info: VerifiableGroupInfo,
         credential_ref: &CredentialRef,
-    ) -> Result<WelcomeBundle> {
-        let (commit_bundle, welcome_bundle, mut pending_conversation) =
+    ) -> Result<ConversationId> {
+        let (commit_bundle, id, mut pending_conversation) =
             self.create_external_join_commit(group_info, credential_ref).await?;
 
         let commit_result = pending_conversation.send_commit(commit_bundle).await;
@@ -55,14 +55,14 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::mls_conversation("merging from external commit"))?;
 
-        Ok(welcome_bundle)
+        Ok(id)
     }
 
     pub(crate) async fn create_external_join_commit(
         &self,
         group_info: VerifiableGroupInfo,
         credential_ref: &CredentialRef,
-    ) -> Result<(MlsCommitBundle, WelcomeBundle, PendingConversation)> {
+    ) -> Result<(MlsCommitBundle, ConversationId, PendingConversation)> {
         let ciphersuite = group_info.ciphersuite().into();
         let mls_provider = self.mls_provider().await?;
         let database = &self.database().await?;
@@ -114,12 +114,9 @@ impl TransactionContext {
             encrypted_message: None,
         };
 
-        let welcome_bundle = WelcomeBundle {
-            id: ConversationId::from(new_group_id),
-            crl_new_distribution_points,
-        };
+        let id = ConversationId::from(new_group_id);
 
-        Ok((commit_bundle, welcome_bundle, pending_conversation))
+        Ok((commit_bundle, id, pending_conversation))
     }
 
     pub(crate) async fn pending_conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
