@@ -35,6 +35,7 @@ use utils::{
     ctx::ctx_store_http_client,
     hooks::TestPkiEnvironmentHooks,
     idp::{IdpServer, OidcProvider, start_idp_server},
+    rand_str,
     stepca::CaCfg,
 };
 use wire_e2e_identity::{
@@ -226,7 +227,7 @@ async fn prepare_pki_env_and_config(
         discovery_base_url,
         dpop_target_uri: Some(dpop_target_uri),
         domain: "wire.localhost".to_string(),
-        host: "ca".to_string(),
+        host: format!("{}.stepca", rand_str(6).to_lowercase()),
     };
 
     let acme = utils::stepca::start_acme_server(&ca_cfg).await;
