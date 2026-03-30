@@ -17,6 +17,7 @@ on:
           - npm
           - jvm
           - android
+          - decode
       sonatype-action:
         description: >
           For JVM/Android: 'release' promotes an existing closed staging repository.
@@ -139,3 +140,20 @@ jobs:
         run: gh release delete-asset "${{ inputs.tag }}" "${{ steps.download.outputs.filename }}" --yes
         env:
           GH_TOKEN: ${{ github.token }}
+
+  prepare-decode:
+    if: >
+      always() &&
+      (inputs.registry == 'all' || inputs.registry == 'decode')
+    uses: ./.github/workflows/publish-decode-binary.yml
+    with:
+      prepare: true
+
+  release-decode:
+    needs: prepare-decode
+    if: >
+      always() &&
+      (inputs.registry == 'all' || inputs.registry == 'decode')
+    uses: ./.github/workflows/publish-decode-binary.yml
+    with:
+      release: true

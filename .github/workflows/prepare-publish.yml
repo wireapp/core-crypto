@@ -69,3 +69,9 @@ jobs:
     uses: ./.github/workflows/publish-npm.yml
     with:
       prepare: true
+
+  decode-binary:
+    needs: verify-tag
+    uses: ./.github/workflows/publish-decode-binary.yml
+    with:
+      prepare: true

@@ -341,3 +341,9 @@ jobs:
       id-token: write
     with:
       release: true
+
+  publish-decode:
+    needs: prepare-publish
+    uses: ./.github/workflows/publish-decode-binary.yml
+    with:
+      release: true

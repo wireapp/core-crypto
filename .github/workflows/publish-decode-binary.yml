@@ -1,0 +1,71 @@
+name: publish decode tool binaries
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-publish-decode-tool"
+
+on:
+  workflow_call:
+    inputs:
+        prepare:
+          description: "If true, stage and validate artifacts."
+          required: false
+          type: boolean
+          default: false
+        release:
+          description: "If true, release staged artifacts."
+          required: false
+          type: boolean
+          default: false
+
+jobs:
+  publish:
+    if: github.repository == 'wireapp/core-crypto'
+
+    strategy:
+      matrix:
+        include:
+          - runs-on: ubuntu-latest
+            target-triple: x86_64-unknown-linux-gnu
+            bin-suffix:
+          - runs-on: macos-latest
+            target-triple: aarch64-apple-darwin
+            bin-suffix:
+          - runs-on: windows-latest
+            target-triple: x86_64-pc-windows-msvc
+            bin-suffix: .exe
+
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: compute consts
+        id: consts
+        run: |
+          echo "artifact-name=decode-${{ matrix.target-triple }}-${{ hashFiles('decode/Cargo.toml', 'decode/**/*.rs') }}-gen-${{ vars.ARTIFACT_GENERATION }}${{ matrix.bin-suffix }}" >> "$GITHUB_OUTPUT"
+          echo "artifact-release-as=decode-${{ matrix.target-triple }}${{ matrix.bin-suffix }}" >> "$GITHUB_OUTPUT"
+
+      - name: build
+        if: ${{ inputs.prepare == true }}
+        run: |
+          cargo build --release -p decode --target ${{ matrix.target-triple }}
+          mv "target/${{ matrix.target-triple }}/release/decode${{ matrix.bin-suffix }}" ${{ steps.consts.outputs.artifact-release-as }}
+
+      - if: ${{ inputs.prepare == true }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.consts.outputs.artifact-name }}
+          path: ${{ steps.consts.outputs.artifact-release-as }}
+          archive: false
+          if-no-files-found: error
+
+      - if: ${{ inputs.prepare == false && inputs.release == true }}
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.consts.outputs.artifact-name }}
+
+      - name: upload built binary to release
+        if: ${{ github.ref_type == 'tag' && inputs.release == true }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "${{ steps.consts.outputs.artifact-release-as }}"
+          fail_on_unmatched_files: true
