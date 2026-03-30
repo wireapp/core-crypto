@@ -163,7 +163,7 @@ impl ConversationGuard {
         message: MlsMessageIn,
         recursion_policy: RecursionPolicy,
     ) -> Result<MlsConversationDecryptMessage> {
-        let client = &self.session().await?;
+        let session = &self.session().await?;
         let provider = &self.crypto_provider().await?;
         let database = self.database().await?;
         let parsed_message = self.parse_message(message.clone()).await?;
@@ -179,7 +179,7 @@ impl ConversationGuard {
         {
             let mut conversation = self.conversation_mut().await;
             let ct = conversation.extract_confirmation_tag_from_own_commit(&message)?;
-            let mut decrypted_message = conversation.handle_own_commit(client, &database, provider, ct).await?;
+            let mut decrypted_message = conversation.handle_own_commit(session, &database, provider, ct).await?;
             debug_assert!(
                 decrypted_message.buffered_messages.is_none(),
                 "decrypted message should be constructed with empty buffer"
@@ -368,7 +368,7 @@ impl ConversationGuard {
                 );
                 let proposals = conversation
                     .renew_proposals_for_current_epoch(
-                        client,
+                        session,
                         provider,
                         &database,
                         proposals_to_renew.into_iter(),
@@ -394,7 +394,7 @@ impl ConversationGuard {
                     proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
                     "Epoch advanced"
                 );
-                client.notify_epoch_changed(conversation.id.clone(), epoch).await;
+                session.notify_epoch_changed(conversation.id.clone(), epoch).await;
 
                 MlsConversationDecryptMessage {
                     app_msg: None,
