@@ -30,7 +30,7 @@ use jwt_simple::prelude::*;
 use rstest::rstest;
 use rusty_jwt_tools::prelude::*;
 use utils::{
-    cfg::{TestEnvironment, WireServer},
+    TestEnvironment, WireServer,
     ctx::ctx_store_http_client,
     hooks::TestPkiEnvironmentHooks,
     idp::{IdpServer, OidcProvider, start_idp_server},

@@ -6,7 +6,7 @@ use wire_e2e_identity::pki_env_hooks::{
 };
 
 use crate::utils::{
-    cfg::{OauthCfg, WireServer, default_http_client},
+    OauthCfg, WireServer, default_http_client,
     idp::{IdpServer, OidcProvider, fetch_id_token},
     stepca::AcmeServer,
 };

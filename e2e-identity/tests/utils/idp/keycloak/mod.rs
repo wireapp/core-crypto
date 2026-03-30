@@ -21,9 +21,9 @@ use url::Url;
 
 use crate::utils::{
     NETWORK, SHM,
-    cfg::scrap_login,
     ctx::{ctx_get_http_client, custom_oauth_client},
     idp::{IdpServer, IdpServerConfig, OAUTH_CLIENT_ID, OAUTH_CLIENT_NAME, OauthCfg, OidcProvider, User},
+    scrap_login,
 };
 
 #[derive(Debug)]

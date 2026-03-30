@@ -12,7 +12,7 @@ use base64::Engine;
 use http::Method;
 use itertools::Itertools;
 
-use crate::utils::cfg::default_http_client;
+use super::default_http_client;
 
 // ugly but openidconnect::Client has too many generics and it's a hell to store in a context
 // to pass between endpoints

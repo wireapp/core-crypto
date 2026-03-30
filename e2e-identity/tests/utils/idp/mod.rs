@@ -3,7 +3,7 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::utils::cfg::OauthCfg;
+use super::OauthCfg;
 
 mod authelia;
 mod keycloak;
