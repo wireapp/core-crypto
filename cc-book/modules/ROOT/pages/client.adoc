@@ -42,4 +42,5 @@ After `mlsInit()` is committed, the instance is ready to use.
 === Multiple Instances
 
 Only one `CoreCrypto` instance (and its clones) should be active against a given database file at a time.
-Opening the same database from two independent `CoreCrypto` instances — whether in the same process or different processes — is not supported and will produce undefined behavior.
+The iOS client has a file lock which prevents two instances of the CoreCrypto from interfering with each other.
+On other clients opening the same database from two independent `CoreCrypto` instances — whether in the same process or different processes — is not supported and will produce undefined behavior.
