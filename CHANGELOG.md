@@ -265,7 +265,7 @@
 
   Affected platforms: all
 
-  Migration: to create key packages after initializing MLS, call `clientKeypackages()` in a transaction.
+  Migration: to create key packages after initializing MLS, call `generateKeypackage()` in a transaction.
 
 - `proteusErrorCode` field was removed from the root error type. Affected platforms: web
 

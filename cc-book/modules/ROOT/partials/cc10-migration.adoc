@@ -22,10 +22,16 @@ endif::[]
 == MLS Initialization
 
 . `mlsInit()` was decoupled from key package creation.
-  To create key packages after initializing MLS, call `clientKeypackages()` in a transaction.
+  To create key packages after initializing MLS, call `CoreCryptoContext.generateKeypackage()` in a transaction.
 
 . removed `CoreCrypto.provideTransport()`, added `transport` parameter to `CoreCryptoContext.mlsInit()`
   Instead of providing transport separately from MLS initialization provide it when calling `mlsInit()`.
+
+== Key Packages
+
+. We *removed* `CoreCryptoContext.clientKeypackages()`. To generate a desired amount of key packages, make repeated calls to `CoreCryptoContext.generateKeypackage()`.
+
+. We *removed* `CoreCryptoContext.clientValidKeypackagesCount()`. To count remaining key packages, call `CoreCryptoContext.getKeypackages()`, and filter the results as desired, and count the remaining items.
 
 == Logging
 
