@@ -241,7 +241,12 @@ async fn prepare_pki_env_and_config(
 
     ctx_store_http_client(&dns_mappings);
 
-    let client_id = ClientId::try_new("e1299f1d-180e-4339-b7c7-2715e1e6897f", 1234, "wire.localhost").unwrap();
+    let client_id = ClientId::try_new(
+        uuid::Uuid::new_v4().to_string(),
+        rand::random::<u64>(),
+        "wire.localhost",
+    )
+    .unwrap();
     let device_id = format!("{:x}", client_id.device_id);
 
     let config = X509CredentialConfiguration {
