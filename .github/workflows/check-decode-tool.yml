@@ -1,0 +1,34 @@
+name: decode tool
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-check-decode-tool"
+
+on:
+  push:
+    paths:
+      - .github/workflows/check-decode-tool.yml
+      - .github/workflows/publish-decode-binary.yml
+      - "decode/**/*"
+
+
+jobs:
+  check:
+    if: github.repository == 'wireapp/core-crypto'
+
+    strategy:
+      matrix:
+        include:
+          - runs-on: ubuntu-latest
+            target-triple: x86_64-unknown-linux-gnu
+          - runs-on: macos-latest
+            target-triple: aarch64-apple-darwin
+          - runs-on: windows-latest
+            target-triple: x86_64-pc-windows-msvc
+
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: check
+        run: |
+          cargo check --release -p decode --target ${{ matrix.target-triple }}
