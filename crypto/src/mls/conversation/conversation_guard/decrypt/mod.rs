@@ -21,25 +21,19 @@ use openmls::{
     },
     group::MlsGroup,
     prelude::{
-        ContentType, CredentialType, LeafNodeIndex, Member, ProcessMessageError, ProcessedMessageContent, Proposal,
+        ContentType, CredentialType, LeafNodeIndex, Member, ProcessMessageError, ProcessedMessageContent,
         StageCommitError, StagedCommit, ValidationError,
     },
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
-use wire_e2e_identity::NewCrlDistributionPoints;
 
 use super::{ConversationGuard, Result};
 use crate::{
     ClientId, E2eiConversationState, MlsError, MlsProposalBundle, RecursiveError, Session, WireIdentity,
     mls::{
         conversation::{Conversation, ConversationWithMls, Error, renew::Renew},
-        credential::{
-            crl::{
-                extract_crl_uris_from_proposals, extract_crl_uris_from_update_path, get_new_crl_distribution_points,
-            },
-            ext::CredentialExt as _,
-        },
+        credential::ext::CredentialExt as _,
     },
 };
 
@@ -67,8 +61,6 @@ pub struct MlsConversationDecryptMessage {
     /// Contains buffered messages for next epoch which were received before the commit creating the epoch
     /// because the DS did not fan them out in order.
     pub buffered_messages: Option<Vec<MlsBufferedConversationDecryptMessage>>,
-    /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
 /// Type safe recursion of [MlsConversationDecryptMessage]
@@ -86,8 +78,6 @@ pub struct MlsBufferedConversationDecryptMessage {
     pub sender_client_id: Option<ClientId>,
     /// see [MlsConversationDecryptMessage]
     pub identity: WireIdentity,
-    /// see [MlsConversationDecryptMessage]
-    pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
 impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessage {
@@ -99,7 +89,6 @@ impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessa
             delay: from.delay,
             sender_client_id: from.sender_client_id,
             identity: from.identity,
-            crl_new_distribution_points: from.crl_new_distribution_points,
         }
     }
 }
@@ -236,17 +225,10 @@ impl ConversationGuard {
                     sender_client_id: Some(sender_client_id),
                     identity,
                     buffered_messages: None,
-                    crl_new_distribution_points: None.into(),
                 }
             }
             ProcessedMessageContent::ProposalMessage(proposal) => {
                 let mut conversation = self.conversation_mut().await;
-                let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])
-                    .map_err(RecursiveError::mls_credential("extracting crl urls from proposals"))?;
-                let crl_new_distribution_points = get_new_crl_distribution_points(&database, crl_dps)
-                    .await
-                    .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
-
                 info!(
                     group_id = conversation.id,
                     sender = Obfuscated::from(proposal.sender()),
@@ -297,7 +279,6 @@ impl ConversationGuard {
                     sender_client_id: None,
                     identity,
                     buffered_messages: None,
-                    crl_new_distribution_points,
                 }
             }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
@@ -305,33 +286,6 @@ impl ConversationGuard {
                 let mut conversation = self.conversation_mut().await;
 
                 let pending_proposals = conversation.self_pending_proposals().cloned().collect::<Vec<_>>();
-
-                let proposal_refs: Vec<Proposal> = pending_proposals
-                    .iter()
-                    .map(|p| p.proposal().clone())
-                    .chain(
-                        staged_commit
-                            .add_proposals()
-                            .map(|p| Proposal::Add(p.add_proposal().clone())),
-                    )
-                    .chain(
-                        staged_commit
-                            .update_proposals()
-                            .map(|p| Proposal::Update(p.update_proposal().clone())),
-                    )
-                    .collect();
-
-                // - This requires a change in OpenMLS to get access to it
-                let mut crl_dps = extract_crl_uris_from_proposals(&proposal_refs)
-                    .map_err(RecursiveError::mls_credential("extracting crl urls from proposals"))?;
-                crl_dps.extend(
-                    extract_crl_uris_from_update_path(&staged_commit)
-                        .map_err(RecursiveError::mls_credential("extracting crl urls from update path"))?,
-                );
-
-                let crl_new_distribution_points = get_new_crl_distribution_points(&database, crl_dps)
-                    .await
-                    .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
                 // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
                 let pending_commit = conversation.group.pending_commit().cloned();
@@ -404,7 +358,6 @@ impl ConversationGuard {
                     sender_client_id: None,
                     identity,
                     buffered_messages,
-                    crl_new_distribution_points,
                 }
             }
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
@@ -415,11 +368,6 @@ impl ConversationGuard {
                     "Received external join proposal"
                 );
 
-                let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])
-                    .map_err(RecursiveError::mls_credential("extracting crl uris from proposals"))?;
-                let crl_new_distribution_points = get_new_crl_distribution_points(&database, crl_dps)
-                    .await
-                    .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
                 conversation.group.store_pending_proposal(*proposal);
 
                 MlsConversationDecryptMessage {
@@ -430,7 +378,6 @@ impl ConversationGuard {
                     sender_client_id: None,
                     identity,
                     buffered_messages: None,
-                    crl_new_distribution_points,
                 }
             }
         };

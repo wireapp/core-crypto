@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use core_crypto_keystore::{Database, entities::E2eiCrl, traits::FetchFromDatabase};
 use openmls::{
     group::MlsGroup,
-    prelude::{Certificate, MlsCredentialType, Proposal, StagedCommit},
+    prelude::{Certificate, MlsCredentialType},
 };
 use wire_e2e_identity::{NewCrlDistributionPoints, x509_check::extract_crl_uris};
 
@@ -31,28 +31,6 @@ pub(crate) fn extract_crl_uris_from_credentials<'a>(
 
         Ok(acc)
     })
-}
-
-pub(crate) fn extract_crl_uris_from_proposals(proposals: &[Proposal]) -> Result<CrlUris> {
-    extract_crl_uris_from_credentials(
-        proposals
-            .iter()
-            .filter_map(|p| match p {
-                Proposal::Add(add) => Some(add.key_package().leaf_node()),
-                Proposal::Update(update) => Some(update.leaf_node()),
-                _ => None,
-            })
-            .map(|ln| ln.credential().mls_credential()),
-    )
-}
-
-pub(crate) fn extract_crl_uris_from_update_path(commit: &StagedCommit) -> Result<CrlUris> {
-    if let Some(update_path) = commit.get_update_path_leaf_node()
-        && let MlsCredentialType::X509(cert) = update_path.credential().mls_credential()
-    {
-        return extract_dp(cert);
-    }
-    Ok(HashSet::new().into())
 }
 
 pub(crate) fn extract_crl_uris_from_group(group: &MlsGroup) -> Result<CrlUris> {

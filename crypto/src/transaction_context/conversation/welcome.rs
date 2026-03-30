@@ -7,8 +7,8 @@ use tls_codec::Deserialize as _;
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    MlsConversation, MlsConversationConfiguration, RecursiveError, WelcomeBundle,
-    mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
+    ConversationId, MlsConversation, MlsConversationConfiguration, RecursiveError,
+    mls::credential::crl::extract_crl_uris_from_group,
 };
 
 impl TransactionContext {
@@ -75,15 +75,6 @@ impl TransactionContext {
         )
         .await
         .map_err(RecursiveError::mls_conversation("creating conversation from welcome"))?;
-
-        // We wait for the group to be created then we iterate through all members
-        let crl_new_distribution_points = get_new_crl_distribution_points(
-            database,
-            extract_crl_uris_from_group(&conversation.group)
-                .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
-        )
-        .await
-        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
         let id = conversation.id.clone();
         mls_groups.insert(&id, conversation);

@@ -3,7 +3,6 @@
 use std::{borrow::Borrow, collections::HashMap};
 
 use openmls::prelude::KeyPackageIn;
-use wire_e2e_identity::NewCrlDistributionPoints;
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
@@ -13,10 +12,7 @@ use crate::{
         conversation::{
             Conversation as _, ConversationGuard, ConversationWithMls as _, Error, Result, commit::MlsCommitBundle,
         },
-        credential::{
-            Credential,
-            crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
-        },
+        credential::Credential,
     },
 };
 
@@ -99,35 +95,21 @@ impl ConversationGuard {
     }
 
     /// Adds new members to the group/conversation
-    pub async fn add_members(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<NewCrlDistributionPoints> {
-        let (new_crl_distribution_points, commit) = self.add_members_inner(key_packages).await?;
+    pub async fn add_members(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<()> {
+        let commit = self.add_members_inner(key_packages).await?;
 
         self.send_and_merge_commit(commit).await?;
 
-        Ok(new_crl_distribution_points)
+        Ok(())
     }
 
-    pub(super) async fn add_members_inner(
-        &mut self,
-        key_packages: Vec<KeyPackageIn>,
-    ) -> Result<(NewCrlDistributionPoints, MlsCommitBundle)> {
+    pub(super) async fn add_members_inner(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<MlsCommitBundle> {
         self.ensure_no_pending_commit().await?;
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
         let signer = credential.signature_key();
         let database = self.database().await?;
         let mut conversation = self.conversation_mut().await;
-
-        // No need to also check pending proposals since they should already have been scanned while decrypting the
-        // proposal message
-        let crl_dps = extract_crl_uris_from_credentials(key_packages.iter().filter_map(|kp| {
-            let mls_credential = kp.credential().mls_credential();
-            matches!(mls_credential, openmls::prelude::MlsCredentialType::X509(_)).then_some(mls_credential)
-        }))
-        .map_err(RecursiveError::mls_credential("extracting crl uris from credentials"))?;
-        let crl_new_distribution_points = get_new_crl_distribution_points(&database, crl_dps)
-            .await
-            .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
         let (commit, welcome, group_info) = conversation
             .group
@@ -155,7 +137,7 @@ impl ConversationGuard {
             encrypted_message: None,
         };
 
-        Ok((crl_new_distribution_points, commit))
+        Ok(commit)
     }
 
     fn err_is_duplicate_signature_key(

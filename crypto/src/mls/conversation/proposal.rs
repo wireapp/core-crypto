@@ -7,14 +7,9 @@
 
 use core_crypto_keystore::Database;
 use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn, prelude::LeafNode};
-use wire_e2e_identity::NewCrlDistributionPoints;
 
 use super::{Error, Result};
-use crate::{
-    MlsConversation, MlsError, MlsProposalRef, RecursiveError, Session,
-    mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
-    mls_provider::MlsCryptoProvider,
-};
+use crate::{MlsConversation, MlsError, MlsProposalRef, Session, mls_provider::MlsCryptoProvider};
 
 /// Creating proposals
 impl MlsConversation {
@@ -33,14 +28,6 @@ impl MlsConversation {
             .map_err(|_| Error::IdentityInitializationError)?
             .signature_key_pair;
 
-        let crl_new_distribution_points = get_new_crl_distribution_points(
-            database,
-            extract_crl_uris_from_credentials(std::iter::once(key_package.credential().mls_credential()))
-                .map_err(RecursiveError::mls_credential("extracting crl uris from credentials"))?,
-        )
-        .await
-        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
-
         let (proposal, proposal_ref) = self
             .group
             .propose_add_member(backend, signer, key_package)
@@ -49,7 +36,6 @@ impl MlsConversation {
         let proposal = MlsProposalBundle {
             proposal,
             proposal_ref: proposal_ref.into(),
-            crl_new_distribution_points,
         };
         self.persist_group_when_changed(database, false).await?;
         Ok(proposal)
@@ -128,8 +114,6 @@ pub struct MlsProposalBundle {
     pub proposal: MlsMessageOut,
     /// A unique identifier of the proposal to rollback it later if required
     pub proposal_ref: MlsProposalRef,
-    /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
 impl From<(MlsMessageOut, openmls::prelude::hash_ref::ProposalRef)> for MlsProposalBundle {
@@ -137,7 +121,6 @@ impl From<(MlsMessageOut, openmls::prelude::hash_ref::ProposalRef)> for MlsPropo
         Self {
             proposal,
             proposal_ref: proposal_ref.into(),
-            crl_new_distribution_points: None.into(),
         }
     }
 }
@@ -147,7 +130,7 @@ impl MlsProposalBundle {
     /// 0 -> proposal
     /// 1 -> proposal reference
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<u8>, NewCrlDistributionPoints)> {
+    pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<u8>)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let proposal = self
             .proposal
@@ -155,7 +138,7 @@ impl MlsProposalBundle {
             .map_err(Error::tls_serialize("proposal"))?;
         let proposal_ref = self.proposal_ref.to_bytes();
 
-        Ok((proposal, proposal_ref, self.crl_new_distribution_points))
+        Ok((proposal, proposal_ref))
     }
 }
 

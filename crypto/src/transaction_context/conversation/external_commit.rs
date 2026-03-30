@@ -9,7 +9,6 @@ use crate::{
     mls::{
         self,
         conversation::{ConversationIdRef, pending_conversation::PendingConversation},
-        credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     },
     transaction_context::TransactionContext,
 };
@@ -98,14 +97,6 @@ impl TransactionContext {
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info).map_err(
             RecursiveError::mls_conversation("trying new full plaintext group info bundle"),
         )?;
-
-        let crl_new_distribution_points = get_new_crl_distribution_points(
-            database,
-            extract_crl_uris_from_group(&group)
-                .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
-        )
-        .await
-        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
         let new_group_id = group.group_id().to_vec();
 

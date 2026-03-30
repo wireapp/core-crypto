@@ -21,10 +21,7 @@ use crate::{
     MlsTransportResponse, RecursiveError,
     mls::{
         conversation::{ConversationIdRef, conversation_guard::decrypt::buffer_messages::MessageRestorePolicy},
-        credential::{
-            crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
-            ext::CredentialExt as _,
-        },
+        credential::ext::CredentialExt as _,
     },
     mls_provider::{Database, MlsCryptoProvider},
     transaction_context::TransactionContext,
@@ -191,14 +188,6 @@ impl PendingConversation {
             .extract_identity(conversation.ciphersuite(), None)
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
-        let crl_new_distribution_points = get_new_crl_distribution_points(
-            &self.keystore().await?,
-            extract_crl_uris_from_group(&conversation.group)
-                .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
-        )
-        .await
-        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
-
         Ok(MlsConversationDecryptMessage {
             app_msg: None,
             proposals: vec![],
@@ -207,7 +196,6 @@ impl PendingConversation {
             sender_client_id: None,
             identity,
             buffered_messages,
-            crl_new_distribution_points,
         })
     }
 

@@ -28,7 +28,7 @@ impl ConversationGuard {
         // Create a commit that adds a history client
         let history_secret = self.generate_history_secret().await?;
         let key_package = history_secret.key_package.clone().into();
-        let (_, commit) = self.add_members_inner(vec![key_package]).await?;
+        let commit = self.add_members_inner(vec![key_package]).await?;
 
         self.send_new_history_client_commit(commit, history_secret).await
     }
