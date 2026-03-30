@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use core_crypto_keystore::{entities::E2eiCrl, traits::FetchFromDatabase};
+use core_crypto_keystore::{Database, entities::E2eiCrl, traits::FetchFromDatabase};
 use openmls::{
     group::MlsGroup,
     prelude::{Certificate, MlsCredentialType, Proposal, StagedCommit},
@@ -10,10 +10,21 @@ use wire_e2e_identity::{NewCrlDistributionPoints, x509_check::extract_crl_uris};
 use super::{Error, Result};
 use crate::{KeystoreError, RecursiveError};
 
+#[derive(
+    Debug,
+    Clone,
+    derive_more::From,
+    derive_more::Into,
+    derive_more::Deref,
+    derive_more::DerefMut,
+    derive_more::IntoIterator,
+)]
+pub(crate) struct CrlUris(HashSet<String>);
+
 pub(crate) fn extract_crl_uris_from_credentials<'a>(
     mut credentials: impl Iterator<Item = &'a MlsCredentialType>,
-) -> Result<HashSet<String>> {
-    credentials.try_fold(HashSet::new(), |mut acc, cred| {
+) -> Result<CrlUris> {
+    credentials.try_fold(CrlUris::new(), |mut acc, cred| {
         if let MlsCredentialType::X509(cert) = cred {
             acc.extend(extract_dp(cert)?);
         }
@@ -22,7 +33,7 @@ pub(crate) fn extract_crl_uris_from_credentials<'a>(
     })
 }
 
-pub(crate) fn extract_crl_uris_from_proposals(proposals: &[Proposal]) -> Result<HashSet<String>> {
+pub(crate) fn extract_crl_uris_from_proposals(proposals: &[Proposal]) -> Result<CrlUris> {
     extract_crl_uris_from_credentials(
         proposals
             .iter()
@@ -35,23 +46,23 @@ pub(crate) fn extract_crl_uris_from_proposals(proposals: &[Proposal]) -> Result<
     )
 }
 
-pub(crate) fn extract_crl_uris_from_update_path(commit: &StagedCommit) -> Result<HashSet<String>> {
+pub(crate) fn extract_crl_uris_from_update_path(commit: &StagedCommit) -> Result<CrlUris> {
     if let Some(update_path) = commit.get_update_path_leaf_node()
         && let MlsCredentialType::X509(cert) = update_path.credential().mls_credential()
     {
         return extract_dp(cert);
     }
-    Ok(HashSet::new())
+    Ok(HashSet::new().into())
 }
 
-pub(crate) fn extract_crl_uris_from_group(group: &MlsGroup) -> Result<HashSet<String>> {
+pub(crate) fn extract_crl_uris_from_group(group: &MlsGroup) -> Result<CrlUris> {
     extract_crl_uris_from_credentials(group.members_credentials().map(|c| c.mls_credential()))
 }
 
-pub(crate) fn extract_dp(cert: &Certificate) -> Result<HashSet<String>> {
+pub(crate) fn extract_dp(cert: &Certificate) -> Result<CrlUris> {
     cert.certificates
         .iter()
-        .try_fold(HashSet::new(), |mut acc, cert| -> Result<HashSet<String>> {
+        .try_fold(CrlUris::new(), |mut acc, cert| -> Result<CrlUris> {
             use x509_cert::der::Decode as _;
             let cert = x509_cert::Certificate::from_der(cert.as_slice()).map_err(Error::DecodeX509)?;
             if let Some(crl_uris) =
@@ -79,4 +90,10 @@ pub(crate) async fn get_new_crl_distribution_points(
     crl_dps.retain(|dp| !stored_crl_dps.contains(&dp.as_str()));
 
     Ok(Some(crl_dps).into())
+}
+
+impl CrlUris {
+    fn new() -> Self {
+        HashSet::new().into()
+    }
 }
