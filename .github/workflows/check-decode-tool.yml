@@ -16,6 +16,7 @@ jobs:
     if: github.repository == 'wireapp/core-crypto'
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           - runs-on: ubuntu-latest
