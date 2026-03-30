@@ -47,6 +47,7 @@ derive_more = { version = "2.1", features = [
   "as_ref",
   "deref",
   "deref_mut",
+  "into_iterator",
 ] }
 futures-util = "0.3"
 hex = "0.4"
