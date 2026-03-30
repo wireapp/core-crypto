@@ -68,7 +68,7 @@ ecdsa = { version = "0.16", features = ["der", "pkcs8"] }
 p256 = { version = "0.13", features = ["pkcs8"] }
 p384 = { version = "0.13", features = ["pkcs8"] }
 p521 = { version = "0.13", features = ["pkcs8"] }
-hkdf = "0.12"
+hkdf = "0.13"
 x509-cert = { workspace = true, features = ["builder", "hazmat"] }
 web-time = "1.1.0"
 rand = { workspace = true, features = ["getrandom"] }
