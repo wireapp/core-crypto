@@ -2,17 +2,15 @@
 //! is responsible for displaying them.
 
 use std::{
-    collections::{HashMap, hash_map::RandomState},
+    collections::HashMap,
     net::SocketAddr,
     str::FromStr,
     sync::{LazyLock, Mutex},
 };
 
 use base64::Engine;
-use http::{Method, Request};
-use hyper::body::Incoming;
+use http::Method;
 use itertools::Itertools;
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 use crate::utils::cfg::default_http_client;
 
@@ -82,125 +80,8 @@ pub(crate) fn ctx_store_request(key: &'static str, req: &oauth2::HttpRequest) {
     ctx_store(format!("{key}-request-body"), body);
 }
 
-pub(crate) fn ctx_store_reqwest_request(key: &'static str, req: &reqwest::Request) {
-    ctx_store(format!("{key}-request-method"), req.method().as_str());
-    ctx_store(format!("{key}-request-uri"), req.url().as_str());
-    let headers = req
-        .headers()
-        .iter()
-        .map(|(k, v)| format!("{}|{}", k.as_str(), v.to_str().unwrap()))
-        .join(";");
-    ctx_store(format!("{key}-request-headers"), headers);
-    if let Some(body) = req.body().and_then(|b| b.as_bytes()) {
-        let body = base64::prelude::BASE64_STANDARD.encode(body);
-        ctx_store(format!("{key}-request-body"), body);
-    }
-}
-
-pub(crate) fn ctx_store_http_request(key: &'static str, req: &Request<Incoming>) {
-    ctx_store(format!("{key}-request-method"), req.method().as_str());
-    ctx_store(format!("{key}-request-uri"), req.uri().to_string());
-    let headers = req
-        .headers()
-        .iter()
-        .map(|(k, v)| format!("{}|{}", k.as_str(), v.to_str().unwrap()))
-        .join(";");
-    ctx_store(format!("{key}-request-headers"), headers);
-}
-
-pub(crate) async fn ctx_store_reqwest_response(key: &'static str, resp: reqwest::Response) -> Option<Vec<u8>> {
-    ctx_store(format!("{key}-response-status"), resp.status().as_str());
-    ctx_store(format!("{key}-response-uri"), resp.url().as_str());
-    let headers = resp
-        .headers()
-        .iter()
-        .map(|(k, v)| format!("{}|{}", k.as_str(), v.to_str().unwrap()))
-        .join(";");
-    ctx_store(format!("{key}-response-headers"), headers);
-
-    if let Ok(body) = resp.bytes().await {
-        let body = body.to_vec();
-        let b64_body = base64::prelude::BASE64_STANDARD.encode(body.clone());
-        ctx_store(format!("{key}-response-body"), b64_body);
-        return Some(body);
-    }
-    None
-}
-
 pub(crate) fn ctx_get(key: impl AsRef<str>) -> Option<String> {
     CONTEXT.lock().unwrap().get(key.as_ref()).map(|v| v.to_string())
-}
-
-pub(crate) fn ctx_get_request(key: &'static str) -> reqwest::Request {
-    let method = ctx_get(format!("{key}-request-method")).unwrap();
-    let method = reqwest::Method::from_str(&method).unwrap();
-    let uri: url::Url = ctx_get(format!("{key}-request-uri")).unwrap().parse().unwrap();
-    let headers = ctx_get(format!("{key}-request-headers"))
-        .unwrap()
-        .split(';')
-        .filter_map(|kv| {
-            let mut kv = kv.split('|');
-            kv.next().zip(kv.next())
-        })
-        .filter_map(|(k, v)| k.parse().ok().zip(v.parse().ok()))
-        .collect::<Vec<(HeaderName, HeaderValue)>>();
-    let body = ctx_get(format!("{key}-request-body"))
-        .map(|body| base64::prelude::BASE64_STANDARD.decode(body).unwrap())
-        .map(reqwest::Body::from);
-
-    // sadly this is currently the only way to build a RequestBuilder
-    let mut req = reqwest::Client::new()
-        .request(method, uri)
-        .headers(HeaderMap::from_iter(headers));
-    if let Some(body) = body {
-        req = req.body(body)
-    }
-    req.build().unwrap()
-}
-
-pub(crate) fn ctx_get_resp(key: &'static str, as_html: bool) -> String {
-    let status = ctx_get(format!("{key}-response-status"))
-        .unwrap()
-        .parse::<u16>()
-        .unwrap();
-    let uri = ctx_get(format!("{key}-response-uri")).unwrap_or_default();
-    let headers = ctx_get(format!("{key}-response-headers"));
-    let headers = headers
-        .as_ref()
-        .unwrap()
-        .split(';')
-        .filter_map(|kv| {
-            let mut kv = kv.split('|');
-            kv.next().zip(kv.next())
-        })
-        .collect::<Vec<(&str, &str)>>();
-    let headers = HashMap::<&str, &str, RandomState>::from_iter(headers);
-    let body = ctx_get(format!("{key}-response-body"))
-        .map(|body| base64::prelude::BASE64_STANDARD.decode(body).unwrap())
-        .map(|body| String::from_utf8(body).unwrap());
-    if as_html {
-        format!(
-            r#"
-```text
-{status} {uri}
-{headers:#?}
-```
-
-<details>
-<summary>Html</summary>
-
-```html
-{}
-```
-
-</details>
-
-"#,
-            body.unwrap_or_default()
-        )
-    } else {
-        body.unwrap_or_default()
-    }
 }
 
 const DNS_MAPPING_PREFIX: &str = "dns-mapping-";

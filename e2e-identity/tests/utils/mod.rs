@@ -7,16 +7,9 @@ pub(crate) mod cfg;
 #[cfg(not(target_os = "unknown"))]
 pub(crate) mod ctx;
 #[cfg(not(target_os = "unknown"))]
-pub(crate) mod display;
-#[cfg(not(target_os = "unknown"))]
-pub(crate) mod fmk;
-#[cfg(not(target_os = "unknown"))]
-pub(crate) mod helpers;
-#[cfg(not(target_os = "unknown"))]
 pub(crate) mod hooks;
 #[cfg(not(target_os = "unknown"))]
 pub(crate) mod idp;
-pub(crate) mod keys;
 #[cfg(not(target_os = "unknown"))]
 pub(crate) mod stepca;
 
@@ -44,33 +37,4 @@ pub(crate) fn rand_client_id(device_id: Option<u64>) -> ClientId {
         format!("{}.com", rand_str(6)).as_bytes(),
     )
     .unwrap()
-}
-
-pub(crate) type TestResult<T> = Result<T, TestError>;
-
-#[derive(Debug, thiserror::Error)]
-pub(crate) enum TestError {
-    #[error(transparent)]
-    Acme(#[from] wire_e2e_identity::acme::RustyAcmeError),
-    #[error(transparent)]
-    Jwt(#[from] rusty_jwt_tools::prelude::RustyJwtError),
-    #[cfg(not(target_os = "unknown"))]
-    #[error(transparent)]
-    Reqwest(#[from] reqwest::Error),
-    #[error(transparent)]
-    Serde(#[from] serde_json::Error),
-    #[error(transparent)]
-    Utf8(#[from] std::str::Utf8Error),
-    #[error("wire-server error")]
-    WireServerError,
-    #[error("account creation error")]
-    AccountCreationError,
-    #[error("authorization creation error")]
-    AuthzCreationError,
-    #[error("dpop challenge verification error")]
-    DpopChallengeError,
-    #[error("oidc challenge verification error")]
-    OidcChallengeError,
-    #[error("Test is not rightfully implemented")]
-    Internal,
 }
