@@ -63,24 +63,6 @@ pub(crate) struct OauthCfg {
     pub redirect_uri: String,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub(crate) struct OidcCfg {
-    pub issuer: String,
-    pub authorization_endpoint: String,
-    pub token_endpoint: String,
-    pub jwks_uri: String,
-    pub userinfo_endpoint: String,
-    pub issuer_uri: Option<String>,
-}
-
-impl OidcCfg {
-    pub(crate) fn set_issuer_uri(&mut self, base: &str) {
-        let issuer_uri = url::Url::parse(&self.issuer).unwrap();
-        let issuer_uri = format!("{base}{}", issuer_uri.path());
-        self.issuer_uri = Some(issuer_uri)
-    }
-}
-
 #[derive(Debug, Clone)]
 pub(crate) struct WireServer {
     pub hostname: String,
