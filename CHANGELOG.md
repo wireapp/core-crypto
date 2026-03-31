@@ -296,6 +296,13 @@
 
   Affected platforms: all
 
+## v9.3.3 - 2026-03-31
+
+### Bug Fixes
+
+- no more errors when deleting non-existent credential
+  ([aa0195c](https://github.com/wireapp/core-crypto/commit/fbe5735e55fd61ec4544795f6dfe6208a27c73be))
+
 ## v9.3.2 - 2026-03-18
 
 ### Bug Fixes
