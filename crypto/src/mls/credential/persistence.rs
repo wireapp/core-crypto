@@ -21,6 +21,18 @@ impl Credential {
         stored_credential.try_into()
     }
 
+    /// Should only be used when really requiring the credential data itself, e.g., when checking for validity or
+    /// looking for CRL URLs. In other cases, use [CredentialRef::get_all].
+    pub(crate) async fn get_all(database: &impl FetchFromDatabase) -> Result<Vec<Self>> {
+        database
+            .load_all::<StoredCredential>()
+            .await
+            .map_err(KeystoreError::wrap("getting all credentials"))?
+            .iter()
+            .map(TryInto::try_into)
+            .collect()
+    }
+
     /// Persist this credential into the database.
     ///
     /// Returns a reference which is stable over time and across the FFI boundary.
