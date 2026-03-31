@@ -12,7 +12,6 @@ use openmls_traits::authentication_service::{CredentialAuthenticationStatus, Cre
 use x509_cert::{Certificate, der::Decode as _};
 
 use crate::{
-    error::E2eIdentityError,
     pki_env_hooks::PkiEnvironmentHooks,
     x509_check::{
         RustyX509CheckError,
@@ -24,8 +23,10 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error(transparent)]
-    IdentityError(#[from] E2eIdentityError),
+    #[error("The trust anchor certificate couldn't be loaded from the database.")]
+    NoTrustAnchor,
+    #[error("Failed to fetch CRL from '{uri}': HTTP {status}")]
+    CrlFetchUnsuccessful { uri: String, status: u16 },
     #[error(transparent)]
     X509Error(#[from] RustyX509CheckError),
     #[error(transparent)]

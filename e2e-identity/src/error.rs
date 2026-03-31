@@ -42,6 +42,8 @@ pub enum E2eIdentityError {
     #[error(transparent)]
     CryptoError(#[from] openmls_traits::types::CryptoError),
     #[error(transparent)]
+    PkiEnvError(#[from] crate::pki_env::Error),
+    #[error(transparent)]
     X509Error(#[from] crate::x509_check::RustyX509CheckError),
     #[error(transparent)]
     UrlError(#[from] url::ParseError),
