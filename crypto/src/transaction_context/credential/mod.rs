@@ -1,3 +1,5 @@
+mod check;
+
 use std::sync::Arc;
 
 use super::{Error, Result};
