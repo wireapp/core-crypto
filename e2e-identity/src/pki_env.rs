@@ -9,7 +9,7 @@ use core_crypto_keystore::{
     traits::FetchFromDatabase,
 };
 use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
-use x509_cert::der::Decode as _;
+use x509_cert::{Certificate, der::Decode as _};
 
 use crate::{
     error::E2eIdentityError,
@@ -142,6 +142,17 @@ impl PkiEnvironment {
 
     pub fn database(&self) -> &Database {
         &self.database
+    }
+
+    pub async fn trust_anchor(&self) -> Result<Certificate> {
+        let trust_anchor = self
+            .database
+            .get_unique::<E2eiAcmeCA>()
+            .await?
+            .ok_or(Error::NoTrustAnchor)?;
+
+        let trust_anchor = x509_cert::Certificate::from_der(&trust_anchor.content)?;
+        Ok(trust_anchor)
     }
 }
 
