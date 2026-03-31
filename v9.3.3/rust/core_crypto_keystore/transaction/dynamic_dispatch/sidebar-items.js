@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Entity","EntityId"],"fn":["execute_delete","execute_save"]};
