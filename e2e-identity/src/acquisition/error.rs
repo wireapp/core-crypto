@@ -55,4 +55,7 @@ pub enum CertificateError {
     /// Advertised public key is not supported
     #[error("Advertised public key is not supported")]
     UnsupportedPublicKey,
+    /// X509Check error
+    #[error("transparent")]
+    X509Check(#[from] crate::x509_check::RustyX509CheckError),
 }
