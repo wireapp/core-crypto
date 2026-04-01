@@ -82,11 +82,6 @@ impl TransactionContext {
         self.e2ei_register_intermediate_ca(inter_ca).await
     }
 
-    pub(crate) async fn e2ei_register_intermediate_ca_der(&self, cert_der: &[u8]) -> Result<NewCrlDistributionPoints> {
-        let inter_ca = x509_cert::Certificate::from_der(cert_der)?;
-        self.e2ei_register_intermediate_ca(inter_ca).await
-    }
-
     async fn e2ei_register_intermediate_ca(
         &self,
         inter_ca: x509_cert::Certificate,
