@@ -5,7 +5,10 @@ use rusty_jwt_tools::{
 };
 use x509_cert::spki::SubjectPublicKeyInfoOwned;
 
-use crate::acme::{RustyAcmeError, RustyAcmeResult, error::CertificateError};
+use crate::{
+    acme::{RustyAcmeError, RustyAcmeResult},
+    acquisition::error::CertificateError,
+};
 
 /// Used to compute the MLS thumbprint of a Basic Credential
 pub fn compute_raw_key_thumbprint(

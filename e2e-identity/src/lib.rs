@@ -136,9 +136,7 @@ pub mod pki_env;
 pub mod utils;
 pub mod x509_check;
 
-pub use acme::{
-    AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader, compute_raw_key_thumbprint,
-};
+pub use acme::{AcmeDirectory, RustyAcme, RustyAcmeError};
 pub use acquisition::X509CredentialAcquisition;
 pub use e2e_identity::RustyE2eIdentity;
 pub use error::{E2eIdentityError, E2eIdentityResult};

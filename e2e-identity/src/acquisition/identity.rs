@@ -2,11 +2,10 @@ use rusty_jwt_tools::prelude::{ClientId, HashAlgorithm, QualifiedHandle};
 use x509_cert::der::Decode as _;
 
 use crate::{
-    acme::{RustyAcmeResult, error::CertificateError},
+    acme::RustyAcmeResult,
+    acquisition::{error::CertificateError, thumbprint::try_compute_jwk_canonicalized_thumbprint},
     x509_check::{IdentityStatus, revocation::PkiEnvironment},
 };
-
-pub(crate) mod thumbprint;
 
 #[derive(Debug, Clone)]
 pub struct WireIdentity {
@@ -41,7 +40,7 @@ impl WireIdentityReader for x509_cert::Certificate {
         let (client_id, handle) = try_extract_san(&self.tbs_certificate)?;
         let (display_name, domain) = try_extract_subject(&self.tbs_certificate)?;
         let status = IdentityStatus::from_cert(self, env);
-        let thumbprint = thumbprint::try_compute_jwk_canonicalized_thumbprint(&self.tbs_certificate, hash_alg)?;
+        let thumbprint = try_compute_jwk_canonicalized_thumbprint(&self.tbs_certificate, hash_alg)?;
 
         Ok(WireIdentity {
             client_id,

@@ -17,6 +17,9 @@ mod error;
 mod initial;
 mod oidc_challenge;
 
+mod identity;
+mod thumbprint;
+
 #[derive(Debug)]
 pub struct X509CredentialConfiguration {
     pub acme_url: String,
