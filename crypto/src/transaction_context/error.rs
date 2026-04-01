@@ -44,6 +44,8 @@ pub enum Error {
     CredentialStillInUse(ConversationId),
     #[error("The supplied credential does not match the id this CC instance was initialized with")]
     WrongCredential,
+    #[error("The supplied credential is invalid")]
+    InvalidCredential,
     #[error("something went wrong when generating and storing a new keypackage: {0}")]
     KeypackageNew(String),
     #[error("{0}")]
