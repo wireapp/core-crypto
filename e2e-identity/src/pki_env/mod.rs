@@ -1,5 +1,6 @@
 //! PKI Environment API
 
+mod crl;
 pub mod hooks;
 
 use std::{collections::HashSet, sync::Arc};
@@ -29,6 +30,8 @@ pub enum Error {
     NoTrustAnchor,
     #[error("Failed to fetch CRL from '{uri}': HTTP {status}")]
     CrlFetchUnsuccessful { uri: String, status: u16 },
+    #[error(transparent)]
+    HooksError(#[from] hooks::PkiEnvironmentHooksError),
     #[error(transparent)]
     X509Error(#[from] RustyX509CheckError),
     #[error(transparent)]
