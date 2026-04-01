@@ -7,7 +7,7 @@ use url::Url;
 use crate::{
     acme::AcmeJws,
     pki_env::PkiEnvironment,
-    pki_env_hooks::{HttpHeader, HttpMethod, HttpResponse},
+    pki_env::hooks::{HttpHeader, HttpMethod, HttpResponse},
 };
 
 mod dpop_challenge;

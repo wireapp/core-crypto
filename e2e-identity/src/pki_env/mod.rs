@@ -1,5 +1,7 @@
 //! PKI Environment API
 
+pub mod hooks;
+
 use std::{collections::HashSet, sync::Arc};
 
 use async_lock::{RwLock, RwLockReadGuard};
@@ -12,7 +14,7 @@ use openmls_traits::authentication_service::{CredentialAuthenticationStatus, Cre
 use x509_cert::{Certificate, der::Decode as _};
 
 use crate::{
-    pki_env_hooks::PkiEnvironmentHooks,
+    pki_env::hooks::PkiEnvironmentHooks,
     x509_check::{
         RustyX509CheckError,
         revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams},

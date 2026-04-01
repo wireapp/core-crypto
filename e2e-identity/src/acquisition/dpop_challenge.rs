@@ -3,7 +3,7 @@ use rusty_jwt_tools::prelude::{Dpop, Handle, Htm, RustyJwtTools};
 use super::{Result, X509CredentialAcquisition, get_header, states};
 use crate::{
     acme::{AcmeAccount, AcmeChallenge, AcmeChallengeType, AcmeOrder, RustyAcme, RustyAcmeError},
-    pki_env_hooks::HttpMethod,
+    pki_env::hooks::HttpMethod,
 };
 
 impl X509CredentialAcquisition<states::Initialized> {

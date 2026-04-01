@@ -1,6 +1,6 @@
 use rusty_jwt_tools::prelude::RustyJwtError;
 
-use crate::pki_env_hooks::PkiEnvironmentHooksError;
+use crate::pki_env::hooks::PkiEnvironmentHooksError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

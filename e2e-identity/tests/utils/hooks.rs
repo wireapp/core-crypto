@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use base64::Engine as _;
-use wire_e2e_identity::pki_env_hooks::{
+use wire_e2e_identity::pki_env::hooks::{
     HttpHeader, HttpMethod, HttpResponse, PkiEnvironmentHooks, PkiEnvironmentHooksError,
 };
 
