@@ -12,6 +12,7 @@ use crate::{
     },
 };
 
+mod checks;
 mod dpop_challenge;
 mod error;
 mod initial;
