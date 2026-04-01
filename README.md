@@ -509,10 +509,6 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
 ### Making a new release<a name="making-a-new-release"></a>
 
 1. Make a branch based on `main` to prepare for release (`git checkout -b prepare-release/X.Y.Z`)
-1. Run `sh scripts/update-versions.sh X.Y.Z` to update the versions of
-   - all workspace member crates
-   - `package.json`
-   - `crypto-ffi/bindings/gradle.properties` Make sure the result of the script run is correct.
 1. Generate the relevant changelog section:
    ```bash
    git cliff --bump --unreleased
@@ -532,6 +528,10 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
 1. In [index.md](docs/index.md), copy the commented-out table row from the bottom of the file to the appropriate place
    in the table, ordering by version number, descending. Search and replace the first 5 occurrences of `x.x.x` with
    `X.Y.Z`.
+1. Run `sh scripts/update-versions.sh X.Y.Z` to update the versions of
+   - all workspace member crates
+   - `package.json`
+   - `crypto-ffi/bindings/gradle.properties` Make sure the result of the script run is correct.
 1. Make sure the changes look reasonable and complete; you can use the previous release as a reference
 1. Push your `prepare-release/X.Y.Z` branch and create a PR for it
 1. Get it reviewed, then merge it into `main` and remove the `prepare-release/X.Y.Z` branch from the remote
