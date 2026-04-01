@@ -5,10 +5,7 @@ use rusty_jwt_tools::{
 };
 use x509_cert::spki::SubjectPublicKeyInfoOwned;
 
-use crate::{
-    acme::{RustyAcmeError, RustyAcmeResult},
-    acquisition::error::CertificateError,
-};
+use crate::{acme::RustyAcmeResult, acquisition::error::CertificateError};
 
 /// Used to compute the MLS thumbprint of a Basic Credential
 pub fn compute_raw_key_thumbprint(
@@ -36,7 +33,7 @@ pub(crate) fn try_compute_jwk_canonicalized_thumbprint(
     Ok(thumbprint.kid)
 }
 
-fn try_into_jwk(spki: &SubjectPublicKeyInfoOwned) -> RustyAcmeResult<Jwk> {
+fn try_into_jwk(spki: &SubjectPublicKeyInfoOwned) -> Result<Jwk, CertificateError> {
     use const_oid::db::{
         rfc5912::{ID_EC_PUBLIC_KEY, SECP_256_R_1, SECP_384_R_1, SECP_521_R_1},
         rfc8410::{ID_ED_448, ID_ED_25519},
@@ -49,9 +46,7 @@ fn try_into_jwk(spki: &SubjectPublicKeyInfoOwned) -> RustyAcmeResult<Jwk> {
 
     match (spki.algorithm.oid, params) {
         (ID_ED_25519, None) => Ok(Ed25519PublicKey::from_bytes(spki.subject_public_key.raw_bytes())?.try_into_jwk()?),
-        (ID_ED_448, None) => Err(RustyAcmeError::InvalidCertificate(
-            CertificateError::UnsupportedPublicKey,
-        )),
+        (ID_ED_448, None) => Err(CertificateError::UnsupportedPublicKey),
         (ID_EC_PUBLIC_KEY, Some(SECP_256_R_1)) => {
             Ok(ES256PublicKey::from_bytes(spki.subject_public_key.raw_bytes())?.try_into_jwk()?)
         }
@@ -61,8 +56,6 @@ fn try_into_jwk(spki: &SubjectPublicKeyInfoOwned) -> RustyAcmeResult<Jwk> {
         (ID_EC_PUBLIC_KEY, Some(SECP_521_R_1)) => {
             Ok(ES512PublicKey::from_bytes(spki.subject_public_key.raw_bytes())?.try_into_jwk()?)
         }
-        _ => Err(RustyAcmeError::InvalidCertificate(
-            CertificateError::UnsupportedPublicKey,
-        )),
+        _ => Err(CertificateError::UnsupportedPublicKey),
     }
 }
