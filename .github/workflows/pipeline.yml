@@ -114,6 +114,14 @@ jobs:
       - build-jvm-darwin
     uses: ./.github/workflows/test-jvm.yml
 
+  benchmark-jvm:
+    if: github.branch == 'main' && github.repository == 'wireapp/core-crypto'
+    needs:
+      - bindings-jvm
+      - build-jvm-linux
+      - build-jvm-darwin
+    uses: ./.github/workflows/benchmark-jvm.yml
+
   docs-jvm:
     needs:
       - bindings-jvm
