@@ -563,7 +563,7 @@ impl MlsTransportTestExt for CoreCryptoTransportRetrySuccessProvider {
     }
 }
 
-use wire_e2e_identity::pki_env_hooks::{
+use wire_e2e_identity::pki_env::hooks::{
     HttpHeader, HttpMethod, HttpResponse, PkiEnvironmentHooks, PkiEnvironmentHooksError,
 };
 

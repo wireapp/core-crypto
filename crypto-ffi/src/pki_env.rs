@@ -1,6 +1,6 @@
 use std::{fmt, sync::Arc};
 
-use wire_e2e_identity::pki_env_hooks;
+use wire_e2e_identity::pki_env;
 
 use crate::{CoreCryptoFfi, CoreCryptoResult, Database};
 
@@ -21,15 +21,15 @@ pub enum HttpMethod {
     Head,
 }
 
-impl From<pki_env_hooks::HttpMethod> for HttpMethod {
-    fn from(inner: pki_env_hooks::HttpMethod) -> Self {
+impl From<pki_env::hooks::HttpMethod> for HttpMethod {
+    fn from(inner: pki_env::hooks::HttpMethod) -> Self {
         match inner {
-            pki_env_hooks::HttpMethod::Get => Self::Get,
-            pki_env_hooks::HttpMethod::Post => Self::Post,
-            pki_env_hooks::HttpMethod::Put => Self::Put,
-            pki_env_hooks::HttpMethod::Delete => Self::Delete,
-            pki_env_hooks::HttpMethod::Patch => Self::Patch,
-            pki_env_hooks::HttpMethod::Head => Self::Head,
+            pki_env::hooks::HttpMethod::Get => Self::Get,
+            pki_env::hooks::HttpMethod::Post => Self::Post,
+            pki_env::hooks::HttpMethod::Put => Self::Put,
+            pki_env::hooks::HttpMethod::Delete => Self::Delete,
+            pki_env::hooks::HttpMethod::Patch => Self::Patch,
+            pki_env::hooks::HttpMethod::Head => Self::Head,
         }
     }
 }
@@ -43,8 +43,8 @@ pub struct HttpHeader {
     pub value: String,
 }
 
-impl From<pki_env_hooks::HttpHeader> for HttpHeader {
-    fn from(inner: pki_env_hooks::HttpHeader) -> Self {
+impl From<pki_env::hooks::HttpHeader> for HttpHeader {
+    fn from(inner: pki_env::hooks::HttpHeader) -> Self {
         Self {
             name: inner.name,
             value: inner.value,
@@ -52,7 +52,7 @@ impl From<pki_env_hooks::HttpHeader> for HttpHeader {
     }
 }
 
-impl From<HttpHeader> for pki_env_hooks::HttpHeader {
+impl From<HttpHeader> for pki_env::hooks::HttpHeader {
     fn from(ffi: HttpHeader) -> Self {
         Self {
             name: ffi.name,
@@ -72,7 +72,7 @@ pub struct HttpResponse {
     pub body: Vec<u8>,
 }
 
-impl From<HttpResponse> for pki_env_hooks::HttpResponse {
+impl From<HttpResponse> for pki_env::hooks::HttpResponse {
     fn from(ffi: HttpResponse) -> Self {
         Self {
             status: ffi.status,
@@ -89,10 +89,10 @@ pub enum PkiEnvironmentHooksError {
 }
 
 // Convert to a "flat" struct in another module
-impl From<PkiEnvironmentHooksError> for pki_env_hooks::PkiEnvironmentHooksError {
+impl From<PkiEnvironmentHooksError> for pki_env::hooks::PkiEnvironmentHooksError {
     fn from(err: PkiEnvironmentHooksError) -> Self {
         match err {
-            PkiEnvironmentHooksError::Error { reason } => pki_env_hooks::PkiEnvironmentHooksError { reason },
+            PkiEnvironmentHooksError::Error { reason } => pki_env::hooks::PkiEnvironmentHooksError { reason },
         }
     }
 }
@@ -180,14 +180,14 @@ impl std::fmt::Debug for PkiEnvironmentHooksShim {
 
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl pki_env_hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
+impl pki_env::hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
     async fn http_request(
         &self,
-        method: pki_env_hooks::HttpMethod,
+        method: pki_env::hooks::HttpMethod,
         url: String,
-        headers: Vec<pki_env_hooks::HttpHeader>,
+        headers: Vec<pki_env::hooks::HttpHeader>,
         body: Vec<u8>,
-    ) -> Result<pki_env_hooks::HttpResponse, pki_env_hooks::PkiEnvironmentHooksError> {
+    ) -> Result<pki_env::hooks::HttpResponse, pki_env::hooks::PkiEnvironmentHooksError> {
         let headers = headers.into_iter().map(Into::into).collect();
         self.0
             .http_request(method.into(), url, headers, body)
@@ -201,18 +201,18 @@ impl pki_env_hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
         idp: String,
         key_auth: String,
         acme_aud: String,
-    ) -> Result<String, pki_env_hooks::PkiEnvironmentHooksError> {
+    ) -> Result<String, pki_env::hooks::PkiEnvironmentHooksError> {
         self.0.authenticate(idp, key_auth, acme_aud).await.map_err(Into::into)
     }
 
-    async fn get_backend_nonce(&self) -> Result<String, pki_env_hooks::PkiEnvironmentHooksError> {
+    async fn get_backend_nonce(&self) -> Result<String, pki_env::hooks::PkiEnvironmentHooksError> {
         self.0.get_backend_nonce().await.map_err(Into::into)
     }
 
     async fn fetch_backend_access_token(
         &self,
         dpop: String,
-    ) -> Result<String, pki_env_hooks::PkiEnvironmentHooksError> {
+    ) -> Result<String, pki_env::hooks::PkiEnvironmentHooksError> {
         self.0.fetch_backend_access_token(dpop).await.map_err(Into::into)
     }
 }
