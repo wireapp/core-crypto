@@ -13,12 +13,6 @@ CC_x86_64-linux-android = "x86_64-linux-android24-clang"
 CXX_x86_64-linux-android = "x86_64-linux-android24-clang++"
 AR_x86_64-linux-android = "llvm-ar"
 RANLIB_x86_64-linux-android = "llvm-ranlib"
-# ? Ring treats warnings as errors during local development by detecting
-# ? the presence of a `.git` folder
-# ? With us having a git dependency to ring, this triggers this local development behavior, preventing
-# ? release builds on certain platforms. Gotta love build systems that are "UB as a service"
-# TODO: Remove this once we target a crates.io version of ring. Probably never! Tracking issue: WPB-9580
-CFLAGS = "-Wno-error=inline"
 
 # Android linkage
 [target.armv7-linux-androideabi]
