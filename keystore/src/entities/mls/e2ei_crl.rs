@@ -14,5 +14,6 @@ use zeroize::Zeroize;
 pub struct E2eiCrl {
     #[entity(id)]
     pub distribution_point: String,
+    /// A DER-encoded certificate list
     pub content: Vec<u8>,
 }
