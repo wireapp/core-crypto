@@ -65,6 +65,9 @@ impl RustCrypto {
         Ok(())
     }
 
+    // TODO: remove this expect(unused) once we start using it again or we drop
+    // it completely (see WPB-23594)
+    #[expect(unused)]
     pub(crate) fn normalize_p521_secret_key(sk: &[u8]) -> zeroize::Zeroizing<[u8; 66]> {
         normalize_p521_secret_key(sk)
     }
