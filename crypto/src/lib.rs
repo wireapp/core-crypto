@@ -41,10 +41,7 @@ pub use openmls::{
         group_info::VerifiableGroupInfo,
     },
 };
-use wire_e2e_identity::{
-    legacy::{E2eiEnrollment, device_status::DeviceStatus},
-    pki_env::PkiEnvironment,
-};
+use wire_e2e_identity::{legacy::device_status::DeviceStatus, pki_env::PkiEnvironment};
 
 pub use crate::{
     build_metadata::{BUILD_METADATA, BuildMetadata},
