@@ -2,7 +2,7 @@
 #![allow(missing_docs)]
 
 use super::e2e_identity;
-use crate::{ConversationId, mls::conversation::pending_conversation::PendingConversation};
+use crate::{ConversationId, CredentialRef, mls::conversation::pending_conversation::PendingConversation};
 
 /// A module-specific [Result][core::result::Result] type with a default error variant.
 pub type Result<T, E = Error> = core::result::Result<T, E>;
@@ -46,12 +46,25 @@ pub enum Error {
     WrongCredential,
     #[error("The supplied credential is invalid")]
     InvalidCredential,
+    #[error(
+        "There are invalid CredentialRefs that should be removed. Hex encoded sha256 hashes: {}",
+        format_invalid_credential_refs(.0)
+    )]
+    InvalidCredentials(Vec<CredentialRef>),
     #[error("something went wrong when generating and storing a new keypackage: {0}")]
     KeypackageNew(String),
     #[error("{0}")]
     Leaf(#[from] crate::LeafError),
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
+}
+
+fn format_invalid_credential_refs(credential_refs: &[CredentialRef]) -> String {
+    credential_refs
+        .iter()
+        .map(|credential_ref| credential_ref.public_key_hash().to_string())
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 impl Error {
