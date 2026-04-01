@@ -81,8 +81,8 @@ sourceSets {
 val jmhIncludes: String? = project.findProperty("jmhIncludes") as? String
 jmh {
     fork.set(1)
-    resultFormat.set("CSV")
-    resultsFile.set(layout.buildDirectory.file("reports/jmh/results.csv").get().asFile)
+    resultFormat.set("JSON")
+    resultsFile.set(layout.buildDirectory.file("reports/jmh/results.json").get().asFile)
     jmhIncludes?.let {
         includes.set(listOf(it))
     }
