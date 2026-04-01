@@ -1,4 +1,5 @@
 use rusty_jwt_tools::{jwk_thumbprint::JwkThumbprint, prelude::Pem};
+use x509_cert::Certificate;
 
 use super::{Result, X509CredentialAcquisition, states};
 use crate::{
@@ -12,7 +13,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
     /// Returns (signing keypair in PEM format, certificate chain).
     /// The first certificate in the chain is the end-entity certificate,
     /// i.e. the one certifying the public portion of the signing keypair.
-    pub async fn complete_oidc_challenge(self) -> Result<(Pem, Vec<Vec<u8>>)> {
+    pub async fn complete_oidc_challenge(self) -> Result<(Pem, Vec<Certificate>)> {
         let hooks = self.pki_env.hooks();
 
         // Complete the OIDC challenge.
@@ -68,7 +69,10 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
             .http_request(HttpMethod::Post, finalize.certificate.to_string(), headers, body)
             .await?;
         let response = String::from_utf8(response.body).map_err(|e| RustyAcmeError::from(e.utf8_error()))?;
-        let certificates = RustyAcme::certificate_response(response, self.data.order, self.config.hash_alg, None)?;
+        let certificates = RustyAcme::certificate_response(response, self.data.order)?;
+
+        super::checks::verify_cert_chain(&self.config, &self.pki_env, &certificates).await?;
+
         Ok((self.sign_kp, certificates))
     }
 }
