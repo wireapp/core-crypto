@@ -23,7 +23,7 @@ pub struct WireIdentity {
 pub trait WireIdentityReader {
     /// Verifies a proof of identity, may it be a x509 certificate (or a Verifiable Presentation (later)).
     /// We do not verify anything else e.g. expiry, it is left to MLS implementation
-    fn extract_identity(&self, env: Option<&PkiEnvironment>, hash_alg: HashAlgorithm) -> RustyAcmeResult<WireIdentity>;
+    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> RustyAcmeResult<WireIdentity>;
 
     /// returns the 'Not Before' claim which usually matches the creation timestamp
     fn extract_created_at(&self) -> RustyAcmeResult<u64>;
@@ -33,7 +33,7 @@ pub trait WireIdentityReader {
 }
 
 impl WireIdentityReader for x509_cert::Certificate {
-    fn extract_identity(&self, env: Option<&PkiEnvironment>, hash_alg: HashAlgorithm) -> RustyAcmeResult<WireIdentity> {
+    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> RustyAcmeResult<WireIdentity> {
         let serial_number = hex::encode(self.tbs_certificate.serial_number.as_bytes());
         let not_before = self.tbs_certificate.validity.not_before.to_unix_duration().as_secs();
         let not_after = self.tbs_certificate.validity.not_after.to_unix_duration().as_secs();
@@ -70,7 +70,7 @@ impl WireIdentityReader for x509_cert::Certificate {
 }
 
 impl WireIdentityReader for &[u8] {
-    fn extract_identity(&self, env: Option<&PkiEnvironment>, hash_alg: HashAlgorithm) -> RustyAcmeResult<WireIdentity> {
+    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> RustyAcmeResult<WireIdentity> {
         x509_cert::Certificate::from_der(self)?.extract_identity(env, hash_alg)
     }
 
@@ -84,7 +84,7 @@ impl WireIdentityReader for &[u8] {
 }
 
 impl WireIdentityReader for Vec<u8> {
-    fn extract_identity(&self, env: Option<&PkiEnvironment>, hash_alg: HashAlgorithm) -> RustyAcmeResult<WireIdentity> {
+    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> RustyAcmeResult<WireIdentity> {
         self.as_slice().extract_identity(env, hash_alg)
     }
 
