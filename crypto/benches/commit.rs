@@ -28,6 +28,7 @@ fn commit_add_bench(c: &mut Criterion) {
                     },
                     |(central, id, kps)| async move {
                         let context = central.new_transaction().await.unwrap();
+                        #[expect(clippy::unit_arg)]
                         black_box(context.conversation(&id).await.unwrap().add_members(kps).await.unwrap());
                         context.finish().await.unwrap();
                     },
@@ -59,6 +60,7 @@ fn commit_add_n_clients_bench(c: &mut Criterion) {
                     },
                     |(central, id, kps)| async move {
                         let context = central.new_transaction().await.unwrap();
+                        #[expect(clippy::unit_arg)]
                         black_box(context.conversation(&id).await.unwrap().add_members(kps).await.unwrap());
                         context.finish().await.unwrap();
                     },
