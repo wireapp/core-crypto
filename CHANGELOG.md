@@ -131,6 +131,11 @@
 
 ### Breaking Changes
 
+- Removed `WelcomeBundle` type that was returned from `processWelcomeMessage()` and `joinByExternalCommit()`. They
+  return a `ConversationId` now only.
+
+  Affected platforms: all
+
 - Typescript: to set the ground for a native module, the browser module is now exported as
   `@wireapp/core-crypto/browser`. Update your imports from `@wireapp/core-crypto` to `@wireapp/core-crypto/browser`.
 
