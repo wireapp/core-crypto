@@ -28,7 +28,7 @@
 <a href=#28 id=28 data-nosnippet>28</a>        <span class="comment">// Create a commit that adds a history client
 <a href=#29 id=29 data-nosnippet>29</a>        </span><span class="kw">let </span>history_secret = <span class="self">self</span>.generate_history_secret().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#30 id=30 data-nosnippet>30</a>        <span class="kw">let </span>key_package = history_secret.key_package.clone().into();
-<a href=#31 id=31 data-nosnippet>31</a>        <span class="kw">let </span>(<span class="kw">_</span>, commit) = <span class="self">self</span>.add_members_inner(<span class="macro">vec!</span>[key_package]).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#31 id=31 data-nosnippet>31</a>        <span class="kw">let </span>commit = <span class="self">self</span>.add_members_inner(<span class="macro">vec!</span>[key_package]).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#32 id=32 data-nosnippet>32</a>
 <a href=#33 id=33 data-nosnippet>33</a>        <span class="self">self</span>.send_new_history_client_commit(commit, history_secret).<span class="kw">await
 <a href=#34 id=34 data-nosnippet>34</a>    </span>}

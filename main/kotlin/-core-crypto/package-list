@@ -755,11 +755,6 @@ $dokka.location:com.wire.crypto/Welcome/equals/#kotlin.Any?/PointingToDeclaratio
 $dokka.location:com.wire.crypto/Welcome/hashCode/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/hash-code.html
 $dokka.location:com.wire.crypto/Welcome/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/to-string.html
 $dokka.location:com.wire.crypto/Welcome/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/uniffi-clone-pointer.html
-$dokka.location:com.wire.crypto/WelcomeBundle.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome-bundle/-companion/index.html
-$dokka.location:com.wire.crypto/WelcomeBundle///PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome-bundle/index.html
-$dokka.location:com.wire.crypto/WelcomeBundle/WelcomeBundle/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome-bundle/-welcome-bundle.html
-$dokka.location:com.wire.crypto/WelcomeBundle/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome-bundle/destroy.html
-$dokka.location:com.wire.crypto/WelcomeBundle/id/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome-bundle/id.html
 $dokka.location:com.wire.crypto/WelcomeInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome-interface/-companion/index.html
 $dokka.location:com.wire.crypto/WelcomeInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome-interface/index.html
 $dokka.location:com.wire.crypto/WelcomeInterface/copyBytes/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome-interface/copy-bytes.html
