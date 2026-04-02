@@ -31,13 +31,8 @@ pub(crate) fn rand_base64_str(size: usize) -> String {
     base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(rand_str(size))
 }
 
-pub(crate) fn rand_client_id() -> ClientId {
-    ClientId::try_new(
-        uuid::Uuid::new_v4().to_string(),
-        rand::random::<u64>(),
-        "wire.localhost",
-    )
-    .unwrap()
+pub(crate) fn rand_client_id(domain: &str) -> ClientId {
+    ClientId::try_new(uuid::Uuid::new_v4().to_string(), rand::random::<u64>(), domain).unwrap()
 }
 
 pub(crate) fn scrap_login(html: String) -> String {
