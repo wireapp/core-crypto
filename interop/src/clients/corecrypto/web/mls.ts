@@ -101,7 +101,7 @@ export async function processWelcome() {
     const [welcome] = arguments;
     const welcomeMessage = new Welcome(Uint8Array.from(Object.values(welcome)).buffer);
 
-    const { id } = await window.cc.transaction((ctx) =>
+    const id = await window.cc.transaction((ctx) =>
         ctx.processWelcomeMessage(welcomeMessage));
     return new Uint8Array(id.copyBytes());
 }
