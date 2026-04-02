@@ -18,7 +18,7 @@ mod error;
 mod initial;
 mod oidc_challenge;
 
-mod identity;
+pub mod identity;
 mod thumbprint;
 
 #[derive(Debug)]
