@@ -125,7 +125,6 @@
 //! - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 
 pub mod acquisition;
-mod e2e_identity;
 mod error;
 mod types;
 
@@ -138,7 +137,6 @@ pub mod x509_check;
 
 pub use acme::{AcmeDirectory, RustyAcme, RustyAcmeError};
 pub use acquisition::X509CredentialAcquisition;
-pub use e2e_identity::RustyE2eIdentity;
 pub use error::{E2eIdentityError, E2eIdentityResult};
 pub use pki_env::{NewCrlDistributionPoints, PkiEnvironmentProvider};
 #[cfg(feature = "builder")]
