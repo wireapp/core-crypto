@@ -2,10 +2,11 @@ use rusty_jwt_tools::prelude::{ClientId, HashAlgorithm, QualifiedHandle};
 use x509_cert::der::Decode as _;
 
 use crate::{
-    acme::RustyAcmeResult,
     acquisition::{error::CertificateError, thumbprint::try_compute_jwk_canonicalized_thumbprint},
     x509_check::{IdentityStatus, revocation::PkiEnvironment},
 };
+
+type Result<T> = std::result::Result<T, CertificateError>;
 
 #[derive(Debug, Clone)]
 pub struct WireIdentity {
@@ -23,17 +24,17 @@ pub struct WireIdentity {
 pub trait WireIdentityReader {
     /// Verifies a proof of identity, may it be a x509 certificate (or a Verifiable Presentation (later)).
     /// We do not verify anything else e.g. expiry, it is left to MLS implementation
-    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> RustyAcmeResult<WireIdentity>;
+    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity>;
 
     /// returns the 'Not Before' claim which usually matches the creation timestamp
-    fn extract_created_at(&self) -> RustyAcmeResult<u64>;
+    fn extract_created_at(&self) -> Result<u64>;
 
     /// returns the 'Subject Public Key Info' claim
-    fn extract_public_key(&self) -> RustyAcmeResult<Vec<u8>>;
+    fn extract_public_key(&self) -> Result<Vec<u8>>;
 }
 
 impl WireIdentityReader for x509_cert::Certificate {
-    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> RustyAcmeResult<WireIdentity> {
+    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity> {
         let serial_number = hex::encode(self.tbs_certificate.serial_number.as_bytes());
         let not_before = self.tbs_certificate.validity.not_before.to_unix_duration().as_secs();
         let not_after = self.tbs_certificate.validity.not_after.to_unix_duration().as_secs();
@@ -55,11 +56,11 @@ impl WireIdentityReader for x509_cert::Certificate {
         })
     }
 
-    fn extract_created_at(&self) -> RustyAcmeResult<u64> {
+    fn extract_created_at(&self) -> Result<u64> {
         Ok(self.tbs_certificate.validity.not_before.to_unix_duration().as_secs())
     }
 
-    fn extract_public_key(&self) -> RustyAcmeResult<Vec<u8>> {
+    fn extract_public_key(&self) -> Result<Vec<u8>> {
         Ok(self
             .tbs_certificate
             .subject_public_key_info
@@ -70,39 +71,39 @@ impl WireIdentityReader for x509_cert::Certificate {
 }
 
 impl WireIdentityReader for &[u8] {
-    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> RustyAcmeResult<WireIdentity> {
+    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity> {
         x509_cert::Certificate::from_der(self)?.extract_identity(env, hash_alg)
     }
 
-    fn extract_created_at(&self) -> RustyAcmeResult<u64> {
+    fn extract_created_at(&self) -> Result<u64> {
         x509_cert::Certificate::from_der(self)?.extract_created_at()
     }
 
-    fn extract_public_key(&self) -> RustyAcmeResult<Vec<u8>> {
+    fn extract_public_key(&self) -> Result<Vec<u8>> {
         x509_cert::Certificate::from_der(self)?.extract_public_key()
     }
 }
 
 impl WireIdentityReader for Vec<u8> {
-    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> RustyAcmeResult<WireIdentity> {
+    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity> {
         self.as_slice().extract_identity(env, hash_alg)
     }
 
-    fn extract_created_at(&self) -> RustyAcmeResult<u64> {
+    fn extract_created_at(&self) -> Result<u64> {
         self.as_slice().extract_created_at()
     }
 
-    fn extract_public_key(&self) -> RustyAcmeResult<Vec<u8>> {
+    fn extract_public_key(&self) -> Result<Vec<u8>> {
         self.as_slice().extract_public_key()
     }
 }
 
-fn try_extract_subject(cert: &x509_cert::TbsCertificate) -> RustyAcmeResult<(String, String)> {
+fn try_extract_subject(cert: &x509_cert::TbsCertificate) -> Result<(String, String)> {
     let mut display_name = None;
     let mut domain = None;
 
     let mut subjects = cert.subject.0.iter().flat_map(|n| n.0.iter());
-    subjects.try_for_each(|s| -> RustyAcmeResult<()> {
+    subjects.try_for_each(|s| -> Result<()> {
         match s.oid {
             const_oid::db::rfc4519::ORGANIZATION_NAME => {
                 domain = Some(std::str::from_utf8(s.value.value())?);
@@ -121,7 +122,7 @@ fn try_extract_subject(cert: &x509_cert::TbsCertificate) -> RustyAcmeResult<(Str
 }
 
 /// extract Subject Alternative Name to pick client-id & display name
-fn try_extract_san(cert: &x509_cert::TbsCertificate) -> RustyAcmeResult<(String, QualifiedHandle)> {
+fn try_extract_san(cert: &x509_cert::TbsCertificate) -> Result<(String, QualifiedHandle)> {
     let extensions = cert.extensions.as_ref().ok_or(CertificateError::InvalidFormat)?;
 
     let san = extensions
@@ -141,7 +142,7 @@ fn try_extract_san(cert: &x509_cert::TbsCertificate) -> RustyAcmeResult<(String,
             x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(ia5_str) => Some(ia5_str.as_str()),
             _ => None,
         })
-        .try_for_each(|name| -> RustyAcmeResult<()> {
+        .try_for_each(|name| -> Result<()> {
             // since both ClientId & handle are in the SAN we first try to parse the element as
             // a ClientId (since it's the most characterizable) and else fallback to a handle
             if let Ok(cid) = ClientId::try_from_uri(name) {
