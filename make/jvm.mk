@@ -6,7 +6,6 @@
 JVM_DARWIN_LIB := target/aarch64-apple-darwin/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 jvm-darwin-deps := $(RUST_SOURCES)
 $(JVM_DARWIN_LIB): $(jvm-darwin-deps)
-	cd crypto-ffi && \
 	cargo rustc --locked \
 	  --target aarch64-apple-darwin \
 	  --package core-crypto-ffi \
@@ -20,7 +19,6 @@ jvm-darwin: $(JVM_DARWIN_LIB) ## Build core-crypto-ffi for JVM on aarch64-apple-
 JVM_LINUX_LIB := target/x86_64-unknown-linux-gnu/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 jvm-linux-deps := $(RUST_SOURCES)
 $(JVM_LINUX_LIB): $(jvm-linux-deps)
-	cd crypto-ffi && \
 	cargo rustc --locked \
 	  --target x86_64-unknown-linux-gnu \
 	  --package core-crypto-ffi \
