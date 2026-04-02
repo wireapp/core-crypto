@@ -164,13 +164,14 @@ async fn prepare_pki_env_and_config(
             .to_pem(),
     };
 
+    let domain = "wire.localhost".to_string();
     let ca_cfg = CaCfg {
         sign_key: wire_server_pubkey.to_string(),
         issuer,
         audience: "wireapp".to_string(),
         discovery_base_url,
         dpop_target_uri: Some(dpop_target_uri),
-        domain: "wire.localhost".to_string(),
+        domain: domain.clone(),
         host: format!("{}.stepca", rand_str(6).to_lowercase()),
     };
 
@@ -185,7 +186,7 @@ async fn prepare_pki_env_and_config(
 
     ctx_store_http_client(&dns_mappings);
 
-    let client_id = rand_client_id();
+    let client_id = rand_client_id(&domain);
     let device_id = format!("{:x}", client_id.device_id);
 
     let config = X509CredentialConfiguration {
@@ -196,6 +197,7 @@ async fn prepare_pki_env_and_config(
         display_name: "Alice Smith".into(),
         handle: "alice_wire".into(),
         client_id: client_id.clone(),
+        domain: domain.clone(),
         team: Some("team".into()),
         validity_period: std::time::Duration::from_hours(1),
     };
@@ -204,7 +206,7 @@ async fn prepare_pki_env_and_config(
         "backend-kp": wire_server_keypair,
         "hash-alg": config.hash_alg.to_string(),
         "wire-server-uri": format!("{wire_server_uri}/clients/{}/access-token", device_id),
-        "handle": Handle::from(config.handle.clone()).try_to_qualified(&client_id.domain).unwrap(),
+        "handle": Handle::from(config.handle.clone()).try_to_qualified(&domain).unwrap(),
         "display_name": config.display_name,
         "team": config.team.as_ref().unwrap(),
     });
