@@ -23,7 +23,11 @@
 
 #![cfg(not(target_os = "unknown"))]
 
-use std::{collections::HashMap, net::SocketAddr, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    net::SocketAddr,
+    sync::Arc,
+};
 
 use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
 use jwt_simple::prelude::*;
@@ -37,7 +41,11 @@ use utils::{
     rand_client_id, rand_str,
     stepca::CaCfg,
 };
-use wire_e2e_identity::{X509CredentialAcquisition, acquisition::X509CredentialConfiguration, pki_env::PkiEnvironment};
+use wire_e2e_identity::{
+    X509CredentialAcquisition, acquisition::X509CredentialConfiguration, pki_env::PkiEnvironment,
+    x509_check::extract_crl_uris,
+};
+use x509_cert::{crl::CertificateList, der::Decode as _};
 
 #[path = "utils/mod.rs"]
 mod utils;
@@ -244,6 +252,53 @@ async fn x509_cert_acquisition_works(test_env: TestEnvironment, #[case] sign_alg
         .complete_oidc_challenge()
         .await
         .unwrap();
+}
+
+#[tokio::test]
+#[rstest]
+#[case(JwsAlgorithm::P256)]
+#[case(JwsAlgorithm::P384)]
+#[case(JwsAlgorithm::P521)]
+#[case(JwsAlgorithm::Ed25519)]
+async fn fetching_crls_works(test_env: TestEnvironment, #[case] sign_alg: JwsAlgorithm) {
+    let (pki_env, config) = prepare_pki_env_and_config(&test_env, sign_alg).await;
+    let acq = X509CredentialAcquisition::try_new(Arc::new(pki_env.clone()), config).unwrap();
+    let (_sign_kp, certs) = acq
+        .complete_dpop_challenge()
+        .await
+        .unwrap()
+        .complete_oidc_challenge()
+        .await
+        .unwrap();
+
+    let crl_uris: HashSet<String> = certs
+        .iter()
+        .map(|cert| x509_cert::Certificate::from_der(cert).expect("certificate in chain parses"))
+        .filter_map(|cert| extract_crl_uris(&cert).expect("CRL distribution points can be extracted"))
+        .flatten()
+        .collect();
+
+    assert!(
+        !crl_uris.is_empty(),
+        "issued certificate chain should advertise at least one CRL"
+    );
+
+    let result = pki_env
+        .fetch_crls(crl_uris.iter().map(String::as_str))
+        .await
+        .expect("fetched CRL URLs");
+
+    assert_eq!(result.len(), crl_uris.len(), "each advertised CRL should be fetched");
+    assert_eq!(
+        result.keys().cloned().collect::<HashSet<_>>(),
+        crl_uris,
+        "fetched CRLs should match the advertised distribution points",
+    );
+
+    for crl_der in result.values() {
+        assert!(!crl_der.is_empty(), "fetched CRL should not be empty");
+        let _ = CertificateList::from_der(crl_der).expect("fetched body is a valid DER CRL");
+    }
 }
 
 // @SF.PROVISIONING @TSFI.ACME
