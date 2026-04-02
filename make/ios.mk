@@ -1,0 +1,106 @@
+#-------------------------------------------------------------------------------
+# iOS builds
+#-------------------------------------------------------------------------------
+
+ios-device-deps := $(RUST_SOURCES)
+IOS_DEVICE := target/aarch64-apple-ios/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+$(IOS_DEVICE): $(ios-device-deps)
+	IPHONEOS_DEPLOYMENT_TARGET=16.4 \
+	cargo rustc --locked \
+	  --target aarch64-apple-ios \
+	  --crate-type=cdylib \
+	  --crate-type=staticlib \
+	  --package core-crypto-ffi \
+	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
+
+.PHONY: ios-device
+ios-device: $(IOS_DEVICE) ## Build core-crypto-ffi for aarch64-apple-ios for iOS 16.4 (macOS only)
+
+IOS_SIMULATOR_ARM := target/aarch64-apple-ios-sim/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+ios-simulator-arm-deps := $(RUST_SOURCES)
+$(IOS_SIMULATOR_ARM): $(ios-simulator-arm-deps)
+	CRATE_CC_NO_DEFAULTS=1 \
+	TARGET_CFLAGS="--target=arm64-apple-ios16.0.0-simulator \
+	-mios-simulator-version-min=16.4 \
+	-isysroot $$(xcrun --show-sdk-path --sdk iphonesimulator)" \
+	cargo rustc --locked \
+	  --target aarch64-apple-ios-sim \
+	  --crate-type=cdylib \
+	  --crate-type=staticlib \
+	  --package core-crypto-ffi \
+	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
+
+.PHONY: ios-simulator-arm
+ios-simulator-arm: $(IOS_SIMULATOR_ARM) ## Build core-crypto-ffi for aarch64-apple-ios-sim, iOS 16.4 (macOS only)
+
+.PHONY: ios
+ios: ios-device ios-simulator-arm
+
+# Build XCFramework (macOS only)
+
+ios-create-xcframework-deps := $(IOS_DEVICE) $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT)
+$(STAMPS)/ios-create-xcframework: $(ios-create-xcframework-deps)
+	cd crypto-ffi/bindings/swift && \
+	set -e; \
+	xcodebuild archive \
+	    -project 'WireCoreCryptoUniffi/WireCoreCryptoUniffi.xcodeproj' \
+	    -scheme 'WireCoreCryptoUniffi' \
+	    -configuration Release \
+	    -archivePath 'WireCoreCryptoUniffi-ios.xcarchive' \
+	    -destination 'generic/platform=ios' \
+	    SKIP_INSTALL=NO \
+	    BUILD_LIBRARY_FOR_DISTRIBUTION=YES; \
+	xcodebuild archive \
+	    -project 'WireCoreCryptoUniffi/WireCoreCryptoUniffi.xcodeproj' \
+	    -scheme 'WireCoreCryptoUniffi' \
+	    -configuration Release \
+	    -archivePath 'WireCoreCryptoUniffi-simulator.xcarchive' \
+	    -destination 'generic/platform=ios Simulator' \
+	    SKIP_INSTALL=NO \
+	    BUILD_LIBRARY_FOR_DISTRIBUTION=YES; \
+	xcodebuild -create-xcframework \
+	    -archive 'WireCoreCryptoUniffi-ios.xcarchive' \
+	    -framework 'WireCoreCryptoUniffi.framework' \
+	    -archive 'WireCoreCryptoUniffi-simulator.xcarchive' \
+	    -framework 'WireCoreCryptoUniffi.framework' \
+	    -output 'WireCoreCryptoUniffi.xcframework'; \
+	xcodebuild archive \
+	    -project 'WireCoreCrypto/WireCoreCrypto.xcodeproj' \
+	    -scheme 'WireCoreCrypto' \
+	    -configuration Release \
+	    -archivePath 'WireCoreCrypto-ios.xcarchive' \
+	    -destination 'generic/platform=ios' \
+	    SKIP_INSTALL=NO \
+	    BUILD_LIBRARY_FOR_DISTRIBUTION=YES; \
+	xcodebuild archive \
+	    -project 'WireCoreCrypto/WireCoreCrypto.xcodeproj' \
+	    -scheme 'WireCoreCrypto' \
+	    -configuration Release \
+	    -archivePath 'WireCoreCrypto-simulator.xcarchive' \
+	    -destination 'generic/platform=ios Simulator' \
+	    SKIP_INSTALL=NO \
+	    BUILD_LIBRARY_FOR_DISTRIBUTION=YES; \
+	xcodebuild -create-xcframework \
+	    -archive 'WireCoreCrypto-ios.xcarchive' \
+	    -framework 'WireCoreCrypto.framework' \
+	    -archive 'WireCoreCrypto-simulator.xcarchive' \
+	    -framework 'WireCoreCrypto.framework' \
+	    -output 'WireCoreCrypto.xcframework'; \
+	zip -r WireCoreCrypto.xcframework.zip WireCoreCrypto.xcframework; \
+	zip -r WireCoreCryptoUniffi.xcframework.zip WireCoreCryptoUniffi.xcframework; \
+	rm -rf WireCoreCryptoUniffi.xcframework; \
+	rm -rf WireCoreCryptoUniffi-ios.xcarchive; \
+	rm -rf WireCoreCryptoUniffi-simulator.xcarchive; \
+	rm -rf WireCoreCrypto.xcframework; \
+	rm -rf WireCoreCrypto-ios.xcarchive; \
+	rm -rf WireCoreCrypto-simulator.xcarchive
+	$(TOUCH_STAMP)
+
+.PHONY: ios-create-xcframework
+ios-create-xcframework: $(STAMPS)/ios-create-xcframework ## Build the XCode framework (macOS only)
+
+ios-test-deps := $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT) $(SWIFT_FILES)
+
+$(STAMPS)/ios-test: $(ios-test-deps)
+	$(SHELL) scripts/run-ios-tests.sh $(XCODE_CONFIG)
+	$(TOUCH_STAMP)
