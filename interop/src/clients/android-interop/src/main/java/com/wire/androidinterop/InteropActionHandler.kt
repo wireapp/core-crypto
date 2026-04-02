@@ -109,7 +109,7 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
                 coreCrypto.transaction { context ->
                     context.processWelcomeMessage(Welcome(action.welcome))
                 }.let {
-                    Result.success(Base64.Default.encode(it.id.copyBytes()))
+                    Result.success(Base64.Default.encode(it.copyBytes()))
                 }
             }
 
