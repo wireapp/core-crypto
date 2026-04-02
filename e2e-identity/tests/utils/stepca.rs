@@ -104,24 +104,34 @@ fn generate_authority_config(cfg: &CaCfg) -> serde_json::Value {
     })
 }
 
-const INTERMEDIATE_CERT_TEMPLATE: &str = r#"
-    {
-        "subject": "Wire Intermediate CA",
-        "keyUsage": ["certSign", "crlSign"],
-        "basicConstraints": {
-            "isCA": true,
-            "maxPathLen": 0
-        },
-        "nameConstraints": {
-            "critical": true,
-            "permittedDNSDomains": ["localhost", "stepca"],
-            "permittedURIDomains": ["wire.localhost"]
-        }
-    }
-"#;
-
-pub(crate) const ACME_PROVISIONER: &str = "wire";
+const ACME_PROVISIONER: &str = "wire";
 const PORT: ContainerPort = ContainerPort::Tcp(9000);
+
+// We need to set the host port of CRL server at runtime, because the CRL
+// is fetched via the host port, so we need to alter the config after the
+// host port has been determined.
+const CRL_DISTRIBUTION_POINT_PLACEHOLDER: &str = "__CRL_DISTRIBUTION_POINT__";
+
+fn intermediate_cert_template() -> String {
+    format!(
+        r#"
+            {{
+                "subject": "Wire Intermediate CA",
+                "keyUsage": ["certSign", "crlSign"],
+                "basicConstraints": {{
+                    "isCA": true,
+                    "maxPathLen": 0
+                }},
+                "nameConstraints": {{
+                    "critical": true,
+                    "permittedDNSDomains": ["localhost", "stepca"],
+                    "permittedURIDomains": ["wire.localhost"]
+                }},
+                "crlDistributionPoints": ["{CRL_DISTRIBUTION_POINT_PLACEHOLDER}"]
+            }}
+        "#
+    )
+}
 
 /// This returns the Smallstep certificate template for leaf certificates, i.e. the ones
 /// issued by the intermediate CA.
@@ -147,6 +157,9 @@ fn alter_configuration(host_volume: &Path, ca_cfg: &CaCfg) {
     cfg.as_object_mut()
         .unwrap()
         .insert("authority".to_string(), generate_authority_config(ca_cfg));
+    cfg.as_object_mut()
+        .unwrap()
+        .insert("crl".to_string(), json!({ "enabled": true }));
     std::fs::write(&cfg_file, serde_json::to_string_pretty(&cfg).unwrap()).unwrap();
 }
 
@@ -180,7 +193,7 @@ pub(crate) async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
         std::fs::set_permissions(&host_volume, permissions).unwrap();
         std::fs::write(
             host_volume.join("intermediate.template"),
-            INTERMEDIATE_CERT_TEMPLATE.to_string().into_bytes(),
+            intermediate_cert_template().into_bytes(),
         )
         .unwrap();
     }
@@ -201,6 +214,18 @@ pub(crate) async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
         .with_cmd(["bash", "-c", "sleep 1h"]);
 
     let node = image.start().await.expect("Error running Step CA image");
+    let crl_distribution_point = format!(
+        "https://{}:{}/1.0/crl",
+        ca_cfg.host,
+        node.get_host_port_ipv4(PORT).await.unwrap()
+    );
+    std::fs::write(
+        host_volume.join("intermediate.template"),
+        intermediate_cert_template()
+            .replace(CRL_DISTRIBUTION_POINT_PLACEHOLDER, &crl_distribution_point)
+            .into_bytes(),
+    )
+    .unwrap();
 
     // Generate the root certificate.
     run_command(&node, "bash -c 'dd if=/dev/random bs=1 count=20 | base64 > password'").await;
