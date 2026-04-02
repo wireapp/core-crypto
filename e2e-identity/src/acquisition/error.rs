@@ -22,6 +22,9 @@ pub enum Error {
 /// Given x509 certificate is invalid and does not follow Wire's format
 #[derive(Debug, thiserror::Error)]
 pub enum CertificateError {
+    /// Client ID is not in a valid format
+    #[error("Client ID is not in a valid format")]
+    InvalidClientId,
     /// ClientId does not match expected one
     #[error("ClientId does not match expected one")]
     ClientIdMismatch,
@@ -58,4 +61,19 @@ pub enum CertificateError {
     /// X509Check error
     #[error("transparent")]
     X509Check(#[from] crate::x509_check::RustyX509CheckError),
+    /// DER error
+    #[error(transparent)]
+    Der(#[from] spki::der::Error),
+    /// UTF-8 error
+    #[error(transparent)]
+    Utf8(#[from] std::str::Utf8Error),
+    /// ACME error
+    #[error(transparent)]
+    Acme(#[from] crate::acme::RustyAcmeError),
+    /// JWT error
+    #[error(transparent)]
+    RustyJwtError(#[from] RustyJwtError),
+    /// jwt-simple error
+    #[error(transparent)]
+    JwtSimple(#[from] jwt_simple::Error),
 }
