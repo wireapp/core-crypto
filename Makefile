@@ -40,10 +40,21 @@ clean: ts-clean ## Run cargo clean and the ts-clean target, remove all stamps
 # Lazy targets
 #-------------------------------------------------------------------------------
 
-# By default, test targets always re-run (the stamp file is deleted first so
-# Make sees the target as dirty). Set LAZY_MAKE=1 to skip a test target when
-# its stamp file is still fresh — useful for local iteration when you know the
-# inputs haven't changed.
+# Test targets have two run modes controlled by the LAZY_MAKE variable.
+#
+# DEFAULT (LAZY_MAKE unset) — always re-run:
+#   Each phony target deletes its stamp file before delegating to the real
+#   stamp target, so Make always sees it as out-of-date and re-runs the tests.
+#   This is what CI wants: tests run unconditionally on every invocation.
+#
+# LAZY (LAZY_MAKE=1) — skip when fresh:
+#   The phony targets become simple aliases for their stamp-file counterparts,
+#   so Make skips the tests when all prerequisite files are older than the
+#   stamp. Useful locally when iterating on non-test code and you are
+#   confident the inputs haven't changed.
+#
+# The real test logic and its prerequisites live in the per-platform sub-makefiles
+# as $(STAMPS)/<target> rules (e.g. $(STAMPS)/jvm-test in make/jvm.mk).
 LAZY_TARGETS := jvm-test kmp-jvm-test ts-browser-test ts-native-test ts-test android-test ios-test interop-test jvm-bench
 
 ts-browser-test: ## Run browser TypeScript wrapper tests via wdio and bun/wasm. Optionally pass TEST=<test> to filter by test name.
