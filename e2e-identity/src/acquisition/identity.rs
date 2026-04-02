@@ -160,6 +160,7 @@ fn try_extract_san(cert: &x509_cert::TbsCertificate) -> Result<(String, Qualifie
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
     use wasm_bindgen_test::*;
 
     use super::*;
@@ -197,13 +198,20 @@ EoOKgYLyKNa24aewZZObydD+k0hFs4iKddICIQDf70uv+h0tHw/WNf15mZ8NGkJm
 OfqfZA1YMtN5NLz/AA==
 -----END CERTIFICATE-----"#;
 
-    #[test]
+    #[rstest::fixture]
+    fn pki_env() -> PkiEnvironment {
+        let mut env = PkiEnvironment::init(Default::default()).unwrap();
+        env.refresh_time_of_interest().unwrap();
+        env
+    }
+
+    #[rstest]
     #[wasm_bindgen_test]
-    fn should_find_claims_in_x509() {
+    fn should_find_claims_in_x509(pki_env: PkiEnvironment) {
         let cert_der = pem::parse(CERT).unwrap();
         let identity = cert_der
             .contents()
-            .extract_identity(None, HashAlgorithm::SHA256)
+            .extract_identity(&pki_env, HashAlgorithm::SHA256)
             .unwrap();
 
         assert_eq!(&identity.client_id, "obakjPOHQ2CkNb0rOrNM3A:ba54e8ace8b4c90d@wire.com");
@@ -234,13 +242,13 @@ OfqfZA1YMtN5NLz/AA==
         );
     }
 
-    #[test]
+    #[rstest]
     #[wasm_bindgen_test]
-    fn should_have_valid_status() {
+    fn should_have_valid_status(pki_env: PkiEnvironment) {
         let cert_der = pem::parse(CERT).unwrap();
         let identity = cert_der
             .contents()
-            .extract_identity(None, HashAlgorithm::SHA256)
+            .extract_identity(&pki_env, HashAlgorithm::SHA256)
             .unwrap();
         assert_eq!(&identity.status, &IdentityStatus::Valid);
 
@@ -249,18 +257,18 @@ OfqfZA1YMtN5NLz/AA==
         env.refresh_time_of_interest().unwrap();
         let identity = cert_der
             .contents()
-            .extract_identity(Some(&env), HashAlgorithm::SHA256)
+            .extract_identity(&env, HashAlgorithm::SHA256)
             .unwrap();
         assert_eq!(&identity.status, &IdentityStatus::Expired);
     }
 
-    #[test]
+    #[rstest]
     #[wasm_bindgen_test]
-    fn should_have_thumbprint() {
+    fn should_have_thumbprint(pki_env: PkiEnvironment) {
         let cert_der = pem::parse(CERT).unwrap();
         let identity = cert_der
             .contents()
-            .extract_identity(None, HashAlgorithm::SHA256)
+            .extract_identity(&pki_env, HashAlgorithm::SHA256)
             .unwrap();
         assert!(!identity.thumbprint.is_empty());
     }
