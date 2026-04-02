@@ -136,7 +136,11 @@ pub mod utils;
 pub mod x509_check;
 
 pub use acme::{AcmeDirectory, RustyAcme, RustyAcmeError};
-pub use acquisition::{X509CredentialAcquisition, identity::WireIdentityReader};
+pub use acquisition::{
+    X509CredentialAcquisition,
+    identity::{WireIdentity, WireIdentityReader},
+    thumbprint::compute_raw_key_thumbprint,
+};
 pub use error::{E2eIdentityError, E2eIdentityResult};
 pub use pki_env::{NewCrlDistributionPoints, PkiEnvironmentProvider};
 #[cfg(feature = "builder")]

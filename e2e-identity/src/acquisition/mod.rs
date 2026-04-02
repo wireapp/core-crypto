@@ -19,7 +19,7 @@ mod initial;
 mod oidc_challenge;
 
 pub mod identity;
-mod thumbprint;
+pub mod thumbprint;
 
 #[derive(Debug)]
 pub struct X509CredentialConfiguration {
