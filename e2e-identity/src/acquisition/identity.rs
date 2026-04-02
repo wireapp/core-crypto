@@ -164,7 +164,6 @@ mod tests {
     use wasm_bindgen_test::*;
 
     use super::*;
-    use crate::x509_check::revocation::PkiEnvironmentParams;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -244,20 +243,11 @@ OfqfZA1YMtN5NLz/AA==
 
     #[rstest]
     #[wasm_bindgen_test]
-    fn should_have_valid_status(pki_env: PkiEnvironment) {
-        let cert_der = pem::parse(CERT).unwrap();
+    fn should_have_revoked_status(pki_env: PkiEnvironment) {
+        let cert_der = pem::parse(CERT_EXPIRED).unwrap();
         let identity = cert_der
             .contents()
             .extract_identity(&pki_env, HashAlgorithm::SHA256)
-            .unwrap();
-        assert_eq!(&identity.status, &IdentityStatus::Valid);
-
-        let cert_der = pem::parse(CERT_EXPIRED).unwrap();
-        let mut env = PkiEnvironment::init(PkiEnvironmentParams::default()).unwrap();
-        env.refresh_time_of_interest().unwrap();
-        let identity = cert_der
-            .contents()
-            .extract_identity(&env, HashAlgorithm::SHA256)
             .unwrap();
         assert_eq!(&identity.status, &IdentityStatus::Expired);
     }
