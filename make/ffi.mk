@@ -17,7 +17,6 @@ $(UNIFFI_VERSION_FILE): Cargo.lock
 	    echo "$$current_version" > $@; \
 	fi
 
-
 UNIFFI_BINDGEN := $(TARGET_DIR)/uniffi-bindgen
 uniffi-bindgen-deps := $(UNIFFI_VERSION_FILE)
 $(UNIFFI_BINDGEN): $(uniffi-bindgen-deps)
