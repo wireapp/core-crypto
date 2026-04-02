@@ -29,6 +29,7 @@ pub struct X509CredentialConfiguration {
     pub display_name: String,
     pub client_id: ClientId,
     pub handle: String,
+    pub domain: String,
     pub team: Option<String>,
     pub validity_period: std::time::Duration,
 }
