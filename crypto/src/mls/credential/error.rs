@@ -15,6 +15,8 @@ pub enum Error {
     InvalidIdentity,
     #[error("No credential for the given public key ({0:?}) was found in this database")]
     CredentialNotFound(SignaturePublicKey),
+    #[error("missing PKI environment")]
+    MissingPKIEnvironment,
     /// Unsupported credential type.
     ///
     /// Supported credential types:
