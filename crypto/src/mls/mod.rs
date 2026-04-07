@@ -117,8 +117,9 @@ mod tests {
                     CertificateBundle::rand_identifier(&session_id, &[x509_test_chain.find_local_intermediate_ca()])
                 }
             };
+            let provider = cc.get_pki_environment().await.unwrap().mls_pki_env_provider();
             let session_id = identifier
-                .get_id()
+                .get_id(provider.borrow().await.as_ref())
                 .expect("get session_id from identifier")
                 .into_owned();
             context

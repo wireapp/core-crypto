@@ -69,7 +69,11 @@ impl fmt::Debug for CertificateBundle {
 
 impl CertificateBundle {
     /// Reads the client_id from the leaf certificate
-    pub fn get_client_id(&self) -> Result<ClientId> {
+    pub fn get_client_id(
+        &self,
+        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
+    ) -> Result<ClientId> {
+        let env = env.ok_or(Error::MissingPKIEnvironment)?;
         let leaf = self.certificate_chain.first().ok_or(Error::InvalidIdentity)?;
 
         let hash_alg = match self.signature_scheme {
@@ -79,7 +83,7 @@ impl CertificateBundle {
         };
 
         let identity = leaf
-            .extract_identity(None, hash_alg)
+            .extract_identity(env, hash_alg)
             .map_err(|_| Error::InvalidIdentity)?;
 
         use wire_e2e_identity::legacy::id as legacy_id;

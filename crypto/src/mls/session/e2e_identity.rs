@@ -119,6 +119,11 @@ impl<D> Session<D> {
         _credential_type: CredentialType,
         env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
     ) -> E2eiConversationState {
+        let env = match env {
+            Some(e) => e,
+            None => return E2eiConversationState::NotEnabled,
+        };
+
         let mut is_e2ei = false;
         let mut state = E2eiConversationState::Verified;
 
@@ -138,10 +143,7 @@ impl<D> Session<D> {
             use openmls_x509_credential::X509Ext as _;
             let is_time_valid = cert.is_time_valid().unwrap_or(false);
             let is_time_invalid = !is_time_valid;
-            let is_revoked_or_invalid = env
-                .map(|e| e.validate_cert_and_revocation(&cert).is_err())
-                .unwrap_or(false);
-
+            let is_revoked_or_invalid = env.validate_cert_and_revocation(&cert).is_err();
             let is_invalid = invalid_identity || is_time_invalid || is_revoked_or_invalid;
             if is_invalid {
                 state = E2eiConversationState::NotVerified;

@@ -2,6 +2,7 @@ use core_crypto_keystore::Database;
 use openmls::prelude::{
     ConfirmationTag, ContentType, CredentialWithKey, FramedContentBodyIn, MlsMessageIn, MlsMessageInBody, Sender,
 };
+use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{Error, Result};
 use crate::{
@@ -98,8 +99,9 @@ impl MlsConversation {
             credential: own_leaf.credential().clone(),
             signature_key: own_leaf.signature_key().clone(),
         };
+        let provider = client.crypto_provider.authentication_service();
         let identity = own_leaf_credential_with_key
-            .extract_identity(self.ciphersuite(), None)
+            .extract_identity(self.ciphersuite(), provider.borrow().await.as_ref())
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         Ok(MlsConversationDecryptMessage {

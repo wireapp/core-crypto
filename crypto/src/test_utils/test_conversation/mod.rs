@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use openmls::{group::QueuedProposal, prelude::group_info::VerifiableGroupInfo};
+use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{CredentialType, MessageExt as _, MlsTransportTestExt, SessionContext, TestContext, TestError};
 use crate::{
@@ -385,7 +386,11 @@ impl<'a> TestConversation<'a> {
         let credential = credential_ref.load(&database).await.unwrap();
         let mls_credential_with_key = credential.to_mls_credential_with_key();
         let ciphersuite = self.case.ciphersuite();
-        let local_identity = mls_credential_with_key.extract_identity(ciphersuite, None).unwrap();
+        let session = self.actor().session().await;
+        let provider = session.crypto_provider.authentication_service();
+        let local_identity = mls_credential_with_key
+            .extract_identity(ciphersuite, provider.borrow().await.as_ref())
+            .unwrap();
 
         assert_eq!(&local_identity.client_id.as_bytes(), &cid.0);
         assert_eq!(
@@ -404,7 +409,9 @@ impl<'a> TestConversation<'a> {
         };
 
         assert_eq!(credential.credential.identity(), &cid.0);
-        let keystore_identity = credential.extract_identity(ciphersuite, None).unwrap();
+        let keystore_identity = credential
+            .extract_identity(ciphersuite, provider.borrow().await.as_ref())
+            .unwrap();
         assert_eq!(
             keystore_identity.x509_identity.as_ref().unwrap().display_name,
             new_display_name

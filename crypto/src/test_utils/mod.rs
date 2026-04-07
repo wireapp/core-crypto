@@ -18,6 +18,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use async_lock::RwLock;
 use openmls::framing::MlsMessageOut;
+use openmls_traits::OpenMlsCryptoProvider as _;
 pub use openmls_traits::types::SignatureScheme;
 use wire_e2e_identity::pki_env::PkiEnvironment;
 
@@ -118,17 +119,7 @@ impl SessionContext {
             .unwrap();
 
         let core_crypto = CoreCrypto::new(db.clone());
-
         let transaction = core_crypto.new_transaction().await.unwrap();
-
-        let session_id = identifier
-            .get_id()
-            .map_err(RecursiveError::mls_client("getting client id"))?
-            .into_owned();
-        transaction
-            .mls_init(session_id, context.transport.clone())
-            .await
-            .map_err(RecursiveError::transaction("mls init"))?;
 
         // Setup the X509 PKI environment
         if let Some(chain) = chain.as_ref() {
@@ -142,6 +133,25 @@ impl SessionContext {
                 .expect("Setting pki environment");
             chain.register_with_central(&transaction).await;
         }
+
+        let pki_env = core_crypto.get_pki_environment().await;
+        let session_id = match pki_env {
+            Some(pki_env) => {
+                let provider = pki_env.mls_pki_env_provider();
+                identifier
+                    .get_id(provider.borrow().await.as_ref())
+                    .map_err(RecursiveError::mls_client("getting client id"))?
+                    .into_owned()
+            }
+            None => identifier
+                .get_id(None)
+                .map_err(RecursiveError::mls_client("getting client id"))?
+                .into_owned(),
+        };
+        transaction
+            .mls_init(session_id, context.transport.clone())
+            .await
+            .map_err(RecursiveError::transaction("mls init"))?;
 
         let session = transaction.session().await.unwrap();
 
@@ -306,7 +316,11 @@ impl SessionContext {
             CredentialType::X509 => {
                 let signer = signer.expect("Missing intermediate CA");
                 let cert = CertificateBundle::rand(&session_id, signer);
-                let session_id = cert.get_client_id().expect("Getting client id from certificate bundle");
+                let session = self.session.read().await;
+                let guard = session.crypto_provider.authentication_service().borrow().await;
+                let session_id = cert
+                    .get_client_id(guard.as_ref())
+                    .expect("Getting client id from certificate bundle");
 
                 let credential = Credential::x509(case.ciphersuite(), cert).expect("creating  x509 credential");
 

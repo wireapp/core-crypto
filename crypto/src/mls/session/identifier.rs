@@ -19,7 +19,10 @@ pub enum ClientIdentifier {
 impl ClientIdentifier {
     /// Extract the unique [ClientId] from an identifier. Use with parsimony as, in case of a x509
     /// certificate this leads to parsing the certificate
-    pub fn get_id(&self) -> Result<std::borrow::Cow<'_, ClientIdRef>> {
+    pub fn get_id(
+        &self,
+        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
+    ) -> Result<std::borrow::Cow<'_, ClientIdRef>> {
         match self {
             ClientIdentifier::Basic(id) => Ok(std::borrow::Cow::Borrowed(id)),
             ClientIdentifier::X509(certs) => {
@@ -28,7 +31,7 @@ impl ClientIdentifier {
                 // that's not a getter's job
                 let cert = certs.values().next().ok_or(Error::NoX509CertificateBundle)?;
                 let id = cert
-                    .get_client_id()
+                    .get_client_id(env)
                     .map_err(RecursiveError::mls_credential("getting client id"))?;
                 Ok(std::borrow::Cow::Owned(id))
             }

@@ -115,6 +115,7 @@ impl CredentialExt for openmls::prelude::Certificate {
         cs: Ciphersuite,
         env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
     ) -> Result<WireIdentity> {
+        let env = env.ok_or(Error::MissingPKIEnvironment)?;
         let leaf = self.certificates.first().ok_or(Error::InvalidIdentity)?;
         let leaf = leaf.as_slice();
         use wire_e2e_identity::WireIdentityReader as _;
