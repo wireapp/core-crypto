@@ -77,8 +77,20 @@ $(STAMPS)/cc-book-jvm-attachments: $(STAMPS)/docs-kotlin
 	cp -r target/kotlin/doc cc-book/modules/jvm/attachments/
 	$(TOUCH_STAMP)
 
+ifeq ($(UNAME_S),Darwin)
+$(STAMPS)/cc-book-ios-attachments: $(STAMPS)/docs-swift
+	mkdir -p cc-book/modules/ios/attachments
+	cp -r target/swift/doc cc-book/modules/ios/attachments/
+	$(TOUCH_STAMP)
+else
+$(STAMPS)/cc-book-ios-attachments:
+	mkdir -p cc-book/modules/ios/attachments/doc
+	echo "<html><body><h1>Swift API not available because this book was built on a non-Darwin platform.</h1></body></html>" > cc-book/modules/ios/attachments/doc/index.html
+	$(TOUCH_STAMP)
+endif
+
 # Build the CC book using Antora
 .PHONY: cc-book
-cc-book: $(STAMPS)/cc-book-browser-attachments $(STAMPS)/cc-book-jvm-attachments
+cc-book: $(STAMPS)/cc-book-browser-attachments $(STAMPS)/cc-book-jvm-attachments $(STAMPS)/cc-book-ios-attachments
 	cd cc-book && \
 	bunx antora antora-playbook.yml
