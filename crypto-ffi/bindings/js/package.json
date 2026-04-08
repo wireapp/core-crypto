@@ -48,7 +48,7 @@
         "ts-loader": "^9.5.2",
         "typedoc": "0.28.18",
         "typescript": "^5.8.3",
-        "typescript-eslint": "^8.57.2",
+        "typescript-eslint": "^8.58.0",
         "uniffi-bindgen-react-native": "github:wireapp/uniffi-bindgen-react-native#8e6391eb37f018d49d7be502320b930ba1e40142",
         "yarn": "^1.22.22"
     },
