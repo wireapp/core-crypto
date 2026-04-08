@@ -1,14 +1,13 @@
 use std::collections::HashSet;
 
-use core_crypto_keystore::{entities::E2eiCrl, traits::FetchFromDatabase};
 use openmls::{
     group::MlsGroup,
     prelude::{Certificate, MlsCredentialType},
 };
-use wire_e2e_identity::{NewCrlDistributionPoints, x509_check::extract_crl_uris};
+use wire_e2e_identity::x509_check::extract_crl_uris;
 
 use super::{Error, Result};
-use crate::{KeystoreError, RecursiveError};
+use crate::RecursiveError;
 
 #[derive(
     Debug,
@@ -50,24 +49,6 @@ pub(crate) fn extract_dp(cert: &Certificate) -> Result<CrlUris> {
             }
             Ok(acc)
         })
-}
-
-pub(crate) async fn get_new_crl_distribution_points(
-    database: &impl FetchFromDatabase,
-    mut crl_dps: HashSet<String>,
-) -> Result<NewCrlDistributionPoints> {
-    if crl_dps.is_empty() {
-        return Ok(None.into());
-    }
-
-    let stored_crls = database
-        .load_all::<E2eiCrl>()
-        .await
-        .map_err(KeystoreError::wrap("finding all e2e crl"))?;
-    let stored_crl_dps: HashSet<&str> = stored_crls.iter().map(|crl| crl.distribution_point.as_str()).collect();
-    crl_dps.retain(|dp| !stored_crl_dps.contains(&dp.as_str()));
-
-    Ok(Some(crl_dps).into())
 }
 
 impl CrlUris {
