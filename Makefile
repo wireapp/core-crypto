@@ -27,7 +27,7 @@ include make/fmt.mk
 #-------------------------------------------------------------------------------
 
 .PHONY: ts wasm bindings local all clean
-ts: $(BROWSER_OUT) ## Build all TypeScript wrappers
+ts: $(BROWSER_OUT) $(TS_NATIVE_OUT) ## Build all TypeScript wrappers
 wasm: ts-browser  ## Alias for ts-browser
 bindings: bindings-kotlin $(if $(filter Darwin,$(UNAME_S)),bindings-swift) ts ## Generate all bindings
 local: bindings ts-fmt ## Generate and format all bindings
