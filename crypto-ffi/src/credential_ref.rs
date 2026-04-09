@@ -2,29 +2,28 @@ use core_crypto::CredentialRef as CryptoCredentialRef;
 
 use crate::{Ciphersuite, ClientId, CredentialType, SignatureScheme};
 
-/// A reference to a credential which has been persisted in CC.
+/// A compact reference to a credential that has been persisted in CoreCrypto.
 ///
-/// This is because credentials can be quite large; we'd really like to avoid passing them
-/// back and forth across the FFI boundary more than is strictly required.
-/// Therefore, we use this type which is substantially more compact.
+/// Credentials can be quite large; this type avoids passing them back and forth across the FFI
+/// boundary more than strictly required.
 ///
-/// Created with [`CoreCryptoContext::add_credential`][crate::CoreCryptoContext::add_credential].
+/// Created by calling `add_credential` on a `CoreCryptoContext`.
 ///
-/// This reference is _not_ a literal reference in memory.
-/// It is instead the key from which a credential can be retrieved.
-/// This means that it is stable over time and across the FFI boundary.
+/// This reference is not a literal in-memory reference.
+/// It is instead the key from which a credential can be retrieved,
+/// and is stable over time and across the FFI boundary.
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, uniffi::Object)]
 #[uniffi::export(Debug)]
 pub struct CredentialRef(pub(crate) CryptoCredentialRef);
 
 #[uniffi::export]
 impl CredentialRef {
-    /// Get the client id associated with this credential ref
+    /// Get the client id associated with this credential ref.
     pub fn client_id(&self) -> ClientId {
         self.0.client_id().to_owned().into()
     }
 
-    /// Get the SHA256 hash of the public key associated with this credential ref
+    /// Get the SHA256 hash of the public key associated with this credential ref.
     pub fn public_key_hash(&self) -> Vec<u8> {
         self.0.public_key_hash().to_vec()
     }
