@@ -4,12 +4,12 @@ use core_crypto::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptM
 
 use crate::{ClientId, WireIdentity};
 
-/// A decrypted message and various associated metadata
+/// A decrypted message and various associated metadata.
 #[derive(Debug, uniffi::Record)]
 pub struct DecryptedMessage {
     /// Decrypted plaintext
     pub message: Option<Vec<u8>>,
-    /// False if processing this message caused the client to be removed from the group, i.e. due to a Remove commit
+    /// False if processing this message caused the client to be removed from the group, i.e. due to a Remove commit.
     pub is_active: bool,
     /// Commit delay in seconds.
     ///
@@ -17,9 +17,9 @@ pub struct DecryptedMessage {
     /// This reduces load on the backend, which otherwise would receive epoch change notifications from all clients
     /// simultaneously.
     pub commit_delay: Option<u64>,
-    /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
+    /// `ClientId` of the sender of the message being decrypted. Only present for application messages.
     pub sender_client_id: Option<Arc<ClientId>>,
-    /// Identity claims present in the sender credential
+    /// Identity claims present in the sender credential.
     pub identity: WireIdentity,
     /// Only set when the decrypted message is a commit.
     ///
@@ -45,12 +45,15 @@ impl From<MlsConversationDecryptMessage> for DecryptedMessage {
     }
 }
 
-/// to avoid recursive structs
+/// A decrypted message that was buffered due to out-of-order delivery by the distribution service.
+///
+/// These are returned in the `buffered_messages` field of a `DecryptedMessage` when a commit is
+/// processed. They represent messages for the new epoch that arrived before the commit that created it.
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct BufferedDecryptedMessage {
     /// Decrypted plaintext
     pub message: Option<Vec<u8>>,
-    /// False if processing this message caused the client to be removed from the group, i.e. due to a Remove commit
+    /// False if processing this message caused the client to be removed from the group, i.e. due to a Remove commit.
     pub is_active: bool,
     /// Commit delay in seconds.
     ///
@@ -58,9 +61,9 @@ pub struct BufferedDecryptedMessage {
     /// This reduces load on the backend, which otherwise would receive epoch change notifications from all clients
     /// simultaneously.
     pub commit_delay: Option<u64>,
-    /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
+    /// `ClientId` of the sender of the message being decrypted. Only present for application messages.
     pub sender_client_id: Option<Arc<ClientId>>,
-    /// Identity claims present in the sender credential
+    /// Identity claims present in the sender credential.
     pub identity: WireIdentity,
 }
 
