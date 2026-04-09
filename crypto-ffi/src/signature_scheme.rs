@@ -6,7 +6,7 @@
 
 use core_crypto::SignatureScheme as MlsSignatureScheme;
 
-/// MLS signature schemes
+/// Signature schemes supported by MLS, as defined in RFC 9420.
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, derive_more::TryFrom)]
@@ -14,15 +14,15 @@ use core_crypto::SignatureScheme as MlsSignatureScheme;
 #[repr(u16)]
 #[derive(uniffi::Enum)]
 pub enum SignatureScheme {
-    /// ECDSA_SECP256R1_SHA256
+    /// ECDSA with secp256r1 (P-256) and SHA-256
     ECDSA_SECP256R1_SHA256 = 0x0403,
-    /// ECDSA_SECP384R1_SHA384
+    /// ECDSA with secp384r1 (P-384) and SHA-384
     ECDSA_SECP384R1_SHA384 = 0x0503,
-    /// ECDSA_SECP521R1_SHA512
+    /// ECDSA with secp521r1 (P-521) and SHA-512
     ECDSA_SECP521R1_SHA512 = 0x0603,
-    /// ED25519
+    /// Deterministic EdDSA with Curve25519 (Ed25519)
     ED25519 = 0x0807,
-    /// ED448
+    /// Deterministic EdDSA with Curve448 (Ed448)
     ED448 = 0x0808,
 }
 

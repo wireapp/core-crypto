@@ -1,11 +1,11 @@
-/// Type of Credential
+/// The type of credential used to authenticate an MLS client's identity.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, uniffi::Enum)]
 #[repr(u8)]
 pub enum CredentialType {
-    /// Basic credential i.e. a KeyPair
+    /// A basic credential backed by a raw key pair, without any certificate infrastructure.
     #[default]
     Basic = 0x01,
-    /// A x509 certificate generally obtained through e2e identity enrollment process
+    /// An X509 certificate credential, typically obtained through the end-to-end identity enrollment process.
     X509 = 0x02,
 }
 
