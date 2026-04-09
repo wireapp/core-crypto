@@ -1,8 +1,8 @@
-/// A Client identifier
+/// A unique identifier for an MLS client.
 ///
-/// A unique identifier for clients. A client is an identifier for each App a user is using, such as desktop,
-/// mobile, etc. Users can have multiple clients.
-/// More information [here](https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients)
+/// Each app instance a user is running, such as desktop or mobile, is a separate client
+/// with its own client id. A single user may therefore have multiple clients.
+/// More information: <https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients>
 #[derive(Debug, Clone, Eq, Hash, PartialEq, derive_more::From, uniffi::Object)]
 pub struct ClientId(pub(crate) core_crypto::ClientId);
 
