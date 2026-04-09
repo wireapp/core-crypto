@@ -197,8 +197,8 @@ $(STAMPS)/ts-test:
 	$(TOUCH_STAMP)
 
 # run WebDriver benches
-.PHONY: ts-bench
-ts-bench: $(BROWSER_OUT) ## Run TypeScript wrapper benches in Chrome via wdio
+.PHONY: ts-browser-bench
+ts-browser-bench: $(BROWSER_OUT) ## Run TypeScript wrapper benches in Chrome via wdio
 	@set -euo pipefail; \
 	cd $(JS_DIR) && \
 	if [ -n "$(BENCH)" ]; then \
@@ -206,6 +206,17 @@ ts-bench: $(BROWSER_OUT) ## Run TypeScript wrapper benches in Chrome via wdio
 	else \
 		bun x wdio run ./packages/browser/benches/wdio.bench.conf.ts --log-level warn; \
 	fi
+
+.PHONY: ts-native-bench
+ts-native-bench: $(TS_NATIVE_OUT)
+	@set -euo pipefail; \
+	cd $(JS_DIR) && \
+	if [ -n "$(BENCH)" ]; then \
+		bun --conditions=cc-native run ./packages/native/benches/*$(BENCH)*.bench.ts; \
+	else \
+		bun --conditions=cc-native run ./packages/native/benches/*.bench.ts; \
+	fi
+
 
 .PHONY: ts-package
 ts-package: $(TS_OUT)  ## Package the ready-to-release tarball
