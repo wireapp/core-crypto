@@ -14,11 +14,11 @@ pub fn version() -> String {
 #[derive(uniffi::Record)]
 /// Metadata describing the conditions of the build of this software.
 pub struct BuildMetadata {
-    /// Build Timestamp
+    /// Build timestamp
     pub timestamp: String,
-    /// Whether this build was in Debug mode (true) or Release mode (false)
+    /// Whether this build was in Debug mode (true) or Release mode (false).
     pub cargo_debug: String,
-    /// Features enabled for this build
+    /// Features enabled for this build.
     pub cargo_features: String,
     /// Optimization level
     pub opt_level: String,
@@ -30,11 +30,11 @@ pub struct BuildMetadata {
     pub git_describe: String,
     /// Hash of current git commit
     pub git_sha: String,
-    /// `true` when the source code differed from the commit at the most recent git hash
+    /// `true` when the source code differed from the commit at the most recent git hash.
     pub git_dirty: String,
 }
 
-/// Returns build data for CoreCrypto
+/// Returns build metadata for CoreCrypto.
 #[uniffi::export]
 pub fn build_metadata() -> BuildMetadata {
     BuildMetadata {

@@ -8,7 +8,7 @@ use crate::{ClientId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult};
 /// ephemeral client.
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, uniffi::Record)]
 pub struct HistorySecret {
-    /// Client id of the associated history client
+    /// Client id of the associated history client.
     pub client_id: Arc<ClientId>,
     /// Opaque secret data sufficient to reconstruct a history client.
     pub data: Vec<u8>,
