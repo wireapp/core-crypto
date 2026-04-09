@@ -4,6 +4,7 @@ use core_crypto::MlsGroupInfoBundle;
 
 use crate::core_crypto_context::mls::GroupInfo;
 
+/// How a `GroupInfo` is encrypted in a commit bundle.
 #[derive(Debug, Clone, Copy, uniffi::Enum)]
 #[repr(u8)]
 pub enum MlsGroupInfoEncryptionType {
@@ -31,14 +32,18 @@ impl From<MlsGroupInfoEncryptionType> for core_crypto::MlsGroupInfoEncryptionTyp
     }
 }
 
+/// How the ratchet tree is represented in a `GroupInfo`.
 #[derive(Debug, Clone, Copy, uniffi::Enum)]
 #[repr(u8)]
 pub enum MlsRatchetTreeType {
-    /// Plain old and complete `GroupInfo`
+    /// The full ratchet tree is included.
     Full = 1,
-    /// Contains `GroupInfo` changes since previous epoch (not yet implemented)
-    /// (see [draft](https://github.com/rohan-wire/ietf-drafts/blob/main/mahy-mls-ratchet-tree-delta/draft-mahy-mls-ratchet-tree-delta.md))
+    /// Only changes since the previous epoch are included.
+    ///
+    /// Not yet implemented. See the draft proposal:
+    /// <https://github.com/rohan-wire/ietf-drafts/blob/main/mahy-mls-ratchet-tree-delta/draft-mahy-mls-ratchet-tree-delta.md>
     Delta = 2,
+    /// The ratchet tree is identified by an external reference rather than included inline.
     ByRef = 3,
 }
 
@@ -62,14 +67,14 @@ impl From<MlsRatchetTreeType> for core_crypto::MlsRatchetTreeType {
     }
 }
 
-/// A `GroupInfo` with some metadata
+/// A `GroupInfo` with associated metadata.
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct GroupInfoBundle {
-    /// How the group info is encrypetd
+    /// How the group info is encrypted.
     pub encryption_type: MlsGroupInfoEncryptionType,
-    /// What kind of ratchet tree is used
+    /// What kind of ratchet tree is used.
     pub ratchet_tree_type: MlsRatchetTreeType,
-    /// The group info
+    /// The group info payload.
     pub payload: Arc<GroupInfo>,
 }
 

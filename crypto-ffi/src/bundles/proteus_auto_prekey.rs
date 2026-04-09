@@ -1,4 +1,4 @@
-/// Encapsulates a prekey id and a cbor-serialized prekey
+/// Encapsulates a prekey id and a CBOR-serialized prekey.
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct ProteusAutoPrekeyBundle {
     /// Prekey id (automatically incremented)

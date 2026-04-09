@@ -7,13 +7,13 @@ use crate::{CoreCryptoError, GroupInfoBundle, core_crypto_context::mls::Welcome}
 /// Information returned when a commit is created.
 #[derive(uniffi::Record)]
 pub struct CommitBundle {
-    /// A welcome message if there are pending Add proposals
+    /// A welcome message, present when there are pending Add proposals.
     pub welcome: Option<Arc<Welcome>>,
-    /// The commit message
+    /// The MLS commit message.
     pub commit: Vec<u8>,
-    /// `GroupInfo` if the commit is merged
+    /// The `GroupInfo` associated with this commit.
     pub group_info: GroupInfoBundle,
-    /// An encrypted message to fan out to all other conversation members in the new epoch
+    /// An encrypted message to fan out to all other conversation members in the new epoch.
     pub encrypted_message: Option<Vec<u8>>,
 }
 
