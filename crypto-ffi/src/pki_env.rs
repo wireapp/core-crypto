@@ -4,7 +4,7 @@ use wire_e2e_identity::pki_env;
 
 use crate::{CoreCryptoFfi, CoreCryptoResult, Database};
 
-/// HttpMethod used for pki hooks
+/// HttpMethod used for PKI hooks.
 #[derive(uniffi::Enum)]
 pub enum HttpMethod {
     /// GET
@@ -34,12 +34,12 @@ impl From<pki_env::hooks::HttpMethod> for HttpMethod {
     }
 }
 
-/// An HttpHeader used for pki hooks
+/// An HttpHeader used for PKI hooks.
 #[derive(uniffi::Record)]
 pub struct HttpHeader {
-    /// header name
+    /// Header name
     pub name: String,
-    /// header value
+    /// Header value
     pub value: String,
 }
 
@@ -61,14 +61,14 @@ impl From<HttpHeader> for pki_env::hooks::HttpHeader {
     }
 }
 
-/// An HttpResponse used for pki hooks
+/// An HttpResponse used for PKI hooks.
 #[derive(uniffi::Record)]
 pub struct HttpResponse {
-    /// http status code
+    /// HTTP status code
     pub status: u16,
     /// List of header fields
     pub headers: Vec<HttpHeader>,
-    /// http body
+    /// HTTP body
     pub body: Vec<u8>,
 }
 
@@ -82,8 +82,10 @@ impl From<HttpResponse> for pki_env::hooks::HttpResponse {
     }
 }
 
+/// An error returned by a `PkiEnvironmentHooks` callback implementation.
 #[derive(Debug, uniffi::Error, thiserror::Error)]
 pub enum PkiEnvironmentHooksError {
+    /// An error with the given reason string.
     #[error("reason: {reason}")]
     Error { reason: String },
 }
@@ -103,8 +105,9 @@ impl From<uniffi::UnexpectedUniFFICallbackError> for PkiEnvironmentHooksError {
     }
 }
 
-/// The PKI Environment Hooks used for external calls during e2e enrollment flow.
-/// When communicating with the Identity Provider (IDP)  and Wire server,
+/// Callbacks for external calls made by CoreCrypto during X509 credential acquisition.
+///
+/// When communicating with the Identity Provider (IDP) and Wire server,
 /// CoreCrypto delegates to the client app by calling the relevant methods.
 ///
 /// Client App                 CoreCrypto                     Acme                     IDP
@@ -129,8 +132,9 @@ impl From<uniffi::UnexpectedUniFFICallbackError> for PkiEnvironmentHooksError {
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait PkiEnvironmentHooks: Send + Sync {
-    /// Make an HTTP request
-    /// Used for requests to ACME servers, CRL distributors etc.
+    /// Make an HTTP request.
+    ///
+    /// Used for requests to ACME servers, CRL distributors, etc.
     async fn http_request(
         &self,
         method: HttpMethod,
@@ -141,7 +145,7 @@ pub trait PkiEnvironmentHooks: Send + Sync {
 
     /// Authenticate with the user's identity provider (IdP)
     ///
-    /// The implementation should perform an [authentication using the authorization code flow]
+    /// The implementation should perform authentication using the authorization code flow
     /// (<https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth>) with the PKCE
     /// (<https://www.rfc-editor.org/rfc/rfc7636>) extension. As part of the authorization
     /// request, the implementation should specify `key_auth` and `acme_aud` claims, along with
@@ -157,7 +161,7 @@ pub trait PkiEnvironmentHooks: Send + Sync {
         acme_aud: String,
     ) -> Result<String, PkiEnvironmentHooksError>;
 
-    /// Get a nonce from the backend
+    /// Get a nonce from the backend.
     async fn get_backend_nonce(&self) -> Result<String, PkiEnvironmentHooksError>;
 
     /// Fetch an access token to be used for the DPoP challenge (`wire-dpop-01`)
@@ -217,13 +221,13 @@ impl pki_env::hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
     }
 }
 
-/// A PkiEnvironment
+/// The PKI environment used for certificate management during X509 credential acquisition.
 #[derive(derive_more::From, derive_more::Into, Clone, uniffi::Object)]
 pub struct PkiEnvironment(wire_e2e_identity::pki_env::PkiEnvironment);
 
 #[cfg_attr(feature = "wasm", uniffi::export)]
 impl PkiEnvironment {
-    /// Create a new PKI environment
+    /// Create a new PKI environment.
     #[cfg_attr(feature = "wasm", uniffi::constructor)]
     pub async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Arc<Database>) -> CoreCryptoResult<Self> {
         let shim = Arc::new(PkiEnvironmentHooksShim::new(hooks));
@@ -232,7 +236,7 @@ impl PkiEnvironment {
     }
 }
 
-/// Create a new PKI environment
+/// Create a new PKI environment.
 #[cfg(not(any(feature = "wasm", target_os = "unknown")))]
 #[uniffi::export]
 pub async fn create_pki_environment(
@@ -244,7 +248,7 @@ pub async fn create_pki_environment(
 
 #[uniffi::export]
 impl CoreCryptoFfi {
-    /// Set the Pki Environment of the CoreCrypto instance
+    /// Set the PKI environment of the CoreCrypto instance.
     pub async fn set_pki_environment(&self, pki_environment: Option<Arc<PkiEnvironment>>) -> CoreCryptoResult<()> {
         let pki_environment = pki_environment.as_ref().map(|p| p.as_ref().clone()).map(Into::into);
         self.inner
@@ -253,7 +257,8 @@ impl CoreCryptoFfi {
             .map_err(Into::into)
     }
 
-    /// Get the PKI environment of the CoreCrypto instance
+    /// Get the PKI environment of the CoreCrypto instance.
+    ///
     /// Returns null if it is not set.
     pub async fn get_pki_environment(&self) -> Option<Arc<PkiEnvironment>> {
         self.inner.get_pki_environment().await.map(PkiEnvironment).map(Arc::new)
