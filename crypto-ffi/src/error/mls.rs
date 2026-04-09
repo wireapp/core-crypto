@@ -1,6 +1,6 @@
 use core_crypto::InnermostErrorMessage as _;
 
-/// MLS produces these kinds of error
+/// Errors produced by the MLS layer.
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 #[allow(missing_docs)] // error variants are self-describing
 pub enum MlsError {
@@ -32,10 +32,12 @@ pub enum MlsError {
     StaleProposal,
     #[error("The received commit is deemed stale and is from an older epoch.")]
     StaleCommit,
-    /// This happens when the DS cannot flag KeyPackages as claimed or not. In this scenario, a client
-    /// requests their old KeyPackages to be deleted but one has already been claimed by another client to create a
-    /// Welcome. In that case the only solution is that the client receiving such a Welcome tries to join the group
-    /// with an External Commit instead
+    /// A Welcome message references a KeyPackage that has already been deleted locally.
+    ///
+    /// This happens when the distribution service cannot flag KeyPackages as claimed. A client
+    /// requests its old KeyPackages to be deleted, but one has already been claimed by another client
+    /// to create a Welcome. The only solution is for the recipient to join the group with an external
+    /// commit instead.
     #[error(
         "Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit"
     )]

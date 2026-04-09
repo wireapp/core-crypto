@@ -3,10 +3,10 @@ pub(crate) mod mls;
 #[cfg(feature = "proteus")]
 pub(crate) mod proteus;
 
-/// The primary error type for CoreCrypto
+/// The primary error type for CoreCrypto.
 pub type CoreCryptoError = core_crypto::CoreCryptoError;
 
-/// A result which produces a [`CoreCryptoError`] by default.
+/// A result type that uses `CoreCryptoError` as the default error type.
 pub type CoreCryptoResult<T, E = CoreCryptoError> = Result<T, E>;
 
 /// Prepare and dispatch a log message reporting this error.

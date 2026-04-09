@@ -4,23 +4,29 @@ use core_crypto::{InnermostErrorMessage as _, RecursiveError};
 use crate::ProteusError;
 use crate::{MlsError, error::log_error};
 
+/// The primary error type returned across the CoreCrypto FFI boundary.
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum CoreCryptoError {
+    /// An error from the MLS layer.
     #[error(transparent)]
     Mls {
         #[from]
         mls_error: MlsError,
     },
+    /// An error from the Proteus layer.
     #[cfg(feature = "proteus")]
     #[error(transparent)]
     Proteus {
         #[from]
         exception: ProteusError,
     },
+    /// An error from the end-to-end identity layer.
     #[error("End to end identity error: {e2ei_error}")]
     E2ei { e2ei_error: String },
+    /// A transaction was rolled back due to an unexpected callback error.
     #[error("Transaction rolled back due to unexpected uniffi error: {error:?}")]
     TransactionFailed { error: String },
+    /// An unclassified error.
     #[error("{msg}")]
     Other { msg: String },
 }
