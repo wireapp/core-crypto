@@ -5,7 +5,7 @@ use tls_codec::{Deserialize as _, Serialize as _};
 
 use crate::{Ciphersuite, CoreCryptoError, CoreCryptoResult, CredentialType, SignatureScheme};
 
-/// A lightweight distinct reference to a `KeyPackage` sufficient to uniquely identify it
+/// A lightweight distinct reference to a `KeyPackage`, sufficient to uniquely identify it.
 ///
 /// This contains some metadata to assist in sorting and filtering refs without needing to perform the
 /// relatively heavy operation of converting to a full keypackage.
@@ -14,7 +14,7 @@ pub struct KeypackageRef(core_crypto::KeypackageRef);
 
 #[uniffi::export]
 impl KeypackageRef {
-    /// Get the bytes of the hash reference to a [`Keypackage`]
+    /// Get the bytes of the hash reference to a keypackage.
     pub fn hash_ref(&self) -> Vec<u8> {
         self.0.hash_ref().into()
     }
@@ -24,7 +24,7 @@ impl KeypackageRef {
         self.0.ciphersuite().into()
     }
 
-    /// Get the signature scheme associated wtih this key package ref.
+    /// Get the signature scheme associated with this key package ref.
     pub fn signature_scheme(&self) -> SignatureScheme {
         self.0.signature_scheme().into()
     }
@@ -34,9 +34,7 @@ impl KeypackageRef {
         self.0.credential_type().into()
     }
 
-    /// Determines whether this keypackage is valid in the sense of the former `client_valid_keypackages_count` method.
-    ///
-    /// In practice, this just checks whether its lifetime (if present) has expired or not.
+    /// Returns true if this keypackage's lifetime has not expired, or if no lifetime is present.
     pub fn is_valid(&self) -> bool {
         self.0.is_valid()
     }
@@ -85,7 +83,7 @@ impl Keypackage {
 
 #[uniffi::export]
 impl Keypackage {
-    /// Construct a new `Keypackage` from a byte array
+    /// Construct a new `Keypackage` from a byte array.
     #[uniffi::constructor]
     pub fn new(bytes: &[u8]) -> CoreCryptoResult<Self> {
         KeyPackageIn::tls_deserialize_exact(bytes)
@@ -110,7 +108,7 @@ impl Keypackage {
         }
     }
 
-    /// Convert this to a reference
+    /// Convert this to a reference.
     pub fn r#ref(&self) -> CoreCryptoResult<KeypackageRef> {
         match &self.0 {
             Inner::Out(key_package) => key_package
