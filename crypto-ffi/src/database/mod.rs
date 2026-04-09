@@ -1,4 +1,4 @@
-//! This module contains the [Database] struct acting as a core crypto keystore and the [DatabaseKey] used to open it.
+//! This module contains the `Database` struct acting as a core crypto keystore and the `DatabaseKey` used to open it.
 
 mod key;
 
@@ -15,7 +15,7 @@ pub struct Database(core_crypto_keystore::Database);
 #[cfg(any(feature = "wasm", feature = "napi"))]
 #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]
 impl Database {
-    /// Open or create a [Database].
+    /// Open or create a database.
     #[uniffi::constructor(name = "open")]
     pub async fn open(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
         core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::Persistent(location), key.as_ref())
@@ -24,7 +24,7 @@ impl Database {
             .map_err(CoreCryptoError::generic())
     }
 
-    /// Create an in-memory [Database] whose data will be lost when the instance is dropped.
+    /// Create an in-memory database whose data will be lost when the instance is dropped.
     #[uniffi::constructor(name = "inMemory")]
     pub async fn in_memory(key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
         core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::InMemory, key.as_ref())
@@ -37,7 +37,7 @@ impl Database {
 // Note: no uniffi::export, because static functions are not supported yet by uniffi version 0.29.
 #[cfg(not(any(feature = "wasm", feature = "napi")))]
 impl Database {
-    /// Open or create a [Database].
+    /// Open or create a database.
     pub async fn open(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
         core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::Persistent(location), key.as_ref())
             .await
@@ -45,7 +45,7 @@ impl Database {
             .map_err(CoreCryptoError::generic())
     }
 
-    /// Create an in-memory [Database] whose data will be lost when the instance is dropped.
+    /// Create an in-memory database whose data will be lost when the instance is dropped.
     pub async fn in_memory(key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
         core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::InMemory, key.as_ref())
             .await
@@ -56,8 +56,9 @@ impl Database {
 
 #[uniffi::export]
 impl Database {
-    /// Get the location of the database
-    /// Returns null if in-memory
+    /// Get the location of the database.
+    ///
+    /// Returns null if the database is in-memory.
     pub async fn get_location(&self) -> CoreCryptoResult<Option<String>> {
         self.location().await.map_err(CoreCryptoError::generic())
     }
@@ -73,38 +74,33 @@ impl Database {
 #[cfg_attr(feature = "wasm", uniffi::export)]
 impl Database {
     /// Close the database.
-    /// Closing the database makes any PkiEnvironment and CoreCrypto instance created with that database unusable.
+    ///
+    /// Closing the database makes any `PkiEnvironment` and `CoreCrypto` instance created with it unusable.
     #[cfg(feature = "wasm")]
     pub async fn close(&self) -> CoreCryptoResult<()> {
         self.0.close().await.map_err(CoreCryptoError::generic())
     }
 }
 
-/// Open or create a [Database].
+/// Open or create a database.
 #[cfg(not(any(feature = "wasm", target_os = "unknown")))]
 #[uniffi::export]
 pub async fn open_database(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Database> {
     Database::open(location, key).await
 }
 
-/// Create an in-memory [Database] whose data will be lost when the instance is dropped.
+/// Create an in-memory database whose data will be lost when the instance is dropped.
 #[cfg(not(any(feature = "wasm", target_os = "unknown")))]
 #[uniffi::export]
 pub async fn in_memory_database(key: Arc<DatabaseKey>) -> CoreCryptoResult<Database> {
     Database::in_memory(key).await
 }
 
-/// Export a copy of the database to the specified path.
+/// Export a fully vacuumed and optimized copy of the database to the specified path.
 ///
-/// This creates a fully vacuumed and optimized copy of the database using SQLite's VACUUM INTO command.
-/// The copy will be encrypted with the same key as the source database.
-///
-/// # Platform Support
-/// This method is only available on platforms using SQLCipher (iOS, Android, JVM, native).
-///
-/// # Arguments
-/// * `database` - The database instance to export
-/// * `destination_path` - The file path where the database copy should be created
+/// The copy is created using SQLite's VACUUM INTO command and is encrypted with the same key
+/// as the source database. This is only available on platforms using SQLCipher
+/// (iOS, Android, JVM, native).
 //
 // These feature flags are ugly, but here's how they work:
 //

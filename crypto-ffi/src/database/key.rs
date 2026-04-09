@@ -19,7 +19,8 @@ impl DatabaseKey {
 }
 
 /// Updates the key of the CoreCrypto database.
-/// To be used only once, when moving from CoreCrypto <= 5.x to CoreCrypto 6.x.
+///
+/// This function is intended to be called only once, when migrating from CoreCrypto 5.x to 6.x.
 #[uniffi::export]
 pub async fn migrate_database_key_type_to_bytes(
     path: &str,
