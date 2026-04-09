@@ -2,19 +2,20 @@ use wire_e2e_identity::legacy::device_status;
 
 use crate::{CredentialType, X509Identity};
 
-/// Represents the identity claims identifying a client
-/// Those claims are verifiable by any member in the group
+/// The identity claims identifying a client.
+///
+/// Those claims are verifiable by any member in the group.
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct WireIdentity {
     /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
     pub client_id: String,
-    /// Status of the Credential at the moment this object is created
+    /// Status of the credential at the moment this object is created.
     pub status: DeviceStatus,
     /// MLS thumbprint
     pub thumbprint: String,
-    /// Indicates whether the credential is Basic or X509
+    /// Indicates whether the credential is Basic or X509.
     pub credential_type: CredentialType,
-    /// In case 'credential_type' is [CredentialType::X509] this is populated
+    /// The X509 certificate details; populated only when `credential_type` is X509.
     pub x509_identity: Option<X509Identity>,
 }
 
@@ -30,17 +31,19 @@ impl From<core_crypto::WireIdentity> for WireIdentity {
     }
 }
 
-/// Indicates the standalone status of a device Credential in a MLS group at a moment T.
+/// The standalone status of a device credential in an MLS group at a given moment.
 ///
-/// This does not represent the states where a device is not using MLS or is not using end-to-end identity
+/// This does not represent states where a device is not using MLS or end-to-end identity.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, uniffi::Enum)]
 #[repr(u8)]
 pub enum DeviceStatus {
-    /// All is fine
+    /// The device credential is valid.
     Valid = 1,
-    /// The Credential's certificate is expired
+    /// The device credential's certificate has expired.
     Expired = 2,
-    /// The Credential's certificate is revoked (not implemented yet)
+    /// The device credential's certificate has been revoked.
+    ///
+    /// Note: revocation is not yet implemented.
     Revoked = 3,
 }
 
