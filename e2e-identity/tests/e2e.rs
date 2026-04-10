@@ -177,6 +177,7 @@ async fn prepare_pki_env_and_config(
 
     let acme = utils::stepca::start_acme_server(&ca_cfg).await;
     let acme_url = acme.socket.to_string();
+    let acme_cert = x509_cert::Certificate::from_pem(acme.ca_cert.to_string()).unwrap();
 
     // configure DNS mappings
     let mut dns_mappings = HashMap::<String, SocketAddr>::new();
@@ -225,7 +226,9 @@ async fn prepare_pki_env_and_config(
         .await
         .unwrap();
 
-    let pki_env = PkiEnvironment::new(hooks, db).await.unwrap();
+    let mut pki_env = PkiEnvironment::new(hooks, db).await.unwrap();
+    pki_env.update_pki_environment_provider().await.unwrap();
+    pki_env.add_trust_anchor("step-ca-root", acme_cert).await.unwrap();
     (pki_env, config)
 }
 
