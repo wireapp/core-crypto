@@ -6,13 +6,17 @@ pub mod hooks;
 use std::{collections::HashSet, sync::Arc};
 
 use async_lock::{RwLock, RwLockReadGuard};
+use certval::{CertVector as _, TaSource};
 use core_crypto_keystore::{
     connection::Database,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
     traits::FetchFromDatabase,
 };
 use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
-use x509_cert::{Certificate, der::Decode as _};
+use x509_cert::{
+    Certificate,
+    der::{Decode as _, Encode as _},
+};
 
 use crate::{
     pki_env::hooks::PkiEnvironmentHooks,
@@ -42,6 +46,8 @@ pub enum Error {
     X509CertDerError(#[from] x509_cert::der::Error),
     #[error(transparent)]
     KeystoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
+    #[error("certval error: {0}")]
+    Certval(certval::Error),
 }
 
 /// New Certificate Revocation List distribution points.
@@ -153,6 +159,20 @@ impl PkiEnvironment {
 
         let trust_anchor = x509_cert::Certificate::from_der(&trust_anchor.content)?;
         Ok(trust_anchor)
+    }
+
+    pub async fn add_trust_anchor(&mut self, name: &str, cert: Certificate) -> Result<()> {
+        let mut guard = self.mls_pki_env_provider.0.write().await;
+        let pki_env = guard.as_mut().expect("inner PKI environment must be set");
+
+        let mut trust_anchors = TaSource::new();
+        trust_anchors.push(certval::CertFile {
+            filename: name.to_owned(),
+            bytes: cert.to_der()?,
+        });
+        trust_anchors.initialize().map_err(Error::Certval)?;
+        pki_env.add_trust_anchor_source(Box::new(trust_anchors));
+        Ok(())
     }
 }
 
