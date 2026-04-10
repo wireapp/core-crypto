@@ -6,7 +6,8 @@ use wire_e2e_identity::pki_env::hooks::{
 };
 
 use crate::utils::{
-    OauthCfg, WireServer, default_http_client,
+    OauthCfg, WireServer,
+    ctx::ctx_get_http_client_builder,
     idp::{IdpServer, OidcProvider, fetch_id_token},
     stepca::AcmeServer,
 };
@@ -30,7 +31,7 @@ impl PkiEnvironmentHooks for TestPkiEnvironmentHooks {
         mut headers: Vec<HttpHeader>,
         body: Vec<u8>,
     ) -> Result<HttpResponse, PkiEnvironmentHooksError> {
-        let client = default_http_client()
+        let client = ctx_get_http_client_builder()
             .add_root_certificate(self.acme.ca_cert.clone())
             .build()
             .unwrap();
