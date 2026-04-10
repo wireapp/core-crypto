@@ -31,8 +31,9 @@ impl PkiEnvironmentHooks for TestPkiEnvironmentHooks {
         mut headers: Vec<HttpHeader>,
         body: Vec<u8>,
     ) -> Result<HttpResponse, PkiEnvironmentHooksError> {
+        let cert = reqwest::tls::Certificate::from_pem(self.acme.ca_cert.to_string().as_ref()).unwrap();
         let client = ctx_get_http_client_builder()
-            .add_root_certificate(self.acme.ca_cert.clone())
+            .add_root_certificate(cert)
             .build()
             .unwrap();
         let headers: HashMap<String, String> = HashMap::from_iter(headers.drain(..).map(|h| (h.name, h.value)));

@@ -13,7 +13,7 @@ use crate::utils::{NETWORK, SHM, rand_str};
 #[derive(Debug)]
 pub(crate) struct AcmeServer {
     pub uri: String,
-    pub ca_cert: reqwest::Certificate,
+    pub ca_cert: pem::Pem,
     pub node: ContainerAsync<GenericImage>,
     pub socket: SocketAddr,
 }
@@ -298,9 +298,9 @@ pub(crate) async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
     }
 }
 
-fn ca_cert(host_volume: &Path) -> reqwest::Certificate {
+fn ca_cert(host_volume: &Path) -> pem::Pem {
     // we need to call step-ca over https so we need to fetch its self-signed CA
     let ca_cert = host_volume.join("certs").join("root_ca.crt");
-    let ca_pem = std::fs::read(ca_cert).unwrap();
-    reqwest::tls::Certificate::from_pem(ca_pem.as_slice()).expect("Smallstep issued an invalid certificate")
+    let bytes = std::fs::read(ca_cert).unwrap();
+    pem::parse(bytes).expect("step-ca issued a valid certificate")
 }
