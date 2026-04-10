@@ -21,7 +21,7 @@ pub(crate) async fn verify_cert_chain(
     // should be simplified once we drop RjtPkiEnvironment.
     let trust_roots: Vec<TrustAnchorChoice> = match *pki_env.mls_pki_env_provider().borrow().await {
         Some(ref pki_env) => {
-            let trust_anchors = pki_env.get_trust_anchors().unwrap_or_default();
+            let trust_anchors = pki_env.get_trust_anchors();
             trust_anchors.iter().map(|f| f.decoded_ta.clone()).collect()
         }
         None => vec![],
