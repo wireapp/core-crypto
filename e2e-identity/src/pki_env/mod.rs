@@ -65,15 +65,13 @@ impl IntoIterator for NewCrlDistributionPoints {
     }
 }
 
-async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<Option<RjtPkiEnvironment>> {
+async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<RjtPkiEnvironment> {
     let mut trust_roots = vec![];
-    let Ok(Some(ta_raw)) = data_provider.get_unique::<E2eiAcmeCA>().await else {
-        return Ok(None);
-    };
-
-    trust_roots.push(
-        x509_cert::Certificate::from_der(&ta_raw.content).map(x509_cert::anchor::TrustAnchorChoice::Certificate)?,
-    );
+    if let Ok(Some(ta_raw)) = data_provider.get_unique::<E2eiAcmeCA>().await {
+        trust_roots.push(
+            x509_cert::Certificate::from_der(&ta_raw.content).map(x509_cert::anchor::TrustAnchorChoice::Certificate)?,
+        );
+    }
 
     let intermediates = data_provider
         .load_all::<E2eiIntermediateCert>()
@@ -96,7 +94,7 @@ async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<Optio
         time_of_interest: None,
     };
 
-    Ok(Some(RjtPkiEnvironment::init(params)?))
+    Ok(RjtPkiEnvironment::init(params)?)
 }
 
 /// The PKI environment which can be initialized independently from a CoreCrypto session.
@@ -115,10 +113,7 @@ pub struct PkiEnvironment {
 impl PkiEnvironment {
     /// Create a new PKI Environment
     pub async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Database) -> Result<PkiEnvironment> {
-        let mls_pki_env_provider = restore_pki_env(&database)
-            .await?
-            .map(PkiEnvironmentProvider::from)
-            .unwrap_or_default();
+        let mls_pki_env_provider = PkiEnvironmentProvider::from(restore_pki_env(&database).await?);
         Ok(Self {
             hooks,
             database,
@@ -136,9 +131,8 @@ impl PkiEnvironment {
     }
 
     pub async fn update_pki_environment_provider(&self) -> Result<()> {
-        if let Some(rjt_pki_environment) = restore_pki_env(&self.database).await? {
-            self.mls_pki_env_provider.update_env(Some(rjt_pki_environment)).await;
-        }
+        let rjt_pki_environment = restore_pki_env(&self.database).await?;
+        self.mls_pki_env_provider.update_env(Some(rjt_pki_environment)).await;
         Ok(())
     }
 
