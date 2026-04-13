@@ -7,7 +7,7 @@ pub(crate) mod identities;
 // End-to-end identity methods
 #[uniffi::export]
 impl CoreCryptoFfi {
-    /// See [core_crypto::Session::e2ei_is_pki_env_setup]
+    /// Returns true if the PKI environment has been set up and its provider is configured.
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
         if let Some(pki_env) = self.inner.get_pki_environment().await {
             return pki_env.provider_is_setup().await;
@@ -16,7 +16,7 @@ impl CoreCryptoFfi {
         false
     }
 
-    /// See [core_crypto::Session::e2ei_is_enabled]
+    /// Returns true if end-to-end identity is enabled for the given ciphersuite.
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
         self.inner
             .mls_session()
@@ -27,7 +27,7 @@ impl CoreCryptoFfi {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::e2ei_conversation_state]
+    /// Returns the end-to-end identity verification state of the given conversation.
     pub async fn e2ei_conversation_state(
         &self,
         conversation_id: &ConversationId,
