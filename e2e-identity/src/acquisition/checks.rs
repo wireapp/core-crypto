@@ -13,8 +13,9 @@ pub(crate) async fn verify_cert_chain(
     pki_env: &PkiEnvironment,
     certs: &[Certificate],
 ) -> Result<(), CertificateError> {
-    let leaf = &certs[0];
-    let intermediates = &certs[1..];
+    // We can be sure there is at least one certificate because the ACME server
+    // response was checked prior to calling this function.
+    let (leaf, intermediates) = certs.split_first().expect("at least one certificate");
 
     // TODO: this is ridiculous, once we have the "outer" PKI env, we should
     // be certain that there is also the "inner", RjtPkiEnvironment one. This
