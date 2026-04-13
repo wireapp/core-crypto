@@ -12,7 +12,7 @@ use log::{
 };
 use log_reload::ReloadLog;
 
-/// Defines the log level for a CoreCrypto
+/// Defines the log level for CoreCrypto.
 #[derive(Debug, Clone, Copy, uniffi::Enum)]
 #[repr(u8)]
 #[expect(missing_docs)] // these are standard log levels and additional docs are pointless
@@ -50,6 +50,7 @@ impl From<Level> for CoreCryptoLogLevel {
     }
 }
 
+/// An error returned by a `CoreCryptoLogger` callback implementation.
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 #[uniffi(flat_error)]
 pub enum LoggingError {
@@ -57,10 +58,10 @@ pub enum LoggingError {
     Ffi(#[from] uniffi::UnexpectedUniFFICallbackError),
 }
 
-/// This trait is used to provide a callback mechanism to hook up the respective platform logging system.
+/// A callback interface for forwarding CoreCrypto log messages to the platform's logging system.
 #[uniffi::export(with_foreign)]
 pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
-    /// Core Crypto will call this method whenever it needs to log a message.
+    /// CoreCrypto will call this method whenever it needs to log a message.
     ///
     /// This function catches panics and other unexpected errors. In those cases, it writes to `stderr`.
     fn log(&self, level: CoreCryptoLogLevel, message: String, context: Option<String>) -> Result<(), LoggingError>;
@@ -156,7 +157,7 @@ impl log::Log for LogShim {
 static INIT_LOGGER: Once = Once::new();
 static LOGGER: LazyLock<ReloadLog<LogShim>> = LazyLock::new(|| ReloadLog::new(LogShim::default()));
 
-/// Initializes the logger
+/// Initializes the logger.
 #[uniffi::export]
 pub fn set_logger(logger: Arc<dyn CoreCryptoLogger>) {
     LOGGER
@@ -171,7 +172,7 @@ pub fn set_logger(logger: Arc<dyn CoreCryptoLogger>) {
     });
 }
 
-/// Set maximum log level forwarded to the logger
+/// Sets the maximum log level forwarded to the logger.
 #[uniffi::export]
 pub fn set_max_log_level(level: CoreCryptoLogLevel) {
     log::set_max_level(level.into());

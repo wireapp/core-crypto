@@ -4,6 +4,7 @@ use async_trait::async_trait;
 
 use crate::{ConversationId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, HistorySecret};
 
+/// An error returned by a `HistoryObserver` callback implementation.
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 #[uniffi(flat_error)]
 pub enum NewHistoryClientReportingError {
@@ -11,21 +12,18 @@ pub enum NewHistoryClientReportingError {
     Ffi(#[from] uniffi::UnexpectedUniFFICallbackError),
 }
 
-/// An `HistoryObserver` is notified whenever a new history client is created.
+/// A `HistoryObserver` is notified whenever a new history client is created.
 #[uniffi::export(with_foreign)]
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait HistoryObserver: Send + Sync {
     /// This function will be called every time a new history client is created.
     ///
-    /// The `secret` parameter is the secret associated with the new history client
+    /// The `secret` parameter is the secret associated with the new history client.
     ///
-    /// <div class="warning">
-    /// This function must not block! Foreign implementors of this interface can
-    /// spawn a task indirecting the notification, or (unblocking) send the notification
-    /// on some kind of channel, or anything else, as long as the operation completes
-    /// quickly.
-    /// </div>
+    /// Warning: this function must not block. Foreign implementors can spawn a task,
+    /// send on a channel, or take any other non-blocking approach, as long as the
+    /// operation completes quickly.
     ///
     /// Though the signature includes an error type, that error is only present because
     /// it is required by `uniffi` in order to handle panics. This function should suppress
@@ -80,7 +78,7 @@ impl CoreCryptoFfi {
     /// Add a history observer to this client.
     ///
     /// This function should be called 0 or 1 times in a session's lifetime. If called
-    /// when an history observer already exists, this will return an error.
+    /// when a history observer already exists, this will return an error.
     pub async fn register_history_observer(&self, history_observer: Arc<dyn HistoryObserver>) -> CoreCryptoResult<()> {
         let shim = Arc::new(ObserverShim(history_observer));
         self.inner

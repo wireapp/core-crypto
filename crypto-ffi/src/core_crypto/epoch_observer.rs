@@ -4,6 +4,7 @@ use async_trait::async_trait;
 
 use crate::{ConversationId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult};
 
+/// An error returned by an `EpochObserver` callback implementation.
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 #[uniffi(flat_error)]
 pub enum EpochChangedReportingError {
@@ -18,14 +19,11 @@ pub enum EpochChangedReportingError {
 pub trait EpochObserver: Send + Sync {
     /// This function will be called every time a conversation's epoch changes.
     ///
-    /// The `epoch` parameter is the new epoch.
+    /// The `epoch` parameter contains the new epoch number.
     ///
-    /// <div class="warning">
-    /// This function must not block! Foreign implementors of this interface can
-    /// spawn a task indirecting the notification, or (unblocking) send the notification
-    /// on some kind of channel, or anything else, as long as the operation completes
-    /// quickly.
-    /// </div>
+    /// Warning: this function must not block. Foreign implementors can spawn a task,
+    /// send on a channel, or take any other non-blocking approach, as long as the
+    /// operation completes quickly.
     ///
     /// Though the signature includes an error type, that error is only present because
     /// it is required by `uniffi` in order to handle panics. This function should suppress
