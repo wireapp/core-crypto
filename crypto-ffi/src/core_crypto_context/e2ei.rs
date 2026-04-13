@@ -9,7 +9,7 @@ use crate::{
 
 #[uniffi::export]
 impl CoreCryptoContext {
-    /// See [core_crypto::mls::conversation::Conversation::e2ei_conversation_state]
+    /// Returns the end-to-end identity verification state of the given conversation.
     pub async fn e2ei_conversation_state(
         &self,
         conversation_id: &ConversationId,
@@ -22,7 +22,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::Session::e2ei_is_enabled]
+    /// Returns true if end-to-end identity is enabled for the given ciphersuite.
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
         self.inner
             .e2ei_is_enabled(ciphersuite.into())
@@ -31,7 +31,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::get_device_identities]
+    /// Returns the E2EI identity claims for the specified devices in the given conversation.
     pub async fn get_device_identities(
         &self,
         conversation_id: &ConversationId,
@@ -44,7 +44,7 @@ impl CoreCryptoContext {
         Ok(wire_ids.into_iter().map(Into::into).collect())
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::get_user_identities]
+    /// Returns the E2EI identity claims for the specified users in the given conversation, grouped by user ID.
     pub async fn get_user_identities(
         &self,
         conversation_id: &ConversationId,
@@ -62,7 +62,7 @@ impl CoreCryptoContext {
         Ok(user_ids)
     }
 
-    /// See [core_crypto::Session::e2ei_is_pki_env_setup]
+    /// Returns true if the PKI environment has been set up.
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
         self.inner.e2ei_is_pki_env_setup().await
     }
