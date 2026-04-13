@@ -19,6 +19,10 @@ targets = [
 
 [advisories]
 version = 2
+
+# Fail if ignored advisories don't exist (anymore).
+unused-ignored-advisory = "deny"
+
 ignore = [
   # `paste` is no longer maintained and its repo is archived,
   # however `uniffi` still depends on it.
