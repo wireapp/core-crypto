@@ -10,7 +10,7 @@ pub(crate) type UserIdentities = HashMap<String, Vec<WireIdentity>>;
 
 #[uniffi::export]
 impl CoreCryptoFfi {
-    /// See [core_crypto::mls::conversation::Conversation::get_device_identities]
+    /// Returns the E2EI identity claims for the specified devices in the given conversation.
     pub async fn get_device_identities(
         &self,
         conversation_id: &ConversationId,
@@ -33,7 +33,7 @@ impl CoreCryptoFfi {
         Ok(wire_identities)
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::get_user_identities]
+    /// Returns the E2EI identity claims for the specified users in the given conversation, grouped by user ID.
     pub async fn get_user_identities(
         &self,
         conversation_id: &ConversationId,
