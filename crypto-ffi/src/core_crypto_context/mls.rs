@@ -45,7 +45,7 @@ bytes_wrapper!(
 
 #[uniffi::export]
 impl CoreCryptoContext {
-    /// See [core_crypto::transaction_context::TransactionContext::mls_init]
+    /// Initializes the MLS client with the given client ID and message transport.
     pub async fn mls_init(&self, client_id: &Arc<ClientId>, transport: Arc<dyn MlsTransport>) -> CoreCryptoResult<()> {
         let transport = callback_shim(transport);
         self.inner
@@ -54,13 +54,13 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::epoch]
+    /// Returns the current MLS epoch of the given conversation.
     pub async fn conversation_epoch(&self, conversation_id: &ConversationId) -> CoreCryptoResult<u64> {
         let conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         Ok(conversation.epoch().await)
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::ciphersuite]
+    /// Returns the ciphersuite in use for the given conversation.
     pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
         let cs = self
             .inner
@@ -96,7 +96,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::Session::conversation_exists]
+    /// Returns true if a conversation with the given id exists in the local state.
     pub async fn conversation_exists(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
         self.inner
             .conversation_exists(conversation_id.as_ref())
@@ -104,7 +104,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::get_client_ids]
+    /// Returns the client ids of all members of the given conversation.
     pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<Arc<ClientId>>> {
         let conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         let client_ids = conversation
@@ -117,7 +117,11 @@ impl CoreCryptoContext {
         Ok(client_ids)
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::export_secret_key]
+    /// Derives and exports a secret of `key_length` bytes for the given conversation.
+    ///
+    /// The secret is derived from the MLS key schedule's exporter mechanism (RFC 9420 §8.5),
+    /// which produces output bound to the current group state and epoch. The exported value
+    /// changes whenever the epoch advances.
     pub async fn export_secret_key(
         &self,
         conversation_id: &ConversationId,
@@ -131,7 +135,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::get_external_sender]
+    /// Returns the serialized public key of the external sender for the given conversation.
     pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<ExternalSenderKey> {
         let conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         conversation
@@ -141,7 +145,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::new_conversation]
+    /// Creates a new MLS group with the given conversation ID, using the specified credential.
     #[uniffi::method(default(external_sender = None))]
     pub async fn create_conversation(
         &self,
@@ -169,7 +173,7 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::process_raw_welcome_message]
+    /// Joins a conversation by processing an MLS Welcome message, returning the new conversation's ID.
     pub async fn process_welcome_message(&self, welcome_message: Arc<Welcome>) -> CoreCryptoResult<ConversationId> {
         let result = self
             .inner
@@ -179,7 +183,7 @@ impl CoreCryptoContext {
         Ok(result)
     }
 
-    /// See [core_crypto::mls::conversation::ConversationGuard::add_members]
+    /// Adds members to the conversation using their key packages, sending the resulting commit via the transport.
     pub async fn add_clients_to_conversation(
         &self,
         conversation_id: &ConversationId,
@@ -195,7 +199,7 @@ impl CoreCryptoContext {
         conversation.add_members(keypackages).await.map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::ConversationGuard::remove_members]
+    /// Removes the specified clients from the conversation, sending the resulting commit via the transport.
     pub async fn remove_clients_from_conversation(
         &self,
         conversation_id: &ConversationId,
@@ -206,7 +210,7 @@ impl CoreCryptoContext {
         conversation.remove_members(&clients).await.map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::ConversationGuard::mark_as_child_of]
+    /// Marks a conversation as a subconversation of the given parent.
     pub async fn mark_conversation_as_child_of(
         &self,
         child_id: &ConversationId,
@@ -219,25 +223,25 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::ConversationGuard::update_key_material]
+    /// Updates this client's key material in the conversation by sending an update commit.
     pub async fn update_keying_material(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         conversation.update_key_material().await.map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::ConversationGuard::commit_pending_proposals]
+    /// Commits all pending proposals in the conversation, sending the resulting commit via the transport.
     pub async fn commit_pending_proposals(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         conversation.commit_pending_proposals().await.map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::ConversationGuard::wipe]
+    /// Destroys the local state of the given conversation; it can no longer be used locally after this call.
     pub async fn wipe_conversation(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         conversation.wipe().await.map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::ConversationGuard::decrypt_message]
+    /// Decrypts an MLS message received in the given conversation.
     pub async fn decrypt_message(
         &self,
         conversation_id: &ConversationId,
@@ -255,7 +259,7 @@ impl CoreCryptoContext {
         Ok(decrypted_message.into())
     }
 
-    /// See [core_crypto::mls::conversation::ConversationGuard::encrypt_message]
+    /// Encrypts a plaintext message for all members of the given conversation.
     pub async fn encrypt_message(
         &self,
         conversation_id: &ConversationId,
@@ -265,7 +269,7 @@ impl CoreCryptoContext {
         conversation.encrypt_message(message).await.map_err(Into::into)
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::join_by_external_commit]
+    /// Joins an existing conversation by constructing an external commit from the given group info.
     pub async fn join_by_external_commit(
         &self,
         group_info: Arc<GroupInfo>,
@@ -283,22 +287,22 @@ impl CoreCryptoContext {
         Ok(conversation_id.into())
     }
 
-    /// See [core_crypto::mls::conversation::ConversationGuard::enable_history_sharing]
+    /// Enables history sharing for the given conversation.
     pub async fn enable_history_sharing(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         conversation.enable_history_sharing().await.map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::ConversationGuard::disable_history_sharing]
+    /// Disables history sharing for the given conversation.
     pub async fn disable_history_sharing(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         conversation.disable_history_sharing().await.map_err(Into::into)
     }
 
-    /// Add a [`Credential`][crate::Credential] to this client.
+    /// Adds a `Credential` to this client.
     ///
     /// Note that while an arbitrary number of credentials can be generated,
-    /// those which are added to a CC instance must be distinct in credential type,
+    /// those which are added to a CoreCrypto instance must be distinct in credential type,
     /// signature scheme, and the timestamp of creation. This timestamp has only
     /// 1 second of resolution, limiting the number of credentials which
     /// can be added. This is a known limitation and will be relaxed in the future.
@@ -308,7 +312,7 @@ impl CoreCryptoContext {
         Ok(credential_ref.into())
     }
 
-    /// Remove a [`Credential`][crate::Credential] from this client.
+    /// Removes a `Credential` from this client.
     pub async fn remove_credential(&self, credential_ref: &Arc<CredentialRef>) -> CoreCryptoResult<()> {
         let credential_ref = credential_ref.as_ref();
         self.inner.remove_credential(&credential_ref.0).await?;
@@ -326,7 +330,7 @@ impl CoreCryptoContext {
 
     /// Generate a `KeyPackage` from the referenced credential.
     ///
-    /// Makes no attempt to look up or prune existing keypackges.
+    /// Makes no attempt to look up or prune existing keypackages.
     ///
     /// If `lifetime` is set, the keypackages will expire that span into the future.
     /// If it is unset, a default lifetime of approximately 3 months is used.
