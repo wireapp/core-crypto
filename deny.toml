@@ -27,6 +27,12 @@ ignore = [
   # and will be in rsa v0.10, once that comes out of the eternal
   # pre-release state. We need to update it via our rusty-jwt-simple.
   "RUSTSEC-2023-0071",
+  # This advisory is about unsoundness of rand versions >= `0.7`, < `0.9.3` and `0.10.0`.
+  # However, it's only relevant if the "log" feature is enabled and a custom logger is used, which is not the case in
+  # this project.
+  #
+  # See https://github.com/rust-random/rand/pull/1763.
+  "RUSTSEC-2026-0097",
 ]
 
 [bans]
