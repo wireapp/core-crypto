@@ -185,18 +185,10 @@ pub(crate) async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
     let host_volume = std::env::temp_dir().join(rand_str(12));
     std::fs::create_dir(&host_volume).unwrap();
 
-    #[cfg(unix)]
-    {
-        // Allow container user to write to our host volume.
-        use std::os::unix::fs::PermissionsExt;
-        let permissions = std::fs::Permissions::from_mode(0o777);
-        std::fs::set_permissions(&host_volume, permissions).unwrap();
-        std::fs::write(
-            host_volume.join("intermediate.template"),
-            intermediate_cert_template().into_bytes(),
-        )
-        .unwrap();
-    }
+    // Allow container user to write to our host volume.
+    use std::os::unix::fs::PermissionsExt;
+    let permissions = std::fs::Permissions::from_mode(0o777);
+    std::fs::set_permissions(&host_volume, permissions).unwrap();
 
     // Prepare the container image. Note that instead of just starting the image as-is, we're
     // overriding the command to be a long sleep, in order to be able to issue commands inside
