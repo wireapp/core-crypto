@@ -31,7 +31,7 @@ impl AsRef<ConversationIdRef> for ConversationId {
 
 #[uniffi::export]
 impl CoreCryptoFfi {
-    /// See [core_crypto::mls::conversation::Conversation::epoch]
+    /// Returns the current MLS epoch of the given conversation.
     pub async fn conversation_epoch(&self, conversation_id: &ConversationId) -> CoreCryptoResult<u64> {
         let conversation = self
             .inner
@@ -45,7 +45,7 @@ impl CoreCryptoFfi {
         Ok(conversation.epoch().await)
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::ciphersuite]
+    /// Returns the ciphersuite in use for the given conversation.
     pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
         let cs = self
             .inner
@@ -77,7 +77,7 @@ impl CoreCryptoFfi {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::Session::conversation_exists]
+    /// Returns true if a conversation with the given id exists in the local state.
     pub async fn conversation_exists(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
         self.inner
             .mls_session()
@@ -88,7 +88,7 @@ impl CoreCryptoFfi {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::get_client_ids]
+    /// Returns the client ids of all members of the given conversation.
     pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<Arc<ClientId>>> {
         let conversation = self
             .inner
@@ -106,7 +106,7 @@ impl CoreCryptoFfi {
             .collect())
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::get_external_sender]
+    /// Returns the serialized public key of the external sender for the given conversation.
     pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<u8>> {
         let conversation = self
             .inner
@@ -120,7 +120,11 @@ impl CoreCryptoFfi {
         conversation.get_external_sender().await.map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::export_secret_key]
+    /// Derives and exports a secret of `key_length` bytes for the given conversation.
+    ///
+    /// The secret is derived from the MLS key schedule's exporter mechanism (RFC 9420 §8.5),
+    /// which produces output bound to the current group state and epoch. The exported value
+    /// changes whenever the epoch advances.
     pub async fn export_secret_key(
         &self,
         conversation_id: &ConversationId,
@@ -139,7 +143,7 @@ impl CoreCryptoFfi {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::Conversation::is_history_sharing_enabled]
+    /// Returns true if history sharing is currently enabled for the given conversation.
     pub async fn is_history_sharing_enabled(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
         let conversation = self
             .inner
