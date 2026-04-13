@@ -36,9 +36,9 @@ $(STAMPS)/docs-ts: $(BROWSER_OUT) $(TS_NATIVE_OUT)
 	cd crypto-ffi/bindings/js && \
 	bun typedoc \
 	  --basePath ./ \
-	  --displayBasePath ./src \
-	  --entryPoints src/browser/CoreCrypto.ts \
-	  --entryPoints src/native/CoreCrypto.ts \
+	  --displayBasePath ./packages \
+	  --entryPoints packages/browser/src/CoreCrypto.ts \
+	  --entryPoints packages/native/src/CoreCrypto.ts \
 	  --tsconfig tsconfig.json \
 	  --out ../../../target/typescript/doc \
 	  --readme none \

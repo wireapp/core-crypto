@@ -66,8 +66,8 @@ ts-fmt: $(STAMPS)/ts-fmt ## Format TypeScript files via eslint
 
 $(STAMPS)/ts-check: $(TS_SRCS) $(TS_TEST_FILES) $(BROWSER_OUT) $(TS_NATIVE_OUT)
 	cd $(JS_DIR) && bun eslint --max-warnings=0 && \
-	bun x tsc --noEmit --project tsconfig.browser.json && \
-	bun x tsc --noEmit --project tsconfig.native.json
+	bun x tsc --noEmit --project ./packages/browser/tsconfig.json && \
+	bun x tsc --noEmit --project ./packages/browser/tsconfig.json
 	$(TOUCH_STAMP)
 
 .PHONY: ts-check
