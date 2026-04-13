@@ -4,7 +4,7 @@ type BatchedEncryptedMessages = std::collections::HashMap<String, Vec<u8>>;
 
 #[uniffi::export]
 impl CoreCryptoContext {
-    /// See [core_crypto::proteus::ProteusCentral::try_new]
+    /// Initializes the Proteus client.
     pub async fn proteus_init(&self) -> CoreCryptoResult<()> {
         proteus_impl!({
             self.inner.proteus_init().await?;
@@ -12,7 +12,7 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_from_prekey]
+    /// Creates a new Proteus session from the given prekey bundle bytes, stored under the given session ID.
     pub async fn proteus_session_from_prekey(&self, session_id: String, prekey: Vec<u8>) -> CoreCryptoResult<()> {
         proteus_impl!({
             self.inner.proteus_session_from_prekey(&session_id, &prekey).await?;
@@ -20,7 +20,7 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_from_message]
+    /// Creates a new Proteus session from an incoming encrypted message, returning the decrypted message payload.
     pub async fn proteus_session_from_message(&self, session_id: &str, envelope: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({
             let (_, payload) = self.inner.proteus_session_from_message(session_id, &envelope).await?;
@@ -28,25 +28,25 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_save]
+    /// Saves the Proteus session with the given ID to the keystore.
     ///
-    /// **Note**: This isn't usually needed as persisting sessions happens automatically when
-    /// decrypting/encrypting messages and initializing Sessions
+    /// Note: this is not usually needed, as sessions are persisted automatically when
+    /// decrypting or encrypting messages and when initializing sessions.
     pub async fn proteus_session_save(&self, session_id: &str) -> CoreCryptoResult<()> {
         proteus_impl!({ self.inner.proteus_session_save(session_id).await.map_err(Into::into) })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_delete]
+    /// Deletes the Proteus session with the given ID from local storage.
     pub async fn proteus_session_delete(&self, session_id: String) -> CoreCryptoResult<()> {
         proteus_impl!({ self.inner.proteus_session_delete(&session_id).await.map_err(Into::into) })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_exists]
+    /// Returns true if a Proteus session with the given ID exists in local storage.
     pub async fn proteus_session_exists(&self, session_id: &str) -> CoreCryptoResult<bool> {
         proteus_impl!({ self.inner.proteus_session_exists(session_id).await.map_err(Into::into) })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_decrypt]
+    /// Decrypts a Proteus ciphertext in the given session, returning the plaintext.
     pub async fn proteus_decrypt(&self, session_id: &str, ciphertext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({
             self.inner
@@ -74,7 +74,7 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_encrypt]
+    /// Encrypts a plaintext message in the given Proteus session.
     pub async fn proteus_encrypt(&self, session_id: String, plaintext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({
             self.inner
@@ -84,7 +84,7 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_encrypt_batched]
+    /// Encrypts a plaintext message in multiple Proteus sessions, returning a map from session ID to ciphertext.
     pub async fn proteus_encrypt_batched(
         &self,
         sessions: Vec<String>,
@@ -96,21 +96,16 @@ impl CoreCryptoContext {
         })
     }
 
-    /// Creates a new Proteus prekey with the given id and returns the CBOR-serialized version of the prekey bundle
+    /// Creates a new Proteus prekey with the given ID and returns its CBOR-serialized bundle.
     ///
-    /// Warning: The Proteus client **MUST** be initialized with `proteus_init` first or an error will be returned
-    ///
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_new_prekey]
+    /// Warning: the Proteus client must be initialized with `proteus_init` first or an error will be returned.
     pub async fn proteus_new_prekey(&self, prekey_id: u16) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({ self.inner.proteus_new_prekey(prekey_id).await.map_err(Into::into) })
     }
 
-    /// Creates a new Proteus prekey with an automatically incremented ID and returns the CBOR-serialized version of the
-    /// prekey bundle
+    /// Creates a new Proteus prekey with an automatically assigned ID and returns its CBOR-serialized bundle.
     ///
-    /// Warning: The Proteus client **MUST** be initialized with `proteus_init` first or an error will be returned
-    ///
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_new_prekey_auto]
+    /// Warning: the Proteus client must be initialized with `proteus_init` first or an error will be returned.
     pub async fn proteus_new_prekey_auto(&self) -> CoreCryptoResult<ProteusAutoPrekeyBundle> {
         proteus_impl!({
             let (id, pkb) = self.inner.proteus_new_prekey_auto().await?;
@@ -118,17 +113,17 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_last_resort_prekey]
+    /// Returns the CBOR-serialized last resort prekey bundle, creating it if it does not yet exist.
     pub async fn proteus_last_resort_prekey(&self) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({ self.inner.proteus_last_resort_prekey().await.map_err(Into::into) })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint]
+    /// Returns the hex-encoded public key fingerprint of this device's Proteus identity.
     pub async fn proteus_fingerprint(&self) -> CoreCryptoResult<String> {
         proteus_impl!({ self.inner.proteus_fingerprint().await.map_err(Into::into) })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint_local]
+    /// Returns the hex-encoded local public key fingerprint for the Proteus session with the given ID.
     pub async fn proteus_fingerprint_local(&self, session_id: String) -> CoreCryptoResult<String> {
         proteus_impl!({
             self.inner
@@ -138,7 +133,7 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint_remote]
+    /// Returns the hex-encoded remote public key fingerprint for the Proteus session with the given ID.
     pub async fn proteus_fingerprint_remote(&self, session_id: String) -> CoreCryptoResult<String> {
         proteus_impl!({
             self.inner
@@ -148,7 +143,7 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_reload_sessions]
+    /// Reloads all Proteus sessions from the keystore into memory.
     pub async fn proteus_reload_sessions(&self) -> CoreCryptoResult<()> {
         proteus_impl!({ self.inner.proteus_reload_sessions().await.map_err(Into::into) })
     }
