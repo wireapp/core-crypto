@@ -45,7 +45,10 @@ use wire_e2e_identity::{
     X509CredentialAcquisition, acquisition::X509CredentialConfiguration, pki_env::PkiEnvironment,
     x509_check::extract_crl_uris,
 };
-use x509_cert::{crl::CertificateList, der::Decode as _};
+use x509_cert::{
+    crl::CertificateList,
+    der::{Decode as _, DecodePem as _},
+};
 
 #[path = "utils/mod.rs"]
 mod utils;
@@ -278,8 +281,7 @@ async fn fetching_crls_works(test_env: TestEnvironment, #[case] sign_alg: JwsAlg
 
     let crl_uris: HashSet<String> = certs
         .iter()
-        .map(|cert| x509_cert::Certificate::from_der(cert).expect("certificate in chain parses"))
-        .filter_map(|cert| extract_crl_uris(&cert).expect("CRL distribution points can be extracted"))
+        .filter_map(|cert| extract_crl_uris(cert).expect("CRL distribution points can be extracted"))
         .flatten()
         .collect();
 
