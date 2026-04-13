@@ -9,22 +9,21 @@ use core_crypto::{HistorySecret, MlsCommitBundle};
 
 use crate::{ClientId, CommitBundle, HistorySecret as HistorySecretFfi};
 
-/// MLS transport may or may not succeeed; this response indicates to CC the outcome of the transport attempt.
+/// The outcome of an MLS transport attempt, returned to CoreCrypto after delivery.
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
 pub enum MlsTransportResponse {
-    /// The message was accepted by the distribution service
+    /// The message was accepted by the distribution service.
     Success,
-    /// A client should have consumed all incoming messages before re-trying.
+    /// The client should consume all incoming messages before retrying.
     Retry,
-    /// The message was rejected by the delivery service and there's no recovery.
+    /// The message was rejected by the delivery service and there is no recovery.
     Abort {
-        /// Why was this message rejected
+        /// The reason this message was rejected.
         reason: String,
     },
 }
 
-/// An entity / data which has been packaged by the application to be encrypted
-/// and transmitted in an application message.
+/// Application data packaged to be encrypted and transmitted in an MLS application message.
 //
 // TODO: We derive Constructor here only because we need to construct an instance in interop.
 // Remove it once we drop the FFI client from interop.
@@ -48,7 +47,8 @@ impl From<MlsTransportResponse> for core_crypto::MlsTransportResponse {
     }
 }
 
-/// Used by core crypto to send commits or application messages to the delivery service.
+/// Used by CoreCrypto to send commits or application messages to the delivery service.
+///
 /// This trait must be implemented before calling any functions that produce commits.
 #[uniffi::export(with_foreign)]
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
@@ -56,7 +56,7 @@ impl From<MlsTransportResponse> for core_crypto::MlsTransportResponse {
 pub trait MlsTransport: Send + Sync {
     /// Send a commit bundle to the corresponding endpoint.
     async fn send_commit_bundle(&self, commit_bundle: CommitBundle) -> MlsTransportResponse;
-    /// Prepare a history secret before being sent
+    /// Prepare a history secret before transmission.
     async fn prepare_for_transport(&self, history_secret: HistorySecretFfi) -> MlsTransportData;
 }
 
