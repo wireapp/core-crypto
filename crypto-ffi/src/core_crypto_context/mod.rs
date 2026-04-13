@@ -10,11 +10,10 @@ use crate::CoreCryptoResult;
 
 /// The `CoreCryptoContext` holds the primary `CoreCrypto` APIs.
 ///
-/// An instance of this struct is provided to the function handed to `CoreCrypto::transaction`.
+/// An instance of this struct is provided to the closure passed to `CoreCryptoFfi::transaction`.
 ///
-/// Every mutable operation is done through this struct. This struct will buffer all
-/// operations in memory and when [TransactionContext::finish] is called, it will persist the data into
-/// the keystore.
+/// Every mutable operation is done through this struct. Operations are buffered in memory
+/// and persisted to the keystore when the transaction completes.
 #[derive(Debug, uniffi::Object)]
 pub struct CoreCryptoContext {
     pub(crate) inner: Arc<TransactionContext>,
@@ -39,17 +38,20 @@ impl CoreCryptoContext {
 
 #[uniffi::export]
 impl CoreCryptoContext {
-    /// See [core_crypto::transaction_context::TransactionContext::set_data]
+    /// Stores arbitrary data to be used as a transaction checkpoint.
+    ///
+    /// The stored data can be retrieved via `get_data`. Keep the data size reasonable;
+    /// this is not a general-purpose key-value store.
     pub async fn set_data(&self, data: Vec<u8>) -> CoreCryptoResult<()> {
         self.inner.set_data(data).await.map_err(Into::into)
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::get_data]
+    /// Returns data previously stored by `set_data`, or `None` if no data has been stored.
     pub async fn get_data(&self) -> CoreCryptoResult<Option<Vec<u8>>> {
         self.inner.get_data().await.map_err(Into::into)
     }
 
-    /// See [core_crypto::Session::random_bytes].
+    /// Generates `len` random bytes from the cryptographically secure RNG.
     pub async fn random_bytes(&self, len: u32) -> CoreCryptoResult<Vec<u8>> {
         self.inner.random_bytes(len as _).await.map_err(Into::into)
     }
