@@ -1,19 +1,12 @@
 {
-  "extends": "./tsconfig.browser.json",
+    "extends": "./packages/browser/tsconfig.json",
     "compilerOptions": {
-        "customConditions": [
-            "cc-browser"
-        ]
+        "customConditions": ["cc-browser"]
     },
-  "include": [
-    "src/shared/**/*.ts",
-    "src/browser/**/*.ts",
-    "src/native/**/*.ts",
-    "test/bun/**/*.ts",
-    "test/wdio/**/*.ts",
-    "benches/**/*.ts",
-    "wdio.test.conf.ts",
-    "wdio.bench.conf.ts",
-    "eslint.config.ts"
-  ]
+    "include": [
+        "packages/shared/**/*.ts",
+        "packages/native/**/*.ts",
+        "packages/browser/**/*.ts",
+        "eslint.config.ts"
+    ]
 }

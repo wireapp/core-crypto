@@ -1,11 +1,7 @@
 {
-  "extends": "./tsconfig.base.json",
-  "compilerOptions": {
-    "customConditions": ["cc-native"]
-  },
-  "include": [
-    "src/shared/**/*.ts",
-    "src/native/**/*.ts",
-    "test/bun/napi/**/*.ts"
-  ]
+    "extends": "../shared/tsconfig.json",
+    "compilerOptions": {
+        "customConditions": ["cc-native"]
+    },
+    "include": ["../shared/src/**/*.ts", "src/**/*.ts", "test/napi/**/*.ts"]
 }

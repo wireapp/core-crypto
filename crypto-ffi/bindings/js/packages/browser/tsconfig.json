@@ -1,15 +1,15 @@
 {
-  "extends": "./tsconfig.base.json",
-  "compilerOptions": {
-    "customConditions": ["cc-browser"]
-  },
-  "include": [
-    "src/shared/**/*.ts",
-    "src/browser/**/*.ts",
-    "test/bun/wasm/**/*.ts",
-    "test/wdio/**/*.ts",
-    "benches/**/*.ts",
-    "wdio.test.conf.ts",
-    "wdio.bench.conf.ts"
-  ]
+    "extends": "../shared/tsconfig.json",
+    "compilerOptions": {
+        "customConditions": ["cc-browser"]
+    },
+    "include": [
+        "../shared/**/*.ts",
+        "src/**/*.ts",
+        "../native/test/wasm/**/*.ts",
+        "test/**/*.ts",
+        "benches/**/*.ts",
+        "test/wdio.test.conf.ts",
+        "benches/wdio.bench.conf.ts"
+    ]
 }
