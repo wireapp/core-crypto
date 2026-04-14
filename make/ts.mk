@@ -7,6 +7,8 @@ WASM_TARGET_DIR := target/wasm
 WASM_BUILD_ENV := CARGO_TARGET_DIR=$(abspath $(WASM_TARGET_DIR))
 WASM_TARGET_TRIPLE := wasm32-unknown-unknown
 WASM_BUILD_RUSTFLAGS := --cfg getrandom_backend=\"wasm_js\" -Awarnings
+WASM_FFI_LIB := $(WASM_TARGET_DIR)/debug/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+BROWSER_TS_IMPL := $(BROWSER_GEN_DIR)/core_crypto_ffi.ts
 BROWSER_OUT_DIR := $(TS_OUT_DIR)/browser
 TS_NATIVE_OUT_DIR := $(TS_OUT_DIR)/native
 BROWSER_OUT := $(BROWSER_OUT_DIR)/corecrypto.d.ts $(BROWSER_OUT_DIR)/corecrypto.js
@@ -54,28 +56,29 @@ ts-clean: ## Cleanup old TypeScript build outputs
 	&& rm -rf $(WASM_TARGET_DIR) \
 	&& rm -rf $(JS_DIR)/rust_modules
 
+ubrn-deps := $(RUST_SOURCES)
+$(WASM_FFI_LIB) $(BROWSER_TS_IMPL) &: $(ubrn-deps)
+	cd $(JS_DIR) && \
+	$(WASM_BUILD_ENV) bun ubrn build web --no-wasm-pack
 
 WASM_GEN := \
 	$(BROWSER_GEN_DIR)/wasm-bindgen/index_bg.wasm \
 	$(BROWSER_GEN_DIR)/wasm-bindgen/index_bg.wasm.d.ts \
 	$(BROWSER_GEN_DIR)/wasm-bindgen/index.d.ts \
-	$(BROWSER_GEN_DIR)/wasm-bindgen/index.js \
-	$(BROWSER_GEN_DIR)/core_crypto_ffi.ts
+	$(BROWSER_GEN_DIR)/wasm-bindgen/index.js
 
 # As soon as ubrn allows reusage of an existing ffi lib, we need to depend on it here.
-wasm-build-deps := $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES) $(PACKAGE_JSON) $(BUNFIG)
+wasm-build-deps := $(WASM_FFI_LIB) $(BROWSER_TS_IMPL) $(BUN_LOCK) $(NODE_MODULES) $(PACKAGE_JSON) $(BUNFIG)
 # index.web.ts is generated but unused so we remove it
 # Build the temporary host library in a dedicated target dir so we do not mix
 # the shared target outputs used by ios/jvm builds.
 #
 # We are accepting warnings on the generated code when running `cargo check`, this is consistent with the ubrn config.
 $(WASM_GEN) &: $(wasm-build-deps)
+	cp Cargo.lock $(JS_DIR)/rust_modules/wasm/Cargo.lock
+	cd $(JS_DIR)/rust_modules/wasm && \
+	RUSTFLAGS="$(WASM_BUILD_RUSTFLAGS)" cargo build --target $(WASM_TARGET_TRIPLE) $(CARGO_BUILD_ARGS)
 	cd $(JS_DIR) && \
-	$(WASM_BUILD_ENV) bun ubrn build web --no-wasm-pack && \
-	cp ../../../Cargo.lock ./rust_modules/wasm/Cargo.lock && \
-	cd ./rust_modules/wasm && \
-	RUSTFLAGS="$(WASM_BUILD_RUSTFLAGS)" cargo build --target $(WASM_TARGET_TRIPLE) $(CARGO_BUILD_ARGS) && \
-	cd ../../ && \
 	wasm-bindgen --target web \
 	  --omit-default-module-path \
 	  --out-name index \
