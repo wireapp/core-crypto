@@ -84,7 +84,12 @@ wasm-build-deps := $(ubrn-deps) Cargo.lock
 # index.web.ts is generated but unused so we remove it
 # Build the temporary host library in a dedicated target dir so we do not mix
 # the shared target outputs used by ios/jvm builds.
-$(WASM_GEN) &: $(WASM_FFI_LIB) $(BROWSER_TS_IMPL) $(WASM_FILE)
+$(WASM_GEN) &: $(wasm-build-deps)
+# Depend on source files, not $(WASM_FILE) directly. The CI artifact system restores
+# $(WASM_GEN) outputs on macOS runners where clang cannot build wasm32-unknown-unknown.
+# Source-file deps let Make treat those restored files as up-to-date without needing
+# $(WASM_FILE) to exist; a direct prerequisite would force a rebuild attempt that fails.
+	$(MAKE) $(WASM_FILE)
 	cd $(JS_DIR) && \
 	wasm-bindgen --target web \
 	  --omit-default-module-path \
