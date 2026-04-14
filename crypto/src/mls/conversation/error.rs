@@ -11,8 +11,6 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 pub enum Error {
     #[error("Message body type not suitable for restoration")]
     InappropriateMessageBodyType,
-    #[error("The specified parent group has not been found in the keystore")]
-    ParentGroupNotFound,
     #[error("The current client id isn't authorized to perform this action")]
     Unauthorized,
     /// Message rejected by the delivery service
