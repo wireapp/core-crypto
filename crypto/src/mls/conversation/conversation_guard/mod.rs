@@ -86,22 +86,6 @@ impl ConversationGuard {
         Ok(())
     }
 
-    /// This is not used right now, just like the entire mechanism of parent and
-    /// child conversations. When our threat model requires it, we can re-enable this, or we remove
-    /// it, along with all other code related to parent-child conversations.
-    #[expect(dead_code)]
-    pub(crate) async fn get_parent(&self) -> Result<Option<Self>> {
-        let conversation_lock = self.conversation().await;
-        let Some(parent_id) = conversation_lock.parent_id.as_ref() else {
-            return Ok(None);
-        };
-        self.central_context
-            .conversation(parent_id)
-            .await
-            .map(Some)
-            .map_err(|_| Error::ParentGroupNotFound)
-    }
-
     pub(crate) async fn credential(&self) -> Result<Arc<Credential>> {
         let client = self.session().await?;
         let inner = self.conversation().await;
