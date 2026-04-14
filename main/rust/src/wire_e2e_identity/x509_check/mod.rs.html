@@ -61,9 +61,9 @@
 <a href=#61 id=61 data-nosnippet>61</a>}
 <a href=#62 id=62 data-nosnippet>62</a>
 <a href=#63 id=63 data-nosnippet>63</a><span class="kw">impl </span>IdentityStatus {
-<a href=#64 id=64 data-nosnippet>64</a>    <span class="kw">pub fn </span>from_cert(cert: <span class="kw-2">&amp;</span>x509_cert::Certificate, env: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>PkiEnvironment&gt;) -&gt; <span class="self">Self </span>{
-<a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">match </span>env.map(|e| e.validate_cert_and_revocation(cert)) {
-<a href=#66 id=66 data-nosnippet>66</a>            <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(RustyX509CheckError::CertValError(certval::Error::PathValidation(e)))) =&gt; <span class="kw">match </span>e {
+<a href=#64 id=64 data-nosnippet>64</a>    <span class="kw">pub fn </span>from_cert(cert: <span class="kw-2">&amp;</span>x509_cert::Certificate, env: <span class="kw-2">&amp;</span>PkiEnvironment) -&gt; <span class="self">Self </span>{
+<a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">match </span>env.validate_cert_and_revocation(cert) {
+<a href=#66 id=66 data-nosnippet>66</a>            <span class="prelude-val">Err</span>(RustyX509CheckError::CertValError(certval::Error::PathValidation(e))) =&gt; <span class="kw">match </span>e {
 <a href=#67 id=67 data-nosnippet>67</a>                PathValidationStatus::InvalidNotAfterDate =&gt; IdentityStatus::Expired,
 <a href=#68 id=68 data-nosnippet>68</a>                PathValidationStatus::CertificateRevoked
 <a href=#69 id=69 data-nosnippet>69</a>                | PathValidationStatus::CertificateRevokedEndEntity

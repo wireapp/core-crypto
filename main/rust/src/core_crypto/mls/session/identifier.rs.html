@@ -19,28 +19,31 @@
 <a href=#19 id=19 data-nosnippet>19</a><span class="kw">impl </span>ClientIdentifier {
 <a href=#20 id=20 data-nosnippet>20</a>    <span class="doccomment">/// Extract the unique [ClientId] from an identifier. Use with parsimony as, in case of a x509
 <a href=#21 id=21 data-nosnippet>21</a>    /// certificate this leads to parsing the certificate
-<a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">pub fn </span>get_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;std::borrow::Cow&lt;<span class="lifetime">'_</span>, ClientIdRef&gt;&gt; {
-<a href=#23 id=23 data-nosnippet>23</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#24 id=24 data-nosnippet>24</a>            ClientIdentifier::Basic(id) =&gt; <span class="prelude-val">Ok</span>(std::borrow::Cow::Borrowed(id)),
-<a href=#25 id=25 data-nosnippet>25</a>            ClientIdentifier::X509(certs) =&gt; {
-<a href=#26 id=26 data-nosnippet>26</a>                <span class="comment">// since ClientId has uniqueness constraints, it is the same for all certificates.
-<a href=#27 id=27 data-nosnippet>27</a>                // hence no need to compute it for every certificate then verify its uniqueness
-<a href=#28 id=28 data-nosnippet>28</a>                // that's not a getter's job
-<a href=#29 id=29 data-nosnippet>29</a>                </span><span class="kw">let </span>cert = certs.values().next().ok_or(Error::NoX509CertificateBundle)<span class="question-mark">?</span>;
-<a href=#30 id=30 data-nosnippet>30</a>                <span class="kw">let </span>id = cert
-<a href=#31 id=31 data-nosnippet>31</a>                    .get_client_id()
-<a href=#32 id=32 data-nosnippet>32</a>                    .map_err(RecursiveError::mls_credential(<span class="string">"getting client id"</span>))<span class="question-mark">?</span>;
-<a href=#33 id=33 data-nosnippet>33</a>                <span class="prelude-val">Ok</span>(std::borrow::Cow::Owned(id))
-<a href=#34 id=34 data-nosnippet>34</a>            }
-<a href=#35 id=35 data-nosnippet>35</a>        }
-<a href=#36 id=36 data-nosnippet>36</a>    }
-<a href=#37 id=37 data-nosnippet>37</a>
-<a href=#38 id=38 data-nosnippet>38</a>    <span class="doccomment">/// The credential type for this identifier
-<a href=#39 id=39 data-nosnippet>39</a>    </span><span class="kw">pub fn </span>credential_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CredentialType {
-<a href=#40 id=40 data-nosnippet>40</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#41 id=41 data-nosnippet>41</a>            ClientIdentifier::Basic(<span class="kw">_</span>) =&gt; CredentialType::Basic,
-<a href=#42 id=42 data-nosnippet>42</a>            ClientIdentifier::X509(<span class="kw">_</span>) =&gt; CredentialType::X509,
-<a href=#43 id=43 data-nosnippet>43</a>        }
-<a href=#44 id=44 data-nosnippet>44</a>    }
-<a href=#45 id=45 data-nosnippet>45</a>}
+<a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">pub fn </span>get_id(
+<a href=#23 id=23 data-nosnippet>23</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#24 id=24 data-nosnippet>24</a>        env: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>wire_e2e_identity::x509_check::revocation::PkiEnvironment&gt;,
+<a href=#25 id=25 data-nosnippet>25</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;std::borrow::Cow&lt;<span class="lifetime">'_</span>, ClientIdRef&gt;&gt; {
+<a href=#26 id=26 data-nosnippet>26</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#27 id=27 data-nosnippet>27</a>            ClientIdentifier::Basic(id) =&gt; <span class="prelude-val">Ok</span>(std::borrow::Cow::Borrowed(id)),
+<a href=#28 id=28 data-nosnippet>28</a>            ClientIdentifier::X509(certs) =&gt; {
+<a href=#29 id=29 data-nosnippet>29</a>                <span class="comment">// since ClientId has uniqueness constraints, it is the same for all certificates.
+<a href=#30 id=30 data-nosnippet>30</a>                // hence no need to compute it for every certificate then verify its uniqueness
+<a href=#31 id=31 data-nosnippet>31</a>                // that's not a getter's job
+<a href=#32 id=32 data-nosnippet>32</a>                </span><span class="kw">let </span>cert = certs.values().next().ok_or(Error::NoX509CertificateBundle)<span class="question-mark">?</span>;
+<a href=#33 id=33 data-nosnippet>33</a>                <span class="kw">let </span>id = cert
+<a href=#34 id=34 data-nosnippet>34</a>                    .get_client_id(env)
+<a href=#35 id=35 data-nosnippet>35</a>                    .map_err(RecursiveError::mls_credential(<span class="string">"getting client id"</span>))<span class="question-mark">?</span>;
+<a href=#36 id=36 data-nosnippet>36</a>                <span class="prelude-val">Ok</span>(std::borrow::Cow::Owned(id))
+<a href=#37 id=37 data-nosnippet>37</a>            }
+<a href=#38 id=38 data-nosnippet>38</a>        }
+<a href=#39 id=39 data-nosnippet>39</a>    }
+<a href=#40 id=40 data-nosnippet>40</a>
+<a href=#41 id=41 data-nosnippet>41</a>    <span class="doccomment">/// The credential type for this identifier
+<a href=#42 id=42 data-nosnippet>42</a>    </span><span class="kw">pub fn </span>credential_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CredentialType {
+<a href=#43 id=43 data-nosnippet>43</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#44 id=44 data-nosnippet>44</a>            ClientIdentifier::Basic(<span class="kw">_</span>) =&gt; CredentialType::Basic,
+<a href=#45 id=45 data-nosnippet>45</a>            ClientIdentifier::X509(<span class="kw">_</span>) =&gt; CredentialType::X509,
+<a href=#46 id=46 data-nosnippet>46</a>        }
+<a href=#47 id=47 data-nosnippet>47</a>    }
+<a href=#48 id=48 data-nosnippet>48</a>}
 </code></pre></div></section></main></body></html>

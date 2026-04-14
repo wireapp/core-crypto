@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["states"],"struct":["X509CredentialAcquisition","X509CredentialConfiguration"],"type":["Result"]};
+window.SIDEBAR_ITEMS = {"mod":["identity","states","thumbprint"],"struct":["X509CredentialAcquisition","X509CredentialConfiguration"],"type":["Result"]};

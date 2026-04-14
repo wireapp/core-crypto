@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["crypto","device_status","id","types"],"struct":["CrlRegistration","E2eiEnrollment"]};
+window.SIDEBAR_ITEMS = {"mod":["device_status","id"],"struct":["CrlRegistration"]};

@@ -125,22 +125,22 @@
 <a href=#125 id=125 data-nosnippet>125</a>//! - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 <a href=#126 id=126 data-nosnippet>126</a>
 <a href=#127 id=127 data-nosnippet>127</a></span><span class="kw">pub mod </span>acquisition;
-<a href=#128 id=128 data-nosnippet>128</a><span class="kw">mod </span>e2e_identity;
-<a href=#129 id=129 data-nosnippet>129</a><span class="kw">mod </span>error;
-<a href=#130 id=130 data-nosnippet>130</a><span class="kw">mod </span>types;
-<a href=#131 id=131 data-nosnippet>131</a>
-<a href=#132 id=132 data-nosnippet>132</a><span class="kw">pub mod </span>acme;
-<a href=#133 id=133 data-nosnippet>133</a><span class="kw">pub mod </span>legacy;
-<a href=#134 id=134 data-nosnippet>134</a><span class="kw">pub mod </span>pki;
-<a href=#135 id=135 data-nosnippet>135</a><span class="kw">pub mod </span>pki_env;
-<a href=#136 id=136 data-nosnippet>136</a><span class="kw">pub mod </span>utils;
-<a href=#137 id=137 data-nosnippet>137</a><span class="kw">pub mod </span>x509_check;
-<a href=#138 id=138 data-nosnippet>138</a>
-<a href=#139 id=139 data-nosnippet>139</a><span class="kw">pub use </span>acme::{
-<a href=#140 id=140 data-nosnippet>140</a>    AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader, compute_raw_key_thumbprint,
-<a href=#141 id=141 data-nosnippet>141</a>};
-<a href=#142 id=142 data-nosnippet>142</a><span class="kw">pub use </span>acquisition::X509CredentialAcquisition;
-<a href=#143 id=143 data-nosnippet>143</a><span class="kw">pub use </span>e2e_identity::RustyE2eIdentity;
+<a href=#128 id=128 data-nosnippet>128</a><span class="kw">mod </span>error;
+<a href=#129 id=129 data-nosnippet>129</a><span class="kw">mod </span>types;
+<a href=#130 id=130 data-nosnippet>130</a>
+<a href=#131 id=131 data-nosnippet>131</a><span class="kw">pub mod </span>acme;
+<a href=#132 id=132 data-nosnippet>132</a><span class="kw">pub mod </span>legacy;
+<a href=#133 id=133 data-nosnippet>133</a><span class="kw">pub mod </span>pki;
+<a href=#134 id=134 data-nosnippet>134</a><span class="kw">pub mod </span>pki_env;
+<a href=#135 id=135 data-nosnippet>135</a><span class="kw">pub mod </span>utils;
+<a href=#136 id=136 data-nosnippet>136</a><span class="kw">pub mod </span>x509_check;
+<a href=#137 id=137 data-nosnippet>137</a>
+<a href=#138 id=138 data-nosnippet>138</a><span class="kw">pub use </span>acme::{AcmeDirectory, RustyAcme, RustyAcmeError};
+<a href=#139 id=139 data-nosnippet>139</a><span class="kw">pub use </span>acquisition::{
+<a href=#140 id=140 data-nosnippet>140</a>    X509CredentialAcquisition,
+<a href=#141 id=141 data-nosnippet>141</a>    identity::{WireIdentity, WireIdentityReader},
+<a href=#142 id=142 data-nosnippet>142</a>    thumbprint::compute_raw_key_thumbprint,
+<a href=#143 id=143 data-nosnippet>143</a>};
 <a href=#144 id=144 data-nosnippet>144</a><span class="kw">pub use </span>error::{E2eIdentityError, E2eIdentityResult};
 <a href=#145 id=145 data-nosnippet>145</a><span class="kw">pub use </span>pki_env::{NewCrlDistributionPoints, PkiEnvironmentProvider};
 <a href=#146 id=146 data-nosnippet>146</a><span class="attr">#[cfg(feature = <span class="string">"builder"</span>)]
