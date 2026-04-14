@@ -202,9 +202,9 @@ ts-bench: $(BROWSER_OUT) ## Run TypeScript wrapper benches in Chrome via wdio
 	@set -euo pipefail; \
 	cd $(JS_DIR) && \
 	if [ -n "$(BENCH)" ]; then \
-		bun x wdio run ./packages/browser/wdio.bench.conf.ts --mochaOpts.grep "$(BENCH)"; \
+		bun x wdio run ./packages/browser/benches/wdio.bench.conf.ts --mochaOpts.grep "$(BENCH)"; \
 	else \
-		bun x wdio run ./packages/browser/wdio.bench.conf.ts --log-level warn; \
+		bun x wdio run ./packages/browser/benches/wdio.bench.conf.ts --log-level warn; \
 	fi
 
 .PHONY: ts-package
