@@ -8,7 +8,7 @@ export const config: WebdriverIO.Config = {
     // WebdriverIO supports running e2e tests as well as unit and component tests.
     runner: "local",
     path: "/",
-    tsConfigPath: "./tsconfig.browser.json",
+    tsConfigPath: "../tsconfig.json",
 
     //
     // ==================
@@ -25,7 +25,7 @@ export const config: WebdriverIO.Config = {
     // The path of the spec files will be resolved relative from the directory of
     //  the config file unless it's absolute.
     //
-    specs: ["./test/wdio/*.test.ts"],
+    specs: ["./*.test.ts"],
     // Patterns to exclude.
     exclude: [
         // 'path/to/excluded/files'

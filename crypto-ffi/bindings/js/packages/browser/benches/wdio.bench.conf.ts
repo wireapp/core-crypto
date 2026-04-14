@@ -1,8 +1,8 @@
-import { config as baseConfig } from "./wdio.test.conf.ts";
+import { config as baseConfig } from "../test/wdio.test.conf.ts";
 
 export const config: WebdriverIO.Config = {
     ...baseConfig,
-    specs: ["./benches/*.bench.ts"],
+    specs: ["./*.bench.ts"],
     mochaOpts: {
         ...baseConfig.mochaOpts,
         timeout: 1_800_000, // 30 min
