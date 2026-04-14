@@ -6,6 +6,7 @@ TS_OUT_DIR := $(JS_DIR)/out
 WASM_TARGET_DIR := target/wasm
 WASM_BUILD_ENV := CARGO_TARGET_DIR=$(abspath $(WASM_TARGET_DIR))
 WASM_TARGET_TRIPLE := wasm32-unknown-unknown
+# We are accepting warnings on the generated code when running `cargo check`, this is consistent with the ubrn config.
 WASM_BUILD_RUSTFLAGS := --cfg getrandom_backend=\"wasm_js\" -Awarnings
 WASM_FFI_LIB := $(WASM_TARGET_DIR)/debug/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 RUST_MODULES_WASM := $(JS_DIR)/rust_modules/wasm
@@ -78,14 +79,12 @@ WASM_GEN := \
 	$(BROWSER_GEN_DIR)/wasm-bindgen/index.d.ts \
 	$(BROWSER_GEN_DIR)/wasm-bindgen/index.js
 
-# As soon as ubrn allows reusage of an existing ffi lib, we need to depend on it here.
-wasm-build-deps := $(WASM_FFI_LIB) $(BROWSER_TS_IMPL) $(WASM_FILE)
+# All our actual dependencies for this step are generated, so we fake it by listing the ancestor dependencies
+wasm-build-deps := $(ubrn-deps) Cargo.lock
 # index.web.ts is generated but unused so we remove it
 # Build the temporary host library in a dedicated target dir so we do not mix
 # the shared target outputs used by ios/jvm builds.
-#
-# We are accepting warnings on the generated code when running `cargo check`, this is consistent with the ubrn config.
-$(WASM_GEN) &: $(wasm-build-deps)
+$(WASM_GEN) &: $(WASM_FFI_LIB) $(BROWSER_TS_IMPL) $(WASM_FILE)
 	cd $(JS_DIR) && \
 	wasm-bindgen --target web \
 	  --omit-default-module-path \
