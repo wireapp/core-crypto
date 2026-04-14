@@ -210,19 +210,6 @@ impl CoreCryptoContext {
         conversation.remove_members(&clients).await.map_err(Into::into)
     }
 
-    /// Marks a conversation as a subconversation of the given parent.
-    pub async fn mark_conversation_as_child_of(
-        &self,
-        child_id: &ConversationId,
-        parent_id: &ConversationId,
-    ) -> CoreCryptoResult<()> {
-        let mut conversation = self.inner.conversation(child_id.as_ref()).await?;
-        conversation
-            .mark_as_child_of(parent_id.as_ref())
-            .await
-            .map_err(Into::into)
-    }
-
     /// Updates this client's key material in the conversation by sending an update commit.
     pub async fn update_keying_material(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
