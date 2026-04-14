@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe } from "mocha";
 import {
     GroupInfoEncryptionType,
     RatchetTreeType,
-} from "../../src/browser/CoreCrypto";
+} from "@wireapp/core-crypto/browser";
 
 beforeEach(async () => {
     await setup();

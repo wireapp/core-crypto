@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe } from "mocha";
 import {
     ConversationId,
     type CommitBundle,
-} from "../../src/browser/CoreCrypto";
+} from "@wireapp/core-crypto/browser";
 
 beforeEach(async () => {
     await setup();

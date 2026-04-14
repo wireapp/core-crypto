@@ -9,8 +9,8 @@ import {
     type HistorySecret,
     type MlsTransport,
     type MlsTransportData,
-} from "../src/browser/CoreCrypto";
-type ccModuleType = typeof import("../src/browser/CoreCrypto");
+} from "@wireapp/core-crypto/browser";
+type ccModuleType = typeof import("@wireapp/core-crypto/browser");
 declare global {
     interface Window {
         ccModule: ccModuleType;

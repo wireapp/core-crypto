@@ -1,7 +1,7 @@
 import { browser, expect } from "@wdio/globals";
 import { ccInit, createConversation, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { E2eiConversationState } from "../../src/browser/CoreCrypto";
+import { E2eiConversationState } from "@wireapp/core-crypto/browser";
 
 beforeEach(async () => {
     await setup();

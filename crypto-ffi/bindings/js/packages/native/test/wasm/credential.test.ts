@@ -6,7 +6,7 @@ import {
     Credential,
     ClientId,
     CredentialType,
-} from "../../../src/browser/CoreCrypto";
+} from "@wireapp/core-crypto/browser";
 
 beforeEach(async () => {
     await setup();

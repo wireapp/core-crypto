@@ -13,9 +13,9 @@ import {
     type PkiEnvironmentHooks,
     HttpMethod,
     HttpHeader,
-} from "../../src/browser/CoreCrypto";
+} from "@wireapp/core-crypto/browser";
 
-type ccModuleType = typeof import("../../src/browser/CoreCrypto");
+type ccModuleType = typeof import("@wireapp/core-crypto/browser");
 
 // Logging can be adjusted via the CC_TEST_LOG_LEVEL variable:
 // 0 = no logs
