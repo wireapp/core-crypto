@@ -7,10 +7,8 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{ConversationWithMls, Error, MlsConversation, Result};
 use crate::{
-    KeystoreError, LeafError, MlsGroupInfoBundle, MlsTransport, RecursiveError,
-    group_store::GroupStoreValue,
-    mls::{conversation::ConversationIdRef, credential::Credential},
-    transaction_context::TransactionContext,
+    KeystoreError, LeafError, MlsGroupInfoBundle, MlsTransport, RecursiveError, group_store::GroupStoreValue,
+    mls::credential::Credential, transaction_context::TransactionContext,
 };
 mod commit;
 pub(crate) mod decrypt;
@@ -102,21 +100,6 @@ impl ConversationGuard {
             .await
             .map(Some)
             .map_err(|_| Error::ParentGroupNotFound)
-    }
-
-    /// Marks this conversation as child of another.
-    /// Prerequisite: Must be a member of the parent group, and it must exist in the keystore
-    pub async fn mark_as_child_of(&mut self, parent_id: &ConversationIdRef) -> Result<()> {
-        let database = &self.database().await?;
-
-        let mut conversation = self.conversation_mut().await;
-        if database.mls_group_exists(parent_id).await {
-            conversation.parent_id = Some(parent_id.to_owned());
-            conversation.persist_group_when_changed(database, true).await?;
-            Ok(())
-        } else {
-            Err(Error::ParentGroupNotFound)
-        }
     }
 
     pub(crate) async fn credential(&self) -> Result<Arc<Credential>> {
