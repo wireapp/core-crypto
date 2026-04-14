@@ -17,7 +17,7 @@
     <a title="WireIdentity Structure Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -355,8 +355,9 @@
 
                 </div>
               </div>
-            <p>Represents the identity claims identifying a client
-Those claims are verifiable by any member in the group</p>
+            <p>The identity claims identifying a client.</p>
+
+<p>Those claims are verifiable by any member in the group.</p>
 
           </section>
           <section class="section task-group-section">
@@ -402,7 +403,7 @@ Those claims are verifiable by any member in the group</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Status of the Credential at the moment this object is created</p>
+                        <p>Status of the credential at the moment this object is created.</p>
 
                       </div>
                       <div class="declaration">
@@ -456,7 +457,7 @@ Those claims are verifiable by any member in the group</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Indicates whether the credential is Basic or X509</p>
+                        <p>Indicates whether the credential is Basic or X509.</p>
 
                       </div>
                       <div class="declaration">
@@ -483,7 +484,7 @@ Those claims are verifiable by any member in the group</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>In case &lsquo;credential_type&rsquo; is [CredentialType::X509] this is populated</p>
+                        <p>The X509 certificate details; populated only when <code>credential_type</code> is X509.</p>
 
                       </div>
                       <div class="declaration">
@@ -522,16 +523,16 @@ Those claims are verifiable by any member in the group</p>
      * Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
      */</span><span class="nv">clientId</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> 
     <span class="cm">/**
-     * Status of the Credential at the moment this object is created
+     * Status of the credential at the moment this object is created.
      */</span><span class="nv">status</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/DeviceStatus.html">DeviceStatus</a></span><span class="p">,</span> 
     <span class="cm">/**
      * MLS thumbprint
      */</span><span class="nv">thumbprint</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> 
     <span class="cm">/**
-     * Indicates whether the credential is Basic or X509
+     * Indicates whether the credential is Basic or X509.
      */</span><span class="nv">credentialType</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/CredentialType.html">CredentialType</a></span><span class="p">,</span> 
     <span class="cm">/**
-     * In case 'credential_type' is [CredentialType::X509] this is populated
+     * The X509 certificate details; populated only when `credential_type` is X509.
      */</span><span class="nv">x509Identity</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/X509Identity.html">X509Identity</a></span><span class="p">?)</span></code></pre>
 
                         </div>

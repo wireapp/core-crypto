@@ -17,7 +17,7 @@
     <a title="Structures  Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -363,7 +363,10 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>to avoid recursive structs</p>
+                        <p>A decrypted message that was buffered due to out-of-order delivery by the distribution service.</p>
+
+<p>These are returned in the <code>buffered_messages</code> field of a <code><a href="WireCoreCryptoUniffi/Structs/DecryptedMessage.html">DecryptedMessage</a></code> when a commit is
+ processed. They represent messages for the new epoch that arrived before the commit that created it.</p>
 
                         <a href="WireCoreCryptoUniffi/Structs/BufferedDecryptedMessage.html" class="slightly-smaller">See more</a>
                       </div>
@@ -451,7 +454,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>A decrypted message and various associated metadata</p>
+                        <p>A decrypted message and various associated metadata.</p>
 
                         <a href="WireCoreCryptoUniffi/Structs/DecryptedMessage.html" class="slightly-smaller">See more</a>
                       </div>
@@ -480,7 +483,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>A <code><a href="WireCoreCryptoUniffi/Classes/GroupInfo.html">GroupInfo</a></code> with some metadata</p>
+                        <p>A <code><a href="WireCoreCryptoUniffi/Classes/GroupInfo.html">GroupInfo</a></code> with associated metadata.</p>
 
                         <a href="WireCoreCryptoUniffi/Structs/GroupInfoBundle.html" class="slightly-smaller">See more</a>
                       </div>
@@ -539,7 +542,7 @@ ephemeral client.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>An HttpHeader used for pki hooks</p>
+                        <p>An HttpHeader used for PKI hooks.</p>
 
                         <a href="WireCoreCryptoUniffi/Structs/HttpHeader.html" class="slightly-smaller">See more</a>
                       </div>
@@ -569,7 +572,7 @@ ephemeral client.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>An HttpResponse used for pki hooks</p>
+                        <p>An HttpResponse used for PKI hooks.</p>
 
                         <a href="WireCoreCryptoUniffi/Structs/HttpResponse.html" class="slightly-smaller">See more</a>
                       </div>
@@ -599,7 +602,7 @@ ephemeral client.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Encapsulates a prekey id and a cbor-serialized prekey</p>
+                        <p>Encapsulates a prekey id and a CBOR-serialized prekey.</p>
 
                         <a href="WireCoreCryptoUniffi/Structs/ProteusAutoPrekeyBundle.html" class="slightly-smaller">See more</a>
                       </div>
@@ -629,8 +632,9 @@ ephemeral client.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Represents the identity claims identifying a client
-Those claims are verifiable by any member in the group</p>
+                        <p>The identity claims identifying a client.</p>
+
+<p>Those claims are verifiable by any member in the group.</p>
 
                         <a href="WireCoreCryptoUniffi/Structs/WireIdentity.html" class="slightly-smaller">See more</a>
                       </div>
@@ -660,11 +664,7 @@ Those claims are verifiable by any member in the group</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Represents the parts of [WireIdentity][crate::WireIdentity] that are specific to a X509 certificate (and not a Basic
- one).</p>
-
-<p>We don&rsquo;t use an enum here since the sole purpose of this is to be exposed through the FFI (and
- union types are impossible to carry over the FFI boundary)</p>
+                        <p>Fields from a <code><a href="WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a></code> that are specific to X509 credentials.</p>
 
                         <a href="WireCoreCryptoUniffi/Structs/X509Identity.html" class="slightly-smaller">See more</a>
                       </div>

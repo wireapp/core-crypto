@@ -17,7 +17,7 @@
     <a title="E2eiConversationState Enumeration Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -355,10 +355,10 @@
 
                 </div>
               </div>
-            <p>Indicates the state of a Conversation regarding end-to-end identity.</p>
+            <p>The end-to-end identity verification state of a conversation.</p>
 
-<p>Note: this does not check pending state (pending commit, pending proposals) so it does not
- consider members about to be added/removed</p>
+<p>Note: this does not check pending state (pending commit, pending proposals), so it does not
+ consider members about to be added or removed.</p>
 
           </section>
           <section class="section task-group-section">
@@ -377,7 +377,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>All clients have a valid E2EI certificate</p>
+                        <p>All clients have a valid E2EI certificate.</p>
 
                       </div>
                       <div class="declaration">
@@ -404,7 +404,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Some clients are either still Basic or their certificate is expired</p>
+                        <p>Some clients are either still using Basic credentials or their certificate has expired.</p>
 
                       </div>
                       <div class="declaration">
@@ -431,8 +431,9 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>All clients are still Basic. If all client have expired certificates, [E2eiConversationState::NotVerified] is
-returned.</p>
+                        <p>All clients are still using Basic credentials.</p>
+
+<p>Note: if all clients have expired certificates, <code>NotVerified</code> is returned instead.</p>
 
                       </div>
                       <div class="declaration">

@@ -17,7 +17,7 @@
     <a title="Functions  Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -396,7 +396,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Returns build data for CoreCrypto</p>
+                        <p>Returns build metadata for CoreCrypto.</p>
 
                       </div>
                       <div class="declaration">
@@ -519,9 +519,10 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Construct a new <code><a href="WireCoreCryptoUniffi/Classes/CoreCryptoFfi.html">CoreCryptoFfi</a></code> instance.
-MLS or proteus can be initialized  with [core_crypto::transaction_context::TransactionContext::mls_init] or
-[core_crypto::transaction_context::TransactionContext::proteus_init], respectively.</p>
+                        <p>Construct a new <code><a href="WireCoreCryptoUniffi/Classes/CoreCryptoFfi.html">CoreCryptoFfi</a></code> instance.</p>
+
+<p>MLS or Proteus can be initialized via <code>mls_init</code> or <code>proteus_init</code> on a
+ <code><a href="WireCoreCryptoUniffi/Classes/CoreCryptoContext.html">CoreCryptoContext</a></code> obtained through a transaction.</p>
 
                       </div>
                       <div class="declaration">
@@ -551,7 +552,7 @@ MLS or proteus can be initialized  with [core_crypto::transaction_context::Trans
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Create a new PKI environment</p>
+                        <p>Create a new PKI environment.</p>
 
                       </div>
                       <div class="declaration">
@@ -581,20 +582,11 @@ MLS or proteus can be initialized  with [core_crypto::transaction_context::Trans
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Export a copy of the database to the specified path.</p>
+                        <p>Export a fully vacuumed and optimized copy of the database to the specified path.</p>
 
-<p>This creates a fully vacuumed and optimized copy of the database using SQLite&rsquo;s VACUUM INTO command.
- The copy will be encrypted with the same key as the source database.</p>
-
-<p># Platform Support
- This method is only available on platforms using SQLCipher (iOS, Android, JVM, native).</p>
-
-<p># Arguments</p>
-
-<ul>
-<li><code>database</code> - The database instance to export</li>
-<li><code>destination_path</code> - The file path where the database copy should be created</li>
-</ul>
+<p>The copy is created using SQLite&rsquo;s VACUUM INTO command and is encrypted with the same key
+ as the source database. This is only available on platforms using SQLCipher
+ (iOS, Android, JVM, native).</p>
 
                       </div>
                       <div class="declaration">
@@ -624,7 +616,7 @@ MLS or proteus can be initialized  with [core_crypto::transaction_context::Trans
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Create an in-memory [Database] whose data will be lost when the instance is dropped.</p>
+                        <p>Create an in-memory database whose data will be lost when the instance is dropped.</p>
 
                       </div>
                       <div class="declaration">
@@ -654,8 +646,9 @@ MLS or proteus can be initialized  with [core_crypto::transaction_context::Trans
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Updates the key of the CoreCrypto database.
-To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.</p>
+                        <p>Updates the key of the CoreCrypto database.</p>
+
+<p>This function is intended to be called only once, when migrating from CoreCrypto 5.x to 6.x.</p>
 
                       </div>
                       <div class="declaration">
@@ -685,7 +678,7 @@ To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.</
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Open or create a [Database].</p>
+                        <p>Open or create a database.</p>
 
                       </div>
                       <div class="declaration">
@@ -715,7 +708,7 @@ To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.</
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle]</p>
+                        <p>Returns the hex-encoded fingerprint of the identity key contained in the given prekey bundle.</p>
 
                       </div>
                       <div class="declaration">
@@ -745,7 +738,10 @@ To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.</
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::proteus::ProteusCentral::last_resort_prekey_id]</p>
+                        <p>Returns the Proteus last resort prekey ID.</p>
+
+<p>The last resort prekey is a special prekey retained after all other prekeys have been consumed,
+ ensuring a session can always be established. Its ID is always <code>u16::MAX</code> (65535).</p>
 
                       </div>
                       <div class="declaration">
@@ -775,7 +771,7 @@ To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.</
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Initializes the logger</p>
+                        <p>Initializes the logger.</p>
 
                       </div>
                       <div class="declaration">
@@ -805,7 +801,7 @@ To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.</
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Set maximum log level forwarded to the logger</p>
+                        <p>Sets the maximum log level forwarded to the logger.</p>
 
                       </div>
                       <div class="declaration">

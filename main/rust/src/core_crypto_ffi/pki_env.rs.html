@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>crate::{CoreCryptoFfi, CoreCryptoResult, Database};
 <a href=#6 id=6 data-nosnippet>6</a>
-<a href=#7 id=7 data-nosnippet>7</a><span class="doccomment">/// HttpMethod used for pki hooks
+<a href=#7 id=7 data-nosnippet>7</a><span class="doccomment">/// HttpMethod used for PKI hooks.
 <a href=#8 id=8 data-nosnippet>8</a></span><span class="attr">#[derive(uniffi::Enum)]
 <a href=#9 id=9 data-nosnippet>9</a></span><span class="kw">pub enum </span>HttpMethod {
 <a href=#10 id=10 data-nosnippet>10</a>    <span class="doccomment">/// GET
@@ -34,12 +34,12 @@
 <a href=#34 id=34 data-nosnippet>34</a>    }
 <a href=#35 id=35 data-nosnippet>35</a>}
 <a href=#36 id=36 data-nosnippet>36</a>
-<a href=#37 id=37 data-nosnippet>37</a><span class="doccomment">/// An HttpHeader used for pki hooks
+<a href=#37 id=37 data-nosnippet>37</a><span class="doccomment">/// An HttpHeader used for PKI hooks.
 <a href=#38 id=38 data-nosnippet>38</a></span><span class="attr">#[derive(uniffi::Record)]
 <a href=#39 id=39 data-nosnippet>39</a></span><span class="kw">pub struct </span>HttpHeader {
-<a href=#40 id=40 data-nosnippet>40</a>    <span class="doccomment">/// header name
+<a href=#40 id=40 data-nosnippet>40</a>    <span class="doccomment">/// Header name
 <a href=#41 id=41 data-nosnippet>41</a>    </span><span class="kw">pub </span>name: String,
-<a href=#42 id=42 data-nosnippet>42</a>    <span class="doccomment">/// header value
+<a href=#42 id=42 data-nosnippet>42</a>    <span class="doccomment">/// Header value
 <a href=#43 id=43 data-nosnippet>43</a>    </span><span class="kw">pub </span>value: String,
 <a href=#44 id=44 data-nosnippet>44</a>}
 <a href=#45 id=45 data-nosnippet>45</a>
@@ -61,14 +61,14 @@
 <a href=#61 id=61 data-nosnippet>61</a>    }
 <a href=#62 id=62 data-nosnippet>62</a>}
 <a href=#63 id=63 data-nosnippet>63</a>
-<a href=#64 id=64 data-nosnippet>64</a><span class="doccomment">/// An HttpResponse used for pki hooks
+<a href=#64 id=64 data-nosnippet>64</a><span class="doccomment">/// An HttpResponse used for PKI hooks.
 <a href=#65 id=65 data-nosnippet>65</a></span><span class="attr">#[derive(uniffi::Record)]
 <a href=#66 id=66 data-nosnippet>66</a></span><span class="kw">pub struct </span>HttpResponse {
-<a href=#67 id=67 data-nosnippet>67</a>    <span class="doccomment">/// http status code
+<a href=#67 id=67 data-nosnippet>67</a>    <span class="doccomment">/// HTTP status code
 <a href=#68 id=68 data-nosnippet>68</a>    </span><span class="kw">pub </span>status: u16,
 <a href=#69 id=69 data-nosnippet>69</a>    <span class="doccomment">/// List of header fields
 <a href=#70 id=70 data-nosnippet>70</a>    </span><span class="kw">pub </span>headers: Vec&lt;HttpHeader&gt;,
-<a href=#71 id=71 data-nosnippet>71</a>    <span class="doccomment">/// http body
+<a href=#71 id=71 data-nosnippet>71</a>    <span class="doccomment">/// HTTP body
 <a href=#72 id=72 data-nosnippet>72</a>    </span><span class="kw">pub </span>body: Vec&lt;u8&gt;,
 <a href=#73 id=73 data-nosnippet>73</a>}
 <a href=#74 id=74 data-nosnippet>74</a>
@@ -82,181 +82,186 @@
 <a href=#82 id=82 data-nosnippet>82</a>    }
 <a href=#83 id=83 data-nosnippet>83</a>}
 <a href=#84 id=84 data-nosnippet>84</a>
-<a href=#85 id=85 data-nosnippet>85</a><span class="attr">#[derive(Debug, uniffi::Error, thiserror::Error)]
-<a href=#86 id=86 data-nosnippet>86</a></span><span class="kw">pub enum </span>PkiEnvironmentHooksError {
-<a href=#87 id=87 data-nosnippet>87</a>    <span class="attr">#[error(<span class="string">"reason: {reason}"</span>)]
-<a href=#88 id=88 data-nosnippet>88</a>    </span>Error { reason: String },
-<a href=#89 id=89 data-nosnippet>89</a>}
-<a href=#90 id=90 data-nosnippet>90</a>
-<a href=#91 id=91 data-nosnippet>91</a><span class="comment">// Convert to a "flat" struct in another module
-<a href=#92 id=92 data-nosnippet>92</a></span><span class="kw">impl </span>From&lt;PkiEnvironmentHooksError&gt; <span class="kw">for </span>pki_env::hooks::PkiEnvironmentHooksError {
-<a href=#93 id=93 data-nosnippet>93</a>    <span class="kw">fn </span>from(err: PkiEnvironmentHooksError) -&gt; <span class="self">Self </span>{
-<a href=#94 id=94 data-nosnippet>94</a>        <span class="kw">match </span>err {
-<a href=#95 id=95 data-nosnippet>95</a>            PkiEnvironmentHooksError::Error { reason } =&gt; pki_env::hooks::PkiEnvironmentHooksError { reason },
-<a href=#96 id=96 data-nosnippet>96</a>        }
-<a href=#97 id=97 data-nosnippet>97</a>    }
-<a href=#98 id=98 data-nosnippet>98</a>}
-<a href=#99 id=99 data-nosnippet>99</a>
-<a href=#100 id=100 data-nosnippet>100</a><span class="kw">impl </span>From&lt;uniffi::UnexpectedUniFFICallbackError&gt; <span class="kw">for </span>PkiEnvironmentHooksError {
-<a href=#101 id=101 data-nosnippet>101</a>    <span class="kw">fn </span>from(value: uniffi::UnexpectedUniFFICallbackError) -&gt; <span class="self">Self </span>{
-<a href=#102 id=102 data-nosnippet>102</a>        PkiEnvironmentHooksError::Error { reason: value.reason }
-<a href=#103 id=103 data-nosnippet>103</a>    }
-<a href=#104 id=104 data-nosnippet>104</a>}
-<a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a><span class="doccomment">/// The PKI Environment Hooks used for external calls during e2e enrollment flow.
-<a href=#107 id=107 data-nosnippet>107</a>/// When communicating with the Identity Provider (IDP)  and Wire server,
-<a href=#108 id=108 data-nosnippet>108</a>/// CoreCrypto delegates to the client app by calling the relevant methods.
+<a href=#85 id=85 data-nosnippet>85</a><span class="doccomment">/// An error returned by a `PkiEnvironmentHooks` callback implementation.
+<a href=#86 id=86 data-nosnippet>86</a></span><span class="attr">#[derive(Debug, uniffi::Error, thiserror::Error)]
+<a href=#87 id=87 data-nosnippet>87</a></span><span class="kw">pub enum </span>PkiEnvironmentHooksError {
+<a href=#88 id=88 data-nosnippet>88</a>    <span class="doccomment">/// An error with the given reason string.
+<a href=#89 id=89 data-nosnippet>89</a>    </span><span class="attr">#[error(<span class="string">"reason: {reason}"</span>)]
+<a href=#90 id=90 data-nosnippet>90</a>    </span>Error { reason: String },
+<a href=#91 id=91 data-nosnippet>91</a>}
+<a href=#92 id=92 data-nosnippet>92</a>
+<a href=#93 id=93 data-nosnippet>93</a><span class="comment">// Convert to a "flat" struct in another module
+<a href=#94 id=94 data-nosnippet>94</a></span><span class="kw">impl </span>From&lt;PkiEnvironmentHooksError&gt; <span class="kw">for </span>pki_env::hooks::PkiEnvironmentHooksError {
+<a href=#95 id=95 data-nosnippet>95</a>    <span class="kw">fn </span>from(err: PkiEnvironmentHooksError) -&gt; <span class="self">Self </span>{
+<a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">match </span>err {
+<a href=#97 id=97 data-nosnippet>97</a>            PkiEnvironmentHooksError::Error { reason } =&gt; pki_env::hooks::PkiEnvironmentHooksError { reason },
+<a href=#98 id=98 data-nosnippet>98</a>        }
+<a href=#99 id=99 data-nosnippet>99</a>    }
+<a href=#100 id=100 data-nosnippet>100</a>}
+<a href=#101 id=101 data-nosnippet>101</a>
+<a href=#102 id=102 data-nosnippet>102</a><span class="kw">impl </span>From&lt;uniffi::UnexpectedUniFFICallbackError&gt; <span class="kw">for </span>PkiEnvironmentHooksError {
+<a href=#103 id=103 data-nosnippet>103</a>    <span class="kw">fn </span>from(value: uniffi::UnexpectedUniFFICallbackError) -&gt; <span class="self">Self </span>{
+<a href=#104 id=104 data-nosnippet>104</a>        PkiEnvironmentHooksError::Error { reason: value.reason }
+<a href=#105 id=105 data-nosnippet>105</a>    }
+<a href=#106 id=106 data-nosnippet>106</a>}
+<a href=#107 id=107 data-nosnippet>107</a>
+<a href=#108 id=108 data-nosnippet>108</a><span class="doccomment">/// Callbacks for external calls made by CoreCrypto during X509 credential acquisition.
 <a href=#109 id=109 data-nosnippet>109</a>///
-<a href=#110 id=110 data-nosnippet>110</a>/// Client App                 CoreCrypto                     Acme                     IDP
-<a href=#111 id=111 data-nosnippet>111</a>///    |                           |                          |                        |
-<a href=#112 id=112 data-nosnippet>112</a>///    | X509CredentialAcquisition().finalize()               |                        |
-<a href=#113 id=113 data-nosnippet>113</a>///    |--------------------------&gt;|                          |                        |
-<a href=#114 id=114 data-nosnippet>114</a>///    |                           | GET acme/root.pem        |                        |
-<a href=#115 id=115 data-nosnippet>115</a>///    |                           |------------------------&gt; |                        |
-<a href=#116 id=116 data-nosnippet>116</a>///    |                           | 200 OK                   |                        |
-<a href=#117 id=117 data-nosnippet>117</a>///    |                           |&lt;------------------------ |                        |
-<a href=#118 id=118 data-nosnippet>118</a>///    | authenticate()            |                          |                        |
-<a href=#119 id=119 data-nosnippet>119</a>///    |&lt;--------------------------|                          |                        |
-<a href=#120 id=120 data-nosnippet>120</a>///    |                           | Authentication flow      |                        |
-<a href=#121 id=121 data-nosnippet>121</a>///    | ----------------------------------------------------------------------------&gt; |
-<a href=#122 id=122 data-nosnippet>122</a>///    |&lt;----------------------------------------------------------------------------- |
-<a href=#123 id=123 data-nosnippet>123</a>///    | return Success [PKiEnvironmentHooks.authenticate()]  |                        |
-<a href=#124 id=124 data-nosnippet>124</a>///    |&lt;--------------------------|                          |                        |
-<a href=#125 id=125 data-nosnippet>125</a>///    |                           |  (excluded several calls for brevity)             |
-<a href=#126 id=126 data-nosnippet>126</a>///    | return Success(Credential) [X509CredentialAcquisition().finalize()]           |
+<a href=#110 id=110 data-nosnippet>110</a>/// When communicating with the Identity Provider (IDP) and Wire server,
+<a href=#111 id=111 data-nosnippet>111</a>/// CoreCrypto delegates to the client app by calling the relevant methods.
+<a href=#112 id=112 data-nosnippet>112</a>///
+<a href=#113 id=113 data-nosnippet>113</a>/// Client App                 CoreCrypto                     Acme                     IDP
+<a href=#114 id=114 data-nosnippet>114</a>///    |                           |                          |                        |
+<a href=#115 id=115 data-nosnippet>115</a>///    | X509CredentialAcquisition().finalize()               |                        |
+<a href=#116 id=116 data-nosnippet>116</a>///    |--------------------------&gt;|                          |                        |
+<a href=#117 id=117 data-nosnippet>117</a>///    |                           | GET acme/root.pem        |                        |
+<a href=#118 id=118 data-nosnippet>118</a>///    |                           |------------------------&gt; |                        |
+<a href=#119 id=119 data-nosnippet>119</a>///    |                           | 200 OK                   |                        |
+<a href=#120 id=120 data-nosnippet>120</a>///    |                           |&lt;------------------------ |                        |
+<a href=#121 id=121 data-nosnippet>121</a>///    | authenticate()            |                          |                        |
+<a href=#122 id=122 data-nosnippet>122</a>///    |&lt;--------------------------|                          |                        |
+<a href=#123 id=123 data-nosnippet>123</a>///    |                           | Authentication flow      |                        |
+<a href=#124 id=124 data-nosnippet>124</a>///    | ----------------------------------------------------------------------------&gt; |
+<a href=#125 id=125 data-nosnippet>125</a>///    |&lt;----------------------------------------------------------------------------- |
+<a href=#126 id=126 data-nosnippet>126</a>///    | return Success [PKiEnvironmentHooks.authenticate()]  |                        |
 <a href=#127 id=127 data-nosnippet>127</a>///    |&lt;--------------------------|                          |                        |
-<a href=#128 id=128 data-nosnippet>128</a></span><span class="attr">#[uniffi::export(with_foreign)]
-<a href=#129 id=129 data-nosnippet>129</a>#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#130 id=130 data-nosnippet>130</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
-<a href=#131 id=131 data-nosnippet>131</a></span><span class="kw">pub trait </span>PkiEnvironmentHooks: Send + Sync {
-<a href=#132 id=132 data-nosnippet>132</a>    <span class="doccomment">/// Make an HTTP request
-<a href=#133 id=133 data-nosnippet>133</a>    /// Used for requests to ACME servers, CRL distributors etc.
-<a href=#134 id=134 data-nosnippet>134</a>    </span><span class="kw">async fn </span>http_request(
-<a href=#135 id=135 data-nosnippet>135</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#136 id=136 data-nosnippet>136</a>        method: HttpMethod,
-<a href=#137 id=137 data-nosnippet>137</a>        url: String,
-<a href=#138 id=138 data-nosnippet>138</a>        headers: Vec&lt;HttpHeader&gt;,
-<a href=#139 id=139 data-nosnippet>139</a>        body: Vec&lt;u8&gt;,
-<a href=#140 id=140 data-nosnippet>140</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;HttpResponse, PkiEnvironmentHooksError&gt;;
-<a href=#141 id=141 data-nosnippet>141</a>
-<a href=#142 id=142 data-nosnippet>142</a>    <span class="doccomment">/// Authenticate with the user's identity provider (IdP)
-<a href=#143 id=143 data-nosnippet>143</a>    ///
-<a href=#144 id=144 data-nosnippet>144</a>    /// The implementation should perform an [authentication using the authorization code flow]
-<a href=#145 id=145 data-nosnippet>145</a>    /// (&lt;https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth&gt;) with the PKCE
-<a href=#146 id=146 data-nosnippet>146</a>    /// (&lt;https://www.rfc-editor.org/rfc/rfc7636&gt;) extension. As part of the authorization
-<a href=#147 id=147 data-nosnippet>147</a>    /// request, the implementation should specify `key_auth` and `acme_aud` claims, along with
-<a href=#148 id=148 data-nosnippet>148</a>    /// their values, in the `claims` parameter. This is to instruct the IdP to add the `key_auth`
-<a href=#149 id=149 data-nosnippet>149</a>    /// and `acme_aud` claims to the ID token that will be returned as part of the access token.
-<a href=#150 id=150 data-nosnippet>150</a>    ///
-<a href=#151 id=151 data-nosnippet>151</a>    /// Once the authentication is completed successfully, the implementation should request
-<a href=#152 id=152 data-nosnippet>152</a>    /// an access token from the IdP, extract the ID token from it and return it to the caller.
-<a href=#153 id=153 data-nosnippet>153</a>    </span><span class="kw">async fn </span>authenticate(
-<a href=#154 id=154 data-nosnippet>154</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#155 id=155 data-nosnippet>155</a>        idp: String,
-<a href=#156 id=156 data-nosnippet>156</a>        key_auth: String,
-<a href=#157 id=157 data-nosnippet>157</a>        acme_aud: String,
-<a href=#158 id=158 data-nosnippet>158</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;String, PkiEnvironmentHooksError&gt;;
-<a href=#159 id=159 data-nosnippet>159</a>
-<a href=#160 id=160 data-nosnippet>160</a>    <span class="doccomment">/// Get a nonce from the backend
-<a href=#161 id=161 data-nosnippet>161</a>    </span><span class="kw">async fn </span>get_backend_nonce(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String, PkiEnvironmentHooksError&gt;;
-<a href=#162 id=162 data-nosnippet>162</a>
-<a href=#163 id=163 data-nosnippet>163</a>    <span class="doccomment">/// Fetch an access token to be used for the DPoP challenge (`wire-dpop-01`)
-<a href=#164 id=164 data-nosnippet>164</a>    ///
-<a href=#165 id=165 data-nosnippet>165</a>    /// The implementation should take the provided DPoP token (`dpop`) and make a request to the
-<a href=#166 id=166 data-nosnippet>166</a>    /// backend to obtain an access token, which should be returned to the caller.
-<a href=#167 id=167 data-nosnippet>167</a>    </span><span class="kw">async fn </span>fetch_backend_access_token(<span class="kw-2">&amp;</span><span class="self">self</span>, dpop: String) -&gt; <span class="prelude-ty">Result</span>&lt;String, PkiEnvironmentHooksError&gt;;
-<a href=#168 id=168 data-nosnippet>168</a>}
-<a href=#169 id=169 data-nosnippet>169</a>
-<a href=#170 id=170 data-nosnippet>170</a><span class="attr">#[derive(derive_more::Constructor)]
-<a href=#171 id=171 data-nosnippet>171</a></span><span class="kw">struct </span>PkiEnvironmentHooksShim(Arc&lt;<span class="kw">dyn </span>PkiEnvironmentHooks&gt;);
-<a href=#172 id=172 data-nosnippet>172</a>
-<a href=#173 id=173 data-nosnippet>173</a><span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>PkiEnvironmentHooksShim {
-<a href=#174 id=174 data-nosnippet>174</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
-<a href=#175 id=175 data-nosnippet>175</a>        f.debug_tuple(<span class="string">"PkiEnvironmentHooksShim"</span>)
-<a href=#176 id=176 data-nosnippet>176</a>            .field(<span class="kw-2">&amp;</span>fmt::from_fn(|f| <span class="macro">write!</span>(f, <span class="string">"{:p}"</span>, Arc::as_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>))))
-<a href=#177 id=177 data-nosnippet>177</a>            .finish()
-<a href=#178 id=178 data-nosnippet>178</a>    }
-<a href=#179 id=179 data-nosnippet>179</a>}
-<a href=#180 id=180 data-nosnippet>180</a>
-<a href=#181 id=181 data-nosnippet>181</a><span class="attr">#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
-<a href=#182 id=182 data-nosnippet>182</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
-<a href=#183 id=183 data-nosnippet>183</a></span><span class="kw">impl </span>pki_env::hooks::PkiEnvironmentHooks <span class="kw">for </span>PkiEnvironmentHooksShim {
-<a href=#184 id=184 data-nosnippet>184</a>    <span class="kw">async fn </span>http_request(
-<a href=#185 id=185 data-nosnippet>185</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#186 id=186 data-nosnippet>186</a>        method: pki_env::hooks::HttpMethod,
-<a href=#187 id=187 data-nosnippet>187</a>        url: String,
-<a href=#188 id=188 data-nosnippet>188</a>        headers: Vec&lt;pki_env::hooks::HttpHeader&gt;,
-<a href=#189 id=189 data-nosnippet>189</a>        body: Vec&lt;u8&gt;,
-<a href=#190 id=190 data-nosnippet>190</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;pki_env::hooks::HttpResponse, pki_env::hooks::PkiEnvironmentHooksError&gt; {
-<a href=#191 id=191 data-nosnippet>191</a>        <span class="kw">let </span>headers = headers.into_iter().map(Into::into).collect();
-<a href=#192 id=192 data-nosnippet>192</a>        <span class="self">self</span>.<span class="number">0
-<a href=#193 id=193 data-nosnippet>193</a>            </span>.http_request(method.into(), url, headers, body)
-<a href=#194 id=194 data-nosnippet>194</a>            .<span class="kw">await
-<a href=#195 id=195 data-nosnippet>195</a>            </span>.map(Into::into)
-<a href=#196 id=196 data-nosnippet>196</a>            .map_err(Into::into)
-<a href=#197 id=197 data-nosnippet>197</a>    }
-<a href=#198 id=198 data-nosnippet>198</a>
-<a href=#199 id=199 data-nosnippet>199</a>    <span class="kw">async fn </span>authenticate(
-<a href=#200 id=200 data-nosnippet>200</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#201 id=201 data-nosnippet>201</a>        idp: String,
-<a href=#202 id=202 data-nosnippet>202</a>        key_auth: String,
-<a href=#203 id=203 data-nosnippet>203</a>        acme_aud: String,
-<a href=#204 id=204 data-nosnippet>204</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;String, pki_env::hooks::PkiEnvironmentHooksError&gt; {
-<a href=#205 id=205 data-nosnippet>205</a>        <span class="self">self</span>.<span class="number">0</span>.authenticate(idp, key_auth, acme_aud).<span class="kw">await</span>.map_err(Into::into)
-<a href=#206 id=206 data-nosnippet>206</a>    }
-<a href=#207 id=207 data-nosnippet>207</a>
-<a href=#208 id=208 data-nosnippet>208</a>    <span class="kw">async fn </span>get_backend_nonce(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String, pki_env::hooks::PkiEnvironmentHooksError&gt; {
-<a href=#209 id=209 data-nosnippet>209</a>        <span class="self">self</span>.<span class="number">0</span>.get_backend_nonce().<span class="kw">await</span>.map_err(Into::into)
+<a href=#128 id=128 data-nosnippet>128</a>///    |                           |  (excluded several calls for brevity)             |
+<a href=#129 id=129 data-nosnippet>129</a>///    | return Success(Credential) [X509CredentialAcquisition().finalize()]           |
+<a href=#130 id=130 data-nosnippet>130</a>///    |&lt;--------------------------|                          |                        |
+<a href=#131 id=131 data-nosnippet>131</a></span><span class="attr">#[uniffi::export(with_foreign)]
+<a href=#132 id=132 data-nosnippet>132</a>#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#133 id=133 data-nosnippet>133</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
+<a href=#134 id=134 data-nosnippet>134</a></span><span class="kw">pub trait </span>PkiEnvironmentHooks: Send + Sync {
+<a href=#135 id=135 data-nosnippet>135</a>    <span class="doccomment">/// Make an HTTP request.
+<a href=#136 id=136 data-nosnippet>136</a>    ///
+<a href=#137 id=137 data-nosnippet>137</a>    /// Used for requests to ACME servers, CRL distributors, etc.
+<a href=#138 id=138 data-nosnippet>138</a>    </span><span class="kw">async fn </span>http_request(
+<a href=#139 id=139 data-nosnippet>139</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#140 id=140 data-nosnippet>140</a>        method: HttpMethod,
+<a href=#141 id=141 data-nosnippet>141</a>        url: String,
+<a href=#142 id=142 data-nosnippet>142</a>        headers: Vec&lt;HttpHeader&gt;,
+<a href=#143 id=143 data-nosnippet>143</a>        body: Vec&lt;u8&gt;,
+<a href=#144 id=144 data-nosnippet>144</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;HttpResponse, PkiEnvironmentHooksError&gt;;
+<a href=#145 id=145 data-nosnippet>145</a>
+<a href=#146 id=146 data-nosnippet>146</a>    <span class="doccomment">/// Authenticate with the user's identity provider (IdP)
+<a href=#147 id=147 data-nosnippet>147</a>    ///
+<a href=#148 id=148 data-nosnippet>148</a>    /// The implementation should perform authentication using the authorization code flow
+<a href=#149 id=149 data-nosnippet>149</a>    /// (&lt;https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth&gt;) with the PKCE
+<a href=#150 id=150 data-nosnippet>150</a>    /// (&lt;https://www.rfc-editor.org/rfc/rfc7636&gt;) extension. As part of the authorization
+<a href=#151 id=151 data-nosnippet>151</a>    /// request, the implementation should specify `key_auth` and `acme_aud` claims, along with
+<a href=#152 id=152 data-nosnippet>152</a>    /// their values, in the `claims` parameter. This is to instruct the IdP to add the `key_auth`
+<a href=#153 id=153 data-nosnippet>153</a>    /// and `acme_aud` claims to the ID token that will be returned as part of the access token.
+<a href=#154 id=154 data-nosnippet>154</a>    ///
+<a href=#155 id=155 data-nosnippet>155</a>    /// Once the authentication is completed successfully, the implementation should request
+<a href=#156 id=156 data-nosnippet>156</a>    /// an access token from the IdP, extract the ID token from it and return it to the caller.
+<a href=#157 id=157 data-nosnippet>157</a>    </span><span class="kw">async fn </span>authenticate(
+<a href=#158 id=158 data-nosnippet>158</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#159 id=159 data-nosnippet>159</a>        idp: String,
+<a href=#160 id=160 data-nosnippet>160</a>        key_auth: String,
+<a href=#161 id=161 data-nosnippet>161</a>        acme_aud: String,
+<a href=#162 id=162 data-nosnippet>162</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;String, PkiEnvironmentHooksError&gt;;
+<a href=#163 id=163 data-nosnippet>163</a>
+<a href=#164 id=164 data-nosnippet>164</a>    <span class="doccomment">/// Get a nonce from the backend.
+<a href=#165 id=165 data-nosnippet>165</a>    </span><span class="kw">async fn </span>get_backend_nonce(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String, PkiEnvironmentHooksError&gt;;
+<a href=#166 id=166 data-nosnippet>166</a>
+<a href=#167 id=167 data-nosnippet>167</a>    <span class="doccomment">/// Fetch an access token to be used for the DPoP challenge (`wire-dpop-01`)
+<a href=#168 id=168 data-nosnippet>168</a>    ///
+<a href=#169 id=169 data-nosnippet>169</a>    /// The implementation should take the provided DPoP token (`dpop`) and make a request to the
+<a href=#170 id=170 data-nosnippet>170</a>    /// backend to obtain an access token, which should be returned to the caller.
+<a href=#171 id=171 data-nosnippet>171</a>    </span><span class="kw">async fn </span>fetch_backend_access_token(<span class="kw-2">&amp;</span><span class="self">self</span>, dpop: String) -&gt; <span class="prelude-ty">Result</span>&lt;String, PkiEnvironmentHooksError&gt;;
+<a href=#172 id=172 data-nosnippet>172</a>}
+<a href=#173 id=173 data-nosnippet>173</a>
+<a href=#174 id=174 data-nosnippet>174</a><span class="attr">#[derive(derive_more::Constructor)]
+<a href=#175 id=175 data-nosnippet>175</a></span><span class="kw">struct </span>PkiEnvironmentHooksShim(Arc&lt;<span class="kw">dyn </span>PkiEnvironmentHooks&gt;);
+<a href=#176 id=176 data-nosnippet>176</a>
+<a href=#177 id=177 data-nosnippet>177</a><span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>PkiEnvironmentHooksShim {
+<a href=#178 id=178 data-nosnippet>178</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+<a href=#179 id=179 data-nosnippet>179</a>        f.debug_tuple(<span class="string">"PkiEnvironmentHooksShim"</span>)
+<a href=#180 id=180 data-nosnippet>180</a>            .field(<span class="kw-2">&amp;</span>fmt::from_fn(|f| <span class="macro">write!</span>(f, <span class="string">"{:p}"</span>, Arc::as_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>))))
+<a href=#181 id=181 data-nosnippet>181</a>            .finish()
+<a href=#182 id=182 data-nosnippet>182</a>    }
+<a href=#183 id=183 data-nosnippet>183</a>}
+<a href=#184 id=184 data-nosnippet>184</a>
+<a href=#185 id=185 data-nosnippet>185</a><span class="attr">#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#186 id=186 data-nosnippet>186</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
+<a href=#187 id=187 data-nosnippet>187</a></span><span class="kw">impl </span>pki_env::hooks::PkiEnvironmentHooks <span class="kw">for </span>PkiEnvironmentHooksShim {
+<a href=#188 id=188 data-nosnippet>188</a>    <span class="kw">async fn </span>http_request(
+<a href=#189 id=189 data-nosnippet>189</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#190 id=190 data-nosnippet>190</a>        method: pki_env::hooks::HttpMethod,
+<a href=#191 id=191 data-nosnippet>191</a>        url: String,
+<a href=#192 id=192 data-nosnippet>192</a>        headers: Vec&lt;pki_env::hooks::HttpHeader&gt;,
+<a href=#193 id=193 data-nosnippet>193</a>        body: Vec&lt;u8&gt;,
+<a href=#194 id=194 data-nosnippet>194</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;pki_env::hooks::HttpResponse, pki_env::hooks::PkiEnvironmentHooksError&gt; {
+<a href=#195 id=195 data-nosnippet>195</a>        <span class="kw">let </span>headers = headers.into_iter().map(Into::into).collect();
+<a href=#196 id=196 data-nosnippet>196</a>        <span class="self">self</span>.<span class="number">0
+<a href=#197 id=197 data-nosnippet>197</a>            </span>.http_request(method.into(), url, headers, body)
+<a href=#198 id=198 data-nosnippet>198</a>            .<span class="kw">await
+<a href=#199 id=199 data-nosnippet>199</a>            </span>.map(Into::into)
+<a href=#200 id=200 data-nosnippet>200</a>            .map_err(Into::into)
+<a href=#201 id=201 data-nosnippet>201</a>    }
+<a href=#202 id=202 data-nosnippet>202</a>
+<a href=#203 id=203 data-nosnippet>203</a>    <span class="kw">async fn </span>authenticate(
+<a href=#204 id=204 data-nosnippet>204</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#205 id=205 data-nosnippet>205</a>        idp: String,
+<a href=#206 id=206 data-nosnippet>206</a>        key_auth: String,
+<a href=#207 id=207 data-nosnippet>207</a>        acme_aud: String,
+<a href=#208 id=208 data-nosnippet>208</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;String, pki_env::hooks::PkiEnvironmentHooksError&gt; {
+<a href=#209 id=209 data-nosnippet>209</a>        <span class="self">self</span>.<span class="number">0</span>.authenticate(idp, key_auth, acme_aud).<span class="kw">await</span>.map_err(Into::into)
 <a href=#210 id=210 data-nosnippet>210</a>    }
 <a href=#211 id=211 data-nosnippet>211</a>
-<a href=#212 id=212 data-nosnippet>212</a>    <span class="kw">async fn </span>fetch_backend_access_token(
-<a href=#213 id=213 data-nosnippet>213</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#214 id=214 data-nosnippet>214</a>        dpop: String,
-<a href=#215 id=215 data-nosnippet>215</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;String, pki_env::hooks::PkiEnvironmentHooksError&gt; {
-<a href=#216 id=216 data-nosnippet>216</a>        <span class="self">self</span>.<span class="number">0</span>.fetch_backend_access_token(dpop).<span class="kw">await</span>.map_err(Into::into)
-<a href=#217 id=217 data-nosnippet>217</a>    }
-<a href=#218 id=218 data-nosnippet>218</a>}
-<a href=#219 id=219 data-nosnippet>219</a>
-<a href=#220 id=220 data-nosnippet>220</a><span class="doccomment">/// A PkiEnvironment
-<a href=#221 id=221 data-nosnippet>221</a></span><span class="attr">#[derive(derive_more::From, derive_more::Into, Clone, uniffi::Object)]
-<a href=#222 id=222 data-nosnippet>222</a></span><span class="kw">pub struct </span>PkiEnvironment(wire_e2e_identity::pki_env::PkiEnvironment);
+<a href=#212 id=212 data-nosnippet>212</a>    <span class="kw">async fn </span>get_backend_nonce(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String, pki_env::hooks::PkiEnvironmentHooksError&gt; {
+<a href=#213 id=213 data-nosnippet>213</a>        <span class="self">self</span>.<span class="number">0</span>.get_backend_nonce().<span class="kw">await</span>.map_err(Into::into)
+<a href=#214 id=214 data-nosnippet>214</a>    }
+<a href=#215 id=215 data-nosnippet>215</a>
+<a href=#216 id=216 data-nosnippet>216</a>    <span class="kw">async fn </span>fetch_backend_access_token(
+<a href=#217 id=217 data-nosnippet>217</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#218 id=218 data-nosnippet>218</a>        dpop: String,
+<a href=#219 id=219 data-nosnippet>219</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;String, pki_env::hooks::PkiEnvironmentHooksError&gt; {
+<a href=#220 id=220 data-nosnippet>220</a>        <span class="self">self</span>.<span class="number">0</span>.fetch_backend_access_token(dpop).<span class="kw">await</span>.map_err(Into::into)
+<a href=#221 id=221 data-nosnippet>221</a>    }
+<a href=#222 id=222 data-nosnippet>222</a>}
 <a href=#223 id=223 data-nosnippet>223</a>
-<a href=#224 id=224 data-nosnippet>224</a><span class="attr">#[cfg_attr(feature = <span class="string">"wasm"</span>, uniffi::export)]
-<a href=#225 id=225 data-nosnippet>225</a></span><span class="kw">impl </span>PkiEnvironment {
-<a href=#226 id=226 data-nosnippet>226</a>    <span class="doccomment">/// Create a new PKI environment
-<a href=#227 id=227 data-nosnippet>227</a>    </span><span class="attr">#[cfg_attr(feature = <span class="string">"wasm"</span>, uniffi::constructor)]
-<a href=#228 id=228 data-nosnippet>228</a>    </span><span class="kw">pub async fn </span>new(hooks: Arc&lt;<span class="kw">dyn </span>PkiEnvironmentHooks&gt;, database: Arc&lt;Database&gt;) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
-<a href=#229 id=229 data-nosnippet>229</a>        <span class="kw">let </span>shim = Arc::new(PkiEnvironmentHooksShim::new(hooks));
-<a href=#230 id=230 data-nosnippet>230</a>        <span class="kw">let </span>pki_env = wire_e2e_identity::pki_env::PkiEnvironment::new(shim, database.as_ref().clone().into()).<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#231 id=231 data-nosnippet>231</a>        <span class="prelude-val">Ok</span>(pki_env.into())
-<a href=#232 id=232 data-nosnippet>232</a>    }
-<a href=#233 id=233 data-nosnippet>233</a>}
-<a href=#234 id=234 data-nosnippet>234</a>
-<a href=#235 id=235 data-nosnippet>235</a><span class="doccomment">/// Create a new PKI environment
-<a href=#236 id=236 data-nosnippet>236</a></span><span class="attr">#[cfg(not(any(feature = <span class="string">"wasm"</span>, target_os = <span class="string">"unknown"</span>)))]
-<a href=#237 id=237 data-nosnippet>237</a>#[uniffi::export]
-<a href=#238 id=238 data-nosnippet>238</a></span><span class="kw">pub async fn </span>create_pki_environment(
-<a href=#239 id=239 data-nosnippet>239</a>    hooks: Arc&lt;<span class="kw">dyn </span>PkiEnvironmentHooks&gt;,
-<a href=#240 id=240 data-nosnippet>240</a>    database: Arc&lt;Database&gt;,
-<a href=#241 id=241 data-nosnippet>241</a>) -&gt; CoreCryptoResult&lt;PkiEnvironment&gt; {
-<a href=#242 id=242 data-nosnippet>242</a>    PkiEnvironment::new(hooks, database).<span class="kw">await
-<a href=#243 id=243 data-nosnippet>243</a></span>}
-<a href=#244 id=244 data-nosnippet>244</a>
-<a href=#245 id=245 data-nosnippet>245</a><span class="attr">#[uniffi::export]
-<a href=#246 id=246 data-nosnippet>246</a></span><span class="kw">impl </span>CoreCryptoFfi {
-<a href=#247 id=247 data-nosnippet>247</a>    <span class="doccomment">/// Set the Pki Environment of the CoreCrypto instance
-<a href=#248 id=248 data-nosnippet>248</a>    </span><span class="kw">pub async fn </span>set_pki_environment(<span class="kw-2">&amp;</span><span class="self">self</span>, pki_environment: <span class="prelude-ty">Option</span>&lt;Arc&lt;PkiEnvironment&gt;&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
-<a href=#249 id=249 data-nosnippet>249</a>        <span class="kw">let </span>pki_environment = pki_environment.as_ref().map(|p| p.as_ref().clone()).map(Into::into);
-<a href=#250 id=250 data-nosnippet>250</a>        <span class="self">self</span>.inner
-<a href=#251 id=251 data-nosnippet>251</a>            .set_pki_environment(pki_environment)
-<a href=#252 id=252 data-nosnippet>252</a>            .<span class="kw">await
-<a href=#253 id=253 data-nosnippet>253</a>            </span>.map_err(Into::into)
-<a href=#254 id=254 data-nosnippet>254</a>    }
-<a href=#255 id=255 data-nosnippet>255</a>
-<a href=#256 id=256 data-nosnippet>256</a>    <span class="doccomment">/// Get the PKI environment of the CoreCrypto instance
-<a href=#257 id=257 data-nosnippet>257</a>    /// Returns null if it is not set.
-<a href=#258 id=258 data-nosnippet>258</a>    </span><span class="kw">pub async fn </span>get_pki_environment(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;PkiEnvironment&gt;&gt; {
-<a href=#259 id=259 data-nosnippet>259</a>        <span class="self">self</span>.inner.get_pki_environment().<span class="kw">await</span>.map(PkiEnvironment).map(Arc::new)
-<a href=#260 id=260 data-nosnippet>260</a>    }
-<a href=#261 id=261 data-nosnippet>261</a>}
+<a href=#224 id=224 data-nosnippet>224</a><span class="doccomment">/// The PKI environment used for certificate management during X509 credential acquisition.
+<a href=#225 id=225 data-nosnippet>225</a></span><span class="attr">#[derive(derive_more::From, derive_more::Into, Clone, uniffi::Object)]
+<a href=#226 id=226 data-nosnippet>226</a></span><span class="kw">pub struct </span>PkiEnvironment(wire_e2e_identity::pki_env::PkiEnvironment);
+<a href=#227 id=227 data-nosnippet>227</a>
+<a href=#228 id=228 data-nosnippet>228</a><span class="attr">#[cfg_attr(feature = <span class="string">"wasm"</span>, uniffi::export)]
+<a href=#229 id=229 data-nosnippet>229</a></span><span class="kw">impl </span>PkiEnvironment {
+<a href=#230 id=230 data-nosnippet>230</a>    <span class="doccomment">/// Create a new PKI environment.
+<a href=#231 id=231 data-nosnippet>231</a>    </span><span class="attr">#[cfg_attr(feature = <span class="string">"wasm"</span>, uniffi::constructor)]
+<a href=#232 id=232 data-nosnippet>232</a>    </span><span class="kw">pub async fn </span>new(hooks: Arc&lt;<span class="kw">dyn </span>PkiEnvironmentHooks&gt;, database: Arc&lt;Database&gt;) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
+<a href=#233 id=233 data-nosnippet>233</a>        <span class="kw">let </span>shim = Arc::new(PkiEnvironmentHooksShim::new(hooks));
+<a href=#234 id=234 data-nosnippet>234</a>        <span class="kw">let </span>pki_env = wire_e2e_identity::pki_env::PkiEnvironment::new(shim, database.as_ref().clone().into()).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#235 id=235 data-nosnippet>235</a>        <span class="prelude-val">Ok</span>(pki_env.into())
+<a href=#236 id=236 data-nosnippet>236</a>    }
+<a href=#237 id=237 data-nosnippet>237</a>}
+<a href=#238 id=238 data-nosnippet>238</a>
+<a href=#239 id=239 data-nosnippet>239</a><span class="doccomment">/// Create a new PKI environment.
+<a href=#240 id=240 data-nosnippet>240</a></span><span class="attr">#[cfg(not(any(feature = <span class="string">"wasm"</span>, target_os = <span class="string">"unknown"</span>)))]
+<a href=#241 id=241 data-nosnippet>241</a>#[uniffi::export]
+<a href=#242 id=242 data-nosnippet>242</a></span><span class="kw">pub async fn </span>create_pki_environment(
+<a href=#243 id=243 data-nosnippet>243</a>    hooks: Arc&lt;<span class="kw">dyn </span>PkiEnvironmentHooks&gt;,
+<a href=#244 id=244 data-nosnippet>244</a>    database: Arc&lt;Database&gt;,
+<a href=#245 id=245 data-nosnippet>245</a>) -&gt; CoreCryptoResult&lt;PkiEnvironment&gt; {
+<a href=#246 id=246 data-nosnippet>246</a>    PkiEnvironment::new(hooks, database).<span class="kw">await
+<a href=#247 id=247 data-nosnippet>247</a></span>}
+<a href=#248 id=248 data-nosnippet>248</a>
+<a href=#249 id=249 data-nosnippet>249</a><span class="attr">#[uniffi::export]
+<a href=#250 id=250 data-nosnippet>250</a></span><span class="kw">impl </span>CoreCryptoFfi {
+<a href=#251 id=251 data-nosnippet>251</a>    <span class="doccomment">/// Set the PKI environment of the CoreCrypto instance.
+<a href=#252 id=252 data-nosnippet>252</a>    </span><span class="kw">pub async fn </span>set_pki_environment(<span class="kw-2">&amp;</span><span class="self">self</span>, pki_environment: <span class="prelude-ty">Option</span>&lt;Arc&lt;PkiEnvironment&gt;&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
+<a href=#253 id=253 data-nosnippet>253</a>        <span class="kw">let </span>pki_environment = pki_environment.as_ref().map(|p| p.as_ref().clone()).map(Into::into);
+<a href=#254 id=254 data-nosnippet>254</a>        <span class="self">self</span>.inner
+<a href=#255 id=255 data-nosnippet>255</a>            .set_pki_environment(pki_environment)
+<a href=#256 id=256 data-nosnippet>256</a>            .<span class="kw">await
+<a href=#257 id=257 data-nosnippet>257</a>            </span>.map_err(Into::into)
+<a href=#258 id=258 data-nosnippet>258</a>    }
+<a href=#259 id=259 data-nosnippet>259</a>
+<a href=#260 id=260 data-nosnippet>260</a>    <span class="doccomment">/// Get the PKI environment of the CoreCrypto instance.
+<a href=#261 id=261 data-nosnippet>261</a>    ///
+<a href=#262 id=262 data-nosnippet>262</a>    /// Returns null if it is not set.
+<a href=#263 id=263 data-nosnippet>263</a>    </span><span class="kw">pub async fn </span>get_pki_environment(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;PkiEnvironment&gt;&gt; {
+<a href=#264 id=264 data-nosnippet>264</a>        <span class="self">self</span>.inner.get_pki_environment().<span class="kw">await</span>.map(PkiEnvironment).map(Arc::new)
+<a href=#265 id=265 data-nosnippet>265</a>    }
+<a href=#266 id=266 data-nosnippet>266</a>}
 </code></pre></div></section></main></body></html>

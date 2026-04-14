@@ -17,7 +17,7 @@
     <a title="PkiEnvironmentHooks Protocol Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -353,8 +353,9 @@
 
                 </div>
               </div>
-            <p>The PKI Environment Hooks used for external calls during e2e enrollment flow.
- When communicating with the Identity Provider (IDP)  and Wire server,
+            <p>Callbacks for external calls made by CoreCrypto during X509 credential acquisition.</p>
+
+<p>When communicating with the Identity Provider (IDP) and Wire server,
  CoreCrypto delegates to the client app by calling the relevant methods.</p>
 
 <p>Client App                 CoreCrypto                     Acme                     IDP
@@ -396,8 +397,9 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Make an HTTP request
-Used for requests to ACME servers, CRL distributors etc.</p>
+                        <p>Make an HTTP request.</p>
+
+<p>Used for requests to ACME servers, CRL distributors, etc.</p>
 
                       </div>
                       <div class="declaration">
@@ -429,7 +431,8 @@ Used for requests to ACME servers, CRL distributors etc.</p>
                       <div class="abstract">
                         <p>Authenticate with the user&rsquo;s identity provider (IdP)</p>
 
-<p>The implementation should perform an <a href="https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth">authentication using the authorization code flow</a> with the PKCE
+<p>The implementation should perform authentication using the authorization code flow
+ (<a href="https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth">https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth</a>) with the PKCE
  (<a href="https://www.rfc-editor.org/rfc/rfc7636">https://www.rfc-editor.org/rfc/rfc7636</a>) extension. As part of the authorization
  request, the implementation should specify <code>key_auth</code> and <code>acme_aud</code> claims, along with
  their values, in the <code>claims</code> parameter. This is to instruct the IdP to add the <code>key_auth</code>
@@ -466,7 +469,7 @@ Used for requests to ACME servers, CRL distributors etc.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Get a nonce from the backend</p>
+                        <p>Get a nonce from the backend.</p>
 
                       </div>
                       <div class="declaration">

@@ -17,7 +17,7 @@
     <a title="X509Identity Structure Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -355,11 +355,7 @@
 
                 </div>
               </div>
-            <p>Represents the parts of [WireIdentity][crate::WireIdentity] that are specific to a X509 certificate (and not a Basic
- one).</p>
-
-<p>We don&rsquo;t use an enum here since the sole purpose of this is to be exposed through the FFI (and
- union types are impossible to carry over the FFI boundary)</p>
+            <p>Fields from a <code><a href="../../WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a></code> that are specific to X509 credentials.</p>
 
           </section>
           <section class="section task-group-section">
@@ -378,7 +374,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>user handle e.g. <code>john_wire</code></p>
+                        <p>User handle e.g. <code>john_wire</code></p>
 
                       </div>
                       <div class="declaration">
@@ -459,7 +455,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>X509 certificate identifying this client in the MLS group ; PEM encoded</p>
+                        <p>PEM-encoded X509 certificate identifying this client in the MLS group.</p>
 
                       </div>
                       <div class="declaration">
@@ -513,7 +509,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>X509 certificate not before</p>
+                        <p>Certificate validity start time (the X509 notBefore field).</p>
 
                       </div>
                       <div class="declaration">
@@ -540,7 +536,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>X509 certificate not after</p>
+                        <p>Certificate validity end time (the X509 notAfter field).</p>
 
                       </div>
                       <div class="declaration">
@@ -576,7 +572,7 @@
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">public</span> <span class="nf">init</span><span class="p">(</span>
     <span class="cm">/**
-     * user handle e.g. `john_wire`
+     * User handle e.g. `john_wire`
      */</span><span class="nv">handle</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> 
     <span class="cm">/**
      * Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
@@ -585,16 +581,16 @@
      * DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
      */</span><span class="nv">domain</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> 
     <span class="cm">/**
-     * X509 certificate identifying this client in the MLS group ; PEM encoded
+     * PEM-encoded X509 certificate identifying this client in the MLS group.
      */</span><span class="nv">certificate</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> 
     <span class="cm">/**
      * X509 certificate serial number
      */</span><span class="nv">serialNumber</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> 
     <span class="cm">/**
-     * X509 certificate not before
+     * Certificate validity start time (the X509 notBefore field).
      */</span><span class="nv">notBefore</span><span class="p">:</span> <span class="kt"><a href="../../Typealiases.html#/s:20WireCoreCryptoUniffi9Timestampa">Timestamp</a></span><span class="p">,</span> 
     <span class="cm">/**
-     * X509 certificate not after
+     * Certificate validity end time (the X509 notAfter field).
      */</span><span class="nv">notAfter</span><span class="p">:</span> <span class="kt"><a href="../../Typealiases.html#/s:20WireCoreCryptoUniffi9Timestampa">Timestamp</a></span><span class="p">)</span></code></pre>
 
                         </div>

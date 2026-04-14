@@ -108,7 +108,7 @@
   <div class="breadcrumbs"><a href="../../../index.html">CoreCrypto</a><span class="delimiter">/</span><a href="../index.html">com.wire.crypto</a><span class="delimiter">/</span><span class="current">E2eiConversationState</span></div>
   <div class="cover ">
     <h1 class="cover"><span>E2ei</span><wbr></wbr><span>Conversation</span><wbr></wbr><span><span>State</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">enum </span><a href="index.html">E2eiConversationState</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="index.html">E2eiConversationState</a><span class="token operator">&gt; </span><span class="clearfix"><span class="floating-right">(<a href="https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt#L13032">source</a>)</span></span></div><p class="paragraph">Indicates the state of a Conversation regarding end-to-end identity.</p><p class="paragraph">Note: this does not check pending state (pending commit, pending proposals) so it does not consider members about to be added/removed</p></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">enum </span><a href="index.html">E2eiConversationState</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="index.html">E2eiConversationState</a><span class="token operator">&gt; </span><span class="clearfix"><span class="floating-right">(<a href="https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt#L13052">source</a>)</span></span></div><p class="paragraph">The end-to-end identity verification state of a conversation.</p><p class="paragraph">Note: this does not check pending state (pending commit, pending proposals), so it does not consider members about to be added or removed.</p></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button><button class="section-tab" data-togglable="ENTRY">Entries</button></div>
@@ -125,7 +125,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><div class="block"><a href="-v-e-r-i-f-i-e-d/index.html">VERIFIED</a></div></div><div class="brief "><p class="paragraph">All clients have a valid E2EI certificate</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><div class="block"><a href="-v-e-r-i-f-i-e-d/index.html">VERIFIED</a></div></div><div class="brief "><p class="paragraph">All clients have a valid E2EI certificate.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -140,7 +140,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><div class="block"><a href="-n-o-t_-v-e-r-i-f-i-e-d/index.html">NOT_VERIFIED</a></div></div><div class="brief "><p class="paragraph">Some clients are either still Basic or their certificate is expired</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><div class="block"><a href="-n-o-t_-v-e-r-i-f-i-e-d/index.html">NOT_VERIFIED</a></div></div><div class="brief "><p class="paragraph">Some clients are either still using Basic credentials or their certificate has expired.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -155,7 +155,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><div class="block"><a href="-n-o-t_-e-n-a-b-l-e-d/index.html">NOT_ENABLED</a></div></div><div class="brief "><p class="paragraph">All clients are still Basic. If all client have expired certificates, E2eiConversationState::NotVerified is returned.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><div class="block"><a href="-n-o-t_-e-n-a-b-l-e-d/index.html">NOT_ENABLED</a></div></div><div class="brief "><p class="paragraph">All clients are still using Basic credentials.</p></div></div></div>
                 </div>
               </div>
             </div>

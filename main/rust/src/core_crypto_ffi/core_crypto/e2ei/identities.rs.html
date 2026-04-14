@@ -10,7 +10,7 @@
 <a href=#10 id=10 data-nosnippet>10</a>
 <a href=#11 id=11 data-nosnippet>11</a><span class="attr">#[uniffi::export]
 <a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">impl </span>CoreCryptoFfi {
-<a href=#13 id=13 data-nosnippet>13</a>    <span class="doccomment">/// See [core_crypto::mls::conversation::Conversation::get_device_identities]
+<a href=#13 id=13 data-nosnippet>13</a>    <span class="doccomment">/// Returns the E2EI identity claims for the specified devices in the given conversation.
 <a href=#14 id=14 data-nosnippet>14</a>    </span><span class="kw">pub async fn </span>get_device_identities(
 <a href=#15 id=15 data-nosnippet>15</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#16 id=16 data-nosnippet>16</a>        conversation_id: <span class="kw-2">&amp;</span>ConversationId,
@@ -33,7 +33,7 @@
 <a href=#33 id=33 data-nosnippet>33</a>        <span class="prelude-val">Ok</span>(wire_identities)
 <a href=#34 id=34 data-nosnippet>34</a>    }
 <a href=#35 id=35 data-nosnippet>35</a>
-<a href=#36 id=36 data-nosnippet>36</a>    <span class="doccomment">/// See [core_crypto::mls::conversation::Conversation::get_user_identities]
+<a href=#36 id=36 data-nosnippet>36</a>    <span class="doccomment">/// Returns the E2EI identity claims for the specified users in the given conversation, grouped by user ID.
 <a href=#37 id=37 data-nosnippet>37</a>    </span><span class="kw">pub async fn </span>get_user_identities(
 <a href=#38 id=38 data-nosnippet>38</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#39 id=39 data-nosnippet>39</a>        conversation_id: <span class="kw-2">&amp;</span>ConversationId,

@@ -14,11 +14,11 @@
 <a href=#14 id=14 data-nosnippet>14</a></span><span class="attr">#[derive(uniffi::Record)]
 <a href=#15 id=15 data-nosnippet>15</a></span><span class="doccomment">/// Metadata describing the conditions of the build of this software.
 <a href=#16 id=16 data-nosnippet>16</a></span><span class="kw">pub struct </span>BuildMetadata {
-<a href=#17 id=17 data-nosnippet>17</a>    <span class="doccomment">/// Build Timestamp
+<a href=#17 id=17 data-nosnippet>17</a>    <span class="doccomment">/// Build timestamp
 <a href=#18 id=18 data-nosnippet>18</a>    </span><span class="kw">pub </span>timestamp: String,
-<a href=#19 id=19 data-nosnippet>19</a>    <span class="doccomment">/// Whether this build was in Debug mode (true) or Release mode (false)
+<a href=#19 id=19 data-nosnippet>19</a>    <span class="doccomment">/// Whether this build was in Debug mode (true) or Release mode (false).
 <a href=#20 id=20 data-nosnippet>20</a>    </span><span class="kw">pub </span>cargo_debug: String,
-<a href=#21 id=21 data-nosnippet>21</a>    <span class="doccomment">/// Features enabled for this build
+<a href=#21 id=21 data-nosnippet>21</a>    <span class="doccomment">/// Features enabled for this build.
 <a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">pub </span>cargo_features: String,
 <a href=#23 id=23 data-nosnippet>23</a>    <span class="doccomment">/// Optimization level
 <a href=#24 id=24 data-nosnippet>24</a>    </span><span class="kw">pub </span>opt_level: String,
@@ -30,11 +30,11 @@
 <a href=#30 id=30 data-nosnippet>30</a>    </span><span class="kw">pub </span>git_describe: String,
 <a href=#31 id=31 data-nosnippet>31</a>    <span class="doccomment">/// Hash of current git commit
 <a href=#32 id=32 data-nosnippet>32</a>    </span><span class="kw">pub </span>git_sha: String,
-<a href=#33 id=33 data-nosnippet>33</a>    <span class="doccomment">/// `true` when the source code differed from the commit at the most recent git hash
+<a href=#33 id=33 data-nosnippet>33</a>    <span class="doccomment">/// `true` when the source code differed from the commit at the most recent git hash.
 <a href=#34 id=34 data-nosnippet>34</a>    </span><span class="kw">pub </span>git_dirty: String,
 <a href=#35 id=35 data-nosnippet>35</a>}
 <a href=#36 id=36 data-nosnippet>36</a>
-<a href=#37 id=37 data-nosnippet>37</a><span class="doccomment">/// Returns build data for CoreCrypto
+<a href=#37 id=37 data-nosnippet>37</a><span class="doccomment">/// Returns build metadata for CoreCrypto.
 <a href=#38 id=38 data-nosnippet>38</a></span><span class="attr">#[uniffi::export]
 <a href=#39 id=39 data-nosnippet>39</a></span><span class="kw">pub fn </span>build_metadata() -&gt; BuildMetadata {
 <a href=#40 id=40 data-nosnippet>40</a>    BuildMetadata {

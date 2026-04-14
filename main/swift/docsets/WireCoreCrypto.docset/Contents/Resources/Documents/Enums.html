@@ -17,7 +17,7 @@
     <a title="Enumerations  Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -393,7 +393,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Undocumented</p>
+                        <p>The primary error type returned across the CoreCrypto FFI boundary.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/CoreCryptoError.html" class="slightly-smaller">See more</a>
                       </div>
@@ -423,7 +423,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Defines the log level for a CoreCrypto</p>
+                        <p>Defines the log level for CoreCrypto.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/CoreCryptoLogLevel.html" class="slightly-smaller">See more</a>
                       </div>
@@ -453,7 +453,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Type of Credential</p>
+                        <p>The type of credential used to authenticate an MLS client&rsquo;s identity.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/CredentialType.html" class="slightly-smaller">See more</a>
                       </div>
@@ -483,9 +483,9 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Indicates the standalone status of a device Credential in a MLS group at a moment T.</p>
+                        <p>The standalone status of a device credential in an MLS group at a given moment.</p>
 
-<p>This does not represent the states where a device is not using MLS or is not using end-to-end identity</p>
+<p>This does not represent states where a device is not using MLS or end-to-end identity.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/DeviceStatus.html" class="slightly-smaller">See more</a>
                       </div>
@@ -515,10 +515,10 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Indicates the state of a Conversation regarding end-to-end identity.</p>
+                        <p>The end-to-end identity verification state of a conversation.</p>
 
-<p>Note: this does not check pending state (pending commit, pending proposals) so it does not
- consider members about to be added/removed</p>
+<p>Note: this does not check pending state (pending commit, pending proposals), so it does not
+ consider members about to be added or removed.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/E2eiConversationState.html" class="slightly-smaller">See more</a>
                       </div>
@@ -548,7 +548,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Undocumented</p>
+                        <p>An error returned by an <code><a href="WireCoreCryptoUniffi/Protocols/EpochObserver.html">EpochObserver</a></code> callback implementation.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/EpochChangedReportingError.html" class="slightly-smaller">See more</a>
                       </div>
@@ -578,7 +578,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>HttpMethod used for pki hooks</p>
+                        <p>HttpMethod used for PKI hooks.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/HttpMethod.html" class="slightly-smaller">See more</a>
                       </div>
@@ -608,7 +608,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Undocumented</p>
+                        <p>An error returned by a <code><a href="WireCoreCryptoUniffi/Protocols/CoreCryptoLogger.html">CoreCryptoLogger</a></code> callback implementation.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/LoggingError.html" class="slightly-smaller">See more</a>
                       </div>
@@ -638,7 +638,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>MLS produces these kinds of error</p>
+                        <p>Errors produced by the MLS layer.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/MlsError.html" class="slightly-smaller">See more</a>
                       </div>
@@ -668,7 +668,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Undocumented</p>
+                        <p>How a <code><a href="WireCoreCryptoUniffi/Classes/GroupInfo.html">GroupInfo</a></code> is encrypted in a commit bundle.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/MlsGroupInfoEncryptionType.html" class="slightly-smaller">See more</a>
                       </div>
@@ -698,7 +698,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Undocumented</p>
+                        <p>How the ratchet tree is represented in a <code><a href="WireCoreCryptoUniffi/Classes/GroupInfo.html">GroupInfo</a></code>.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/MlsRatchetTreeType.html" class="slightly-smaller">See more</a>
                       </div>
@@ -728,7 +728,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>MLS transport may or may not succeeed; this response indicates to CC the outcome of the transport attempt.</p>
+                        <p>The outcome of an MLS transport attempt, returned to CoreCrypto after delivery.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/MlsTransportResponse.html" class="slightly-smaller">See more</a>
                       </div>
@@ -758,7 +758,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Undocumented</p>
+                        <p>An error returned by a <code><a href="WireCoreCryptoUniffi/Protocols/HistoryObserver.html">HistoryObserver</a></code> callback implementation.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/NewHistoryClientReportingError.html" class="slightly-smaller">See more</a>
                       </div>
@@ -788,7 +788,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Undocumented</p>
+                        <p>An error returned by a <code><a href="WireCoreCryptoUniffi/Protocols/PkiEnvironmentHooks.html">PkiEnvironmentHooks</a></code> callback implementation.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/PkiEnvironmentHooksError.html" class="slightly-smaller">See more</a>
                       </div>
@@ -818,7 +818,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Proteus produces these kinds of error</p>
+                        <p>Errors produced by the Proteus layer.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/ProteusError.html" class="slightly-smaller">See more</a>
                       </div>
@@ -848,7 +848,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>MLS signature schemes</p>
+                        <p>Signature schemes supported by MLS, as defined in RFC 9420.</p>
 
                         <a href="WireCoreCryptoUniffi/Enums/SignatureScheme.html" class="slightly-smaller">See more</a>
                       </div>

@@ -17,7 +17,7 @@
     <a title="KeypackageRefProtocol Protocol Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -353,7 +353,7 @@
 
                 </div>
               </div>
-            <p>A lightweight distinct reference to a <code>KeyPackage</code> sufficient to uniquely identify it</p>
+            <p>A lightweight distinct reference to a <code>KeyPackage</code>, sufficient to uniquely identify it.</p>
 
 <p>This contains some metadata to assist in sorting and filtering refs without needing to perform the
  relatively heavy operation of converting to a full keypackage.</p>
@@ -429,7 +429,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Get the bytes of the hash reference to a [<code><a href="../../WireCoreCryptoUniffi/Classes/Keypackage.html">Keypackage</a></code>]</p>
+                        <p>Get the bytes of the hash reference to a keypackage.</p>
 
                       </div>
                       <div class="declaration">
@@ -456,9 +456,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Determines whether this keypackage is valid in the sense of the former <code>client_valid_keypackages_count</code> method.</p>
-
-<p>In practice, this just checks whether its lifetime (if present) has expired or not.</p>
+                        <p>Returns true if this keypackage&rsquo;s lifetime has not expired, or if no lifetime is present.</p>
 
                       </div>
                       <div class="declaration">
@@ -485,7 +483,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Get the signature scheme associated wtih this key package ref.</p>
+                        <p>Get the signature scheme associated with this key package ref.</p>
 
                       </div>
                       <div class="declaration">

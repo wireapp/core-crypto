@@ -19,15 +19,16 @@
 <a href=#19 id=19 data-nosnippet>19</a>}
 <a href=#20 id=20 data-nosnippet>20</a>
 <a href=#21 id=21 data-nosnippet>21</a><span class="doccomment">/// Updates the key of the CoreCrypto database.
-<a href=#22 id=22 data-nosnippet>22</a>/// To be used only once, when moving from CoreCrypto &lt;= 5.x to CoreCrypto 6.x.
-<a href=#23 id=23 data-nosnippet>23</a></span><span class="attr">#[uniffi::export]
-<a href=#24 id=24 data-nosnippet>24</a></span><span class="kw">pub async fn </span>migrate_database_key_type_to_bytes(
-<a href=#25 id=25 data-nosnippet>25</a>    path: <span class="kw-2">&amp;</span>str,
-<a href=#26 id=26 data-nosnippet>26</a>    old_key: <span class="kw-2">&amp;</span>str,
-<a href=#27 id=27 data-nosnippet>27</a>    new_key: <span class="kw-2">&amp;</span>DatabaseKey,
-<a href=#28 id=28 data-nosnippet>28</a>) -&gt; CoreCryptoResult&lt;()&gt; {
-<a href=#29 id=29 data-nosnippet>29</a>    Database::migrate_db_key_type_to_bytes(path, old_key, <span class="kw-2">&amp;</span>new_key.<span class="number">0</span>)
-<a href=#30 id=30 data-nosnippet>30</a>        .<span class="kw">await
-<a href=#31 id=31 data-nosnippet>31</a>        </span>.map_err(CoreCryptoError::generic())
-<a href=#32 id=32 data-nosnippet>32</a>}
+<a href=#22 id=22 data-nosnippet>22</a>///
+<a href=#23 id=23 data-nosnippet>23</a>/// This function is intended to be called only once, when migrating from CoreCrypto 5.x to 6.x.
+<a href=#24 id=24 data-nosnippet>24</a></span><span class="attr">#[uniffi::export]
+<a href=#25 id=25 data-nosnippet>25</a></span><span class="kw">pub async fn </span>migrate_database_key_type_to_bytes(
+<a href=#26 id=26 data-nosnippet>26</a>    path: <span class="kw-2">&amp;</span>str,
+<a href=#27 id=27 data-nosnippet>27</a>    old_key: <span class="kw-2">&amp;</span>str,
+<a href=#28 id=28 data-nosnippet>28</a>    new_key: <span class="kw-2">&amp;</span>DatabaseKey,
+<a href=#29 id=29 data-nosnippet>29</a>) -&gt; CoreCryptoResult&lt;()&gt; {
+<a href=#30 id=30 data-nosnippet>30</a>    Database::migrate_db_key_type_to_bytes(path, old_key, <span class="kw-2">&amp;</span>new_key.<span class="number">0</span>)
+<a href=#31 id=31 data-nosnippet>31</a>        .<span class="kw">await
+<a href=#32 id=32 data-nosnippet>32</a>        </span>.map_err(CoreCryptoError::generic())
+<a href=#33 id=33 data-nosnippet>33</a>}
 </code></pre></div></section></main></body></html>

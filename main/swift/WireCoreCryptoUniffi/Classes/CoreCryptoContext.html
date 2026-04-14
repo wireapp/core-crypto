@@ -17,7 +17,7 @@
     <a title="CoreCryptoContext Class Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -355,11 +355,10 @@
               </div>
             <p>The <code>CoreCryptoContext</code> holds the primary <code><a href="../../WireCoreCrypto/Classes/CoreCrypto.html">CoreCrypto</a></code> APIs.</p>
 
-<p>An instance of this struct is provided to the function handed to <code>CoreCrypto::transaction</code>.</p>
+<p>An instance of this struct is provided to the closure passed to <code>CoreCryptoFfi::transaction</code>.</p>
 
-<p>Every mutable operation is done through this struct. This struct will buffer all
- operations in memory and when [TransactionContext::finish] is called, it will persist the data into
- the keystore.</p>
+<p>Every mutable operation is done through this struct. Operations are buffered in memory
+ and persisted to the keystore when the transaction completes.</p>
 
           </section>
           <section class="section task-group-section">
@@ -381,7 +380,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::ConversationGuard::add_members]</p>
+                        <p>Adds members to the conversation using their key packages, sending the resulting commit via the transport.</p>
 
                       </div>
                       <div class="declaration">
@@ -411,10 +410,10 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Add a [<code><a href="../../WireCoreCryptoUniffi/Classes/Credential.html">Credential</a></code>][crate::Credential] to this client.</p>
+                        <p>Adds a <code><a href="../../WireCoreCryptoUniffi/Classes/Credential.html">Credential</a></code> to this client.</p>
 
 <p>Note that while an arbitrary number of credentials can be generated,
- those which are added to a CC instance must be distinct in credential type,
+ those which are added to a CoreCrypto instance must be distinct in credential type,
  signature scheme, and the timestamp of creation. This timestamp has only
  1 second of resolution, limiting the number of credentials which
  can be added. This is a known limitation and will be relaxed in the future.</p>
@@ -447,7 +446,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::ConversationGuard::commit_pending_proposals]</p>
+                        <p>Commits all pending proposals in the conversation, sending the resulting commit via the transport.</p>
 
                       </div>
                       <div class="declaration">
@@ -477,7 +476,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::Conversation::ciphersuite]</p>
+                        <p>Returns the ciphersuite in use for the given conversation.</p>
 
                       </div>
                       <div class="declaration">
@@ -537,7 +536,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::Conversation::epoch]</p>
+                        <p>Returns the current MLS epoch of the given conversation.</p>
 
                       </div>
                       <div class="declaration">
@@ -567,7 +566,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::Session::conversation_exists]</p>
+                        <p>Returns true if a conversation with the given id exists in the local state.</p>
 
                       </div>
                       <div class="declaration">
@@ -597,7 +596,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::new_conversation]</p>
+                        <p>Creates a new MLS group with the given conversation ID, using the specified credential.</p>
 
                       </div>
                       <div class="declaration">
@@ -627,7 +626,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::ConversationGuard::decrypt_message]</p>
+                        <p>Decrypts an MLS message received in the given conversation.</p>
 
                       </div>
                       <div class="declaration">
@@ -657,7 +656,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::ConversationGuard::disable_history_sharing]</p>
+                        <p>Disables history sharing for the given conversation.</p>
 
                       </div>
                       <div class="declaration">
@@ -687,7 +686,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::Conversation::e2ei_conversation_state]</p>
+                        <p>Returns the end-to-end identity verification state of the given conversation.</p>
 
                       </div>
                       <div class="declaration">
@@ -717,7 +716,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::Session::e2ei_is_enabled]</p>
+                        <p>Returns true if end-to-end identity is enabled for the given ciphersuite.</p>
 
                       </div>
                       <div class="declaration">
@@ -747,7 +746,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::Session::e2ei_is_pki_env_setup]</p>
+                        <p>Returns true if the PKI environment has been set up.</p>
 
                       </div>
                       <div class="declaration">
@@ -777,7 +776,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::ConversationGuard::enable_history_sharing]</p>
+                        <p>Enables history sharing for the given conversation.</p>
 
                       </div>
                       <div class="declaration">
@@ -807,7 +806,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::ConversationGuard::encrypt_message]</p>
+                        <p>Encrypts a plaintext message for all members of the given conversation.</p>
 
                       </div>
                       <div class="declaration">
@@ -837,7 +836,11 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::Conversation::export_secret_key]</p>
+                        <p>Derives and exports a secret of <code>key_length</code> bytes for the given conversation.</p>
+
+<p>The secret is derived from the MLS key schedule&rsquo;s exporter mechanism (RFC 9420 §8.5),
+ which produces output bound to the current group state and epoch. The exported value
+ changes whenever the epoch advances.</p>
 
                       </div>
                       <div class="declaration">
@@ -902,7 +905,7 @@
                       <div class="abstract">
                         <p>Generate a <code>KeyPackage</code> from the referenced credential.</p>
 
-<p>Makes no attempt to look up or prune existing keypackges.</p>
+<p>Makes no attempt to look up or prune existing keypackages.</p>
 
 <p>If <code>lifetime</code> is set, the keypackages will expire that span into the future.
  If it is unset, a default lifetime of approximately 3 months is used.</p>
@@ -935,7 +938,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::Conversation::get_client_ids]</p>
+                        <p>Returns the client ids of all members of the given conversation.</p>
 
                       </div>
                       <div class="declaration">
@@ -995,7 +998,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::get_data]</p>
+                        <p>Returns data previously stored by <code>set_data</code>, or <code>None</code> if no data has been stored.</p>
 
                       </div>
                       <div class="declaration">
@@ -1025,7 +1028,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::Conversation::get_device_identities]</p>
+                        <p>Returns the E2EI identity claims for the specified devices in the given conversation.</p>
 
                       </div>
                       <div class="declaration">
@@ -1055,7 +1058,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::Conversation::get_external_sender]</p>
+                        <p>Returns the serialized public key of the external sender for the given conversation.</p>
 
                       </div>
                       <div class="declaration">
@@ -1115,7 +1118,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::Conversation::get_user_identities]</p>
+                        <p>Returns the E2EI identity claims for the specified users in the given conversation, grouped by user ID.</p>
 
                       </div>
                       <div class="declaration">
@@ -1145,7 +1148,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::join_by_external_commit]</p>
+                        <p>Joins an existing conversation by constructing an external commit from the given group info.</p>
 
                       </div>
                       <div class="declaration">
@@ -1175,7 +1178,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::ConversationGuard::mark_as_child_of]</p>
+                        <p>Marks a conversation as a subconversation of the given parent.</p>
 
                       </div>
                       <div class="declaration">
@@ -1205,7 +1208,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::mls_init]</p>
+                        <p>Initializes the MLS client with the given client ID and message transport.</p>
 
                       </div>
                       <div class="declaration">
@@ -1235,7 +1238,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::process_raw_welcome_message]</p>
+                        <p>Joins a conversation by processing an MLS Welcome message, returning the new conversation&rsquo;s ID.</p>
 
                       </div>
                       <div class="declaration">
@@ -1265,7 +1268,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::proteus_decrypt]</p>
+                        <p>Decrypts a Proteus ciphertext in the given session, returning the plaintext.</p>
 
                       </div>
                       <div class="declaration">
@@ -1330,7 +1333,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::proteus_encrypt]</p>
+                        <p>Encrypts a plaintext message in the given Proteus session.</p>
 
                       </div>
                       <div class="declaration">
@@ -1360,7 +1363,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::proteus_encrypt_batched]</p>
+                        <p>Encrypts a plaintext message in multiple Proteus sessions, returning a map from session ID to ciphertext.</p>
 
                       </div>
                       <div class="declaration">
@@ -1390,7 +1393,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint]</p>
+                        <p>Returns the hex-encoded public key fingerprint of this device&rsquo;s Proteus identity.</p>
 
                       </div>
                       <div class="declaration">
@@ -1420,7 +1423,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint_local]</p>
+                        <p>Returns the hex-encoded local public key fingerprint for the Proteus session with the given ID.</p>
 
                       </div>
                       <div class="declaration">
@@ -1450,7 +1453,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint_remote]</p>
+                        <p>Returns the hex-encoded remote public key fingerprint for the Proteus session with the given ID.</p>
 
                       </div>
                       <div class="declaration">
@@ -1480,7 +1483,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::proteus::ProteusCentral::try_new]</p>
+                        <p>Initializes the Proteus client.</p>
 
                       </div>
                       <div class="declaration">
@@ -1510,7 +1513,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::proteus_last_resort_prekey]</p>
+                        <p>Returns the CBOR-serialized last resort prekey bundle, creating it if it does not yet exist.</p>
 
                       </div>
                       <div class="declaration">
@@ -1540,11 +1543,9 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Creates a new Proteus prekey with the given id and returns the CBOR-serialized version of the prekey bundle</p>
+                        <p>Creates a new Proteus prekey with the given ID and returns its CBOR-serialized bundle.</p>
 
-<p>Warning: The Proteus client <strong>MUST</strong> be initialized with <code>proteus_init</code> first or an error will be returned</p>
-
-<p>See [core_crypto::transaction_context::TransactionContext::proteus_new_prekey]</p>
+<p>Warning: the Proteus client must be initialized with <code>proteus_init</code> first or an error will be returned.</p>
 
                       </div>
                       <div class="declaration">
@@ -1574,12 +1575,9 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Creates a new Proteus prekey with an automatically incremented ID and returns the CBOR-serialized version of the
- prekey bundle</p>
+                        <p>Creates a new Proteus prekey with an automatically assigned ID and returns its CBOR-serialized bundle.</p>
 
-<p>Warning: The Proteus client <strong>MUST</strong> be initialized with <code>proteus_init</code> first or an error will be returned</p>
-
-<p>See [core_crypto::transaction_context::TransactionContext::proteus_new_prekey_auto]</p>
+<p>Warning: the Proteus client must be initialized with <code>proteus_init</code> first or an error will be returned.</p>
 
                       </div>
                       <div class="declaration">
@@ -1609,7 +1607,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::proteus_reload_sessions]</p>
+                        <p>Reloads all Proteus sessions from the keystore into memory.</p>
 
                       </div>
                       <div class="declaration">
@@ -1639,7 +1637,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::proteus_session_delete]</p>
+                        <p>Deletes the Proteus session with the given ID from local storage.</p>
 
                       </div>
                       <div class="declaration">
@@ -1669,7 +1667,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::proteus_session_exists]</p>
+                        <p>Returns true if a Proteus session with the given ID exists in local storage.</p>
 
                       </div>
                       <div class="declaration">
@@ -1699,7 +1697,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::proteus_session_from_message]</p>
+                        <p>Creates a new Proteus session from an incoming encrypted message, returning the decrypted message payload.</p>
 
                       </div>
                       <div class="declaration">
@@ -1729,7 +1727,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::proteus_session_from_prekey]</p>
+                        <p>Creates a new Proteus session from the given prekey bundle bytes, stored under the given session ID.</p>
 
                       </div>
                       <div class="declaration">
@@ -1759,10 +1757,10 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::proteus_session_save]</p>
+                        <p>Saves the Proteus session with the given ID to the keystore.</p>
 
-<p><strong>Note</strong>: This isn&rsquo;t usually needed as persisting sessions happens automatically when
- decrypting/encrypting messages and initializing Sessions</p>
+<p>Note: this is not usually needed, as sessions are persisted automatically when
+ decrypting or encrypting messages and when initializing sessions.</p>
 
                       </div>
                       <div class="declaration">
@@ -1792,7 +1790,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::Session::random_bytes].</p>
+                        <p>Generates <code>len</code> random bytes from the cryptographically secure RNG.</p>
 
                       </div>
                       <div class="declaration">
@@ -1822,7 +1820,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::ConversationGuard::remove_members]</p>
+                        <p>Removes the specified clients from the conversation, sending the resulting commit via the transport.</p>
 
                       </div>
                       <div class="declaration">
@@ -1852,7 +1850,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Remove a [<code><a href="../../WireCoreCryptoUniffi/Classes/Credential.html">Credential</a></code>][crate::Credential] from this client.</p>
+                        <p>Removes a <code><a href="../../WireCoreCryptoUniffi/Classes/Credential.html">Credential</a></code> from this client.</p>
 
                       </div>
                       <div class="declaration">
@@ -1972,7 +1970,10 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::transaction_context::TransactionContext::set_data]</p>
+                        <p>Stores arbitrary data to be used as a transaction checkpoint.</p>
+
+<p>The stored data can be retrieved via <code>get_data</code>. Keep the data size reasonable;
+ this is not a general-purpose key-value store.</p>
 
                       </div>
                       <div class="declaration">
@@ -2002,7 +2003,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::ConversationGuard::update_key_material]</p>
+                        <p>Updates this client&rsquo;s key material in the conversation by sending an update commit.</p>
 
                       </div>
                       <div class="declaration">
@@ -2032,7 +2033,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>See [core_crypto::mls::conversation::ConversationGuard::wipe]</p>
+                        <p>Destroys the local state of the given conversation; it can no longer be used locally after this call.</p>
 
                       </div>
                       <div class="declaration">

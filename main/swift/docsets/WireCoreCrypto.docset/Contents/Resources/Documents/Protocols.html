@@ -17,7 +17,7 @@
     <a title="Protocols  Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -391,11 +391,11 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>A Client identifier</p>
+                        <p>A unique identifier for an MLS client.</p>
 
-<p>A unique identifier for clients. A client is an identifier for each App a user is using, such as desktop,
- mobile, etc. Users can have multiple clients.
- More information <a href="https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients">here</a></p>
+<p>Each app instance a user is running, such as desktop or mobile, is a separate client
+ with its own client id. A single user may therefore have multiple clients.
+ More information: <a href="https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients">https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients</a></p>
 
                         <a href="WireCoreCryptoUniffi/Protocols/ClientIdProtocol.html" class="slightly-smaller">See more</a>
                       </div>
@@ -486,11 +486,10 @@
                       <div class="abstract">
                         <p>The <code><a href="WireCoreCryptoUniffi/Classes/CoreCryptoContext.html">CoreCryptoContext</a></code> holds the primary <code><a href="WireCoreCrypto/Classes/CoreCrypto.html">CoreCrypto</a></code> APIs.</p>
 
-<p>An instance of this struct is provided to the function handed to <code>CoreCrypto::transaction</code>.</p>
+<p>An instance of this struct is provided to the closure passed to <code>CoreCryptoFfi::transaction</code>.</p>
 
-<p>Every mutable operation is done through this struct. This struct will buffer all
- operations in memory and when [TransactionContext::finish] is called, it will persist the data into
- the keystore.</p>
+<p>Every mutable operation is done through this struct. Operations are buffered in memory
+ and persisted to the keystore when the transaction completes.</p>
 
                         <a href="WireCoreCryptoUniffi/Protocols/CoreCryptoContextProtocol.html" class="slightly-smaller">See more</a>
                       </div>
@@ -546,7 +545,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>This trait is used to provide a callback mechanism to hook up the respective platform logging system.</p>
+                        <p>A callback interface for forwarding CoreCrypto log messages to the platform&rsquo;s logging system.</p>
 
                         <a href="WireCoreCryptoUniffi/Protocols/CoreCryptoLogger.html" class="slightly-smaller">See more</a>
                       </div>
@@ -579,8 +578,7 @@
 <p>This is tied to a particular client via either its client id or certificate bundle,
  depending on its credential type, but is independent of any client instance or storage.</p>
 
-<p>To attach to a particular client instance and store, see
- [<code>CoreCryptoContext::add_credential</code>][crate::CoreCryptoContext::add_credential].</p>
+<p>To attach a credential to a client instance and store it, call <code>add_credential</code> on a <code><a href="WireCoreCryptoUniffi/Classes/CoreCryptoContext.html">CoreCryptoContext</a></code>.</p>
 
                         <a href="WireCoreCryptoUniffi/Protocols/CredentialProtocol.html" class="slightly-smaller">See more</a>
                       </div>
@@ -608,17 +606,16 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>A reference to a credential which has been persisted in CC.</p>
+                        <p>A compact reference to a credential that has been persisted in CoreCrypto.</p>
 
-<p>This is because credentials can be quite large; we&rsquo;d really like to avoid passing them
- back and forth across the FFI boundary more than is strictly required.
- Therefore, we use this type which is substantially more compact.</p>
+<p>Credentials can be quite large; this type avoids passing them back and forth across the FFI
+ boundary more than strictly required.</p>
 
-<p>Created with [<code>CoreCryptoContext::add_credential</code>][crate::CoreCryptoContext::add_credential].</p>
+<p>Created by calling <code>add_credential</code> on a <code><a href="WireCoreCryptoUniffi/Classes/CoreCryptoContext.html">CoreCryptoContext</a></code>.</p>
 
-<p>This reference is <em>not</em> a literal reference in memory.
- It is instead the key from which a credential can be retrieved.
- This means that it is stable over time and across the FFI boundary.</p>
+<p>This reference is not a literal in-memory reference.
+ It is instead the key from which a credential can be retrieved,
+ and is stable over time and across the FFI boundary.</p>
 
                         <a href="WireCoreCryptoUniffi/Protocols/CredentialRefProtocol.html" class="slightly-smaller">See more</a>
                       </div>
@@ -793,7 +790,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>An <code>HistoryObserver</code> is notified whenever a new history client is created.</p>
+                        <p>A <code>HistoryObserver</code> is notified whenever a new history client is created.</p>
 
                         <a href="WireCoreCryptoUniffi/Protocols/HistoryObserver.html" class="slightly-smaller">See more</a>
                       </div>
@@ -852,7 +849,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>A lightweight distinct reference to a <code>KeyPackage</code> sufficient to uniquely identify it</p>
+                        <p>A lightweight distinct reference to a <code>KeyPackage</code>, sufficient to uniquely identify it.</p>
 
 <p>This contains some metadata to assist in sorting and filtering refs without needing to perform the
  relatively heavy operation of converting to a full keypackage.</p>
@@ -883,8 +880,9 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used by core crypto to send commits or application messages to the delivery service.
-This trait must be implemented before calling any functions that produce commits.</p>
+                        <p>Used by CoreCrypto to send commits or application messages to the delivery service.</p>
+
+<p>This trait must be implemented before calling any functions that produce commits.</p>
 
                         <a href="WireCoreCryptoUniffi/Protocols/MlsTransport.html" class="slightly-smaller">See more</a>
                       </div>
@@ -915,7 +913,7 @@ This trait must be implemented before calling any functions that produce commits
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>A PkiEnvironment</p>
+                        <p>The PKI environment used for certificate management during X509 credential acquisition.</p>
 
                       </div>
                       <div class="declaration">
@@ -942,8 +940,9 @@ This trait must be implemented before calling any functions that produce commits
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The PKI Environment Hooks used for external calls during e2e enrollment flow.
- When communicating with the Identity Provider (IDP)  and Wire server,
+                        <p>Callbacks for external calls made by CoreCrypto during X509 credential acquisition.</p>
+
+<p>When communicating with the Identity Provider (IDP) and Wire server,
  CoreCrypto delegates to the client app by calling the relevant methods.</p>
 
 <p>Client App                 CoreCrypto                     Acme                     IDP

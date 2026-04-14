@@ -6,7 +6,7 @@
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">use </span>core_crypto::SignatureScheme <span class="kw">as </span>MlsSignatureScheme;
 <a href=#8 id=8 data-nosnippet>8</a>
-<a href=#9 id=9 data-nosnippet>9</a><span class="doccomment">/// MLS signature schemes
+<a href=#9 id=9 data-nosnippet>9</a><span class="doccomment">/// Signature schemes supported by MLS, as defined in RFC 9420.
 <a href=#10 id=10 data-nosnippet>10</a></span><span class="attr">#[allow(non_camel_case_types)]
 <a href=#11 id=11 data-nosnippet>11</a>#[allow(clippy::upper_case_acronyms)]
 <a href=#12 id=12 data-nosnippet>12</a>#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, derive_more::TryFrom)]
@@ -14,15 +14,15 @@
 <a href=#14 id=14 data-nosnippet>14</a>#[repr(u16)]
 <a href=#15 id=15 data-nosnippet>15</a>#[derive(uniffi::Enum)]
 <a href=#16 id=16 data-nosnippet>16</a></span><span class="kw">pub enum </span>SignatureScheme {
-<a href=#17 id=17 data-nosnippet>17</a>    <span class="doccomment">/// ECDSA_SECP256R1_SHA256
+<a href=#17 id=17 data-nosnippet>17</a>    <span class="doccomment">/// ECDSA with secp256r1 (P-256) and SHA-256
 <a href=#18 id=18 data-nosnippet>18</a>    </span>ECDSA_SECP256R1_SHA256 = <span class="number">0x0403</span>,
-<a href=#19 id=19 data-nosnippet>19</a>    <span class="doccomment">/// ECDSA_SECP384R1_SHA384
+<a href=#19 id=19 data-nosnippet>19</a>    <span class="doccomment">/// ECDSA with secp384r1 (P-384) and SHA-384
 <a href=#20 id=20 data-nosnippet>20</a>    </span>ECDSA_SECP384R1_SHA384 = <span class="number">0x0503</span>,
-<a href=#21 id=21 data-nosnippet>21</a>    <span class="doccomment">/// ECDSA_SECP521R1_SHA512
+<a href=#21 id=21 data-nosnippet>21</a>    <span class="doccomment">/// ECDSA with secp521r1 (P-521) and SHA-512
 <a href=#22 id=22 data-nosnippet>22</a>    </span>ECDSA_SECP521R1_SHA512 = <span class="number">0x0603</span>,
-<a href=#23 id=23 data-nosnippet>23</a>    <span class="doccomment">/// ED25519
+<a href=#23 id=23 data-nosnippet>23</a>    <span class="doccomment">/// Deterministic EdDSA with Curve25519 (Ed25519)
 <a href=#24 id=24 data-nosnippet>24</a>    </span>ED25519 = <span class="number">0x0807</span>,
-<a href=#25 id=25 data-nosnippet>25</a>    <span class="doccomment">/// ED448
+<a href=#25 id=25 data-nosnippet>25</a>    <span class="doccomment">/// Deterministic EdDSA with Curve448 (Ed448)
 <a href=#26 id=26 data-nosnippet>26</a>    </span>ED448 = <span class="number">0x0808</span>,
 <a href=#27 id=27 data-nosnippet>27</a>}
 <a href=#28 id=28 data-nosnippet>28</a>

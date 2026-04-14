@@ -17,7 +17,7 @@
     <a title="EpochObserver Protocol Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -377,14 +377,11 @@
                       <div class="abstract">
                         <p>This function will be called every time a conversation&rsquo;s epoch changes.</p>
 
-<p>The <code>epoch</code> parameter is the new epoch.</p>
+<p>The <code>epoch</code> parameter contains the new epoch number.</p>
 
-<p><div class="warning">
- This function must not block! Foreign implementors of this interface can
- spawn a task indirecting the notification, or (unblocking) send the notification
- on some kind of channel, or anything else, as long as the operation completes
- quickly.
- </div></p>
+<p>Warning: this function must not block. Foreign implementors can spawn a task,
+ send on a channel, or take any other non-blocking approach, as long as the
+ operation completes quickly.</p>
 
 <p>Though the signature includes an error type, that error is only present because
  it is required by <code>uniffi</code> in order to handle panics. This function should suppress

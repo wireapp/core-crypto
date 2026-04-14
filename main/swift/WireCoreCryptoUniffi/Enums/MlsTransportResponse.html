@@ -17,7 +17,7 @@
     <a title="MlsTransportResponse Enumeration Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -355,7 +355,7 @@
 
                 </div>
               </div>
-            <p>MLS transport may or may not succeeed; this response indicates to CC the outcome of the transport attempt.</p>
+            <p>The outcome of an MLS transport attempt, returned to CoreCrypto after delivery.</p>
 
           </section>
           <section class="section task-group-section">
@@ -374,7 +374,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The message was accepted by the distribution service</p>
+                        <p>The message was accepted by the distribution service.</p>
 
                       </div>
                       <div class="declaration">
@@ -401,7 +401,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>A client should have consumed all incoming messages before re-trying.</p>
+                        <p>The client should consume all incoming messages before retrying.</p>
 
                       </div>
                       <div class="declaration">
@@ -428,7 +428,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The message was rejected by the delivery service and there&rsquo;s no recovery.</p>
+                        <p>The message was rejected by the delivery service and there is no recovery.</p>
 
                       </div>
                       <div class="declaration">
@@ -437,7 +437,7 @@
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="k">case</span> <span class="nf">abort</span><span class="p">(</span>
     <span class="cm">/**
-     * Why was this message rejected
+     * The reason this message was rejected.
      */</span><span class="nv">reason</span><span class="p">:</span> <span class="kt">String</span>
 <span class="p">)</span></code></pre>
 

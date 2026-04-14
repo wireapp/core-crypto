@@ -3,10 +3,10 @@
 <a href=#3 id=3 data-nosnippet>3</a><span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
 <a href=#4 id=4 data-nosnippet>4</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>proteus;
 <a href=#5 id=5 data-nosnippet>5</a>
-<a href=#6 id=6 data-nosnippet>6</a><span class="doccomment">/// The primary error type for CoreCrypto
+<a href=#6 id=6 data-nosnippet>6</a><span class="doccomment">/// The primary error type for CoreCrypto.
 <a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">pub type </span>CoreCryptoError = core_crypto::CoreCryptoError;
 <a href=#8 id=8 data-nosnippet>8</a>
-<a href=#9 id=9 data-nosnippet>9</a><span class="doccomment">/// A result which produces a [`CoreCryptoError`] by default.
+<a href=#9 id=9 data-nosnippet>9</a><span class="doccomment">/// A result type that uses `CoreCryptoError` as the default error type.
 <a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">pub type </span>CoreCryptoResult&lt;T, E = CoreCryptoError&gt; = <span class="prelude-ty">Result</span>&lt;T, E&gt;;
 <a href=#11 id=11 data-nosnippet>11</a>
 <a href=#12 id=12 data-nosnippet>12</a><span class="doccomment">/// Prepare and dispatch a log message reporting this error.

@@ -17,7 +17,7 @@
     <a title="HistoryObserverImpl Class Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -353,7 +353,7 @@
 
                 </div>
               </div>
-            <p>An <code><a href="../../WireCoreCryptoUniffi/Protocols/HistoryObserver.html">HistoryObserver</a></code> is notified whenever a new history client is created.</p>
+            <p>A <code><a href="../../WireCoreCryptoUniffi/Protocols/HistoryObserver.html">HistoryObserver</a></code> is notified whenever a new history client is created.</p>
 
           </section>
           <section class="section task-group-section">
@@ -377,14 +377,11 @@
                       <div class="abstract">
                         <p>This function will be called every time a new history client is created.</p>
 
-<p>The <code>secret</code> parameter is the secret associated with the new history client</p>
+<p>The <code>secret</code> parameter is the secret associated with the new history client.</p>
 
-<p><div class="warning">
- This function must not block! Foreign implementors of this interface can
- spawn a task indirecting the notification, or (unblocking) send the notification
- on some kind of channel, or anything else, as long as the operation completes
- quickly.
- </div></p>
+<p>Warning: this function must not block. Foreign implementors can spawn a task,
+ send on a channel, or take any other non-blocking approach, as long as the
+ operation completes quickly.</p>
 
 <p>Though the signature includes an error type, that error is only present because
  it is required by <code>uniffi</code> in order to handle panics. This function should suppress

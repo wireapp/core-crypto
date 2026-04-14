@@ -17,7 +17,7 @@
     <a title="BufferedDecryptedMessage Structure Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (88% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (93% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -354,7 +354,10 @@
 
                 </div>
               </div>
-            <p>to avoid recursive structs</p>
+            <p>A decrypted message that was buffered due to out-of-order delivery by the distribution service.</p>
+
+<p>These are returned in the <code>buffered_messages</code> field of a <code><a href="../../WireCoreCryptoUniffi/Structs/DecryptedMessage.html">DecryptedMessage</a></code> when a commit is
+ processed. They represent messages for the new epoch that arrived before the commit that created it.</p>
 
           </section>
           <section class="section task-group-section">
@@ -400,7 +403,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>False if processing this message caused the client to be removed from the group, i.e. due to a Remove commit</p>
+                        <p>False if processing this message caused the client to be removed from the group, i.e. due to a Remove commit.</p>
 
                       </div>
                       <div class="declaration">
@@ -458,7 +461,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>[ClientId] of the sender of the message being decrypted. Only present for application messages.</p>
+                        <p><code><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></code> of the sender of the message being decrypted. Only present for application messages.</p>
 
                       </div>
                       <div class="declaration">
@@ -485,7 +488,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Identity claims present in the sender credential</p>
+                        <p>Identity claims present in the sender credential.</p>
 
                       </div>
                       <div class="declaration">
@@ -524,7 +527,7 @@
      * Decrypted plaintext
      */</span><span class="nv">message</span><span class="p">:</span> <span class="kt">Data</span><span class="p">?,</span> 
     <span class="cm">/**
-     * False if processing this message caused the client to be removed from the group, i.e. due to a Remove commit
+     * False if processing this message caused the client to be removed from the group, i.e. due to a Remove commit.
      */</span><span class="nv">isActive</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">,</span> 
     <span class="cm">/**
      * Commit delay in seconds.
@@ -534,10 +537,10 @@
      * simultaneously.
      */</span><span class="nv">commitDelay</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">?,</span> 
     <span class="cm">/**
-     * [ClientId] of the sender of the message being decrypted. Only present for application messages.
+     * `ClientId` of the sender of the message being decrypted. Only present for application messages.
      */</span><span class="nv">senderClientId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">?,</span> 
     <span class="cm">/**
-     * Identity claims present in the sender credential
+     * Identity claims present in the sender credential.
      */</span><span class="nv">identity</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a></span><span class="p">)</span></code></pre>
 
                         </div>
