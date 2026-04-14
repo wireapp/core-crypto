@@ -79,7 +79,7 @@ WASM_GEN := \
 	$(BROWSER_GEN_DIR)/wasm-bindgen/index.js
 
 # As soon as ubrn allows reusage of an existing ffi lib, we need to depend on it here.
-wasm-build-deps := $(WASM_FFI_LIB) $(BROWSER_TS_IMPL) $(WASM_FILE) $(BUN_LOCK) $(NODE_MODULES) $(PACKAGE_JSON) $(BUNFIG)
+wasm-build-deps := $(WASM_FFI_LIB) $(BROWSER_TS_IMPL) $(WASM_FILE)
 # index.web.ts is generated but unused so we remove it
 # Build the temporary host library in a dedicated target dir so we do not mix
 # the shared target outputs used by ios/jvm builds.
@@ -97,7 +97,7 @@ $(WASM_GEN) &: $(wasm-build-deps)
 wasm-build: $(WASM_GEN)
 
 # generate TypeScript defs only when corecrypto.js changed
-ts-browser-deps := $(TS_BROWSER_SRCS) $(WASM_GEN)
+ts-browser-deps := $(TS_BROWSER_SRCS) $(WASM_GEN) $(BUN_LOCK) $(NODE_MODULES) $(PACKAGE_JSON) $(BUNFIG)
 $(BROWSER_OUT) &: $(ts-browser-deps)
 	cd $(JS_DIR) && \
 	bun build packages/browser/src/CoreCrypto.ts \
