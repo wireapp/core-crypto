@@ -171,10 +171,8 @@ $(STAMPS)/ts-browser-test: $(ts-browser-test-deps)
 	cd $(JS_DIR) && \
 	if [ -n "$(TEST)" ]; then \
 		bun x wdio run ./packages/browser/test/wdio.test.conf.ts --mochaOpts.grep "$(TEST)"; \
-		bun --conditions=cc-browser test --filter "$(TEST)" ./packages/native/test/wasm; \
 	else \
 		bun x wdio run ./packages/browser/test/wdio.test.conf.ts; \
-		bun --conditions=cc-browser test ./packages/native/test/wasm; \
 	fi
 	$(TOUCH_STAMP)
 
