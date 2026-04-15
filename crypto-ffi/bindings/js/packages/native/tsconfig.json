@@ -6,7 +6,7 @@
     "include": [
         "../shared/src/**/*.ts",
         "src/**/*.ts",
-        "test/napi/**/*.ts",
+        "test/**/*.ts",
         "benches/**/*.ts"
     ]
 }
