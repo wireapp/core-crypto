@@ -82,4 +82,7 @@ TS_BROWSER_TEST_FILES := $(sort \
 	$(shell find $(TS_NATIVE_DIR)/test/wasm -type f -name '*.ts' 2>/dev/null | LC_ALL=C sort) \
 	$(shell find $(TS_BROWSER_DIR)/test -type f -name '*.ts' 2>/dev/null | LC_ALL=C sort))
 TS_TEST_FILES := $(sort $(TS_NATIVE_TEST_FILES) $(TS_BROWSER_TEST_FILES))
-TS_BENCH_FILES := $(shell find $(TS_BROWSER_DIR)/benches -type f -name '*.ts' 2>/dev/null | LC_ALL=C sort)
+TS_NATIVE_BENCH_FILES := $(shell find $(TS_NATIVE_DIR)/benches -type f -name '*.ts' 2>/dev/null | LC_ALL=C sort)
+TS_BROWSER_BENCH_FILES := $(shell find $(TS_BROWSER_DIR)/benches -type f -name '*.ts' 2>/dev/null | LC_ALL=C sort)
+
+TS_BENCH_FILES := $(sort $(TS_NATIVE_BENCH_FILES) $(TS_BROWSER_BENCH_FILES))
