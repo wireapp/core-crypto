@@ -1,7 +1,8 @@
 import { beforeEach, describe } from "mocha";
 import { browser } from "@wdio/globals";
-import { setup } from "./utils";
+import { setup, toCustomBenchmarkEntries } from "./utils";
 import { benchmarkParameters } from "../../shared/benches/utils";
+import { mkdir, writeFile } from "fs/promises";
 
 beforeEach(async () => {
     await setup();
@@ -78,5 +79,18 @@ describe("benchmark", () => {
 
         console.log(results.name);
         console.log(results.table);
+
+        if (!process.env["CI"]) return;
+
+        const customResults = toCustomBenchmarkEntries(
+            results.name,
+            results.table
+        );
+
+        await mkdir("benches_result", { recursive: true });
+        await writeFile(
+            `benches_result/${results.name}.json`,
+            JSON.stringify(customResults, null, 2)
+        );
     });
 });
