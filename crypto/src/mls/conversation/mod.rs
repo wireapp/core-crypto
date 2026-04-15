@@ -287,10 +287,8 @@ impl<'a, T: ConversationWithMls<'a>> Conversation<'a> for T {}
 /// operations that can be done in a group, such as creating proposals and commits.
 /// More information [here](https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-general-setting)
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct MlsConversation {
     pub(crate) id: ConversationId,
-    pub(crate) parent_id: Option<ConversationId>,
     pub(crate) group: MlsGroup,
     configuration: MlsConversationConfiguration,
 }
@@ -322,7 +320,6 @@ impl MlsConversation {
         let mut conversation = Self {
             id,
             group,
-            parent_id: None,
             configuration,
         };
 
@@ -343,7 +340,6 @@ impl MlsConversation {
             id,
             group,
             configuration,
-            parent_id: None,
         };
 
         conversation.persist_group_when_changed(database, true).await?;

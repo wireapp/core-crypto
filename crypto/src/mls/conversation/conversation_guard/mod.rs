@@ -114,7 +114,7 @@ mod test_utils {
             let inner = self.conversation().await;
             let id = inner.id();
 
-            let (parent_id, group) = context
+            let (_parent_id, group) = context
                 .database()
                 .await
                 .unwrap()
@@ -122,7 +122,7 @@ mod test_utils {
                 .await
                 .map(|mut groups| groups.remove(id.as_ref()).unwrap())
                 .unwrap();
-            let group = MlsConversation::from_serialized_state(group, parent_id.map(Into::into)).unwrap();
+            let group = MlsConversation::from_serialized_state(group).unwrap();
             context.mls_groups().await.unwrap().insert(id, group);
         }
     }

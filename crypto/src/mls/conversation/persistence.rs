@@ -13,7 +13,7 @@ impl MlsConversation {
                 .mls_group_persist(
                     &self.id,
                     &core_crypto_keystore::ser(&self.group).map_err(KeystoreError::wrap("serializing group state"))?,
-                    self.parent_id.as_ref().map(|id| id.as_ref()),
+                    None,
                 )
                 .await
                 .map_err(KeystoreError::wrap("persisting mls group"))?;
@@ -25,7 +25,7 @@ impl MlsConversation {
     }
 
     /// restore the conversation from a persistence-saved serialized Group State.
-    pub(crate) fn from_serialized_state(buf: Vec<u8>, parent_id: Option<ConversationId>) -> Result<Self> {
+    pub(crate) fn from_serialized_state(buf: Vec<u8>) -> Result<Self> {
         let group: MlsGroup =
             core_crypto_keystore::deser(&buf).map_err(KeystoreError::wrap("deserializing group state"))?;
         let id = ConversationId::from(group.group_id().as_slice());
@@ -37,7 +37,6 @@ impl MlsConversation {
         Ok(Self {
             id,
             group,
-            parent_id,
             configuration,
         })
     }
@@ -49,10 +48,7 @@ impl MlsConversation {
             .await
             .map_err(KeystoreError::wrap("finding a persisted mls group"))?;
         let Some(mut group) = group else { return Ok(None) };
-        let conversation = Self::from_serialized_state(
-            std::mem::take(&mut group.state),
-            std::mem::take(&mut group.parent_id).map(Into::into),
-        )?;
+        let conversation = Self::from_serialized_state(std::mem::take(&mut group.state))?;
         Ok(Some(conversation))
     }
 
@@ -68,8 +64,7 @@ impl MlsConversation {
                 // we can't just destructure the fields straight out of the group, because we derive `Zeroize`, which
                 // zeroizes on drop, which means we are forced to clone all the group's fields, because
                 // otherwise the drop impl couldn't run.
-                let conversation =
-                    Self::from_serialized_state(group.state.clone(), group.parent_id.clone().map(Into::into))?;
+                let conversation = Self::from_serialized_state(group.state.clone())?;
                 Ok((group.id.clone().into(), conversation))
             })
             .collect()

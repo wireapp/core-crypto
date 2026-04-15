@@ -9,12 +9,12 @@ impl MlsConversation {
         use core_crypto_keystore::CryptoKeystoreMls as _;
 
         let group_id = self.group.group_id();
-        let (parent_id, group) = database
+        let (_parent_id, group) = database
             .mls_groups_restore()
             .await
             .map(|mut groups| groups.remove(group_id.as_slice()).unwrap())
             .unwrap();
-        let group = MlsConversation::from_serialized_state(group, parent_id.map(Into::into)).unwrap();
+        let group = MlsConversation::from_serialized_state(group).unwrap();
         *self = group;
     }
 }
