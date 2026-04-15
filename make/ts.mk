@@ -209,12 +209,13 @@ ts-browser-bench: $(BROWSER_OUT) ## Run TypeScript wrapper benches in Chrome via
 ts-native-bench: $(TS_NATIVE_OUT)
 	@set -euo pipefail; \
 	cd $(JS_DIR) && \
+	bench_files="./packages/native/benches/*.bench.ts"; \
 	if [ -n "$(BENCH)" ]; then \
-		bun --conditions=cc-native run ./packages/native/benches/*$(BENCH)*.bench.ts; \
-	else \
-		bun --conditions=cc-native run ./packages/native/benches/*.bench.ts; \
-	fi
-
+		bench_files="./packages/native/benches/*$(BENCH)*.bench.ts"; \
+	fi; \
+	for f in $$bench_files; do \
+		bun --conditions=cc-native run "$$f"; \
+	done
 
 .PHONY: ts-package
 ts-package: $(TS_OUT)  ## Package the ready-to-release tarball
