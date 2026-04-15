@@ -1,0 +1,59 @@
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-benchmark-ts-browser"
+  cancel-in-progress: true
+
+on:
+  workflow_call:
+
+env:
+  RELEASE: 1
+
+permissions:
+  # deployments permission to deploy GitHub pages website
+  deployments: write
+  # contents permission to update benchmark contents in gh-pages branch
+  contents: write
+
+jobs:
+  benchmark:
+    name: Performance regression check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: wireapp/setup-chrome@master
+        id: setup-chrome
+        with:
+          chrome-version: stable
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: download web files
+        uses: ./.github/actions/make/ts/browser
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: Run benchmark
+        run: make ts-browser-bench
+
+      # Merge all benchmark results into one file
+      - name: Process results
+        run: jq -s add crypto-ffi/bindings/js/benches_result/*.json > benches_result.json
+
+      # Publish the benchmark result on GitHub pages
+      - name: Publish benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          # Name under which to group the results
+          name: "Browser Benchmarks"
+          # What benchmark tool the output.txt came from
+          tool: 'customBiggerIsBetter'
+          # Where the output from the benchmark tool is stored
+          output-file-path: benches_result.json
+          # Workflow will fail when an alert happens
+          fail-on-alert: true
+          # Access token to deploy GitHub Pages branch
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Push and deploy GitHub pages branch automatically
+          auto-push: true

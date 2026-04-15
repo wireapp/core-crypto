@@ -213,6 +213,12 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
+  benchmark-ts-browser:
+    if: github.branch == 'main' && github.repository == 'wireapp/core-crypto'
+    needs:
+      - bindings-ts-browser
+    uses: ./.github/workflows/benchmark-ts-browser.yml
+
   test-ts-browser:
     needs:
       - bindings-ts-browser
