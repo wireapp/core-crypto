@@ -22,6 +22,8 @@ jobs:
           distribution: "adopt"
       - name: gradle setup
         uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v6
 
