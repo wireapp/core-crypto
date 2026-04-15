@@ -71,6 +71,12 @@
 
   Affected platforms: all
 
+- removed `CoreCryptoContext.markConversationAsChildOf()`
+
+  No client should actually be using this function and all existing references to it should be removed.
+
+  Affected platforms: all
+
 #### New Credential API
 
 - `Credential` is a first-class type representing a cryptographic identity.
