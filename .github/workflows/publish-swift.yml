@@ -48,7 +48,7 @@ jobs:
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: upload xcframework
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
             files: |
               crypto-ffi/bindings/swift/WireCoreCrypto.xcframework.zip

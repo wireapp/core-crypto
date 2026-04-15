@@ -65,7 +65,7 @@ jobs:
 
       - name: upload built binary to release
         if: ${{ github.ref_type == 'tag' && inputs.release == true }}
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: "${{ steps.consts.outputs.artifact-release-as }}"
           fail_on_unmatched_files: true
