@@ -9,7 +9,7 @@ import {
     benchmarkParameters,
     tinybench_setup,
 } from "../../shared/benches/utils";
-import { ccInit, setup, teardown } from "../test/napi/utils";
+import { ccInit, setup, teardown } from "../test/utils";
 
 async function run() {
     await setup();
