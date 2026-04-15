@@ -6,7 +6,6 @@
     "include": [
         "../shared/**/*.ts",
         "src/**/*.ts",
-        "../native/test/wasm/**/*.ts",
         "test/**/*.ts",
         "benches/**/*.ts",
         "test/wdio.test.conf.ts",
