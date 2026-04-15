@@ -15,7 +15,7 @@ describe("benchmark", () => {
         const parameters = await benchmarkParameters();
         await browser.execute(async (parameters) => {
             window.benchRunning = true;
-            await (async (parameters) => {
+            void (async (parameters) => {
                 window.bench = new window.tinybench.Bench({
                     name: "create message",
                     time: 1000,
