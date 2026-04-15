@@ -3,5 +3,10 @@
     "compilerOptions": {
         "customConditions": ["cc-native"]
     },
-    "include": ["../shared/src/**/*.ts", "src/**/*.ts", "test/napi/**/*.ts"]
+    "include": [
+        "../shared/src/**/*.ts",
+        "src/**/*.ts",
+        "test/napi/**/*.ts",
+        "benches/**/*.ts"
+    ]
 }
