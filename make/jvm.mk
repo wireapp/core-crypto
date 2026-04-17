@@ -10,8 +10,7 @@ $(JVM_DARWIN_LIB): $(jvm-darwin-deps)
 	  --target aarch64-apple-darwin \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
-	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
-
+	  $(CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS)
 .PHONY: jvm-darwin
 jvm-darwin: $(JVM_DARWIN_LIB) ## Build core-crypto-ffi for JVM on aarch64-apple-darwin
 
@@ -23,7 +22,7 @@ $(JVM_LINUX_LIB): $(jvm-linux-deps)
 	  --target x86_64-unknown-linux-gnu \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
-	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
+	  $(CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS)
 
 .PHONY: jvm-linux
 jvm-linux: $(JVM_LINUX_LIB) ## Build core-crypto-ffi for JVM on x86_64-unknown-linux-gnu

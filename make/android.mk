@@ -19,7 +19,7 @@ $(ANDROID_ARMv7): $(android-armv7-deps)
 	  --target armv7-linux-androideabi \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
-	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
+	  $(CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS)
 
 .PHONY: android-armv7
 android-armv7: $(ANDROID_ARMv7) ## Build core-crypto-ffi for armv7-linux-androideabi
@@ -32,7 +32,7 @@ $(ANDROID_ARMv8): $(android-armv8-deps)
 	  --target aarch64-linux-android \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
-	  $(CARGO_BUILD_ARGS) -- -C strip=symbols
+	  $(CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS)
 
 .PHONY: android-armv8
 android-armv8: $(ANDROID_ARMv8) ## Build core-crypto-ffi for aarch64-linux-android
@@ -47,7 +47,7 @@ $(ANDROID_X86): $(android-x86-deps)
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
 	  $(CARGO_BUILD_ARGS) -- \
-	  -C strip=symbols \
+	  $(RUST_STRIP_FLAGS) \
 	  -l static=clang_rt.builtins-x86_64-android \
 	  -L $$($(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(PLATFORM_DIR)/bin/clang --print-resource-dir)/lib/linux
 

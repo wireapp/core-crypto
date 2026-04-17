@@ -41,3 +41,8 @@ STAMPS := .stamps
 # We're writing a timestamp into the file because CI relies on file hashes to
 # change when the stamp files are updated.
 TOUCH_STAMP = @mkdir -p $(STAMPS) && echo "$$(date)" > $@
+
+RUST_STRIP_FLAGS :=
+ifeq ($(RELEASE_MODE),release)
+RUST_STRIP_FLAGS := -C strip=symbols
+endif
