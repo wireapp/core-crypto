@@ -36,9 +36,7 @@ openmls_x509_credential = { workspace = true }
 postcard = { version = "1.1", default-features = false, features = ["use-std"] }
 proteus-traits = { workspace = true, optional = true }
 rand = { workspace = true, features = ["getrandom"] }
-# we should depend on a real release instead of a git tag again once refinery
-# releases a version containing https://github.com/rust-db/refinery/commit/3abf61ec3836e835012346336fe144ca7fe9e9b7
-refinery = { version = "0.9", git = "https://github.com/rust-db/refinery", rev = "3abf61ec3836e835012346336fe144ca7fe9e9b7", default-features = false, features = [
+refinery = { version = "0.9.1", default-features = false, features = [
   "rusqlite",
 ] }
 rusqlite = { version = "0.38", default-features = false, features = [
