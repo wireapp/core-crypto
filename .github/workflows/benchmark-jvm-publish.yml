@@ -1,0 +1,33 @@
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-benchmark-jvm-publish"
+  cancel-in-progress: true
+
+on:
+  workflow_call:
+
+permissions:
+  deployments: write
+  contents: write
+
+jobs:
+  publish:
+    name: Publish benchmark result
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download benchmark result
+        uses: actions/download-artifact@v8
+        with:
+          name: benchmark-jvm-results
+          path: crypto-ffi/bindings/jvm/build/reports/jmh
+
+      - name: Publish benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: "JVM Benchmarks"
+          tool: 'jmh'
+          output-file-path: crypto-ffi/bindings/jvm/build/reports/jmh/results.json
+          fail-on-alert: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true

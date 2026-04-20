@@ -58,19 +58,13 @@ jobs:
       - name: Run benchmark
         run: make jvm-bench
 
-      # Publish the benchmark result on GitHub pages
-      - name: Publish benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
+      - name: Upload benchmark result
+        uses: actions/upload-artifact@v7.0.0
         with:
-          # Name under which to group the results
-          name: "JVM Benchmarks"
-          # What benchmark tool the output.txt came from
-          tool: 'jmh'
-          # Where the output from the benchmark tool is stored
-          output-file-path: crypto-ffi/bindings/jvm/build/reports/jmh/results.json
-          # Workflow will fail when an alert happens
-          fail-on-alert: true
-          # Access token to deploy GitHub Pages branch
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          # Push and deploy GitHub pages branch automatically
-          auto-push: true
+          name: benchmark-jvm-results
+          path: crypto-ffi/bindings/jvm/build/reports/jmh/results.json
+
+  publish:
+    needs:
+      - benchmark
+    uses: ./.github/workflows/benchmark-jvm-publish.yml
