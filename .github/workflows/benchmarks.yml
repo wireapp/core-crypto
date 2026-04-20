@@ -57,3 +57,9 @@ jobs:
           # No bench command, as we run the bench before calling bencher CLI.
           bench-command:
           bench-results-file-name: web_benchmark_results.json
+
+  benchmark-jvm:
+    uses: ./.github/workflows/benchmark-jvm.yml
+
+  benchmark-ts-browser:
+    uses: ./.github/workflows/benchmark-ts-browser.yml

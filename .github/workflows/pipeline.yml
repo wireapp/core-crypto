@@ -114,14 +114,6 @@ jobs:
       - build-jvm-darwin
     uses: ./.github/workflows/test-jvm.yml
 
-  benchmark-jvm:
-    if: github.branch == 'main' && github.repository == 'wireapp/core-crypto'
-    needs:
-      - bindings-jvm
-      - build-jvm-linux
-      - build-jvm-darwin
-    uses: ./.github/workflows/benchmark-jvm.yml
-
   docs-jvm:
     needs:
       - bindings-jvm
@@ -212,12 +204,6 @@ jobs:
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
-
-  benchmark-ts-browser:
-    if: github.branch == 'main' && github.repository == 'wireapp/core-crypto'
-    needs:
-      - bindings-ts-browser
-    uses: ./.github/workflows/benchmark-ts-browser.yml
 
   test-ts-browser:
     needs:
