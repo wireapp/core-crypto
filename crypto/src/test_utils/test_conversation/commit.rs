@@ -58,7 +58,7 @@ impl<'a> TestConversation<'a> {
         let key_packages = futures_util::future::join_all(new_memembers_with_credentials.clone().map(
             async |(cc, credential_ref)| {
                 cc.transaction
-                    .generate_keypackage(credential_ref, None)
+                    .generate_key_package(credential_ref, None)
                     .await
                     .unwrap()
                     .into()

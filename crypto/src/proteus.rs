@@ -655,7 +655,7 @@ mod tests {
         let credential_ref = transaction.add_credential(credential).await.unwrap();
 
         // expect MLS to work
-        assert!(transaction.generate_keypackage(&credential_ref, None).await.is_ok());
+        assert!(transaction.generate_key_package(&credential_ref, None).await.is_ok());
 
         #[cfg(not(target_os = "unknown"))]
         drop(db_file);

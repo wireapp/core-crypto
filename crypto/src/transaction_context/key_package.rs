@@ -24,7 +24,7 @@ impl TransactionContext {
     /// is used.
     ///
     /// As a side effect, stores the keypackages and some related data in the keystore.
-    pub async fn generate_keypackage(
+    pub async fn generate_key_package(
         &self,
         credential_ref: &CredentialRef,
         lifetime: Option<Duration>,

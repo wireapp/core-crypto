@@ -23,7 +23,7 @@ impl TransactionContext {
     ) -> Result<MlsMessageOut> {
         let group_id = GroupId::from_slice(conversation_id.as_ref());
 
-        let kp = self.generate_keypackage(credential_ref, None).await?;
+        let kp = self.generate_key_package(credential_ref, None).await?;
 
         let database = &self.database().await?;
         let credential = credential_ref

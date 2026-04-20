@@ -134,7 +134,7 @@ mod tests {
             let credential_ref = context.add_credential(credential).await.unwrap();
 
             // expect mls_client to work
-            assert!(context.generate_keypackage(&credential_ref, None).await.is_ok());
+            assert!(context.generate_key_package(&credential_ref, None).await.is_ok());
         })
         .await
     }

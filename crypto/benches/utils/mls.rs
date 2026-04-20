@@ -315,7 +315,7 @@ pub(crate) async fn invite(
         .await
         .unwrap();
     let credential_ref = credential_refs.last().unwrap();
-    let other_kp = other_context.generate_keypackage(credential_ref, None).await.unwrap();
+    let other_kp = other_context.generate_key_package(credential_ref, None).await.unwrap();
     from_context
         .conversation(id)
         .await

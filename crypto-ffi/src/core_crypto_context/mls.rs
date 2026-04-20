@@ -322,14 +322,14 @@ impl CoreCryptoContext {
     /// If `lifetime` is set, the keypackages will expire that span into the future.
     /// If it is unset, a default lifetime of approximately 3 months is used.
     #[uniffi::method(default(lifetime = None))]
-    pub async fn generate_keypackage(
+    pub async fn generate_key_package(
         &self,
         credential_ref: &Arc<CredentialRef>,
         lifetime: Option<Duration>,
     ) -> CoreCryptoResult<Arc<KeyPackage>> {
         let credential_ref = &credential_ref.0;
         self.inner
-            .generate_keypackage(credential_ref, lifetime)
+            .generate_key_package(credential_ref, lifetime)
             .await
             .map(KeyPackage::coerce_arc)
             .map_err(Into::into)

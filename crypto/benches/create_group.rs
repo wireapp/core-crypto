@@ -62,7 +62,7 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                             let bob_context = bob_central.new_transaction().await.unwrap();
 
                             let bob_kp = bob_context
-                                .generate_keypackage(&bob_credential_ref, None)
+                                .generate_key_package(&bob_credential_ref, None)
                                 .await
                                 .unwrap();
                             bob_context.finish().await.unwrap();

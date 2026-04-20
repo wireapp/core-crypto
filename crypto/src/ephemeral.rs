@@ -100,7 +100,7 @@ pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<
 
     // we can generate a key package from the ephemeral cc and ciphersutite
     let key_package = tx
-        .generate_keypackage(&credential_ref, None)
+        .generate_key_package(&credential_ref, None)
         .await
         .map_err(RecursiveError::transaction("generating keypackage"))?;
     let key_package = KeyPackageSecretEncapsulation::load(&session.crypto_provider, key_package)

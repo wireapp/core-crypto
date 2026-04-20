@@ -26,7 +26,7 @@ fn generate_key_package_bench(c: &mut Criterion) {
                     },
                     |(context, credential_ref)| async move {
                         for _ in 0..*i {
-                            let _kp = black_box(context.generate_keypackage(&credential_ref, None).await.unwrap());
+                            let _kp = black_box(context.generate_key_package(&credential_ref, None).await.unwrap());
                         }
                         context.finish().await.unwrap();
                     },
@@ -51,7 +51,7 @@ fn get_key_packages_bench(c: &mut Criterion) {
                             let context = client.new_transaction().await.unwrap();
 
                             for _ in 0..*i {
-                                let _kp = context.generate_keypackage(&credential_ref, None).await.unwrap();
+                                let _kp = context.generate_key_package(&credential_ref, None).await.unwrap();
                             }
 
                             context.finish().await.unwrap();

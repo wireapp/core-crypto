@@ -39,7 +39,7 @@ impl SessionContext {
         let credential = self.find_any_credential(case.ciphersuite(), case.credential_type).await;
         let credential_ref = CredentialRef::from_credential(&credential);
         self.transaction
-            .generate_keypackage(&credential_ref, lifetime)
+            .generate_key_package(&credential_ref, lifetime)
             .await
             .unwrap()
     }
@@ -50,7 +50,7 @@ impl SessionContext {
         lifetime: Option<std::time::Duration>,
     ) -> KeyPackage {
         self.transaction
-            .generate_keypackage(&credential_ref, lifetime)
+            .generate_key_package(&credential_ref, lifetime)
             .await
             .unwrap()
     }
