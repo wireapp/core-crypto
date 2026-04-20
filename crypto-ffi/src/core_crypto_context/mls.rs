@@ -9,7 +9,7 @@ use tls_codec::Deserialize as _;
 
 use crate::{
     Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, Credential, CredentialRef,
-    CredentialType, DecryptedMessage, Keypackage, KeyPackageRef, MlsTransport, bytes_wrapper::bytes_wrapper,
+    CredentialType, DecryptedMessage, KeyPackage, KeyPackageRef, MlsTransport, bytes_wrapper::bytes_wrapper,
     core_crypto::mls_transport::callback_shim,
 };
 
@@ -187,7 +187,7 @@ impl CoreCryptoContext {
     pub async fn add_clients_to_conversation(
         &self,
         conversation_id: &ConversationId,
-        key_packages: Vec<Arc<Keypackage>>,
+        key_packages: Vec<Arc<KeyPackage>>,
     ) -> CoreCryptoResult<()> {
         let keypackages = key_packages
             .into_iter()
@@ -326,12 +326,12 @@ impl CoreCryptoContext {
         &self,
         credential_ref: &Arc<CredentialRef>,
         lifetime: Option<Duration>,
-    ) -> CoreCryptoResult<Arc<Keypackage>> {
+    ) -> CoreCryptoResult<Arc<KeyPackage>> {
         let credential_ref = &credential_ref.0;
         self.inner
             .generate_keypackage(credential_ref, lifetime)
             .await
-            .map(Keypackage::coerce_arc)
+            .map(KeyPackage::coerce_arc)
             .map_err(Into::into)
     }
 

@@ -65,7 +65,7 @@ pub use identity::{
     wire::{DeviceStatus, WireIdentity},
     x509::X509Identity,
 };
-pub use key_package::{KeyPackageRef, Keypackage};
+pub use key_package::{KeyPackage, KeyPackageRef};
 pub use metadata::{BuildMetadata, build_metadata, version};
 #[cfg(not(any(feature = "wasm", target_os = "unknown")))]
 pub use pki_env::create_pki_environment;

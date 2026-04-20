@@ -62,10 +62,10 @@ enum Inner {
 /// Includes a public key that can be used to encrypt to that client.
 /// Other clients can use a client's KeyPackage to introduce that client to a new group.
 #[derive(Clone, uniffi::Object)]
-pub struct Keypackage(Inner);
+pub struct KeyPackage(Inner);
 
-impl From<Keypackage> for KeyPackageIn {
-    fn from(value: Keypackage) -> Self {
+impl From<KeyPackage> for KeyPackageIn {
+    fn from(value: KeyPackage) -> Self {
         match value.0 {
             Inner::Out(key_package) => key_package.into(),
             Inner::In(key_package_in) => key_package_in,
@@ -73,16 +73,16 @@ impl From<Keypackage> for KeyPackageIn {
     }
 }
 
-impl Keypackage {
+impl KeyPackage {
     /// Bundle the inner type up appropriately
     #[expect(private_bounds)]
-    pub(crate) fn coerce_arc<T: Into<Inner>>(t: T) -> Arc<Keypackage> {
-        std::sync::Arc::new(Keypackage(t.into()))
+    pub(crate) fn coerce_arc<T: Into<Inner>>(t: T) -> Arc<KeyPackage> {
+        std::sync::Arc::new(KeyPackage(t.into()))
     }
 }
 
 #[uniffi::export]
-impl Keypackage {
+impl KeyPackage {
     /// Construct a new `Keypackage` from a byte array.
     #[uniffi::constructor]
     pub fn new(bytes: &[u8]) -> CoreCryptoResult<Self> {
