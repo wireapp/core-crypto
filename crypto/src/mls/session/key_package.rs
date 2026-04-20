@@ -14,7 +14,7 @@ where
     D: FetchFromDatabase,
 {
     /// Get all [`Keypackage`]s in the database.
-    pub(crate) async fn get_keypackages(&self) -> Result<Vec<Keypackage>> {
+    pub(crate) async fn get_key_packages(&self) -> Result<Vec<Keypackage>> {
         let stored_keypackages: Vec<StoredKeypackage> = self
             .database
             .load_all()
@@ -34,7 +34,7 @@ where
 
     /// Get all [`KeypackageRef`]s in the database.
     pub async fn get_keypackage_refs(&self) -> Result<Vec<KeypackageRef>> {
-        self.get_keypackages()
+        self.get_key_packages()
             .await?
             .iter()
             .map(|keypackage| keypackage.make_ref().map_err(Into::into))
@@ -123,7 +123,7 @@ mod tests {
         // generate a keypackage; automatically saves it
         let kp = cc.new_keypackage(&case).await;
 
-        let all_keypackages = cc.session.read().await.get_keypackages().await.unwrap();
+        let all_keypackages = cc.session.read().await.get_key_packages().await.unwrap();
         assert_eq!(all_keypackages[0], kp);
 
         let kp_ref = kp.make_ref().unwrap();

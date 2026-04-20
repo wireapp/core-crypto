@@ -336,9 +336,9 @@ impl CoreCryptoContext {
     }
 
     /// Get a reference to each `KeyPackage` in the database.
-    pub async fn get_keypackages(&self) -> CoreCryptoResult<Vec<Arc<KeyPackageRef>>> {
+    pub async fn get_key_packages(&self) -> CoreCryptoResult<Vec<Arc<KeyPackageRef>>> {
         self.inner
-            .get_keypackage_refs()
+            .get_key_package_refs()
             .await
             .map(|kp_refs| kp_refs.into_iter().map(KeyPackageRef::coerce_arc).collect())
             .map_err(Into::into)

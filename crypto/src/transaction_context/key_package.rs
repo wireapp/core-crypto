@@ -54,7 +54,7 @@ impl TransactionContext {
     }
 
     /// Get all [`KeypackageRef`]s known to the keystore.
-    pub async fn get_keypackage_refs(&self) -> Result<Vec<KeypackageRef>> {
+    pub async fn get_key_package_refs(&self) -> Result<Vec<KeypackageRef>> {
         let session = self.session().await?;
         session
             .get_keypackage_refs()
@@ -128,7 +128,7 @@ impl TransactionContext {
 
         let session = self.session().await?;
         for keypackage in session
-            .get_keypackages()
+            .get_key_packages()
             .await
             .map_err(RecursiveError::mls_client("loading key packages"))?
             .into_iter()

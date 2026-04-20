@@ -60,7 +60,7 @@ fn get_key_packages_bench(c: &mut Criterion) {
                     },
                     |central| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(context.get_keypackage_refs().await.unwrap());
+                        black_box(context.get_key_package_refs().await.unwrap());
                         context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
