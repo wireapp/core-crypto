@@ -29,7 +29,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
-        "@types/bun": "^1.3.11",
+        "@types/bun": "^1.3.12",
         "@types/mocha": "^10.0.10",
         "@types/node": "^25.6.0",
         "@wdio/browser-runner": "^9.27.0",
@@ -46,9 +46,9 @@
         "prettier": "^3.8.2",
         "tinybench": "^6.0.0",
         "ts-loader": "^9.5.7",
-        "typedoc": "0.28.18",
+        "typedoc": "0.28.19",
         "typescript": "^5.8.3",
-        "typescript-eslint": "^8.58.1",
+        "typescript-eslint": "^8.58.2",
         "uniffi-bindgen-react-native": "github:wireapp/uniffi-bindgen-react-native#8e6391eb37f018d49d7be502320b930ba1e40142",
         "yarn": "^1.22.22"
     },
