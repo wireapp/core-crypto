@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changes
+
+- The `decode` tool has been extracted into its own repository at <https://github.com/wireapp/decode>.
+
 ### Features
 
 - expose enitre read-only API in Kotlin on the `CoreCrypto` type. This allows reading data without opening a

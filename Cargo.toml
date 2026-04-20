@@ -7,7 +7,6 @@ members = [
   "keystore",
   "keystore-dump",
   "interop",
-  "decode",
   "obfuscate",
   "test-wire-server",
 ]

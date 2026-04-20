@@ -896,15 +896,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "clap-stdin"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c597a504c7d12819c50d2e1f78719afb6e01d4e14cbc94eb4c5f6a850494d1c"
-dependencies = [
- "thiserror 2.0.18",
-]
-
-[[package]]
 name = "clap_builder"
 version = "4.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1344,12 +1335,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "critical-section"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
-
-[[package]]
 name = "crossbeam-deque"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1588,27 +1573,6 @@ dependencies = [
  "darling_core 0.23.0",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "debug_tree"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d1ec383f2d844902d3c34e4253ba11ae48513cdaddc565cf1a6518db09a8e57"
-dependencies = [
- "once_cell",
-]
-
-[[package]]
-name = "decode"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "clap",
- "clap-stdin",
- "mls-rs",
- "proteus-wasm",
- "wire-e2e-identity",
 ]
 
 [[package]]
@@ -3223,7 +3187,7 @@ version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 dependencies = [
- "spin 0.5.2",
+ "spin",
 ]
 
 [[package]]
@@ -3412,17 +3376,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "maybe-async"
-version = "0.2.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cf92c10c7e361d6b99666ec1c6f9805b0bea2c3bd8c78dc6fe98ac5bd78db11"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "memchr"
 version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3478,88 +3431,6 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "mls-rs"
-version = "0.54.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "210707fc5b5109801dc32cff1563f7d56568f04757bf92df9c23b2de8c2caacf"
-dependencies = [
- "async-trait",
- "cfg-if",
- "debug_tree",
- "futures",
- "getrandom 0.2.15",
- "hex",
- "itertools 0.14.0",
- "maybe-async",
- "mls-rs-codec",
- "mls-rs-core",
- "mls-rs-identity-x509",
- "portable-atomic",
- "portable-atomic-util",
- "rand_core 0.6.4",
- "rayon",
- "serde",
- "spin 0.10.0",
- "subtle",
- "thiserror 2.0.18",
- "wasm-bindgen",
- "zeroize",
-]
-
-[[package]]
-name = "mls-rs-codec"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45bd834f164dc06c1fed805540ae307a460b7ed7c2769a35a376f1de577a0dc1"
-dependencies = [
- "itertools 0.14.0",
- "mls-rs-codec-derive",
- "thiserror 2.0.18",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "mls-rs-codec-derive"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8b31fb579767147e96686889f1e7459d6bd41a131b11d7cd130776cffadb1c3"
-dependencies = [
- "darling 0.20.11",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "mls-rs-core"
-version = "0.26.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a39fcfdd769f82037ef92052b6cfc3061822f220767227b56bda73208cc59a7e"
-dependencies = [
- "async-trait",
- "hex",
- "maybe-async",
- "mls-rs-codec",
- "serde",
- "thiserror 2.0.18",
- "wasm-bindgen",
- "zeroize",
-]
-
-[[package]]
-name = "mls-rs-identity-x509"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6ab2bf0bae192901fc53a87536381c5d26263cfe1bb0907ee88675998469ffc"
-dependencies = [
- "async-trait",
- "maybe-async",
- "mls-rs-core",
- "thiserror 2.0.18",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -4325,9 +4196,6 @@ name = "portable-atomic"
 version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f89776e4d69bb58bc6993e99ffa1d11f228b839984854c7daeb5d37f87cbe950"
-dependencies = [
- "critical-section",
-]
 
 [[package]]
 name = "portable-atomic-util"
@@ -5520,15 +5388,6 @@ name = "spin"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
-
-[[package]]
-name = "spin"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5fe4ccb98d9c292d56fec89a5e07da7fc4cf0dc11e156b41793132775d3e591"
-dependencies = [
- "portable-atomic",
-]
 
 [[package]]
 name = "spinoff"
