@@ -50,7 +50,7 @@ impl TransactionContext {
                 credential.to_mls_credential_with_key(),
             )
             .await
-            .map_err(Error::keypackage_new())
+            .map_err(Error::key_package_new())
     }
 
     /// Get all [`KeypackageRef`]s known to the keystore.

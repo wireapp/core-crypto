@@ -76,7 +76,7 @@ impl Error {
         move |source| Self::TlsDeserialize { item, source }
     }
 
-    pub fn keypackage_new<E: std::error::Error>() -> impl FnOnce(E) -> Self {
+    pub fn key_package_new<E: std::error::Error>() -> impl FnOnce(E) -> Self {
         move |source| Self::KeypackageNew(source.to_string())
     }
 }
