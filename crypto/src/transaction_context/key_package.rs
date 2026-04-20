@@ -103,7 +103,7 @@ impl TransactionContext {
     /// Implementation note: once it makes it as far as having a list of keypackages, does _not_ short-circuit
     /// if removing one returns an error. In that case, only the first produced error is returned.
     /// This helps ensure that as many keypackages for the given credential ref are removed as possible.
-    pub async fn remove_keypackages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
+    pub async fn remove_key_packages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
         let database = &self.database().await?;
         let credential = credential_ref
             .load(database)
