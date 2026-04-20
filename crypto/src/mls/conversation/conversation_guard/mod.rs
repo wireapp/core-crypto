@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_lock::{RwLockReadGuard, RwLockWriteGuard};
+use async_lock::RwLockReadGuard;
 use core_crypto_keystore::{CryptoKeystoreMls as _, Database};
 use openmls::prelude::group_info::GroupInfo;
 use openmls_traits::OpenMlsCryptoProvider as _;
@@ -47,8 +47,29 @@ impl ConversationGuard {
         Self { inner, central_context }
     }
 
-    pub(crate) async fn conversation_mut(&mut self) -> RwLockWriteGuard<'_, MlsConversation> {
-        self.inner.write().await
+    /// Perform an operation on a mutable reference to this conversation.
+    ///
+    /// Errors will be propagated.
+    /// When the operation does not error, [`MlsConversation::persist_group_when_changed`] will be called automatically.
+    /// This ensures that persistence cannot be forgotten.
+    ///
+    /// We choose to implement this as a closure instead of a lightweight holding a reference to the coversation
+    /// which calls that method on `Drop` because this way we can ensure we do _not_ automatically call it when there is an error.
+    pub(crate) async fn conversation_mut<T>(
+        &mut self,
+        operation: impl AsyncFnOnce(&mut MlsConversation, &Database) -> Result<T>,
+    ) -> Result<T> {
+        // we can't get the database if the transaction context has been invalidated,
+        // and we want to have that error first before evaluating anything in the operation.
+        let database = self
+            .central_context
+            .database()
+            .await
+            .map_err(RecursiveError::transaction("getting database from context"))?;
+        let mut guard = self.inner.write().await;
+        let ok_result = operation(&mut guard, &database).await?;
+        guard.persist_group_when_changed(&database, false).await?;
+        Ok(ok_result)
     }
 
     async fn transport(&self) -> Result<Arc<dyn MlsTransport>> {
