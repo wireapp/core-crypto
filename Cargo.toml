@@ -106,7 +106,7 @@ tokio = { version = "1.51", default-features = false }
 wasm-bindgen-test = { version = "0.3" }
 http = { version = "1", default-features = false }
 hyper = { version = "1.9", default-features = false }
-keycloak = { version = "26.5.200", default-features = false, features = [
+keycloak = { version = "26.6.1", default-features = false, features = [
   "tags-all",
   "resource-builder",
   "reqwest12",
