@@ -75,7 +75,7 @@ impl TransactionContext {
         let Some(kp) = self
             .session()
             .await?
-            .load_keypackage(kp_ref)
+            .load_key_package(kp_ref)
             .await
             .map_err(RecursiveError::mls_client("loading key packages on session"))?
         else {

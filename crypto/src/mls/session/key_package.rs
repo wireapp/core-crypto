@@ -42,7 +42,7 @@ where
     }
 
     /// Load one [`Keypackage`] from its [`KeypackageRef`]
-    pub(crate) async fn load_keypackage(&self, kp_ref: &KeypackageRef) -> Result<Option<Keypackage>> {
+    pub(crate) async fn load_key_package(&self, kp_ref: &KeypackageRef) -> Result<Option<Keypackage>> {
         self.database
             .get_borrowed::<StoredKeypackage>(kp_ref.hash_ref())
             .await
@@ -127,7 +127,14 @@ mod tests {
         assert_eq!(all_keypackages[0], kp);
 
         let kp_ref = kp.make_ref().unwrap();
-        let by_ref = cc.session.read().await.load_keypackage(&kp_ref).await.unwrap().unwrap();
+        let by_ref = cc
+            .session
+            .read()
+            .await
+            .load_key_package(&kp_ref)
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(kp, by_ref);
     }
 }
