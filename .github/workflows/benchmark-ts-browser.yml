@@ -4,6 +4,46 @@ concurrency:
 
 on:
   workflow_call:
+    inputs:
+      benchmark_message_counts:
+        required: false
+        type: string
+      benchmark_message_sizes:
+        required: false
+        type: string
+      benchmark_user_counts:
+        required: false
+        type: string
+      benchmark_cipher_suites:
+        required: false
+        type: string
+      publish:
+        required: false
+        type: boolean
+        default: true
+  workflow_dispatch:
+    inputs:
+      benchmark_message_counts:
+        description: Comma-separated benchmark message counts
+        required: false
+        type: string
+      benchmark_message_sizes:
+        description: Comma-separated benchmark message sizes
+        required: false
+        type: string
+      benchmark_user_counts:
+        description: Comma-separated benchmark user counts
+        required: false
+        type: string
+      benchmark_cipher_suites:
+        description: Comma-separated benchmark cipher suite names
+        required: false
+        type: string
+      publish:
+        description: Publish benchmark results
+        required: false
+        type: boolean
+        default: true
 
 env:
   RELEASE: 1
@@ -18,6 +58,11 @@ jobs:
   benchmark:
     name: Performance regression check
     runs-on: [self-hosted, benchmark]
+    env:
+      BENCHMARK_MESSAGE_COUNTS: ${{ inputs.benchmark_message_counts }}
+      BENCHMARK_MESSAGE_SIZES: ${{ inputs.benchmark_message_sizes }}
+      BENCHMARK_USER_COUNTS: ${{ inputs.benchmark_user_counts }}
+      BENCHMARK_CIPHER_SUITES: ${{ inputs.benchmark_cipher_suites }}
     steps:
       - uses: actions/checkout@v6
       - uses: wireapp/setup-chrome@master
@@ -48,6 +93,7 @@ jobs:
           path: benches_result.json
 
   publish:
+    if: ${{ inputs.publish }}
     needs:
       - benchmark
     uses: ./.github/workflows/benchmark-ts-browser-publish.yml
