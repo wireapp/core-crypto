@@ -48,13 +48,17 @@ $(STAMPS)/jvm-test: $(jvm-test-deps)
 	$(TOUCH_STAMP)
 
 .PHONY: jvm-bench
+jvm-bench: $(jvm-test-deps) $(KT_BENCHMARKS) ## Run the JVM benchmarks
 	@set -euo pipefail; \
 	cd crypto-ffi/bindings && \
+	GRADLE_ARGS=""; \
 	if [ -n "$(BENCH)" ]; then \
-		./gradlew :jvm:jmh -PjmhIncludes=$(BENCH); \
-	else \
-		./gradlew :jvm:jmh; \
-	fi
+		GRADLE_ARGS="$$GRADLE_ARGS -PjmhIncludes=$(BENCH)"; \
+	fi; \
+	if [ -n "$(PROFILE)" ]; then \
+		GRADLE_ARGS="$$GRADLE_ARGS -Pprofile"; \
+	fi; \
+	./gradlew :jvm:jmh $$GRADLE_ARGS
 
 #-------------------------------------------------------------------------------
 # KMP (Kotlin Multiplatform) builds

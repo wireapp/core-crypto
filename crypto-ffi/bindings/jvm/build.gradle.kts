@@ -86,6 +86,18 @@ jmh {
     jmhIncludes?.let {
         includes.set(listOf(it))
     }
+
+    if (project.hasProperty("profile")) {
+        // Set this to the async-profiler .dylib/.so file
+        val lib = System.getenv("ASYNC_PROFILER_LIB")
+        if (lib == null) error("ASYNC_PROFILER_LIB not set")
+
+        profilers.set(
+            listOf(
+                "async:output=flamegraph;event=cpu;dir=build/reports/async;libPath=$lib"
+            )
+        )
+    }
 }
 
 tasks.named("jmh") {
