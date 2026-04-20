@@ -4,7 +4,7 @@ import { ciphersuiteDefault, ClientId } from "@wireapp/core-crypto/native";
 import {
     Ciphersuite,
     Credential,
-    Keypackage,
+    KeyPackage,
 } from "@wireapp/core-crypto/native";
 
 beforeEach(async () => {
@@ -29,7 +29,7 @@ describe("key package", () => {
         });
 
         const keyPackage = await cc.transaction(async (ctx) => {
-            return await ctx.generateKeypackage(credentialRef);
+            return await ctx.generateKeyPackage(credentialRef);
         });
 
         expect(keyPackage).toBeDefined();
@@ -48,7 +48,7 @@ describe("key package", () => {
         });
 
         const keyPackage = await cc.transaction(async (ctx) => {
-            return await ctx.generateKeypackage(credentialRef);
+            return await ctx.generateKeyPackage(credentialRef);
         });
 
         const bytes = new Uint8Array(keyPackage.serialize());
@@ -57,7 +57,7 @@ describe("key package", () => {
         expect(bytes).not.toBeEmpty();
 
         // roundtrip
-        const kp2 = new Keypackage(bytes.buffer);
+        const kp2 = new KeyPackage(bytes.buffer);
         const bytes2 = new Uint8Array(kp2.serialize());
 
         expect(bytes2).toEqual(bytes);
@@ -76,11 +76,11 @@ describe("key package", () => {
         });
 
         await cc.transaction(async (ctx) => {
-            await ctx.generateKeypackage(credentialRef);
+            await ctx.generateKeyPackage(credentialRef);
         });
 
         const keyPackages = await cc.transaction(async (ctx) => {
-            return await ctx.getKeypackages();
+            return await ctx.getKeyPackages();
         });
 
         expect(keyPackages).toBeDefined();
@@ -102,21 +102,21 @@ describe("key package", () => {
 
         // add a kp which will not be removed, so we have one left over
         await cc.transaction(async (ctx) => {
-            await ctx.generateKeypackage(credentialRef);
+            await ctx.generateKeyPackage(credentialRef);
         });
 
         // add a kp which will be removed
         const keyPackage = await cc.transaction(async (ctx) => {
-            return await ctx.generateKeypackage(credentialRef);
+            return await ctx.generateKeyPackage(credentialRef);
         });
 
         // now remove the keypackage
         await cc.transaction(async (ctx) => {
-            await ctx.removeKeypackage(keyPackage.ref());
+            await ctx.removeKeyPackage(keyPackage.ref());
         });
 
         const keyPackages = await cc.transaction(async (ctx) => {
-            return await ctx.getKeypackages();
+            return await ctx.getKeyPackages();
         });
 
         expect(keyPackages).toBeDefined();
@@ -146,20 +146,20 @@ describe("key package", () => {
             const KEYPACKAGES_PER_CREDENTIAL = 2;
             for (const cref of [cref1, cref2]) {
                 for (let i = 0; i < KEYPACKAGES_PER_CREDENTIAL; i++) {
-                    await ctx.generateKeypackage(cref);
+                    await ctx.generateKeyPackage(cref);
                 }
             }
 
-            const kpsBeforeRemoval = await ctx.getKeypackages();
+            const kpsBeforeRemoval = await ctx.getKeyPackages();
             // 2 credentials with the same n keypackages each
             expect(kpsBeforeRemoval).toBeArrayOfSize(
                 KEYPACKAGES_PER_CREDENTIAL * 2
             );
 
             // now remove all keypackages for one of the credentials
-            await ctx.removeKeypackagesFor(cref1);
+            await ctx.removeKeyPackagesFor(cref1);
 
-            const kps = await ctx.getKeypackages();
+            const kps = await ctx.getKeyPackages();
             expect(kps).toBeArrayOfSize(KEYPACKAGES_PER_CREDENTIAL);
         });
     });

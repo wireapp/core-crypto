@@ -188,7 +188,7 @@ export async function invite(
             ciphersuite: DEFAULT_CIPHERSUITE,
             credentialType: CredentialType.Basic,
         });
-        return await ctx.generateKeypackage(credentialRef!);
+        return await ctx.generateKeyPackage(credentialRef!);
     });
     await cc1.transaction((ctx) =>
         ctx.addClientsToConversation(conversationId, [kp])

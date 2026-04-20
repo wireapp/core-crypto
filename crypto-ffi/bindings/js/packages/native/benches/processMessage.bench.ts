@@ -58,7 +58,7 @@ async function run() {
                 ciphersuite: cipherSuite,
                 credentialType: CredentialType.Basic,
             });
-            return await ctx.generateKeypackage(credentialRef!);
+            return await ctx.generateKeyPackage(credentialRef!);
         });
 
         await aliceCc.transaction(
