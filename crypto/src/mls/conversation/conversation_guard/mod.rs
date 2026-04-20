@@ -96,14 +96,20 @@ impl ConversationGuard {
             .mls_groups()
             .await
             .map_err(RecursiveError::transaction("getting mls groups"))?;
-        let mut conversation = self.conversation_mut().await;
-        conversation.wipe_associated_entities(&provider).await?;
+
+        let id = self
+            .conversation_mut(async |conversation, _| {
+                conversation.wipe_associated_entities(&provider).await?;
+                Ok(conversation.id().to_owned())
+            })
+            .await?;
         provider
             .key_store()
-            .mls_group_delete(conversation.id())
+            .mls_group_delete(&id)
             .await
             .map_err(KeystoreError::wrap("deleting mls group"))?;
-        let _ = group_store.remove(conversation.id());
+        let _ = group_store.remove(&id);
+
         Ok(())
     }
 

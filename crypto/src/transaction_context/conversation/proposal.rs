@@ -2,7 +2,9 @@ use openmls::prelude::KeyPackage;
 
 use super::{Error, Result};
 use crate::{
-    ClientId, ConversationId, MlsProposal, MlsProposalBundle, RecursiveError, transaction_context::TransactionContext,
+    ClientId, ConversationId, MlsProposal, MlsProposalBundle, RecursiveError,
+    mls::conversation::{ConversationWithMls as _, Error as ConversationError},
+    transaction_context::TransactionContext,
 };
 
 impl TransactionContext {
@@ -38,34 +40,54 @@ impl TransactionContext {
     /// If the conversation is not found, an error will be returned. Errors from OpenMls can be
     /// returned as well, when for example there's a commit pending to be merged
     async fn new_proposal(&self, id: &ConversationId, proposal: MlsProposal) -> Result<MlsProposalBundle> {
-        let mut conversation = self.conversation(id).await?;
-        let mut conversation = conversation.conversation_mut().await;
-        let client = &self.session().await?;
-        let provider = &self.mls_provider().await?;
-        let database = &self.database().await?;
-        let proposal = match proposal {
-            MlsProposal::Add(key_package) => conversation
-                .propose_add_member(client, provider, database, key_package.into())
-                .await
-                .map_err(RecursiveError::mls_conversation("proposing to add member"))?,
-            MlsProposal::Update => conversation
-                .propose_self_update(client, provider, database)
-                .await
-                .map_err(RecursiveError::mls_conversation("proposing self update"))?,
-            MlsProposal::Remove(client_id) => {
-                let index = conversation
+        let mut guard = self.conversation(id).await?;
+        let client = self.session().await?;
+        let provider = self.mls_provider().await?;
+
+        // For Remove proposals, look up the leaf index before taking the write lock so we can
+        // surface ClientNotFound as a transaction-level error.
+        let remove_index = if let MlsProposal::Remove(client_id) = &proposal {
+            Some(
+                guard
+                    .conversation()
+                    .await
                     .group
                     .members()
                     .find(|kp| kp.credential.identity() == client_id.as_slice())
-                    .ok_or(Error::ClientNotFound(client_id))
-                    .map(|kp| kp.index)?;
-                (*conversation)
-                    .propose_remove_member(client, provider, database, index)
-                    .await
-                    .map_err(RecursiveError::mls_conversation("proposing to remove member"))?
-            }
+                    .ok_or_else(|| Error::ClientNotFound(client_id.clone()))
+                    .map(|kp| kp.index)?,
+            )
+        } else {
+            None
         };
-        Ok(proposal)
+
+        guard
+            .conversation_mut(async move |conversation, database| {
+                let proposal = match proposal {
+                    MlsProposal::Add(key_package) => conversation
+                        .propose_add_member(&client, &provider, database, key_package.into())
+                        .await
+                        .map_err(RecursiveError::mls_conversation("proposing to add member"))
+                        .map_err(ConversationError::from)?,
+                    MlsProposal::Update => conversation
+                        .propose_self_update(&client, &provider, database)
+                        .await
+                        .map_err(RecursiveError::mls_conversation("proposing self update"))
+                        .map_err(ConversationError::from)?,
+                    MlsProposal::Remove(_) => {
+                        let index = remove_index.expect("we always have a remove index for a remove proposal");
+                        conversation
+                            .propose_remove_member(&client, &provider, database, index)
+                            .await
+                            .map_err(RecursiveError::mls_conversation("proposing to remove member"))
+                            .map_err(ConversationError::from)?
+                    }
+                };
+                Ok(proposal)
+            })
+            .await
+            .map_err(RecursiveError::mls_conversation("new proposal"))
+            .map_err(Into::into)
     }
 }
 

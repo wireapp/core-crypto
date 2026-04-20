@@ -21,23 +21,23 @@ impl ConversationGuard {
     pub async fn encrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<Vec<u8>> {
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
-        let signer = credential.signature_key();
-        let database = self.database().await?;
-        let mut inner = self.conversation_mut().await;
-        let encrypted = inner
-            .group
-            .create_message(&backend, signer, message.as_ref())
-            .map_err(MlsError::wrap("creating message"))?;
 
-        // make sure all application messages are encrypted
-        debug_assert!(matches!(encrypted.body, MlsMessageOutBody::PrivateMessage(_)));
+        self.conversation_mut(async move |conversation, _database| {
+            let signer = credential.signature_key();
+            let encrypted = conversation
+                .group
+                .create_message(&backend, signer, message.as_ref())
+                .map_err(MlsError::wrap("creating message"))?;
 
-        let encrypted = encrypted
-            .to_bytes()
-            .map_err(MlsError::wrap("constructing byte vector of encrypted message"))?;
+            // make sure all application messages are encrypted
+            debug_assert!(matches!(encrypted.body, MlsMessageOutBody::PrivateMessage(_)));
 
-        inner.persist_group_when_changed(&database, false).await?;
-        Ok(encrypted)
+            encrypted
+                .to_bytes()
+                .map_err(MlsError::wrap("constructing byte vector of encrypted message"))
+                .map_err(Into::into)
+        })
+        .await
     }
 }
 

@@ -107,37 +107,30 @@ impl ConversationGuard {
         self.ensure_no_pending_commit().await?;
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
-        let signer = credential.signature_key();
-        let database = self.database().await?;
-        let mut conversation = self.conversation_mut().await;
 
-        let (commit, welcome, group_info) = conversation
-            .group
-            .add_members(&backend, signer, key_packages.clone())
-            .await
-            .map_err(|err| {
-                if Self::err_is_duplicate_signature_key(&err) {
-                    let affected_clients = Self::clients_with_duplicate_signature_keys(key_packages.as_ref());
-                    Error::DuplicateSignature { affected_clients }
-                } else {
-                    MlsError::wrap("group add members")(err).into()
-                }
-            })?;
+        self.conversation_mut(async move |conversation, _database| {
+            let signer = credential.signature_key();
+            let (commit, welcome, group_info) = conversation
+                .group
+                .add_members(&backend, signer, key_packages.clone())
+                .await
+                .map_err(|err| {
+                    if Self::err_is_duplicate_signature_key(&err) {
+                        let affected_clients = Self::clients_with_duplicate_signature_keys(key_packages.as_ref());
+                        Error::DuplicateSignature { affected_clients }
+                    } else {
+                        MlsError::wrap("group add members")(err).into()
+                    }
+                })?;
 
-        // commit requires an optional welcome
-        let welcome = Some(welcome);
-        let group_info = Self::group_info(group_info)?;
-
-        conversation.persist_group_when_changed(&database, false).await?;
-
-        let commit = MlsCommitBundle {
-            commit,
-            welcome,
-            group_info,
-            encrypted_message: None,
-        };
-
-        Ok(commit)
+            Ok(MlsCommitBundle {
+                commit,
+                welcome: Some(welcome),
+                group_info: Self::group_info(group_info)?,
+                encrypted_message: None,
+            })
+        })
+        .await
     }
 
     fn err_is_duplicate_signature_key(
@@ -239,42 +232,42 @@ impl ConversationGuard {
     /// committed.
     pub(crate) async fn set_credential_inner(&mut self, credential: &Credential) -> Result<MlsCommitBundle> {
         self.ensure_no_pending_commit().await?;
-        let backend = &self.crypto_provider().await?;
-        let database = self.database().await?;
-        let mut conversation = self.conversation_mut().await;
+        let backend = self.crypto_provider().await?;
+        let credential = credential.clone();
 
-        // If the credential remains the same and we still want to update, we explicitly need to pass `None` to openmls,
-        // if we just passed an unchanged leaf node, no update commit would be created.
-        // Also, we can avoid cloning in the case we don't need to create a new leaf node.
-        let updated_leaf_node = {
-            let leaf_node = conversation.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
-            if leaf_node.credential() == &credential.mls_credential {
-                None
-            } else {
-                let mut leaf_node = leaf_node.clone();
-                leaf_node.set_credential_with_key(credential.to_mls_credential_with_key());
-                Some(leaf_node)
-            }
-        };
+        self.conversation_mut(async move |conversation, _database| {
+            // If the credential remains the same and we still want to update, we explicitly need to pass `None` to openmls,
+            // if we just passed an unchanged leaf node, no update commit would be created.
+            // Also, we can avoid cloning in the case we don't need to create a new leaf node.
+            let updated_leaf_node = {
+                let leaf_node = conversation.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
+                if leaf_node.credential() == &credential.mls_credential {
+                    None
+                } else {
+                    let mut leaf_node = leaf_node.clone();
+                    leaf_node.set_credential_with_key(credential.to_mls_credential_with_key());
+                    Some(leaf_node)
+                }
+            };
 
-        let (commit, welcome, group_info) = conversation
-            .group
-            .explicit_self_update(backend, &credential.signature_key_pair, updated_leaf_node)
-            .await
-            .map_err(MlsError::wrap("group self update"))?;
+            let (commit, welcome, group_info) = conversation
+                .group
+                .explicit_self_update(&backend, &credential.signature_key_pair, updated_leaf_node)
+                .await
+                .map_err(MlsError::wrap("group self update"))?;
 
-        // We should always have ratchet tree extension turned on hence GroupInfo should always be present
-        let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
+            // We should always have ratchet tree extension turned on hence GroupInfo should always be present
+            let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
+            let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
 
-        conversation.persist_group_when_changed(&database, false).await?;
-
-        Ok(MlsCommitBundle {
-            welcome,
-            commit,
-            group_info,
-            encrypted_message: None,
+            Ok(MlsCommitBundle {
+                welcome,
+                commit,
+                group_info,
+                encrypted_message: None,
+            })
         })
+        .await
     }
 
     /// Commits all pending proposals of the group

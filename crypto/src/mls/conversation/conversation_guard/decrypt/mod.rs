@@ -154,7 +154,6 @@ impl ConversationGuard {
     ) -> Result<MlsConversationDecryptMessage> {
         let session = &self.session().await?;
         let provider = &self.crypto_provider().await?;
-        let database = self.database().await?;
         let parsed_message = self.parse_message(message.clone()).await?;
 
         let message_result = self.process_message(parsed_message).await;
@@ -166,15 +165,17 @@ impl ConversationGuard {
             ..
         })) = message_result
         {
-            let mut conversation = self.conversation_mut().await;
-            let ct = conversation.extract_confirmation_tag_from_own_commit(&message)?;
-            let mut decrypted_message = conversation.handle_own_commit(session, &database, provider, ct).await?;
+            let mut decrypted_message = self
+                .conversation_mut(async |conversation, database| {
+                    let ct = conversation.extract_confirmation_tag_from_own_commit(&message)?;
+                    conversation.handle_own_commit(session, database, provider, ct).await
+                })
+                .await?;
             debug_assert!(
                 decrypted_message.buffered_messages.is_none(),
                 "decrypted message should be constructed with empty buffer"
             );
             if recursion_policy == RecursionPolicy::AsNecessary {
-                drop(conversation);
                 decrypted_message.buffered_messages = self.restore_and_clear_pending_messages().await?;
             }
 
@@ -228,16 +229,18 @@ impl ConversationGuard {
                 }
             }
             ProcessedMessageContent::ProposalMessage(proposal) => {
-                let mut conversation = self.conversation_mut().await;
-                info!(
-                    group_id = conversation.id,
-                    sender = Obfuscated::from(proposal.sender()),
-                    proposals = Obfuscated::from(&proposal.proposal);
-                    "Received proposal"
-                );
+                self.conversation_mut(async move |conversation, _database| {
+                    info!(
+                        group_id = conversation.id,
+                        sender = Obfuscated::from(proposal.sender()),
+                        proposals = Obfuscated::from(&proposal.proposal);
+                        "Received proposal"
+                    );
+                    conversation.group.store_pending_proposal(*proposal);
+                    Ok(())
+                })
+                .await?;
 
-                conversation.group.store_pending_proposal(*proposal);
-                drop(conversation);
                 if let Some(commit) =
                     self.retrieve_buffered_commit()
                         .await
@@ -283,108 +286,113 @@ impl ConversationGuard {
             }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
                 self.validate_commit(&staged_commit).await?;
-                let mut conversation = self.conversation_mut().await;
 
-                let pending_proposals = conversation.self_pending_proposals().cloned().collect::<Vec<_>>();
+                let (proposals, is_active, delay, removed_members, added_members, group_id) = self
+                    .conversation_mut(async |conversation, database| {
+                        let pending_proposals = conversation.self_pending_proposals().cloned().collect::<Vec<_>>();
 
-                // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
-                let pending_commit = conversation.group.pending_commit().cloned();
+                        // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
+                        let pending_commit = conversation.group.pending_commit().cloned();
 
-                let removed_indices = staged_commit
-                    .remove_proposals()
-                    .map(|p| p.remove_proposal().removed())
-                    .collect::<Vec<_>>();
+                        let removed_indices = staged_commit
+                            .remove_proposals()
+                            .map(|p| p.remove_proposal().removed())
+                            .collect::<Vec<_>>();
 
-                let added_credentials = staged_commit
-                    .add_proposals()
-                    .map(|p| p.add_proposal().key_package.leaf_node().credential().to_owned())
-                    .collect::<Vec<_>>();
+                        let added_credentials = staged_commit
+                            .add_proposals()
+                            .map(|p| p.add_proposal().key_package.leaf_node().credential().to_owned())
+                            .collect::<Vec<_>>();
 
-                let removed_members = Self::members_at_indices(removed_indices, conversation.group());
+                        let removed_members = Self::members_at_indices(removed_indices, conversation.group());
 
-                conversation
-                    .group
-                    .merge_staged_commit(provider, *staged_commit.clone())
-                    .await
-                    .map_err(MlsError::wrap("merge staged commit"))?;
+                        conversation
+                            .group
+                            .merge_staged_commit(provider, *staged_commit.clone())
+                            .await
+                            .map_err(MlsError::wrap("merge staged commit"))?;
 
-                let added_members = conversation
-                    .group
-                    .members()
-                    .filter_map(|member| added_credentials.contains(&member.credential).then(|| member.clone()))
-                    .collect::<Vec<_>>();
+                        let added_members = conversation
+                            .group
+                            .members()
+                            .filter_map(|member| added_credentials.contains(&member.credential).then(|| member.clone()))
+                            .collect::<Vec<_>>();
 
-                let (proposals_to_renew, needs_update) = Renew::renew(
-                    &conversation.group.own_leaf_index(),
-                    pending_proposals.iter(),
-                    pending_commit.as_ref(),
-                    staged_commit.as_ref(),
-                );
-                let proposals = conversation
-                    .renew_proposals_for_current_epoch(
-                        session,
-                        provider,
-                        &database,
-                        proposals_to_renew.into_iter(),
-                        needs_update,
-                    )
+                        let (proposals_to_renew, needs_update) = Renew::renew(
+                            &conversation.group.own_leaf_index(),
+                            pending_proposals.iter(),
+                            pending_commit.as_ref(),
+                            staged_commit.as_ref(),
+                        );
+                        let proposals = conversation
+                            .renew_proposals_for_current_epoch(
+                                session,
+                                provider,
+                                database,
+                                proposals_to_renew.into_iter(),
+                                needs_update,
+                            )
+                            .await?;
+
+                        let is_active = conversation.group.is_active();
+                        let delay = conversation.compute_next_commit_delay();
+                        let group_id = conversation.id.clone();
+
+                        Ok((proposals, is_active, delay, removed_members, added_members, group_id))
+                    })
                     .await?;
 
                 // can't use `.then` because async
                 let mut buffered_messages = None;
-                // drop conversation to allow borrowing `self` again
-                drop(conversation);
                 if recursion_policy == RecursionPolicy::AsNecessary {
                     buffered_messages = self.restore_and_clear_pending_messages().await?;
                 }
 
-                let conversation = self.conversation().await;
                 let epoch = staged_commit.staged_context().epoch().as_u64();
                 info!(
                     added = Obfuscated::from(&added_members),
                     removed = Obfuscated::from(&removed_members),
-                    group_id = conversation.id,
+                    group_id,
                     epoch,
                     proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
                     "Epoch advanced"
                 );
-                session.notify_epoch_changed(conversation.id.clone(), epoch).await;
+                session.notify_epoch_changed(group_id, epoch).await;
 
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals,
-                    is_active: conversation.group.is_active(),
-                    delay: conversation.compute_next_commit_delay(),
+                    is_active,
+                    delay,
                     sender_client_id: None,
                     identity,
                     buffered_messages,
                 }
             }
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
-                let mut conversation = self.conversation_mut().await;
-                info!(
-                    group_id = conversation.id,
-                    sender = Obfuscated::from(proposal.sender());
-                    "Received external join proposal"
-                );
-
-                conversation.group.store_pending_proposal(*proposal);
+                let delay = self
+                    .conversation_mut(async move |conversation, _database| {
+                        info!(
+                            group_id = conversation.id,
+                            sender = Obfuscated::from(proposal.sender());
+                            "Received external join proposal"
+                        );
+                        conversation.group.store_pending_proposal(*proposal);
+                        Ok(conversation.compute_next_commit_delay())
+                    })
+                    .await?;
 
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals: vec![],
                     is_active: true,
-                    delay: conversation.compute_next_commit_delay(),
+                    delay,
                     sender_client_id: None,
                     identity,
                     buffered_messages: None,
                 }
             }
         };
-
-        let mut conversation = self.conversation_mut().await;
-
-        conversation.persist_group_when_changed(&database, false).await?;
 
         Ok(decrypted)
     }
@@ -433,53 +441,55 @@ impl ConversationGuard {
     ) -> Result<ProcessedMessage> {
         let msg_epoch = protocol_message.epoch().as_u64();
         let backend = self.crypto_provider().await?;
-        let mut conversation = self.conversation_mut().await;
-        let group_epoch = conversation.group.epoch().as_u64();
-        let processed_msg = conversation
-            .group
-            .process_message(&backend, protocol_message)
-            .await
-            .map_err(|e| match e {
-                ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
-                    MessageDecryptionError::GenerationOutOfBound,
-                )) => Error::DuplicateMessage,
-                ProcessMessageError::ValidationError(ValidationError::WrongEpoch) => {
-                    if is_duplicate {
-                        Error::DuplicateMessage
-                    } else if msg_epoch == group_epoch + 1 {
-                        // limit to next epoch otherwise if we were buffering a commit for epoch + 2
-                        // we would fail when trying to decrypt it in [MlsCentral::commit_accepted]
+        self.conversation_mut(async move |conversation, _database| {
+            let group_epoch = conversation.group.epoch().as_u64();
+            let processed_msg = conversation
+                .group
+                .process_message(&backend, protocol_message)
+                .await
+                .map_err(|e| match e {
+                    ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
+                        MessageDecryptionError::GenerationOutOfBound,
+                    )) => Error::DuplicateMessage,
+                    ProcessMessageError::ValidationError(ValidationError::WrongEpoch) => {
+                        if is_duplicate {
+                            Error::DuplicateMessage
+                        } else if msg_epoch == group_epoch + 1 {
+                            // limit to next epoch otherwise if we were buffering a commit for epoch + 2
+                            // we would fail when trying to decrypt it in [MlsCentral::commit_accepted]
 
-                        // We need to buffer the message until the group has advanced to the right
-                        // epoch. We can't do that here--we don't have the appropriate data in scope
-                        // --but we can at least produce the proper error and return that, so our
-                        // caller can handle it. Our caller needs to know about the epoch number, so
-                        // we pass it back inside the error.
-                        Error::BufferedFutureMessage {
-                            message_epoch: msg_epoch,
+                            // We need to buffer the message until the group has advanced to the right
+                            // epoch. We can't do that here--we don't have the appropriate data in scope
+                            // --but we can at least produce the proper error and return that, so our
+                            // caller can handle it. Our caller needs to know about the epoch number, so
+                            // we pass it back inside the error.
+                            Error::BufferedFutureMessage {
+                                message_epoch: msg_epoch,
+                            }
+                        } else if msg_epoch < group_epoch {
+                            match content_type {
+                                ContentType::Application => Error::StaleMessage,
+                                ContentType::Commit => Error::StaleCommit,
+                                ContentType::Proposal => Error::StaleProposal,
+                            }
+                        } else {
+                            Error::UnbufferedFarFutureMessage
                         }
-                    } else if msg_epoch < group_epoch {
-                        match content_type {
-                            ContentType::Application => Error::StaleMessage,
-                            ContentType::Commit => Error::StaleCommit,
-                            ContentType::Proposal => Error::StaleProposal,
-                        }
-                    } else {
-                        Error::UnbufferedFarFutureMessage
                     }
-                }
-                ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
-                    MessageDecryptionError::AeadError,
-                )) => Error::DecryptionError,
-                ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
-                    MessageDecryptionError::SecretTreeError(SecretTreeError::TooDistantInThePast),
-                )) => Error::MessageEpochTooOld,
-                _ => MlsError::wrap("processing message")(e).into(),
-            })?;
-        if is_duplicate {
-            return Err(Error::DuplicateMessage);
-        }
-        Ok(processed_msg)
+                    ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
+                        MessageDecryptionError::AeadError,
+                    )) => Error::DecryptionError,
+                    ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
+                        MessageDecryptionError::SecretTreeError(SecretTreeError::TooDistantInThePast),
+                    )) => Error::MessageEpochTooOld,
+                    _ => MlsError::wrap("processing message")(e).into(),
+                })?;
+            if is_duplicate {
+                return Err(Error::DuplicateMessage);
+            }
+            Ok(processed_msg)
+        })
+        .await
     }
 
     async fn validate_commit(&self, commit: &StagedCommit) -> Result<()> {
