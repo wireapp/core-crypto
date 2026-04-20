@@ -88,6 +88,10 @@ jmh {
     }
 }
 
+tasks.named("jmh") {
+    outputs.upToDateWhen { false }
+}
+
 // Allows skipping signing jars published to 'MavenLocal' repository
 project.afterEvaluate {
     tasks.named("signMavenPublication").configure {
