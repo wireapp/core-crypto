@@ -117,29 +117,6 @@ mod tests {
     }
 
     #[apply(all_storage_types_and_ciphersuites)]
-    async fn signature_is_consistent(
-        backend: MlsCryptoProvider,
-        ciphersuite: Ciphersuite,
-        entropy_seed: Option<EntropySeed>,
-    ) {
-        let backend = backend.await;
-        backend.reseed(entropy_seed).unwrap();
-
-        let len = rand::thread_rng().gen_range(LEN_RANGE);
-        let data = backend.rand().random_vec(len).unwrap();
-
-        let crypto = backend.crypto();
-        let (sk, pk) = crypto.signature_key_gen(ciphersuite.signature_algorithm()).unwrap();
-
-        let signature = crypto.sign(ciphersuite.signature_algorithm(), &data, &sk).unwrap();
-        crypto
-            .verify_signature(ciphersuite.signature_algorithm(), &data, &pk, &signature)
-            .unwrap();
-
-        teardown(backend).await;
-    }
-
-    #[apply(all_storage_types_and_ciphersuites)]
     async fn hpke_is_consistent(
         backend: MlsCryptoProvider,
         ciphersuite: Ciphersuite,

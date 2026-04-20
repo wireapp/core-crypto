@@ -34,13 +34,6 @@ impl Default for RustCrypto {
     }
 }
 
-#[inline]
-fn normalize_p521_secret_key(sk: &[u8]) -> zeroize::Zeroizing<[u8; 66]> {
-    let mut sk_buf = zeroize::Zeroizing::new([0u8; 66]);
-    sk_buf[66 - sk.len()..].copy_from_slice(sk);
-    sk_buf
-}
-
 impl RustCrypto {
     pub fn new_with_seed(seed: EntropySeed) -> Self {
         Self {
@@ -52,28 +45,6 @@ impl RustCrypto {
         let mut val = self.rng.write().map_err(|_| MlsProviderError::RngLockPoison)?;
         *val = rand_chacha::ChaCha20Rng::from_seed(seed.unwrap_or_default().0);
         Ok(())
-    }
-
-    pub fn normalize_p521_secret_key(sk: &[u8]) -> zeroize::Zeroizing<[u8; 66]> {
-        normalize_p521_secret_key(sk)
-    }
-
-    pub fn normalize_ed25519_key(key: &[u8]) -> Result<ed25519_dalek::SigningKey, CryptoError> {
-        let k = match key.len() {
-            // Compat layer for legacy keypairs [seed, pk]
-            ed25519_dalek::KEYPAIR_LENGTH => {
-                let mut sk = zeroize::Zeroizing::new([0u8; ed25519_dalek::KEYPAIR_LENGTH]);
-                sk.copy_from_slice(key);
-                ed25519_dalek::SigningKey::from_keypair_bytes(&sk).map_err(|_| CryptoError::CryptoLibraryError)?
-            }
-            ed25519_dalek::SECRET_KEY_LENGTH => {
-                let mut sk = zeroize::Zeroizing::new([0u8; ed25519_dalek::SECRET_KEY_LENGTH]);
-                sk.copy_from_slice(key);
-                ed25519_dalek::SigningKey::from_bytes(&sk)
-            }
-            _ => return Err(CryptoError::CryptoLibraryError),
-        };
-        Ok(k)
     }
 }
 
@@ -330,36 +301,8 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
-    fn sign(&self, alg: SignatureScheme, data: &[u8], key: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        use signature::Signer as _;
-
-        match alg {
-            SignatureScheme::ECDSA_SECP256R1_SHA256 => {
-                let k = p256::ecdsa::SigningKey::from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
-                let signature: p256::ecdsa::DerSignature =
-                    k.try_sign(data).map_err(|_| CryptoError::CryptoLibraryError)?;
-                Ok(signature.to_bytes().into())
-            }
-            SignatureScheme::ECDSA_SECP384R1_SHA384 => {
-                let k = p384::ecdsa::SigningKey::from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
-                let signature: p384::ecdsa::DerSignature =
-                    k.try_sign(data).map_err(|_| CryptoError::CryptoLibraryError)?;
-                Ok(signature.to_bytes().into())
-            }
-            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
-                let k = p521::ecdsa::SigningKey::from_slice(&*normalize_p521_secret_key(key))
-                    .map_err(|_| CryptoError::CryptoLibraryError)?;
-                let signature: p521::ecdsa::DerSignature =
-                    k.try_sign(data).map_err(|_| CryptoError::CryptoLibraryError)?.to_der();
-                Ok(signature.to_bytes().into())
-            }
-            SignatureScheme::ED25519 => {
-                let k = Self::normalize_ed25519_key(key)?;
-                let signature = k.try_sign(data).map_err(|_| CryptoError::CryptoLibraryError)?;
-                Ok(signature.to_bytes().into())
-            }
-            _ => Err(CryptoError::UnsupportedSignatureScheme),
-        }
+    fn sign(&self, _alg: SignatureScheme, _data: &[u8], _key: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        unimplemented!("This is never used by openmls, so we don't make the effort of implementing it.");
     }
 
     fn hpke_seal(

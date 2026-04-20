@@ -1,4 +1,4 @@
-use mls_crypto_provider::{MlsCryptoProvider, RustCrypto};
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::SignatureScheme;
 use openmls_traits::{OpenMlsCryptoProvider as _, crypto::OpenMlsCrypto as _};
 
@@ -20,11 +20,8 @@ impl super::E2eiEnrollment {
     pub(crate) fn get_sign_key_for_mls(&self) -> Result<Vec<u8>> {
         let sk = match self.ciphersuite.signature_algorithm() {
             SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ECDSA_SECP384R1_SHA384 => self.sign_sk.to_vec(),
-            SignatureScheme::ECDSA_SECP521R1_SHA512 => RustCrypto::normalize_p521_secret_key(&self.sign_sk).to_vec(),
-            SignatureScheme::ED25519 => RustCrypto::normalize_ed25519_key(self.sign_sk.as_slice())
-                .map_err(MlsError::wrap("normalizing ed25519 key"))?
-                .to_bytes()
-                .to_vec(),
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => self.sign_sk.to_vec(),
+            SignatureScheme::ED25519 => self.sign_sk.to_vec(),
             SignatureScheme::ED448 => return Err(Error::NotYetSupported),
         };
         Ok(sk)
