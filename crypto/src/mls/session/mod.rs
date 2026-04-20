@@ -188,7 +188,7 @@ mod tests {
             use core_crypto_keystore::CryptoKeystoreMls as _;
             let kps = backend
                 .key_store()
-                .mls_fetch_keypackages::<openmls::prelude::KeyPackage>(u32::MAX)
+                .mls_fetch_key_packages::<openmls::prelude::KeyPackage>(u32::MAX)
                 .await
                 .map_err(KeystoreError::wrap("fetching mls keypackages"))?;
             Ok(kps)

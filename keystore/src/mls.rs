@@ -23,7 +23,7 @@ pub trait CryptoKeystoreMls: Sized {
     /// # Errors
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
-    async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>>;
+    async fn mls_fetch_key_packages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>>;
 
     /// Checks if the given MLS group id exists in the keystore
     /// Note: in case of any error, this will return false
@@ -123,7 +123,7 @@ pub trait CryptoKeystoreMls: Sized {
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl CryptoKeystoreMls for crate::Database {
-    async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
+    async fn mls_fetch_key_packages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
         let keypackages = self.load_all::<StoredKeypackage>().await?;
         Ok(keypackages
             .into_iter()
