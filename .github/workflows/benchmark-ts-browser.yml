@@ -17,7 +17,7 @@ permissions:
 jobs:
   benchmark:
     name: Performance regression check
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, benchmark]
     steps:
       - uses: actions/checkout@v6
       - uses: wireapp/setup-chrome@master
@@ -41,19 +41,13 @@ jobs:
       - name: Process results
         run: jq -s add crypto-ffi/bindings/js/benches_result/*.json > benches_result.json
 
-      # Publish the benchmark result on GitHub pages
-      - name: Publish benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
+      - name: Upload benchmark result
+        uses: actions/upload-artifact@v7.0.0
         with:
-          # Name under which to group the results
-          name: "Browser Benchmarks"
-          # What benchmark tool the output.txt came from
-          tool: 'customBiggerIsBetter'
-          # Where the output from the benchmark tool is stored
-          output-file-path: benches_result.json
-          # Workflow will fail when an alert happens
-          fail-on-alert: true
-          # Access token to deploy GitHub Pages branch
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          # Push and deploy GitHub pages branch automatically
-          auto-push: true
+          name: benchmark-ts-browser-results
+          path: benches_result.json
+
+  publish:
+    needs:
+      - benchmark
+    uses: ./.github/workflows/benchmark-ts-browser-publish.yml
