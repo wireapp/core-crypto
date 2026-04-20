@@ -54,7 +54,7 @@ open class ProcessMessage {
         val kp = bobCc.transaction {
             it.mlsInit(bobId, mockTransportProvider)
             val credentialRef = it.addCredential(Credential.basic(Ciphersuite.valueOf(cipherSuite), bobId))
-            it.generateKeypackage(credentialRef)
+            it.generateKeyPackage(credentialRef)
         }
 
         aliceCc.transaction {

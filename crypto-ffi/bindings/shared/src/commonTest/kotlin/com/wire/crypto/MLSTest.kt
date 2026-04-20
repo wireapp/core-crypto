@@ -153,13 +153,13 @@ class MLSTest : HasMockDeliveryService() {
         // by default, no key packages are generated
         assertThat(
             alice.transaction { ctx ->
-                ctx.getKeypackages().size
+                ctx.getKeyPackages().size
             }
         ).isEqualTo(0)
         assertThat(alice.transaction { ctx -> ctx.clientKeypackagesShort(200U) }).isNotEmpty().hasSize(200)
         assertThat(
             alice.transaction { ctx ->
-                ctx.getKeypackages().size
+                ctx.getKeyPackages().size
             }
         ).isEqualTo(200)
     }
@@ -622,7 +622,7 @@ class MLSTest : HasMockDeliveryService() {
             }
 
             val keyPackage = cc.transaction { ctx ->
-                ctx.generateKeypackage(credentialRef)
+                ctx.generateKeyPackage(credentialRef)
             }
 
             assertNotNull(keyPackage)
@@ -643,7 +643,7 @@ class MLSTest : HasMockDeliveryService() {
             }
 
             val keyPackage = cc.transaction { ctx ->
-                ctx.generateKeypackage(credentialRef)
+                ctx.generateKeyPackage(credentialRef)
             }
 
             val bytes = keyPackage.serialize()
@@ -651,7 +651,7 @@ class MLSTest : HasMockDeliveryService() {
             assertTrue(bytes.isNotEmpty())
 
             // roundtrip
-            val kp2 = Keypackage(bytes)
+            val kp2 = KeyPackage(bytes)
             val bytes2 = kp2.serialize()
 
             assertEquals(bytes.toList(), bytes2.toList())
@@ -672,11 +672,11 @@ class MLSTest : HasMockDeliveryService() {
             }
 
             cc.transaction { ctx ->
-                ctx.generateKeypackage(credentialRef)
+                ctx.generateKeyPackage(credentialRef)
             }
 
             val keyPackages = cc.transaction { ctx ->
-                ctx.getKeypackages()
+                ctx.getKeyPackages()
             }
 
             assertNotNull(keyPackages)
@@ -700,21 +700,21 @@ class MLSTest : HasMockDeliveryService() {
 
             // add a kp which will not be removed
             cc.transaction { ctx ->
-                ctx.generateKeypackage(credentialRef)
+                ctx.generateKeyPackage(credentialRef)
             }
 
             // add a kp which will be removed
             val keyPackage = cc.transaction { ctx ->
-                ctx.generateKeypackage(credentialRef)
+                ctx.generateKeyPackage(credentialRef)
             }
 
             // remove the keypackage
             cc.transaction { ctx ->
-                ctx.removeKeypackage(keyPackage.ref())
+                ctx.removeKeyPackage(keyPackage.ref())
             }
 
             val keyPackages = cc.transaction { ctx ->
-                ctx.getKeypackages()
+                ctx.getKeyPackages()
             }
 
             assertNotNull(keyPackages)
@@ -746,17 +746,17 @@ class MLSTest : HasMockDeliveryService() {
                 val keypackagesPerCredential = 2
                 for (cref in listOf(cref1, cref2)) {
                     repeat(keypackagesPerCredential) {
-                        ctx.generateKeypackage(cref)
+                        ctx.generateKeyPackage(cref)
                     }
                 }
 
-                val kpsBeforeRemoval = ctx.getKeypackages()
+                val kpsBeforeRemoval = ctx.getKeyPackages()
                 assertThat(kpsBeforeRemoval).hasSize(keypackagesPerCredential * 2)
 
                 // remove all keypackages for one of the credentials
-                ctx.removeKeypackagesFor(cref1)
+                ctx.removeKeyPackagesFor(cref1)
 
-                val kps = ctx.getKeypackages()
+                val kps = ctx.getKeyPackages()
                 assertThat(kps).hasSize(keypackagesPerCredential)
             }
         }

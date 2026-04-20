@@ -149,7 +149,7 @@ suspend fun CoreCryptoContext.createConversationShort(
 }
 
 /** Shorthand for generating keypackages with defaults */
-suspend fun CoreCryptoContext.clientKeypackagesShort(amount: UInt): List<Keypackage> {
+suspend fun CoreCryptoContext.clientKeypackagesShort(amount: UInt): List<KeyPackage> {
     val credentials = findCredentials(
         clientId = null,
         publicKey = null,
@@ -161,6 +161,6 @@ suspend fun CoreCryptoContext.clientKeypackagesShort(amount: UInt): List<Keypack
 
     return List(amount.toInt()) { _ ->
         // cycle through credentials if amount > credentials.size
-        generateKeypackage(credential)
+        generateKeyPackage(credential)
     }
 }
