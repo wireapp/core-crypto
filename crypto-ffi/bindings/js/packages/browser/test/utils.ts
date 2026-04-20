@@ -322,7 +322,7 @@ export async function invite(
                     credentialType: window.ccModule.CredentialType.Basic,
                 });
                 console.log("generated key package");
-                return await ctx.generateKeypackage(credentialRef!);
+                return await ctx.generateKeyPackage(credentialRef!);
             });
 
             const clients = await cc1.getClientIds(conversationIdBytes);

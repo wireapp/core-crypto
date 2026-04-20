@@ -37,7 +37,7 @@ describe("client identity", () => {
                         ciphersuite: window.defaultCipherSuite,
                         credentialType: window.ccModule.CredentialType.Basic,
                     });
-                    return await ctx.generateKeypackage(credentialRef!);
+                    return await ctx.generateKeyPackage(credentialRef!);
                 });
                 keypackage.serialize();
             } catch {

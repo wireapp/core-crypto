@@ -37,7 +37,7 @@ describe("key package", () => {
                 let keyPackage = undefined;
                 try {
                     keyPackage = await cc.transaction(async (ctx) => {
-                        return await ctx.generateKeypackage(credentialRef);
+                        return await ctx.generateKeyPackage(credentialRef);
                     });
                 } catch {
                     threwError = true;
@@ -78,14 +78,14 @@ describe("key package", () => {
                 });
 
                 const keyPackage = await cc.transaction(async (ctx) => {
-                    return await ctx.generateKeypackage(credentialRef);
+                    return await ctx.generateKeyPackage(credentialRef);
                 });
                 const bytes = new Uint8Array(keyPackage.serialize());
 
                 const wasDefined = bytes !== null && bytes !== undefined;
                 const wasEmpty = bytes.byteLength === 0;
 
-                const kp2 = new window.ccModule.Keypackage(bytes.buffer);
+                const kp2 = new window.ccModule.KeyPackage(bytes.buffer);
                 const bytes2 = new Uint8Array(kp2.serialize());
 
                 // JS in the browser doesn't have a natural way to compare Uint8Arrays,
@@ -126,8 +126,8 @@ describe("key package", () => {
 
                 const keyPackages = await cc.transaction(async (ctx) => {
                     const credentialRef = await ctx.addCredential(credential);
-                    await ctx.generateKeypackage(credentialRef);
-                    return await ctx.getKeypackages();
+                    await ctx.generateKeyPackage(credentialRef);
+                    return await ctx.getKeyPackages();
                 });
 
                 const wasDefined =
@@ -167,14 +167,14 @@ describe("key package", () => {
                 const keyPackages = await cc.transaction(async (ctx) => {
                     const credentialRef = await ctx.addCredential(credential);
                     // add a kp which will not be removed, so we have one left over
-                    await ctx.generateKeypackage(credentialRef);
+                    await ctx.generateKeyPackage(credentialRef);
                     // add a kp which will be removed
                     const keyPackage =
-                        await ctx.generateKeypackage(credentialRef);
+                        await ctx.generateKeyPackage(credentialRef);
                     // now remove that keypackage
-                    await ctx.removeKeypackage(keyPackage.ref());
+                    await ctx.removeKeyPackage(keyPackage.ref());
 
-                    return await ctx.getKeypackages();
+                    return await ctx.getKeyPackages();
                 });
 
                 const wasDefined =
@@ -232,17 +232,17 @@ describe("key package", () => {
                                 i < KEYPACKAGES_PER_CREDENTIAL;
                                 i++
                             ) {
-                                await ctx.generateKeypackage(cref);
+                                await ctx.generateKeyPackage(cref);
                             }
                         }
 
-                        const kpsBeforeRemoval = await ctx.getKeypackages();
+                        const kpsBeforeRemoval = await ctx.getKeyPackages();
                         const beforeRemovalArraySize = kpsBeforeRemoval.length;
 
                         // now remove all keypackages for one of the credentials
-                        await ctx.removeKeypackagesFor(cref1);
+                        await ctx.removeKeyPackagesFor(cref1);
 
-                        const kps = await ctx.getKeypackages();
+                        const kps = await ctx.getKeyPackages();
                         const afterRemovalArraySize = kps.length;
                         return {
                             beforeRemovalArraySize,

@@ -45,7 +45,7 @@ describe("benchmark", () => {
                             credentialType:
                                 window.ccModule.CredentialType.Basic,
                         });
-                        return await ctx.generateKeypackage(credentialRef!);
+                        return await ctx.generateKeyPackage(credentialRef!);
                     });
 
                     await aliceCc.transaction(
