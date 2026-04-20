@@ -25,7 +25,7 @@ mod tests {
                     .unwrap();
 
                 // ...Bob deletes locally (with the associated private key) before processing the Welcome
-                bob.transaction.remove_keypackage(&bob_kp_ref).await.unwrap();
+                bob.transaction.remove_key_package(&bob_kp_ref).await.unwrap();
 
                 let welcome = alice.mls_transport().await.latest_welcome_message().await;
 

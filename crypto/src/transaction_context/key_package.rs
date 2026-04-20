@@ -71,7 +71,7 @@ impl TransactionContext {
     ///
     /// Implementation note: this must first load and deserialize the keypackage,
     /// then remove items from three distinct tables.
-    pub async fn remove_keypackage(&self, kp_ref: &KeypackageRef) -> Result<()> {
+    pub async fn remove_key_package(&self, kp_ref: &KeypackageRef) -> Result<()> {
         let Some(kp) = self
             .session()
             .await?
@@ -135,7 +135,7 @@ impl TransactionContext {
             .filter(|keypackage| keypackage.leaf_node().signature_key().as_slice() == signature_public_key)
         {
             let kp_ref = try_retain_err!(keypackage.make_ref());
-            try_retain_err!(self.remove_keypackage(&kp_ref).await);
+            try_retain_err!(self.remove_key_package(&kp_ref).await);
         }
 
         match first_err {

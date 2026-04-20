@@ -345,8 +345,8 @@ impl CoreCryptoContext {
     }
 
     /// Remove a `KeyPackage` from the database.
-    pub async fn remove_keypackage(&self, kp_ref: &Arc<KeyPackageRef>) -> CoreCryptoResult<()> {
-        self.inner.remove_keypackage(kp_ref.as_cc()).await.map_err(Into::into)
+    pub async fn remove_key_package(&self, kp_ref: &Arc<KeyPackageRef>) -> CoreCryptoResult<()> {
+        self.inner.remove_key_package(kp_ref.as_cc()).await.map_err(Into::into)
     }
 
     /// Remove all `KeyPackage`s associated with this credential ref.
