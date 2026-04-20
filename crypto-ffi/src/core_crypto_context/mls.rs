@@ -9,7 +9,7 @@ use tls_codec::Deserialize as _;
 
 use crate::{
     Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, Credential, CredentialRef,
-    CredentialType, DecryptedMessage, Keypackage, KeypackageRef, MlsTransport, bytes_wrapper::bytes_wrapper,
+    CredentialType, DecryptedMessage, Keypackage, KeyPackageRef, MlsTransport, bytes_wrapper::bytes_wrapper,
     core_crypto::mls_transport::callback_shim,
 };
 
@@ -336,16 +336,16 @@ impl CoreCryptoContext {
     }
 
     /// Get a reference to each `KeyPackage` in the database.
-    pub async fn get_keypackages(&self) -> CoreCryptoResult<Vec<Arc<KeypackageRef>>> {
+    pub async fn get_keypackages(&self) -> CoreCryptoResult<Vec<Arc<KeyPackageRef>>> {
         self.inner
             .get_keypackage_refs()
             .await
-            .map(|kp_refs| kp_refs.into_iter().map(KeypackageRef::coerce_arc).collect())
+            .map(|kp_refs| kp_refs.into_iter().map(KeyPackageRef::coerce_arc).collect())
             .map_err(Into::into)
     }
 
     /// Remove a `KeyPackage` from the database.
-    pub async fn remove_keypackage(&self, kp_ref: &Arc<KeypackageRef>) -> CoreCryptoResult<()> {
+    pub async fn remove_keypackage(&self, kp_ref: &Arc<KeyPackageRef>) -> CoreCryptoResult<()> {
         self.inner.remove_keypackage(kp_ref.as_cc()).await.map_err(Into::into)
     }
 

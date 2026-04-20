@@ -10,10 +10,10 @@ use crate::{Ciphersuite, CoreCryptoError, CoreCryptoResult, CredentialType, Sign
 /// This contains some metadata to assist in sorting and filtering refs without needing to perform the
 /// relatively heavy operation of converting to a full keypackage.
 #[derive(Clone, derive_more::From, derive_more::Deref, uniffi::Object)]
-pub struct KeypackageRef(core_crypto::KeypackageRef);
+pub struct KeyPackageRef(core_crypto::KeypackageRef);
 
 #[uniffi::export]
-impl KeypackageRef {
+impl KeyPackageRef {
     /// Get the bytes of the hash reference to a keypackage.
     pub fn hash_ref(&self) -> Vec<u8> {
         self.0.hash_ref().into()
@@ -40,7 +40,7 @@ impl KeypackageRef {
     }
 }
 
-impl KeypackageRef {
+impl KeyPackageRef {
     pub(crate) fn coerce_arc<T: Into<Self>>(t: T) -> Arc<Self> {
         Arc::new(t.into())
     }
@@ -109,11 +109,11 @@ impl Keypackage {
     }
 
     /// Convert this to a reference.
-    pub fn r#ref(&self) -> CoreCryptoResult<KeypackageRef> {
+    pub fn r#ref(&self) -> CoreCryptoResult<KeyPackageRef> {
         match &self.0 {
             Inner::Out(key_package) => key_package
                 .make_ref()
-                .map(KeypackageRef)
+                .map(KeyPackageRef)
                 .map_err(RecursiveError::mls_client("generating hashref for key package"))
                 .map_err(Into::into),
             Inner::In(_) => Err(CoreCryptoError::ad_hoc(
