@@ -47,7 +47,7 @@ $(STAMPS)/jvm-test: $(jvm-test-deps)
 	./gradlew jvm:test --rerun
 	$(TOUCH_STAMP)
 
-$(STAMPS)/jvm-bench: $(jvm-test-deps) $(KT_BENCHMARKS)
+.PHONY: jvm-bench
 	@set -euo pipefail; \
 	cd crypto-ffi/bindings && \
 	if [ -n "$(BENCH)" ]; then \
@@ -55,7 +55,6 @@ $(STAMPS)/jvm-bench: $(jvm-test-deps) $(KT_BENCHMARKS)
 	else \
 		./gradlew :jvm:jmh; \
 	fi
-	$(TOUCH_STAMP)
 
 #-------------------------------------------------------------------------------
 # KMP (Kotlin Multiplatform) builds

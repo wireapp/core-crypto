@@ -55,14 +55,13 @@ clean: ts-clean ## Run cargo clean and the ts-clean target, remove all stamps
 #
 # The real test logic and its prerequisites live in the per-platform sub-makefiles
 # as $(STAMPS)/<target> rules (e.g. $(STAMPS)/jvm-test in make/jvm.mk).
-LAZY_TARGETS := jvm-test kmp-jvm-test ts-browser-test ts-native-test ts-test android-test ios-test interop-test jvm-bench
+LAZY_TARGETS := jvm-test kmp-jvm-test ts-browser-test ts-native-test ts-test android-test ios-test interop-test
 
 ts-browser-test: ## Run browser TypeScript wrapper tests via wdio and bun/wasm. Optionally pass TEST=<test> to filter by test name.
 ts-native-test: ## Run native TypeScript wrapper tests via bun/napi. Optionally pass TEST=<test> to filter by test name.
 ts-test: ## Run all TypeScript wrapper tests. Optionally pass TEST=<test> to filter by test name.
 kmp-jvm-test: ## Run Kotlin multi-platform tests on JVM
 jvm-test: ## Run Kotlin tests on JVM
-jvm-bench: ## Run the JVM benchmarks
 android-test: ## Run Kotlin tests on Android
 ios-test: ## Run Swift tests on iOS (macOS only)
 interop-test: ## Run e2e interop test
