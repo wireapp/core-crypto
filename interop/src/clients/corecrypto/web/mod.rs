@@ -148,8 +148,8 @@ impl EmulatedClient for CoreCryptoWebClient {
 impl EmulatedMlsClient for CoreCryptoWebClient {
     async fn get_keypackage(&self) -> Result<Vec<u8>> {
         let js = MLS_FUNCTIONS
-            .get("getKeypackage")
-            .context("getting `getKeypackage` from `mls.ts`")?;
+            .get("getKeyPackage")
+            .context("getting `getKeyPackage` from `mls.ts`")?;
         let start = std::time::Instant::now();
         let kp_raw = self.browser.execute(js, vec![]).await?;
         let kp_raw = serde_json::from_value::<Vec<u8>>(kp_raw)?;

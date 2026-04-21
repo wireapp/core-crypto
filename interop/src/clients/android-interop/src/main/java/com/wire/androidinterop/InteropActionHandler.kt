@@ -7,7 +7,7 @@ import com.wire.crypto.CoreCrypto
 import com.wire.crypto.Credential
 import com.wire.crypto.DatabaseKey
 import com.wire.crypto.HistorySecret
-import com.wire.crypto.Keypackage
+import com.wire.crypto.KeyPackage
 import com.wire.crypto.MlsTransport
 import com.wire.crypto.MlsTransportData
 import com.wire.crypto.MlsTransportResponse
@@ -57,7 +57,7 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
                     context.addClientsToConversation(
                         ConversationId(action.conversationId),
                         keyPackages = listOf(
-                            Keypackage(action.keyPackage)
+                            KeyPackage(action.keyPackage)
                         )
                     )
                 }
@@ -99,7 +99,7 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
                         credentialType = null,
                         earliestValidity = null
                     ).first()
-                    context.generateKeypackage(credential, null)
+                    context.generateKeyPackage(credential, null)
                 }.let {
                     Result.success(Base64.Default.encode(it.serialize()))
                 }

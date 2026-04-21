@@ -138,7 +138,7 @@ struct InteropClientApp: App {
                     earliestValidity: nil
                 ).first!
 
-                return try await $0.generateKeypackage(
+                return try await $0.generateKeyPackage(
                     credentialRef: credential,
                     lifetime: nil
                 )
@@ -150,7 +150,7 @@ struct InteropClientApp: App {
             guard let coreCrypto else { throw InteropError.notInitialised }
             let conversationId = ConversationId(bytes: conversationId)
             let ciphersuite = try ciphersuiteFromU16(discriminant: ciphersuite)
-            let keyPackage = try Keypackage(bytes: keyPackage)
+            let keyPackage = try KeyPackage(bytes: keyPackage)
 
             try await coreCrypto.transaction { context in
                 if try await context.conversationExists(
