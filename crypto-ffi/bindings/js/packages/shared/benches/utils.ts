@@ -5,13 +5,13 @@ export function tinybench_setup(task?: Task, mode?: string) {
     console.log(`Executing ${mode} ${task?.name}`);
 }
 
-type ParameterSet = {
+type MessageParameterSet = {
     count: number;
     size: number;
     cipherSuite: number;
 };
 
-export async function messageBenchmarkParameters(): Promise<ParameterSet[]> {
+export async function messageBenchmarkParameters(): Promise<MessageParameterSet[]> {
     const messageCounts = [1, 10, 100];
     const messageSizes = [16, 1024, 65536];
     const cipherSuites = [
@@ -32,5 +32,5 @@ export async function messageBenchmarkParameters(): Promise<ParameterSet[]> {
         }
     }
 
-    return Array.from(benchmarkCombinations()) as ParameterSet[]; // return as plain array
+    return Array.from(benchmarkCombinations()) as MessageParameterSet[]; // return as plain array
 }
