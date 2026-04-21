@@ -11,6 +11,8 @@ import {
     type MlsTransportData,
 } from "@wireapp/core-crypto/browser";
 import { isNumberObject } from "node:util/types";
+import { mkdir } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 type ccModuleType = typeof import("@wireapp/core-crypto/browser");
 declare global {
     interface Window {
@@ -190,4 +192,41 @@ function logEvents(entry: local.LogEntry) {
     if (logLevel >= 1) {
         console.log(`[${entry.level}] ${entry.text}`);
     }
+}
+
+/*
+Helper method to:
+1. Poll until the benchmark is done
+2. Retrieve the results
+3. Print results and save them to file if in CI
+*/
+export async function collect_benchmark_results() {
+    // 2. Poll until benchmark is done
+    await browser.waitUntil(
+        async () => {
+            return !(await browser.execute(() => window.benchRunning));
+        },
+        {
+            timeout: 1_800_000, // 30 min
+            timeoutMsg: "Benchmark did not finish in time",
+        }
+    );
+
+    // 3. Retrieve results
+    const results = await browser.execute(() => {
+        return { name: window.bench.name, table: window.bench.table() };
+    });
+
+    console.log(results.name);
+    console.log(results.table);
+
+    if (!process.env["CI"]) return;
+
+    const customResults = toCustomBenchmarkEntries(results.name, results.table);
+
+    await mkdir("benches_result", { recursive: true });
+    await writeFile(
+        `benches_result/${results.name}.json`,
+        JSON.stringify(customResults, null, 2)
+    );
 }

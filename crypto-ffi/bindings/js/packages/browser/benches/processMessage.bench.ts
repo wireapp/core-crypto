@@ -1,8 +1,7 @@
 import { beforeEach, describe } from "mocha";
 import { browser } from "@wdio/globals";
-import { setup, toCustomBenchmarkEntries } from "./utils";
+import { collect_benchmark_results, setup } from "./utils";
 import { messageBenchmarkParameters } from "../../shared/benches/utils";
-import { writeFile, mkdir } from "fs/promises";
 
 beforeEach(async () => {
     await setup();
@@ -107,36 +106,6 @@ describe("benchmark", () => {
             })(parameters);
         }, parameters);
 
-        // 2. Poll until benchmark is done
-        await browser.waitUntil(
-            async () => {
-                return !(await browser.execute(() => window.benchRunning));
-            },
-            {
-                timeout: 1_800_000, // 30 min
-                timeoutMsg: "Benchmark did not finish in time",
-            }
-        );
-
-        // 3. Retrieve results
-        const results = await browser.execute(() => {
-            return { name: window.bench.name, table: window.bench.table() };
-        });
-
-        console.log(results.name);
-        console.log(results.table);
-
-        if (!process.env["CI"]) return;
-
-        const customResults = toCustomBenchmarkEntries(
-            results.name,
-            results.table
-        );
-
-        await mkdir("benches_result", { recursive: true });
-        await writeFile(
-            `benches_result/${results.name}.json`,
-            JSON.stringify(customResults, null, 2)
-        );
+        await collect_benchmark_results();
     });
 });
