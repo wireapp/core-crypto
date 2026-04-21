@@ -526,7 +526,7 @@ final class WireCoreCryptoTests: XCTestCase {
                 earliestValidity: nil
             ).first!
 
-            return try await $0.generateKeypackage(
+            return try await $0.generateKeyPackage(
                 credentialRef: credential,
                 lifetime: nil
             )
@@ -577,7 +577,7 @@ final class WireCoreCryptoTests: XCTestCase {
                 earliestValidity: nil
             ).first!
 
-            return try await $0.generateKeypackage(
+            return try await $0.generateKeyPackage(
                 credentialRef: credential,
                 lifetime: nil
             )
@@ -708,7 +708,7 @@ final class WireCoreCryptoTests: XCTestCase {
         }
 
         let keyPackage = try await alice.transaction {
-            try await $0.generateKeypackage(credentialRef: credentialRef, lifetime: nil)
+            try await $0.generateKeyPackage(credentialRef: credentialRef, lifetime: nil)
         }
 
         XCTAssertNotNil(keyPackage)
@@ -729,14 +729,14 @@ final class WireCoreCryptoTests: XCTestCase {
         }
 
         let keyPackage = try await alice.transaction {
-            try await $0.generateKeypackage(credentialRef: credentialRef, lifetime: nil)
+            try await $0.generateKeyPackage(credentialRef: credentialRef, lifetime: nil)
         }
 
         let bytes = try keyPackage.serialize()
         XCTAssertFalse(bytes.isEmpty)
 
         // roundtrip
-        let kp2 = try Keypackage(bytes: bytes)
+        let kp2 = try KeyPackage(bytes: bytes)
         let bytes2 = try kp2.serialize()
 
         XCTAssertEqual(bytes, bytes2)
@@ -757,11 +757,11 @@ final class WireCoreCryptoTests: XCTestCase {
         }
 
         _ = try await alice.transaction {
-            try await $0.generateKeypackage(credentialRef: credentialRef, lifetime: nil)
+            try await $0.generateKeyPackage(credentialRef: credentialRef, lifetime: nil)
         }
 
         let keyPackages = try await alice.transaction { ctx in
-            try await ctx.getKeypackages()
+            try await ctx.getKeyPackages()
         }
 
         XCTAssertEqual(keyPackages.count, 1)
@@ -783,21 +783,21 @@ final class WireCoreCryptoTests: XCTestCase {
 
         // add a kp which will not be removed
         _ = try await alice.transaction {
-            try await $0.generateKeypackage(credentialRef: credentialRef, lifetime: nil)
+            try await $0.generateKeyPackage(credentialRef: credentialRef, lifetime: nil)
         }
 
         // add a kp which will be removed
         let keyPackage = try await alice.transaction {
-            try await $0.generateKeypackage(credentialRef: credentialRef, lifetime: nil)
+            try await $0.generateKeyPackage(credentialRef: credentialRef, lifetime: nil)
         }
 
         // remove the keypackage
         try await alice.transaction {
-            try await $0.removeKeypackage(kpRef: try keyPackage.ref())
+            try await $0.removeKeyPackage(kpRef: try keyPackage.ref())
         }
 
         let keyPackages = try await alice.transaction { ctx in
-            try await ctx.getKeypackages()
+            try await ctx.getKeyPackages()
         }
 
         XCTAssertEqual(keyPackages.count, 1)
@@ -828,17 +828,17 @@ final class WireCoreCryptoTests: XCTestCase {
             let keypackagesPerCredential = 2
             for cref in [cref1, cref2] {
                 for _ in 0..<keypackagesPerCredential {
-                    _ = try await ctx.generateKeypackage(credentialRef: cref, lifetime: nil)
+                    _ = try await ctx.generateKeyPackage(credentialRef: cref, lifetime: nil)
                 }
             }
 
-            let kpsBeforeRemoval = try await ctx.getKeypackages()
+            let kpsBeforeRemoval = try await ctx.getKeyPackages()
             XCTAssertEqual(kpsBeforeRemoval.count, keypackagesPerCredential * 2)
 
             // remove all keypackages for one of the credentials
-            try await ctx.removeKeypackagesFor(credentialRef: cref1)
+            try await ctx.removeKeyPackagesFor(credentialRef: cref1)
 
-            let kps = try await ctx.getKeypackages()
+            let kps = try await ctx.getKeyPackages()
             XCTAssertEqual(kps.count, keypackagesPerCredential)
         }
     }
