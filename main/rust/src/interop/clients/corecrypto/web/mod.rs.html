@@ -148,8 +148,8 @@
 <a href=#148 id=148 data-nosnippet>148</a></span><span class="kw">impl </span>EmulatedMlsClient <span class="kw">for </span>CoreCryptoWebClient {
 <a href=#149 id=149 data-nosnippet>149</a>    <span class="kw">async fn </span>get_keypackage(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
 <a href=#150 id=150 data-nosnippet>150</a>        <span class="kw">let </span>js = MLS_FUNCTIONS
-<a href=#151 id=151 data-nosnippet>151</a>            .get(<span class="string">"getKeypackage"</span>)
-<a href=#152 id=152 data-nosnippet>152</a>            .context(<span class="string">"getting `getKeypackage` from `mls.ts`"</span>)<span class="question-mark">?</span>;
+<a href=#151 id=151 data-nosnippet>151</a>            .get(<span class="string">"getKeyPackage"</span>)
+<a href=#152 id=152 data-nosnippet>152</a>            .context(<span class="string">"getting `getKeyPackage` from `mls.ts`"</span>)<span class="question-mark">?</span>;
 <a href=#153 id=153 data-nosnippet>153</a>        <span class="kw">let </span>start = std::time::Instant::now();
 <a href=#154 id=154 data-nosnippet>154</a>        <span class="kw">let </span>kp_raw = <span class="self">self</span>.browser.execute(js, <span class="macro">vec!</span>[]).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#155 id=155 data-nosnippet>155</a>        <span class="kw">let </span>kp_raw = serde_json::from_value::&lt;Vec&lt;u8&gt;&gt;(kp_raw)<span class="question-mark">?</span>;

@@ -25,7 +25,7 @@
 <a href=#25 id=25 data-nosnippet>25</a>                    </span>.unwrap();
 <a href=#26 id=26 data-nosnippet>26</a>
 <a href=#27 id=27 data-nosnippet>27</a>                <span class="comment">// ...Bob deletes locally (with the associated private key) before processing the Welcome
-<a href=#28 id=28 data-nosnippet>28</a>                </span>bob.transaction.remove_keypackage(<span class="kw-2">&amp;</span>bob_kp_ref).<span class="kw">await</span>.unwrap();
+<a href=#28 id=28 data-nosnippet>28</a>                </span>bob.transaction.remove_key_package(<span class="kw-2">&amp;</span>bob_kp_ref).<span class="kw">await</span>.unwrap();
 <a href=#29 id=29 data-nosnippet>29</a>
 <a href=#30 id=30 data-nosnippet>30</a>                <span class="kw">let </span>welcome = alice.mls_transport().<span class="kw">await</span>.latest_welcome_message().<span class="kw">await</span>;
 <a href=#31 id=31 data-nosnippet>31</a>

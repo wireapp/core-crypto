@@ -10,10 +10,10 @@
 <a href=#10 id=10 data-nosnippet>10</a>/// This contains some metadata to assist in sorting and filtering refs without needing to perform the
 <a href=#11 id=11 data-nosnippet>11</a>/// relatively heavy operation of converting to a full keypackage.
 <a href=#12 id=12 data-nosnippet>12</a></span><span class="attr">#[derive(Clone, derive_more::From, derive_more::Deref, uniffi::Object)]
-<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">pub struct </span>KeypackageRef(core_crypto::KeypackageRef);
+<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">pub struct </span>KeyPackageRef(core_crypto::KeypackageRef);
 <a href=#14 id=14 data-nosnippet>14</a>
 <a href=#15 id=15 data-nosnippet>15</a><span class="attr">#[uniffi::export]
-<a href=#16 id=16 data-nosnippet>16</a></span><span class="kw">impl </span>KeypackageRef {
+<a href=#16 id=16 data-nosnippet>16</a></span><span class="kw">impl </span>KeyPackageRef {
 <a href=#17 id=17 data-nosnippet>17</a>    <span class="doccomment">/// Get the bytes of the hash reference to a keypackage.
 <a href=#18 id=18 data-nosnippet>18</a>    </span><span class="kw">pub fn </span>hash_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
 <a href=#19 id=19 data-nosnippet>19</a>        <span class="self">self</span>.<span class="number">0</span>.hash_ref().into()
@@ -40,7 +40,7 @@
 <a href=#40 id=40 data-nosnippet>40</a>    }
 <a href=#41 id=41 data-nosnippet>41</a>}
 <a href=#42 id=42 data-nosnippet>42</a>
-<a href=#43 id=43 data-nosnippet>43</a><span class="kw">impl </span>KeypackageRef {
+<a href=#43 id=43 data-nosnippet>43</a><span class="kw">impl </span>KeyPackageRef {
 <a href=#44 id=44 data-nosnippet>44</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>coerce_arc&lt;T: Into&lt;<span class="self">Self</span>&gt;&gt;(t: T) -&gt; Arc&lt;<span class="self">Self</span>&gt; {
 <a href=#45 id=45 data-nosnippet>45</a>        Arc::new(t.into())
 <a href=#46 id=46 data-nosnippet>46</a>    }
@@ -62,10 +62,10 @@
 <a href=#62 id=62 data-nosnippet>62</a>/// Includes a public key that can be used to encrypt to that client.
 <a href=#63 id=63 data-nosnippet>63</a>/// Other clients can use a client's KeyPackage to introduce that client to a new group.
 <a href=#64 id=64 data-nosnippet>64</a></span><span class="attr">#[derive(Clone, uniffi::Object)]
-<a href=#65 id=65 data-nosnippet>65</a></span><span class="kw">pub struct </span>Keypackage(Inner);
+<a href=#65 id=65 data-nosnippet>65</a></span><span class="kw">pub struct </span>KeyPackage(Inner);
 <a href=#66 id=66 data-nosnippet>66</a>
-<a href=#67 id=67 data-nosnippet>67</a><span class="kw">impl </span>From&lt;Keypackage&gt; <span class="kw">for </span>KeyPackageIn {
-<a href=#68 id=68 data-nosnippet>68</a>    <span class="kw">fn </span>from(value: Keypackage) -&gt; <span class="self">Self </span>{
+<a href=#67 id=67 data-nosnippet>67</a><span class="kw">impl </span>From&lt;KeyPackage&gt; <span class="kw">for </span>KeyPackageIn {
+<a href=#68 id=68 data-nosnippet>68</a>    <span class="kw">fn </span>from(value: KeyPackage) -&gt; <span class="self">Self </span>{
 <a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">match </span>value.<span class="number">0 </span>{
 <a href=#70 id=70 data-nosnippet>70</a>            Inner::Out(key_package) =&gt; key_package.into(),
 <a href=#71 id=71 data-nosnippet>71</a>            Inner::In(key_package_in) =&gt; key_package_in,
@@ -73,16 +73,16 @@
 <a href=#73 id=73 data-nosnippet>73</a>    }
 <a href=#74 id=74 data-nosnippet>74</a>}
 <a href=#75 id=75 data-nosnippet>75</a>
-<a href=#76 id=76 data-nosnippet>76</a><span class="kw">impl </span>Keypackage {
+<a href=#76 id=76 data-nosnippet>76</a><span class="kw">impl </span>KeyPackage {
 <a href=#77 id=77 data-nosnippet>77</a>    <span class="doccomment">/// Bundle the inner type up appropriately
 <a href=#78 id=78 data-nosnippet>78</a>    </span><span class="attr">#[expect(private_bounds)]
-<a href=#79 id=79 data-nosnippet>79</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>coerce_arc&lt;T: Into&lt;Inner&gt;&gt;(t: T) -&gt; Arc&lt;Keypackage&gt; {
-<a href=#80 id=80 data-nosnippet>80</a>        std::sync::Arc::new(Keypackage(t.into()))
+<a href=#79 id=79 data-nosnippet>79</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>coerce_arc&lt;T: Into&lt;Inner&gt;&gt;(t: T) -&gt; Arc&lt;KeyPackage&gt; {
+<a href=#80 id=80 data-nosnippet>80</a>        std::sync::Arc::new(KeyPackage(t.into()))
 <a href=#81 id=81 data-nosnippet>81</a>    }
 <a href=#82 id=82 data-nosnippet>82</a>}
 <a href=#83 id=83 data-nosnippet>83</a>
 <a href=#84 id=84 data-nosnippet>84</a><span class="attr">#[uniffi::export]
-<a href=#85 id=85 data-nosnippet>85</a></span><span class="kw">impl </span>Keypackage {
+<a href=#85 id=85 data-nosnippet>85</a></span><span class="kw">impl </span>KeyPackage {
 <a href=#86 id=86 data-nosnippet>86</a>    <span class="doccomment">/// Construct a new `Keypackage` from a byte array.
 <a href=#87 id=87 data-nosnippet>87</a>    </span><span class="attr">#[uniffi::constructor]
 <a href=#88 id=88 data-nosnippet>88</a>    </span><span class="kw">pub fn </span>new(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
@@ -109,11 +109,11 @@
 <a href=#109 id=109 data-nosnippet>109</a>    }
 <a href=#110 id=110 data-nosnippet>110</a>
 <a href=#111 id=111 data-nosnippet>111</a>    <span class="doccomment">/// Convert this to a reference.
-<a href=#112 id=112 data-nosnippet>112</a>    </span><span class="kw">pub fn </span>r#ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;KeypackageRef&gt; {
+<a href=#112 id=112 data-nosnippet>112</a>    </span><span class="kw">pub fn </span>r#ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;KeyPackageRef&gt; {
 <a href=#113 id=113 data-nosnippet>113</a>        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
 <a href=#114 id=114 data-nosnippet>114</a>            Inner::Out(key_package) =&gt; key_package
 <a href=#115 id=115 data-nosnippet>115</a>                .make_ref()
-<a href=#116 id=116 data-nosnippet>116</a>                .map(KeypackageRef)
+<a href=#116 id=116 data-nosnippet>116</a>                .map(KeyPackageRef)
 <a href=#117 id=117 data-nosnippet>117</a>                .map_err(RecursiveError::mls_client(<span class="string">"generating hashref for key package"</span>))
 <a href=#118 id=118 data-nosnippet>118</a>                .map_err(Into::into),
 <a href=#119 id=119 data-nosnippet>119</a>            Inner::In(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(CoreCryptoError::ad_hoc(

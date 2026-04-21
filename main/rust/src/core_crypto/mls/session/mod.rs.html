@@ -188,7 +188,7 @@
 <a href=#188 id=188 data-nosnippet>188</a>            <span class="kw">use </span>core_crypto_keystore::CryptoKeystoreMls <span class="kw">as _</span>;
 <a href=#189 id=189 data-nosnippet>189</a>            <span class="kw">let </span>kps = backend
 <a href=#190 id=190 data-nosnippet>190</a>                .key_store()
-<a href=#191 id=191 data-nosnippet>191</a>                .mls_fetch_keypackages::&lt;openmls::prelude::KeyPackage&gt;(u32::MAX)
+<a href=#191 id=191 data-nosnippet>191</a>                .mls_fetch_key_packages::&lt;openmls::prelude::KeyPackage&gt;(u32::MAX)
 <a href=#192 id=192 data-nosnippet>192</a>                .<span class="kw">await
 <a href=#193 id=193 data-nosnippet>193</a>                </span>.map_err(KeystoreError::wrap(<span class="string">"fetching mls keypackages"</span>))<span class="question-mark">?</span>;
 <a href=#194 id=194 data-nosnippet>194</a>            <span class="prelude-val">Ok</span>(kps)

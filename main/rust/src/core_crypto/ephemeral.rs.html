@@ -100,7 +100,7 @@
 <a href=#100 id=100 data-nosnippet>100</a>
 <a href=#101 id=101 data-nosnippet>101</a>    <span class="comment">// we can generate a key package from the ephemeral cc and ciphersutite
 <a href=#102 id=102 data-nosnippet>102</a>    </span><span class="kw">let </span>key_package = tx
-<a href=#103 id=103 data-nosnippet>103</a>        .generate_keypackage(<span class="kw-2">&amp;</span>credential_ref, <span class="prelude-val">None</span>)
+<a href=#103 id=103 data-nosnippet>103</a>        .generate_key_package(<span class="kw-2">&amp;</span>credential_ref, <span class="prelude-val">None</span>)
 <a href=#104 id=104 data-nosnippet>104</a>        .<span class="kw">await
 <a href=#105 id=105 data-nosnippet>105</a>        </span>.map_err(RecursiveError::transaction(<span class="string">"generating keypackage"</span>))<span class="question-mark">?</span>;
 <a href=#106 id=106 data-nosnippet>106</a>    <span class="kw">let </span>key_package = KeyPackageSecretEncapsulation::load(<span class="kw-2">&amp;</span>session.crypto_provider, key_package)

@@ -134,7 +134,7 @@
 <a href=#134 id=134 data-nosnippet>134</a>            <span class="kw">let </span>credential_ref = context.add_credential(credential).<span class="kw">await</span>.unwrap();
 <a href=#135 id=135 data-nosnippet>135</a>
 <a href=#136 id=136 data-nosnippet>136</a>            <span class="comment">// expect mls_client to work
-<a href=#137 id=137 data-nosnippet>137</a>            </span><span class="macro">assert!</span>(context.generate_keypackage(<span class="kw-2">&amp;</span>credential_ref, <span class="prelude-val">None</span>).<span class="kw">await</span>.is_ok());
+<a href=#137 id=137 data-nosnippet>137</a>            </span><span class="macro">assert!</span>(context.generate_key_package(<span class="kw-2">&amp;</span>credential_ref, <span class="prelude-val">None</span>).<span class="kw">await</span>.is_ok());
 <a href=#138 id=138 data-nosnippet>138</a>        })
 <a href=#139 id=139 data-nosnippet>139</a>        .<span class="kw">await
 <a href=#140 id=140 data-nosnippet>140</a>    </span>}
