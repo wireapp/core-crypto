@@ -109,7 +109,7 @@ struct InteropClientApp: App {
             let key = try generateDatabaseKey()
             let keystorePath = try generateKeystorePath()
             let database = try await Database.open(location: keystorePath.path, key: key)
-            self.coreCrypto = try await CoreCrypto(
+            self.coreCrypto = try CoreCrypto(
                 database: database
             )
 
@@ -237,7 +237,7 @@ struct InteropClientApp: App {
                 let key = try generateDatabaseKey()
                 let database = try await Database.open(
                     location: generateKeystorePath().path, key: key)
-                self.coreCrypto = try await CoreCrypto(
+                self.coreCrypto = try CoreCrypto(
                     database: database
                 )
             }
