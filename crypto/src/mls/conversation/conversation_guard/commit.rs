@@ -236,8 +236,8 @@ impl ConversationGuard {
         let credential = credential.clone();
 
         self.conversation_mut(async move |conversation, _database| {
-            // If the credential remains the same and we still want to update, we explicitly need to pass `None` to openmls,
-            // if we just passed an unchanged leaf node, no update commit would be created.
+            // If the credential remains the same and we still want to update, we explicitly need to pass `None` to
+            // openmls, if we just passed an unchanged leaf node, no update commit would be created.
             // Also, we can avoid cloning in the case we don't need to create a new leaf node.
             let updated_leaf_node = {
                 let leaf_node = conversation.group.own_leaf().ok_or(LeafError::InternalMlsError)?;

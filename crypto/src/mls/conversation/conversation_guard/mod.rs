@@ -54,7 +54,8 @@ impl ConversationGuard {
     /// This ensures that persistence cannot be forgotten.
     ///
     /// We choose to implement this as a closure instead of a lightweight holding a reference to the coversation
-    /// which calls that method on `Drop` because this way we can ensure we do _not_ automatically call it when there is an error.
+    /// which calls that method on `Drop` because this way we can ensure we do _not_ automatically call it when there is
+    /// an error.
     pub(crate) async fn conversation_mut<T>(
         &mut self,
         operation: impl AsyncFnOnce(&mut MlsConversation, &Database) -> Result<T>,
