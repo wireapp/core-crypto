@@ -117,7 +117,7 @@ impl KeycloakImage {
         // (event though the discovery endpoint already advertises supporting it)
         let component_type = "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy";
         let components = admin
-            .realm_components_get(Self::REALM, None, None, Some(component_type.to_string()))
+            .realm_components_get(Self::REALM, None, None, Some(component_type.to_string()), None)
             .await
             .unwrap();
         let mut component = components
