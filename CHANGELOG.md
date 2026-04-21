@@ -141,6 +141,17 @@
 
 ### Breaking Changes
 
+- We aligned key package spelling to KeyPackage
+
+  - renamed `Keypackage` -> `KeyPackage`
+  - renamed `KeypackageRef` -> `KeyPackageRef`
+  - renamed `generateKeypackage` -> `generateKeyPackage`
+  - renamed `getKeypackages` -> `getKeyPackages`
+  - renamed `removeKeypackage` -> `removeKeyPackage`
+  - renamed `removeKeypackagesFor` -> `removeKeyPackagesFor`
+
+  Affected platforms: all
+
 - Removed `WelcomeBundle` type that was returned from `processWelcomeMessage()` and `joinByExternalCommit()`. They
   return a `ConversationId` now only.
 
