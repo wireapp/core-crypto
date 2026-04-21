@@ -1,7 +1,7 @@
 import { beforeEach, describe } from "mocha";
 import { browser } from "@wdio/globals";
 import { setup, toCustomBenchmarkEntries } from "./utils";
-import { benchmarkParameters } from "../../shared/benches/utils";
+import { messageBenchmarkParameters } from "../../shared/benches/utils";
 import { writeFile, mkdir } from "fs/promises";
 
 beforeEach(async () => {
@@ -11,7 +11,7 @@ beforeEach(async () => {
 describe("benchmark", () => {
     it(`process messages`, async () => {
         // 1. Initialize the benchmark in the browser, but don't block
-        const parameters = await benchmarkParameters();
+        const parameters = await messageBenchmarkParameters();
         await browser.execute(async (parameters) => {
             window.benchRunning = true;
 

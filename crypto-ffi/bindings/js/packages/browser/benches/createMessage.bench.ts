@@ -1,7 +1,7 @@
 import { beforeEach, describe } from "mocha";
 import { browser } from "@wdio/globals";
 import { setup, toCustomBenchmarkEntries } from "./utils";
-import { benchmarkParameters } from "../../shared/benches/utils";
+import { messageBenchmarkParameters } from "../../shared/benches/utils";
 import { mkdir, writeFile } from "fs/promises";
 
 beforeEach(async () => {
@@ -14,7 +14,7 @@ describe("benchmark", () => {
         // For long runnning tasks we can't synchronously wait for `browser.execute()` to finish.
         // If the function runs longer than 60s the browser will timeout unrelated to wdio/mocha timeout configs.
 
-        const parameters = await benchmarkParameters();
+        const parameters = await messageBenchmarkParameters();
         await browser.execute(async (parameters) => {
             window.benchRunning = true;
             void (async (parameters) => {

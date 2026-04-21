@@ -11,7 +11,7 @@ type ParameterSet = {
     cipherSuite: number;
 };
 
-export async function benchmarkParameters(): Promise<ParameterSet[]> {
+export async function messageBenchmarkParameters(): Promise<ParameterSet[]> {
     const messageCounts = [1, 10, 100];
     const messageSizes = [16, 1024, 65536];
     const cipherSuites = [

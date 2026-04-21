@@ -7,14 +7,14 @@ import {
     CredentialType,
 } from "@wireapp/core-crypto/native";
 import {
-    benchmarkParameters,
+    messageBenchmarkParameters,
     tinybench_setup,
 } from "../../shared/benches/utils";
 import { ccInit, setup, teardown, DELIVERY_SERVICE } from "../test/utils";
 
 async function run() {
     await setup();
-    const parameters = await benchmarkParameters();
+    const parameters = await messageBenchmarkParameters();
     const bench = new Bench({
         name: "Process Messages Benchmark",
         time: 1000,
