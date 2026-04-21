@@ -33,6 +33,14 @@ endif::[]
 
 . We *removed* `CoreCryptoContext.clientValidKeypackagesCount()`. To count remaining key packages, call `CoreCryptoContext.getKeypackages()`, and filter the results as desired, and count the remaining items.
 
+. We aligned key package spelling to KeyPackage
+.. renamed `Keypackage` -> `KeyPackage`
+.. renamed `KeypackageRef` -> `KeyPackageRef`
+.. renamed `generateKeypackage` -> `generateKeyPackage`
+.. renamed `getKeypackages` -> `getKeyPackages`
+.. renamed `removeKeypackage` -> `removeKeyPackage`
+.. renamed `removeKeypackagesFor` -> `removeKeyPackagesFor`
+
 == Logging
 
 . We *removed* `CoreCrypto.setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)`
