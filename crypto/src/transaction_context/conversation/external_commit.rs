@@ -374,28 +374,37 @@ mod tests {
 
         // we need an invalid GroupInfo; let's manufacture one.
         let group_info = {
-            let mut conversation = conversation.guard().await;
-            let mut conversation = conversation.conversation_mut().await;
-            let group = &mut conversation.group;
-            let ct = group
-                .credential()
+            let mut guard = conversation.guard().await;
+            let (ciphersuite, credential_type) = {
+                let conversation = guard.conversation().await;
+                let credential_type = conversation
+                    .group
+                    .credential()
+                    .unwrap()
+                    .credential_type()
+                    .try_into()
+                    .expect("case conversation has a known credential type");
+                let ciphersuite = conversation.group.ciphersuite();
+                (ciphersuite, credential_type)
+            };
+            let credential = alice.find_any_credential(ciphersuite.into(), credential_type).await;
+            let mls_provider = alice.transaction.mls_provider().await.unwrap();
+            guard
+                .conversation_mut(async move |conversation, _database| {
+                    let gi = conversation
+                        .group
+                        .export_group_info(
+                            &mls_provider,
+                            &credential.signature_key_pair,
+                            // joining by external commit assumes we include a ratchet tree, but this `false`
+                            // says to leave it out
+                            false,
+                        )
+                        .unwrap();
+                    Ok(gi.group_info().unwrap())
+                })
+                .await
                 .unwrap()
-                .credential_type()
-                .try_into()
-                .expect("case conversation has a known credential type");
-            let cs = group.ciphersuite();
-            let cb = alice.find_any_credential(cs.into(), ct).await;
-
-            let gi = group
-                .export_group_info(
-                    &alice.transaction.mls_provider().await.unwrap(),
-                    &cb.signature_key_pair,
-                    // joining by external commit assumes we include a ratchet tree, but this `false`
-                    // says to leave it out
-                    false,
-                )
-                .unwrap();
-            gi.group_info().unwrap()
         };
 
         let join_ext_commit = guest

@@ -1063,10 +1063,12 @@ mod tests {
                 conversation
                     .guard()
                     .await
-                    .conversation_mut()
+                    .conversation_mut(async |conv, _db| {
+                        conv.group.clear_pending_proposals();
+                        Ok(())
+                    })
                     .await
-                    .group
-                    .clear_pending_proposals();
+                    .unwrap();
                 let commit_guard = conversation.update_unmerged().await;
                 let old_commit = commit_guard.message().to_bytes().unwrap();
                 let conversation = commit_guard.finish();

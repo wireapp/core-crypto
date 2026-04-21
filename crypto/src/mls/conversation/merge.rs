@@ -65,16 +65,16 @@ mod tests {
 
                 assert!(conversation.has_pending_commit().await);
 
+                let session = alice.session().await;
+
                 conversation
                     .guard()
                     .await
-                    .conversation_mut()
-                    .await
-                    .commit_accepted(
-                        &alice.transaction.session().await.unwrap(),
-                        &alice.database().await,
-                        &alice.session().await.crypto_provider,
-                    )
+                    .conversation_mut(async |conversation, database| {
+                        conversation
+                            .commit_accepted(&session, database, &session.crypto_provider)
+                            .await
+                    })
                     .await
                     .unwrap();
 
@@ -101,16 +101,16 @@ mod tests {
                 assert!(conversation.has_pending_proposals().await);
                 assert!(conversation.has_pending_commit().await);
 
+                let session = alice.session().await;
+
                 conversation
                     .guard()
                     .await
-                    .conversation_mut()
-                    .await
-                    .commit_accepted(
-                        &alice.transaction.session().await.unwrap(),
-                        &alice.database().await,
-                        &alice.session().await.crypto_provider,
-                    )
+                    .conversation_mut(async |conversation, database| {
+                        conversation
+                            .commit_accepted(&session, database, &session.crypto_provider)
+                            .await
+                    })
                     .await
                     .unwrap();
                 assert!(!conversation.has_pending_proposals().await);
