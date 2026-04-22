@@ -81,12 +81,15 @@ export async function setup() {
 
         class BenchmarkHelpers {
             static async setupCc(
-                cipherSuite: Ciphersuite
+                cipherSuite: Ciphersuite,
+                clientIdStr?: string
             ): Promise<CoreCrypto> {
-                const encoder = new TextEncoder();
+                if (clientIdStr === undefined) {
+                    clientIdStr = window.crypto.randomUUID();
+                }
 
-                const clientIdStr = window.crypto.randomUUID();
-                const id = new window.ccModule.ClientId(
+                const encoder = new TextEncoder();
+                const clientId = new window.ccModule.ClientId(
                     encoder.encode(clientIdStr).buffer
                 );
 
@@ -101,9 +104,9 @@ export async function setup() {
                 const cc = window.ccModule.CoreCrypto.new(db);
 
                 await cc.transaction(async (ctx) => {
-                    await ctx.mlsInit(id, window.deliveryService);
+                    await ctx.mlsInit(clientId, window.deliveryService);
                     await ctx.addCredential(
-                        window.ccModule.Credential.basic(cipherSuite, id)
+                        window.ccModule.Credential.basic(cipherSuite, clientId)
                     );
                 });
                 return cc;
@@ -118,7 +121,10 @@ interface DeliveryService extends MlsTransport {
 }
 
 interface BenchmarkHelpers {
-    setupCc: (cipherSuite: Ciphersuite) => Promise<CoreCrypto>;
+    setupCc: (
+        cipherSuite: Ciphersuite,
+        clientIdStr?: string
+    ) => Promise<CoreCrypto>;
 }
 
 export type CustomBenchmarkEntry = {
