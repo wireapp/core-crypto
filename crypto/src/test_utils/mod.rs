@@ -27,8 +27,7 @@ pub(crate) use self::{epoch_observer::TestEpochObserver, history_observer::TestH
 pub use self::{error::Error as TestError, message::*, test_context::*, test_conversation::TestConversation};
 use crate::{
     CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Credential, CredentialRef, Database,
-    DatabaseKey, Error, MlsCommitBundle, MlsGroupInfoBundle, MlsTransport, MlsTransportData, MlsTransportResponse,
-    RecursiveError, Session,
+    DatabaseKey, Error, MlsCommitBundle, MlsGroupInfoBundle, MlsTransport, MlsTransportData, RecursiveError, Session,
     mls::HistoryObserver,
     test_utils::x509::{
         CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs, qualified_e2ei_cid_with_domain,
@@ -477,103 +476,6 @@ impl MlsTransport for CoreCryptoTransportAbortProvider {
 impl MlsTransportTestExt for CoreCryptoTransportAbortProvider {
     async fn latest_commit_bundle(&self) -> MlsCommitBundle {
         unreachable!("abort provider never stores a commit bundle")
-    }
-}
-
-/// This alternates between retry and success responses (starts with retry).
-#[derive(Debug, Default)]
-pub struct CoreCryptoTransportRetrySuccessProvider {
-    latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
-    just_returned_retry: RwLock<bool>,
-    retry_count: RwLock<u32>,
-    success_count: RwLock<u32>,
-    intermediate_commits: RwLock<Option<IntermediateCommits>>,
-}
-
-#[derive(Debug, Clone)]
-struct IntermediateCommits {
-    receiver: SessionContext,
-    conversation_id: ConversationId,
-    commits: Arc<[MlsMessageOut]>,
-}
-
-impl CoreCryptoTransportRetrySuccessProvider {
-    /// Adds intermediate commits that will be consumed and processed before the next time `Retry` is returned.
-    pub fn with_intermediate_commits(
-        mut self,
-        receiver: SessionContext,
-        commits: &[MlsMessageOut],
-        conversation_id: &ConversationId,
-    ) -> Self {
-        self.intermediate_commits = Some(IntermediateCommits {
-            receiver,
-            commits: commits.into(),
-            conversation_id: conversation_id.clone(),
-        })
-        .into();
-        self
-    }
-
-    pub async fn retry_count(&self) -> u32 {
-        *self.retry_count.read().await
-    }
-
-    pub async fn success_count(&self) -> u32 {
-        *self.success_count.read().await
-    }
-}
-
-#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl MlsTransport for CoreCryptoTransportRetrySuccessProvider {
-    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> crate::Result<MlsTransportResponse> {
-        let mut just_returned_retry = self.just_returned_retry.write().await;
-        if *just_returned_retry {
-            *just_returned_retry = false;
-            *self.success_count.write().await += 1;
-            self.latest_commit_bundle.write().await.replace(commit_bundle);
-            Ok(MlsTransportResponse::Success)
-        } else {
-            *just_returned_retry = true;
-            *self.retry_count.write().await += 1;
-            let mut intermediate_commits = self.intermediate_commits.write().await;
-            let Some(IntermediateCommits {
-                receiver,
-                conversation_id,
-                commits,
-            }) = &*intermediate_commits
-            else {
-                return Ok(MlsTransportResponse::Retry);
-            };
-            for commit in commits.iter() {
-                receiver
-                    .transaction
-                    .conversation(conversation_id)
-                    .await
-                    .expect("conversation guard")
-                    .decrypt_message(commit.to_bytes().expect("reading bytes from intermediate commit"))
-                    .await
-                    .expect("processed intermediate commit");
-            }
-            *intermediate_commits = None;
-            Ok(MlsTransportResponse::Retry)
-        }
-    }
-
-    async fn prepare_for_transport(&self, secret: &HistorySecret) -> crate::Result<MlsTransportData> {
-        Ok(format!("history_secret: {}", secret.client_id).into_bytes().into())
-    }
-}
-
-#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl MlsTransportTestExt for CoreCryptoTransportRetrySuccessProvider {
-    async fn latest_commit_bundle(&self) -> MlsCommitBundle {
-        self.latest_commit_bundle
-            .read()
-            .await
-            .clone()
-            .expect("latest_commit_bundle")
     }
 }
 

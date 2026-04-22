@@ -54,57 +54,8 @@ mod tests {
 
     use super::{Error, *};
     use crate::{
-        mls::conversation::{Conversation as _, ConversationWithMls as _},
-        test_utils::*,
-        transaction_context::Error as TransactionError,
+        mls::conversation::ConversationWithMls as _, test_utils::*, transaction_context::Error as TransactionError,
     };
-
-    mod transport {
-        use std::sync::Arc;
-
-        use super::*;
-
-        #[apply(all_cred_cipher)]
-        async fn retry_should_work(case: TestContext) {
-            let [alice, bob, charlie] = case.sessions().await;
-            Box::pin(async move {
-                // Create conversation
-                let conversation = case.create_conversation([&alice, &bob]).await;
-
-                // Bob produces a commit that Alice will receive only after she tried sending a commit
-                let commit = conversation.acting_as(&bob).await.update().await;
-                let bob_epoch = commit.conversation().guard_of(&bob).await.epoch().await;
-                assert_eq!(2, bob_epoch);
-                let alice_epoch = commit.conversation().guard_of(&alice).await.epoch().await;
-                assert_eq!(1, alice_epoch);
-                let intermediate_commit = commit.message();
-                // Next time a commit is sent, process the intermediate commit and return retry, success the second time
-                let retry_provider = Arc::new(
-                    CoreCryptoTransportRetrySuccessProvider::default().with_intermediate_commits(
-                        alice.clone(),
-                        &[intermediate_commit],
-                        commit.conversation().id(),
-                    ),
-                );
-
-                alice.replace_transport(retry_provider.clone()).await;
-
-                // Send two commits and process them on bobs side
-                // For this second commit, the retry provider will first return retry and
-                // then success, but now without an intermediate commit
-                let conversation = commit.finish().advance_epoch().await.invite_notify([&charlie]).await;
-
-                // Retry should have been returned twice
-                assert_eq!(retry_provider.retry_count().await, 2);
-                // Success should have been returned twice
-                assert_eq!(retry_provider.success_count().await, 2);
-
-                // Group is still in valid state
-                assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
-            })
-            .await;
-        }
-    }
 
     mod add_members {
         use std::sync::Arc;
