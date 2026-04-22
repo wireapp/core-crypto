@@ -49,7 +49,7 @@ $(STAMPS)/kotlin-fmt: $(KT_FILES) $(KT_GRADLE_FILES)
 kotlin-fmt: $(STAMPS)/kotlin-fmt ## Format Kotlin files via ktlint
 
 $(STAMPS)/kotlin-check: $(KT_FILES) $(KT_GRADLE_FILES)
-	ktlint $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP) $(KT_GRADLE_FILES)
+	ktlint $(KT_FILES) $(KT_GRADLE_FILES)
 	$(TOUCH_STAMP)
 
 .PHONY: kotlin-check
