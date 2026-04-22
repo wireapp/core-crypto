@@ -229,6 +229,7 @@ impl CoreCryptoContext {
     }
 
     /// Decrypts an MLS message received in the given conversation.
+    /// **Note**: this will discard any local pending operations.
     pub async fn decrypt_message(
         &self,
         conversation_id: &ConversationId,

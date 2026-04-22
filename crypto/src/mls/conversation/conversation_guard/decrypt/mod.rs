@@ -98,7 +98,8 @@ enum RecursionPolicy {
 }
 
 impl ConversationGuard {
-    /// Deserializes a TLS-serialized message, then processes it
+    /// Deserializes a TLS-serialized message, then processes it.
+    /// **Note**: this will discard any local pending commits or proposals.
     ///
     /// # Arguments
     /// * `message` - the encrypted message as a byte array
