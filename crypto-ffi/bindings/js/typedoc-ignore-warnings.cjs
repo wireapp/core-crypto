@@ -22,6 +22,7 @@ exports.load = function (app) {
                 message.includes("PkiEnvironmentHooksError.__type") ||
                 message.includes("CoreCryptoError.__type") ||
                 message.includes("MlsError.__type") ||
+                message.includes("MessageRejected_") ||
                 message.includes("ProteusError.__type") ||
                 message.includes("EpochChangedReportingError.__type") ||
                 message.includes("LoggingError.__type") ||
