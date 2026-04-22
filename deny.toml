@@ -48,7 +48,6 @@ allow = [
   "Apache-2.0",
   "MIT",
   "MPL-2.0",
-  "GPL-3.0",
   "GPL-3.0-only",
   "BSD-3-Clause",
   "Apache-2.0 WITH LLVM-exception",
@@ -65,7 +64,6 @@ license-files = []
 [sources]
 unknown-git = "deny"
 unknown-registry = "deny"
-allow-git = ["https://github.com/rust-db/refinery"]
 
 [sources.allow-org]
 github = ["wireapp"]
