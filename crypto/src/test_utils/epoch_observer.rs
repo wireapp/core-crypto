@@ -17,11 +17,6 @@ impl TestEpochObserver {
         Arc::new(Self(Default::default()))
     }
 
-    pub(crate) async fn reset(&self) {
-        let mut guard = self.0.lock().await;
-        guard.observed_epochs.clear();
-    }
-
     pub(crate) async fn has_changed(&self) -> bool {
         let guard = self.0.lock().await;
         !guard.observed_epochs.is_empty()

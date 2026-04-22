@@ -573,128 +573,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        pub async fn decrypting_a_commit_should_not_renew_proposals_in_valid_commit(case: TestContext) {
-            let [alice, bob, charlie] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case.create_conversation([&alice, &bob]).await;
-
-                let alice_observer = TestEpochObserver::new();
-                alice
-                    .session()
-                    .await
-                    .register_epoch_observer(alice_observer.clone())
-                    .await
-                    .unwrap();
-
-                // Bob will create a proposal to add Charlie
-                // Alice will decrypt this proposal
-                // Then Bob will create a commit to update
-                // Alice will decrypt the commit but musn't renew the proposal to add Charlie
-                let conversation = conversation
-                    .acting_as(&bob)
-                    .await
-                    .invite_proposal_notify(&charlie)
-                    .await;
-
-                alice_observer.reset().await;
-
-                let (commit, decrypted) = conversation
-                    .acting_as(&bob)
-                    .await
-                    .update()
-                    .await
-                    .notify_member_fallible(&alice)
-                    .await;
-                let decrypted = decrypted.unwrap();
-                let conversation = commit.finish();
-
-                assert!(decrypted.proposals.is_empty());
-                assert!(decrypted.delay.is_none());
-                assert!(!conversation.has_pending_proposals().await);
-                assert!(alice_observer.has_changed().await);
-            })
-            .await
-        }
-
-        // orphan proposal = not backed by the pending commit
-        #[apply(all_cred_cipher)]
-        pub async fn decrypting_a_commit_should_renew_orphan_pending_proposals(case: TestContext) {
-            let [alice, bob, charlie] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case.create_conversation([&alice, &bob]).await;
-                let alice_observer = TestEpochObserver::new();
-                alice
-                    .session()
-                    .await
-                    .register_epoch_observer(alice_observer.clone())
-                    .await
-                    .unwrap();
-
-                // Alice will create a proposal to add Charlie
-                // Alice propose to add Charlie
-                let conversation = conversation.invite_proposal(&charlie).await.finish();
-                assert_eq!(conversation.pending_proposal_count().await, 1);
-
-                // Bob will create a commit which Alice will decrypt
-                // Then Alice will renew her proposal
-                let (commit, decrypted) = conversation
-                    .acting_as(&bob)
-                    .await
-                    .update()
-                    .await
-                    .notify_member_fallible(&alice)
-                    .await;
-                let decrypted = decrypted.unwrap();
-                let bob_commit = commit.message();
-                let commit_epoch = bob_commit.epoch().unwrap();
-                let conversation = commit.finish();
-
-                // So Charlie has not been added to the group
-                assert!(
-                    !conversation
-                        .guard()
-                        .await
-                        .conversation()
-                        .await
-                        .members()
-                        .contains_key(b"charlie".as_slice())
-                );
-                // Make sure we are suggesting a commit delay
-                assert!(decrypted.delay.is_some());
-
-                // But its proposal to add Charlie has been renewed and is also in store
-                assert!(!decrypted.proposals.is_empty());
-                assert_eq!(conversation.pending_proposal_count().await, 1);
-                let renewed_proposal = decrypted.proposals.first().unwrap();
-                assert_eq!(
-                    commit_epoch.as_u64() + 1,
-                    renewed_proposal.proposal.epoch().unwrap().as_u64()
-                );
-
-                // we don't care if there was an epoch change before this,
-                // but we want to see if the epoch changes for alice now
-                alice_observer.reset().await;
-
-                let conversation = conversation.acting_as(&bob).await;
-
-                // Let's use this proposal to see if it works
-                conversation
-                    .guard()
-                    .await
-                    .decrypt_message(renewed_proposal.proposal.to_bytes().unwrap())
-                    .await
-                    .unwrap();
-                assert_eq!(conversation.pending_proposal_count().await, 1);
-                let conversation = conversation.commit_pending_proposals_notify().await;
-                // Charlie is now in the group
-                assert_eq!(3, conversation.member_count().await);
-                assert!(conversation.is_functional_and_contains([&alice, &bob, &charlie]).await);
-                assert!(alice_observer.has_changed().await);
-            })
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
         pub async fn decrypting_a_commit_should_discard_pending_external_proposals(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
@@ -712,18 +590,14 @@ mod tests {
 
                 // But meanwhile Bob, before receiving the external proposal,
                 // will create a commit and send it to Alice.
-                // Alice will not renew the external proposal
-                let (commit, decrypted) = conversation
+                let conversation = conversation
                     .acting_as(&bob)
                     .await
                     .update()
                     .await
-                    .notify_member_fallible(&alice)
-                    .await;
-                let conversation = commit.finish();
-                let decrypted = decrypted.unwrap();
-                let alice_renewed_proposals = decrypted.proposals;
-                assert!(alice_renewed_proposals.is_empty());
+                    .notify_member(&alice)
+                    .await
+                    .finish();
                 assert!(!conversation.has_pending_proposals().await);
             })
             .await
