@@ -136,7 +136,7 @@ runs:
 
     - name: Upload artifact if it doesn't exist for this workflow run
       if: steps.download.outputs.found_in_this_run != 'true'
-      uses: actions/upload-artifact@v7.0.0
+      uses: actions/upload-artifact@v7.0.1
       with:
         name: ${{ steps.compute-key.outputs.key }}
         path: artifact.tar.gz
