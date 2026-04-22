@@ -43,7 +43,7 @@ jobs:
         with:
           xcode-version: '16.4.0'
       - name: Set up Ruby environment
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@v1.301.0
         with:
           ruby-version: '3.3'
 
