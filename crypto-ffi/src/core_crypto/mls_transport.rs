@@ -9,20 +9,6 @@ use core_crypto::{HistorySecret, MlsCommitBundle};
 
 use crate::{ClientId, CommitBundle, HistorySecret as HistorySecretFfi};
 
-/// The outcome of an MLS transport attempt, returned to CoreCrypto after delivery.
-#[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
-pub enum MlsTransportResponse {
-    /// The message was accepted by the distribution service.
-    Success,
-    /// The client should consume all incoming messages before retrying.
-    Retry,
-    /// The message was rejected by the delivery service and there is no recovery.
-    Abort {
-        /// The reason this message was rejected.
-        reason: String,
-    },
-}
-
 /// Application data packaged to be encrypted and transmitted in an MLS application message.
 //
 // TODO: We derive Constructor here only because we need to construct an instance in interop.
@@ -36,16 +22,6 @@ uniffi::custom_type!(MlsTransportData, Vec<u8>, {
         Ok(MlsTransportData(core_crypto::MlsTransportData::from(vec)))
     }
 });
-
-impl From<MlsTransportResponse> for core_crypto::MlsTransportResponse {
-    fn from(value: MlsTransportResponse) -> Self {
-        match value {
-            MlsTransportResponse::Success => Self::Success,
-            MlsTransportResponse::Retry => Self::Retry,
-            MlsTransportResponse::Abort { reason } => Self::Abort { reason },
-        }
-    }
-}
 
 /// Used by CoreCrypto to send commits or application messages to the delivery service.
 ///

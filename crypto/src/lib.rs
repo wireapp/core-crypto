@@ -79,19 +79,6 @@ pub use crate::{
     },
 };
 
-/// Response from the delivery service
-pub enum MlsTransportResponse {
-    /// The message was accepted by the delivery service
-    Success,
-    /// A client should have consumed all incoming messages before re-trying.
-    Retry,
-    /// The message was rejected by the delivery service and there's no recovery.
-    Abort {
-        /// Why did the delivery service reject the message?
-        reason: String,
-    },
-}
-
 /// An entity / data which has been packaged by the application to be encrypted
 /// and transmitted in an application message.
 #[derive(Debug, derive_more::From, derive_more::Deref, serde::Serialize, serde::Deserialize)]
