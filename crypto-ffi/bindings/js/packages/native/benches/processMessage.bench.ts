@@ -74,7 +74,9 @@ async function run() {
 
         const message = new Uint8Array(size);
 
-        // Multiple iterations of a benchmark happen on the same cc instances. This means that we can't encrypt the messages beforehand as this would lead to bob decrypting the same messages over and over again.
+        // Multiple iterations of a benchmark happen on the same cc instances.
+        // This means that we can't encrypt the messages beforehand as this would lead to bob decrypting
+        // the same messages over and over again.
         bench.add(
             `cipherSuite=${Ciphersuite[cipherSuite]} size=${size}B count=${count}`,
             async () => {

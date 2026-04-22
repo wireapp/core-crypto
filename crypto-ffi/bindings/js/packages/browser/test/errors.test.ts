@@ -16,7 +16,7 @@ afterEach(async () => {
 
 /*
  * Most if not all tests in this module violate the "don't test the library" principle. However, they're also showing
- * how to access the errors we're throwing, which isn't trivial (at least not for someone unfamiliar with TS typeguards).
+ * how to access the errors we're throwing, which isn't trivial (for someone unfamiliar with TS typeguards).
  * If the access pattern changes, we want to notice so that we can document the migration for library consumers.
  */
 

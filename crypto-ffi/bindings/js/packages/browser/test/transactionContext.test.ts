@@ -116,7 +116,7 @@ describe("transaction context", () => {
                 throw new Error("Error wasn't thrown");
             }
 
-            // This would fail with a "Conversation already exists" error, if the above transaction hadn't been rolled back.
+            // This would throw a "Conversation already exists" error, if the above transaction hadn't been rolled back.
             await cc.transaction(async (ctx) => {
                 const [credentialRef] = await ctx.findCredentials({
                     credentialType: basicCredentialType,

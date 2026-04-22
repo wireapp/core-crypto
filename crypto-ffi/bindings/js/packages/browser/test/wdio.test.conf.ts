@@ -56,7 +56,8 @@ export const config: WebdriverIO.Config = {
         {
             browserName: "chrome", // or "firefox"
             "goog:chromeOptions": { args: ["--headless", "--disable-gpu"] },
-            // @ts-expect-error TS2353: Object literal may only specify known properties, and "goog:loggingPrefs" does not exist in type RequestedStandaloneCapabilities
+            // @ts-expect-error TS2353: Object literal may only specify known properties, and "goog:loggingPrefs" does
+            // not exist in type RequestedStandaloneCapabilities
             "goog:loggingPrefs": {
                 browser: "ALL",
                 performance: "ALL",

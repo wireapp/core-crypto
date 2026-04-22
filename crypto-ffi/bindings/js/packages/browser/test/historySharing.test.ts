@@ -80,7 +80,8 @@ describe("history sharing", () => {
 
                 const decoder = new TextDecoder();
 
-                // we have to explicitly return non-primitives, as anything passed by reference won't make it out of the browser context
+                // we have to explicitly return non-primitives, as anything passed by reference won't make it out of
+                // the browser context
                 const firstIdString = decoder.decode(
                     observer.observations[0]?.conversationId.copyBytes() ??
                         new Uint8Array()
