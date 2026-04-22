@@ -5,17 +5,22 @@ use core_crypto::{
     mls::conversation::{Conversation as _, ConversationIdRef},
 };
 
-use crate::{Ciphersuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef, bytes_wrapper::bytes_wrapper};
+use crate::{
+    Ciphersuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef,
+    bytes_wrapper::{bytes_wrapper, impl_display_via_hex},
+};
 
 bytes_wrapper!(
     /// A unique identifier for a single conversation.
     ///
     /// The backend provides an opaque string identifying a new conversation.
     /// Construct an instance of this newtype to pass that identifier to Rust.
-    #[derive(Debug, PartialOrd, Ord, Clone)]
-    #[uniffi::export(Debug)]
-    ConversationId
+    #[derive(Debug, PartialOrd, Ord, Clone, PartialEq, Eq, Hash)]
+    #[uniffi::export(Debug, Eq, Hash, Display)]
+    ConversationId infallibly wraps core_crypto::ConversationId; copy_bytes
 );
+
+impl_display_via_hex!(ConversationId);
 
 impl Borrow<ConversationIdRef> for ConversationId {
     fn borrow(&self) -> &ConversationIdRef {
