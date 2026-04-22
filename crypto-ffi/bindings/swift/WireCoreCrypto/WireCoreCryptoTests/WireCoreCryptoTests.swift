@@ -868,14 +868,12 @@ final class WireCoreCryptoTests: XCTestCase {
         var lastMlsMessage: Data?
         var lastHistorySecret: HistorySecret?
 
-        func sendCommitBundle(commitBundle: CommitBundle) async -> MlsTransportResponse {
+        func sendCommitBundle(commitBundle: CommitBundle) async {
             lastCommitBundle = commitBundle
-            return .success
         }
 
-        func sendMessage(mlsMessage: Data) async -> MlsTransportResponse {
+        func sendMessage(mlsMessage: Data) async {
             lastMlsMessage = mlsMessage
-            return .success
         }
 
         func prepareForTransport(historySecret: WireCoreCryptoUniffi.HistorySecret) async
