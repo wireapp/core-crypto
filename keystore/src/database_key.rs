@@ -55,3 +55,18 @@ impl TryFrom<&[u8]> for DatabaseKey {
         }
     }
 }
+
+impl TryFrom<Vec<u8>> for DatabaseKey {
+    type Error = CryptoKeystoreError;
+
+    fn try_from(buf: Vec<u8>) -> Result<Self, Self::Error> {
+        if buf.len() != Self::LEN {
+            Err(CryptoKeystoreError::InvalidDbKeySize {
+                expected: Self::LEN,
+                actual: buf.len(),
+            })
+        } else {
+            Ok(Self(buf.try_into().unwrap()))
+        }
+    }
+}

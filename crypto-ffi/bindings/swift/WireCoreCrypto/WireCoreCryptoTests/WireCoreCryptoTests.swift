@@ -957,7 +957,7 @@ final class WireCoreCryptoTests: XCTestCase {
         _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
         // constructor only fails if we have other than 32 bytes
         // swiftlint:disable:next force_try
-        return try! DatabaseKey(key: Data(bytes))
+        return try! DatabaseKey(bytes: Data(bytes))
     }
 
     func genClientId() -> ClientId {
