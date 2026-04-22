@@ -137,6 +137,12 @@
 
 ### Breaking Changes
 
+- During decryption, core-crypto would automatically replay previously executed but unmerged (i.e., not yet acceped by
+  the delivery service) operations. This behavior has changed: the responsibility of replaying any unmerged operations
+  is delegated to the consumer.
+
+  Affected platforms: all
+
 - Changed the `MlsTransport` interface. Instead of returning an `MlsTransportResponse` to communicate the reason why a
   message was rejected by the DS, now throw an `MlsTransportError` instead. `MlsTransportResponse` was removed.
 

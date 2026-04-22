@@ -55,3 +55,7 @@ endif::[]
 . Instead of returning an `MlsTransportResponse` to communicate the reason why a
   message was rejected by the DS, now throw an `MlsTransportError` instead.
  `MlsTransportResponse` was removed.
+
+== No more buffering of unmerged changes while decrypting
+. During decryption, core-crypto would previously automatically replay previously executed but unmerged (i.e., not yet acceped by the delivery service) operations.
+This behavior has changed: the responsibility of replaying any unmerged operations is delegated to the consumer.
