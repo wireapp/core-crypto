@@ -14,6 +14,6 @@ runs:
         echo "wasm_bindgen_version=$version" >> "$GITHUB_OUTPUT"
 
     - name: Install wasm-bindgen-cli
-      uses: taiki-e/install-action@v2
+      uses: taiki-e/install-action@v2.75.14
       with:
         tool: wasm-bindgen-cli@${{ steps.cargo_metadata.outputs.wasm_bindgen_version }}
