@@ -40,7 +40,7 @@ use crate::{
 /// Represents the potential items a consumer might require after passing us an encrypted message we
 /// have decrypted for him
 #[derive(Debug)]
-pub struct MlsConversationDecryptMessage {
+pub struct MlsDecryptMessage {
     /// Decrypted text message
     pub app_msg: Option<Vec<u8>>,
     /// Is the conversation still active after receiving this commit aka has the user been removed from the group
@@ -55,26 +55,26 @@ pub struct MlsConversationDecryptMessage {
     /// Only set when the decrypted message is a commit.
     /// Contains buffered messages for next epoch which were received before the commit creating the epoch
     /// because the DS did not fan them out in order.
-    pub buffered_messages: Option<Vec<MlsBufferedConversationDecryptMessage>>,
+    pub buffered_messages: Option<Vec<MlsBufferedDecryptMessage>>,
 }
 
-/// Type safe recursion of [MlsConversationDecryptMessage]
+/// Type safe recursion of [MlsDecryptMessage]
 #[derive(Debug)]
-pub struct MlsBufferedConversationDecryptMessage {
-    /// see [MlsConversationDecryptMessage]
+pub struct MlsBufferedDecryptMessage {
+    /// see [MlsDecryptMessage]
     pub app_msg: Option<Vec<u8>>,
-    /// see [MlsConversationDecryptMessage]
+    /// see [MlsDecryptMessage]
     pub is_active: bool,
-    /// see [MlsConversationDecryptMessage]
+    /// see [MlsDecryptMessage]
     pub delay: Option<u64>,
-    /// see [MlsConversationDecryptMessage]
+    /// see [MlsDecryptMessage]
     pub sender_client_id: Option<ClientId>,
-    /// see [MlsConversationDecryptMessage]
+    /// see [MlsDecryptMessage]
     pub identity: WireIdentity,
 }
 
-impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessage {
-    fn from(from: MlsConversationDecryptMessage) -> Self {
+impl From<MlsDecryptMessage> for MlsBufferedDecryptMessage {
+    fn from(from: MlsDecryptMessage) -> Self {
         Self {
             app_msg: from.app_msg,
             is_active: from.is_active,
@@ -105,12 +105,12 @@ impl ConversationGuard {
     /// * `message` - the encrypted message as a byte array
     ///
     /// # Returns
-    /// An [MlsConversationDecryptMessage]
+    /// An [MlsDecryptMessage]
     ///
     /// # Errors
     /// If a message has been buffered, this will be indicated by an error.
     /// Other errors are originating from OpenMls and the KeyStore
-    pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<MlsConversationDecryptMessage> {
+    pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<MlsDecryptMessage> {
         let mls_message_in =
             MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
 
@@ -144,7 +144,7 @@ impl ConversationGuard {
         &mut self,
         message: MlsMessageIn,
         recursion_policy: RecursionPolicy,
-    ) -> Result<MlsConversationDecryptMessage> {
+    ) -> Result<MlsDecryptMessage> {
         let session = &self.session().await?;
         let provider = &self.crypto_provider().await?;
         let parsed_message = self.parse_message(message.clone()).await?;
@@ -211,7 +211,7 @@ impl ConversationGuard {
                     "Application message"
                 );
 
-                MlsConversationDecryptMessage {
+                MlsDecryptMessage {
                     app_msg: Some(app_msg.into_bytes()),
                     is_active: true,
                     delay: None,
@@ -266,7 +266,7 @@ impl ConversationGuard {
                 let conversation = self.conversation().await;
                 let delay = conversation.compute_next_commit_delay();
 
-                MlsConversationDecryptMessage {
+                MlsDecryptMessage {
                     app_msg: None,
                     is_active: true,
                     delay,
@@ -329,7 +329,7 @@ impl ConversationGuard {
                 );
                 session.notify_epoch_changed(group_id, epoch).await;
 
-                MlsConversationDecryptMessage {
+                MlsDecryptMessage {
                     app_msg: None,
                     is_active,
                     delay,
@@ -351,7 +351,7 @@ impl ConversationGuard {
                     })
                     .await?;
 
-                MlsConversationDecryptMessage {
+                MlsDecryptMessage {
                     app_msg: None,
                     is_active: true,
                     delay,

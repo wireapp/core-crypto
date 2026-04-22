@@ -57,7 +57,7 @@ pub use crate::{
             ConversationId, MlsConversation,
             commit::MlsCommitBundle,
             config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
-            conversation_guard::decrypt::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
+            conversation_guard::decrypt::{MlsBufferedDecryptMessage, MlsDecryptMessage},
             group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
             proposal::MlsProposalBundle,
         },

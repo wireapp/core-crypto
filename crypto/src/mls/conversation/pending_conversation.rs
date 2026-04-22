@@ -16,8 +16,8 @@ use tls_codec::Deserialize as _;
 
 use super::{ConversationWithMls, Error, Result};
 use crate::{
-    KeystoreError, LeafError, MlsBufferedConversationDecryptMessage, MlsCommitBundle, MlsConversation,
-    MlsConversationConfiguration, MlsConversationDecryptMessage, MlsCustomConfiguration, MlsError, RecursiveError,
+    KeystoreError, LeafError, MlsBufferedDecryptMessage, MlsCommitBundle, MlsConversation,
+    MlsConversationConfiguration, MlsCustomConfiguration, MlsDecryptMessage, MlsError, RecursiveError,
     mls::{
         conversation::{ConversationIdRef, conversation_guard::decrypt::buffer_messages::MessageRestorePolicy},
         credential::ext::CredentialExt as _,
@@ -103,10 +103,7 @@ impl PendingConversation {
     /// merge the pending group and restore any buffered messages.
     ///
     /// Otherwise, the given message will be buffered.
-    pub async fn try_process_own_join_commit(
-        &mut self,
-        message: impl AsRef<[u8]>,
-    ) -> Result<MlsConversationDecryptMessage> {
+    pub async fn try_process_own_join_commit(&mut self, message: impl AsRef<[u8]>) -> Result<MlsDecryptMessage> {
         // If the confirmation tag of the pending group and this incoming message are identical, we can merge the
         // pending group.
         if self.incoming_message_is_own_join_commit(message.as_ref()).await? {
@@ -161,7 +158,7 @@ impl PendingConversation {
     }
 
     /// Merges the [Self] instance and restores any buffered messages.
-    async fn merge_and_restore_messages(&mut self) -> Result<MlsConversationDecryptMessage> {
+    async fn merge_and_restore_messages(&mut self) -> Result<MlsDecryptMessage> {
         let buffered_messages = self.merge().await?;
         let context = &self.context;
         let id = self.id();
@@ -196,7 +193,7 @@ impl PendingConversation {
                 .map_err(RecursiveError::mls_credential("extracting identity"))?,
         };
 
-        Ok(MlsConversationDecryptMessage {
+        Ok(MlsDecryptMessage {
             app_msg: None,
             is_active: conversation.group.is_active(),
             delay: conversation.compute_next_commit_delay(),
@@ -212,7 +209,7 @@ impl PendingConversation {
     ///
     /// # Errors
     /// Errors resulting from OpenMls, the KeyStore calls and deserialization
-    pub(crate) async fn merge(&mut self) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
+    pub(crate) async fn merge(&mut self) -> Result<Option<Vec<MlsBufferedDecryptMessage>>> {
         let mls_provider = self.mls_provider().await?;
         let id = self.id();
         let group = self.inner.state.clone();
@@ -306,7 +303,7 @@ impl PendingConversation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{MlsConversationDecryptMessage, test_utils::*};
+    use crate::{MlsDecryptMessage, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {
@@ -376,7 +373,7 @@ mod tests {
                 .unwrap();
 
             // Finally, Bob receives the green light from the DS and he can merge the external commit
-            let MlsConversationDecryptMessage {
+            let MlsDecryptMessage {
                 buffered_messages: Some(restored_messages),
                 ..
             } = pending_conversation

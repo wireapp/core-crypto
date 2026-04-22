@@ -10,7 +10,7 @@ use tls_codec::Deserialize;
 
 use super::{RecursionPolicy, Result};
 use crate::{
-    KeystoreError, MlsBufferedConversationDecryptMessage,
+    KeystoreError, MlsBufferedDecryptMessage,
     mls::conversation::{ConversationGuard, ConversationWithMls, Error},
 };
 
@@ -48,7 +48,7 @@ impl ConversationGuard {
 
     pub(super) async fn restore_and_clear_pending_messages(
         &mut self,
-    ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
+    ) -> Result<Option<Vec<MlsBufferedDecryptMessage>>> {
         let pending_messages = self
             .restore_pending_messages(MessageRestorePolicy::DecryptAndClear)
             .await?;
@@ -67,7 +67,7 @@ impl ConversationGuard {
     pub(crate) async fn restore_pending_messages(
         &mut self,
         policy: MessageRestorePolicy,
-    ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
+    ) -> Result<Option<Vec<MlsBufferedDecryptMessage>>> {
         let result = async move {
             let conversation = self.conversation().await;
             let conversation_id = conversation.id();
@@ -124,7 +124,7 @@ impl ConversationGuard {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{MlsConversationDecryptMessage, test_utils::*};
+    use crate::{MlsDecryptMessage, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn can_operate_with_pending_commit_wpb_17356(case: TestContext) {
@@ -209,7 +209,7 @@ mod tests {
                 .unwrap();
 
             // Finally, Bob receives the green light from the DS and he can merge the external commit
-            let MlsConversationDecryptMessage {
+            let MlsDecryptMessage {
                 buffered_messages: Some(restored_messages),
                 ..
             } = conversation
@@ -323,7 +323,7 @@ mod tests {
 
             // Finally, Alice receives the original commit for this epoch
             let original_commit = ext_commit.to_bytes().unwrap();
-            let MlsConversationDecryptMessage {
+            let MlsDecryptMessage {
                 buffered_messages: Some(restored_messages),
                 ..
             } = conversation

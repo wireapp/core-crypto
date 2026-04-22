@@ -6,7 +6,7 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{Error, Result};
 use crate::{
-    MlsConversation, MlsConversationDecryptMessage, RecursiveError, Session, mls::credential::ext::CredentialExt,
+    MlsConversation, MlsDecryptMessage, RecursiveError, Session, mls::credential::ext::CredentialExt,
     mls_provider::MlsCryptoProvider,
 };
 
@@ -50,7 +50,7 @@ impl MlsConversation {
         database: &Database,
         provider: &MlsCryptoProvider,
         ct: &ConfirmationTag,
-    ) -> Result<MlsConversationDecryptMessage> {
+    ) -> Result<MlsDecryptMessage> {
         if self.group.pending_commit().is_none() {
             // This either means the DS replayed one of our commit OR we cleared a commit accepted by the DS
             // In both cases, CoreCrypto cannot be of any help since it cannot decrypt self commits
@@ -86,7 +86,7 @@ impl MlsConversation {
         client: &Session<Database>,
         database: &Database,
         provider: &MlsCryptoProvider,
-    ) -> Result<MlsConversationDecryptMessage> {
+    ) -> Result<MlsDecryptMessage> {
         self.commit_accepted(client, database, provider).await?;
 
         let own_leaf = self
@@ -104,7 +104,7 @@ impl MlsConversation {
             .extract_identity(self.ciphersuite(), provider.borrow().await.as_ref())
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
-        Ok(MlsConversationDecryptMessage {
+        Ok(MlsDecryptMessage {
             app_msg: None,
             is_active: self.group.is_active(),
             delay: self.compute_next_commit_delay(),

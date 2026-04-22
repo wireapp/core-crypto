@@ -3,7 +3,7 @@ use std::{collections::HashSet, marker::PhantomData};
 use openmls::prelude::MlsMessageOut;
 
 use super::{SessionContext, TestConversation};
-use crate::{CredentialRef, MlsConversationDecryptMessage, mls::conversation::Conversation as _};
+use crate::{CredentialRef, MlsDecryptMessage, mls::conversation::Conversation as _};
 
 pub struct Commit;
 
@@ -131,7 +131,7 @@ impl<'a, T> OperationGuard<'a, T> {
     async fn notify_member_inner(
         &mut self,
         member: &SessionContext,
-    ) -> crate::mls::conversation::Result<Option<MlsConversationDecryptMessage>> {
+    ) -> crate::mls::conversation::Result<Option<MlsDecryptMessage>> {
         let member_index = self.conversation().member_index(member).await;
         if self.already_notified.contains(&member_index) {
             return Ok(None);
@@ -150,12 +150,12 @@ impl<'a, T> OperationGuard<'a, T> {
         result.map(Some)
     }
 
-    /// Use this if you need access to the [MlsConversationDecryptMessage] or potential error returned when the
+    /// Use this if you need access to the [MlsDecryptMessage] or potential error returned when the
     /// member is notified about this.
     pub async fn notify_member_fallible(
         mut self,
         member: &SessionContext,
-    ) -> (Self, crate::mls::conversation::Result<MlsConversationDecryptMessage>) {
+    ) -> (Self, crate::mls::conversation::Result<MlsDecryptMessage>) {
         let result = self.notify_member_inner(member).await;
         (
             self,

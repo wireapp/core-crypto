@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use core_crypto::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage};
+use core_crypto::{MlsBufferedDecryptMessage, MlsDecryptMessage};
 
 use crate::{ClientId, WireIdentity};
 
@@ -28,8 +28,8 @@ pub struct DecryptedMessage {
     pub buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
 }
 
-impl From<MlsConversationDecryptMessage> for DecryptedMessage {
-    fn from(from: MlsConversationDecryptMessage) -> Self {
+impl From<MlsDecryptMessage> for DecryptedMessage {
+    fn from(from: MlsDecryptMessage) -> Self {
         let buffered_messages = from
             .buffered_messages
             .map(|bm| bm.into_iter().map(Into::into).collect::<Vec<_>>());
@@ -67,8 +67,8 @@ pub struct BufferedDecryptedMessage {
     pub identity: WireIdentity,
 }
 
-impl From<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage {
-    fn from(from: MlsBufferedConversationDecryptMessage) -> Self {
+impl From<MlsBufferedDecryptMessage> for BufferedDecryptedMessage {
+    fn from(from: MlsBufferedDecryptMessage) -> Self {
         Self {
             message: from.app_msg,
             is_active: from.is_active,
