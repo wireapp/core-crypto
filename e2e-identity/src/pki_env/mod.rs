@@ -161,68 +161,58 @@ impl PkiEnvironment {
         self.rjt_pki_env.add_trust_anchor_source(Box::new(trust_anchors));
         Ok(())
     }
-}
 
-#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl openmls_traits::authentication_service::AuthenticationServiceDelegate for PkiEnvironmentProvider {
-    async fn validate_credential<'a>(&'a self, credential: CredentialRef<'a>) -> CredentialAuthenticationStatus {
-        match credential {
-            // We assume that Basic credentials are always valid
-            CredentialRef::Basic { identity: _ } => CredentialAuthenticationStatus::Valid,
+    pub async fn validate_credential<'a>(
+        &'a mut self,
+        credential: CredentialRef<'a>,
+    ) -> CredentialAuthenticationStatus {
+        let certificates = if let CredentialRef::X509 { certificates } = credential {
+            certificates
+        } else {
+            panic!("this function can only be called with an X509 credential");
+        };
 
-            CredentialRef::X509 { certificates } => {
-                self.refresh_time_of_interest().await;
+        let pki_env = &mut self.rjt_pki_env;
+        pki_env.refresh_time_of_interest();
 
-                let binding = self.0.read().await;
-                let Some(pki_env) = binding.as_ref() else {
-                    // This implies that we have a Basic client without a PKI environment setup. Hence they cannot
-                    // validate X509 credentials they see. So we consider it as always valid as we
-                    // have no way to assert the validity
-                    return CredentialAuthenticationStatus::Valid;
-                };
+        use x509_cert::der::Decode as _;
+        let Some(cert) = certificates
+            .first()
+            .and_then(|cert_raw| x509_cert::Certificate::from_der(cert_raw).ok())
+        else {
+            return CredentialAuthenticationStatus::Invalid;
+        };
 
-                use x509_cert::der::Decode as _;
-                let Some(cert) = certificates
-                    .first()
-                    .and_then(|cert_raw| x509_cert::Certificate::from_der(cert_raw).ok())
-                else {
-                    return CredentialAuthenticationStatus::Invalid;
-                };
+        if let Err(validation_error) = pki_env.validate_cert_and_revocation(&cert) {
+            use crate::x509_check::{
+                RustyX509CheckError,
+                reexports::certval::{Error as CertvalError, PathValidationStatus},
+            };
 
-                if let Err(validation_error) = pki_env.validate_cert_and_revocation(&cert) {
-                    use crate::x509_check::{
-                        RustyX509CheckError,
-                        reexports::certval::{Error as CertvalError, PathValidationStatus},
-                    };
-
-                    if let RustyX509CheckError::CertValError(CertvalError::PathValidation(
-                        certificate_validation_error,
-                    )) = validation_error
-                    {
-                        match certificate_validation_error {
-                            PathValidationStatus::Valid
-                            | PathValidationStatus::RevocationStatusNotAvailable
-                            | PathValidationStatus::RevocationStatusNotDetermined => {}
-                            PathValidationStatus::CertificateRevoked
-                            | PathValidationStatus::CertificateRevokedEndEntity
-                            | PathValidationStatus::CertificateRevokedIntermediateCa => {
-                                // ? Revoked credentials are A-OK. They still degrade conversations though.
-                                // return CredentialAuthenticationStatus::Revoked;
-                            }
-                            PathValidationStatus::InvalidNotAfterDate => {
-                                // ? Expired credentials are A-OK. They still degrade conversations though.
-                                // return CredentialAuthenticationStatus::Expired;
-                            }
-                            _ => return CredentialAuthenticationStatus::Invalid,
-                        }
-                    } else {
-                        return CredentialAuthenticationStatus::Unknown;
+            if let RustyX509CheckError::CertValError(CertvalError::PathValidation(certificate_validation_error)) =
+                validation_error
+            {
+                match certificate_validation_error {
+                    PathValidationStatus::Valid
+                    | PathValidationStatus::RevocationStatusNotAvailable
+                    | PathValidationStatus::RevocationStatusNotDetermined => {}
+                    PathValidationStatus::CertificateRevoked
+                    | PathValidationStatus::CertificateRevokedEndEntity
+                    | PathValidationStatus::CertificateRevokedIntermediateCa => {
+                        // ? Revoked credentials are A-OK. They still degrade conversations though.
+                        // return CredentialAuthenticationStatus::Revoked;
                     }
+                    PathValidationStatus::InvalidNotAfterDate => {
+                        // ? Expired credentials are A-OK. They still degrade conversations though.
+                        // return CredentialAuthenticationStatus::Expired;
+                    }
+                    _ => return CredentialAuthenticationStatus::Invalid,
                 }
-
-                CredentialAuthenticationStatus::Valid
+            } else {
+                return CredentialAuthenticationStatus::Unknown;
             }
         }
+
+        CredentialAuthenticationStatus::Valid
     }
 }
