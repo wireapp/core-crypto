@@ -10,7 +10,6 @@ import com.wire.crypto.HistorySecret
 import com.wire.crypto.KeyPackage
 import com.wire.crypto.MlsTransport
 import com.wire.crypto.MlsTransportData
-import com.wire.crypto.MlsTransportResponse
 import com.wire.crypto.Welcome
 import com.wire.crypto.ciphersuiteFromU16
 import com.wire.crypto.openDatabase
@@ -21,8 +20,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 
 class DummyTransport : MlsTransport {
-    override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
-        return MlsTransportResponse.Success
+    override suspend fun sendCommitBundle(commitBundle: CommitBundle) {
     }
 
     override suspend fun prepareForTransport(historySecret: HistorySecret): MlsTransportData {

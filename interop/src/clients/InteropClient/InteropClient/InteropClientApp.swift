@@ -6,14 +6,12 @@ final class TransportProvider: MlsTransport {
 
     func sendCommitBundle(
         commitBundle: CommitBundle
-    ) async -> MlsTransportResponse {
-        .success
+    ) async {
     }
 
     func sendMessage(
         mlsMessage: Data
-    ) async -> MlsTransportResponse {
-        .success
+    ) async {
     }
 
     func prepareForTransport(historySecret: WireCoreCryptoUniffi.HistorySecret) async
