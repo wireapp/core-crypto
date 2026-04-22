@@ -46,7 +46,7 @@ pub use core_crypto::{
     core_crypto_new,
     epoch_observer::EpochObserver,
     logger::{CoreCryptoLogLevel, CoreCryptoLogger, set_logger, set_max_log_level},
-    mls_transport::{MlsTransport, MlsTransportData, MlsTransportResponse},
+    mls_transport::{MlsTransport, MlsTransportData},
 };
 pub use core_crypto_context::CoreCryptoContext;
 pub use credential::Credential;
@@ -60,7 +60,11 @@ pub use e2ei::E2eiConversationState;
 pub use ephemeral::{HistorySecret, core_crypto_history_client};
 #[cfg(feature = "proteus")]
 pub use error::proteus::ProteusError;
-pub use error::{CoreCryptoError, CoreCryptoResult, mls::MlsError};
+pub use error::{
+    CoreCryptoError, CoreCryptoResult,
+    mls::MlsError,
+    mls_transport::{MlsTransportError, MlsTransportResult},
+};
 pub use identity::{
     wire::{DeviceStatus, WireIdentity},
     x509::X509Identity,

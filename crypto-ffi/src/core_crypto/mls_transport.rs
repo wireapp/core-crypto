@@ -7,7 +7,7 @@ use std::{fmt, sync::Arc};
 
 use core_crypto::{HistorySecret, MlsCommitBundle};
 
-use crate::{ClientId, CommitBundle, HistorySecret as HistorySecretFfi};
+use crate::{ClientId, CommitBundle, HistorySecret as HistorySecretFfi, error::mls_transport::MlsTransportResult};
 
 /// Application data packaged to be encrypted and transmitted in an MLS application message.
 //
@@ -31,7 +31,7 @@ uniffi::custom_type!(MlsTransportData, Vec<u8>, {
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait MlsTransport: Send + Sync {
     /// Send a commit bundle to the corresponding endpoint.
-    async fn send_commit_bundle(&self, commit_bundle: CommitBundle) -> MlsTransportResponse;
+    async fn send_commit_bundle(&self, commit_bundle: CommitBundle) -> MlsTransportResult;
     /// Prepare a history secret before transmission.
     async fn prepare_for_transport(&self, history_secret: HistorySecretFfi) -> MlsTransportData;
 }
@@ -50,13 +50,10 @@ impl std::fmt::Debug for MlsTransportShim {
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl core_crypto::MlsTransport for MlsTransportShim {
-    async fn send_commit_bundle(
-        &self,
-        commit_bundle: MlsCommitBundle,
-    ) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
+    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> core_crypto::Result<()> {
         let commit_bundle = CommitBundle::try_from(commit_bundle)
             .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(e.to_string()))?;
-        Ok(self.0.send_commit_bundle(commit_bundle).await.into())
+        self.0.send_commit_bundle(commit_bundle).await.map_err(Into::into)
     }
 
     async fn prepare_for_transport(
