@@ -172,9 +172,6 @@ impl PkiEnvironment {
             panic!("this function can only be called with an X509 credential");
         };
 
-        let pki_env = &mut self.rjt_pki_env;
-        pki_env.refresh_time_of_interest();
-
         use x509_cert::der::Decode as _;
         let Some(cert) = certificates
             .first()
@@ -183,7 +180,7 @@ impl PkiEnvironment {
             return CredentialAuthenticationStatus::Invalid;
         };
 
-        if let Err(validation_error) = pki_env.validate_cert_and_revocation(&cert) {
+        if let Err(validation_error) = self.rjt_pki_env.validate_cert_and_revocation(&cert) {
             use crate::x509_check::{
                 RustyX509CheckError,
                 reexports::certval::{Error as CertvalError, PathValidationStatus},
