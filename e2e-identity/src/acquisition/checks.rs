@@ -22,11 +22,10 @@ pub(crate) async fn verify_cert_chain(
     // should be simplified once we drop RjtPkiEnvironment.
     let trust_roots: Vec<TrustAnchorChoice> = pki_env
         .mls_pki_env_provider()
-        .borrow()
-        .await
-        .as_ref()
-        .map(|env| env.get_trust_anchors().iter().map(|ta| ta.decoded_ta.clone()).collect())
-        .unwrap_or_default();
+        .get_trust_anchors()
+        .iter()
+        .map(|ta| ta.decoded_ta.clone())
+        .collect();
 
     let env = RjtPkiEnvironment::init(PkiEnvironmentParams {
         trust_roots: trust_roots.as_slice(),
