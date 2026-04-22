@@ -199,9 +199,7 @@ OfqfZA1YMtN5NLz/AA==
 
     #[rstest::fixture]
     fn pki_env() -> PkiEnvironment {
-        let mut env = PkiEnvironment::init(Default::default()).unwrap();
-        env.refresh_time_of_interest().unwrap();
-        env
+        PkiEnvironment::init(Default::default()).unwrap()
     }
 
     #[rstest]
