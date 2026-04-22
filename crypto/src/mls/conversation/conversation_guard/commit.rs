@@ -6,24 +6,12 @@ use openmls::prelude::KeyPackageIn;
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
-    ClientId, ClientIdRef, CredentialRef, LeafError, MlsError, MlsGroupInfoBundle, MlsTransportResponse,
-    RecursiveError,
+    ClientId, ClientIdRef, CredentialRef, LeafError, MlsError, MlsGroupInfoBundle, RecursiveError,
     mls::{
-        conversation::{
-            Conversation as _, ConversationGuard, ConversationWithMls as _, Error, Result, commit::MlsCommitBundle,
-        },
+        conversation::{ConversationGuard, ConversationWithMls as _, Error, Result, commit::MlsCommitBundle},
         credential::Credential,
     },
 };
-
-/// What to do with a commit after it has been sent via [crate::MlsTransport].
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum TransportedCommitPolicy {
-    /// Accept and merge the commit.
-    Merge,
-    /// Do nothing, because intended operation was already done in one in intermediate processing.
-    None,
-}
 
 impl ConversationGuard {
     pub(super) async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
@@ -33,13 +21,11 @@ impl ConversationGuard {
         }
 
         match self.send_commit(commit).await {
-            Ok(TransportedCommitPolicy::None) => Ok(()),
-            Ok(TransportedCommitPolicy::Merge) => self.merge_commit().await,
-            Err(e @ Error::MessageRejected { .. }) => {
+            Ok(()) => self.merge_commit().await,
+            e @ Err(_) => {
                 self.clear_pending_commit().await?;
-                Err(e)
+                e
             }
-            Err(e) => Err(e),
         }
     }
 
@@ -52,46 +38,14 @@ impl ConversationGuard {
     }
 
     /// Send the commit via [crate::MlsTransport] and handle the response.
-    pub(super) async fn send_commit(&mut self, mut commit: MlsCommitBundle) -> Result<TransportedCommitPolicy> {
+    pub(super) async fn send_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
         let transport = self.transport().await?;
 
-        let epoch_before_sending = self.epoch().await;
-
-        loop {
-            match transport
-                .send_commit_bundle(commit.clone())
-                .await
-                .map_err(RecursiveError::root("sending commit bundle"))?
-            {
-                MlsTransportResponse::Success => {
-                    return Ok(TransportedCommitPolicy::Merge);
-                }
-                MlsTransportResponse::Abort { reason } => {
-                    return Err(Error::MessageRejected { reason });
-                }
-                MlsTransportResponse::Retry => {
-                    let epoch_after_sending = self.epoch().await;
-                    if epoch_before_sending == epoch_after_sending {
-                        // No intermediate commits have been processed before returning retry.
-                        // This will be the case, e.g., on network failure.
-                        // We can just send the exact same commit again.
-                        continue;
-                    }
-
-                    // The epoch has changed. I.e., a client originally tried sending a commit for an old epoch,
-                    // which was rejected by the DS.
-                    // Before returning `Retry`, the API consumer has fetched and merged all commits,
-                    // so the group state is up-to-date.
-                    // The original commit has been `renewed` to a pending proposal, unless the
-                    // intended operation was already done in one of the merged commits.
-                    let Some(commit_to_retry) = self.commit_pending_proposals_inner().await? else {
-                        // The intended operation was already done in one of the merged commits.
-                        return Ok(TransportedCommitPolicy::None);
-                    };
-                    commit = commit_to_retry;
-                }
-            }
-        }
+        transport
+            .send_commit_bundle(commit)
+            .await
+            .map_err(RecursiveError::root("sending commit bundle"))
+            .map_err(Into::into)
     }
 
     /// Adds new members to the group/conversation

@@ -5,7 +5,7 @@ use itertools::{Either, Itertools as _};
 use super::{ConversationGuard, Error, Result};
 use crate::{
     ClientIdRef, HistorySecret, MlsCommitBundle, RecursiveError,
-    mls::conversation::{Conversation as _, ConversationWithMls, conversation_guard::commit::TransportedCommitPolicy},
+    mls::conversation::{Conversation as _, ConversationWithMls},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,16 +65,8 @@ impl ConversationGuard {
             .notify_new_history_client(self.conversation().await.id().clone(), &history_secret)
             .await;
 
-        let transported_commit_policy = self.send_commit(commit).await?;
-
-        // We already merged the commit above, so being requested to merge the commit means we're in the correct state.
-        assert_eq!(
-            transported_commit_policy,
-            TransportedCommitPolicy::Merge,
-            "The transport was successful, so we should be requested to merge the commit"
-        );
-
-        Ok(())
+        // We already merged the commit above, so successfully sending the commit means we're in the correct state.
+        self.send_commit(commit).await
     }
 
     /// Disable history sharing by removing history clients from the conversation.
