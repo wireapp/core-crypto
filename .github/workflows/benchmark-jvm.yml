@@ -30,7 +30,7 @@ jobs:
         with:
           cache-provider: basic
       - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v5
+        uses: gradle/actions/wrapper-validation@v6
 
       - name: download linux library
         uses: ./.github/actions/make/jvm
