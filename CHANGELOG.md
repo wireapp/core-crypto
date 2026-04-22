@@ -135,11 +135,12 @@
 - The duplicate signature error when adding members to a conversation now contain debug information about which members
   had duplicate signatures.
 
-### Bug Fixes
-
-- Web: fixed the abort reason of an `MlsTransportResponse` not being forwarded to rust.
-
 ### Breaking Changes
+
+- Changed the `MlsTransport` interface. Instead of returning an `MlsTransportResponse` to communicate the reason why a
+  message was rejected by the DS, now throw an `MlsTransportError` instead. `MlsTransportResponse` was removed.
+
+  Affected platforms: all
 
 - We aligned key package spelling to KeyPackage
 
@@ -191,14 +192,6 @@
 
   Affected platforms: all
 
-- `MlsTransportResponse` is no longer a union type. `MlsTransport` should return one of the following:
-
-  - `MlsTransportResponse.Success.new()`
-  - `MlsTransportResponse.Retry.new()`
-  - `MlsTransportResponse.Abort.new({reason: "any reason"})`
-
-  Affected platforms: web
-
 - Adjusted TypeScript error structure
 
   Affected platform: web
@@ -211,7 +204,7 @@
 
   ##### Example Usage
 
-  Extract the abort reason given via an `MlsTransportResponse`
+  Extract the abort reason given via throwing an `MlsTransportError`
 
   ```typescript
   import { CoreCryptoError, MlsError } from "core-crypto";
