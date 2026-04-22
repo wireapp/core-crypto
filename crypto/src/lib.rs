@@ -90,7 +90,7 @@ pub struct MlsTransportData(pub Vec<u8>);
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait MlsTransport: std::fmt::Debug + Send + Sync {
     /// Send a commit bundle to the corresponding endpoint.
-    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> Result<MlsTransportResponse>;
+    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> Result<()>;
 
     /// This function will be called before a history secret is sent to the mls transport to allow
     /// the application to package it in a suitable transport container (json, protobuf, ...).
@@ -109,7 +109,7 @@ pub struct CoreCryptoTransportNotImplementedProvider();
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
-    async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> crate::Result<MlsTransportResponse> {
+    async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> crate::Result<()> {
         Err(Error::MlsTransportNotProvided)
     }
 

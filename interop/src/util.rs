@@ -80,12 +80,9 @@ pub(crate) struct MlsTransportSuccessProvider {
 
 #[async_trait::async_trait]
 impl MlsTransport for MlsTransportSuccessProvider {
-    async fn send_commit_bundle(
-        &self,
-        commit_bundle: MlsCommitBundle,
-    ) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
+    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> core_crypto::Result<()> {
         self.latest_commit_bundle.write().await.replace(commit_bundle);
-        Ok(core_crypto::MlsTransportResponse::Success)
+        Ok(())
     }
 
     async fn prepare_for_transport(
@@ -109,8 +106,8 @@ impl MlsTransportTestExt for MlsTransportSuccessProvider {
 
 #[async_trait::async_trait]
 impl core_crypto_ffi::MlsTransport for MlsTransportSuccessProvider {
-    async fn send_commit_bundle(&self, _commit_bundle: CommitBundle) -> core_crypto_ffi::MlsTransportResponse {
-        core_crypto_ffi::MlsTransportResponse::Success
+    async fn send_commit_bundle(&self, _commit_bundle: CommitBundle) -> core_crypto_ffi::MlsTransportResult {
+        Ok(())
     }
 
     async fn prepare_for_transport(&self, history_secret: HistorySecretFfi) -> core_crypto_ffi::MlsTransportData {

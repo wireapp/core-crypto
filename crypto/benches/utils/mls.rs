@@ -8,7 +8,6 @@ use core_crypto::{
     CertificateBundle, Ciphersuite, ClientId, ConnectionType, ConversationId, CoreCrypto, Credential as CcCredential,
     CredentialFindFilters, CredentialRef, CredentialType, Database, DatabaseKey, HistorySecret, MlsCommitBundle,
     MlsConversationConfiguration, MlsCryptoProvider, MlsGroupInfoBundle, MlsTransport, MlsTransportData,
-    MlsTransportResponse,
 };
 use criterion::BenchmarkId;
 use openmls::{
@@ -352,9 +351,9 @@ pub(crate) struct CoreCryptoTransportSuccessProvider {
 
 #[async_trait::async_trait]
 impl MlsTransport for CoreCryptoTransportSuccessProvider {
-    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> core_crypto::Result<MlsTransportResponse> {
+    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> core_crypto::Result<()> {
         self.latest_commit_bundle.write().await.replace(commit_bundle);
-        Ok(MlsTransportResponse::Success)
+        Ok(())
     }
 
     async fn prepare_for_transport(&self, secret: &HistorySecret) -> core_crypto::Result<MlsTransportData> {
