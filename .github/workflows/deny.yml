@@ -23,7 +23,7 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           rustflags: ''
-      - uses: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@v2.75.14
         with:
           tool: cargo-deny@0.19
       - name: "check licenses / supply chain"
