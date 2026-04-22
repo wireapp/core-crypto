@@ -152,16 +152,13 @@ impl PkiEnvironment {
     }
 
     pub async fn add_trust_anchor(&mut self, name: &str, cert: Certificate) -> Result<()> {
-        let mut guard = self.mls_pki_env_provider.0.write().await;
-        let pki_env = guard.as_mut().expect("inner PKI environment must be set");
-
         let mut trust_anchors = TaSource::new();
         trust_anchors.push(certval::CertFile {
             filename: name.to_owned(),
             bytes: cert.to_der()?,
         });
         trust_anchors.initialize().map_err(Error::Certval)?;
-        pki_env.add_trust_anchor_source(Box::new(trust_anchors));
+        self.rjt_pki_env.add_trust_anchor_source(Box::new(trust_anchors));
         Ok(())
     }
 }
