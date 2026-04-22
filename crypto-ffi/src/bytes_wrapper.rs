@@ -188,3 +188,16 @@ macro_rules! bytes_wrapper {
 // This import is an idiom which makes it possible for other modules to
 // import the macro from this module instead of from the root.
 pub(crate) use bytes_wrapper;
+
+/// Implement `Display` based on the hex-encoding of the bytes in the inner type.
+macro_rules! impl_display_via_hex {
+    ($id:ident) => {
+        impl std::fmt::Display for $id {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str(&hex::encode(<_ as AsRef<[u8]>>::as_ref(&self.0)))
+            }
+        }
+    };
+}
+
+pub(crate) use impl_display_via_hex;
