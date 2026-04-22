@@ -35,6 +35,7 @@ export {
     CoreCryptoError_Tags,
     MlsError,
     MlsError_Tags,
+    MlsTransportError,
     ProteusError,
     ProteusError_Tags,
     proteusLastResortPrekeyIdFfi as proteusLastResortPrekeyId,
@@ -81,6 +82,5 @@ export {
     HttpResponse,
     HttpMethod,
     type Timestamp,
-    MlsTransportResponse,
     type MlsTransport,
 } from "#core-crypto-ffi";

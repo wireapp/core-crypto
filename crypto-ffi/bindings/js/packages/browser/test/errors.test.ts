@@ -97,9 +97,9 @@ describe("core crypto errors", () => {
         await browser.execute((_) => {
             const transport_override = {
                 async sendCommitBundle(_: CommitBundle) {
-                    return window.ccModule.MlsTransportResponse.Abort.new({
-                        reason: "just testing",
-                    });
+                    throw window.ccModule.MlsTransportError.MessageRejected.new(
+                        { reason: "just testing" }
+                    );
                 },
             };
 
@@ -120,7 +120,7 @@ describe("core crypto errors", () => {
                     ...window.deliveryService,
                     ...{
                         async sendCommitBundle(_: CommitBundle) {
-                            return window.ccModule.MlsTransportResponse.Abort.new(
+                            throw window.ccModule.MlsTransportError.MessageRejected.new(
                                 { reason: "just testing" }
                             );
                         },

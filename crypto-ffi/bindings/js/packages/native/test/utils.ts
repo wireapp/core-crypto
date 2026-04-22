@@ -8,7 +8,6 @@ import {
     CoreCryptoLogLevel,
     CredentialType,
     DatabaseKey,
-    MlsTransportResponse,
     type HistorySecret,
     type MlsTransportData,
     type GroupInfoBundle,
@@ -40,16 +39,11 @@ interface DeliveryService extends MlsTransport {
 class TestDeliveryService implements DeliveryService {
     private latestCommitBundle?: CommitBundle;
 
-    async sendCommitBundle(
-        commitBundle: CommitBundle
-    ): Promise<MlsTransportResponse> {
+    async sendCommitBundle(commitBundle: CommitBundle): Promise<void> {
         this.latestCommitBundle = commitBundle;
-        return MlsTransportResponse.Success.new();
     }
 
-    async sendMessage(): Promise<MlsTransportResponse> {
-        return MlsTransportResponse.Success.new();
-    }
+    async sendMessage(): Promise<void> {}
 
     prepareForTransport(secret: HistorySecret): Promise<MlsTransportData> {
         return Promise.resolve(secret.clientId.copyBytes());
