@@ -142,7 +142,7 @@ pub use acquisition::{
     thumbprint::compute_raw_key_thumbprint,
 };
 pub use error::{E2eIdentityError, E2eIdentityResult};
-pub use pki_env::{NewCrlDistributionPoints, PkiEnvironmentProvider};
+pub use pki_env::NewCrlDistributionPoints;
 #[cfg(feature = "builder")]
 pub use rusty_jwt_tools::prelude::generate_jwk;
 pub use rusty_jwt_tools::prelude::{

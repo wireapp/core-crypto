@@ -5,7 +5,6 @@ pub mod hooks;
 
 use std::{collections::HashSet, sync::Arc};
 
-use async_lock::{RwLock, RwLockReadGuard};
 use certval::{CertVector as _, TaSource};
 use core_crypto_keystore::{
     connection::Database,
@@ -104,41 +103,32 @@ async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<RjtPk
 }
 
 /// The PKI environment which can be initialized independently from a CoreCrypto session.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PkiEnvironment {
     /// Implemented by the clients and used by us to make external calls during e2e flow
     hooks: Arc<dyn PkiEnvironmentHooks>,
     /// The database in which X509 Credentials are stored.
     database: Database,
-    /// The PkiEnvironmentProvider is the provider used by the MlsCryptoProvider which has to implement
-    /// openmls_traits::OpenMlsCryptoProvideropenMls. It therefore has to be shared with the MlsCryptoProvider but
-    /// we consider this struct to be the place where it actually belongs to.
-    mls_pki_env_provider: PkiEnvironmentProvider,
+    rjt_pki_env: RjtPkiEnvironment,
 }
 
 impl PkiEnvironment {
     /// Create a new PKI Environment
     pub async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Database) -> Result<PkiEnvironment> {
-        let mls_pki_env_provider = PkiEnvironmentProvider::from(restore_pki_env(&database).await?);
+        let rjt_pki_env = restore_pki_env(&database).await?;
         Ok(Self {
             hooks,
             database,
-            mls_pki_env_provider,
+            rjt_pki_env,
         })
     }
 
-    /// Returns true if the inner pki environment has been restored from the database.
-    pub async fn provider_is_setup(&self) -> bool {
-        self.mls_pki_env_provider.is_env_setup().await
+    pub fn mls_pki_env_provider(&self) -> &RjtPkiEnvironment {
+        &self.rjt_pki_env
     }
 
-    pub fn mls_pki_env_provider(&self) -> PkiEnvironmentProvider {
-        self.mls_pki_env_provider.clone()
-    }
-
-    pub async fn update_pki_environment_provider(&self) -> Result<()> {
-        let rjt_pki_environment = restore_pki_env(&self.database).await?;
-        self.mls_pki_env_provider.update_env(Some(rjt_pki_environment)).await;
+    pub async fn update_pki_environment_provider(&mut self) -> Result<()> {
+        self.rjt_pki_env = restore_pki_env(&self.database).await?;
         Ok(())
     }
 
@@ -173,36 +163,6 @@ impl PkiEnvironment {
         trust_anchors.initialize().map_err(Error::Certval)?;
         pki_env.add_trust_anchor_source(Box::new(trust_anchors));
         Ok(())
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct PkiEnvironmentProvider(Arc<RwLock<Option<RjtPkiEnvironment>>>);
-
-impl From<RjtPkiEnvironment> for PkiEnvironmentProvider {
-    fn from(value: RjtPkiEnvironment) -> Self {
-        Self(Arc::new(Some(value).into()))
-    }
-}
-
-impl PkiEnvironmentProvider {
-    pub async fn refresh_time_of_interest(&self) {
-        if let Some(pki) = self.0.write().await.as_mut() {
-            let _ = pki.refresh_time_of_interest();
-        }
-    }
-
-    pub async fn borrow(&self) -> RwLockReadGuard<'_, Option<RjtPkiEnvironment>> {
-        self.0.read().await
-    }
-
-    pub async fn is_env_setup(&self) -> bool {
-        self.0.read().await.is_some()
-    }
-
-    pub async fn update_env(&self, env: Option<RjtPkiEnvironment>) {
-        let mut guard = self.0.write().await;
-        *guard = env;
     }
 }
 
