@@ -1,5 +1,6 @@
 pub(crate) mod core_crypto;
 pub(crate) mod mls;
+pub(crate) mod mls_transport;
 #[cfg(feature = "proteus")]
 pub(crate) mod proteus;
 
