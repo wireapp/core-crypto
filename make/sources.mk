@@ -84,3 +84,4 @@ TS_NATIVE_BENCH_FILES := $(shell find $(TS_NATIVE_DIR)/benches -type f -name '*.
 TS_BROWSER_BENCH_FILES := $(shell find $(TS_BROWSER_DIR)/benches -type f -name '*.ts' 2>/dev/null | LC_ALL=C sort)
 
 TS_BENCH_FILES := $(sort $(TS_NATIVE_BENCH_FILES) $(TS_BROWSER_BENCH_FILES))
+JSON_FILES := $(shell find $(JS_DIR) \( -path '$(JS_DIR)/node_modules' -o -path '$(JS_DIR)/rust_modules' \) -prune -o -type f -name '*.json' -print 2>/dev/null | LC_ALL=C sort )
