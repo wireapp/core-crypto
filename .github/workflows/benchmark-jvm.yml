@@ -57,7 +57,7 @@ permissions:
 jobs:
   benchmark:
     name: Performance regression check
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, benchmark]
     env:
       BENCHMARK_MESSAGE_COUNTS: ${{ inputs.benchmark_message_counts }}
       BENCHMARK_MESSAGE_SIZES: ${{ inputs.benchmark_message_sizes }}
@@ -78,8 +78,11 @@ jobs:
         uses: gradle/actions/wrapper-validation@v6
 
       - name: download linux library
-        uses: ./.github/actions/make/jvm
+        uses: ./.github/actions/make
         with:
+          key: jvm-linux
+          make-rule: jvm-linux
+          target-path: target/x86_64-unknown-linux-gnu/release/libcore_crypto_ffi.so
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
