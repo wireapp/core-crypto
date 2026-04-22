@@ -120,6 +120,19 @@ jobs:
       - build-jvm-linux
     uses: ./.github/workflows/docs-jvm.yml
 
+  benchmark-jvm:
+    needs:
+      - bindings-jvm
+      - build-jvm-linux
+      - build-jvm-darwin
+    uses: ./.github/workflows/benchmark-jvm.yml
+    with:
+      publish: false
+      benchmark_message_counts: "1"
+      benchmark_message_sizes: "16"
+      benchmark_user_counts: "1"
+      benchmark_cipher_suites: "MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519"
+
   #################
   # KMP
 

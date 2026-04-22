@@ -55,6 +55,18 @@ jvm-bench: $(jvm-test-deps) $(KT_BENCHMARKS) ## Run the JVM benchmarks
 	if [ -n "$(BENCH)" ]; then \
 		GRADLE_ARGS="$$GRADLE_ARGS -PjmhIncludes=$(BENCH)"; \
 	fi; \
+	if [ -n "$(BENCHMARK_MESSAGE_COUNTS)" ]; then \
+		GRADLE_ARGS="$$GRADLE_ARGS -PjmhBenchmarkMessageCounts=$(BENCHMARK_MESSAGE_COUNTS)"; \
+	fi; \
+	if [ -n "$(BENCHMARK_MESSAGE_SIZES)" ]; then \
+		GRADLE_ARGS="$$GRADLE_ARGS -PjmhBenchmarkMessageSizes=$(BENCHMARK_MESSAGE_SIZES)"; \
+	fi; \
+	if [ -n "$(BENCHMARK_USER_COUNTS)" ]; then \
+		GRADLE_ARGS="$$GRADLE_ARGS -PjmhBenchmarkUserCounts=$(BENCHMARK_USER_COUNTS)"; \
+	fi; \
+	if [ -n "$(BENCHMARK_CIPHER_SUITES)" ]; then \
+		GRADLE_ARGS="$$GRADLE_ARGS -PjmhBenchmarkCipherSuites=$(BENCHMARK_CIPHER_SUITES)"; \
+	fi; \
 	if [ -n "$(PROFILE)" ]; then \
 		GRADLE_ARGS="$$GRADLE_ARGS -Pprofile"; \
 	fi; \
