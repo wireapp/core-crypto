@@ -17,13 +17,6 @@ include::ROOT:partial$cc10-migration.adoc[]
    Use `new Uint8Array(buffer)` to get a Uint8Array from an `ArrayBuffer`.
 
 
-== MlsTransportResponse
-* `MlsTransportResponse` is no longer a union type. `MlsTransport` should return one of the following:
-
-** `MlsTransportResponse.Success.new()`
-** `MlsTransportResponse.Retry.new()`
-** `MlsTransportResponse.Abort.new({reason: "any reason"})`
-
 == Errors
 === Error Structure
 We adjusted TypeScript error structure
@@ -37,7 +30,7 @@ https://jhugman.github.io/uniffi-bindgen-react-native/idioms/errors.html#enums-a
 
 ==== Example Usage
 
-.Extracting the abort reason given via an `MlsTransportResponse`
+.Extracting the abort reason given via throwing an `MlsTransportError`
 [source,typescript]
 ----
   import { CoreCryptoError, MlsError } from "core-crypto";

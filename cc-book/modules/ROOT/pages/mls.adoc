@@ -56,23 +56,12 @@ CoreCrypto intentionally abstains from communication with the Wire backend; inst
   The `commitBundle` contains the commit message, a welcome message for any newly added members, and the updated group info.
   All three should be forwarded to the delivery service in a single request.
 
+The implementor of `sendCommitBundle` may throw an `MlsTransportError` indicating the reason for a rejected message.
+
 `prepareForTransport(historySecret)`::
   Called before a history secret is transmitted to a new history client.
   The implementation should package the secret in the application's transport format (e.g., JSON or Protobuf) and return the serialized bytes.
   CoreCrypto will then encrypt and send those bytes as an application message.
-
-Each method returns an `MlsTransportResponse` indicating the outcome:
-
-`Success`::
-  The delivery service accepted the message.
-
-`Retry`::
-  The delivery service rejected the message because the client is behind — it has not yet processed all pending incoming messages.
-  CoreCrypto will not retry automatically; the caller should fetch and process pending messages, then re-attempt the operation that triggered the callback.
-
-`Abort { reason }`::
-  The delivery service rejected the message and there is no recovery path.
-  CoreCrypto surfaces this as an `MlsError::MessageRejected` with the reason string attached.
 
 == Observers
 

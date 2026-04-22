@@ -50,3 +50,8 @@ endif::[]
   as logging is configured globally and not tied to a `CoreCrypto` instance.
   To set the log level use the free function `setMaxLogLevel(level: CoreCryptoLogLevel)`.
 . We *renamed* `setLoggerOnly(logger: CoreCryptoLogger)` to `setLogger(logger: CoreCryptoLogger)`.
+
+== MlsTransport interface
+. Instead of returning an `MlsTransportResponse` to communicate the reason why a
+  message was rejected by the DS, now throw an `MlsTransportError` instead.
+ `MlsTransportResponse` was removed.
