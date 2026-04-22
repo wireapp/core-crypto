@@ -35,6 +35,16 @@ export default tseslint.config(
                     ignoreRestSiblings: true,
                 },
             ],
+            "max-len": [
+                "error",
+                {
+                    code: 120,
+                    comments: 120,
+                    ignoreUrls: true,
+                    ignoreStrings: true,
+                    ignoreTemplateLiterals: true,
+                },
+            ],
         },
     }
 );
