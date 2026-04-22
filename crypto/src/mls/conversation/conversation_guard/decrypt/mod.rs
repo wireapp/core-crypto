@@ -43,11 +43,6 @@ use crate::{
 pub struct MlsConversationDecryptMessage {
     /// Decrypted text message
     pub app_msg: Option<Vec<u8>>,
-    /// Only when decrypted message is a commit, CoreCrypto will renew local proposal which could not make it in the
-    /// commit. This will contain either:
-    /// * local pending proposal not in the accepted commit
-    /// * If there is a pending commit, its proposals which are not in the accepted commit
-    pub proposals: Vec<MlsProposalBundle>,
     /// Is the conversation still active after receiving this commit aka has the user been removed from the group
     pub is_active: bool,
     /// Delay time in seconds to feed caller timer for committing
@@ -69,8 +64,6 @@ pub struct MlsBufferedConversationDecryptMessage {
     /// see [MlsConversationDecryptMessage]
     pub app_msg: Option<Vec<u8>>,
     /// see [MlsConversationDecryptMessage]
-    pub proposals: Vec<MlsProposalBundle>,
-    /// see [MlsConversationDecryptMessage]
     pub is_active: bool,
     /// see [MlsConversationDecryptMessage]
     pub delay: Option<u64>,
@@ -84,7 +77,6 @@ impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessa
     fn from(from: MlsConversationDecryptMessage) -> Self {
         Self {
             app_msg: from.app_msg,
-            proposals: from.proposals,
             is_active: from.is_active,
             delay: from.delay,
             sender_client_id: from.sender_client_id,
