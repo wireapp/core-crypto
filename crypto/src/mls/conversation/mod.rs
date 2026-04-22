@@ -29,7 +29,6 @@ mod own_commit;
 pub(crate) mod pending_conversation;
 mod persistence;
 pub(crate) mod proposal;
-mod renew;
 pub(crate) mod welcome;
 mod wipe;
 
