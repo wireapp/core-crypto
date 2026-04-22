@@ -146,7 +146,7 @@
                 <a href="WireCoreCryptoUniffi/Enums/MlsRatchetTreeType.html">MlsRatchetTreeType</a>
               </li>
               <li class="nav-group-task">
-                <a href="WireCoreCryptoUniffi/Enums/MlsTransportResponse.html">MlsTransportResponse</a>
+                <a href="WireCoreCryptoUniffi/Enums/MlsTransportError.html">MlsTransportError</a>
               </li>
               <li class="nav-group-task">
                 <a href="WireCoreCryptoUniffi/Enums/NewHistoryClientReportingError.html">NewHistoryClientReportingError</a>
@@ -718,9 +718,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi20MlsTransportResponseO"></a>
-                    <a name="//apple_ref/swift/Enum/MlsTransportResponse" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi20MlsTransportResponseO">MlsTransportResponse</a>
+                    <a name="/s:20WireCoreCryptoUniffi17MlsTransportErrorO"></a>
+                    <a name="//apple_ref/swift/Enum/MlsTransportError" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi17MlsTransportErrorO">MlsTransportError</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -728,17 +728,17 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The outcome of an MLS transport attempt, returned to CoreCrypto after delivery.</p>
+                        <p>Errors returned by MLS transport callbacks exposed through FFI.</p>
 
-                        <a href="WireCoreCryptoUniffi/Enums/MlsTransportResponse.html" class="slightly-smaller">See more</a>
+                        <a href="WireCoreCryptoUniffi/Enums/MlsTransportError.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">MlsTransportResponse</span></code></pre>
-<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">MlsTransportResponse</span><span class="p">:</span> <span class="kt">Sendable</span></code></pre>
-<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">MlsTransportResponse</span><span class="p">:</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Hashable</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">MlsTransportError</span> <span class="p">:</span> <span class="kt">Swift</span><span class="o">.</span><span class="kt">Error</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">MlsTransportError</span><span class="p">:</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Hashable</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">MlsTransportError</span><span class="p">:</span> <span class="kt">Foundation</span><span class="o">.</span><span class="kt">LocalizedError</span></code></pre>
 
                         </div>
                       </div>
