@@ -198,7 +198,6 @@ impl PendingConversation {
 
         Ok(MlsConversationDecryptMessage {
             app_msg: None,
-            proposals: vec![],
             is_active: conversation.group.is_active(),
             delay: conversation.compute_next_commit_delay(),
             sender_client_id: None,

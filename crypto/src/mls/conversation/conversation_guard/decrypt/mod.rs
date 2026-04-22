@@ -30,9 +30,9 @@ use tls_codec::Deserialize as _;
 
 use super::{ConversationGuard, Result};
 use crate::{
-    ClientId, E2eiConversationState, MlsError, MlsProposalBundle, RecursiveError, Session, WireIdentity,
+    ClientId, E2eiConversationState, MlsError, RecursiveError, Session, WireIdentity,
     mls::{
-        conversation::{Conversation, ConversationWithMls, Error, renew::Renew},
+        conversation::{Conversation, ConversationWithMls, Error},
         credential::ext::CredentialExt as _,
     },
 };
@@ -212,7 +212,6 @@ impl ConversationGuard {
 
                 MlsConversationDecryptMessage {
                     app_msg: Some(app_msg.into_bytes()),
-                    proposals: vec![],
                     is_active: true,
                     delay: None,
                     sender_client_id: Some(sender_client_id),
@@ -268,7 +267,6 @@ impl ConversationGuard {
 
                 MlsConversationDecryptMessage {
                     app_msg: None,
-                    proposals: vec![],
                     is_active: true,
                     delay,
                     sender_client_id: None,
@@ -279,13 +277,8 @@ impl ConversationGuard {
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
                 self.validate_commit(&staged_commit).await?;
 
-                let (proposals, is_active, delay, removed_members, added_members, group_id) = self
-                    .conversation_mut(async |conversation, database| {
-                        let pending_proposals = conversation.self_pending_proposals().cloned().collect::<Vec<_>>();
-
-                        // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
-                        let pending_commit = conversation.group.pending_commit().cloned();
-
+                let (is_active, delay, removed_members, added_members, group_id) = self
+                    .conversation_mut(async |conversation, _database| {
                         let removed_indices = staged_commit
                             .remove_proposals()
                             .map(|p| p.remove_proposal().removed())
@@ -310,27 +303,11 @@ impl ConversationGuard {
                             .filter_map(|member| added_credentials.contains(&member.credential).then(|| member.clone()))
                             .collect::<Vec<_>>();
 
-                        let (proposals_to_renew, needs_update) = Renew::renew(
-                            &conversation.group.own_leaf_index(),
-                            pending_proposals.iter(),
-                            pending_commit.as_ref(),
-                            staged_commit.as_ref(),
-                        );
-                        let proposals = conversation
-                            .renew_proposals_for_current_epoch(
-                                session,
-                                provider,
-                                database,
-                                proposals_to_renew.into_iter(),
-                                needs_update,
-                            )
-                            .await?;
-
                         let is_active = conversation.group.is_active();
                         let delay = conversation.compute_next_commit_delay();
                         let group_id = conversation.id.clone();
 
-                        Ok((proposals, is_active, delay, removed_members, added_members, group_id))
+                        Ok((is_active, delay, removed_members, added_members, group_id))
                     })
                     .await?;
 
@@ -353,7 +330,6 @@ impl ConversationGuard {
 
                 MlsConversationDecryptMessage {
                     app_msg: None,
-                    proposals,
                     is_active,
                     delay,
                     sender_client_id: None,
@@ -376,7 +352,6 @@ impl ConversationGuard {
 
                 MlsConversationDecryptMessage {
                     app_msg: None,
-                    proposals: vec![],
                     is_active: true,
                     delay,
                     sender_client_id: None,

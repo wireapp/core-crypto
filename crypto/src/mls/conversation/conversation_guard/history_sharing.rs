@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use itertools::{Either, Itertools as _};
+use openmls::prelude::Sender;
 
 use super::{ConversationGuard, Error, Result};
 use crate::{
@@ -170,11 +171,15 @@ impl ConversationGuard {
 
                 // We're getting the proposals we just created from the pending proposals queue, as the previously
                 // called `propose_remove()` and `propose_add()` pushed them to that queue as a side effect.
-                Ok(conversation
-                    .self_pending_proposals()
+                let remove_and_add = conversation
+                    .group()
+                    .pending_proposals()
+                    .filter(|&p| matches!(p.sender(), Sender::Member(i) if i == &conversation.group().own_leaf_index()))
                     .map(|proposal| proposal.proposal())
                     .cloned()
-                    .collect::<Vec<_>>())
+                    .collect::<Vec<_>>();
+
+                Ok(remove_and_add)
             })
             .await?;
 

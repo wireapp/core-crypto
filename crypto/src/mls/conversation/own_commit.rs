@@ -106,7 +106,6 @@ impl MlsConversation {
 
         Ok(MlsConversationDecryptMessage {
             app_msg: None,
-            proposals: vec![],
             is_active: self.group.is_active(),
             delay: self.compute_next_commit_delay(),
             sender_client_id: None,
