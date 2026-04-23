@@ -22,8 +22,8 @@ describe("benchmark", () => {
                     warmupIterations: 1,
                 });
                 for (const { count, size, cipherSuite } of parameters) {
-                    const aliceCc = await window.helpers.setupCc(cipherSuite);
-                    const bobCc = await window.helpers.setupCc(cipherSuite);
+                    const aliceCc = await window.helpers.ccInit(cipherSuite);
+                    const bobCc = await window.helpers.ccInit(cipherSuite);
 
                     const conversationIdStr = window.crypto.randomUUID();
                     const conversationId = new window.ccModule.ConversationId(
