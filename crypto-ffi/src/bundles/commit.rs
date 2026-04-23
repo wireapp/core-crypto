@@ -23,7 +23,7 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
     fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
         let encrypted_message = msg.encrypted_message.clone();
         let (welcome, commit, group_info) = msg.to_bytes_triple()?;
-        let welcome = welcome.map(Welcome::from).map(Arc::new);
+        let welcome = welcome.map(Into::into).map(Arc::new);
         let group_info = group_info.into();
         Ok(Self {
             welcome,

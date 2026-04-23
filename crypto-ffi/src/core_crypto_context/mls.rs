@@ -44,7 +44,7 @@ bytes_wrapper!(
     /// This structure is defined in RFC 9420:
     /// <https://www.rfc-editor.org/rfc/rfc9420.html#joining-via-welcome-message>.
     #[derive(Debug, Clone)]
-    Welcome
+    Welcome fallibly wraps core_crypto::transaction_context::conversation::welcome::WelcomeMessage
 );
 
 #[uniffi::export]
@@ -181,7 +181,7 @@ impl CoreCryptoContext {
     pub async fn process_welcome_message(&self, welcome_message: Arc<Welcome>) -> CoreCryptoResult<ConversationId> {
         let result = self
             .inner
-            .process_raw_welcome_message(welcome_message.as_slice())
+            .process_welcome_message(Arc::unwrap_or_clone(welcome_message).0)
             .await?
             .into();
         Ok(result)
