@@ -12,6 +12,8 @@ import {
 } from "@wireapp/core-crypto/browser";
 import { shared_setup } from "../shared/utils";
 
+export { teardown } from "../shared/utils"
+
 type ccModuleType = typeof import("@wireapp/core-crypto/browser");
 
 /**
@@ -100,10 +102,6 @@ export async function setup() {
             return cc;
         };
     });
-}
-
-export async function teardown() {
-    browser.off("log.entryAdded", logEvents);
 }
 
 /**

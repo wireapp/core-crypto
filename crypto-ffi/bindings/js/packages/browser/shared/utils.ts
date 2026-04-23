@@ -101,6 +101,10 @@ export async function sharedSetup() {
     }, logLevel);
 }
 
+export async function teardown() {
+    browser.off("log.entryAdded", logEvents);
+}
+
 export interface DeliveryService extends MlsTransport {
     getLatestCommitBundle: () => Promise<CommitBundle>;
 }
