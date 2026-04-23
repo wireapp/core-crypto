@@ -17,20 +17,19 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub(crate) async fn propose_add_member(
         &mut self,
-        client: &Session<Database>,
-        backend: &MlsCryptoProvider,
+        session: &Session<Database>,
         database: &Database,
         key_package: KeyPackageIn,
     ) -> Result<MlsProposalBundle> {
         let signer = &self
-            .find_current_credential(client)
+            .find_current_credential(session)
             .await
             .map_err(|_| Error::IdentityInitializationError)?
             .signature_key_pair;
 
         let (proposal, proposal_ref) = self
             .group
-            .propose_add_member(backend, signer, key_package)
+            .propose_add_member(&session.crypto_provider, signer, key_package)
             .await
             .map_err(MlsError::wrap("propose add member"))?;
         let proposal = MlsProposalBundle {
