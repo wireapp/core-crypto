@@ -191,7 +191,7 @@ export async function invite(
         await DELIVERY_SERVICE.getLatestCommitBundle();
 
     await cc2.transaction((ctx) =>
-        ctx.processWelcomeMessage(new Welcome(welcome!.copyBytes()))
+        ctx.processWelcomeMessage(new Welcome(welcome!.serialize()))
     );
 
     return groupInfo;

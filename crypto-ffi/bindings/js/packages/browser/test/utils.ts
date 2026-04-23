@@ -338,7 +338,7 @@ export async function invite(
             await cc2.transaction((ctx) =>
                 ctx.processWelcomeMessage(
                     new window.ccModule.Welcome(
-                        commitBundle.welcome!.copyBytes()
+                        commitBundle.welcome!.serialize()
                     )
                 )
             );
