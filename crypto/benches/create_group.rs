@@ -81,7 +81,7 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                     },
                     |(central, welcome)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(context.process_welcome_message(welcome.into()).await.unwrap());
+                        black_box(context.process_welcome_message(welcome).await.unwrap());
                         context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,

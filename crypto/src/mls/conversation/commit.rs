@@ -8,7 +8,7 @@
 use openmls::prelude::MlsMessageOut;
 
 use super::{Error, Result};
-use crate::MlsGroupInfoBundle;
+use crate::{MlsGroupInfoBundle, transaction_context::conversation::welcome::WelcomeMessage};
 
 /// Returned when a commit is created
 #[derive(Debug, Clone)]
@@ -24,21 +24,15 @@ pub struct MlsCommitBundle {
 }
 
 impl MlsCommitBundle {
-    /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
+    /// Unpacks this struct and serializes the commit
+    ///
     /// 0 -> welcome
     /// 1 -> message
     /// 2 -> public group state
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes_triple(self) -> Result<(Option<Vec<u8>>, Vec<u8>, MlsGroupInfoBundle)> {
+    pub fn to_bytes_triple(self) -> Result<(Option<WelcomeMessage>, Vec<u8>, MlsGroupInfoBundle)> {
         use openmls::prelude::TlsSerializeTrait as _;
-        let welcome = self
-            .welcome
-            .as_ref()
-            .map(|w| {
-                w.tls_serialize_detached()
-                    .map_err(Error::tls_serialize("serialize welcome"))
-            })
-            .transpose()?;
+        let welcome = self.welcome.map(Into::into);
         let commit = self
             .commit
             .tls_serialize_detached()
