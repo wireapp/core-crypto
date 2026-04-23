@@ -108,9 +108,6 @@ macro_rules_attribute.workspace = true
 wasm-bindgen-test = { workspace = true }
 openmls.workspace = true
 hex-literal = "1.1"
-[target.'cfg(not(target_os = "unknown"))'.dev-dependencies.criterion]
-version = "0.8"
-features = ["async_smol", "async_futures", "html_reports"]
 
 [target.'cfg(not(target_os = "unknown"))'.dev-dependencies]
 smol-macros.workspace = true
