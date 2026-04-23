@@ -33,14 +33,32 @@ bytes_wrapper!(
 );
 impl_display_via_hex!(ExternalSenderKey);
 
-bytes_wrapper!(
-    /// MLS Group Information
-    ///
-    /// This is used when joining by external commit.
-    /// It can be found within the `GroupInfoBundle` within a `CommitBundle`.
-    #[derive(Debug, Clone)]
-    GroupInfo
-);
+/// MLS Group Information
+///
+/// This is used when joining by external commit.
+/// It can be found within the `GroupInfoBundle` within a `CommitBundle`.
+//
+// We can't use the `bytes_wrapper` macro here because it requires certain
+// trait implementations for its implementation, and `VerifiableGroupInfo`
+// does not and cannot implement these because despite the import path it is
+// an OpenMLS type, not a CoreCrypto type.
+//
+// So we just reimplement it manually.
+#[derive(Debug, Clone, uniffi::Object, derive_more::From, derive_more::Into)]
+pub struct GroupInfo(pub(crate) core_crypto::VerifiableGroupInfo);
+
+#[uniffi::export]
+impl GroupInfo {
+    /// Fallibly instantiate an instance from a TLS-serialized byte array.
+    #[uniffi::constructor]
+    pub fn new(bytes: Vec<u8>) -> CoreCryptoResult<Self> {
+        use tls_codec::Deserialize as _;
+        core_crypto::VerifiableGroupInfo::tls_deserialize(&mut bytes.as_slice())
+            .map(GroupInfo)
+            .map_err(CoreCryptoError::generic())
+    }
+}
+
 bytes_wrapper!(
     /// A TLS-serialized Welcome message.
     ///
@@ -269,14 +287,9 @@ impl CoreCryptoContext {
         group_info: Arc<GroupInfo>,
         credential_ref: Arc<CredentialRef>,
     ) -> CoreCryptoResult<ConversationId> {
-        let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
-            .map_err(core_crypto::mls::conversation::Error::tls_deserialize(
-                "verifiable group info",
-            ))
-            .map_err(RecursiveError::mls_conversation("joining by external commmit"))?;
         let conversation_id = self
             .inner
-            .join_by_external_commit(group_info, &credential_ref.0)
+            .join_by_external_commit(Arc::unwrap_or_clone(group_info).0, &credential_ref.0)
             .await?;
         Ok(conversation_id.into())
     }
