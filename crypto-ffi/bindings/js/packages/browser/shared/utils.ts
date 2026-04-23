@@ -65,7 +65,7 @@ export async function sharedSetup() {
         }
 
         class Helpers {
-            static async setupCc(
+            static async ccInit(
                 cipherSuite: Ciphersuite,
                 clientIdStr?: string
             ): Promise<CoreCrypto> {
@@ -110,7 +110,7 @@ export interface DeliveryService extends MlsTransport {
 }
 
 export interface Helpers {
-    setupCc: (
+    ccInit: (
         cipherSuite: Ciphersuite,
         clientIdStr?: string
     ) => Promise<CoreCrypto>;

@@ -27,7 +27,7 @@ describe("benchmark", () => {
                         `cipherSuite=${window.ccModule.Ciphersuite[cipherSuite]} userCount=${userCount}`,
                         async () => {
                             const aliceCc =
-                                await window.helpers.setupCc(cipherSuite);
+                                await window.helpers.ccInit(cipherSuite);
 
                             const conversationIdStr =
                                 window.crypto.randomUUID();
@@ -56,7 +56,7 @@ describe("benchmark", () => {
                                 const clientId = new window.ccModule.ClientId(
                                     encoder.encode(clientIdStr).buffer
                                 );
-                                const bobCc = await window.helpers.setupCc(
+                                const bobCc = await window.helpers.ccInit(
                                     cipherSuite,
                                     clientIdStr
                                 );

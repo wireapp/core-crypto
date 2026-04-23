@@ -27,7 +27,7 @@ describe("benchmark", () => {
                         `cipherSuite=${window.ccModule.Ciphersuite[cipherSuite]} userCount=${userCount}`,
                         async () => {
                             const aliceCc =
-                                await window.helpers.setupCc(cipherSuite);
+                                await window.helpers.ccInit(cipherSuite);
 
                             const conversationIdStr =
                                 window.crypto.randomUUID();
@@ -50,7 +50,7 @@ describe("benchmark", () => {
 
                             for (let i = 0; i < userCount; i++) {
                                 const bobCc =
-                                    await window.helpers.setupCc(cipherSuite);
+                                    await window.helpers.ccInit(cipherSuite);
                                 const kp = await bobCc.transaction(
                                     async (ctx) => {
                                         const [credentialRef] =
