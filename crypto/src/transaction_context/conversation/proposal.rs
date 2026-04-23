@@ -57,7 +57,7 @@ impl TransactionContext {
             .conversation_mut(async move |conversation, database| {
                 let proposal = match proposal {
                     MlsProposal::Add(key_package) => conversation
-                        .propose_add_member(&client, &provider, database, key_package.into())
+                        .propose_add_member(&client, database, key_package.into())
                         .await
                         .map_err(RecursiveError::mls_conversation("proposing to add member"))
                         .map_err(ConversationError::from)?,
