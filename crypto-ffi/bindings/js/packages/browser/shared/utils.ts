@@ -4,6 +4,7 @@ import type {
     CommitBundle,
     CoreCrypto,
     CoreCryptoLogLevel,
+    GroupInfoBundle,
     HistorySecret,
     MlsTransport,
     MlsTransportData,
@@ -104,14 +105,380 @@ export async function sharedSetup() {
                     await ctx.mlsInit(clientId, window.deliveryService);
                     if (withBasicCredential) {
                         if (cipherSuite === undefined) {
-                            cipherSuite = window.defaultCipherSuite
+                            cipherSuite = window.defaultCipherSuite;
                         }
                         await ctx.addCredential(
-                            window.ccModule.Credential.basic(cipherSuite, clientId)
+                            window.ccModule.Credential.basic(
+                                cipherSuite,
+                                clientId
+                            )
                         );
                     }
                 });
                 return cc;
+            }
+
+            /**
+             * Records logs by setting a logger and maximum log level in the browser's context.
+             * The logs are stored in a global variable `window.recordedLogs` for further retrieval.
+             *
+             * @return {Promise<void>}
+             */
+            static async recordLogs(): Promise<void> {
+                const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
+                    window.ccModule;
+                window.recordedLogs = [];
+
+                setLogger({
+                    log: (level: number, message: string, context: string) => {
+                        console.log(message, context);
+                        window.recordedLogs.push({
+                            level: level,
+                            message: message,
+                            context: context,
+                        });
+                    },
+                });
+                setMaxLogLevel(CoreCryptoLogLevel.Debug);
+            }
+
+            /**
+             * Retrieves the logs recorded on the browser-side.
+             *
+             * @return {Promise<LogEntry[]>} A promise that resolves to an array of log entries
+             */
+            static async retrieveLogs(): Promise<LogEntry[]> {
+                return window.recordedLogs.map((entry) => {
+                    return entry;
+                });
+            }
+
+            /**
+             * Create a conversation on a {@link CoreCrypto} instance that has
+             * been initialized before via {@link ccInit}.
+             *
+             * @param clientName The name the {@link CoreCrypto} instance has been
+             * initialized with.
+             * @param conversationId The id that the conversation will be created with.
+             *
+             * @returns {Promise<void>}
+             *
+             * @throws Error if the instance with {@link clientName} cannot be found.
+             */
+            static async createConversation(
+                clientName: string,
+                conversationId: string
+            ): Promise<void> {
+                const cc = window.ensureCcDefined(clientName);
+                await cc.transaction(async (ctx) => {
+                    const conversationIdBytes =
+                        new window.ccModule.ConversationId(
+                            new TextEncoder().encode(conversationId).buffer
+                        );
+                    const [credentialRef] = await ctx.getCredentials();
+                    await ctx.createConversation(
+                        conversationIdBytes,
+                        credentialRef!
+                    );
+                });
+            }
+
+            /**
+             * Invite {@link client2} to a previously created conversation on the
+             * instance of {@link client1} (via {@link createConversation}).
+             *
+             * @param client1 The name of the {@link CoreCrypto} instance on which the
+             * conversation was created previously.
+             * @param client2 The name of the {@link CoreCrypto} instance that will be
+             * invited.
+             * @param conversationId The id of the previously created conversation.
+             *
+             * @returns {Promise<GroupInfoBundle>} The resulting group info.
+             *
+             * @throws Error if {@link client1} or {@link client2} instances cannot be found.
+             */
+            static async invite(
+                client1: string,
+                client2: string,
+                conversationId: string
+            ): Promise<GroupInfoBundle> {
+                const cc1 = window.ensureCcDefined(client1);
+                const cc2 = window.ensureCcDefined(client2);
+                const conversationIdBytes = new window.ccModule.ConversationId(
+                    new TextEncoder().encode(conversationId).buffer
+                );
+                const kp = await cc2.transaction(async (ctx) => {
+                    const [credentialRef] = await ctx.findCredentials({
+                        ciphersuite: window.defaultCipherSuite,
+                        credentialType: window.ccModule.CredentialType.Basic,
+                    });
+                    console.log("generated key package");
+                    return await ctx.generateKeyPackage(credentialRef!);
+                });
+
+                const clients = await cc1.getClientIds(conversationIdBytes);
+                console.log("clients");
+                console.log(clients);
+
+                console.log("inviting bob");
+                await cc1.transaction((ctx) =>
+                    ctx.addClientsToConversation(conversationIdBytes, [kp])
+                );
+                console.log("processing welcome");
+                const commitBundle =
+                    await window.deliveryService.getLatestCommitBundle();
+                await cc2.transaction((ctx) =>
+                    ctx.processWelcomeMessage(
+                        new window.ccModule.Welcome(
+                            commitBundle.welcome!.copyBytes()
+                        )
+                    )
+                );
+
+                return commitBundle.groupInfo;
+            }
+
+            /**
+             * Remove {@link client2} from a previously created conversation on the
+             * instance of {@link client1} (via {@link createConversation}).
+             *
+             * @param client1 The name of the {@link CoreCrypto} instance on which the
+             * conversation was created previously.
+             * @param client2 The name of the {@link CoreCrypto} instance that will be
+             * removed.
+             * @param conversationId The id of the previously created conversation.
+             *
+             * @returns {Promise<GroupInfoBundle>} The resulting group info.
+             *
+             * @throws Error if {@link client1} or {@link client2} instances cannot be found.
+             */
+            static async remove(
+                client1: string,
+                client2: string,
+                conversationId: string
+            ): Promise<GroupInfoBundle> {
+                const cc1 = window.ensureCcDefined(client1);
+                const cid = new window.ccModule.ConversationId(
+                    new TextEncoder().encode(conversationId).buffer
+                );
+                const clientId = new window.ccModule.ClientId(
+                    new TextEncoder().encode(client2).buffer
+                );
+                await cc1.transaction((ctx) =>
+                    ctx.removeClientsFromConversation(cid, [clientId])
+                );
+                const commitBundle =
+                    await window.deliveryService.getLatestCommitBundle();
+
+                return commitBundle.groupInfo;
+            }
+
+            /**
+             * Consume the last commit message on {@link client1}
+             *
+             * @param client1 The name of the {@link CoreCrypto} instance on which to consume the commit.
+             * @param conversationId The id of the previously created conversation.
+             *
+             * @returns {Promise<void>}
+             *
+             * @throws Error if {@link client1} instances cannot be found.
+             */
+            static async consumeLastestCommit(
+                client1: string,
+                conversationId: string
+            ): Promise<void> {
+                const cc1 = window.ensureCcDefined(client1);
+                const cid = new window.ccModule.ConversationId(
+                    new TextEncoder().encode(conversationId).buffer
+                );
+                const commitBundle =
+                    await window.deliveryService.getLatestCommitBundle();
+                await cc1.transaction((ctx) =>
+                    ctx.decryptMessage(cid, commitBundle.commit)
+                );
+            }
+            /**
+             * Inside a previously created conversation, {@link client1} encrypts
+             * {@link message}, sends it to {@link client2}, who then decrypts it.
+             * This procedure is then repeated vice versa.
+             *
+             * @param client1 The first of the conversation.
+             * @param client2 The second member of the conversation.
+             * @param conversationId The id of the conversation.
+             * @param message The message encrypted, sent, and decrypted once in each
+             * direction.
+             *
+             * @returns {Promise<(string | null)[]>} A two-element list, containing the decrypted {@link message} by
+             * {@link client1} and {@link client2}, in that order.
+             */
+            static async roundTripMessage(
+                client1: string,
+                client2: string,
+                conversationId: string,
+                message: string
+            ): Promise<(string | null)[]> {
+                const cc1 = window.ensureCcDefined(client1);
+                const cc2 = window.ensureCcDefined(client2);
+
+                const encoder = new TextEncoder();
+                const cid = new window.ccModule.ConversationId(
+                    encoder.encode(conversationId).buffer
+                );
+                const messageBytes = encoder.encode(message);
+
+                const encryptedByClient1 = await cc1.transaction(
+                    async (ctx) => {
+                        return await ctx.encryptMessage(
+                            cid,
+                            messageBytes.buffer
+                        );
+                    }
+                );
+                const decryptedByClient2 = await cc2.transaction(
+                    async (ctx) => {
+                        return await ctx.decryptMessage(
+                            cid,
+                            encryptedByClient1
+                        );
+                    }
+                );
+
+                const encryptedByClient2 = await cc2.transaction(
+                    async (ctx) => {
+                        return await ctx.encryptMessage(
+                            cid,
+                            messageBytes.buffer
+                        );
+                    }
+                );
+                const decryptedByClient1 = await cc1.transaction(
+                    async (ctx) => {
+                        return await ctx.decryptMessage(
+                            cid,
+                            encryptedByClient2
+                        );
+                    }
+                );
+
+                const decoder = new TextDecoder();
+                const result1 =
+                    decryptedByClient1.message !== undefined
+                        ? decoder.decode(decryptedByClient1.message)
+                        : null;
+                const result2 =
+                    decryptedByClient2.message !== undefined
+                        ? decoder.decode(decryptedByClient2.message)
+                        : null;
+
+                return [result1, result2];
+            }
+
+            /**
+             * Initialize a {@link CoreCrypto} instance without initializing MLS.
+             * Instead, initialize proteus.
+             * It can be obtained inside the browser context via
+             * {@link Window.ensureCcDefined}.
+             *
+             * @param clientName the client name used to initialize.
+             *
+             * @returns {Promise<void>}
+             */
+            static async proteusInit(clientName: string): Promise<void> {
+                const key = new Uint8Array(32);
+                window.crypto.getRandomValues(key);
+
+                const database = await window.ccModule.Database.open(
+                    clientName,
+                    new window.ccModule.DatabaseKey(key.buffer)
+                );
+
+                const instance = window.ccModule.CoreCrypto.new(database);
+                await instance.transaction((ctx) => ctx.proteusInit());
+
+                if (window.cc === undefined) {
+                    window.cc = new Map();
+                }
+                window.cc.set(clientName, instance);
+            }
+
+            /**
+             * Create a proteus session on the {@link CoreCrypto} instance of
+             * {@link client1}, with the prekey of {@link client2}.
+             *
+             * @param client1 The name of the {@link CoreCrypto} instance which will
+             * create the session.
+             * @param client2 The name of the {@link CoreCrypto} instance whose pre key will
+             * be used.
+             * @param sessionId The id of session that will be created.
+             *
+             * @returns {Promise<void>}
+             *
+             * @throws Error if {@link client1} or {@link client2} instances cannot be found.
+             */
+            static async newProteusSessionFromPrekey(
+                client1: string,
+                client2: string,
+                sessionId: string
+            ): Promise<void> {
+                const cc1 = window.ensureCcDefined(client1);
+                const cc2 = window.ensureCcDefined(client2);
+
+                const cc2Prekey = await cc2.transaction(async (ctx) => {
+                    return await ctx.proteusNewPrekey(10);
+                });
+
+                await cc1.transaction(async (ctx) => {
+                    return await ctx.proteusSessionFromPrekey(
+                        sessionId,
+                        cc2Prekey
+                    );
+                });
+            }
+
+            /**
+             * Create a proteus session on the {@link CoreCrypto} instance of
+             * {@link client2}, from a message encrypted by {@link client1} in a session
+             * created previously via {@link newProteusSessionFromPrekey}.
+             *
+             * @param client1 The name of the {@link CoreCrypto} instance which used its
+             * existing session to encrypt the message.
+             * @param client2 The name of the {@link CoreCrypto} instance whose session will
+             * be created.
+             * @param sessionId The id of session that will be created.
+             * For simplicity, this must match the id of the previously created session.
+             * @param message The message to encrypt and create the message from.
+             *
+             * @returns {Promise<string | null>} the decrypted {@link message}.
+             *
+             * @throws Error if {@link client1} or {@link client2} instances cannot be found.
+             */
+            static async newProteusSessionFromMessage(
+                client1: string,
+                client2: string,
+                sessionId: string,
+                message: string
+            ): Promise<string | null> {
+                const cc1 = window.ensureCcDefined(client1);
+                const cc2 = window.ensureCcDefined(client2);
+
+                const encoder = new TextEncoder();
+                const messageBytes = encoder.encode(message);
+                const encrypted = await cc1.transaction(async (ctx) => {
+                    return await ctx.proteusEncrypt(
+                        sessionId,
+                        messageBytes.buffer
+                    );
+                });
+
+                const decrypted = await cc2.transaction(async (ctx) => {
+                    return await ctx.proteusSessionFromMessage(
+                        sessionId,
+                        encrypted
+                    );
+                });
+
+                const decoder = new TextDecoder();
+                return decrypted !== null ? decoder.decode(decrypted) : null;
             }
         }
         window.helpers = Helpers;
@@ -126,12 +493,59 @@ export interface DeliveryService extends MlsTransport {
     getLatestCommitBundle: () => Promise<CommitBundle>;
 }
 
+/**
+ * Log entry from the core crypto logger
+ */
+export interface LogEntry {
+    level: number;
+    message: string;
+    context: string;
+}
+
 export interface Helpers {
     ccInit: (
         withBasicCredential?: boolean,
         cipherSuite?: Ciphersuite,
         clientId?: ClientId
     ) => Promise<CoreCrypto>;
+    recordLogs(): Promise<void>;
+    retrieveLogs(): Promise<LogEntry[]>;
+    createConversation(
+        clientName: string,
+        conversationId: string
+    ): Promise<void>;
+    invite(
+        client1: string,
+        client2: string,
+        conversationId: string
+    ): Promise<GroupInfoBundle>;
+    remove(
+        client1: string,
+        client2: string,
+        conversationId: string
+    ): Promise<GroupInfoBundle>;
+    consumeLastestCommit(
+        client1: string,
+        conversationId: string
+    ): Promise<void>;
+    roundTripMessage(
+        client1: string,
+        client2: string,
+        conversationId: string,
+        message: string
+    ): Promise<(string | null)[]>;
+    proteusInit(clientName: string): Promise<void>;
+    newProteusSessionFromPrekey(
+        client1: string,
+        client2: string,
+        sessionId: string
+    ): Promise<void>;
+    newProteusSessionFromMessage(
+        client1: string,
+        client2: string,
+        sessionId: string,
+        message: string
+    ): Promise<string | null>;
 }
 
 function logEvents(entry: local.LogEntry) {
