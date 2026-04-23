@@ -6,7 +6,7 @@ import { mkdir } from "node:fs/promises";
 import { writeFile } from "node:fs/promises";
 import {
     shared_setup,
-    type BenchmarkHelpers,
+    type Helpers,
     type DeliveryService,
 } from "../shared/utils";
 type ccModuleType = typeof import("@wireapp/core-crypto/browser");
@@ -18,7 +18,7 @@ declare global {
         tinybench: typeof import("tinybench");
         benchRunning: boolean;
         bench: Bench;
-        helpers: BenchmarkHelpers;
+        helpers: Helpers;
     }
 }
 
