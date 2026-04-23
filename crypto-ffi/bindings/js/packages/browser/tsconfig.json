@@ -8,6 +8,7 @@
         "src/**/*.ts",
         "test/**/*.ts",
         "benches/**/*.ts",
+        "shared/**/*.ts",
         "test/wdio.test.conf.ts",
         "benches/wdio.bench.conf.ts"
     ]
