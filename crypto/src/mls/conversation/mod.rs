@@ -29,7 +29,7 @@ mod own_commit;
 pub(crate) mod pending_conversation;
 mod persistence;
 pub(crate) mod proposal;
-pub(crate) mod welcome;
+mod welcome;
 mod wipe;
 
 use std::{
@@ -54,6 +54,7 @@ pub use self::{
     error::{Error, Result},
     id::{ConversationId, ConversationIdRef},
     immutable_conversation::ImmutableConversation,
+    welcome::WelcomeMessage,
 };
 use super::credential::Credential;
 use crate::{

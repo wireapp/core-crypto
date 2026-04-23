@@ -33,7 +33,7 @@ mod tests {
                 // and rejoin with an external commit
                 let process_welcome = bob
                     .transaction
-                    .process_welcome_message(welcome.into())
+                    .process_welcome_message(welcome)
                     .await;
                 assert!(matches!(
                     process_welcome.unwrap_err(),

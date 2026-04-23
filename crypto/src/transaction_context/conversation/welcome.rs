@@ -3,31 +3,11 @@
 use std::borrow::BorrowMut as _;
 
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
-use tls_codec::Deserialize as _;
 
 use super::{Error, Result, TransactionContext};
 use crate::{ConversationId, MlsConversation, MlsConversationConfiguration, RecursiveError};
 
 impl TransactionContext {
-    /// Create a conversation from a TLS serialized MLS Welcome message. The `MlsConversationConfiguration` used in this
-    /// function will be the default implementation.
-    ///
-    /// # Arguments
-    /// * `welcome` - a TLS serialized welcome message
-    ///
-    /// # Return type
-    /// This function will return the conversation/group id
-    ///
-    /// # Errors
-    /// see [TransactionContext::process_welcome_message]
-    #[cfg_attr(test, crate::dispotent)]
-    pub async fn process_raw_welcome_message(&self, welcome: &[u8]) -> Result<ConversationId> {
-        let mut cursor = std::io::Cursor::new(welcome);
-        let welcome =
-            MlsMessageIn::tls_deserialize(&mut cursor).map_err(Error::tls_deserialize("mls message in (welcome)"))?;
-        self.process_welcome_message(welcome).await
-    }
-
     /// Create a conversation from a received MLS Welcome message
     ///
     /// # Arguments
@@ -41,9 +21,9 @@ impl TransactionContext {
     /// * if no [openmls::key_packages::KeyPackage] can be read from the KeyStore
     /// * if the message can't be decrypted
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn process_welcome_message(&self, welcome: MlsMessageIn) -> Result<ConversationId> {
+    pub async fn process_welcome_message(&self, welcome: impl Into<MlsMessageIn>) -> Result<ConversationId> {
         let database = &self.database().await?;
-        let MlsMessageInBody::Welcome(welcome) = welcome.extract() else {
+        let MlsMessageInBody::Welcome(welcome) = welcome.into().extract() else {
             return Err(Error::CallerError(
                 "the message provided to process_welcome_message was not a welcome message",
             ));
@@ -126,7 +106,7 @@ mod tests {
                 let welcome = conversation.transport().await.latest_welcome_message().await;
                 let join_welcome = bob
                     .transaction
-                    .process_welcome_message(welcome.into())
+                    .process_welcome_message(welcome)
                     .await;
                 assert!(
                     matches!(join_welcome.unwrap_err(),
