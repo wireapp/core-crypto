@@ -1,15 +1,15 @@
 use std::{sync::Arc, time::Duration};
 
 use core_crypto::{
-    Ciphersuite as CryptoCiphersuite, CredentialFindFilters, MlsConversationConfiguration, RecursiveError,
-    VerifiableGroupInfo, mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
+    Ciphersuite as CryptoCiphersuite, CredentialFindFilters, MlsConversationConfiguration,
+    mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
 };
 use core_crypto_keystore::Sha256Hash;
-use tls_codec::Deserialize as _;
 
 use crate::{
-    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, Credential, CredentialRef,
-    CredentialType, DecryptedMessage, KeyPackage, KeyPackageRef, MlsTransport, bytes_wrapper::bytes_wrapper,
+    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
+    CredentialRef, CredentialType, DecryptedMessage, KeyPackage, KeyPackageRef, MlsTransport,
+    bytes_wrapper::{bytes_wrapper, impl_display_via_hex},
     core_crypto::mls_transport::callback_shim,
 };
 
@@ -17,30 +17,55 @@ bytes_wrapper!(
     /// A secret key derived from the group secret.
     ///
     /// This is intended to be used for AVS.
-    SecretKey
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    #[uniffi::export(Eq, Hash, Display)]
+    SecretKey infallibly wraps core_crypto::mls::conversation::SecretKey; copy_bytes
 );
+impl_display_via_hex!(SecretKey);
+
 bytes_wrapper!(
     /// The raw public key of an external sender.
     ///
     /// This can be used to initialize a subconversation.
-    #[derive(Debug, Clone)]
-    ExternalSenderKey
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    #[uniffi::export(Eq, Hash, Display)]
+    ExternalSenderKey infallibly wraps core_crypto::mls::conversation::ExternalSenderKey; copy_bytes
 );
-bytes_wrapper!(
-    /// MLS Group Information
-    ///
-    /// This is used when joining by external commit.
-    /// It can be found within the `GroupInfoBundle` within a `CommitBundle`.
-    #[derive(Debug, Clone)]
-    GroupInfo
-);
+impl_display_via_hex!(ExternalSenderKey);
+
+/// MLS Group Information
+///
+/// This is used when joining by external commit.
+/// It can be found within the `GroupInfoBundle` within a `CommitBundle`.
+//
+// We can't use the `bytes_wrapper` macro here because it requires certain
+// trait implementations for its implementation, and `VerifiableGroupInfo`
+// does not and cannot implement these because despite the import path it is
+// an OpenMLS type, not a CoreCrypto type.
+//
+// So we just reimplement it manually.
+#[derive(Debug, Clone, uniffi::Object, derive_more::From, derive_more::Into)]
+pub struct GroupInfo(pub(crate) core_crypto::VerifiableGroupInfo);
+
+#[uniffi::export]
+impl GroupInfo {
+    /// Fallibly instantiate an instance from a TLS-serialized byte array.
+    #[uniffi::constructor]
+    pub fn new(bytes: Vec<u8>) -> CoreCryptoResult<Self> {
+        use tls_codec::Deserialize as _;
+        core_crypto::VerifiableGroupInfo::tls_deserialize(&mut bytes.as_slice())
+            .map(GroupInfo)
+            .map_err(CoreCryptoError::generic())
+    }
+}
+
 bytes_wrapper!(
     /// A TLS-serialized Welcome message.
     ///
     /// This structure is defined in RFC 9420:
     /// <https://www.rfc-editor.org/rfc/rfc9420.html#joining-via-welcome-message>.
     #[derive(Debug, Clone)]
-    Welcome
+    Welcome fallibly wraps core_crypto::transaction_context::conversation::welcome::WelcomeMessage
 );
 
 #[uniffi::export]
@@ -163,7 +188,7 @@ impl CoreCryptoContext {
                 &self.inner.mls_provider().await?,
                 external_sender
                     .into_iter()
-                    .map(|external_sender| external_sender.copy_bytes()),
+                    .map(|external_sender| Arc::unwrap_or_clone(external_sender).into()),
             )
             .await?;
 
@@ -177,7 +202,7 @@ impl CoreCryptoContext {
     pub async fn process_welcome_message(&self, welcome_message: Arc<Welcome>) -> CoreCryptoResult<ConversationId> {
         let result = self
             .inner
-            .process_raw_welcome_message(welcome_message.as_slice())
+            .process_welcome_message(Arc::unwrap_or_clone(welcome_message).0)
             .await?
             .into();
         Ok(result)
@@ -263,14 +288,9 @@ impl CoreCryptoContext {
         group_info: Arc<GroupInfo>,
         credential_ref: Arc<CredentialRef>,
     ) -> CoreCryptoResult<ConversationId> {
-        let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
-            .map_err(core_crypto::mls::conversation::Error::tls_deserialize(
-                "verifiable group info",
-            ))
-            .map_err(RecursiveError::mls_conversation("joining by external commmit"))?;
         let conversation_id = self
             .inner
-            .join_by_external_commit(group_info, &credential_ref.0)
+            .join_by_external_commit(Arc::unwrap_or_clone(group_info).0, &credential_ref.0)
             .await?;
         Ok(conversation_id.into())
     }

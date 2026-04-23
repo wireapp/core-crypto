@@ -323,7 +323,7 @@ pub(crate) async fn invite(
         .await
         .unwrap();
     let welcome = delivery_service.latest_welcome_message().await;
-    other_context.process_welcome_message(welcome.into()).await.unwrap();
+    other_context.process_welcome_message(welcome).await.unwrap();
     from_context.finish().await.unwrap();
     other_context.finish().await.unwrap();
 }

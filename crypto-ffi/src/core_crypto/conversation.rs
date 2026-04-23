@@ -5,17 +5,23 @@ use core_crypto::{
     mls::conversation::{Conversation as _, ConversationIdRef},
 };
 
-use crate::{Ciphersuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef, bytes_wrapper::bytes_wrapper};
+use crate::{
+    Ciphersuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef,
+    bytes_wrapper::{bytes_wrapper, impl_display_via_hex},
+    core_crypto_context::mls::SecretKey,
+};
 
 bytes_wrapper!(
     /// A unique identifier for a single conversation.
     ///
     /// The backend provides an opaque string identifying a new conversation.
     /// Construct an instance of this newtype to pass that identifier to Rust.
-    #[derive(Debug, PartialOrd, Ord, Clone)]
-    #[uniffi::export(Debug)]
-    ConversationId
+    #[derive(Debug, PartialOrd, Ord, Clone, PartialEq, Eq, Hash)]
+    #[uniffi::export(Debug, Eq, Hash, Display)]
+    ConversationId infallibly wraps core_crypto::ConversationId; copy_bytes
 );
+
+impl_display_via_hex!(ConversationId);
 
 impl Borrow<ConversationIdRef> for ConversationId {
     fn borrow(&self) -> &ConversationIdRef {
@@ -117,7 +123,11 @@ impl CoreCryptoFfi {
             .map_err(RecursiveError::mls_client(
                 "get_external_sender: getting raw conversation",
             ))?;
-        conversation.get_external_sender().await.map_err(Into::into)
+        conversation
+            .get_external_sender()
+            .await
+            .map(Into::into)
+            .map_err(Into::into)
     }
 
     /// Derives and exports a secret of `key_length` bytes for the given conversation.
@@ -129,7 +139,7 @@ impl CoreCryptoFfi {
         &self,
         conversation_id: &ConversationId,
         key_length: u32,
-    ) -> CoreCryptoResult<Vec<u8>> {
+    ) -> CoreCryptoResult<SecretKey> {
         self.inner
             .mls_session()
             .await?
@@ -140,6 +150,7 @@ impl CoreCryptoFfi {
             ))?
             .export_secret_key(key_length as usize)
             .await
+            .map(Into::into)
             .map_err(Into::into)
     }
 

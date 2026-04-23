@@ -16,7 +16,9 @@ use serde::{Deserialize, Serialize};
 use wire_e2e_identity::parse_json_jwk;
 
 use super::Result;
-use crate::{Ciphersuite, MlsError, RecursiveError, mls_provider::MlsCryptoProvider};
+use crate::{
+    Ciphersuite, MlsError, RecursiveError, mls::conversation::ExternalSenderKey, mls_provider::MlsCryptoProvider,
+};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -107,14 +109,14 @@ impl MlsConversationConfiguration {
     pub async fn set_raw_external_senders(
         &mut self,
         mls_crypto_provider: &MlsCryptoProvider,
-        external_senders: impl IntoIterator<Item = Vec<u8>>,
+        external_senders: impl IntoIterator<Item = ExternalSenderKey>,
     ) -> Result<()> {
         self.external_senders = external_senders
             .into_iter()
             .map(|key| {
                 MlsConversationConfiguration::parse_external_sender(&key).or_else(|_| {
                     MlsConversationConfiguration::legacy_external_sender(
-                        key,
+                        key.into(),
                         self.ciphersuite.signature_algorithm(),
                         mls_crypto_provider,
                     )
@@ -290,6 +292,7 @@ mod tests {
                 .crypto()
                 .signature_key_gen(case.signature_scheme())
                 .unwrap();
+            let pk = pk.into();
 
             assert!(
                 case.cfg
@@ -316,7 +319,7 @@ mod tests {
                 SignatureScheme::ED448 => unreachable!(),
             };
 
-            let jwk = wire_e2e_identity::generate_jwk(alg);
+            let jwk = wire_e2e_identity::generate_jwk(alg).into();
             assert!(
                 case.cfg
                     .clone()

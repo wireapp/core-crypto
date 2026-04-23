@@ -353,7 +353,7 @@ mod tests {
                 // erroneous call
                 let conflict_welcome = bob
                     .transaction
-                    .process_welcome_message(welcome.into())
+                    .process_welcome_message(welcome)
                     .await;
 
                 assert!(matches!(

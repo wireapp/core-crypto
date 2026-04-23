@@ -277,7 +277,7 @@ impl<'a> OperationGuard<'a, Commit> {
         for new_member in invited_members {
             new_member
                 .transaction
-                .process_welcome_message(welcome_message.clone().into())
+                .process_welcome_message(welcome_message.clone())
                 .await
                 .unwrap();
         }

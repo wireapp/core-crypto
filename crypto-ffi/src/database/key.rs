@@ -1,22 +1,18 @@
 use core_crypto_keystore::Database;
 
-use crate::{CoreCryptoError, CoreCryptoResult};
+use crate::{CoreCryptoError, CoreCryptoResult, bytes_wrapper::bytes_wrapper};
 
-/// The key used to encrypt the database.
-#[derive(Debug, derive_more::From, derive_more::Into, PartialEq, Eq, Clone, derive_more::Deref, uniffi::Object)]
-#[uniffi::export(Eq)]
-pub struct DatabaseKey(core_crypto_keystore::DatabaseKey);
-
-#[uniffi::export]
-impl DatabaseKey {
-    /// Construct a new instance from a byte vector.
-    #[uniffi::constructor]
-    pub fn new(key: Vec<u8>) -> CoreCryptoResult<Self> {
-        core_crypto_keystore::DatabaseKey::try_from(key.as_slice())
-            .map(Self)
-            .map_err(CoreCryptoError::generic())
-    }
-}
+bytes_wrapper!(
+    /// A unique identifier for an MLS client.
+    ///
+    /// Each app instance a user is running, such as desktop or mobile, is a separate client
+    /// with its own client id. A single user may therefore have multiple clients.
+    /// More information: <https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients>
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[uniffi::export(Debug, Eq)]
+    DatabaseKey fallibly wraps core_crypto_keystore::DatabaseKey;
+    constructor_map_err(CoreCryptoError::generic())
+);
 
 /// Updates the key of the CoreCrypto database.
 ///

@@ -13,6 +13,7 @@ pub mod test_utils;
 // both imports above have to be defined at the beginning of the crate for rstest to work
 
 mod build_metadata;
+mod bytes_wrapper;
 mod ephemeral;
 mod error;
 mod group_store;
@@ -31,13 +32,14 @@ use std::sync::Arc;
 #[cfg(feature = "proteus")]
 use async_lock::Mutex;
 use async_lock::RwLock;
+pub(crate) use bytes_wrapper::bytes_wrapper;
 pub use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
 #[cfg(test)]
 pub use core_crypto_macros::{dispotent, durable, idempotent};
 pub use openmls::{
     group::{MlsGroup, MlsGroupConfig},
     prelude::{
-        Ciphersuite as MlsCiphersuite, GroupEpoch, KeyPackageIn, MlsMessageIn, Node, SignatureScheme,
+        Ciphersuite as MlsCiphersuite, GroupEpoch, KeyPackageIn, MlsMessageIn, MlsMessageInBody, Node, SignatureScheme,
         group_info::VerifiableGroupInfo,
     },
 };

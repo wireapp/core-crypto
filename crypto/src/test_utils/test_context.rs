@@ -355,7 +355,8 @@ impl TestContext {
             .await
             .unwrap()
             .signature_key()
-            .to_public_vec();
+            .to_public_vec()
+            .into();
         self.cfg
             .set_raw_external_senders(&creator.session().await.crypto_provider, vec![signature_key])
             .await
