@@ -58,10 +58,17 @@ pub use self::{
 use super::credential::Credential;
 use crate::{
     Ciphersuite, ClientId, ClientIdRef, CredentialRef, CredentialType, E2eiConversationState, LeafError, MlsError,
-    RecursiveError, UserId, WireIdentity,
+    RecursiveError, UserId, WireIdentity, bytes_wrapper,
     mls::{HasSessionAndCrypto, Session, credential::ext::CredentialExt as _},
     mls_provider::MlsCryptoProvider,
 };
+
+bytes_wrapper!(
+    /// A secret key derived from the group secret.
+    ///
+    /// This is intended to be used for AVS.
+    SecretKey
+);
 
 /// The base layer for [Conversation].
 /// The trait is only exposed internally.
@@ -134,7 +141,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
     ///
     /// # Errors
     /// OpenMls secret generation error
-    async fn export_secret_key(&'a self, key_length: usize) -> Result<Vec<u8>> {
+    async fn export_secret_key(&'a self, key_length: usize) -> Result<SecretKey> {
         const EXPORTER_LABEL: &str = "exporter";
         const EXPORTER_CONTEXT: &[u8] = &[];
         let backend = self.crypto_provider().await?;
@@ -142,6 +149,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         inner
             .group()
             .export_secret(&backend, EXPORTER_LABEL, EXPORTER_CONTEXT, key_length)
+            .map(Into::into)
             .map_err(MlsError::wrap("exporting secret key"))
             .map_err(Into::into)
     }
