@@ -1,5 +1,6 @@
 import { browser, expect } from "@wdio/globals";
-import { ccInit, createConversation, setup, teardown } from "./utils";
+import { ccInit, createConversation, setup } from "./utils";
+import { teardown } from "../shared/utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import { E2eiConversationState } from "@wireapp/core-crypto/browser";
 

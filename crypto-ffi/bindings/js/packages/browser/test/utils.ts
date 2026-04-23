@@ -102,10 +102,6 @@ export async function setup() {
     });
 }
 
-export async function teardown() {
-    browser.off("log.entryAdded", logEvents);
-}
-
 /**
  * Initialize a {@link CoreCrypto} instance that can be obtained inside the
  * browser context via {@link Window.ensureCcDefined}.

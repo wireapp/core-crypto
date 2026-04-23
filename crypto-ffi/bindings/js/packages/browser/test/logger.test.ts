@@ -8,8 +8,8 @@ import {
     remove,
     retrieveLogs,
     setup,
-    teardown,
 } from "./utils";
+import { teardown } from "../shared/utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {

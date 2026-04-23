@@ -1,5 +1,6 @@
 import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
+import { setup } from "./utils";
+import { teardown } from "../shared/utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {

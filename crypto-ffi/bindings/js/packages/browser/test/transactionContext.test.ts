@@ -1,5 +1,6 @@
 import { browser, expect } from "@wdio/globals";
-import { ccInit, setup, teardown } from "./utils";
+import { ccInit, setup } from "./utils";
+import { teardown } from "../shared/utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import { CoreCryptoContext } from "@wireapp/core-crypto/browser";
 
