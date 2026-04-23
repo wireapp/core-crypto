@@ -27,9 +27,12 @@ bytes_wrapper!(
     /// The raw public key of an external sender.
     ///
     /// This can be used to initialize a subconversation.
-    #[derive(Debug, Clone)]
-    ExternalSenderKey
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    #[uniffi::export(Eq, Hash, Display)]
+    ExternalSenderKey infallibly wraps core_crypto::mls::conversation::ExternalSenderKey; copy_bytes
 );
+impl_display_via_hex!(ExternalSenderKey);
+
 bytes_wrapper!(
     /// MLS Group Information
     ///
@@ -167,7 +170,7 @@ impl CoreCryptoContext {
                 &self.inner.mls_provider().await?,
                 external_sender
                     .into_iter()
-                    .map(|external_sender| external_sender.copy_bytes()),
+                    .map(|external_sender| Arc::unwrap_or_clone(external_sender).into()),
             )
             .await?;
 
