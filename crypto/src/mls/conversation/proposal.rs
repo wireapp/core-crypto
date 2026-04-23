@@ -13,9 +13,9 @@ use crate::{MlsConversation, MlsError, MlsProposalRef, Session, mls_provider::Ml
 
 /// Creating proposals
 impl MlsConversation {
-    /// see [openmls::group::MlsGroup::propose_add_member]
+    /// Used when adding or updating the history client.
     #[cfg_attr(test, crate::durable)]
-    pub async fn propose_add_member(
+    pub(crate) async fn propose_add_member(
         &mut self,
         client: &Session<Database>,
         backend: &MlsCryptoProvider,
