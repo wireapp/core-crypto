@@ -59,7 +59,7 @@ jobs:
         run: make jvm-bench
 
       - name: Upload benchmark result
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: benchmark-jvm-results
           path: crypto-ffi/bindings/jvm/build/reports/jmh/results.json

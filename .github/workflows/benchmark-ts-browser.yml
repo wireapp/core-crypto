@@ -42,7 +42,7 @@ jobs:
         run: jq -s add crypto-ffi/bindings/js/benches_result/*.json > benches_result.json
 
       - name: Upload benchmark result
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: benchmark-ts-browser-results
           path: benches_result.json
