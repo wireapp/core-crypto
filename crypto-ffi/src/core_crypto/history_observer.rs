@@ -59,7 +59,7 @@ impl core_crypto::mls::HistoryObserver for ObserverShim {
         };
         if let Err(err) = self
             .0
-            .history_client_created(Arc::new(ConversationId(conversation_id.clone().into())), secret)
+            .history_client_created(Arc::new(ConversationId(conversation_id.clone())), secret)
             .await
         {
             // we don't _care_ if an error is thrown by the notification function, per se,
