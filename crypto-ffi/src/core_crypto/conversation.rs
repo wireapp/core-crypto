@@ -8,6 +8,7 @@ use core_crypto::{
 use crate::{
     Ciphersuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef,
     bytes_wrapper::{bytes_wrapper, impl_display_via_hex},
+    core_crypto_context::mls::SecretKey,
 };
 
 bytes_wrapper!(
@@ -134,7 +135,7 @@ impl CoreCryptoFfi {
         &self,
         conversation_id: &ConversationId,
         key_length: u32,
-    ) -> CoreCryptoResult<Vec<u8>> {
+    ) -> CoreCryptoResult<SecretKey> {
         self.inner
             .mls_session()
             .await?
@@ -145,6 +146,7 @@ impl CoreCryptoFfi {
             ))?
             .export_secret_key(key_length as usize)
             .await
+            .map(Into::into)
             .map_err(Into::into)
     }
 

@@ -1,15 +1,15 @@
 use std::{sync::Arc, time::Duration};
 
 use core_crypto::{
-    Ciphersuite as CryptoCiphersuite, CredentialFindFilters, MlsConversationConfiguration, RecursiveError,
-    VerifiableGroupInfo, mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
+    Ciphersuite as CryptoCiphersuite, CredentialFindFilters, MlsConversationConfiguration,
+    mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
 };
 use core_crypto_keystore::Sha256Hash;
-use tls_codec::Deserialize as _;
 
 use crate::{
-    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, Credential, CredentialRef,
-    CredentialType, DecryptedMessage, KeyPackage, KeyPackageRef, MlsTransport, bytes_wrapper::bytes_wrapper,
+    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
+    CredentialRef, CredentialType, DecryptedMessage, KeyPackage, KeyPackageRef, MlsTransport,
+    bytes_wrapper::{bytes_wrapper, impl_display_via_hex},
     core_crypto::mls_transport::callback_shim,
 };
 
@@ -17,8 +17,12 @@ bytes_wrapper!(
     /// A secret key derived from the group secret.
     ///
     /// This is intended to be used for AVS.
-    SecretKey
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    #[uniffi::export(Eq, Hash, Display)]
+    SecretKey infallibly wraps core_crypto::mls::conversation::SecretKey; copy_bytes
 );
+impl_display_via_hex!(SecretKey);
+
 bytes_wrapper!(
     /// The raw public key of an external sender.
     ///
