@@ -1,5 +1,3 @@
-use openmls::prelude::KeyPackage;
-
 use super::{Error, Result};
 use crate::{
     ClientId, ConversationId, MlsProposal, MlsProposalBundle, RecursiveError,
@@ -8,12 +6,6 @@ use crate::{
 };
 
 impl TransactionContext {
-    /// Creates a new Add proposal
-    #[cfg_attr(test, crate::idempotent)]
-    pub async fn new_add_proposal(&self, id: &ConversationId, key_package: KeyPackage) -> Result<MlsProposalBundle> {
-        self.new_proposal(id, MlsProposal::Add(key_package)).await
-    }
-
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::idempotent)]
     pub async fn new_remove_proposal(&self, id: &ConversationId, client_id: ClientId) -> Result<MlsProposalBundle> {
@@ -65,7 +57,7 @@ impl TransactionContext {
             .conversation_mut(async move |conversation, database| {
                 let proposal = match proposal {
                     MlsProposal::Add(key_package) => conversation
-                        .propose_add_member(&client, &provider, database, key_package.into())
+                        .propose_add_member(&client, database, key_package.into())
                         .await
                         .map_err(RecursiveError::mls_conversation("proposing to add member"))
                         .map_err(ConversationError::from)?,
@@ -95,27 +87,6 @@ impl TransactionContext {
 mod tests {
     use super::Error;
     use crate::{mls::conversation::ConversationWithMls as _, test_utils::*, *};
-
-    mod add {
-        use super::*;
-
-        #[apply(all_cred_cipher)]
-        pub async fn should_add_member(case: TestContext) {
-            let [alice, bob] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case
-                    .create_conversation([&alice])
-                    .await
-                    .invite_proposal_notify(&bob)
-                    .await
-                    .commit_pending_proposals_notify()
-                    .await;
-                assert_eq!(conversation.member_count().await, 2);
-                assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
-            })
-            .await
-        }
-    }
 
     mod update {
         use itertools::Itertools;

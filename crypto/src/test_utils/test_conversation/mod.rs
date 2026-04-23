@@ -278,17 +278,6 @@ impl<'a> TestConversation<'a> {
             .unwrap()
     }
 
-    pub(crate) async fn pending_proposals(&self) -> impl IntoIterator<Item = QueuedProposal> {
-        let guard = self.guard().await;
-        guard
-            .conversation()
-            .await
-            .group()
-            .pending_proposals()
-            .cloned()
-            .collect::<Vec<_>>()
-    }
-
     /// The reference of the latest pending proposal.
     pub async fn latest_proposal_ref(&self) -> MlsProposalRef {
         assert!(self.has_pending_proposals().await);

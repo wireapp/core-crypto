@@ -82,65 +82,11 @@ impl ConversationGuard {
 
 #[cfg(test)]
 mod tests {
-    use openmls::prelude::Proposal;
-
     use super::*;
     use crate::test_utils::*;
 
     mod clear_pending_proposal {
         use super::*;
-
-        #[apply(all_cred_cipher)]
-        pub async fn should_remove_proposal(case: TestContext) {
-            let [alice, bob, charlie] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case.create_conversation([&alice, &bob]).await;
-                assert!(!conversation.has_pending_proposals().await);
-
-                let conversation = conversation.invite_proposal_notify(&charlie).await;
-                let add_ref = conversation.latest_proposal_ref().await;
-
-                let conversation = conversation.remove_proposal_notify(&bob).await;
-                let remove_ref = conversation.latest_proposal_ref().await;
-
-                let conversation = conversation.update_proposal_notify().await;
-                let update_ref = conversation.latest_proposal_ref().await;
-
-                let mut guard = conversation.guard().await;
-
-                assert_eq!(conversation.pending_proposal_count().await, 3);
-                guard.clear_pending_proposal(add_ref).await.unwrap();
-                assert_eq!(conversation.pending_proposal_count().await, 2);
-                assert!(
-                    !conversation
-                        .pending_proposals()
-                        .await
-                        .into_iter()
-                        .any(|p| matches!(p.proposal(), Proposal::Add(_)))
-                );
-
-                guard.clear_pending_proposal(remove_ref).await.unwrap();
-                assert_eq!(conversation.pending_proposal_count().await, 1);
-                assert!(
-                    !conversation
-                        .pending_proposals()
-                        .await
-                        .into_iter()
-                        .any(|p| matches!(p.proposal(), Proposal::Remove(_)))
-                );
-
-                guard.clear_pending_proposal(update_ref).await.unwrap();
-                assert!(!conversation.has_pending_proposals().await);
-                assert!(
-                    !conversation
-                        .pending_proposals()
-                        .await
-                        .into_iter()
-                        .any(|p| matches!(p.proposal(), Proposal::Update(_)))
-                );
-            })
-            .await
-        }
 
         #[apply(all_cred_cipher)]
         pub async fn should_fail_when_proposal_ref_not_found(case: TestContext) {

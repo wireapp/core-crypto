@@ -49,9 +49,6 @@ impl MlsCommitBundle {
 
 #[cfg(test)]
 mod tests {
-    use itertools::Itertools;
-    use openmls::prelude::SignaturePublicKey;
-
     use super::{Error, *};
     use crate::{
         mls::conversation::ConversationWithMls as _, test_utils::*, transaction_context::Error as TransactionError,
@@ -207,25 +204,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        async fn should_return_valid_welcome(case: TestContext) {
-            let [alice, bob, guest] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case
-                    .create_conversation([&alice, &bob])
-                    .await
-                    .invite_proposal_notify(&guest)
-                    .await
-                    .remove_notify(&bob)
-                    .await;
-
-                assert!(conversation.is_functional_and_contains([&alice, &guest]).await);
-                // because Bob has been removed from the group
-                assert!(!conversation.can_talk(&alice, &bob).await);
-            })
-            .await;
-        }
-
-        #[apply(all_cred_cipher)]
         async fn should_return_valid_group_info(case: TestContext) {
             let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
@@ -307,105 +285,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        async fn should_create_welcome_for_pending_add_proposals(case: TestContext) {
-            let [alice, bob, charlie] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case.create_conversation([&alice, &bob]).await;
-
-                let bob_keys = conversation
-                    .guard_of(&bob)
-                    .await
-                    .conversation()
-                    .await
-                    .signature_keys()
-                    .collect::<Vec<SignaturePublicKey>>();
-                let alice_keys = conversation
-                    .guard()
-                    .await
-                    .conversation()
-                    .await
-                    .signature_keys()
-                    .collect::<Vec<SignaturePublicKey>>();
-
-                // checking that the members on both sides are the same
-                assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
-
-                let alice_key = conversation.encryption_public_key().await;
-
-                // proposing adding charlie
-                let conversation = conversation.invite_proposal_notify(&charlie).await;
-
-                assert!(
-                    conversation
-                        .guard()
-                        .await
-                        .conversation()
-                        .await
-                        .encryption_keys()
-                        .contains(&alice_key)
-                );
-
-                // The add proposal hasn't been committed yet
-                assert_eq!(conversation.member_count().await, 2);
-
-                // performing an update on Alice's key. this should generate a welcome for Charlie
-                let conversation = conversation.update_notify().await;
-                let MlsCommitBundle { welcome, .. } = alice.mls_transport().await.latest_commit_bundle().await;
-                assert!(welcome.is_some());
-                assert!(
-                    !conversation
-                        .guard()
-                        .await
-                        .conversation()
-                        .await
-                        .encryption_keys()
-                        .contains(&alice_key)
-                );
-
-                assert_eq!(conversation.member_count().await, 3);
-
-                let alice_new_keys = conversation
-                    .guard()
-                    .await
-                    .conversation()
-                    .await
-                    .encryption_keys()
-                    .collect::<Vec<Vec<u8>>>();
-                assert!(!alice_new_keys.contains(&alice_key));
-
-                let bob_new_keys = conversation
-                    .guard_of(&bob)
-                    .await
-                    .conversation()
-                    .await
-                    .encryption_keys()
-                    .collect::<Vec<Vec<u8>>>();
-                assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
-
-                // ensure all parties can encrypt messages
-                assert!(conversation.is_functional_and_contains([&alice, &bob, &charlie]).await);
-            })
-            .await;
-        }
-
-        #[apply(all_cred_cipher)]
-        async fn should_return_valid_welcome(case: TestContext) {
-            let [alice, bob, guest] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case
-                    .create_conversation([&alice, &bob])
-                    .await
-                    .invite_proposal_notify(&guest)
-                    .await
-                    .update_notify()
-                    .await;
-
-                assert!(conversation.is_functional_and_contains([&alice, &bob, &guest]).await);
-            })
-            .await;
-        }
-
-        #[apply(all_cred_cipher)]
         async fn should_return_valid_group_info(case: TestContext) {
             let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
@@ -427,90 +306,28 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        async fn should_create_a_commit_out_of_self_pending_proposals(case: TestContext) {
-            let [alice, bob] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case
-                    .create_conversation([&alice])
-                    .await
-                    .advance_epoch()
-                    .await
-                    .invite_proposal_notify(&bob)
-                    .await;
-
-                assert!(conversation.has_pending_proposals().await);
-                assert_eq!(conversation.member_count().await, 1);
-
-                let conversation = conversation.commit_pending_proposals_notify().await;
-                assert_eq!(conversation.member_count().await, 2);
-
-                assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
-            })
-            .await;
-        }
-
-        #[apply(all_cred_cipher)]
         async fn should_create_a_commit_out_of_pending_proposals_by_ref(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
-                // Bob invites charlie
+                // Bob removes charlie
                 let conversation = case
-                    .create_conversation([&alice, &bob])
+                    .create_conversation([&alice, &bob, &charlie])
                     .await
                     .acting_as(&bob)
                     .await
-                    .invite_proposal_notify(&charlie)
+                    .remove_proposal_notify(&charlie)
                     .await
                     .acting_as(&bob)
                     .await;
 
                 assert!(conversation.has_pending_proposals().await);
-                assert_eq!(conversation.member_count().await, 2);
+                assert_eq!(conversation.member_count().await, 3);
 
                 // Alice commits the proposal
                 let conversation = conversation.commit_pending_proposals_notify().await;
-                assert_eq!(conversation.member_count().await, 3);
-
-                assert!(conversation.is_functional_and_contains([&alice, &bob, &charlie]).await);
-            })
-            .await;
-        }
-
-        #[apply(all_cred_cipher)]
-        async fn should_return_valid_welcome(case: TestContext) {
-            let [alice, bob] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case
-                    .create_conversation([&alice])
-                    .await
-                    .invite_proposal_notify(&bob)
-                    .await
-                    .commit_pending_proposals_notify()
-                    .await;
+                assert_eq!(conversation.member_count().await, 2);
 
                 assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
-            })
-            .await;
-        }
-
-        #[apply(all_cred_cipher)]
-        async fn should_return_valid_group_info(case: TestContext) {
-            let [alice, bob, guest] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case
-                    .create_conversation([&alice])
-                    .await
-                    .invite_proposal_notify(&bob)
-                    .await
-                    .commit_pending_proposals_notify()
-                    .await;
-                let commit_bundle = alice.mls_transport().await.latest_commit_bundle().await;
-                let group_info = commit_bundle.group_info.get_group_info();
-                let conversation = conversation
-                    .external_join_via_group_info_notify(&guest, group_info)
-                    .await;
-
-                assert!(conversation.is_functional_and_contains([&alice, &bob, &guest]).await);
             })
             .await;
         }
