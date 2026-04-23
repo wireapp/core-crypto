@@ -19,8 +19,6 @@ proteus = [
 ]
 # for test/bench all ciphersuites
 test-all-cipher = []
-# execute benches with also real db to better see overhead
-bench-in-db = []
 
 [dependencies]
 derive_more.workspace = true
@@ -111,37 +109,9 @@ wasm-bindgen-test = { workspace = true }
 openmls.workspace = true
 hex-literal = "1.1"
 
-[target.'cfg(not(target_os = "unknown"))'.dev-dependencies.criterion]
-version = "0.8"
-features = ["async_smol", "async_futures", "html_reports"]
-
 [target.'cfg(not(target_os = "unknown"))'.dev-dependencies]
 smol-macros.workspace = true
 macro_rules_attribute.workspace = true
-
-[[bench]]
-name = "key_package"
-harness = false
-
-[[bench]]
-name = "proposal"
-harness = false
-
-[[bench]]
-name = "commit"
-harness = false
-
-[[bench]]
-name = "encryption"
-harness = false
-
-[[bench]]
-name = "create_group"
-harness = false
-
-[[bench]]
-name = "transaction"
-harness = false
 
 [build-dependencies]
 anyhow = "1.0.102"

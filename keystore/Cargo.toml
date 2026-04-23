@@ -96,7 +96,6 @@ uuid = { workspace = true, features = ["v4", "js"] }
 wasm-bindgen-test = { workspace = true }
 
 [target.'cfg(not(target_os = "unknown"))'.dev-dependencies]
-criterion = { version = "0.8", features = ["async_futures", "html_reports"] }
 macro_rules_attribute.workspace = true
 smol-macros.workspace = true
 smol.workspace = true
