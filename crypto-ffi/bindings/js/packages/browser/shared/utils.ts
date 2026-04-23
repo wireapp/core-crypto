@@ -11,6 +11,10 @@ import type {
 import { browser } from "@wdio/globals";
 import type { local } from "webdriver";
 
+// Logging can be adjusted via the CC_TEST_LOG_LEVEL variable:
+// 0 = no logs
+// 1 = browser logs
+// 2 = browser logs + CoreCrypto logs
 const logLevel = Number(process.env["CC_TEST_LOG_LEVEL"] || "0");
 
 export async function sharedSetup() {
@@ -18,6 +22,7 @@ export async function sharedSetup() {
         await browser.url("/html/index.html");
     }
 
+    // Forward browser log events to the console.
     browser.on("log.entryAdded", logEvents);
     await browser.execute(async (logLevel) => {
         if (window.ccModule === undefined) {
