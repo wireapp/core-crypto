@@ -6,27 +6,27 @@
 
 - `GroupInfo` and `Welcome` constructors are now fallible.
 
-  Both `GroupInfo::new` and `Welcome::new` previously accepted any byte sequence unconditionally.
-  They now validate the bytes as a TLS-encoded MLS structure at construction time and return an error
-  if the bytes are not well-formed.
+  Both `GroupInfo::new` and `Welcome::new` previously accepted any byte sequence unconditionally. They now validate the
+  bytes as a TLS-encoded MLS structure at construction time and return an error if the bytes are not well-formed.
 
   Affected platforms: android, ios, web
 
 - `GroupInfo::copy_bytes()` and `Welcome::copy_bytes()` have been removed.
 
-  These methods returned raw byte copies of the wrapped data. They are not available on the new
-  types because the underlying types do not have a TLS serialization implementation.
+  These methods returned raw byte copies of the wrapped data. They are not available on the new types because the
+  underlying types do not have a TLS serialization implementation.
 
   Affected platforms: android, ios, web
 
 - `GroupInfo` and `Welcome` no longer support equality, hashing, or hex display.
 
-  These capabilities were previously exposed in the generated bindings. Client code relying on
-  comparing or hashing these values will need to be updated.
+  These capabilities were previously exposed in the generated bindings. Client code relying on comparing or hashing
+  these values will need to be updated.
 
   Affected platforms: android, ios, web
 
-- `CoreCryptoContext::export_secret_key()` and `CoreCryptoFfi::export_secret_key()` now return `SecretKey` instead of `Vec<u8>`.
+- `CoreCryptoContext::export_secret_key()` and `CoreCryptoFfi::export_secret_key()` now return `SecretKey` instead of
+  `Vec<u8>`.
 
   Use `SecretKey::copy_bytes()` to extract the raw bytes when needed.
 
