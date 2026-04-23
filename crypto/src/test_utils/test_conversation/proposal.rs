@@ -16,9 +16,14 @@ impl<'a> TestConversation<'a> {
     pub async fn invite_proposal(self, new_member: &'a SessionContext) -> OperationGuard<'a, Proposal> {
         let proposer = self.actor();
         let key_package = new_member.new_keypackage(self.case).await;
-        let proposal = proposer
-            .transaction
-            .new_add_proposal(self.id(), key_package)
+        let mut guard = self.guard().await;
+        let session = &proposer.session().await;
+        let proposal = guard
+            .conversation_mut(async |conversation, database| {
+                conversation
+                    .propose_add_member(session, database, key_package.into())
+                    .await
+            })
             .await
             .unwrap()
             .proposal;

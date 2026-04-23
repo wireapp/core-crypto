@@ -165,9 +165,7 @@ impl ConversationGuard {
                 }
 
                 // Propose to add a new history client
-                conversation
-                    .propose_add_member(&session, &provider, database, key_package)
-                    .await?;
+                conversation.propose_add_member(&session, database, key_package).await?;
 
                 // We're getting the proposals we just created from the pending proposals queue, as the previously
                 // called `propose_remove()` and `propose_add()` pushed them to that queue as a side effect.
