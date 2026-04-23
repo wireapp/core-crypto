@@ -39,7 +39,7 @@ pub use core_crypto_macros::{dispotent, durable, idempotent};
 pub use openmls::{
     group::{MlsGroup, MlsGroupConfig},
     prelude::{
-        Ciphersuite as MlsCiphersuite, GroupEpoch, KeyPackageIn, MlsMessageIn, Node, SignatureScheme,
+        Ciphersuite as MlsCiphersuite, GroupEpoch, KeyPackageIn, MlsMessageIn, MlsMessageInBody, Node, SignatureScheme,
         group_info::VerifiableGroupInfo,
     },
 };
