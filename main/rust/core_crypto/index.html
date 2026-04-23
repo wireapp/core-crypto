@@ -232,7 +232,10 @@ docker kill authelia.local &amp;&amp; docker rm authelia.local</code></pre></div
 </ul>
 <h5 id="toml"><a class="doc-anchor" href="#toml">§</a>Toml<a name="toml"></a></h5>
 <p>We’re using <a href="https://taplo.tamasfe.dev/">taplo</a> to format .toml files.</p>
-<h3 id="benchmarks"><a class="doc-anchor" href="#benchmarks">§</a>Benchmarks<a name="benchmarks"></a></h3><h4 id="rust"><a class="doc-anchor" href="#rust">§</a>Rust<a name="rust"></a></h4>
+<h3 id="benchmarks"><a class="doc-anchor" href="#benchmarks">§</a>Benchmarks<a name="benchmarks"></a></h3><h4 id="nightly-run"><a class="doc-anchor" href="#nightly-run">§</a>Nightly run<a name="nightly-run"></a></h4>
+<p>Every night we run benchmarks on the <code>main</code> branch and publish the results on the
+<a href="https://wireapp.github.io/core-crypto/dev/bench/">CoreCrypto Benchmarks page</a>.</p>
+<h4 id="rust"><a class="doc-anchor" href="#rust">§</a>Rust<a name="rust"></a></h4>
 <p>There are benches implemented in <a href="crypto/benches/"><code>crypto/benches</code></a> for several operations on mls groups with varying
 sizes or proteus. Parameters like minimum or maximum group sizes and step sizes are defined in
 <a href="crypto/benches/utils/mod.rs"><code>crypto/benches/utils/mod.rs</code></a>.</p>
