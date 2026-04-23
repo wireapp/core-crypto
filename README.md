@@ -62,6 +62,7 @@ express prior written consent of Wire Swiss GmbH.
       - [Markdown](#markdown)
       - [Toml](#toml)
   - [Benchmarks](#benchmarks)
+    - [Nightly run](#nightly-run)
     - [Rust](#rust)
     - [FFI Bindings](#ffi-bindings)
       - [JVM](#jvm-1)
@@ -468,6 +469,11 @@ We're using `mdformat` for consistent formatting of our markdown files. Install 
 We're using [taplo](https://taplo.tamasfe.dev/) to format .toml files.
 
 ## Benchmarks<a name="benchmarks"></a>
+
+### Nightly run<a name="nightly-run"></a>
+
+Every night we run benchmarks on the `main` branch and publish the results on the
+[CoreCrypto Benchmarks page](https://wireapp.github.io/core-crypto/dev/bench/).
 
 ### Rust<a name="rust"></a>
 
