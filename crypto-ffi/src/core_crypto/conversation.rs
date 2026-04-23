@@ -123,7 +123,11 @@ impl CoreCryptoFfi {
             .map_err(RecursiveError::mls_client(
                 "get_external_sender: getting raw conversation",
             ))?;
-        conversation.get_external_sender().await.map_err(Into::into)
+        conversation
+            .get_external_sender()
+            .await
+            .map(Into::into)
+            .map_err(Into::into)
     }
 
     /// Derives and exports a secret of `key_length` bytes for the given conversation.
