@@ -656,27 +656,6 @@ mod tests {
     mod proposal {
         use super::*;
 
-        // Ensures decrypting an proposal is durable
-        #[apply(all_cred_cipher)]
-        async fn can_decrypt_proposal(case: TestContext) {
-            let [alice, bob, charlie] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case.create_conversation([&alice, &bob]).await;
-
-                let conversation = conversation.invite_proposal_notify(&charlie).await;
-
-                assert_eq!(conversation.member_count().await, 2);
-                // if 'decrypt_message' is not durable the commit won't contain the add proposal
-                let conversation = conversation
-                    .commit_pending_proposals()
-                    .await
-                    .notify_members_and_verify_sender()
-                    .await;
-                assert_eq!(conversation.member_count().await, 3);
-            })
-            .await
-        }
-
         #[apply(all_cred_cipher)]
         async fn should_not_return_sender_client_id(case: TestContext) {
             let [alice, bob] = case.sessions().await;

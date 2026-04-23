@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use openmls::{group::QueuedProposal, prelude::group_info::VerifiableGroupInfo};
+use openmls::prelude::group_info::VerifiableGroupInfo;
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{CredentialType, MessageExt as _, MlsTransportTestExt, SessionContext, TestContext, TestError};
@@ -276,17 +276,6 @@ impl<'a> TestConversation<'a> {
             .get_credential_in_use(gi, CredentialType::X509)
             .await
             .unwrap()
-    }
-
-    pub(crate) async fn pending_proposals(&self) -> impl IntoIterator<Item = QueuedProposal> {
-        let guard = self.guard().await;
-        guard
-            .conversation()
-            .await
-            .group()
-            .pending_proposals()
-            .cloned()
-            .collect::<Vec<_>>()
     }
 
     /// The reference of the latest pending proposal.
