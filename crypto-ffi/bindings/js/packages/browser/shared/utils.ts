@@ -64,7 +64,7 @@ export async function sharedSetup() {
             };
         }
 
-        class BenchmarkHelpers {
+        class Helpers {
             static async setupCc(
                 cipherSuite: Ciphersuite,
                 clientIdStr?: string
@@ -97,7 +97,7 @@ export async function sharedSetup() {
                 return cc;
             }
         }
-        window.helpers = BenchmarkHelpers;
+        window.helpers = Helpers;
     }, logLevel);
 }
 
@@ -109,7 +109,7 @@ export interface DeliveryService extends MlsTransport {
     getLatestCommitBundle: () => Promise<CommitBundle>;
 }
 
-export interface BenchmarkHelpers {
+export interface Helpers {
     setupCc: (
         cipherSuite: Ciphersuite,
         clientIdStr?: string
