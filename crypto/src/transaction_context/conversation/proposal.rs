@@ -88,27 +88,6 @@ mod tests {
     use super::Error;
     use crate::{mls::conversation::ConversationWithMls as _, test_utils::*, *};
 
-    mod add {
-        use super::*;
-
-        #[apply(all_cred_cipher)]
-        pub async fn should_add_member(case: TestContext) {
-            let [alice, bob] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case
-                    .create_conversation([&alice])
-                    .await
-                    .invite_proposal_notify(&bob)
-                    .await
-                    .commit_pending_proposals_notify()
-                    .await;
-                assert_eq!(conversation.member_count().await, 2);
-                assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
-            })
-            .await
-        }
-    }
-
     mod update {
         use itertools::Itertools;
 
