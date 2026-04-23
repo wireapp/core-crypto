@@ -41,6 +41,29 @@ endif::[]
 .. renamed `removeKeypackage` -> `removeKeyPackage`
 .. renamed `removeKeypackagesFor` -> `removeKeyPackagesFor`
 
+== Higher-Level Newtypes
+
+. `GroupInfo.new()` and `Welcome.new()` are now *fallible* constructors.
+  Previously, both accepted any byte sequence unconditionally.
+  They now validate the input as a TLS-encoded MLS structure at construction time and throw if the bytes are malformed.
+
+. We *removed* `GroupInfo.copyBytes()` and `Welcome.copyBytes()`.
+  The underlying types no longer store raw bytes and cannot be round-tripped back to a byte array.
+
+. Added `Welcome::serialize()`
+  We had test functions which required the serialized bytes given a `Welcome` instance. So we added the ability
+  to recreate those bytes.
+
+. `GroupInfo` and `Welcome` no longer support equality comparisons, hashing, or hex string display in generated bindings.
+
+. `exportSecretKey()` now returns a `SecretKey` object instead of a byte array.
+  To access the raw bytes, call `secretKey.copyBytes()`.
+
+ifeval::[{platform} != browser]
+. `CoreCryptoContext.getExternalSender()` now returns an `ExternalSenderKey` object instead of a byte array.
+  To access the raw bytes, call `externalSenderKey.copyBytes()`.
+endif::[]
+
 == Logging
 
 . We *removed* `CoreCrypto.setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)`
