@@ -1,5 +1,3 @@
-use openmls::prelude::KeyPackage;
-
 use super::{Error, Result};
 use crate::{
     ClientId, ConversationId, MlsProposal, MlsProposalBundle, RecursiveError,
@@ -8,12 +6,6 @@ use crate::{
 };
 
 impl TransactionContext {
-    /// Creates a new Add proposal
-    #[cfg_attr(test, crate::idempotent)]
-    pub async fn new_add_proposal(&self, id: &ConversationId, key_package: KeyPackage) -> Result<MlsProposalBundle> {
-        self.new_proposal(id, MlsProposal::Add(key_package)).await
-    }
-
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::idempotent)]
     pub async fn new_remove_proposal(&self, id: &ConversationId, client_id: ClientId) -> Result<MlsProposalBundle> {
