@@ -49,8 +49,8 @@
 ///
 /// ## Derives
 ///
-/// This macro automatically implements `#[derive(derive_more::From, derive_more::Into, derive_more::Deref, derive_more::DerefMut, uniffi::Object)]`
-/// for the produced type.
+/// This macro automatically implements `#[derive(derive_more::From, derive_more::Into, derive_more::Deref,
+/// derive_more::DerefMut, uniffi::Object)]` for the produced type.
 ///
 /// Other annotations, including documentation, are passed through.
 /// This is the recommended method for adding derives to the produced item.
