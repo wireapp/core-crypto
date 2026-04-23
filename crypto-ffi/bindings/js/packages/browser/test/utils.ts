@@ -103,55 +103,6 @@ export async function setup() {
 }
 
 /**
- * Initialize a {@link CoreCrypto} instance that can be obtained inside the
- * browser context via {@link Window.ensureCcDefined}.
- *
- * @param clientName The client name used to initialize.
- * @param withCredential When set (default), adds a basic credential to the CC instance
- *
- * @returns {Promise<void>}
- */
-export async function ccInit(
-    clientName: string,
-    withCredential: boolean = true
-): Promise<void> {
-    return await browser.execute(
-        async (clientName, withCredential) => {
-            const cipherSuite = window.defaultCipherSuite;
-            const encoder = new TextEncoder();
-            const clientId = new window.ccModule.ClientId(
-                encoder.encode(clientName).buffer
-            );
-
-            const key = new Uint8Array(32);
-            window.crypto.getRandomValues(key);
-
-            const database = await window.ccModule.Database.open(
-                clientName,
-                new window.ccModule.DatabaseKey(key.buffer)
-            );
-
-            const instance = window.ccModule.CoreCrypto.new(database);
-            await instance.transaction(async (ctx) => {
-                await ctx.mlsInit(clientId, window.deliveryService);
-                if (withCredential) {
-                    await ctx.addCredential(
-                        window.ccModule.Credential.basic(cipherSuite, clientId)
-                    );
-                }
-            });
-
-            if (window.cc === undefined) {
-                window.cc = new Map();
-            }
-            window.cc.set(clientName, instance);
-        },
-        clientName,
-        withCredential
-    );
-}
-
-/**
  * Records logs by setting a logger and maximum log level in the browser's context.
  * The logs are stored in a global variable `window.recordedLogs` for further retrieval.
  *

@@ -1,5 +1,6 @@
 import type {
     Ciphersuite,
+    ClientId,
     CommitBundle,
     CoreCrypto,
     CoreCryptoLogLevel,
@@ -65,24 +66,35 @@ export async function shared_setup() {
         }
 
         class Helpers {
+            /**
+             * Initialize a {@link CoreCrypto} instance.
+             *
+             * @param clientId The ClientId used to initialize CC.
+             * @param withBasicCredential When set (default), adds a basic credential to the CC instance
+             * @param cipherSuite Set the cipherSuite to use, if not set the default cipherSuite will be used
+             *
+             * @returns {Promise<void>}
+             */
             static async ccInit(
-                cipherSuite: Ciphersuite,
-                clientIdStr?: string
+                clientId?: ClientId,
+                withBasicCredential: boolean = false,
+                cipherSuite?: Ciphersuite,
             ): Promise<CoreCrypto> {
-                if (clientIdStr === undefined) {
-                    clientIdStr = window.crypto.randomUUID();
+                if (clientId === undefined) {
+                    const clientIdStr = window.crypto.randomUUID();
+                    const encoder = new TextEncoder();
+                    clientId = new window.ccModule.ClientId(
+                        encoder.encode(clientIdStr).buffer
+                    );
                 }
-
-                const encoder = new TextEncoder();
-                const clientId = new window.ccModule.ClientId(
-                    encoder.encode(clientIdStr).buffer
-                );
 
                 const key = new Uint8Array(32);
                 crypto.getRandomValues(key);
 
+                const databaseLocation = window.crypto.randomUUID();
+
                 const db = await window.ccModule.Database.open(
-                    clientIdStr,
+                    databaseLocation,
                     new window.ccModule.DatabaseKey(key.buffer)
                 );
 
@@ -90,9 +102,14 @@ export async function shared_setup() {
 
                 await cc.transaction(async (ctx) => {
                     await ctx.mlsInit(clientId, window.deliveryService);
-                    await ctx.addCredential(
-                        window.ccModule.Credential.basic(cipherSuite, clientId)
-                    );
+                    if (withBasicCredential) {
+                        if (cipherSuite === undefined) {
+                            cipherSuite = window.defaultCipherSuite
+                        }
+                        await ctx.addCredential(
+                            window.ccModule.Credential.basic(cipherSuite, clientId)
+                        );
+                    }
                 });
                 return cc;
             }
@@ -111,8 +128,9 @@ export interface DeliveryService extends MlsTransport {
 
 export interface Helpers {
     ccInit: (
-        cipherSuite: Ciphersuite,
-        clientIdStr?: string
+        clientId?: ClientId,
+        withBasicCredential?: boolean,
+        cipherSuite?: Ciphersuite,
     ) => Promise<CoreCrypto>;
 }
 
