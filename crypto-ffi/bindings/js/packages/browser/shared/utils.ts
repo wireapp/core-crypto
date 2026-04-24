@@ -1,13 +1,15 @@
-import type {
+import {
     Ciphersuite,
-    ClientId,
-    CommitBundle,
-    CoreCrypto,
-    CoreCryptoLogLevel,
-    GroupInfoBundle,
-    HistorySecret,
-    MlsTransport,
-    MlsTransportData,
+    type ClientId,
+    type CommitBundle,
+    type ConversationId,
+    type CoreCrypto,
+    type CoreCryptoLogLevel,
+    type GroupInfoBundle,
+    type HistorySecret,
+    type KeyPackage,
+    type MlsTransport,
+    type MlsTransportData,
 } from "@wireapp/core-crypto/browser";
 
 import { browser } from "@wdio/globals";
@@ -67,6 +69,46 @@ export async function sharedSetup() {
         }
 
         class Helpers {
+            /**
+             * Construct a new ClientId
+             **/
+            static newClientId(clientIdStr?: string): ClientId {
+                if (clientIdStr === undefined) {
+                    clientIdStr = window.crypto.randomUUID();
+                }
+                const encoder = new TextEncoder();
+                return new window.ccModule.ClientId(
+                    encoder.encode(clientIdStr).buffer
+                );
+            }
+
+            /**
+             * Construct a new ConversationId
+             **/
+            static newConversationId(): ConversationId {
+                const conversationIdStr = window.crypto.randomUUID();
+                const encoder = new TextEncoder();
+                return new window.ccModule.ConversationId(
+                    encoder.encode(conversationIdStr).buffer
+                );
+            }
+
+            static async generateKeyPackage(
+                cc: CoreCrypto,
+                cipherSuite?: Ciphersuite
+            ): Promise<KeyPackage> {
+                if (cipherSuite === undefined) {
+                    cipherSuite = window.defaultCipherSuite;
+                }
+                return await cc.transaction(async (ctx) => {
+                    const [credentialRef] = await ctx.findCredentials({
+                        ciphersuite: cipherSuite,
+                        credentialType: window.ccModule.CredentialType.Basic,
+                    });
+                    return await ctx.generateKeyPackage(credentialRef!);
+                });
+            }
+
             /**
              * Initialize a {@link CoreCrypto} instance.
              *
@@ -503,6 +545,12 @@ export interface LogEntry {
 }
 
 export interface Helpers {
+    newClientId(clientIdStr?: string): ClientId;
+    newConversationId(): ConversationId;
+    generateKeyPackage(
+        cc: CoreCrypto,
+        cipherSuite?: Ciphersuite
+    ): Promise<KeyPackage>;
     ccInit: (
         withBasicCredential?: boolean,
         cipherSuite?: Ciphersuite,
