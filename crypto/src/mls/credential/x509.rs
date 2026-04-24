@@ -68,6 +68,15 @@ impl fmt::Debug for CertificateBundle {
 }
 
 impl CertificateBundle {
+    /// Create a certificate bundle from a DER-encoded certificate chain and raw private key bytes.
+    pub fn from_raw(certificate_chain: Vec<Vec<u8>>, private_key: Vec<u8>, signature_scheme: SignatureScheme) -> Self {
+        Self {
+            certificate_chain,
+            private_key: CertificatePrivateKey::new(private_key),
+            signature_scheme,
+        }
+    }
+
     /// Reads the client_id from the leaf certificate
     pub fn get_client_id(
         &self,

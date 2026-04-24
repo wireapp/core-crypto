@@ -861,6 +861,35 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertNil(pkiEnvironment3)
     }
 
+    func testCanInstantiateX509CredentialAcquisition() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "mls")
+        let keystore = root.appending(path: "pki-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let database = try await Database.open(location: keystore.path, key: genDatabaseKey())
+
+        let pkiEnvironment = try await PkiEnvironment(
+            hooks: MockPkiEnvironmentHooks(), database: database)
+        let clientId = ClientId(
+            bytes: Data("LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com".utf8))
+
+        let acquisition = try X509CredentialAcquisition(
+            pkiEnvironment: pkiEnvironment,
+            config: X509CredentialAcquisitionConfiguration(
+                acmeUrl: "acme.example.com",
+                idpUrl: "https://idp.example.com",
+                signAlg: .ed25519,
+                displayName: "Alice Smith",
+                clientId: clientId,
+                handle: "alice_wire",
+                domain: "world.com",
+                team: nil,
+                validityPeriodSecs: 3600
+            )
+        )
+
+        XCTAssertNotNil(acquisition)
+    }
+
     // MARK: - helpers
 
     final actor MockMlsTransport: MlsTransport {

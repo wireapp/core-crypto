@@ -45,6 +45,7 @@ export {
     NewHistoryClientReportingError,
     EpochChangedReportingError_Tags,
     E2eiConversationState,
+    E2eiJwsAlgorithm,
     ciphersuiteFromU16,
     ciphersuiteDefault,
     ClientId,
@@ -81,6 +82,8 @@ export {
     HttpHeader,
     HttpResponse,
     HttpMethod,
+    X509CredentialAcquisition,
+    X509CredentialAcquisitionConfiguration,
     type Timestamp,
     type MlsTransport,
 } from "#core-crypto-ffi";

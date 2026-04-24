@@ -91,6 +91,48 @@ describe("PKI environment", () => {
 });
 
 describe("end to end identity", () => {
+    it("should instantiate an x509 credential acquisition object", async () => {
+        const acquisitionCreated = await browser.execute(async () => {
+            const key = new Uint8Array(32);
+            window.crypto.getRandomValues(key);
+            const database = await window.ccModule.Database.open(
+                crypto.randomUUID(),
+                new window.ccModule.DatabaseKey(key.buffer)
+            );
+            const pkiEnvironment = await window.ccModule.PkiEnvironment.create(
+                window.pkiEnvironmentHooks,
+                database
+            );
+
+            const clientId = new window.ccModule.ClientId(
+                new TextEncoder().encode(
+                    "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com"
+                ).buffer
+            );
+            const config =
+                window.ccModule.X509CredentialAcquisitionConfiguration.new({
+                    acmeUrl: "acme.example.com",
+                    idpUrl: "https://idp.example.com",
+                    signAlg: window.ccModule.E2eiJwsAlgorithm.Ed25519,
+                    displayName: "Alice Smith",
+                    clientId,
+                    handle: "alice_wire",
+                    domain: "world.com",
+                    team: undefined,
+                    validityPeriodSecs: BigInt(3600),
+                });
+
+            const acquisition = new window.ccModule.X509CredentialAcquisition(
+                pkiEnvironment,
+                config
+            );
+
+            return acquisition !== undefined;
+        });
+
+        await expect(acquisitionCreated).toBe(true);
+    });
+
     it("should not be enabled on conversation with basic credential", async () => {
         const alice = crypto.randomUUID();
         const convId = crypto.randomUUID();
