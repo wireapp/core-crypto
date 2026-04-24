@@ -33,7 +33,7 @@ impl From<core_crypto::E2eiConversationState> for E2eiConversationState {
     }
 }
 
-/// Signing algorithm used for E2EI certificate acquisition.
+/// Signing algorithm used for certificate acquisition.
 #[derive(Debug, Copy, Clone, uniffi::Enum)]
 pub enum E2eiJwsAlgorithm {
     /// Ed25519 / EdDSA
@@ -77,7 +77,7 @@ impl E2eiJwsAlgorithm {
     }
 }
 
-/// Configuration for an E2EI X509 credential acquisition flow.
+/// Configuration for an X509 credential acquisition flow.
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct X509CredentialAcquisitionConfiguration {
     /// ACME server hostname.
@@ -121,7 +121,7 @@ impl X509CredentialAcquisitionConfiguration {
     }
 }
 
-/// Initial state of the E2EI X509 credential acquisition flow.
+/// Initial state of the X509 credential acquisition flow.
 #[derive(uniffi::Object)]
 pub struct X509CredentialAcquisition {
     inner: Mutex<Option<wire_e2e_identity::X509CredentialAcquisition>>,
