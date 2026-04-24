@@ -35,6 +35,7 @@ wire-e2e-identity.workspace = true
 derive_more.workspace = true
 futures-util.workspace = true
 hex.workspace = true
+jwt-simple.workspace = true
 log-reload.workspace = true
 log.workspace = true
 obfuscate = { workspace = true, features = ["openmls"] }
@@ -43,6 +44,7 @@ rmp-serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tls_codec.workspace = true
+x509-cert.workspace = true
 
 # UniFFI - Android + iOS bindings - Runtime support
 uniffi.workspace = true

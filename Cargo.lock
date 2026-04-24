@@ -1161,6 +1161,7 @@ dependencies = [
  "getrandom 0.3.4",
  "hex",
  "js-sys",
+ "jwt-simple",
  "log",
  "log-reload",
  "macro_rules_attribute",
@@ -1177,6 +1178,7 @@ dependencies = [
  "uniffi 0.31.0",
  "web-sys",
  "wire-e2e-identity",
+ "x509-cert",
 ]
 
 [[package]]
