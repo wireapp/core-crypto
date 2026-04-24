@@ -199,39 +199,33 @@ export async function sharedSetup() {
              * Create a conversation on a {@link CoreCrypto} instance that has
              * been initialized before via {@link ccInit}.
              *
-             * @param clientName The name the {@link CoreCrypto} instance has been
+             * @param cc The {@link CoreCrypto} instance has been
              * initialized with.
-             * @param conversationId The id that the conversation will be created with.
-             *
-             * @returns {Promise<void>}
+             * @returns {Promise<ConversationId>} The ConversationOd of the created Conversation.
              *
              * @throws Error if the instance with {@link clientName} cannot be found.
              */
             static async createConversation(
-                clientName: string,
-                conversationId: string
-            ): Promise<void> {
-                const cc = window.ensureCcDefined(clientName);
+                cc: CoreCrypto
+            ): Promise<ConversationId> {
+                const conversationId = window.helpers.newConversationId();
                 await cc.transaction(async (ctx) => {
-                    const conversationIdBytes =
-                        new window.ccModule.ConversationId(
-                            new TextEncoder().encode(conversationId).buffer
-                        );
                     const [credentialRef] = await ctx.getCredentials();
                     await ctx.createConversation(
-                        conversationIdBytes,
+                        conversationId,
                         credentialRef!
                     );
                 });
+                return conversationId;
             }
 
             /**
              * Invite {@link client2} to a previously created conversation on the
              * instance of {@link client1} (via {@link createConversation}).
              *
-             * @param client1 The name of the {@link CoreCrypto} instance on which the
+             * @param cc1 The {@link CoreCrypto} instance on which the
              * conversation was created previously.
-             * @param client2 The name of the {@link CoreCrypto} instance that will be
+             * @param cc2 The {@link CoreCrypto} instance that will be
              * invited.
              * @param conversationId The id of the previously created conversation.
              *
@@ -240,74 +234,56 @@ export async function sharedSetup() {
              * @throws Error if {@link client1} or {@link client2} instances cannot be found.
              */
             static async invite(
-                client1: string,
-                client2: string,
-                conversationId: string
+                cc1: CoreCrypto,
+                cc2: CoreCrypto,
+                conversationId: ConversationId,
+                cipherSuite?: Ciphersuite
             ): Promise<GroupInfoBundle> {
-                const cc1 = window.ensureCcDefined(client1);
-                const cc2 = window.ensureCcDefined(client2);
-                const conversationIdBytes = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId).buffer
+                const kp = await window.helpers.generateKeyPackage(
+                    cc2,
+                    cipherSuite
                 );
-                const kp = await cc2.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
-                        ciphersuite: window.defaultCipherSuite,
-                        credentialType: window.ccModule.CredentialType.Basic,
-                    });
-                    console.log("generated key package");
-                    return await ctx.generateKeyPackage(credentialRef!);
-                });
-
-                const clients = await cc1.getClientIds(conversationIdBytes);
+                const clients = await cc1.getClientIds(conversationId);
                 console.log("clients");
                 console.log(clients);
 
                 console.log("inviting bob");
                 await cc1.transaction((ctx) =>
-                    ctx.addClientsToConversation(conversationIdBytes, [kp])
+                    ctx.addClientsToConversation(conversationId, [kp])
                 );
                 console.log("processing welcome");
                 const commitBundle =
                     await window.deliveryService.getLatestCommitBundle();
                 await cc2.transaction((ctx) =>
-                    ctx.processWelcomeMessage(
-                        new window.ccModule.Welcome(
-                            commitBundle.welcome!.copyBytes()
-                        )
-                    )
+                    ctx.processWelcomeMessage(commitBundle.welcome!)
                 );
 
                 return commitBundle.groupInfo;
             }
 
             /**
-             * Remove {@link client2} from a previously created conversation on the
-             * instance of {@link client1} (via {@link createConversation}).
+             * Remove {@link cc2} from a previously created conversation on the
+             * instance of {@link cc} (via {@link createConversation}).
              *
-             * @param client1 The name of the {@link CoreCrypto} instance on which the
+             * @param cc The {@link CoreCrypto} instance on which the
              * conversation was created previously.
-             * @param client2 The name of the {@link CoreCrypto} instance that will be
+             * @param clientIdToRemove The client id of the {@link CoreCrypto} instance that will be
              * removed.
              * @param conversationId The id of the previously created conversation.
              *
              * @returns {Promise<GroupInfoBundle>} The resulting group info.
              *
-             * @throws Error if {@link client1} or {@link client2} instances cannot be found.
+             * @throws Error if {@link cc} or {@link cc2} instances cannot be found.
              */
             static async remove(
-                client1: string,
-                client2: string,
-                conversationId: string
+                cc: CoreCrypto,
+                clientIdToRemove: ClientId,
+                conversationId: ConversationId
             ): Promise<GroupInfoBundle> {
-                const cc1 = window.ensureCcDefined(client1);
-                const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId).buffer
-                );
-                const clientId = new window.ccModule.ClientId(
-                    new TextEncoder().encode(client2).buffer
-                );
-                await cc1.transaction((ctx) =>
-                    ctx.removeClientsFromConversation(cid, [clientId])
+                await cc.transaction((ctx) =>
+                    ctx.removeClientsFromConversation(conversationId, [
+                        clientIdToRemove,
+                    ])
                 );
                 const commitBundle =
                     await window.deliveryService.getLatestCommitBundle();
@@ -316,36 +292,33 @@ export async function sharedSetup() {
             }
 
             /**
-             * Consume the last commit message on {@link client1}
+             * Consume the last commit message on {@link cc}
              *
-             * @param client1 The name of the {@link CoreCrypto} instance on which to consume the commit.
+             * @param cc The {@link CoreCrypto} instance on which to consume the commit.
              * @param conversationId The id of the previously created conversation.
              *
              * @returns {Promise<void>}
              *
-             * @throws Error if {@link client1} instances cannot be found.
+             * @throws Error if {@link cc} instances cannot be found.
              */
             static async consumeLastestCommit(
-                client1: string,
-                conversationId: string
+                cc: CoreCrypto,
+                conversationId: ConversationId
             ): Promise<void> {
-                const cc1 = window.ensureCcDefined(client1);
-                const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId).buffer
-                );
                 const commitBundle =
                     await window.deliveryService.getLatestCommitBundle();
-                await cc1.transaction((ctx) =>
-                    ctx.decryptMessage(cid, commitBundle.commit)
+                await cc.transaction((ctx) =>
+                    ctx.decryptMessage(conversationId, commitBundle.commit)
                 );
             }
+
             /**
              * Inside a previously created conversation, {@link client1} encrypts
              * {@link message}, sends it to {@link client2}, who then decrypts it.
              * This procedure is then repeated vice versa.
              *
-             * @param client1 The first of the conversation.
-             * @param client2 The second member of the conversation.
+             * @param cc1 The first of the conversation.
+             * @param cc2 The second member of the conversation.
              * @param conversationId The id of the conversation.
              * @param message The message encrypted, sent, and decrypted once in each
              * direction.
@@ -354,24 +327,18 @@ export async function sharedSetup() {
              * {@link client1} and {@link client2}, in that order.
              */
             static async roundTripMessage(
-                client1: string,
-                client2: string,
-                conversationId: string,
+                cc1: CoreCrypto,
+                cc2: CoreCrypto,
+                conversationId: ConversationId,
                 message: string
             ): Promise<(string | null)[]> {
-                const cc1 = window.ensureCcDefined(client1);
-                const cc2 = window.ensureCcDefined(client2);
-
                 const encoder = new TextEncoder();
-                const cid = new window.ccModule.ConversationId(
-                    encoder.encode(conversationId).buffer
-                );
                 const messageBytes = encoder.encode(message);
 
                 const encryptedByClient1 = await cc1.transaction(
                     async (ctx) => {
                         return await ctx.encryptMessage(
-                            cid,
+                            conversationId,
                             messageBytes.buffer
                         );
                     }
@@ -379,7 +346,7 @@ export async function sharedSetup() {
                 const decryptedByClient2 = await cc2.transaction(
                     async (ctx) => {
                         return await ctx.decryptMessage(
-                            cid,
+                            conversationId,
                             encryptedByClient1
                         );
                     }
@@ -388,7 +355,7 @@ export async function sharedSetup() {
                 const encryptedByClient2 = await cc2.transaction(
                     async (ctx) => {
                         return await ctx.encryptMessage(
-                            cid,
+                            conversationId,
                             messageBytes.buffer
                         );
                     }
@@ -396,7 +363,7 @@ export async function sharedSetup() {
                 const decryptedByClient1 = await cc1.transaction(
                     async (ctx) => {
                         return await ctx.decryptMessage(
-                            cid,
+                            conversationId,
                             encryptedByClient2
                         );
                     }
@@ -425,46 +392,40 @@ export async function sharedSetup() {
              *
              * @returns {Promise<void>}
              */
-            static async proteusInit(clientName: string): Promise<void> {
+            static async proteusInit(): Promise<CoreCrypto> {
+                const databaseLocation = window.crypto.randomUUID();
                 const key = new Uint8Array(32);
                 window.crypto.getRandomValues(key);
 
                 const database = await window.ccModule.Database.open(
-                    clientName,
+                    databaseLocation,
                     new window.ccModule.DatabaseKey(key.buffer)
                 );
 
                 const instance = window.ccModule.CoreCrypto.new(database);
                 await instance.transaction((ctx) => ctx.proteusInit());
-
-                if (window.cc === undefined) {
-                    window.cc = new Map();
-                }
-                window.cc.set(clientName, instance);
+                return instance;
             }
 
             /**
              * Create a proteus session on the {@link CoreCrypto} instance of
-             * {@link client1}, with the prekey of {@link client2}.
+             * {@link cc1}, with the prekey of {@link cc2}.
              *
-             * @param client1 The name of the {@link CoreCrypto} instance which will
+             * @param cc1 The {@link CoreCrypto} instance which will
              * create the session.
-             * @param client2 The name of the {@link CoreCrypto} instance whose pre key will
+             * @param cc2 The {@link CoreCrypto} instance whose pre key will
              * be used.
              * @param sessionId The id of session that will be created.
              *
              * @returns {Promise<void>}
              *
-             * @throws Error if {@link client1} or {@link client2} instances cannot be found.
+             * @throws Error if {@link cc1} or {@link cc2} instances cannot be found.
              */
             static async newProteusSessionFromPrekey(
-                client1: string,
-                client2: string,
+                cc1: CoreCrypto,
+                cc2: CoreCrypto,
                 sessionId: string
             ): Promise<void> {
-                const cc1 = window.ensureCcDefined(client1);
-                const cc2 = window.ensureCcDefined(client2);
-
                 const cc2Prekey = await cc2.transaction(async (ctx) => {
                     return await ctx.proteusNewPrekey(10);
                 });
@@ -479,12 +440,12 @@ export async function sharedSetup() {
 
             /**
              * Create a proteus session on the {@link CoreCrypto} instance of
-             * {@link client2}, from a message encrypted by {@link client1} in a session
+             * {@link cc2}, from a message encrypted by {@link cc1} in a session
              * created previously via {@link newProteusSessionFromPrekey}.
              *
-             * @param client1 The name of the {@link CoreCrypto} instance which used its
+             * @param cc1 The {@link CoreCrypto} instance which used its
              * existing session to encrypt the message.
-             * @param client2 The name of the {@link CoreCrypto} instance whose session will
+             * @param cc2 The {@link CoreCrypto} instance whose session will
              * be created.
              * @param sessionId The id of session that will be created.
              * For simplicity, this must match the id of the previously created session.
@@ -492,17 +453,14 @@ export async function sharedSetup() {
              *
              * @returns {Promise<string | null>} the decrypted {@link message}.
              *
-             * @throws Error if {@link client1} or {@link client2} instances cannot be found.
+             * @throws Error if {@link cc1} or {@link cc2} instances cannot be found.
              */
             static async newProteusSessionFromMessage(
-                client1: string,
-                client2: string,
+                cc1: CoreCrypto,
+                cc2: CoreCrypto,
                 sessionId: string,
                 message: string
             ): Promise<string | null> {
-                const cc1 = window.ensureCcDefined(client1);
-                const cc2 = window.ensureCcDefined(client2);
-
                 const encoder = new TextEncoder();
                 const messageBytes = encoder.encode(message);
                 const encrypted = await cc1.transaction(async (ctx) => {
@@ -558,39 +516,37 @@ export interface Helpers {
     ) => Promise<CoreCrypto>;
     recordLogs(): Promise<void>;
     retrieveLogs(): Promise<LogEntry[]>;
-    createConversation(
-        clientName: string,
-        conversationId: string
-    ): Promise<void>;
+    createConversation(cc: CoreCrypto): Promise<ConversationId>;
     invite(
-        client1: string,
-        client2: string,
-        conversationId: string
+        cc1: CoreCrypto,
+        cc2: CoreCrypto,
+        conversationId: ConversationId,
+        cipherSuite?: Ciphersuite
     ): Promise<GroupInfoBundle>;
     remove(
-        client1: string,
-        client2: string,
-        conversationId: string
+        cc: CoreCrypto,
+        clientIdToRemove: ClientId,
+        conversationId: ConversationId
     ): Promise<GroupInfoBundle>;
     consumeLastestCommit(
-        client1: string,
-        conversationId: string
+        cc: CoreCrypto,
+        conversationId: ConversationId
     ): Promise<void>;
     roundTripMessage(
-        client1: string,
-        client2: string,
-        conversationId: string,
+        cc1: CoreCrypto,
+        cc2: CoreCrypto,
+        conversationId: ConversationId,
         message: string
     ): Promise<(string | null)[]>;
-    proteusInit(clientName: string): Promise<void>;
+    proteusInit(): Promise<CoreCrypto>;
     newProteusSessionFromPrekey(
-        client1: string,
-        client2: string,
+        cc1: CoreCrypto,
+        cc2: CoreCrypto,
         sessionId: string
     ): Promise<void>;
     newProteusSessionFromMessage(
-        client1: string,
-        client2: string,
+        cc1: CoreCrypto,
+        cc2: CoreCrypto,
         sessionId: string,
         message: string
     ): Promise<string | null>;
