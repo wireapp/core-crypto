@@ -240,41 +240,28 @@ export async function shared_setup() {
              * @throws Error if {@link client1} or {@link client2} instances cannot be found.
              */
             static async invite(
-                client1: string,
-                client2: string,
-                conversationId: string
+                cc1: CoreCrypto,
+                cc2: CoreCrypto,
+                conversationId: ConversationId,
+                cipherSuite?: Ciphersuite
             ): Promise<GroupInfoBundle> {
-                const cc1 = window.ensureCcDefined(client1);
-                const cc2 = window.ensureCcDefined(client2);
-                const conversationIdBytes = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId).buffer
+                const kp = await window.helpers.generateKeyPackage(
+                    cc2,
+                    cipherSuite
                 );
-                const kp = await cc2.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
-                        ciphersuite: window.defaultCipherSuite,
-                        credentialType: window.ccModule.CredentialType.Basic,
-                    });
-                    console.log("generated key package");
-                    return await ctx.generateKeyPackage(credentialRef!);
-                });
-
-                const clients = await cc1.getClientIds(conversationIdBytes);
+                const clients = await cc1.getClientIds(conversationId);
                 console.log("clients");
                 console.log(clients);
 
                 console.log("inviting bob");
                 await cc1.transaction((ctx) =>
-                    ctx.addClientsToConversation(conversationIdBytes, [kp])
+                    ctx.addClientsToConversation(conversationId, [kp])
                 );
                 console.log("processing welcome");
                 const commitBundle =
                     await window.deliveryService.getLatestCommitBundle();
                 await cc2.transaction((ctx) =>
-                    ctx.processWelcomeMessage(
-                        new window.ccModule.Welcome(
-                            commitBundle.welcome!.copyBytes()
-                        )
-                    )
+                    ctx.processWelcomeMessage(commitBundle.welcome!)
                 );
 
                 return commitBundle.groupInfo;
@@ -563,9 +550,10 @@ export interface Helpers {
         conversationId: string
     ): Promise<void>;
     invite(
-        client1: string,
-        client2: string,
-        conversationId: string
+        cc1: CoreCrypto,
+        cc2: CoreCrypto,
+        conversationId: ConversationId,
+        cipherSuite?: Ciphersuite
     ): Promise<GroupInfoBundle>;
     remove(
         client1: string,
