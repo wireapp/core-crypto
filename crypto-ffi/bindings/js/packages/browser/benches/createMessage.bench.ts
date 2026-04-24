@@ -25,20 +25,14 @@ describe("benchmark", () => {
                 });
                 for (const { count, size, cipherSuite } of parameters) {
                     const message = new Uint8Array(size);
-                    const cc = await window.helpers.ccInit(cipherSuite);
-
-                    const conversationIdStr = window.crypto.randomUUID();
-                    const conversationId = new window.ccModule.ConversationId(
-                        new TextEncoder().encode(conversationIdStr).buffer
+                    const cc = await window.helpers.ccInit(
+                        undefined,
+                        true,
+                        cipherSuite
                     );
 
-                    await cc.transaction(async (ctx) => {
-                        const [credentialRef] = await ctx.getCredentials();
-                        await ctx.createConversation(
-                            conversationId,
-                            credentialRef!
-                        );
-                    });
+                    const conversationId =
+                        await window.helpers.createConversation(cc);
 
                     window.bench.add(
                         `cipherSuite=${window.ccModule.Ciphersuite[cipherSuite]} size=${size}B count=${count}`,
