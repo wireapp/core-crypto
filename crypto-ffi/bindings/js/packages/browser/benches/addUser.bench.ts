@@ -26,46 +26,27 @@ describe("benchmark", () => {
                     window.bench.add(
                         `cipherSuite=${window.ccModule.Ciphersuite[cipherSuite]} userCount=${userCount}`,
                         async () => {
-                            const aliceCc =
-                                await window.helpers.ccInit(cipherSuite);
+                            const aliceCc = await window.helpers.ccInit(
+                                true,
+                                cipherSuite
+                            );
 
-                            const conversationIdStr =
-                                window.crypto.randomUUID();
                             const conversationId =
-                                new window.ccModule.ConversationId(
-                                    new TextEncoder().encode(conversationIdStr)
-                                        .buffer
+                                await window.helpers.createConversation(
+                                    aliceCc
                                 );
-
-                            await aliceCc.transaction(async (ctx) => {
-                                const [credentialRef] =
-                                    await ctx.getCredentials();
-                                await ctx.createConversation(
-                                    conversationId,
-                                    credentialRef!
-                                );
-                            });
-
                             const keyPackages: KeyPackage[] = [];
 
                             for (let i = 0; i < userCount; i++) {
-                                const bobCc =
-                                    await window.helpers.ccInit(cipherSuite);
-                                const kp = await bobCc.transaction(
-                                    async (ctx) => {
-                                        const [credentialRef] =
-                                            await ctx.findCredentials({
-                                                ciphersuite: cipherSuite,
-                                                credentialType:
-                                                    window.ccModule
-                                                        .CredentialType.Basic,
-                                            });
-                                        return await ctx.generateKeyPackage(
-                                            credentialRef!
-                                        );
-                                    }
+                                const bobCc = await window.helpers.ccInit(
+                                    true,
+                                    cipherSuite
                                 );
-
+                                const kp =
+                                    await window.helpers.generateKeyPackage(
+                                        bobCc,
+                                        cipherSuite
+                                    );
                                 keyPackages.push(kp);
                             }
 

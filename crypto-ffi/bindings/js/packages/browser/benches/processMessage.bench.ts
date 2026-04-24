@@ -22,45 +22,23 @@ describe("benchmark", () => {
                     warmupIterations: 1,
                 });
                 for (const { count, size, cipherSuite } of parameters) {
-                    const aliceCc = await window.helpers.ccInit(cipherSuite);
-                    const bobCc = await window.helpers.ccInit(cipherSuite);
-
-                    const conversationIdStr = window.crypto.randomUUID();
-                    const conversationId = new window.ccModule.ConversationId(
-                        new TextEncoder().encode(conversationIdStr).buffer
+                    const aliceCc = await window.helpers.ccInit(
+                        true,
+                        cipherSuite
+                    );
+                    const bobCc = await window.helpers.ccInit(
+                        true,
+                        cipherSuite
                     );
 
-                    await aliceCc.transaction(async (ctx) => {
-                        const [credentialRef] = await ctx.getCredentials();
-                        await ctx.createConversation(
-                            conversationId,
-                            credentialRef!
-                        );
-                    });
+                    const conversationId =
+                        await window.helpers.createConversation(aliceCc);
 
-                    const kp = await bobCc.transaction(async (ctx) => {
-                        const [credentialRef] = await ctx.findCredentials({
-                            ciphersuite: cipherSuite,
-                            credentialType:
-                                window.ccModule.CredentialType.Basic,
-                        });
-                        return await ctx.generateKeyPackage(credentialRef!);
-                    });
-
-                    await aliceCc.transaction(
-                        async (ctx) =>
-                            await ctx.addClientsToConversation(conversationId, [
-                                kp,
-                            ])
-                    );
-                    const commitBundle =
-                        await window.deliveryService.getLatestCommitBundle();
-
-                    await bobCc.transaction(
-                        async (ctx) =>
-                            await ctx.processWelcomeMessage(
-                                commitBundle.welcome!
-                            )
+                    await window.helpers.invite(
+                        aliceCc,
+                        bobCc,
+                        conversationId,
+                        cipherSuite
                     );
 
                     const message = new Uint8Array(size);

@@ -2,7 +2,7 @@ import { beforeEach, describe } from "mocha";
 import { browser } from "@wdio/globals";
 import { collect_benchmark_results, setup } from "./utils";
 import { userBenchmarkParameters } from "../../shared/benches/utils";
-import type { ClientId, KeyPackage } from "@wireapp/core-crypto/browser";
+import { type ClientId, type KeyPackage } from "@wireapp/core-crypto/browser";
 
 beforeEach(async () => {
     await setup();
@@ -26,57 +26,32 @@ describe("benchmark", () => {
                     window.bench.add(
                         `cipherSuite=${window.ccModule.Ciphersuite[cipherSuite]} userCount=${userCount}`,
                         async () => {
-                            const aliceCc =
-                                await window.helpers.ccInit(cipherSuite);
+                            const aliceCc = await window.helpers.ccInit(
+                                true,
+                                cipherSuite
+                            );
 
-                            const conversationIdStr =
-                                window.crypto.randomUUID();
                             const conversationId =
-                                new window.ccModule.ConversationId(
-                                    new TextEncoder().encode(conversationIdStr)
-                                        .buffer
+                                await window.helpers.createConversation(
+                                    aliceCc
                                 );
-
-                            await aliceCc.transaction(async (ctx) => {
-                                const [credentialRef] =
-                                    await ctx.getCredentials();
-                                await ctx.createConversation(
-                                    conversationId,
-                                    credentialRef!
-                                );
-                            });
-
                             const keyPackages: KeyPackage[] = [];
                             const clientIdsToRemove: ClientId[] = [];
 
                             for (let i = 0; i < userCount; i++) {
-                                const clientIdStr = window.crypto.randomUUID();
-
-                                const encoder = new TextEncoder();
-                                const clientId = new window.ccModule.ClientId(
-                                    encoder.encode(clientIdStr).buffer
-                                );
+                                const bobId = window.helpers.newClientId();
                                 const bobCc = await window.helpers.ccInit(
+                                    true,
                                     cipherSuite,
-                                    clientIdStr
+                                    bobId
                                 );
-                                const kp = await bobCc.transaction(
-                                    async (ctx) => {
-                                        const [credentialRef] =
-                                            await ctx.findCredentials({
-                                                ciphersuite: cipherSuite,
-                                                credentialType:
-                                                    window.ccModule
-                                                        .CredentialType.Basic,
-                                            });
-                                        return await ctx.generateKeyPackage(
-                                            credentialRef!
-                                        );
-                                    }
-                                );
-
+                                const kp =
+                                    await window.helpers.generateKeyPackage(
+                                        bobCc,
+                                        cipherSuite
+                                    );
                                 keyPackages.push(kp);
-                                clientIdsToRemove.push(clientId);
+                                clientIdsToRemove.push(bobId);
                             }
 
                             await aliceCc.transaction(
