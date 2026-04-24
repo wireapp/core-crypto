@@ -199,30 +199,24 @@ export async function shared_setup() {
              * Create a conversation on a {@link CoreCrypto} instance that has
              * been initialized before via {@link ccInit}.
              *
-             * @param clientName The name the {@link CoreCrypto} instance has been
+             * @param cc The name the {@link CoreCrypto} instance has been
              * initialized with.
-             * @param conversationId The id that the conversation will be created with.
-             *
-             * @returns {Promise<void>}
+             * @returns {Promise<ConversationId>} The ConversationOd of the created Conversation.
              *
              * @throws Error if the instance with {@link clientName} cannot be found.
              */
             static async createConversation(
-                clientName: string,
-                conversationId: string
-            ): Promise<void> {
-                const cc = window.ensureCcDefined(clientName);
+                cc: CoreCrypto
+            ): Promise<ConversationId> {
+                const conversationId = window.helpers.newConversationId();
                 await cc.transaction(async (ctx) => {
-                    const conversationIdBytes =
-                        new window.ccModule.ConversationId(
-                            new TextEncoder().encode(conversationId).buffer
-                        );
                     const [credentialRef] = await ctx.getCredentials();
                     await ctx.createConversation(
-                        conversationIdBytes,
+                        conversationId,
                         credentialRef!
                     );
                 });
+                return conversationId;
             }
 
             /**
@@ -545,10 +539,7 @@ export interface Helpers {
     ) => Promise<CoreCrypto>;
     recordLogs(): Promise<void>;
     retrieveLogs(): Promise<LogEntry[]>;
-    createConversation(
-        clientName: string,
-        conversationId: string
-    ): Promise<void>;
+    createConversation(cc: CoreCrypto): Promise<ConversationId>;
     invite(
         cc1: CoreCrypto,
         cc2: CoreCrypto,
