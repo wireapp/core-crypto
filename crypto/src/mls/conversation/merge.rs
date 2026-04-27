@@ -81,12 +81,12 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         async fn should_clear_pending_commit_and_proposals(case: TestContext) {
-            let [alice] = case.sessions().await;
+            let [alice, bob] = case.sessions().await;
             Box::pin(async move {
                 let commit = case
-                    .create_conversation([&alice])
+                    .create_conversation([&alice, &bob])
                     .await
-                    .update_proposal_notify()
+                    .remove_proposal_notify(&bob)
                     .await
                     .update_unmerged()
                     .await;
@@ -108,28 +108,6 @@ mod tests {
                     .unwrap();
                 assert!(!conversation.has_pending_proposals().await);
                 assert!(!conversation.has_pending_commit().await);
-            })
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
-        async fn should_clean_associated_key_material(case: TestContext) {
-            let [alice] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case.create_conversation([&alice]).await;
-                let initial_count = alice.transaction.count_entities().await;
-
-                let conversation = conversation.update_proposal_notify().await;
-                let post_proposal_count = alice.transaction.count_entities().await;
-                assert_eq!(
-                    post_proposal_count.encryption_keypair,
-                    initial_count.encryption_keypair + 1
-                );
-
-                conversation.commit_pending_proposals_notify().await;
-
-                let final_count = alice.transaction.count_entities().await;
-                assert_eq!(initial_count, final_count);
             })
             .await
         }

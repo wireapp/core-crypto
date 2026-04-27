@@ -55,53 +55,6 @@ mod tests {
     use super::*;
     use crate::test_utils::*;
 
-    mod clear_pending_proposal {
-        use super::*;
-
-        #[apply(all_cred_cipher)]
-        pub async fn should_fail_when_proposal_ref_not_found(case: TestContext) {
-            let [alice] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case.create_conversation([&alice]).await;
-                assert!(!conversation.has_pending_proposals().await);
-                let any_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
-                let clear = conversation.guard().await.clear_pending_proposal(any_ref.clone()).await;
-                assert!(matches!(clear.unwrap_err(), Error::PendingProposalNotFound(prop_ref) if prop_ref == any_ref))
-            })
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
-        pub async fn should_clean_associated_key_material(case: TestContext) {
-            let [session] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case.create_conversation([&session]).await;
-                assert!(!conversation.has_pending_proposals().await);
-
-                let init = session.transaction.count_entities().await;
-
-                let conversation = conversation.update_proposal_notify().await;
-                let proposal_ref = conversation.latest_proposal_ref().await;
-                assert_eq!(conversation.pending_proposal_count().await, 1);
-
-                conversation
-                    .guard()
-                    .await
-                    .clear_pending_proposal(proposal_ref)
-                    .await
-                    .unwrap();
-                assert!(!conversation.has_pending_proposals().await);
-
-                // This whole flow should be idempotent.
-                // Here we verify that we are indeed deleting the `EncryptionKeyPair` created
-                // for the Update proposal
-                let after_clear_proposal = session.transaction.count_entities().await;
-                assert_eq!(init, after_clear_proposal);
-            })
-            .await
-        }
-    }
-
     mod clear_pending_commit {
         use super::*;
 

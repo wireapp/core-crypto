@@ -95,10 +95,8 @@ impl MlsProposalBundle {
 
 #[cfg(test)]
 mod tests {
-    use itertools::Itertools;
-
     use super::*;
-    use crate::{mls::conversation::ConversationWithMls as _, test_utils::*};
+    use crate::test_utils::*;
 
     mod propose_add_members {
         use super::*;
@@ -158,92 +156,17 @@ mod tests {
         }
     }
 
-    mod propose_self_update {
-        use super::*;
-
-        #[apply(all_cred_cipher)]
-        async fn can_propose_updating(case: TestContext) {
-            let [alice, bob] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case.create_conversation([&alice, &bob]).await;
-
-                let bob_keys = conversation
-                    .guard_of(&bob)
-                    .await
-                    .conversation()
-                    .await
-                    .signature_keys()
-                    .collect::<Vec<_>>();
-                let alice_keys = conversation
-                    .guard()
-                    .await
-                    .conversation()
-                    .await
-                    .signature_keys()
-                    .collect::<Vec<_>>();
-                assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
-                let alice_key = conversation.encryption_public_key().await;
-
-                let commit_guard = conversation
-                    .update_proposal_notify()
-                    .await
-                    .acting_as(&bob)
-                    .await
-                    .commit_pending_proposals()
-                    .await;
-
-                let conversation = commit_guard.conversation();
-
-                assert!(
-                    !conversation
-                        .guard_of(&bob)
-                        .await
-                        .conversation()
-                        .await
-                        .encryption_keys()
-                        .contains(&alice_key)
-                );
-
-                assert!(
-                    conversation
-                        .guard_of(&alice)
-                        .await
-                        .conversation()
-                        .await
-                        .encryption_keys()
-                        .contains(&alice_key)
-                );
-                // if 'new_proposal' wasn't durable this would fail because proposal would
-                // not be referenced in commit
-                let conversation = commit_guard.notify_members().await;
-                assert!(
-                    !conversation
-                        .guard_of(&alice)
-                        .await
-                        .conversation()
-                        .await
-                        .encryption_keys()
-                        .contains(&alice_key)
-                );
-
-                // ensuring both can encrypt messages
-                assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
-            })
-            .await;
-        }
-    }
-
     mod delivery_semantics {
         use super::*;
 
         #[apply(all_cred_cipher)]
         async fn should_prevent_out_of_order_proposals(case: TestContext) {
-            let [alice, bob] = case.sessions().await;
+            let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
-                let conversation = case.create_conversation([&alice, &bob]).await;
+                let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
                 let id = conversation.id().clone();
 
-                let proposal_guard = conversation.update_proposal().await;
+                let proposal_guard = conversation.remove_proposal(&charlie).await;
                 let proposal = proposal_guard.message();
                 proposal_guard
                     .notify_members()

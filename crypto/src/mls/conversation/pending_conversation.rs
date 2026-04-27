@@ -336,9 +336,6 @@ mod tests {
                 .unwrap();
 
             let conversation = proposal_guard.notify_member(&alice).await.finish();
-            let proposal_guard = conversation.update_proposal().await;
-            let proposal = proposal_guard.message();
-            let conversation = proposal_guard.finish();
 
             let commit_guard = conversation.invite([&charlie]).await;
             let commit = commit_guard.message();
@@ -347,7 +344,7 @@ mod tests {
             // And now Bob will have to decrypt those messages while he hasn't yet merged its external commit
             // To add more fun, he will buffer the messages in exactly the wrong order (to make
             // sure he reapplies them in the right order afterwards)
-            let messages = vec![commit, external_proposal, proposal]
+            let messages = vec![commit, external_proposal]
                 .into_iter()
                 .map(|m| m.to_bytes().unwrap());
             let Err(crate::transaction_context::Error::PendingConversation(mut pending_conversation)) =
@@ -363,7 +360,7 @@ mod tests {
             assert!(matches!(decrypt.unwrap_err(), Error::BufferedForPendingConversation));
 
             // Bob should have buffered the messages
-            assert_eq!(bob.transaction.count_entities().await.pending_messages, 4);
+            assert_eq!(bob.transaction.count_entities().await.pending_messages, 3);
 
             let observer = TestEpochObserver::new();
             bob.session()

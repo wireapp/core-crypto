@@ -36,24 +36,6 @@ impl<'a> TestConversation<'a> {
         )
     }
 
-    /// Propose updating the actor's key material and notify members.
-    pub async fn update_proposal_notify(self) -> TestConversation<'a> {
-        self.update_proposal().await.notify_members().await
-    }
-
-    /// Propose updating the actor's key material.
-    pub async fn update_proposal(self) -> OperationGuard<'a, Proposal> {
-        let proposer = self.actor();
-        let proposal = proposer
-            .transaction
-            .new_update_proposal(self.id())
-            .await
-            .unwrap()
-            .proposal;
-        let proposer_index = self.actor_index();
-        OperationGuard::new(TestOperation::Update, proposal, self, [proposer_index])
-    }
-
     /// Propose removing the member and notify all members.
     pub async fn remove_proposal_notify(self, member: &'a SessionContext) -> TestConversation<'a> {
         self.remove_proposal(member).await.notify_members().await

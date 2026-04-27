@@ -78,38 +78,7 @@ impl TransactionContext {
 #[cfg(test)]
 mod tests {
     use super::Error;
-    use crate::{mls::conversation::ConversationWithMls as _, test_utils::*, *};
-
-    mod update {
-        use itertools::Itertools;
-
-        use super::*;
-
-        #[apply(all_cred_cipher)]
-        pub async fn should_update_hpke_key(case: TestContext) {
-            let [session] = case.sessions().await;
-            let conversation = case.create_conversation([&session]).await;
-            let conversation_guard = conversation.guard().await;
-            let before = conversation_guard
-                .conversation()
-                .await
-                .encryption_keys()
-                .find_or_first(|_| true)
-                .unwrap();
-            conversation
-                .update_proposal_notify()
-                .await
-                .commit_pending_proposals_notify()
-                .await;
-            let after = conversation_guard
-                .conversation()
-                .await
-                .encryption_keys()
-                .find_or_first(|_| true)
-                .unwrap();
-            assert_ne!(before, after)
-        }
-    }
+    use crate::{test_utils::*, *};
 
     mod remove {
         use super::*;

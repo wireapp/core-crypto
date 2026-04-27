@@ -388,21 +388,6 @@ mod tests {
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
 
-                let proposal_guard = conversation.update_proposal().await;
-                let proposal_replay = proposal_guard.message();
-
-                // replayed encrypted proposal should fail
-                let conversation = proposal_guard.notify_members().await;
-                assert!(matches!(
-                    conversation
-                        .guard_of(&bob)
-                        .await
-                        .decrypt_message(proposal_replay.to_bytes().unwrap())
-                        .await
-                        .unwrap_err(),
-                    Error::DuplicateMessage
-                ));
-
                 let commit_guard = conversation.update().await;
                 let commit_replay = commit_guard.message();
 

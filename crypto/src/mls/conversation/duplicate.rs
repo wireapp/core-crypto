@@ -129,11 +129,11 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn decrypting_duplicate_proposal_should_fail(case: TestContext) {
-        let [alice, bob] = case.sessions().await;
+        let [alice, bob, charlie] = case.sessions().await;
         Box::pin(async move {
-            let conversation = case.create_conversation([&alice, &bob]).await;
+            let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
 
-            let proposal_guard = conversation.update_proposal().await;
+            let proposal_guard = conversation.remove_proposal(&charlie).await;
             let proposal = proposal_guard.message();
 
             // decrypt once ... ok

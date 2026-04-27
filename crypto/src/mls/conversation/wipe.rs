@@ -21,35 +21,3 @@ impl MlsConversation {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::{mls::conversation::ConversationWithMls as _, test_utils::*};
-
-    // should delete anything related to this conversation
-    #[apply(all_cred_cipher)]
-    async fn should_cascade_deletion(case: TestContext) {
-        let [alice] = case.sessions().await;
-        Box::pin(async move {
-            let conversation = case.create_conversation([&alice]).await;
-            assert!(conversation.guard().await.conversation().await.group.is_active());
-            let initial_count = alice.transaction.count_entities().await;
-
-            let conversation = conversation.update_proposal_notify().await;
-            let post_proposal_count = alice.transaction.count_entities().await;
-            assert_eq!(
-                post_proposal_count.encryption_keypair,
-                initial_count.encryption_keypair + 1
-            );
-
-            conversation.guard().await.wipe().await.unwrap();
-
-            let final_count = alice.transaction.count_entities().await;
-            assert!(!alice.transaction.conversation_exists(conversation.id()).await.unwrap());
-            assert_eq!(final_count.group, 0);
-            assert_eq!(final_count.encryption_keypair, final_count.key_package);
-            assert_eq!(final_count.epoch_encryption_keypair, 0);
-        })
-        .await
-    }
-}

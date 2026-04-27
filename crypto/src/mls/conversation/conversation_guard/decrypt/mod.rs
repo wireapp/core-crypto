@@ -662,7 +662,7 @@ mod tests {
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
 
-                let (_proposal, decrypted) = conversation.update_proposal().await.notify_member_fallible(&bob).await;
+                let (_commit, decrypted) = conversation.update_unmerged().await.notify_member_fallible(&bob).await;
 
                 let sender_client_id = decrypted.unwrap().sender_client_id;
                 assert!(sender_client_id.is_none());
@@ -873,14 +873,14 @@ mod tests {
         async fn should_throw_specialized_error_when_epoch_desynchronized(mut case: TestContext) {
             case.cfg.custom.out_of_order_tolerance = 0;
 
-            let [alice, bob] = case.sessions().await;
+            let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
-                let conversation = case.create_conversation([&alice, &bob]).await;
+                let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
 
                 // Alice generates a bunch of soon to be outdated messages
-                let proposal_guard = conversation.update_proposal().await;
-                let old_proposal = proposal_guard.message().to_bytes().unwrap();
-                let conversation = proposal_guard.finish();
+                let message_guard = conversation.remove_proposal(&charlie).await;
+                let old_message = message_guard.message().to_bytes().unwrap();
+                let conversation = message_guard.finish();
                 conversation
                     .guard()
                     .await
@@ -902,7 +902,7 @@ mod tests {
                 let decrypt_err = conversation
                     .guard_of(&bob)
                     .await
-                    .decrypt_message(&old_proposal)
+                    .decrypt_message(&old_message)
                     .await
                     .unwrap_err();
 

@@ -176,10 +176,6 @@ mod tests {
             let external_proposal = proposal_guard.message();
             let conversation = proposal_guard.finish();
 
-            let proposal_guard = conversation.update_proposal().await;
-            let proposal = proposal_guard.message();
-            let conversation = proposal_guard.finish();
-
             // This commit will contain the invitations of charlie and debbie
             let commit_guard = conversation.invite([&charlie]).await;
             let commit = commit_guard.message();
@@ -189,7 +185,7 @@ mod tests {
             // And now Bob will have to decrypt those messages while he hasn't yet merged its commit
             // To add more fun, he will buffer the messages in exactly the wrong order (to make
             // sure he reapplies them in the right order afterwards)
-            let messages = [commit, external_proposal, proposal]
+            let messages = [commit, external_proposal]
                 .into_iter()
                 .map(|m| m.to_bytes().unwrap())
                 .chain(std::iter::once(app_msg));
@@ -199,7 +195,7 @@ mod tests {
             }
 
             // Bob should have buffered the messages
-            assert_eq!(bob.transaction.count_entities().await.pending_messages, 4);
+            assert_eq!(bob.transaction.count_entities().await.pending_messages, 3);
 
             let observer = TestEpochObserver::new();
             bob.session()
@@ -290,9 +286,6 @@ mod tests {
                 .notify_member(&bob)
                 .await;
             let external_proposal = proposal_guard.message();
-            let conversation = proposal_guard.finish();
-            let proposal_guard = conversation.acting_as(&bob).await.update_proposal().await;
-            let proposal = proposal_guard.message();
             let commit_guard = proposal_guard.finish().acting_as(&bob).await.invite([&debbie]).await;
             let commit = commit_guard.message();
             let conversation = commit_guard.process_member_changes().await.finish();
@@ -300,7 +293,7 @@ mod tests {
             // And now Alice will have to decrypt those messages while he hasn't yet merged the commit
             // To add more fun, he will buffer the messages in exactly the wrong order (to make
             // sure he reapplies them in the right order afterwards)
-            let messages = vec![commit, external_proposal, proposal]
+            let messages = vec![commit, external_proposal]
                 .into_iter()
                 .map(|m| m.to_bytes().unwrap());
             for m in messages {
@@ -311,7 +304,7 @@ mod tests {
             assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
 
             // Alice should have buffered the messages
-            assert_eq!(alice.transaction.count_entities().await.pending_messages, 4);
+            assert_eq!(alice.transaction.count_entities().await.pending_messages, 3);
 
             let observer = TestEpochObserver::new();
             alice
