@@ -96,7 +96,6 @@ async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<RjtPk
         trust_roots: &trust_roots,
         intermediates: &intermediates,
         crls: &crls,
-        time_of_interest: None,
     };
 
     Ok(RjtPkiEnvironment::init(params)?)
