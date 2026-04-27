@@ -17,7 +17,7 @@
     <a title="WelcomeProtocol Protocol Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (93% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (92% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -263,7 +263,7 @@
                 <a href="../../WireCoreCryptoUniffi/Protocols/ExternalSenderKeyProtocol.html">ExternalSenderKeyProtocol</a>
               </li>
               <li class="nav-group-task">
-                <a href="../../WireCoreCryptoUniffi/Protocols/GroupInfoProtocol.html">GroupInfoProtocol</a>
+                <a href="../../Protocols.html#/s:20WireCoreCryptoUniffi17GroupInfoProtocolP">GroupInfoProtocol</a>
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Protocols/HistoryObserver.html">HistoryObserver</a>
@@ -365,9 +365,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi15WelcomeProtocolP9copyBytes10Foundation4DataVyF"></a>
-                    <a name="//apple_ref/swift/Method/copyBytes()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi15WelcomeProtocolP9copyBytes10Foundation4DataVyF">copyBytes()</a>
+                    <a name="/s:20WireCoreCryptoUniffi15WelcomeProtocolP9serialize10Foundation4DataVyKF"></a>
+                    <a name="//apple_ref/swift/Method/serialize()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi15WelcomeProtocolP9serialize10Foundation4DataVyKF">serialize()</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -375,16 +375,14 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Get the raw bytes from this type, transferring data from Rust to the client layer.</p>
-
-<p>This does not consume the newtype, instead copying the internal data across the FFI boundary.</p>
+                        <p>TLS-serialize this message</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">copyBytes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">serialize</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
 
                         </div>
                       </div>

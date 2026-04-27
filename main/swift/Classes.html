@@ -17,7 +17,7 @@
     <a title="Classes  Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="index.html">WireCoreCrypto Docs</a> (93% documented)</p>
+        <p><a href="index.html">WireCoreCrypto Docs</a> (92% documented)</p>
         <div class="header-right">
           <form role="search" action="search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -261,7 +261,7 @@
                 <a href="WireCoreCryptoUniffi/Protocols/ExternalSenderKeyProtocol.html">ExternalSenderKeyProtocol</a>
               </li>
               <li class="nav-group-task">
-                <a href="WireCoreCryptoUniffi/Protocols/GroupInfoProtocol.html">GroupInfoProtocol</a>
+                <a href="Protocols.html#/s:20WireCoreCryptoUniffi17GroupInfoProtocolP">GroupInfoProtocol</a>
               </li>
               <li class="nav-group-task">
                 <a href="WireCoreCryptoUniffi/Protocols/HistoryObserver.html">HistoryObserver</a>
@@ -460,6 +460,8 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">ClientId</span> <span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Protocols/ClientIdProtocol.html">ClientIdProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">ClientId</span><span class="p">:</span> <span class="kt">Equatable</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">ClientId</span><span class="p">:</span> <span class="kt">Hashable</span></code></pre>
 
                         </div>
                       </div>
@@ -704,7 +706,11 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The key used to encrypt the database.</p>
+                        <p>A unique identifier for an MLS client.</p>
+
+<p>Each app instance a user is running, such as desktop or mobile, is a separate client
+ with its own client id. A single user may therefore have multiple clients.
+ More information: <a href="https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients">https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients</a></p>
 
                         <a href="WireCoreCryptoUniffi/Classes/DatabaseKey.html" class="slightly-smaller">See more</a>
                       </div>
@@ -713,6 +719,7 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">DatabaseKey</span> <span class="p">:</span> <span class="kt"><a href="Protocols.html#/s:20WireCoreCryptoUniffi19DatabaseKeyProtocolP">DatabaseKeyProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">DatabaseKey</span><span class="p">:</span> <span class="kt">CustomDebugStringConvertible</span></code></pre>
 <pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">DatabaseKey</span><span class="p">:</span> <span class="kt">Equatable</span></code></pre>
 
                         </div>
@@ -805,10 +812,7 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">GroupInfo</span> <span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Protocols/GroupInfoProtocol.html">GroupInfoProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
-<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">GroupInfo</span><span class="p">:</span> <span class="kt">CustomStringConvertible</span></code></pre>
-<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">GroupInfo</span><span class="p">:</span> <span class="kt">Equatable</span></code></pre>
-<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">GroupInfo</span><span class="p">:</span> <span class="kt">Hashable</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">GroupInfo</span> <span class="p">:</span> <span class="kt"><a href="Protocols.html#/s:20WireCoreCryptoUniffi17GroupInfoProtocolP">GroupInfoProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
 
                         </div>
                       </div>
@@ -1043,9 +1047,6 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">Welcome</span> <span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Protocols/WelcomeProtocol.html">WelcomeProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
-<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">Welcome</span><span class="p">:</span> <span class="kt">CustomStringConvertible</span></code></pre>
-<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">Welcome</span><span class="p">:</span> <span class="kt">Equatable</span></code></pre>
-<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">Welcome</span><span class="p">:</span> <span class="kt">Hashable</span></code></pre>
 
                         </div>
                       </div>

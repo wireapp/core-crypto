@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error"],"struct":["ConversationGuard","ConversationId","ConversationIdRef","ImmutableConversation","MlsConversation"],"trait":["Conversation"],"type":["Result"]};
+window.SIDEBAR_ITEMS = {"enum":["Error"],"struct":["ConversationGuard","ConversationId","ConversationIdRef","ExternalSenderKey","ImmutableConversation","MlsConversation","SecretKey","WelcomeMessage"],"trait":["Conversation"],"type":["Result"]};

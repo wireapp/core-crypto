@@ -72,6 +72,8 @@ $dokka.location:com.wire.crypto/ClientId/ClientId/#kotlin.ByteArray/PointingToDe
 $dokka.location:com.wire.crypto/ClientId/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-client-id/close.html
 $dokka.location:com.wire.crypto/ClientId/copyBytes/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-client-id/copy-bytes.html
 $dokka.location:com.wire.crypto/ClientId/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-client-id/destroy.html
+$dokka.location:com.wire.crypto/ClientId/equals/#kotlin.Any?/PointingToDeclaration/-core-crypto/com.wire.crypto/-client-id/equals.html
+$dokka.location:com.wire.crypto/ClientId/hashCode/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-client-id/hash-code.html
 $dokka.location:com.wire.crypto/ClientId/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-client-id/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/ClientIdInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-client-id-interface/-companion/index.html
 $dokka.location:com.wire.crypto/ClientIdInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-client-id-interface/index.html
@@ -476,11 +478,7 @@ $dokka.location:com.wire.crypto/GroupInfo/GroupInfo/#com.sun.jna.Pointer/Pointin
 $dokka.location:com.wire.crypto/GroupInfo/GroupInfo/#com.wire.crypto.NoPointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/-group-info.html
 $dokka.location:com.wire.crypto/GroupInfo/GroupInfo/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/-group-info.html
 $dokka.location:com.wire.crypto/GroupInfo/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/close.html
-$dokka.location:com.wire.crypto/GroupInfo/copyBytes/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/copy-bytes.html
 $dokka.location:com.wire.crypto/GroupInfo/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/destroy.html
-$dokka.location:com.wire.crypto/GroupInfo/equals/#kotlin.Any?/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/equals.html
-$dokka.location:com.wire.crypto/GroupInfo/hashCode/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/hash-code.html
-$dokka.location:com.wire.crypto/GroupInfo/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/to-string.html
 $dokka.location:com.wire.crypto/GroupInfo/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/GroupInfoBundle.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-bundle/-companion/index.html
 $dokka.location:com.wire.crypto/GroupInfoBundle///PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-bundle/index.html
@@ -491,7 +489,6 @@ $dokka.location:com.wire.crypto/GroupInfoBundle/payload/#/PointingToDeclaration/
 $dokka.location:com.wire.crypto/GroupInfoBundle/ratchetTreeType/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-bundle/ratchet-tree-type.html
 $dokka.location:com.wire.crypto/GroupInfoInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-interface/-companion/index.html
 $dokka.location:com.wire.crypto/GroupInfoInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-interface/index.html
-$dokka.location:com.wire.crypto/GroupInfoInterface/copyBytes/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-interface/copy-bytes.html
 $dokka.location:com.wire.crypto/HistoryObserver.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-history-observer/-companion/index.html
 $dokka.location:com.wire.crypto/HistoryObserver///PointingToDeclaration/-core-crypto/com.wire.crypto/-history-observer/index.html
 $dokka.location:com.wire.crypto/HistoryObserver/historyClientCreated/#com.wire.crypto.ConversationId#com.wire.crypto.HistorySecret/PointingToDeclaration/-core-crypto/com.wire.crypto/-history-observer/history-client-created.html
@@ -746,15 +743,12 @@ $dokka.location:com.wire.crypto/Welcome/Welcome/#com.sun.jna.Pointer/PointingToD
 $dokka.location:com.wire.crypto/Welcome/Welcome/#com.wire.crypto.NoPointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/-welcome.html
 $dokka.location:com.wire.crypto/Welcome/Welcome/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/-welcome.html
 $dokka.location:com.wire.crypto/Welcome/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/close.html
-$dokka.location:com.wire.crypto/Welcome/copyBytes/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/copy-bytes.html
 $dokka.location:com.wire.crypto/Welcome/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/destroy.html
-$dokka.location:com.wire.crypto/Welcome/equals/#kotlin.Any?/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/equals.html
-$dokka.location:com.wire.crypto/Welcome/hashCode/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/hash-code.html
-$dokka.location:com.wire.crypto/Welcome/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/to-string.html
+$dokka.location:com.wire.crypto/Welcome/serialize/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/serialize.html
 $dokka.location:com.wire.crypto/Welcome/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/WelcomeInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome-interface/-companion/index.html
 $dokka.location:com.wire.crypto/WelcomeInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome-interface/index.html
-$dokka.location:com.wire.crypto/WelcomeInterface/copyBytes/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome-interface/copy-bytes.html
+$dokka.location:com.wire.crypto/WelcomeInterface/serialize/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-welcome-interface/serialize.html
 $dokka.location:com.wire.crypto/WireIdentity.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-wire-identity/-companion/index.html
 $dokka.location:com.wire.crypto/WireIdentity///PointingToDeclaration/-core-crypto/com.wire.crypto/-wire-identity/index.html
 $dokka.location:com.wire.crypto/WireIdentity/WireIdentity/#kotlin.String#com.wire.crypto.DeviceStatus#kotlin.String#com.wire.crypto.CredentialType#com.wire.crypto.X509Identity?/PointingToDeclaration/-core-crypto/com.wire.crypto/-wire-identity/-wire-identity.html

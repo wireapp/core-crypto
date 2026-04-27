@@ -23,8 +23,8 @@
 <a href=#23 id=23 data-nosnippet>23</a>    <span class="kw">fn </span>try_from(msg: MlsCommitBundle) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
 <a href=#24 id=24 data-nosnippet>24</a>        <span class="kw">let </span>encrypted_message = msg.encrypted_message.clone();
 <a href=#25 id=25 data-nosnippet>25</a>        <span class="kw">let </span>(welcome, commit, group_info) = msg.to_bytes_triple()<span class="question-mark">?</span>;
-<a href=#26 id=26 data-nosnippet>26</a>        <span class="kw">let </span>welcome = welcome.map(Welcome::from).map(Arc::new);
-<a href=#27 id=27 data-nosnippet>27</a>        <span class="kw">let </span>group_info = group_info.into();
+<a href=#26 id=26 data-nosnippet>26</a>        <span class="kw">let </span>welcome = welcome.map(Into::into).map(Arc::new);
+<a href=#27 id=27 data-nosnippet>27</a>        <span class="kw">let </span>group_info = group_info.try_into()<span class="question-mark">?</span>;
 <a href=#28 id=28 data-nosnippet>28</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
 <a href=#29 id=29 data-nosnippet>29</a>            welcome,
 <a href=#30 id=30 data-nosnippet>30</a>            commit,
