@@ -178,20 +178,13 @@ impl PendingConversation {
         };
         let pki_env = self
             .context
-            .pki_environment_option()
+            .pki_environment()
             .await
             .map_err(RecursiveError::transaction("getting PKI environment"))?;
-        let identity = match pki_env {
-            Some(pki_env) => {
-                let provider = pki_env.mls_pki_env_provider();
-                own_leaf_credential_with_key
-                    .extract_identity(conversation.ciphersuite(), provider.borrow().await.as_ref())
-                    .map_err(RecursiveError::mls_credential("extracting identity"))?
-            }
-            None => own_leaf_credential_with_key
-                .extract_identity(conversation.ciphersuite(), None)
-                .map_err(RecursiveError::mls_credential("extracting identity"))?,
-        };
+
+        let identity = own_leaf_credential_with_key
+            .extract_identity(conversation.ciphersuite(), pki_env.as_deref())
+            .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         Ok(MlsDecryptMessage {
             app_msg: None,

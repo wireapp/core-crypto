@@ -117,7 +117,7 @@ impl SessionContext {
             .await
             .unwrap();
 
-        let core_crypto = CoreCrypto::new(db.clone());
+        let mut core_crypto = CoreCrypto::new(db.clone());
         let transaction = core_crypto.new_transaction().await.unwrap();
 
         // Setup the X509 PKI environment
@@ -126,27 +126,15 @@ impl SessionContext {
             let pki_env = PkiEnvironment::new(dummy_hooks, db.clone())
                 .await
                 .expect("Constructing pki environment");
-            core_crypto
-                .set_pki_environment(Some(pki_env))
-                .await
-                .expect("Setting pki environment");
+            core_crypto.set_pki_environment(Some(Arc::new(pki_env))).await;
             chain.register_with_central(&transaction).await;
         }
 
         let pki_env = core_crypto.get_pki_environment().await;
-        let session_id = match pki_env {
-            Some(pki_env) => {
-                let provider = pki_env.mls_pki_env_provider();
-                identifier
-                    .get_id(provider.borrow().await.as_ref())
-                    .map_err(RecursiveError::mls_client("getting client id"))?
-                    .into_owned()
-            }
-            None => identifier
-                .get_id(None)
-                .map_err(RecursiveError::mls_client("getting client id"))?
-                .into_owned(),
-        };
+        let session_id = identifier
+            .get_id(pki_env.as_deref())
+            .map_err(RecursiveError::mls_client("getting client id"))?
+            .into_owned();
         transaction
             .mls_init(session_id, context.transport.clone())
             .await
@@ -174,7 +162,7 @@ impl SessionContext {
 
     pub(crate) async fn new_from_cc(
         context: &TestContext,
-        core_crypto: CoreCrypto,
+        mut core_crypto: CoreCrypto,
         chain: Option<&X509TestChain>,
     ) -> Self {
         let transport = context.transport.clone();
@@ -187,10 +175,7 @@ impl SessionContext {
             let pki_env = PkiEnvironment::new(dummy_hooks, core_crypto.database.clone())
                 .await
                 .expect("Constructing pki environment");
-            core_crypto
-                .set_pki_environment(Some(pki_env))
-                .await
-                .expect("Setting pki environment");
+            core_crypto.set_pki_environment(Some(Arc::new(pki_env))).await;
             chain.register_with_central(&transaction).await;
         }
 
@@ -316,9 +301,11 @@ impl SessionContext {
                 let signer = signer.expect("Missing intermediate CA");
                 let cert = CertificateBundle::rand(&session_id, signer);
                 let session = self.session.read().await;
-                let guard = session.crypto_provider.authentication_service().borrow().await;
+                let pki_env = session.crypto_provider.authentication_service().pki_env().ok_or(
+                    RecursiveError::mls_credential("")(crate::mls::credential::Error::MissingPKIEnvironment),
+                )?;
                 let session_id = cert
-                    .get_client_id(guard.as_ref())
+                    .get_client_id(&pki_env)
                     .expect("Getting client id from certificate bundle");
 
                 let credential = Credential::x509(case.ciphersuite(), cert).expect("creating  x509 credential");

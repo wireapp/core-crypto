@@ -1,7 +1,10 @@
-use std::{fmt::Display, time::Duration};
+use std::{fmt::Display, sync::Arc, time::Duration};
 
-use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
-use wire_e2e_identity::legacy::id::QualifiedE2eiClientId;
+use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
+use wire_e2e_identity::{
+    legacy::id::QualifiedE2eiClientId, pki_env::PkiEnvironment,
+    x509_check::revocation::PkiEnvironment as RjtPkiEnvironment,
+};
 use x509_cert::der::EncodePem;
 
 use crate::{
@@ -352,7 +355,7 @@ impl X509TestChain {
         }
     }
 
-    pub async fn register_with_provider(&self, backend: &MlsCryptoProvider) {
+    pub async fn register_with_provider(&self, backend: &mut MlsCryptoProvider) {
         let trust_roots = vec![x509_cert::anchor::TrustAnchorChoice::Certificate(
             self.trust_anchor.certificate.clone(),
         )];
@@ -368,8 +371,14 @@ impl X509TestChain {
             crls: &crls,
         };
 
-        let pki_env = wire_e2e_identity::x509_check::revocation::PkiEnvironment::init(params).unwrap();
-        backend.update_pki_env(Some(pki_env)).await;
+        let inner_pki_env = RjtPkiEnvironment::init(params).unwrap();
+
+        let dummy_hooks = Arc::new(super::DummyPkiEnvironmentHooks);
+        let mut pki_env = PkiEnvironment::new(dummy_hooks, backend.key_store().clone())
+            .await
+            .expect("Constructing pki environment");
+        pki_env.set_pki_environment_provider(inner_pki_env);
+        backend.set_pki_environment(Some(Arc::new(pki_env))).await;
     }
 
     pub fn find_local_intermediate_ca(&self) -> &X509Certificate {

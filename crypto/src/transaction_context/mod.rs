@@ -45,7 +45,7 @@ pub struct TransactionContext {
 #[derive(Debug, Clone)]
 enum TransactionContextInner {
     Valid {
-        pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
+        pki_environment: Option<Arc<PkiEnvironment>>,
         database: Database,
         mls_session: Arc<RwLock<Option<Session<Database>>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
@@ -93,7 +93,7 @@ impl HasSessionAndCrypto for TransactionContext {
 impl TransactionContext {
     async fn new(
         keystore: Database,
-        pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
+        pki_environment: Option<Arc<PkiEnvironment>>,
         mls_session: Arc<RwLock<Option<Session<Database>>>>,
         #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     ) -> Result<Self> {
@@ -184,24 +184,9 @@ impl TransactionContext {
         }
     }
 
-    pub(crate) async fn pki_environment(&self) -> Result<PkiEnvironment> {
+    pub(crate) async fn pki_environment(&self) -> Result<Option<Arc<PkiEnvironment>>> {
         match &*self.inner.read().await {
-            TransactionContextInner::Valid { pki_environment, .. } => {
-                pki_environment.read().await.as_ref().map(Clone::clone).ok_or(
-                    RecursiveError::transaction("Getting PKI environment from transaction context")(
-                        e2e_identity::Error::PkiEnvironmentUnset,
-                    )
-                    .into(),
-                )
-            }
-            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
-        }
-    }
-
-    pub(crate) async fn pki_environment_option(&self) -> Result<Option<PkiEnvironment>> {
-        match &*self.inner.read().await {
-            TransactionContextInner::Valid { pki_environment, .. } => Ok(pki_environment.read().await.clone()),
-
+            TransactionContextInner::Valid { pki_environment, .. } => Ok(pki_environment.clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
@@ -293,14 +278,8 @@ impl TransactionContext {
     /// Initializes the MLS client of [super::CoreCrypto].
     pub async fn mls_init(&self, session_id: ClientId, transport: Arc<dyn MlsTransport>) -> Result<()> {
         let database = self.database().await?;
-
-        let pki_env_provider = self
-            .pki_environment_option()
-            .await?
-            .map(|pki_env| pki_env.mls_pki_env_provider())
-            .unwrap_or_default();
-
-        let crypto_provider = MlsCryptoProvider::new_with_pki_env(database.clone(), pki_env_provider);
+        let pki_env = self.pki_environment().await?;
+        let crypto_provider = MlsCryptoProvider::new_with_pki_env(database.clone(), pki_env);
         let session = Session::new(session_id.clone(), crypto_provider, database, transport);
         self.set_mls_session(session).await?;
 

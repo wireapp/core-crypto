@@ -226,10 +226,10 @@ mod tests {
     async fn can_generate_session(mut case: TestContext) {
         let [alice] = case.sessions().await;
         let key_store = case.create_in_memory_database().await;
-        let backend = MlsCryptoProvider::new(key_store);
+        let mut backend = MlsCryptoProvider::new(key_store);
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
-            x509_test_chain.register_with_provider(&backend).await;
+            x509_test_chain.register_with_provider(&mut backend).await;
             Some(x509_test_chain)
         } else {
             None
