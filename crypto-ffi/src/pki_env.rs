@@ -222,7 +222,7 @@ impl pki_env::hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
 }
 
 /// The PKI environment used for certificate management during X509 credential acquisition.
-#[derive(derive_more::From, derive_more::Into, Clone, uniffi::Object)]
+#[derive(derive_more::From, derive_more::Into, uniffi::Object)]
 pub struct PkiEnvironment(wire_e2e_identity::pki_env::PkiEnvironment);
 
 #[cfg_attr(feature = "wasm", uniffi::export)]
