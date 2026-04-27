@@ -12,12 +12,6 @@ impl TransactionContext {
         self.new_proposal(id, MlsProposal::Remove(client_id)).await
     }
 
-    /// Creates a new Add proposal
-    #[cfg_attr(test, crate::dispotent)]
-    pub async fn new_update_proposal(&self, id: &ConversationId) -> Result<MlsProposalBundle> {
-        self.new_proposal(id, MlsProposal::Update).await
-    }
-
     /// Creates a new proposal within a group
     ///
     /// # Arguments
