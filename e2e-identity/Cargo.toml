@@ -22,7 +22,7 @@ core-crypto-macros.workspace = true
 async-trait.workspace = true
 async-lock.workspace = true
 sha1.workspace = true
-spki = { version = "0.7", features = ["pem", "fingerprint"] }
+spki = { version = "0.8", features = ["pem", "fingerprint"] }
 openmls_traits.workspace = true
 rusty-jwt-tools.workspace = true
 serde.workspace = true
