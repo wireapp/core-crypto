@@ -100,7 +100,7 @@ abstract class HasMockDeliveryService {
     }
 }
 
-fun newClients(instance: HasMockDeliveryService, vararg clientIds: ClientId) = runBlocking {
+fun newClients(vararg clientIds: ClientId) = runBlocking {
     clientIds.map { clientID ->
         val cc = initCc()
         cc.transaction { ctx ->

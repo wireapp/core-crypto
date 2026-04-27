@@ -39,7 +39,7 @@ internal class E2EITest : HasMockDeliveryService() {
     @Test
     fun conversation_should_be_not_verified_when_at_least_1_of_the_members_uses_a_Basic_credential() =
         runTest {
-            val (alice, bob) = newClients(this@E2EITest, genClientId(), genClientId())
+            val (alice, bob) = newClients(genClientId(), genClientId())
 
             bob.transaction { ctx -> ctx.createConversationShort(id) }
 
@@ -54,7 +54,7 @@ internal class E2EITest : HasMockDeliveryService() {
 
     @Test
     fun e2ei_should_not_be_enabled_for_a_Basic_Credential() = runTest {
-        val (alice) = newClients(this@E2EITest, genClientId())
+        val (alice) = newClients(genClientId())
         assertThat(alice.transaction { ctx -> ctx.e2eiIsEnabled(CIPHERSUITE_DEFAULT) }).isFalse()
     }
 }

@@ -68,7 +68,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun transaction_rolls_back_on_error() = runTest {
-        val (cc) = newClients(this@MLSTest, genClientId())
+        val (cc) = newClients(genClientId())
 
         val expectedException = IllegalStateException("Expected Exception")
 
@@ -93,7 +93,7 @@ class MLSTest : HasMockDeliveryService() {
     @Test
     fun parallel_transactions_are_performed_serially() = runTest {
         withContext(Dispatchers.Default) {
-            val (alice) = newClients(this@MLSTest, genClientId())
+            val (alice) = newClients(genClientId())
             val jobs: MutableList<Job> = mutableListOf()
             val token = "t"
             val transactionCount = 3
@@ -125,7 +125,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun errorTypeMapping_should_work() = runTest {
-        val (alice) = newClients(this@MLSTest, genClientId())
+        val (alice) = newClients(genClientId())
         alice.transaction { ctx -> ctx.createConversationShort(id) }
         val expectedException = assertFailsWith<CoreCryptoException.Mls> { alice.transaction { ctx -> ctx.createConversationShort(id) } }
         assertIs<MlsException.ConversationAlreadyExists>(expectedException.mlsError)
@@ -134,13 +134,13 @@ class MLSTest : HasMockDeliveryService() {
     @Test
     fun findCredentials_should_return_non_empty_result() = runTest {
         val clientId = genClientId()
-        val (alice) = newClients(this@MLSTest, clientId)
+        val (alice) = newClients(clientId)
         assertThat(alice.transaction { it.findCredentials(clientId, null, null, null, null) }).isNotEmpty()
     }
 
     @Test
     fun conversationExists_should_return_true() = runTest {
-        val (alice) = newClients(this@MLSTest, genClientId())
+        val (alice) = newClients(genClientId())
         assertThat(alice.transaction { ctx -> ctx.conversationExists(id) }).isFalse()
         alice.transaction { ctx -> ctx.createConversationShort(id) }
         assertThat(alice.transaction { ctx -> ctx.conversationExists(id) }).isTrue()
@@ -148,7 +148,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun calling_generateKeyPackages_should_return_expected_number() = runTest {
-        val (alice) = newClients(this@MLSTest, genClientId())
+        val (alice) = newClients(genClientId())
 
         // by default, no key packages are generated
         assertThat(
@@ -166,14 +166,14 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun given_new_conversation_when_calling_conversationEpoch_should_return_epoch_0() = runTest {
-        val (alice) = newClients(this@MLSTest, genClientId())
+        val (alice) = newClients(genClientId())
         alice.transaction { ctx -> ctx.createConversationShort(id) }
         assertThat(alice.transaction { ctx -> ctx.conversationEpoch(id) }).isEqualTo(0UL)
     }
 
     @Test
     fun updateKeyingMaterial_should_process_the_commit_message() = runTest {
-        val (alice, bob) = newClients(this@MLSTest, genClientId(), genClientId())
+        val (alice, bob) = newClients(genClientId(), genClientId())
 
         bob.transaction { ctx -> ctx.createConversationShort(id) }
 
@@ -192,7 +192,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun addClientsToConversation_should_allow_joining_a_conversation_with_a_Welcome() = runTest {
-        val (alice, bob) = newClients(this@MLSTest, genClientId(), genClientId())
+        val (alice, bob) = newClients(genClientId(), genClientId())
 
         bob.transaction { ctx -> ctx.createConversationShort(id) }
 
@@ -207,7 +207,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun encryptMessage_should_encrypt_then_receiver_should_decrypt() = runTest {
-        val (alice, bob) = newClients(this@MLSTest, genClientId(), genClientId())
+        val (alice, bob) = newClients(genClientId(), genClientId())
 
         bob.transaction { ctx -> ctx.createConversationShort(id) }
 
@@ -233,7 +233,7 @@ class MLSTest : HasMockDeliveryService() {
         val aliceId = genClientId()
         val bobId = genClientId()
         val carolId = genClientId()
-        val (alice, bob, carol) = newClients(this@MLSTest, aliceId, bobId, carolId)
+        val (alice, bob, carol) = newClients(aliceId, bobId, carolId)
 
         bob.transaction { ctx -> ctx.createConversationShort(id) }
         val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
@@ -257,7 +257,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun addClientsToConversation_should_return_a_valid_Welcome_message() = runTest {
-        val (alice, bob) = newClients(this@MLSTest, genClientId(), genClientId())
+        val (alice, bob) = newClients(genClientId(), genClientId())
 
         bob.transaction { ctx -> ctx.createConversationShort(id) }
 
@@ -273,7 +273,7 @@ class MLSTest : HasMockDeliveryService() {
     @Test
     fun removeMember_should_remove_members_from_the_MLS_group() = runTest {
         val carolId = genClientId()
-        val (alice, bob, carol) = newClients(this@MLSTest, genClientId(), genClientId(), carolId)
+        val (alice, bob, carol) = newClients(genClientId(), genClientId(), carolId)
 
         bob.transaction { ctx -> ctx.createConversationShort(id) }
 
@@ -293,7 +293,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun wipeConversation_should_delete_the_conversation_from_the_keystore() = runTest {
-        val (alice) = newClients(this@MLSTest, genClientId())
+        val (alice) = newClients(genClientId())
         alice.transaction { ctx -> ctx.createConversationShort(id) }
         assertThatNoException().isThrownBy {
             runBlocking { alice.transaction { ctx -> ctx.wipeConversation(id) } }
@@ -344,7 +344,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun exportSecretKey_should_generate_a_secret_with_the_right_length() = runTest {
-        val (alice) = newClients(this@MLSTest, genClientId())
+        val (alice) = newClients(genClientId())
         alice.transaction { ctx -> ctx.createConversationShort(id) }
         val n = 50
         val secrets = (0 until n).map {
@@ -373,7 +373,7 @@ class MLSTest : HasMockDeliveryService() {
             val aliceObserver = Observer()
 
             // Set up the conversation in one transaction
-            val (alice, bob) = newClients(this@MLSTest, genClientId(), genClientId())
+            val (alice, bob) = newClients(genClientId(), genClientId())
             bob.transaction { ctx -> ctx.createConversationShort(id) }
 
             // Register observers
@@ -414,7 +414,7 @@ class MLSTest : HasMockDeliveryService() {
     fun epochObserverEvent_shouldAllowReadingData(): TestResult {
         val scope = TestScope()
         return scope.runTest {
-            val (alice) = newClients(this@MLSTest, genClientId())
+            val (alice) = newClients(genClientId())
 
             data class ObserverEvent(val eventEpoch: ULong, val conversationEpoch: ULong)
 
@@ -467,7 +467,7 @@ class MLSTest : HasMockDeliveryService() {
             val aliceObserver = Observer()
 
             // Set up the conversation in one transaction
-            val (alice, bob) = newClients(this@MLSTest, genClientId(), genClientId())
+            val (alice, bob) = newClients(genClientId(), genClientId())
             val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
             bob.transaction {
                 it.createConversationShort(id)
