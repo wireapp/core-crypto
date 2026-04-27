@@ -30,8 +30,6 @@ pub struct PkiEnvironmentParams<'a> {
     pub trust_roots: &'a [x509_cert::anchor::TrustAnchorChoice],
     /// CRLs to add to the revocation check
     pub crls: &'a [x509_cert::crl::CertificateList],
-    /// Time of interest for CRL verfication. If not provided, will default to current UNIX epoch
-    pub time_of_interest: Option<u64>,
 }
 
 pub struct PkiEnvironment {
