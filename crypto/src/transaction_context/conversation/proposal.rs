@@ -48,7 +48,7 @@ impl TransactionContext {
         };
 
         guard
-            .conversation_mut(async move |conversation, _database| {
+            .conversation_mut(async move |conversation| {
                 let proposal = match proposal {
                     MlsProposal::Add(key_package) => conversation
                         .propose_add_member(&client, key_package.into())

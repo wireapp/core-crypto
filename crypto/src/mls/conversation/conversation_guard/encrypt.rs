@@ -22,7 +22,7 @@ impl ConversationGuard {
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
 
-        self.conversation_mut(async move |conversation, _database| {
+        self.conversation_mut(async move |conversation| {
             let signer = credential.signature_key();
             let encrypted = conversation
                 .group

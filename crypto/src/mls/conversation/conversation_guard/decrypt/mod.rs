@@ -159,7 +159,7 @@ impl ConversationGuard {
         })) = message_result
         {
             let mut decrypted_message = self
-                .conversation_mut(async |conversation, _database| {
+                .conversation_mut(async |conversation| {
                     let ct = conversation.extract_confirmation_tag_from_own_commit(&message)?;
                     conversation.handle_own_commit(session, provider, ct).await
                 })
@@ -221,7 +221,7 @@ impl ConversationGuard {
                 }
             }
             ProcessedMessageContent::ProposalMessage(proposal) => {
-                self.conversation_mut(async move |conversation, _database| {
+                self.conversation_mut(async move |conversation| {
                     info!(
                         group_id = conversation.id,
                         sender = Obfuscated::from(proposal.sender()),
@@ -279,7 +279,7 @@ impl ConversationGuard {
                 self.validate_commit(&staged_commit).await?;
 
                 let (is_active, delay, removed_members, added_members, group_id) = self
-                    .conversation_mut(async |conversation, _database| {
+                    .conversation_mut(async |conversation| {
                         let removed_indices = staged_commit
                             .remove_proposals()
                             .map(|p| p.remove_proposal().removed())
@@ -340,7 +340,7 @@ impl ConversationGuard {
             }
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
                 let delay = self
-                    .conversation_mut(async move |conversation, _database| {
+                    .conversation_mut(async move |conversation| {
                         info!(
                             group_id = conversation.id,
                             sender = Obfuscated::from(proposal.sender());
@@ -409,7 +409,7 @@ impl ConversationGuard {
     ) -> Result<ProcessedMessage> {
         let msg_epoch = protocol_message.epoch().as_u64();
         let backend = self.crypto_provider().await?;
-        self.conversation_mut(async move |conversation, _database| {
+        self.conversation_mut(async move |conversation| {
             let group_epoch = conversation.group.epoch().as_u64();
             let processed_msg = conversation
                 .group
@@ -884,7 +884,7 @@ mod tests {
                 conversation
                     .guard()
                     .await
-                    .conversation_mut(async |conv, _db| {
+                    .conversation_mut(async |conv| {
                         conv.group.clear_pending_proposals();
                         Ok(())
                     })

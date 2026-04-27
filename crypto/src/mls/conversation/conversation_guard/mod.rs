@@ -58,7 +58,7 @@ impl ConversationGuard {
     /// an error.
     pub(crate) async fn conversation_mut<T>(
         &mut self,
-        operation: impl AsyncFnOnce(&mut MlsConversation, &Database) -> Result<T>,
+        operation: impl AsyncFnOnce(&mut MlsConversation) -> Result<T>,
     ) -> Result<T> {
         // we can't get the database if the transaction context has been invalidated,
         // and we want to have that error first before evaluating anything in the operation.
@@ -68,7 +68,7 @@ impl ConversationGuard {
             .await
             .map_err(RecursiveError::transaction("getting database from context"))?;
         let mut guard = self.inner.write().await;
-        let ok_result = operation(&mut guard, &database).await?;
+        let ok_result = operation(&mut guard).await?;
         guard.persist_group_when_changed(&database, false).await?;
         Ok(ok_result)
     }
@@ -99,7 +99,7 @@ impl ConversationGuard {
             .map_err(RecursiveError::transaction("getting mls groups"))?;
 
         let id = self
-            .conversation_mut(async |conversation, _| {
+            .conversation_mut(async |conversation| {
                 conversation.wipe_associated_entities(&provider).await?;
                 Ok(conversation.id().to_owned())
             })

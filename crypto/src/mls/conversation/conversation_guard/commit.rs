@@ -32,7 +32,7 @@ impl ConversationGuard {
     pub(super) async fn merge_commit(&mut self) -> Result<()> {
         let client = self.session().await?;
         let provider = self.crypto_provider().await?;
-        self.conversation_mut(async |conversation, _database| conversation.commit_accepted(&client, &provider).await)
+        self.conversation_mut(async |conversation| conversation.commit_accepted(&client, &provider).await)
             .await
     }
 
@@ -61,7 +61,7 @@ impl ConversationGuard {
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
 
-        self.conversation_mut(async move |conversation, _database| {
+        self.conversation_mut(async move |conversation| {
             let signer = credential.signature_key();
             let (commit, welcome, group_info) = conversation
                 .group
@@ -128,7 +128,7 @@ impl ConversationGuard {
         let signer = credential.signature_key();
 
         let (commit, welcome, group_info) = self
-            .conversation_mut(async |conversation, _database| {
+            .conversation_mut(async |conversation| {
                 let members = conversation
                     .group
                     .members()
@@ -186,7 +186,7 @@ impl ConversationGuard {
         let backend = self.crypto_provider().await?;
         let credential = credential.clone();
 
-        self.conversation_mut(async move |conversation, _database| {
+        self.conversation_mut(async move |conversation| {
             // If the credential remains the same and we still want to update, we explicitly need to pass `None` to
             // openmls, if we just passed an unchanged leaf node, no update commit would be created.
             // Also, we can avoid cloning in the case we don't need to create a new leaf node.
@@ -239,7 +239,7 @@ impl ConversationGuard {
         }
 
         let (commit, welcome, openmls_group_info) = self
-            .conversation_mut(async |inner, _database| {
+            .conversation_mut(async |inner| {
                 let signer = &inner.find_current_credential(session).await?.signature_key_pair;
                 inner
                     .group
@@ -272,7 +272,7 @@ impl ConversationGuard {
         }
 
         let (commit, welcome, openmls_group_info) = self
-            .conversation_mut(async |inner, _database| {
+            .conversation_mut(async |inner| {
                 let signer = &inner.find_current_credential(session).await?.signature_key_pair;
                 inner
                     .group

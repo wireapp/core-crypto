@@ -67,7 +67,7 @@ mod tests {
                 conversation
                     .guard()
                     .await
-                    .conversation_mut(async |conversation, _database| {
+                    .conversation_mut(async |conversation| {
                         conversation.commit_accepted(&session, &session.crypto_provider).await
                     })
                     .await
@@ -101,7 +101,7 @@ mod tests {
                 conversation
                     .guard()
                     .await
-                    .conversation_mut(async |conversation, _database| {
+                    .conversation_mut(async |conversation| {
                         conversation.commit_accepted(&session, &session.crypto_provider).await
                     })
                     .await

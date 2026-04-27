@@ -390,7 +390,7 @@ mod tests {
             let credential = alice.find_any_credential(ciphersuite.into(), credential_type).await;
             let mls_provider = alice.transaction.mls_provider().await.unwrap();
             guard
-                .conversation_mut(async move |conversation, _database| {
+                .conversation_mut(async move |conversation| {
                     let gi = conversation
                         .group
                         .export_group_info(

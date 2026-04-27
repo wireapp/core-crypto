@@ -156,7 +156,7 @@ impl ConversationGuard {
         let key_package = history_secret.key_package.clone().into();
 
         let remove_and_add = self
-            .conversation_mut(async move |conversation, _database| {
+            .conversation_mut(async move |conversation| {
                 // Propose to remove the old history client
                 for history_client in existing_history_clients {
                     conversation
