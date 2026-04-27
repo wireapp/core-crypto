@@ -97,7 +97,7 @@ struct InteropClientApp: App {
             throw InteropError.randomBytesError
         }
         // swiftlint:disable:next force_try
-        return try! WireCoreCrypto.DatabaseKey(key: Data(bytes))
+        return try! WireCoreCrypto.DatabaseKey(bytes: Data(bytes))
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
