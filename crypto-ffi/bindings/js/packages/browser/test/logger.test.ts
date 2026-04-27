@@ -1,15 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import {
-    ccInit,
-    consumeLastestCommit,
-    createConversation,
-    invite,
-    recordLogs,
-    remove,
-    retrieveLogs,
-    setup,
-    teardown,
-} from "./utils";
+import { setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -29,146 +19,85 @@ describe("logger", () => {
     };
 
     it("forwards logs when registered", async () => {
-        const alice = crypto.randomUUID();
-        const convId = crypto.randomUUID();
-        await ccInit(alice);
-        const result = await browser.execute(
-            async (clientName, conversationId) => {
-                const cc = window.ensureCcDefined(clientName);
-                const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
-                    window.ccModule;
+        const result = await browser.execute(async () => {
+            const cc = await window.helpers.ccInit();
+            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
+                window.ccModule;
 
-                const logs: string[] = [];
-                setLogger({
-                    log: (_level, json_msg: string, _context) => {
-                        logs.push(json_msg);
-                    },
-                });
-                setMaxLogLevel(CoreCryptoLogLevel.Debug);
-                const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId).buffer
-                );
-                await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
-                        credentialType: window.ccModule.CredentialType.Basic,
-                    });
-                    await ctx.createConversation(cid, credentialRef!);
-                });
-                return logs;
-            },
-            alice,
-            convId
-        );
+            const logs: string[] = [];
+            setLogger({
+                log: (_level, json_msg: string, _context) => {
+                    logs.push(json_msg);
+                },
+            });
+            setMaxLogLevel(CoreCryptoLogLevel.Debug);
+            await window.helpers.createConversation(cc);
+            return logs;
+        });
 
         await expect(result.length).toBeGreaterThan(0);
     });
 
     it("can be replaced", async () => {
-        const alice = crypto.randomUUID();
-        const convId = crypto.randomUUID();
-        await ccInit(alice);
-        const result = await browser.execute(
-            async (clientName, conversationId) => {
-                const cc = window.ensureCcDefined(clientName);
-                const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
-                    window.ccModule;
+        const result = await browser.execute(async () => {
+            const cc = await window.helpers.ccInit();
+            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
+                window.ccModule;
 
-                const logs: string[] = [];
-                setLogger({
-                    log: (_level, _message, _context) => {
-                        throw Error("Initial logger should not be active");
-                    },
-                });
-                setLogger({
-                    log: (_level, json_msg: string, _context) => {
-                        logs.push(json_msg);
-                    },
-                });
-                setMaxLogLevel(CoreCryptoLogLevel.Debug);
-                const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId).buffer
-                );
-                await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
-                        credentialType: window.ccModule.CredentialType.Basic,
-                    });
-                    await ctx.createConversation(cid, credentialRef!);
-                });
-                return logs;
-            },
-            alice,
-            convId
-        );
+            const logs: string[] = [];
+            setLogger({
+                log: (_level, _message, _context) => {
+                    throw Error("Initial logger should not be active");
+                },
+            });
+            setLogger({
+                log: (_level, json_msg: string, _context) => {
+                    logs.push(json_msg);
+                },
+            });
+            setMaxLogLevel(CoreCryptoLogLevel.Debug);
+            await window.helpers.createConversation(cc);
+            return logs;
+        });
 
         await expect(result.length).toBeGreaterThan(0);
     });
 
     it("doesn't forward logs below log level when registered", async () => {
-        const alice = crypto.randomUUID();
-        const convId = crypto.randomUUID();
-        await ccInit(alice);
-        const result = await browser.execute(
-            async (clientName, conversationId) => {
-                const cc = window.ensureCcDefined(clientName);
-                const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
-                    window.ccModule;
+        const result = await browser.execute(async () => {
+            const cc = await window.helpers.ccInit();
+            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
+                window.ccModule;
 
-                const logs: string[] = [];
-                setLogger({
-                    log: (_level, json_msg: string, _context) => {
-                        logs.push(json_msg);
-                    },
-                });
-                setMaxLogLevel(CoreCryptoLogLevel.Warn);
-                const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId).buffer
-                );
-                await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
-                        credentialType: window.ccModule.CredentialType.Basic,
-                    });
-                    await ctx.createConversation(cid, credentialRef!);
-                });
-                return logs;
-            },
-            alice,
-            convId
-        );
+            const logs: string[] = [];
+            setLogger({
+                log: (_level, json_msg: string, _context) => {
+                    logs.push(json_msg);
+                },
+            });
+            setMaxLogLevel(CoreCryptoLogLevel.Warn);
+            await window.helpers.createConversation(cc);
+            return logs;
+        });
 
         await expect(result.length).toBe(0);
     });
 
     it("when throwing errors they're reported as errors", async () => {
-        const alice = crypto.randomUUID();
-        const convId = crypto.randomUUID();
         const expectedErrorMessage = "expected test error in logger test";
-        await ccInit(alice);
-        await browser.execute(
-            async (clientName, conversationId, expectedErrorMessage) => {
-                const cc = window.ensureCcDefined(clientName);
-                const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
-                    window.ccModule;
+        await browser.execute(async (expectedErrorMessage) => {
+            const cc = await window.helpers.ccInit();
+            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
+                window.ccModule;
 
-                setLogger({
-                    log: (_level, _message, _context) => {
-                        throw Error(expectedErrorMessage);
-                    },
-                });
-                setMaxLogLevel(CoreCryptoLogLevel.Debug);
-                const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId).buffer
-                );
-                await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
-                        credentialType: window.ccModule.CredentialType.Basic,
-                    });
-                    await ctx.createConversation(cid, credentialRef!);
-                });
-            },
-            alice,
-            convId,
-            expectedErrorMessage
-        );
+            setLogger({
+                log: (_level, _message, _context) => {
+                    throw Error(expectedErrorMessage);
+                },
+            });
+            setMaxLogLevel(CoreCryptoLogLevel.Debug);
+            await window.helpers.createConversation(cc);
+        }, expectedErrorMessage);
 
         const logs = (await browser.getLogs("browser")) as BrowserLog[];
         console.log(JSON.stringify(logs));
@@ -186,59 +115,34 @@ describe("logger", () => {
     });
 
     it("forwards logs with context key/value pairs", async () => {
-        const alice = crypto.randomUUID();
-        const bob = crypto.randomUUID();
-        const convId = crypto.randomUUID();
-        await ccInit(alice);
-        await createConversation(alice, convId);
-        await ccInit(bob);
-        await invite(alice, bob, convId);
-        const result = await browser.execute(
-            async (aliceName, bobName, conversationId) => {
-                const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
-                    window.ccModule;
+        const result = await browser.execute(async () => {
+            const alice = await window.helpers.ccInit();
+            const bob = await window.helpers.ccInit();
+            const conversationId =
+                await window.helpers.createConversation(alice);
+            await window.helpers.invite(alice, bob, conversationId);
 
-                const logs: {
-                    level: number;
-                    message: string;
-                    context: string;
-                }[] = [];
-                setLogger({
-                    log: (level: number, message: string, context: string) => {
-                        logs.push({
-                            level: level,
-                            message: message,
-                            context: context,
-                        });
-                    },
-                });
-                setMaxLogLevel(CoreCryptoLogLevel.Debug);
+            await window.helpers.recordLogs();
 
-                const alice = window.ensureCcDefined(aliceName);
-                const bob = window.ensureCcDefined(bobName);
-                const encoder = new TextEncoder();
-                const messageText = "Hello world!";
-                const cid = new window.ccModule.ConversationId(
-                    encoder.encode(conversationId).buffer
-                );
-                const messageBytes = encoder.encode(messageText);
+            const encoder = new TextEncoder();
+            const messageText = "Hello world!";
+            const messageBytes = encoder.encode(messageText);
 
-                const encryptedMessage = await alice.transaction(
-                    async (ctx) =>
-                        await ctx.encryptMessage(cid, messageBytes.buffer)
-                );
+            const encryptedMessage = await alice.transaction(
+                async (ctx) =>
+                    await ctx.encryptMessage(
+                        conversationId,
+                        messageBytes.buffer
+                    )
+            );
 
-                await bob.transaction(
-                    async (ctx) =>
-                        await ctx.decryptMessage(cid, encryptedMessage)
-                );
+            await bob.transaction(
+                async (ctx) =>
+                    await ctx.decryptMessage(conversationId, encryptedMessage)
+            );
 
-                return logs;
-            },
-            alice,
-            bob,
-            convId
-        );
+            return window.helpers.retrieveLogs();
+        });
 
         const proteusErrorLog = result.find(
             (element) => element.message === "Application message"
@@ -252,22 +156,22 @@ describe("logger", () => {
     });
 
     it("forward logs with member changes", async () => {
-        const alice = crypto.randomUUID();
-        const bob = crypto.randomUUID();
-        const carol = crypto.randomUUID();
-        const convId = crypto.randomUUID();
-        await ccInit(alice);
-        await ccInit(bob);
-        await ccInit(carol);
-        await recordLogs();
-        await createConversation(alice, convId);
-        await invite(alice, bob, convId);
-        await invite(alice, carol, convId);
-        await consumeLastestCommit(bob, convId);
-        await remove(alice, carol, convId);
-        await consumeLastestCommit(bob, convId);
+        const logs = await browser.execute(async () => {
+            const alice = await window.helpers.ccInit();
+            const bob = await window.helpers.ccInit();
+            const carolId = window.helpers.newClientId();
+            const carol = await window.helpers.ccInit(true, undefined, carolId);
+            await window.helpers.recordLogs();
+            const conversationId =
+                await window.helpers.createConversation(alice);
+            await window.helpers.invite(alice, bob, conversationId);
+            await window.helpers.invite(alice, carol, conversationId);
+            await window.helpers.consumeLastestCommit(bob, conversationId);
+            await window.helpers.remove(alice, carolId, conversationId);
+            await window.helpers.consumeLastestCommit(bob, conversationId);
+            return await window.helpers.retrieveLogs();
+        });
 
-        const logs = await retrieveLogs();
         const epochChangedContext1 = logs.find(
             (element) => element.message === "Epoch advanced"
         )!.context;

@@ -14,7 +14,7 @@ import {
     type LogEntry,
 } from "../shared/utils";
 
-export { teardown } from "../shared/utils"
+export { teardown } from "../shared/utils";
 
 type ccModuleType = typeof import("@wireapp/core-crypto/browser");
 

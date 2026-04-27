@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ccInit, createConversation, setup, teardown } from "./utils";
+import { setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import {
     ConversationId,
@@ -22,79 +22,58 @@ afterEach(async () => {
 
 describe("core crypto errors", () => {
     it("should build correctly when constructed by cc", async () => {
-        const alice = crypto.randomUUID();
-        const convId = crypto.randomUUID();
-        await ccInit(alice);
-        await createConversation(alice, convId);
+        const result = await browser.execute(async () => {
+            const cc = await window.helpers.ccInit();
 
-        const result = await browser.execute(
-            async (clientName, convId) => {
-                const cc = window.ensureCcDefined(clientName);
+            const conversationId = await window.helpers.createConversation(cc);
+            const CoreCryptoError = window.ccModule.CoreCryptoError;
+            const MlsError = window.ccModule.MlsError;
 
-                const conversationIdBuffer = new TextEncoder().encode(
-                    convId
-                ).buffer;
-                const conversationId = new window.ccModule.ConversationId(
-                    conversationIdBuffer
-                );
-                const CoreCryptoError = window.ccModule.CoreCryptoError;
-                const MlsError = window.ccModule.MlsError;
-
-                try {
-                    await cc.transaction(async (cx) => {
-                        const [credentialRef] = await cx.findCredentials({
-                            credentialType:
-                                window.ccModule.CredentialType.Basic,
-                        });
-                        await cx.createConversation(
-                            conversationId,
-                            credentialRef!
-                        );
+            try {
+                await cc.transaction(async (cx) => {
+                    const [credentialRef] = await cx.findCredentials({
+                        credentialType: window.ccModule.CredentialType.Basic,
                     });
+                    await cx.createConversation(conversationId, credentialRef!);
+                });
+                return {
+                    errorWasThrown: false,
+                };
+            } catch (err) {
+                if (
+                    CoreCryptoError.Mls.instanceOf(err) &&
+                    MlsError.ConversationAlreadyExists.instanceOf(
+                        err.inner.mlsError
+                    )
+                ) {
+                    const conversationIdFromError = new Uint8Array(
+                        err.inner.mlsError.inner.conversationId
+                    );
                     return {
-                        errorWasThrown: false,
+                        errorWasThrown: true,
+                        isCorrectInstance: true,
+                        errorConvIdMatches:
+                            JSON.stringify(conversationIdFromError) ===
+                            JSON.stringify(
+                                new Uint8Array(conversationId.copyBytes())
+                            ),
                     };
-                } catch (err) {
-                    if (
-                        CoreCryptoError.Mls.instanceOf(err) &&
-                        MlsError.ConversationAlreadyExists.instanceOf(
-                            err.inner.mlsError
-                        )
-                    ) {
-                        const conversationIdFromError = new Uint8Array(
-                            err.inner.mlsError.inner.conversationId
-                        );
-                        return {
-                            errorWasThrown: true,
-                            isCorrectInstance: true,
-                            errorConvIdMatches:
-                                JSON.stringify(conversationIdFromError) ===
-                                JSON.stringify(
-                                    new Uint8Array(conversationIdBuffer)
-                                ),
-                        };
-                    } else {
-                        return {
-                            errorWasThrown: true,
-                            isCorrectInstance: false,
-                            errorConvIdMatches: false,
-                        };
-                    }
+                } else {
+                    return {
+                        errorWasThrown: true,
+                        isCorrectInstance: false,
+                        errorConvIdMatches: false,
+                    };
                 }
-            },
-            alice,
-            convId
-        );
+            }
+        });
         await expect(result.errorWasThrown).toBe(true);
         await expect(result.isCorrectInstance).toBe(true);
         await expect(result.errorConvIdMatches).toBe(true);
     });
 
     it("should be correct when message rejected", async () => {
-        const alice = crypto.randomUUID();
-        const convId = crypto.randomUUID();
-
-        await browser.execute((_) => {
+        const result = await browser.execute(async () => {
             const transport_override = {
                 async sendCommitBundle(_: CommitBundle) {
                     throw window.ccModule.MlsTransportError.MessageRejected.new(
@@ -107,56 +86,34 @@ describe("core crypto errors", () => {
                 ...window.deliveryService,
                 ...transport_override,
             };
-        });
 
-        await ccInit(alice);
-        await createConversation(alice, convId);
+            const cc = await window.helpers.ccInit();
+            const conversationId = await window.helpers.createConversation(cc);
 
-        const result = await browser.execute(
-            async (clientName, convId) => {
-                const cc = window.ensureCcDefined(clientName);
-
-                window.deliveryService = {
-                    ...window.deliveryService,
-                    ...{
-                        async sendCommitBundle(_: CommitBundle) {
-                            throw window.ccModule.MlsTransportError.MessageRejected.new(
-                                { reason: "just testing" }
-                            );
-                        },
-                    },
+            const CoreCryptoError = window.ccModule.CoreCryptoError;
+            const MlsError = window.ccModule.MlsError;
+            try {
+                await cc.transaction(async (cx) => {
+                    await cx.updateKeyingMaterial(conversationId);
+                });
+                return {
+                    errorWasThrown: false,
                 };
-
-                const conversationId = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(convId).buffer
-                );
-                const CoreCryptoError = window.ccModule.CoreCryptoError;
-                const MlsError = window.ccModule.MlsError;
-                try {
-                    await cc.transaction(async (cx) => {
-                        await cx.updateKeyingMaterial(conversationId);
-                    });
-                    return {
-                        errorWasThrown: false,
-                    };
-                } catch (err) {
-                    return CoreCryptoError.Mls.instanceOf(err) &&
-                        MlsError.MessageRejected.instanceOf(err.inner.mlsError)
-                        ? {
-                              errorWasThrown: true,
-                              errorTypeAndReasonMatch:
-                                  "just testing" ===
-                                  err.inner.mlsError.inner.reason,
-                          }
-                        : {
-                              errorWasThrown: true,
-                              errorTypeAndReasonMatch: false,
-                          };
-                }
-            },
-            alice,
-            convId
-        );
+            } catch (err) {
+                return CoreCryptoError.Mls.instanceOf(err) &&
+                    MlsError.MessageRejected.instanceOf(err.inner.mlsError)
+                    ? {
+                          errorWasThrown: true,
+                          errorTypeAndReasonMatch:
+                              "just testing" ===
+                              err.inner.mlsError.inner.reason,
+                      }
+                    : {
+                          errorWasThrown: true,
+                          errorTypeAndReasonMatch: false,
+                      };
+            }
+        });
 
         await expect(result.errorWasThrown).toBe(true);
         await expect(result.errorTypeAndReasonMatch).toBe(true);
@@ -164,38 +121,32 @@ describe("core crypto errors", () => {
 });
 
 it("should build correctly when constructed by ubrn", async () => {
-    const alice = crypto.randomUUID();
     const convId = crypto.randomUUID();
-    await ccInit(alice);
-    const result = await browser.execute(
-        async (clientName, convId) => {
-            const cc = window.ensureCcDefined(clientName);
+    const result = await browser.execute(async (convId) => {
+        const cc = await window.helpers.ccInit();
 
-            try {
-                await cc.transaction(async (cx) => {
-                    // pass in a string argument instead of a `ConversationId` instance
-                    const [credentialRef] = await cx.findCredentials({
-                        credentialType: window.ccModule.CredentialType.Basic,
-                    });
-                    await cx.createConversation(
-                        convId as unknown as ConversationId,
-                        credentialRef!
-                    );
+        try {
+            await cc.transaction(async (cx) => {
+                // pass in a string argument instead of a `ConversationId` instance
+                const [credentialRef] = await cx.findCredentials({
+                    credentialType: window.ccModule.CredentialType.Basic,
                 });
-                return {
-                    errorWasThrown: false,
-                };
-            } catch (err) {
-                return {
-                    errorWasThrown: true,
-                    isCorrectInstance: Error.isError(err),
-                    message: Error.isError(err) && err.message,
-                };
-            }
-        },
-        alice,
-        convId
-    );
+                await cx.createConversation(
+                    convId as unknown as ConversationId,
+                    credentialRef!
+                );
+            });
+            return {
+                errorWasThrown: false,
+            };
+        } catch (err) {
+            return {
+                errorWasThrown: true,
+                isCorrectInstance: Error.isError(err),
+                message: Error.isError(err) && err.message,
+            };
+        }
+    }, convId);
 
     await expect(result.errorWasThrown).toBe(true);
     await expect(result.isCorrectInstance).toBe(true);
@@ -204,39 +155,31 @@ it("should build correctly when constructed by ubrn", async () => {
 
 describe("Error type mapping", () => {
     it("should work for conversation already exists", async () => {
-        const alice = crypto.randomUUID();
-        const convId = crypto.randomUUID();
-        await ccInit(alice);
-        await createConversation(alice, convId);
+        const isCorrectErrorInstance = await browser.execute(async () => {
+            const cc = await window.helpers.ccInit();
+            const conversationId = await window.helpers.createConversation(cc);
 
-        const isCorrectErrorInstance = await browser.execute(
-            async (clientName, conversationId) => {
-                const cc = window.ensureCcDefined(clientName);
-                const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId).buffer
-                );
-                try {
-                    await cc.transaction(async (ctx) => {
-                        const [credentialRef] = await ctx.findCredentials({
-                            credentialType:
-                                window.ccModule.CredentialType.Basic,
-                        });
-                        await ctx.createConversation(cid, credentialRef!);
+            try {
+                await cc.transaction(async (ctx) => {
+                    const [credentialRef] = await ctx.findCredentials({
+                        credentialType: window.ccModule.CredentialType.Basic,
                     });
-                } catch (e) {
-                    return (
-                        window.ccModule.CoreCryptoError.Mls.hasInner(e) &&
-                        window.ccModule.MlsError.ConversationAlreadyExists.instanceOf(
-                            e.inner.mlsError
-                        ) &&
-                        e.inner.mlsError.inner.conversationId !== undefined
+                    await ctx.createConversation(
+                        conversationId,
+                        credentialRef!
                     );
-                }
-                return false;
-            },
-            alice,
-            convId
-        );
+                });
+            } catch (e) {
+                return (
+                    window.ccModule.CoreCryptoError.Mls.hasInner(e) &&
+                    window.ccModule.MlsError.ConversationAlreadyExists.instanceOf(
+                        e.inner.mlsError
+                    ) &&
+                    e.inner.mlsError.inner.conversationId !== undefined
+                );
+            }
+            return false;
+        });
 
         await expect(isCorrectErrorInstance).toBe(true);
     });

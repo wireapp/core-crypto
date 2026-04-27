@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ccInit, setup, teardown } from "./utils";
+import { setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -27,12 +27,9 @@ describe("external entropy", () => {
             0x6f4d794b,
         ]);
 
-        const alice = crypto.randomUUID();
-        await ccInit(alice);
-
         const [result1, result2] = await browser.execute(
-            async (clientName, length1, length2) => {
-                const cc = window.ensureCcDefined(clientName);
+            async (length1, length2) => {
+                const cc = await window.helpers.ccInit();
                 // Null byte seed
                 const seed = new Uint8Array(32);
                 await cc.reseed(seed.buffer);
@@ -44,7 +41,6 @@ describe("external entropy", () => {
                     Array.from(new Uint8Array(produced2)),
                 ];
             },
-            alice,
             vector1.length * vector1.BYTES_PER_ELEMENT,
             vector2.length * vector2.BYTES_PER_ELEMENT
         );

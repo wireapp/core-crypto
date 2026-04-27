@@ -1,4 +1,4 @@
-import { ccInit, setup, teardown } from "./utils";
+import { setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -11,6 +11,8 @@ afterEach(async () => {
 
 describe("initialization", () => {
     it("should succeed", async () => {
-        await ccInit("foo");
+        await browser.execute(async () => {
+            await window.helpers.ccInit();
+        });
     });
 });

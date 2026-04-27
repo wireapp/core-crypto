@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ccInit, setup, teardown } from "./utils";
+import { setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -12,15 +12,8 @@ afterEach(async () => {
 
 describe("epoch observer", () => {
     it("should observe new epochs", async () => {
-        const alice = crypto.randomUUID();
-        const convId = crypto.randomUUID();
-        await ccInit(alice);
-        const { length, first_id_hex } = await browser.execute(
-            async (clientName, conv_id_str) => {
-                const conv_id = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conv_id_str).buffer
-                );
-
+        const { length, first_id_hex, convIdSerialized } =
+            await browser.execute(async () => {
                 // set up the observer. this just keeps a list of all observations.
                 type ObservedEpoch = {
                     // @ts-expect-error `window` is not present when ts is checking, but is present in the browser
@@ -42,22 +35,17 @@ describe("epoch observer", () => {
                 }
                 const observer = new Observer();
 
-                const cc = window.ensureCcDefined(clientName);
+                const cc = await window.helpers.ccInit();
 
                 // create the conversation in one transaction
-                await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
-                        credentialType: window.ccModule.CredentialType.Basic,
-                    });
-                    await ctx.createConversation(conv_id, credentialRef!);
-                });
+                const convId = await window.helpers.createConversation(cc);
 
                 // register the epoch observer
                 await cc.registerEpochObserver(observer);
 
                 // in another transaction, change the epoch
                 await cc.transaction(async (ctx) => {
-                    await ctx.updateKeyingMaterial(conv_id);
+                    await ctx.updateKeyingMaterial(convId);
                 });
 
                 // wait a bit to ensure that the observation, which we have intentionally
@@ -68,13 +56,18 @@ describe("epoch observer", () => {
                 const first_id_hex = new TextDecoder().decode(
                     observer.observations[0]?.conversationId.copyBytes()
                 );
-                return { length: observer.observations.length, first_id_hex };
-            },
-            alice,
-            convId
-        );
+
+                const convIdSerialized = new TextDecoder().decode(
+                    convId.copyBytes()
+                );
+                return {
+                    length: observer.observations.length,
+                    first_id_hex,
+                    convIdSerialized,
+                };
+            });
 
         await expect(length).toEqual(1);
-        await expect(first_id_hex).toEqual(convId);
+        await expect(first_id_hex).toEqual(convIdSerialized);
     });
 });

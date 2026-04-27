@@ -1,12 +1,5 @@
 import { expect } from "@wdio/globals";
-import {
-    ccInit,
-    createConversation,
-    invite,
-    roundTripMessage,
-    setup,
-    teardown,
-} from "./utils";
+import { setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import {
     GroupInfoEncryptionType,
@@ -23,13 +16,12 @@ afterEach(async () => {
 
 describe("conversation", () => {
     it("should allow inviting members", async () => {
-        const alice = crypto.randomUUID();
-        const bob = crypto.randomUUID();
-        const convId = crypto.randomUUID();
-        await ccInit(alice);
-        await ccInit(bob);
-        await createConversation(alice, convId);
-        const groupInfo = await invite(alice, bob, convId);
+        const groupInfo = await browser.execute(async () => {
+            const alice = await window.helpers.ccInit();
+            const bob = await window.helpers.ccInit();
+            const convId = await window.helpers.createConversation(alice);
+            return await window.helpers.invite(alice, bob, convId);
+        });
         await expect(groupInfo.encryptionType).toBe(
             GroupInfoEncryptionType.Plaintext
         );
@@ -37,18 +29,20 @@ describe("conversation", () => {
     });
 
     it("should allow sending messages", async () => {
-        const alice = crypto.randomUUID();
-        const bob = crypto.randomUUID();
-        const convId = crypto.randomUUID();
-        await ccInit(alice);
-        await ccInit(bob);
-        await createConversation(alice, convId);
-        await invite(alice, bob, convId);
         const messageText = "Hello world!";
-        const [decryptedByAlice, decryptedByBob] = await roundTripMessage(
-            alice,
-            bob,
-            convId,
+        const [decryptedByAlice, decryptedByBob] = await browser.execute(
+            async (messageText) => {
+                const alice = await window.helpers.ccInit();
+                const bob = await window.helpers.ccInit();
+                const convId = await window.helpers.createConversation(alice);
+                await window.helpers.invite(alice, bob, convId);
+                return await window.helpers.roundTripMessage(
+                    alice,
+                    bob,
+                    convId,
+                    messageText
+                );
+            },
             messageText
         );
         await expect(decryptedByAlice).toBe(messageText);

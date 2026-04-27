@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ccInit, createConversation, setup, teardown } from "./utils";
+import { setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import { E2eiConversationState } from "@wireapp/core-crypto/browser";
 
@@ -13,155 +13,114 @@ afterEach(async () => {
 
 describe("PKI environment", () => {
     it("should be settable after mls init", async () => {
-        const alice = crypto.randomUUID();
-        await ccInit(alice);
-
         // Get unset pki environment
-        const pki_env = await browser.execute(async (alice) => {
-            const cc = window.ensureCcDefined(alice);
-            return await cc.getPkiEnvironment();
-        }, alice);
+        const success = await browser.execute(async () => {
+            const cc = await window.helpers.ccInit(false);
 
-        await expect(pki_env).toBe(undefined);
+            let pkiEnv = await cc.getPkiEnvironment();
 
-        // set pki environment
-        const success = await browser.execute(async (alice) => {
-            const cc = window.ensureCcDefined(alice);
+            if (pkiEnv != undefined) {
+                throw new Error("Expected pkiEnv to be undefined.");
+            }
+
+            // set pki environment
             const key = new Uint8Array(32);
             window.crypto.getRandomValues(key);
             const database = await window.ccModule.Database.open(
                 crypto.randomUUID(),
                 new window.ccModule.DatabaseKey(key.buffer)
             );
-            const pki_env = await window.ccModule.PkiEnvironment.create(
+            pkiEnv = await window.ccModule.PkiEnvironment.create(
                 window.pkiEnvironmentHooks,
                 database
             );
-            await cc.setPkiEnvironment(pki_env);
+            await cc.setPkiEnvironment(pkiEnv);
             // We cannot compare the result of getPkiEnvironment()
-            // with `pki_env`, due to uniffi hiding everything,
+            // with `pkiEnv`, due to uniffi hiding everything,
             // so just make sure it's not undefined.
             if ((await cc.getPkiEnvironment()) === undefined) return false;
 
             await cc.setPkiEnvironment(undefined);
             return (await cc.getPkiEnvironment()) === undefined;
-        }, alice);
+        });
         await expect(success).toBe(true);
     });
 
     it("should be settable before mls init", async () => {
-        const alice = crypto.randomUUID();
-
-        const pki_env = await browser.execute(async (alice) => {
+        const success = await browser.execute(async () => {
             const key = new Uint8Array(32);
             window.crypto.getRandomValues(key);
             const database = await window.ccModule.Database.open(
-                alice,
+                window.crypto.randomUUID(),
                 new window.ccModule.DatabaseKey(key.buffer)
             );
 
             const cc = window.ccModule.CoreCrypto.new(database);
-            window.cc = new Map();
-            window.cc.set(alice, cc);
-            const pki_env = await cc.getPkiEnvironment();
-            return pki_env;
-        }, alice);
+            let pkiEnv = await cc.getPkiEnvironment();
 
-        await expect(pki_env).toBe(undefined);
+            if (pkiEnv != undefined) {
+                throw new Error("Expected pkiEnv to be undefined.");
+            }
 
-        const success = await browser.execute(async (alice) => {
-            const key = new Uint8Array(32);
-            window.crypto.getRandomValues(key);
-            const database = await window.ccModule.Database.open(
-                alice,
-                new window.ccModule.DatabaseKey(key.buffer)
-            );
-
-            const cc = window.ensureCcDefined(alice);
-            const pki_env = await window.ccModule.PkiEnvironment.create(
+            pkiEnv = await window.ccModule.PkiEnvironment.create(
                 window.pkiEnvironmentHooks,
                 database
             );
-            await cc.setPkiEnvironment(pki_env);
+            await cc.setPkiEnvironment(pkiEnv);
 
             return (await cc.getPkiEnvironment()) != undefined;
-        }, alice);
+        });
         await expect(success).toBe(true);
     });
 });
 
 describe("end to end identity", () => {
     it("should not be enabled on conversation with basic credential", async () => {
-        const alice = crypto.randomUUID();
-        const convId = crypto.randomUUID();
-        await ccInit(alice);
-        await createConversation(alice, convId);
-        const conversationState = await browser.execute(
-            async (clientName, conversationId) => {
-                const cc = window.ensureCcDefined(clientName);
-                const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId).buffer
-                );
-                return await cc.transaction(async (ctx) => {
-                    return await ctx.e2eiConversationState(cid);
-                });
-            },
-            alice,
-            convId
-        );
-        await expect(conversationState).toBe(E2eiConversationState.NotEnabled);
+        const conversationState = await browser.execute(async () => {
+            const cc = await window.helpers.ccInit();
+            const conversationId = await window.helpers.createConversation(cc);
+            return await cc.transaction(async (ctx) => {
+                return await ctx.e2eiConversationState(conversationId);
+            });
+        });
+        expect(conversationState).toBe(E2eiConversationState.NotEnabled);
     });
 
     it("identities can be queried by client id", async () => {
-        const alice = crypto.randomUUID();
-        const convId = crypto.randomUUID();
-        await ccInit(alice);
-        await createConversation(alice, convId);
-        const identities = await browser.execute(
-            async (clientName, conversationId) => {
-                const cc = window.ensureCcDefined(clientName);
-                const encoder = new TextEncoder();
-                const cid = new window.ccModule.ConversationId(
-                    encoder.encode(conversationId).buffer
-                );
-                const identities = await cc.transaction(async (ctx) => {
-                    return await ctx.getDeviceIdentities(cid, [
-                        new window.ccModule.ClientId(
-                            encoder.encode(clientName).buffer
-                        ),
-                    ]);
-                });
+        const success = await browser.execute(async () => {
+            const clientIdStr = window.crypto.randomUUID();
+            const clientId = window.helpers.newClientId(clientIdStr);
+            const cc = await window.helpers.ccInit(true, undefined, clientId);
+            const conversationId = await window.helpers.createConversation(cc);
+            const identities = await cc.transaction(async (ctx) => {
+                return await ctx.getDeviceIdentities(conversationId, [
+                    clientId,
+                ]);
+            });
 
-                return identities.pop()?.clientId;
-            },
-            alice,
-            convId
-        );
-        await expect(identities).toBe(alice);
+            return identities.pop()?.clientId === clientIdStr;
+        });
+        await expect(success).toBe(true);
     });
 
     it("identities can be queried by user id", async () => {
-        const alice = "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com";
-        const convId = crypto.randomUUID();
-        await ccInit(alice);
-        await createConversation(alice, convId);
-        const identities = await browser.execute(
-            async (clientName, conversationId) => {
-                const cc = window.ensureCcDefined(clientName);
-                const cid = new window.ccModule.ConversationId(
-                    new TextEncoder().encode(conversationId).buffer
-                );
-                const identities = await cc.transaction(async (ctx) => {
-                    return await ctx.getUserIdentities(cid, [
-                        "LcksJb74Tm6N12cDjFy7lQ",
-                    ]);
-                });
+        const success = await browser.execute(async () => {
+            const clientIdStr =
+                "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com";
+            const clientId = window.helpers.newClientId(clientIdStr);
+            const cc = await window.helpers.ccInit(true, undefined, clientId);
+            const conversationId = await window.helpers.createConversation(cc);
+            const identities = await cc.transaction(async (ctx) => {
+                return await ctx.getUserIdentities(conversationId, [
+                    "LcksJb74Tm6N12cDjFy7lQ",
+                ]);
+            });
 
-                return identities.values().next().value?.pop()?.clientId;
-            },
-            alice,
-            convId
-        );
-        await expect(identities).toBe(alice);
+            return (
+                identities.values().next().value?.pop()?.clientId ===
+                clientIdStr
+            );
+        });
+        await expect(success).toBe(true);
     });
 });

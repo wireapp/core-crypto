@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ccInit, setup, teardown } from "./utils";
+import { setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -12,39 +12,29 @@ afterEach(async () => {
 
 describe("client identity", () => {
     it("get client public key should work", async () => {
-        const alice = crypto.randomUUID();
-        await ccInit(alice);
-        const result = await browser.execute(async (clientName) => {
-            const cc = window.ensureCcDefined(clientName);
+        const result = await browser.execute(async () => {
+            const cc = await window.helpers.ccInit();
             return (
                 await cc.transaction(async (ctx) => {
                     return await ctx.getCredentials();
                 })
             )[0]!.publicKeyHash().byteLength;
-        }, alice);
+        });
         await expect(result).toBe(32);
     });
 
     it("requesting client key package should work", async () => {
-        const alice = crypto.randomUUID();
-        await ccInit(alice);
-        const threwError = await browser.execute(async (clientName) => {
-            const cc = window.ensureCcDefined(clientName);
+        const threwError = await browser.execute(async () => {
+            const cc = await window.helpers.ccInit();
             let threwError = false;
             try {
-                const keypackage = await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
-                        ciphersuite: window.defaultCipherSuite,
-                        credentialType: window.ccModule.CredentialType.Basic,
-                    });
-                    return await ctx.generateKeyPackage(credentialRef!);
-                });
+                const keypackage = await window.helpers.generateKeyPackage(cc);
                 keypackage.serialize();
             } catch {
                 threwError = true;
             }
             return threwError;
-        }, alice);
+        });
         await expect(threwError).toBe(false);
     });
 });

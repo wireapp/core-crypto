@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ccInit, setup, teardown } from "./utils";
+import { setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import { CoreCryptoContext } from "@wireapp/core-crypto/browser";
 
@@ -13,36 +13,24 @@ afterEach(async () => {
 
 describe("transaction context", () => {
     it("should propagate JS error", async () => {
-        const alice = crypto.randomUUID();
         const expectedErrorMessage = "Message of expected error";
-
-        await ccInit(alice);
-
         await expect(
-            browser.execute(
-                async (clientName, expectedMessage) => {
-                    const cc = window.ensureCcDefined(clientName);
-
-                    await cc.transaction(async () => {
-                        throw new Error(expectedMessage);
-                    });
-                },
-                alice,
-                expectedErrorMessage
-            )
+            browser.execute(async (expectedMessage) => {
+                const cc = await window.helpers.ccInit();
+                await cc.transaction(async () => {
+                    throw new Error(expectedMessage);
+                });
+            }, expectedErrorMessage)
             // wdio wraps the error and prepends the original message with
             // the error type as prefix
         ).rejects.toThrow(new Error(`Error: ${expectedErrorMessage}`));
     });
 
     it("should throw error when using invalid context", async () => {
-        const alice = crypto.randomUUID();
-        await ccInit(alice);
-
-        const result = await browser.execute(async (clientName) => {
+        const result = await browser.execute(async () => {
             const CoreCryptoError = window.ccModule.CoreCryptoError;
             const MlsError = window.ccModule.MlsError;
-            const cc = window.ensureCcDefined(clientName);
+            const cc = await window.helpers.ccInit();
 
             let context: CoreCryptoContext | null = null;
             await cc.transaction(async (ctx) => {
@@ -72,7 +60,7 @@ describe("transaction context", () => {
                 isCorrectInstance: false,
                 message: false,
             };
-        }, alice);
+        });
         await expect(result.errorWasThrown).toBe(true);
         await expect(result.isCorrectInstance).toBe(true);
         await expect(result.message).toBe(
@@ -81,11 +69,8 @@ describe("transaction context", () => {
     });
 
     it("should roll back transaction after error", async () => {
-        const alice = crypto.randomUUID();
-        await ccInit(alice);
-
-        const error = await browser.execute(async (clientName) => {
-            const cc = window.ensureCcDefined(clientName);
+        const error = await browser.execute(async () => {
+            const cc = await window.helpers.ccInit();
             const basicCredentialType = window.ccModule.CredentialType.Basic;
             const conversationId = new window.ccModule.ConversationId(
                 new TextEncoder().encode("testConversation").buffer
@@ -147,7 +132,7 @@ describe("transaction context", () => {
                 }
             }
             throw new Error("Expected 'Conversation already exists' error");
-        }, alice);
+        });
         await expect(error.message).toBe("MlsError.ConversationAlreadyExists");
     });
 });
