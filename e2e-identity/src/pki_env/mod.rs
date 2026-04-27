@@ -20,7 +20,7 @@ use x509_cert::{
 use crate::{
     pki_env::hooks::PkiEnvironmentHooks,
     x509_check::{
-        RustyX509CheckError,
+        RustyX509CheckError, RustyX509CheckResult,
         revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams},
     },
 };
@@ -163,6 +163,10 @@ impl PkiEnvironment {
         trust_anchors.initialize().map_err(Error::Certval)?;
         self.rjt_pki_env.add_trust_anchor_source(Box::new(trust_anchors));
         Ok(())
+    }
+
+    pub fn validate_cert(&self, cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
+        self.rjt_pki_env.validate_cert_and_revocation(cert)
     }
 
     pub async fn validate_credential<'a>(&'a self, credential: CredentialRef<'a>) -> CredentialAuthenticationStatus {
