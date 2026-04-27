@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{fmt, sync::Arc, time::Duration};
 
 use core_crypto::{
     Ciphersuite as CryptoCiphersuite, CredentialFindFilters, MlsConversationConfiguration,
@@ -21,7 +21,16 @@ bytes_wrapper!(
     #[uniffi::export(Eq, Hash, Display)]
     SecretKey infallibly wraps core_crypto::mls::conversation::SecretKey; copy_bytes
 );
-impl_display_via_hex!(SecretKey);
+impl fmt::Display for SecretKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let hash = obfuscate::compute_hash(&self.0);
+        let mut buffer = [0; 20];
+        hex::encode_to_slice(hash, &mut buffer).expect("hash has constant length 10 therefore encodes to 20 bytes");
+        // SAFETY: hex crate always produces valid utf-8
+        let data = unsafe { str::from_utf8_unchecked(&buffer) };
+        f.write_str(data)
+    }
+}
 
 bytes_wrapper!(
     /// The raw public key of an external sender.
