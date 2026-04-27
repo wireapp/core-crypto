@@ -154,7 +154,23 @@ impl PkiEnvironment {
         Ok(trust_anchor)
     }
 
+    /// Adds the certificate as a trust anchor to the PKI environment.
+    ///
+    /// The certificate is saved to the database, and included in the PKI environment for
+    /// future validation.
     pub async fn add_trust_anchor(&mut self, name: &str, cert: Certificate) -> Result<()> {
+        // Validate it (expiration & signature only)
+        self.rjt_pki_env.validate_trust_anchor_cert(&cert)?;
+
+        // Save cert's DER representation to the database
+        let cert_data = E2eiAcmeCA {
+            content: cert.to_der()?,
+        };
+
+        self.database.new_transaction().await?;
+        self.database.save(cert_data).await?;
+        self.database.commit_transaction().await?;
+
         let mut trust_anchors = TaSource::new();
         trust_anchors.push(certval::CertFile {
             filename: name.to_owned(),
