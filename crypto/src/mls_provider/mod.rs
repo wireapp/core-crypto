@@ -18,7 +18,6 @@ use openmls_traits::{
         KemOutput, SignatureScheme,
     },
 };
-use wire_e2e_identity::PkiEnvironmentProvider;
 // TODO: remove this allow(unused) once the E2EI parts have been coupled.
 #[allow(unused)]
 pub use wire_e2e_identity::pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
@@ -105,7 +104,7 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for A
 pub struct MlsCryptoProvider {
     crypto: Arc<RustCrypto>,
     key_store: Database,
-    pki_env: PkiEnvironmentProvider,
+    auth_service: AuthenticationService,
 }
 
 impl MlsCryptoProvider {
@@ -115,19 +114,16 @@ impl MlsCryptoProvider {
     ///
     /// - [Database::open]
     pub fn new(key_store: Database) -> Self {
-        Self {
-            key_store,
-            crypto: Arc::clone(&CRYPTO),
-            pki_env: Default::default(),
-        }
+        Self::new_with_pki_env(key_store, None)
     }
 
     /// Construct a crypto provider with the given database and the PKI environment.
-    pub fn new_with_pki_env(key_store: Database, pki_env: PkiEnvironmentProvider) -> Self {
+    pub fn new_with_pki_env(key_store: Database, pki_env: Option<Arc<PkiEnvironment>>) -> Self {
+        let auth_service = AuthenticationService { pki_env };
         Self {
             key_store,
             crypto: Arc::clone(&CRYPTO),
-            pki_env,
+            auth_service,
         }
     }
 
@@ -137,23 +133,14 @@ impl MlsCryptoProvider {
         self.key_store.new_transaction().await.map_err(Into::into)
     }
 
-    /// Replaces the PKI env currently in place
-    pub async fn update_pki_env(&self, pki_env: Option<wire_e2e_identity::x509_check::revocation::PkiEnvironment>) {
-        self.pki_env.update_env(pki_env).await
-    }
-
     /// Set pki_env to a new shared pki environment provider
-    pub async fn set_pki_environment_provider(&mut self, pki_env: Option<PkiEnvironmentProvider>) {
-        if let Some(pki_env) = pki_env {
-            self.pki_env = pki_env;
-        } else {
-            self.pki_env.update_env(None).await;
-        }
+    pub async fn set_pki_environment(&mut self, pki_env: Option<Arc<PkiEnvironment>>) {
+        self.auth_service.pki_env = pki_env;
     }
 
     /// Returns whether we have a PKI env setup
-    pub async fn is_pki_env_setup(&self) -> bool {
-        self.pki_env.is_env_setup().await
+    pub fn is_pki_env_setup(&self) -> bool {
+        self.auth_service.pki_env.is_some()
     }
 
     /// Reseeds the internal CSPRNG entropy pool with a brand new one.
@@ -176,7 +163,7 @@ impl openmls_traits::OpenMlsCryptoProvider for MlsCryptoProvider {
     type CryptoProvider = RustCrypto;
     type RandProvider = RustCrypto;
     type KeyStoreProvider = Database;
-    type AuthenticationServiceProvider = PkiEnvironmentProvider;
+    type AuthenticationServiceProvider = AuthenticationService;
 
     fn crypto(&self) -> &Self::CryptoProvider {
         &self.crypto
@@ -191,7 +178,7 @@ impl openmls_traits::OpenMlsCryptoProvider for MlsCryptoProvider {
     }
 
     fn authentication_service(&self) -> &Self::AuthenticationServiceProvider {
-        &self.pki_env
+        &self.auth_service
     }
 }
 

@@ -1,6 +1,6 @@
 use openmls::prelude::{Credential, CredentialWithKey};
 use openmls_traits::types::{HashType, SignatureScheme};
-use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint};
+use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint, pki_env::PkiEnvironment};
 use x509_cert::{Certificate, der::Decode};
 
 use super::{Error, Result};
@@ -10,11 +10,7 @@ use crate::{CipherSuite, CredentialType, DeviceStatus, WireIdentity};
 pub(crate) trait CredentialExt {
     fn parse_leaf_cert(&self) -> Result<Option<Certificate>>;
     fn get_type(&self) -> Result<CredentialType>;
-    fn extract_identity(
-        &self,
-        cs: CipherSuite,
-        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
-    ) -> Result<WireIdentity>;
+    fn extract_identity(&self, cs: CipherSuite, env: Option<&PkiEnvironment>) -> Result<WireIdentity>;
     fn extract_public_key(&self) -> Result<Option<Vec<u8>>>;
     fn is_basic(&self) -> bool;
 }
@@ -28,11 +24,7 @@ impl CredentialExt for CredentialWithKey {
         self.credential.get_type()
     }
 
-    fn extract_identity(
-        &self,
-        cs: CipherSuite,
-        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
-    ) -> Result<WireIdentity> {
+    fn extract_identity(&self, cs: CipherSuite, env: Option<&PkiEnvironment>) -> Result<WireIdentity> {
         match self.credential.mls_credential() {
             openmls::prelude::MlsCredentialType::X509(cert) => cert.extract_identity(cs, env),
             openmls::prelude::MlsCredentialType::Basic(_) => {
@@ -76,11 +68,7 @@ impl CredentialExt for Credential {
         self.credential_type().try_into()
     }
 
-    fn extract_identity(
-        &self,
-        _cs: CipherSuite,
-        _env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
-    ) -> Result<WireIdentity> {
+    fn extract_identity(&self, _cs: CipherSuite, _env: Option<&PkiEnvironment>) -> Result<WireIdentity> {
         // This should not be called directly because one does not have the signature public key and hence
         // cannot compute the MLS thumbprint for a Basic credential.
         // [CredentialWithKey::extract_identity] should be preferred
@@ -110,17 +98,13 @@ impl CredentialExt for openmls::prelude::Certificate {
         Ok(CredentialType::X509)
     }
 
-    fn extract_identity(
-        &self,
-        cs: CipherSuite,
-        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
-    ) -> Result<WireIdentity> {
+    fn extract_identity(&self, cs: CipherSuite, env: Option<&PkiEnvironment>) -> Result<WireIdentity> {
         let env = env.ok_or(Error::MissingPKIEnvironment)?;
         let leaf = self.certificates.first().ok_or(Error::InvalidIdentity)?;
         let leaf = leaf.as_slice();
         use wire_e2e_identity::WireIdentityReader as _;
         let identity = leaf
-            .extract_identity(env, cs.e2ei_hash_alg())
+            .extract_identity(env.mls_pki_env_provider(), cs.e2ei_hash_alg())
             .map_err(|_| Error::InvalidIdentity)?;
         let identity = WireIdentity::try_from((identity, leaf)).map_err(|_| Error::InvalidIdentity)?;
         Ok(identity)

@@ -91,9 +91,9 @@ impl MlsConversation {
             credential: own_leaf.credential().clone(),
             signature_key: own_leaf.signature_key().clone(),
         };
-        let provider = provider.authentication_service();
+        let pki_env = provider.authentication_service().pki_env();
         let identity = own_leaf_credential_with_key
-            .extract_identity(self.ciphersuite(), provider.borrow().await.as_ref())
+            .extract_identity(self.ciphersuite(), pki_env.as_deref())
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         Ok(MlsDecryptMessage {

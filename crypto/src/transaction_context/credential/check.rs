@@ -1,5 +1,5 @@
 use core_crypto_keystore::{entities::E2eiCrl, traits::FetchFromDatabase};
-use wire_e2e_identity::x509_check::extract_crl_uris;
+use wire_e2e_identity::{pki_env::PkiEnvironment, x509_check::extract_crl_uris};
 use x509_cert::Certificate;
 
 use super::{Error, Result};
@@ -9,7 +9,7 @@ use crate::{
         crl::{CrlUris, extract_crl_uris_from_credentials, extract_crl_uris_from_group},
         ext::CredentialExt as _,
     },
-    transaction_context::TransactionContext,
+    transaction_context::{TransactionContext, e2e_identity},
 };
 
 impl TransactionContext {
@@ -17,7 +17,10 @@ impl TransactionContext {
     /// because in case x509 credentials are used, HTTP requests are done to fetch new certificate revocation lists.
     pub async fn check_credentials(&self) -> Result<()> {
         let database = self.database().await?;
-        let pki_env = self.pki_environment().await?;
+        let pki_env = self
+            .pki_environment()
+            .await?
+            .ok_or(e2e_identity::Error::PkiEnvironmentUnset)?;
 
         let credentials = Credential::get_all(&database)
             .await
@@ -53,7 +56,7 @@ impl TransactionContext {
 
         // check our own credentials for expiration or revocation
         for credential in credentials {
-            if self.check_credential(&credential).await.is_err() {
+            if self.check_credential(&pki_env, &credential).await.is_err() {
                 invalid_credential_refs.push(CredentialRef::from_credential(&credential));
             }
         }
@@ -97,21 +100,14 @@ impl TransactionContext {
         Ok(crl_uris)
     }
 
-    async fn check_credential(&self, credential: &Credential) -> Result<()> {
-        let pki_env = self.pki_environment().await?;
+    async fn check_credential(&self, pki_env: &PkiEnvironment, credential: &Credential) -> Result<()> {
         let provider = pki_env.mls_pki_env_provider();
-        let auth_service_arc = provider.borrow().await;
-        let Some(pki_env) = auth_service_arc.as_ref() else {
-            return Err(crate::transaction_context::e2e_identity::Error::PkiEnvironmentUnset.into());
-        };
-        let Some(cert) = credential
+        let cert = credential
             .mls_credential()
             .parse_leaf_cert()
             .map_err(RecursiveError::mls_credential("parsing leaf certificate"))?
-        else {
-            return Err(Error::InvalidCredential);
-        };
-        pki_env
+            .ok_or(Error::InvalidCredential)?;
+        provider
             .validate_cert_and_revocation(&cert)
             .map_err(RecursiveError::e2e_identity("validating credential certificate"))?;
         Ok(())

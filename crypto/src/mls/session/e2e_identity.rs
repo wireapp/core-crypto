@@ -10,12 +10,13 @@ use super::{Result, Session};
 use crate::{
     CipherSuite, CredentialFindFilters, CredentialType, E2eiConversationState, MlsError,
     mls::{credential::ext::CredentialExt as _, session::Error},
+    mls_provider::AuthenticationService,
 };
 
 impl<D> Session<D> {
     /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
-        self.crypto_provider.is_pki_env_setup().await
+        self.crypto_provider.is_pki_env_setup()
     }
 
     /// Returns true if end-to-end-identity is enabled for the given ciphersuite.
@@ -48,11 +49,6 @@ impl<D> Session<D> {
 
     /// Verifies a Group state before joining it
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
-        self.crypto_provider
-            .authentication_service()
-            .refresh_time_of_interest()
-            .await;
-
         let cs = group_info.ciphersuite().into();
 
         let is_sender = true; // verify the ratchet tree as sender to turn on hardened verification
@@ -69,7 +65,7 @@ impl<D> Session<D> {
             cs,
             credentials,
             CredentialType::X509,
-            self.crypto_provider.authentication_service().borrow().await.as_ref(),
+            self.crypto_provider.authentication_service(),
         )
         .await)
     }
@@ -94,7 +90,7 @@ impl<D> Session<D> {
             cs,
             rt,
             credential_type,
-            self.crypto_provider.authentication_service().borrow().await.as_ref(),
+            self.crypto_provider.authentication_service(),
         )
         .await
     }
@@ -102,13 +98,13 @@ impl<D> Session<D> {
         ciphersuite: CipherSuite,
         ratchet_tree: RatchetTree,
         credential_type: CredentialType,
-        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
+        auth_service: &AuthenticationService,
     ) -> Result<E2eiConversationState> {
         let credentials = ratchet_tree.iter().filter_map(|n| match n {
             Some(Node::LeafNode(ln)) => Some(ln.credential()),
             _ => None,
         });
-        Ok(Self::compute_conversation_state(ciphersuite, credentials, credential_type, env).await)
+        Ok(Self::compute_conversation_state(ciphersuite, credentials, credential_type, auth_service).await)
     }
 
     /// _credential_type will be used in the future to get the usage of VC Credentials, even Basics one.
@@ -117,12 +113,13 @@ impl<D> Session<D> {
         ciphersuite: CipherSuite,
         credentials: impl Iterator<Item = &'a Credential>,
         _credential_type: CredentialType,
-        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
+        auth_service: &AuthenticationService,
     ) -> E2eiConversationState {
-        let env = match env {
-            Some(e) => e,
+        let pki_env = match auth_service.pki_env() {
+            Some(env) => env,
             None => return E2eiConversationState::NotEnabled,
         };
+        let env = pki_env.mls_pki_env_provider();
 
         let mut is_e2ei = false;
         let mut state = E2eiConversationState::Verified;

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use openmls::prelude::CredentialType;
 use openmls_traits::types::SignatureScheme;
+use wire_e2e_identity::pki_env::PkiEnvironment;
 
 use super::error::{Error, Result};
 use crate::{CertificateBundle, ClientId, RecursiveError, mls::session::id::ClientIdRef};
@@ -19,19 +20,20 @@ pub enum ClientIdentifier {
 impl ClientIdentifier {
     /// Extract the unique [ClientId] from an identifier. Use with parsimony as, in case of a x509
     /// certificate this leads to parsing the certificate
-    pub fn get_id(
-        &self,
-        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
-    ) -> Result<std::borrow::Cow<'_, ClientIdRef>> {
+    pub fn get_id(&self, pki_env: Option<&PkiEnvironment>) -> Result<std::borrow::Cow<'_, ClientIdRef>> {
         match self {
             ClientIdentifier::Basic(id) => Ok(std::borrow::Cow::Borrowed(id)),
             ClientIdentifier::X509(certs) => {
+                let pki_env = pki_env
+                    .ok_or(crate::mls::credential::Error::MissingPKIEnvironment)
+                    .map_err(RecursiveError::mls_credential("getting ID"))?;
+
                 // since ClientId has uniqueness constraints, it is the same for all certificates.
                 // hence no need to compute it for every certificate then verify its uniqueness
                 // that's not a getter's job
                 let cert = certs.values().next().ok_or(Error::NoX509CertificateBundle)?;
                 let id = cert
-                    .get_client_id(env)
+                    .get_client_id(pki_env)
                     .map_err(RecursiveError::mls_credential("getting client id"))?;
                 Ok(std::borrow::Cow::Owned(id))
             }

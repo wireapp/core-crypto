@@ -127,7 +127,7 @@ impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
 #[derive(Debug, Clone)]
 pub struct CoreCrypto {
     database: Database,
-    pki_environment: Arc<RwLock<Option<PkiEnvironment>>>,
+    pki_environment: Option<Arc<PkiEnvironment>>,
     mls: Arc<RwLock<Option<mls::session::Session<Database>>>>,
     #[cfg(feature = "proteus")]
     proteus: Arc<Mutex<Option<proteus::ProteusCentral>>>,
@@ -148,23 +148,20 @@ impl CoreCrypto {
     }
 
     /// Set the session's PKI Environment
-    pub async fn set_pki_environment(&self, pki_environment: Option<PkiEnvironment>) -> Result<()> {
+    pub async fn set_pki_environment(&mut self, pki_environment: Option<Arc<PkiEnvironment>>) {
         if let Some(mls_session) = self.mls.write().await.as_mut() {
             mls_session
                 .crypto_provider
-                .set_pki_environment_provider(pki_environment.as_ref().map(|p| p.mls_pki_env_provider()))
-                .await
+                .set_pki_environment(pki_environment.clone())
+                .await;
         }
 
-        let mut guard = self.pki_environment.write().await;
-        *guard = pki_environment;
-
-        Ok(())
+        self.pki_environment = pki_environment;
     }
 
     /// Get the session's PKI Environment
-    pub async fn get_pki_environment(&self) -> Option<PkiEnvironment> {
-        self.pki_environment.read().await.clone()
+    pub async fn get_pki_environment(&self) -> Option<Arc<PkiEnvironment>> {
+        self.pki_environment.clone()
     }
 
     /// Get the mls session if initialized

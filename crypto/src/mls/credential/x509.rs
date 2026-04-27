@@ -6,7 +6,9 @@ use derive_more::derive;
 use openmls::prelude::Credential as MlsCredential;
 use openmls_traits::types::SignatureScheme;
 use openmls_x509_credential::CertificateKeyPair;
-use wire_e2e_identity::{HashAlgorithm, WireIdentityReader, legacy::id::WireQualifiedClientId};
+use wire_e2e_identity::{
+    HashAlgorithm, WireIdentityReader, legacy::id::WireQualifiedClientId, pki_env::PkiEnvironment,
+};
 #[cfg(test)]
 use x509_cert::der::Encode;
 use zeroize::Zeroize;
@@ -78,11 +80,7 @@ impl CertificateBundle {
     }
 
     /// Reads the client_id from the leaf certificate
-    pub fn get_client_id(
-        &self,
-        env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
-    ) -> Result<ClientId> {
-        let env = env.ok_or(Error::MissingPKIEnvironment)?;
+    pub fn get_client_id(&self, pki_env: &PkiEnvironment) -> Result<ClientId> {
         let leaf = self.certificate_chain.first().ok_or(Error::InvalidIdentity)?;
 
         let hash_alg = match self.signature_scheme {
@@ -92,7 +90,7 @@ impl CertificateBundle {
         };
 
         let identity = leaf
-            .extract_identity(env, hash_alg)
+            .extract_identity(pki_env.mls_pki_env_provider(), hash_alg)
             .map_err(|_| Error::InvalidIdentity)?;
 
         use wire_e2e_identity::legacy::id as legacy_id;

@@ -20,7 +20,6 @@ pub(crate) trait HasSessionAndCrypto: Send {
 
 #[cfg(test)]
 mod tests {
-
     use crate::{
         CertificateBundle, ClientIdentifier, CoreCrypto, CredentialType,
         test_utils::{x509::X509TestChain, *},
@@ -97,14 +96,12 @@ mod tests {
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
             // phase 1: init without initialized mls_client
-            let cc = CoreCrypto::new(db.clone());
+            let mut cc = CoreCrypto::new(db.clone());
             let context = cc.new_transaction().await.unwrap();
 
             let hooks = Arc::new(DummyPkiEnvironmentHooks);
             let pki_env = PkiEnvironment::new(hooks, db).await.expect("creating pki environment");
-            cc.set_pki_environment(Some(pki_env))
-                .await
-                .expect("setting pki environment");
+            cc.set_pki_environment(Some(Arc::new(pki_env))).await;
 
             x509_test_chain.register_with_central(&context).await;
 
@@ -116,9 +113,9 @@ mod tests {
                     CertificateBundle::rand_identifier(&session_id, &[x509_test_chain.find_local_intermediate_ca()])
                 }
             };
-            let provider = cc.get_pki_environment().await.unwrap().mls_pki_env_provider();
+            let pki_env = cc.get_pki_environment().await;
             let session_id = identifier
-                .get_id(provider.borrow().await.as_ref())
+                .get_id(pki_env.as_deref())
                 .expect("get session_id from identifier")
                 .into_owned();
             context

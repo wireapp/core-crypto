@@ -29,7 +29,6 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
-        auth_service.refresh_time_of_interest().await;
         let cs = group_info.ciphersuite().into();
 
         let is_sender = true; // verify the ratchet tree as sender to turn on hardened verification
@@ -51,14 +50,7 @@ impl TransactionContext {
             _ => None,
         });
 
-        let auth_service = auth_service.borrow().await;
-        Ok(Session::<Database>::compute_conversation_state(
-            cs,
-            credentials,
-            CredentialType::X509,
-            auth_service.as_ref(),
-        )
-        .await)
+        Ok(Session::<Database>::compute_conversation_state(cs, credentials, CredentialType::X509, auth_service).await)
     }
 
     /// See [crate::mls::session::Session::get_credential_in_use].
@@ -86,8 +78,8 @@ impl TransactionContext {
             .mls_provider()
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
-        let auth_service = mls_provider.authentication_service().borrow().await;
-        Session::<Database>::get_credential_in_use_in_ratchet_tree(cs, rt, credential_type, auth_service.as_ref())
+        let auth_service = mls_provider.authentication_service();
+        Session::<Database>::get_credential_in_use_in_ratchet_tree(cs, rt, credential_type, auth_service)
             .await
             .map_err(RecursiveError::mls_client("getting credentials in use"))
             .map_err(Into::into)
