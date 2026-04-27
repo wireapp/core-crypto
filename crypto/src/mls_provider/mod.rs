@@ -11,6 +11,7 @@ pub(crate) use crypto_provider::CRYPTO;
 pub use crypto_provider::RustCrypto;
 pub use error::{MlsProviderError, MlsProviderResult};
 use openmls_traits::{
+    authentication_service::{CredentialAuthenticationStatus, CredentialRef},
     crypto::OpenMlsCrypto,
     types::{
         AeadType, Ciphersuite, CryptoError, ExporterSecret, HashType, HpkeCiphertext, HpkeConfig, HpkeKeyPair,
@@ -21,6 +22,7 @@ use wire_e2e_identity::PkiEnvironmentProvider;
 // TODO: remove this allow(unused) once the E2EI parts have been coupled.
 #[allow(unused)]
 pub use wire_e2e_identity::pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
+use wire_e2e_identity::pki_env::PkiEnvironment;
 
 /// 32-byte raw entropy seed
 pub type RawEntropySeed = <rand_chacha::ChaCha20Rng as rand::SeedableRng>::Seed;
@@ -65,6 +67,36 @@ impl std::ops::Deref for EntropySeed {
 impl std::ops::DerefMut for EntropySeed {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AuthenticationService {
+    pki_env: Option<Arc<PkiEnvironment>>,
+}
+
+impl AuthenticationService {
+    pub fn pki_env(&self) -> Option<Arc<PkiEnvironment>> {
+        self.pki_env.clone()
+    }
+}
+
+#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
+impl openmls_traits::authentication_service::AuthenticationServiceDelegate for AuthenticationService {
+    async fn validate_credential<'a>(&'a self, credential: CredentialRef<'a>) -> CredentialAuthenticationStatus {
+        match credential {
+            // We assume that Basic credentials are always valid
+            CredentialRef::Basic { .. } => CredentialAuthenticationStatus::Valid,
+
+            CredentialRef::X509 { .. } => match &self.pki_env {
+                None => {
+                    log::warn!("unable to validate X509 credentials: PKI environment is unset");
+                    CredentialAuthenticationStatus::Unknown
+                }
+                Some(pki_env) => pki_env.validate_credential(credential).await,
+            },
+        }
     }
 }
 
