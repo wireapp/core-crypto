@@ -11,40 +11,10 @@
 //!     * 409 CONFLICT --> do nothing. [ConversationGuard::decrypt_message] will restore the proposals not committed
 //!     * 5xx --> retry
 
-use openmls::prelude::MlsGroupStateError;
-
 use super::{ConversationGuard, Result};
-use crate::{MlsError, MlsProposalRef, mls::conversation::Error};
+use crate::mls::conversation::Error;
 
 impl ConversationGuard {
-    /// Allows to remove a pending (uncommitted) proposal. Use this when backend rejects the proposal
-    /// you just sent e.g. if permissions have changed meanwhile.
-    ///
-    /// **CAUTION**: only use this when you had an explicit response from the Delivery Service
-    /// e.g. 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc..
-    ///
-    /// # Arguments
-    /// * `conversation_id` - the group/conversation id
-    /// * `proposal_ref` - unique proposal identifier which is present in [crate::MlsProposalBundle] and returned from
-    ///   all operation creating a proposal
-    ///
-    /// # Errors
-    /// When the conversation is not found or the proposal reference does not identify a proposal
-    /// in the local pending proposal store
-    pub async fn clear_pending_proposal(&mut self, proposal_ref: MlsProposalRef) -> Result<()> {
-        self.conversation_mut(async move |conversation, database| {
-            conversation
-                .group
-                .remove_pending_proposal(database, &proposal_ref)
-                .await
-                .map_err(|mls_group_state_error| match mls_group_state_error {
-                    MlsGroupStateError::PendingProposalNotFound => Error::PendingProposalNotFound(proposal_ref),
-                    _ => MlsError::wrap("removing pending proposal")(mls_group_state_error).into(),
-                })
-        })
-        .await
-    }
-
     /// Allows to remove a pending commit. Use this when backend rejects the commit
     /// you just sent e.g. if permissions have changed meanwhile.
     ///
