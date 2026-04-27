@@ -2,7 +2,6 @@ import { browser } from "@wdio/globals";
 
 import {
     Ciphersuite,
-    CoreCrypto,
     type CommitBundle,
     type PkiEnvironmentHooks,
     HttpMethod,
@@ -22,26 +21,12 @@ type ccModuleType = typeof import("@wireapp/core-crypto/browser");
 declare global {
     interface Window {
         ccModule: ccModuleType;
-        cc: Map<string, CoreCrypto>;
         defaultCipherSuite: Ciphersuite;
         deliveryService: DeliveryService;
         pkiEnvironmentHooks: PkiEnvironmentHooks;
         _latestCommitBundle: CommitBundle;
         recordedLogs: LogEntry[];
         helpers: Helpers;
-
-        // Helper functions that are used inside the browser context
-        /**
-         * Gets a {@link CoreCrypto} instance initialized previously via
-         * {@link ccInit}.
-         *
-         * @param clientName The name the {@link ccInit} was called with.
-         *
-         * @returns {CoreCrypto} The {@link CoreCrypto} instance.
-         *
-         * @throws Error if no instance with the name has been initialized.
-         */
-        ensureCcDefined: (clientName: string) => CoreCrypto;
     }
 }
 
@@ -81,16 +66,6 @@ export async function setup() {
             async fetchBackendAccessToken(_dpop) {
                 return "dummy-backend-token";
             },
-        };
-
-        window.ensureCcDefined = (clientName: string) => {
-            const cc = window.cc.get(clientName);
-            if (cc === undefined) {
-                throw new Error(
-                    `Client with name '${clientName}' is not initialized in the browser context.`
-                );
-            }
-            return cc;
         };
     });
 }
