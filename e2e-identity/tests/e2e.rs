@@ -270,7 +270,8 @@ async fn x509_cert_acquisition_works(test_env: TestEnvironment, #[case] sign_alg
 #[case(JwsAlgorithm::Ed25519)]
 async fn fetching_crls_works(test_env: TestEnvironment, #[case] sign_alg: JwsAlgorithm) {
     let (pki_env, config) = prepare_pki_env_and_config(&test_env, sign_alg).await;
-    let acq = X509CredentialAcquisition::try_new(Arc::new(pki_env.clone()), config).unwrap();
+    let pki_env = Arc::new(pki_env);
+    let acq = X509CredentialAcquisition::try_new(pki_env.clone(), config).unwrap();
     let (_sign_kp, certs) = acq
         .complete_dpop_challenge()
         .await
