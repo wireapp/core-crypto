@@ -366,7 +366,6 @@ impl X509TestChain {
             trust_roots: &trust_roots,
             intermediates: &intermediates,
             crls: &crls,
-            time_of_interest: None,
         };
 
         let pki_env = wire_e2e_identity::x509_check::revocation::PkiEnvironment::init(params).unwrap();

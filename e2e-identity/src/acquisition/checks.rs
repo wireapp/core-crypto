@@ -31,7 +31,6 @@ pub(crate) async fn verify_cert_chain(
         trust_roots: trust_roots.as_slice(),
         intermediates,
         crls: &[],
-        time_of_interest: None,
     })?;
 
     verify_leaf_certificate(config, &env, leaf)?;

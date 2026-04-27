@@ -47,7 +47,6 @@ impl TransactionContext {
             intermediates: Default::default(),
             trust_roots: Default::default(),
             crls: Default::default(),
-            time_of_interest: Default::default(),
         })?;
 
         // Parse/decode PEM cert
