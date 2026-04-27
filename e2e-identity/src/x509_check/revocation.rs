@@ -78,6 +78,13 @@ fn check_cpr(cpr: CertificationPathResults) -> RustyX509CheckResult<()> {
     }
 }
 
+fn now() -> RustyX509CheckResult<u64> {
+    Ok(web_time::SystemTime::now()
+        .duration_since(web_time::SystemTime::UNIX_EPOCH)
+        .map_err(|_| RustyX509CheckError::CannotDetermineCurrentTime)?
+        .as_secs())
+}
+
 impl PkiEnvironment {
     pub fn decode_pem_cert(pem: String) -> RustyX509CheckResult<x509_cert::Certificate> {
         Ok(x509_cert::Certificate::from_pem(pem)?)
@@ -176,7 +183,7 @@ impl PkiEnvironment {
 
     pub fn validate_trust_anchor_cert(&self, cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
         let mut cps = CertificationPathSettings::default();
-        set_time_of_interest(&mut cps, self.toi);
+        set_time_of_interest(&mut cps, now()?);
 
         let mut cert = PDVCertificate::try_from(cert.clone())?;
         cert.parse_extensions(EXTS_OF_INTEREST);
@@ -277,7 +284,7 @@ impl PkiEnvironment {
         perform_revocation_check: bool,
     ) -> RustyX509CheckResult<()> {
         let mut cps = CertificationPathSettings::default();
-        set_time_of_interest(&mut cps, self.toi);
+        set_time_of_interest(&mut cps, now()?);
         set_require_ta_store(&mut cps, true);
         set_forbid_self_signed_ee(&mut cps, true);
 
