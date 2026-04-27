@@ -39,7 +39,7 @@
         "@wdio/spec-reporter": "^9.27.0",
         "@wdio/static-server-service": "^9.27.0",
         "dts-bundle-generator": "^9.5.1",
-        "eslint": "^10.2.0",
+        "eslint": "^10.2.1",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-prettier": "^5.5.1",
         "eslint-plugin-wdio": "^9.27.0",
@@ -48,7 +48,7 @@
         "ts-loader": "^9.5.7",
         "typedoc": "0.28.19",
         "typescript": "^5.8.3",
-        "typescript-eslint": "^8.58.2",
+        "typescript-eslint": "^8.59.0",
         "uniffi-bindgen-react-native": "github:wireapp/uniffi-bindgen-react-native#8e6391eb37f018d49d7be502320b930ba1e40142",
         "yarn": "^1.22.22"
     },
