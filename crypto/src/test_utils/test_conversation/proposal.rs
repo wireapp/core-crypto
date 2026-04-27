@@ -19,10 +19,8 @@ impl<'a> TestConversation<'a> {
         let mut guard = self.guard().await;
         let session = &proposer.session().await;
         let proposal = guard
-            .conversation_mut(async |conversation, database| {
-                conversation
-                    .propose_add_member(session, database, key_package.into())
-                    .await
+            .conversation_mut(async |conversation, _database| {
+                conversation.propose_add_member(session, key_package.into()).await
             })
             .await
             .unwrap()

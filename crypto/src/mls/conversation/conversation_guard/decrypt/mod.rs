@@ -159,9 +159,9 @@ impl ConversationGuard {
         })) = message_result
         {
             let mut decrypted_message = self
-                .conversation_mut(async |conversation, database| {
+                .conversation_mut(async |conversation, _database| {
                     let ct = conversation.extract_confirmation_tag_from_own_commit(&message)?;
-                    conversation.handle_own_commit(session, database, provider, ct).await
+                    conversation.handle_own_commit(session, provider, ct).await
                 })
                 .await?;
             debug_assert!(

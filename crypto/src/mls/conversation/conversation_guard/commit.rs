@@ -32,9 +32,8 @@ impl ConversationGuard {
     pub(super) async fn merge_commit(&mut self) -> Result<()> {
         let client = self.session().await?;
         let provider = self.crypto_provider().await?;
-        let database = self.database().await?;
-        let mut conversation = self.inner.write().await;
-        conversation.commit_accepted(&client, &database, &provider).await
+        self.conversation_mut(async |conversation, _database| conversation.commit_accepted(&client, &provider).await)
+            .await
     }
 
     /// Send the commit via [crate::MlsTransport] and handle the response.
@@ -127,32 +126,30 @@ impl ConversationGuard {
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
         let signer = credential.signature_key();
-        let database = self.database().await?;
-        let mut conversation = self.inner.write().await;
 
-        let members = conversation
-            .group
-            .members()
-            .filter_map(|kp| {
-                clients
-                    .iter()
-                    .any(move |client_id| client_id.borrow() == kp.credential.identity())
-                    .then_some(kp.index)
+        let (commit, welcome, group_info) = self
+            .conversation_mut(async |conversation, _database| {
+                let members = conversation
+                    .group
+                    .members()
+                    .filter_map(|kp| {
+                        clients
+                            .iter()
+                            .any(move |client_id| client_id.borrow() == kp.credential.identity())
+                            .then_some(kp.index)
+                    })
+                    .collect::<Vec<_>>();
+
+                conversation
+                    .group
+                    .remove_members(&backend, signer, &members)
+                    .await
+                    .map_err(MlsError::wrap("group remove members"))
+                    .map_err(Into::into)
             })
-            .collect::<Vec<_>>();
-
-        let (commit, welcome, group_info) = conversation
-            .group
-            .remove_members(&backend, signer, &members)
-            .await
-            .map_err(MlsError::wrap("group remove members"))?;
+            .await?;
 
         let group_info = Self::group_info(group_info)?;
-
-        conversation.persist_group_when_changed(&database, false).await?;
-
-        // we don't need the conversation anymore, but we do need to mutably borrow `self` again
-        drop(conversation);
 
         self.send_and_merge_commit(MlsCommitBundle {
             commit,
@@ -237,22 +234,24 @@ impl ConversationGuard {
     pub(crate) async fn commit_pending_proposals_inner(&mut self) -> Result<Option<MlsCommitBundle>> {
         let session = &self.session().await?;
         let provider = &self.crypto_provider().await?;
-        let mut inner = self.inner.write().await;
-        let database = self.database().await?;
-        if inner.group.pending_proposals().next().is_none() {
+        if self.conversation().await.group().pending_proposals().next().is_none() {
             return Ok(None);
         }
 
-        let signer = &inner.find_current_credential(session).await?.signature_key_pair;
-
-        let (commit, welcome, gi) = inner
-            .group
-            .commit_to_pending_proposals(provider, signer)
-            .await
-            .map_err(MlsError::wrap("group commit to pending proposals"))?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
-
-        inner.persist_group_when_changed(&database, false).await?;
+        let (commit, welcome, openmls_group_info) = self
+            .conversation_mut(async |inner, _database| {
+                let signer = &inner.find_current_credential(session).await?.signature_key_pair;
+                inner
+                    .group
+                    .commit_to_pending_proposals(provider, signer)
+                    .await
+                    .map_err(MlsError::wrap("group commit to pending proposals"))
+                    .map_err(Into::into)
+            })
+            .await?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(
+            openmls_group_info.expect("creating a commit always produces a group info"),
+        )?;
 
         Ok(Some(MlsCommitBundle {
             welcome,
@@ -268,21 +267,24 @@ impl ConversationGuard {
     ) -> Result<Option<MlsCommitBundle>> {
         let session = &self.session().await?;
         let provider = &self.crypto_provider().await?;
-        let database = self.database().await?;
-        let mut inner = self.inner.write().await;
         if proposals.is_empty() {
             return Ok(None);
         }
-        let signer = &inner.find_current_credential(session).await?.signature_key_pair;
 
-        let (commit, welcome, gi) = inner
-            .group
-            .commit_to_inline_proposals(provider, signer, proposals)
-            .await
-            .map_err(MlsError::wrap("group commit to pending proposals"))?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
-
-        inner.persist_group_when_changed(&database, false).await?;
+        let (commit, welcome, openmls_group_info) = self
+            .conversation_mut(async |inner, _database| {
+                let signer = &inner.find_current_credential(session).await?.signature_key_pair;
+                inner
+                    .group
+                    .commit_to_inline_proposals(provider, signer, proposals)
+                    .await
+                    .map_err(MlsError::wrap("group commit to pending proposals"))
+                    .map_err(Into::into)
+            })
+            .await?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(
+            openmls_group_info.expect("creating a commit always produces a group info"),
+        )?;
 
         Ok(Some(MlsCommitBundle {
             welcome,

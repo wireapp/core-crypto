@@ -18,11 +18,9 @@ use crate::{MlsError, Session, mls::MlsConversation, mls_provider::MlsCryptoProv
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
-    #[cfg_attr(test, crate::durable)]
     pub(crate) async fn commit_accepted(
         &mut self,
         session: &Session<Database>,
-        database: &Database,
         backend: &MlsCryptoProvider,
     ) -> Result<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
@@ -32,7 +30,6 @@ impl MlsConversation {
             .merge_pending_commit(backend)
             .await
             .map_err(MlsError::wrap("merging pending commit"))?;
-        self.persist_group_when_changed(database, false).await?;
 
         // ..so if there's any, we clear them after the commit is merged
         for oln in &previous_own_leaf_nodes {
@@ -70,10 +67,8 @@ mod tests {
                 conversation
                     .guard()
                     .await
-                    .conversation_mut(async |conversation, database| {
-                        conversation
-                            .commit_accepted(&session, database, &session.crypto_provider)
-                            .await
+                    .conversation_mut(async |conversation, _database| {
+                        conversation.commit_accepted(&session, &session.crypto_provider).await
                     })
                     .await
                     .unwrap();
@@ -106,10 +101,8 @@ mod tests {
                 conversation
                     .guard()
                     .await
-                    .conversation_mut(async |conversation, database| {
-                        conversation
-                            .commit_accepted(&session, database, &session.crypto_provider)
-                            .await
+                    .conversation_mut(async |conversation, _database| {
+                        conversation.commit_accepted(&session, &session.crypto_provider).await
                     })
                     .await
                     .unwrap();

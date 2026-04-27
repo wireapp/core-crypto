@@ -48,10 +48,10 @@ impl TransactionContext {
         };
 
         guard
-            .conversation_mut(async move |conversation, database| {
+            .conversation_mut(async move |conversation, _database| {
                 let proposal = match proposal {
                     MlsProposal::Add(key_package) => conversation
-                        .propose_add_member(&client, database, key_package.into())
+                        .propose_add_member(&client, key_package.into())
                         .await
                         .map_err(RecursiveError::mls_conversation("proposing to add member"))
                         .map_err(ConversationError::from)?,
@@ -61,7 +61,7 @@ impl TransactionContext {
                     MlsProposal::Remove(_) => {
                         let index = remove_index.expect("we always have a remove index for a remove proposal");
                         conversation
-                            .propose_remove_member(&client, &provider, database, index)
+                            .propose_remove_member(&client, &provider, index)
                             .await
                             .map_err(RecursiveError::mls_conversation("proposing to remove member"))
                             .map_err(ConversationError::from)?

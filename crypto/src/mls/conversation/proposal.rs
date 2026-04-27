@@ -14,11 +14,9 @@ use crate::{MlsConversation, MlsError, MlsProposalRef, Session, mls_provider::Ml
 /// Creating proposals
 impl MlsConversation {
     /// Used when adding or updating the history client.
-    #[cfg_attr(test, crate::durable)]
     pub(crate) async fn propose_add_member(
         &mut self,
         session: &Session<Database>,
-        database: &Database,
         key_package: KeyPackageIn,
     ) -> Result<MlsProposalBundle> {
         let signer = &self
@@ -36,17 +34,14 @@ impl MlsConversation {
             proposal,
             proposal_ref: proposal_ref.into(),
         };
-        self.persist_group_when_changed(database, false).await?;
         Ok(proposal)
     }
 
     /// see [openmls::group::MlsGroup::propose_remove_member]
-    #[cfg_attr(test, crate::durable)]
     pub async fn propose_remove_member(
         &mut self,
         client: &Session<Database>,
         provider: &MlsCryptoProvider,
-        database: &Database,
         member: LeafNodeIndex,
     ) -> Result<MlsProposalBundle> {
         let signer = &self
@@ -59,7 +54,6 @@ impl MlsConversation {
             .propose_remove_member(provider, signer, member)
             .map_err(MlsError::wrap("propose remove member"))
             .map(MlsProposalBundle::from)?;
-        self.persist_group_when_changed(database, false).await?;
         Ok(proposal)
     }
 }
