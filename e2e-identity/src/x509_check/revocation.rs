@@ -36,7 +36,6 @@ pub struct PkiEnvironmentParams<'a> {
 
 pub struct PkiEnvironment {
     pe: certval::environment::PkiEnvironment,
-    toi: u64,
 }
 
 impl std::ops::Deref for PkiEnvironment {
@@ -55,10 +54,7 @@ impl std::ops::DerefMut for PkiEnvironment {
 
 impl std::fmt::Debug for PkiEnvironment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("PkiEnvironment")
-            .field("pe", &"[OPAQUE]")
-            .field("toi", &self.toi)
-            .finish()
+        f.debug_struct("PkiEnvironment").field("pe", &"[OPAQUE]").finish()
     }
 }
 
@@ -178,7 +174,7 @@ impl PkiEnvironment {
 
         pe.add_certificate_source(Box::new(cert_source));
 
-        Ok(Self { pe, toi })
+        Ok(Self { pe })
     }
 
     pub fn validate_trust_anchor_cert(&self, cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
@@ -283,8 +279,10 @@ impl PkiEnvironment {
         end_identity_cert: &x509_cert::Certificate,
         perform_revocation_check: bool,
     ) -> RustyX509CheckResult<()> {
+        let toi = now()?;
+
         let mut cps = CertificationPathSettings::default();
-        set_time_of_interest(&mut cps, now()?);
+        set_time_of_interest(&mut cps, toi);
         set_require_ta_store(&mut cps, true);
         set_forbid_self_signed_ee(&mut cps, true);
 
@@ -293,7 +291,7 @@ impl PkiEnvironment {
 
         let mut paths = vec![];
         self.pe
-            .get_paths_for_target(&self.pe, &end_identity_cert, &mut paths, 0, self.toi)?;
+            .get_paths_for_target(&self.pe, &end_identity_cert, &mut paths, 0, toi)?;
 
         if paths.is_empty() {
             return Err(RustyX509CheckError::CertValError(certval::Error::PathValidation(
