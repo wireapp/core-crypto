@@ -55,11 +55,9 @@ impl TransactionContext {
                         .await
                         .map_err(RecursiveError::mls_conversation("proposing to add member"))
                         .map_err(ConversationError::from)?,
-                    MlsProposal::Update => conversation
-                        .propose_self_update(&client, &provider, database)
-                        .await
-                        .map_err(RecursiveError::mls_conversation("proposing self update"))
-                        .map_err(ConversationError::from)?,
+                    MlsProposal::Update => unimplemented!(
+                        "This whole function is going to be removed in WPB-24580, and this match arm already has been."
+                    ),
                     MlsProposal::Remove(_) => {
                         let index = remove_index.expect("we always have a remove index for a remove proposal");
                         conversation

@@ -6,7 +6,7 @@
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
 use core_crypto_keystore::Database;
-use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn, prelude::LeafNode};
+use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn};
 
 use super::{Error, Result};
 use crate::{MlsConversation, MlsError, MlsProposalRef, Session, mls_provider::MlsCryptoProvider};
@@ -59,48 +59,6 @@ impl MlsConversation {
             .propose_remove_member(provider, signer, member)
             .map_err(MlsError::wrap("propose remove member"))
             .map(MlsProposalBundle::from)?;
-        self.persist_group_when_changed(database, false).await?;
-        Ok(proposal)
-    }
-
-    /// see [openmls::group::MlsGroup::propose_self_update]
-    #[cfg_attr(test, crate::durable)]
-    pub async fn propose_self_update(
-        &mut self,
-        client: &Session<Database>,
-        provider: &MlsCryptoProvider,
-        database: &Database,
-    ) -> Result<MlsProposalBundle> {
-        self.propose_explicit_self_update(client, provider, database, None)
-            .await
-    }
-
-    /// see [openmls::group::MlsGroup::propose_self_update]
-    #[cfg_attr(test, crate::durable)]
-    pub async fn propose_explicit_self_update(
-        &mut self,
-        client: &Session<Database>,
-        backend: &MlsCryptoProvider,
-        database: &Database,
-        leaf_node: Option<LeafNode>,
-    ) -> Result<MlsProposalBundle> {
-        let msg_signer = &self
-            .find_current_credential(client)
-            .await
-            .map_err(|_| Error::IdentityInitializationError)?
-            .signature_key_pair;
-
-        let proposal = if let Some(own_leaf) = leaf_node {
-            let credential = self.find_credential_for_leaf_node(client, &own_leaf).await?;
-            self.group
-                .propose_explicit_self_update(backend, msg_signer, own_leaf, credential.signature_key())
-                .await
-        } else {
-            self.group.propose_self_update(backend, msg_signer).await
-        }
-        .map(MlsProposalBundle::from)
-        .map_err(MlsError::wrap("proposing explicit self update"))?;
-
         self.persist_group_when_changed(database, false).await?;
         Ok(proposal)
     }
