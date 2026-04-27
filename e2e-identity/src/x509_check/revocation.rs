@@ -174,23 +174,6 @@ impl PkiEnvironment {
         Ok(Self { pe, toi })
     }
 
-    /// Overrides TIME_OF_INTEREST for certificate verifications based on a moment in the past or future
-    pub fn set_time_of_interest(&mut self, toi: u64) {
-        self.toi = toi;
-    }
-
-    /// Updates the TIME_OF_INTEREST for certificate checks to be `now`
-    pub fn refresh_time_of_interest(&mut self) -> RustyX509CheckResult<()> {
-        self.set_time_of_interest(
-            web_time::SystemTime::now()
-                .duration_since(web_time::SystemTime::UNIX_EPOCH)
-                .map_err(|_| RustyX509CheckError::CannotDetermineCurrentTime)?
-                .as_secs(),
-        );
-
-        Ok(())
-    }
-
     pub fn validate_trust_anchor_cert(&self, cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
         let mut cps = CertificationPathSettings::default();
         set_time_of_interest(&mut cps, self.toi);
