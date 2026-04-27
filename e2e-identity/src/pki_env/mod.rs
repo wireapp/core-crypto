@@ -162,10 +162,7 @@ impl PkiEnvironment {
         Ok(())
     }
 
-    pub async fn validate_credential<'a>(
-        &'a mut self,
-        credential: CredentialRef<'a>,
-    ) -> CredentialAuthenticationStatus {
+    pub async fn validate_credential<'a>(&'a self, credential: CredentialRef<'a>) -> CredentialAuthenticationStatus {
         let certificates = if let CredentialRef::X509 { certificates } = credential {
             certificates
         } else {
