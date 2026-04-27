@@ -124,14 +124,7 @@ impl PkiEnvironment {
 
     /// Initializes a certval PkiEnvironment using the provided params
     pub fn init(params: PkiEnvironmentParams) -> RustyX509CheckResult<PkiEnvironment> {
-        let toi = if let Some(toi) = params.time_of_interest {
-            toi
-        } else {
-            web_time::SystemTime::now()
-                .duration_since(web_time::SystemTime::UNIX_EPOCH)
-                .map_err(|_| RustyX509CheckError::CannotDetermineCurrentTime)?
-                .as_secs()
-        };
+        let toi = now()?;
 
         let mut cps = CertificationPathSettings::new();
         set_time_of_interest(&mut cps, toi);
