@@ -420,13 +420,10 @@ class MLSTest : HasMockDeliveryService() {
 
             class Observer : EpochObserver {
                 val observedEvents = emptyList<ObserverEvent>().toMutableList()
-                val firstObservedEvent = CompletableDeferred<ObserverEvent>()
 
                 override suspend fun epochChanged(conversationId: ConversationId, epoch: ULong) {
                     val conversationEpoch = alice.conversationEpoch(conversationId)
-                    val observerEvent = ObserverEvent(epoch, conversationEpoch)
-                    observedEvents.add(observerEvent)
-                    firstObservedEvent.complete(observerEvent)
+                    observedEvents.add(ObserverEvent(epoch, conversationEpoch))
                 }
             }
 
@@ -439,14 +436,11 @@ class MLSTest : HasMockDeliveryService() {
 
             alice.transaction { it.updateKeyingMaterial(id) }
             val laterEpoch = alice.conversationEpoch(id)
-            val observedEvent = aliceObserver.firstObservedEvent.await()
 
             assertEquals(initialEpoch + 1U, laterEpoch)
             assertEquals(1, aliceObserver.observedEvents.size, "we triggered exactly 1 epoch change and must have observed that")
-            assertEquals(laterEpoch, observedEvent.eventEpoch, "event epoch must equal the epoch after the transaction")
-            assertEquals(
-                observedEvent.eventEpoch,
-                observedEvent.conversationEpoch,
+            assertTrue(
+                aliceObserver.observedEvents.all { it.eventEpoch == it.conversationEpoch && it.eventEpoch == laterEpoch },
                 "event epoch must equal the epoch read during the event"
             )
         }
