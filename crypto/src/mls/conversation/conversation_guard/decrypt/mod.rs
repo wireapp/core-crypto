@@ -327,7 +327,10 @@ impl ConversationGuard {
                     proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
                     "Epoch advanced"
                 );
-                session.notify_epoch_changed(group_id, epoch).await;
+                self.central_context
+                    .queue_epoch_changed(group_id, epoch)
+                    .await
+                    .map_err(RecursiveError::transaction("queueing epoch changed notification"))?;
 
                 MlsDecryptMessage {
                     app_msg: None,

@@ -30,10 +30,18 @@ impl ConversationGuard {
     }
 
     pub(super) async fn merge_commit(&mut self) -> Result<()> {
-        let client = self.session().await?;
         let provider = self.crypto_provider().await?;
-        self.conversation_mut(async |conversation| conversation.commit_accepted(&client, &provider).await)
+        let (conversation_id, epoch) = self
+            .conversation_mut(async |conversation| {
+                conversation.commit_accepted(&provider).await?;
+                Ok((conversation.id().to_owned(), conversation.group.epoch().as_u64()))
+            })
+            .await?;
+        self.central_context
+            .queue_epoch_changed(conversation_id, epoch)
             .await
+            .map_err(RecursiveError::transaction("queueing epoch changed notification"))?;
+        Ok(())
     }
 
     /// Send the commit via [crate::MlsTransport] and handle the response.
