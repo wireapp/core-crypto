@@ -42,13 +42,27 @@ impl<'a> TestConversation<'a> {
     /// Propose removing the member.
     pub async fn remove_proposal(self, member: &'a SessionContext) -> OperationGuard<'a, Proposal> {
         let proposer = self.actor();
+        let mut guard = self.guard().await;
+        let session = &proposer.session().await;
         let member_id = member.session().await.id();
-        let proposal = proposer
-            .transaction
-            .new_remove_proposal(self.id(), member_id)
+        let proposal = guard
+            .conversation_mut(async |conversation| {
+                let member_index = conversation
+                    .group
+                    .members()
+                    .find(|member| member.credential.identity() == member_id.as_slice())
+                    .map(|member| member.index)
+                    .unwrap();
+                let proposal = conversation
+                    .propose_remove_member(session, member_index)
+                    .await
+                    .unwrap()
+                    .proposal;
+                Ok(proposal)
+            })
             .await
-            .unwrap()
-            .proposal;
+            .unwrap();
+
         let proposer_index = self.actor_index();
         OperationGuard::new(TestOperation::Remove(member), proposal, self, [proposer_index])
     }
