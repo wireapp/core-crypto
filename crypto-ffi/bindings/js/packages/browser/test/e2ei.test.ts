@@ -79,12 +79,7 @@ describe("PKI environment", () => {
 describe("end to end identity", () => {
     it("should instantiate an x509 credential acquisition object", async () => {
         const acquisitionCreated = await browser.execute(async () => {
-            const key = new Uint8Array(32);
-            window.crypto.getRandomValues(key);
-            const database = await window.ccModule.Database.open(
-                crypto.randomUUID(),
-                new window.ccModule.DatabaseKey(key.buffer)
-            );
+            const database = await window.helpers.newDatabase();
             const pkiEnvironment = await window.ccModule.PkiEnvironment.create(
                 window.pkiEnvironmentHooks,
                 database

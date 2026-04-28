@@ -14,6 +14,7 @@ import {
 
 import { browser } from "@wdio/globals";
 import type { local } from "webdriver";
+import type { Database } from "#core-crypto-ffi";
 
 // Logging can be adjusted via the CC_TEST_LOG_LEVEL variable:
 // 0 = no logs
@@ -93,6 +94,15 @@ export async function sharedSetup() {
                 );
             }
 
+            static async newDatabase(): Promise<Database> {
+                const key = new Uint8Array(32);
+                window.crypto.getRandomValues(key);
+                return window.ccModule.Database.open(
+                    crypto.randomUUID(),
+                    new window.ccModule.DatabaseKey(key.buffer)
+                );
+            }
+
             static async generateKeyPackage(
                 cc: CoreCrypto,
                 cipherSuite?: Ciphersuite
@@ -126,17 +136,7 @@ export async function sharedSetup() {
             ): Promise<CoreCrypto> {
                 const clientId =
                     options.clientId ?? window.helpers.newClientId();
-
-                const key = new Uint8Array(32);
-                crypto.getRandomValues(key);
-
-                const databaseLocation = window.crypto.randomUUID();
-
-                const db = await window.ccModule.Database.open(
-                    databaseLocation,
-                    new window.ccModule.DatabaseKey(key.buffer)
-                );
-
+                const db = await window.helpers.newDatabase();
                 const cc = window.ccModule.CoreCrypto.new(db);
 
                 // this also sets the default if undefined
@@ -516,6 +516,7 @@ type CcInitOptions =
 export interface Helpers {
     newClientId(clientIdStr?: string): ClientId;
     newConversationId(): ConversationId;
+    newDatabase(): Promise<Database>;
     generateKeyPackage(
         cc: CoreCrypto,
         cipherSuite?: Ciphersuite
