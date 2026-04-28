@@ -3,9 +3,7 @@
 
 use std::sync::Arc;
 
-#[cfg(feature = "proteus")]
-use async_lock::Mutex;
-use async_lock::{RwLock, RwLockWriteGuardArc};
+use async_lock::{Mutex, RwLock, RwLockWriteGuardArc};
 use core_crypto_keystore::{CryptoKeystoreError, entities::ConsumerData, traits::FetchFromDatabase as _};
 pub use error::{Error, Result};
 use openmls_traits::OpenMlsCryptoProvider as _;
@@ -14,8 +12,8 @@ use wire_e2e_identity::pki_env::PkiEnvironment;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    ClientId, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsConversation, MlsError, MlsTransport,
-    RecursiveError, Session,
+    ClientId, ConversationId, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsConversation,
+    MlsError, MlsTransport, RecursiveError, Session,
     group_store::GroupStore,
     mls::{self, HasSessionAndCrypto},
     mls_provider::{Database, MlsCryptoProvider},
@@ -51,6 +49,7 @@ enum TransactionContextInner {
         database: Database,
         mls_session: Arc<RwLock<Option<Session<Database>>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
+        pending_epoch_changes: Arc<Mutex<Vec<(ConversationId, u64)>>>,
         #[cfg(feature = "proteus")]
         proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     },
@@ -110,6 +109,7 @@ impl TransactionContext {
                     pki_environment,
                     mls_session: mls_session.clone(),
                     mls_groups,
+                    pending_epoch_changes: Default::default(),
                     #[cfg(feature = "proteus")]
                     proteus_central,
                 }
@@ -213,6 +213,18 @@ impl TransactionContext {
         }
     }
 
+    pub(crate) async fn queue_epoch_changed(&self, conversation_id: ConversationId, epoch: u64) -> Result<()> {
+        match &*self.inner.read().await {
+            TransactionContextInner::Valid {
+                pending_epoch_changes, ..
+            } => {
+                pending_epoch_changes.lock().await.push((conversation_id, epoch));
+                Ok(())
+            }
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
+        }
+    }
+
     #[cfg(feature = "proteus")]
     pub(crate) async fn proteus_central(&self) -> Result<Arc<Mutex<Option<ProteusCentral>>>> {
         match &*self.inner.read().await {
@@ -226,15 +238,33 @@ impl TransactionContext {
     /// something is called from this object.
     pub async fn finish(&self) -> Result<()> {
         let mut guard = self.inner.write().await;
-        let TransactionContextInner::Valid { database: keystore, .. } = &*guard else {
+        let TransactionContextInner::Valid {
+            database,
+            pending_epoch_changes,
+            mls_session,
+            ..
+        } = &*guard
+        else {
             return Err(Error::InvalidTransactionContext);
         };
 
-        let commit_result = keystore
+        let commit_result = database
             .commit_transaction()
             .await
             .map_err(KeystoreError::wrap("commiting transaction"))
             .map_err(Into::into);
+
+        if let Some(session) = mls_session.read_arc().await.clone()
+            && commit_result.is_ok()
+        {
+            // We need owned values, so we could just clone the conversation ids, but we don't need the events anymore,
+            // so draining the vector works, too.
+            let mut epoch_changes = pending_epoch_changes.lock().await;
+            let epoch_changes = epoch_changes.drain(..);
+            for (conversation_id, epoch) in epoch_changes {
+                session.notify_epoch_changed(conversation_id, epoch).await;
+            }
+        }
 
         *guard = TransactionContextInner::Invalid;
         commit_result
