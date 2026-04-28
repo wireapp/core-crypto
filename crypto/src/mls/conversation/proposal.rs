@@ -9,7 +9,7 @@ use core_crypto_keystore::Database;
 use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn};
 
 use super::{Error, Result};
-use crate::{MlsConversation, MlsError, MlsProposalRef, Session, mls_provider::MlsCryptoProvider};
+use crate::{MlsConversation, MlsError, MlsProposalRef, Session};
 
 /// Creating proposals
 impl MlsConversation {
@@ -37,21 +37,20 @@ impl MlsConversation {
         Ok(proposal)
     }
 
-    /// see [openmls::group::MlsGroup::propose_remove_member]
-    pub async fn propose_remove_member(
+    /// Used when updating the history client.
+    pub(crate) async fn propose_remove_member(
         &mut self,
-        client: &Session<Database>,
-        provider: &MlsCryptoProvider,
+        session: &Session<Database>,
         member: LeafNodeIndex,
     ) -> Result<MlsProposalBundle> {
         let signer = &self
-            .find_current_credential(client)
+            .find_current_credential(session)
             .await
             .map_err(|_| Error::IdentityInitializationError)?
             .signature_key_pair;
         let proposal = self
             .group
-            .propose_remove_member(provider, signer, member)
+            .propose_remove_member(&session.crypto_provider, signer, member)
             .map_err(MlsError::wrap("propose remove member"))
             .map(MlsProposalBundle::from)?;
         Ok(proposal)

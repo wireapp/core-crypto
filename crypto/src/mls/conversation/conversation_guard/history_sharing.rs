@@ -151,7 +151,6 @@ impl ConversationGuard {
         self.clear_pending_commit().await?;
 
         let session = self.session().await?;
-        let provider = self.crypto_provider().await?;
         let history_secret = self.generate_history_secret().await?;
         let key_package = history_secret.key_package.clone().into();
 
@@ -159,9 +158,7 @@ impl ConversationGuard {
             .conversation_mut(async move |conversation| {
                 // Propose to remove the old history client
                 for history_client in existing_history_clients {
-                    conversation
-                        .propose_remove_member(&session, &provider, history_client)
-                        .await?;
+                    conversation.propose_remove_member(&session, history_client).await?;
                 }
 
                 // Propose to add a new history client
