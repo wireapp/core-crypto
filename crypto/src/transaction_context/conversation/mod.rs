@@ -2,7 +2,6 @@
 
 pub mod external_commit;
 mod external_proposal;
-pub(crate) mod proposal;
 pub mod welcome;
 
 use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
