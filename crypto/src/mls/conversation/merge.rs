@@ -10,31 +10,30 @@
 //! | 0 pend. Proposal  | ❌              | ✅              |
 //! | 1+ pend. Proposal | ❌              | ✅              |
 
-use core_crypto_keystore::{Database, entities::StoredEncryptionKeyPair};
+use core_crypto_keystore::entities::StoredEncryptionKeyPair;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use super::Result;
-use crate::{MlsError, Session, mls::MlsConversation, mls_provider::MlsCryptoProvider};
+use crate::{MlsError, mls::MlsConversation, mls_provider::MlsCryptoProvider};
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
-    pub(crate) async fn commit_accepted(
-        &mut self,
-        session: &Session<Database>,
-        backend: &MlsCryptoProvider,
-    ) -> Result<()> {
+    pub(crate) async fn commit_accepted(&mut self, provider: &MlsCryptoProvider) -> Result<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
         let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
 
         self.group
-            .merge_pending_commit(backend)
+            .merge_pending_commit(provider)
             .await
             .map_err(MlsError::wrap("merging pending commit"))?;
 
         // ..so if there's any, we clear them after the commit is merged
         for oln in &previous_own_leaf_nodes {
             let ek = oln.encryption_key().as_slice();
-            let _ = backend.key_store().remove_borrowed::<StoredEncryptionKeyPair>(ek).await;
+            let _ = provider
+                .key_store()
+                .remove_borrowed::<StoredEncryptionKeyPair>(ek)
+                .await;
         }
 
         Ok(())
@@ -58,13 +57,13 @@ mod tests {
 
                 assert!(conversation.has_pending_commit().await);
 
-                let session = alice.session().await;
-
                 conversation
                     .guard()
                     .await
                     .conversation_mut(async |conversation| {
-                        conversation.commit_accepted(&session, &session.crypto_provider).await
+                        conversation
+                            .commit_accepted(&alice.session().await.crypto_provider)
+                            .await
                     })
                     .await
                     .unwrap();
@@ -92,13 +91,13 @@ mod tests {
                 assert!(conversation.has_pending_proposals().await);
                 assert!(conversation.has_pending_commit().await);
 
-                let session = alice.session().await;
-
                 conversation
                     .guard()
                     .await
                     .conversation_mut(async |conversation| {
-                        conversation.commit_accepted(&session, &session.crypto_provider).await
+                        conversation
+                            .commit_accepted(&alice.session().await.crypto_provider)
+                            .await
                     })
                     .await
                     .unwrap();

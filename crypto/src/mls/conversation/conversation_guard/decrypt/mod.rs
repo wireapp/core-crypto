@@ -145,7 +145,6 @@ impl ConversationGuard {
         message: MlsMessageIn,
         recursion_policy: RecursionPolicy,
     ) -> Result<MlsDecryptMessage> {
-        let session = &self.session().await?;
         let provider = &self.crypto_provider().await?;
         let parsed_message = self.parse_message(message.clone()).await?;
 
@@ -161,7 +160,7 @@ impl ConversationGuard {
             let mut decrypted_message = self
                 .conversation_mut(async |conversation| {
                     let ct = conversation.extract_confirmation_tag_from_own_commit(&message)?;
-                    conversation.handle_own_commit(session, provider, ct).await
+                    conversation.handle_own_commit(provider, ct).await
                 })
                 .await?;
             debug_assert!(

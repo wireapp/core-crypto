@@ -1,4 +1,3 @@
-use core_crypto_keystore::Database;
 use openmls::prelude::{
     ConfirmationTag, ContentType, CredentialWithKey, FramedContentBodyIn, MlsMessageIn, MlsMessageInBody, Sender,
 };
@@ -6,7 +5,7 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{Error, Result};
 use crate::{
-    MlsConversation, MlsDecryptMessage, RecursiveError, Session, mls::credential::ext::CredentialExt,
+    MlsConversation, MlsDecryptMessage, RecursiveError, mls::credential::ext::CredentialExt,
     mls_provider::MlsCryptoProvider,
 };
 
@@ -46,7 +45,6 @@ impl MlsConversation {
 
     pub(crate) async fn handle_own_commit(
         &mut self,
-        client: &Session<Database>,
         provider: &MlsCryptoProvider,
         ct: &ConfirmationTag,
     ) -> Result<MlsDecryptMessage> {
@@ -66,7 +64,7 @@ impl MlsConversation {
 
         // incoming is from ourselves and it's the same as the local pending commit
         // => merge the pending commit & continue
-        self.merge_pending_commit(client, provider).await
+        self.merge_pending_commit(provider).await
     }
 
     /// Compare incoming commit with local pending commit
@@ -80,12 +78,8 @@ impl MlsConversation {
     /// When the incoming commit is sent by ourselves and it's the same as the local pending commit.
     /// This adapts [Self::commit_accepted] to return the same as
     /// [crate::mls::conversation::ConversationGuard::decrypt_message]
-    pub(crate) async fn merge_pending_commit(
-        &mut self,
-        client: &Session<Database>,
-        provider: &MlsCryptoProvider,
-    ) -> Result<MlsDecryptMessage> {
-        self.commit_accepted(client, provider).await?;
+    pub(crate) async fn merge_pending_commit(&mut self, provider: &MlsCryptoProvider) -> Result<MlsDecryptMessage> {
+        self.commit_accepted(provider).await?;
 
         let own_leaf = self
             .group
@@ -97,7 +91,7 @@ impl MlsConversation {
             credential: own_leaf.credential().clone(),
             signature_key: own_leaf.signature_key().clone(),
         };
-        let provider = client.crypto_provider.authentication_service();
+        let provider = provider.authentication_service();
         let identity = own_leaf_credential_with_key
             .extract_identity(self.ciphersuite(), provider.borrow().await.as_ref())
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
