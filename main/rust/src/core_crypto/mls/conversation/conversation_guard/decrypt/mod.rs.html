@@ -159,9 +159,9 @@
 <a href=#159 id=159 data-nosnippet>159</a>        })) = message_result
 <a href=#160 id=160 data-nosnippet>160</a>        {
 <a href=#161 id=161 data-nosnippet>161</a>            <span class="kw">let </span><span class="kw-2">mut </span>decrypted_message = <span class="self">self
-<a href=#162 id=162 data-nosnippet>162</a>                </span>.conversation_mut(<span class="kw">async </span>|conversation, database| {
+<a href=#162 id=162 data-nosnippet>162</a>                </span>.conversation_mut(<span class="kw">async </span>|conversation| {
 <a href=#163 id=163 data-nosnippet>163</a>                    <span class="kw">let </span>ct = conversation.extract_confirmation_tag_from_own_commit(<span class="kw-2">&amp;</span>message)<span class="question-mark">?</span>;
-<a href=#164 id=164 data-nosnippet>164</a>                    conversation.handle_own_commit(session, database, provider, ct).<span class="kw">await
+<a href=#164 id=164 data-nosnippet>164</a>                    conversation.handle_own_commit(session, provider, ct).<span class="kw">await
 <a href=#165 id=165 data-nosnippet>165</a>                </span>})
 <a href=#166 id=166 data-nosnippet>166</a>                .<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#167 id=167 data-nosnippet>167</a>            <span class="macro">debug_assert!</span>(
@@ -221,7 +221,7 @@
 <a href=#221 id=221 data-nosnippet>221</a>                }
 <a href=#222 id=222 data-nosnippet>222</a>            }
 <a href=#223 id=223 data-nosnippet>223</a>            ProcessedMessageContent::ProposalMessage(proposal) =&gt; {
-<a href=#224 id=224 data-nosnippet>224</a>                <span class="self">self</span>.conversation_mut(<span class="kw">async move </span>|conversation, _database| {
+<a href=#224 id=224 data-nosnippet>224</a>                <span class="self">self</span>.conversation_mut(<span class="kw">async move </span>|conversation| {
 <a href=#225 id=225 data-nosnippet>225</a>                    <span class="macro">info!</span>(
 <a href=#226 id=226 data-nosnippet>226</a>                        group_id = conversation.id,
 <a href=#227 id=227 data-nosnippet>227</a>                        sender = Obfuscated::from(proposal.sender()),
@@ -279,7 +279,7 @@
 <a href=#279 id=279 data-nosnippet>279</a>                <span class="self">self</span>.validate_commit(<span class="kw-2">&amp;</span>staged_commit).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#280 id=280 data-nosnippet>280</a>
 <a href=#281 id=281 data-nosnippet>281</a>                <span class="kw">let </span>(is_active, delay, removed_members, added_members, group_id) = <span class="self">self
-<a href=#282 id=282 data-nosnippet>282</a>                    </span>.conversation_mut(<span class="kw">async </span>|conversation, _database| {
+<a href=#282 id=282 data-nosnippet>282</a>                    </span>.conversation_mut(<span class="kw">async </span>|conversation| {
 <a href=#283 id=283 data-nosnippet>283</a>                        <span class="kw">let </span>removed_indices = staged_commit
 <a href=#284 id=284 data-nosnippet>284</a>                            .remove_proposals()
 <a href=#285 id=285 data-nosnippet>285</a>                            .map(|p| p.remove_proposal().removed())
@@ -340,7 +340,7 @@
 <a href=#340 id=340 data-nosnippet>340</a>            }
 <a href=#341 id=341 data-nosnippet>341</a>            ProcessedMessageContent::ExternalJoinProposalMessage(proposal) =&gt; {
 <a href=#342 id=342 data-nosnippet>342</a>                <span class="kw">let </span>delay = <span class="self">self
-<a href=#343 id=343 data-nosnippet>343</a>                    </span>.conversation_mut(<span class="kw">async move </span>|conversation, _database| {
+<a href=#343 id=343 data-nosnippet>343</a>                    </span>.conversation_mut(<span class="kw">async move </span>|conversation| {
 <a href=#344 id=344 data-nosnippet>344</a>                        <span class="macro">info!</span>(
 <a href=#345 id=345 data-nosnippet>345</a>                            group_id = conversation.id,
 <a href=#346 id=346 data-nosnippet>346</a>                            sender = Obfuscated::from(proposal.sender());
@@ -409,7 +409,7 @@
 <a href=#409 id=409 data-nosnippet>409</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;ProcessedMessage&gt; {
 <a href=#410 id=410 data-nosnippet>410</a>        <span class="kw">let </span>msg_epoch = protocol_message.epoch().as_u64();
 <a href=#411 id=411 data-nosnippet>411</a>        <span class="kw">let </span>backend = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#412 id=412 data-nosnippet>412</a>        <span class="self">self</span>.conversation_mut(<span class="kw">async move </span>|conversation, _database| {
+<a href=#412 id=412 data-nosnippet>412</a>        <span class="self">self</span>.conversation_mut(<span class="kw">async move </span>|conversation| {
 <a href=#413 id=413 data-nosnippet>413</a>            <span class="kw">let </span>group_epoch = conversation.group.epoch().as_u64();
 <a href=#414 id=414 data-nosnippet>414</a>            <span class="kw">let </span>processed_msg = conversation
 <a href=#415 id=415 data-nosnippet>415</a>                .group
@@ -662,7 +662,7 @@
 <a href=#662 id=662 data-nosnippet>662</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#663 id=663 data-nosnippet>663</a>                <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>;
 <a href=#664 id=664 data-nosnippet>664</a>
-<a href=#665 id=665 data-nosnippet>665</a>                <span class="kw">let </span>(_proposal, decrypted) = conversation.update_proposal().<span class="kw">await</span>.notify_member_fallible(<span class="kw-2">&amp;</span>bob).<span class="kw">await</span>;
+<a href=#665 id=665 data-nosnippet>665</a>                <span class="kw">let </span>(_commit, decrypted) = conversation.update_unmerged().<span class="kw">await</span>.notify_member_fallible(<span class="kw-2">&amp;</span>bob).<span class="kw">await</span>;
 <a href=#666 id=666 data-nosnippet>666</a>
 <a href=#667 id=667 data-nosnippet>667</a>                <span class="kw">let </span>sender_client_id = decrypted.unwrap().sender_client_id;
 <a href=#668 id=668 data-nosnippet>668</a>                <span class="macro">assert!</span>(sender_client_id.is_none());
@@ -873,18 +873,18 @@
 <a href=#873 id=873 data-nosnippet>873</a>        </span><span class="kw">async fn </span>should_throw_specialized_error_when_epoch_desynchronized(<span class="kw-2">mut </span>case: TestContext) {
 <a href=#874 id=874 data-nosnippet>874</a>            case.cfg.custom.out_of_order_tolerance = <span class="number">0</span>;
 <a href=#875 id=875 data-nosnippet>875</a>
-<a href=#876 id=876 data-nosnippet>876</a>            <span class="kw">let </span>[alice, bob] = case.sessions().<span class="kw">await</span>;
+<a href=#876 id=876 data-nosnippet>876</a>            <span class="kw">let </span>[alice, bob, charlie] = case.sessions().<span class="kw">await</span>;
 <a href=#877 id=877 data-nosnippet>877</a>            Box::pin(<span class="kw">async move </span>{
-<a href=#878 id=878 data-nosnippet>878</a>                <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>;
+<a href=#878 id=878 data-nosnippet>878</a>                <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob, <span class="kw-2">&amp;</span>charlie]).<span class="kw">await</span>;
 <a href=#879 id=879 data-nosnippet>879</a>
 <a href=#880 id=880 data-nosnippet>880</a>                <span class="comment">// Alice generates a bunch of soon to be outdated messages
-<a href=#881 id=881 data-nosnippet>881</a>                </span><span class="kw">let </span>proposal_guard = conversation.update_proposal().<span class="kw">await</span>;
-<a href=#882 id=882 data-nosnippet>882</a>                <span class="kw">let </span>old_proposal = proposal_guard.message().to_bytes().unwrap();
-<a href=#883 id=883 data-nosnippet>883</a>                <span class="kw">let </span>conversation = proposal_guard.finish();
+<a href=#881 id=881 data-nosnippet>881</a>                </span><span class="kw">let </span>message_guard = conversation.remove_proposal(<span class="kw-2">&amp;</span>charlie).<span class="kw">await</span>;
+<a href=#882 id=882 data-nosnippet>882</a>                <span class="kw">let </span>old_message = message_guard.message().to_bytes().unwrap();
+<a href=#883 id=883 data-nosnippet>883</a>                <span class="kw">let </span>conversation = message_guard.finish();
 <a href=#884 id=884 data-nosnippet>884</a>                conversation
 <a href=#885 id=885 data-nosnippet>885</a>                    .guard()
 <a href=#886 id=886 data-nosnippet>886</a>                    .<span class="kw">await
-<a href=#887 id=887 data-nosnippet>887</a>                    </span>.conversation_mut(<span class="kw">async </span>|conv, _db| {
+<a href=#887 id=887 data-nosnippet>887</a>                    </span>.conversation_mut(<span class="kw">async </span>|conv| {
 <a href=#888 id=888 data-nosnippet>888</a>                        conv.group.clear_pending_proposals();
 <a href=#889 id=889 data-nosnippet>889</a>                        <span class="prelude-val">Ok</span>(())
 <a href=#890 id=890 data-nosnippet>890</a>                    })
@@ -902,7 +902,7 @@
 <a href=#902 id=902 data-nosnippet>902</a>                </span><span class="kw">let </span>decrypt_err = conversation
 <a href=#903 id=903 data-nosnippet>903</a>                    .guard_of(<span class="kw-2">&amp;</span>bob)
 <a href=#904 id=904 data-nosnippet>904</a>                    .<span class="kw">await
-<a href=#905 id=905 data-nosnippet>905</a>                    </span>.decrypt_message(<span class="kw-2">&amp;</span>old_proposal)
+<a href=#905 id=905 data-nosnippet>905</a>                    </span>.decrypt_message(<span class="kw-2">&amp;</span>old_message)
 <a href=#906 id=906 data-nosnippet>906</a>                    .<span class="kw">await
 <a href=#907 id=907 data-nosnippet>907</a>                    </span>.unwrap_err();
 <a href=#908 id=908 data-nosnippet>908</a>

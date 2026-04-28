@@ -58,7 +58,7 @@
 <a href=#58 id=58 data-nosnippet>58</a>    /// an error.
 <a href=#59 id=59 data-nosnippet>59</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>conversation_mut&lt;T&gt;(
 <a href=#60 id=60 data-nosnippet>60</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#61 id=61 data-nosnippet>61</a>        operation: <span class="kw">impl </span>AsyncFnOnce(<span class="kw-2">&amp;mut </span>MlsConversation, <span class="kw-2">&amp;</span>Database) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;,
+<a href=#61 id=61 data-nosnippet>61</a>        operation: <span class="kw">impl </span>AsyncFnOnce(<span class="kw-2">&amp;mut </span>MlsConversation) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;,
 <a href=#62 id=62 data-nosnippet>62</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt; {
 <a href=#63 id=63 data-nosnippet>63</a>        <span class="comment">// we can't get the database if the transaction context has been invalidated,
 <a href=#64 id=64 data-nosnippet>64</a>        // and we want to have that error first before evaluating anything in the operation.
@@ -68,7 +68,7 @@
 <a href=#68 id=68 data-nosnippet>68</a>            .<span class="kw">await
 <a href=#69 id=69 data-nosnippet>69</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting database from context"</span>))<span class="question-mark">?</span>;
 <a href=#70 id=70 data-nosnippet>70</a>        <span class="kw">let </span><span class="kw-2">mut </span>guard = <span class="self">self</span>.inner.write().<span class="kw">await</span>;
-<a href=#71 id=71 data-nosnippet>71</a>        <span class="kw">let </span>ok_result = operation(<span class="kw-2">&amp;mut </span>guard, <span class="kw-2">&amp;</span>database).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#71 id=71 data-nosnippet>71</a>        <span class="kw">let </span>ok_result = operation(<span class="kw-2">&amp;mut </span>guard).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#72 id=72 data-nosnippet>72</a>        guard.persist_group_when_changed(<span class="kw-2">&amp;</span>database, <span class="bool-val">false</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#73 id=73 data-nosnippet>73</a>        <span class="prelude-val">Ok</span>(ok_result)
 <a href=#74 id=74 data-nosnippet>74</a>    }
@@ -99,7 +99,7 @@
 <a href=#99 id=99 data-nosnippet>99</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls groups"</span>))<span class="question-mark">?</span>;
 <a href=#100 id=100 data-nosnippet>100</a>
 <a href=#101 id=101 data-nosnippet>101</a>        <span class="kw">let </span>id = <span class="self">self
-<a href=#102 id=102 data-nosnippet>102</a>            </span>.conversation_mut(<span class="kw">async </span>|conversation, <span class="kw">_</span>| {
+<a href=#102 id=102 data-nosnippet>102</a>            </span>.conversation_mut(<span class="kw">async </span>|conversation| {
 <a href=#103 id=103 data-nosnippet>103</a>                conversation.wipe_associated_entities(<span class="kw-2">&amp;</span>provider).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#104 id=104 data-nosnippet>104</a>                <span class="prelude-val">Ok</span>(conversation.id().to_owned())
 <a href=#105 id=105 data-nosnippet>105</a>            })

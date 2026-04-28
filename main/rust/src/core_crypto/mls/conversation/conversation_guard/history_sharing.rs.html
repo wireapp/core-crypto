@@ -156,16 +156,16 @@
 <a href=#156 id=156 data-nosnippet>156</a>        <span class="kw">let </span>key_package = history_secret.key_package.clone().into();
 <a href=#157 id=157 data-nosnippet>157</a>
 <a href=#158 id=158 data-nosnippet>158</a>        <span class="kw">let </span>remove_and_add = <span class="self">self
-<a href=#159 id=159 data-nosnippet>159</a>            </span>.conversation_mut(<span class="kw">async move </span>|conversation, database| {
+<a href=#159 id=159 data-nosnippet>159</a>            </span>.conversation_mut(<span class="kw">async move </span>|conversation| {
 <a href=#160 id=160 data-nosnippet>160</a>                <span class="comment">// Propose to remove the old history client
 <a href=#161 id=161 data-nosnippet>161</a>                </span><span class="kw">for </span>history_client <span class="kw">in </span>existing_history_clients {
 <a href=#162 id=162 data-nosnippet>162</a>                    conversation
-<a href=#163 id=163 data-nosnippet>163</a>                        .propose_remove_member(<span class="kw-2">&amp;</span>session, <span class="kw-2">&amp;</span>provider, database, history_client)
+<a href=#163 id=163 data-nosnippet>163</a>                        .propose_remove_member(<span class="kw-2">&amp;</span>session, <span class="kw-2">&amp;</span>provider, history_client)
 <a href=#164 id=164 data-nosnippet>164</a>                        .<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#165 id=165 data-nosnippet>165</a>                }
 <a href=#166 id=166 data-nosnippet>166</a>
 <a href=#167 id=167 data-nosnippet>167</a>                <span class="comment">// Propose to add a new history client
-<a href=#168 id=168 data-nosnippet>168</a>                </span>conversation.propose_add_member(<span class="kw-2">&amp;</span>session, database, key_package).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#168 id=168 data-nosnippet>168</a>                </span>conversation.propose_add_member(<span class="kw-2">&amp;</span>session, key_package).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#169 id=169 data-nosnippet>169</a>
 <a href=#170 id=170 data-nosnippet>170</a>                <span class="comment">// We're getting the proposals we just created from the pending proposals queue, as the previously
 <a href=#171 id=171 data-nosnippet>171</a>                // called `propose_remove()` and `propose_add()` pushed them to that queue as a side effect.

@@ -390,7 +390,7 @@
 <a href=#390 id=390 data-nosnippet>390</a>            <span class="kw">let </span>credential = alice.find_any_credential(ciphersuite.into(), credential_type).<span class="kw">await</span>;
 <a href=#391 id=391 data-nosnippet>391</a>            <span class="kw">let </span>mls_provider = alice.transaction.mls_provider().<span class="kw">await</span>.unwrap();
 <a href=#392 id=392 data-nosnippet>392</a>            guard
-<a href=#393 id=393 data-nosnippet>393</a>                .conversation_mut(<span class="kw">async move </span>|conversation, _database| {
+<a href=#393 id=393 data-nosnippet>393</a>                .conversation_mut(<span class="kw">async move </span>|conversation| {
 <a href=#394 id=394 data-nosnippet>394</a>                    <span class="kw">let </span>gi = conversation
 <a href=#395 id=395 data-nosnippet>395</a>                        .group
 <a href=#396 id=396 data-nosnippet>396</a>                        .export_group_info(
