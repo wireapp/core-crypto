@@ -563,13 +563,14 @@ mod tests {
 
                 let epoch_after = commit.finish().guard_of(&bob).await.epoch().await;
                 assert_eq!(epoch_after, epoch_before + 1);
-                assert!(bob_observer.has_changed().await);
                 assert!(decrypted.delay.is_none());
                 assert!(decrypted.app_msg.is_none());
 
                 alice
                     .verify_sender_identity(&case, &alice.initial_credential, &decrypted)
                     .await;
+                bob.transaction.finish().await.unwrap();
+                assert!(bob_observer.has_changed().await);
             })
             .await
         }

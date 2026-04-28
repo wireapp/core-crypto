@@ -226,18 +226,6 @@ mod tests {
                     assert!(msg.app_msg.is_none());
                 }
             }
-            let observed_epochs = observer
-                .observed_epochs()
-                .await
-                .into_iter()
-                .map(|(_conversation_id, epoch)| epoch)
-                .collect::<Vec<_>>();
-            dbg!(&observed_epochs);
-            assert_eq!(
-                observed_epochs.len(),
-                2,
-                "there was 1 buffered commit changing the epoch plus the outer commit changing the epoch"
-            );
 
             assert_eq!(conversation.member_count().await, 4);
             assert!(
@@ -248,6 +236,17 @@ mod tests {
 
             // After merging we should erase all those pending messages
             assert_eq!(bob.transaction.count_entities().await.pending_messages, 0);
+
+            bob.transaction.finish().await.unwrap();
+
+            let observed_epochs = observer
+                .observed_epochs()
+                .await
+                .into_iter()
+                .map(|(_conversation_id, epoch)| epoch)
+                .collect::<Vec<_>>();
+            dbg!(&observed_epochs);
+            assert_eq!(observed_epochs.len(), 1, "there was 1 commit changing the epoch");
         })
         .await
     }
@@ -336,6 +335,18 @@ mod tests {
                 }
             }
 
+            assert_eq!(conversation.member_count().await, 4);
+            assert!(
+                conversation
+                    .is_functional_and_contains([&alice, &bob, &charlie, &debbie])
+                    .await
+            );
+
+            // After merging we should erase all those pending messages
+            assert_eq!(alice.transaction.count_entities().await.pending_messages, 0);
+
+            alice.transaction.finish().await.unwrap();
+
             let observed_epochs = observer
                 .observed_epochs()
                 .await
@@ -348,16 +359,6 @@ mod tests {
                 2,
                 "there was 1 buffered commit changing the epoch plus the outer commit changing the epoch"
             );
-
-            assert_eq!(conversation.member_count().await, 4);
-            assert!(
-                conversation
-                    .is_functional_and_contains([&alice, &bob, &charlie, &debbie])
-                    .await
-            );
-
-            // After merging we should erase all those pending messages
-            assert_eq!(alice.transaction.count_entities().await.pending_messages, 0);
         })
         .await
     }

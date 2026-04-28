@@ -381,14 +381,6 @@ mod tests {
                 panic!("Alice's messages should have been restored at this point");
             };
 
-            let observed_epochs = observer.observed_epochs().await;
-            assert_eq!(
-                observed_epochs.len(),
-                1,
-                "we should see exactly 1 epoch change in these 4 messages"
-            );
-            assert_eq!(observed_epochs[0].0, *conversation.id(), "conversation id must match");
-
             for (idx, msg) in restored_messages.iter().enumerate() {
                 if idx == 0 {
                     // the only application message
@@ -407,6 +399,16 @@ mod tests {
 
             // After merging we should erase all those pending messages
             assert_eq!(bob.transaction.count_entities().await.pending_messages, 0);
+
+            bob.transaction.finish().await.unwrap();
+
+            let observed_epochs = observer.observed_epochs().await;
+            assert_eq!(
+                observed_epochs.len(),
+                1,
+                "we should see exactly 1 epoch change in these 4 messages"
+            );
+            assert_eq!(observed_epochs[0].0, *conversation.id(), "conversation id must match");
         })
         .await
     }
