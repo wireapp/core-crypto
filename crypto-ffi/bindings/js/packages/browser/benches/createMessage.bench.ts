@@ -25,7 +25,10 @@ describe("benchmark", () => {
                 });
                 for (const { count, size, cipherSuite } of parameters) {
                     const message = new Uint8Array(size);
-                    const cc = await window.helpers.ccInit(true, cipherSuite);
+                    const cc = await window.helpers.ccInit({
+                        withBasicCredential: true,
+                        cipherSuite,
+                    });
 
                     const conversationId =
                         await window.helpers.createConversation(cc);

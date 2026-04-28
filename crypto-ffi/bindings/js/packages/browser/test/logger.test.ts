@@ -160,7 +160,7 @@ describe("logger", () => {
             const alice = await window.helpers.ccInit();
             const bob = await window.helpers.ccInit();
             const carolId = window.helpers.newClientId();
-            const carol = await window.helpers.ccInit(true, undefined, carolId);
+            const carol = await window.helpers.ccInit({ clientId: carolId });
             await window.helpers.recordLogs();
             const conversationId =
                 await window.helpers.createConversation(alice);

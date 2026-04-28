@@ -94,11 +94,10 @@ describe("key package", () => {
         const { wasDefined, wasArray, arraySize } = await browser.execute(
             async () => {
                 const clientId = window.helpers.newClientId();
-                const cc = await window.helpers.ccInit(
-                    false,
-                    undefined,
-                    clientId
-                );
+                const cc = await window.helpers.ccInit({
+                    withBasicCredential: false,
+                    clientId,
+                });
 
                 const credential = window.ccModule.Credential.basic(
                     window.ccModule.ciphersuiteDefault(),
@@ -138,11 +137,10 @@ describe("key package", () => {
         const { beforeRemovalArraySize, afterRemovalArraySize } =
             await browser.execute(async (KEYPACKAGES_PER_CREDENTIAL) => {
                 const clientId = window.helpers.newClientId();
-                const cc = await window.helpers.ccInit(
-                    false,
-                    undefined,
-                    clientId
-                );
+                const cc = await window.helpers.ccInit({
+                    withBasicCredential: false,
+                    clientId,
+                });
                 const credential1 = window.ccModule.Credential.basic(
                     window.ccModule.Ciphersuite
                         .Mls128Dhkemx25519Aes128gcmSha256Ed25519,

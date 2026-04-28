@@ -26,10 +26,10 @@ describe("benchmark", () => {
                     window.bench.add(
                         `cipherSuite=${window.ccModule.Ciphersuite[cipherSuite]} userCount=${userCount}`,
                         async () => {
-                            const aliceCc = await window.helpers.ccInit(
-                                true,
-                                cipherSuite
-                            );
+                            const aliceCc = await window.helpers.ccInit({
+                                withBasicCredential: true,
+                                cipherSuite,
+                            });
 
                             const conversationId =
                                 await window.helpers.createConversation(
@@ -40,11 +40,11 @@ describe("benchmark", () => {
 
                             for (let i = 0; i < userCount; i++) {
                                 const bobId = window.helpers.newClientId();
-                                const bobCc = await window.helpers.ccInit(
-                                    true,
+                                const bobCc = await window.helpers.ccInit({
+                                    withBasicCredential: true,
                                     cipherSuite,
-                                    bobId
-                                );
+                                    clientId: bobId,
+                                });
                                 const kp =
                                     await window.helpers.generateKeyPackage(
                                         bobCc,

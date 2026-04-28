@@ -119,17 +119,13 @@ export async function sharedSetup() {
              * @returns {Promise<void>}
              */
             static async ccInit(
-                withBasicCredential: boolean = true,
-                cipherSuite?: Ciphersuite,
-                clientId?: ClientId
-            ): Promise<CoreCrypto> {
-                if (clientId === undefined) {
-                    const clientIdStr = window.crypto.randomUUID();
-                    const encoder = new TextEncoder();
-                    clientId = new window.ccModule.ClientId(
-                        encoder.encode(clientIdStr).buffer
-                    );
+                options: CcInitOptions = {
+                    withBasicCredential: true,
+                    cipherSuite: window.defaultCipherSuite,
                 }
+            ): Promise<CoreCrypto> {
+                const clientId =
+                    options.clientId ?? window.helpers.newClientId();
 
                 const key = new Uint8Array(32);
                 crypto.getRandomValues(key);
@@ -143,12 +139,16 @@ export async function sharedSetup() {
 
                 const cc = window.ccModule.CoreCrypto.new(db);
 
+                // this also sets the default if undefined
+                // ?? would break type narrowing of CcInitOptions
+                const withBasicCredential =
+                    options.withBasicCredential !== false;
+
                 await cc.transaction(async (ctx) => {
                     await ctx.mlsInit(clientId, window.deliveryService);
                     if (withBasicCredential) {
-                        if (cipherSuite === undefined) {
-                            cipherSuite = window.defaultCipherSuite;
-                        }
+                        const cipherSuite =
+                            options.cipherSuite ?? window.defaultCipherSuite;
                         await ctx.addCredential(
                             window.ccModule.Credential.basic(
                                 cipherSuite,
@@ -502,6 +502,17 @@ export interface LogEntry {
     context: string;
 }
 
+type CcInitOptions =
+    | {
+          withBasicCredential: false;
+          clientId?: ClientId;
+      }
+    | {
+          withBasicCredential?: true;
+          cipherSuite?: Ciphersuite;
+          clientId?: ClientId;
+      };
+
 export interface Helpers {
     newClientId(clientIdStr?: string): ClientId;
     newConversationId(): ConversationId;
@@ -509,11 +520,7 @@ export interface Helpers {
         cc: CoreCrypto,
         cipherSuite?: Ciphersuite
     ): Promise<KeyPackage>;
-    ccInit: (
-        withBasicCredential?: boolean,
-        cipherSuite?: Ciphersuite,
-        clientId?: ClientId
-    ) => Promise<CoreCrypto>;
+    ccInit: (options?: CcInitOptions) => Promise<CoreCrypto>;
     recordLogs(): Promise<void>;
     retrieveLogs(): Promise<LogEntry[]>;
     createConversation(cc: CoreCrypto): Promise<ConversationId>;

@@ -22,14 +22,14 @@ describe("benchmark", () => {
                     warmupIterations: 1,
                 });
                 for (const { count, size, cipherSuite } of parameters) {
-                    const aliceCc = await window.helpers.ccInit(
-                        true,
-                        cipherSuite
-                    );
-                    const bobCc = await window.helpers.ccInit(
-                        true,
-                        cipherSuite
-                    );
+                    const aliceCc = await window.helpers.ccInit({
+                        withBasicCredential: true,
+                        cipherSuite,
+                    });
+                    const bobCc = await window.helpers.ccInit({
+                        withBasicCredential: true,
+                        cipherSuite,
+                    });
 
                     const conversationId =
                         await window.helpers.createConversation(aliceCc);

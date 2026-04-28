@@ -15,7 +15,9 @@ describe("PKI environment", () => {
     it("should be settable after mls init", async () => {
         // Get unset pki environment
         const success = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit(false);
+            const cc = await window.helpers.ccInit({
+                withBasicCredential: false,
+            });
 
             let pkiEnv = await cc.getPkiEnvironment();
 
@@ -90,7 +92,7 @@ describe("end to end identity", () => {
         const success = await browser.execute(async () => {
             const clientIdStr = window.crypto.randomUUID();
             const clientId = window.helpers.newClientId(clientIdStr);
-            const cc = await window.helpers.ccInit(true, undefined, clientId);
+            const cc = await window.helpers.ccInit({ clientId });
             const conversationId = await window.helpers.createConversation(cc);
             const identities = await cc.transaction(async (ctx) => {
                 return await ctx.getDeviceIdentities(conversationId, [
@@ -108,7 +110,7 @@ describe("end to end identity", () => {
             const clientIdStr =
                 "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com";
             const clientId = window.helpers.newClientId(clientIdStr);
-            const cc = await window.helpers.ccInit(true, undefined, clientId);
+            const cc = await window.helpers.ccInit({ clientId });
             const conversationId = await window.helpers.createConversation(cc);
             const identities = await cc.transaction(async (ctx) => {
                 return await ctx.getUserIdentities(conversationId, [
