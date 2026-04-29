@@ -17,13 +17,13 @@ use openmls_traits::OpenMlsCryptoProvider;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use super::Result;
-use crate::{MlsError, mls::MlsConversation, prelude::Session};
+use crate::{MlsError, mls::MlsConversation};
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
     /// see [TransactionContext::commit_accepted]
     #[cfg_attr(test, crate::durable)]
-    pub(crate) async fn commit_accepted(&mut self, client: &Session, backend: &MlsCryptoProvider) -> Result<()> {
+    pub(crate) async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> Result<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
         let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
 
@@ -65,10 +65,7 @@ mod tests {
                     .await
                     .conversation_mut()
                     .await
-                    .commit_accepted(
-                        &alice.transaction.session().await.unwrap(),
-                        &alice.session.crypto_provider,
-                    )
+                    .commit_accepted(&alice.session.crypto_provider)
                     .await
                     .unwrap();
 
@@ -100,10 +97,7 @@ mod tests {
                     .await
                     .conversation_mut()
                     .await
-                    .commit_accepted(
-                        &alice.transaction.session().await.unwrap(),
-                        &alice.session.crypto_provider,
-                    )
+                    .commit_accepted(&alice.session.crypto_provider)
                     .await
                     .unwrap();
                 assert!(!conversation.has_pending_proposals().await);

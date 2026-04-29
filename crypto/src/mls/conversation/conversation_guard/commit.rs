@@ -45,10 +45,9 @@ impl ConversationGuard {
     }
 
     pub(super) async fn merge_commit(&mut self) -> Result<()> {
-        let client = self.session().await?;
         let provider = self.crypto_provider().await?;
         let mut conversation = self.inner.write().await;
-        conversation.commit_accepted(&client, &provider).await?;
+        conversation.commit_accepted(&provider).await?;
         let conversation_id = conversation.id().clone();
         let epoch = conversation.group.epoch().as_u64();
         drop(conversation);

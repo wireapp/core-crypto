@@ -5,7 +5,7 @@ use crate::{
         crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
         ext::CredentialExt,
     },
-    prelude::{MlsConversation, MlsConversationDecryptMessage, Session},
+    prelude::{MlsConversation, MlsConversationDecryptMessage},
 };
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
@@ -48,7 +48,6 @@ impl MlsConversation {
 
     pub(crate) async fn handle_own_commit(
         &mut self,
-        client: &Session,
         backend: &MlsCryptoProvider,
         ct: &ConfirmationTag,
     ) -> Result<MlsConversationDecryptMessage> {
@@ -68,7 +67,7 @@ impl MlsConversation {
 
         // incoming is from ourselves and it's the same as the local pending commit
         // => merge the pending commit & continue
-        self.merge_pending_commit(client, backend).await
+        self.merge_pending_commit(backend).await
     }
 
     /// Compare incoming commit with local pending commit
@@ -83,10 +82,9 @@ impl MlsConversation {
     /// This adapts [Self::commit_accepted] to return the same as [MlsConversation::decrypt_message]
     pub(crate) async fn merge_pending_commit(
         &mut self,
-        client: &Session,
         backend: &MlsCryptoProvider,
     ) -> Result<MlsConversationDecryptMessage> {
-        self.commit_accepted(client, backend).await?;
+        self.commit_accepted(backend).await?;
 
         let own_leaf = self
             .group
