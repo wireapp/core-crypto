@@ -364,7 +364,6 @@ pub struct X509Certificate {
     #[debug("<elided>")]
     pub certificate: x509_cert::Certificate,
     pub cert_type: X509CertificateType,
-    pub is_federated: bool,
     pub crl_dps: Vec<String>,
 }
 
@@ -401,7 +400,6 @@ impl X509Certificate {
             signature_scheme,
             certificate,
             cert_type: X509CertificateType::Root,
-            is_federated: false,
             crl_dps,
         }
     }
@@ -443,7 +441,6 @@ impl X509Certificate {
             signature_scheme,
             certificate,
             cert_type: X509CertificateType::IntermediateCA,
-            is_federated: false,
             crl_dps,
         }
     }
@@ -509,7 +506,6 @@ impl X509Certificate {
             signature_scheme,
             certificate,
             cert_type: X509CertificateType::EndIdentity,
-            is_federated: false,
             crl_dps,
         }
     }
