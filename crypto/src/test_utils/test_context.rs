@@ -248,14 +248,6 @@ impl TestContext {
         return self.sessions_inner(client_ids, None, CredentialType::Basic).await;
     }
 
-    pub async fn sessions_basic_with_pki_env<const N: usize>(&self) -> [SessionContext; N] {
-        let client_ids = self.basic_client_ids::<N>();
-        let test_chain = X509TestChain::init_empty(self.signature_scheme());
-        return self
-            .sessions_inner(client_ids, Some(&test_chain), CredentialType::Basic)
-            .await;
-    }
-
     /// Use this to create sessions with both x509 and basic credential types.
     /// The first tuple element contains the x509 sessions, the second contains the basic sessions.
     pub async fn sessions_mixed_credential_types<const N: usize, const M: usize>(
