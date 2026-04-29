@@ -131,10 +131,6 @@ impl PkiEnvironment {
         Ok(())
     }
 
-    pub async fn set_pki_environment_provider(&mut self, provider: RjtPkiEnvironment) {
-        self.rjt_pki_env = provider
-    }
-
     pub fn hooks(&self) -> Arc<dyn PkiEnvironmentHooks> {
         self.hooks.clone()
     }
