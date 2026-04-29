@@ -1,6 +1,8 @@
+import type { Capabilities } from "@wdio/types";
+
 const STATIC_SERVER_URL = "http://localhost:3000/";
 
-export const config: WebdriverIO.Config = {
+export const config = {
     //
     // ====================
     // Runner Configuration
@@ -56,8 +58,6 @@ export const config: WebdriverIO.Config = {
         {
             browserName: "chrome", // or "firefox"
             "goog:chromeOptions": { args: ["--headless", "--disable-gpu"] },
-            // @ts-expect-error TS2353: Object literal may only specify known properties, and "goog:loggingPrefs" does
-            // not exist in type RequestedStandaloneCapabilities
             "goog:loggingPrefs": {
                 browser: "ALL",
                 performance: "ALL",
@@ -162,4 +162,9 @@ export const config: WebdriverIO.Config = {
         ui: "bdd",
         timeout: 60000,
     },
+} satisfies Omit<WebdriverIO.Config, "capabilities"> & {
+    capabilities: (WebdriverIO.Capabilities & {
+        // This member doesn't exist on WebdriverIO.Capabilities so we extend that type manually
+        "goog:loggingPrefs": Record<string, Capabilities.LoggingPreferenceType>;
+    })[];
 };
