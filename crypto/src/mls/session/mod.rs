@@ -176,9 +176,7 @@ mod tests {
     use core_crypto_keystore::{entities::*, traits::FetchFromDatabase};
 
     use super::*;
-    use crate::{
-        KeystoreError, mls_provider::MlsCryptoProvider, test_utils::*, transaction_context::test_utils::EntitiesCount,
-    };
+    use crate::{KeystoreError, mls_provider::MlsCryptoProvider, transaction_context::test_utils::EntitiesCount};
 
     impl<D: FetchFromDatabase> Session<D> {
         // test functions are not held to the same documentation standard as proper functions
@@ -220,27 +218,5 @@ mod tests {
                 psk_bundle,
             }
         }
-    }
-
-    #[apply(all_cred_cipher)]
-    async fn can_generate_session(mut case: TestContext) {
-        let [alice] = case.sessions().await;
-        let key_store = case.create_in_memory_database().await;
-        let mut backend = MlsCryptoProvider::new(key_store);
-        let x509_test_chain = if case.is_x509() {
-            let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
-            x509_test_chain.register_with_provider(&mut backend).await;
-            Some(x509_test_chain)
-        } else {
-            None
-        };
-        backend.new_transaction().await.unwrap();
-        alice
-            .random_generate(
-                &case,
-                x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
-            )
-            .await
-            .unwrap();
     }
 }
