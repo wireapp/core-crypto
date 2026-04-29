@@ -49,7 +49,10 @@ impl TransactionContext {
 
         // store fresh CRLs
         for (crl_uri, crl) in crls {
-            self.e2ei_register_crl(crl_uri, crl).await?;
+            pki_env
+                .save_crl(&crl_uri, &crl)
+                .await
+                .map_err(RecursiveError::e2e_identity("saving CRL"))?;
         }
 
         let mut invalid_credential_refs = Vec::new();
