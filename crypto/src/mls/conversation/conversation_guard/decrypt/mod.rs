@@ -646,11 +646,12 @@ mod tests {
 
                 let epoch_after = commit.finish().guard_of(&bob).await.epoch().await;
                 assert_eq!(epoch_after, epoch_before + 1);
-                assert!(bob_observer.has_changed().await);
                 assert!(decrypted.delay.is_none());
                 assert!(decrypted.app_msg.is_none());
 
                 alice.verify_sender_identity(&case, &decrypted).await;
+                bob.transaction.finish().await.unwrap();
+                assert!(bob_observer.has_changed().await);
             })
             .await
         }
@@ -694,6 +695,7 @@ mod tests {
                 assert!(decrypted.proposals.is_empty());
                 assert!(decrypted.delay.is_none());
                 assert!(!conversation.has_pending_proposals().await);
+                alice.transaction.finish().await.unwrap();
                 assert!(alice_observer.has_changed().await);
             })
             .await
@@ -772,6 +774,7 @@ mod tests {
                 // Charlie is now in the group
                 assert_eq!(3, conversation.member_count().await);
                 assert!(conversation.is_functional_and_contains([&alice, &bob, &charlie]).await);
+                alice.transaction.finish().await.unwrap();
                 assert!(alice_observer.has_changed().await);
             })
             .await

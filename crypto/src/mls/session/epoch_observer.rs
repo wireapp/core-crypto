@@ -69,6 +69,7 @@ mod tests {
 
             // trigger an epoch
             let id = test_conv.advance_epoch().await.id;
+            session_context.transaction.finish().await.unwrap();
 
             // ensure we have observed the epoch change
             let observed_epochs = observer.observed_epochs().await;
@@ -101,6 +102,7 @@ mod tests {
 
             // alice triggers an epoch
             let id = test_conv.advance_epoch().await.id;
+            bob.transaction.finish().await.unwrap();
 
             // ensure we have observed the epoch change
             let observed_epochs = observer.observed_epochs().await;
