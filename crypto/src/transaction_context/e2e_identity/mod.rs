@@ -3,6 +3,5 @@
 pub(crate) mod conversation_state;
 pub mod enabled;
 mod error;
-mod init_certificates;
 
 pub use error::{Error, Result};
