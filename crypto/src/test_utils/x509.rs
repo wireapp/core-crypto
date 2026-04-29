@@ -271,34 +271,30 @@ impl X509TestChain {
     }
 
     pub async fn register_with_central(&self, context: &TransactionContext) {
-        use x509_cert::der::{Encode as _, EncodePem as _};
-        match context
-            .e2ei_register_acme_ca(
-                self.trust_anchor
-                    .certificate
-                    .to_pem(x509_cert::der::pem::LineEnding::LF)
-                    .unwrap(),
-            )
+        use x509_cert::der::Encode as _;
+
+        let pki_env = context
+            .pki_environment()
             .await
-        {
-            Ok(_) | Err(crate::transaction_context::e2e_identity::Error::TrustAnchorAlreadyRegistered) => {}
-            Err(e) => panic!("{e:?}"),
-        }
+            .unwrap()
+            .expect("PKI environment must be set");
+        pki_env
+            .add_trust_anchor("root", self.trust_anchor.certificate.clone())
+            .await
+            .expect("can add trust anchor");
 
-        for intermediate in &self.intermediates {
-            let pem = intermediate
-                .certificate
-                .to_pem(x509_cert::der::pem::LineEnding::LF)
-                .unwrap();
-
-            context.e2ei_register_intermediate_ca_pem(pem).await.unwrap();
+        for (idx, intermediate) in self.intermediates.iter().enumerate() {
+            pki_env
+                .add_intermediate_cert(&format!("intermediate {idx}"), intermediate.certificate.clone())
+                .await
+                .expect("can add intermediate cert");
         }
 
         for (crl_dp, crl) in &self.crls {
-            context
-                .e2ei_register_crl(crl_dp.clone(), crl.to_der().unwrap())
+            pki_env
+                .save_crl(crl_dp, crl.to_der().unwrap().as_slice())
                 .await
-                .unwrap();
+                .expect("can save CRL");
         }
     }
 
