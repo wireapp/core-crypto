@@ -1,16 +1,13 @@
-use std::{fmt::Display, sync::Arc, time::Duration};
+use std::{fmt::Display, time::Duration};
 
-use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
-use wire_e2e_identity::{
-    legacy::id::QualifiedE2eiClientId, pki_env::PkiEnvironment,
-    x509_check::revocation::PkiEnvironment as RjtPkiEnvironment,
-};
+use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
+use wire_e2e_identity::legacy::id::QualifiedE2eiClientId;
 use x509_cert::der::EncodePem;
 
 use crate::{
     CertificateBundle,
     mls::session::identifier::ClientIdentifier,
-    mls_provider::{CRYPTO, CertProfile, CertificateGenerationArgs, MlsCryptoProvider, PkiKeypair},
+    mls_provider::{CRYPTO, CertProfile, CertificateGenerationArgs, PkiKeypair},
     transaction_context::TransactionContext,
 };
 
@@ -303,32 +300,6 @@ impl X509TestChain {
                 .await
                 .unwrap();
         }
-    }
-
-    pub async fn register_with_provider(&self, backend: &mut MlsCryptoProvider) {
-        let trust_roots = vec![x509_cert::anchor::TrustAnchorChoice::Certificate(
-            self.trust_anchor.certificate.clone(),
-        )];
-        let intermediates: Vec<_> = self
-            .intermediates
-            .iter()
-            .map(|intermediate| intermediate.certificate.clone())
-            .collect();
-        let crls: Vec<_> = self.crls.values().cloned().collect();
-        let params = wire_e2e_identity::x509_check::revocation::PkiEnvironmentParams {
-            trust_roots: &trust_roots,
-            intermediates: &intermediates,
-            crls: &crls,
-        };
-
-        let inner_pki_env = RjtPkiEnvironment::init(params).unwrap();
-
-        let dummy_hooks = Arc::new(super::DummyPkiEnvironmentHooks);
-        let mut pki_env = PkiEnvironment::new(dummy_hooks, backend.key_store().clone())
-            .await
-            .expect("Constructing pki environment");
-        pki_env.set_pki_environment_provider(inner_pki_env);
-        backend.set_pki_environment(Some(Arc::new(pki_env))).await;
     }
 
     pub fn find_local_intermediate_ca(&self) -> &X509Certificate {
