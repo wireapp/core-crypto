@@ -39,10 +39,6 @@ impl MlsConversation {
             let _ = backend.key_store().remove::<MlsEncryptionKeyPair, _>(ek).await;
         }
 
-        client
-            .notify_epoch_changed(self.id.clone(), self.group.epoch().as_u64())
-            .await;
-
         Ok(())
     }
 }

@@ -178,7 +178,7 @@ impl ConversationGuard {
         {
             let mut conversation = self.conversation_mut().await;
             let ct = conversation.extract_confirmation_tag_from_own_commit(&message)?;
-            let mut decrypted_message = conversation.handle_own_commit(client, backend, ct).await?;
+            let mut decrypted_message = conversation.handle_own_commit(backend, ct).await?;
             debug_assert!(
                 decrypted_message.buffered_messages.is_none(),
                 "decrypted message should be constructed with empty buffer"
@@ -393,7 +393,10 @@ impl ConversationGuard {
                     proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
                     "Epoch advanced"
                 );
-                client.notify_epoch_changed(conversation.id.clone(), epoch).await;
+                self.central_context
+                    .queue_epoch_changed(conversation.id.clone(), epoch)
+                    .await
+                    .map_err(RecursiveError::transaction("queueing epoch changed notification"))?;
 
                 // we still support the `has_epoch_changed` field, though we'll remove it later
                 #[expect(deprecated)]
