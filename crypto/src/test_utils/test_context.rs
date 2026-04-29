@@ -243,13 +243,6 @@ impl TestContext {
         self.sessions_x509().await
     }
 
-    pub async fn sessions_with_pki_env<const N: usize>(&self) -> [SessionContext; N] {
-        if self.is_basic() {
-            return self.sessions_basic_with_pki_env().await;
-        }
-        self.sessions_x509().await
-    }
-
     pub async fn sessions_basic<const N: usize>(&self) -> [SessionContext; N] {
         let client_ids = self.basic_client_ids::<N>();
         return self.sessions_inner(client_ids, None, CredentialType::Basic).await;
