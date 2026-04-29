@@ -61,9 +61,4 @@ impl CoreCryptoContext {
             .collect::<CoreCryptoResult<HashMap<_, _>>>()?;
         Ok(user_ids)
     }
-
-    /// Returns true if the PKI environment has been set up.
-    pub async fn e2ei_is_pki_env_setup(&self) -> bool {
-        self.inner.e2ei_is_pki_env_setup().await
-    }
 }
