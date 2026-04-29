@@ -179,56 +179,6 @@ impl X509TestChain {
         })
     }
 
-    pub fn init_for_random_clients(signature_scheme: SignatureScheme, count: usize) -> Self {
-        let default_params = CertificateParams::default();
-        let root_params = {
-            let mut params = default_params.clone();
-            if let Some(root_cn) = &default_params.common_name {
-                params.common_name.replace(format!("{root_cn} Root CA"));
-            }
-            params
-        };
-        let local_ca_params = {
-            let mut params = default_params.clone();
-            if let Some(root_cn) = &default_params.common_name {
-                params.common_name.replace(format!("{root_cn} Intermediate CA"));
-            }
-            params
-        };
-
-        let actor_names = (0..count)
-            .map(|i| match i {
-                0 => "Alice",
-                1 => "Bob",
-                2 => "Charlie",
-                3 => "David",
-                4 => "Erin",
-                5 => "Frank",
-                _ => unimplemented!("Add more actor names"),
-            })
-            .collect::<Vec<&'static str>>();
-
-        let local_actors = actor_names
-            .into_iter()
-            .map(|first_name| X509TestChainActorArg {
-                name: first_name.to_string(),
-                handle: format!("{}_wire", first_name.to_lowercase()),
-                client_id: qualified_e2ei_cid_with_domain(local_ca_params.domain.as_ref().unwrap())
-                    .try_into()
-                    .unwrap(),
-                is_revoked: false,
-            })
-            .collect();
-
-        X509TestChain::init(X509TestChainArgs {
-            root_params,
-            local_ca_params,
-            signature_scheme,
-            local_actors,
-            dump_pem_certs: false,
-        })
-    }
-
     pub fn init(args: X509TestChainArgs) -> Self {
         let trust_anchor = X509Certificate::create_root_cert_ta(args.root_params.clone(), args.signature_scheme);
         let local_intermediate = trust_anchor.create_and_sign_intermediate(args.local_ca_params.clone());
