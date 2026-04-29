@@ -305,7 +305,7 @@ impl X509TestChain {
     pub fn find_local_intermediate_ca(&self) -> &X509Certificate {
         self.intermediates
             .iter()
-            .find(|cert| !cert.is_federated && cert.cert_type == X509CertificateType::IntermediateCA)
+            .find(|cert| cert.cert_type == X509CertificateType::IntermediateCA)
             .expect("Cannot find Local (owned) Intermediate CA. Something isn't right in the setup of X509TestChain")
     }
 
