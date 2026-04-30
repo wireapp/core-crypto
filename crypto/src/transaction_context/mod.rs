@@ -300,8 +300,7 @@ impl TransactionContext {
             .map(|pki_env| pki_env.mls_pki_env_provider())
             .unwrap_or_default();
 
-        let crypto_provider = MlsCryptoProvider::new_with_pki_env(database, pki_env_provider);
-        let database = self.database().await?;
+        let crypto_provider = MlsCryptoProvider::new_with_pki_env(database.clone(), pki_env_provider);
         let session = Session::new(session_id.clone(), crypto_provider, database, transport);
         self.set_mls_session(session).await?;
 
