@@ -33,7 +33,7 @@ pub(crate) async fn verify_cert_chain(
         crls: &[],
     })?;
 
-    verify_leaf_certificate(config, &env, leaf)?;
+    verify_leaf_certificate(config, &env, pki_env, leaf)?;
 
     // see https://datatracker.ietf.org/doc/html/rfc8555#section-11.4
     RjtPkiEnvironment::extract_ski_aki_from_cert(leaf)?;
@@ -46,12 +46,13 @@ pub(crate) async fn verify_cert_chain(
 fn verify_leaf_certificate(
     config: &X509CredentialConfiguration,
     pki_env: &RjtPkiEnvironment,
+    outer_pki_env: &PkiEnvironment,
     cert: &Certificate,
 ) -> Result<(), CertificateError> {
     pki_env.validate_cert(cert)?;
 
     // TODO: verify that cert is signed by enrollment.sign_kp
-    let cert_identity = cert.extract_identity(pki_env, config.hash_alg)?;
+    let cert_identity = cert.extract_identity(outer_pki_env, config.hash_alg)?;
 
     let cert_id =
         ClientId::try_from_qualified(&cert_identity.client_id).map_err(|_| CertificateError::InvalidClientId)?;
