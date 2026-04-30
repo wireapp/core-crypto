@@ -88,6 +88,12 @@ impl Welcome {
 #[uniffi::export]
 impl CoreCryptoContext {
     /// Initializes the MLS client with the given client ID and message transport.
+    ///
+    /// In general this method should be called at most once per core-crypto instance.
+    /// Calling it multiple times with the same parameters should silently succeed, but this is not
+    /// a supported or tested mode of operation.
+    /// Calling it multiple times with varying parameters might succeed, but this is not a supported or tested mode of
+    /// operation.
     pub async fn mls_init(&self, client_id: &Arc<ClientId>, transport: Arc<dyn MlsTransport>) -> CoreCryptoResult<()> {
         let transport = callback_shim(transport);
         self.inner

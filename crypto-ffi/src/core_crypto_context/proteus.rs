@@ -5,6 +5,12 @@ type BatchedEncryptedMessages = std::collections::HashMap<String, Vec<u8>>;
 #[uniffi::export]
 impl CoreCryptoContext {
     /// Initializes the Proteus client.
+    ///
+    /// In general this method should be called at most once per core-crypto instance.
+    /// Calling it multiple times with the same parameters should silently succeed, but this is not
+    /// a supported or tested mode of operation.
+    /// Calling it multiple times with varying parameters might succeed, but this is not a supported or tested mode of
+    /// operation.
     pub async fn proteus_init(&self) -> CoreCryptoResult<()> {
         proteus_impl!({
             self.inner.proteus_init().await?;
