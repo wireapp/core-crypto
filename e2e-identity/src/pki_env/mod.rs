@@ -134,11 +134,6 @@ impl PkiEnvironment {
             .collect()
     }
 
-    pub async fn update_pki_environment_provider(&mut self) -> Result<()> {
-        self.rjt_pki_env = restore_pki_env(&self.database).await?;
-        Ok(())
-    }
-
     pub fn hooks(&self) -> Arc<dyn PkiEnvironmentHooks> {
         self.hooks.clone()
     }
