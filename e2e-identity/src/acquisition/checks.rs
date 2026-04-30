@@ -17,18 +17,14 @@ pub(crate) async fn verify_cert_chain(
     // response was checked prior to calling this function.
     let (leaf, intermediates) = certs.split_first().expect("at least one certificate");
 
-    // TODO: this is ridiculous, once we have the "outer" PKI env, we should
-    // be certain that there is also the "inner", RjtPkiEnvironment one. This
-    // should be simplified once we drop RjtPkiEnvironment.
-    let trust_roots: Vec<TrustAnchorChoice> = pki_env
-        .mls_pki_env_provider()
+    let trust_anchors: Vec<TrustAnchorChoice> = pki_env
         .get_trust_anchors()
-        .iter()
-        .map(|ta| ta.decoded_ta.clone())
+        .into_iter()
+        .map(TrustAnchorChoice::Certificate)
         .collect();
 
     let env = RjtPkiEnvironment::init(PkiEnvironmentParams {
-        trust_roots: trust_roots.as_slice(),
+        trust_roots: trust_anchors.as_slice(),
         intermediates,
         crls: &[],
     })?;
