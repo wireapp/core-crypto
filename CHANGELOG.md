@@ -368,6 +368,20 @@
 
   Affected platforms: all
 
+## v9.3.4 - 2026-04-30
+
+### Highlights
+
+Fixes an issue that could cause _epoch observer_ events to be emitted for epoch changes that would not (yet) actually be
+persisted to the CoreCrypto database. This is relevant if the CoreCrypto instance is used inside the event handler of
+the _epoch observer_ (e.g., to update the exported secret). If you created a CoreCrypto transaction inside the handler
+and didn't use the CoreCrypto instance directly, this fix is irrelevant.
+
+### Bug Fixes
+
+- don't eagerly emit epoch change events [WPB-25113]
+  ([b391f2e](https://github.com/wireapp/core-crypto/commit/b391f2e73a818161ea97cd00d6672d1010dbaf43))
+
 ## v9.3.3 - 2026-03-31
 
 ### Bug Fixes
