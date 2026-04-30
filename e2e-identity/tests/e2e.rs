@@ -230,7 +230,6 @@ async fn prepare_pki_env_and_config(
         .unwrap();
 
     let mut pki_env = PkiEnvironment::new(hooks, db).await.unwrap();
-    pki_env.update_pki_environment_provider().await.unwrap();
     pki_env.add_trust_anchor("step-ca-root", acme_cert).await.unwrap();
     (pki_env, config)
 }
