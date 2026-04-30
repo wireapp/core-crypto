@@ -90,7 +90,6 @@ macro_rules! innermost_source_matches {
 use crate::RecursiveError::Test;
 use crate::ephemeral::HistorySecret;
 use crate::test_utils::TestError::ImplementationError;
-pub(crate) use innermost_source_matches;
 
 #[derive(Debug, Clone)]
 pub struct SessionContext {
