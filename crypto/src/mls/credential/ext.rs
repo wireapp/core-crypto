@@ -104,7 +104,7 @@ impl CredentialExt for openmls::prelude::Certificate {
         let leaf = leaf.as_slice();
         use wire_e2e_identity::WireIdentityReader as _;
         let identity = leaf
-            .extract_identity(env.mls_pki_env_provider(), cs.e2ei_hash_alg())
+            .extract_identity(env, cs.e2ei_hash_alg())
             .map_err(|_| Error::InvalidIdentity)?;
         let identity = WireIdentity::try_from((identity, leaf)).map_err(|_| Error::InvalidIdentity)?;
         Ok(identity)
