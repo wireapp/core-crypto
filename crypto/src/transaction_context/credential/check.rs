@@ -104,14 +104,13 @@ impl TransactionContext {
     }
 
     async fn check_credential(&self, pki_env: &PkiEnvironment, credential: &Credential) -> Result<()> {
-        let provider = pki_env.mls_pki_env_provider();
         let cert = credential
             .mls_credential()
             .parse_leaf_cert()
             .map_err(RecursiveError::mls_credential("parsing leaf certificate"))?
             .ok_or(Error::InvalidCredential)?;
-        provider
-            .validate_cert_and_revocation(&cert)
+        pki_env
+            .validate_cert(&cert)
             .map_err(RecursiveError::e2e_identity("validating credential certificate"))?;
         Ok(())
     }
