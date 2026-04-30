@@ -1,7 +1,6 @@
 //! This module contains all [super::TransactionContext] methods related to a conversation.
 
 pub mod external_commit;
-mod external_proposal;
 pub mod welcome;
 
 use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
