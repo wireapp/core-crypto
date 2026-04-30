@@ -35,8 +35,8 @@ impl PkiEnvironment {
 
     /// Validate the CRL (trust anchors must be configured prior to this) and
     /// save it to the database.
-    pub async fn save_crl(&mut self, crl_dp: &str, crl_der: &[u8]) -> Result<()> {
-        let crl = self.rjt_pki_env.validate_crl_with_raw(crl_der)?;
+    pub async fn save_crl(&self, crl_dp: &str, crl_der: &[u8]) -> Result<()> {
+        let crl = self.rjt_pki_env.lock().await.validate_crl_with_raw(crl_der)?;
         let crl_data = E2eiCrl {
             content: RjtPkiEnvironment::encode_crl_to_der(&crl)?,
             distribution_point: crl_dp.to_owned(),

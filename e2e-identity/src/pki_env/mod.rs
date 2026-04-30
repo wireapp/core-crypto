@@ -5,6 +5,7 @@ pub mod hooks;
 
 use std::{collections::HashSet, sync::Arc};
 
+use async_lock::Mutex;
 use certval::{CertSource, CertVector as _, CertificationPathSettings, TaSource};
 use core_crypto_keystore::{
     connection::Database,
@@ -109,7 +110,7 @@ pub struct PkiEnvironment {
     hooks: Arc<dyn PkiEnvironmentHooks>,
     /// The database in which X509 Credentials are stored.
     database: Database,
-    rjt_pki_env: RjtPkiEnvironment,
+    rjt_pki_env: Mutex<RjtPkiEnvironment>,
 }
 
 impl PkiEnvironment {
@@ -119,12 +120,14 @@ impl PkiEnvironment {
         Ok(Self {
             hooks,
             database,
-            rjt_pki_env,
+            rjt_pki_env: Mutex::new(rjt_pki_env),
         })
     }
 
-    pub fn get_trust_anchors(&self) -> Vec<Certificate> {
+    pub async fn get_trust_anchors(&self) -> Vec<Certificate> {
         self.rjt_pki_env
+            .lock()
+            .await
             .get_trust_anchors()
             .iter()
             .filter_map(|choice| match choice.decoded_ta {
@@ -157,9 +160,9 @@ impl PkiEnvironment {
     ///
     /// The certificate is saved to the database, and included in the PKI environment for
     /// future validation.
-    pub async fn add_trust_anchor(&mut self, name: &str, cert: Certificate) -> Result<()> {
+    pub async fn add_trust_anchor(&self, name: &str, cert: Certificate) -> Result<()> {
         // Validate it (expiration & signature only)
-        self.rjt_pki_env.validate_trust_anchor_cert(&cert)?;
+        self.rjt_pki_env.lock().await.validate_trust_anchor_cert(&cert)?;
 
         // Save cert's DER representation to the database
         let cert_data = E2eiAcmeCA {
@@ -176,7 +179,10 @@ impl PkiEnvironment {
             bytes: cert.to_der()?,
         });
         trust_anchors.initialize().map_err(Error::Certval)?;
-        self.rjt_pki_env.add_trust_anchor_source(Box::new(trust_anchors));
+        self.rjt_pki_env
+            .lock()
+            .await
+            .add_trust_anchor_source(Box::new(trust_anchors));
         Ok(())
     }
 
@@ -187,7 +193,7 @@ impl PkiEnvironment {
     ///
     /// CRL (Certificate Revocation List) distribution points are extracted from the certificate and
     /// an attempt is made to fetch a CRL from each one.
-    pub async fn add_intermediate_cert(&mut self, name: &str, cert: Certificate) -> Result<()> {
+    pub async fn add_intermediate_cert(&self, name: &str, cert: Certificate) -> Result<()> {
         // Save cert's DER representation to the database
         let (ski, aki) = RjtPkiEnvironment::extract_ski_aki_from_cert(&cert)?;
         let ski_aki_pair = format!("{ski}:{}", aki.unwrap_or_default());
@@ -219,13 +225,16 @@ impl PkiEnvironment {
         });
 
         cert_source.initialize(&cps).map_err(Error::Certval)?;
-        self.rjt_pki_env.add_certificate_source(Box::new(cert_source));
+        self.rjt_pki_env
+            .lock()
+            .await
+            .add_certificate_source(Box::new(cert_source));
 
         Ok(())
     }
 
-    pub fn validate_cert(&self, cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
-        self.rjt_pki_env.validate_cert_and_revocation(cert)
+    pub async fn validate_cert(&self, cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
+        self.rjt_pki_env.lock().await.validate_cert_and_revocation(cert)
     }
 
     pub async fn validate_credential<'a>(&'a self, credential: CredentialRef<'a>) -> CredentialAuthenticationStatus {
@@ -243,7 +252,7 @@ impl PkiEnvironment {
             return CredentialAuthenticationStatus::Invalid;
         };
 
-        if let Err(validation_error) = self.rjt_pki_env.validate_cert_and_revocation(&cert) {
+        if let Err(validation_error) = self.rjt_pki_env.lock().await.validate_cert_and_revocation(&cert) {
             use crate::x509_check::{
                 RustyX509CheckError,
                 reexports::certval::{Error as CertvalError, PathValidationStatus},

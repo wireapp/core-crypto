@@ -19,6 +19,7 @@ pub(crate) async fn verify_cert_chain(
 
     let trust_anchors: Vec<TrustAnchorChoice> = pki_env
         .get_trust_anchors()
+        .await
         .into_iter()
         .map(TrustAnchorChoice::Certificate)
         .collect();
