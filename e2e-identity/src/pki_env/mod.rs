@@ -14,6 +14,7 @@ use core_crypto_keystore::{
 use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
 use x509_cert::{
     Certificate,
+    anchor::TrustAnchorChoice,
     der::{Decode as _, Encode as _},
 };
 
@@ -124,6 +125,17 @@ impl PkiEnvironment {
 
     pub fn mls_pki_env_provider(&self) -> &RjtPkiEnvironment {
         &self.rjt_pki_env
+    }
+
+    pub fn get_trust_anchors(&self) -> Vec<Certificate> {
+        self.rjt_pki_env
+            .get_trust_anchors()
+            .iter()
+            .filter_map(|choice| match choice.decoded_ta {
+                TrustAnchorChoice::Certificate(ref cert) => Some(cert.clone()),
+                _ => None,
+            })
+            .collect()
     }
 
     pub async fn update_pki_environment_provider(&mut self) -> Result<()> {
