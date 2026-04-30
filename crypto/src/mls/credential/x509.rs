@@ -90,7 +90,7 @@ impl CertificateBundle {
         };
 
         let identity = leaf
-            .extract_identity(pki_env.mls_pki_env_provider(), hash_alg)
+            .extract_identity(pki_env, hash_alg)
             .map_err(|_| Error::InvalidIdentity)?;
 
         use wire_e2e_identity::legacy::id as legacy_id;
