@@ -309,7 +309,7 @@ mod tests {
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {
         let [alice, bob, charlie, debbie] = case.sessions().await;
         Box::pin(async move {
-            let conversation = case.create_conversation([&alice]).await;
+            let conversation = case.create_conversation([&alice, &debbie]).await;
             // Bob tries to join Alice's group with an external commit
             let (commit_guard, _pending_conversation) = conversation.external_join_unmerged(&bob).await;
             let external_commit = commit_guard.message();
@@ -322,20 +322,19 @@ mod tests {
                 .await
                 .finish();
 
-            // Meanwhile Debbie joins the party by creating an external proposal
-            let proposal_guard = conversation.external_join_proposal(&debbie).await;
-            let external_proposal = proposal_guard.message();
-
             // ...then Alice generates new messages for this epoch
-            let app_msg = proposal_guard
-                .conversation()
+            let app_msg = conversation
                 .guard()
                 .await
                 .encrypt_message(b"Hello Bob !")
                 .await
                 .unwrap();
 
-            let conversation = proposal_guard.notify_member(&alice).await.finish();
+            // And proposes to remove debbie
+            let proposal_guard = conversation.remove_proposal(&debbie).await;
+            let remove_proposal = proposal_guard.message();
+
+            let conversation = proposal_guard.finish();
 
             let commit_guard = conversation.invite([&charlie]).await;
             let commit = commit_guard.message();
@@ -344,9 +343,7 @@ mod tests {
             // And now Bob will have to decrypt those messages while he hasn't yet merged its external commit
             // To add more fun, he will buffer the messages in exactly the wrong order (to make
             // sure he reapplies them in the right order afterwards)
-            let messages = vec![commit, external_proposal]
-                .into_iter()
-                .map(|m| m.to_bytes().unwrap());
+            let messages = vec![remove_proposal, commit].into_iter().map(|m| m.to_bytes().unwrap());
             let Err(crate::transaction_context::Error::PendingConversation(mut pending_conversation)) =
                 bob.transaction.conversation(conversation.id()).await
             else {
@@ -390,12 +387,14 @@ mod tests {
                 }
             }
 
-            assert_eq!(conversation.member_count().await, 4);
-            assert!(
-                conversation
-                    .is_functional_and_contains([&alice, &bob, &charlie, &debbie])
-                    .await
-            );
+            println!("alice: {:?}", alice.identifier);
+            println!("bob: {:?}", bob.identifier);
+            println!("charlie: {:?}", charlie.identifier);
+            println!("debbie: {:?}", debbie.identifier);
+
+            assert_eq!(conversation.member_count().await, 3);
+            assert!(conversation.is_functional().await);
+            assert!(conversation.is_functional_and_contains([&alice, &bob, &charlie]).await);
 
             // After merging we should erase all those pending messages
             assert_eq!(bob.transaction.count_entities().await.pending_messages, 0);

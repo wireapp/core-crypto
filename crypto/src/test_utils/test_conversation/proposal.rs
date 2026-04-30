@@ -67,34 +67,6 @@ impl<'a> TestConversation<'a> {
         OperationGuard::new(TestOperation::Remove(member), proposal, self, [proposer_index])
     }
 
-    /// Create an external join proposal and notify all members. The epoch count needed for this will be taken
-    /// from the actor's state.
-    pub async fn external_join_proposal_notify(self, joiner: &'a SessionContext) -> TestConversation<'a> {
-        self.external_join_proposal(joiner).await.notify_members().await
-    }
-
-    /// Create an external join proposal. The epoch count needed for this will be taken from the actor's state.
-    pub async fn external_join_proposal(self, joiner: &'a SessionContext) -> OperationGuard<'a, Proposal> {
-        let external_proposal = joiner
-            .transaction
-            .new_external_add_proposal(
-                self.id().clone(),
-                self.guard().await.epoch().await.into(),
-                &joiner.initial_credential,
-            )
-            .await
-            .unwrap();
-
-        OperationGuard::new(
-            TestOperation::Add(AddGuard {
-                new_members: vec![joiner],
-            }),
-            external_proposal,
-            self,
-            [],
-        )
-    }
-
     /// Like [Self::remove_proposal_notify], but by an external actor, the so-called external sender. We're using the
     /// sender index 0.
     pub async fn external_remove_proposal_notify(

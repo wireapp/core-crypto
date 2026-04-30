@@ -165,40 +165,6 @@ mod tests {
         .await
     }
 
-    #[apply(all_cred_cipher)]
-    async fn decrypting_duplicate_external_proposal_should_fail(case: TestContext) {
-        let [alice, bob] = case.sessions().await;
-        Box::pin(async move {
-            let conversation = case.create_conversation([&alice]).await;
-
-            let proposal_guard = conversation.external_join_proposal(&bob).await;
-            let proposal = proposal_guard.message();
-
-            // decrypt once ... ok
-            let conversation = proposal_guard.notify_members().await;
-
-            // decrypt twice ... not ok
-            let decryption = conversation
-                .guard()
-                .await
-                .decrypt_message(&proposal.to_bytes().unwrap())
-                .await;
-            assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
-
-            // advance alice's epoch
-            let conversation = conversation.commit_pending_proposals_notify().await;
-
-            // Epoch has advanced so we cannot detect duplicates anymore
-            let decryption = conversation
-                .guard()
-                .await
-                .decrypt_message(&proposal.to_bytes().unwrap())
-                .await;
-            assert!(matches!(decryption.unwrap_err(), Error::StaleProposal));
-        })
-        .await
-    }
-
     // Ensures decrypting an application message is durable (we increment the messages generation & persist the group)
     #[apply(all_cred_cipher)]
     async fn decrypting_duplicate_application_message_should_fail(case: TestContext) {

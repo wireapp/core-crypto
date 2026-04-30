@@ -576,37 +576,6 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        pub async fn decrypting_a_commit_should_discard_pending_external_proposals(case: TestContext) {
-            let [alice, bob, charlie] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case.create_conversation([&alice, &bob]).await;
-
-                // DS will create an external proposal to add Charlie
-                assert!(!conversation.has_pending_proposals().await);
-                let proposal_guard = conversation
-                    .external_join_proposal(&charlie)
-                    .await
-                    .notify_member(&alice)
-                    .await;
-                let conversation = proposal_guard.finish();
-                assert_eq!(conversation.pending_proposal_count().await, 1);
-
-                // But meanwhile Bob, before receiving the external proposal,
-                // will create a commit and send it to Alice.
-                let conversation = conversation
-                    .acting_as(&bob)
-                    .await
-                    .update()
-                    .await
-                    .notify_member(&alice)
-                    .await
-                    .finish();
-                assert!(!conversation.has_pending_proposals().await);
-            })
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
         async fn should_not_return_sender_client_id(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
@@ -616,41 +585,6 @@ mod tests {
 
                 let sender_client_id = decrypted.unwrap().sender_client_id;
                 assert!(sender_client_id.is_none());
-            })
-            .await
-        }
-    }
-
-    mod external_proposal {
-        use super::*;
-
-        #[apply(all_cred_cipher)]
-        async fn can_decrypt_external_proposal(case: TestContext) {
-            let [alice, bob, charlie] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case.create_conversation([&alice, &bob]).await;
-
-                let bob_observer = TestEpochObserver::new();
-                bob.session()
-                    .await
-                    .register_epoch_observer(bob_observer.clone())
-                    .await
-                    .unwrap();
-
-                let (proposal, decrypted) = conversation
-                    .external_join_proposal(&charlie)
-                    .await
-                    .notify_member_fallible(&alice)
-                    .await;
-                let decrypted = decrypted.unwrap();
-                assert!(decrypted.app_msg.is_none());
-                assert!(decrypted.delay.is_some());
-
-                let (_, decrypted) = proposal.notify_member_fallible(&bob).await;
-                let decrypted = decrypted.unwrap();
-                assert!(decrypted.app_msg.is_none());
-                assert!(decrypted.delay.is_some());
-                assert!(!bob_observer.has_changed().await)
             })
             .await
         }

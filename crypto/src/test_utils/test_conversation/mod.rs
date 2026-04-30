@@ -160,7 +160,14 @@ impl<'a> TestConversation<'a> {
             self.members()
                 .enumerate()
                 .filter(move |(other_idx, _)| idx != *other_idx)
-                .map(move |(_, other_member)| self.can_talk(member, other_member))
+                .map(async move |(_, other_member)| {
+                    let can_talk = self.can_talk(member, other_member).await;
+                    println!(
+                        "member id: {:?}, other member id: {:?}, can_talk: {}",
+                        member.identifier, other_member.identifier, can_talk
+                    );
+                    can_talk
+                })
         });
 
         futures_util::future::join_all(result_futures)

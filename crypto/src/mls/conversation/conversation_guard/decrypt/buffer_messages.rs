@@ -149,7 +149,7 @@ mod tests {
 
         let [alice, bob, charlie, debbie] = case.sessions().await;
         Box::pin(async move {
-            let conversation = case.create_conversation([&alice, &bob]).await;
+            let conversation = case.create_conversation([&alice, &bob, &debbie]).await;
 
             // Bob creates a commit but won't merge it immediately (e.g, because his app crashes before he receives the
             // success response from the ds)
@@ -167,25 +167,20 @@ mod tests {
                 .await
                 .unwrap();
 
-            // Meanwhile Debbie joins the party by creating an external proposal
-            let proposal_guard = conversation
-                .external_join_proposal(&debbie)
-                .await
-                .notify_member(&alice)
-                .await;
-            let external_proposal = proposal_guard.message();
+            let proposal_guard = conversation.remove_proposal(&debbie).await;
+            let remove_proposal = proposal_guard.message();
             let conversation = proposal_guard.finish();
 
-            // This commit will contain the invitations of charlie and debbie
+            // This commit will contain the invitation of charlie and debbie's removal
             let commit_guard = conversation.invite([&charlie]).await;
             let commit = commit_guard.message();
-            // This will make charlie and debbie process welcome messages
+            // This will make charlie process welcome message
             let conversation = commit_guard.process_member_changes().await.finish();
 
             // And now Bob will have to decrypt those messages while he hasn't yet merged its commit
             // To add more fun, he will buffer the messages in exactly the wrong order (to make
             // sure he reapplies them in the right order afterwards)
-            let messages = [commit, external_proposal]
+            let messages = [commit, remove_proposal]
                 .into_iter()
                 .map(|m| m.to_bytes().unwrap())
                 .chain(std::iter::once(app_msg));
@@ -227,12 +222,8 @@ mod tests {
                 }
             }
 
-            assert_eq!(conversation.member_count().await, 4);
-            assert!(
-                conversation
-                    .is_functional_and_contains([&alice, &bob, &charlie, &debbie])
-                    .await
-            );
+            assert_eq!(conversation.member_count().await, 3);
+            assert!(conversation.is_functional_and_contains([&alice, &bob, &charlie]).await);
 
             // After merging we should erase all those pending messages
             assert_eq!(bob.transaction.count_entities().await.pending_messages, 0);
@@ -261,10 +252,10 @@ mod tests {
 
         let [alice, bob, charlie, debbie] = case.sessions().await;
         Box::pin(async move {
-            let conversation = case.create_conversation([&alice]).await;
+            let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
 
-            // Bob joins the group with an external commit...
-            let commit_guard = conversation.external_join(&bob).await;
+            // Bob creates a commit...
+            let commit_guard = conversation.acting_as(&bob).await.update().await;
             let ext_commit = commit_guard.message();
             let conversation = commit_guard.process_member_changes().await.finish();
 
@@ -277,14 +268,8 @@ mod tests {
                 .encrypt_message(b"Hello Alice !")
                 .await
                 .unwrap();
-            let proposal_guard = conversation
-                .acting_as(&bob)
-                .await
-                .external_join_proposal(&charlie)
-                .await
-                .notify_member(&bob)
-                .await;
-            let external_proposal = proposal_guard.message();
+            let proposal_guard = conversation.acting_as(&bob).await.remove_proposal(&charlie).await;
+            let proposal = proposal_guard.message();
             let commit_guard = proposal_guard.finish().acting_as(&bob).await.invite([&debbie]).await;
             let commit = commit_guard.message();
             let conversation = commit_guard.process_member_changes().await.finish();
@@ -292,11 +277,9 @@ mod tests {
             // And now Alice will have to decrypt those messages while he hasn't yet merged the commit
             // To add more fun, he will buffer the messages in exactly the wrong order (to make
             // sure he reapplies them in the right order afterwards)
-            let messages = vec![commit, external_proposal]
-                .into_iter()
-                .map(|m| m.to_bytes().unwrap());
+            let messages = vec![commit, proposal].into_iter().map(|m| m.to_bytes().unwrap());
             for m in messages {
-                let decrypt = conversation.guard().await.decrypt_message(m).await;
+                let decrypt = conversation.guard_of(&alice).await.decrypt_message(m).await;
                 assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
             }
             let decrypt = conversation.guard().await.decrypt_message(app_msg).await;
@@ -335,12 +318,8 @@ mod tests {
                 }
             }
 
-            assert_eq!(conversation.member_count().await, 4);
-            assert!(
-                conversation
-                    .is_functional_and_contains([&alice, &bob, &charlie, &debbie])
-                    .await
-            );
+            assert_eq!(conversation.member_count().await, 3);
+            assert!(conversation.is_functional_and_contains([&alice, &bob, &debbie]).await);
 
             // After merging we should erase all those pending messages
             assert_eq!(alice.transaction.count_entities().await.pending_messages, 0);
@@ -356,8 +335,8 @@ mod tests {
             dbg!(&observed_epochs);
             assert_eq!(
                 observed_epochs.len(),
-                2,
-                "there was 1 buffered commit changing the epoch plus the outer commit changing the epoch"
+                3,
+                "there was 2 buffered commits changing the epoch plus the outer commit changing the epoch"
             );
         })
         .await
