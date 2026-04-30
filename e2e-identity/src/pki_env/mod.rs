@@ -123,10 +123,6 @@ impl PkiEnvironment {
         })
     }
 
-    pub fn mls_pki_env_provider(&self) -> &RjtPkiEnvironment {
-        &self.rjt_pki_env
-    }
-
     pub fn get_trust_anchors(&self) -> Vec<Certificate> {
         self.rjt_pki_env
             .get_trust_anchors()
