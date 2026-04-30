@@ -4,7 +4,7 @@ pub mod reexports {
     pub use certval;
 }
 
-use revocation::PkiEnvironment;
+use crate::pki_env::PkiEnvironment;
 
 pub mod revocation;
 
@@ -62,7 +62,7 @@ pub enum IdentityStatus {
 
 impl IdentityStatus {
     pub fn from_cert(cert: &x509_cert::Certificate, env: &PkiEnvironment) -> Self {
-        match env.validate_cert_and_revocation(cert) {
+        match env.validate_cert(cert) {
             Err(RustyX509CheckError::CertValError(certval::Error::PathValidation(e))) => match e {
                 PathValidationStatus::InvalidNotAfterDate => IdentityStatus::Expired,
                 PathValidationStatus::CertificateRevoked
