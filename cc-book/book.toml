@@ -4,3 +4,7 @@ src = "src"
 
 [preprocessor.langtabs]
 command = "mdbook-langtabs"
+
+[output.html]
+additional-css = ["langtabs.css"]
+additional-js = ["langtabs.js"]
