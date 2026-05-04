@@ -102,6 +102,17 @@ export async function teardown() {
     );
 }
 
+type CcInitOptions =
+    | {
+          withBasicCredential: false;
+          clientId?: ClientId;
+      }
+    | {
+          withBasicCredential?: true;
+          cipherSuite?: Ciphersuite;
+          clientId?: ClientId;
+      };
+
 /**
  * Initialize a {@link CoreCrypto} with a database.
  * @param clientName The client name used to initialize.
@@ -109,18 +120,27 @@ export async function teardown() {
  * @returns {Promise<CoreCrypto>}
  */
 export async function ccInit(
-    clientId: ClientId,
-    databaseName?: string
+    options: CcInitOptions = {
+        withBasicCredential: true,
+        cipherSuite: DEFAULT_CIPHERSUITE,
+    }
 ): Promise<CoreCrypto> {
-    const database = await openTestDatabase(databaseName);
+    const clientId = options.clientId ?? randomClientId();
+
+    const database = await openTestDatabase();
     const cc = CoreCrypto.new(database);
 
-    if (clientId) {
-        await cc.transaction(async (ctx) => {
-            await ctx.mlsInit(clientId, DELIVERY_SERVICE);
-        });
-    }
+    // this also sets the default if undefined
+    // ?? would break type narrowing of CcInitOptions
+    const withBasicCredential = options.withBasicCredential !== false;
 
+    await cc.transaction(async (ctx) => {
+        await ctx.mlsInit(clientId, DELIVERY_SERVICE);
+        if (withBasicCredential) {
+            const cipherSuite = options.cipherSuite ?? DEFAULT_CIPHERSUITE;
+            await ctx.addCredential(Credential.basic(cipherSuite, clientId));
+        }
+    });
     return cc;
 }
 
