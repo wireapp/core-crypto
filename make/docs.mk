@@ -67,30 +67,7 @@ docs-swift: $(STAMPS)/docs-swift ## Generate Swift iOS docs (macOS only)
 .PHONY: docs
 docs: docs-rust-generic docs-rust-wasm docs-kotlin docs-ts $(if $(filter Darwin,$(UNAME_S)),docs-swift) ## Generate all docs (excluding Swift on non-Darwin platforms)
 
-$(STAMPS)/cc-book-browser-attachments: $(STAMPS)/docs-ts
-	mkdir -p cc-book/modules/browser/attachments
-	cp -r target/typescript/doc cc-book/modules/browser/attachments/
-	$(TOUCH_STAMP)
-
-$(STAMPS)/cc-book-jvm-attachments: $(STAMPS)/docs-kotlin
-	mkdir -p cc-book/modules/jvm/attachments
-	cp -r target/kotlin/doc cc-book/modules/jvm/attachments/
-	$(TOUCH_STAMP)
-
-ifeq ($(UNAME_S),Darwin)
-$(STAMPS)/cc-book-ios-attachments: $(STAMPS)/docs-swift
-	mkdir -p cc-book/modules/ios/attachments
-	cp -r target/swift/doc cc-book/modules/ios/attachments/
-	$(TOUCH_STAMP)
-else
-$(STAMPS)/cc-book-ios-attachments:
-	mkdir -p cc-book/modules/ios/attachments/doc
-	echo "<html><body><h1>Swift API not available because this book was built on a non-Darwin platform.</h1></body></html>" > cc-book/modules/ios/attachments/doc/index.html
-	$(TOUCH_STAMP)
-endif
-
-# Build the CC book using Antora
+# Build the CC book using mdbook
 .PHONY: cc-book
-cc-book: $(STAMPS)/cc-book-browser-attachments $(STAMPS)/cc-book-jvm-attachments $(STAMPS)/cc-book-ios-attachments
-	cd cc-book && \
-	bunx antora antora-playbook.yml
+cc-book: ## Build the CoreCrypto Book
+	mdbook build cc-book
