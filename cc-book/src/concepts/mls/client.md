@@ -27,6 +27,7 @@ Any operation that might change state — creating or deleting a conversation, a
 A `CoreCrypto` instance is typically created once at application startup and kept alive for the life of the process.
 The initialization sequence is:
 
+<!-- langtabs-start -->
 ```typescript
 const db = await Database.open(path, key);       // open the keystore
 const cc = CoreCrypto.new(db);                   // construct CoreCrypto
@@ -34,6 +35,23 @@ await cc.transaction(async (ctx) => {
     await ctx.mlsInit(clientId, transport);      // initialize the MLS session
 });
 ```
+
+```swift
+let db = try await Database.open(location: path, key: key)  // open the keystore
+let cc = CoreCrypto(database: db)                            // construct CoreCrypto
+try await cc.transaction { ctx in
+    try await ctx.mlsInit(clientId: clientId, transport: transport)  // initialize the MLS session
+}
+```
+
+```kotlin
+val db = Database.open(path, key)  // open the keystore
+val cc = CoreCrypto(db)            // construct CoreCrypto
+cc.transaction { ctx ->
+    ctx.mlsInit(clientId, transport)  // initialize the MLS session
+}
+```
+<!-- langtabs-end -->
 
 After `mlsInit()` is committed, the instance is ready to use.
 

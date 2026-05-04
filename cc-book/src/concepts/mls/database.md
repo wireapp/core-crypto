@@ -29,9 +29,19 @@ Future work on the database is intended to unify the backing storages, such that
 The `DatabaseKey` is a 32-byte symmetric key used to encrypt all data at rest.
 Construct it from a byte array:
 
+<!-- langtabs-start -->
+```typescript
+const key = DatabaseKey.new(bytes)  // bytes must be exactly 32 bytes
 ```
-key = DatabaseKey.new(bytes)    // bytes must be exactly 32 bytes
+
+```swift
+let key = DatabaseKey(bytes: bytes)  // bytes must be exactly 32 bytes
 ```
+
+```kotlin
+val key = DatabaseKey(bytes)  // bytes must be exactly 32 bytes
+```
+<!-- langtabs-end -->
 
 CoreCrypto does not generate or store the key — that is entirely the client's responsibility.
 The key should be kept in the platform's secure credential storage.
@@ -51,9 +61,19 @@ All platforms define an async static method to open a transient database in memo
 
 The database can be re-encrypted with a new key without closing and reopening it:
 
+<!-- langtabs-start -->
+```typescript
+await db.updateKey(newKey)
 ```
+
+```swift
+try await db.updateKey(key: newKey)
+```
+
+```kotlin
 db.updateKey(newKey)
 ```
+<!-- langtabs-end -->
 
 This re-encrypts all stored data in place.
 
@@ -61,8 +81,8 @@ This re-encrypts all stored data in place.
 
 On browser platforms, explicitly close the database when tearing down:
 
-```
-db.close()
+```typescript
+await db.close()
 ```
 
 ## Single-Transaction Constraint
@@ -76,9 +96,15 @@ For more detail, see [Transactions → Concurrency](transactions.md#concurrency)
 
 On native platforms, a fully vacuumed copy of the database can be written to a new file:
 
+<!-- langtabs-start -->
+```swift
+try await exportDatabaseCopy(database: db, destinationPath: destinationPath)
 ```
+
+```kotlin
 exportDatabaseCopy(db, destinationPath)
 ```
+<!-- langtabs-end -->
 
 The copy is encrypted with the same key as the source.
 This is useful for backup or for migrating the database to a new location.

@@ -9,12 +9,28 @@ This prevents the keystore from being left in an inconsistent state if an operat
 Transactions are opened with a callback pattern.
 Call `transaction()` on the `CoreCrypto` instance and pass an async function; CoreCrypto calls that function with a `CoreCryptoContext` (the transaction handle), and commits or rolls back the transaction automatically based on whether the function succeeds or throws:
 
+<!-- langtabs-start -->
 ```typescript
 await cc.transaction(async (ctx) => {
     await ctx.mlsInit(clientId, transport);
     // more operations...
 });
 ```
+
+```swift
+try await cc.transaction { ctx in
+    try await ctx.mlsInit(clientId: clientId, transport: transport)
+    // more operations...
+}
+```
+
+```kotlin
+cc.transaction { ctx ->
+    ctx.mlsInit(clientId, transport)
+    // more operations...
+}
+```
+<!-- langtabs-end -->
 
 If the callback completes without throwing, the transaction is committed — all buffered operations are written to the keystore in a single atomic database transaction.
 If the callback throws, the transaction is rolled back and no changes are persisted.
@@ -45,6 +61,7 @@ On the other hand, once a client is fully synced and active, the opposite advice
 If an operation inside a transaction fails, it is usually best to let the error propagate out of the callback.
 `transaction()` will catch it, roll back automatically, and rethrow — the caller can then handle the error without worrying about cleanup:
 
+<!-- langtabs-start -->
 ```typescript
 try {
     await cc.transaction(async (ctx) => {
@@ -55,6 +72,29 @@ try {
     // The transaction was rolled back. No state was changed.
 }
 ```
+
+```swift
+do {
+    try await cc.transaction { ctx in
+        try await ctx.decryptMessage(conversationId: conversationId, payload: incomingCiphertext)
+        try await ctx.encryptMessage(conversationId: conversationId, message: outgoingPlaintext)
+    }
+} catch {
+    // The transaction was rolled back. No state was changed.
+}
+```
+
+```kotlin
+try {
+    cc.transaction { ctx ->
+        ctx.decryptMessage(conversationId, incomingCiphertext)
+        ctx.encryptMessage(conversationId, outgoingPlaintext)
+    }
+} catch (e: Exception) {
+    // The transaction was rolled back. No state was changed.
+}
+```
+<!-- langtabs-end -->
 
 ### Retry After Delivery Failure
 
@@ -72,9 +112,21 @@ Always perform all work within the callback scope.
 
 The context provides two methods for storing a single blob of arbitrary bytes in the keystore, associated with the device:
 
+<!-- langtabs-start -->
 ```typescript
 await ctx.setData(bytes)
 const bytes = await ctx.getData()
 ```
+
+```swift
+try await ctx.setData(data: bytes)
+let bytes = try await ctx.getData()
+```
+
+```kotlin
+ctx.setData(bytes)
+val bytes = ctx.getData()
+```
+<!-- langtabs-end -->
 
 These were implemented for the purpose of checkpointing during initial sync / batch decryption, but are not limited to that use.

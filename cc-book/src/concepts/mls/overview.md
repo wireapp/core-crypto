@@ -36,9 +36,19 @@ While changes in the group structure require O(log n) key operations, applicatio
 
 Before any MLS operation, MLS must be explicitly initialized within a transaction:
 
+<!-- langtabs-start -->
+```typescript
+await ctx.mlsInit(clientId, transport)
 ```
-transaction_context.mlsInit(clientId, transport)
+
+```swift
+try await ctx.mlsInit(clientId: clientId, transport: transport)
 ```
+
+```kotlin
+ctx.mlsInit(clientId, transport)
+```
+<!-- langtabs-end -->
 
 ### Client Identity
 

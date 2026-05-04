@@ -15,9 +15,19 @@ Its implementation is already feature-gated for easy removal, and is intended to
 
 Before any Proteus operation, the Proteus subsystem must be explicitly initialized within a transaction:
 
+<!-- langtabs-start -->
+```typescript
+await ctx.proteusInit()
 ```
-transaction_context.proteusInit()
+
+```swift
+try await ctx.proteusInit()
 ```
+
+```kotlin
+ctx.proteusInit()
+```
+<!-- langtabs-end -->
 
 This loads the device's Proteus identity from the keystore, creating it if it does not yet exist.
 All other Proteus methods will return an error if called before `proteusInit()` has succeeded.
@@ -53,9 +63,19 @@ Both return a CBOR-serialized prekey bundle ready to upload to the delivery serv
 Proteus reserves prekey ID 65535 (`u16::MAX`) as a last resort prekey.
 Unlike one-time prekeys, the last resort prekey is never consumed — it stays in the keystore indefinitely so that a sender can always open a session even when all one-time prekeys have been exhausted.
 
+<!-- langtabs-start -->
+```typescript
+const prekey = await ctx.proteusLastResortPrekey()
 ```
-prekey = transaction_context.proteusLastResortPrekey()
+
+```swift
+let prekey = try await ctx.proteusLastResortPrekey()
 ```
+
+```kotlin
+val prekey = ctx.proteusLastResortPrekey()
+```
+<!-- langtabs-end -->
 
 The constant `proteusLastResortPrekeyId()` returns `65535` and can be used to exclude this ID when generating ordinary prekeys.
 
@@ -77,19 +97,43 @@ Manual saves via `proteusSessionSave(sessionId)` are available but not normally 
 
 With a session established, encryption and decryption are straightforward:
 
+<!-- langtabs-start -->
+```typescript
+const ciphertext = await ctx.proteusEncrypt(sessionId, plaintext)
+const plaintext  = await ctx.proteusDecrypt(sessionId, ciphertext)
 ```
-ciphertext = transaction_context.proteusEncrypt(sessionId, plaintext)
-plaintext  = transaction_context.proteusDecrypt(sessionId, ciphertext)
+
+```swift
+let ciphertext = try await ctx.proteusEncrypt(sessionId: sessionId, plaintext: plaintext)
+let plaintext  = try await ctx.proteusDecrypt(sessionId: sessionId, ciphertext: ciphertext)
 ```
+
+```kotlin
+val ciphertext = ctx.proteusEncrypt(sessionId, plaintext)
+val plaintext  = ctx.proteusDecrypt(sessionId, ciphertext)
+```
+<!-- langtabs-end -->
 
 ### Batched Encryption
 
 Because a group message in Proteus requires one encrypted copy per recipient client, CoreCrypto provides a batched variant to reduce FFI round-trips:
 
-```
-map = transaction_context.proteusEncryptBatched(sessionIds, plaintext)
+<!-- langtabs-start -->
+```typescript
+const map = await ctx.proteusEncryptBatched(sessionIds, plaintext)
 // map: { sessionId -> ciphertext }
 ```
+
+```swift
+let map = try await ctx.proteusEncryptBatched(sessions: sessionIds, plaintext: plaintext)
+// map: { sessionId -> ciphertext }
+```
+
+```kotlin
+val map = ctx.proteusEncryptBatched(sessionIds, plaintext)
+// map: { sessionId -> ciphertext }
+```
+<!-- langtabs-end -->
 
 This is more efficient than calling `proteusEncrypt` in a loop and should be preferred whenever sending to multiple sessions simultaneously.
 
