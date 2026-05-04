@@ -1,16 +1,16 @@
 import { Bench } from "tinybench";
-import {
-    Ciphersuite,
-    ClientId,
-    ConversationId,
-    Credential,
-    CredentialType,
-} from "@wireapp/core-crypto/native";
+import { Ciphersuite } from "@wireapp/core-crypto/native";
 import {
     messageBenchmarkParameters,
     tinybench_setup,
 } from "../../shared/benches/utils";
-import { ccInit, setup, teardown, DELIVERY_SERVICE } from "../test/utils";
+import {
+    ccInit,
+    setup,
+    teardown,
+    createConversation,
+    invite,
+} from "../test/utils";
 
 async function run() {
     await setup();
@@ -25,52 +25,15 @@ async function run() {
     });
 
     for (const { count, size, cipherSuite } of parameters) {
-        const aliceId = new ClientId(Buffer.from(crypto.randomUUID()).buffer);
-        const aliceCc = await ccInit(aliceId);
-
-        const aliceCredential = Credential.basic(cipherSuite, aliceId);
-
-        await aliceCc.transaction(async (ctx) => {
-            await ctx.addCredential(aliceCredential);
+        const aliceCc = await ccInit({
+            withBasicCredential: true,
+            cipherSuite,
         });
 
-        const bobId = new ClientId(Buffer.from(crypto.randomUUID()).buffer);
-        const bobCc = await ccInit(bobId);
+        const bobCc = await ccInit({ withBasicCredential: true, cipherSuite });
+        const conversationId = await createConversation(aliceCc);
 
-        const bobCredential = Credential.basic(cipherSuite, bobId);
-
-        await bobCc.transaction(async (ctx) => {
-            await ctx.addCredential(bobCredential);
-        });
-
-        const conversationIdStr = crypto.randomUUID();
-        const conversationId = new ConversationId(
-            new TextEncoder().encode(conversationIdStr).buffer
-        );
-
-        await aliceCc.transaction(async (ctx) => {
-            const [credentialRef] = await ctx.getCredentials();
-            await ctx.createConversation(conversationId, credentialRef!);
-        });
-
-        const kp = await bobCc.transaction(async (ctx) => {
-            const [credentialRef] = await ctx.findCredentials({
-                ciphersuite: cipherSuite,
-                credentialType: CredentialType.Basic,
-            });
-            return await ctx.generateKeyPackage(credentialRef!);
-        });
-
-        await aliceCc.transaction(
-            async (ctx) =>
-                await ctx.addClientsToConversation(conversationId, [kp])
-        );
-        const commitBundle = await DELIVERY_SERVICE.getLatestCommitBundle();
-
-        await bobCc.transaction(
-            async (ctx) =>
-                await ctx.processWelcomeMessage(commitBundle.welcome!)
-        );
+        await invite(aliceCc, bobCc, conversationId, cipherSuite);
 
         const message = new Uint8Array(size);
 

@@ -1,15 +1,10 @@
 import { Bench } from "tinybench";
-import {
-    Ciphersuite,
-    ClientId,
-    ConversationId,
-    Credential,
-} from "@wireapp/core-crypto/native";
+import { Ciphersuite } from "@wireapp/core-crypto/native";
 import {
     messageBenchmarkParameters,
     tinybench_setup,
 } from "../../shared/benches/utils";
-import { ccInit, setup, teardown } from "../test/utils";
+import { ccInit, createConversation, setup, teardown } from "../test/utils";
 
 async function run() {
     await setup();
@@ -25,23 +20,8 @@ async function run() {
 
     for (const { count, size, cipherSuite } of parameters) {
         const message = new Uint8Array(size);
-        const clientId = new ClientId(Buffer.from(crypto.randomUUID()).buffer);
-        const cc = await ccInit(clientId);
-        const conversationIdStr = crypto.randomUUID();
-        const conversationId = new ConversationId(
-            new TextEncoder().encode(conversationIdStr).buffer
-        );
-
-        const credential = Credential.basic(cipherSuite, clientId);
-
-        await cc.transaction(async (ctx) => {
-            await ctx.addCredential(credential);
-        });
-
-        await cc.transaction(async (ctx) => {
-            const [credentialRef] = await ctx.getCredentials();
-            await ctx.createConversation(conversationId, credentialRef!);
-        });
+        const cc = await ccInit({ withBasicCredential: true, cipherSuite });
+        const conversationId = await createConversation(cc);
 
         bench.add(
             `cipherSuite=${Ciphersuite[cipherSuite]} size=${size}B count=${count}`,
