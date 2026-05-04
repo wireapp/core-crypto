@@ -27,42 +27,28 @@ describe("credentials", () => {
     });
 
     test("credential can be added", async () => {
-        const clientId = new ClientId(
-            Buffer.from("any random client id here").buffer
-        );
-        const credential = Credential.basic(ciphersuiteDefault(), clientId);
-
-        const cc = await ccInit(clientId);
-
-        const ref = await cc.transaction(async (ctx) => {
-            return await ctx.addCredential(credential);
-        });
-
-        expect(ref).toBeDefined();
-        expect(ref.type()).toEqual(CredentialType.Basic);
-        // saving causes the earliest validity to be updated
-        expect(ref.earliestValidity()).not.toEqual(0n);
-
+        const cc = await ccInit();
         const allCredentials = await cc.transaction(async (ctx) => {
             return await ctx.getCredentials();
         });
+        const [ref] = allCredentials;
+        expect(ref).toBeDefined();
+        expect(ref!.type()).toEqual(CredentialType.Basic);
+        // saving causes the earliest validity to be updated
+        expect(ref!.earliestValidity()).not.toEqual(0n);
+
         expect(allCredentials.length).toBe(1);
     });
 
     test("credential can be removed", async () => {
-        const clientId = new ClientId(
-            Buffer.from("any random client id here").buffer
-        );
-        const credential = Credential.basic(ciphersuiteDefault(), clientId);
+        const cc = await ccInit();
 
-        const cc = await ccInit(clientId);
-
-        const ref = await cc.transaction(async (ctx) => {
-            return await ctx.addCredential(credential);
+        const [ref] = await cc.transaction(async (ctx) => {
+            return await ctx.getCredentials();
         });
 
         await cc.transaction(async (ctx) => {
-            return await ctx.removeCredential(ref);
+            return await ctx.removeCredential(ref!);
         });
 
         const allCredentials = await cc.transaction(async (ctx) => {
@@ -82,7 +68,7 @@ describe("credentials", () => {
             Ciphersuite.Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519;
         const credential2 = Credential.basic(ciphersuite2, clientId);
 
-        const cc = await ccInit(clientId);
+        const cc = await ccInit({ withBasicCredential: false, clientId });
 
         await cc.transaction(async (ctx) => {
             await ctx.addCredential(credential1);

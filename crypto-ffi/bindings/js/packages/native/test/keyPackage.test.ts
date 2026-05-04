@@ -1,6 +1,6 @@
-import { ccInit, setup, teardown } from "./utils";
+import { ccInit, generateKeyPackage, setup, teardown } from "./utils";
 import { test, beforeEach, describe, expect, afterAll } from "bun:test";
-import { ciphersuiteDefault, ClientId } from "@wireapp/core-crypto/native";
+import { ClientId } from "@wireapp/core-crypto/native";
 import {
     Ciphersuite,
     Credential,
@@ -17,39 +17,15 @@ afterAll(async () => {
 
 describe("key package", () => {
     test("can be created", async () => {
-        const clientId = new ClientId(
-            Buffer.from("any random client id here").buffer
-        );
-        const credential = Credential.basic(ciphersuiteDefault(), clientId);
-
-        const cc = await ccInit(clientId);
-
-        const credentialRef = await cc.transaction(async (ctx) => {
-            return await ctx.addCredential(credential);
-        });
-
-        const keyPackage = await cc.transaction(async (ctx) => {
-            return await ctx.generateKeyPackage(credentialRef);
-        });
-
+        const cc = await ccInit();
+        const keyPackage = await generateKeyPackage(cc);
         expect(keyPackage).toBeDefined();
     });
 
     test("can be serialized", async () => {
-        const clientId = new ClientId(
-            Buffer.from("any random client id here").buffer
-        );
-        const credential = Credential.basic(ciphersuiteDefault(), clientId);
+        const cc = await ccInit();
 
-        const cc = await ccInit(clientId);
-
-        const credentialRef = await cc.transaction(async (ctx) => {
-            return await ctx.addCredential(credential);
-        });
-
-        const keyPackage = await cc.transaction(async (ctx) => {
-            return await ctx.generateKeyPackage(credentialRef);
-        });
+        const keyPackage = await generateKeyPackage(cc);
 
         const bytes = new Uint8Array(keyPackage.serialize());
 
@@ -64,20 +40,9 @@ describe("key package", () => {
     });
 
     test("can be retrieved in bulk", async () => {
-        const clientId = new ClientId(
-            Buffer.from("any random client id here").buffer
-        );
-        const credential = Credential.basic(ciphersuiteDefault(), clientId);
+        const cc = await ccInit();
 
-        const cc = await ccInit(clientId);
-
-        const credentialRef = await cc.transaction(async (ctx) => {
-            return await ctx.addCredential(credential);
-        });
-
-        await cc.transaction(async (ctx) => {
-            await ctx.generateKeyPackage(credentialRef);
-        });
+        await generateKeyPackage(cc);
 
         const keyPackages = await cc.transaction(async (ctx) => {
             return await ctx.getKeyPackages();
@@ -89,26 +54,13 @@ describe("key package", () => {
     });
 
     test("can be removed", async () => {
-        const clientId = new ClientId(
-            Buffer.from("any random client id here").buffer
-        );
-        const credential = Credential.basic(ciphersuiteDefault(), clientId);
-
-        const cc = await ccInit(clientId);
-
-        const credentialRef = await cc.transaction(async (ctx) => {
-            return await ctx.addCredential(credential);
-        });
+        const cc = await ccInit();
 
         // add a kp which will not be removed, so we have one left over
-        await cc.transaction(async (ctx) => {
-            await ctx.generateKeyPackage(credentialRef);
-        });
+        await generateKeyPackage(cc);
 
         // add a kp which will be removed
-        const keyPackage = await cc.transaction(async (ctx) => {
-            return await ctx.generateKeyPackage(credentialRef);
-        });
+        const keyPackage = await generateKeyPackage(cc);
 
         // now remove the keypackage
         await cc.transaction(async (ctx) => {
@@ -135,7 +87,7 @@ describe("key package", () => {
             Ciphersuite.Mls128Dhkemp256Aes128gcmSha256P256,
             clientId
         );
-        const cc = await ccInit(clientId);
+        const cc = await ccInit({ withBasicCredential: false, clientId });
 
         await cc.transaction(async (ctx) => {
             const cref1 = await ctx.addCredential(credential1);
