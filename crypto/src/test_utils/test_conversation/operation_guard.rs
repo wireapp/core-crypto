@@ -175,7 +175,7 @@ impl<'a> OperationGuard<'a, Commit> {
             .history_client
             .clone()
             .filter(|_| !matches!(self.operation, TestOperation::HistorySharingEnabled));
-        let members = members.into_iter().chain(history_client.as_ref().into_iter());
+        let members = members.into_iter().chain(history_client.as_ref());
 
         for member in members {
             self = self.notify_member(member).await;
