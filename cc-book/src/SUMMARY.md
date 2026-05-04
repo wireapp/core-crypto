@@ -1,5 +1,7 @@
 # Summary
 
+[Introduction](introduction.md)
+
 # Concepts
 
 - [Proteus](concepts/proteus.md)
