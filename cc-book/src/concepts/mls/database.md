@@ -1,35 +1,42 @@
 # The Database
 
-The `Database` is CoreCrypto's keystore: the persistent store for all key material and cryptographic state, as well as some non-cryptographic internal data.
-It is opened before constructing a `CoreCrypto` instance and passed in as an argument, making the storage layer an explicit dependency rather than something CoreCrypto manages internally.
+The `Database` is CoreCrypto's keystore: the persistent store for all key material and cryptographic state, as well as
+some non-cryptographic internal data. It is opened before constructing a `CoreCrypto` instance and passed in as an
+argument, making the storage layer an explicit dependency rather than something CoreCrypto manages internally.
 
 ## What the Database Stores
 
 The database holds all state that must survive process restarts:
 
 - **MLS group state** — the serialized ratchet tree and secrets for every conversation the device participates in
-- **Credentials and key packages** — the device's identity material and the key packages it has published to the delivery service
-- **Pending messages** — application messages and commits that arrived during an epoch transition and are waiting to be merged
-- **Proteus identity and sessions** — the device's long-lived Proteus identity keypair and the state of every active Proteus session
+- **Credentials and key packages** — the device's identity material and the key packages it has published to the
+  delivery service
+- **Pending messages** — application messages and commits that arrived during an epoch transition and are waiting to be
+  merged
+- **Proteus identity and sessions** — the device's long-lived Proteus identity keypair and the state of every active
+  Proteus session
 - **Proteus prekeys** — including the last-resort prekey
-- **E2EI state** — data about the ACME certificate authority, various certificates and CRLs, refresh tokens, and the like
+- **E2EI state** — data about the ACME certificate authority, various certificates and CRLs, refresh tokens, and the
+  like
 
 All entries are encrypted at rest using the `DatabaseKey` provided at open time.
 
 ## Backing Storage
 
-On non-browser platforms the database is backed by [SQLCipher](https://www.zetetic.net/sqlcipher/), an encrypted SQLite variant.
-On the browser, the database sits atop IndexedDB and uses item-level encryption managed by CoreCrypto.
-In both cases, data is encrypted at rest.
+On non-browser platforms the database is backed by [SQLCipher](https://www.zetetic.net/sqlcipher/), an encrypted SQLite
+variant. On the browser, the database sits atop IndexedDB and uses item-level encryption managed by CoreCrypto. In both
+cases, data is encrypted at rest.
 
-Future work on the database is intended to unify the backing storages, such that CoreCrypto will internally see an encrypted SQLite connection for all platforms. That work will be part of CC 11, but not CC 10. This change should be invisible to clients.
+Future work on the database is intended to unify the backing storages, such that CoreCrypto will internally see an
+encrypted SQLite connection for all platforms. That work will be part of CC 11, but not CC 10. This change should be
+invisible to clients.
 
 ## The Database Key
 
-The `DatabaseKey` is a 32-byte symmetric key used to encrypt all data at rest.
-Construct it from a byte array:
+The `DatabaseKey` is a 32-byte symmetric key used to encrypt all data at rest. Construct it from a byte array:
 
 <!-- langtabs-start -->
+
 ```typescript
 const key = DatabaseKey.new(bytes)  // bytes must be exactly 32 bytes
 ```
@@ -41,27 +48,29 @@ let key = DatabaseKey(bytes: bytes)  // bytes must be exactly 32 bytes
 ```kotlin
 val key = DatabaseKey(bytes)  // bytes must be exactly 32 bytes
 ```
+
 <!-- langtabs-end -->
 
-CoreCrypto does not generate or store the key — that is entirely the client's responsibility.
-The key should be kept in the platform's secure credential storage.
+CoreCrypto does not generate or store the key — that is entirely the client's responsibility. The key should be kept in
+the platform's secure credential storage.
 
-> **Note**
->
-> The database key is never written to disk by CoreCrypto.
-> If the key is lost, the database contents are unrecoverable.
+> [!NOTE]
+> The database key is never written to disk by CoreCrypto. If the key is lost, the database contents are unrecoverable.
 
 ## Opening the Database
 
-All platforms define an async `Database.open` static method accepting a location and key. On platforms with an OS, the location is a filesystem path. On WASM, the location is the IndexedDB store name.
+All platforms define an async `Database.open` static method accepting a location and key. On platforms with an OS, the
+location is a filesystem path. On WASM, the location is the IndexedDB store name.
 
-All platforms define an async static method to open a transient database in memory. On WASM, this is `Database.inMemory`. For Kotlin and Swift, this is an overload of `Database.open`.
+All platforms define an async static method to open a transient database in memory. On WASM, this is
+`Database.inMemory`. For Kotlin and Swift, this is an overload of `Database.open`.
 
 ## Key Rotation
 
 The database can be re-encrypted with a new key without closing and reopening it:
 
 <!-- langtabs-start -->
+
 ```typescript
 await db.updateKey(newKey)
 ```
@@ -73,6 +82,7 @@ try await db.updateKey(key: newKey)
 ```kotlin
 db.updateKey(newKey)
 ```
+
 <!-- langtabs-end -->
 
 This re-encrypts all stored data in place.
@@ -87,8 +97,8 @@ await db.close()
 
 ## Single-Transaction Constraint
 
-Only one transaction may write to the database at a time.
-If a transaction is requested while another transaction is in flight, the call will block until the first transaction concludes.
+Only one transaction may write to the database at a time. If a transaction is requested while another transaction is in
+flight, the call will block until the first transaction concludes.
 
 For more detail, see [Transactions → Concurrency](transactions.md#concurrency).
 
@@ -97,6 +107,7 @@ For more detail, see [Transactions → Concurrency](transactions.md#concurrency)
 On native platforms, a fully vacuumed copy of the database can be written to a new file:
 
 <!-- langtabs-start -->
+
 ```swift
 try await exportDatabaseCopy(database: db, destinationPath: destinationPath)
 ```
@@ -104,8 +115,8 @@ try await exportDatabaseCopy(database: db, destinationPath: destinationPath)
 ```kotlin
 exportDatabaseCopy(db, destinationPath)
 ```
+
 <!-- langtabs-end -->
 
-The copy is encrypted with the same key as the source.
-This is useful for backup or for migrating the database to a new location.
-This function is not available on browser platforms.
+The copy is encrypted with the same key as the source. This is useful for backup or for migrating the database to a new
+location. This function is not available on browser platforms.

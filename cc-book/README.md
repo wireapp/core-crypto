@@ -1,7 +1,7 @@
 # The CoreCrypto Book
 
-This folder contains the source of the CoreCrypto Book, built with [mdBook](https://rust-lang.github.io/mdBook/).
-The book covers core CoreCrypto concepts and migration guides for major releases.
+This folder contains the source of the CoreCrypto Book, built with [mdBook](https://rust-lang.github.io/mdBook/). The
+book covers core CoreCrypto concepts and migration guides for major releases.
 
 ## Prerequisites
 
@@ -12,8 +12,8 @@ The book covers core CoreCrypto concepts and migration guides for major releases
   cargo install mdbook --locked
   ```
 
-- **mdbook-langtabs** — install a released binary from the [mdbook-langtabs releases page](https://github.com/nx10/mdbook-langtabs/releases),
-  or via Cargo from a tagged release:
+- **mdbook-langtabs** — install a released binary from the
+  [mdbook-langtabs releases page](https://github.com/nx10/mdbook-langtabs/releases), or via Cargo from a tagged release:
 
   ```sh
   cargo install --git https://github.com/nx10/mdbook-langtabs --tag v0.2.0 --locked

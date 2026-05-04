@@ -1,21 +1,25 @@
 # Proteus
 
-Proteus is Wire's implementation of the [Signal Protocol](https://signal.org/docs/): a double-ratchet scheme providing forward secrecy and break-in recovery for one-to-one encrypted sessions.
+Proteus is Wire's implementation of the [Signal Protocol](https://signal.org/docs/): a double-ratchet scheme providing
+forward secrecy and break-in recovery for one-to-one encrypted sessions.
 
-Proteus is intrinsically a direct protocol: every message is individually encrypted for each recipient.
-Groups in Proteus are a fiction managed collaboratively between the backend and the client; they do not exist at the protocol level.
-Encrypting a message for a group of _n_ clients requires sending _n_ individually encrypted copies.
-This effect is compounded by the fact that a logical user in the sense of a human is very likely to have multiple clients in terms of individual devices.
-This O(n²) overhead is manageable for small groups, but becomes expensive as they scale, and it was the primary motivation for adopting MLS.
+Proteus is intrinsically a direct protocol: every message is individually encrypted for each recipient. Groups in
+Proteus are a fiction managed collaboratively between the backend and the client; they do not exist at the protocol
+level. Encrypting a message for a group of _n_ clients requires sending _n_ individually encrypted copies. This effect
+is compounded by the fact that a logical user in the sense of a human is very likely to have multiple clients in terms
+of individual devices. This O(n²) overhead is manageable for small groups, but becomes expensive as they scale, and it
+was the primary motivation for adopting MLS.
 
-Proteus remains supported for backwards compatibility, but has not received direct development work in some time.
-Its implementation is already feature-gated for easy removal, and is intended to be removed as soon as we can confirm that a sufficiency of clients have upgraded their conversations to MLS.
+Proteus remains supported for backwards compatibility, but has not received direct development work in some time. Its
+implementation is already feature-gated for easy removal, and is intended to be removed as soon as we can confirm that a
+sufficiency of clients have upgraded their conversations to MLS.
 
 ## Initialization
 
 Before any Proteus operation, the Proteus subsystem must be explicitly initialized within a transaction:
 
 <!-- langtabs-start -->
+
 ```typescript
 await ctx.proteusInit()
 ```
@@ -27,43 +31,52 @@ try await ctx.proteusInit()
 ```kotlin
 ctx.proteusInit()
 ```
+
 <!-- langtabs-end -->
 
-This loads the device's Proteus identity from the keystore, creating it if it does not yet exist.
-All other Proteus methods will return an error if called before `proteusInit()` has succeeded.
+This loads the device's Proteus identity from the keystore, creating it if it does not yet exist. All other Proteus
+methods will return an error if called before `proteusInit()` has succeeded.
 
 ## Identity and Fingerprints
 
-A Proteus identity is a long-lived Ed25519 keypair tied to the device.
-CoreCrypto exposes several fingerprint accessors, each returning a hex string:
+A Proteus identity is a long-lived Ed25519 keypair tied to the device. CoreCrypto exposes several fingerprint accessors,
+each returning a hex string:
 
 **`proteusFingerprint()`** — The local device's public key. Remains stable for the lifetime of the keystore.
 
-**`proteusFingerprintLocal(sessionId)`** — The local public key as seen from within a specific session. Equivalent to `proteusFingerprint()` but scoped to a session for API symmetry.
+**`proteusFingerprintLocal(sessionId)`** — The local public key as seen from within a specific session. Equivalent to
+`proteusFingerprint()` but scoped to a session for API symmetry.
 
-**`proteusFingerprintRemote(sessionId)`** — The remote peer's public key within a session. Can be used to verify the peer's identity out-of-band.
+**`proteusFingerprintRemote(sessionId)`** — The remote peer's public key within a session. Can be used to verify the
+peer's identity out-of-band.
 
-**`proteusFingerprintPrekeybundle(prekey)`** — Extracts the public key fingerprint from a serialized prekey bundle without opening a session. Useful for verifying a peer's identity before establishing a session.
+**`proteusFingerprintPrekeybundle(prekey)`** — Extracts the public key fingerprint from a serialized prekey bundle
+without opening a session. Useful for verifying a peer's identity before establishing a session.
 
 ## Prekeys
 
-Prekeys are the mechanism that allows a sender to open a Proteus session with a recipient who is offline.
-The recipient publishes a set of one-time prekey bundles to the delivery service in advance; the sender fetches one and uses it to bootstrap the session.
+Prekeys are the mechanism that allows a sender to open a Proteus session with a recipient who is offline. The recipient
+publishes a set of one-time prekey bundles to the delivery service in advance; the sender fetches one and uses it to
+bootstrap the session.
 
 CoreCrypto provides two ways to generate prekeys:
 
-**`proteusNewPrekey(id)`** — Generates a prekey with an explicit numeric ID (a `u16`). Use this when your app manages the prekey ID space itself.
+**`proteusNewPrekey(id)`** — Generates a prekey with an explicit numeric ID (a `u16`). Use this when your app manages
+the prekey ID space itself.
 
-**`proteusNewPrekeyAuto()`** — Generates a prekey with an automatically incremented ID and returns both the ID and the serialized bundle. Prefer this unless you have a specific reason to control IDs manually.
+**`proteusNewPrekeyAuto()`** — Generates a prekey with an automatically incremented ID and returns both the ID and the
+serialized bundle. Prefer this unless you have a specific reason to control IDs manually.
 
 Both return a CBOR-serialized prekey bundle ready to upload to the delivery service.
 
 ### The Last Resort Prekey
 
-Proteus reserves prekey ID 65535 (`u16::MAX`) as a last resort prekey.
-Unlike one-time prekeys, the last resort prekey is never consumed — it stays in the keystore indefinitely so that a sender can always open a session even when all one-time prekeys have been exhausted.
+Proteus reserves prekey ID 65535 (`u16::MAX`) as a last resort prekey. Unlike one-time prekeys, the last resort prekey
+is never consumed — it stays in the keystore indefinitely so that a sender can always open a session even when all
+one-time prekeys have been exhausted.
 
 <!-- langtabs-start -->
+
 ```typescript
 const prekey = await ctx.proteusLastResortPrekey()
 ```
@@ -75,29 +88,35 @@ let prekey = try await ctx.proteusLastResortPrekey()
 ```kotlin
 val prekey = ctx.proteusLastResortPrekey()
 ```
+
 <!-- langtabs-end -->
 
-The constant `proteusLastResortPrekeyId()` returns `65535` and can be used to exclude this ID when generating ordinary prekeys.
+The constant `proteusLastResortPrekeyId()` returns `65535` and can be used to exclude this ID when generating ordinary
+prekeys.
 
 ## Sessions
 
-A Proteus session represents an established encrypted channel with one remote client, identified by a caller-supplied `sessionId` string.
-Session state is cached in memory and persisted to the keystore.
+A Proteus session represents an established encrypted channel with one remote client, identified by a caller-supplied
+`sessionId` string. Session state is cached in memory and persisted to the keystore.
 
 There are two ways to establish a new session, depending on which side initiates:
 
-**`proteusSessionFromPrekey(sessionId, prekey)`** — Used by the **sender** to initiate a session. Takes the remote client's serialized prekey bundle (fetched from the delivery service) and creates a local session ready to encrypt.
+**`proteusSessionFromPrekey(sessionId, prekey)`** — Used by the **sender** to initiate a session. Takes the remote
+client's serialized prekey bundle (fetched from the delivery service) and creates a local session ready to encrypt.
 
-**`proteusSessionFromMessage(sessionId, envelope)`** — Used by the **recipient** upon receiving the first message. Decrypts the initial envelope, establishes the session, and returns the plaintext in a single step.
+**`proteusSessionFromMessage(sessionId, envelope)`** — Used by the **recipient** upon receiving the first message.
+Decrypts the initial envelope, establishes the session, and returns the plaintext in a single step.
 
-Once established, a session can be checked for existence with `proteusSessionExists(sessionId)` and explicitly removed with `proteusSessionDelete(sessionId)`.
-Manual saves via `proteusSessionSave(sessionId)` are available but not normally required — sessions are persisted automatically when encrypting or decrypting.
+Once established, a session can be checked for existence with `proteusSessionExists(sessionId)` and explicitly removed
+with `proteusSessionDelete(sessionId)`. Manual saves via `proteusSessionSave(sessionId)` are available but not normally
+required — sessions are persisted automatically when encrypting or decrypting.
 
 ## Encrypting and Decrypting
 
 With a session established, encryption and decryption are straightforward:
 
 <!-- langtabs-start -->
+
 ```typescript
 const ciphertext = await ctx.proteusEncrypt(sessionId, plaintext)
 const plaintext  = await ctx.proteusDecrypt(sessionId, ciphertext)
@@ -112,13 +131,16 @@ let plaintext  = try await ctx.proteusDecrypt(sessionId: sessionId, ciphertext: 
 val ciphertext = ctx.proteusEncrypt(sessionId, plaintext)
 val plaintext  = ctx.proteusDecrypt(sessionId, ciphertext)
 ```
+
 <!-- langtabs-end -->
 
 ### Batched Encryption
 
-Because a group message in Proteus requires one encrypted copy per recipient client, CoreCrypto provides a batched variant to reduce FFI round-trips:
+Because a group message in Proteus requires one encrypted copy per recipient client, CoreCrypto provides a batched
+variant to reduce FFI round-trips:
 
 <!-- langtabs-start -->
+
 ```typescript
 const map = await ctx.proteusEncryptBatched(sessionIds, plaintext)
 // map: { sessionId -> ciphertext }
@@ -133,15 +155,18 @@ let map = try await ctx.proteusEncryptBatched(sessions: sessionIds, plaintext: p
 val map = ctx.proteusEncryptBatched(sessionIds, plaintext)
 // map: { sessionId -> ciphertext }
 ```
+
 <!-- langtabs-end -->
 
-This is more efficient than calling `proteusEncrypt` in a loop and should be preferred whenever sending to multiple sessions simultaneously.
+This is more efficient than calling `proteusEncrypt` in a loop and should be preferred whenever sending to multiple
+sessions simultaneously.
 
 ### Safe Decrypt
 
-`proteusDecryptSafe(sessionId, ciphertext)` is a convenience wrapper that handles the common case where you do not know in advance whether the session already exists.
-It opens the session from the message envelope if necessary, then decrypts, in a single call.
-For high-volume decryption to an existing session, the plain `proteusDecrypt` call is slightly more efficient.
+`proteusDecryptSafe(sessionId, ciphertext)` is a convenience wrapper that handles the common case where you do not know
+in advance whether the session already exists. It opens the session from the message envelope if necessary, then
+decrypts, in a single call. For high-volume decryption to an existing session, the plain `proteusDecrypt` call is
+slightly more efficient.
 
 ## Error Handling
 
@@ -149,8 +174,12 @@ Proteus errors are surfaced as a `ProteusError` with the following variants:
 
 **`SessionNotFound`** — The requested session ID does not exist in the keystore or in-memory cache.
 
-**`DuplicateMessage`** — The ciphertext has already been decrypted. The double-ratchet discards keys after use, so replaying a message is always an error.
+**`DuplicateMessage`** — The ciphertext has already been decrypted. The double-ratchet discards keys after use, so
+replaying a message is always an error.
 
-**`RemoteIdentityChanged`** — The remote peer's identity key no longer matches what was recorded when the session was established. This typically indicates a device reset or, in the worst case, a key compromise.
+**`RemoteIdentityChanged`** — The remote peer's identity key no longer matches what was recorded when the session was
+established. This typically indicates a device reset or, in the worst case, a key compromise.
 
-**`Other { error_code }`** — A lower-level Proteus error that does not map to one of the above categories. The numeric `error_code` corresponds to the [proteus-traits error table](https://github.com/wireapp/proteus/blob/develop/crates/proteus-traits/src/lib.rs).
+**`Other { error_code }`** — A lower-level Proteus error that does not map to one of the above categories. The numeric
+`error_code` corresponds to the
+[proteus-traits error table](https://github.com/wireapp/proteus/blob/develop/crates/proteus-traits/src/lib.rs).
