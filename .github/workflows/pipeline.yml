@@ -255,6 +255,10 @@ jobs:
   #################
   # Rust
 
+  docs-cc-book:
+    if: github.event_name != 'pull_request'
+    uses: ./.github/workflows/docs-cc-book.yml
+
   docs-rust:
     runs-on: ubuntu-latest
     env:
@@ -303,6 +307,7 @@ jobs:
 
   deploy-docs:
     needs:
+      - docs-cc-book
       - docs-rust
       - docs-ts
       - docs-jvm

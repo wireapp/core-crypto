@@ -23,7 +23,7 @@ jobs:
     - name: download pre-rendered docs
       uses: actions/download-artifact@v8
       with:
-        pattern: '{typescript,swift,kotlin,rust}'
+        pattern: '{cc-book,typescript,swift,kotlin,rust}'
         path: "./target/doc/${{ env.GIT_TAG }}"
         merge-multiple: false
 
