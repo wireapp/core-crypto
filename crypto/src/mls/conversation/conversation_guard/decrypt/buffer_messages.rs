@@ -83,20 +83,20 @@ impl ConversationGuard {
                 .map_err(KeystoreError::wrap("finding all mls pending messages"))?
                 .into_iter()
                 .map(|m| -> Result<_> {
-                    let msg = MlsMessageIn::tls_deserialize(&mut m.message.as_slice())
+                    let message = MlsMessageIn::tls_deserialize(&mut m.message.as_slice())
                         .map_err(Error::tls_deserialize("mls message in"))?;
-                    let ct = match msg.body_as_ref() {
+                    let content_type = match message.body_as_ref() {
                         MlsMessageInBody::PublicMessage(m) => m.content_type(),
                         MlsMessageInBody::PrivateMessage(m) => m.content_type(),
                         _ => return Err(Error::InappropriateMessageBodyType),
                     };
-                    Ok((ct as u8, msg))
+                    Ok((content_type as u8, message))
                 })
                 .collect::<Result<Vec<_>>>()?;
 
             // We want to restore application messages first, then Proposals & finally Commits
             // luckily for us that's the exact same order as the [ContentType] enum
-            pending_messages.sort_by(|(a, _), (b, _)| a.cmp(b));
+            pending_messages.sort_by_key(|(content_type, _)| *content_type);
 
             info!(group_id = conversation_id; "Attempting to restore {} buffered messages", pending_messages.len());
 
