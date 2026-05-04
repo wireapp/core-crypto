@@ -21,8 +21,7 @@ impl<'a> TestConversation<'a> {
         let proposal = guard
             .conversation_mut(async |conversation| conversation.propose_add_member(session, key_package.into()).await)
             .await
-            .unwrap()
-            .proposal;
+            .unwrap();
         let proposer_index = self.member_index(proposer).await;
         OperationGuard::new(
             TestOperation::Add(AddGuard {
@@ -53,11 +52,7 @@ impl<'a> TestConversation<'a> {
                     .find(|member| member.credential.identity() == member_id.as_slice())
                     .map(|member| member.index)
                     .unwrap();
-                let proposal = conversation
-                    .propose_remove_member(session, member_index)
-                    .await
-                    .unwrap()
-                    .proposal;
+                let proposal = conversation.propose_remove_member(session, member_index).await.unwrap();
                 Ok(proposal)
             })
             .await

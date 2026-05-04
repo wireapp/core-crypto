@@ -51,8 +51,6 @@ pub enum Error {
     MlsMessageInvalidState(&'static str),
     #[error("The group lacks an ExternalSender extension whereas it should have at least one")]
     MissingExternalSenderExtension,
-    #[error("Couldn't find pending proposal {0}")]
-    PendingProposalNotFound(crate::mls::proposal::MlsProposalRef),
     #[error("Couldn't find pending commit")]
     PendingCommitNotFound,
     #[error("Couldn't find pending conversation")]

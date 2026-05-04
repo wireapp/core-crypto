@@ -5,7 +5,7 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{CredentialType, MessageExt as _, MlsTransportTestExt, SessionContext, TestContext, TestError};
 use crate::{
-    ConversationId, CredentialRef, E2eiConversationState, MlsProposalRef, RecursiveError,
+    ConversationId, CredentialRef, E2eiConversationState, RecursiveError,
     mls::{
         conversation::{Conversation, ConversationGuard, ConversationWithMls as _},
         credential::{Credential, ext::CredentialExt as _},
@@ -283,22 +283,6 @@ impl<'a> TestConversation<'a> {
             .get_credential_in_use(gi, CredentialType::X509)
             .await
             .unwrap()
-    }
-
-    /// The reference of the latest pending proposal.
-    pub async fn latest_proposal_ref(&self) -> MlsProposalRef {
-        assert!(self.has_pending_proposals().await);
-        let guard = self.guard().await;
-        guard
-            .conversation()
-            .await
-            .group()
-            .pending_proposals()
-            .last()
-            .unwrap()
-            .proposal_reference()
-            .to_owned()
-            .into()
     }
 
     /// The pending proposal count of the actor

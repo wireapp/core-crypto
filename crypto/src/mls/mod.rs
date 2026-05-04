@@ -1,11 +1,10 @@
-use crate::{ClientId, MlsConversation, Session, mls_provider::MlsCryptoProvider};
+use crate::{MlsConversation, Session, mls_provider::MlsCryptoProvider};
 
 pub(crate) mod ciphersuite;
 pub mod conversation;
 pub mod credential;
 mod error;
 pub mod key_package;
-pub(crate) mod proposal;
 pub(crate) mod session;
 
 use core_crypto_keystore::Database;

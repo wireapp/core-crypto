@@ -9,7 +9,7 @@ use core_crypto_keystore::Database;
 use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn};
 
 use super::{Error, Result};
-use crate::{MlsConversation, MlsError, MlsProposalRef, Session};
+use crate::{MlsConversation, MlsError, Session};
 
 /// Creating proposals
 impl MlsConversation {
@@ -18,22 +18,18 @@ impl MlsConversation {
         &mut self,
         session: &Session<Database>,
         key_package: KeyPackageIn,
-    ) -> Result<MlsProposalBundle> {
+    ) -> Result<MlsMessageOut> {
         let signer = &self
             .find_current_credential(session)
             .await
             .map_err(|_| Error::IdentityInitializationError)?
             .signature_key_pair;
 
-        let (proposal, proposal_ref) = self
+        let (proposal, _proposal_ref) = self
             .group
             .propose_add_member(&session.crypto_provider, signer, key_package)
             .await
             .map_err(MlsError::wrap("propose add member"))?;
-        let proposal = MlsProposalBundle {
-            proposal,
-            proposal_ref: proposal_ref.into(),
-        };
         Ok(proposal)
     }
 
@@ -42,53 +38,17 @@ impl MlsConversation {
         &mut self,
         session: &Session<Database>,
         member: LeafNodeIndex,
-    ) -> Result<MlsProposalBundle> {
+    ) -> Result<MlsMessageOut> {
         let signer = &self
             .find_current_credential(session)
             .await
             .map_err(|_| Error::IdentityInitializationError)?
             .signature_key_pair;
-        let proposal = self
+        let (proposal, _proposal_ref) = self
             .group
             .propose_remove_member(&session.crypto_provider, signer, member)
-            .map_err(MlsError::wrap("propose remove member"))
-            .map(MlsProposalBundle::from)?;
+            .map_err(MlsError::wrap("propose remove member"))?;
         Ok(proposal)
-    }
-}
-
-/// Returned when a Proposal is created. Helps roll backing a local proposal
-#[derive(Debug)]
-pub struct MlsProposalBundle {
-    /// The proposal message
-    pub proposal: MlsMessageOut,
-    /// A unique identifier of the proposal to rollback it later if required
-    pub proposal_ref: MlsProposalRef,
-}
-
-impl From<(MlsMessageOut, openmls::prelude::hash_ref::ProposalRef)> for MlsProposalBundle {
-    fn from((proposal, proposal_ref): (MlsMessageOut, openmls::prelude::hash_ref::ProposalRef)) -> Self {
-        Self {
-            proposal,
-            proposal_ref: proposal_ref.into(),
-        }
-    }
-}
-
-impl MlsProposalBundle {
-    /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
-    /// 0 -> proposal
-    /// 1 -> proposal reference
-    #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<u8>)> {
-        use openmls::prelude::TlsSerializeTrait as _;
-        let proposal = self
-            .proposal
-            .tls_serialize_detached()
-            .map_err(Error::tls_serialize("proposal"))?;
-        let proposal_ref = self.proposal_ref.to_bytes();
-
-        Ok((proposal, proposal_ref))
     }
 }
 

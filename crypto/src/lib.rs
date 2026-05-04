@@ -61,13 +61,11 @@ pub use crate::{
             config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
             conversation_guard::decrypt::{MlsBufferedDecryptMessage, MlsDecryptMessage},
             group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
-            proposal::MlsProposalBundle,
         },
         credential::{
             Credential, CredentialRef, CredentialType, FindFilters as CredentialFindFilters, x509::CertificateBundle,
         },
         key_package::{Keypackage, KeypackageRef},
-        proposal::{MlsProposal, MlsProposalRef},
         session::{
             EpochObserver, HistoryObserver, Session,
             id::{ClientId, ClientIdRef},
