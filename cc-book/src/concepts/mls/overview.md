@@ -1,0 +1,100 @@
+# MLS
+
+[RFC 9420](https://www.rfc-editor.org/rfc/rfc9420.html), the Messaging Layer Security standard, solves the group-scaling problem that limits Proteus.
+Rather than maintaining an independent session per client pair, MLS establishes a single shared group secret from which all members independently derive the same encryption keys.
+Membership changes are managed through a _ratchet tree_ — a binary tree structure that lets any member compute the new shared secret after an add or remove using only O(log n) key operations rather than O(n²) messages.
+
+The fundamental unit of time in an MLS group is the _epoch_.
+Each epoch has a distinct shared secret; when membership changes (or when keys are rotated for other reasons), the group advances to a new epoch and new keys are computed.
+The two-phase _proposal / commit_ model makes this safe in asynchronous networks: proposals accumulate from multiple senders, and a single commit bundles them into an atomic epoch transition.
+
+## Cryptographic Properties
+
+### Security Guarantees
+
+MLS provides two complementary security properties that together defend against both historical and future exposure of messages.
+
+#### Forward Secrecy
+
+Because each epoch derives a distinct shared secret and prior epoch secrets are deleted after use, compromise of the current epoch does not expose messages from any prior epoch.
+An attacker who obtains today's keys learns nothing about yesterday's conversations.
+
+#### Post-Compromise Security
+
+Forward secrecy protects the past; post-compromise security (PCS) protects the future.
+If an attacker obtains a member's key material — for example by compromising a device — they gain access to the current epoch.
+MLS limits this exposure: once any member contributes a commit that includes a fresh path secret (an Update proposal, or any commit authored by the compromised member), new randomness is injected into the key schedule.
+The attacker's copy of the old keys cannot be used to derive the new epoch's secrets, so the group heals automatically as conversation continues.
+
+Together, these guarantees mean that an MLS group is resilient over time: past messages remain private even after compromise, and future messages recover privacy as soon as keys are rotated.
+
+### Efficiency
+
+While changes in the group structure require O(log n) key operations, application messages are more efficient. Because each group has a shared group state governing its current shared secret, application messages encrypt in O(1). A significant improvement over Proteus!
+
+## Initialization
+
+Before any MLS operation, MLS must be explicitly initialized within a transaction:
+
+```
+transaction_context.mlsInit(clientId, transport)
+```
+
+### Client Identity
+
+`ClientId` is an opaque byte array.
+CoreCrypto treats it as an identifier and does not inspect or validate its contents.
+Wire's convention is to encode the client ID as a UTF-8 string of the form `userId:clientId@domain` — for example `alice_user_id:device1@wire.com` — but this is a Wire convention, not a CoreCrypto requirement.
+
+### `MlsTransport`
+
+CoreCrypto intentionally abstains from communication with the Wire backend; instead, the caller provides an implementation of this interface that CoreCrypto calls on demand.
+
+**`sendCommitBundle(commitBundle)`** — Called whenever a commit is produced — for example when creating a conversation, adding or removing members, or rotating keys. The `commitBundle` contains the commit message, a welcome message for any newly added members, and the updated group info. All three should be forwarded to the delivery service in a single request.
+
+The implementor of `sendCommitBundle` may throw an `MlsTransportError` indicating the reason for a rejected message.
+
+**`prepareForTransport(historySecret)`** — Called before a history secret is transmitted to a new history client. The implementation should package the secret in the application's transport format (e.g., JSON or Protobuf) and return the serialized bytes. CoreCrypto will then encrypt and send those bytes as an application message.
+
+## Observers
+
+CoreCrypto provides two optional observer interfaces that allow the application to react to significant MLS events without polling.
+Both are registered on the `CoreCrypto` instance directly (not on a transaction) and persist for the lifetime of the session.
+
+### EpochObserver
+
+`registerEpochObserver(observer)` registers a callback that fires whenever a conversation advances to a new epoch — that is, whenever a commit is merged.
+The callback receives the `conversationId` and the new `epoch` number.
+
+> **Note**
+>
+> The `epochChanged` callback must return promptly.
+> CoreCrypto holds internal locks while dispatching it.
+> If your observer needs to do significant work, dispatch it to a background task rather than doing it inline.
+
+### HistoryObserver
+
+`registerHistoryObserver(observer)` registers a callback that fires when a new history client has been created and accepted by the delivery service.
+The callback receives the `conversationId` and a `HistorySecret` — an opaque bundle of key material that the application should forward to the history client so it can decrypt past messages.
+
+The history client feature is Wire's mechanism for allowing newly added devices to read conversation history; the `HistoryObserver` is the hook through which the application participates in that handoff.
+
+## Credentials and Key Packages
+
+Before a device can join or create MLS groups, it needs a _credential_ — a proof of identity that other group members can verify.
+CoreCrypto supports two credential types:
+
+**`Basic`** — A locally generated keypair with no external attestation. Suitable whenever end-to-end identity verification is not required. This is the default.
+
+**`X509`** — A certificate chain obtained through the E2EI enrollment process, binding the device's MLS identity to a verified Wire user identity. Required for deployments with end-to-end identity enabled.
+
+Credentials are created and stored via `addCredential()` on the transaction, which returns a `CredentialRef` — a short handle used to refer to the credential in subsequent operations.
+
+**Key packages** — MLS-level advertisements of a device's identity and capabilities. Other devices fetch a target device's key package from the delivery service when adding it to a group. Generate them with `generateKeypackage(credentialRef)` inside a transaction.
+
+## Ciphersuites
+
+An MLS ciphersuite is a composite designation which specifies the KEM, AEAD, hash, and signature algorithms.
+CoreCrypto formally supports any of the ciphersuites specified in the RFC, but is primarily tested on ciphersuite 1 (MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519).
+
+The ciphersuite is fixed per conversation at the conversation's creation.
