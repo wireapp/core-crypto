@@ -1,0 +1,6 @@
+[book]
+title = "CoreCrypto"
+src = "src"
+
+[preprocessor.langtabs]
+command = "mdbook-langtabs"
