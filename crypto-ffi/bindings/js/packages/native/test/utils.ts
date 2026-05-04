@@ -18,6 +18,7 @@ import {
     Credential,
     ciphersuiteDefault,
     Welcome,
+    KeyPackage,
 } from "@wireapp/core-crypto/native";
 import { Database } from "@wireapp/core-crypto/native";
 
@@ -144,6 +145,22 @@ export async function ccInit(
     return cc;
 }
 
+export async function generateKeyPackage(
+    cc: CoreCrypto,
+    cipherSuite?: Ciphersuite
+): Promise<KeyPackage> {
+    if (cipherSuite === undefined) {
+        cipherSuite = DEFAULT_CIPHERSUITE;
+    }
+    return await cc.transaction(async (ctx) => {
+        const [credentialRef] = await ctx.findCredentials({
+            ciphersuite: cipherSuite,
+            credentialType: CredentialType.Basic,
+        });
+        return await ctx.generateKeyPackage(credentialRef!);
+    });
+}
+
 export function randomConversationId(): ConversationId {
     const uuid = crypto.randomUUID();
     return new ConversationId(Uint8Array.from(uuid).buffer);
@@ -165,9 +182,9 @@ export function randomClientId(): ClientId {
  *
  */
 export async function createConversation(
-    cc: CoreCrypto,
-    conversationId: ConversationId
-): Promise<void> {
+    cc: CoreCrypto
+): Promise<ConversationId> {
+    const conversationId = randomConversationId();
     await cc.transaction(async (ctx) => {
         const credential = Credential.basic(
             ciphersuiteDefault(),
@@ -178,6 +195,7 @@ export async function createConversation(
         await ctx.createConversation(conversationId, credentialRef, undefined);
         await ctx.createConversation(conversationId, credentialRef);
     });
+    return conversationId;
 }
 
 /**
@@ -195,15 +213,10 @@ export async function createConversation(
 export async function invite(
     cc1: CoreCrypto,
     cc2: CoreCrypto,
-    conversationId: ConversationId
+    conversationId: ConversationId,
+    cipherSuite?: Ciphersuite
 ): Promise<GroupInfoBundle> {
-    const kp = await cc2.transaction(async (ctx) => {
-        const [credentialRef] = await ctx.findCredentials({
-            ciphersuite: DEFAULT_CIPHERSUITE,
-            credentialType: CredentialType.Basic,
-        });
-        return await ctx.generateKeyPackage(credentialRef!);
-    });
+    const kp = await generateKeyPackage(cc2, cipherSuite);
     await cc1.transaction((ctx) =>
         ctx.addClientsToConversation(conversationId, [kp])
     );
