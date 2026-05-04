@@ -16,7 +16,6 @@ import {
     setMaxLogLevel,
     ClientId,
     Credential,
-    ciphersuiteDefault,
     Welcome,
     KeyPackage,
 } from "@wireapp/core-crypto/native";
@@ -186,14 +185,8 @@ export async function createConversation(
 ): Promise<ConversationId> {
     const conversationId = randomConversationId();
     await cc.transaction(async (ctx) => {
-        const credential = Credential.basic(
-            ciphersuiteDefault(),
-            randomClientId()
-        );
-
-        const credentialRef = await ctx.addCredential(credential);
-        await ctx.createConversation(conversationId, credentialRef, undefined);
-        await ctx.createConversation(conversationId, credentialRef);
+        const [credentialRef] = await ctx.getCredentials();
+        await ctx.createConversation(conversationId, credentialRef!);
     });
     return conversationId;
 }
