@@ -1,51 +1,42 @@
 # The CoreCrypto Book
 
-This folder contains the source of the CoreCrypto Book. This book contains both an overview of core CoreCrypto concepts,
-and detailed migration guides for certain major migrations.
+This folder contains the source of the CoreCrypto Book, built with [mdBook](https://rust-lang.github.io/mdBook/).
+The book covers core CoreCrypto concepts and migration guides for major releases.
 
-## Building the Book
+## Prerequisites
 
-### Prerequisites
-
-- Install the node modules
-
-  ```sh
-  pushd cc-book
-  bun install
-  popd
-  ```
-
-- [Install Ruby](https://www.ruby-lang.org/en/documentation/installation/)
-
-- Install bundler
+- **mdBook** — install a released binary from the [mdBook releases page](https://github.com/rust-lang/mdBook/releases),
+  or via Cargo from crates.io:
 
   ```sh
-  pushd cc-book
-  bundler_version="$(grep -A1 'BUNDLED WITH' Gemfile.lock | tail -n1)"
-  sudo gem install bundler -v "$bundler_version"
-  popd
+  cargo install mdbook --locked
   ```
 
-- Install Ruby deps
+- **mdbook-langtabs** — install a released binary from the [mdbook-langtabs releases page](https://github.com/nx10/mdbook-langtabs/releases),
+  or via Cargo from a tagged release:
 
   ```sh
-  pushd cc-book
-  bundle config set --local frozen true
-  bundle config set --local path .bundle
-  bundle install
-  popd
+  cargo install --git https://github.com/nx10/mdbook-langtabs --tag v0.2.0 --locked
   ```
 
-### The Build
+## Building
+
+From the repository root:
+
+```sh
+mdbook build cc-book
+```
+
+Or equivalently via Make:
 
 ```sh
 make cc-book
 ```
 
-### Serving Locally
+## Serving Locally
 
-It is often handy to serve the book locally. In a separate terminal:
+mdBook has a built-in development server that watches for changes and live-reloads:
 
 ```sh
-miniserve cc-book/build/site --index index.html
+mdbook serve cc-book --open
 ```
