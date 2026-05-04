@@ -1,7 +1,0 @@
-{
-  "devDependencies": {
-    "@antora/epub-extension": "^1.0.0-beta.20",
-    "@antora/pdf-extension": "^1.0.0-beta.20",
-    "antora": "3.1.14"
-  }
-}

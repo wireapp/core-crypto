@@ -1,8 +1,0 @@
-assembly:
-  xml_ids: true
-  attributes:
-    allow-uri-read: ''
-    source-highlighter: rouge
-    toc: ''
-build:
-  command: bundle exec asciidoctor-epub3

@@ -1,3 +1,0 @@
-:platform: browser
-
-include::ROOT:partial$whats-new.adoc[]

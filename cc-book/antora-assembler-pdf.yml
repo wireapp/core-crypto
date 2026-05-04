@@ -1,7 +1,0 @@
-assembly:
-  attributes:
-    allow-uri-read: ''
-    source-highlighter: rouge
-    toc: ''
-build:
-  command: bundle exec asciidoctor-pdf --sourcemap --trace

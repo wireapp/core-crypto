@@ -1,7 +1,0 @@
-source 'https://rubygems.org'
-
-gem 'asciidoctor-pdf'
-gem 'logger'
-gem 'bigdecimal'
-gem 'rouge'
-gem 'asciidoctor-epub3'
