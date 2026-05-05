@@ -32,7 +32,7 @@ jwt-simple.workspace = true
 derive_more = { workspace = true, features = ["deref", "from", "into"] }
 url.workspace = true
 zeroize.workspace = true
-uuid.workspace = true
+uuid = { workspace = true, features = ["serde"] }
 x509-cert = { workspace = true, features = ["builder", "hazmat"] }
 time = { workspace = true, features = [
   "serde",

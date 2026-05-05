@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_lock::Mutex;
 use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair};
-use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm};
+use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, acquisition::states};
 use x509_cert::der::Encode as _;
 
 use crate::{CipherSuite as FfiCiphersuite, ClientId, CoreCryptoError, CoreCryptoResult, Credential, PkiEnvironment};
@@ -46,6 +46,17 @@ impl TryFrom<FfiCiphersuite> for JwsAlgorithm {
             _ => Err(CoreCryptoError::ad_hoc(
                 "ciphersuite is not supported for certificate acquisition",
             )),
+        }
+    }
+}
+
+impl From<JwsAlgorithm> for FfiCiphersuite {
+    fn from(value: JwsAlgorithm) -> Self {
+        match value {
+            JwsAlgorithm::Ed25519 => FfiCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+            JwsAlgorithm::P256 => FfiCiphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
+            JwsAlgorithm::P384 => FfiCiphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
+            JwsAlgorithm::P521 => FfiCiphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
         }
     }
 }
@@ -106,6 +117,7 @@ pub struct X509CredentialAcquisition {
 
 enum AcquisitionState {
     Initialized(Box<wire_e2e_identity::X509CredentialAcquisition>),
+    DpopChallengeCompleted(Box<wire_e2e_identity::X509CredentialAcquisition<states::DpopChallengeCompleted>>),
     InProgress,
     Finalized,
 }
@@ -167,6 +179,23 @@ impl X509CredentialAcquisition {
         })
     }
 
+    /// Deserialize a credential acquisition flow.
+    #[uniffi::constructor(name = "fromBytes")]
+    pub fn from_bytes(pki_environment: Arc<PkiEnvironment>, bytes: &[u8]) -> CoreCryptoResult<Self> {
+        let snapshot = wire_e2e_identity::X509CredentialAcquisition::<states::DpopChallengeCompleted>::deserialize(
+            pki_environment.clone_inner(),
+            bytes,
+        )
+        .map_err(CoreCryptoError::generic())?;
+
+        let ciphersuite: FfiCiphersuite = snapshot.sign_alg().into();
+
+        Ok(Self {
+            state: Mutex::new(AcquisitionState::DpopChallengeCompleted(snapshot.into())),
+            ciphersuite,
+        })
+    }
+
     /// Complete the DPoP and OIDC challenges and return the acquired X509 credential.
     pub async fn finalize(&self) -> CoreCryptoResult<Credential> {
         let state = {
@@ -186,6 +215,14 @@ impl X509CredentialAcquisition {
                 .map_err(|err| CoreCryptoError::E2ei {
                     e2ei_error: err.to_string(),
                 }),
+            AcquisitionState::DpopChallengeCompleted(inner) => {
+                inner
+                    .complete_oidc_challenge()
+                    .await
+                    .map_err(|err| CoreCryptoError::E2ei {
+                        e2ei_error: err.to_string(),
+                    })
+            }
             AcquisitionState::InProgress => {
                 return Err(CoreCryptoError::ad_hoc(
                     "x509 credential acquisition is already in progress",

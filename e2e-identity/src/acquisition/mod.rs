@@ -17,17 +17,22 @@ mod dpop_challenge;
 mod error;
 mod initial;
 mod oidc_challenge;
+mod serialization;
 
 pub mod identity;
 pub mod thumbprint;
 
-#[derive(Debug)]
+pub use error::Error as AcquisitionError;
+pub use serialization::ClientIdDef;
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct X509CredentialConfiguration {
     pub acme_url: String,
     pub idp_url: String,
     pub sign_alg: JwsAlgorithm,
     pub hash_alg: HashAlgorithm,
     pub display_name: String,
+    #[serde(with = "ClientIdDef")]
     pub client_id: ClientId,
     pub handle: String,
     pub domain: String,
@@ -38,10 +43,10 @@ pub struct X509CredentialConfiguration {
 pub mod states {
     use crate::acme::{AcmeAccount, AcmeChallenge, AcmeOrder};
 
-    #[derive(Debug)]
+    #[derive(Debug, serde::Serialize, serde::Deserialize)]
     pub struct Initialized;
 
-    #[derive(Debug)]
+    #[derive(Debug, serde::Serialize, serde::Deserialize)]
     pub struct DpopChallengeCompleted {
         pub nonce: String,
         pub acme_account: AcmeAccount,
@@ -86,8 +91,10 @@ pub mod states {
 ///     .complete_dpop_challenge().await?
 ///     .complete_oidc_challenge().await?;
 /// ```
+#[derive(serde::Serialize)]
 pub struct X509CredentialAcquisition<T: std::fmt::Debug = states::Initialized> {
     /// A reference to the PKI environment that stores trust anchors.
+    #[serde(skip)]
     pki_env: Arc<PkiEnvironment>,
     /// The configuration used for acquisition.
     config: X509CredentialConfiguration,
@@ -114,6 +121,11 @@ fn get_header(resp: &HttpResponse, header: &'static str) -> Result<String> {
 }
 
 impl<T: std::fmt::Debug> X509CredentialAcquisition<T> {
+    /// The signing algorithm used for certificate acquisition.
+    pub fn sign_alg(&self) -> JwsAlgorithm {
+        self.config.sign_alg
+    }
+
     /// Send an HTTP request to the ACME server and return the result in the form of a
     /// pair (nonce, deserialized JSON response). The nonce is returned so it can be
     /// used by the caller to construct the body of the next ACME request.
