@@ -1,5 +1,5 @@
 [book]
-title = "CoreCrypto"
+title = "CoreCrypto Book"
 src = "src"
 
 [preprocessor.langtabs]
