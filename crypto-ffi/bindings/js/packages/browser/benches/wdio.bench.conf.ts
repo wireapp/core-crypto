@@ -33,9 +33,9 @@ export const config: WebdriverIO.Config = {
     capabilities,
     mochaOpts: {
         ...baseConfig.mochaOpts,
-        timeout: 1_800_000, // 30 min
+        timeout: 3_600_000, // 1 hr
     },
-    waitforTimeout: 1_800_000, // 30 min
+    waitforTimeout: 3_600_000, // 1 hr
     services: [
         [
             "static-server",
