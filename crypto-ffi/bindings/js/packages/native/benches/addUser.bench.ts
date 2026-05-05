@@ -1,4 +1,5 @@
 import {
+    logResults,
     tinybenchSetup,
     userBenchmarkParameters,
 } from "../../shared/benches/utils";
@@ -61,8 +62,7 @@ async function run() {
     console.log(`Starting ${bench.name}`);
     await bench.run();
 
-    console.log(bench.name);
-    console.table(bench.table());
+    await logResults(bench.name, bench.table());
 }
 
 await run();

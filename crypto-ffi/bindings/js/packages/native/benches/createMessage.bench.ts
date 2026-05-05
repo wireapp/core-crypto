@@ -1,6 +1,7 @@
 import { Bench } from "tinybench";
 import { Ciphersuite } from "@wireapp/core-crypto/native";
 import {
+    logResults,
     messageBenchmarkParameters,
     tinybenchSetup,
 } from "../../shared/benches/utils";
@@ -40,8 +41,7 @@ async function run() {
     console.log(`Starting ${bench.name}`);
     await bench.run();
 
-    console.log(bench.name);
-    console.table(bench.table());
+    await logResults(bench.name, bench.table());
 }
 
 await run();
