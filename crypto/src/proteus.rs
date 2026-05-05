@@ -601,7 +601,7 @@ mod tests {
             .await
             .unwrap();
 
-        let cc: CoreCrypto = CoreCrypto::new(db);
+        let cc = CoreCrypto::new(db);
         let context = cc.new_transaction().await.unwrap();
         assert!(context.proteus_init().await.is_ok());
         assert!(context.proteus_new_prekey(1).await.is_ok());
@@ -626,7 +626,7 @@ mod tests {
             .await
             .unwrap();
 
-        let cc: CoreCrypto = CoreCrypto::new(db.clone());
+        let cc = CoreCrypto::new(db.clone());
         let hooks = Arc::new(DummyPkiEnvironmentHooks);
         let pki_env = PkiEnvironment::new(hooks, db).await.expect("creating pki environment");
         cc.set_pki_environment(Some(Arc::new(pki_env))).await;

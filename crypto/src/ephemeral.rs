@@ -126,7 +126,7 @@ impl CoreCrypto {
     ///
     /// This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
     /// Other use is a logic error.
-    pub async fn history_client(history_secret: HistorySecret) -> Result<Self> {
+    pub async fn history_client(history_secret: HistorySecret) -> Result<Arc<Self>> {
         if !history_secret
             .client_id
             .starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes())
