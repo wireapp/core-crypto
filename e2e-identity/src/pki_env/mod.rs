@@ -3,6 +3,9 @@
 mod crl;
 pub mod hooks;
 
+#[cfg(test)]
+mod dummy;
+
 use std::{collections::HashSet, sync::Arc};
 
 use async_lock::Mutex;
