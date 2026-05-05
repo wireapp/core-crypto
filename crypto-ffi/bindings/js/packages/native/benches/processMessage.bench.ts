@@ -2,7 +2,7 @@ import { Bench } from "tinybench";
 import { Ciphersuite } from "@wireapp/core-crypto/native";
 import {
     messageBenchmarkParameters,
-    tinybench_setup,
+    tinybenchSetup,
 } from "../../shared/benches/utils";
 import {
     ccInit,
@@ -20,7 +20,7 @@ async function run() {
         time: 1000,
         iterations: 5,
         warmupIterations: 1,
-        setup: tinybench_setup,
+        setup: tinybenchSetup,
         teardown: teardown,
     });
 

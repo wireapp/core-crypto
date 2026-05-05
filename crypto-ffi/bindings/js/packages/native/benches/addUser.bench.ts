@@ -1,5 +1,5 @@
 import {
-    tinybench_setup,
+    tinybenchSetup,
     userBenchmarkParameters,
 } from "../../shared/benches/utils";
 import { Ciphersuite, type KeyPackage } from "@wireapp/core-crypto/native";
@@ -21,7 +21,7 @@ async function run() {
         time: 1000,
         iterations: 5,
         warmupIterations: 1,
-        setup: tinybench_setup,
+        setup: tinybenchSetup,
         teardown: teardown,
     });
     for (const { userCount, cipherSuite } of parameters) {

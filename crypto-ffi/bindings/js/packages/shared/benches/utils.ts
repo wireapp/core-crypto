@@ -1,7 +1,7 @@
 import type { Task } from "tinybench";
 import { Ciphersuite } from "../src/CoreCrypto";
 
-export function tinybench_setup(task?: Task, mode?: string) {
+export function tinybenchSetup(task?: Task, mode?: string) {
     console.log(`Executing ${mode} ${task?.name}`);
 }
 
