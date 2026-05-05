@@ -122,9 +122,7 @@ impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
 ///
 /// As [std::ops::Deref] is implemented, this struct is automatically dereferred to [mls::session::Session] apart from
 /// `proteus_*` calls
-///
-/// This is cheap to clone as all internal members have `Arc` wrappers or are `Copy`.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoreCrypto {
     database: Database,
     pki_environment: Arc<RwLock<Option<Arc<PkiEnvironment>>>>,
