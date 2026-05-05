@@ -96,7 +96,7 @@ pub struct SessionContext {
     mls_transport: Arc<RwLock<Arc<dyn MlsTransportTestExt + 'static>>>,
     x509_test_chain: Arc<Option<X509TestChain>>,
     history_observer: Arc<RwLock<Option<Arc<TestHistoryObserver>>>>,
-    core_crypto: CoreCrypto,
+    core_crypto: Arc<CoreCrypto>,
     // We need to store the `TempDir` struct for the duration of the test session,
     // because its drop implementation takes care of the directory deletion.
     _db: Option<(Database, Arc<tempfile::TempDir>)>,
@@ -164,7 +164,7 @@ impl SessionContext {
 
     pub(crate) async fn new_from_cc(
         context: &TestContext,
-        core_crypto: CoreCrypto,
+        core_crypto: Arc<CoreCrypto>,
         chain: Option<&X509TestChain>,
     ) -> Self {
         let transport = context.transport.clone();

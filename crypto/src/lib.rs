@@ -136,13 +136,14 @@ pub struct CoreCrypto {
 
 impl CoreCrypto {
     /// Create an new CoreCrypto client without any initialized session.
-    pub fn new(database: Database) -> Self {
+    pub fn new(database: Database) -> Arc<Self> {
         Self {
             database,
             pki_environment: Default::default(),
             mls: Default::default(),
             proteus: Default::default(),
         }
+        .into()
     }
 
     /// Set the session's PKI Environment
