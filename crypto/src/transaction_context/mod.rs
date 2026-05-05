@@ -45,7 +45,7 @@ pub struct TransactionContext {
 #[derive(Debug, Clone)]
 enum TransactionContextInner {
     Valid {
-        pki_environment: Option<Arc<PkiEnvironment>>,
+        pki_environment: Arc<RwLock<Option<Arc<PkiEnvironment>>>>,
         database: Database,
         mls_session: Arc<RwLock<Option<Session<Database>>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
@@ -93,7 +93,7 @@ impl HasSessionAndCrypto for TransactionContext {
 impl TransactionContext {
     async fn new(
         keystore: Database,
-        pki_environment: Option<Arc<PkiEnvironment>>,
+        pki_environment: Arc<RwLock<Option<Arc<PkiEnvironment>>>>,
         mls_session: Arc<RwLock<Option<Session<Database>>>>,
         #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     ) -> Result<Self> {
@@ -184,7 +184,7 @@ impl TransactionContext {
         }
     }
 
-    pub(crate) async fn pki_environment(&self) -> Result<Option<Arc<PkiEnvironment>>> {
+    pub(crate) async fn pki_environment(&self) -> Result<Arc<RwLock<Option<Arc<PkiEnvironment>>>>> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { pki_environment, .. } => Ok(pki_environment.clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),

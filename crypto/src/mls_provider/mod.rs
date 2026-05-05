@@ -2,6 +2,7 @@
 #![expect(unreachable_pub)]
 use std::sync::Arc;
 
+use async_lock::RwLock;
 pub use core_crypto_keystore::{Database, DatabaseKey};
 
 mod crypto_provider;
@@ -71,11 +72,11 @@ impl std::ops::DerefMut for EntropySeed {
 
 #[derive(Debug, Clone)]
 pub struct AuthenticationService {
-    pki_env: Option<Arc<PkiEnvironment>>,
+    pki_env: Arc<RwLock<Option<Arc<PkiEnvironment>>>>,
 }
 
 impl AuthenticationService {
-    pub fn pki_env(&self) -> Option<Arc<PkiEnvironment>> {
+    pub fn pki_env(&self) -> Arc<RwLock<Option<Arc<PkiEnvironment>>>> {
         self.pki_env.clone()
     }
 }
@@ -88,7 +89,7 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for A
             // We assume that Basic credentials are always valid
             CredentialRef::Basic { .. } => CredentialAuthenticationStatus::Valid,
 
-            CredentialRef::X509 { .. } => match &self.pki_env {
+            CredentialRef::X509 { .. } => match self.pki_env.read().await.as_ref() {
                 None => {
                     log::warn!("unable to validate X509 credentials: PKI environment is unset");
                     CredentialAuthenticationStatus::Unknown
@@ -114,11 +115,11 @@ impl MlsCryptoProvider {
     ///
     /// - [Database::open]
     pub fn new(key_store: Database) -> Self {
-        Self::new_with_pki_env(key_store, None)
+        Self::new_with_pki_env(key_store, Arc::new(RwLock::new(None)))
     }
 
     /// Construct a crypto provider with the given database and the PKI environment.
-    pub fn new_with_pki_env(key_store: Database, pki_env: Option<Arc<PkiEnvironment>>) -> Self {
+    pub fn new_with_pki_env(key_store: Database, pki_env: Arc<RwLock<Option<Arc<PkiEnvironment>>>>) -> Self {
         let auth_service = AuthenticationService { pki_env };
         Self {
             key_store,
@@ -134,13 +135,13 @@ impl MlsCryptoProvider {
     }
 
     /// Set pki_env to a new shared pki environment provider
-    pub async fn set_pki_environment(&mut self, pki_env: Option<Arc<PkiEnvironment>>) {
+    pub async fn set_pki_environment(&mut self, pki_env: Arc<RwLock<Option<Arc<PkiEnvironment>>>>) {
         self.auth_service.pki_env = pki_env;
     }
 
     /// Returns whether we have a PKI env setup
-    pub fn is_pki_env_setup(&self) -> bool {
-        self.auth_service.pki_env.is_some()
+    pub async fn is_pki_env_setup(&self) -> bool {
+        self.auth_service.pki_env.read().await.is_some()
     }
 
     /// Reseeds the internal CSPRNG entropy pool with a brand new one.

@@ -17,15 +17,17 @@ impl TransactionContext {
     /// because in case x509 credentials are used, HTTP requests are done to fetch new certificate revocation lists.
     pub async fn check_credentials(&self) -> Result<()> {
         let database = self.database().await?;
-        let pki_env = self
-            .pki_environment()
-            .await?
-            .ok_or(e2e_identity::Error::PkiEnvironmentUnset)?;
+        let pki_env = self.pki_environment().await?;
+        let guard = pki_env.read().await;
+        let env = match *guard {
+            None => return Err(e2e_identity::Error::PkiEnvironmentUnset.into()),
+            Some(ref env) => env,
+        };
 
         let credentials = Credential::get_all(&database)
             .await
             .map_err(RecursiveError::mls_credential("getting all credentials"))?;
-        let trust_anchor = pki_env
+        let trust_anchor = env
             .trust_anchor()
             .await
             .map_err(RecursiveError::e2e_identity("reading trust anchor cert"))?;
@@ -42,15 +44,14 @@ impl TransactionContext {
 
         self.clean_up_irrelevant_crls(&relevant_crl_uris).await?;
 
-        let crls = pki_env
+        let crls = env
             .fetch_crls(relevant_crl_uris.iter().map(AsRef::as_ref))
             .await
             .map_err(RecursiveError::e2e_identity("fetching crls"))?;
 
         // store fresh CRLs
         for (crl_uri, crl) in crls {
-            pki_env
-                .save_crl(&crl_uri, &crl)
+            env.save_crl(&crl_uri, &crl)
                 .await
                 .map_err(RecursiveError::e2e_identity("saving CRL"))?;
         }
@@ -59,7 +60,7 @@ impl TransactionContext {
 
         // check our own credentials for expiration or revocation
         for credential in credentials {
-            if self.check_credential(&pki_env, &credential).await.is_err() {
+            if self.check_credential(env, &credential).await.is_err() {
                 invalid_credential_refs.push(CredentialRef::from_credential(&credential));
             }
         }

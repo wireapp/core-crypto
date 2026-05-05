@@ -192,8 +192,9 @@ impl ConversationGuard {
         let epoch = message.epoch();
 
         let pki_env = provider.authentication_service().pki_env();
+        let guard = pki_env.read().await;
         let identity = credential
-            .extract_identity(self.ciphersuite().await, pki_env.as_deref())
+            .extract_identity(self.ciphersuite().await, guard.as_ref().map(|v| &**v))
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         let sender_client_id: ClientId = credential.credential.identity().to_owned().into();
@@ -462,7 +463,7 @@ impl ConversationGuard {
 
     async fn validate_commit(&self, commit: &StagedCommit) -> Result<()> {
         let backend = self.crypto_provider().await?;
-        if backend.is_pki_env_setup() {
+        if backend.is_pki_env_setup().await {
             let credentials: Vec<_> = commit
                 .add_proposals()
                 .filter_map(|add_proposal| {

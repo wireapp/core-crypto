@@ -222,8 +222,8 @@ impl pki_env::hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
 }
 
 /// The PKI environment used for certificate management during X509 credential acquisition.
-#[derive(derive_more::From, derive_more::Into, uniffi::Object)]
-pub struct PkiEnvironment(wire_e2e_identity::pki_env::PkiEnvironment);
+#[derive(derive_more::Into, uniffi::Object)]
+pub struct PkiEnvironment(Arc<wire_e2e_identity::pki_env::PkiEnvironment>);
 
 #[cfg_attr(feature = "wasm", uniffi::export)]
 impl PkiEnvironment {
@@ -232,7 +232,7 @@ impl PkiEnvironment {
     pub async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Arc<Database>) -> CoreCryptoResult<Self> {
         let shim = Arc::new(PkiEnvironmentHooksShim::new(hooks));
         let pki_env = wire_e2e_identity::pki_env::PkiEnvironment::new(shim, database.as_ref().clone().into()).await?;
-        Ok(pki_env.into())
+        Ok(Self(Arc::new(pki_env)))
     }
 }
 
@@ -249,18 +249,19 @@ pub async fn create_pki_environment(
 #[uniffi::export]
 impl CoreCryptoFfi {
     /// Set the PKI environment of the CoreCrypto instance.
-    pub async fn set_pki_environment(&self, pki_environment: Option<Arc<PkiEnvironment>>) -> CoreCryptoResult<()> {
-        let pki_environment = pki_environment.as_ref().map(|p| p.as_ref().clone()).map(Into::into);
+    pub async fn set_pki_environment(&self, pki_environment: Option<Arc<PkiEnvironment>>) {
         self.inner
-            .set_pki_environment(pki_environment)
-            .await
-            .map_err(Into::into)
+            .set_pki_environment(pki_environment.map(|env| env.0.clone()))
+            .await;
     }
 
     /// Get the PKI environment of the CoreCrypto instance.
     ///
     /// Returns null if it is not set.
     pub async fn get_pki_environment(&self) -> Option<Arc<PkiEnvironment>> {
-        self.inner.get_pki_environment().await.map(PkiEnvironment).map(Arc::new)
+        let pki_env = self.inner.get_pki_environment();
+        (*pki_env.read().await)
+            .as_ref()
+            .map(|env| Arc::new(PkiEnvironment(env.clone())))
     }
 }
