@@ -112,7 +112,7 @@ export async function collectBenchmarkResults() {
             return !(await browser.execute(() => window.benchRunning));
         },
         {
-            timeout: 1_800_000, // 30 min
+            timeout: 3_600_000, // 1hr
             timeoutMsg: "Benchmark did not finish in time",
         }
     );
