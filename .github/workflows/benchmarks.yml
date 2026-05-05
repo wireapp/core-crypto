@@ -10,3 +10,6 @@ jobs:
 
   benchmark-ts-browser:
     uses: ./.github/workflows/benchmark-ts-browser.yml
+
+  benchmark-ts-native:
+    uses: ./.github/workflows/benchmark-ts-native.yml

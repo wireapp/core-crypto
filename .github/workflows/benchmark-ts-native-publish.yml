@@ -1,0 +1,32 @@
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-benchmark-ts-native-publish"
+  cancel-in-progress: true
+
+on:
+  workflow_call:
+
+permissions:
+  deployments: write
+  contents: write
+
+jobs:
+  publish:
+    name: Publish benchmark result
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download benchmark result
+        uses: actions/download-artifact@v8
+        with:
+          name: benchmark-ts-native-results
+
+      - name: Publish benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: "TS Native Benchmarks"
+          tool: 'customBiggerIsBetter'
+          output-file-path: benches_result.json
+          fail-on-alert: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
