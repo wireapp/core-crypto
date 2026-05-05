@@ -1,6 +1,6 @@
 import { beforeEach, describe } from "mocha";
 import { browser } from "@wdio/globals";
-import { collect_benchmark_results, setup } from "./utils";
+import { collectBenchmarkResults, setup } from "./utils";
 import { messageBenchmarkParameters } from "../../shared/benches/utils";
 
 beforeEach(async () => {
@@ -53,6 +53,6 @@ describe("benchmark", () => {
             })(parameters);
         }, parameters);
 
-        await collect_benchmark_results();
+        await collectBenchmarkResults();
     });
 });

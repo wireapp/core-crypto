@@ -105,7 +105,7 @@ Helper method to:
 2. Retrieve the results
 3. Print results and save them to file if in CI
 */
-export async function collect_benchmark_results() {
+export async function collectBenchmarkResults() {
     // 2. Poll until benchmark is done
     await browser.waitUntil(
         async () => {
