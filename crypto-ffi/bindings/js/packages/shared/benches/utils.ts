@@ -1,5 +1,8 @@
 import type { Task } from "tinybench";
 import { Ciphersuite } from "../src/CoreCrypto";
+import { isNumberObject } from "node:util/types";
+import { mkdir } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 
 export function tinybenchSetup(task?: Task, mode?: string) {
     console.log(`Executing ${mode} ${task?.name}`);
@@ -109,4 +112,88 @@ export async function userBenchmarkParameters(): Promise<UserParameterSet[]> {
     }
 
     return Array.from(benchmarkCombinations()) as UserParameterSet[]; // return as plain array
+}
+
+export type CustomBenchmarkEntry = {
+    name: string;
+    unit: string;
+    value: number;
+    range?: string;
+    extra?: string;
+};
+
+function parseMetric(metric?: string | number) {
+    if (!metric) return null;
+
+    if (isNumberObject(metric)) {
+        return {
+            metric,
+            range: undefined,
+        };
+    } else {
+        const [rawValue, rawRange] = metric
+            .split("±")
+            .map((part) => part.trim());
+
+        const value =
+            rawValue !== undefined ? Number.parseFloat(rawValue) : undefined;
+
+        if (Number.isNaN(value)) return null;
+
+        return {
+            value,
+            range: rawRange,
+        };
+    }
+}
+
+export function toCustomBenchmarkEntries(
+    benchmarkName: string | undefined,
+    rows: (Record<string, string | number | undefined> | null)[]
+): CustomBenchmarkEntry[] {
+    return rows.map((row) => {
+        const throughput = parseMetric(row?.["Throughput avg (ops/s)"]);
+        const extra = [
+            row?.["Latency avg (ns)"]
+                ? `Average Latency (ns): ${row["Latency avg (ns)"]}`
+                : null,
+            row?.["Latency med (ns)"]
+                ? `Median Latency (ns): ${row["Latency med (ns)"]}`
+                : null,
+            row?.["Throughput med (ops/s)"]
+                ? `Median Throughput (ops/s): ${row["Throughput med (ops/s)"]}`
+                : null,
+            row?.["Samples"] !== undefined
+                ? `Samples: ${row["Samples"]}`
+                : null,
+        ]
+            .filter(Boolean)
+            .join("\n");
+
+        return {
+            name: `${benchmarkName} - ${row?.["Task name"]}`,
+            unit: "ops/s",
+            value: throughput?.value ?? 0,
+            range: throughput?.range,
+            extra: extra || undefined,
+        };
+    });
+}
+
+export async function logResults(
+    benchmarkName: string | undefined,
+    rows: (Record<string, string | number | undefined> | null)[]
+) {
+    console.log(benchmarkName);
+    console.table(rows);
+
+    if (!process.env["CI"]) return;
+
+    const customResults = toCustomBenchmarkEntries(benchmarkName, rows);
+
+    await mkdir("benches_result", { recursive: true });
+    await writeFile(
+        `benches_result/${benchmarkName}.json`,
+        JSON.stringify(customResults, null, 2)
+    );
 }
