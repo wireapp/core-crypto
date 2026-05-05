@@ -223,12 +223,13 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         let conversation = self.conversation().await;
 
         let pki_env = auth_service.pki_env();
+        let guard = pki_env.read().await;
         conversation
             .members_with_key()
             .into_iter()
             .filter(|(id, _)| device_ids.iter().any(|client_id| client_id.borrow() == id))
             .map(|(_, c)| {
-                c.extract_identity(conversation.ciphersuite(), pki_env.as_deref())
+                c.extract_identity(conversation.ciphersuite(), guard.as_ref().map(|v| &**v))
                     .map_err(RecursiveError::mls_credential("extracting identity"))
             })
             .collect::<Result<Vec<_>, _>>()
@@ -253,6 +254,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         let user_ids = user_ids.iter().map(|uid| uid.as_bytes()).collect::<Vec<_>>();
 
         let pki_env = auth_service.pki_env();
+        let guard = pki_env.read().await;
         conversation
             .members_with_key()
             .iter()
@@ -261,7 +263,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
             .map(|(uid, c)| {
                 let uid = String::try_from(uid).map_err(RecursiveError::mls_client("getting user identities"))?;
                 let identity = c
-                    .extract_identity(conversation.ciphersuite(), pki_env.as_deref())
+                    .extract_identity(conversation.ciphersuite(), guard.as_ref().map(|v| &**v))
                     .map_err(RecursiveError::mls_credential("extracting identity"))?;
                 Ok((uid, identity))
             })

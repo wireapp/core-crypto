@@ -117,7 +117,7 @@ impl SessionContext {
             .await
             .unwrap();
 
-        let mut core_crypto = CoreCrypto::new(db.clone());
+        let core_crypto = CoreCrypto::new(db.clone());
         let transaction = core_crypto.new_transaction().await.unwrap();
 
         // Setup the X509 PKI environment
@@ -130,9 +130,10 @@ impl SessionContext {
             chain.register_with_central(&transaction).await;
         }
 
-        let pki_env = core_crypto.get_pki_environment().await;
+        let pki_env = core_crypto.get_pki_environment();
+        let guard = pki_env.read().await;
         let session_id = identifier
-            .get_id(pki_env.as_deref())
+            .get_id(guard.as_ref().map(|v| &**v))
             .map_err(RecursiveError::mls_client("getting client id"))?
             .into_owned();
         transaction
@@ -162,7 +163,7 @@ impl SessionContext {
 
     pub(crate) async fn new_from_cc(
         context: &TestContext,
-        mut core_crypto: CoreCrypto,
+        core_crypto: CoreCrypto,
         chain: Option<&X509TestChain>,
     ) -> Self {
         let transport = context.transport.clone();
@@ -301,13 +302,18 @@ impl SessionContext {
                 let signer = signer.expect("Missing intermediate CA");
                 let cert = CertificateBundle::rand(&session_id, signer);
                 let session = self.session.read().await;
-                let pki_env = session.crypto_provider.authentication_service().pki_env().ok_or(
-                    RecursiveError::mls_credential("")(crate::mls::credential::Error::MissingPKIEnvironment),
-                )?;
-                let session_id = cert
-                    .get_client_id(&pki_env)
-                    .expect("Getting client id from certificate bundle");
-
+                let pki_env = session.crypto_provider.authentication_service().pki_env();
+                let session_id = match *pki_env.read().await {
+                    None => {
+                        return Err(RecursiveError::mls_credential("")(
+                            crate::mls::credential::Error::MissingPKIEnvironment,
+                        )
+                        .into());
+                    }
+                    Some(ref pki_env) => cert
+                        .get_client_id(pki_env)
+                        .expect("Getting client id from certificate bundle"),
+                };
                 let credential = Credential::x509(case.ciphersuite(), cert).expect("creating  x509 credential");
 
                 (session_id, credential)

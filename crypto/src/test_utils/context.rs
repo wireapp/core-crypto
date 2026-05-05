@@ -231,13 +231,12 @@ impl SessionContext {
             &expected_credential.mls_credential().mls_credential()
         {
             let session = self.session().await;
-            let pki_env = session
-                .crypto_provider
-                .authentication_service()
-                .pki_env()
-                .expect("PKI environment is set");
+            let pki_env = session.crypto_provider.authentication_service().pki_env();
+            let guard = pki_env.read().await;
+            assert!(guard.as_ref().is_some());
+
             let mls_identity = certificate
-                .extract_identity(case.ciphersuite(), Some(&pki_env))
+                .extract_identity(case.ciphersuite(), guard.as_ref().map(|v| &**v))
                 .unwrap();
             let mls_client_id = mls_identity.client_id.as_bytes();
 
@@ -246,7 +245,7 @@ impl SessionContext {
             let leaf: Vec<u8> = certificate.certificates.first().unwrap().clone().into();
             let identity = leaf
                 .as_slice()
-                .extract_identity(&pki_env, case.ciphersuite().e2ei_hash_alg())
+                .extract_identity(guard.as_ref().unwrap(), case.ciphersuite().e2ei_hash_alg())
                 .unwrap();
             let identity = WireIdentity::try_from((identity, leaf.as_slice())).unwrap();
 
@@ -272,7 +271,7 @@ impl SessionContext {
             let chain = x509_cert::Certificate::load_pem_chain(decrypted_x509_identity.certificate.as_bytes()).unwrap();
             let leaf = chain.first().unwrap();
             let cert_identity = leaf
-                .extract_identity(&pki_env, case.ciphersuite().e2ei_hash_alg())
+                .extract_identity(guard.as_ref().unwrap(), case.ciphersuite().e2ei_hash_alg())
                 .unwrap();
 
             let cert_identity = WireIdentity::try_from((cert_identity, leaf.to_der().unwrap().as_slice())).unwrap();

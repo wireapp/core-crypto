@@ -98,7 +98,7 @@ mod tests {
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
             // phase 1: init without initialized mls_client
-            let mut cc = CoreCrypto::new(db.clone());
+            let cc = CoreCrypto::new(db.clone());
             let context = cc.new_transaction().await.unwrap();
 
             let hooks = Arc::new(DummyPkiEnvironmentHooks);
@@ -115,9 +115,10 @@ mod tests {
                     CertificateBundle::rand_identifier(&session_id, &[x509_test_chain.find_local_intermediate_ca()])
                 }
             };
-            let pki_env = cc.get_pki_environment().await;
+            let pki_env = cc.get_pki_environment();
+            let guard = pki_env.read().await;
             let session_id = identifier
-                .get_id(pki_env.as_deref())
+                .get_id(guard.as_ref().map(|v| &**v))
                 .expect("get session_id from identifier")
                 .into_owned();
             context

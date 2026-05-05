@@ -181,9 +181,10 @@ impl PendingConversation {
             .pki_environment()
             .await
             .map_err(RecursiveError::transaction("getting PKI environment"))?;
+        let guard = pki_env.read().await;
 
         let identity = own_leaf_credential_with_key
-            .extract_identity(conversation.ciphersuite(), pki_env.as_deref())
+            .extract_identity(conversation.ciphersuite(), guard.as_ref().map(|v| &**v))
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         Ok(MlsDecryptMessage {

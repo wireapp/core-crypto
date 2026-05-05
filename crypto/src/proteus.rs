@@ -624,10 +624,10 @@ mod tests {
             .await
             .unwrap();
 
-        let mut cc: CoreCrypto = CoreCrypto::new(db.clone());
+        let cc: CoreCrypto = CoreCrypto::new(db.clone());
         let hooks = Arc::new(DummyPkiEnvironmentHooks);
-        let pki_env = Arc::new(PkiEnvironment::new(hooks, db).await.expect("creating pki environment"));
-        cc.set_pki_environment(Some(pki_env)).await;
+        let pki_env = PkiEnvironment::new(hooks, db).await.expect("creating pki environment");
+        cc.set_pki_environment(Some(Arc::new(pki_env))).await;
         let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(&transaction).await;
@@ -643,9 +643,10 @@ mod tests {
                 CertificateBundle::rand_identifier(&session_id, &[x509_test_chain.find_local_intermediate_ca()])
             }
         };
-        let pki_env = cc.get_pki_environment().await.unwrap();
+        let pki_env = cc.get_pki_environment();
+        let guard = pki_env.read().await;
         let session_id = identifier
-            .get_id(Some(&pki_env))
+            .get_id(guard.as_ref().map(|v| &**v))
             .expect("Getting session id from identifier")
             .into_owned();
         transaction.mls_init(session_id, transport).await.unwrap();
