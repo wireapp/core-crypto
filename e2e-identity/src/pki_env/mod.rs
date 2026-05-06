@@ -172,9 +172,7 @@ impl PkiEnvironment {
             content: cert.to_der()?,
         };
 
-        self.database.new_transaction().await?;
         self.database.save(cert_data).await?;
-        self.database.commit_transaction().await?;
 
         let mut trust_anchors = TaSource::new();
         trust_anchors.push(certval::CertFile {
@@ -206,7 +204,6 @@ impl PkiEnvironment {
             ski_aki_pair,
         };
 
-        self.database.new_transaction().await?;
         self.database.save(intermediate_cert).await?;
 
         // Get CRL distribution points and CRLs
@@ -217,8 +214,6 @@ impl PkiEnvironment {
         for (distribution_point, crl) in &crls {
             self.save_crl(distribution_point, crl).await?;
         }
-
-        self.database.commit_transaction().await?;
 
         let cps = CertificationPathSettings::new();
         let mut cert_source = CertSource::new();
