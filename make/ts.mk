@@ -154,6 +154,12 @@ $(TS_NATIVE_OUT) &: $(ts-native-deps)
 		--library \
 		--ts-dir $(abspath $(TS_NATIVE_GEN_DIR)) \
 		$(TS_NATIVE_FFI_LIB) && \
+	perl -0pi \
+		-e 's#import \{ createRequire \} from "node:module";\n\n' \
+		-e 'const require = createRequire\(import\.meta\.url\);\n' \
+		-e 'const lib = require\("uniffi-bindgen-react-native/runtimes/napi/lib\.js"\);' \
+		-e '#import lib from "../runtime/uniffiRuntime";#' \
+		$(abspath $(TS_NATIVE_GEN_DIR))/core_crypto_ffi-ffi.ts && \
 	cd $(abspath $(JS_DIR)) && \
 	bun build packages/native/src/CoreCrypto.ts \
 	  --conditions=cc-native \
