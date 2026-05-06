@@ -87,7 +87,7 @@ final class WireCoreCryptoTests: XCTestCase {
         var coreCrypto = try CoreCrypto(database: database)
 
         let clientId = ClientId(bytes: UUID().uuidString.data(using: .utf8)!)
-        let ciphersuite = Ciphersuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
+        let ciphersuite = CipherSuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
 
         let credential = try Credential.basic(ciphersuite: ciphersuite, clientId: clientId)
 
@@ -437,10 +437,10 @@ final class WireCoreCryptoTests: XCTestCase {
 
     func testCanSearchCredentialsByCiphersuite() async throws {
         let clientId = genClientId()
-        let ciphersuite1 = Ciphersuite.mls128Dhkemp256Aes128gcmSha256P256
+        let ciphersuite1 = CipherSuite.mls128Dhkemp256Aes128gcmSha256P256
         let credential1 = try Credential.basic(ciphersuite: ciphersuite1, clientId: clientId)
 
-        let ciphersuite2 = Ciphersuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
+        let ciphersuite2 = CipherSuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
         let credential2 = try Credential.basic(ciphersuite: ciphersuite2, clientId: clientId)
 
         let alice = try await createCoreCrypto()
