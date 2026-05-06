@@ -24,6 +24,30 @@ if (runtimeNodeName === undefined) {
 
 const require = createRequire(import.meta.url);
 const here = dirname(fileURLToPath(import.meta.url));
-const runtime = require(join(here, runtimeNodeName));
+const native = require(join(here, runtimeNodeName));
 
-export default runtime;
+export default {
+    ...native,
+    FfiType: {
+        UInt8: { tag: "UInt8" },
+        Int8: { tag: "Int8" },
+        UInt16: { tag: "UInt16" },
+        Int16: { tag: "Int16" },
+        UInt32: { tag: "UInt32" },
+        Int32: { tag: "Int32" },
+        UInt64: { tag: "UInt64" },
+        Int64: { tag: "Int64" },
+        Float32: { tag: "Float32" },
+        Float64: { tag: "Float64" },
+        Handle: { tag: "Handle" },
+        RustBuffer: { tag: "RustBuffer" },
+        ForeignBytes: { tag: "ForeignBytes" },
+        RustCallStatus: { tag: "RustCallStatus" },
+        VoidPointer: { tag: "VoidPointer" },
+        Void: { tag: "Void" },
+        Callback: (name: string) => ({ tag: "Callback", name }),
+        Struct: (name: string) => ({ tag: "Struct", name }),
+        Reference: (inner: unknown) => ({ tag: "Reference", inner }),
+        MutReference: (inner: unknown) => ({ tag: "MutReference", inner }),
+    },
+};
