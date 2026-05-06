@@ -197,13 +197,6 @@ impl PkiEnvironment {
         Ok(())
     }
 
-    #[inline]
-    #[deprecated = "This method is not to be used as it causes spurious verification failures because of re-encoding the DER repr of the CRL. Use `validate_crl_with_raw`"]
-    pub fn validate_crl(&self, crl: &x509_cert::crl::CertificateList) -> RustyX509CheckResult<()> {
-        let _ = self.validate_crl_with_raw(&crl.to_der()?)?;
-        Ok(())
-    }
-
     pub fn validate_crl_with_raw(&self, crl_raw: &[u8]) -> RustyX509CheckResult<x509_cert::crl::CertificateList> {
         let crl = x509_cert::crl::CertificateList::from_der(crl_raw)?;
 
