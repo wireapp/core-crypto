@@ -22,7 +22,7 @@ jobs:
           name: benchmark-ts-browser-results
 
       - name: Publish benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
+        uses: benchmark-action/github-action-benchmark@v1.22.0
         with:
           name: "Browser Benchmarks"
           tool: 'customBiggerIsBetter'

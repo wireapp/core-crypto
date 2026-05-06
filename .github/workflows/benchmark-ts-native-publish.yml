@@ -22,7 +22,7 @@ jobs:
           name: benchmark-ts-native-results
 
       - name: Publish benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
+        uses: benchmark-action/github-action-benchmark@v1.22.0
         with:
           name: "TS Native Benchmarks"
           tool: 'customBiggerIsBetter'

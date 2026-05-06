@@ -23,7 +23,7 @@ jobs:
           path: crypto-ffi/bindings/jvm/build/reports/jmh
 
       - name: Publish benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
+        uses: benchmark-action/github-action-benchmark@v1.22.0
         with:
           name: "JVM Benchmarks"
           tool: 'jmh'
