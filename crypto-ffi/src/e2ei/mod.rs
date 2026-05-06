@@ -157,7 +157,7 @@ impl X509CredentialAcquisition {
     ) -> CoreCryptoResult<Self> {
         let ciphersuite = config.ciphersuite;
         let inner = wire_e2e_identity::X509CredentialAcquisition::try_new(
-            Arc::new(pki_environment.as_ref().clone().into()),
+            pki_environment.clone_inner(),
             config.try_into_core()?,
         )?;
 
