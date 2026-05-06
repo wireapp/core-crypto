@@ -39,7 +39,7 @@ open class JoinGroup {
             val aliceCc = initCc()
             aliceCc.transaction {
                 it.mlsInit(aliceId, mockTransportProvider)
-                val credentialRef = it.addCredential(Credential.basic(Ciphersuite.valueOf(cipherSuite), aliceId))
+                val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
                 it.createConversation(conversationId, credentialRef, null)
             }
 
@@ -51,7 +51,7 @@ open class JoinGroup {
                     val bobCc = initCc()
                     val kp = bobCc.transaction {
                         it.mlsInit(bobId, mockTransportProvider)
-                        val credentialRef = it.addCredential(Credential.basic(Ciphersuite.valueOf(cipherSuite), bobId))
+                        val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), bobId))
                         it.generateKeyPackage(credentialRef)
                     }
                     keyPackages.add(kp)
@@ -65,7 +65,7 @@ open class JoinGroup {
             charlieCc = initCc()
             val kp = charlieCc.transaction {
                 it.mlsInit(charlieId, mockTransportProvider)
-                val credentialRef = it.addCredential(Credential.basic(Ciphersuite.valueOf(cipherSuite), charlieId))
+                val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), charlieId))
                 it.generateKeyPackage(credentialRef)
             }
 

@@ -569,11 +569,11 @@ class MLSTest : HasMockDeliveryService() {
         val scope = TestScope()
         return scope.runTest {
             val clientId = genClientId()
-            val ciphersuite1 = Ciphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+            val ciphersuite1 = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
             val credential1 = Credential.basic(ciphersuite1, clientId)
 
             val ciphersuite2 =
-                Ciphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519
+                CipherSuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519
             val credential2 = Credential.basic(ciphersuite2, clientId)
 
             val cc = initCc()
@@ -728,11 +728,11 @@ class MLSTest : HasMockDeliveryService() {
         return scope.runTest {
             val clientId = genClientId()
             val credential1 = Credential.basic(
-                Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
+                CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
                 clientId
             )
             val credential2 = Credential.basic(
-                Ciphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
+                CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
                 clientId
             )
 

@@ -41,7 +41,7 @@ open class RemoveUser {
             aliceCc = initCc()
             aliceCc.transaction {
                 it.mlsInit(aliceId, mockTransportProvider)
-                val credentialRef = it.addCredential(Credential.basic(Ciphersuite.valueOf(cipherSuite), aliceId))
+                val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
                 it.createConversation(conversationId, credentialRef, null)
             }
 
@@ -53,7 +53,7 @@ open class RemoveUser {
                 val bobCc = initCc()
                 val kp = bobCc.transaction {
                     it.mlsInit(bobId, mockTransportProvider)
-                    val credentialRef = it.addCredential(Credential.basic(Ciphersuite.valueOf(cipherSuite), bobId))
+                    val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), bobId))
                     it.generateKeyPackage(credentialRef)
                 }
                 keyPackages.add(kp)

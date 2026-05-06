@@ -42,7 +42,7 @@ open class CreateMessage {
         cc = initCc()
         cc.transaction {
             it.mlsInit(aliceId, MockMlsTransportSuccessProvider())
-            val credentialRef = it.addCredential(Credential.basic(Ciphersuite.valueOf(cipherSuite), aliceId))
+            val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
             it.createConversation(conversationId, credentialRef, null)
         }
         messages = List(messageCount) {
