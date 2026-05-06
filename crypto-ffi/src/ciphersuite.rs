@@ -4,7 +4,7 @@
 //! it doesn't work on newtypes around external enums. We therefore redefine the ciphersuites enum
 //! here with appropriate annotations such that it gets exported to all relevant bindings.
 
-use core_crypto::{CipherSuite as CryptoCiphersuite, MlsCiphersuite};
+use core_crypto::{CipherSuite as CryptoCipherSuite, MlsCiphersuite as MlsCipherSuite};
 
 use crate::{CoreCryptoError, CoreCryptoResult};
 
@@ -39,7 +39,7 @@ pub enum CipherSuite {
     MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
 }
 
-impl From<CipherSuite> for MlsCiphersuite {
+impl From<CipherSuite> for MlsCipherSuite {
     #[inline]
     fn from(value: CipherSuite) -> Self {
         (value as u16)
@@ -48,26 +48,26 @@ impl From<CipherSuite> for MlsCiphersuite {
     }
 }
 
-impl From<MlsCiphersuite> for CipherSuite {
+impl From<MlsCipherSuite> for CipherSuite {
     #[inline]
-    fn from(value: MlsCiphersuite) -> Self {
+    fn from(value: MlsCipherSuite) -> Self {
         (value as u16)
             .try_into()
             .expect("mls Ciphersuite is a subset of ffi Ciphersuite")
     }
 }
 
-impl From<CipherSuite> for CryptoCiphersuite {
+impl From<CipherSuite> for CryptoCipherSuite {
     #[inline]
     fn from(value: CipherSuite) -> Self {
-        MlsCiphersuite::from(value).into()
+        MlsCipherSuite::from(value).into()
     }
 }
 
-impl From<CryptoCiphersuite> for CipherSuite {
+impl From<CryptoCipherSuite> for CipherSuite {
     #[inline]
-    fn from(value: CryptoCiphersuite) -> Self {
-        MlsCiphersuite::from(value).into()
+    fn from(value: CryptoCipherSuite) -> Self {
+        MlsCipherSuite::from(value).into()
     }
 }
 

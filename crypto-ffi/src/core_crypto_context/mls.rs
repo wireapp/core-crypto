@@ -1,7 +1,7 @@
 use std::{fmt, sync::Arc, time::Duration};
 
 use core_crypto::{
-    CipherSuite as CryptoCiphersuite, CredentialFindFilters, MlsConversationConfiguration,
+    CipherSuite as CryptoCipherSuite, CredentialFindFilters, MlsConversationConfiguration,
     mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
 };
 use core_crypto_keystore::Sha256Hash;
@@ -469,7 +469,7 @@ impl CoreCryptoContext {
     ) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
         let client_id = client_id.as_ref().map(|c| c.as_ref().as_ref());
 
-        let ciphersuite = ciphersuite.map(CryptoCiphersuite::from);
+        let ciphersuite = ciphersuite.map(CryptoCipherSuite::from);
 
         let credential_type = credential_type.map(core_crypto::CredentialType::from);
 
