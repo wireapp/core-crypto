@@ -8,7 +8,7 @@ import {
 
 export interface CredentialFindFilters {
     clientId?: ClientId;
-    publicKey?: ArrayBuffer;
+    publicKey?: Uint8Array;
     ciphersuite?: Ciphersuite;
     credentialType?: CredentialType;
     earliestValidity?: bigint;
@@ -47,7 +47,7 @@ export class CoreCryptoContext extends CoreCryptoContextFfi {
      */
     async findCredentialsFfi(
         clientId?: ClientId,
-        publicKey?: ArrayBuffer,
+        publicKey?: Uint8Array,
         ciphersuite?: Ciphersuite,
         credentialType?: CredentialType,
         earliestValidity?: bigint,
