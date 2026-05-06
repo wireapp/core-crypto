@@ -225,6 +225,12 @@ impl pki_env::hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
 #[derive(uniffi::Object)]
 pub struct PkiEnvironment(Arc<wire_e2e_identity::pki_env::PkiEnvironment>);
 
+impl PkiEnvironment {
+    pub(crate) fn clone_inner(&self) -> Arc<wire_e2e_identity::pki_env::PkiEnvironment> {
+        self.0.clone()
+    }
+}
+
 #[cfg_attr(feature = "wasm", uniffi::export)]
 impl PkiEnvironment {
     /// Create a new PKI environment.
