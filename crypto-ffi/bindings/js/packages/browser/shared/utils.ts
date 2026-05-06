@@ -10,11 +10,11 @@ import {
     type KeyPackage,
     type MlsTransport,
     type MlsTransportData,
+    Database
 } from "@wireapp/core-crypto/browser";
 
 import { browser } from "@wdio/globals";
 import type { local } from "webdriver";
-import type { Database } from "#core-crypto-ffi";
 
 // Logging can be adjusted via the CC_TEST_LOG_LEVEL variable:
 // 0 = no logs
@@ -504,14 +504,14 @@ export interface LogEntry {
 
 type CcInitOptions =
     | {
-          withBasicCredential: false;
-          clientId?: ClientId;
-      }
+        withBasicCredential: false;
+        clientId?: ClientId;
+    }
     | {
-          withBasicCredential?: true;
-          cipherSuite?: Ciphersuite;
-          clientId?: ClientId;
-      };
+        withBasicCredential?: true;
+        cipherSuite?: Ciphersuite;
+        clientId?: ClientId;
+    };
 
 export interface Helpers {
     newClientId(clientIdStr?: string): ClientId;
