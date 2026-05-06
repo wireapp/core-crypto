@@ -43,7 +43,7 @@ describe("key package", () => {
                 const wasDefined = bytes !== null && bytes !== undefined;
                 const wasEmpty = bytes.byteLength === 0;
 
-                const kp2 = new window.ccModule.KeyPackage(bytes.buffer);
+                const kp2 = new window.ccModule.KeyPackage(bytes);
                 const bytes2 = new Uint8Array(kp2.serialize());
 
                 // JS in the browser doesn't have a natural way to compare Uint8Arrays,

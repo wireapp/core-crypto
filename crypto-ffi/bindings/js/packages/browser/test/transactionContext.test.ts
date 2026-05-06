@@ -73,7 +73,7 @@ describe("transaction context", () => {
             const cc = await window.helpers.ccInit();
             const basicCredentialType = window.ccModule.CredentialType.Basic;
             const conversationId = new window.ccModule.ConversationId(
-                new TextEncoder().encode("testConversation").buffer
+                new TextEncoder().encode("testConversation")
             );
             const CoreCryptoError = window.ccModule.CoreCryptoError;
             const MlsError = window.ccModule.MlsError;

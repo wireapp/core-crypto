@@ -40,7 +40,7 @@ describe("benchmark", () => {
                                 for (let i = 0; i < count; i++) {
                                     await ctx.encryptMessage(
                                         conversationId,
-                                        message!.buffer
+                                        message
                                     );
                                 }
                             });

@@ -130,10 +130,7 @@ describe("logger", () => {
 
             const encryptedMessage = await alice.transaction(
                 async (ctx) =>
-                    await ctx.encryptMessage(
-                        conversationId,
-                        messageBytes.buffer
-                    )
+                    await ctx.encryptMessage(conversationId, messageBytes)
             );
 
             await bob.transaction(

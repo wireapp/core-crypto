@@ -20,7 +20,7 @@ describe("credentials", () => {
     test("basic credential can be created", async () => {
         const credential = Credential.basic(
             ciphersuiteDefault(),
-            new ClientId(Buffer.from("any random client id here").buffer)
+            new ClientId(Buffer.from("any random client id here"))
         );
         expect(credential.type()).toEqual(CredentialType.Basic);
         expect(credential.earliestValidity()).toEqual(0n);
@@ -58,9 +58,7 @@ describe("credentials", () => {
     });
 
     test("credentials can be searched", async () => {
-        const clientId = new ClientId(
-            Buffer.from("any random client id here").buffer
-        );
+        const clientId = new ClientId(Buffer.from("any random client id here"));
         const ciphersuite1 = Ciphersuite.Mls128Dhkemp256Aes128gcmSha256P256;
         const credential1 = Credential.basic(ciphersuite1, clientId);
 

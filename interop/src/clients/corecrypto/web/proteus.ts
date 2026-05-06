@@ -31,7 +31,7 @@ export async function getPrekey() {
 
 export async function sessionFromPrekey() {
     const [sessionId, prekey] = arguments;
-    const prekeyBuffer = Uint8Array.from(Object.values(prekey)).buffer;
+    const prekeyBuffer = Uint8Array.from(Object.values(prekey));
     await window.cc.transaction((ctx) =>
         ctx.proteusSessionFromPrekey(sessionId, prekeyBuffer)
     );
@@ -39,7 +39,7 @@ export async function sessionFromPrekey() {
 
 export async function sessionFromMessage() {
     const [sessionId, message] = arguments;
-    const messageBuffer = Uint8Array.from(Object.values(message)).buffer;
+    const messageBuffer = Uint8Array.from(Object.values(message));
     return new Uint8Array(await window.cc.transaction((ctx) =>
         ctx.proteusSessionFromMessage(sessionId, messageBuffer)
     ));
@@ -47,7 +47,7 @@ export async function sessionFromMessage() {
 
 export async function encrypt() {
     const [sessionId, plaintext] = arguments;
-    const plaintextBuffer = Uint8Array.from(Object.values(plaintext)).buffer;
+    const plaintextBuffer = Uint8Array.from(Object.values(plaintext));
     return new Uint8Array(await window.cc.transaction((ctx) =>
         ctx.proteusEncrypt(sessionId, plaintextBuffer)
     ));
@@ -55,7 +55,7 @@ export async function encrypt() {
 
 export async function decrypt() {
     const [sessionId, ciphertext] = arguments;
-    const ciphertextBuffer = Uint8Array.from(Object.values(ciphertext)).buffer;
+    const ciphertextBuffer = Uint8Array.from(Object.values(ciphertext));
     return new Uint8Array(await window.cc.transaction((ctx) =>
         ctx.proteusDecrypt(sessionId, ciphertextBuffer)
     ));

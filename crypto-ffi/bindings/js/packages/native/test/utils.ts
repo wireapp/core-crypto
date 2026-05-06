@@ -76,7 +76,7 @@ export async function setup() {
 async function openTestDatabase(databaseName?: string) {
     const keyBytes = new Uint8Array(32);
     crypto.getRandomValues(keyBytes);
-    const key = new DatabaseKey(keyBytes.buffer);
+    const key = new DatabaseKey(keyBytes);
     const location = databaseName ?? `bun-test-db-${crypto.randomUUID()}`;
 
     const database = await Database.open(location, key);
@@ -162,12 +162,12 @@ export async function generateKeyPackage(
 
 export function randomConversationId(): ConversationId {
     const uuid = crypto.randomUUID();
-    return new ConversationId(Uint8Array.from(uuid).buffer);
+    return new ConversationId(Uint8Array.from(uuid));
 }
 
 export function randomClientId(): ClientId {
     const uuid = crypto.randomUUID();
-    return new ClientId(Uint8Array.from(uuid).buffer);
+    return new ClientId(Uint8Array.from(uuid));
 }
 
 /**
@@ -241,8 +241,8 @@ export async function roundTripMessage(
     cc1: CoreCrypto,
     cc2: CoreCrypto,
     conversationId: ConversationId,
-    message: ArrayBuffer
-): Promise<(ArrayBuffer | null)[]> {
+    message: Uint8Array
+): Promise<(Uint8Array | null)[]> {
     const encryptedByClient1 = await cc1.transaction(async (ctx) => {
         return await ctx.encryptMessage(conversationId, message);
     });
@@ -335,8 +335,8 @@ export async function newProteusSessionFromMessage(
     cc1: CoreCrypto,
     cc2: CoreCrypto,
     sessionId: string,
-    messageBytes: ArrayBuffer
-): Promise<ArrayBuffer> {
+    messageBytes: Uint8Array
+): Promise<Uint8Array> {
     const encrypted = await cc1.transaction(async (ctx) => {
         return await ctx.proteusEncrypt(sessionId, messageBytes);
     });

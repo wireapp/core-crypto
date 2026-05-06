@@ -20,12 +20,12 @@ describe("database", () => {
 
                 await window.ccModule.Database.open(
                     databaseName,
-                    new window.ccModule.DatabaseKey(key.buffer)
+                    new window.ccModule.DatabaseKey(key)
                 );
 
                 const db = await window.ccModule.Database.open(
                     databaseName,
-                    new window.ccModule.DatabaseKey(key.buffer)
+                    new window.ccModule.DatabaseKey(key)
                 );
 
                 return { dbIsDefined: db !== undefined };
@@ -42,7 +42,7 @@ describe("database", () => {
 
                 const db = await window.ccModule.Database.open(
                     databaseName,
-                    new window.ccModule.DatabaseKey(key.buffer)
+                    new window.ccModule.DatabaseKey(key)
                 );
 
                 return {
@@ -55,7 +55,7 @@ describe("database", () => {
     it("key must have correct length", async () => {
         await expect(
             browser.execute(async () => {
-                new window.ccModule.DatabaseKey(new Uint8Array(11).buffer);
+                new window.ccModule.DatabaseKey(new Uint8Array(11));
             })
         ).rejects.toThrow();
     });
@@ -68,7 +68,7 @@ describe("database", () => {
 
                 const database = await window.ccModule.Database.open(
                     databaseName,
-                    new window.ccModule.DatabaseKey(key.buffer)
+                    new window.ccModule.DatabaseKey(key)
                 );
 
                 await database.close();
@@ -89,12 +89,12 @@ describe("database", () => {
 
             const makeClientId = () => {
                 const array = new Uint8Array([1, 2]);
-                return new window.ccModule.ClientId(array.buffer);
+                return new window.ccModule.ClientId(array);
             };
 
             const keyBytes = new Uint8Array(32);
             window.crypto.getRandomValues(keyBytes);
-            const key = new window.ccModule.DatabaseKey(keyBytes.buffer);
+            const key = new window.ccModule.DatabaseKey(keyBytes);
 
             const database = await window.ccModule.Database.open(
                 databaseName,
@@ -115,7 +115,7 @@ describe("database", () => {
 
             const newKeyBytes = new Uint8Array(32);
             window.crypto.getRandomValues(newKeyBytes);
-            const newKey = new window.ccModule.DatabaseKey(newKeyBytes.buffer);
+            const newKey = new window.ccModule.DatabaseKey(newKeyBytes);
 
             try {
                 await database.updateKey(newKey);
@@ -191,9 +191,7 @@ describe("database", () => {
 
             // Migrate the whole database to use the new key type.
             const old_key = clientName;
-            const new_key = new window.ccModule.DatabaseKey(
-                new Uint8Array(32).buffer
-            );
+            const new_key = new window.ccModule.DatabaseKey(new Uint8Array(32));
             await window.ccModule.migrateDatabaseKeyTypeToBytes(
                 clientName,
                 old_key,
@@ -210,9 +208,7 @@ describe("database", () => {
             const instance = window.ccModule.CoreCrypto.new(database);
             const epoch = await instance.transaction(async (ctx) => {
                 return await ctx.conversationEpoch(
-                    new window.ccModule.ConversationId(
-                        encoder.encode("convId").buffer
-                    )
+                    new window.ccModule.ConversationId(encoder.encode("convId"))
                 );
             });
             return epoch;

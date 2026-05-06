@@ -33,7 +33,7 @@ describe("key package", () => {
         expect(bytes).not.toBeEmpty();
 
         // roundtrip
-        const kp2 = new KeyPackage(bytes.buffer);
+        const kp2 = new KeyPackage(bytes);
         const bytes2 = new Uint8Array(kp2.serialize());
 
         expect(bytes2).toEqual(bytes);
@@ -76,9 +76,7 @@ describe("key package", () => {
     });
 
     test("can be removed by credentialref", async () => {
-        const clientId = new ClientId(
-            Buffer.from("any random client id here").buffer
-        );
+        const clientId = new ClientId(Buffer.from("any random client id here"));
         const credential1 = Credential.basic(
             Ciphersuite.Mls128Dhkemx25519Aes128gcmSha256Ed25519,
             clientId

@@ -17,10 +17,10 @@ describe("set_data()", () => {
             const cc = await window.helpers.ccInit();
             const encoder = new TextEncoder();
             const data = encoder.encode(text);
-            let dbResultBeforeSet: ArrayBuffer | undefined;
+            let dbResultBeforeSet: Uint8Array | undefined;
             await cc.transaction(async (ctx) => {
                 dbResultBeforeSet = await ctx.getData();
-                await ctx.setData(data.buffer);
+                await ctx.setData(data);
             });
             const dbResultAfterSet = await cc.transaction(async (ctx) => {
                 return await ctx.getData();

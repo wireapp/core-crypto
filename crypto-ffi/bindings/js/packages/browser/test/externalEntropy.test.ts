@@ -32,7 +32,7 @@ describe("external entropy", () => {
                 const cc = await window.helpers.ccInit();
                 // Null byte seed
                 const seed = new Uint8Array(32);
-                await cc.reseed(seed.buffer);
+                await cc.reseed(seed);
 
                 const produced1 = await cc.randomBytes(length1);
                 const produced2 = await cc.randomBytes(length2);

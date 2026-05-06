@@ -51,12 +51,12 @@ describe("benchmark", () => {
                         async () => {
                             const encryptedMessages = await aliceCc.transaction(
                                 async (ctx) => {
-                                    const encryptedMessages: ArrayBuffer[] = [];
+                                    const encryptedMessages: Uint8Array[] = [];
                                     for (let i = 0; i < count; i++) {
                                         const encryptedMessage =
                                             await ctx.encryptMessage(
                                                 conversationId,
-                                                message.buffer
+                                                message
                                             );
 
                                         encryptedMessages.push(

@@ -45,7 +45,7 @@ async function run() {
 
                 for (let i = 0; i < userCount; i++) {
                     const bobId = new ClientId(
-                        Buffer.from(crypto.randomUUID()).buffer
+                        Buffer.from(crypto.randomUUID())
                     );
                     const bobCc = await ccInit({
                         withBasicCredential: true,

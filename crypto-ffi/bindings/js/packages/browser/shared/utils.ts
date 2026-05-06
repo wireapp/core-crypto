@@ -79,7 +79,7 @@ export async function sharedSetup() {
                 }
                 const encoder = new TextEncoder();
                 return new window.ccModule.ClientId(
-                    encoder.encode(clientIdStr).buffer
+                    encoder.encode(clientIdStr)
                 );
             }
 
@@ -90,7 +90,7 @@ export async function sharedSetup() {
                 const conversationIdStr = window.crypto.randomUUID();
                 const encoder = new TextEncoder();
                 return new window.ccModule.ConversationId(
-                    encoder.encode(conversationIdStr).buffer
+                    encoder.encode(conversationIdStr)
                 );
             }
 
@@ -99,7 +99,7 @@ export async function sharedSetup() {
                 window.crypto.getRandomValues(key);
                 return window.ccModule.Database.open(
                     crypto.randomUUID(),
-                    new window.ccModule.DatabaseKey(key.buffer)
+                    new window.ccModule.DatabaseKey(key)
                 );
             }
 
@@ -339,7 +339,7 @@ export async function sharedSetup() {
                     async (ctx) => {
                         return await ctx.encryptMessage(
                             conversationId,
-                            messageBytes.buffer
+                            messageBytes
                         );
                     }
                 );
@@ -356,7 +356,7 @@ export async function sharedSetup() {
                     async (ctx) => {
                         return await ctx.encryptMessage(
                             conversationId,
-                            messageBytes.buffer
+                            messageBytes
                         );
                     }
                 );
@@ -399,7 +399,7 @@ export async function sharedSetup() {
 
                 const database = await window.ccModule.Database.open(
                     databaseLocation,
-                    new window.ccModule.DatabaseKey(key.buffer)
+                    new window.ccModule.DatabaseKey(key)
                 );
 
                 const instance = window.ccModule.CoreCrypto.new(database);
@@ -464,10 +464,7 @@ export async function sharedSetup() {
                 const encoder = new TextEncoder();
                 const messageBytes = encoder.encode(message);
                 const encrypted = await cc1.transaction(async (ctx) => {
-                    return await ctx.proteusEncrypt(
-                        sessionId,
-                        messageBytes.buffer
-                    );
+                    return await ctx.proteusEncrypt(sessionId, messageBytes);
                 });
 
                 const decrypted = await cc2.transaction(async (ctx) => {

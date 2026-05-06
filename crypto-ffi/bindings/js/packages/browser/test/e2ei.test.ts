@@ -30,7 +30,7 @@ describe("PKI environment", () => {
             window.crypto.getRandomValues(key);
             const database = await window.ccModule.Database.open(
                 crypto.randomUUID(),
-                new window.ccModule.DatabaseKey(key.buffer)
+                new window.ccModule.DatabaseKey(key)
             );
             pkiEnv = await window.ccModule.PkiEnvironment.create(
                 window.pkiEnvironmentHooks,
@@ -54,7 +54,7 @@ describe("PKI environment", () => {
             window.crypto.getRandomValues(key);
             const database = await window.ccModule.Database.open(
                 window.crypto.randomUUID(),
-                new window.ccModule.DatabaseKey(key.buffer)
+                new window.ccModule.DatabaseKey(key)
             );
 
             const cc = window.ccModule.CoreCrypto.new(database);

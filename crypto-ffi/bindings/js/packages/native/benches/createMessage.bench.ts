@@ -29,10 +29,7 @@ async function run() {
             async () => {
                 await cc.transaction(async (ctx) => {
                     for (let i = 0; i < count; i++) {
-                        await ctx.encryptMessage(
-                            conversationId,
-                            message.buffer
-                        );
+                        await ctx.encryptMessage(conversationId, message);
                     }
                 });
             }

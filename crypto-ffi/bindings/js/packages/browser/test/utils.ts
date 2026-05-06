@@ -41,13 +41,13 @@ export async function setup() {
                 _method: HttpMethod,
                 _url: string,
                 _headers: Array<HttpHeader>,
-                _body: ArrayBuffer
+                _body: Uint8Array
             ) {
                 // return a HttpResponse
                 return {
                     status: 200,
                     headers: [],
-                    body: new Uint8Array().buffer,
+                    body: new Uint8Array(),
                 };
             },
 
