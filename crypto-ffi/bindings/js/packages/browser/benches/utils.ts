@@ -1,6 +1,6 @@
 import { browser } from "@wdio/globals";
 import type { Bench } from "tinybench";
-import { type CommitBundle } from "@wireapp/core-crypto/browser";
+import type { CommitBundle } from "@wireapp/core-crypto/browser";
 import {
     sharedSetup,
     type Helpers,

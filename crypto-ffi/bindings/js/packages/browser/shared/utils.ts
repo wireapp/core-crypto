@@ -1,15 +1,15 @@
-import {
+import type {
     Ciphersuite,
-    type ClientId,
-    type CommitBundle,
-    type ConversationId,
-    type CoreCrypto,
-    type CoreCryptoLogLevel,
-    type GroupInfoBundle,
-    type HistorySecret,
-    type KeyPackage,
-    type MlsTransport,
-    type MlsTransportData,
+    ClientId,
+    CommitBundle,
+    ConversationId,
+    CoreCrypto,
+    CoreCryptoLogLevel,
+    GroupInfoBundle,
+    HistorySecret,
+    KeyPackage,
+    MlsTransport,
+    MlsTransportData,
 } from "@wireapp/core-crypto/browser";
 
 import { browser } from "@wdio/globals";

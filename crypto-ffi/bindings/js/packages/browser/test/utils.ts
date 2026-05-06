@@ -1,9 +1,9 @@
 import { browser } from "@wdio/globals";
 
-import {
+import type {
     Ciphersuite,
-    type CommitBundle,
-    type PkiEnvironmentHooks,
+    CommitBundle,
+    PkiEnvironmentHooks,
     HttpMethod,
     HttpHeader,
 } from "@wireapp/core-crypto/browser";
