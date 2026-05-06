@@ -72,7 +72,7 @@ ts-clean: ## Cleanup old TypeScript build outputs
 	&& rm -rf $(WASM_TARGET_DIR) \
 	&& rm -rf $(JS_DIR)/rust_modules
 
-ubrn-deps := $(RUST_SOURCES)
+ubrn-deps := $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES)
 $(WASM_FFI_LIB) $(BROWSER_TS_IMPL) $(RUST_MODULES_STAMP) &: $(ubrn-deps)
 	cd $(JS_DIR) && $(WASM_BUILD_ENV) bun ubrn build web --no-wasm-pack
 	touch $(RUST_MODULES_STAMP)
