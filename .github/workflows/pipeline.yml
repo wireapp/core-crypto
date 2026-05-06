@@ -240,11 +240,21 @@ jobs:
       - bindings-ts-native-linux
     uses: ./.github/workflows/docs-ts.yml
 
-  benchmark-ts:
+  benchmark-ts-browser:
     needs:
       - bindings-ts-browser
-      - bindings-ts-native-linux
     uses: ./.github/workflows/benchmark-ts-browser.yml
+    with:
+      publish: false
+      benchmark_message_counts: "1"
+      benchmark_message_sizes: "16"
+      benchmark_user_counts: "1"
+      benchmark_cipher_suites: "Mls128Dhkemx25519Aes128gcmSha256Ed25519"
+
+  benchmark-ts-native:
+    needs:
+      - bindings-ts-native-darwin
+    uses: ./.github/workflows/benchmark-ts-native.yml
     with:
       publish: false
       benchmark_message_counts: "1"
