@@ -20,3 +20,4 @@ generate_module_map = false
 
 [bindings.typescript]
 strictObjectTypes = true
+strictByteArrays = true
