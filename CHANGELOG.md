@@ -200,6 +200,12 @@
 
   Affected platforms: all
 
+- We aligned cipher suite spelling to CipherSuite
+
+  - renamed `Ciphersuite` -> `CipherSuite`
+
+  Affected platforms: all
+
 - Removed `WelcomeBundle` type that was returned from `processWelcomeMessage()` and `joinByExternalCommit()`. They
   return a `ConversationId` now only.
 

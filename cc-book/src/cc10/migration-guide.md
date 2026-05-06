@@ -32,6 +32,10 @@ the sub-pages:
    - renamed `removeKeypackage` → `removeKeyPackage`
    - renamed `removeKeypackagesFor` → `removeKeyPackagesFor`
 
+1. We aligned cipher suite spelling to `CipherSuite`:
+
+   - renamed `Ciphersuite` -> `CipherSuite`
+
 ## Higher-Level Newtypes
 
 1. `GroupInfo.new()` and `Welcome.new()` are now **fallible** constructors. Previously, both accepted any byte sequence
