@@ -7,7 +7,7 @@ use openmls::prelude::Credential as MlsCredential;
 use tls_codec::Deserialize as _;
 
 use super::{Error, Result};
-use crate::{Ciphersuite, ClientId, CredentialRef, CredentialType, KeystoreError, mls::session::id::ClientIdRef};
+use crate::{CipherSuite, ClientId, CredentialRef, CredentialType, KeystoreError, mls::session::id::ClientIdRef};
 
 /// Filters to narrow down the set of credentials returned from various credential-finding methods.
 ///
@@ -42,7 +42,7 @@ pub struct FindFilters<'a> {
     pub public_key_hash: Option<Sha256Hash>,
     /// Ciphersuite to search for
     #[builder(default, setter(strip_option))]
-    pub ciphersuite: Option<Ciphersuite>,
+    pub ciphersuite: Option<CipherSuite>,
     /// Credential type to search for
     #[builder(default, setter(strip_option))]
     pub credential_type: Option<CredentialType>,

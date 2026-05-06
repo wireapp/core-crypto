@@ -10,7 +10,7 @@ use super::{
     tmp_db_file,
     x509::{CertificateParams, X509TestChain, qualified_e2ei_cid, qualified_e2ei_cid_from_user_id},
 };
-pub use crate::{Ciphersuite, CredentialType, MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy};
+pub use crate::{CipherSuite, CredentialType, MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy};
 use crate::{ClientId, ConnectionType, CredentialRef, Database, DatabaseKey, test_utils::SessionContext};
 
 #[template]
@@ -90,7 +90,7 @@ impl TestContext {
         }
     }
 
-    pub fn ciphersuite(&self) -> Ciphersuite {
+    pub fn ciphersuite(&self) -> CipherSuite {
         self.cfg.ciphersuite
     }
 

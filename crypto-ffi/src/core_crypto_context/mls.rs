@@ -1,7 +1,7 @@
 use std::{fmt, sync::Arc, time::Duration};
 
 use core_crypto::{
-    Ciphersuite as CryptoCiphersuite, CredentialFindFilters, MlsConversationConfiguration,
+    CipherSuite as CryptoCiphersuite, CredentialFindFilters, MlsConversationConfiguration,
     mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
 };
 use core_crypto_keystore::Sha256Hash;

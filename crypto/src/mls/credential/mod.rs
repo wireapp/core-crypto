@@ -22,7 +22,7 @@ pub use self::{
     credential_type::CredentialType,
     error::Error,
 };
-use crate::{Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, MlsError, RecursiveError, mls_provider::CRYPTO};
+use crate::{CipherSuite, ClientId, ClientIdRef, ClientIdentifier, MlsError, RecursiveError, mls_provider::CRYPTO};
 
 /// A cryptographic credential.
 ///
@@ -34,7 +34,7 @@ use crate::{Ciphersuite, ClientId, ClientIdRef, ClientIdentifier, MlsError, Recu
 #[derive(core_crypto_macros::Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Credential {
     /// Ciphersuite used by this credential
-    pub(crate) ciphersuite: Ciphersuite,
+    pub(crate) ciphersuite: CipherSuite,
     /// Credential type
     pub(crate) credential_type: CredentialType,
     /// MLS internal credential. Stores the MLS credential
@@ -57,7 +57,7 @@ impl TryFrom<&StoredCredential> for Credential {
     fn try_from(stored_credential: &StoredCredential) -> Result<Credential> {
         let mls_credential = MlsCredential::tls_deserialize(&mut stored_credential.credential.as_slice())
             .map_err(Error::tls_deserialize("mls credential"))?;
-        let ciphersuite = Ciphersuite::try_from(stored_credential.ciphersuite)
+        let ciphersuite = CipherSuite::try_from(stored_credential.ciphersuite)
             .map_err(RecursiveError::mls("loading ciphersuite from db"))?;
         let signature_key_pair = openmls_basic_credential::SignatureKeyPair::from_raw(
             ciphersuite.signature_algorithm(),
@@ -86,7 +86,7 @@ impl Credential {
     ///
     /// The earliest validity of this credential is always 0. It will be updated once the credential is added to a
     /// session.
-    pub fn basic(ciphersuite: Ciphersuite, client_id: ClientId) -> Result<Self> {
+    pub fn basic(ciphersuite: CipherSuite, client_id: ClientId) -> Result<Self> {
         let signature_scheme = ciphersuite.signature_algorithm();
         let (private_key, public_key) = CRYPTO
             .signature_key_gen(signature_scheme)
@@ -125,7 +125,7 @@ impl Credential {
     }
 
     /// Get the ciphersuite
-    pub fn ciphersuite(&self) -> Ciphersuite {
+    pub fn ciphersuite(&self) -> CipherSuite {
         self.ciphersuite
     }
 
@@ -158,7 +158,7 @@ impl Credential {
     /// Create a credential from an identifier
     // currently only used in test code, but generally applicable
     #[cfg_attr(not(test), expect(dead_code))]
-    pub(crate) fn from_identifier(identifier: &ClientIdentifier, ciphersuite: Ciphersuite) -> Result<Self> {
+    pub(crate) fn from_identifier(identifier: &ClientIdentifier, ciphersuite: CipherSuite) -> Result<Self> {
         match identifier {
             ClientIdentifier::Basic(client_id) => Self::basic(ciphersuite, client_id.clone()),
             ClientIdentifier::X509(certs) => {

@@ -46,7 +46,7 @@ async fn main() -> anyhow::Result<()> {
     for cred in keystore.load_all::<StoredCredential>().await?.into_iter() {
         let mls_credential = openmls::prelude::Credential::tls_deserialize(&mut cred.credential.as_slice())?;
         let mls_keypair = openmls_basic_credential::SignatureKeyPair::from_raw(
-            core_crypto::Ciphersuite::try_from(cred.ciphersuite)
+            core_crypto::CipherSuite::try_from(cred.ciphersuite)
                 .expect("ciphersuite from db")
                 .signature_algorithm(),
             cred.private_key.to_owned(),

@@ -9,7 +9,7 @@ use openmls::prelude::SignatureScheme;
 
 pub(crate) use self::error::{Error, Result};
 pub use self::find::{FindFilters, FindFiltersBuilder};
-use crate::{Ciphersuite, ClientId, ClientIdRef, CredentialType};
+use crate::{CipherSuite, ClientId, ClientIdRef, CredentialType};
 
 /// A reference to a credential which has been stored in a session.
 ///
@@ -29,7 +29,7 @@ pub struct CredentialRef {
     client_id: ClientId,
     public_key_hash: Sha256Hash,
     r#type: CredentialType,
-    ciphersuite: Ciphersuite,
+    ciphersuite: CipherSuite,
     // first unix timestamp at which the credential is valid
     earliest_validity: u64,
 }
@@ -68,7 +68,7 @@ impl CredentialRef {
     }
 
     /// Get the ciphersuite associated with this credential
-    pub fn ciphersuite(&self) -> Ciphersuite {
+    pub fn ciphersuite(&self) -> CipherSuite {
         self.ciphersuite
     }
 

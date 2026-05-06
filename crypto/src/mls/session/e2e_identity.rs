@@ -8,7 +8,7 @@ use wire_e2e_identity::WireIdentityReader as _;
 
 use super::{Result, Session};
 use crate::{
-    Ciphersuite, CredentialFindFilters, CredentialType, E2eiConversationState, MlsError,
+    CipherSuite, CredentialFindFilters, CredentialType, E2eiConversationState, MlsError,
     mls::{credential::ext::CredentialExt as _, session::Error},
 };
 
@@ -24,7 +24,7 @@ impl<D> Session<D> {
     /// If there are x509 (and optionally basic) credentials -> Ok(true)
     /// If there are no x509 but basic credentials -> Ok(false)
     /// If there are no credentials for the given ciphersuite -> Err(CredentialNotFound)
-    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> Result<bool>
+    pub async fn e2ei_is_enabled(&self, ciphersuite: CipherSuite) -> Result<bool>
     where
         D: FetchFromDatabase,
     {
@@ -99,7 +99,7 @@ impl<D> Session<D> {
         .await
     }
     pub(crate) async fn get_credential_in_use_in_ratchet_tree(
-        ciphersuite: Ciphersuite,
+        ciphersuite: CipherSuite,
         ratchet_tree: RatchetTree,
         credential_type: CredentialType,
         env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
@@ -114,7 +114,7 @@ impl<D> Session<D> {
     /// _credential_type will be used in the future to get the usage of VC Credentials, even Basics one.
     /// Right now though, we do not need anything other than X509 so let's keep things simple.
     pub(crate) async fn compute_conversation_state<'a>(
-        ciphersuite: Ciphersuite,
+        ciphersuite: CipherSuite,
         credentials: impl Iterator<Item = &'a Credential>,
         _credential_type: CredentialType,
         env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,

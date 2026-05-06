@@ -54,7 +54,7 @@ pub use crate::{
     },
     identity::{WireIdentity, X509Identity},
     mls::{
-        ciphersuite::Ciphersuite,
+        ciphersuite::CipherSuite,
         conversation::{
             ConversationId, MlsConversation,
             commit::MlsCommitBundle,

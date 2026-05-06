@@ -1,7 +1,7 @@
 #![allow(clippy::assign_op_pattern)]
 
 use anyhow::Result;
-use core_crypto::Ciphersuite;
+use core_crypto::CipherSuite;
 
 pub(crate) mod corecrypto;
 
@@ -71,5 +71,5 @@ pub(crate) trait EmulatedProteusClient: EmulatedClient {
 #[async_trait::async_trait(?Send)]
 #[allow(dead_code)]
 pub(crate) trait EmulatedE2eIdentityClient: EmulatedClient {
-    async fn e2ei_new_enrollment(&mut self, ciphersuite: Ciphersuite) -> Result<()>;
+    async fn e2ei_new_enrollment(&mut self, ciphersuite: CipherSuite) -> Result<()>;
 }

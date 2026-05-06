@@ -4,7 +4,7 @@ use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint}
 use x509_cert::{Certificate, der::Decode};
 
 use super::{Error, Result};
-use crate::{Ciphersuite, CredentialType, DeviceStatus, WireIdentity};
+use crate::{CipherSuite, CredentialType, DeviceStatus, WireIdentity};
 
 #[allow(dead_code)]
 pub(crate) trait CredentialExt {
@@ -12,7 +12,7 @@ pub(crate) trait CredentialExt {
     fn get_type(&self) -> Result<CredentialType>;
     fn extract_identity(
         &self,
-        cs: Ciphersuite,
+        cs: CipherSuite,
         env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
     ) -> Result<WireIdentity>;
     fn extract_public_key(&self) -> Result<Option<Vec<u8>>>;
@@ -30,7 +30,7 @@ impl CredentialExt for CredentialWithKey {
 
     fn extract_identity(
         &self,
-        cs: Ciphersuite,
+        cs: CipherSuite,
         env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
     ) -> Result<WireIdentity> {
         match self.credential.mls_credential() {
@@ -78,7 +78,7 @@ impl CredentialExt for Credential {
 
     fn extract_identity(
         &self,
-        _cs: Ciphersuite,
+        _cs: CipherSuite,
         _env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
     ) -> Result<WireIdentity> {
         // This should not be called directly because one does not have the signature public key and hence
@@ -112,7 +112,7 @@ impl CredentialExt for openmls::prelude::Certificate {
 
     fn extract_identity(
         &self,
-        cs: Ciphersuite,
+        cs: CipherSuite,
         env: Option<&wire_e2e_identity::x509_check::revocation::PkiEnvironment>,
     ) -> Result<WireIdentity> {
         let env = env.ok_or(Error::MissingPKIEnvironment)?;
@@ -141,7 +141,7 @@ impl CredentialExt for openmls::prelude::Certificate {
     }
 }
 
-fn compute_thumbprint(cs: Ciphersuite, raw_key: &[u8]) -> Result<String> {
+fn compute_thumbprint(cs: CipherSuite, raw_key: &[u8]) -> Result<String> {
     let sign_alg = match cs.signature_algorithm() {
         SignatureScheme::ED25519 => JwsAlgorithm::Ed25519,
         SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::P256,

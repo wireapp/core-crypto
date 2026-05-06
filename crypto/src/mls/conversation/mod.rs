@@ -58,7 +58,7 @@ pub use self::{
 };
 use super::credential::Credential;
 use crate::{
-    Ciphersuite, ClientId, ClientIdRef, CredentialRef, CredentialType, E2eiConversationState, LeafError, MlsError,
+    CipherSuite, ClientId, ClientIdRef, CredentialRef, CredentialType, E2eiConversationState, LeafError, MlsError,
     RecursiveError, UserId, WireIdentity, bytes_wrapper,
     mls::{HasSessionAndCrypto, Session, credential::ext::CredentialExt as _},
     mls_provider::MlsCryptoProvider,
@@ -128,7 +128,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
     }
 
     /// Returns the ciphersuite of a given conversation
-    async fn ciphersuite(&'a self) -> Ciphersuite {
+    async fn ciphersuite(&'a self) -> CipherSuite {
         self.conversation().await.ciphersuite()
     }
 
@@ -402,7 +402,7 @@ impl MlsConversation {
             .collect::<Vec<_>>()
     }
 
-    pub(crate) fn ciphersuite(&self) -> Ciphersuite {
+    pub(crate) fn ciphersuite(&self) -> CipherSuite {
         self.configuration.ciphersuite
     }
 

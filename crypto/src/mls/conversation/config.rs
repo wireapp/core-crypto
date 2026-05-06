@@ -17,7 +17,7 @@ use wire_e2e_identity::parse_json_jwk;
 
 use super::Result;
 use crate::{
-    Ciphersuite, MlsError, RecursiveError, mls::conversation::ExternalSenderKey, mls_provider::MlsCryptoProvider,
+    CipherSuite, MlsError, RecursiveError, mls::conversation::ExternalSenderKey, mls_provider::MlsCryptoProvider,
 };
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
@@ -34,7 +34,7 @@ pub(crate) const MAXIMUM_FORWARD_DISTANCE: u32 = 1000;
 #[derive(Debug, Clone, Default)]
 pub struct MlsConversationConfiguration {
     /// The `OpenMls` Ciphersuite used in the group
-    pub ciphersuite: Ciphersuite,
+    pub ciphersuite: CipherSuite,
     /// Delivery service public signature key and credential
     pub external_senders: Vec<ExternalSender>,
     /// Implementation specific configuration

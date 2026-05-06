@@ -17,7 +17,7 @@ use wire_e2e_identity::{
 use x509_cert::der::Encode;
 
 use crate::{
-    CertificateBundle, Ciphersuite, CredentialFindFilters, CredentialRef, CredentialType, MlsDecryptMessage,
+    CertificateBundle, CipherSuite, CredentialFindFilters, CredentialRef, CredentialType, MlsDecryptMessage,
     WireIdentity,
     mls::credential::{Credential, ext::CredentialExt},
     test_utils::{SessionContext, TestContext, x509::X509Certificate},
@@ -55,7 +55,7 @@ impl SessionContext {
             .unwrap()
     }
 
-    pub async fn count_key_package(&self, cs: Ciphersuite, ct: Option<CredentialType>) -> usize {
+    pub async fn count_key_package(&self, cs: CipherSuite, ct: Option<CredentialType>) -> usize {
         self.transaction
             .database()
             .await
@@ -115,7 +115,7 @@ impl SessionContext {
             .unwrap()
     }
 
-    pub async fn find_any_credential(&self, ciphersuite: Ciphersuite, credential_type: CredentialType) -> Credential {
+    pub async fn find_any_credential(&self, ciphersuite: CipherSuite, credential_type: CredentialType) -> Credential {
         let find_filters = CredentialFindFilters::builder()
             .credential_type(credential_type)
             .ciphersuite(ciphersuite)

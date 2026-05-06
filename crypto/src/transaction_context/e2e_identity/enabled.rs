@@ -1,11 +1,11 @@
 //! Whether e2ei is enabled
 
 use super::Result;
-use crate::{Ciphersuite, RecursiveError, transaction_context::TransactionContext};
+use crate::{CipherSuite, RecursiveError, transaction_context::TransactionContext};
 
 impl TransactionContext {
     /// See [crate::mls::session::Session::e2ei_is_enabled]
-    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> Result<bool> {
+    pub async fn e2ei_is_enabled(&self, ciphersuite: CipherSuite) -> Result<bool> {
         let client = self
             .session()
             .await

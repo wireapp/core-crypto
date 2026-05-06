@@ -8,7 +8,7 @@
 pub use openmls::prelude::KeyPackage as Keypackage;
 use openmls::prelude::{KeyPackageRef as KpHashRef, Lifetime, SignatureScheme};
 
-use crate::{Ciphersuite, CredentialType, MlsError, mls_provider::CRYPTO};
+use crate::{CipherSuite, CredentialType, MlsError, mls_provider::CRYPTO};
 
 /// Extensions on the `KeyPackage` type for nicer usage patterns.
 pub trait KeypackageExt {
@@ -18,7 +18,7 @@ pub trait KeypackageExt {
     fn make_ref(&self) -> Result<KeypackageRef, MlsError>;
 
     /// Returns the ciphersuite associated this this key package.
-    fn ciphersuite(&self) -> Ciphersuite;
+    fn ciphersuite(&self) -> CipherSuite;
 
     /// Returns the credential type associated with this key package.
     fn credential_type(&self) -> CredentialType;
@@ -47,7 +47,7 @@ impl KeypackageExt for Keypackage {
         })
     }
 
-    fn ciphersuite(&self) -> Ciphersuite {
+    fn ciphersuite(&self) -> CipherSuite {
         <Keypackage>::ciphersuite(self).into()
     }
 
@@ -72,7 +72,7 @@ impl KeypackageExt for Keypackage {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeypackageRef {
     hash_ref: KpHashRef,
-    ciphersuite: Ciphersuite,
+    ciphersuite: CipherSuite,
     credential_type: CredentialType,
     lifetime: Option<Lifetime>,
 }
@@ -84,7 +84,7 @@ impl KeypackageRef {
     }
 
     /// Get the ciphersuite associated with this key package ref.
-    pub fn ciphersuite(&self) -> Ciphersuite {
+    pub fn ciphersuite(&self) -> CipherSuite {
         self.ciphersuite
     }
 
@@ -117,7 +117,7 @@ impl KeypackageExt for KeypackageRef {
         Ok(self.clone())
     }
 
-    fn ciphersuite(&self) -> Ciphersuite {
+    fn ciphersuite(&self) -> CipherSuite {
         self.ciphersuite
     }
 

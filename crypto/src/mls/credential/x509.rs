@@ -16,7 +16,7 @@ use super::{Error, Result};
 use crate::mls_provider::PkiKeypair;
 #[cfg(test)]
 use crate::test_utils::x509::X509Certificate;
-use crate::{Ciphersuite, ClientId, Credential, CredentialType, MlsError, RecursiveError};
+use crate::{CipherSuite, ClientId, Credential, CredentialType, MlsError, RecursiveError};
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, derive::Constructor)]
 #[zeroize(drop)]
@@ -115,7 +115,7 @@ impl CertificateBundle {
 
 impl Credential {
     /// Create a new x509 credential from a certificate bundle.
-    pub fn x509(ciphersuite: Ciphersuite, cert: CertificateBundle) -> Result<Self> {
+    pub fn x509(ciphersuite: CipherSuite, cert: CertificateBundle) -> Result<Self> {
         let earliest_validity = cert.get_created_at().map_err(RecursiveError::mls_credential(
             "getting credential 'not before' claim from leaf cert in Credential::x509",
         ))?;

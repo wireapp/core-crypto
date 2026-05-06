@@ -4,7 +4,7 @@
 //! it doesn't work on newtypes around external enums. We therefore redefine the ciphersuites enum
 //! here with appropriate annotations such that it gets exported to all relevant bindings.
 
-use core_crypto::{Ciphersuite as CryptoCiphersuite, MlsCiphersuite};
+use core_crypto::{CipherSuite as CryptoCiphersuite, MlsCiphersuite};
 
 use crate::{CoreCryptoError, CoreCryptoResult};
 

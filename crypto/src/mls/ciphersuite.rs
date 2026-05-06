@@ -10,9 +10,9 @@ use crate::MlsCiphersuite;
 #[serde(transparent)]
 #[repr(transparent)]
 /// A wrapper for the OpenMLS Ciphersuite, so that we are able to provide a default value.
-pub struct Ciphersuite(pub(crate) MlsCiphersuite);
+pub struct CipherSuite(pub(crate) MlsCiphersuite);
 
-impl Ciphersuite {
+impl CipherSuite {
     pub(crate) fn e2ei_hash_alg(&self) -> HashAlgorithm {
         match self.0.hash_algorithm() {
             HashType::Sha2_256 => HashAlgorithm::SHA256,
@@ -22,31 +22,31 @@ impl Ciphersuite {
     }
 }
 
-impl Default for Ciphersuite {
+impl Default for CipherSuite {
     fn default() -> Self {
         Self(MlsCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
     }
 }
 
-impl From<MlsCiphersuite> for Ciphersuite {
+impl From<MlsCiphersuite> for CipherSuite {
     fn from(value: MlsCiphersuite) -> Self {
         Self(value)
     }
 }
 
-impl From<Ciphersuite> for MlsCiphersuite {
-    fn from(ciphersuite: Ciphersuite) -> Self {
+impl From<CipherSuite> for MlsCiphersuite {
+    fn from(ciphersuite: CipherSuite) -> Self {
         ciphersuite.0
     }
 }
 
-impl From<Ciphersuite> for u16 {
-    fn from(cs: Ciphersuite) -> Self {
+impl From<CipherSuite> for u16 {
+    fn from(cs: CipherSuite) -> Self {
         (&cs.0).into()
     }
 }
 
-impl TryFrom<u16> for Ciphersuite {
+impl TryFrom<u16> for CipherSuite {
     type Error = Error;
 
     fn try_from(c: u16) -> Result<Self> {
@@ -56,7 +56,7 @@ impl TryFrom<u16> for Ciphersuite {
     }
 }
 
-impl PartialEq<MlsCiphersuite> for Ciphersuite {
+impl PartialEq<MlsCiphersuite> for CipherSuite {
     fn eq(&self, other: &MlsCiphersuite) -> bool {
         self.0 == *other
     }

@@ -28,7 +28,7 @@ use obfuscate::{Obfuscate, Obfuscated};
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
-    Ciphersuite, ClientId, ClientIdRef, CoreCrypto, CoreCryptoTransportNotImplementedProvider, Credential, Error,
+    CipherSuite, ClientId, ClientIdRef, CoreCrypto, CoreCryptoTransportNotImplementedProvider, Credential, Error,
     MlsError, RecursiveError, Result, Session,
     mls_provider::{DatabaseKey, MlsCryptoProvider},
 };
@@ -64,7 +64,7 @@ impl Obfuscate for HistorySecret {
 /// Note that this is a crate-private function; the public interface for this feature is
 /// [`Conversation::generate_history_secret`][crate::mls::conversation::Conversation::generate_history_secret].
 /// This implementation lives here instead of there for organizational reasons.
-pub(crate) async fn generate_history_secret(ciphersuite: Ciphersuite) -> Result<HistorySecret> {
+pub(crate) async fn generate_history_secret(ciphersuite: CipherSuite) -> Result<HistorySecret> {
     // generate a new completely arbitrary client id
     let session_id = uuid::Uuid::new_v4();
     let session_id = format!("{HISTORY_CLIENT_ID_PREFIX}-{session_id}");

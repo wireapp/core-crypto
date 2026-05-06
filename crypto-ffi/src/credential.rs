@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use core_crypto::{Ciphersuite as CryptoCiphersuite, Credential as CryptoCredential};
+use core_crypto::{CipherSuite as CryptoCiphersuite, Credential as CryptoCredential};
 
 use crate::{Ciphersuite, CoreCryptoResult, CredentialType, SignatureScheme, client_id::ClientId};
 
