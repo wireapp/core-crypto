@@ -7,7 +7,7 @@ use core_crypto::{
 use core_crypto_keystore::Sha256Hash;
 
 use crate::{
-    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
+    CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
     CredentialRef, CredentialType, DecryptedMessage, KeyPackage, KeyPackageRef, MlsTransport,
     bytes_wrapper::{bytes_wrapper, impl_display_via_hex},
     core_crypto::mls_transport::callback_shim,
@@ -109,14 +109,14 @@ impl CoreCryptoContext {
     }
 
     /// Returns the ciphersuite in use for the given conversation.
-    pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
+    pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<CipherSuite> {
         let cs = self
             .inner
             .conversation(conversation_id.as_ref())
             .await?
             .ciphersuite()
             .await;
-        Ok(Ciphersuite::from(cs))
+        Ok(CipherSuite::from(cs))
     }
 
     /// Get the credential ref for the given conversation.
@@ -419,7 +419,7 @@ impl CoreCryptoContext {
         &self,
         client_id: Option<Arc<ClientId>>,
         public_key: Option<Vec<u8>>,
-        ciphersuite: Option<Ciphersuite>,
+        ciphersuite: Option<CipherSuite>,
         credential_type: Option<CredentialType>,
         earliest_validity: Option<u64>,
     ) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
@@ -445,7 +445,7 @@ impl CoreCryptoContext {
         &self,
         client_id: Option<Arc<ClientId>>,
         public_key: Option<Vec<u8>>,
-        ciphersuite: Option<Ciphersuite>,
+        ciphersuite: Option<CipherSuite>,
         credential_type: Option<CredentialType>,
         earliest_validity: Option<u64>,
     ) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
@@ -463,7 +463,7 @@ impl CoreCryptoContext {
         &self,
         client_id: Option<Arc<ClientId>>,
         public_key: Option<Vec<u8>>,
-        ciphersuite: Option<Ciphersuite>,
+        ciphersuite: Option<CipherSuite>,
         credential_type: Option<CredentialType>,
         earliest_validity: Option<u64>,
     ) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {

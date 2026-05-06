@@ -6,7 +6,7 @@ use core_crypto::{
 };
 
 use crate::{
-    Ciphersuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef,
+    CipherSuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef,
     bytes_wrapper::{bytes_wrapper, impl_display_via_hex},
     core_crypto_context::mls::SecretKey,
 };
@@ -52,7 +52,7 @@ impl CoreCryptoFfi {
     }
 
     /// Returns the ciphersuite in use for the given conversation.
-    pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
+    pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<CipherSuite> {
         let cs = self
             .inner
             .mls_session()
@@ -64,7 +64,7 @@ impl CoreCryptoFfi {
             ))?
             .ciphersuite()
             .await;
-        Ok(Ciphersuite::from(core_crypto::MlsCiphersuite::from(cs)))
+        Ok(CipherSuite::from(core_crypto::MlsCiphersuite::from(cs)))
     }
 
     /// Get the credential ref for the given conversation.

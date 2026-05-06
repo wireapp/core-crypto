@@ -3,7 +3,7 @@ use std::sync::Arc;
 use core_crypto::{KeyPackageIn, RecursiveError, mls::key_package::KeypackageExt};
 use tls_codec::{Deserialize as _, Serialize as _};
 
-use crate::{Ciphersuite, CoreCryptoError, CoreCryptoResult, CredentialType, SignatureScheme};
+use crate::{CipherSuite, CoreCryptoError, CoreCryptoResult, CredentialType, SignatureScheme};
 
 /// A lightweight distinct reference to a `KeyPackage`, sufficient to uniquely identify it.
 ///
@@ -20,7 +20,7 @@ impl KeyPackageRef {
     }
 
     /// Get the ciphersuite associated with this key package ref.
-    pub fn ciphersuite(&self) -> Ciphersuite {
+    pub fn ciphersuite(&self) -> CipherSuite {
         self.0.ciphersuite().into()
     }
 

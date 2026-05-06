@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use core_crypto::{CipherSuite as CryptoCiphersuite, Credential as CryptoCredential};
 
-use crate::{Ciphersuite, CoreCryptoResult, CredentialType, SignatureScheme, client_id::ClientId};
+use crate::{CipherSuite, CoreCryptoResult, CredentialType, SignatureScheme, client_id::ClientId};
 
 /// A cryptographic credential.
 ///
@@ -19,7 +19,7 @@ impl Credential {
     ///
     /// The result is independent of any client instance and the database; it lives in memory only.
     #[uniffi::constructor(name = "basic")]
-    fn basic(ciphersuite: Ciphersuite, client_id: &Arc<ClientId>) -> CoreCryptoResult<Self> {
+    fn basic(ciphersuite: CipherSuite, client_id: &Arc<ClientId>) -> CoreCryptoResult<Self> {
         let client_id_ref = client_id.as_ref().as_ref();
         CryptoCredential::basic(CryptoCiphersuite::from(ciphersuite), client_id_ref.to_owned())
             .map(Into::into)

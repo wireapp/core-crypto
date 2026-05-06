@@ -5,7 +5,7 @@ use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPa
 use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm};
 use x509_cert::der::Encode as _;
 
-use crate::{Ciphersuite as FfiCiphersuite, ClientId, CoreCryptoError, CoreCryptoResult, Credential, PkiEnvironment};
+use crate::{CipherSuite as FfiCiphersuite, ClientId, CoreCryptoError, CoreCryptoResult, Credential, PkiEnvironment};
 
 /// The end-to-end identity verification state of a conversation.
 ///
@@ -139,7 +139,7 @@ fn credential_from_acquisition_result(
     let certificate_bundle = core_crypto::CertificateBundle::from_raw(
         certificate_chain,
         signing_key,
-        core_crypto::Ciphersuite::from(ciphersuite).signature_algorithm(),
+        core_crypto::CipherSuite::from(ciphersuite).signature_algorithm(),
     );
 
     core_crypto::Credential::x509(ciphersuite.into(), certificate_bundle)

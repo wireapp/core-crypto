@@ -15,7 +15,7 @@ use crate::{CoreCryptoError, CoreCryptoResult};
 #[try_from(repr)]
 #[repr(u16)]
 #[derive(uniffi::Enum)]
-pub enum Ciphersuite {
+pub enum CipherSuite {
     /// DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
     #[default]
     MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 = 0x0001,
@@ -39,16 +39,16 @@ pub enum Ciphersuite {
     MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
 }
 
-impl From<Ciphersuite> for MlsCiphersuite {
+impl From<CipherSuite> for MlsCiphersuite {
     #[inline]
-    fn from(value: Ciphersuite) -> Self {
+    fn from(value: CipherSuite) -> Self {
         (value as u16)
             .try_into()
             .expect("ffi Ciphersuite is a subset of mls Ciphersuite")
     }
 }
 
-impl From<MlsCiphersuite> for Ciphersuite {
+impl From<MlsCiphersuite> for CipherSuite {
     #[inline]
     fn from(value: MlsCiphersuite) -> Self {
         (value as u16)
@@ -57,14 +57,14 @@ impl From<MlsCiphersuite> for Ciphersuite {
     }
 }
 
-impl From<Ciphersuite> for CryptoCiphersuite {
+impl From<CipherSuite> for CryptoCiphersuite {
     #[inline]
-    fn from(value: Ciphersuite) -> Self {
+    fn from(value: CipherSuite) -> Self {
         MlsCiphersuite::from(value).into()
     }
 }
 
-impl From<CryptoCiphersuite> for Ciphersuite {
+impl From<CryptoCiphersuite> for CipherSuite {
     #[inline]
     fn from(value: CryptoCiphersuite) -> Self {
         MlsCiphersuite::from(value).into()
@@ -73,12 +73,12 @@ impl From<CryptoCiphersuite> for Ciphersuite {
 
 /// Construct a ciphersuite enum instance from its discriminant.
 #[uniffi::export]
-pub fn ciphersuite_from_u16(discriminant: u16) -> CoreCryptoResult<Ciphersuite> {
-    Ciphersuite::try_from(discriminant).map_err(CoreCryptoError::generic())
+pub fn ciphersuite_from_u16(discriminant: u16) -> CoreCryptoResult<CipherSuite> {
+    CipherSuite::try_from(discriminant).map_err(CoreCryptoError::generic())
 }
 
 /// Get an instance of the default ciphersuite.
 #[uniffi::export]
-pub fn ciphersuite_default() -> Ciphersuite {
-    Ciphersuite::default()
+pub fn ciphersuite_default() -> CipherSuite {
+    CipherSuite::default()
 }

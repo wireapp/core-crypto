@@ -1,6 +1,6 @@
 use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
 
-use crate::{Ciphersuite, ConversationId, CoreCryptoFfi, CoreCryptoResult, E2eiConversationState};
+use crate::{CipherSuite, ConversationId, CoreCryptoFfi, CoreCryptoResult, E2eiConversationState};
 
 pub(crate) mod identities;
 
@@ -17,7 +17,7 @@ impl CoreCryptoFfi {
     }
 
     /// Returns true if end-to-end identity is enabled for the given ciphersuite.
-    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
+    pub async fn e2ei_is_enabled(&self, ciphersuite: CipherSuite) -> CoreCryptoResult<bool> {
         self.inner
             .mls_session()
             .await?

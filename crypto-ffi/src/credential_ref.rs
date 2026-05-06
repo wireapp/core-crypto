@@ -1,6 +1,6 @@
 use core_crypto::CredentialRef as CryptoCredentialRef;
 
-use crate::{Ciphersuite, ClientId, CredentialType, SignatureScheme};
+use crate::{CipherSuite, ClientId, CredentialType, SignatureScheme};
 
 /// A compact reference to a credential that has been persisted in CoreCrypto.
 ///
@@ -39,7 +39,7 @@ impl CredentialRef {
     }
 
     /// Get the ciphersuite of this credential ref.
-    pub fn ciphersuite(&self) -> Ciphersuite {
+    pub fn ciphersuite(&self) -> CipherSuite {
         self.0.ciphersuite().into()
     }
 

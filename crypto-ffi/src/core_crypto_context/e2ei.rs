@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use core_crypto::{mls::conversation::Conversation as _, transaction_context::Error as TransactionError};
 
 use crate::{
-    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, E2eiConversationState, UserIdentities,
+    CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, E2eiConversationState, UserIdentities,
     WireIdentity,
 };
 
@@ -23,7 +23,7 @@ impl CoreCryptoContext {
     }
 
     /// Returns true if end-to-end identity is enabled for the given ciphersuite.
-    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
+    pub async fn e2ei_is_enabled(&self, ciphersuite: CipherSuite) -> CoreCryptoResult<bool> {
         self.inner
             .e2ei_is_enabled(ciphersuite.into())
             .await
