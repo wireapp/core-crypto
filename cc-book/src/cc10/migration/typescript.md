@@ -32,14 +32,6 @@ import { ... } from "@wireapp/core-crypto/browser";
 
 1. We **renamed** `setLoggerOnly(logger: CoreCryptoLogger)` to `setLogger(logger: CoreCryptoLogger)`.
 
-## Passing ByteArray Arguments
-
-We now generate the TypeScript bindings from the same uniffi code that Swift and Kotlin use. Arrays are now passed as
-`ArrayBuffer` between client and the FFI layer, changing parameter and return types.
-
-- Use `.buffer()` to get an `ArrayBuffer` from a `Uint8Array`.
-- Use `new Uint8Array(buffer)` to get a `Uint8Array` from an `ArrayBuffer`.
-
 ## Errors
 
 ### Error Structure
@@ -118,7 +110,7 @@ the mapping.
 
 ## Other
 
-1. `CoreCryptoContext.generateKeyPackage()` now returns a `KeyPackage` instance instead of an `ArrayBuffer`. If you need
-   the underlying `ArrayBuffer`, call the `serialize` property on the `KeyPackage`.
+1. `CoreCryptoContext.generateKeyPackage()` now returns a `KeyPackage` instance instead of an `Uint8Array`. If you need
+   the underlying `Uint8Array`, call the `serialize` property on the `KeyPackage`.
 
 1. `CustomConfiguration.keyRotationSpan` now defines milliseconds instead of seconds.

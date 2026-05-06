@@ -108,12 +108,6 @@
 
 - We now generate the ts bindings from the same uniffi code that swift and kotlin use.
 
-  - Arrays are now passed as ArrayBuffer between client and the FFI layer, changing parameter and return types.
-
-    Use `.buffer()` to get `ArrayBuffer` from `Uint8Array`.
-
-    Use `new Uint8Array(buffer)` to get a Uint8Array from an `ArrayBuffer`.
-
   - `CustomConfiguration.keyRotationSpan` now defines milliseconds instead of seconds
 
   Affected platforms: web
@@ -315,11 +309,11 @@
   }
   ```
 
-- `CoreCryptoContext.generateKeyPackage()` now returns a `Keypackage` instance instead of an `ArrayBuffer`.
+- `CoreCryptoContext.generateKeyPackage()` now returns a `Keypackage` instance instead of an `Uint8Array`.
 
   Affected platforms: web
 
-  Migration: if you need the underlying `ArrayBuffer`, call the `buffer` property on the `KeyPackage`.
+  Migration: if you need the underlying `Uint8Array`, call the `serialize` property on the `KeyPackage`.
 
 - Deferred init is now the only way to instantiate core crypto.
 
