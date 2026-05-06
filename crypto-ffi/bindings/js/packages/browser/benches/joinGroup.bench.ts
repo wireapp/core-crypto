@@ -24,7 +24,7 @@ describe("benchmark", () => {
                 });
                 for (const { userCount, cipherSuite } of parameters) {
                     window.bench.add(
-                        `cipherSuite=${window.ccModule.Ciphersuite[cipherSuite]} userCount=${userCount}`,
+                        `cipherSuite=${window.ccModule.CipherSuite[cipherSuite]} userCount=${userCount}`,
                         async () => {
                             const aliceCc = await window.helpers.ccInit({
                                 withBasicCredential: true,

@@ -142,12 +142,12 @@ describe("key package", () => {
                     clientId,
                 });
                 const credential1 = window.ccModule.Credential.basic(
-                    window.ccModule.Ciphersuite
+                    window.ccModule.CipherSuite
                         .Mls128Dhkemx25519Aes128gcmSha256Ed25519,
                     clientId
                 );
                 const credential2 = window.ccModule.Credential.basic(
-                    window.ccModule.Ciphersuite
+                    window.ccModule.CipherSuite
                         .Mls128Dhkemp256Aes128gcmSha256P256,
                     clientId
                 );

@@ -1,5 +1,5 @@
 import type { Task } from "tinybench";
-import { Ciphersuite } from "../src/CoreCrypto";
+import { CipherSuite } from "../src/CoreCrypto";
 import { isNumberObject } from "node:util/types";
 import { mkdir } from "node:fs/promises";
 import { writeFile } from "node:fs/promises";
@@ -18,11 +18,11 @@ const DEFAULT_MESSAGE_COUNTS = [1, 10, 100];
 const DEFAULT_MESSAGE_SIZES = [16, 1024, 65536];
 const DEFAULT_USER_COUNTS = [1, 10, 100];
 const DEFAULT_CIPHER_SUITES = [
-    Ciphersuite.Mls128Dhkemx25519Aes128gcmSha256Ed25519,
-    Ciphersuite.Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519,
-    Ciphersuite.Mls128Dhkemp256Aes128gcmSha256P256,
-    Ciphersuite.Mls256Dhkemp384Aes256gcmSha384P384,
-    Ciphersuite.Mls256Dhkemp521Aes256gcmSha512P521,
+    CipherSuite.Mls128Dhkemx25519Aes128gcmSha256Ed25519,
+    CipherSuite.Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519,
+    CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256,
+    CipherSuite.Mls256Dhkemp384Aes256gcmSha384P384,
+    CipherSuite.Mls256Dhkemp521Aes256gcmSha512P521,
 ];
 
 function parsePositiveIntegerList(
@@ -51,7 +51,7 @@ function parseCipherSuiteList(
 
     const values = rawValue.split(",").map((value) => value.trim());
     return values.map((value) => {
-        const cipherSuite = Ciphersuite[value as keyof typeof Ciphersuite];
+        const cipherSuite = CipherSuite[value as keyof typeof CipherSuite];
         if (typeof cipherSuite !== "number") {
             throw new Error(`Invalid ciphersuite override: ${value}`);
         }

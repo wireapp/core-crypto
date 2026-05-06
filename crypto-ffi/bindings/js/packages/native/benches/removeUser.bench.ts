@@ -4,7 +4,7 @@ import {
     userBenchmarkParameters,
 } from "../../shared/benches/utils";
 import {
-    Ciphersuite,
+    CipherSuite,
     ClientId,
     type KeyPackage,
 } from "@wireapp/core-crypto/native";
@@ -31,7 +31,7 @@ async function run() {
     });
     for (const { userCount, cipherSuite } of parameters) {
         bench.add(
-            `cipherSuite=${Ciphersuite[cipherSuite]} userCount=${userCount}`,
+            `cipherSuite=${CipherSuite[cipherSuite]} userCount=${userCount}`,
             async () => {
                 const aliceCc = await ccInit({
                     withBasicCredential: true,

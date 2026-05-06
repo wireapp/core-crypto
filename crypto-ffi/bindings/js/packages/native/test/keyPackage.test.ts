@@ -2,7 +2,7 @@ import { ccInit, generateKeyPackage, setup, teardown } from "./utils";
 import { test, beforeEach, describe, expect, afterAll } from "bun:test";
 import { ClientId } from "@wireapp/core-crypto/native";
 import {
-    Ciphersuite,
+    CipherSuite,
     Credential,
     KeyPackage,
 } from "@wireapp/core-crypto/native";
@@ -78,11 +78,11 @@ describe("key package", () => {
     test("can be removed by credentialref", async () => {
         const clientId = new ClientId(Buffer.from("any random client id here"));
         const credential1 = Credential.basic(
-            Ciphersuite.Mls128Dhkemx25519Aes128gcmSha256Ed25519,
+            CipherSuite.Mls128Dhkemx25519Aes128gcmSha256Ed25519,
             clientId
         );
         const credential2 = Credential.basic(
-            Ciphersuite.Mls128Dhkemp256Aes128gcmSha256P256,
+            CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256,
             clientId
         );
         const cc = await ccInit({ withBasicCredential: false, clientId });

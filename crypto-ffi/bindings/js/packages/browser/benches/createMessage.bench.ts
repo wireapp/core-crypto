@@ -34,7 +34,7 @@ describe("benchmark", () => {
                         await window.helpers.createConversation(cc);
 
                     window.bench.add(
-                        `cipherSuite=${window.ccModule.Ciphersuite[cipherSuite]} size=${size}B count=${count}`,
+                        `cipherSuite=${window.ccModule.CipherSuite[cipherSuite]} size=${size}B count=${count}`,
                         async () => {
                             await cc.transaction(async (ctx) => {
                                 for (let i = 0; i < count; i++) {

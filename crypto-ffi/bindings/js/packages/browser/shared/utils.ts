@@ -1,16 +1,16 @@
-import type {
-    Ciphersuite,
-    ClientId,
-    CommitBundle,
-    ConversationId,
-    CoreCrypto,
-    CoreCryptoLogLevel,
-    GroupInfoBundle,
-    HistorySecret,
-    KeyPackage,
-    MlsTransport,
-    MlsTransportData,
-    Database,
+import {
+    CipherSuite,
+    type ClientId,
+    type CommitBundle,
+    type ConversationId,
+    type CoreCrypto,
+    type CoreCryptoLogLevel,
+    type Database,
+    type GroupInfoBundle,
+    type HistorySecret,
+    type KeyPackage,
+    type MlsTransport,
+    type MlsTransportData,
 } from "@wireapp/core-crypto/browser";
 
 import { browser } from "@wdio/globals";
@@ -105,7 +105,7 @@ export async function sharedSetup() {
 
             static async generateKeyPackage(
                 cc: CoreCrypto,
-                cipherSuite?: Ciphersuite
+                cipherSuite?: CipherSuite
             ): Promise<KeyPackage> {
                 if (cipherSuite === undefined) {
                     cipherSuite = window.defaultCipherSuite;
@@ -237,7 +237,7 @@ export async function sharedSetup() {
                 cc1: CoreCrypto,
                 cc2: CoreCrypto,
                 conversationId: ConversationId,
-                cipherSuite?: Ciphersuite
+                cipherSuite?: CipherSuite
             ): Promise<GroupInfoBundle> {
                 const kp = await window.helpers.generateKeyPackage(
                     cc2,
@@ -506,7 +506,7 @@ type CcInitOptions =
       }
     | {
           withBasicCredential?: true;
-          cipherSuite?: Ciphersuite;
+          cipherSuite?: CipherSuite;
           clientId?: ClientId;
       };
 
@@ -516,7 +516,7 @@ export interface Helpers {
     newDatabase(): Promise<Database>;
     generateKeyPackage(
         cc: CoreCrypto,
-        cipherSuite?: Ciphersuite
+        cipherSuite?: CipherSuite
     ): Promise<KeyPackage>;
     ccInit: (options?: CcInitOptions) => Promise<CoreCrypto>;
     recordLogs(): Promise<void>;
@@ -526,7 +526,7 @@ export interface Helpers {
         cc1: CoreCrypto,
         cc2: CoreCrypto,
         conversationId: ConversationId,
-        cipherSuite?: Ciphersuite
+        cipherSuite?: CipherSuite
     ): Promise<GroupInfoBundle>;
     remove(
         cc: CoreCrypto,

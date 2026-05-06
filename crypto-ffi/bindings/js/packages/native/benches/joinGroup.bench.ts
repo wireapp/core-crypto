@@ -3,7 +3,7 @@ import {
     tinybenchSetup,
     userBenchmarkParameters,
 } from "../../shared/benches/utils";
-import { Ciphersuite, type KeyPackage } from "@wireapp/core-crypto/native";
+import { CipherSuite, type KeyPackage } from "@wireapp/core-crypto/native";
 import { Bench } from "tinybench";
 import {
     setup,
@@ -28,7 +28,7 @@ async function run() {
     });
     for (const { userCount, cipherSuite } of parameters) {
         bench.add(
-            `cipherSuite=${Ciphersuite[cipherSuite]} userCount=${userCount}`,
+            `cipherSuite=${CipherSuite[cipherSuite]} userCount=${userCount}`,
             async () => {
                 const aliceCc = await ccInit({
                     withBasicCredential: true,

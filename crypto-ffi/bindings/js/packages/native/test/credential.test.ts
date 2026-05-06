@@ -1,7 +1,7 @@
 import { ccInit, setup, teardown } from "./utils";
 import { test, beforeEach, describe, expect, afterAll } from "bun:test";
 import {
-    Ciphersuite,
+    CipherSuite,
     ciphersuiteDefault,
     ClientId,
     Credential,
@@ -59,11 +59,11 @@ describe("credentials", () => {
 
     test("credentials can be searched", async () => {
         const clientId = new ClientId(Buffer.from("any random client id here"));
-        const ciphersuite1 = Ciphersuite.Mls128Dhkemp256Aes128gcmSha256P256;
+        const ciphersuite1 = CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256;
         const credential1 = Credential.basic(ciphersuite1, clientId);
 
         const ciphersuite2 =
-            Ciphersuite.Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519;
+            CipherSuite.Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519;
         const credential2 = Credential.basic(ciphersuite2, clientId);
 
         const cc = await ccInit({ withBasicCredential: false, clientId });

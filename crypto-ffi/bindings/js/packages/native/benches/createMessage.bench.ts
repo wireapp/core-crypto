@@ -1,5 +1,5 @@
 import { Bench } from "tinybench";
-import { Ciphersuite } from "@wireapp/core-crypto/native";
+import { CipherSuite } from "@wireapp/core-crypto/native";
 import {
     logResults,
     messageBenchmarkParameters,
@@ -25,7 +25,7 @@ async function run() {
         const conversationId = await createConversation(cc);
 
         bench.add(
-            `cipherSuite=${Ciphersuite[cipherSuite]} size=${size}B count=${count}`,
+            `cipherSuite=${CipherSuite[cipherSuite]} size=${size}B count=${count}`,
             async () => {
                 await cc.transaction(async (ctx) => {
                     for (let i = 0; i < count; i++) {

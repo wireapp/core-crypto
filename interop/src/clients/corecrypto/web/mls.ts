@@ -8,14 +8,14 @@
 // Note in particular that functions _must not_ use a normal parameters list. Instead they must
 // internally destructure the `arguments` list. This is to conform with the webdriver `.execute` API.
 
-import { Ciphersuite, CoreCrypto, CredentialType, Database, MlsTransport, } from "./corecrypto.js";
+import { CipherSuite, CoreCrypto, CredentialType, Database, MlsTransport, } from "./corecrypto.js";
 
 declare global {
     interface Window {
         CoreCrypto: typeof CoreCrypto;
         cc: CoreCrypto;
         database: Database;
-        ciphersuite: Ciphersuite;
+        ciphersuite: CipherSuite;
         credentialType: CredentialType;
         deliveryService: MlsTransport;
     }

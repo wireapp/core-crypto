@@ -1,9 +1,9 @@
 import { browser } from "@wdio/globals";
 
-import type {
-    Ciphersuite,
-    CommitBundle,
-    PkiEnvironmentHooks,
+import {
+    CipherSuite,
+    type CommitBundle,
+    type PkiEnvironmentHooks,
     HttpMethod,
     HttpHeader,
 } from "@wireapp/core-crypto/browser";
@@ -21,7 +21,7 @@ type ccModuleType = typeof import("@wireapp/core-crypto/browser");
 declare global {
     interface Window {
         ccModule: ccModuleType;
-        defaultCipherSuite: Ciphersuite;
+        defaultCipherSuite: CipherSuite;
         deliveryService: DeliveryService;
         pkiEnvironmentHooks: PkiEnvironmentHooks;
         _latestCommitBundle: CommitBundle;
@@ -34,7 +34,7 @@ export async function setup() {
     await sharedSetup();
     await browser.execute(async () => {
         window.defaultCipherSuite =
-            window.ccModule.Ciphersuite.Mls128Dhkemx25519Aes128gcmSha256Ed25519;
+            window.ccModule.CipherSuite.Mls128Dhkemx25519Aes128gcmSha256Ed25519;
 
         window.pkiEnvironmentHooks = {
             async httpRequest(

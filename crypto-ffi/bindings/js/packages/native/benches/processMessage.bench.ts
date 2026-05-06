@@ -1,5 +1,5 @@
 import { Bench } from "tinybench";
-import { Ciphersuite } from "@wireapp/core-crypto/native";
+import { CipherSuite } from "@wireapp/core-crypto/native";
 import {
     logResults,
     messageBenchmarkParameters,
@@ -42,7 +42,7 @@ async function run() {
         // This means that we can't encrypt the messages beforehand as this would lead to bob decrypting
         // the same messages over and over again.
         bench.add(
-            `cipherSuite=${Ciphersuite[cipherSuite]} size=${size}B count=${count}`,
+            `cipherSuite=${CipherSuite[cipherSuite]} size=${size}B count=${count}`,
             async () => {
                 const encryptedMessages = await aliceCc.transaction(
                     async (ctx) => {

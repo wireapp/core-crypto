@@ -47,7 +47,7 @@ describe("benchmark", () => {
                     // This means that we can't encrypt the messages beforehand as this would lead to bob decrypting
                     // the same messages over and over again.
                     window.bench.add(
-                        `cipherSuite=${window.ccModule.Ciphersuite[cipherSuite]} size=${size}B count=${count}`,
+                        `cipherSuite=${window.ccModule.CipherSuite[cipherSuite]} size=${size}B count=${count}`,
                         async () => {
                             const encryptedMessages = await aliceCc.transaction(
                                 async (ctx) => {

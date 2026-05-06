@@ -30,7 +30,7 @@ export {
     CredentialType,
     WireIdentity,
     X509Identity,
-    Ciphersuite,
+    CipherSuite,
     CoreCryptoError,
     CoreCryptoError_Tags,
     MlsError,

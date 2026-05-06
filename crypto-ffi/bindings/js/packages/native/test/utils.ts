@@ -1,7 +1,7 @@
 import { rm } from "node:fs/promises";
 import assert from "node:assert";
 import {
-    Ciphersuite,
+    CipherSuite,
     type CommitBundle,
     ConversationId,
     CoreCrypto,
@@ -28,7 +28,7 @@ import { Database } from "@wireapp/core-crypto/native";
 const logLevel = Number(process.env["CC_TEST_LOG_LEVEL"] || "0");
 
 const DEFAULT_CIPHERSUITE =
-    Ciphersuite.Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519;
+    CipherSuite.Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519;
 const SQLITE_SIDE_CAR_SUFFIXES = ["", "-journal", "-shm", "-wal"] as const;
 const DATABASE_LOCATIONS = new Set<string>();
 
@@ -109,7 +109,7 @@ type CcInitOptions =
       }
     | {
           withBasicCredential?: true;
-          cipherSuite?: Ciphersuite;
+          cipherSuite?: CipherSuite;
           clientId?: ClientId;
       };
 
@@ -146,7 +146,7 @@ export async function ccInit(
 
 export async function generateKeyPackage(
     cc: CoreCrypto,
-    cipherSuite?: Ciphersuite
+    cipherSuite?: CipherSuite
 ): Promise<KeyPackage> {
     if (cipherSuite === undefined) {
         cipherSuite = DEFAULT_CIPHERSUITE;
@@ -207,7 +207,7 @@ export async function invite(
     cc1: CoreCrypto,
     cc2: CoreCrypto,
     conversationId: ConversationId,
-    cipherSuite?: Ciphersuite
+    cipherSuite?: CipherSuite
 ): Promise<GroupInfoBundle> {
     const kp = await generateKeyPackage(cc2, cipherSuite);
     await cc1.transaction((ctx) =>
