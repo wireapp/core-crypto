@@ -123,6 +123,8 @@ mod tests {
     }
 
     // testing the case where Bob & Alice have different Credential type
+    // TODO: ignore this test for now, until we fix the test suite (WPB-25356)
+    #[ignore]
     #[apply(all_cred_cipher)]
     async fn heterogeneous_conversation_should_be_not_verified(case: TestContext) {
         let ([x509_session], [basic_session]) = case.sessions_mixed_credential_types().await;

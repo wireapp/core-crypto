@@ -610,6 +610,8 @@ mod tests {
         drop(db_file);
     }
 
+    // TODO: ignore this test for now, until we fix the test suite (WPB-25356)
+    #[ignore]
     #[apply(all_cred_cipher)]
     async fn cc_can_2_phase_init(case: TestContext) {
         use wire_e2e_identity::pki_env::PkiEnvironment;

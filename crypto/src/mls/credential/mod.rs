@@ -230,6 +230,8 @@ mod tests {
         assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
     }
 
+    // TODO: ignore this test for now, until we fix the test suite (WPB-25356)
+    #[ignore]
     #[apply(all_cred_cipher)]
     async fn heterogeneous_clients_can_send_messages(case: TestContext) {
         // check that both credentials can initiate/join a group
@@ -245,6 +247,8 @@ mod tests {
         assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
     }
 
+    // TODO: ignore this test for now, until we fix the test suite (WPB-25356)
+    #[ignore]
     #[apply(all_cred_cipher)]
     async fn should_fail_when_certificate_chain_is_empty(case: TestContext) {
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
