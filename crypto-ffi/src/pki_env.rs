@@ -159,6 +159,7 @@ pub trait PkiEnvironmentHooks: Send + Sync {
         idp: String,
         key_auth: String,
         acme_aud: String,
+        acquisition_snapshot: Vec<u8>,
     ) -> Result<String, PkiEnvironmentHooksError>;
 
     /// Get a nonce from the backend.
@@ -205,8 +206,12 @@ impl pki_env::hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
         idp: String,
         key_auth: String,
         acme_aud: String,
+        acquisition_snapshot: Vec<u8>,
     ) -> Result<String, pki_env::hooks::PkiEnvironmentHooksError> {
-        self.0.authenticate(idp, key_auth, acme_aud).await.map_err(Into::into)
+        self.0
+            .authenticate(idp, key_auth, acme_aud, acquisition_snapshot)
+            .await
+            .map_err(Into::into)
     }
 
     async fn get_backend_nonce(&self) -> Result<String, pki_env::hooks::PkiEnvironmentHooksError> {

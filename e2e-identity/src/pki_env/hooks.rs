@@ -137,6 +137,7 @@ pub trait PkiEnvironmentHooks: std::fmt::Debug + Send + Sync {
         idp: String,
         key_auth: String,
         acme_aud: String,
+        acquisition_snapshot: Vec<u8>,
     ) -> Result<String, PkiEnvironmentHooksError>;
 
     /// Get a nonce from the backend

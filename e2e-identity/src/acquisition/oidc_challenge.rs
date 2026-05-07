@@ -20,10 +20,11 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
         let oidc_challenge_token = &self.data.oidc_challenge.token;
         let thumbprint = JwkThumbprint::generate(&self.acme_jwk, self.config.hash_alg)?.kid;
         let key_auth = format!("{oidc_challenge_token}.{thumbprint}");
+        let snapshot = serde_json::to_vec(&self)?;
 
         let url = &self.data.oidc_challenge.url;
         let id_token = hooks
-            .authenticate(self.config.idp_url.clone(), key_auth, url.to_string())
+            .authenticate(self.config.idp_url.clone(), key_auth, url.to_string(), snapshot)
             .await?;
 
         let oidc_challenge_request = RustyAcme::oidc_chall_request(
