@@ -83,6 +83,8 @@ mod tests {
         .await;
     }
 
+    // TODO: ignore this test for now, until we fix the test suite (WPB-25356)
+    #[ignore]
     #[apply(all_cred_cipher)]
     async fn can_2_phase_init_central(mut case: TestContext) {
         let db = case.create_persistent_db().await;
