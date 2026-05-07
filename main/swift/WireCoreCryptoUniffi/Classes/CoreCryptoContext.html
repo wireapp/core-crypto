@@ -1181,6 +1181,12 @@
                       <div class="abstract">
                         <p>Initializes the MLS client with the given client ID and message transport.</p>
 
+<p>In general this method should be called at most once per core-crypto instance.
+ Calling it multiple times with the same parameters should silently succeed, but this is not
+ a supported or tested mode of operation.
+ Calling it multiple times with varying parameters might succeed, but this is not a supported or tested mode of
+ operation.</p>
+
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
@@ -1455,6 +1461,12 @@
                       <div class="pointer"></div>
                       <div class="abstract">
                         <p>Initializes the Proteus client.</p>
+
+<p>In general this method should be called at most once per core-crypto instance.
+ Calling it multiple times with the same parameters should silently succeed, but this is not
+ a supported or tested mode of operation.
+ Calling it multiple times with varying parameters might succeed, but this is not a supported or tested mode of
+ operation.</p>
 
                       </div>
                       <div class="declaration">
