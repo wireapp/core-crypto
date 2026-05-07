@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-2c0098f8.js";
+            window.path_to_searchindex_js = "searchindex-7378d649.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-5214041f.js"></script>
@@ -960,13 +960,6 @@ with the static function <code>CoreCrypto.new(database: Database)</code>. Instea
 <p>We <strong>renamed</strong> <code>setLoggerOnly(logger: CoreCryptoLogger)</code> to <code>setLogger(logger: CoreCryptoLogger)</code>.</p>
 </li>
 </ol>
-<h2 id="passing-bytearray-arguments"><a class="header" href="#passing-bytearray-arguments">Passing ByteArray Arguments</a></h2>
-<p>We now generate the TypeScript bindings from the same uniffi code that Swift and Kotlin use. Arrays are now passed as
-<code>ArrayBuffer</code> between client and the FFI layer, changing parameter and return types.</p>
-<ul>
-<li>Use <code>.buffer()</code> to get an <code>ArrayBuffer</code> from a <code>Uint8Array</code>.</li>
-<li>Use <code>new Uint8Array(buffer)</code> to get a <code>Uint8Array</code> from an <code>ArrayBuffer</code>.</li>
-</ul>
 <h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
 <h3 id="error-structure"><a class="header" href="#error-structure">Error Structure</a></h3>
 <p>We adjusted the TypeScript error structure. Whenever matching on errors using version <code>&gt;= 9.1.0</code> type guards, update
@@ -1033,8 +1026,8 @@ the mapping.</p>
 <h2 id="other"><a class="header" href="#other">Other</a></h2>
 <ol>
 <li>
-<p><code>CoreCryptoContext.generateKeyPackage()</code> now returns a <code>KeyPackage</code> instance instead of an <code>ArrayBuffer</code>. If you need
-the underlying <code>ArrayBuffer</code>, call the <code>serialize</code> property on the <code>KeyPackage</code>.</p>
+<p><code>CoreCryptoContext.generateKeyPackage()</code> now returns a <code>KeyPackage</code> instance instead of an <code>Uint8Array</code>. If you need
+the underlying <code>Uint8Array</code>, call the <code>serialize</code> property on the <code>KeyPackage</code>.</p>
 </li>
 <li>
 <p><code>CustomConfiguration.keyRotationSpan</code> now defines milliseconds instead of seconds.</p>
