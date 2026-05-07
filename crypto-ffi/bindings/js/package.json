@@ -44,11 +44,11 @@
         "eslint-plugin-prettier": "^5.5.1",
         "eslint-plugin-wdio": "^9.27.0",
         "prettier": "^3.8.3",
-        "tinybench": "^6.0.0",
+        "tinybench": "^6.0.1",
         "ts-loader": "^9.5.7",
         "typedoc": "0.28.19",
         "typescript": "^5.8.3",
-        "typescript-eslint": "^8.59.0",
+        "typescript-eslint": "^8.59.1",
         "uniffi-bindgen-react-native": "github:wireapp/uniffi-bindgen-react-native#08a931b44dae4a4344a32bd9e9b21f5485a322a3",
         "yarn": "^1.22.22"
     },
