@@ -77,6 +77,7 @@ impl PkiEnvironmentHooks for TestPkiEnvironmentHooks {
         idp: String,
         key_auth: String,
         acme_aud: String,
+        _acquisition_snapshot: Vec<u8>,
     ) -> Result<String, PkiEnvironmentHooksError> {
         let oauth_cfg = OauthCfg {
             client_id: "wireapp".to_string(),

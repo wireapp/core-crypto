@@ -505,6 +505,7 @@ impl PkiEnvironmentHooks for DummyPkiEnvironmentHooks {
         _idp: String,
         _key_auth: String,
         _acme_aud: String,
+        _acquisition_snapshot: Vec<u8>,
     ) -> Result<String, PkiEnvironmentHooksError> {
         Ok("dummy-id-token".to_string())
     }
