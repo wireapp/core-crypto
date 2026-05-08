@@ -4,21 +4,14 @@
 //! when joining one by Welcome or external commit
 
 use openmls::prelude::{
-    Capabilities, Credential, CredentialType, ExternalSender, OpenMlsSignaturePublicKey,
-    PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY, ProtocolVersion,
-    RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy,
+    Capabilities, CredentialType, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
+    ProtocolVersion, RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy,
 };
-use openmls_traits::{
-    crypto::OpenMlsCrypto,
-    types::{Ciphersuite as MlsCiphersuite, SignatureScheme},
-};
+use openmls_traits::types::Ciphersuite as MlsCiphersuite;
 use serde::{Deserialize, Serialize};
-use wire_e2e_identity::parse_json_jwk;
 
 use super::Result;
-use crate::{
-    CipherSuite, MlsError, RecursiveError, mls::conversation::ExternalSenderKey, mls_provider::MlsCryptoProvider,
-};
+use crate::{CipherSuite, ExternalSender};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -42,8 +35,6 @@ pub struct MlsConversationConfiguration {
 }
 
 impl MlsConversationConfiguration {
-    const WIRE_SERVER_IDENTITY: &'static str = "wire-server";
-
     const PADDING_SIZE: usize = 128;
 
     /// Default protocol
@@ -84,7 +75,7 @@ impl MlsConversationConfiguration {
                 self.custom.maximum_forward_distance,
             ))
             .use_ratchet_tree_extension(true)
-            .external_senders(self.external_senders.clone())
+            .external_senders(self.external_senders.iter().cloned().map(Into::into).collect())
             .crypto_config(crypto_config)
             .build())
     }
@@ -104,57 +95,14 @@ impl MlsConversationConfiguration {
         RequiredCapabilitiesExtension::new(&[], &[], Self::DEFAULT_SUPPORTED_CREDENTIALS)
     }
 
-    /// Parses external senders' keys provided by the delivery service
+    /// Updates external senders provided by the delivery service
     /// and updates the conversation's configuration with them.
-    pub async fn set_raw_external_senders(
+    pub async fn set_external_senders(
         &mut self,
-        mls_crypto_provider: &MlsCryptoProvider,
-        external_senders: impl IntoIterator<Item = ExternalSenderKey>,
+        external_senders: impl IntoIterator<Item = ExternalSender>,
     ) -> Result<()> {
-        self.external_senders = external_senders
-            .into_iter()
-            .map(|key| {
-                MlsConversationConfiguration::parse_external_sender(&key).or_else(|_| {
-                    MlsConversationConfiguration::legacy_external_sender(
-                        key.into(),
-                        self.ciphersuite.signature_algorithm(),
-                        mls_crypto_provider,
-                    )
-                })
-            })
-            .collect::<crate::mls::conversation::Result<_>>()
-            .map_err(RecursiveError::mls_conversation("setting external sender"))?;
+        self.external_senders = external_senders.into_iter().collect();
         Ok(())
-    }
-
-    /// This expects a raw json serialized JWK. It works with any Signature scheme
-    pub(crate) fn parse_external_sender(jwk: &[u8]) -> Result<ExternalSender> {
-        let pk = parse_json_jwk(jwk)
-            .map_err(wire_e2e_identity::E2eIdentityError::from)
-            .map_err(RecursiveError::e2e_identity("parsing jwk"))?;
-        Ok(ExternalSender::new(
-            pk.into(),
-            Credential::new_basic(Self::WIRE_SERVER_IDENTITY.into()),
-        ))
-    }
-
-    /// This supports the legacy behaviour where the server was providing the external sender public key
-    /// raw.
-    // TODO: remove at some point when the backend API is not used anymore. Tracking issue: WPB-9614
-    pub(crate) fn legacy_external_sender(
-        key: Vec<u8>,
-        signature_scheme: SignatureScheme,
-        backend: &MlsCryptoProvider,
-    ) -> Result<ExternalSender> {
-        backend
-            .validate_signature_key(signature_scheme, &key[..])
-            .map_err(MlsError::wrap("validating signature key"))?;
-        let key = OpenMlsSignaturePublicKey::new(key.into(), signature_scheme)
-            .map_err(MlsError::wrap("creating new signature public key"))?;
-        Ok(ExternalSender::new(
-            key.into(),
-            Credential::new_basic(Self::WIRE_SERVER_IDENTITY.into()),
-        ))
     }
 }
 
@@ -216,7 +164,9 @@ mod tests {
     };
     use wire_e2e_identity::JwsAlgorithm;
 
-    use crate::{MlsConversationConfiguration, mls::conversation::ConversationWithMls as _, test_utils::*};
+    use crate::{
+        ExternalSender, MlsConversationConfiguration, mls::conversation::ConversationWithMls as _, test_utils::*,
+    };
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn group_should_have_required_capabilities() {
@@ -292,22 +242,15 @@ mod tests {
                 .crypto()
                 .signature_key_gen(case.signature_scheme())
                 .unwrap();
-            let pk = pk.into();
+            let pk = ExternalSender::parse_public_key(&pk, case.signature_scheme()).unwrap();
 
-            assert!(
-                case.cfg
-                    .clone()
-                    .set_raw_external_senders(&cc.session().await.crypto_provider, vec![pk])
-                    .await
-                    .is_ok()
-            );
+            assert!(case.cfg.clone().set_external_senders([pk]).await.is_ok());
         })
         .await
     }
 
     #[apply(all_cred_cipher)]
     pub async fn should_support_jwk_external_sender(case: TestContext) {
-        let [cc] = case.sessions().await;
         Box::pin(async move {
             let sc = case.signature_scheme();
 
@@ -319,14 +262,9 @@ mod tests {
                 SignatureScheme::ED448 => unreachable!(),
             };
 
-            let jwk = wire_e2e_identity::generate_jwk(alg).into();
-            assert!(
-                case.cfg
-                    .clone()
-                    .set_raw_external_senders(&cc.session().await.crypto_provider, vec![jwk])
-                    .await
-                    .is_ok()
-            );
+            let jwk = wire_e2e_identity::generate_jwk(alg);
+            let external_sender = ExternalSender::parse_jwk(&jwk).unwrap();
+            assert!(case.cfg.clone().set_external_senders([external_sender]).await.is_ok());
         })
         .await;
     }

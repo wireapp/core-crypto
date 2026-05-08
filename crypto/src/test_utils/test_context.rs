@@ -11,7 +11,9 @@ use super::{
     x509::{CertificateParams, X509TestChain, qualified_e2ei_cid, qualified_e2ei_cid_from_user_id},
 };
 pub use crate::{CipherSuite, CredentialType, MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy};
-use crate::{ClientId, ConnectionType, CredentialRef, Database, DatabaseKey, test_utils::SessionContext};
+use crate::{
+    ClientId, ConnectionType, CredentialRef, Database, DatabaseKey, ExternalSender, test_utils::SessionContext,
+};
 
 #[template]
 #[rstest(
@@ -347,20 +349,18 @@ impl TestContext {
         S: IntoIterator<Item = &'a SessionContext>,
         <S as IntoIterator>::IntoIter: Clone,
     {
-        let mut members = members.into_iter().peekable();
-        let creator = members.peek().unwrap();
         let signature_key = external_sender
             .initial_credential
             .load(&external_sender.database().await)
             .await
             .unwrap()
             .signature_key()
-            .to_public_vec()
-            .into();
-        self.cfg
-            .set_raw_external_senders(&creator.session().await.crypto_provider, vec![signature_key])
-            .await
-            .unwrap();
+            .to_public_vec();
+        let external_sender =
+            ExternalSender::parse_public_key(&signature_key, external_sender.initial_credential.signature_scheme())
+                .unwrap();
+
+        self.cfg.set_external_senders([external_sender]).await.unwrap();
         self.create_conversation(members).await
     }
 
