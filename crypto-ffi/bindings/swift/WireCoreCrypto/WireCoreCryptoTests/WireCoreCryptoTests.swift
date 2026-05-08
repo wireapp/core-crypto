@@ -965,7 +965,8 @@ final class WireCoreCryptoTests: XCTestCase {
         func authenticate(
             idp: String,
             keyAuth: String,
-            acmeAud: String
+            acmeAud: String,
+            acquisitionSnapshot: Data
         ) async -> String {
             return "mock-id-token"
         }

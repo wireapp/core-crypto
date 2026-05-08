@@ -74,7 +74,8 @@ class MockPkiEnvironmentHooks : PkiEnvironmentHooks {
     override suspend fun authenticate(
         idp: String,
         keyAuth: String,
-        acmeAud: String
+        acmeAud: String,
+        acquisitionSnapshot: ByteArray
     ): String {
         return "mock-id-token"
     }
