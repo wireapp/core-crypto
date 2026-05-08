@@ -4,11 +4,13 @@ pub(crate) mod ciphersuite;
 pub mod conversation;
 pub mod credential;
 mod error;
+mod external_sender;
 pub mod key_package;
 pub(crate) mod session;
 
 use core_crypto_keystore::Database;
 pub use error::{Error, Result};
+pub use external_sender::ExternalSender;
 pub use session::{EpochObserver, HistoryObserver};
 
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
