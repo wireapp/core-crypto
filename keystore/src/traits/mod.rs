@@ -29,7 +29,7 @@ pub use primary_key::{BorrowPrimaryKey, PrimaryKey};
 pub use searchable_entity::{
     DeletableBySearchKey, SearchableEntity, UnifiedDeletableBySearchKey, UnifiedSearchableEntity,
 };
-pub use transaction::CryptoTransaction;
+pub use transaction::{CryptoTransaction, PkiTransaction};
 pub use unique_entity::{
     UnifiedUniqueEntity, UnifiedUniqueEntityExt, UnifiedUniqueEntityImplementationHelper, UniqueEntity,
     UniqueEntityExt, UniqueEntityImplementationHelper,
