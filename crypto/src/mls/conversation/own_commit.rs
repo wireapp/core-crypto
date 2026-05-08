@@ -95,6 +95,7 @@ impl MlsConversation {
         let guard = pki_env.read().await;
         let identity = own_leaf_credential_with_key
             .extract_identity(self.ciphersuite(), guard.as_ref().map(|v| &**v))
+            .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         Ok(MlsDecryptMessage {

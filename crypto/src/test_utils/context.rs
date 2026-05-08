@@ -237,6 +237,7 @@ impl SessionContext {
 
             let mls_identity = certificate
                 .extract_identity(case.ciphersuite(), guard.as_ref().map(|v| &**v))
+                .await
                 .unwrap();
             let mls_client_id = mls_identity.client_id.as_bytes();
 
@@ -246,6 +247,7 @@ impl SessionContext {
             let identity = leaf
                 .as_slice()
                 .extract_identity(guard.as_ref().unwrap(), case.ciphersuite().e2ei_hash_alg())
+                .await
                 .unwrap();
             let identity = WireIdentity::try_from((identity, leaf.as_slice())).unwrap();
 
@@ -272,6 +274,7 @@ impl SessionContext {
             let leaf = chain.first().unwrap();
             let cert_identity = leaf
                 .extract_identity(guard.as_ref().unwrap(), case.ciphersuite().e2ei_hash_alg())
+                .await
                 .unwrap();
 
             let cert_identity = WireIdentity::try_from((cert_identity, leaf.to_der().unwrap().as_slice())).unwrap();

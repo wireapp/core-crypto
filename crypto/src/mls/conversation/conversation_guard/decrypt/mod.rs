@@ -195,6 +195,7 @@ impl ConversationGuard {
         let guard = pki_env.read().await;
         let identity = credential
             .extract_identity(self.ciphersuite().await, guard.as_ref().map(|v| &**v))
+            .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         let sender_client_id: ClientId = credential.credential.identity().to_owned().into();

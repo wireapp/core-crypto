@@ -649,6 +649,7 @@ mod tests {
         let guard = pki_env.read().await;
         let session_id = identifier
             .get_id(guard.as_ref().map(|v| &**v))
+            .await
             .expect("Getting session id from identifier")
             .into_owned();
         transaction.mls_init(session_id, transport).await.unwrap();

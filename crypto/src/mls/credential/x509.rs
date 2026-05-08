@@ -80,7 +80,7 @@ impl CertificateBundle {
     }
 
     /// Reads the client_id from the leaf certificate
-    pub fn get_client_id(&self, pki_env: &PkiEnvironment) -> Result<ClientId> {
+    pub async fn get_client_id(&self, pki_env: &PkiEnvironment) -> Result<ClientId> {
         let leaf = self.certificate_chain.first().ok_or(Error::InvalidIdentity)?;
 
         let hash_alg = match self.signature_scheme {
@@ -91,6 +91,7 @@ impl CertificateBundle {
 
         let identity = leaf
             .extract_identity(pki_env, hash_alg)
+            .await
             .map_err(|_| Error::InvalidIdentity)?;
 
         use wire_e2e_identity::legacy::id as legacy_id;

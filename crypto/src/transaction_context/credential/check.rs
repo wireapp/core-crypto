@@ -112,6 +112,7 @@ impl TransactionContext {
             .ok_or(Error::InvalidCredential)?;
         pki_env
             .validate_cert(&cert)
+            .await
             .map_err(RecursiveError::e2e_identity("validating credential certificate"))?;
         Ok(())
     }

@@ -119,6 +119,7 @@ mod tests {
             let guard = pki_env.read().await;
             let session_id = identifier
                 .get_id(guard.as_ref().map(|v| &**v))
+                .await
                 .expect("get session_id from identifier")
                 .into_owned();
             context
