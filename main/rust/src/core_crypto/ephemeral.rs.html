@@ -28,7 +28,7 @@
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>openmls::prelude::KeyPackageSecretEncapsulation;
 <a href=#29 id=29 data-nosnippet>29</a>
 <a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span>crate::{
-<a href=#31 id=31 data-nosnippet>31</a>    Ciphersuite, ClientId, ClientIdRef, CoreCrypto, CoreCryptoTransportNotImplementedProvider, Credential, Error,
+<a href=#31 id=31 data-nosnippet>31</a>    CipherSuite, ClientId, ClientIdRef, CoreCrypto, CoreCryptoTransportNotImplementedProvider, Credential, Error,
 <a href=#32 id=32 data-nosnippet>32</a>    MlsError, RecursiveError, <span class="prelude-ty">Result</span>, Session,
 <a href=#33 id=33 data-nosnippet>33</a>    mls_provider::{DatabaseKey, MlsCryptoProvider},
 <a href=#34 id=34 data-nosnippet>34</a>};
@@ -64,7 +64,7 @@
 <a href=#64 id=64 data-nosnippet>64</a>/// Note that this is a crate-private function; the public interface for this feature is
 <a href=#65 id=65 data-nosnippet>65</a>/// [`Conversation::generate_history_secret`][crate::mls::conversation::Conversation::generate_history_secret].
 <a href=#66 id=66 data-nosnippet>66</a>/// This implementation lives here instead of there for organizational reasons.
-<a href=#67 id=67 data-nosnippet>67</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>generate_history_secret(ciphersuite: Ciphersuite) -&gt; <span class="prelude-ty">Result</span>&lt;HistorySecret&gt; {
+<a href=#67 id=67 data-nosnippet>67</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>generate_history_secret(ciphersuite: CipherSuite) -&gt; <span class="prelude-ty">Result</span>&lt;HistorySecret&gt; {
 <a href=#68 id=68 data-nosnippet>68</a>    <span class="comment">// generate a new completely arbitrary client id
 <a href=#69 id=69 data-nosnippet>69</a>    </span><span class="kw">let </span>session_id = uuid::Uuid::new_v4();
 <a href=#70 id=70 data-nosnippet>70</a>    <span class="kw">let </span>session_id = <span class="macro">format!</span>(<span class="string">"{HISTORY_CLIENT_ID_PREFIX}-{session_id}"</span>);

@@ -8,7 +8,7 @@
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>super::{<span class="prelude-ty">Result</span>, Session};
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>crate::{
-<a href=#11 id=11 data-nosnippet>11</a>    Ciphersuite, CredentialFindFilters, CredentialType, E2eiConversationState, MlsError,
+<a href=#11 id=11 data-nosnippet>11</a>    CipherSuite, CredentialFindFilters, CredentialType, E2eiConversationState, MlsError,
 <a href=#12 id=12 data-nosnippet>12</a>    mls::{credential::ext::CredentialExt <span class="kw">as _</span>, session::Error},
 <a href=#13 id=13 data-nosnippet>13</a>};
 <a href=#14 id=14 data-nosnippet>14</a>
@@ -24,7 +24,7 @@
 <a href=#24 id=24 data-nosnippet>24</a>    /// If there are x509 (and optionally basic) credentials -&gt; Ok(true)
 <a href=#25 id=25 data-nosnippet>25</a>    /// If there are no x509 but basic credentials -&gt; Ok(false)
 <a href=#26 id=26 data-nosnippet>26</a>    /// If there are no credentials for the given ciphersuite -&gt; Err(CredentialNotFound)
-<a href=#27 id=27 data-nosnippet>27</a>    </span><span class="kw">pub async fn </span>e2ei_is_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>, ciphersuite: Ciphersuite) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt;
+<a href=#27 id=27 data-nosnippet>27</a>    </span><span class="kw">pub async fn </span>e2ei_is_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>, ciphersuite: CipherSuite) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt;
 <a href=#28 id=28 data-nosnippet>28</a>    <span class="kw">where
 <a href=#29 id=29 data-nosnippet>29</a>        </span>D: FetchFromDatabase,
 <a href=#30 id=30 data-nosnippet>30</a>    {
@@ -99,7 +99,7 @@
 <a href=#99 id=99 data-nosnippet>99</a>        .<span class="kw">await
 <a href=#100 id=100 data-nosnippet>100</a>    </span>}
 <a href=#101 id=101 data-nosnippet>101</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>get_credential_in_use_in_ratchet_tree(
-<a href=#102 id=102 data-nosnippet>102</a>        ciphersuite: Ciphersuite,
+<a href=#102 id=102 data-nosnippet>102</a>        ciphersuite: CipherSuite,
 <a href=#103 id=103 data-nosnippet>103</a>        ratchet_tree: RatchetTree,
 <a href=#104 id=104 data-nosnippet>104</a>        credential_type: CredentialType,
 <a href=#105 id=105 data-nosnippet>105</a>        env: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>wire_e2e_identity::x509_check::revocation::PkiEnvironment&gt;,
@@ -114,7 +114,7 @@
 <a href=#114 id=114 data-nosnippet>114</a>    <span class="doccomment">/// _credential_type will be used in the future to get the usage of VC Credentials, even Basics one.
 <a href=#115 id=115 data-nosnippet>115</a>    /// Right now though, we do not need anything other than X509 so let's keep things simple.
 <a href=#116 id=116 data-nosnippet>116</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>compute_conversation_state&lt;<span class="lifetime">'a</span>&gt;(
-<a href=#117 id=117 data-nosnippet>117</a>        ciphersuite: Ciphersuite,
+<a href=#117 id=117 data-nosnippet>117</a>        ciphersuite: CipherSuite,
 <a href=#118 id=118 data-nosnippet>118</a>        credentials: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Credential&gt;,
 <a href=#119 id=119 data-nosnippet>119</a>        _credential_type: CredentialType,
 <a href=#120 id=120 data-nosnippet>120</a>        env: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>wire_e2e_identity::x509_check::revocation::PkiEnvironment&gt;,

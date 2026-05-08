@@ -17,7 +17,7 @@
 <a href=#17 id=17 data-nosnippet>17</a>
 <a href=#18 id=18 data-nosnippet>18</a><span class="kw">use </span><span class="kw">super</span>::Result;
 <a href=#19 id=19 data-nosnippet>19</a><span class="kw">use </span>crate::{
-<a href=#20 id=20 data-nosnippet>20</a>    Ciphersuite, MlsError, RecursiveError, mls::conversation::ExternalSenderKey, mls_provider::MlsCryptoProvider,
+<a href=#20 id=20 data-nosnippet>20</a>    CipherSuite, MlsError, RecursiveError, mls::conversation::ExternalSenderKey, mls_provider::MlsCryptoProvider,
 <a href=#21 id=21 data-nosnippet>21</a>};
 <a href=#22 id=22 data-nosnippet>22</a>
 <a href=#23 id=23 data-nosnippet>23</a><span class="doccomment">/// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
@@ -34,7 +34,7 @@
 <a href=#34 id=34 data-nosnippet>34</a></span><span class="attr">#[derive(Debug, Clone, Default)]
 <a href=#35 id=35 data-nosnippet>35</a></span><span class="kw">pub struct </span>MlsConversationConfiguration {
 <a href=#36 id=36 data-nosnippet>36</a>    <span class="doccomment">/// The `OpenMls` Ciphersuite used in the group
-<a href=#37 id=37 data-nosnippet>37</a>    </span><span class="kw">pub </span>ciphersuite: Ciphersuite,
+<a href=#37 id=37 data-nosnippet>37</a>    </span><span class="kw">pub </span>ciphersuite: CipherSuite,
 <a href=#38 id=38 data-nosnippet>38</a>    <span class="doccomment">/// Delivery service public signature key and credential
 <a href=#39 id=39 data-nosnippet>39</a>    </span><span class="kw">pub </span>external_senders: Vec&lt;ExternalSender&gt;,
 <a href=#40 id=40 data-nosnippet>40</a>    <span class="doccomment">/// Implementation specific configuration

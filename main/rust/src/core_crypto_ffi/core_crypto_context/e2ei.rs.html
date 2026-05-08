@@ -3,7 +3,7 @@
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span>core_crypto::{mls::conversation::Conversation <span class="kw">as _</span>, transaction_context::Error <span class="kw">as </span>TransactionError};
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>crate::{
-<a href=#6 id=6 data-nosnippet>6</a>    Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, E2eiConversationState, UserIdentities,
+<a href=#6 id=6 data-nosnippet>6</a>    CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, E2eiConversationState, UserIdentities,
 <a href=#7 id=7 data-nosnippet>7</a>    WireIdentity,
 <a href=#8 id=8 data-nosnippet>8</a>};
 <a href=#9 id=9 data-nosnippet>9</a>
@@ -23,7 +23,7 @@
 <a href=#23 id=23 data-nosnippet>23</a>    }
 <a href=#24 id=24 data-nosnippet>24</a>
 <a href=#25 id=25 data-nosnippet>25</a>    <span class="doccomment">/// Returns true if end-to-end identity is enabled for the given ciphersuite.
-<a href=#26 id=26 data-nosnippet>26</a>    </span><span class="kw">pub async fn </span>e2ei_is_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>, ciphersuite: Ciphersuite) -&gt; CoreCryptoResult&lt;bool&gt; {
+<a href=#26 id=26 data-nosnippet>26</a>    </span><span class="kw">pub async fn </span>e2ei_is_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>, ciphersuite: CipherSuite) -&gt; CoreCryptoResult&lt;bool&gt; {
 <a href=#27 id=27 data-nosnippet>27</a>        <span class="self">self</span>.inner
 <a href=#28 id=28 data-nosnippet>28</a>            .e2ei_is_enabled(ciphersuite.into())
 <a href=#29 id=29 data-nosnippet>29</a>            .<span class="kw">await

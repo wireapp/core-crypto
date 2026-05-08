@@ -58,7 +58,7 @@
 <a href=#58 id=58 data-nosnippet>58</a>};
 <a href=#59 id=59 data-nosnippet>59</a><span class="kw">use </span><span class="kw">super</span>::credential::Credential;
 <a href=#60 id=60 data-nosnippet>60</a><span class="kw">use </span>crate::{
-<a href=#61 id=61 data-nosnippet>61</a>    Ciphersuite, ClientId, ClientIdRef, CredentialRef, CredentialType, E2eiConversationState, LeafError, MlsError,
+<a href=#61 id=61 data-nosnippet>61</a>    CipherSuite, ClientId, ClientIdRef, CredentialRef, CredentialType, E2eiConversationState, LeafError, MlsError,
 <a href=#62 id=62 data-nosnippet>62</a>    RecursiveError, UserId, WireIdentity, bytes_wrapper,
 <a href=#63 id=63 data-nosnippet>63</a>    mls::{HasSessionAndCrypto, Session, credential::ext::CredentialExt <span class="kw">as _</span>},
 <a href=#64 id=64 data-nosnippet>64</a>    mls_provider::MlsCryptoProvider,
@@ -128,7 +128,7 @@
 <a href=#128 id=128 data-nosnippet>128</a>    }
 <a href=#129 id=129 data-nosnippet>129</a>
 <a href=#130 id=130 data-nosnippet>130</a>    <span class="doccomment">/// Returns the ciphersuite of a given conversation
-<a href=#131 id=131 data-nosnippet>131</a>    </span><span class="kw">async fn </span>ciphersuite(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>) -&gt; Ciphersuite {
+<a href=#131 id=131 data-nosnippet>131</a>    </span><span class="kw">async fn </span>ciphersuite(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>) -&gt; CipherSuite {
 <a href=#132 id=132 data-nosnippet>132</a>        <span class="self">self</span>.conversation().<span class="kw">await</span>.ciphersuite()
 <a href=#133 id=133 data-nosnippet>133</a>    }
 <a href=#134 id=134 data-nosnippet>134</a>
@@ -402,7 +402,7 @@
 <a href=#402 id=402 data-nosnippet>402</a>            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
 <a href=#403 id=403 data-nosnippet>403</a>    }
 <a href=#404 id=404 data-nosnippet>404</a>
-<a href=#405 id=405 data-nosnippet>405</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>ciphersuite(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Ciphersuite {
+<a href=#405 id=405 data-nosnippet>405</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>ciphersuite(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CipherSuite {
 <a href=#406 id=406 data-nosnippet>406</a>        <span class="self">self</span>.configuration.ciphersuite
 <a href=#407 id=407 data-nosnippet>407</a>    }
 <a href=#408 id=408 data-nosnippet>408</a>
