@@ -134,6 +134,7 @@ impl SessionContext {
         let guard = pki_env.read().await;
         let session_id = identifier
             .get_id(guard.as_ref().map(|v| &**v))
+            .await
             .map_err(RecursiveError::mls_client("getting client id"))?
             .into_owned();
         transaction
@@ -312,6 +313,7 @@ impl SessionContext {
                     }
                     Some(ref pki_env) => cert
                         .get_client_id(pki_env)
+                        .await
                         .expect("Getting client id from certificate bundle"),
                 };
                 let credential = Credential::x509(case.ciphersuite(), cert).expect("creating  x509 credential");

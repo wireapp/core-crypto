@@ -40,7 +40,6 @@ use std::{
 };
 
 use core_crypto_keystore::Database;
-use itertools::Itertools as _;
 use log::trace;
 use openmls::{
     group::{MlsGroup, QueuedProposal},
@@ -224,16 +223,19 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
 
         let pki_env = auth_service.pki_env();
         let guard = pki_env.read().await;
-        conversation
-            .members_with_key()
-            .into_iter()
-            .filter(|(id, _)| device_ids.iter().any(|client_id| client_id.borrow() == id))
-            .map(|(_, c)| {
-                c.extract_identity(conversation.ciphersuite(), guard.as_ref().map(|v| &**v))
-                    .map_err(RecursiveError::mls_credential("extracting identity"))
-            })
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(Into::into)
+
+        let mut identities = vec![];
+        for (id, credential) in conversation.members_with_key() {
+            if device_ids.iter().any(|client_id| client_id.borrow() == id) {
+                identities.push(
+                    credential
+                        .extract_identity(conversation.ciphersuite(), guard.as_ref().map(|v| &**v))
+                        .await
+                        .map_err(RecursiveError::mls_credential("extracting identity"))?,
+                );
+            }
+        }
+        Ok(identities)
     }
 
     /// From a given conversation, get the identity of the users (device holders) supplied.
@@ -255,19 +257,28 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
 
         let pki_env = auth_service.pki_env();
         let guard = pki_env.read().await;
-        conversation
-            .members_with_key()
-            .iter()
-            .filter_map(|(id, c)| UserId::try_from(id.as_slice()).ok().zip(Some(c)))
-            .filter(|(uid, _)| user_ids.contains(uid))
-            .map(|(uid, c)| {
-                let uid = String::try_from(uid).map_err(RecursiveError::mls_client("getting user identities"))?;
-                let identity = c
-                    .extract_identity(conversation.ciphersuite(), guard.as_ref().map(|v| &**v))
-                    .map_err(RecursiveError::mls_credential("extracting identity"))?;
-                Ok((uid, identity))
-            })
-            .process_results(|iter| iter.into_group_map())
+
+        let mut identities = HashMap::new();
+        for (id, credential) in conversation.members_with_key() {
+            let uid = match UserId::try_from(id.as_slice()) {
+                Ok(uid) => uid,
+                Err(_) => continue,
+            };
+
+            if !user_ids.contains(&uid) {
+                continue;
+            }
+
+            let uid = String::try_from(uid).map_err(RecursiveError::mls_client("getting user identities"))?;
+            let identity = credential
+                .extract_identity(conversation.ciphersuite(), guard.as_ref().map(|v| &**v))
+                .await
+                .map_err(RecursiveError::mls_credential("extracting identity"))?;
+            let value = identities.entry(uid).or_insert_with(Vec::new);
+            value.push(identity);
+        }
+
+        Ok(identities)
     }
 
     /// Generate a new [`crate::HistorySecret`].
