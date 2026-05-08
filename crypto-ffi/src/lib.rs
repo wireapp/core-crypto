@@ -25,6 +25,7 @@ mod decrypted_message;
 mod e2ei;
 mod ephemeral;
 mod error;
+mod external_sender;
 mod identity;
 mod key_package;
 mod metadata;
@@ -65,6 +66,7 @@ pub use error::{
     mls::MlsError,
     mls_transport::{MlsTransportError, MlsTransportResult},
 };
+pub use external_sender::ExternalSender;
 pub use identity::{
     wire::{DeviceStatus, WireIdentity},
     x509::X509Identity,

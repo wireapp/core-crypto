@@ -8,7 +8,7 @@ use core_crypto_keystore::Sha256Hash;
 
 use crate::{
     CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
-    CredentialRef, CredentialType, DecryptedMessage, KeyPackage, KeyPackageRef, MlsTransport,
+    CredentialRef, CredentialType, DecryptedMessage, ExternalSender, KeyPackage, KeyPackageRef, MlsTransport,
     bytes_wrapper::{bytes_wrapper, impl_display_via_hex},
     core_crypto::mls_transport::callback_shim,
 };
@@ -199,21 +199,16 @@ impl CoreCryptoContext {
         &self,
         conversation_id: &ConversationId,
         credential_ref: &CredentialRef,
-        external_sender: Option<Arc<ExternalSenderKey>>,
+        external_sender: Option<Arc<ExternalSender>>,
     ) -> CoreCryptoResult<()> {
-        let mut lower_cfg = MlsConversationConfiguration {
+        let lower_cfg = MlsConversationConfiguration {
             ciphersuite: credential_ref.ciphersuite().into(),
+            external_senders: external_sender
+                .into_iter()
+                .map(|arc_external_sender| Arc::unwrap_or_clone(arc_external_sender).into())
+                .collect(),
             ..Default::default()
         };
-
-        lower_cfg
-            .set_raw_external_senders(
-                &self.inner.mls_provider().await?,
-                external_sender
-                    .into_iter()
-                    .map(|external_sender| Arc::unwrap_or_clone(external_sender).into()),
-            )
-            .await?;
 
         self.inner
             .new_conversation(conversation_id.as_ref(), &credential_ref.0, lower_cfg)
