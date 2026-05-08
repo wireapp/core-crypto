@@ -11,6 +11,7 @@ mod item_encryption;
 mod key_type;
 mod primary_key;
 mod searchable_entity;
+mod transaction;
 mod unique_entity;
 
 pub use entity::{Entity, EntityGetBorrowed, UnifiedEntity, UnifiedEntityGetBorrowed};
@@ -28,6 +29,7 @@ pub use primary_key::{BorrowPrimaryKey, PrimaryKey};
 pub use searchable_entity::{
     DeletableBySearchKey, SearchableEntity, UnifiedDeletableBySearchKey, UnifiedSearchableEntity,
 };
+pub use transaction::CryptoTransaction;
 pub use unique_entity::{
     UnifiedUniqueEntity, UnifiedUniqueEntityExt, UnifiedUniqueEntityImplementationHelper, UniqueEntity,
     UniqueEntityExt, UniqueEntityImplementationHelper,
