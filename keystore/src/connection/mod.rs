@@ -69,11 +69,17 @@ pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
     fn location(&self) -> Option<&str>;
 }
 
+const INDEPENDENT_TRANSACTIONS_COUNT: usize = 2;
+
 #[derive(Debug, Clone)]
 pub struct Database {
     pub(crate) conn: Arc<Mutex<Option<KeystoreDatabaseConnection>>>,
-    pub(crate) transaction: Arc<Mutex<Option<KeystoreTransaction>>>,
-    transaction_semaphore: Arc<Semaphore>,
+    // We assume that these transactions never hold the same entity types.
+    // Only because of this we can run the transactions in parrallel.
+    // Ideally we make this compile-safe by introducing clear layers and avoid the indirection between database and
+    // transaction cache.
+    pub(crate) transactions: [Arc<Mutex<Option<KeystoreTransaction>>>; INDEPENDENT_TRANSACTIONS_COUNT],
+    transaction_semaphores: [Arc<Semaphore>; INDEPENDENT_TRANSACTIONS_COUNT],
 }
 
 const ALLOWED_CONCURRENT_TRANSACTIONS_COUNT: usize = 1;
@@ -141,8 +147,10 @@ impl Database {
         let conn = Arc::new(conn);
         Ok(Self {
             conn,
-            transaction: Default::default(),
-            transaction_semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
+            transactions: Default::default(),
+            transaction_semaphores: std::array::from_fn(|_| {
+                Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT))
+            }),
         })
     }
 
@@ -157,8 +165,10 @@ impl Database {
         let conn = Arc::new(conn);
         Ok(Self {
             conn,
-            transaction: Default::default(),
-            transaction_semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
+            transactions: Default::default(),
+            transaction_semaphores: std::array::from_fn(|_| {
+                Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT))
+            }),
         })
     }
 
@@ -182,8 +192,10 @@ impl Database {
         let conn = Arc::new(Mutex::new(Some(wasm_connection)));
         Ok(Self {
             conn,
-            transaction: Default::default(),
-            transaction_semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
+            transactions: Default::default(),
+            transaction_semaphores: std::array::from_fn(|_| {
+                Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT))
+            }),
         })
     }
 
@@ -199,7 +211,11 @@ impl Database {
     /// Wait for any running transaction to finish, then take the connection out of this database,
     /// preventing this database from being used again.
     async fn take(&self) -> CryptoKeystoreResult<KeystoreDatabaseConnection> {
-        let _semaphore = self.transaction_semaphore.acquire_arc().await;
+        let mut guards = Vec::with_capacity(self.transaction_semaphores.len());
+
+        for transaction_semaphore in &self.transaction_semaphores {
+            guards.push(transaction_semaphore.acquire_arc().await);
+        }
 
         let mut guard = self.conn.lock().await;
         guard.take().ok_or(CryptoKeystoreError::Closed)
@@ -257,15 +273,15 @@ impl Database {
     }
 
     /// Waits for the current transaction to be committed or rolled back, then starts a new one.
-    pub async fn new_transaction(&self) -> CryptoKeystoreResult<()> {
-        let semaphore = self.transaction_semaphore.acquire_arc().await;
-        let mut transaction_guard = self.transaction.lock().await;
+    pub async fn new_transaction<const SLOT: usize>(&self) -> CryptoKeystoreResult<()> {
+        let semaphore = self.transaction_semaphores[SLOT].acquire_arc().await;
+        let mut transaction_guard = self.transactions[SLOT].lock().await;
         *transaction_guard = Some(KeystoreTransaction::new(semaphore).await?);
         Ok(())
     }
 
-    pub async fn commit_transaction(&self) -> CryptoKeystoreResult<()> {
-        let mut transaction_guard = self.transaction.lock().await;
+    pub async fn commit_transaction<const SLOT: usize>(&self) -> CryptoKeystoreResult<()> {
+        let mut transaction_guard = self.transactions[SLOT].lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
             return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
         };
@@ -274,8 +290,8 @@ impl Database {
         Ok(())
     }
 
-    pub async fn rollback_transaction(&self) -> CryptoKeystoreResult<()> {
-        let mut transaction_guard = self.transaction.lock().await;
+    pub async fn rollback_transaction<const SLOT: usize>(&self) -> CryptoKeystoreResult<()> {
+        let mut transaction_guard = self.transactions[SLOT].lock().await;
         if transaction_guard.is_none() {
             return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
         };
@@ -294,33 +310,36 @@ impl Database {
         transaction.child_groups(entity, persisted_records).await
     }
 
-    pub async fn save<'a, E>(&self, entity: E) -> CryptoKeystoreResult<E::AutoGeneratedFields>
+    pub async fn save<'a, E, const SLOT: usize>(&self, entity: E) -> CryptoKeystoreResult<E::AutoGeneratedFields>
     where
         E: Entity + EntityDatabaseMutation<'a> + Send + Sync,
     {
-        let transaction_guard = self.transaction.lock().await;
+        let transaction_guard = self.transactions[SLOT].lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
             return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
         };
         transaction.save(entity).await
     }
 
-    pub async fn remove<'a, E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<()>
+    pub async fn remove<'a, E, const SLOT: usize>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<()>
     where
         E: Entity + EntityDatabaseMutation<'a>,
     {
-        let transaction_guard = self.transaction.lock().await;
+        let transaction_guard = self.transactions[SLOT].lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
             return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
         };
         transaction.remove::<E>(id).await
     }
 
-    pub async fn remove_borrowed<'a, E>(&self, id: &E::BorrowedPrimaryKey) -> CryptoKeystoreResult<()>
+    pub async fn remove_borrowed<'a, E, const SLOT: usize>(
+        &self,
+        id: &E::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<()>
     where
         E: Entity + EntityDatabaseMutation<'a> + BorrowPrimaryKey + EntityDeleteBorrowed<'a>,
     {
-        let transaction_guard = self.transaction.lock().await;
+        let transaction_guard = self.transactions[SLOT].lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
             return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
         };
