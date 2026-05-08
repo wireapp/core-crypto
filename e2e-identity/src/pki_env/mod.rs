@@ -9,7 +9,9 @@ mod dummy;
 use std::{collections::HashSet, sync::Arc};
 
 use async_lock::Mutex;
-use certval::{CertSource, CertVector as _, CertificationPathSettings, TaSource};
+use certval::{
+    CertSource, CertVector as _, CertificationPathSettings, Error as CertvalError, PathValidationStatus, TaSource,
+};
 use core_crypto_keystore::{
     connection::Database,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
@@ -249,36 +251,26 @@ impl PkiEnvironment {
             return CredentialAuthenticationStatus::Invalid;
         };
 
-        if let Err(validation_error) = self.rjt_pki_env.lock().await.validate_cert_and_revocation(&cert) {
-            use crate::x509_check::{
-                RustyX509CheckError,
-                reexports::certval::{Error as CertvalError, PathValidationStatus},
-            };
-
-            if let RustyX509CheckError::CertValError(CertvalError::PathValidation(certificate_validation_error)) =
-                validation_error
-            {
-                match certificate_validation_error {
-                    PathValidationStatus::Valid
-                    | PathValidationStatus::RevocationStatusNotAvailable
-                    | PathValidationStatus::RevocationStatusNotDetermined => {}
-                    PathValidationStatus::CertificateRevoked
-                    | PathValidationStatus::CertificateRevokedEndEntity
-                    | PathValidationStatus::CertificateRevokedIntermediateCa => {
-                        // ? Revoked credentials are A-OK. They still degrade conversations though.
-                        // return CredentialAuthenticationStatus::Revoked;
-                    }
-                    PathValidationStatus::InvalidNotAfterDate => {
-                        // ? Expired credentials are A-OK. They still degrade conversations though.
-                        // return CredentialAuthenticationStatus::Expired;
-                    }
-                    _ => return CredentialAuthenticationStatus::Invalid,
-                }
-            } else {
-                return CredentialAuthenticationStatus::Unknown;
+        match self.rjt_pki_env.lock().await.validate_cert_and_revocation(&cert) {
+            Err(RustyX509CheckError::CertValError(CertvalError::PathValidation(
+                PathValidationStatus::CertificateRevoked
+                | PathValidationStatus::CertificateRevokedEndEntity
+                | PathValidationStatus::CertificateRevokedIntermediateCa,
+            ))) => {
+                // ? Revoked credentials are A-OK. They still degrade conversations though.
+                CredentialAuthenticationStatus::Valid
             }
+            Err(RustyX509CheckError::CertValError(CertvalError::PathValidation(
+                PathValidationStatus::InvalidNotAfterDate,
+            ))) => {
+                // ? Expired credentials are A-OK. They still degrade conversations though.
+                CredentialAuthenticationStatus::Valid
+            }
+            Err(RustyX509CheckError::CertValError(CertvalError::PathValidation(_))) => {
+                CredentialAuthenticationStatus::Invalid
+            }
+            Err(_) => CredentialAuthenticationStatus::Unknown,
+            Ok(_) => CredentialAuthenticationStatus::Valid,
         }
-
-        CredentialAuthenticationStatus::Valid
     }
 }
