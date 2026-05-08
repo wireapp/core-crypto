@@ -5,7 +5,7 @@ use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash,
     entities::{
-        PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredE2eiEnrollment, StoredEncryptionKeyPair,
+        PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredEncryptionKeyPair,
         StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
     traits::FetchFromDatabase,
@@ -105,19 +105,6 @@ pub trait CryptoKeystoreMls: Sized {
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
     async fn mls_pending_groups_delete(&self, group_id: impl AsRef<[u8]> + Send) -> CryptoKeystoreResult<()>;
-
-    /// Persists an enrollment instance
-    ///
-    /// # Arguments
-    /// * `id` - hash of the enrollment and unique identifier
-    /// * `content` - serialized enrollment
-    async fn save_e2ei_enrollment(&self, id: &[u8], content: &[u8]) -> CryptoKeystoreResult<()>;
-
-    /// Fetches and delete the enrollment instance
-    ///
-    /// # Arguments
-    /// * `id` - hash of the enrollment and unique identifier
-    async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Option<Vec<u8>>>;
 }
 
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
@@ -206,24 +193,6 @@ impl CryptoKeystoreMls for crate::Database {
     async fn mls_pending_groups_delete(&self, group_id: impl AsRef<[u8]> + Send) -> CryptoKeystoreResult<()> {
         self.remove_borrowed::<PersistedMlsPendingGroup>(group_id.as_ref())
             .await
-    }
-
-    async fn save_e2ei_enrollment(&self, id: &[u8], content: &[u8]) -> CryptoKeystoreResult<()> {
-        self.save(StoredE2eiEnrollment {
-            id: id.into(),
-            content: content.into(),
-        })
-        .await?;
-        Ok(())
-    }
-
-    async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Option<Vec<u8>>> {
-        // someone who has time could try to optimize this but honestly it's really on the cold path
-        let Some(mut enrollment) = self.get_borrowed::<StoredE2eiEnrollment>(id).await? else {
-            return Ok(None);
-        };
-        self.remove_borrowed::<StoredE2eiEnrollment>(id).await?;
-        Ok(Some(std::mem::take(&mut enrollment.content)))
     }
 }
 
