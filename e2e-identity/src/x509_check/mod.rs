@@ -61,8 +61,8 @@ pub enum IdentityStatus {
 }
 
 impl IdentityStatus {
-    pub fn from_cert(cert: &x509_cert::Certificate, env: &PkiEnvironment) -> Self {
-        match env.validate_cert(cert) {
+    pub async fn from_cert(cert: &x509_cert::Certificate, env: &PkiEnvironment) -> Self {
+        match env.validate_cert(cert).await {
             Err(RustyX509CheckError::CertValError(certval::Error::PathValidation(e))) => match e {
                 PathValidationStatus::InvalidNotAfterDate => IdentityStatus::Expired,
                 PathValidationStatus::CertificateRevoked

@@ -25,7 +25,8 @@ pub struct WireIdentity {
 pub trait WireIdentityReader {
     /// Verifies a proof of identity, may it be a x509 certificate (or a Verifiable Presentation (later)).
     /// We do not verify anything else e.g. expiry, it is left to MLS implementation
-    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity>;
+    #[allow(async_fn_in_trait)]
+    async fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity>;
 
     /// returns the 'Not Before' claim which usually matches the creation timestamp
     fn extract_created_at(&self) -> Result<u64>;
@@ -35,13 +36,13 @@ pub trait WireIdentityReader {
 }
 
 impl WireIdentityReader for x509_cert::Certificate {
-    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity> {
+    async fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity> {
         let serial_number = hex::encode(self.tbs_certificate.serial_number.as_bytes());
         let not_before = self.tbs_certificate.validity.not_before.to_unix_duration().as_secs();
         let not_after = self.tbs_certificate.validity.not_after.to_unix_duration().as_secs();
         let (client_id, handle) = try_extract_san(&self.tbs_certificate)?;
         let (display_name, domain) = try_extract_subject(&self.tbs_certificate)?;
-        let status = IdentityStatus::from_cert(self, env);
+        let status = IdentityStatus::from_cert(self, env).await;
         let thumbprint = try_compute_jwk_canonicalized_thumbprint(&self.tbs_certificate, hash_alg)?;
 
         Ok(WireIdentity {
@@ -72,8 +73,10 @@ impl WireIdentityReader for x509_cert::Certificate {
 }
 
 impl WireIdentityReader for &[u8] {
-    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity> {
-        x509_cert::Certificate::from_der(self)?.extract_identity(env, hash_alg)
+    async fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity> {
+        x509_cert::Certificate::from_der(self)?
+            .extract_identity(env, hash_alg)
+            .await
     }
 
     fn extract_created_at(&self) -> Result<u64> {
@@ -86,8 +89,8 @@ impl WireIdentityReader for &[u8] {
 }
 
 impl WireIdentityReader for Vec<u8> {
-    fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity> {
-        self.as_slice().extract_identity(env, hash_alg)
+    async fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity> {
+        self.as_slice().extract_identity(env, hash_alg).await
     }
 
     fn extract_created_at(&self) -> Result<u64> {
@@ -214,6 +217,7 @@ OfqfZA1YMtN5NLz/AA==
         let identity = cert_der
             .contents()
             .extract_identity(&pki_env.await, HashAlgorithm::SHA256)
+            .await
             .unwrap();
 
         assert_eq!(&identity.client_id, "obakjPOHQ2CkNb0rOrNM3A:ba54e8ace8b4c90d@wire.com");
@@ -252,6 +256,7 @@ OfqfZA1YMtN5NLz/AA==
         let identity = cert_der
             .contents()
             .extract_identity(&pki_env.await, HashAlgorithm::SHA256)
+            .await
             .unwrap();
         assert_eq!(&identity.status, &IdentityStatus::Expired);
     }
@@ -264,6 +269,7 @@ OfqfZA1YMtN5NLz/AA==
         let identity = cert_der
             .contents()
             .extract_identity(&pki_env.await, HashAlgorithm::SHA256)
+            .await
             .unwrap();
         assert!(!identity.thumbprint.is_empty());
     }
