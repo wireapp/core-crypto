@@ -1,7 +1,7 @@
 pub mod platform;
 
 use std::{
-    borrow::Borrow,
+    borrow::{Borrow, Cow},
     ops::{Deref, DerefMut},
     sync::Arc,
 };
@@ -462,11 +462,15 @@ impl FetchFromDatabase for Database {
         E: Entity<ConnectionType = KeystoreDatabaseConnection> + Clone + Send + Sync,
     {
         // If a transaction is in progress...
-        if let Some(transaction) = self.transaction[SLOT].lock().await.as_ref()
+        for transaction in &self.transactions {
+            let guard = transaction.lock().await;
+
+            if let Some(transaction) = guard.as_ref()
             //... and it has information about this entity, ...
-            && let Some(cached_record) = transaction.get(id).await
-        {
-            return Ok(cached_record.map(Arc::unwrap_or_clone));
+                && let Some(record) = transaction.get(id).await
+            {
+                return Ok(record.map(Arc::unwrap_or_clone));
+            }
         }
 
         // Otherwise get it from the database
@@ -480,14 +484,17 @@ impl FetchFromDatabase for Database {
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
         for<'a> &'a E::BorrowedPrimaryKey: KeyType,
     {
-        // If a transaction is in progress...
-        if let Some(transaction) = self.transaction.lock().await.as_ref()
+        for transaction in &self.transactions {
+            let guard = transaction.lock().await;
+
+            // If a transaction is in progress...
+            if let Some(transaction) = guard.as_ref()
             //... and it has information about this entity, ...
             && let Some(cached_record) = transaction.get_borrowed(id).await
-        {
-            return Ok(cached_record.map(Arc::unwrap_or_clone));
+            {
+                return Ok(cached_record.map(Arc::unwrap_or_clone));
+            }
         }
-
         // Otherwise get it from the database
         let mut conn = self.conn().await?;
         E::get_borrowed(&mut conn, id).await
@@ -497,7 +504,16 @@ impl FetchFromDatabase for Database {
     where
         E: Entity<ConnectionType = KeystoreDatabaseConnection> + Clone + Send + Sync,
     {
-        if self.transaction.lock().await.is_some() {
+        let mut has_any_transaction = false;
+
+        for transaction in &self.transactions {
+            if transaction.lock().await.is_some() {
+                has_any_transaction = true;
+                break;
+            }
+        }
+
+        if has_any_transaction {
             // Unfortunately, we have to do this because of possible record id overlap
             // between cache and db.
             let count = self.load_all::<E>().await?.len();
@@ -515,11 +531,21 @@ impl FetchFromDatabase for Database {
         let mut conn = self.conn().await?;
         let persisted_records = E::load_all(&mut conn).await?;
 
-        let transaction_guard = self.transaction.lock().await;
-        let Some(transaction) = transaction_guard.as_ref() else {
-            return Ok(persisted_records);
-        };
-        transaction.find_all(persisted_records).await
+        for transaction in &self.transactions {
+            let guard = transaction.lock().await;
+
+            if let Some(transaction) = guard.as_ref() {
+                let cached_records = transaction.find_all_in_cache::<E>().await;
+                let merged_records = transaction
+                    .merge_records::<E>(
+                        cached_records.iter().map(Arc::as_ref).map(Cow::Borrowed),
+                        persisted_records.into_iter().map(Cow::Owned),
+                    )
+                    .await;
+                return Ok(merged_records);
+            }
+        }
+        Ok(persisted_records)
     }
 
     async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
@@ -530,11 +556,20 @@ impl FetchFromDatabase for Database {
         let mut conn = self.conn().await?;
         let persisted_records = E::find_all_matching(&mut conn, search_key).await?;
 
-        let transaction_guard = self.transaction.lock().await;
-        let Some(transaction) = transaction_guard.as_ref() else {
-            return Ok(persisted_records);
-        };
+        for transaction in &self.transactions {
+            let guard = transaction.lock().await;
 
-        transaction.search(persisted_records, search_key).await
+            if let Some(transaction) = guard.as_ref() {
+                let cached_records = transaction.search_in_cache::<E, SearchKey>(search_key).await;
+                let merged_records = transaction
+                    .merge_records::<E>(
+                        cached_records.iter().map(Arc::as_ref).map(Cow::Borrowed),
+                        persisted_records.into_iter().map(Cow::Owned),
+                    )
+                    .await;
+                return Ok(merged_records);
+            }
+        }
+        Ok(persisted_records)
     }
 }

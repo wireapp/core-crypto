@@ -240,7 +240,7 @@ impl KeystoreTransaction {
         self.get_by_entity_id(&entity_id).await
     }
 
-    async fn find_all_in_cache<E>(&self) -> Vec<Arc<E>>
+    pub(crate) async fn find_all_in_cache<E>(&self) -> Vec<Arc<E>>
     where
         E: Entity + Send + Sync,
     {
@@ -261,7 +261,7 @@ impl KeystoreTransaction {
             .unwrap_or_default()
     }
 
-    async fn search_in_cache<E, SearchKey>(&self, search_key: &SearchKey) -> Vec<Arc<E>>
+    pub(crate) async fn search_in_cache<E, SearchKey>(&self, search_key: &SearchKey) -> Vec<Arc<E>>
     where
         E: Entity + SearchableEntity<SearchKey> + Send + Sync,
         SearchKey: KeyType,
@@ -284,39 +284,6 @@ impl KeystoreTransaction {
             .unwrap_or_default()
     }
 
-    pub(crate) async fn find_all<E>(&self, persisted_records: Vec<E>) -> CryptoKeystoreResult<Vec<E>>
-    where
-        E: Clone + Entity + Send + Sync,
-    {
-        let cached_records = self.find_all_in_cache().await;
-        let merged_records = self
-            .merge_records(
-                cached_records.iter().map(Arc::as_ref).map(Cow::Borrowed),
-                persisted_records.into_iter().map(Cow::Owned),
-            )
-            .await;
-        Ok(merged_records)
-    }
-
-    pub(crate) async fn search<E, SearchKey>(
-        &self,
-        persisted_records: Vec<E>,
-        search_key: &SearchKey,
-    ) -> CryptoKeystoreResult<Vec<E>>
-    where
-        E: Clone + Entity + SearchableEntity<SearchKey> + Send + Sync,
-        SearchKey: KeyType,
-    {
-        let cached_records = self.search_in_cache(search_key).await;
-        let merged_records = self
-            .merge_records(
-                cached_records.iter().map(Arc::as_ref).map(Cow::Borrowed),
-                persisted_records.into_iter().map(Cow::Owned),
-            )
-            .await;
-        Ok(merged_records)
-    }
-
     /// Build a single list of unique records from two potentially overlapping lists.
     /// In case of overlap, records in `records_a` are prioritized.
     /// Identity from the perspective of this function is determined by the output of
@@ -324,7 +291,7 @@ impl KeystoreTransaction {
     ///
     /// Further, the output list of records is built with respect to the provided [EntityFindParams]
     /// and the deleted records cached in this [Self] instance.
-    async fn merge_records<'a, E>(
+    pub(crate) async fn merge_records<'a, E>(
         &self,
         records_a: impl IntoIterator<Item = Cow<'a, E>>,
         records_b: impl IntoIterator<Item = Cow<'a, E>>,
