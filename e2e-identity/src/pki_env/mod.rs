@@ -242,7 +242,6 @@ impl PkiEnvironment {
             panic!("this function can only be called with an X509 credential");
         };
 
-        use x509_cert::der::Decode as _;
         let Some(cert) = certificates
             .first()
             .and_then(|cert_raw| x509_cert::Certificate::from_der(cert_raw).ok())
