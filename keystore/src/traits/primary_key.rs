@@ -21,7 +21,7 @@ pub trait PrimaryKey {
 ///
 /// i.e. `String`, `Vec<u8>`, etc.
 pub trait BorrowPrimaryKey: PrimaryKey {
-    type BorrowedPrimaryKey: ?Sized + ToOwned<Owned = Self::PrimaryKey>;
+    type BorrowedPrimaryKey: ?Sized + ToOwned<Owned = Self::PrimaryKey> + Sync;
 
     /// Borrow this entity's primary key without copying any data.
     ///
