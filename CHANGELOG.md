@@ -45,6 +45,17 @@
 
   Affected platforms: android, ios
 
+- `CoreCryptoContext::create_conversation()` now accepts `Option<ExternalSender>` instead of
+  `Option<ExternalSenderKey>`.
+
+  Previously the raw external-sender bytes were parsed inside `create_conversation`. Callers must now parse external
+  senders ahead of time using one of the new free functions: `ExternalSender::parse_jwk` for the JWK form,
+  `ExternalSender::parse_public_key()` for the legacy raw public-key form, or `ExternalSender::parse()` which tries both
+  in turn. Parse errors surface at parse time rather than during conversation creation. Call
+  `ExternalSender::serialize()` to recover the raw bytes when needed.
+
+  Affected platforms: android, ios, web
+
 - `DatabaseKey` constructor parameter is now named `bytes` not `key`
 
   We've changed the internal macro which generates this type and consequently the parameter name changed.

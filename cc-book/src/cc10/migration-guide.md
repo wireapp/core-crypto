@@ -54,6 +54,11 @@ the sub-pages:
 1. `exportSecretKey()` now returns a `SecretKey` object instead of a byte array. To access the raw bytes, call
    `secretKey.copyBytes()`.
 
+1. `createConversation()` now takes a parsed `ExternalSender` object instead of raw bytes. Parse the external sender
+   ahead of time with `ExternalSender.parseJwk()` for the JWK form, `ExternalSender.parsePublicKey()` for the legacy raw
+   public-key form, or `ExternalSender.parse()` to try both in turn. Parse errors are reported at parse time rather than
+   during conversation creation. Call `externalSender.serialize()` to recover the raw bytes when needed.
+
 ## MlsTransport Interface
 
 Instead of returning an `MlsTransportResponse` to communicate the reason why a message was rejected by the DS, throw an
