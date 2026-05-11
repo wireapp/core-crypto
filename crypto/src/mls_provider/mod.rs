@@ -70,9 +70,17 @@ impl std::ops::DerefMut for EntropySeed {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct AuthenticationService {
-    pki_env: Arc<RwLock<Option<Arc<PkiEnvironment>>>>,
+    /// The PKI Environment type is complicated, but it's all necessary:
+    ///
+    /// - The inner `Arc` derives from two facts: the PKI environment is provided across FFI, and it's `!Clone`,
+    ///   so we have to retain that `Arc` because the foreign environment is more-or-less guaranteed to have
+    ///   kept a reference to it.
+    /// - The `Option` is there because the PKI environment is initially unset and may never be set,
+    ///   according to client behavior.
+    /// - The `RwLock` is there because we need to be able to set the PKI environment, implying interior mutability.
+    pki_env: RwLock<Option<Arc<PkiEnvironment>>>,
 }
 
 impl AuthenticationService {
@@ -105,7 +113,7 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for A
 pub struct MlsCryptoProvider {
     crypto: Arc<RustCrypto>,
     key_store: Database,
-    auth_service: AuthenticationService,
+    auth_service: Arc<AuthenticationService>,
 }
 
 impl MlsCryptoProvider {

@@ -125,10 +125,10 @@ impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
 #[derive(Debug)]
 pub struct CoreCrypto {
     database: Database,
-    pki_environment: Arc<RwLock<Option<Arc<PkiEnvironment>>>>,
-    mls: Arc<RwLock<Option<mls::session::Session<Database>>>>,
+    pki_environment: RwLock<Option<Arc<PkiEnvironment>>>,
+    mls: RwLock<Option<mls::session::Session<Database>>>,
     #[cfg(feature = "proteus")]
-    proteus: Arc<Mutex<Option<proteus::ProteusCentral>>>,
+    proteus: Mutex<Option<proteus::ProteusCentral>>,
     #[cfg(not(feature = "proteus"))]
     #[allow(dead_code)]
     proteus: (),

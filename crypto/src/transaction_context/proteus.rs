@@ -1,6 +1,6 @@
 //! This module contains all [super::TransactionContext] methods concerning proteus.
 
-use super::{Error, Result, TransactionContext};
+use super::{Error, Result, TransactionContext, TransactionContextInner};
 use crate::{
     RecursiveError,
     group_store::GroupStoreValue,
@@ -21,8 +21,10 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::root("getting last resort prekey"))?;
 
-        let mutex = self.proteus_central().await?;
-        let mut guard = mutex.lock().await;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
         *guard = Some(proteus_client);
         Ok(())
     }
@@ -32,9 +34,11 @@ impl TransactionContext {
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or it will do
     /// nothing
     pub async fn proteus_reload_sessions(&self) -> Result<()> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let Some(proteus) = mutex.as_mut() else { return Ok(()) };
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let Some(proteus) = guard.as_mut() else { return Ok(()) };
         let keystore = self.database().await?;
         proteus
             .reload_sessions(&keystore)
@@ -52,9 +56,11 @@ impl TransactionContext {
         session_id: &str,
         prekey: &[u8],
     ) -> Result<GroupStoreValue<ProteusConversationSession>> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let keystore = self.database().await?;
         let session = proteus
             .session_from_prekey(session_id, prekey)
@@ -76,9 +82,11 @@ impl TransactionContext {
         session_id: &str,
         envelope: &[u8],
     ) -> Result<(GroupStoreValue<ProteusConversationSession>, Vec<u8>)> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let mut keystore = self.database().await?;
         let (session, message) = proteus
             .session_from_message(&mut keystore, session_id, envelope)
@@ -96,9 +104,11 @@ impl TransactionContext {
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
     /// will be returned
     pub async fn proteus_session_save(&self, session_id: &str) -> Result<()> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let keystore = self.database().await?;
         proteus
             .session_save(&keystore, session_id)
@@ -112,9 +122,11 @@ impl TransactionContext {
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
     /// will be returned
     pub async fn proteus_session_delete(&self, session_id: &str) -> Result<()> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let keystore = self.database().await?;
         proteus
             .session_delete(&keystore, session_id)
@@ -131,9 +143,11 @@ impl TransactionContext {
         &self,
         session_id: &str,
     ) -> Result<Option<GroupStoreValue<ProteusConversationSession>>> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let keystore = self.database().await?;
         proteus
             .session(session_id, &keystore)
@@ -147,9 +161,11 @@ impl TransactionContext {
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
     /// will be returned
     pub async fn proteus_session_exists(&self, session_id: &str) -> Result<bool> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let keystore = self.database().await?;
         Ok(proteus.session_exists(session_id, &keystore).await)
     }
@@ -159,9 +175,11 @@ impl TransactionContext {
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
     /// will be returned
     pub async fn proteus_decrypt(&self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let mut keystore = self.database().await?;
         proteus
             .decrypt(&mut keystore, session_id, ciphertext)
@@ -175,9 +193,11 @@ impl TransactionContext {
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
     /// will be returned
     pub async fn proteus_encrypt(&self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let mut keystore = self.database().await?;
         proteus
             .encrypt(&mut keystore, session_id, plaintext)
@@ -196,9 +216,11 @@ impl TransactionContext {
         sessions: &[impl AsRef<str>],
         plaintext: &[u8],
     ) -> Result<std::collections::HashMap<String, Vec<u8>>> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let mut keystore = self.database().await?;
         proteus
             .encrypt_batched(&mut keystore, sessions, plaintext)
@@ -212,9 +234,11 @@ impl TransactionContext {
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
     /// will be returned
     pub async fn proteus_new_prekey(&self, prekey_id: u16) -> Result<Vec<u8>> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let keystore = self.database().await?;
         proteus
             .new_prekey(prekey_id, &keystore)
@@ -229,9 +253,11 @@ impl TransactionContext {
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
     /// will be returned
     pub async fn proteus_new_prekey_auto(&self) -> Result<(u16, Vec<u8>)> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let keystore = self.database().await?;
         proteus
             .new_prekey_auto(&keystore)
@@ -242,9 +268,11 @@ impl TransactionContext {
 
     /// Returns the last resort prekey
     pub async fn proteus_last_resort_prekey(&self) -> Result<Vec<u8>> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let keystore = self.database().await?;
 
         proteus
@@ -264,9 +292,11 @@ impl TransactionContext {
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
     /// will be returned
     pub async fn proteus_fingerprint(&self) -> Result<String> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         Ok(proteus.fingerprint())
     }
 
@@ -275,9 +305,11 @@ impl TransactionContext {
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
     /// will be returned
     pub async fn proteus_fingerprint_local(&self, session_id: &str) -> Result<String> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let keystore = self.database().await?;
         proteus
             .fingerprint_local(session_id, &keystore)
@@ -291,9 +323,11 @@ impl TransactionContext {
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
     /// will be returned
     pub async fn proteus_fingerprint_remote(&self, session_id: &str) -> Result<String> {
-        let arc = self.proteus_central().await?;
-        let mut mutex = arc.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let mut guard = core_crypto.proteus.lock().await;
+        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let keystore = self.database().await?;
         proteus
             .fingerprint_remote(session_id, &keystore)
