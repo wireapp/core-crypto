@@ -85,7 +85,20 @@ jobs:
         id: setup-chrome
         with:
           chrome-version: stable
-      - run: echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
+      - name: Configure Chrome for wasm-bindgen-test
+        run: |
+          cat > "$RUNNER_TEMP/wasm-webdriver.json" <<EOF
+          {
+            "goog:chromeOptions": {
+              "binary": "${{ steps.setup-chrome.outputs.chrome-path }}",
+              "args": [
+                "--disable-dev-shm-usage",
+                "--no-sandbox"
+              ]
+            }
+          }
+          EOF
+          echo "WASM_BINDGEN_TEST_WEBDRIVER_JSON=$RUNNER_TEMP/wasm-webdriver.json" >> "$GITHUB_ENV"
       - name: Install wasm-bindgen-cli
         uses: ./.github/actions/setup-wasm-bindgen
       - run: cargo test --locked --target wasm32-unknown-unknown -p core-crypto-keystore
@@ -103,7 +116,20 @@ jobs:
         id: setup-chrome
         with:
           chrome-version: stable
-      - run: echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
+      - name: Configure Chrome for wasm-bindgen-test
+        run: |
+          cat > "$RUNNER_TEMP/wasm-webdriver.json" <<EOF
+          {
+            "goog:chromeOptions": {
+              "binary": "${{ steps.setup-chrome.outputs.chrome-path }}",
+              "args": [
+                "--disable-dev-shm-usage",
+                "--no-sandbox"
+              ]
+            }
+          }
+          EOF
+          echo "WASM_BINDGEN_TEST_WEBDRIVER_JSON=$RUNNER_TEMP/wasm-webdriver.json" >> "$GITHUB_ENV"
       - name: Install wasm-bindgen-cli
         uses: ./.github/actions/setup-wasm-bindgen
       - run: cargo test --locked --target wasm32-unknown-unknown -p core-crypto-keystore --features proteus-keystore -- proteus
