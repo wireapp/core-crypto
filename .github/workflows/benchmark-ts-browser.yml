@@ -21,6 +21,11 @@ on:
         required: false
         type: boolean
         default: true
+      runs_on:
+        description: JSON string or array to use for the benchmark runner
+        required: false
+        type: string
+        default: '"ubuntu-latest"'
   workflow_dispatch:
     inputs:
       benchmark_message_counts:
@@ -44,6 +49,11 @@ on:
         required: false
         type: boolean
         default: true
+      runs_on:
+        description: JSON string or array to use for the benchmark runner
+        required: false
+        type: string
+        default: '"ubuntu-latest"'
 
 env:
   RELEASE: 1
@@ -56,8 +66,7 @@ permissions:
 
 jobs:
   benchmark:
-    name: Performance regression check
-    runs-on: [self-hosted, benchmark]
+    runs-on: ${{ fromJSON(inputs.runs_on) }}
     env:
       BENCHMARK_MESSAGE_COUNTS: ${{ inputs.benchmark_message_counts }}
       BENCHMARK_MESSAGE_SIZES: ${{ inputs.benchmark_message_sizes }}
@@ -71,11 +80,13 @@ jobs:
           bun-version: latest
 
       - name: Install chrome-headless-shell
+        if: ${{ runner.environment == 'self-hosted' }}
         run: |
           bun x @puppeteer/browsers install chrome-headless-shell@latest --path $PWD
           echo "CHROME_PATH=$(echo $PWD/chrome-headless-shell/*/*/chrome-headless-shell)" >> $GITHUB_ENV
 
       - name: Install chromedriver
+        if: ${{ runner.environment == 'self-hosted' }}
         run: |
           bun x @puppeteer/browsers install chromedriver@latest --path $PWD
           echo "CHROMEDRIVER_PATH=$(echo $PWD/chromedriver/*/*/chromedriver)" >> $GITHUB_ENV

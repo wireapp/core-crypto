@@ -253,7 +253,7 @@ jobs:
 
   benchmark-ts-native:
     needs:
-      - bindings-ts-native-darwin
+      - bindings-ts-native-linux
     uses: ./.github/workflows/benchmark-ts-native.yml
     with:
       publish: false
