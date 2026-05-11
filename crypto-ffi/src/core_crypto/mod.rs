@@ -17,7 +17,7 @@ use crate::{CoreCryptoResult, Database};
 /// CoreCrypto wraps around MLS and Proteus implementations and provides a transactional interface for each.
 #[derive(Debug, uniffi::Object)]
 pub struct CoreCryptoFfi {
-    pub(crate) inner: core_crypto::CoreCrypto,
+    pub(crate) inner: Arc<core_crypto::CoreCrypto>,
 }
 
 /// Construct a new `CoreCryptoFfi` instance.
