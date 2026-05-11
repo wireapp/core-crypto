@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-9db97130.js";
+            window.path_to_searchindex_js = "searchindex-867523f1.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-5214041f.js"></script>
@@ -912,6 +912,12 @@ bindings.</p>
 <li>
 <p><code>exportSecretKey()</code> now returns a <code>SecretKey</code> object instead of a byte array. To access the raw bytes, call
 <code>secretKey.copyBytes()</code>.</p>
+</li>
+<li>
+<p><code>createConversation()</code> now takes a parsed <code>ExternalSender</code> object instead of raw bytes. Parse the external sender
+ahead of time with <code>ExternalSender.parseJwk()</code> for the JWK form, <code>ExternalSender.parsePublicKey()</code> for the legacy raw
+public-key form, or <code>ExternalSender.parse()</code> to try both in turn. Parse errors are reported at parse time rather than
+during conversation creation. Call <code>externalSender.serialize()</code> to recover the raw bytes when needed.</p>
 </li>
 </ol>
 <h2 id="mlstransport-interface"><a class="header" href="#mlstransport-interface">MlsTransport Interface</a></h2>
