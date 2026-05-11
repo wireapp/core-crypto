@@ -2,7 +2,7 @@
 #![expect(unreachable_pub)]
 use std::sync::Arc;
 
-pub use core_crypto_keystore::{Database, DatabaseKey};
+pub use core_crypto_keystore::{Database, DatabaseKey, traits::CryptoTransaction as _};
 
 mod crypto_provider;
 mod error;

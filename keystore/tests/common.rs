@@ -6,7 +6,7 @@ use std::{
 };
 
 use core_crypto_keystore::connection::{ConnectionType, DatabaseConnection, KeystoreDatabaseConnection};
-pub(crate) use core_crypto_keystore::{Database as CryptoKeystore, DatabaseKey};
+pub(crate) use core_crypto_keystore::{Database as CryptoKeystore, DatabaseKey, traits::CryptoTransaction as _};
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
 

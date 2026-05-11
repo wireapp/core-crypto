@@ -5,6 +5,7 @@
 use core_crypto_keystore::{
     CryptoKeystoreMls as _,
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
+    traits::CryptoTransaction as _,
 };
 use log::trace;
 use openmls::{

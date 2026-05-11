@@ -1,4 +1,7 @@
-use core_crypto_keystore::{entities::StoredBufferedCommit, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{
+    entities::StoredBufferedCommit,
+    traits::{CryptoTransaction as _, FetchFromDatabase as _},
+};
 use log::info;
 use openmls::framing::MlsMessageIn;
 use openmls_traits::OpenMlsCryptoProvider as _;

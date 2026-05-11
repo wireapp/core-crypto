@@ -4,7 +4,11 @@
 use std::sync::Arc;
 
 use async_lock::{Mutex, RwLock, RwLockWriteGuardArc};
-use core_crypto_keystore::{CryptoKeystoreError, entities::ConsumerData, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{
+    CryptoKeystoreError,
+    entities::ConsumerData,
+    traits::{CryptoTransaction as _, FetchFromDatabase as _},
+};
 pub use error::{Error, Result};
 use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::pki_env::PkiEnvironment;

@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use core_crypto_keystore::{
     Database as CryptoKeystore,
     entities::{ProteusIdentity, ProteusSession},
-    traits::FetchFromDatabase,
+    traits::{CryptoTransaction, FetchFromDatabase},
 };
 use proteus_wasm::{
     keys::{IdentityKeyPair, PreKeyBundle},

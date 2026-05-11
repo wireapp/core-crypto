@@ -1,4 +1,8 @@
-use core_crypto_keystore::{Sha256Hash, entities::StoredCredential, traits::FetchFromDatabase};
+use core_crypto_keystore::{
+    Sha256Hash,
+    entities::StoredCredential,
+    traits::{CryptoTransaction as _, FetchFromDatabase},
+};
 use openmls::prelude::SignaturePublicKey;
 use tls_codec::Serialize as _;
 

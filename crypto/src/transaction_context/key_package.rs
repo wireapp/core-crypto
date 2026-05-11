@@ -2,7 +2,10 @@
 
 use std::time::Duration;
 
-use core_crypto_keystore::entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage};
+use core_crypto_keystore::{
+    entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
+    traits::CryptoTransaction as _,
+};
 use openmls::prelude::{CryptoConfig, Lifetime};
 
 use super::{Error, Result, TransactionContext};

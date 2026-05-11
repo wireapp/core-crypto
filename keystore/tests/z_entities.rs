@@ -46,7 +46,7 @@ mod tests_impl {
     use core_crypto_keystore::{
         connection::KeystoreDatabaseConnection,
         entities::{MlsPendingMessage, StoredCredential},
-        traits::{Entity, EntityDatabaseMutation, FetchFromDatabase as _, PrimaryKey as _},
+        traits::{CryptoTransaction as _, Entity, EntityDatabaseMutation, FetchFromDatabase as _, PrimaryKey as _},
     };
 
     use super::common::*;

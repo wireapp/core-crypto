@@ -161,10 +161,9 @@ mod tests {
     use crate::{
         connection::{Database as OldDatabase, platform::wasm::migrations::DB_VERSION_4},
         entities::ProteusPrekey,
-        traits::UnifiedEntity,
+        traits::{CryptoTransaction as _, UnifiedEntity},
         unified_connection::Database as NewDatabase,
     };
-
     pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(DatabaseKey::generate);
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);

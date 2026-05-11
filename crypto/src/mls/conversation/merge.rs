@@ -10,7 +10,7 @@
 //! | 0 pend. Proposal  | ❌              | ✅              |
 //! | 1+ pend. Proposal | ❌              | ✅              |
 
-use core_crypto_keystore::entities::StoredEncryptionKeyPair;
+use core_crypto_keystore::{entities::StoredEncryptionKeyPair, traits::CryptoTransaction as _};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use super::Result;

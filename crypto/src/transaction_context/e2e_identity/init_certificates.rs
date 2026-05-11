@@ -1,6 +1,6 @@
 use core_crypto_keystore::{
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
-    traits::FetchFromDatabase,
+    traits::{CryptoTransaction as _, FetchFromDatabase},
 };
 use wire_e2e_identity::{
     NewCrlDistributionPoints,

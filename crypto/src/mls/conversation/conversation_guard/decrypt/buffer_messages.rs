@@ -3,7 +3,7 @@
 //! This module deals with buffering these messages until we receive the commit that advances the
 //! group epoch.
 
-use core_crypto_keystore::entities::MlsPendingMessage;
+use core_crypto_keystore::{entities::MlsPendingMessage, traits::CryptoTransaction as _};
 use log::{error, info};
 use openmls::framing::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;

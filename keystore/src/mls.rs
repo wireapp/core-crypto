@@ -8,7 +8,7 @@ use crate::{
         PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredEncryptionKeyPair,
         StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
-    traits::FetchFromDatabase,
+    traits::{CryptoTransaction as _, FetchFromDatabase as _},
 };
 
 /// An interface for the specialized queries in the KeyStore

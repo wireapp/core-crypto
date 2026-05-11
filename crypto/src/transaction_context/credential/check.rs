@@ -1,4 +1,7 @@
-use core_crypto_keystore::{entities::E2eiCrl, traits::FetchFromDatabase};
+use core_crypto_keystore::{
+    entities::E2eiCrl,
+    traits::{CryptoTransaction as _, FetchFromDatabase},
+};
 use wire_e2e_identity::x509_check::extract_crl_uris;
 use x509_cert::Certificate;
 

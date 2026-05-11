@@ -25,7 +25,7 @@ fn random_bytes(len: impl SampleRange<usize>) -> Vec<u8> {
 mod persisted_mls_groups {
     use core_crypto_keystore::{
         entities::{ParentGroupId, PersistedMlsGroup},
-        traits::FetchFromDatabase as _,
+        traits::{CryptoTransaction as _, FetchFromDatabase as _},
     };
     use rstest_reuse::apply;
 

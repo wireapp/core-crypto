@@ -1,6 +1,8 @@
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, connection::Database, entities::ProteusPrekey,
-    traits::FetchFromDatabase as _,
+    CryptoKeystoreError, CryptoKeystoreResult,
+    connection::Database,
+    entities::ProteusPrekey,
+    traits::{CryptoTransaction, FetchFromDatabase as _},
 };
 
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
@@ -34,6 +36,6 @@ impl proteus_traits::PreKeyStore for Database {
     }
 
     async fn remove(&mut self, id: proteus_traits::RawPreKeyId) -> Result<(), Self::Error> {
-        Database::remove::<ProteusPrekey>(self, &id).await
+        <Self as CryptoTransaction>::remove::<ProteusPrekey>(self, &id).await
     }
 }
