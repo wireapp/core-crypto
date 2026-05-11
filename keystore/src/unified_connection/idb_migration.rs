@@ -170,7 +170,7 @@ mod tests {
 
     #[wasm_bindgen_test]
     pub(crate) async fn data_is_preserved_through_migrations() {
-        const DB_NAME: &str = "test";
+        const DB_NAME: &str = "unified_idb_migration_data_is_preserved";
 
         // clear the factory before beginning
         let factory = Factory::new().unwrap();
