@@ -191,10 +191,9 @@ impl ConversationGuard {
         let credential = message.credential();
         let epoch = message.epoch();
 
-        let pki_env = provider.authentication_service().pki_env();
-        let guard = pki_env.read().await;
+        let pki_env = provider.authentication_service().pki_env().await;
         let identity = credential
-            .extract_identity(self.ciphersuite().await, guard.as_ref().map(|v| &**v))
+            .extract_identity(self.ciphersuite().await, pki_env.as_deref())
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 

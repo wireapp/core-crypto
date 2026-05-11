@@ -289,7 +289,7 @@ impl TransactionContext {
     /// Initializes the MLS client of [super::CoreCrypto].
     pub async fn mls_init(&self, session_id: ClientId, transport: Arc<dyn MlsTransport>) -> Result<()> {
         let database = self.database().await?;
-        let pki_env = self.pki_environment().await?;
+        let pki_env = self.pki_environment().await.ok();
         let crypto_provider = MlsCryptoProvider::new_with_pki_env(database.clone(), pki_env);
         let session = Session::new(session_id.clone(), crypto_provider, database, transport);
         self.set_mls_session(session).await?;

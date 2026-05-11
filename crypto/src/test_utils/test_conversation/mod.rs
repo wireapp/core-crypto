@@ -367,10 +367,9 @@ impl<'a> TestConversation<'a> {
         let mls_credential_with_key = credential.to_mls_credential_with_key();
         let ciphersuite = self.case.ciphersuite();
         let session = self.actor().session().await;
-        let pki_env = session.crypto_provider.authentication_service().pki_env();
-        let guard = pki_env.read().await;
+        let pki_env = session.crypto_provider.authentication_service().pki_env().await;
         let local_identity = mls_credential_with_key
-            .extract_identity(ciphersuite, guard.as_ref().map(|v| &**v))
+            .extract_identity(ciphersuite, pki_env.as_deref())
             .await
             .unwrap();
 
@@ -392,7 +391,7 @@ impl<'a> TestConversation<'a> {
 
         assert_eq!(credential.credential.identity(), &cid.0);
         let keystore_identity = credential
-            .extract_identity(ciphersuite, guard.as_ref().map(|v| &**v))
+            .extract_identity(ciphersuite, pki_env.as_deref())
             .await
             .unwrap();
         assert_eq!(

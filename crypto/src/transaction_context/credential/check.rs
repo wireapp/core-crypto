@@ -9,7 +9,7 @@ use crate::{
         crl::{CrlUris, extract_crl_uris_from_credentials, extract_crl_uris_from_group},
         ext::CredentialExt as _,
     },
-    transaction_context::{TransactionContext, e2e_identity},
+    transaction_context::TransactionContext,
 };
 
 impl TransactionContext {
@@ -17,12 +17,7 @@ impl TransactionContext {
     /// because in case x509 credentials are used, HTTP requests are done to fetch new certificate revocation lists.
     pub async fn check_credentials(&self) -> Result<()> {
         let database = self.database().await?;
-        let pki_env = self.pki_environment().await?;
-        let guard = pki_env.read().await;
-        let env = match *guard {
-            None => return Err(e2e_identity::Error::PkiEnvironmentUnset.into()),
-            Some(ref env) => env,
-        };
+        let env = self.pki_environment().await?;
 
         let credentials = Credential::get_all(&database)
             .await
@@ -57,7 +52,7 @@ impl TransactionContext {
 
         // check our own credentials for expiration or revocation
         for credential in credentials {
-            if self.check_credential(env, &credential).await.is_err() {
+            if self.check_credential(&env, &credential).await.is_err() {
                 invalid_credential_refs.push(CredentialRef::from_credential(&credential));
             }
         }
