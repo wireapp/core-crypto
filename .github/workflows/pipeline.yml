@@ -120,7 +120,7 @@ jobs:
       - build-jvm-linux
     uses: ./.github/workflows/docs-jvm.yml
 
-  benchmark-jvm:
+  check-benchmark-jvm:
     needs:
       - bindings-jvm
       - build-jvm-linux
@@ -240,7 +240,7 @@ jobs:
       - bindings-ts-native-linux
     uses: ./.github/workflows/docs-ts.yml
 
-  benchmark-ts-browser:
+  check-benchmark-ts-browser:
     needs:
       - bindings-ts-browser
     uses: ./.github/workflows/benchmark-ts-browser.yml
@@ -251,7 +251,7 @@ jobs:
       benchmark_user_counts: "1"
       benchmark_cipher_suites: "Mls128Dhkemx25519Aes128gcmSha256Ed25519"
 
-  benchmark-ts-native:
+  check-benchmark-ts-native:
     needs:
       - bindings-ts-native-linux
     uses: ./.github/workflows/benchmark-ts-native.yml
