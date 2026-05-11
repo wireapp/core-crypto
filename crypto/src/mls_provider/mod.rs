@@ -76,8 +76,8 @@ pub struct AuthenticationService {
 }
 
 impl AuthenticationService {
-    pub fn pki_env(&self) -> Arc<RwLock<Option<Arc<PkiEnvironment>>>> {
-        self.pki_env.clone()
+    pub async fn pki_env(&self) -> Option<Arc<PkiEnvironment>> {
+        self.pki_env.read().await.clone()
     }
 }
 
@@ -115,12 +115,13 @@ impl MlsCryptoProvider {
     ///
     /// - [Database::open]
     pub fn new(key_store: Database) -> Self {
-        Self::new_with_pki_env(key_store, Arc::new(RwLock::new(None)))
+        Self::new_with_pki_env(key_store, None)
     }
 
     /// Construct a crypto provider with the given database and the PKI environment.
-    pub fn new_with_pki_env(key_store: Database, pki_env: Arc<RwLock<Option<Arc<PkiEnvironment>>>>) -> Self {
-        let auth_service = AuthenticationService { pki_env };
+    pub fn new_with_pki_env(key_store: Database, pki_env: Option<Arc<PkiEnvironment>>) -> Self {
+        let pki_env = RwLock::new(pki_env);
+        let auth_service = Arc::new(AuthenticationService { pki_env });
         Self {
             key_store,
             crypto: Arc::clone(&CRYPTO),
@@ -135,8 +136,8 @@ impl MlsCryptoProvider {
     }
 
     /// Set pki_env to a new shared pki environment provider
-    pub async fn set_pki_environment(&mut self, pki_env: Arc<RwLock<Option<Arc<PkiEnvironment>>>>) {
-        self.auth_service.pki_env = pki_env;
+    pub async fn set_pki_environment(&mut self, pki_env: Option<Arc<PkiEnvironment>>) {
+        *self.auth_service.pki_env.write().await = pki_env;
     }
 
     /// Returns whether we have a PKI env setup
