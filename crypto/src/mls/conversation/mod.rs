@@ -221,15 +221,14 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         let auth_service = mls_provider.authentication_service();
         let conversation = self.conversation().await;
 
-        let pki_env = auth_service.pki_env();
-        let guard = pki_env.read().await;
+        let pki_env = auth_service.pki_env().await;
 
         let mut identities = vec![];
         for (id, credential) in conversation.members_with_key() {
             if device_ids.iter().any(|client_id| client_id.borrow() == id) {
                 identities.push(
                     credential
-                        .extract_identity(conversation.ciphersuite(), guard.as_ref().map(|v| &**v))
+                        .extract_identity(conversation.ciphersuite(), pki_env.as_deref())
                         .await
                         .map_err(RecursiveError::mls_credential("extracting identity"))?,
                 );
@@ -255,8 +254,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         let conversation = self.conversation().await;
         let user_ids = user_ids.iter().map(|uid| uid.as_bytes()).collect::<Vec<_>>();
 
-        let pki_env = auth_service.pki_env();
-        let guard = pki_env.read().await;
+        let pki_env = auth_service.pki_env().await;
 
         let mut identities = HashMap::new();
         for (id, credential) in conversation.members_with_key() {
@@ -271,7 +269,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
 
             let uid = String::try_from(uid).map_err(RecursiveError::mls_client("getting user identities"))?;
             let identity = credential
-                .extract_identity(conversation.ciphersuite(), guard.as_ref().map(|v| &**v))
+                .extract_identity(conversation.ciphersuite(), pki_env.as_deref())
                 .await
                 .map_err(RecursiveError::mls_credential("extracting identity"))?;
             let value = identities.entry(uid).or_insert_with(Vec::new);

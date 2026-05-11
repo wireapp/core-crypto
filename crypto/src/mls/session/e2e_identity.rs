@@ -115,11 +115,9 @@ impl<D> Session<D> {
         _credential_type: CredentialType,
         auth_service: &AuthenticationService,
     ) -> E2eiConversationState {
-        let pki_env = auth_service.pki_env();
-        let guard = pki_env.read().await;
-        let env = match *guard {
-            Some(ref env) => env,
-            None => return E2eiConversationState::NotEnabled,
+        let pki_env = auth_service.pki_env().await;
+        let Some(env) = pki_env else {
+            return E2eiConversationState::NotEnabled;
         };
 
         let mut is_e2ei = false;
@@ -136,7 +134,7 @@ impl<D> Session<D> {
 
             is_e2ei = true;
 
-            let invalid_identity = cert.extract_identity(env, ciphersuite.e2ei_hash_alg()).await.is_err();
+            let invalid_identity = cert.extract_identity(&env, ciphersuite.e2ei_hash_alg()).await.is_err();
 
             use openmls_x509_credential::X509Ext as _;
             let is_time_valid = cert.is_time_valid().unwrap_or(false);

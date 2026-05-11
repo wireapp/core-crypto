@@ -176,15 +176,10 @@ impl PendingConversation {
             credential: own_leaf.credential().clone(),
             signature_key: own_leaf.signature_key().clone(),
         };
-        let pki_env = self
-            .context
-            .pki_environment()
-            .await
-            .map_err(RecursiveError::transaction("getting PKI environment"))?;
-        let guard = pki_env.read().await;
+        let pki_env = self.context.pki_environment().await.ok();
 
         let identity = own_leaf_credential_with_key
-            .extract_identity(conversation.ciphersuite(), guard.as_ref().map(|v| &**v))
+            .extract_identity(conversation.ciphersuite(), pki_env.as_deref())
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 

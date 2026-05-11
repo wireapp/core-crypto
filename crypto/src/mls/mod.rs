@@ -115,10 +115,9 @@ mod tests {
                     CertificateBundle::rand_identifier(&session_id, &[x509_test_chain.find_local_intermediate_ca()])
                 }
             };
-            let pki_env = cc.get_pki_environment();
-            let guard = pki_env.read().await;
+            let pki_env = cc.get_pki_environment().await;
             let session_id = identifier
-                .get_id(guard.as_ref().map(|v| &**v))
+                .get_id(pki_env.as_deref())
                 .await
                 .expect("get session_id from identifier")
                 .into_owned();
