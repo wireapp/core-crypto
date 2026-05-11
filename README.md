@@ -202,6 +202,24 @@ Make sure you have all prerequisites:
   bunx @puppeteer/browsers install --path ~/bin chromedriver
   ```
 
+  If `chrome-headless-shell` is not installed as a binary on your `$PATH`, create a WebDriver config so
+  `wasm-bindgen-test-runner` can tell ChromeDriver where the browser binary lives. For local development, this can be a
+  `keystore/webdriver.json`; the file is intentionally git-ignored because the installed path contains the OS,
+  architecture, and browser version. In CI, generate the same JSON into a temporary file and set
+  `WASM_BINDGEN_TEST_WEBDRIVER_JSON` to that path.
+
+  ```json
+  {
+    "goog:chromeOptions": {
+      "binary": "/absolute/path/to/chrome-headless-shell",
+      "args": [
+        "--disable-dev-shm-usage",
+        "--no-sandbox"
+      ]
+    }
+  }
+  ```
+
 Build:
 
 ```sh
