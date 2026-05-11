@@ -9,7 +9,7 @@ pub(crate) mod identities;
 impl CoreCryptoFfi {
     /// Returns true if the PKI environment has been set up and its provider is configured.
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
-        self.inner.get_pki_environment().read().await.is_some()
+        self.inner.get_pki_environment().await.is_some()
     }
 
     /// Returns true if end-to-end identity is enabled for the given ciphersuite.

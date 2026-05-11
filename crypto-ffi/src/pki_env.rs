@@ -265,9 +265,9 @@ impl CoreCryptoFfi {
     ///
     /// Returns null if it is not set.
     pub async fn get_pki_environment(&self) -> Option<Arc<PkiEnvironment>> {
-        let pki_env = self.inner.get_pki_environment();
-        (*pki_env.read().await)
-            .as_ref()
-            .map(|env| Arc::new(PkiEnvironment(env.clone())))
+        self.inner
+            .get_pki_environment()
+            .await
+            .map(|inner| Arc::new(PkiEnvironment(inner)))
     }
 }
