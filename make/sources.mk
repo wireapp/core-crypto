@@ -15,7 +15,11 @@ WORKSPACE_CARGO_FILES := Cargo.toml Cargo.lock
 CRATE_MANIFESTS := $(addsuffix /Cargo.toml,$(CRATES))
 
 # Enumerate all .rs files in relevant crates
-RUST_RS_FILES := $(shell find $(CRATES) \( -type d \( -name $(BINDINGS_DIR) ./interop/.* \) \) -prune -o \
+RUST_RS_FILES := $(shell find $(CRATES) \
+	\( -type d \( \
+	-name $(BINDINGS_DIR) -o \
+	-name .gradle \
+	\) \) -prune -o \
     -type f -name '*.rs' -print 2>/dev/null | LC_ALL=C sort)
 
 # Files relevant to build interop
