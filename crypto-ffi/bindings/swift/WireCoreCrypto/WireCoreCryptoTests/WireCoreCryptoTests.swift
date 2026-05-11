@@ -890,6 +890,41 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertNotNil(acquisition)
     }
 
+    func testParseJwkProducesSenderUsableInCreateConversation() async throws {
+        let jwk = generateEd25519Jwk()
+        let externalSender = try ExternalSender.parseJwk(jwk: jwk)
+        let alice = try await createClients("alice1")[0]
+        let conversationId = ConversationId(bytes: Data("ext-sender-jwk".utf8))
+
+        let retrievedKey = try await alice.transaction { ctx -> ExternalSenderKey in
+            let credentialRef = try await ctx.findCredentials(
+                clientId: nil, publicKey: nil, ciphersuite: nil,
+                credentialType: nil, earliestValidity: nil
+            ).first!
+            try await ctx.createConversation(
+                conversationId: conversationId,
+                credentialRef: credentialRef,
+                externalSender: externalSender
+            )
+            return try await ctx.getExternalSender(conversationId: conversationId)
+        }
+
+        XCTAssertEqual(retrievedKey.copyBytes(), externalSender.serialize())
+    }
+
+    func testParsePublicKeyAcceptsBytesProducedBySerialize() throws {
+        let fromJwk = try ExternalSender.parseJwk(jwk: generateEd25519Jwk())
+        let fromBytes = try ExternalSender.parsePublicKey(
+            key: fromJwk.serialize(),
+            signatureScheme: .ed25519
+        )
+        XCTAssertEqual(fromJwk, fromBytes)
+    }
+
+    func testParseJwkRejectsMalformedBytes() {
+        XCTAssertThrowsError(try ExternalSender.parseJwk(jwk: Data([0, 1, 2, 3])))
+    }
+
     // MARK: - helpers
 
     final actor MockMlsTransport: MlsTransport {
@@ -991,6 +1026,12 @@ final class WireCoreCryptoTests: XCTestCase {
 
     func genClientId() -> ClientId {
         ClientId(bytes: withUnsafeBytes(of: UUID().uuid) { Data($0) })
+    }
+
+    private func generateEd25519Jwk() -> Data {
+        let base64PublicKey = Curve25519.Signing.PrivateKey().publicKey.rawRepresentation
+            .base64URLEncodedString()
+        return Data(#"{"kty":"OKP","crv":"Ed25519","x":"\#(base64PublicKey)"}"#.utf8)
     }
 
     // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -1095,5 +1136,12 @@ extension Data {
 
         guard hex.count / bytes.count == 2 else { return nil }
         self.init(bytes)
+    }
+
+    func base64URLEncodedString() -> String {
+        base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
     }
 }
