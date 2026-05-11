@@ -141,7 +141,7 @@ mod tests {
 
     #[wasm_bindgen_test]
     pub(crate) async fn can_run_migrations() {
-        let name = "test";
+        let name = "can_run_migrations";
         let factory = Factory::new().expect("factory");
         factory.delete(name).expect("delete request").await.expect("wiping db");
 
@@ -195,7 +195,7 @@ mod tests {
 
     #[wasm_bindgen_test]
     pub(crate) async fn v9_schema_allows_multiple_creds_per_session() {
-        let name = "test";
+        let name = "v9_schema_allows_multiple_creds_per_session";
         const LEN_RANGE: std::ops::Range<usize> = 1024..8192;
         let mut rng = rand::thread_rng();
 
@@ -260,7 +260,7 @@ mod tests {
 
     #[wasm_bindgen_test]
     pub(crate) async fn data_is_preserved_through_migrations() {
-        const DB_NAME: &str = "test";
+        const DB_NAME: &str = "wasm_migrations_data_is_preserved";
         // this entity type is simple, stable from v0 through v10, and we do not expect
         // it to change in the future
         const COLLECTION_NAME: &str = ProteusPrekey::COLLECTION_NAME;
