@@ -77,8 +77,10 @@ internal class E2EITest : HasMockDeliveryService() {
             val welcome = mockDeliveryService.getLatestWelcome()
             val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
 
-            assertThat(alice.transaction { ctx -> ctx.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NOT_ENABLED)
-            assertThat(bob.transaction { ctx -> ctx.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NOT_ENABLED)
+            assertThat(alice.transaction { ctx -> ctx.e2eiConversationState(groupId) })
+                .isEqualTo(E2eiConversationState.NOT_ENABLED)
+            assertThat(bob.transaction { ctx -> ctx.e2eiConversationState(groupId) })
+                .isEqualTo(E2eiConversationState.NOT_ENABLED)
         }
 
     @Test

@@ -127,7 +127,9 @@ class MLSTest : HasMockDeliveryService() {
     fun errorTypeMapping_should_work() = runTest {
         val (alice) = newClients(genClientId())
         alice.transaction { ctx -> ctx.createConversationShort(id) }
-        val expectedException = assertFailsWith<CoreCryptoException.Mls> { alice.transaction { ctx -> ctx.createConversationShort(id) } }
+        val expectedException = assertFailsWith<CoreCryptoException.Mls> {
+            alice.transaction { ctx -> ctx.createConversationShort(id) }
+        }
         assertIs<MlsException.ConversationAlreadyExists>(expectedException.mlsError)
     }
 
@@ -224,7 +226,9 @@ class MLSTest : HasMockDeliveryService() {
         assertThat(plaintextMsg).isNotEmpty().isEqualTo(msg)
 
         val expectedException =
-            assertFailsWith<CoreCryptoException.Mls> { bob.transaction { ctx -> ctx.decryptMessage(groupId, ciphertextMsg) } }
+            assertFailsWith<CoreCryptoException.Mls> {
+                bob.transaction { ctx -> ctx.decryptMessage(groupId, ciphertextMsg) }
+            }
         assertIs<MlsException.DuplicateMessage>(expectedException.mlsError)
     }
 
@@ -396,8 +400,16 @@ class MLSTest : HasMockDeliveryService() {
 
             // Bob's observer must have observed all epoch change events, Alice's observer saw only the
             // last one
-            assertEquals(3, bobObserver.observedEvents.size, "we triggered exactly 3 epoch changes and must have observed that")
-            assertEquals(1, aliceObserver.observedEvents.size, "we triggered exactly 1 epoch change and must have observed that")
+            assertEquals(
+                3,
+                bobObserver.observedEvents.size,
+                "we triggered exactly 3 epoch changes and must have observed that"
+            )
+            assertEquals(
+                1,
+                aliceObserver.observedEvents.size,
+                "we triggered exactly 1 epoch change and must have observed that"
+            )
 
             assertTrue(
                 bobObserver.observedEvents.all { ctx -> ctx.conversationId == id },
@@ -438,9 +450,15 @@ class MLSTest : HasMockDeliveryService() {
             val laterEpoch = alice.conversationEpoch(id)
 
             assertEquals(initialEpoch + 1U, laterEpoch)
-            assertEquals(1, aliceObserver.observedEvents.size, "we triggered exactly 1 epoch change and must have observed that")
+            assertEquals(
+                1,
+                aliceObserver.observedEvents.size,
+                "we triggered exactly 1 epoch change and must have observed that"
+            )
             assertTrue(
-                aliceObserver.observedEvents.all { it.eventEpoch == it.conversationEpoch && it.eventEpoch == laterEpoch },
+                aliceObserver.observedEvents.all {
+                    it.eventEpoch == it.conversationEpoch && it.eventEpoch == laterEpoch
+                },
                 "event epoch must equal the epoch read during the event"
             )
         }
@@ -496,8 +514,13 @@ class MLSTest : HasMockDeliveryService() {
             alice.transaction { ctx: CoreCryptoContext -> ctx.decryptMessage(groupId, commit) }
             assertTrue(alice.isHistorySharingEnabled(id))
 
-            // Bob's observer must have observed the history secret changes, Alice's should not have observed anything
-            assertEquals(1, bobObserver.observedEvents.size, "bob triggered exactly 1 history secret changes and must have observed that")
+            // Bob's observer must have observed the history secret changes, Alice's should not
+            // have observed anything
+            assertEquals(
+                1,
+                bobObserver.observedEvents.size,
+                "bob triggered exactly 1 history secret changes and must have observed that"
+            )
             assertEquals(
                 0,
                 aliceObserver.observedEvents.size,
