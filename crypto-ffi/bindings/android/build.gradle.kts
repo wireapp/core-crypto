@@ -1,4 +1,5 @@
 import org.gradle.api.tasks.bundling.Jar
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
@@ -108,6 +109,9 @@ android {
 
     kotlin {
         jvmToolchain(25)
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
         sourceSets {
             main {
                 kotlin {

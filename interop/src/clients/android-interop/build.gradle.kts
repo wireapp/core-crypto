@@ -30,6 +30,9 @@ android {
     }
     kotlin {
         jvmToolchain(25)
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
     }
 }
 

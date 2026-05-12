@@ -5,6 +5,7 @@ import gobley.gradle.cargo.tasks.CargoBuildTask
 import gobley.gradle.rust.CrateType
 import gobley.gradle.uniffi.tasks.BuildUniffiBindingsTask
 import org.gradle.api.tasks.bundling.Jar
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     kotlin("multiplatform")
@@ -33,10 +34,17 @@ kotlin {
     // Android target
     androidTarget {
         publishLibraryVariants("release")
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
     }
 
     // JVM target
-    jvm()
+    jvm {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
 
     // iOS targets
     iosArm64()

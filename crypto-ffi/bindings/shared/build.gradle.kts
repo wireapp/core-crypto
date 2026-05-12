@@ -2,6 +2,8 @@
 // The sources are included directly by those modules rather than compiled as a separate library,
 // because they depend on Uniffi-generated types that are platform-specific.
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     kotlin("multiplatform")
 }
@@ -9,7 +11,11 @@ plugins {
 kotlin {
     jvmToolchain(25)
 
-    jvm()
+    jvm {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
 
     sourceSets {
         commonMain {

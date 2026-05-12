@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     kotlin("jvm")
     id("java-library")
@@ -14,6 +16,9 @@ java {
 
 kotlin {
     jvmToolchain(25)
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
 }
 
 val sharedSources = projectDir.resolve("../shared/src/commonMain")
