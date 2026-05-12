@@ -249,11 +249,18 @@ cargo nextest run --features test-all-cipher
 Sometimes for the Keystore it is valuable to run Rust unit/integration tests on the WASM target.
 
 - Ensure you are set up to [build wasm](#wasm)
+- Install `wasm-pack`: `cargo install wasm-pack`.
 
-Then, just use `cargo test`:
+Then, just use `wasm-pack` to run the tests:
 
 ```sh
-cargo test --target wasm32-unknown-unknown -p core-crypto-keystore
+wasm-pack test --headless --chrome -- ./keystore --locked
+```
+
+Run tests containing the word _proteus_, additionally enabling the feature `proteus-keystore`:
+
+```sh
+wasm-pack test --headless --chrome -- ./keystore --locked --features proteus-keystore -- proteus
 ```
 
 Unfortunately it appears that nextest doesn't work well with the wasm runner, so we're stuck with the basic test runner.
