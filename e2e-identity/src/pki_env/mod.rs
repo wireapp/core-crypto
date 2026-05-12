@@ -243,9 +243,7 @@ impl PkiEnvironment {
     }
 
     pub async fn validate_credential<'a>(&'a self, credential: CredentialRef<'a>) -> CredentialAuthenticationStatus {
-        let certificates = if let CredentialRef::X509 { certificates } = credential {
-            certificates
-        } else {
+        let CredentialRef::X509 { certificates } = credential else {
             panic!("this function can only be called with an X509 credential");
         };
 
