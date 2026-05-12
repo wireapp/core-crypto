@@ -153,17 +153,6 @@ impl PkiEnvironment {
         &self.database
     }
 
-    pub async fn trust_anchor(&self) -> Result<Certificate> {
-        let trust_anchor = self
-            .database
-            .get_unique::<E2eiAcmeCA>()
-            .await?
-            .ok_or(Error::NoTrustAnchor)?;
-
-        let trust_anchor = x509_cert::Certificate::from_der(&trust_anchor.content)?;
-        Ok(trust_anchor)
-    }
-
     /// Adds the certificate as a trust anchor to the PKI environment.
     ///
     /// The certificate is saved to the database, and included in the PKI environment for
