@@ -1,28 +1,22 @@
-build:
-  maxIssues: 0
-
 config:
   validation: true
   warningsAsErrors: true
 
-output-reports:
-  active: false
-
 comments:
   active: true
+  excludes: &testBenchSources ['**/commonTest/**', '**/src/jmh/**']
   KDocReferencesNonPublicProperty:
     active: true
-    excludes: ['**/core_crypto_ffi.kt', '**/test/**']
+    excludes: *testBenchSources
   OutdatedDocumentation:
     active: true
-    excludes: ['**/core_crypto_ffi.kt']
   UndocumentedPublicClass:
     active: true
-    excludes: ['**/core_crypto_ffi.kt', '**/test/**']
+    excludes: *testBenchSources
     ignoreDefaultCompanionObject: true
   UndocumentedPublicFunction:
     active: true
-    excludes: ['**/core_crypto_ffi.kt', '**/test/**']
+    excludes: *testBenchSources
   UndocumentedPublicProperty:
     active: true
-    excludes: ['**/core_crypto_ffi.kt', '**/test/**']
+    excludes: *testBenchSources
