@@ -47,7 +47,9 @@ val buildAllAbis = providers.systemProperty("coreCryptoAndroidBuildAllAbis")
 
 val hostAndroidAbi = when (System.getProperty("os.arch").lowercase()) {
     "aarch64", "arm64" -> "arm64-v8a"
+
     "x86_64", "amd64" -> "x86_64"
+
     else -> if (buildAllAbis) {
         "this is not going to be used."
     } else {
