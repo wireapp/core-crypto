@@ -264,6 +264,21 @@ impl Database {
         Ok(())
     }
 
+    /// Start a new transaction if no other transaction is currently in progress.
+    ///
+    /// If a transaction is currently in progress, this will produce a `TransactionInProgress` error.
+    pub async fn try_new_immediate_transaction(&self) -> CryptoKeystoreResult<()> {
+        let semaphore =
+            self.transaction_semaphore
+                .try_acquire_arc()
+                .ok_or_else(|| CryptoKeystoreError::TransactionInProgress {
+                    attempted_operation: "create an immediate transaction".into(),
+                })?;
+        let mut transaction_guard = self.transaction.lock().await;
+        *transaction_guard = Some(KeystoreTransaction::new(semaphore).await?);
+        Ok(())
+    }
+
     pub async fn commit_transaction(&self) -> CryptoKeystoreResult<()> {
         let mut transaction_guard = self.transaction.lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
