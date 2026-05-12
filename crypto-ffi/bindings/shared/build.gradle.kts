@@ -2,6 +2,7 @@
 // The sources are included directly by those modules rather than compiled as a separate library,
 // because they depend on Uniffi-generated types that are platform-specific.
 
+import dev.detekt.gradle.extensions.FailOnSeverity
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -36,4 +37,5 @@ detekt {
     source.setFrom(files("src/commonMain/kotlin", "src/commonTest/kotlin"))
     buildUponDefaultConfig = true
     config.setFrom(files("../detekt.yml"))
+    failOnSeverity = FailOnSeverity.Info
 }
