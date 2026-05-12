@@ -21,6 +21,7 @@ use x509_cert::{Certificate, anchor::TrustAnchorChoice, der::Decode as _};
 
 use crate::{
     pki_env::hooks::PkiEnvironmentHooks,
+    pki_env_tx::PkiTransactionContext,
     x509_check::{
         RustyX509CheckError, RustyX509CheckResult,
         revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams},
@@ -49,6 +50,14 @@ pub enum Error {
     KeystoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
     #[error("certval error: {0}")]
     Certval(certval::Error),
+    #[error("transaction context")]
+    Context(Box<crate::pki_env_tx::Error>),
+}
+
+impl From<crate::pki_env_tx::Error> for Error {
+    fn from(value: crate::pki_env_tx::Error) -> Self {
+        Error::Context(Box::new(value))
+    }
 }
 
 /// New Certificate Revocation List distribution points.
@@ -197,5 +206,14 @@ impl PkiEnvironment {
             Err(_) => CredentialAuthenticationStatus::Unknown,
             Ok(_) => CredentialAuthenticationStatus::Valid,
         }
+    }
+
+    /// Creates a new transaction.
+    ///
+    /// All operations that persist data will be
+    /// buffered, and when [TransactionContext::finish] is called, the data will be persisted
+    /// in a single database transaction.
+    pub async fn new_transaction(self: &Arc<Self>) -> Result<PkiTransactionContext> {
+        PkiTransactionContext::new(self.clone()).await.map_err(Into::into)
     }
 }
