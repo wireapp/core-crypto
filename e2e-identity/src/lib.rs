@@ -132,6 +132,7 @@ pub mod acme;
 pub mod legacy;
 pub mod pki;
 pub mod pki_env;
+pub mod pki_env_tx;
 pub mod utils;
 pub mod x509_check;
 
