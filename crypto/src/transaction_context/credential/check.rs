@@ -27,10 +27,7 @@ impl TransactionContext {
         let credentials = Credential::get_all(&database)
             .await
             .map_err(RecursiveError::mls_credential("getting all credentials"))?;
-        let trust_anchor = env
-            .trust_anchor()
-            .await
-            .map_err(RecursiveError::e2e_identity("reading trust anchor cert"))?;
+        let trust_anchors = env.get_trust_anchors().await;
         let conversations_with_id =
             MlsConversation::load_all(&database)
                 .await
@@ -40,7 +37,7 @@ impl TransactionContext {
         let conversations = conversations_with_id
             .iter()
             .map(|conversation_with_id| conversation_with_id.1);
-        let relevant_crl_uris = Self::get_crl_uris(trust_anchor, credentials.iter(), conversations).await?;
+        let relevant_crl_uris = Self::get_crl_uris(trust_anchors.iter(), credentials.iter(), conversations).await?;
 
         self.clean_up_irrelevant_crls(&relevant_crl_uris).await?;
 
@@ -77,7 +74,7 @@ impl TransactionContext {
     /// - the trust anchor
     /// - MLS groups
     async fn get_crl_uris(
-        trust_anchor: Certificate,
+        trust_anchors: impl Iterator<Item = &Certificate>,
         credentials: impl Iterator<Item = &Credential>,
         conversations: impl Iterator<Item = &MlsConversation>,
     ) -> Result<CrlUris> {
@@ -89,11 +86,13 @@ impl TransactionContext {
             RecursiveError::mls_credential("extracting CRL URLs from stored credentials"),
         )?;
 
-        crl_uris.extend(
-            extract_crl_uris(&trust_anchor)
-                .map_err(RecursiveError::e2e_identity("extracting CRL URL from trust anchor"))?
-                .unwrap_or_default(),
-        );
+        for trust_anchor in trust_anchors {
+            crl_uris.extend(
+                extract_crl_uris(trust_anchor)
+                    .map_err(RecursiveError::e2e_identity("extracting CRL URL from trust anchor"))?
+                    .unwrap_or_default(),
+            );
+        }
 
         for conversation in conversations {
             let uris_from_group = extract_crl_uris_from_group(conversation.group())
