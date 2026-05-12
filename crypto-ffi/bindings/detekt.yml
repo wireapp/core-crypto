@@ -20,3 +20,8 @@ comments:
   UndocumentedPublicProperty:
     active: true
     excludes: *testBenchSources
+
+style:
+  active: true
+  MultilineLambdaItParameter:
+    active: true
