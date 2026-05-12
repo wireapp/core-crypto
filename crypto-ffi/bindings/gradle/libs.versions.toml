@@ -11,7 +11,7 @@ sdk-compile = "35"
 sdk-min = "26"
 gradle = "9.1.0"
 dokka = "2.2.0"
-detekt = "1.23.8"
+detekt = "2.0.0-alpha.3"
 agp = "8.12.3"
 gobley = "0.3.7"
 nexus = "2.0.0"
@@ -19,7 +19,7 @@ nexus = "2.0.0"
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
 gobley-cargo = { id = "dev.gobley.cargo", version.ref = "gobley" }
 gobley-uniffi = { id = "dev.gobley.uniffi", version.ref = "gobley" }
 gobley-rust = { id = "dev.gobley.rust", version.ref = "gobley" }
