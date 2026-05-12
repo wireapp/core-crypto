@@ -49,6 +49,7 @@ KT_BENCHMARKS = $(BINDINGS_DIR)/jvm/src/jmh/
 INTEROP_CLIENTS_DIR = ./interop/src/clients
 KT_INTEROP = $(INTEROP_CLIENTS_DIR)/android-interop/src/main/java
 KT_FILES := $(shell find $(KT_WRAPPER) $(KT_TESTS) $(KT_INTEROP) $(KT_BENCHMARKS) -type f -name '*.kt')
+KT_DETEKT_CONFIG = $(BINDINGS_DIR)/jvm/detekt.yml
 KT_GRADLE_FILES = $(shell find $(INTEROP_CLIENTS_DIR) $(BINDINGS_DIR) \
 	\( -type d \( \
 	-name build -o \
