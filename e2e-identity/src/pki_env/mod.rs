@@ -129,6 +129,7 @@ impl PkiEnvironment {
         })
     }
 
+    /// Return certificates that are used as trust anchors.
     pub async fn get_trust_anchors(&self) -> Vec<Certificate> {
         self.rjt_pki_env
             .lock()
@@ -142,10 +143,12 @@ impl PkiEnvironment {
             .collect()
     }
 
+    /// Get the hooks.
     pub fn hooks(&self) -> Arc<dyn PkiEnvironmentHooks> {
         self.hooks.clone()
     }
 
+    /// Get the database.
     pub fn database(&self) -> &Database {
         &self.database
     }
@@ -238,10 +241,21 @@ impl PkiEnvironment {
         Ok(())
     }
 
+    /// Validate an end-entity X509 certificate.
+    ///
+    /// Performs validation of the provided certificate in the context
+    /// defined by the set of trust anchors and intermediate certificates
+    /// contained in this PKI environment. Revocation check is performed
+    /// and time of interest is set to the time of the call.
     pub async fn validate_cert(&self, cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
         self.rjt_pki_env.lock().await.validate_cert_and_revocation(cert)
     }
 
+    /// Validate an X509 credential.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the provided credential is not of type X509.
     pub async fn validate_credential<'a>(&'a self, credential: CredentialRef<'a>) -> CredentialAuthenticationStatus {
         let CredentialRef::X509 { certificates } = credential else {
             panic!("this function can only be called with an X509 credential");
