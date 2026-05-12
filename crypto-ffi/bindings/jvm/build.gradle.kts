@@ -1,3 +1,4 @@
+import dev.detekt.gradle.extensions.FailOnSeverity
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -150,6 +151,7 @@ project.afterEvaluate {
 
 detekt {
     config.setFrom(files("detekt.yml"))
+    failOnSeverity = FailOnSeverity.Info
 }
 
 val sourcesJar = tasks.register<Jar>("sourcesJar") {
