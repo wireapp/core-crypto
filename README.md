@@ -91,6 +91,7 @@ express prior written consent of Wire Swiss GmbH.
 - nextest: <https://nexte.st/>: `cargo install --locked cargo-nextest`
 - Ensure your git is configured to
   [sign commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)
+- fd: <https://github.com/sharkdp/fd>
 
 #### Pre-commit<a name="pre-commit"></a>
 
