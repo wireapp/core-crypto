@@ -111,9 +111,12 @@ make ts</code></pre></div><h3 id="testing"><a class="doc-anchor" href="#testing"
 <p>Sometimes for the Keystore it is valuable to run Rust unit/integration tests on the WASM target.</p>
 <ul>
 <li>Ensure you are set up to <a href="#wasm">build wasm</a></li>
+<li>Install <code>wasm-pack</code>: <code>cargo install wasm-pack</code>.</li>
 </ul>
-<p>Then, just use <code>cargo test</code>:</p>
-<div class="example-wrap"><pre class="language-sh"><code>cargo test --target wasm32-unknown-unknown -p core-crypto-keystore</code></pre></div>
+<p>Then, just use <code>wasm-pack</code> to run the tests:</p>
+<div class="example-wrap"><pre class="language-sh"><code>wasm-pack test --headless --chrome -- ./keystore --locked</code></pre></div>
+<p>Run tests containing the word <em>proteus</em>, additionally enabling the feature <code>proteus-keystore</code>:</p>
+<div class="example-wrap"><pre class="language-sh"><code>wasm-pack test --headless --chrome -- ./keystore --locked --features proteus-keystore -- proteus</code></pre></div>
 <p>Unfortunately it appears that nextest doesn’t work well with the wasm runner, so we’re stuck with the basic test runner.</p>
 <h4 id="platform-specific-tests-for-wasmweb"><a class="doc-anchor" href="#platform-specific-tests-for-wasmweb">§</a>Platform-specific tests for WASM/Web<a name="platform-specific-tests-for-wasmweb"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make ts-test</code></pre></div>
 <p>Note the <code>CC_TEST_LOG_LEVEL</code> environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto
