@@ -28,7 +28,7 @@ val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
 val buildVariant = if (System.getenv("RELEASE") == "1") Variant.Release else Variant.Debug
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(25)
 
     // Android target
     androidTarget {

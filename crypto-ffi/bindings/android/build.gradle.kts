@@ -107,7 +107,7 @@ android {
     }
 
     kotlin {
-        jvmToolchain(17)
+        jvmToolchain(25)
         sourceSets {
             main {
                 kotlin {

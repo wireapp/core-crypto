@@ -13,7 +13,7 @@ java {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(25)
 }
 
 val sharedSources = projectDir.resolve("../shared/src/commonMain")
