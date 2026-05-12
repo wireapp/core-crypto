@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 # Relevant crates for FFI builds
-CRATES := crypto crypto-ffi keystore crypto-macros
+CRATES := crypto crypto-ffi keystore crypto-macros e2e-identity obfuscate
 
 # Directory with language specific bindings
 BINDINGS_DIR= ./crypto-ffi/bindings
