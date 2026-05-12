@@ -20,6 +20,7 @@ jobs:
         id: setup-chrome
         with:
           chrome-version: stable
+          install-chromedriver: true
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
