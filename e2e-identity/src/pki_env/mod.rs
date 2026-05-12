@@ -2,6 +2,7 @@
 
 mod crl;
 pub mod hooks;
+mod mutation;
 
 #[cfg(test)]
 mod dummy;
@@ -9,25 +10,19 @@ mod dummy;
 use std::{collections::HashSet, sync::Arc};
 
 use async_lock::Mutex;
-use certval::{
-    CertSource, CertVector as _, CertificationPathSettings, Error as CertvalError, PathValidationStatus, TaSource,
-};
+use certval::{Error as CertvalError, PathValidationStatus};
 use core_crypto_keystore::{
     connection::Database,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
     traits::FetchFromDatabase,
 };
 use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
-use x509_cert::{
-    Certificate,
-    anchor::TrustAnchorChoice,
-    der::{Decode as _, Encode as _},
-};
+use x509_cert::{Certificate, anchor::TrustAnchorChoice, der::Decode as _};
 
 use crate::{
     pki_env::hooks::PkiEnvironmentHooks,
     x509_check::{
-        RustyX509CheckError, RustyX509CheckResult, extract_crl_uris,
+        RustyX509CheckError, RustyX509CheckResult,
         revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams},
     },
 };
@@ -159,78 +154,6 @@ impl PkiEnvironment {
 
         let trust_anchor = x509_cert::Certificate::from_der(&trust_anchor.content)?;
         Ok(trust_anchor)
-    }
-
-    /// Adds the certificate as a trust anchor to the PKI environment.
-    ///
-    /// The certificate is saved to the database, and included in the PKI environment for
-    /// future validation.
-    pub async fn add_trust_anchor(&self, name: &str, cert: Certificate) -> Result<()> {
-        // Validate it (expiration & signature only)
-        self.rjt_pki_env.lock().await.validate_trust_anchor_cert(&cert)?;
-
-        // Save cert's DER representation to the database
-        let cert_data = E2eiAcmeCA {
-            content: cert.to_der()?,
-        };
-
-        self.database.save(cert_data).await?;
-
-        let mut trust_anchors = TaSource::new();
-        trust_anchors.push(certval::CertFile {
-            filename: name.to_owned(),
-            bytes: cert.to_der()?,
-        });
-        trust_anchors.initialize().map_err(Error::Certval)?;
-        self.rjt_pki_env
-            .lock()
-            .await
-            .add_trust_anchor_source(Box::new(trust_anchors));
-        Ok(())
-    }
-
-    /// Adds the certificate to the PKI environment.
-    ///
-    /// The certificate is saved to the database, and included in the PKI environment for
-    /// future validation.
-    ///
-    /// CRL (Certificate Revocation List) distribution points are extracted from the certificate and
-    /// an attempt is made to fetch a CRL from each one.
-    pub async fn add_intermediate_cert(&self, name: &str, cert: Certificate) -> Result<()> {
-        // Save cert's DER representation to the database
-        let (ski, aki) = RjtPkiEnvironment::extract_ski_aki_from_cert(&cert)?;
-        let ski_aki_pair = format!("{ski}:{}", aki.unwrap_or_default());
-        let cert_der = RjtPkiEnvironment::encode_cert_to_der(&cert)?;
-        let intermediate_cert = E2eiIntermediateCert {
-            content: cert_der,
-            ski_aki_pair,
-        };
-
-        self.database.save(intermediate_cert).await?;
-
-        // Get CRL distribution points and CRLs
-        let dps: Vec<String> = extract_crl_uris(&cert)?.iter().flatten().cloned().collect();
-        let crls = self.fetch_crls(dps.iter().map(AsRef::as_ref)).await?;
-
-        // Save all CRLs to the database
-        for (distribution_point, crl) in &crls {
-            self.save_crl(distribution_point, crl).await?;
-        }
-
-        let cps = CertificationPathSettings::new();
-        let mut cert_source = CertSource::new();
-        cert_source.push(certval::CertFile {
-            filename: name.to_owned(),
-            bytes: cert.to_der()?,
-        });
-
-        cert_source.initialize(&cps).map_err(Error::Certval)?;
-        self.rjt_pki_env
-            .lock()
-            .await
-            .add_certificate_source(Box::new(cert_source));
-
-        Ok(())
     }
 
     pub async fn validate_cert(&self, cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
