@@ -19,8 +19,8 @@ $(STAMPS)/docs-rust-wasm: $(RUST_SOURCES)
 docs-rust-wasm: $(STAMPS)/docs-rust-wasm ## Generate Rust docs for wasm32-unknown-unknown
 
 # Kotlin docs
-KOTLIN_SOURCES := $(shell find crypto-ffi/bindings/shared/src/commonMain/kotlin \
-	                           -type f -name '*.kt' 2>/dev/null | LC_ALL=C sort)
+KOTLIN_SOURCES := $(shell fd --type f --extension kt . crypto-ffi/bindings/shared/src/commonMain/kotlin | LC_ALL=C sort)
+
 docs-kotlin-deps := $(JVM_LIB) $(jvm-deps) $(KOTLIN_SOURCES)
 $(STAMPS)/docs-kotlin: $(docs-kotlin-deps)
 	cd crypto-ffi/bindings && ./gradlew jvm:dokkaGeneratePublicationHtml
