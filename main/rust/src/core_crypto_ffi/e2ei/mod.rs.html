@@ -157,7 +157,7 @@
 <a href=#157 id=157 data-nosnippet>157</a>    ) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
 <a href=#158 id=158 data-nosnippet>158</a>        <span class="kw">let </span>ciphersuite = config.ciphersuite;
 <a href=#159 id=159 data-nosnippet>159</a>        <span class="kw">let </span>inner = wire_e2e_identity::X509CredentialAcquisition::try_new(
-<a href=#160 id=160 data-nosnippet>160</a>            Arc::new(pki_environment.as_ref().clone().into()),
+<a href=#160 id=160 data-nosnippet>160</a>            pki_environment.clone_inner(),
 <a href=#161 id=161 data-nosnippet>161</a>            config.try_into_core()<span class="question-mark">?</span>,
 <a href=#162 id=162 data-nosnippet>162</a>        )<span class="question-mark">?</span>;
 <a href=#163 id=163 data-nosnippet>163</a>

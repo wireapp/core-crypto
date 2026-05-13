@@ -123,63 +123,55 @@
 <a href=#123 id=123 data-nosnippet>123</a>///
 <a href=#124 id=124 data-nosnippet>124</a>/// As [std::ops::Deref] is implemented, this struct is automatically dereferred to [mls::session::Session] apart from
 <a href=#125 id=125 data-nosnippet>125</a>/// `proteus_*` calls
-<a href=#126 id=126 data-nosnippet>126</a>///
-<a href=#127 id=127 data-nosnippet>127</a>/// This is cheap to clone as all internal members have `Arc` wrappers or are `Copy`.
-<a href=#128 id=128 data-nosnippet>128</a></span><span class="attr">#[derive(Debug, Clone)]
-<a href=#129 id=129 data-nosnippet>129</a></span><span class="kw">pub struct </span>CoreCrypto {
-<a href=#130 id=130 data-nosnippet>130</a>    database: Database,
-<a href=#131 id=131 data-nosnippet>131</a>    pki_environment: Arc&lt;RwLock&lt;<span class="prelude-ty">Option</span>&lt;PkiEnvironment&gt;&gt;&gt;,
-<a href=#132 id=132 data-nosnippet>132</a>    mls: Arc&lt;RwLock&lt;<span class="prelude-ty">Option</span>&lt;mls::session::Session&lt;Database&gt;&gt;&gt;&gt;,
-<a href=#133 id=133 data-nosnippet>133</a>    <span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
-<a href=#134 id=134 data-nosnippet>134</a>    </span>proteus: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;proteus::ProteusCentral&gt;&gt;&gt;,
-<a href=#135 id=135 data-nosnippet>135</a>    <span class="attr">#[cfg(not(feature = <span class="string">"proteus"</span>))]
-<a href=#136 id=136 data-nosnippet>136</a>    #[allow(dead_code)]
-<a href=#137 id=137 data-nosnippet>137</a>    </span>proteus: (),
-<a href=#138 id=138 data-nosnippet>138</a>}
-<a href=#139 id=139 data-nosnippet>139</a>
-<a href=#140 id=140 data-nosnippet>140</a><span class="kw">impl </span>CoreCrypto {
-<a href=#141 id=141 data-nosnippet>141</a>    <span class="doccomment">/// Create an new CoreCrypto client without any initialized session.
-<a href=#142 id=142 data-nosnippet>142</a>    </span><span class="kw">pub fn </span>new(database: Database) -&gt; <span class="self">Self </span>{
-<a href=#143 id=143 data-nosnippet>143</a>        <span class="self">Self </span>{
-<a href=#144 id=144 data-nosnippet>144</a>            database,
-<a href=#145 id=145 data-nosnippet>145</a>            pki_environment: Default::default(),
-<a href=#146 id=146 data-nosnippet>146</a>            mls: Default::default(),
-<a href=#147 id=147 data-nosnippet>147</a>            proteus: Default::default(),
-<a href=#148 id=148 data-nosnippet>148</a>        }
-<a href=#149 id=149 data-nosnippet>149</a>    }
-<a href=#150 id=150 data-nosnippet>150</a>
-<a href=#151 id=151 data-nosnippet>151</a>    <span class="doccomment">/// Set the session's PKI Environment
-<a href=#152 id=152 data-nosnippet>152</a>    </span><span class="kw">pub async fn </span>set_pki_environment(<span class="kw-2">&amp;</span><span class="self">self</span>, pki_environment: <span class="prelude-ty">Option</span>&lt;PkiEnvironment&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#126 id=126 data-nosnippet>126</a></span><span class="attr">#[derive(Debug)]
+<a href=#127 id=127 data-nosnippet>127</a></span><span class="kw">pub struct </span>CoreCrypto {
+<a href=#128 id=128 data-nosnippet>128</a>    database: Database,
+<a href=#129 id=129 data-nosnippet>129</a>    pki_environment: RwLock&lt;<span class="prelude-ty">Option</span>&lt;Arc&lt;PkiEnvironment&gt;&gt;&gt;,
+<a href=#130 id=130 data-nosnippet>130</a>    mls: RwLock&lt;<span class="prelude-ty">Option</span>&lt;mls::session::Session&lt;Database&gt;&gt;&gt;,
+<a href=#131 id=131 data-nosnippet>131</a>    <span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
+<a href=#132 id=132 data-nosnippet>132</a>    </span>proteus: Mutex&lt;<span class="prelude-ty">Option</span>&lt;proteus::ProteusCentral&gt;&gt;,
+<a href=#133 id=133 data-nosnippet>133</a>    <span class="attr">#[cfg(not(feature = <span class="string">"proteus"</span>))]
+<a href=#134 id=134 data-nosnippet>134</a>    #[allow(dead_code)]
+<a href=#135 id=135 data-nosnippet>135</a>    </span>proteus: (),
+<a href=#136 id=136 data-nosnippet>136</a>}
+<a href=#137 id=137 data-nosnippet>137</a>
+<a href=#138 id=138 data-nosnippet>138</a><span class="kw">impl </span>CoreCrypto {
+<a href=#139 id=139 data-nosnippet>139</a>    <span class="doccomment">/// Create an new CoreCrypto client without any initialized session.
+<a href=#140 id=140 data-nosnippet>140</a>    </span><span class="kw">pub fn </span>new(database: Database) -&gt; Arc&lt;<span class="self">Self</span>&gt; {
+<a href=#141 id=141 data-nosnippet>141</a>        <span class="self">Self </span>{
+<a href=#142 id=142 data-nosnippet>142</a>            database,
+<a href=#143 id=143 data-nosnippet>143</a>            pki_environment: Default::default(),
+<a href=#144 id=144 data-nosnippet>144</a>            mls: Default::default(),
+<a href=#145 id=145 data-nosnippet>145</a>            proteus: Default::default(),
+<a href=#146 id=146 data-nosnippet>146</a>        }
+<a href=#147 id=147 data-nosnippet>147</a>        .into()
+<a href=#148 id=148 data-nosnippet>148</a>    }
+<a href=#149 id=149 data-nosnippet>149</a>
+<a href=#150 id=150 data-nosnippet>150</a>    <span class="doccomment">/// Set the session's PKI Environment
+<a href=#151 id=151 data-nosnippet>151</a>    </span><span class="kw">pub async fn </span>set_pki_environment(<span class="kw-2">&amp;</span><span class="self">self</span>, pki_environment: <span class="prelude-ty">Option</span>&lt;Arc&lt;PkiEnvironment&gt;&gt;) {
+<a href=#152 id=152 data-nosnippet>152</a>        <span class="kw-2">*</span><span class="self">self</span>.pki_environment.write().<span class="kw">await </span>= pki_environment.clone();
 <a href=#153 id=153 data-nosnippet>153</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(mls_session) = <span class="self">self</span>.mls.write().<span class="kw">await</span>.as_mut() {
-<a href=#154 id=154 data-nosnippet>154</a>            mls_session
-<a href=#155 id=155 data-nosnippet>155</a>                .crypto_provider
-<a href=#156 id=156 data-nosnippet>156</a>                .set_pki_environment_provider(pki_environment.as_ref().map(|p| p.mls_pki_env_provider()))
-<a href=#157 id=157 data-nosnippet>157</a>                .<span class="kw">await
-<a href=#158 id=158 data-nosnippet>158</a>        </span>}
-<a href=#159 id=159 data-nosnippet>159</a>
-<a href=#160 id=160 data-nosnippet>160</a>        <span class="kw">let </span><span class="kw-2">mut </span>guard = <span class="self">self</span>.pki_environment.write().<span class="kw">await</span>;
-<a href=#161 id=161 data-nosnippet>161</a>        <span class="kw-2">*</span>guard = pki_environment;
+<a href=#154 id=154 data-nosnippet>154</a>            mls_session.crypto_provider.set_pki_environment(pki_environment).<span class="kw">await</span>;
+<a href=#155 id=155 data-nosnippet>155</a>        }
+<a href=#156 id=156 data-nosnippet>156</a>    }
+<a href=#157 id=157 data-nosnippet>157</a>
+<a href=#158 id=158 data-nosnippet>158</a>    <span class="doccomment">/// Get the session's PKI Environment
+<a href=#159 id=159 data-nosnippet>159</a>    </span><span class="kw">pub async fn </span>get_pki_environment(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;PkiEnvironment&gt;&gt; {
+<a href=#160 id=160 data-nosnippet>160</a>        <span class="self">self</span>.pki_environment.read().<span class="kw">await</span>.clone()
+<a href=#161 id=161 data-nosnippet>161</a>    }
 <a href=#162 id=162 data-nosnippet>162</a>
-<a href=#163 id=163 data-nosnippet>163</a>        <span class="prelude-val">Ok</span>(())
-<a href=#164 id=164 data-nosnippet>164</a>    }
-<a href=#165 id=165 data-nosnippet>165</a>
-<a href=#166 id=166 data-nosnippet>166</a>    <span class="doccomment">/// Get the session's PKI Environment
-<a href=#167 id=167 data-nosnippet>167</a>    </span><span class="kw">pub async fn </span>get_pki_environment(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;PkiEnvironment&gt; {
-<a href=#168 id=168 data-nosnippet>168</a>        <span class="self">self</span>.pki_environment.read().<span class="kw">await</span>.clone()
-<a href=#169 id=169 data-nosnippet>169</a>    }
-<a href=#170 id=170 data-nosnippet>170</a>
-<a href=#171 id=171 data-nosnippet>171</a>    <span class="doccomment">/// Get the mls session if initialized
-<a href=#172 id=172 data-nosnippet>172</a>    </span><span class="kw">pub async fn </span>mls_session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Session&lt;Database&gt;&gt; {
-<a href=#173 id=173 data-nosnippet>173</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(session) = <span class="self">self</span>.mls.read().<span class="kw">await</span>.as_ref() {
-<a href=#174 id=174 data-nosnippet>174</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(session.clone());
-<a href=#175 id=175 data-nosnippet>175</a>        }
-<a href=#176 id=176 data-nosnippet>176</a>        <span class="kw">let </span>err = <span class="prelude-val">Err</span>(mls::session::Error::MlsNotInitialized);
-<a href=#177 id=177 data-nosnippet>177</a>        err.map_err(RecursiveError::mls_client(<span class="string">"Getting mls session"</span>))<span class="question-mark">?
-<a href=#178 id=178 data-nosnippet>178</a>    </span>}
-<a href=#179 id=179 data-nosnippet>179</a>
-<a href=#180 id=180 data-nosnippet>180</a>    <span class="doccomment">/// Get the database
-<a href=#181 id=181 data-nosnippet>181</a>    </span><span class="kw">pub fn </span>database(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Database {
-<a href=#182 id=182 data-nosnippet>182</a>        <span class="self">self</span>.database.clone()
-<a href=#183 id=183 data-nosnippet>183</a>    }
-<a href=#184 id=184 data-nosnippet>184</a>}
+<a href=#163 id=163 data-nosnippet>163</a>    <span class="doccomment">/// Get the mls session if initialized
+<a href=#164 id=164 data-nosnippet>164</a>    </span><span class="kw">pub async fn </span>mls_session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Session&lt;Database&gt;&gt; {
+<a href=#165 id=165 data-nosnippet>165</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(session) = <span class="self">self</span>.mls.read().<span class="kw">await</span>.as_ref() {
+<a href=#166 id=166 data-nosnippet>166</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(session.clone());
+<a href=#167 id=167 data-nosnippet>167</a>        }
+<a href=#168 id=168 data-nosnippet>168</a>        <span class="kw">let </span>err = <span class="prelude-val">Err</span>(mls::session::Error::MlsNotInitialized);
+<a href=#169 id=169 data-nosnippet>169</a>        err.map_err(RecursiveError::mls_client(<span class="string">"Getting mls session"</span>))<span class="question-mark">?
+<a href=#170 id=170 data-nosnippet>170</a>    </span>}
+<a href=#171 id=171 data-nosnippet>171</a>
+<a href=#172 id=172 data-nosnippet>172</a>    <span class="doccomment">/// Get the database
+<a href=#173 id=173 data-nosnippet>173</a>    </span><span class="kw">pub fn </span>database(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Database {
+<a href=#174 id=174 data-nosnippet>174</a>        <span class="self">self</span>.database.clone()
+<a href=#175 id=175 data-nosnippet>175</a>    }
+<a href=#176 id=176 data-nosnippet>176</a>}
 </code></pre></div></section></main></body></html>

@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a>    <span class="kw">pub use </span>certval;
 <a href=#5 id=5 data-nosnippet>5</a>}
 <a href=#6 id=6 data-nosnippet>6</a>
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>revocation::PkiEnvironment;
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::pki_env::PkiEnvironment;
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">pub mod </span>revocation;
 <a href=#10 id=10 data-nosnippet>10</a>
@@ -61,8 +61,8 @@
 <a href=#61 id=61 data-nosnippet>61</a>}
 <a href=#62 id=62 data-nosnippet>62</a>
 <a href=#63 id=63 data-nosnippet>63</a><span class="kw">impl </span>IdentityStatus {
-<a href=#64 id=64 data-nosnippet>64</a>    <span class="kw">pub fn </span>from_cert(cert: <span class="kw-2">&amp;</span>x509_cert::Certificate, env: <span class="kw-2">&amp;</span>PkiEnvironment) -&gt; <span class="self">Self </span>{
-<a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">match </span>env.validate_cert_and_revocation(cert) {
+<a href=#64 id=64 data-nosnippet>64</a>    <span class="kw">pub async fn </span>from_cert(cert: <span class="kw-2">&amp;</span>x509_cert::Certificate, env: <span class="kw-2">&amp;</span>PkiEnvironment) -&gt; <span class="self">Self </span>{
+<a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">match </span>env.validate_cert(cert).<span class="kw">await </span>{
 <a href=#66 id=66 data-nosnippet>66</a>            <span class="prelude-val">Err</span>(RustyX509CheckError::CertValError(certval::Error::PathValidation(e))) =&gt; <span class="kw">match </span>e {
 <a href=#67 id=67 data-nosnippet>67</a>                PathValidationStatus::InvalidNotAfterDate =&gt; IdentityStatus::Expired,
 <a href=#68 id=68 data-nosnippet>68</a>                PathValidationStatus::CertificateRevoked
