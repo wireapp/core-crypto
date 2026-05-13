@@ -43,6 +43,7 @@ KT_TESTS = $(BINDINGS_DIR)/shared/src/commonTest
 KT_BENCHMARKS = $(BINDINGS_DIR)/jvm/src/jmh/
 KT_FILES := $(shell fd --type f --extension kt . | LC_ALL=C sort)
 KT_GRADLE_FILES = $(shell fd --type f --extension kts . | LC_ALL=C sort)
+KT_DETEKT_CONFIG = $(BINDINGS_DIR)/detekt.yml
 
 #-------------------------------------------------------------------------------
 # Swift file-based heuristics

@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     kotlin("multiplatform")
+    id(libs.plugins.detekt.get().pluginId) version libs.versions.detekt
 }
 
 kotlin {
@@ -29,4 +30,10 @@ kotlin {
             }
         }
     }
+}
+
+detekt {
+    source.setFrom(files("src/commonMain/kotlin", "src/commonTest/kotlin"))
+    buildUponDefaultConfig = true
+    config.setFrom(files("../detekt.yml"))
 }

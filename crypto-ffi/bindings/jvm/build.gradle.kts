@@ -149,7 +149,9 @@ project.afterEvaluate {
 }
 
 detekt {
-    config.setFrom(files("detekt.yml"))
+    source.setFrom(files("src/jmh/kotlin"))
+    buildUponDefaultConfig = true
+    config.setFrom(files("../detekt.yml"))
 }
 
 val sourcesJar = tasks.register<Jar>("sourcesJar") {

@@ -48,12 +48,14 @@ $(STAMPS)/kotlin-fmt: $(KT_FILES) $(KT_GRADLE_FILES)
 .PHONY: kotlin-fmt
 kotlin-fmt: $(STAMPS)/kotlin-fmt ## Format Kotlin files via ktlint
 
-$(STAMPS)/kotlin-check: $(KT_FILES) $(KT_GRADLE_FILES)
-	ktlint $(KT_FILES) $(KT_GRADLE_FILES)
+$(STAMPS)/kotlin-check: $(KT_FILES) $(KT_GRADLE_FILES) $(KT_DETEKT_CONFIG)
+	ktlint $(KT_FILES) $(KT_GRADLE_FILES) && \
+	cd crypto-ffi/bindings && \
+	./gradlew detekt
 	$(TOUCH_STAMP)
 
 .PHONY: kotlin-check
-kotlin-check: $(STAMPS)/kotlin-check ## Lint Kotlin files via ktlint
+kotlin-check: $(STAMPS)/kotlin-check ## Lint Kotlin files via ktlint and detekt
 
 # TypeScript
 
