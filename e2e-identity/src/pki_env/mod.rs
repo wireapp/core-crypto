@@ -13,6 +13,7 @@ use certval::{
     CertSource, CertVector as _, CertificationPathSettings, Error as CertvalError, PathValidationStatus, TaSource,
 };
 use core_crypto_keystore::{
+    CryptoKeystoreError,
     connection::Database,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
     traits::FetchFromDatabase,
@@ -153,6 +154,32 @@ impl PkiEnvironment {
         &self.database
     }
 
+    /// Wrap an operation which requires a transaction.
+    ///
+    /// If a transaction does not already exist, creates one.
+    ///
+    /// After the operation finishes, if we created a transaction, then either
+    /// commit or rollback the operation according to the operation's success.
+    async fn transactionally<T, E>(&self, operation: impl AsyncFnOnce() -> std::result::Result<T, E>) -> Result<T>
+    where
+        E: Into<Error>,
+    {
+        let created_transaction = match self.database.try_new_immediate_transaction().await {
+            Ok(()) => true,
+            Err(CryptoKeystoreError::TransactionInProgress) => false,
+            Err(err) => return Err(err.into()),
+        };
+        let operation_outcome = operation().await;
+        if created_transaction {
+            if operation_outcome.is_ok() {
+                self.database.commit_transaction().await?;
+            } else {
+                self.database.rollback_transaction().await?;
+            }
+        }
+        operation_outcome.map_err(Into::into)
+    }
+
     /// Adds the certificate as a trust anchor to the PKI environment.
     ///
     /// The certificate is saved to the database, and included in the PKI environment for
@@ -172,9 +199,8 @@ impl PkiEnvironment {
             content: cert.to_der()?,
         };
 
-        self.database.try_new_immediate_transaction().await?;
-        self.database.save(cert_data).await?;
-        self.database.commit_transaction().await?;
+        self.transactionally(async || self.database.save(cert_data).await)
+            .await?;
 
         let mut trust_anchors = TaSource::new();
         trust_anchors.push(certval::CertFile {
@@ -206,19 +232,21 @@ impl PkiEnvironment {
             ski_aki_pair,
         };
 
-        self.database.try_new_immediate_transaction().await?;
-        self.database.save(intermediate_cert).await?;
+        self.transactionally(async || {
+            self.database.save(intermediate_cert).await?;
 
-        // Get CRL distribution points and CRLs
-        let dps: Vec<String> = extract_crl_uris(&cert)?.iter().flatten().cloned().collect();
-        let crls = self.fetch_crls(dps.iter().map(AsRef::as_ref)).await?;
+            // Get CRL distribution points and CRLs
+            let dps: Vec<String> = extract_crl_uris(&cert)?.iter().flatten().cloned().collect();
+            let crls = self.fetch_crls(dps.iter().map(AsRef::as_ref)).await?;
 
-        // Save all CRLs to the database
-        for (distribution_point, crl) in &crls {
-            self.save_crl(distribution_point, crl).await?;
-        }
+            // Save all CRLs to the database
+            for (distribution_point, crl) in &crls {
+                self.save_crl(distribution_point, crl).await?;
+            }
 
-        self.database.commit_transaction().await?;
+            Result::Ok(())
+        })
+        .await?;
 
         let cps = CertificationPathSettings::new();
         let mut cert_source = CertSource::new();
