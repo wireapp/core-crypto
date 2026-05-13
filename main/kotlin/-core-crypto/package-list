@@ -428,7 +428,7 @@ $dokka.location:com.wire.crypto/DeviceStatus/value/#/PointingToDeclaration/-cor
 $dokka.location:com.wire.crypto/DeviceStatus/valueOf/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-device-status/value-of.html
 $dokka.location:com.wire.crypto/DeviceStatus/values/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-device-status/values.html
 $dokka.location:com.wire.crypto/Disposable.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-disposable/-companion/index.html
-$dokka.location:com.wire.crypto/Disposable.Companion/destroy/#kotlin.Array[kotlin.Any?]/PointingToDeclaration/-core-crypto/com.wire.crypto/-disposable/-companion/destroy.html
+$dokka.location:com.wire.crypto/Disposable.Companion/destroy/#vararg(kotlin.Any?)/PointingToDeclaration/-core-crypto/com.wire.crypto/-disposable/-companion/destroy.html
 $dokka.location:com.wire.crypto/Disposable///PointingToDeclaration/-core-crypto/com.wire.crypto/-disposable/index.html
 $dokka.location:com.wire.crypto/Disposable/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-disposable/destroy.html
 $dokka.location:com.wire.crypto/E2eiConversationState.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-e2ei-conversation-state/-companion/index.html

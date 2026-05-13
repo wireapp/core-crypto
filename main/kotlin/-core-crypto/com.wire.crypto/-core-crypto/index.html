@@ -1,44 +1,41 @@
 <!DOCTYPE html>
-<html class="no-js">
+<html class="no-js" lang="en">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
     <title>CoreCrypto</title>
     <link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">
-    <script>var pathToRoot = "../../../";</script>
-    <script>document.documentElement.classList.replace("no-js","js");</script>
+        <script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
     <script>const storage = localStorage.getItem("dokka-dark-mode")
-    if (storage == null) {
+      if (storage == null) {
         const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         if (osDarkSchemePreferred === true) {
-            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
         }
-    } else {
+      } else {
         const savedDarkMode = JSON.parse(storage)
-        if(savedDarkMode === true) {
-            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
         }
-    }
+      }
     </script>
-<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async="async"></script>
 <script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async="async"></script>
 <link href="../../../styles/style.css" rel="Stylesheet">
 <link href="../../../styles/main.css" rel="Stylesheet">
 <link href="../../../styles/prism.css" rel="Stylesheet">
 <link href="../../../styles/logo-styles.css" rel="Stylesheet">
-<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
 <link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
-<script type="text/javascript" src="../../../scripts/clipboard.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/safe-local-storage_blocking.js"></script>
 <script type="text/javascript" src="../../../scripts/navigation-loader.js" async="async"></script>
 <script type="text/javascript" src="../../../scripts/platform-content-handler.js" async="async"></script>
 <script type="text/javascript" src="../../../scripts/main.js" defer="defer"></script>
 <script type="text/javascript" src="../../../scripts/prism.js" async="async"></script>
 <script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer="defer"></script>
-<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer="defer"></script>
 </head>
 <body>
-    <div class="root">
-    <nav class="navigation theme-dark" id="navigation-wrapper">
-            <a class="library-name--link" href="../../../index.html">
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+            <a class="library-name--link" href="../../../index.html" tabindex="1">
                     CoreCrypto
             </a>
         <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle"
@@ -48,8 +45,8 @@
         <div class="library-version" id="library-version">
         </div>
         <div class="navigation-controls">
-        <div class="filter-section filter-section_loading" id="filter-section">
-                <button class="platform-tag platform-selector jvm-like" data-active=""
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true"
                         data-filter=":jvm/main">jvm</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox"
@@ -59,9 +56,9 @@
                         aria-expanded="false"
                         aria-label="Toggle source sets"
                 ></button>
-                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
-                    <div class="dropdown--header"><span>Platform filter</span>
-                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
                             <i class="ui-kit-icon ui-kit-icon_cross"></i>
                         </button>
                     </div>
@@ -76,7 +73,7 @@
                 </ul>
                 <div class="dropdown--overlay"></div>
             </div>
-        </div>
+        </ul>
             <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button"
                     type="button">Switch theme
             </button>
@@ -84,26 +81,28 @@
                 API
             </div>
         </div>
-    </nav>
-        <div id="container">
-            <div class="sidebar" id="leftColumn">
-                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
-                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list"
-                        data-role="dropdown-listbox">
-                        <div class="dropdown--header">
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config='{"defaultSize": 280, "minSize": 200, "maxSize": 400}'>
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list"
+                    data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
                             <span>
                                     CoreCrypto
                             </span>
-                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
-                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
-                            </button>
-                        </div>
-                        <div class="sidebar--inner" id="sideMenu"></div>
-                    </ul>
-                    <div class="dropdown--overlay"></div>
-                </div>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
             </div>
-            <div id="main">
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
 <div class="main-content" data-page-type="classlike" id="content" pageIds="CoreCrypto::com.wire.crypto/CoreCrypto///PointingToDeclaration//1144021071">
   <div class="breadcrumbs"><a href="../../../index.html">CoreCrypto</a><span class="delimiter">/</span><a href="../index.html">com.wire.crypto</a><span class="delimiter">/</span><span class="current">CoreCrypto</span></div>
   <div class="cover ">
@@ -114,9 +113,9 @@
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
       <div data-togglable="CONSTRUCTOR">
-        <h2 class="">Constructors</h2>
+        <h2 class="tableheader">Constructors</h2>
         <div class="table"><a data-name="1460353034%2FConstructors%2F1144021071" anchor-label="CoreCrypto" id="1460353034%2FConstructors%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-togglable="CONSTRUCTOR" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-core-crypto.html"><span>Core</span><wbr></wbr><span><span>Crypto</span></span></a></div>
@@ -133,9 +132,9 @@
         </div>
       </div>
       <div data-togglable="TYPE">
-        <h2 class="">Types</h2>
+        <h2 class="tableheader">Types</h2>
         <div class="table"><a data-name="2098795233%2FClasslikes%2F1144021071" anchor-label="Companion" id="2098795233%2FClasslikes%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
@@ -152,9 +151,9 @@
         </div>
       </div>
       <div data-togglable="FUNCTION">
-        <h2 class="">Functions</h2>
+        <h2 class="tableheader">Functions</h2>
         <div class="table"><a data-name="-756219614%2FFunctions%2F1144021071" anchor-label="close" id="-756219614%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="close.html"><span><span>close</span></span></a></div>
@@ -169,7 +168,7 @@
             </div>
           </div>
 <a data-name="795024689%2FFunctions%2F1144021071" anchor-label="conversationCiphersuite" id="795024689%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/conversation-ciphersuite.html"><span>conversation</span><wbr></wbr><span><span>Ciphersuite</span></span></a></div>
@@ -184,7 +183,7 @@
             </div>
           </div>
 <a data-name="-1290524601%2FFunctions%2F1144021071" anchor-label="conversationCredential" id="-1290524601%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/conversation-credential.html"><span>conversation</span><wbr></wbr><span><span>Credential</span></span></a></div>
@@ -199,7 +198,7 @@
             </div>
           </div>
 <a data-name="-370210571%2FFunctions%2F1144021071" anchor-label="conversationEpoch" id="-370210571%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/conversation-epoch.html"><span>conversation</span><wbr></wbr><span><span>Epoch</span></span></a></div>
@@ -214,7 +213,7 @@
             </div>
           </div>
 <a data-name="-2123697502%2FFunctions%2F1144021071" anchor-label="conversationExists" id="-2123697502%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/conversation-exists.html"><span>conversation</span><wbr></wbr><span><span>Exists</span></span></a></div>
@@ -229,7 +228,7 @@
             </div>
           </div>
 <a data-name="535160414%2FFunctions%2F1144021071" anchor-label="e2eiConversationState" id="535160414%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/e2ei-conversation-state.html"><span>e2ei</span><wbr></wbr><span>Conversation</span><wbr></wbr><span><span>State</span></span></a></div>
@@ -244,7 +243,7 @@
             </div>
           </div>
 <a data-name="-90489598%2FFunctions%2F1144021071" anchor-label="e2eiIsEnabled" id="-90489598%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/e2ei-is-enabled.html"><span>e2ei</span><wbr></wbr><span>Is</span><wbr></wbr><span><span>Enabled</span></span></a></div>
@@ -259,7 +258,7 @@
             </div>
           </div>
 <a data-name="-1955278937%2FFunctions%2F1144021071" anchor-label="e2eiIsPkiEnvSetup" id="-1955278937%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/e2ei-is-pki-env-setup.html"><span>e2ei</span><wbr></wbr><span>Is</span><wbr></wbr><span>Pki</span><wbr></wbr><span>Env</span><wbr></wbr><span><span>Setup</span></span></a></div>
@@ -274,7 +273,7 @@
             </div>
           </div>
 <a data-name="-1409582340%2FFunctions%2F1144021071" anchor-label="exportSecretKey" id="-1409582340%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/export-secret-key.html"><span>export</span><wbr></wbr><span>Secret</span><wbr></wbr><span><span>Key</span></span></a></div>
@@ -289,7 +288,7 @@
             </div>
           </div>
 <a data-name="-394782614%2FFunctions%2F1144021071" anchor-label="getClientIds" id="-394782614%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/get-client-ids.html"><span>get</span><wbr></wbr><span>Client</span><wbr></wbr><span><span>Ids</span></span></a></div>
@@ -304,7 +303,7 @@
             </div>
           </div>
 <a data-name="-1741711481%2FFunctions%2F1144021071" anchor-label="getDeviceIdentities" id="-1741711481%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/get-device-identities.html"><span>get</span><wbr></wbr><span>Device</span><wbr></wbr><span><span>Identities</span></span></a></div>
@@ -319,7 +318,7 @@
             </div>
           </div>
 <a data-name="-720073243%2FFunctions%2F1144021071" anchor-label="getExternalSender" id="-720073243%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/get-external-sender.html"><span>get</span><wbr></wbr><span>External</span><wbr></wbr><span><span>Sender</span></span></a></div>
@@ -334,7 +333,7 @@
             </div>
           </div>
 <a data-name="-2012696081%2FFunctions%2F1144021071" anchor-label="getPkiEnvironment" id="-2012696081%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/get-pki-environment.html"><span>get</span><wbr></wbr><span>Pki</span><wbr></wbr><span><span>Environment</span></span></a></div>
@@ -349,7 +348,7 @@
             </div>
           </div>
 <a data-name="-2092689045%2FFunctions%2F1144021071" anchor-label="getUserIdentities" id="-2092689045%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/get-user-identities.html"><span>get</span><wbr></wbr><span>User</span><wbr></wbr><span><span>Identities</span></span></a></div>
@@ -364,7 +363,7 @@
             </div>
           </div>
 <a data-name="986571116%2FFunctions%2F1144021071" anchor-label="isHistorySharingEnabled" id="986571116%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/is-history-sharing-enabled.html"><span>is</span><wbr></wbr><span>History</span><wbr></wbr><span>Sharing</span><wbr></wbr><span><span>Enabled</span></span></a></div>
@@ -379,7 +378,7 @@
             </div>
           </div>
 <a data-name="-1575346712%2FFunctions%2F1144021071" anchor-label="proteusFingerprint" id="-1575346712%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/proteus-fingerprint.html"><span>proteus</span><wbr></wbr><span><span>Fingerprint</span></span></a></div>
@@ -394,7 +393,7 @@
             </div>
           </div>
 <a data-name="-910578467%2FFunctions%2F1144021071" anchor-label="proteusFingerprintLocal" id="-910578467%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/proteus-fingerprint-local.html"><span>proteus</span><wbr></wbr><span>Fingerprint</span><wbr></wbr><span><span>Local</span></span></a></div>
@@ -409,7 +408,7 @@
             </div>
           </div>
 <a data-name="-123676606%2FFunctions%2F1144021071" anchor-label="proteusFingerprintRemote" id="-123676606%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/proteus-fingerprint-remote.html"><span>proteus</span><wbr></wbr><span>Fingerprint</span><wbr></wbr><span><span>Remote</span></span></a></div>
@@ -424,7 +423,7 @@
             </div>
           </div>
 <a data-name="-1962632438%2FFunctions%2F1144021071" anchor-label="proteusSessionExists" id="-1962632438%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/proteus-session-exists.html"><span>proteus</span><wbr></wbr><span>Session</span><wbr></wbr><span><span>Exists</span></span></a></div>
@@ -439,7 +438,7 @@
             </div>
           </div>
 <a data-name="-1971674405%2FFunctions%2F1144021071" anchor-label="registerEpochObserver" id="-1971674405%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="register-epoch-observer.html"><span>register</span><wbr></wbr><span>Epoch</span><wbr></wbr><span><span>Observer</span></span></a></div>
@@ -454,7 +453,7 @@
             </div>
           </div>
 <a data-name="-579118565%2FFunctions%2F1144021071" anchor-label="registerHistoryObserver" id="-579118565%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="register-history-observer.html"><span>register</span><wbr></wbr><span>History</span><wbr></wbr><span><span>Observer</span></span></a></div>
@@ -469,7 +468,7 @@
             </div>
           </div>
 <a data-name="637600150%2FFunctions%2F1144021071" anchor-label="setPkiEnvironment" id="637600150%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="../-core-crypto-ffi-interface/set-pki-environment.html"><span>set</span><wbr></wbr><span>Pki</span><wbr></wbr><span><span>Environment</span></span></a></div>
@@ -484,7 +483,7 @@
             </div>
           </div>
 <a data-name="-1899756249%2FFunctions%2F1144021071" anchor-label="transaction" id="-1899756249%2FFunctions%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="transaction.html"><span><span>transaction</span></span></a></div>
@@ -504,17 +503,21 @@
   </div>
 </div>
     <div class="footer">
-        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
-        <span>Copyright Wire GmbH</span>
-        <span class="pull-right">
-            <span>Generated by </span>
-            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
-                <span>dokka</span>
-            </a>
-        </span>
-    </div>
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>Copyright Wire GmbH</div>
+                </div>
             </div>
         </div>
     </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
