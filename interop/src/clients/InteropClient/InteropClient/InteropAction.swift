@@ -28,15 +28,15 @@ extension InteropAction {
         switch url.host() {
         case "init-mls":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let clientId = components?.queryItems?.first(where: {
-                $0.name == "client"
-            })?.value.flatMap {
-                Data(base64Encoded: $0)
+            let clientId = components?.queryItems?.first(where: { item in
+                item.name == "client"
+            })?.value.flatMap { value in
+                Data(base64Encoded: value)
             }
-            let ciphersuite = components?.queryItems?.first(where: {
-                $0.name == "ciphersuite"
-            })?.value.flatMap {
-                UInt16($0)
+            let ciphersuite = components?.queryItems?.first(where: { item in
+                item.name == "ciphersuite"
+            })?.value.flatMap { value in
+                UInt16(value)
             }
 
             if let clientId, let ciphersuite {
@@ -47,8 +47,8 @@ extension InteropAction {
 
         case "get-key-package":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let ciphersuite = components?.queryItems?.first(where: {
-                $0.name == "ciphersuite"
+            let ciphersuite = components?.queryItems?.first(where: { item in
+                item.name == "ciphersuite"
             })?.value.flatMap { UInt16($0) }
 
             if let ciphersuite {
@@ -59,20 +59,20 @@ extension InteropAction {
 
         case "add-client":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let converationId = components?.queryItems?.first(where: {
-                $0.name == "cid"
-            })?.value.flatMap {
-                Data(base64Encoded: $0)
+            let converationId = components?.queryItems?.first(where: { item in
+                item.name == "cid"
+            })?.value.flatMap { value in
+                Data(base64Encoded: value)
             }
-            let ciphersuite = components?.queryItems?.first(where: {
-                $0.name == "ciphersuite"
-            })?.value.flatMap {
-                UInt16($0)
+            let ciphersuite = components?.queryItems?.first(where: { item in
+                item.name == "ciphersuite"
+            })?.value.flatMap { value in
+                UInt16(value)
             }
-            let keyPackage = components?.queryItems?.first(where: {
-                $0.name == "kp"
-            })?.value.flatMap {
-                Data(base64Encoded: $0)
+            let keyPackage = components?.queryItems?.first(where: { item in
+                item.name == "kp"
+            })?.value.flatMap { value in
+                Data(base64Encoded: value)
             }
 
             if let converationId, let ciphersuite, let keyPackage {
@@ -84,15 +84,15 @@ extension InteropAction {
 
         case "remove-client":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let converationId = components?.queryItems?.first(where: {
-                $0.name == "cid"
-            })?.value.flatMap {
-                Data(base64Encoded: $0)
+            let converationId = components?.queryItems?.first(where: { item in
+                item.name == "cid"
+            })?.value.flatMap { value in
+                Data(base64Encoded: value)
             }
-            let clientId = components?.queryItems?.first(where: {
-                $0.name == "client"
-            })?.value.flatMap {
-                Data(base64Encoded: $0)
+            let clientId = components?.queryItems?.first(where: { item in
+                item.name == "client"
+            })?.value.flatMap { value in
+                Data(base64Encoded: value)
             }
 
             if let converationId, let clientId {
@@ -103,10 +103,10 @@ extension InteropAction {
 
         case "process-welcome":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let welcomePath = components?.queryItems?.first(where: {
-                $0.name == "welcome_path"
-            })?.value.flatMap {
-                URL(fileURLWithPath: $0)
+            let welcomePath = components?.queryItems?.first(where: { item in
+                item.name == "welcome_path"
+            })?.value.flatMap { value in
+                URL(fileURLWithPath: value)
             }
 
             if let welcomePath {
@@ -117,15 +117,15 @@ extension InteropAction {
 
         case "encrypt-message":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let converationId = components?.queryItems?.first(where: {
-                $0.name == "cid"
-            })?.value.flatMap {
-                Data(base64Encoded: $0)
+            let converationId = components?.queryItems?.first(where: { item in
+                item.name == "cid"
+            })?.value.flatMap { value in
+                Data(base64Encoded: value)
             }
-            let message = components?.queryItems?.first(where: {
-                $0.name == "message"
-            })?.value.flatMap {
-                Data(base64Encoded: $0)
+            let message = components?.queryItems?.first(where: { item in
+                item.name == "message"
+            })?.value.flatMap { value in
+                Data(base64Encoded: value)
             }
 
             if let converationId, let message {
@@ -136,15 +136,15 @@ extension InteropAction {
 
         case "decrypt-message":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let converationId = components?.queryItems?.first(where: {
-                $0.name == "cid"
-            })?.value.flatMap {
-                Data(base64Encoded: $0)
+            let converationId = components?.queryItems?.first(where: { item in
+                item.name == "cid"
+            })?.value.flatMap { value in
+                Data(base64Encoded: value)
             }
-            let message = components?.queryItems?.first(where: {
-                $0.name == "message"
-            })?.value.flatMap {
-                Data(base64Encoded: $0)
+            let message = components?.queryItems?.first(where: { item in
+                item.name == "message"
+            })?.value.flatMap { value in
+                Data(base64Encoded: value)
             }
 
             if let converationId, let message {
@@ -158,10 +158,10 @@ extension InteropAction {
 
         case "get-prekey":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let id = components?.queryItems?.first(where: {
-                $0.name == "id"
-            })?.value.flatMap {
-                UInt16($0)
+            let id = components?.queryItems?.first(where: { item in
+                item.name == "id"
+            })?.value.flatMap { value in
+                UInt16(value)
             }
 
             if let id {
@@ -172,13 +172,13 @@ extension InteropAction {
 
         case "session-from-prekey":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let sessionId = components?.queryItems?.first(where: {
-                $0.name == "session_id"
+            let sessionId = components?.queryItems?.first(where: { item in
+                item.name == "session_id"
             })?.value
-            let prekey = components?.queryItems?.first(where: {
-                $0.name == "prekey"
-            })?.value.flatMap {
-                Data(base64Encoded: $0)
+            let prekey = components?.queryItems?.first(where: { item in
+                item.name == "prekey"
+            })?.value.flatMap { value in
+                Data(base64Encoded: value)
             }
 
             if let sessionId, let prekey {
@@ -189,13 +189,13 @@ extension InteropAction {
 
         case "session-from-message":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let sessionId = components?.queryItems?.first(where: {
-                $0.name == "session_id"
+            let sessionId = components?.queryItems?.first(where: { item in
+                item.name == "session_id"
             })?.value
-            let message = components?.queryItems?.first(where: {
-                $0.name == "message"
-            })?.value.flatMap {
-                Data(base64Encoded: $0)
+            let message = components?.queryItems?.first(where: { item in
+                item.name == "message"
+            })?.value.flatMap { value in
+                Data(base64Encoded: value)
             }
 
             if let sessionId, let message {
@@ -206,13 +206,13 @@ extension InteropAction {
 
         case "decrypt-proteus":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let sessionId = components?.queryItems?.first(where: {
-                $0.name == "session_id"
+            let sessionId = components?.queryItems?.first(where: { item in
+                item.name == "session_id"
             })?.value
-            let message = components?.queryItems?.first(where: {
-                $0.name == "message"
-            })?.value.flatMap {
-                Data(base64Encoded: $0)
+            let message = components?.queryItems?.first(where: { item in
+                item.name == "message"
+            })?.value.flatMap { value in
+                Data(base64Encoded: value)
             }
 
             if let sessionId, let message {
@@ -223,13 +223,13 @@ extension InteropAction {
 
         case "encrypt-proteus":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let sessionId = components?.queryItems?.first(where: {
-                $0.name == "session_id"
+            let sessionId = components?.queryItems?.first(where: { item in
+                item.name == "session_id"
             })?.value
-            let message = components?.queryItems?.first(where: {
-                $0.name == "message"
-            })?.value.flatMap {
-                Data(base64Encoded: $0)
+            let message = components?.queryItems?.first(where: { item in
+                item.name == "message"
+            })?.value.flatMap { value in
+                Data(base64Encoded: value)
             }
 
             if let sessionId, let message {

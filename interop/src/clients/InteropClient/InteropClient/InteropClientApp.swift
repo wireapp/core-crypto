@@ -127,8 +127,8 @@ struct InteropClientApp: App {
         case .getKeyPackage(let ciphersuite):
             guard let coreCrypto else { throw InteropError.notInitialised }
 
-            let keyPackage = try await coreCrypto.transaction {
-                let credential = try await $0.findCredentials(
+            let keyPackage = try await coreCrypto.transaction { ctx in
+                let credential = try await ctx.findCredentials(
                     clientId: nil,
                     publicKey: nil,
                     ciphersuite: ciphersuiteFromU16(discriminant: ciphersuite),
@@ -136,7 +136,7 @@ struct InteropClientApp: App {
                     earliestValidity: nil
                 ).first!
 
-                return try await $0.generateKeyPackage(
+                return try await ctx.generateKeyPackage(
                     credentialRef: credential,
                     lifetime: nil
                 )
@@ -165,8 +165,8 @@ struct InteropClientApp: App {
                 }
             }
 
-            _ = try await coreCrypto.transaction {
-                try await $0.addClientsToConversation(
+            _ = try await coreCrypto.transaction { ctx in
+                try await ctx.addClientsToConversation(
                     conversationId: conversationId,
                     keyPackages: [keyPackage]
                 )
@@ -179,8 +179,8 @@ struct InteropClientApp: App {
             let conversationId = ConversationId(bytes: conversationId)
             let clientId = ClientId(bytes: clientId)
 
-            _ = try await coreCrypto.transaction {
-                try await $0.removeClientsFromConversation(
+            _ = try await coreCrypto.transaction { ctx in
+                try await ctx.removeClientsFromConversation(
                     conversationId: conversationId,
                     clients: [clientId]
                 )
@@ -192,8 +192,8 @@ struct InteropClientApp: App {
             guard let coreCrypto else { throw InteropError.notInitialised }
 
             let welcomeMessage = try Welcome(bytes: Data(contentsOf: welcomePath))
-            let conversationId = try await coreCrypto.transaction {
-                try await $0.processWelcomeMessage(
+            let conversationId = try await coreCrypto.transaction { ctx in
+                try await ctx.processWelcomeMessage(
                     welcomeMessage: welcomeMessage
                 )
             }
@@ -204,8 +204,8 @@ struct InteropClientApp: App {
             guard let coreCrypto else { throw InteropError.notInitialised }
             let conversationId = ConversationId(bytes: conversationId)
 
-            let encryptedMessage = try await coreCrypto.transaction {
-                try await $0.encryptMessage(
+            let encryptedMessage = try await coreCrypto.transaction { ctx in
+                try await ctx.encryptMessage(
                     conversationId: conversationId,
                     message: message
                 )
@@ -217,8 +217,8 @@ struct InteropClientApp: App {
             guard let coreCrypto else { throw InteropError.notInitialised }
             let conversationId = ConversationId(bytes: conversationId)
 
-            let decryptedMessage = try await coreCrypto.transaction {
-                try await $0.decryptMessage(
+            let decryptedMessage = try await coreCrypto.transaction { ctx in
+                try await ctx.decryptMessage(
                     conversationId: conversationId,
                     payload: message
                 )
@@ -247,8 +247,8 @@ struct InteropClientApp: App {
         case .getPrekey(let id):
             guard let coreCrypto else { throw InteropError.notInitialised }
 
-            let prekey = try await coreCrypto.transaction {
-                try await $0.proteusNewPrekey(prekeyId: id)
+            let prekey = try await coreCrypto.transaction { ctx in
+                try await ctx.proteusNewPrekey(prekeyId: id)
             }
 
             return prekey.base64EncodedString()
@@ -256,8 +256,8 @@ struct InteropClientApp: App {
         case .sessionFromPrekey(let sessionId, let prekey):
             guard let coreCrypto else { throw InteropError.notInitialised }
 
-            try await coreCrypto.transaction {
-                try await $0.proteusSessionFromPrekey(
+            try await coreCrypto.transaction { ctx in
+                try await ctx.proteusSessionFromPrekey(
                     sessionId: sessionId, prekey: prekey)
             }
 
@@ -266,8 +266,8 @@ struct InteropClientApp: App {
         case .sessionFromMessage(let sessionId, let message):
             guard let coreCrypto else { throw InteropError.notInitialised }
 
-            let decryptedMessage = try await coreCrypto.transaction {
-                try await $0.proteusSessionFromMessage(
+            let decryptedMessage = try await coreCrypto.transaction { ctx in
+                try await ctx.proteusSessionFromMessage(
                     sessionId: sessionId, envelope: message)
             }
 
@@ -276,8 +276,8 @@ struct InteropClientApp: App {
         case .encryptProteusMessage(let sessionId, let message):
             guard let coreCrypto else { throw InteropError.notInitialised }
 
-            let encryptedMessage = try await coreCrypto.transaction {
-                try await $0.proteusEncrypt(
+            let encryptedMessage = try await coreCrypto.transaction { ctx in
+                try await ctx.proteusEncrypt(
                     sessionId: sessionId, plaintext: message)
             }
 
@@ -286,8 +286,8 @@ struct InteropClientApp: App {
         case .decryptProteusMessage(let sessionId, let message):
             guard let coreCrypto else { throw InteropError.notInitialised }
 
-            let decryptedMessasge = try await coreCrypto.transaction {
-                try await $0.proteusDecrypt(
+            let decryptedMessasge = try await coreCrypto.transaction { ctx in
+                try await ctx.proteusDecrypt(
                     sessionId: sessionId, ciphertext: message)
             }
 
@@ -296,8 +296,8 @@ struct InteropClientApp: App {
         case .getFingerprint:
             guard let coreCrypto else { throw InteropError.notInitialised }
 
-            let fingerprint = try await coreCrypto.transaction({
-                try await $0.proteusFingerprint()
+            let fingerprint = try await coreCrypto.transaction({ ctx in
+                try await ctx.proteusFingerprint()
             })
 
             return fingerprint
