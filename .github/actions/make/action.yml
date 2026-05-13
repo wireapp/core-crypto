@@ -34,6 +34,10 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: setup fd
+      uses: taiki-e/install-action@v2
+      with:
+        tool: fd-find
     - name: Set MAKE
       uses: ./.github/actions/make/set-make-executable
 
