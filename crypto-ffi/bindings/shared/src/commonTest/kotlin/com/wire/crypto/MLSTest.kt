@@ -429,11 +429,16 @@ class MLSTest : HasMockDeliveryService() {
             data class ObserverEvent(val eventEpoch: ULong, val conversationEpoch: ULong)
 
             class Observer : EpochObserver {
-                val observedEvents = emptyList<ObserverEvent>().toMutableList()
+                val observedEvents = emptyList<CompletableDeferred<ObserverEvent>>().toMutableList()
+
+                fun expectEvent(): CompletableDeferred<ObserverEvent> =
+                    CompletableDeferred<ObserverEvent>().also { observedEvents.add(it) }
 
                 override suspend fun epochChanged(conversationId: ConversationId, epoch: ULong) {
+                    val deferredEvent = observedEvents.firstOrNull { !it.isCompleted } ?: expectEvent()
                     val conversationEpoch = alice.conversationEpoch(conversationId)
-                    observedEvents.add(ObserverEvent(epoch, conversationEpoch))
+                    val event = ObserverEvent(epoch, conversationEpoch)
+                    deferredEvent.complete(event)
                 }
             }
 
@@ -444,7 +449,9 @@ class MLSTest : HasMockDeliveryService() {
 
             alice.registerEpochObserver(scope, aliceObserver)
 
+            val expectedEvent = aliceObserver.expectEvent()
             alice.transaction { it.updateKeyingMaterial(id) }
+            val observedEvent = expectedEvent.await()
             val laterEpoch = alice.conversationEpoch(id)
 
             assertEquals(initialEpoch + 1U, laterEpoch)
@@ -454,9 +461,7 @@ class MLSTest : HasMockDeliveryService() {
                 "we triggered exactly 1 epoch change and must have observed that"
             )
             assertTrue(
-                aliceObserver.observedEvents.all {
-                    it.eventEpoch == it.conversationEpoch && it.eventEpoch == laterEpoch
-                },
+                observedEvent.eventEpoch == observedEvent.conversationEpoch && observedEvent.eventEpoch == laterEpoch,
                 "event epoch must equal the epoch read during the event"
             )
         }
