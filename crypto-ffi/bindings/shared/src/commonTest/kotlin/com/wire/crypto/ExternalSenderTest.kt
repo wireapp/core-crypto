@@ -1,4 +1,4 @@
-@file:Suppress("ktlint:standard:no-wildcard-imports")
+@file:Suppress("ktlint:standard:no-wildcard-imports", "WildcardImport")
 
 package com.wire.crypto
 
