@@ -157,11 +157,17 @@ impl PkiEnvironment {
     ///
     /// The certificate is saved to the database, and included in the PKI environment for
     /// future validation.
+    ///
+    /// # Caution
+    ///
+    /// Adding a trust anchor will replace any existing trust anchor. This limitation
+    /// will be relaxed in the future.
     pub async fn add_trust_anchor(&self, name: &str, cert: Certificate) -> Result<()> {
         // Validate it (expiration & signature only)
         self.rjt_pki_env.lock().await.validate_trust_anchor_cert(&cert)?;
 
         // Save cert's DER representation to the database
+        // TODO: make this work for multiple trust anchors, see WPB-25632
         let cert_data = E2eiAcmeCA {
             content: cert.to_der()?,
         };
