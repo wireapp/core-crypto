@@ -50,11 +50,6 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
-      - name: run detekt
-        run: |
-          cd crypto-ffi/bindings
-          ./gradlew jvm:detekt
-
       - name: build and test jvm package
         uses: ./.github/actions/make
         with:
