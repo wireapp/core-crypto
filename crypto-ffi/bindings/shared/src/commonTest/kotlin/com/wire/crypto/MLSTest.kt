@@ -203,7 +203,6 @@ class MLSTest : HasMockDeliveryService() {
         val welcome = mockDeliveryService.getLatestWelcome()
         val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
 
-        // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
         assertThat(groupId).isEqualTo(id)
     }
 
@@ -270,7 +269,6 @@ class MLSTest : HasMockDeliveryService() {
         val welcome = mockDeliveryService.getLatestWelcome()
 
         val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
-        // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
         assertThat(groupId).isEqualTo(id)
     }
 
