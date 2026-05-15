@@ -71,7 +71,7 @@ x509-cert = { workspace = true, features = ["builder", "hazmat"] }
 web-time = "1.1.0"
 rand = { workspace = true, features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
-rand_core = "0.6"
+rand_core = "0.10"
 rand_chacha = "0.3"
 
 [dependencies.hpke]
