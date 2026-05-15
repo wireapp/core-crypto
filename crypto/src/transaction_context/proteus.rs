@@ -1,11 +1,7 @@
 //! This module contains all [super::TransactionContext] methods concerning proteus.
 
 use super::{Error, Result, TransactionContext, TransactionContextInner};
-use crate::{
-    RecursiveError,
-    group_store::GroupStoreValue,
-    proteus::{ProteusCentral, ProteusConversationSession},
-};
+use crate::{RecursiveError, proteus::ProteusCentral};
 
 impl TransactionContext {
     /// Initializes the proteus client
@@ -29,33 +25,11 @@ impl TransactionContext {
         Ok(())
     }
 
-    /// Reloads the sessions from the key store
-    ///
-    /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or it will do
-    /// nothing
-    pub async fn proteus_reload_sessions(&self) -> Result<()> {
-        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
-            return Err(Error::InvalidTransactionContext);
-        };
-        let mut guard = core_crypto.proteus.lock().await;
-        let Some(proteus) = guard.as_mut() else { return Ok(()) };
-        let keystore = self.database().await?;
-        proteus
-            .reload_sessions(&keystore)
-            .await
-            .map_err(RecursiveError::root("reloading proteus session"))
-            .map_err(Into::into)
-    }
-
     /// Creates a proteus session from a prekey
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
     /// will be returned
-    pub async fn proteus_session_from_prekey(
-        &self,
-        session_id: &str,
-        prekey: &[u8],
-    ) -> Result<GroupStoreValue<ProteusConversationSession>> {
+    pub async fn proteus_session_from_prekey(&self, session_id: &str, prekey: &[u8]) -> Result<()> {
         let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
             return Err(Error::InvalidTransactionContext);
         };
@@ -66,22 +40,17 @@ impl TransactionContext {
             .session_from_prekey(session_id, prekey)
             .await
             .map_err(RecursiveError::root("creating proteus session from prekey"))?;
-        ProteusCentral::session_save_by_ref(&keystore, session.clone())
+        ProteusCentral::session_save_by_ref(&keystore, session)
             .await
             .map_err(RecursiveError::root("saving proteus session by ref"))?;
-
-        Ok(session)
+        Ok(())
     }
 
-    /// Creates a proteus session from a Proteus message envelope
+    /// Creates a proteus session from a Proteus message envelope, returning the decrypted payload
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
     /// will be returned
-    pub async fn proteus_session_from_message(
-        &self,
-        session_id: &str,
-        envelope: &[u8],
-    ) -> Result<(GroupStoreValue<ProteusConversationSession>, Vec<u8>)> {
+    pub async fn proteus_session_from_message(&self, session_id: &str, envelope: &[u8]) -> Result<Vec<u8>> {
         let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
             return Err(Error::InvalidTransactionContext);
         };
@@ -92,11 +61,10 @@ impl TransactionContext {
             .session_from_message(&mut keystore, session_id, envelope)
             .await
             .map_err(RecursiveError::root("creating proteus sesseion from message"))?;
-        ProteusCentral::session_save_by_ref(&keystore, session.clone())
+        ProteusCentral::session_save_by_ref(&keystore, session)
             .await
             .map_err(RecursiveError::root("saving proteus session by ref"))?;
-
-        Ok((session, message))
+        Ok(message)
     }
 
     /// Saves a proteus session in the keystore
@@ -132,27 +100,6 @@ impl TransactionContext {
             .session_delete(&keystore, session_id)
             .await
             .map_err(RecursiveError::root("deleting proteus session"))
-            .map_err(Into::into)
-    }
-
-    /// Proteus session accessor
-    ///
-    /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
-    /// will be returned
-    pub async fn proteus_session(
-        &self,
-        session_id: &str,
-    ) -> Result<Option<GroupStoreValue<ProteusConversationSession>>> {
-        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
-            return Err(Error::InvalidTransactionContext);
-        };
-        let mut guard = core_crypto.proteus.lock().await;
-        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
-        proteus
-            .session(session_id, &keystore)
-            .await
-            .map_err(RecursiveError::root("getting proteus session"))
             .map_err(Into::into)
     }
 

@@ -3,17 +3,16 @@
 
 use std::sync::Arc;
 
-use async_lock::{Mutex, RwLock, RwLockWriteGuardArc};
+use async_lock::{Mutex, MutexGuardArc, RwLock};
 use core_crypto_keystore::{CryptoKeystoreError, entities::ConsumerData, traits::FetchFromDatabase as _};
 pub use error::{Error, Result};
 use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::pki_env::PkiEnvironment;
 
 use crate::{
-    ClientId, ConversationId, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsConversation,
-    MlsError, MlsTransport, RecursiveError, Session,
-    group_store::GroupStore,
-    mls::{self, HasSessionAndCrypto},
+    ClientId, ConversationId, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsError, MlsTransport,
+    RecursiveError, Session,
+    mls::{self, HasSessionAndCrypto, conversation_cache::MlsConversationCache},
     mls_provider::{Database, MlsCryptoProvider},
 };
 pub mod conversation;
@@ -44,7 +43,6 @@ pub struct TransactionContext {
 enum TransactionContextInner {
     Valid {
         core_crypto: Arc<CoreCrypto>,
-        mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
         pending_epoch_changes: Arc<Mutex<Vec<(ConversationId, u64)>>>,
     },
     Invalid,
@@ -88,7 +86,6 @@ impl TransactionContext {
             inner: Arc::new(
                 TransactionContextInner::Valid {
                     core_crypto,
-                    mls_groups: Default::default(),
                     pending_epoch_changes: Default::default(),
                 }
                 .into(),
@@ -185,11 +182,24 @@ impl TransactionContext {
         }
     }
 
-    pub(crate) async fn mls_groups(&self) -> Result<RwLockWriteGuardArc<GroupStore<MlsConversation>>> {
-        match &*self.inner.read().await {
-            TransactionContextInner::Valid { mls_groups, .. } => Ok(mls_groups.write_arc().await),
-            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
-        }
+    pub(crate) async fn mls_groups(&self) -> Result<MutexGuardArc<MlsConversationCache>> {
+        let guard = self.inner.read().await;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*guard else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        let cache = core_crypto
+            .mls
+            .read()
+            .await
+            .as_ref()
+            .map(|session| session.conversation_cache.clone())
+            .ok_or_else(|| {
+                RecursiveError::mls_client("getting mls session from transaction context")(
+                    mls::session::Error::MlsNotInitialized,
+                )
+            })?;
+
+        Ok(cache.lock_arc().await)
     }
 
     pub(crate) async fn queue_epoch_changed(&self, conversation_id: ConversationId, epoch: u64) -> Result<()> {
@@ -225,15 +235,19 @@ impl TransactionContext {
             .map_err(KeystoreError::wrap("commiting transaction"))
             .map_err(Into::into);
 
-        if let Some(session) = core_crypto.mls.read().await.as_ref()
-            && commit_result.is_ok()
-        {
-            // We need owned values, so we could just clone the conversation ids, but we don't need the events anymore,
-            // so draining the vector works, too.
-            let mut epoch_changes = pending_epoch_changes.lock().await;
-            let epoch_changes = epoch_changes.drain(..);
-            for (conversation_id, epoch) in epoch_changes {
-                session.notify_epoch_changed(conversation_id, epoch).await;
+        if let Some(session) = core_crypto.mls.read().await.as_ref() {
+            if commit_result.is_ok() {
+                // We need owned values, so we could just clone the conversation ids, but we don't need the events
+                // anymore, so draining the vector works, too.
+                let mut epoch_changes = pending_epoch_changes.lock().await;
+                for (conversation_id, epoch) in epoch_changes.drain(..) {
+                    session.notify_epoch_changed(conversation_id, epoch).await;
+                }
+            } else {
+                // Commit failed: the keystore is back to its pre-transaction state, but the in-memory
+                // conversation cache may have absorbed mutations that never made it to disk. Clear them
+                // so subsequent reads load fresh state from the keystore.
+                session.conversation_cache.lock().await.clear();
             }
         }
 
@@ -250,6 +264,12 @@ impl TransactionContext {
         let TransactionContextInner::Valid { core_crypto, .. } = &*guard else {
             return Err(Error::InvalidTransactionContext);
         };
+
+        // Drop any in-memory conversation state mutated during this transaction; it never reached
+        // the keystore and would otherwise diverge from disk after rollback.
+        if let Some(session) = core_crypto.mls.read().await.as_ref() {
+            session.conversation_cache.lock().await.clear();
+        }
 
         let result = core_crypto
             .database

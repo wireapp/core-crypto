@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
-use async_lock::RwLockReadGuard;
+use async_lock::{RwLock, RwLockReadGuard};
 use core_crypto_keystore::{CryptoKeystoreMls as _, Database};
 use openmls::prelude::group_info::GroupInfo;
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{ConversationWithMls, Error, MlsConversation, Result};
 use crate::{
-    KeystoreError, LeafError, MlsGroupInfoBundle, MlsTransport, RecursiveError, group_store::GroupStoreValue,
-    mls::credential::Credential, transaction_context::TransactionContext,
+    KeystoreError, LeafError, MlsGroupInfoBundle, MlsTransport, RecursiveError, mls::credential::Credential,
+    transaction_context::TransactionContext,
 };
 mod commit;
 pub(crate) mod decrypt;
@@ -16,14 +16,17 @@ mod encrypt;
 mod history_sharing;
 mod merge;
 
-/// A Conversation Guard wraps a `GroupStoreValue<MlsConversation>`.
+/// A Conversation Guard wraps an [`Arc<RwLock<MlsConversation>>`].
 ///
-/// By doing so, it permits mutable accesses to the conversation. This in turn
-/// means that we don't have to duplicate the entire `MlsConversation` API
-/// on `TransactionContext`.
+/// The conversation is ultimately owned by the conversation cache, but we take an `Arc`
+/// here so that we don't have to tie the lifetime of the guard to the cache.
+///
+/// More generally, the conversation guard gives us convenient mutable accesses to a single
+/// conversation. This in turn means that we don't have to duplicate the entire
+/// `MlsConversation` API on `TransactionContext`.
 #[derive(Debug)]
 pub struct ConversationGuard {
-    inner: GroupStoreValue<MlsConversation>,
+    inner: Arc<RwLock<MlsConversation>>,
     central_context: TransactionContext,
 }
 
@@ -43,7 +46,7 @@ impl<'inner> ConversationWithMls<'inner> for ConversationGuard {
 }
 
 impl ConversationGuard {
-    pub(crate) fn new(inner: GroupStoreValue<MlsConversation>, central_context: TransactionContext) -> Self {
+    pub(crate) fn new(inner: Arc<RwLock<MlsConversation>>, central_context: TransactionContext) -> Self {
         Self { inner, central_context }
     }
 
@@ -151,7 +154,7 @@ mod test_utils {
                 .map(|mut groups| groups.remove(id.as_ref()).unwrap())
                 .unwrap();
             let group = MlsConversation::from_serialized_state(group).unwrap();
-            context.mls_groups().await.unwrap().insert(id, group);
+            context.mls_groups().await.unwrap().insert(group);
         }
     }
 }

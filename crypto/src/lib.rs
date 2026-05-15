@@ -16,7 +16,6 @@ mod build_metadata;
 mod bytes_wrapper;
 mod ephemeral;
 mod error;
-mod group_store;
 mod identity;
 
 /// MLS Abstraction

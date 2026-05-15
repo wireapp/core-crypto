@@ -173,9 +173,6 @@ final actor TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand 
         // Only aquire lock if we are using an instance which persists to disk
         if fileDescriptor != nil {
             acquireFileLock()
-
-            // Reload any cached proteus sessions from disk since they may be invalid
-            try await context.proteusReloadSessions()
         }
 
         defer {
