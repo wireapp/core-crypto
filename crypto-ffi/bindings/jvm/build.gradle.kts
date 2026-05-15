@@ -149,11 +149,18 @@ project.afterEvaluate {
     }
 }
 
+// `./gradlew detekt` runs detekt rules without type resolution and silently ignores rules that require it
+// `./gradlew jvm:detekt<SourceSet>` runs detekt for the source set with type resolution and all rules
+// See https://detekt.dev/docs/gettingstarted/type-resolution#enabling-on-a-jvm-project
 detekt {
-    source.setFrom(files("src/jmh/kotlin"))
     buildUponDefaultConfig = true
     config.setFrom(files("../detekt.yml"))
     failOnSeverity = FailOnSeverity.Info
+}
+
+// exclude uniffi bindings from detekt tasks
+tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
+    exclude("**/core_crypto_ffi.kt")
 }
 
 val sourcesJar = tasks.register<Jar>("sourcesJar") {
