@@ -87,10 +87,7 @@ impl ProteusCentral {
         Ok(())
     }
 
-    pub(crate) async fn session_save_by_ref(
-        keystore: &Database,
-        session: &ProteusConversationSession,
-    ) -> Result<()> {
+    pub(crate) async fn session_save_by_ref(keystore: &Database, session: &ProteusConversationSession) -> Result<()> {
         let db_session = ProteusSession {
             id: session.identifier().to_string(),
             session: session
