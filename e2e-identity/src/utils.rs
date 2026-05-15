@@ -1,4 +1,7 @@
-use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair, Jwk};
+use jwt_simple::{
+    algorithms::{ECDSAP256PublicKeyLike as _, ECDSAP384PublicKeyLike as _, ECDSAP521PublicKeyLike as _},
+    prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair, Jwk},
+};
 use rusty_jwt_tools::{
     jwk::TryIntoJwk as _,
     prelude::{JwsAlgorithm, Pem},
@@ -24,4 +27,23 @@ pub fn public_jwk_from_pem_keypair(alg: JwsAlgorithm, keypair: &Pem) -> E2eIdent
         JwsAlgorithm::Ed25519 => Ed25519KeyPair::from_pem(keypair)?.public_key().try_into_jwk()?,
     };
     Ok(jwk)
+}
+
+pub(crate) fn public_key_bytes(alg: JwsAlgorithm, keypair: &Pem) -> E2eIdentityResult<Vec<u8>> {
+    let bytes = match alg {
+        JwsAlgorithm::P256 => ES256KeyPair::from_pem(keypair)?
+            .public_key()
+            .public_key()
+            .to_bytes_uncompressed(),
+        JwsAlgorithm::P384 => ES384KeyPair::from_pem(keypair)?
+            .public_key()
+            .public_key()
+            .to_bytes_uncompressed(),
+        JwsAlgorithm::P521 => ES512KeyPair::from_pem(keypair)?
+            .public_key()
+            .public_key()
+            .to_bytes_uncompressed(),
+        JwsAlgorithm::Ed25519 => Ed25519KeyPair::from_pem(keypair)?.public_key().to_bytes(),
+    };
+    Ok(bytes)
 }
