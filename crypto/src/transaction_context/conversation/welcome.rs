@@ -1,7 +1,5 @@
 //! This module contains transactional conversation operations that are related to processing welcome messages.
 
-use std::borrow::BorrowMut as _;
-
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 
 use super::{Error, Result, TransactionContext};
@@ -41,18 +39,13 @@ impl TransactionContext {
             .mls_groups()
             .await
             .map_err(RecursiveError::transaction("getting mls groups"))?;
-        let conversation = MlsConversation::from_welcome_message(
-            welcome,
-            configuration,
-            &mls_provider,
-            database,
-            mls_groups.borrow_mut(),
-        )
-        .await
-        .map_err(RecursiveError::mls_conversation("creating conversation from welcome"))?;
+        let conversation =
+            MlsConversation::from_welcome_message(welcome, configuration, &mls_provider, database, &mut mls_groups)
+                .await
+                .map_err(RecursiveError::mls_conversation("creating conversation from welcome"))?;
 
         let id = conversation.id.clone();
-        mls_groups.insert(&id, conversation);
+        mls_groups.insert(conversation);
 
         Ok(id)
     }

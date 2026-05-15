@@ -10,7 +10,7 @@ pub(crate) mod user_id;
 
 use std::sync::Arc;
 
-use async_lock::RwLock;
+use async_lock::{Mutex, RwLock};
 use core_crypto_keystore::traits::FetchFromDatabase;
 pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
@@ -22,6 +22,7 @@ use crate::{
     mls::{
         self, HasSessionAndCrypto,
         conversation::{ConversationIdRef, ImmutableConversation},
+        conversation_cache::MlsConversationCache,
     },
     mls_provider::{EntropySeed, MlsCryptoProvider},
 };
@@ -57,6 +58,11 @@ pub struct Session<D> {
     pub(crate) epoch_observer: Arc<RwLock<Option<Arc<dyn EpochObserver + 'static>>>>,
     #[debug("HistoryObserver")]
     pub(crate) history_observer: Arc<RwLock<Option<Arc<dyn HistoryObserver + 'static>>>>,
+    /// LRU cache of live MLS conversations.
+    ///
+    /// Shared across transactions for cache reuse;
+    /// cleared on transaction rollback to avoid serving stale state.
+    pub(crate) conversation_cache: Arc<Mutex<MlsConversationCache>>,
 }
 
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
@@ -86,6 +92,7 @@ impl<D: FetchFromDatabase> Session<D> {
             database,
             epoch_observer: Arc::new(RwLock::new(None)),
             history_observer: Arc::new(RwLock::new(None)),
+            conversation_cache: Arc::new(Mutex::new(MlsConversationCache::new())),
         }
     }
 

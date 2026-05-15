@@ -248,7 +248,7 @@ impl PendingConversation {
             .mls_groups()
             .await
             .map_err(RecursiveError::transaction("getting mls groups"))?
-            .insert(id, conversation);
+            .insert(conversation);
 
         // This is the now merged conversation
         let mut conversation = context

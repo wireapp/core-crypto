@@ -5,8 +5,8 @@ use tls_codec::{Deserialize as _, Serialize as _};
 
 use super::{Error, Result};
 use crate::{
-    ConversationId, LeafError, MlsConversation, MlsConversationConfiguration, MlsError, group_store::GroupStore,
-    mls_provider::MlsCryptoProvider,
+    ConversationId, LeafError, MlsConversation, MlsConversationConfiguration, MlsError,
+    mls::conversation_cache::MlsConversationCache, mls_provider::MlsCryptoProvider,
 };
 
 /// A Welcome Message as defined in RFC 9420.
@@ -57,7 +57,7 @@ impl MlsConversation {
         configuration: MlsConversationConfiguration,
         provider: &MlsCryptoProvider,
         database: &Database,
-        mls_groups: &mut GroupStore<MlsConversation>,
+        mls_groups: &mut MlsConversationCache,
     ) -> Result<Self> {
         let mls_group_config = configuration.as_openmls_default_configuration()?;
 
@@ -72,7 +72,7 @@ impl MlsConversation {
             })?;
 
         let id = ConversationId::from(group.group_id().as_slice());
-        let existing_conversation = mls_groups.get_fetch(&id, database, None).await;
+        let existing_conversation = mls_groups.get_or_fetch(&id, database).await;
         let conversation_exists = existing_conversation.ok().flatten().is_some();
 
         let pending_group = provider
