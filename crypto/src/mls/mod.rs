@@ -2,6 +2,7 @@ use crate::{MlsConversation, Session, mls_provider::MlsCryptoProvider};
 
 pub(crate) mod ciphersuite;
 pub mod conversation;
+pub(crate) mod conversation_cache;
 pub mod credential;
 mod error;
 mod external_sender;

@@ -93,3 +93,19 @@ impl<'a> From<&'a ConversationIdRef> for Cow<'a, [u8]> {
         Cow::Borrowed(value.as_ref())
     }
 }
+
+// Cross-type equality so that `&ConversationIdRef` can be used to look up an entry
+// in a hash-keyed collection (e.g. `schnellru::LruMap<ConversationId, _>`) without
+// allocating a `ConversationId`. The `Hash` derives on both types compare equal
+// bytes to equal hashes, keeping these impls consistent with the `Hash` impls.
+impl PartialEq<ConversationId> for ConversationIdRef {
+    fn eq(&self, other: &ConversationId) -> bool {
+        self.as_ref() == other.as_ref()
+    }
+}
+
+impl PartialEq<ConversationIdRef> for ConversationId {
+    fn eq(&self, other: &ConversationIdRef) -> bool {
+        self.as_ref() == other.as_ref()
+    }
+}
