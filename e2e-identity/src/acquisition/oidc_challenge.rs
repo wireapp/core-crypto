@@ -72,7 +72,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
         let response = String::from_utf8(response.body).map_err(|e| RustyAcmeError::from(e.utf8_error()))?;
         let certificates = RustyAcme::certificate_response(response, self.data.order)?;
 
-        super::checks::verify_cert_chain(&self.config, &self.pki_env, &certificates).await?;
+        super::checks::verify_cert_chain(&self.config, &self.pki_env, &self.sign_kp, &certificates).await?;
 
         Ok((self.sign_kp, certificates))
     }
