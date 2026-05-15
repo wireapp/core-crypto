@@ -164,10 +164,12 @@ final class WireCoreCryptoTests: XCTestCase {
             location: targetPath.lastPathComponent, key: newKey)
 
         // Check if we can read the conversation from the migrated database
-        let alice = try CoreCrypto(database: database)
+        let bob = try CoreCrypto(database: database)
+        let clientId = ClientId(bytes: Data("bob1".utf8))
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
-        let epoch = try await alice.transaction { ctx in
-            try await ctx.conversationEpoch(conversationId: conversationId)
+        let epoch = try await bob.transaction { ctx in
+            try await ctx.mlsInit(clientId: clientId, transport: self.mockMlsTransport)
+            return try await ctx.conversationEpoch(conversationId: conversationId)
         }
         XCTAssertEqual(1, epoch)
 
