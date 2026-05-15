@@ -1,7 +1,5 @@
 //! The session cache keeps Proteus sessions in memory to reduce DB / deserialization latency.
 
-#![allow(dead_code)]
-
 use std::sync::Arc;
 
 use core_crypto_keystore::{Database, entities::ProteusSession, traits::FetchFromDatabase as _};

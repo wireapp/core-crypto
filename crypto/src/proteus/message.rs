@@ -16,13 +16,13 @@ impl ProteusCentral {
     ) -> Result<Vec<u8>> {
         let session = self
             .proteus_sessions
-            .get_fetch(session_id.as_bytes(), keystore, Some(self.proteus_identity.clone()))
+            .get_or_fetch(session_id, keystore)
             .await?
             .ok_or(LeafError::ConversationNotFound(session_id.as_bytes().into()))
             .map_err(ProteusError::wrap("getting session"))?;
 
-        let plaintext = session.write().await.decrypt(keystore, ciphertext).await?;
-        ProteusCentral::session_save_by_ref(keystore, session).await?;
+        let plaintext = session.decrypt(keystore, ciphertext).await?;
+        Self::session_save_by_ref(keystore, session).await?;
 
         Ok(plaintext)
     }
@@ -40,8 +40,8 @@ impl ProteusCentral {
             .ok_or(LeafError::ConversationNotFound(session_id.as_bytes().into()))
             .map_err(ProteusError::wrap("getting session"))?;
 
-        let ciphertext = session.write().await.encrypt(plaintext)?;
-        ProteusCentral::session_save_by_ref(keystore, session).await?;
+        let ciphertext = session.encrypt(plaintext)?;
+        Self::session_save_by_ref(keystore, session).await?;
 
         Ok(ciphertext)
     }
@@ -54,14 +54,15 @@ impl ProteusCentral {
         sessions: &[impl AsRef<str>],
         plaintext: &[u8],
     ) -> Result<HashMap<String, Vec<u8>>> {
+        // unfortunately we can't write this as an iterator chain because
+        // the operations are async
         let mut acc = HashMap::new();
         for session_id in sessions {
             if let Some(session) = self.session(session_id.as_ref(), keystore).await? {
-                let mut session_w = session.write().await;
-                acc.insert(session_w.identifier.clone(), session_w.encrypt(plaintext)?);
-                drop(session_w);
-
-                ProteusCentral::session_save_by_ref(keystore, session).await?;
+                let identifier = session.identifier.clone();
+                let ciphertext = session.encrypt(plaintext)?;
+                Self::session_save_by_ref(keystore, session).await?;
+                acc.insert(identifier, ciphertext);
             }
         }
         Ok(acc)

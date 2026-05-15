@@ -1,57 +1,16 @@
-use std::sync::Arc;
-
-use core_crypto_keystore::{Database, entities::ProteusSession, traits::FetchFromDatabase as _};
-use proteus_wasm::{
-    keys::{IdentityKeyPair, PreKeyBundle},
-    message::Envelope,
-    session::Session,
-};
+use core_crypto_keystore::{Database, entities::ProteusSession};
+use proteus_wasm::{keys::PreKeyBundle, message::Envelope, session::Session};
 
 use super::{ProteusCentral, ProteusConversationSession};
-use crate::{
-    KeystoreError, LeafError, ProteusError, Result,
-    group_store::{GroupStore, GroupStoreValue},
-};
+use crate::{KeystoreError, LeafError, ProteusError, Result};
 
 impl ProteusCentral {
-    /// Restores the saved sessions in memory. This is performed automatically on init
-    pub(super) async fn restore_sessions(
-        keystore: &core_crypto_keystore::Database,
-        identity: &Arc<IdentityKeyPair>,
-    ) -> Result<GroupStore<ProteusConversationSession>> {
-        let mut proteus_sessions = GroupStore::new_with_limit(crate::group_store::ITEM_LIMIT * 2);
-        for session in keystore
-            .load_all::<ProteusSession>()
-            .await
-            .map_err(KeystoreError::wrap("finding all proteus sessions"))?
-        {
-            let proteus_session = Session::deserialise(identity.clone(), &session.session)
-                .map_err(ProteusError::wrap("deserializing session"))?;
-
-            let identifier = session.id.clone();
-
-            let proteus_conversation = ProteusConversationSession {
-                identifier: identifier.clone(),
-                session: proteus_session,
-            };
-
-            if proteus_sessions
-                .try_insert(identifier.into_bytes(), proteus_conversation)
-                .is_err()
-            {
-                break;
-            }
-        }
-
-        Ok(proteus_sessions)
-    }
-
     /// Creates a new session from a prekey
     pub async fn session_from_prekey(
         &mut self,
         session_id: &str,
         key: &[u8],
-    ) -> Result<GroupStoreValue<ProteusConversationSession>> {
+    ) -> Result<&mut ProteusConversationSession> {
         let prekey = PreKeyBundle::deserialise(key).map_err(ProteusError::wrap("deserializing prekey bundle"))?;
         // Note on the `::<>` turbofish below:
         //
@@ -89,15 +48,12 @@ impl ProteusCentral {
         )
         .map_err(ProteusError::wrap("initializing session from prekey"))?;
 
-        let proteus_conversation = ProteusConversationSession {
+        let conversation = ProteusConversationSession {
             identifier: session_id.into(),
             session: proteus_session,
         };
 
-        self.proteus_sessions
-            .insert(session_id.as_bytes(), proteus_conversation);
-
-        Ok(self.proteus_sessions.get(session_id.as_bytes()).unwrap().clone())
+        Ok(self.proteus_sessions.insert(conversation))
     }
 
     /// Creates a new proteus Session from a received message
@@ -106,24 +62,18 @@ impl ProteusCentral {
         keystore: &mut Database,
         session_id: &str,
         envelope: &[u8],
-    ) -> Result<(GroupStoreValue<ProteusConversationSession>, Vec<u8>)> {
+    ) -> Result<(&mut ProteusConversationSession, Vec<u8>)> {
         let message = Envelope::deserialise(envelope).map_err(ProteusError::wrap("deserialising envelope"))?;
         let (session, payload) = Session::init_from_message(self.proteus_identity.clone(), keystore, &message)
             .await
             .map_err(ProteusError::wrap("initializing session from message"))?;
 
-        let proteus_conversation = ProteusConversationSession {
+        let conversation = ProteusConversationSession {
             identifier: session_id.into(),
             session,
         };
 
-        self.proteus_sessions
-            .insert(session_id.as_bytes(), proteus_conversation);
-
-        Ok((
-            self.proteus_sessions.get(session_id.as_bytes()).unwrap().clone(),
-            payload,
-        ))
+        Ok((self.proteus_sessions.insert(conversation), payload))
     }
 
     /// Persists a session in store
@@ -131,22 +81,16 @@ impl ProteusCentral {
     /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting
     /// messages and initializing Sessions
     pub(crate) async fn session_save(&mut self, keystore: &Database, session_id: &str) -> Result<()> {
-        if let Some(session) = self
-            .proteus_sessions
-            .get_fetch(session_id.as_bytes(), keystore, Some(self.proteus_identity.clone()))
-            .await?
-        {
+        if let Some(session) = self.proteus_sessions.get_or_fetch(session_id, keystore).await? {
             Self::session_save_by_ref(keystore, session).await?;
         }
-
         Ok(())
     }
 
     pub(crate) async fn session_save_by_ref(
         keystore: &Database,
-        session: GroupStoreValue<ProteusConversationSession>,
+        session: &ProteusConversationSession,
     ) -> Result<()> {
-        let session = session.read().await;
         let db_session = ProteusSession {
             id: session.identifier().to_string(),
             session: session
@@ -164,7 +108,7 @@ impl ProteusCentral {
     /// Deletes a session in the store
     pub(crate) async fn session_delete(&mut self, keystore: &Database, session_id: &str) -> Result<()> {
         if keystore.remove_borrowed::<ProteusSession>(session_id).await.is_ok() {
-            let _ = self.proteus_sessions.remove(session_id.as_bytes());
+            let _ = self.proteus_sessions.remove(session_id);
         }
         Ok(())
     }
@@ -174,10 +118,8 @@ impl ProteusCentral {
         &mut self,
         session_id: &str,
         keystore: &Database,
-    ) -> Result<Option<GroupStoreValue<ProteusConversationSession>>> {
-        self.proteus_sessions
-            .get_fetch(session_id.as_bytes(), keystore, Some(self.proteus_identity.clone()))
-            .await
+    ) -> Result<Option<&mut ProteusConversationSession>> {
+        self.proteus_sessions.get_or_fetch(session_id, keystore).await
     }
 
     /// Session exists
@@ -195,8 +137,7 @@ impl ProteusCentral {
             .await?
             .ok_or(LeafError::ConversationNotFound(session_id.as_bytes().into()))
             .map_err(ProteusError::wrap("getting session"))?;
-        let fingerprint = session.read().await.fingerprint_local();
-        Ok(fingerprint)
+        Ok(session.fingerprint_local())
     }
 
     /// Proteus Session remote hex-encoded fingerprint
@@ -209,7 +150,6 @@ impl ProteusCentral {
             .await?
             .ok_or(LeafError::ConversationNotFound(session_id.as_bytes().into()))
             .map_err(ProteusError::wrap("getting session"))?;
-        let fingerprint = session.read().await.fingerprint_remote();
-        Ok(fingerprint)
+        Ok(session.fingerprint_remote())
     }
 }
