@@ -1,21 +1,7 @@
-use super::{ProteusCentral, ProteusConversationSession};
-use crate::{CoreCrypto, Error, Result, group_store::GroupStoreValue};
+use super::ProteusCentral;
+use crate::{CoreCrypto, Error, Result};
 
 impl CoreCrypto {
-    /// Proteus session accessor
-    ///
-    /// Warning: The Proteus client **MUST** be initialized with
-    /// [crate::transaction_context::TransactionContext::proteus_init] first or an error will be
-    /// returned
-    pub async fn proteus_session(
-        &self,
-        session_id: &str,
-    ) -> Result<Option<GroupStoreValue<ProteusConversationSession>>> {
-        let mut mutex = self.proteus.lock().await;
-        let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        proteus.session(session_id, &self.database).await
-    }
-
     /// Proteus session exists
     ///
     /// Warning: The Proteus client **MUST** be initialized with
