@@ -29,7 +29,7 @@ impl CoreCryptoContext {
     /// Creates a new Proteus session from an incoming encrypted message, returning the decrypted message payload.
     pub async fn proteus_session_from_message(&self, session_id: &str, envelope: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({
-            let (_, payload) = self.inner.proteus_session_from_message(session_id, &envelope).await?;
+            let payload = self.inner.proteus_session_from_message(session_id, &envelope).await?;
             Ok(payload)
         })
     }
@@ -147,10 +147,5 @@ impl CoreCryptoContext {
                 .await
                 .map_err(Into::into)
         })
-    }
-
-    /// Reloads all Proteus sessions from the keystore into memory.
-    pub async fn proteus_reload_sessions(&self) -> CoreCryptoResult<()> {
-        proteus_impl!({ self.inner.proteus_reload_sessions().await.map_err(Into::into) })
     }
 }

@@ -6,13 +6,14 @@ mod session;
 mod session_cache;
 
 pub use conversation_session::{ProteusConversationSession, SessionIdentifier};
+pub(crate) use session_cache::ProteusSessionCache;
 
 use std::sync::Arc;
 
 use core_crypto_keystore::{Database, entities::ProteusIdentity, traits::FetchFromDatabase as _};
 use proteus_wasm::keys::IdentityKeyPair;
 
-use crate::{KeystoreError, ProteusError, Result, group_store::GroupStore};
+use crate::{KeystoreError, ProteusError, Result};
 
 /// Proteus counterpart of [crate::mls::session::Session]
 ///
@@ -22,25 +23,19 @@ use crate::{KeystoreError, ProteusError, Result, group_store::GroupStore};
 #[derive(Debug)]
 pub struct ProteusCentral {
     proteus_identity: Arc<IdentityKeyPair>,
-    proteus_sessions: GroupStore<ProteusConversationSession>,
+    proteus_sessions: ProteusSessionCache,
 }
 
 impl ProteusCentral {
     /// Initializes the [ProteusCentral]
     pub async fn try_new(keystore: &Database) -> Result<Self> {
         let proteus_identity: Arc<IdentityKeyPair> = Arc::new(Self::load_or_create_identity(keystore).await?);
-        let proteus_sessions = Self::restore_sessions(keystore, &proteus_identity).await?;
+        let proteus_sessions = ProteusSessionCache::new(proteus_identity.clone());
 
         Ok(Self {
             proteus_identity,
             proteus_sessions,
         })
-    }
-
-    /// Restore proteus sessions from disk
-    pub(crate) async fn reload_sessions(&mut self, keystore: &Database) -> Result<()> {
-        self.proteus_sessions = Self::restore_sessions(keystore, &self.proteus_identity).await?;
-        Ok(())
     }
 
     /// This function will try to load a proteus Identity from our keystore; If it cannot, it will create a new one
