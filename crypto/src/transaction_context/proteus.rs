@@ -135,27 +135,6 @@ impl TransactionContext {
             .map_err(Into::into)
     }
 
-    /// Proteus session accessor
-    ///
-    /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
-    /// will be returned
-    pub async fn proteus_session(
-        &self,
-        session_id: &str,
-    ) -> Result<Option<GroupStoreValue<ProteusConversationSession>>> {
-        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
-            return Err(Error::InvalidTransactionContext);
-        };
-        let mut guard = core_crypto.proteus.lock().await;
-        let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
-        proteus
-            .session(session_id, &keystore)
-            .await
-            .map_err(RecursiveError::root("getting proteus session"))
-            .map_err(Into::into)
-    }
-
     /// Proteus session exists
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
