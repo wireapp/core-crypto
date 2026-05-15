@@ -6,6 +6,7 @@ use rusty_jwt_tools::{
     jwk::TryIntoJwk as _,
     prelude::{JwsAlgorithm, Pem},
 };
+use spki::AlgorithmIdentifierOwned;
 
 use crate::error::E2eIdentityResult;
 
@@ -46,4 +47,25 @@ pub(crate) fn public_key_bytes(alg: JwsAlgorithm, keypair: &Pem) -> E2eIdentityR
         JwsAlgorithm::Ed25519 => Ed25519KeyPair::from_pem(keypair)?.public_key().to_bytes(),
     };
     Ok(bytes)
+}
+
+pub(crate) fn jws_alg_to_x509_identifier(alg: JwsAlgorithm) -> AlgorithmIdentifierOwned {
+    match alg {
+        JwsAlgorithm::Ed25519 => AlgorithmIdentifierOwned {
+            oid: const_oid::db::rfc8410::ID_ED_25519,
+            parameters: None,
+        },
+        JwsAlgorithm::P256 => AlgorithmIdentifierOwned {
+            oid: const_oid::db::rfc5912::ID_EC_PUBLIC_KEY,
+            parameters: Some(const_oid::db::rfc5912::SECP_256_R_1.into()),
+        },
+        JwsAlgorithm::P384 => AlgorithmIdentifierOwned {
+            oid: const_oid::db::rfc5912::ID_EC_PUBLIC_KEY,
+            parameters: Some(const_oid::db::rfc5912::SECP_384_R_1.into()),
+        },
+        JwsAlgorithm::P521 => AlgorithmIdentifierOwned {
+            oid: const_oid::db::rfc5912::ID_EC_PUBLIC_KEY,
+            parameters: Some(const_oid::db::rfc5912::SECP_521_R_1.into()),
+        },
+    }
 }
