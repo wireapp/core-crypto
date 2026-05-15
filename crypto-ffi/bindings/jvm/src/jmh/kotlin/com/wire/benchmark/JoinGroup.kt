@@ -37,10 +37,10 @@ open class JoinGroup {
             val aliceId = genClientId()
             conversationId = genConversationId()
             val aliceCc = initCc()
-            aliceCc.transaction {
-                it.mlsInit(aliceId, mockTransportProvider)
-                val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
-                it.createConversation(conversationId, credentialRef, null)
+            aliceCc.transaction { ctx ->
+                ctx.mlsInit(aliceId, mockTransportProvider)
+                val credentialRef = ctx.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
+                ctx.createConversation(conversationId, credentialRef, null)
             }
 
             val keyPackages = mutableListOf<KeyPackage>()
@@ -49,10 +49,10 @@ open class JoinGroup {
                 repeat(userCount) {
                     val bobId = genClientId()
                     val bobCc = initCc()
-                    val kp = bobCc.transaction {
-                        it.mlsInit(bobId, mockTransportProvider)
-                        val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), bobId))
-                        it.generateKeyPackage(credentialRef)
+                    val kp = bobCc.transaction { ctx ->
+                        ctx.mlsInit(bobId, mockTransportProvider)
+                        val credentialRef = ctx.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), bobId))
+                        ctx.generateKeyPackage(credentialRef)
                     }
                     keyPackages.add(kp)
                 }
@@ -63,10 +63,10 @@ open class JoinGroup {
 
             val charlieId = genClientId()
             charlieCc = initCc()
-            val kp = charlieCc.transaction {
-                it.mlsInit(charlieId, mockTransportProvider)
-                val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), charlieId))
-                it.generateKeyPackage(credentialRef)
+            val kp = charlieCc.transaction { ctx ->
+                ctx.mlsInit(charlieId, mockTransportProvider)
+                val credentialRef = ctx.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), charlieId))
+                ctx.generateKeyPackage(credentialRef)
             }
 
             aliceCc.transaction {
@@ -77,9 +77,9 @@ open class JoinGroup {
     }
 
     @Benchmark
-    fun joinGroup() = runBlocking {
-        charlieCc.transaction {
-            it.processWelcomeMessage(welcome)
+    fun bench() = runBlocking {
+        charlieCc.transaction { ctx ->
+            ctx.processWelcomeMessage(welcome)
         }
     }
 }

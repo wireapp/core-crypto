@@ -110,11 +110,11 @@ class DatabaseKeyTest {
         val clientId = "alice".toClientId()
         val db = openDatabase(path.absolutePathString(), oldKey)
         var cc = CoreCrypto(db)
-        var transport = MockMlsTransportSuccessProvider()
-        val credentialRef1 = cc.transaction {
-            it.mlsInit(clientId = clientId, transport)
-            it.addCredential(Credential.basic(CIPHERSUITE_DEFAULT, clientId))
-            it.findCredentials(clientId, null, null, null, null)
+        val transport = MockMlsTransportSuccessProvider()
+        val credentialRef1 = cc.transaction { ctx ->
+            ctx.mlsInit(clientId = clientId, transport)
+            ctx.addCredential(Credential.basic(CIPHERSUITE_DEFAULT, clientId))
+            ctx.findCredentials(clientId, null, null, null, null)
         }.first()
         cc.close()
 
@@ -123,9 +123,9 @@ class DatabaseKeyTest {
 
         db.updateKey(newKey)
         cc = CoreCrypto(db)
-        val credentialRef2 = cc.transaction {
-            it.mlsInit(clientId = clientId, transport)
-            it.findCredentials(clientId, null, null, null, null)
+        val credentialRef2 = cc.transaction { ctx ->
+            ctx.mlsInit(clientId = clientId, transport)
+            ctx.findCredentials(clientId, null, null, null, null)
         }.first()
         cc.close()
         assertContentEquals(credentialRef1.publicKeyHash(), credentialRef2.publicKeyHash())

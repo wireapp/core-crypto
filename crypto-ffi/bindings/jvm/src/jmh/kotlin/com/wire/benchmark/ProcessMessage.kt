@@ -43,18 +43,18 @@ open class ProcessMessage {
         conversationId = genConversationId()
         val aliceCc = initCc()
         val mockTransportProvider = MockMlsTransportSuccessProvider()
-        aliceCc.transaction {
-            it.mlsInit(aliceId, mockTransportProvider)
-            val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
-            it.createConversation(conversationId, credentialRef, null)
+        aliceCc.transaction { ctx ->
+            ctx.mlsInit(aliceId, mockTransportProvider)
+            val credentialRef = ctx.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
+            ctx.createConversation(conversationId, credentialRef, null)
         }
 
         val bobId = genClientId()
         bobCc = initCc()
-        val kp = bobCc.transaction {
-            it.mlsInit(bobId, mockTransportProvider)
-            val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), bobId))
-            it.generateKeyPackage(credentialRef)
+        val kp = bobCc.transaction { ctx ->
+            ctx.mlsInit(bobId, mockTransportProvider)
+            val credentialRef = ctx.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), bobId))
+            ctx.generateKeyPackage(credentialRef)
         }
 
         aliceCc.transaction {
@@ -70,20 +70,20 @@ open class ProcessMessage {
             ByteArray(messageSize) { 'A'.code.toByte() }
         }
 
-        aliceCc.transaction {
+        aliceCc.transaction { ctx ->
             val tempList = mutableListOf<ByteArray>()
             messages.forEach { msg ->
-                tempList += it.encryptMessage(conversationId, msg)
+                tempList += ctx.encryptMessage(conversationId, msg)
             }
             encryptedMessages = tempList
         }
     }
 
     @Benchmark
-    fun processMessages() = runBlocking {
-        bobCc.transaction {
+    fun bench() = runBlocking {
+        bobCc.transaction { ctx ->
             for (msg in encryptedMessages) {
-                it.decryptMessage(conversationId, msg)
+                ctx.decryptMessage(conversationId, msg)
             }
         }
     }

@@ -90,7 +90,7 @@ class MockPkiEnvironmentHooks : PkiEnvironmentHooks {
     }
 }
 
-abstract class HasMockDeliveryService {
+open class HasMockDeliveryService {
     companion object {
         internal lateinit var mockDeliveryService: MockDeliveryService
     }
@@ -123,7 +123,7 @@ fun initCc(): CoreCrypto = runBlocking {
 fun randomIdentifier(n: Int = 12): String {
     val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
     return (1..n)
-        .map { Random.nextInt(0, charPool.size).let { charPool[it] } }
+        .map { Random.nextInt(0, charPool.size).let { index -> charPool[index] } }
         .joinToString("")
 }
 

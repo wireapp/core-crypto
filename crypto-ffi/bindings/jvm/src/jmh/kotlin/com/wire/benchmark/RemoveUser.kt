@@ -30,7 +30,7 @@ open class RemoveUser {
 
     private lateinit var aliceCc: CoreCrypto
     private lateinit var conversationId: ConversationId
-    private lateinit var clientIdsToRemove: MutableList<ClientId>
+    private lateinit var clientIdsToRemove: List<ClientId>
 
     @Setup(Level.Invocation)
     fun setup() {
@@ -39,25 +39,25 @@ open class RemoveUser {
             val aliceId = genClientId()
             conversationId = genConversationId()
             aliceCc = initCc()
-            aliceCc.transaction {
-                it.mlsInit(aliceId, mockTransportProvider)
-                val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
-                it.createConversation(conversationId, credentialRef, null)
+            aliceCc.transaction { ctx ->
+                ctx.mlsInit(aliceId, mockTransportProvider)
+                val credentialRef = ctx.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
+                ctx.createConversation(conversationId, credentialRef, null)
             }
 
             val keyPackages = mutableListOf<KeyPackage>()
-            clientIdsToRemove = mutableListOf<ClientId>()
-
-            repeat(userCount) {
-                val bobId = genClientId()
-                val bobCc = initCc()
-                val kp = bobCc.transaction {
-                    it.mlsInit(bobId, mockTransportProvider)
-                    val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), bobId))
-                    it.generateKeyPackage(credentialRef)
+            clientIdsToRemove = buildList {
+                repeat(userCount) {
+                    val bobId = genClientId()
+                    val bobCc = initCc()
+                    val kp = bobCc.transaction { ctx ->
+                        ctx.mlsInit(bobId, mockTransportProvider)
+                        val credentialRef = ctx.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), bobId))
+                        ctx.generateKeyPackage(credentialRef)
+                    }
+                    keyPackages.add(kp)
+                    this.add(bobId)
                 }
-                keyPackages.add(kp)
-                clientIdsToRemove.add(bobId)
             }
 
             aliceCc.transaction {
@@ -67,7 +67,7 @@ open class RemoveUser {
     }
 
     @Benchmark
-    fun removeUser() = runBlocking {
+    fun bench() = runBlocking {
         aliceCc.transaction {
             it.removeClientsFromConversation(conversationId, clientIdsToRemove)
         }

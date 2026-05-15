@@ -90,6 +90,7 @@ class MLSTest : HasMockDeliveryService() {
         cc.transaction { ctx -> ctx.createConversationShort(id) }
     }
 
+    @Suppress("InjectDispatcher")
     @Test
     fun parallel_transactions_are_performed_serially() = runTest {
         withContext(Dispatchers.Default) {
@@ -253,9 +254,7 @@ class MLSTest : HasMockDeliveryService() {
         assertThat(decrypted.message).isNull()
 
         val members = alice.transaction { ctx -> ctx.getClientIds(id) }
-        assertThat(
-            members.containsAll(listOf(aliceId, bobId, carolId))
-        )
+        assertThat(members).containsAll(listOf(aliceId, bobId, carolId))
     }
 
     @Test
@@ -490,9 +489,9 @@ class MLSTest : HasMockDeliveryService() {
             // Set up the conversation in one transaction
             val (alice, bob) = newClients(genClientId(), genClientId())
             val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
-            bob.transaction {
-                it.createConversationShort(id)
-                it.addClientsToConversation(id, listOf(aliceKp))
+            bob.transaction { ctx ->
+                ctx.createConversationShort(id)
+                ctx.addClientsToConversation(id, listOf(aliceKp))
             }
 
             // Alice joins the group

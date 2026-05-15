@@ -40,10 +40,10 @@ open class CreateMessage {
         val aliceId = genClientId()
         conversationId = genConversationId()
         cc = initCc()
-        cc.transaction {
-            it.mlsInit(aliceId, MockMlsTransportSuccessProvider())
-            val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
-            it.createConversation(conversationId, credentialRef, null)
+        cc.transaction { ctx ->
+            ctx.mlsInit(aliceId, MockMlsTransportSuccessProvider())
+            val credentialRef = ctx.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
+            ctx.createConversation(conversationId, credentialRef, null)
         }
         messages = List(messageCount) {
             ByteArray(messageSize) { 'A'.code.toByte() }
@@ -51,10 +51,10 @@ open class CreateMessage {
     }
 
     @Benchmark
-    fun createMessages() = runBlocking {
-        cc.transaction {
+    fun bench() = runBlocking {
+        cc.transaction { ctx ->
             for (msg in messages) {
-                it.encryptMessage(conversationId, msg)
+                ctx.encryptMessage(conversationId, msg)
             }
         }
     }

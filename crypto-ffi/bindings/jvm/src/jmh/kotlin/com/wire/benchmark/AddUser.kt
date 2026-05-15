@@ -30,7 +30,7 @@ open class AddUser {
 
     private lateinit var aliceCc: CoreCrypto
     private lateinit var conversationId: ConversationId
-    private lateinit var keyPackages: MutableList<KeyPackage>
+    private lateinit var keyPackages: List<KeyPackage>
 
     @Setup(Level.Invocation)
     fun setup() {
@@ -39,29 +39,38 @@ open class AddUser {
             val aliceId = genClientId()
             conversationId = genConversationId()
             aliceCc = initCc()
-            aliceCc.transaction {
-                it.mlsInit(aliceId, mockTransportProvider)
-                val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
-                it.createConversation(conversationId, credentialRef, null)
+            aliceCc.transaction { ctx ->
+                ctx.mlsInit(aliceId, mockTransportProvider)
+                val credentialRef = ctx.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
+                ctx.createConversation(conversationId, credentialRef, null)
             }
 
-            keyPackages = mutableListOf<KeyPackage>()
+            keyPackages = buildList {
+                repeat(userCount) {
+                    val bobId = genClientId()
+                    val bobCc = initCc()
 
-            repeat(userCount) {
-                val bobId = genClientId()
-                val bobCc = initCc()
-                val kp = bobCc.transaction {
-                    it.mlsInit(bobId, mockTransportProvider)
-                    val credentialRef = it.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), bobId))
-                    it.generateKeyPackage(credentialRef)
+                    val kp = bobCc.transaction { ctx ->
+                        ctx.mlsInit(bobId, mockTransportProvider)
+
+                        val credentialRef = ctx.addCredential(
+                            Credential.basic(
+                                CipherSuite.valueOf(cipherSuite),
+                                bobId
+                            )
+                        )
+
+                        ctx.generateKeyPackage(credentialRef)
+                    }
+
+                    this.add(kp)
                 }
-                keyPackages.add(kp)
             }
         }
     }
 
     @Benchmark
-    fun addUser() = runBlocking {
+    fun bench() = runBlocking {
         aliceCc.transaction {
             it.addClientsToConversation(conversationId, keyPackages)
         }
