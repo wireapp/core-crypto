@@ -3,6 +3,7 @@ mod core_crypto;
 mod message;
 mod prekey;
 mod session;
+mod session_cache;
 
 pub use conversation_session::{ProteusConversationSession, SessionIdentifier};
 
