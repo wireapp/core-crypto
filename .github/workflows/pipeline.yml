@@ -114,6 +114,12 @@ jobs:
       - build-jvm-darwin
     uses: ./.github/workflows/test-jvm.yml
 
+  check-kotlin:
+    needs:
+      - bindings-jvm
+      - build-jvm-linux
+    uses: ./.github/workflows/kotlin-check.yml
+
   docs-jvm:
     needs:
       - bindings-jvm
