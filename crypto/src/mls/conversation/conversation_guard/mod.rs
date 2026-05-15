@@ -18,13 +18,12 @@ mod merge;
 
 /// A Conversation Guard wraps an [`Arc<RwLock<MlsConversation>>`].
 ///
-/// The conversation ultimately lives in the
-/// [`crate::mls::conversation_cache::MlsConversationCache`], but taking a guard lets us
-///  more conveniently perform mutating operations on a particular conversation.
+/// The conversation is ultimately owned by the conversation cache, but we take an `Arc`
+/// here so that we don't have to tie the lifetime of the guard to the cache.
 ///
-/// By doing so, it permits mutable accesses to the conversation. This in turn
-/// means that we don't have to duplicate the entire `MlsConversation` API
-/// on `TransactionContext`.
+/// More generally, the conversation guard gives us convenient mutable accesses to a single
+/// conversation. This in turn means that we don't have to duplicate the entire
+/// `MlsConversation` API on `TransactionContext`.
 #[derive(Debug)]
 pub struct ConversationGuard {
     inner: Arc<RwLock<MlsConversation>>,
