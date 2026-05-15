@@ -208,7 +208,9 @@ describe("database", () => {
             const instance = window.ccModule.CoreCrypto.new(database);
             const epoch = await instance.transaction(async (ctx) => {
                 // note that `conversationEpoch` is a MLS operation so we must at some point initialize MLS
-                const clientId = new window.ccModule.ClientId(encoder.encode("alice"));
+                const clientId = new window.ccModule.ClientId(
+                    encoder.encode("alice")
+                );
                 await ctx.mlsInit(clientId, window.deliveryService);
                 return await ctx.conversationEpoch(
                     new window.ccModule.ConversationId(encoder.encode("convId"))
