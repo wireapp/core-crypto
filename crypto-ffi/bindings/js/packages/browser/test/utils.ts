@@ -54,7 +54,8 @@ export async function setup() {
             async authenticate(
                 _idp: string,
                 _keyAuth: string,
-                _acmeAud: string
+                _acmeAud: string,
+                _acquisition_snapshot: Uint8Array
             ) {
                 return "dummy-id-token";
             },
