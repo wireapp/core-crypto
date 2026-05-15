@@ -5,13 +5,12 @@ mod prekey;
 mod session;
 mod session_cache;
 
-pub use conversation_session::{ProteusConversationSession, SessionIdentifier};
-pub(crate) use session_cache::ProteusSessionCache;
-
 use std::sync::Arc;
 
+pub use conversation_session::{ProteusConversationSession, SessionIdentifier};
 use core_crypto_keystore::{Database, entities::ProteusIdentity, traits::FetchFromDatabase as _};
 use proteus_wasm::keys::IdentityKeyPair;
+pub(crate) use session_cache::ProteusSessionCache;
 
 use crate::{KeystoreError, ProteusError, Result};
 
