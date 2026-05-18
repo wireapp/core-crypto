@@ -7,7 +7,7 @@ import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import testutils.*
 import kotlin.test.*
 
-class ExternalSenderTest : HasMockDeliveryService() {
+class ExternalSenderTest {
     companion object {
         private val id: ConversationId = genConversationId()
 
@@ -17,15 +17,10 @@ class ExternalSenderTest : HasMockDeliveryService() {
             """{"kty":"OKP","crv":"Ed25519","x":"SN_PbU3M_gqC4ztSO0uagUZVabiXU1KVdRJF1ciRnnM"}""".toByteArray()
     }
 
-    @BeforeTest
-    fun setup() {
-        setupMocks()
-    }
-
     @Test
     fun parseJwk_produces_a_sender_usable_in_createConversation() = runTest {
         val externalSender = ExternalSender.parseJwk(FIXTURE_JWK)
-        val (alice) = newClients(genClientId())
+        val alice = ccInit()
 
         val retrievedKey = alice.transaction { ctx ->
             val credentials = ctx.findCredentials(

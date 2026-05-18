@@ -37,14 +37,8 @@ open class CreateMessage {
 
     @Setup(Level.Iteration)
     fun setup() = runBlocking {
-        val aliceId = genClientId()
-        conversationId = genConversationId()
-        cc = initCc()
-        cc.transaction { ctx ->
-            ctx.mlsInit(aliceId, MockMlsTransportSuccessProvider())
-            val credentialRef = ctx.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
-            ctx.createConversation(conversationId, credentialRef, null)
-        }
+        cc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+        conversationId = createConversation(cc)
         messages = List(messageCount) {
             ByteArray(messageSize) { 'A'.code.toByte() }
         }

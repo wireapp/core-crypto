@@ -13,19 +13,10 @@ import kotlin.collections.toList
 import kotlin.test.*
 import kotlin.time.Duration.Companion.milliseconds
 
-class MLSTest : HasMockDeliveryService() {
-    companion object {
-        private val id: ConversationId = genConversationId()
-    }
-
-    @BeforeTest
-    fun setup() {
-        setupMocks()
-    }
-
+class MLSTest {
     @Test
     fun set_client_data_persists() = runTest {
-        val cc = initCc()
+        val cc = CoreCrypto(newDatabase())
 
         val data = "my message processing checkpoint".toByteArray()
 
@@ -39,14 +30,14 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun interaction_with_invalid_context_throws_error() = runTest {
-        val cc = initCc()
+        val cc = CoreCrypto(newDatabase())
         var context: CoreCryptoContext? = null
 
         cc.transaction { ctx -> context = ctx }
 
         val expectedException =
             assertFailsWith<CoreCryptoException.Mls> {
-                context!!.mlsInitShort(genClientId())
+                context!!.mlsInit(genClientId(), MockMlsTransportSuccessProvider.getInstance())
             }
 
         assertIs<MlsException.Other>(expectedException.mlsError)
@@ -54,7 +45,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun error_is_propagated_by_transaction() = runTest {
-        val cc = initCc()
+        val cc = CoreCrypto(newDatabase())
         val expectedException = RuntimeException("Expected Exception")
 
         val actualException =
@@ -68,7 +59,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun transaction_rolls_back_on_error() = runTest {
-        val (cc) = newClients(genClientId())
+        val cc = ccInit()
 
         val expectedException = IllegalStateException("Expected Exception")
 
@@ -94,7 +85,7 @@ class MLSTest : HasMockDeliveryService() {
     @Test
     fun parallel_transactions_are_performed_serially() = runTest {
         withContext(Dispatchers.Default) {
-            val (alice) = newClients(genClientId())
+            val alice = ccInit()
             val jobs: MutableList<Job> = mutableListOf()
             val token = "t"
             val transactionCount = 3
@@ -126,10 +117,10 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun errorTypeMapping_should_work() = runTest {
-        val (alice) = newClients(genClientId())
-        alice.transaction { ctx -> ctx.createConversationShort(id) }
+        val alice = ccInit()
+        val conversationId = createConversation(alice)
         val expectedException = assertFailsWith<CoreCryptoException.Mls> {
-            alice.transaction { ctx -> ctx.createConversationShort(id) }
+            alice.transaction { ctx -> ctx.createConversationShort(conversationId) }
         }
         assertIs<MlsException.ConversationAlreadyExists>(expectedException.mlsError)
     }
@@ -137,13 +128,13 @@ class MLSTest : HasMockDeliveryService() {
     @Test
     fun findCredentials_should_return_non_empty_result() = runTest {
         val clientId = genClientId()
-        val (alice) = newClients(clientId)
+        val alice = ccInit(CcInitOptions.WithBasicCredential(CIPHERSUITE_DEFAULT, clientId))
         assertThat(alice.transaction { it.findCredentials(clientId, null, null, null, null) }).isNotEmpty()
     }
 
     @Test
     fun conversationExists_should_return_true() = runTest {
-        val (alice) = newClients(genClientId())
+        val alice = ccInit()
         assertThat(alice.transaction { ctx -> ctx.conversationExists(id) }).isFalse()
         alice.transaction { ctx -> ctx.createConversationShort(id) }
         assertThat(alice.transaction { ctx -> ctx.conversationExists(id) }).isTrue()
@@ -151,7 +142,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun calling_generateKeyPackages_should_return_expected_number() = runTest {
-        val (alice) = newClients(genClientId())
+        val alice = ccInit()
 
         // by default, no key packages are generated
         assertThat(
@@ -169,23 +160,20 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun given_new_conversation_when_calling_conversationEpoch_should_return_epoch_0() = runTest {
-        val (alice) = newClients(genClientId())
-        alice.transaction { ctx -> ctx.createConversationShort(id) }
+        val alice = ccInit()
+        val id = createConversation(alice)
         assertThat(alice.transaction { ctx -> ctx.conversationEpoch(id) }).isEqualTo(0UL)
     }
 
     @Test
     fun updateKeyingMaterial_should_process_the_commit_message() = runTest {
-        val (alice, bob) = newClients(genClientId(), genClientId())
+        val alice = ccInit()
+        val bob = ccInit()
+        val conversationId = createConversation(bob)
 
-        bob.transaction { ctx -> ctx.createConversationShort(id) }
-
-        val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
-        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
-        val welcome = mockDeliveryService.getLatestWelcome()
-        val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
-        bob.transaction { ctx -> ctx.updateKeyingMaterial(id) }
-        val commit = mockDeliveryService.getLatestCommit()
+        val groupId = invite(bob, alice, conversationId)
+        bob.transaction { ctx -> ctx.updateKeyingMaterial(groupId) }
+        val commit = MockMlsTransportSuccessProvider.getInstance().getLatestCommit()
 
         val decrypted = alice.transaction { ctx -> ctx.decryptMessage(groupId, commit) }
         assertThat(decrypted.message).isNull()
@@ -195,28 +183,22 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun addClientsToConversation_should_allow_joining_a_conversation_with_a_Welcome() = runTest {
-        val (alice, bob) = newClients(genClientId(), genClientId())
+        val alice = ccInit()
+        val bob = ccInit()
 
-        bob.transaction { ctx -> ctx.createConversationShort(id) }
+        val conversationId = createConversation(bob)
+        val groupId = invite(bob, alice, conversationId)
 
-        val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
-        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
-        val welcome = mockDeliveryService.getLatestWelcome()
-        val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
-
-        assertThat(groupId).isEqualTo(id)
+        assertThat(groupId).isEqualTo(conversationId)
     }
 
     @Test
     fun encryptMessage_should_encrypt_then_receiver_should_decrypt() = runTest {
-        val (alice, bob) = newClients(genClientId(), genClientId())
+        val alice = ccInit()
+        val bob = ccInit()
 
-        bob.transaction { ctx -> ctx.createConversationShort(id) }
-
-        val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
-        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
-        val welcome = mockDeliveryService.getLatestWelcome()
-        val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
+        val conversationId = createConversation(bob)
+        val groupId = invite(bob, alice, conversationId)
 
         val msg = "Hello World !".toByteArray()
         val ciphertextMsg = alice.transaction { ctx -> ctx.encryptMessage(groupId, msg) }
@@ -235,58 +217,52 @@ class MLSTest : HasMockDeliveryService() {
     @Test
     fun addClientsToConversation_should_add_members_to_the_MLS_group() = runTest {
         val aliceId = genClientId()
+        val alice = ccInit(CcInitOptions.WithBasicCredential(CIPHERSUITE_DEFAULT, aliceId))
         val bobId = genClientId()
+        val bob = ccInit(CcInitOptions.WithBasicCredential(CIPHERSUITE_DEFAULT, bobId))
         val carolId = genClientId()
-        val (alice, bob, carol) = newClients(aliceId, bobId, carolId)
+        val carol = ccInit(CcInitOptions.WithBasicCredential(CIPHERSUITE_DEFAULT, carolId))
 
-        bob.transaction { ctx -> ctx.createConversationShort(id) }
-        val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
-        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
-        val welcome = mockDeliveryService.getLatestWelcome()
+        val conversationId = createConversation(bob)
+        invite(bob, alice, conversationId)
 
-        alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
+        invite(bob, carol, conversationId)
+        val commit = MockMlsTransportSuccessProvider.getInstance().getLatestCommit()
 
-        val carolKp = carol.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
-        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(carolKp)) }
-        val commit = mockDeliveryService.getLatestCommit()
-
-        val decrypted = alice.transaction { ctx -> ctx.decryptMessage(id, commit) }
+        val decrypted = alice.transaction { ctx -> ctx.decryptMessage(conversationId, commit) }
         assertThat(decrypted.message).isNull()
 
-        val members = alice.transaction { ctx -> ctx.getClientIds(id) }
+        val members = alice.transaction { ctx -> ctx.getClientIds(conversationId) }
         assertThat(members).containsAll(listOf(aliceId, bobId, carolId))
     }
 
     @Test
     fun addClientsToConversation_should_return_a_valid_Welcome_message() = runTest {
-        val (alice, bob) = newClients(genClientId(), genClientId())
+        val alice = ccInit()
+        val bob = ccInit()
 
-        bob.transaction { ctx -> ctx.createConversationShort(id) }
+        val id = createConversation(bob)
 
-        val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
-        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
-        val welcome = mockDeliveryService.getLatestWelcome()
-
-        val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
+        val groupId = invite(bob, alice, id)
         assertThat(groupId).isEqualTo(id)
     }
 
     @Test
     fun removeMember_should_remove_members_from_the_MLS_group() = runTest {
+        val alice = ccInit()
+        val bob = ccInit()
         val carolId = genClientId()
-        val (alice, bob, carol) = newClients(genClientId(), genClientId(), carolId)
-
-        bob.transaction { ctx -> ctx.createConversationShort(id) }
-
-        val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
-        val carolKp = carol.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
-        bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp, carolKp)) }
-        val welcome = mockDeliveryService.getLatestWelcome()
-        val conversationId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
+        val carol = ccInit(CcInitOptions.WithBasicCredential(CIPHERSUITE_DEFAULT, carolId))
+        val conversationId = createConversation(bob)
+        invite(bob, alice, conversationId)
+        invite(bob, carol, conversationId)
+        alice.transaction { ctx ->
+            ctx.decryptMessage(conversationId, MockMlsTransportSuccessProvider.getInstance().getLatestCommit())
+        }
 
         val carolMember = listOf(carolId)
         bob.transaction { ctx -> ctx.removeClientsFromConversation(conversationId, carolMember) }
-        val commit = mockDeliveryService.getLatestCommit()
+        val commit = MockMlsTransportSuccessProvider.getInstance().getLatestCommit()
 
         val decrypted = alice.transaction { ctx -> ctx.decryptMessage(conversationId, commit) }
         assertThat(decrypted.message).isNull()
@@ -294,16 +270,16 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun wipeConversation_should_delete_the_conversation_from_the_keystore() = runTest {
-        val (alice) = newClients(genClientId())
-        alice.transaction { ctx -> ctx.createConversationShort(id) }
+        val alice = ccInit()
+        val conversationId = createConversation(alice)
         assertThatNoException().isThrownBy {
-            runBlocking { alice.transaction { ctx -> ctx.wipeConversation(id) } }
+            runBlocking { alice.transaction { ctx -> ctx.wipeConversation(conversationId) } }
         }
     }
 
     @Test
     fun givenTransactionRunsSuccessfully_thenShouldBeAbleToFinishOtherTransactions() = runTest {
-        val coreCrypto = initCc()
+        val coreCrypto = ccInit(CcInitOptions.WithoutBasicCredential())
         val someWork = Job()
         val firstTransactionJob = launch {
             coreCrypto.transaction {
@@ -324,7 +300,7 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun givenTransactionIsCancelled_thenShouldBeAbleToFinishOtherTransactions() = runTest {
-        val coreCrypto = initCc()
+        val coreCrypto = ccInit(CcInitOptions.WithoutBasicCredential())
 
         val firstTransactionJob = launch {
             coreCrypto.transaction {
@@ -345,11 +321,11 @@ class MLSTest : HasMockDeliveryService() {
 
     @Test
     fun exportSecretKey_should_generate_a_secret_with_the_right_length() = runTest {
-        val (alice) = newClients(genClientId())
-        alice.transaction { ctx -> ctx.createConversationShort(id) }
+        val alice = ccInit()
+        val conversationId = createConversation(alice)
         val n = 50
         val secrets = (0 until n).map {
-            val secret = alice.transaction { ctx -> ctx.exportSecretKey(id, 32U) }.copyBytes()
+            val secret = alice.transaction { ctx -> ctx.exportSecretKey(conversationId, 32U) }.copyBytes()
             assertThat(secret).hasSize(32)
             secret
         }.toSet()
@@ -374,26 +350,24 @@ class MLSTest : HasMockDeliveryService() {
             val aliceObserver = Observer()
 
             // Set up the conversation in one transaction
-            val (alice, bob) = newClients(genClientId(), genClientId())
-            bob.transaction { ctx -> ctx.createConversationShort(id) }
+            val alice = ccInit()
+            val bob = ccInit()
+            val conversationId = createConversation(bob)
 
             // Register observers
             bob.registerEpochObserver(scope, bobObserver)
             alice.registerEpochObserver(scope, aliceObserver)
 
             // In another transaction, change the epoch
-            bob.transaction { ctx -> ctx.updateKeyingMaterial(id) }
+            bob.transaction { ctx -> ctx.updateKeyingMaterial(conversationId) }
 
             // Alice joins the group
-            val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
-            bob.transaction { ctx -> ctx.addClientsToConversation(id, listOf(aliceKp)) }
-            val welcome = mockDeliveryService.getLatestWelcome()
-            val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
+            invite(bob, alice, conversationId)
 
             // Change the epoch again, this should be seen by both observers
-            bob.transaction { ctx -> ctx.updateKeyingMaterial(id) }
-            val commit = mockDeliveryService.getLatestCommit()
-            alice.transaction { ctx -> ctx.decryptMessage(groupId, commit) }
+            bob.transaction { ctx -> ctx.updateKeyingMaterial(conversationId) }
+            val commit = MockMlsTransportSuccessProvider.getInstance().getLatestCommit()
+            alice.transaction { ctx -> ctx.decryptMessage(conversationId, commit) }
 
             // Bob's observer must have observed all epoch change events, Alice's observer saw only the
             // last one
@@ -409,11 +383,11 @@ class MLSTest : HasMockDeliveryService() {
             )
 
             assertTrue(
-                bobObserver.observedEvents.all { ctx -> ctx.conversationId == id },
+                bobObserver.observedEvents.all { ctx -> ctx.conversationId == conversationId },
                 "the events observed by bob must be for this conversation"
             )
             assertTrue(
-                aliceObserver.observedEvents.all { ctx -> ctx.conversationId == id },
+                aliceObserver.observedEvents.all { ctx -> ctx.conversationId == conversationId },
                 "the event observed by alice must be for this conversation"
             )
         }
@@ -423,7 +397,7 @@ class MLSTest : HasMockDeliveryService() {
     fun epochObserverEvent_shouldAllowReadingData(): TestResult {
         val scope = TestScope()
         return scope.runTest {
-            val (alice) = newClients(genClientId())
+            val alice = ccInit()
 
             data class ObserverEvent(val eventEpoch: ULong, val conversationEpoch: ULong)
 
@@ -443,15 +417,15 @@ class MLSTest : HasMockDeliveryService() {
 
             val aliceObserver = Observer()
 
-            alice.transaction { it.createConversationShort(id) }
-            val initialEpoch = alice.conversationEpoch(id)
+            val conversationId = createConversation(alice)
+            val initialEpoch = alice.conversationEpoch(conversationId)
 
             alice.registerEpochObserver(scope, aliceObserver)
 
             val expectedEvent = aliceObserver.expectEvent()
-            alice.transaction { it.updateKeyingMaterial(id) }
+            alice.transaction { it.updateKeyingMaterial(conversationId) }
             val observedEvent = expectedEvent.await()
-            val laterEpoch = alice.conversationEpoch(id)
+            val laterEpoch = alice.conversationEpoch(conversationId)
 
             assertEquals(initialEpoch + 1U, laterEpoch)
             assertEquals(
@@ -487,34 +461,29 @@ class MLSTest : HasMockDeliveryService() {
             val aliceObserver = Observer()
 
             // Set up the conversation in one transaction
-            val (alice, bob) = newClients(genClientId(), genClientId())
-            val aliceKp = alice.transaction { ctx -> ctx.clientKeypackagesShort(1U).first() }
-            bob.transaction { ctx ->
-                ctx.createConversationShort(id)
-                ctx.addClientsToConversation(id, listOf(aliceKp))
-            }
+            val alice = ccInit()
+            val bob = ccInit()
+            val conversationId = createConversation(bob)
 
-            // Alice joins the group
-            val welcome = mockDeliveryService.getLatestWelcome()
-            val groupId = alice.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
+            invite(bob, alice, conversationId)
 
             // Register observers
             bob.registerHistoryObserver(scope, bobObserver)
             alice.registerHistoryObserver(scope, aliceObserver)
 
             // History sharing is disabled by default
-            assertFalse(bob.isHistorySharingEnabled(id))
+            assertFalse(bob.isHistorySharingEnabled(conversationId))
 
             // In another transaction, enable history sharing
-            bob.transaction { ctx -> ctx.enableHistorySharing(id) }
+            bob.transaction { ctx -> ctx.enableHistorySharing(conversationId) }
 
             // Before Alice received the commit, history sharing is only enabled for Bob
-            assertTrue(bob.isHistorySharingEnabled(id))
-            assertFalse(alice.isHistorySharingEnabled(id))
+            assertTrue(bob.isHistorySharingEnabled(conversationId))
+            assertFalse(alice.isHistorySharingEnabled(conversationId))
 
-            val commit = mockDeliveryService.getLatestCommit()
-            alice.transaction { ctx: CoreCryptoContext -> ctx.decryptMessage(groupId, commit) }
-            assertTrue(alice.isHistorySharingEnabled(id))
+            val commit = MockMlsTransportSuccessProvider.getInstance().getLatestCommit()
+            alice.transaction { ctx: CoreCryptoContext -> ctx.decryptMessage(conversationId, commit) }
+            assertTrue(alice.isHistorySharingEnabled(conversationId))
 
             // Bob's observer must have observed the history secret changes, Alice's should not
             // have observed anything
@@ -528,7 +497,7 @@ class MLSTest : HasMockDeliveryService() {
                 aliceObserver.observedEvents.size,
                 "alice did not trigger any history secret changes and must not have observed that"
             )
-            val expected = id
+            val expected = conversationId
             assertTrue(
                 bobObserver.observedEvents.all { ctx -> ctx.conversationId == expected },
                 "the events observed by bob must be for this conversation"
@@ -550,19 +519,11 @@ class MLSTest : HasMockDeliveryService() {
     fun can_add_basic_credential(): TestResult {
         val scope = TestScope()
         return scope.runTest {
-            val clientId = genClientId()
-            val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
-
-            val cc = initCc()
-            val ref = cc.transaction { ctx ->
-                ctx.mlsInitShort(clientId)
-                ctx.addCredential(credential)
-            }
-
+            val cc = ccInit()
+            val allCredentials = cc.transaction { ctx -> ctx.getCredentials() }
+            val ref = allCredentials.last()
             assertEquals(ref.type(), CredentialType.BASIC)
             assertNotEquals(ref.earliestValidity(), 0uL)
-
-            val allCredentials = cc.transaction { ctx -> ctx.getCredentials() }
             assertThat(allCredentials).hasSize(1)
         }
     }
@@ -571,13 +532,9 @@ class MLSTest : HasMockDeliveryService() {
     fun can_remove_basic_credential(): TestResult {
         val scope = TestScope()
         return scope.runTest {
-            val clientId = genClientId()
-            val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
-
-            val cc = initCc()
+            val cc = ccInit()
             val ref = cc.transaction { ctx ->
-                ctx.mlsInitShort(clientId)
-                ctx.addCredential(credential)
+                ctx.`getCredentials`().last()
             }
 
             cc.transaction { ctx ->
@@ -601,9 +558,8 @@ class MLSTest : HasMockDeliveryService() {
                 CipherSuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519
             val credential2 = Credential.basic(ciphersuite2, clientId)
 
-            val cc = initCc()
+            val cc = ccInit(CcInitOptions.WithoutBasicCredential(clientId))
             cc.transaction { ctx ->
-                ctx.mlsInitShort(clientId)
                 ctx.addCredential(credential1)
                 ctx.addCredential(credential2)
             }
@@ -637,13 +593,9 @@ class MLSTest : HasMockDeliveryService() {
     fun can_create_keypackage(): TestResult {
         val scope = TestScope()
         return scope.runTest {
-            val clientId = genClientId()
-            val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
-
-            val cc = initCc()
+            val cc = ccInit()
             val credentialRef = cc.transaction { ctx ->
-                ctx.mlsInitShort(clientId)
-                ctx.addCredential(credential)
+                ctx.`getCredentials`().last()
             }
 
             val keyPackage = cc.transaction { ctx ->
@@ -658,18 +610,9 @@ class MLSTest : HasMockDeliveryService() {
     fun can_serialize_keypackage(): TestResult {
         val scope = TestScope()
         return scope.runTest {
-            val clientId = genClientId()
-            val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
+            val cc = ccInit()
 
-            val cc = initCc()
-            val credentialRef = cc.transaction { ctx ->
-                ctx.mlsInitShort(clientId)
-                ctx.addCredential(credential)
-            }
-
-            val keyPackage = cc.transaction { ctx ->
-                ctx.generateKeyPackage(credentialRef)
-            }
+            val keyPackage = generateKeyPackage(cc)
 
             val bytes = keyPackage.serialize()
             assertNotNull(bytes)
@@ -687,19 +630,8 @@ class MLSTest : HasMockDeliveryService() {
     fun can_retrieve_keypackages_in_bulk(): TestResult {
         val scope = TestScope()
         return scope.runTest {
-            val clientId = genClientId()
-            val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
-
-            val cc = initCc()
-            val credentialRef = cc.transaction { ctx ->
-                ctx.mlsInitShort(clientId)
-                ctx.addCredential(credential)
-            }
-
-            cc.transaction { ctx ->
-                ctx.generateKeyPackage(credentialRef)
-            }
-
+            val cc = ccInit()
+            generateKeyPackage(cc)
             val keyPackages = cc.transaction { ctx ->
                 ctx.getKeyPackages()
             }
@@ -714,24 +646,11 @@ class MLSTest : HasMockDeliveryService() {
     fun can_remove_keypackage(): TestResult {
         val scope = TestScope()
         return scope.runTest {
-            val clientId = genClientId()
-            val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
-
-            val cc = initCc()
-            val credentialRef = cc.transaction { ctx ->
-                ctx.mlsInitShort(clientId)
-                ctx.addCredential(credential)
-            }
-
-            // add a kp which will not be removed
-            cc.transaction { ctx ->
-                ctx.generateKeyPackage(credentialRef)
-            }
+            val cc = ccInit()
+            generateKeyPackage(cc)
 
             // add a kp which will be removed
-            val keyPackage = cc.transaction { ctx ->
-                ctx.generateKeyPackage(credentialRef)
-            }
+            val keyPackage = generateKeyPackage(cc)
 
             // remove the keypackage
             cc.transaction { ctx ->
@@ -761,10 +680,9 @@ class MLSTest : HasMockDeliveryService() {
                 clientId
             )
 
-            val cc = initCc()
+            val cc = ccInit(CcInitOptions.WithoutBasicCredential(clientId))
 
             cc.transaction { ctx ->
-                ctx.mlsInitShort(clientId)
                 val cref1 = ctx.addCredential(credential1)
                 val cref2 = ctx.addCredential(credential2)
 

@@ -35,34 +35,13 @@ open class AddUser {
     @Setup(Level.Invocation)
     fun setup() {
         runBlocking {
-            val mockTransportProvider = MockMlsTransportSuccessProvider()
-            val aliceId = genClientId()
-            conversationId = genConversationId()
-            aliceCc = initCc()
-            aliceCc.transaction { ctx ->
-                ctx.mlsInit(aliceId, mockTransportProvider)
-                val credentialRef = ctx.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
-                ctx.createConversation(conversationId, credentialRef, null)
-            }
+            aliceCc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+            conversationId = createConversation(aliceCc)
 
             keyPackages = buildList {
                 repeat(userCount) {
-                    val bobId = genClientId()
-                    val bobCc = initCc()
-
-                    val kp = bobCc.transaction { ctx ->
-                        ctx.mlsInit(bobId, mockTransportProvider)
-
-                        val credentialRef = ctx.addCredential(
-                            Credential.basic(
-                                CipherSuite.valueOf(cipherSuite),
-                                bobId
-                            )
-                        )
-
-                        ctx.generateKeyPackage(credentialRef)
-                    }
-
+                    val bobCc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+                    val kp = generateKeyPackage(bobCc)
                     this.add(kp)
                 }
             }

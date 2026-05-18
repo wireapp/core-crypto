@@ -39,32 +39,11 @@ open class ProcessMessage {
 
     @Setup(Level.Invocation)
     fun setup() = runBlocking {
-        val aliceId = genClientId()
-        conversationId = genConversationId()
-        val aliceCc = initCc()
-        val mockTransportProvider = MockMlsTransportSuccessProvider()
-        aliceCc.transaction { ctx ->
-            ctx.mlsInit(aliceId, mockTransportProvider)
-            val credentialRef = ctx.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), aliceId))
-            ctx.createConversation(conversationId, credentialRef, null)
-        }
+        val aliceCc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+        conversationId = createConversation(aliceCc)
 
-        val bobId = genClientId()
-        bobCc = initCc()
-        val kp = bobCc.transaction { ctx ->
-            ctx.mlsInit(bobId, mockTransportProvider)
-            val credentialRef = ctx.addCredential(Credential.basic(CipherSuite.valueOf(cipherSuite), bobId))
-            ctx.generateKeyPackage(credentialRef)
-        }
-
-        aliceCc.transaction {
-            it.addClientsToConversation(conversationId, keyPackages = listOf(kp))
-        }
-
-        val welcome = mockTransportProvider.getLatestWelcome()
-        bobCc.transaction {
-            it.processWelcomeMessage(welcome)
-        }
+        bobCc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+        invite(aliceCc, bobCc, conversationId)
 
         val messages = List(messageCount) {
             ByteArray(messageSize) { 'A'.code.toByte() }
