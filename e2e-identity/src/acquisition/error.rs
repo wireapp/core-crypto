@@ -58,9 +58,6 @@ pub enum CertificateError {
     /// Certificate public key does not match the one in the signing keypair
     #[error("Certificate public key does not match the one in the signing keypair")]
     KeyMismatch,
-    /// Advertised public key does not match algorithm
-    #[error("Advertised public key does not match algorithm")]
-    InvalidPublicKey,
     /// Advertised public key is not supported
     #[error("Advertised public key is not supported")]
     UnsupportedPublicKey,
