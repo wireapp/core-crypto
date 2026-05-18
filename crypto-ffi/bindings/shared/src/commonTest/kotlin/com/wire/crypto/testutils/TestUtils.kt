@@ -39,7 +39,18 @@ interface MockDeliveryService : MlsTransport {
     suspend fun getLatestCommit(): ByteArray
 }
 
+// We use a singleton to easily access the mocked provider
 class MockMlsTransportSuccessProvider : MockDeliveryService {
+    companion object {
+        @Volatile
+        private var instance: MockMlsTransportSuccessProvider? = null
+
+        fun getInstance() =
+            instance ?: synchronized(this) {
+                instance ?: MockMlsTransportSuccessProvider().also { instance = it }
+            }
+    }
+
     private var latestCommitBundle: CommitBundle? = null
 
     override suspend fun sendCommitBundle(commitBundle: CommitBundle) {
@@ -91,34 +102,78 @@ class MockPkiEnvironmentHooks : PkiEnvironmentHooks {
     }
 }
 
-open class HasMockDeliveryService {
-    companion object {
-        internal lateinit var mockDeliveryService: MockDeliveryService
-    }
+sealed interface CcInitOptions {
+    val clientId: ClientId?
 
-    fun setupMocks() {
-        mockDeliveryService = MockMlsTransportSuccessProvider()
-    }
+    data class WithoutBasicCredential(
+        override val clientId: ClientId? = null
+    ) : CcInitOptions
+
+    data class WithBasicCredential(
+        val cipherSuite: CipherSuite = CIPHERSUITE_DEFAULT,
+        override val clientId: ClientId? = null
+    ) : CcInitOptions
 }
 
-fun newClients(vararg clientIds: ClientId) = runBlocking {
-    clientIds.map { clientID ->
-        val cc = initCc()
-        cc.transaction { ctx ->
-            ctx.mlsInitShort(clientID)
-            ctx.addCredential(Credential.basic(CIPHERSUITE_DEFAULT, clientID))
+suspend fun ccInit(
+    options: CcInitOptions = CcInitOptions.WithBasicCredential()
+): CoreCrypto {
+    val db = newDatabase()
+    val cc = CoreCrypto(db)
+
+    val clientId = options.clientId ?: genClientId()
+
+    cc.transaction { ctx ->
+        ctx.mlsInit(clientId, MockMlsTransportSuccessProvider.getInstance())
+
+        when (options) {
+            is CcInitOptions.WithBasicCredential -> {
+                ctx.addCredential(
+                    Credential.basic(
+                        options.cipherSuite,
+                        clientId
+                    )
+                )
+            }
+
+            is CcInitOptions.WithoutBasicCredential -> {
+                // nothing
+            }
         }
-        cc
     }
+    return cc
 }
 
-fun initCc(): CoreCrypto = runBlocking {
+suspend fun newDatabase(): Database {
     val root = Files.createTempDirectory("mls").toFile()
     val path = root.resolve("keystore-${randomIdentifier()}")
     val key = genDatabaseKey()
-    val db = openDatabase(path.absolutePath, key)
-    val cc = CoreCrypto(db)
-    cc
+    return openDatabase(path.absolutePath, key)
+}
+
+suspend fun createConversation(cc: CoreCrypto): ConversationId {
+    val conversationId = genConversationId()
+    cc.transaction { ctx ->
+        val credentialRef = ctx.`getCredentials`().last()
+        ctx.createConversation(conversationId, credentialRef)
+    }
+    return conversationId
+}
+
+suspend fun invite(cc1: CoreCrypto, cc2: CoreCrypto, conversationId: ConversationId): ConversationId {
+    val kp = generateKeyPackage(cc2)
+    cc1.transaction {
+        it.addClientsToConversation(conversationId, listOf(kp))
+    }
+    val welcome = MockMlsTransportSuccessProvider.getInstance().getLatestWelcome()
+    return cc2.transaction { ctx -> ctx.processWelcomeMessage(welcome) }
+}
+
+suspend fun generateKeyPackage(cc: CoreCrypto): KeyPackage {
+    return cc.transaction { ctx ->
+        val credentialRef = ctx.getCredentials().last()
+        ctx.generateKeyPackage(credentialRef)
+    }
 }
 
 fun randomIdentifier(n: Int = 12): String {
