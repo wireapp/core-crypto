@@ -137,15 +137,16 @@
 <a href=#137 id=137 data-nosnippet>137</a>        idp: String,
 <a href=#138 id=138 data-nosnippet>138</a>        key_auth: String,
 <a href=#139 id=139 data-nosnippet>139</a>        acme_aud: String,
-<a href=#140 id=140 data-nosnippet>140</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;String, PkiEnvironmentHooksError&gt;;
-<a href=#141 id=141 data-nosnippet>141</a>
-<a href=#142 id=142 data-nosnippet>142</a>    <span class="doccomment">/// Get a nonce from the backend
-<a href=#143 id=143 data-nosnippet>143</a>    </span><span class="kw">async fn </span>get_backend_nonce(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String, PkiEnvironmentHooksError&gt;;
-<a href=#144 id=144 data-nosnippet>144</a>
-<a href=#145 id=145 data-nosnippet>145</a>    <span class="doccomment">/// Fetch an access token to be used for the DPoP challenge (`wire-dpop-01`)
-<a href=#146 id=146 data-nosnippet>146</a>    ///
-<a href=#147 id=147 data-nosnippet>147</a>    /// The implementation should take the provided DPoP token (`dpop`) and make a request to the
-<a href=#148 id=148 data-nosnippet>148</a>    /// backend to obtain an access token, which should be returned to the caller.
-<a href=#149 id=149 data-nosnippet>149</a>    </span><span class="kw">async fn </span>fetch_backend_access_token(<span class="kw-2">&amp;</span><span class="self">self</span>, dpop: String) -&gt; <span class="prelude-ty">Result</span>&lt;String, PkiEnvironmentHooksError&gt;;
-<a href=#150 id=150 data-nosnippet>150</a>}
+<a href=#140 id=140 data-nosnippet>140</a>        acquisition_snapshot: Vec&lt;u8&gt;,
+<a href=#141 id=141 data-nosnippet>141</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;String, PkiEnvironmentHooksError&gt;;
+<a href=#142 id=142 data-nosnippet>142</a>
+<a href=#143 id=143 data-nosnippet>143</a>    <span class="doccomment">/// Get a nonce from the backend
+<a href=#144 id=144 data-nosnippet>144</a>    </span><span class="kw">async fn </span>get_backend_nonce(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String, PkiEnvironmentHooksError&gt;;
+<a href=#145 id=145 data-nosnippet>145</a>
+<a href=#146 id=146 data-nosnippet>146</a>    <span class="doccomment">/// Fetch an access token to be used for the DPoP challenge (`wire-dpop-01`)
+<a href=#147 id=147 data-nosnippet>147</a>    ///
+<a href=#148 id=148 data-nosnippet>148</a>    /// The implementation should take the provided DPoP token (`dpop`) and make a request to the
+<a href=#149 id=149 data-nosnippet>149</a>    /// backend to obtain an access token, which should be returned to the caller.
+<a href=#150 id=150 data-nosnippet>150</a>    </span><span class="kw">async fn </span>fetch_backend_access_token(<span class="kw-2">&amp;</span><span class="self">self</span>, dpop: String) -&gt; <span class="prelude-ty">Result</span>&lt;String, PkiEnvironmentHooksError&gt;;
+<a href=#151 id=151 data-nosnippet>151</a>}
 </code></pre></div></section></main></body></html>

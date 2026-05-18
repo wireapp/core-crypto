@@ -678,7 +678,7 @@ $dokka.location:com.wire.crypto/PkiEnvironment/destroy/#/PointingToDeclaration/
 $dokka.location:com.wire.crypto/PkiEnvironment/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/PkiEnvironmentHooks.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks/-companion/index.html
 $dokka.location:com.wire.crypto/PkiEnvironmentHooks///PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks/index.html
-$dokka.location:com.wire.crypto/PkiEnvironmentHooks/authenticate/#kotlin.String#kotlin.String#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks/authenticate.html
+$dokka.location:com.wire.crypto/PkiEnvironmentHooks/authenticate/#kotlin.String#kotlin.String#kotlin.String#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks/authenticate.html
 $dokka.location:com.wire.crypto/PkiEnvironmentHooks/fetchBackendAccessToken/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks/fetch-backend-access-token.html
 $dokka.location:com.wire.crypto/PkiEnvironmentHooks/getBackendNonce/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks/get-backend-nonce.html
 $dokka.location:com.wire.crypto/PkiEnvironmentHooks/httpRequest/#com.wire.crypto.HttpMethod#kotlin.String#kotlin.collections.List[com.wire.crypto.HttpHeader]#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks/http-request.html
@@ -693,7 +693,7 @@ $dokka.location:com.wire.crypto/PkiEnvironmentHooksImpl.Companion///PointingToDe
 $dokka.location:com.wire.crypto/PkiEnvironmentHooksImpl///PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks-impl/index.html
 $dokka.location:com.wire.crypto/PkiEnvironmentHooksImpl/PkiEnvironmentHooksImpl/#com.sun.jna.Pointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks-impl/-pki-environment-hooks-impl.html
 $dokka.location:com.wire.crypto/PkiEnvironmentHooksImpl/PkiEnvironmentHooksImpl/#com.wire.crypto.NoPointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks-impl/-pki-environment-hooks-impl.html
-$dokka.location:com.wire.crypto/PkiEnvironmentHooksImpl/authenticate/#kotlin.String#kotlin.String#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks-impl/authenticate.html
+$dokka.location:com.wire.crypto/PkiEnvironmentHooksImpl/authenticate/#kotlin.String#kotlin.String#kotlin.String#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks-impl/authenticate.html
 $dokka.location:com.wire.crypto/PkiEnvironmentHooksImpl/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks-impl/close.html
 $dokka.location:com.wire.crypto/PkiEnvironmentHooksImpl/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks-impl/destroy.html
 $dokka.location:com.wire.crypto/PkiEnvironmentHooksImpl/fetchBackendAccessToken/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks-impl/fetch-backend-access-token.html
@@ -771,6 +771,7 @@ $dokka.location:com.wire.crypto/WireIdentity/status/#/PointingToDeclaration/-co
 $dokka.location:com.wire.crypto/WireIdentity/thumbprint/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-wire-identity/thumbprint.html
 $dokka.location:com.wire.crypto/WireIdentity/x509Identity/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-wire-identity/x509-identity.html
 $dokka.location:com.wire.crypto/X509CredentialAcquisition.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition/-companion/index.html
+$dokka.location:com.wire.crypto/X509CredentialAcquisition.Companion/fromBytes/#com.wire.crypto.PkiEnvironment#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition/-companion/from-bytes.html
 $dokka.location:com.wire.crypto/X509CredentialAcquisition///PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition/index.html
 $dokka.location:com.wire.crypto/X509CredentialAcquisition/X509CredentialAcquisition/#com.sun.jna.Pointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition/-x509-credential-acquisition.html
 $dokka.location:com.wire.crypto/X509CredentialAcquisition/X509CredentialAcquisition/#com.wire.crypto.NoPointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition/-x509-credential-acquisition.html
