@@ -1,8 +1,9 @@
 use std::{fmt, sync::Arc};
 
 use wire_e2e_identity::pki_env;
+use x509_cert::der::Decode as _;
 
-use crate::{CoreCryptoFfi, CoreCryptoResult, Database};
+use crate::{CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, Database};
 
 /// HttpMethod used for PKI hooks.
 #[derive(uniffi::Enum)]
@@ -244,6 +245,26 @@ impl PkiEnvironment {
         let shim = Arc::new(PkiEnvironmentHooksShim::new(hooks));
         let pki_env = wire_e2e_identity::pki_env::PkiEnvironment::new(shim, database.as_ref().clone().into()).await?;
         Ok(Self(Arc::new(pki_env)))
+    }
+}
+
+#[uniffi::export]
+impl PkiEnvironment {
+    /// Add a DER-encoded certificate as a trust anchor.
+    ///
+    /// NOTE: currently we only support storing a single trust anchor, calling this method multiple
+    /// times will overwrite any previously added trust anchor.
+    pub async fn add_trust_anchor(&self, cert_der: &[u8]) -> CoreCryptoResult<()> {
+        let cert = x509_cert::Certificate::from_der(cert_der).map_err(CoreCryptoError::generic())?;
+        self.0.add_trust_anchor(cert).await?;
+        Ok(())
+    }
+
+    /// Add a DER-encoded certificate as an intermediate certificate.
+    pub async fn add_intermediate_cert(&self, cert_der: &[u8]) -> CoreCryptoResult<()> {
+        let cert = x509_cert::Certificate::from_der(cert_der).map_err(CoreCryptoError::generic())?;
+        self.0.add_intermediate_cert(cert).await?;
+        Ok(())
     }
 }
 

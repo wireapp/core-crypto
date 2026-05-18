@@ -275,12 +275,12 @@ impl X509TestChain {
 
         let env = context.pki_environment().await.unwrap();
 
-        env.add_trust_anchor("root", self.trust_anchor.certificate.clone())
+        env.add_trust_anchor(self.trust_anchor.certificate.clone())
             .await
             .expect("can add trust anchor");
 
-        for (idx, intermediate) in self.intermediates.iter().enumerate() {
-            env.add_intermediate_cert(&format!("intermediate {idx}"), intermediate.certificate.clone())
+        for intermediate in &self.intermediates {
+            env.add_intermediate_cert(intermediate.certificate.clone())
                 .await
                 .expect("can add intermediate cert");
         }

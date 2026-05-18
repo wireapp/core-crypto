@@ -189,7 +189,7 @@ impl PkiEnvironment {
     ///
     /// Adding a trust anchor will replace any existing trust anchor. This limitation
     /// will be relaxed in the future.
-    pub async fn add_trust_anchor(&self, name: &str, cert: Certificate) -> Result<()> {
+    pub async fn add_trust_anchor(&self, cert: Certificate) -> Result<()> {
         // Validate it (expiration & signature only)
         self.rjt_pki_env.lock().await.validate_trust_anchor_cert(&cert)?;
 
@@ -204,7 +204,7 @@ impl PkiEnvironment {
 
         let mut trust_anchors = TaSource::new();
         trust_anchors.push(certval::CertFile {
-            filename: name.to_owned(),
+            filename: "".to_string(),
             bytes: cert.to_der()?,
         });
         trust_anchors.initialize().map_err(Error::Certval)?;
@@ -222,7 +222,7 @@ impl PkiEnvironment {
     ///
     /// CRL (Certificate Revocation List) distribution points are extracted from the certificate and
     /// an attempt is made to fetch a CRL from each one.
-    pub async fn add_intermediate_cert(&self, name: &str, cert: Certificate) -> Result<()> {
+    pub async fn add_intermediate_cert(&self, cert: Certificate) -> Result<()> {
         // Save cert's DER representation to the database
         let (ski, aki) = RjtPkiEnvironment::extract_ski_aki_from_cert(&cert)?;
         let ski_aki_pair = format!("{ski}:{}", aki.unwrap_or_default());
@@ -251,7 +251,7 @@ impl PkiEnvironment {
         let cps = CertificationPathSettings::new();
         let mut cert_source = CertSource::new();
         cert_source.push(certval::CertFile {
-            filename: name.to_owned(),
+            filename: "".to_string(),
             bytes: cert.to_der()?,
         });
 
