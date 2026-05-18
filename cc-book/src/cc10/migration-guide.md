@@ -76,3 +76,6 @@ operations is delegated to the consumer.
 
 1. removed `.proteusFingerprintPrekeybundle()` and `.proteusLastResortPrekeyId()` from `CoreCryptoContext`. Both are
    available as static methods on `CoreCrypto`.
+
+1. removed `CoreCryptoContext.proteusReloadSessions()`. Proteus sessions are now loaded on demand by the new per-session
+   cache, so explicit reloads are no longer needed. Delete any call sites.
