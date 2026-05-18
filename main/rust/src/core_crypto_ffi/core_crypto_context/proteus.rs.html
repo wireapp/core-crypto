@@ -29,7 +29,7 @@
 <a href=#29 id=29 data-nosnippet>29</a>    <span class="doccomment">/// Creates a new Proteus session from an incoming encrypted message, returning the decrypted message payload.
 <a href=#30 id=30 data-nosnippet>30</a>    </span><span class="kw">pub async fn </span>proteus_session_from_message(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, envelope: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
 <a href=#31 id=31 data-nosnippet>31</a>        <span class="macro">proteus_impl!</span>({
-<a href=#32 id=32 data-nosnippet>32</a>            <span class="kw">let </span>(<span class="kw">_</span>, payload) = <span class="self">self</span>.inner.proteus_session_from_message(session_id, <span class="kw-2">&amp;</span>envelope).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#32 id=32 data-nosnippet>32</a>            <span class="kw">let </span>payload = <span class="self">self</span>.inner.proteus_session_from_message(session_id, <span class="kw-2">&amp;</span>envelope).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#33 id=33 data-nosnippet>33</a>            <span class="prelude-val">Ok</span>(payload)
 <a href=#34 id=34 data-nosnippet>34</a>        })
 <a href=#35 id=35 data-nosnippet>35</a>    }
@@ -148,10 +148,5 @@
 <a href=#148 id=148 data-nosnippet>148</a>                </span>.map_err(Into::into)
 <a href=#149 id=149 data-nosnippet>149</a>        })
 <a href=#150 id=150 data-nosnippet>150</a>    }
-<a href=#151 id=151 data-nosnippet>151</a>
-<a href=#152 id=152 data-nosnippet>152</a>    <span class="doccomment">/// Reloads all Proteus sessions from the keystore into memory.
-<a href=#153 id=153 data-nosnippet>153</a>    </span><span class="kw">pub async fn </span>proteus_reload_sessions(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;()&gt; {
-<a href=#154 id=154 data-nosnippet>154</a>        <span class="macro">proteus_impl!</span>({ <span class="self">self</span>.inner.proteus_reload_sessions().<span class="kw">await</span>.map_err(Into::into) })
-<a href=#155 id=155 data-nosnippet>155</a>    }
-<a href=#156 id=156 data-nosnippet>156</a>}
+<a href=#151 id=151 data-nosnippet>151</a>}
 </code></pre></div></section></main></body></html>

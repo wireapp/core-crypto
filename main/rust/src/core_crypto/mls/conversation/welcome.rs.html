@@ -5,8 +5,8 @@
 <a href=#5 id=5 data-nosnippet>5</a>
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span>super::{Error, <span class="prelude-ty">Result</span>};
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>crate::{
-<a href=#8 id=8 data-nosnippet>8</a>    ConversationId, LeafError, MlsConversation, MlsConversationConfiguration, MlsError, group_store::GroupStore,
-<a href=#9 id=9 data-nosnippet>9</a>    mls_provider::MlsCryptoProvider,
+<a href=#8 id=8 data-nosnippet>8</a>    ConversationId, LeafError, MlsConversation, MlsConversationConfiguration, MlsError,
+<a href=#9 id=9 data-nosnippet>9</a>    mls::conversation_cache::MlsConversationCache, mls_provider::MlsCryptoProvider,
 <a href=#10 id=10 data-nosnippet>10</a>};
 <a href=#11 id=11 data-nosnippet>11</a>
 <a href=#12 id=12 data-nosnippet>12</a><span class="doccomment">/// A Welcome Message as defined in RFC 9420.
@@ -57,7 +57,7 @@
 <a href=#57 id=57 data-nosnippet>57</a>        configuration: MlsConversationConfiguration,
 <a href=#58 id=58 data-nosnippet>58</a>        provider: <span class="kw-2">&amp;</span>MlsCryptoProvider,
 <a href=#59 id=59 data-nosnippet>59</a>        database: <span class="kw-2">&amp;</span>Database,
-<a href=#60 id=60 data-nosnippet>60</a>        mls_groups: <span class="kw-2">&amp;mut </span>GroupStore&lt;MlsConversation&gt;,
+<a href=#60 id=60 data-nosnippet>60</a>        mls_groups: <span class="kw-2">&amp;mut </span>MlsConversationCache,
 <a href=#61 id=61 data-nosnippet>61</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
 <a href=#62 id=62 data-nosnippet>62</a>        <span class="kw">let </span>mls_group_config = configuration.as_openmls_default_configuration()<span class="question-mark">?</span>;
 <a href=#63 id=63 data-nosnippet>63</a>
@@ -72,7 +72,7 @@
 <a href=#72 id=72 data-nosnippet>72</a>            })<span class="question-mark">?</span>;
 <a href=#73 id=73 data-nosnippet>73</a>
 <a href=#74 id=74 data-nosnippet>74</a>        <span class="kw">let </span>id = ConversationId::from(group.group_id().as_slice());
-<a href=#75 id=75 data-nosnippet>75</a>        <span class="kw">let </span>existing_conversation = mls_groups.get_fetch(<span class="kw-2">&amp;</span>id, database, <span class="prelude-val">None</span>).<span class="kw">await</span>;
+<a href=#75 id=75 data-nosnippet>75</a>        <span class="kw">let </span>existing_conversation = mls_groups.get_or_fetch(<span class="kw-2">&amp;</span>id, database).<span class="kw">await</span>;
 <a href=#76 id=76 data-nosnippet>76</a>        <span class="kw">let </span>conversation_exists = existing_conversation.ok().flatten().is_some();
 <a href=#77 id=77 data-nosnippet>77</a>
 <a href=#78 id=78 data-nosnippet>78</a>        <span class="kw">let </span>pending_group = provider

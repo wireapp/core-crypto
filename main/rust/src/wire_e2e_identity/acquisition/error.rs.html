@@ -52,29 +52,32 @@
 <a href=#52 id=52 data-nosnippet>52</a>    <span class="doccomment">/// X509 lacks required standard fields
 <a href=#53 id=53 data-nosnippet>53</a>    </span><span class="attr">#[error(<span class="string">"X509 lacks required standard fields"</span>)]
 <a href=#54 id=54 data-nosnippet>54</a>    </span>InvalidFormat,
-<a href=#55 id=55 data-nosnippet>55</a>    <span class="doccomment">/// Advertised public key does not match algorithm
-<a href=#56 id=56 data-nosnippet>56</a>    </span><span class="attr">#[error(<span class="string">"Advertised public key does not match algorithm"</span>)]
-<a href=#57 id=57 data-nosnippet>57</a>    </span>InvalidPublicKey,
-<a href=#58 id=58 data-nosnippet>58</a>    <span class="doccomment">/// Advertised public key is not supported
-<a href=#59 id=59 data-nosnippet>59</a>    </span><span class="attr">#[error(<span class="string">"Advertised public key is not supported"</span>)]
-<a href=#60 id=60 data-nosnippet>60</a>    </span>UnsupportedPublicKey,
-<a href=#61 id=61 data-nosnippet>61</a>    <span class="doccomment">/// X509Check error
-<a href=#62 id=62 data-nosnippet>62</a>    </span><span class="attr">#[error(<span class="string">"transparent"</span>)]
-<a href=#63 id=63 data-nosnippet>63</a>    </span>X509Check(<span class="attr">#[from] </span><span class="kw">crate</span>::x509_check::RustyX509CheckError),
-<a href=#64 id=64 data-nosnippet>64</a>    <span class="doccomment">/// DER error
-<a href=#65 id=65 data-nosnippet>65</a>    </span><span class="attr">#[error(transparent)]
-<a href=#66 id=66 data-nosnippet>66</a>    </span>Der(<span class="attr">#[from] </span>spki::der::Error),
-<a href=#67 id=67 data-nosnippet>67</a>    <span class="doccomment">/// UTF-8 error
+<a href=#55 id=55 data-nosnippet>55</a>    <span class="doccomment">/// Certificate algorithm does not match the one of the signing keypair
+<a href=#56 id=56 data-nosnippet>56</a>    </span><span class="attr">#[error(<span class="string">"Certificate algorithm does not match the one of the signing keypair"</span>)]
+<a href=#57 id=57 data-nosnippet>57</a>    </span>AlgorithmMismatch,
+<a href=#58 id=58 data-nosnippet>58</a>    <span class="doccomment">/// Certificate public key does not match the one in the signing keypair
+<a href=#59 id=59 data-nosnippet>59</a>    </span><span class="attr">#[error(<span class="string">"Certificate public key does not match the one in the signing keypair"</span>)]
+<a href=#60 id=60 data-nosnippet>60</a>    </span>KeyMismatch,
+<a href=#61 id=61 data-nosnippet>61</a>    <span class="doccomment">/// Advertised public key is not supported
+<a href=#62 id=62 data-nosnippet>62</a>    </span><span class="attr">#[error(<span class="string">"Advertised public key is not supported"</span>)]
+<a href=#63 id=63 data-nosnippet>63</a>    </span>UnsupportedPublicKey,
+<a href=#64 id=64 data-nosnippet>64</a>    <span class="doccomment">/// X509Check error
+<a href=#65 id=65 data-nosnippet>65</a>    </span><span class="attr">#[error(<span class="string">"transparent"</span>)]
+<a href=#66 id=66 data-nosnippet>66</a>    </span>X509Check(<span class="attr">#[from] </span><span class="kw">crate</span>::x509_check::RustyX509CheckError),
+<a href=#67 id=67 data-nosnippet>67</a>    <span class="doccomment">/// DER error
 <a href=#68 id=68 data-nosnippet>68</a>    </span><span class="attr">#[error(transparent)]
-<a href=#69 id=69 data-nosnippet>69</a>    </span>Utf8(<span class="attr">#[from] </span>std::str::Utf8Error),
-<a href=#70 id=70 data-nosnippet>70</a>    <span class="doccomment">/// ACME error
+<a href=#69 id=69 data-nosnippet>69</a>    </span>Der(<span class="attr">#[from] </span>spki::der::Error),
+<a href=#70 id=70 data-nosnippet>70</a>    <span class="doccomment">/// UTF-8 error
 <a href=#71 id=71 data-nosnippet>71</a>    </span><span class="attr">#[error(transparent)]
-<a href=#72 id=72 data-nosnippet>72</a>    </span>Acme(<span class="attr">#[from] </span><span class="kw">crate</span>::acme::RustyAcmeError),
-<a href=#73 id=73 data-nosnippet>73</a>    <span class="doccomment">/// JWT error
+<a href=#72 id=72 data-nosnippet>72</a>    </span>Utf8(<span class="attr">#[from] </span>std::str::Utf8Error),
+<a href=#73 id=73 data-nosnippet>73</a>    <span class="doccomment">/// ACME error
 <a href=#74 id=74 data-nosnippet>74</a>    </span><span class="attr">#[error(transparent)]
-<a href=#75 id=75 data-nosnippet>75</a>    </span>RustyJwtError(<span class="attr">#[from] </span>RustyJwtError),
-<a href=#76 id=76 data-nosnippet>76</a>    <span class="doccomment">/// jwt-simple error
+<a href=#75 id=75 data-nosnippet>75</a>    </span>Acme(<span class="attr">#[from] </span><span class="kw">crate</span>::acme::RustyAcmeError),
+<a href=#76 id=76 data-nosnippet>76</a>    <span class="doccomment">/// JWT error
 <a href=#77 id=77 data-nosnippet>77</a>    </span><span class="attr">#[error(transparent)]
-<a href=#78 id=78 data-nosnippet>78</a>    </span>JwtSimple(<span class="attr">#[from] </span>jwt_simple::Error),
-<a href=#79 id=79 data-nosnippet>79</a>}
+<a href=#78 id=78 data-nosnippet>78</a>    </span>RustyJwtError(<span class="attr">#[from] </span>RustyJwtError),
+<a href=#79 id=79 data-nosnippet>79</a>    <span class="doccomment">/// jwt-simple error
+<a href=#80 id=80 data-nosnippet>80</a>    </span><span class="attr">#[error(transparent)]
+<a href=#81 id=81 data-nosnippet>81</a>    </span>JwtSimple(<span class="attr">#[from] </span>jwt_simple::Error),
+<a href=#82 id=82 data-nosnippet>82</a>}
 </code></pre></div></section></main></body></html>

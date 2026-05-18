@@ -167,7 +167,6 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/proteusInit/#/PointingToDeclar
 $dokka.location:com.wire.crypto/CoreCryptoContext/proteusLastResortPrekey/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/proteus-last-resort-prekey.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/proteusNewPrekey/#kotlin.UShort/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/proteus-new-prekey.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/proteusNewPrekeyAuto/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/proteus-new-prekey-auto.html
-$dokka.location:com.wire.crypto/CoreCryptoContext/proteusReloadSessions/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/proteus-reload-sessions.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/proteusSessionDelete/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/proteus-session-delete.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/proteusSessionExists/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/proteus-session-exists.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/proteusSessionFromMessage/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/proteus-session-from-message.html
@@ -223,7 +222,6 @@ $dokka.location:com.wire.crypto/CoreCryptoContextInterface/proteusInit/#/Pointin
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/proteusLastResortPrekey/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/proteus-last-resort-prekey.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/proteusNewPrekey/#kotlin.UShort/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/proteus-new-prekey.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/proteusNewPrekeyAuto/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/proteus-new-prekey-auto.html
-$dokka.location:com.wire.crypto/CoreCryptoContextInterface/proteusReloadSessions/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/proteus-reload-sessions.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/proteusSessionDelete/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/proteus-session-delete.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/proteusSessionExists/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/proteus-session-exists.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/proteusSessionFromMessage/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/proteus-session-from-message.html

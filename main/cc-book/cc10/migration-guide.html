@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-867523f1.js";
+            window.path_to_searchindex_js = "../searchindex-91c1b39e.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-5214041f.js"></script>
@@ -267,6 +267,10 @@ operations is delegated to the consumer.</p>
 <li>
 <p>removed <code>.proteusFingerprintPrekeybundle()</code> and <code>.proteusLastResortPrekeyId()</code> from <code>CoreCryptoContext</code>. Both are
 available as static methods on <code>CoreCrypto</code>.</p>
+</li>
+<li>
+<p>removed <code>CoreCryptoContext.proteusReloadSessions()</code>. Proteus sessions are now loaded on demand by the new per-session
+cache, so explicit reloads are no longer needed. Delete any call sites.</p>
 </li>
 </ol>
 
