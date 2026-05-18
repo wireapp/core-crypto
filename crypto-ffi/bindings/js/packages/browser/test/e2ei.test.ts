@@ -3,6 +3,18 @@ import { setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import { E2eiConversationState } from "@wireapp/core-crypto/browser";
 
+const TEST_CA_DER_BASE64 = `
+MIIBrTCCAVOgAwIBAgIUTZQSLl3eOORQ+adTBaACtDinzVIwCgYIKoZIzj0EAwIwIzEhMB8G
+A1UEAwwYQ29yZSBDcnlwdG8gVGVzdCBSb290IENBMCAXDTI2MDUxODExMzcxNFoYDzIxMjYw
+NDI0MTEzNzE0WjAjMSEwHwYDVQQDDBhDb3JlIENyeXB0byBUZXN0IFJvb3QgQ0EwWTATBgcq
+hkjOPQIBBggqhkjOPQMBBwNCAASepKWhYSdxi9vctOj+3iksMZqCYv94ijB7KkHwvaOhsByE
+tzGoCRVuw12fzZ7C5tDChISJDoDuLkMVF17n8IoYo2MwYTAPBgNVHRMBAf8EBTADAQH/MA4G
+A1UdDwEB/wQEAwIBBjAdBgNVHQ4EFgQUcTTkAA9iiyLL9K7ZoQ/KowFwjZ8wHwYDVR0jBBgw
+FoAUcTTkAA9iiyLL9K7ZoQ/KowFwjZ8wCgYIKoZIzj0EAwIDSAAwRQIgGvcMi47MTKh6F4uz
+ppJsiJ+R0Mj4ato4FPg90nm0OtACIQCAIjV4mlXh8Gp2RRSlwuA894+NhyztLPU+vErHy/0I
+uA==
+`.replace(/\s/g, "");
+
 beforeEach(async () => {
     await setup();
 });
@@ -73,6 +85,50 @@ describe("PKI environment", () => {
             return (await cc.getPkiEnvironment()) != undefined;
         });
         await expect(success).toBe(true);
+    });
+
+    it("should add a trust anchor certificate", async () => {
+        const error = await browser.execute(async (certBase64) => {
+            const certDer = Uint8Array.from(atob(certBase64), (char) =>
+                char.charCodeAt(0)
+            );
+            const database = await window.helpers.newDatabase();
+            const pkiEnvironment = await window.ccModule.PkiEnvironment.create(
+                window.pkiEnvironmentHooks,
+                database
+            );
+
+            try {
+                await pkiEnvironment.addTrustAnchor(certDer);
+                return undefined;
+            } catch (error) {
+                return error instanceof Error ? error.message : String(error);
+            }
+        }, TEST_CA_DER_BASE64);
+
+        await expect(error).toBe(undefined);
+    });
+
+    it("should add an intermediate certificate", async () => {
+        const error = await browser.execute(async (certBase64) => {
+            const certDer = Uint8Array.from(atob(certBase64), (char) =>
+                char.charCodeAt(0)
+            );
+            const database = await window.helpers.newDatabase();
+            const pkiEnvironment = await window.ccModule.PkiEnvironment.create(
+                window.pkiEnvironmentHooks,
+                database
+            );
+
+            try {
+                await pkiEnvironment.addIntermediateCert(certDer);
+                return undefined;
+            } catch (error) {
+                return error instanceof Error ? error.message : String(error);
+            }
+        }, TEST_CA_DER_BASE64);
+
+        await expect(error).toBe(undefined);
     });
 });
 
