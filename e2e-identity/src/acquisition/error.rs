@@ -52,6 +52,9 @@ pub enum CertificateError {
     /// X509 lacks required standard fields
     #[error("X509 lacks required standard fields")]
     InvalidFormat,
+    /// Certificate algorithm does not match the one of the signing keypair
+    #[error("Certificate algorithm does not match the one of the signing keypair")]
+    AlgorithmMismatch,
     /// Certificate public key does not match the one in the signing keypair
     #[error("Certificate public key does not match the one in the signing keypair")]
     KeyMismatch,

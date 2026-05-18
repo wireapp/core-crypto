@@ -50,6 +50,13 @@ async fn verify_leaf_certificate(
 ) -> Result<(), CertificateError> {
     pki_env.validate_cert(cert)?;
 
+    // Make sure that the algorithm specified by the certificate matches the one of the signing
+    // keypair.
+    let alg = crate::utils::jws_alg_to_x509_identifier(config.sign_alg);
+    if cert.tbs_certificate.subject_public_key_info.algorithm != alg {
+        return Err(CertificateError::AlgorithmMismatch);
+    }
+
     // Make sure that the public key in the certificate matches the one from the signing keypair.
     // Note that we expect to always get proper PEM data here since that data is generated
     // internally, when starting acquisition; if the expect fails, that means the implementation is
