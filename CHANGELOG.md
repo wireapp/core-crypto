@@ -133,6 +133,13 @@
 
   Affected platforms: all
 
+- removed `CoreCryptoContext.proteusReloadSessions()`
+
+  Proteus sessions are now loaded from the keystore on demand by the new per-session cache, so there is no longer a need
+  to explicitly reload them. Any call sites should simply be deleted.
+
+  Affected platforms: android, ios, web
+
 #### New Credential API
 
 - `Credential` is a first-class type representing a cryptographic identity.
