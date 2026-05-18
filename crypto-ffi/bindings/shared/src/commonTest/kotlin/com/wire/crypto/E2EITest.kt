@@ -5,12 +5,27 @@ package com.wire.crypto
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import testutils.*
-import java.nio.file.Files
-import kotlin.test.BeforeTest
-import kotlin.test.Ignore
+import java.util.Base64
 import kotlin.test.Test
+import kotlin.test.fail
 
 internal class E2EITest {
+    companion object {
+        private val testCaDer: ByteArray = Base64.getMimeDecoder().decode(
+            """
+            MIIBrTCCAVOgAwIBAgIUTZQSLl3eOORQ+adTBaACtDinzVIwCgYIKoZIzj0EAwIwIzEhMB8G
+            A1UEAwwYQ29yZSBDcnlwdG8gVGVzdCBSb290IENBMCAXDTI2MDUxODExMzcxNFoYDzIxMjYw
+            NDI0MTEzNzE0WjAjMSEwHwYDVQQDDBhDb3JlIENyeXB0byBUZXN0IFJvb3QgQ0EwWTATBgcq
+            hkjOPQIBBggqhkjOPQMBBwNCAASepKWhYSdxi9vctOj+3iksMZqCYv94ijB7KkHwvaOhsByE
+            tzGoCRVuw12fzZ7C5tDChISJDoDuLkMVF17n8IoYo2MwYTAPBgNVHRMBAf8EBTADAQH/MA4G
+            A1UdDwEB/wQEAwIBBjAdBgNVHQ4EFgQUcTTkAA9iiyLL9K7ZoQ/KowFwjZ8wHwYDVR0jBBgw
+            FoAUcTTkAA9iiyLL9K7ZoQ/KowFwjZ8wCgYIKoZIzj0EAwIDSAAwRQIgGvcMi47MTKh6F4uz
+            ppJsiJ+R0Mj4ato4FPg90nm0OtACIQCAIjV4mlXh8Gp2RRSlwuA894+NhyztLPU+vErHy/0I
+            uA==
+            """.trimIndent()
+        )
+    }
+
     @Test
     fun testSetPkiEnvironment() = runTest {
         val hooks = MockPkiEnvironmentHooks()
@@ -21,6 +36,32 @@ internal class E2EITest {
         cc.setPkiEnvironment(pkiEnv)
         val pkiEnv2 = cc.getPkiEnvironment()
         assert(pkiEnv2 != null)
+    }
+
+    @Test
+    fun testAddTrustAnchor() = runTest {
+        val hooks = MockPkiEnvironmentHooks()
+        val db = newDatabase()
+        val pkiEnv = PkiEnvironment.new(hooks, db)
+
+        try {
+            pkiEnv.addTrustAnchor(testCaDer)
+        } catch (exception: Exception) {
+            fail("Expected addTrustAnchor not to throw, but it threw: ${exception.message}")
+        }
+    }
+
+    @Test
+    fun testAddIntermediateCert() = runTest {
+        val hooks = MockPkiEnvironmentHooks()
+        val db = newDatabase()
+        val pkiEnv = PkiEnvironment.new(hooks, db)
+
+        try {
+            pkiEnv.addIntermediateCert(testCaDer)
+        } catch (exception: Exception) {
+            fail("Expected addIntermediateCert not to throw, but it threw: ${exception.message}")
+        }
     }
 
     @Test
