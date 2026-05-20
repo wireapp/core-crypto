@@ -19,23 +19,26 @@ impl ConversationGuard {
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     pub async fn encrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<Vec<u8>> {
+        let message = message.as_ref().to_vec();
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
 
-        self.conversation_mut(async move |conversation| {
-            let signer = credential.signature_key();
-            let encrypted = conversation
-                .group
-                .create_message(&backend, signer, message.as_ref())
-                .map_err(MlsError::wrap("creating message"))?;
+        self.conversation_mut(|conversation| {
+            Box::pin(async move {
+                let signer = credential.signature_key();
+                let encrypted = conversation
+                    .group
+                    .create_message(&backend, signer, &message)
+                    .map_err(MlsError::wrap("creating message"))?;
 
-            // make sure all application messages are encrypted
-            debug_assert!(matches!(encrypted.body, MlsMessageOutBody::PrivateMessage(_)));
+                // make sure all application messages are encrypted
+                debug_assert!(matches!(encrypted.body, MlsMessageOutBody::PrivateMessage(_)));
 
-            encrypted
-                .to_bytes()
-                .map_err(MlsError::wrap("constructing byte vector of encrypted message"))
-                .map_err(Into::into)
+                encrypted
+                    .to_bytes()
+                    .map_err(MlsError::wrap("constructing byte vector of encrypted message"))
+                    .map_err(Into::into)
+            })
         })
         .await
     }

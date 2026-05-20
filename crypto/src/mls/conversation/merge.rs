@@ -57,13 +57,12 @@ mod tests {
 
                 assert!(conversation.has_pending_commit().await);
 
+                let provider = alice.session().await.crypto_provider.clone();
                 conversation
                     .guard()
                     .await
-                    .conversation_mut(async |conversation| {
-                        conversation
-                            .commit_accepted(&alice.session().await.crypto_provider)
-                            .await
+                    .conversation_mut(|conversation| {
+                        Box::pin(async move { conversation.commit_accepted(&provider).await })
                     })
                     .await
                     .unwrap();
@@ -91,13 +90,12 @@ mod tests {
                 assert!(conversation.has_pending_proposals().await);
                 assert!(conversation.has_pending_commit().await);
 
+                let provider = alice.session().await.crypto_provider.clone();
                 conversation
                     .guard()
                     .await
-                    .conversation_mut(async |conversation| {
-                        conversation
-                            .commit_accepted(&alice.session().await.crypto_provider)
-                            .await
+                    .conversation_mut(|conversation| {
+                        Box::pin(async move { conversation.commit_accepted(&provider).await })
                     })
                     .await
                     .unwrap();

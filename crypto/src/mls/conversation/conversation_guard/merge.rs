@@ -28,15 +28,17 @@ impl ConversationGuard {
     /// When there is no pending commit
     pub(crate) async fn clear_pending_commit(&mut self) -> Result<()> {
         let database = self.database().await?;
-        self.conversation_mut(async |conversation| {
-            if conversation.group.pending_commit().is_some() {
-                conversation.group.clear_pending_commit();
-                conversation.persist_group_when_changed(&database, true).await?;
-                log::info!(group_id = conversation.id(); "Cleared pending commit.");
-                Ok(())
-            } else {
-                Err(Error::PendingCommitNotFound)
-            }
+        self.conversation_mut(|conversation| {
+            Box::pin(async move {
+                if conversation.group.pending_commit().is_some() {
+                    conversation.group.clear_pending_commit();
+                    conversation.persist_group_when_changed(&database, true).await?;
+                    log::info!(group_id = conversation.id(); "Cleared pending commit.");
+                    Ok(())
+                } else {
+                    Err(Error::PendingCommitNotFound)
+                }
+            })
         })
         .await
     }

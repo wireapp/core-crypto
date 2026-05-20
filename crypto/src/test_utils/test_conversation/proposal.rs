@@ -17,9 +17,11 @@ impl<'a> TestConversation<'a> {
         let proposer = self.actor();
         let key_package = new_member.new_keypackage(self.case).await;
         let mut guard = self.guard().await;
-        let session = &proposer.session().await;
+        let session = proposer.session().await;
         let proposal = guard
-            .conversation_mut(async |conversation| conversation.propose_add_member(session, key_package.into()).await)
+            .conversation_mut(|conversation| {
+                Box::pin(async move { conversation.propose_add_member(&session, key_package.into()).await })
+            })
             .await
             .unwrap();
         let proposer_index = self.member_index(proposer).await;
@@ -42,18 +44,23 @@ impl<'a> TestConversation<'a> {
     pub async fn remove_proposal(self, member: &'a SessionContext) -> OperationGuard<'a, Proposal> {
         let proposer = self.actor();
         let mut guard = self.guard().await;
-        let session = &proposer.session().await;
+        let session = proposer.session().await;
         let member_id = member.session().await.id();
         let proposal = guard
-            .conversation_mut(async |conversation| {
-                let member_index = conversation
-                    .group
-                    .members()
-                    .find(|member| member.credential.identity() == member_id.as_slice())
-                    .map(|member| member.index)
-                    .unwrap();
-                let proposal = conversation.propose_remove_member(session, member_index).await.unwrap();
-                Ok(proposal)
+            .conversation_mut(|conversation| {
+                Box::pin(async move {
+                    let member_index = conversation
+                        .group
+                        .members()
+                        .find(|member| member.credential.identity() == member_id.as_slice())
+                        .map(|member| member.index)
+                        .unwrap();
+                    let proposal = conversation
+                        .propose_remove_member(&session, member_index)
+                        .await
+                        .unwrap();
+                    Ok(proposal)
+                })
             })
             .await
             .unwrap();

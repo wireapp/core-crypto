@@ -155,26 +155,30 @@ impl ConversationGuard {
         let key_package = history_secret.key_package.clone().into();
 
         let remove_and_add = self
-            .conversation_mut(async move |conversation| {
-                // Propose to remove the old history client
-                for history_client in existing_history_clients {
-                    conversation.propose_remove_member(&session, history_client).await?;
-                }
+            .conversation_mut(|conversation| {
+                Box::pin(async move {
+                    // Propose to remove the old history client
+                    for history_client in existing_history_clients {
+                        conversation.propose_remove_member(&session, history_client).await?;
+                    }
 
-                // Propose to add a new history client
-                conversation.propose_add_member(&session, key_package).await?;
+                    // Propose to add a new history client
+                    conversation.propose_add_member(&session, key_package).await?;
 
-                // We're getting the proposals we just created from the pending proposals queue, as the previously
-                // called `propose_remove()` and `propose_add()` pushed them to that queue as a side effect.
-                let remove_and_add = conversation
-                    .group()
-                    .pending_proposals()
-                    .filter(|&p| matches!(p.sender(), Sender::Member(i) if i == &conversation.group().own_leaf_index()))
-                    .map(|proposal| proposal.proposal())
-                    .cloned()
-                    .collect::<Vec<_>>();
+                    // We're getting the proposals we just created from the pending proposals queue, as the previously
+                    // called `propose_remove()` and `propose_add()` pushed them to that queue as a side effect.
+                    let remove_and_add = conversation
+                        .group()
+                        .pending_proposals()
+                        .filter(
+                            |&p| matches!(p.sender(), Sender::Member(i) if i == &conversation.group().own_leaf_index()),
+                        )
+                        .map(|proposal| proposal.proposal())
+                        .cloned()
+                        .collect::<Vec<_>>();
 
-                Ok(remove_and_add)
+                    Ok(remove_and_add)
+                })
             })
             .await?;
 
