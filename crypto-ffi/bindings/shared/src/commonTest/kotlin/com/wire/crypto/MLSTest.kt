@@ -62,11 +62,12 @@ class MLSTest {
         val cc = ccInit()
 
         val expectedException = IllegalStateException("Expected Exception")
-
+        val conversationId = genConversationId()
         val actualException =
             assertFailsWith<RuntimeException> {
                 cc.transaction<Unit> { ctx ->
-                    ctx.createConversationShort(id)
+                    val credentialRef = ctx.getCredentials().last()
+                    ctx.createConversation(conversationId, credentialRef)
                     throw expectedException
                 }
             }
@@ -78,7 +79,10 @@ class MLSTest {
 
         // This would fail with a "Conversation already exists" exception, if the above
         // transaction hadn't been rolled back.
-        cc.transaction { ctx -> ctx.createConversationShort(id) }
+        cc.transaction { ctx ->
+            val credentialRef = ctx.getCredentials().last()
+                    ctx.createConversation(conversationId, credentialRef)
+        }
     }
 
     @Suppress("InjectDispatcher")
@@ -120,7 +124,10 @@ class MLSTest {
         val alice = ccInit()
         val conversationId = createConversation(alice)
         val expectedException = assertFailsWith<CoreCryptoException.Mls> {
-            alice.transaction { ctx -> ctx.createConversationShort(conversationId) }
+            alice.transaction { ctx ->
+                val credentialRef = ctx.`getCredentials`().last()
+                ctx.createConversation(conversationId, credentialRef)
+            }
         }
         assertIs<MlsException.ConversationAlreadyExists>(expectedException.mlsError)
     }
@@ -135,9 +142,13 @@ class MLSTest {
     @Test
     fun conversationExists_should_return_true() = runTest {
         val alice = ccInit()
-        assertThat(alice.transaction { ctx -> ctx.conversationExists(id) }).isFalse()
-        alice.transaction { ctx -> ctx.createConversationShort(id) }
-        assertThat(alice.transaction { ctx -> ctx.conversationExists(id) }).isTrue()
+        val conversationId = genConversationId()
+        assertThat(alice.transaction { ctx -> ctx.conversationExists(conversationId) }).isFalse()
+        alice.transaction { ctx ->
+            val credentialRef = ctx.getCredentials().last()
+            ctx.createConversation(conversationId, credentialRef)
+        }
+        assertThat(alice.transaction { ctx -> ctx.conversationExists(conversationId) }).isTrue()
     }
 
     @Test

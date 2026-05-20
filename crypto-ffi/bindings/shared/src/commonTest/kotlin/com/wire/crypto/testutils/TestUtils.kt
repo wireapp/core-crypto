@@ -183,22 +183,6 @@ fun randomIdentifier(n: Int = 12): String {
         .joinToString("")
 }
 
-
-/** Shorthand for creating a conversation with defaults */
-suspend fun CoreCryptoContext.createConversationShort(
-    id: ConversationId
-) {
-    val credentials = findCredentials(
-        clientId = null,
-        publicKey = null,
-        ciphersuite = CIPHERSUITE_DEFAULT,
-        credentialType = CREDENTIAL_TYPE_DEFAULT,
-        earliestValidity = null
-    )
-    val credential = credentials.last()
-    createConversation(id, credential, null)
-}
-
 /** Shorthand for generating keypackages with defaults */
 suspend fun CoreCryptoContext.clientKeypackagesShort(amount: UInt): List<KeyPackage> {
     val credentials = findCredentials(
