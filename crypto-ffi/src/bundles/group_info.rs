@@ -1,9 +1,4 @@
-use std::sync::Arc;
-
-use core_crypto::{MlsGroupInfoBundle, MlsMessageIn, MlsMessageInBody};
-use tls_codec::Deserialize;
-
-use crate::{CoreCryptoError, CoreCryptoResult, core_crypto_context::mls::GroupInfo};
+use core_crypto::MlsGroupInfoBundle;
 
 /// How a `GroupInfo` is encrypted in a commit bundle.
 #[derive(Debug, Clone, Copy, uniffi::Enum)]
@@ -76,29 +71,17 @@ pub struct GroupInfoBundle {
     /// What kind of ratchet tree is used.
     pub ratchet_tree_type: MlsRatchetTreeType,
     /// The group info payload.
-    pub payload: Arc<GroupInfo>,
+    pub payload: Vec<u8>,
 }
 
-impl TryFrom<MlsGroupInfoBundle> for GroupInfoBundle {
-    type Error = CoreCryptoError;
-
-    fn try_from(group_info_bundle: MlsGroupInfoBundle) -> CoreCryptoResult<Self> {
+impl From<MlsGroupInfoBundle> for GroupInfoBundle {
+    fn from(group_info_bundle: MlsGroupInfoBundle) -> Self {
         // single variant => no match stmt necessary
         let core_crypto::GroupInfoPayload::Plaintext(payload) = group_info_bundle.payload;
-        let message_in = MlsMessageIn::tls_deserialize_exact(payload)
-            .map_err(CoreCryptoError::generic())?
-            .extract();
-        let MlsMessageInBody::GroupInfo(group_info) = message_in else {
-            return Err(CoreCryptoError::ad_hoc(
-                "group info bundle contained a non-GroupInfo body",
-            ));
-        };
-        let payload = Arc::new(group_info.into());
-
-        Ok(Self {
+        Self {
             encryption_type: group_info_bundle.encryption_type.into(),
             ratchet_tree_type: group_info_bundle.ratchet_tree_type.into(),
             payload,
-        })
+        }
     }
 }
