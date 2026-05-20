@@ -18,6 +18,8 @@
 
   Affected platforms: android, ios, web
 
+- `GroupInfoBundle.payload` now contains a byte array instead of a class instance.
+
 - Added `Welcome::serialize()`
 
   We had test functions which required the serialized bytes given a `Welcome` instance. So we added the ability to

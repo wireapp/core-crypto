@@ -79,3 +79,5 @@ operations is delegated to the consumer.
 
 1. removed `CoreCryptoContext.proteusReloadSessions()`. Proteus sessions are now loaded on demand by the new per-session
    cache, so explicit reloads are no longer needed. Delete any call sites.
+
+1. `GroupInfoBundle.payload` now contains a byte array instead of a class instance.
