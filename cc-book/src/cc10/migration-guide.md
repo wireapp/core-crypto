@@ -59,6 +59,61 @@ the sub-pages:
    public-key form, or `ExternalSender.parse()` to try both in turn. Parse errors are reported at parse time rather than
    during conversation creation. Call `externalSender.serialize()` to recover the raw bytes when needed.
 
+## X509 Credential Acquisition
+
+The enrollment API that previously drove the ACME and OIDC exchanges step-by-step from the client has been **removed**.
+The whole ACME / DPoP / OIDC sequence is now hidden behind a single object, `X509CredentialAcquisition`, which the
+client constructs once and then calls `finalize()` on to obtain a `Credential`. CoreCrypto reaches back into the client
+only via well-defined hook points; the client no longer threads nonces, account responses, order requests, or challenge
+payloads through its own code.
+
+Where you previously called `e2eiNewEnrollment`, `e2eiNewActivationEnrollment`, `e2eiNewRotateEnrollment`,
+`directoryResponse`, `newAccountRequest`/`Response`, `newOrderRequest`/`Response`, `newAuthzRequest`/`Response`,
+`createDpopToken`, `newDpopChallengeRequest`/`Response`, `newOidcChallengeRequest`/`Response`,
+`checkOrderRequest`/`Response`, `finalizeRequest`/`Response`, or `certificateRequest` — delete all of it. The new flow
+replaces every one of those calls.
+
+### Acquiring an X509 credential
+
+1. **Implement `PkiEnvironmentHooks`**. CoreCrypto will call these hooks during acquisition:
+
+   - `httpRequest` — perform HTTP requests against the ACME server, CRL distributors, and similar.
+   - `authenticate` — drive the IdP authorization code flow with PKCE and return the resulting ID token.
+   - `getBackendNonce` — obtain a nonce from the Wire backend.
+   - `fetchBackendAccessToken` — exchange the DPoP token for a backend access token.
+
+1. **Create a `PkiEnvironment`** with `PkiEnvironment.new(hooks, database)` (TypeScript) or
+   `createPkiEnvironment(hooks, database)` (Swift/Kotlin). The `Database` can be the same used by the `CoreCrypto`
+   instance or distinct; they use unrelated tables. That said, it is typically more convenient to use a single database.
+
+1. **Build an `X509CredentialAcquisitionConfiguration`** describing the certificate you want:
+
+   - `acmeUrl`, `idpUrl`
+   - `ciphersuite` — must be one of the four with a JWS-compatible signature scheme: Ed25519, P256, P384, or P521. Other
+     ciphersuites will fail at construction.
+   - `displayName`, `clientId`, `handle`, `domain`, optional `team`
+   - `validityPeriodSecs`
+
+1. **Construct the acquisition**: `X509CredentialAcquisition.new(pkiEnvironment, configuration)`.
+
+1. **Call `await acquisition.finalize()`**. This drives the DPoP and OIDC challenges to completion, calling your hooks
+   as needed, and returns the acquired `Credential`. The acquisition can only be finalized once; a second call throws.
+
+1. **Attach the credential** to the client with `transactionContext.addCredential(credential)`, exactly as for a basic
+   credential. This persists it to the internal database and returns a `CredentialRef`.
+
+### Pausing across the IdP redirect
+
+The IdP authentication flow typically requires an external redirect, after which the app may have been suspended,
+backgrounded, or restarted. To support this, the `authenticate` hook receives an `acquisitionSnapshot: bytes` parameter
+capturing the acquisition state at the point the DPoP challenge has completed and OIDC is about to begin. Persist these
+bytes to encrypted storage before launching the IdP flow.
+
+When the app resumes and is ready to complete acquisition, reconstruct the acquisition from the snapshot with
+`X509CredentialAcquisition.fromBytes(pkiEnvironment, snapshot)` and call `finalize()` on the reconstructed instance.
+There is no client-visible serialization method on `X509CredentialAcquisition` itself; the snapshot bytes are delivered
+to you exclusively through the `authenticate` hook's `acquisitionSnapshot` parameter.
+
 ## MlsTransport Interface
 
 Instead of returning an `MlsTransportResponse` to communicate the reason why a message was rejected by the DS, throw an
