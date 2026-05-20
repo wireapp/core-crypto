@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{future::Future, pin::Pin, sync::Arc};
 
 use async_lock::{RwLock, RwLockReadGuard};
 use core_crypto_keystore::{CryptoKeystoreMls as _, Database};
@@ -15,6 +15,13 @@ pub(crate) mod decrypt;
 mod encrypt;
 mod history_sharing;
 mod merge;
+
+/// The return type of the operation closure passed to [`ConversationGuard::conversation_mut`].
+/// On non-WASM targets the future must also be [`Send`].
+#[cfg(not(target_os = "unknown"))]
+pub(crate) type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T>> + Send + 'a>>;
+#[cfg(target_os = "unknown")]
+pub(crate) type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T>> + 'a>>;
 
 /// A Conversation Guard wraps an [`Arc<RwLock<MlsConversation>>`].
 ///
@@ -61,7 +68,7 @@ impl ConversationGuard {
     /// an error.
     pub(crate) async fn conversation_mut<T>(
         &mut self,
-        operation: impl AsyncFnOnce(&mut MlsConversation) -> Result<T>,
+        operation: impl FnOnce(&mut MlsConversation) -> BoxFuture<'_, T>,
     ) -> Result<T> {
         // we can't get the database if the transaction context has been invalidated,
         // and we want to have that error first before evaluating anything in the operation.
@@ -102,9 +109,14 @@ impl ConversationGuard {
             .map_err(RecursiveError::transaction("getting mls groups"))?;
 
         let id = self
-            .conversation_mut(async |conversation| {
-                conversation.wipe_associated_entities(&provider).await?;
-                Ok(conversation.id().to_owned())
+            .conversation_mut({
+                let provider = provider.clone();
+                |conversation| {
+                    Box::pin(async move {
+                        conversation.wipe_associated_entities(&provider).await?;
+                        Ok(conversation.id().to_owned())
+                    })
+                }
             })
             .await?;
         provider
