@@ -366,6 +366,7 @@
                   
                   <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">GroupInfoBundle</span></code></pre>
 <pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">GroupInfoBundle</span><span class="p">:</span> <span class="kt">Sendable</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">GroupInfoBundle</span><span class="p">:</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Hashable</span></code></pre>
 
                 </div>
               </div>
@@ -432,9 +433,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi15GroupInfoBundleV7payloadAA0eF0Cvp"></a>
+                    <a name="/s:20WireCoreCryptoUniffi15GroupInfoBundleV7payload10Foundation4DataVvp"></a>
                     <a name="//apple_ref/swift/Property/payload" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi15GroupInfoBundleV7payloadAA0eF0Cvp">payload</a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi15GroupInfoBundleV7payload10Foundation4DataVvp">payload</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -449,7 +450,7 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">payload</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/GroupInfo.html">GroupInfo</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">payload</span><span class="p">:</span> <span class="kt">Data</span></code></pre>
 
                         </div>
                       </div>
@@ -459,9 +460,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi15GroupInfoBundleV14encryptionType011ratchetTreeI07payloadAcA03Mlsef10EncryptionI0O_AA0m7RatchetkI0OAA0eF0Ctcfc"></a>
+                    <a name="/s:20WireCoreCryptoUniffi15GroupInfoBundleV14encryptionType011ratchetTreeI07payloadAcA03Mlsef10EncryptionI0O_AA0m7RatchetkI0O10Foundation4DataVtcfc"></a>
                     <a name="//apple_ref/swift/Method/init(encryptionType:ratchetTreeType:payload:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi15GroupInfoBundleV14encryptionType011ratchetTreeI07payloadAcA03Mlsef10EncryptionI0O_AA0m7RatchetkI0OAA0eF0Ctcfc">init(encryptionType:<wbr>ratchetTreeType:<wbr>payload:<wbr>)</a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi15GroupInfoBundleV14encryptionType011ratchetTreeI07payloadAcA03Mlsef10EncryptionI0O_AA0m7RatchetkI0O10Foundation4DataVtcfc">init(encryptionType:<wbr>ratchetTreeType:<wbr>payload:<wbr>)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -485,7 +486,59 @@
      */</span><span class="nv">ratchetTreeType</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/MlsRatchetTreeType.html">MlsRatchetTreeType</a></span><span class="p">,</span> 
     <span class="cm">/**
      * The group info payload.
-     */</span><span class="nv">payload</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/GroupInfo.html">GroupInfo</a></span><span class="p">)</span></code></pre>
+     */</span><span class="nv">payload</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:SQ2eeoiySbx_xtFZ"></a>
+                    <a name="//apple_ref/swift/Method/==(_:_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:SQ2eeoiySbx_xtFZ">==(_:<wbr>_:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="o">==</span> <span class="p">(</span><span class="nv">lhs</span><span class="p">:</span> <span class="kt">GroupInfoBundle</span><span class="p">,</span> <span class="nv">rhs</span><span class="p">:</span> <span class="kt">GroupInfoBundle</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:SH4hash4intoys6HasherVz_tF"></a>
+                    <a name="//apple_ref/swift/Method/hash(into:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:SH4hash4intoys6HasherVz_tF">hash(into:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">hash</span><span class="p">(</span><span class="n">into</span> <span class="nv">hasher</span><span class="p">:</span> <span class="k">inout</span> <span class="kt">Hasher</span><span class="p">)</span></code></pre>
 
                         </div>
                       </div>

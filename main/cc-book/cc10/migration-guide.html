@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-91c1b39e.js";
+            window.path_to_searchindex_js = "../searchindex-1dc8f6ce.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-5214041f.js"></script>
@@ -271,6 +271,9 @@ available as static methods on <code>CoreCrypto</code>.</p>
 <li>
 <p>removed <code>CoreCryptoContext.proteusReloadSessions()</code>. Proteus sessions are now loaded on demand by the new per-session
 cache, so explicit reloads are no longer needed. Delete any call sites.</p>
+</li>
+<li>
+<p><code>GroupInfoBundle.payload</code> now contains a byte array instead of a class instance.</p>
 </li>
 </ol>
 

@@ -493,8 +493,7 @@ $dokka.location:com.wire.crypto/GroupInfo/destroy/#/PointingToDeclaration/-core
 $dokka.location:com.wire.crypto/GroupInfo/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/GroupInfoBundle.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-bundle/-companion/index.html
 $dokka.location:com.wire.crypto/GroupInfoBundle///PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-bundle/index.html
-$dokka.location:com.wire.crypto/GroupInfoBundle/GroupInfoBundle/#com.wire.crypto.MlsGroupInfoEncryptionType#com.wire.crypto.MlsRatchetTreeType#com.wire.crypto.GroupInfo/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-bundle/-group-info-bundle.html
-$dokka.location:com.wire.crypto/GroupInfoBundle/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-bundle/destroy.html
+$dokka.location:com.wire.crypto/GroupInfoBundle/GroupInfoBundle/#com.wire.crypto.MlsGroupInfoEncryptionType#com.wire.crypto.MlsRatchetTreeType#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-bundle/-group-info-bundle.html
 $dokka.location:com.wire.crypto/GroupInfoBundle/encryptionType/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-bundle/encryption-type.html
 $dokka.location:com.wire.crypto/GroupInfoBundle/payload/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-bundle/payload.html
 $dokka.location:com.wire.crypto/GroupInfoBundle/ratchetTreeType/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-group-info-bundle/ratchet-tree-type.html
