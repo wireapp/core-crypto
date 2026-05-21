@@ -60,7 +60,7 @@
 <a href=#60 id=60 data-nosnippet>60</a><span class="attr">#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
 <a href=#61 id=61 data-nosnippet>61</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
 <a href=#62 id=62 data-nosnippet>62</a></span><span class="kw">impl </span>HasSessionAndCrypto <span class="kw">for </span>TransactionContext {
-<a href=#63 id=63 data-nosnippet>63</a>    <span class="kw">async fn </span>session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">crate</span>::mls::Result&lt;Session&lt;Database&gt;&gt; {
+<a href=#63 id=63 data-nosnippet>63</a>    <span class="kw">async fn </span>session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">crate</span>::mls::Result&lt;Session&gt; {
 <a href=#64 id=64 data-nosnippet>64</a>        <span class="self">self</span>.session()
 <a href=#65 id=65 data-nosnippet>65</a>            .<span class="kw">await
 <a href=#66 id=66 data-nosnippet>66</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls client"</span>))
@@ -93,7 +93,7 @@
 <a href=#93 id=93 data-nosnippet>93</a>        })
 <a href=#94 id=94 data-nosnippet>94</a>    }
 <a href=#95 id=95 data-nosnippet>95</a>
-<a href=#96 id=96 data-nosnippet>96</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Session&lt;Database&gt;&gt; {
+<a href=#96 id=96 data-nosnippet>96</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Session&gt; {
 <a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">match </span><span class="kw-2">&amp;*</span><span class="self">self</span>.inner.read().<span class="kw">await </span>{
 <a href=#98 id=98 data-nosnippet>98</a>            TransactionContextInner::Valid { core_crypto, .. } =&gt; core_crypto.mls.read().<span class="kw">await</span>.as_ref().cloned().ok_or(
 <a href=#99 id=99 data-nosnippet>99</a>                RecursiveError::mls_client(<span class="string">"Getting mls session from transaction context"</span>)(
@@ -106,7 +106,7 @@
 <a href=#106 id=106 data-nosnippet>106</a>    }
 <a href=#107 id=107 data-nosnippet>107</a>
 <a href=#108 id=108 data-nosnippet>108</a>    <span class="attr">#[cfg(test)]
-<a href=#109 id=109 data-nosnippet>109</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>set_session_if_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, new_session: Session&lt;Database&gt;) {
+<a href=#109 id=109 data-nosnippet>109</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>set_session_if_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, new_session: Session) {
 <a href=#110 id=110 data-nosnippet>110</a>        <span class="kw">match </span><span class="kw-2">&amp;*</span><span class="self">self</span>.inner.read().<span class="kw">await </span>{
 <a href=#111 id=111 data-nosnippet>111</a>            TransactionContextInner::Valid { core_crypto, .. } =&gt; {
 <a href=#112 id=112 data-nosnippet>112</a>                <span class="kw">let </span><span class="kw-2">mut </span>guard = core_crypto.mls.write().<span class="kw">await</span>;
@@ -287,14 +287,14 @@
 <a href=#287 id=287 data-nosnippet>287</a>        <span class="kw">let </span>database = <span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#288 id=288 data-nosnippet>288</a>        <span class="kw">let </span>pki_env = <span class="self">self</span>.pki_environment().<span class="kw">await</span>.ok();
 <a href=#289 id=289 data-nosnippet>289</a>        <span class="kw">let </span>crypto_provider = MlsCryptoProvider::new_with_pki_env(database.clone(), pki_env);
-<a href=#290 id=290 data-nosnippet>290</a>        <span class="kw">let </span>session = Session::new(session_id.clone(), crypto_provider, database, transport);
+<a href=#290 id=290 data-nosnippet>290</a>        <span class="kw">let </span>session = Session::new(session_id.clone(), crypto_provider, database.into(), transport);
 <a href=#291 id=291 data-nosnippet>291</a>        <span class="self">self</span>.set_mls_session(session).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#292 id=292 data-nosnippet>292</a>
 <a href=#293 id=293 data-nosnippet>293</a>        <span class="prelude-val">Ok</span>(())
 <a href=#294 id=294 data-nosnippet>294</a>    }
 <a href=#295 id=295 data-nosnippet>295</a>
 <a href=#296 id=296 data-nosnippet>296</a>    <span class="doccomment">/// Set the `mls_session` Arc (also sets it on the transaction's CoreCrypto instance)
-<a href=#297 id=297 data-nosnippet>297</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>set_mls_session(<span class="kw-2">&amp;</span><span class="self">self</span>, session: Session&lt;Database&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#297 id=297 data-nosnippet>297</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>set_mls_session(<span class="kw-2">&amp;</span><span class="self">self</span>, session: Session) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#298 id=298 data-nosnippet>298</a>        <span class="kw">match </span><span class="kw-2">&amp;*</span><span class="self">self</span>.inner.read().<span class="kw">await </span>{
 <a href=#299 id=299 data-nosnippet>299</a>            TransactionContextInner::Valid { core_crypto, .. } =&gt; {
 <a href=#300 id=300 data-nosnippet>300</a>                <span class="kw">let </span><span class="kw-2">mut </span>guard = core_crypto.mls.write().<span class="kw">await</span>;
