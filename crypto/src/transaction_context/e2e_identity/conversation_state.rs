@@ -1,4 +1,3 @@
-use core_crypto_keystore::Database;
 use openmls::{messages::group_info::VerifiableGroupInfo, prelude::Node};
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -50,7 +49,7 @@ impl TransactionContext {
             _ => None,
         });
 
-        Ok(Session::<Database>::compute_conversation_state(cs, credentials, CredentialType::X509, auth_service).await)
+        Ok(Session::compute_conversation_state(cs, credentials, CredentialType::X509, auth_service).await)
     }
 
     /// See [crate::mls::session::Session::get_credential_in_use].
@@ -79,7 +78,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
-        Session::<Database>::get_credential_in_use_in_ratchet_tree(cs, rt, credential_type, auth_service)
+        Session::get_credential_in_use_in_ratchet_tree(cs, rt, credential_type, auth_service)
             .await
             .map_err(RecursiveError::mls_client("getting credentials in use"))
             .map_err(Into::into)

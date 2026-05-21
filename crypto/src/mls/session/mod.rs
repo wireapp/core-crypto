@@ -11,14 +11,13 @@ pub(crate) mod user_id;
 use std::sync::Arc;
 
 use async_lock::{Mutex, RwLock};
-use core_crypto_keystore::traits::FetchFromDatabase;
 pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
 pub use history_observer::HistoryObserver;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::{
-    ClientId, HistorySecret, LeafError, MlsConversation, MlsError, MlsTransport, RecursiveError,
+    ClientId, HistorySecret, ImmutableDatabase, LeafError, MlsConversation, MlsError, MlsTransport, RecursiveError,
     mls::{
         self, HasSessionAndCrypto,
         conversation::{ConversationIdRef, ImmutableConversation},
@@ -37,23 +36,12 @@ use crate::{
 /// It is cheap to clone a `Session` because everything heavy is wrapped inside an [Arc].
 ///
 /// [RFC 9720]: https://www.rfc-editor.org/rfc/rfc9420.html
-///
-/// ## Why does the session have a generic parameter?
-///
-/// The reason is to ensure at compile time that from inside the session, we don't have the full interface of the
-/// database, just the read-only one, so we don't have to remember that the session should only have API that doesn't
-/// require writing to the DB – it won't compile if we forget and try to do that. All API requiring to write to the DB
-/// should live on the transaction context.
-///
-/// Ideally, we'd like to have the database as an `Arc<dyn FetchFromDatabase>>` field on the session. However, we'd
-/// need to refactor the FetchFromDatabase trait, and thus the Entity trait to be dyn-compatible, which would require us
-/// to rewrite the entire keystore crate.
 #[derive(Clone, derive_more::Debug)]
-pub struct Session<D> {
+pub struct Session {
     id: ClientId,
     pub(crate) crypto_provider: MlsCryptoProvider,
     pub(crate) transport: Arc<dyn MlsTransport + 'static>,
-    database: D,
+    database: ImmutableDatabase,
     #[debug("EpochObserver")]
     pub(crate) epoch_observer: Arc<RwLock<Option<Arc<dyn EpochObserver + 'static>>>>,
     #[debug("HistoryObserver")]
@@ -67,8 +55,8 @@ pub struct Session<D> {
 
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl HasSessionAndCrypto for Session<core_crypto_keystore::Database> {
-    async fn session(&self) -> mls::Result<Session<core_crypto_keystore::Database>> {
+impl HasSessionAndCrypto for Session {
+    async fn session(&self) -> mls::Result<Session> {
         Ok(self.clone())
     }
 
@@ -77,12 +65,12 @@ impl HasSessionAndCrypto for Session<core_crypto_keystore::Database> {
     }
 }
 
-impl<D: FetchFromDatabase> Session<D> {
+impl Session {
     /// Create a new `Session`
     pub fn new(
         id: ClientId,
         crypto_provider: MlsCryptoProvider,
-        database: D,
+        database: ImmutableDatabase,
         transport: Arc<dyn MlsTransport>,
     ) -> Self {
         Self {
@@ -101,10 +89,7 @@ impl<D: FetchFromDatabase> Session<D> {
     /// Because it operates on the raw conversation type, this may be faster than
     /// [crate::transaction_context::TransactionContext::conversation] for transient and immutable
     /// purposes. For long-lived or mutable purposes, prefer the other method.
-    pub async fn get_raw_conversation(&self, id: &ConversationIdRef) -> Result<ImmutableConversation<D>>
-    where
-        D: FetchFromDatabase + Clone,
-    {
+    pub async fn get_raw_conversation(&self, id: &ConversationIdRef) -> Result<ImmutableConversation> {
         let raw_conversation = MlsConversation::load(&self.database, id)
             .await
             .map_err(RecursiveError::mls_conversation("getting raw conversation by id"))?
@@ -113,10 +98,7 @@ impl<D: FetchFromDatabase> Session<D> {
     }
 
     /// Checks if a given conversation id exists locally
-    pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool>
-    where
-        D: Clone + FetchFromDatabase,
-    {
+    pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
         match self.get_raw_conversation(id).await {
             Ok(_) => Ok(true),
             Err(Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
@@ -148,7 +130,7 @@ impl<D: FetchFromDatabase> Session<D> {
     }
 
     /// Get read-only access to the database.
-    pub fn database(&self) -> &impl FetchFromDatabase {
+    pub fn database(&self) -> &ImmutableDatabase {
         &self.database
     }
 
@@ -185,7 +167,7 @@ mod tests {
     use super::*;
     use crate::{KeystoreError, mls_provider::MlsCryptoProvider, transaction_context::test_utils::EntitiesCount};
 
-    impl<D: FetchFromDatabase> Session<D> {
+    impl Session {
         // test functions are not held to the same documentation standard as proper functions
         #![allow(missing_docs)]
 

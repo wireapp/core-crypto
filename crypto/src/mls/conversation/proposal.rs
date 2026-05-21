@@ -5,7 +5,6 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use core_crypto_keystore::Database;
 use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn};
 
 use super::{Error, Result};
@@ -16,7 +15,7 @@ impl MlsConversation {
     /// Used when adding or updating the history client.
     pub(crate) async fn propose_add_member(
         &mut self,
-        session: &Session<Database>,
+        session: &Session,
         key_package: KeyPackageIn,
     ) -> Result<MlsMessageOut> {
         let signer = &self
@@ -36,7 +35,7 @@ impl MlsConversation {
     /// Used when updating the history client.
     pub(crate) async fn propose_remove_member(
         &mut self,
-        session: &Session<Database>,
+        session: &Session,
         member: LeafNodeIndex,
     ) -> Result<MlsMessageOut> {
         let signer = &self

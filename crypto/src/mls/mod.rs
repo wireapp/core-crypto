@@ -9,7 +9,6 @@ mod external_sender;
 pub mod key_package;
 pub(crate) mod session;
 
-use core_crypto_keystore::Database;
 pub use error::{Error, Result};
 pub use external_sender::ExternalSender;
 pub use session::{EpochObserver, HistoryObserver};
@@ -17,7 +16,7 @@ pub use session::{EpochObserver, HistoryObserver};
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub(crate) trait HasSessionAndCrypto: Send {
-    async fn session(&self) -> Result<Session<Database>>;
+    async fn session(&self) -> Result<Session>;
     async fn crypto_provider(&self) -> Result<MlsCryptoProvider>;
 }
 

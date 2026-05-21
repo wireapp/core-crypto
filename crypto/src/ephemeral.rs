@@ -148,7 +148,12 @@ impl CoreCrypto {
         // store the client id (with some other stuff)
         let mls_backend = MlsCryptoProvider::new(database.clone());
         let transport = Arc::new(CoreCryptoTransportNotImplementedProvider::default());
-        let session = Session::new(history_secret.client_id.clone(), mls_backend, database, transport);
+        let session = Session::new(
+            history_secret.client_id.clone(),
+            mls_backend,
+            database.into(),
+            transport,
+        );
 
         session
             .restore_from_history_secret(history_secret)

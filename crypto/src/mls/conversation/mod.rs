@@ -103,7 +103,7 @@ pub(crate) trait ConversationWithMls<'a> {
             .map_err(Into::into)
     }
 
-    async fn session(&self) -> Result<Session<Database>> {
+    async fn session(&self) -> Result<Session> {
         self.context()
             .await?
             .session()
@@ -195,7 +195,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
     async fn e2ei_conversation_state(&'a self) -> Result<E2eiConversationState> {
         let backend = self.crypto_provider().await?;
         let inner = self.conversation().await;
-        let state = Session::<Database>::compute_conversation_state(
+        let state = Session::compute_conversation_state(
             inner.ciphersuite(),
             inner.group.members_credentials(),
             CredentialType::X509,
@@ -429,11 +429,7 @@ impl MlsConversation {
             .last()
     }
 
-    async fn find_credential_for_leaf_node(
-        &self,
-        session: &Session<Database>,
-        leaf_node: &LeafNode,
-    ) -> Result<Arc<Credential>> {
+    async fn find_credential_for_leaf_node(&self, session: &Session, leaf_node: &LeafNode) -> Result<Arc<Credential>> {
         let credential = session
             .find_credential_by_public_key(leaf_node.signature_key())
             .await
@@ -441,7 +437,7 @@ impl MlsConversation {
         Ok(credential)
     }
 
-    pub(crate) async fn find_current_credential(&self, client: &Session<Database>) -> Result<Arc<Credential>> {
+    pub(crate) async fn find_current_credential(&self, client: &Session) -> Result<Arc<Credential>> {
         // if the group has pending proposals one of which is an own update proposal, we should take the credential from
         // there.
         let own_leaf = Self::extract_own_updated_node_from_proposals(

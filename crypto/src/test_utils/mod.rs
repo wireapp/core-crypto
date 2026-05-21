@@ -90,7 +90,7 @@ use crate::{RecursiveError::Test, ephemeral::HistorySecret, test_utils::TestErro
 #[derive(Debug, Clone)]
 pub struct SessionContext {
     pub transaction: TransactionContext,
-    pub session: Arc<RwLock<Session<Database>>>,
+    pub session: Arc<RwLock<Session>>,
     pub identifier: ClientIdentifier,
     pub initial_credential: CredentialRef,
     mls_transport: Arc<RwLock<Arc<dyn MlsTransportTestExt + 'static>>>,
@@ -223,7 +223,7 @@ impl SessionContext {
             .expect("database from transaction context")
     }
 
-    pub async fn session(&self) -> Session<Database> {
+    pub async fn session(&self) -> Session {
         self.session.read().await.clone()
     }
 
@@ -236,7 +236,7 @@ impl SessionContext {
         *guard = new_transport.clone();
         let session = self.session().await;
         let crypto_provider = session.crypto_provider.clone();
-        let database = self.transaction.database().await.unwrap();
+        let database = self.transaction.database().await.unwrap().into();
         let new_session = Session::new(self.get_client_id().await, crypto_provider, database, new_transport);
         self.set_session(new_session).await;
     }
@@ -252,7 +252,7 @@ impl SessionContext {
         self.set_session(session).await;
     }
 
-    async fn set_session(&self, session: Session<Database>) {
+    async fn set_session(&self, session: Session) {
         let mut guard = self.session.write().await;
         *guard = session.clone();
 

@@ -128,7 +128,7 @@ impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
 pub struct CoreCrypto {
     database: ImmutableDatabase,
     pki_environment: RwLock<Option<Arc<PkiEnvironment>>>,
-    mls: RwLock<Option<mls::session::Session<Database>>>,
+    mls: RwLock<Option<mls::session::Session>>,
     #[cfg(feature = "proteus")]
     proteus: Mutex<Option<proteus::ProteusCentral>>,
     #[cfg(not(feature = "proteus"))]
@@ -162,7 +162,7 @@ impl CoreCrypto {
     }
 
     /// Get the mls session if initialized
-    pub async fn mls_session(&self) -> Result<Session<Database>> {
+    pub async fn mls_session(&self) -> Result<Session> {
         if let Some(session) = self.mls.read().await.as_ref() {
             return Ok(session.clone());
         }

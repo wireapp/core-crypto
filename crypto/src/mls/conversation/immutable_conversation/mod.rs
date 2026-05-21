@@ -1,24 +1,22 @@
-use core_crypto_keystore::Database;
-
 use super::{ConversationWithMls, MlsConversation, Result};
 use crate::Session;
 
 /// An ImmutableConversation wraps a `MlsConversation`.
 ///
 /// It only exposes the read-only interface of the conversation.
-pub struct ImmutableConversation<D> {
+pub struct ImmutableConversation {
     inner: MlsConversation,
-    client: Session<D>,
+    client: Session,
 }
 
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl<'inner> ConversationWithMls<'inner> for ImmutableConversation<Database> {
-    type Context = Session<Database>;
+impl<'inner> ConversationWithMls<'inner> for ImmutableConversation {
+    type Context = Session;
 
     type Conversation = &'inner MlsConversation;
 
-    async fn context(&self) -> Result<Session<Database>> {
+    async fn context(&self) -> Result<Session> {
         Ok(self.client.clone())
     }
 
@@ -27,8 +25,8 @@ impl<'inner> ConversationWithMls<'inner> for ImmutableConversation<Database> {
     }
 }
 
-impl<D> ImmutableConversation<D> {
-    pub(crate) fn new(inner: MlsConversation, client: Session<D>) -> Self {
+impl ImmutableConversation {
+    pub(crate) fn new(inner: MlsConversation, client: Session) -> Self {
         Self { inner, client }
     }
 }

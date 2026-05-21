@@ -9,10 +9,7 @@ fn from_stored(stored_keypackage: &StoredKeypackage) -> Result<Keypackage> {
         .map_err(Into::into)
 }
 
-impl<D> Session<D>
-where
-    D: FetchFromDatabase,
-{
+impl Session {
     /// Get all [`Keypackage`]s in the database.
     pub(crate) async fn get_key_packages(&self) -> Result<Vec<Keypackage>> {
         let stored_keypackages: Vec<StoredKeypackage> = self

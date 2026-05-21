@@ -60,7 +60,7 @@ impl CoreCrypto {
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl HasSessionAndCrypto for TransactionContext {
-    async fn session(&self) -> crate::mls::Result<Session<Database>> {
+    async fn session(&self) -> crate::mls::Result<Session> {
         self.session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))
@@ -94,7 +94,7 @@ impl TransactionContext {
         })
     }
 
-    pub(crate) async fn session(&self) -> Result<Session<Database>> {
+    pub(crate) async fn session(&self) -> Result<Session> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { core_crypto, .. } => core_crypto.mls.read().await.as_ref().cloned().ok_or(
                 RecursiveError::mls_client("Getting mls session from transaction context")(
@@ -107,7 +107,7 @@ impl TransactionContext {
     }
 
     #[cfg(test)]
-    pub(crate) async fn set_session_if_exists(&self, new_session: Session<Database>) {
+    pub(crate) async fn set_session_if_exists(&self, new_session: Session) {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { core_crypto, .. } => {
                 let mut guard = core_crypto.mls.write().await;
@@ -290,14 +290,14 @@ impl TransactionContext {
         let database = self.database().await?;
         let pki_env = self.pki_environment().await.ok();
         let crypto_provider = MlsCryptoProvider::new_with_pki_env(database.clone(), pki_env);
-        let session = Session::new(session_id.clone(), crypto_provider, database, transport);
+        let session = Session::new(session_id.clone(), crypto_provider, database.into(), transport);
         self.set_mls_session(session).await?;
 
         Ok(())
     }
 
     /// Set the `mls_session` Arc (also sets it on the transaction's CoreCrypto instance)
-    pub(crate) async fn set_mls_session(&self, session: Session<Database>) -> Result<()> {
+    pub(crate) async fn set_mls_session(&self, session: Session) -> Result<()> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { core_crypto, .. } => {
                 let mut guard = core_crypto.mls.write().await;

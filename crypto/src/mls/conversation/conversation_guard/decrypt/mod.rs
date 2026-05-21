@@ -11,7 +11,6 @@
 mod buffer_commit;
 pub(crate) mod buffer_messages;
 
-use core_crypto_keystore::Database;
 use log::{debug, info};
 use obfuscate::Obfuscated;
 use openmls::{
@@ -472,7 +471,7 @@ impl ConversationGuard {
                     matches!(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
                 })
                 .collect();
-            let state = Session::<Database>::compute_conversation_state(
+            let state = Session::compute_conversation_state(
                 self.ciphersuite().await,
                 credentials.iter(),
                 crate::CredentialType::X509,
