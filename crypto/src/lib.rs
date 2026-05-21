@@ -17,6 +17,7 @@ mod bytes_wrapper;
 mod ephemeral;
 mod error;
 mod identity;
+mod immutable_database;
 
 /// MLS Abstraction
 pub mod mls;
@@ -35,6 +36,7 @@ pub(crate) use bytes_wrapper::bytes_wrapper;
 pub use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
 #[cfg(test)]
 pub use core_crypto_macros::{dispotent, durable, idempotent};
+pub(crate) use immutable_database::ImmutableDatabase;
 pub use openmls::{
     group::{MlsGroup, MlsGroupConfig},
     prelude::{
