@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-1dc8f6ce.js";
+            window.path_to_searchindex_js = "searchindex-1a6c3218.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-5214041f.js"></script>
@@ -790,7 +790,8 @@ e2ei flow</li>
 <ul>
 <li>It can be created at any time and lives in memory.</li>
 <li>There are two variants of credential: basic and x509. Basic credentials are created with <code>Credential.basic</code> static
-method. <strong>TODO DO NOT RELEASE BEFORE REWRITING THIS</strong> X509 credentials are created with <code>TODO TODO</code>.</li>
+method. X509 credentials are obtained through the acquisition flow described in the
+<a href="#x509-credential-acquisition">X509 Credential Acquisition</a> section of the migration guide.</li>
 </ul>
 </li>
 <li>Initializing an MLS client no longer automatically generates any credentials. Any stored credentials will be
@@ -920,6 +921,64 @@ public-key form, or <code>ExternalSender.parse()</code> to try both in turn. Par
 during conversation creation. Call <code>externalSender.serialize()</code> to recover the raw bytes when needed.</p>
 </li>
 </ol>
+<h2 id="x509-credential-acquisition"><a class="header" href="#x509-credential-acquisition">X509 Credential Acquisition</a></h2>
+<p>The enrollment API that previously drove the ACME and OIDC exchanges step-by-step from the client has been <strong>removed</strong>.
+The whole ACME / DPoP / OIDC sequence is now hidden behind a single object, <code>X509CredentialAcquisition</code>, which the
+client constructs once and then calls <code>finalize()</code> on to obtain a <code>Credential</code>. CoreCrypto reaches back into the client
+only via well-defined hook points; the client no longer threads nonces, account responses, order requests, or challenge
+payloads through its own code.</p>
+<p>Where you previously called <code>e2eiNewEnrollment</code>, <code>e2eiNewActivationEnrollment</code>, <code>e2eiNewRotateEnrollment</code>,
+<code>directoryResponse</code>, <code>newAccountRequest</code>/<code>Response</code>, <code>newOrderRequest</code>/<code>Response</code>, <code>newAuthzRequest</code>/<code>Response</code>,
+<code>createDpopToken</code>, <code>newDpopChallengeRequest</code>/<code>Response</code>, <code>newOidcChallengeRequest</code>/<code>Response</code>,
+<code>checkOrderRequest</code>/<code>Response</code>, <code>finalizeRequest</code>/<code>Response</code>, or <code>certificateRequest</code> — delete all of it. The new flow
+replaces every one of those calls.</p>
+<h3 id="acquiring-an-x509-credential"><a class="header" href="#acquiring-an-x509-credential">Acquiring an X509 credential</a></h3>
+<ol>
+<li>
+<p><strong>Implement <code>PkiEnvironmentHooks</code></strong>. CoreCrypto will call these hooks during acquisition:</p>
+<ul>
+<li><code>httpRequest</code> — perform HTTP requests against the ACME server, CRL distributors, and similar.</li>
+<li><code>authenticate</code> — drive the IdP authorization code flow with PKCE and return the resulting ID token.</li>
+<li><code>getBackendNonce</code> — obtain a nonce from the Wire backend.</li>
+<li><code>fetchBackendAccessToken</code> — exchange the DPoP token for a backend access token.</li>
+</ul>
+</li>
+<li>
+<p><strong>Create a <code>PkiEnvironment</code></strong> with <code>PkiEnvironment.new(hooks, database)</code> (TypeScript) or
+<code>createPkiEnvironment(hooks, database)</code> (Swift/Kotlin). The <code>Database</code> can be the same used by the <code>CoreCrypto</code>
+instance or distinct; they use unrelated tables. That said, it is typically more convenient to use a single database.</p>
+</li>
+<li>
+<p><strong>Build an <code>X509CredentialAcquisitionConfiguration</code></strong> describing the certificate you want:</p>
+<ul>
+<li><code>acmeUrl</code>, <code>idpUrl</code></li>
+<li><code>ciphersuite</code> — must be one of the four with a JWS-compatible signature scheme: Ed25519, P256, P384, or P521. Other
+ciphersuites will fail at construction.</li>
+<li><code>displayName</code>, <code>clientId</code>, <code>handle</code>, <code>domain</code>, optional <code>team</code></li>
+<li><code>validityPeriodSecs</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Construct the acquisition</strong>: <code>X509CredentialAcquisition.new(pkiEnvironment, configuration)</code>.</p>
+</li>
+<li>
+<p><strong>Call <code>await acquisition.finalize()</code></strong>. This drives the DPoP and OIDC challenges to completion, calling your hooks
+as needed, and returns the acquired <code>Credential</code>. The acquisition can only be finalized once; a second call throws.</p>
+</li>
+<li>
+<p><strong>Attach the credential</strong> to the client with <code>transactionContext.addCredential(credential)</code>, exactly as for a basic
+credential. This persists it to the internal database and returns a <code>CredentialRef</code>.</p>
+</li>
+</ol>
+<h3 id="pausing-across-the-idp-redirect"><a class="header" href="#pausing-across-the-idp-redirect">Pausing across the IdP redirect</a></h3>
+<p>The IdP authentication flow typically requires an external redirect, after which the app may have been suspended,
+backgrounded, or restarted. To support this, the <code>authenticate</code> hook receives an <code>acquisitionSnapshot: bytes</code> parameter
+capturing the acquisition state at the point the DPoP challenge has completed and OIDC is about to begin. Persist these
+bytes to encrypted storage before launching the IdP flow.</p>
+<p>When the app resumes and is ready to complete acquisition, reconstruct the acquisition from the snapshot with
+<code>X509CredentialAcquisition.fromBytes(pkiEnvironment, snapshot)</code> and call <code>finalize()</code> on the reconstructed instance.
+There is no client-visible serialization method on <code>X509CredentialAcquisition</code> itself; the snapshot bytes are delivered
+to you exclusively through the <code>authenticate</code> hook’s <code>acquisitionSnapshot</code> parameter.</p>
 <h2 id="mlstransport-interface"><a class="header" href="#mlstransport-interface">MlsTransport Interface</a></h2>
 <p>Instead of returning an <code>MlsTransportResponse</code> to communicate the reason why a message was rejected by the DS, throw an
 <code>MlsTransportError</code> instead. <code>MlsTransportResponse</code> was removed.</p>

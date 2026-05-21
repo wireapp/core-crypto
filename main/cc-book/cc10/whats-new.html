@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-1dc8f6ce.js";
+            window.path_to_searchindex_js = "../searchindex-1a6c3218.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-5214041f.js"></script>
@@ -204,7 +204,8 @@ e2ei flow</li>
 <ul>
 <li>It can be created at any time and lives in memory.</li>
 <li>There are two variants of credential: basic and x509. Basic credentials are created with <code>Credential.basic</code> static
-method. <strong>TODO DO NOT RELEASE BEFORE REWRITING THIS</strong> X509 credentials are created with <code>TODO TODO</code>.</li>
+method. X509 credentials are obtained through the acquisition flow described in the
+<a href="migration-guide.html#x509-credential-acquisition">X509 Credential Acquisition</a> section of the migration guide.</li>
 </ul>
 </li>
 <li>Initializing an MLS client no longer automatically generates any credentials. Any stored credentials will be
