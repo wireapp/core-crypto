@@ -81,7 +81,7 @@ class MLSTest {
         // transaction hadn't been rolled back.
         cc.transaction { ctx ->
             val credentialRef = ctx.getCredentials().last()
-                    ctx.createConversation(conversationId, credentialRef)
+            ctx.createConversation(conversationId, credentialRef)
         }
     }
 
@@ -161,7 +161,14 @@ class MLSTest {
                 ctx.getKeyPackages().size
             }
         ).isEqualTo(0)
-        assertThat(alice.transaction { ctx -> ctx.clientKeypackagesShort(200U) }).isNotEmpty().hasSize(200)
+        assertThat(
+            alice.transaction { ctx ->
+
+                val credentialRef = ctx.getCredentials().last()
+
+                List(200U.toInt()) { _ -> ctx.generateKeyPackage(credentialRef) }
+            }
+        ).isNotEmpty().hasSize(200)
         assertThat(
             alice.transaction { ctx ->
                 ctx.getKeyPackages().size

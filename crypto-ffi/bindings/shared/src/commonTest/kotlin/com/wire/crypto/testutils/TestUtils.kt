@@ -182,20 +182,3 @@ fun randomIdentifier(n: Int = 12): String {
         .map { Random.nextInt(0, charPool.size).let { index -> charPool[index] } }
         .joinToString("")
 }
-
-/** Shorthand for generating keypackages with defaults */
-suspend fun CoreCryptoContext.clientKeypackagesShort(amount: UInt): List<KeyPackage> {
-    val credentials = findCredentials(
-        clientId = null,
-        publicKey = null,
-        ciphersuite = CIPHERSUITE_DEFAULT,
-        credentialType = CREDENTIAL_TYPE_DEFAULT,
-        earliestValidity = null
-    )
-    val credential = credentials.last()
-
-    return List(amount.toInt()) { _ ->
-        // cycle through credentials if amount > credentials.size
-        generateKeyPackage(credential)
-    }
-}
