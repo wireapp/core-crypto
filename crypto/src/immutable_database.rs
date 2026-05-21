@@ -17,14 +17,6 @@ use core_crypto_keystore::{
 #[derive(Debug, Clone, derive_more::From)]
 pub struct ImmutableDatabase(Database);
 
-impl ImmutableDatabase {
-    /// Get access to the version of this database which exposes
-    /// mutating operations.
-    pub(crate) fn mutable(&self) -> &Database {
-        &self.0
-    }
-}
-
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]
 impl FetchFromDatabase for ImmutableDatabase {
