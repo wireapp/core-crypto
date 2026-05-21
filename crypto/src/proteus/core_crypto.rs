@@ -10,7 +10,7 @@ impl CoreCrypto {
     pub async fn proteus_session_exists(&self, session_id: &str) -> Result<bool> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        Ok(proteus.session_exists(session_id, &self.database).await)
+        Ok(proteus.session_exists(session_id, self.database.mutable()).await)
     }
 
     /// Returns the proteus last resort prekey id (u16::MAX = 65535)
@@ -37,7 +37,7 @@ impl CoreCrypto {
     pub async fn proteus_fingerprint_local(&self, session_id: &str) -> Result<String> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        proteus.fingerprint_local(session_id, &self.database).await
+        proteus.fingerprint_local(session_id, self.database.mutable()).await
     }
 
     /// Returns the proteus identity's public key fingerprint
@@ -48,7 +48,7 @@ impl CoreCrypto {
     pub async fn proteus_fingerprint_remote(&self, session_id: &str) -> Result<String> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        proteus.fingerprint_remote(session_id, &self.database).await
+        proteus.fingerprint_remote(session_id, self.database.mutable()).await
     }
 }
 

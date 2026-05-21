@@ -126,7 +126,7 @@ impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
 /// `proteus_*` calls
 #[derive(Debug)]
 pub struct CoreCrypto {
-    database: Database,
+    database: ImmutableDatabase,
     pki_environment: RwLock<Option<Arc<PkiEnvironment>>>,
     mls: RwLock<Option<mls::session::Session<Database>>>,
     #[cfg(feature = "proteus")]
@@ -140,7 +140,7 @@ impl CoreCrypto {
     /// Create an new CoreCrypto client without any initialized session.
     pub fn new(database: Database) -> Arc<Self> {
         Self {
-            database,
+            database: database.into(),
             pki_environment: Default::default(),
             mls: Default::default(),
             proteus: Default::default(),
@@ -171,7 +171,7 @@ impl CoreCrypto {
     }
 
     /// Get the database
-    pub fn database(&self) -> Database {
+    pub fn database(&self) -> ImmutableDatabase {
         self.database.clone()
     }
 }

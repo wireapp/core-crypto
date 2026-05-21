@@ -79,6 +79,7 @@ impl TransactionContext {
     async fn new(core_crypto: Arc<CoreCrypto>) -> Result<Self> {
         core_crypto
             .database
+            .mutable()
             .new_transaction()
             .await
             .map_err(MlsError::wrap("creating new transaction"))?;
@@ -159,7 +160,7 @@ impl TransactionContext {
 
     pub(crate) async fn database(&self) -> Result<Database> {
         match &*self.inner.read().await {
-            TransactionContextInner::Valid { core_crypto, .. } => Ok(core_crypto.database.clone()),
+            TransactionContextInner::Valid { core_crypto, .. } => Ok(core_crypto.database.mutable().clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
@@ -229,7 +230,8 @@ impl TransactionContext {
         };
 
         let commit_result = core_crypto
-            .database
+            .database()
+            .mutable()
             .commit_transaction()
             .await
             .map_err(KeystoreError::wrap("commiting transaction"))
@@ -272,7 +274,8 @@ impl TransactionContext {
         }
 
         let result = core_crypto
-            .database
+            .database()
+            .mutable()
             .rollback_transaction()
             .await
             .map_err(KeystoreError::wrap("rolling back transaction"))

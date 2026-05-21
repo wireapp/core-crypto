@@ -14,7 +14,8 @@ use core_crypto_keystore::{
 /// have access to the immutable variant, while
 /// [`TransactionContext`][crate::transaction_context::TransactionContext]
 /// can still access the mutable variant on request.
-pub(crate) struct ImmutableDatabase(Database);
+#[derive(Debug, Clone, derive_more::From)]
+pub struct ImmutableDatabase(Database);
 
 impl ImmutableDatabase {
     /// Get access to the version of this database which exposes

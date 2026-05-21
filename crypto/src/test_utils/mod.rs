@@ -173,7 +173,7 @@ impl SessionContext {
         // Setup the X509 PKI environment
         if let Some(chain) = chain.as_ref() {
             let dummy_hooks = Arc::new(DummyPkiEnvironmentHooks);
-            let pki_env = PkiEnvironment::new(dummy_hooks, core_crypto.database.clone())
+            let pki_env = PkiEnvironment::new(dummy_hooks, core_crypto.database.mutable().clone())
                 .await
                 .expect("Constructing pki environment");
             core_crypto.set_pki_environment(Some(Arc::new(pki_env))).await;
