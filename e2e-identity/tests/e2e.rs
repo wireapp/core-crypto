@@ -195,7 +195,6 @@ async fn prepare_pki_env_and_config(
 
     let config = X509CredentialConfiguration {
         acme_url,
-        idp_url: test_env.idp_server.discovery_base_url.clone(),
         sign_alg,
         hash_alg: HashAlgorithm::SHA256,
         display_name: "Alice Smith".into(),

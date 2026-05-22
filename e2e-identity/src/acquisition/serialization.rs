@@ -106,7 +106,6 @@ mod tests {
         let client_id = ClientId::try_new(Uuid::new_v4().to_string(), 1, "wire.example").unwrap();
         let config = X509CredentialConfiguration {
             acme_url: "acme.example".into(),
-            idp_url: "idp.example".into(),
             sign_alg: JwsAlgorithm::P256,
             hash_alg: HashAlgorithm::SHA256,
             display_name: "Alice".into(),

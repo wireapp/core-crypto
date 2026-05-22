@@ -28,7 +28,6 @@ pub use serialization::ClientIdDef;
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct X509CredentialConfiguration {
     pub acme_url: String,
-    pub idp_url: String,
     pub sign_alg: JwsAlgorithm,
     pub hash_alg: HashAlgorithm,
     pub display_name: String,
