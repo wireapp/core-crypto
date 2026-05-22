@@ -925,7 +925,6 @@ final class WireCoreCryptoTests: XCTestCase {
             pkiEnvironment: pkiEnvironment,
             config: X509CredentialAcquisitionConfiguration(
                 acmeUrl: "acme.example.com",
-                idpUrl: "https://idp.example.com",
                 ciphersuite: ciphersuiteDefault(),
                 displayName: "Alice Smith",
                 clientId: clientId,

@@ -76,7 +76,6 @@ internal class E2EITest {
             pkiEnv,
             X509CredentialAcquisitionConfiguration(
                 acmeUrl = "acme.example.com",
-                idpUrl = "https://idp.example.com",
                 ciphersuite = CIPHERSUITE_DEFAULT,
                 displayName = "Alice Smith",
                 clientId = clientId,

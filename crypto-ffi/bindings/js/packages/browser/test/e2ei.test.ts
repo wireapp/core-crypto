@@ -147,7 +147,6 @@ describe("end to end identity", () => {
             const config =
                 window.ccModule.X509CredentialAcquisitionConfiguration.new({
                     acmeUrl: "acme.example.com",
-                    idpUrl: "https://idp.example.com",
                     ciphersuite: window.defaultCipherSuite,
                     displayName: "Alice Smith",
                     clientId,
