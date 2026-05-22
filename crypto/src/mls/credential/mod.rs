@@ -119,6 +119,12 @@ impl Credential {
         &self.signature_key_pair
     }
 
+    /// The signature key bytes.
+    // TODO temporary. Remove when https://wearezeta.atlassian.net/wiki/x/RABtrQ is resolved.
+    pub fn signature_key_bytes(&self) -> &[u8] {
+        self.signature_key_pair.private()
+    }
+
     /// Get the signature scheme
     pub fn signature_scheme(&self) -> SignatureScheme {
         self.signature_key_pair.signature_scheme()
