@@ -64,7 +64,7 @@ impl X509CredentialAcquisition<states::Initialized> {
             .http_request(HttpMethod::Get, url.to_string(), vec![], vec![])
             .await?;
         let body = resp.json()?;
-        let directory = RustyAcme::acme_directory_response(body).unwrap();
+        let directory = RustyAcme::acme_directory_response(body)?;
 
         let url = directory.new_nonce.to_string();
         let resp = hooks.http_request(HttpMethod::Get, url, vec![], vec![]).await?;
