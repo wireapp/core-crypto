@@ -106,39 +106,38 @@
 <a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>client_id = ClientId::try_new(Uuid::new_v4().to_string(), <span class="number">1</span>, <span class="string">"wire.example"</span>).unwrap();
 <a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">let </span>config = X509CredentialConfiguration {
 <a href=#108 id=108 data-nosnippet>108</a>            acme_url: <span class="string">"acme.example"</span>.into(),
-<a href=#109 id=109 data-nosnippet>109</a>            idp_url: <span class="string">"idp.example"</span>.into(),
-<a href=#110 id=110 data-nosnippet>110</a>            sign_alg: JwsAlgorithm::P256,
-<a href=#111 id=111 data-nosnippet>111</a>            hash_alg: HashAlgorithm::SHA256,
-<a href=#112 id=112 data-nosnippet>112</a>            display_name: <span class="string">"Alice"</span>.into(),
-<a href=#113 id=113 data-nosnippet>113</a>            client_id,
-<a href=#114 id=114 data-nosnippet>114</a>            handle: <span class="string">"alice"</span>.into(),
-<a href=#115 id=115 data-nosnippet>115</a>            domain: <span class="string">"wire.example"</span>.into(),
-<a href=#116 id=116 data-nosnippet>116</a>            team: <span class="prelude-val">Some</span>(<span class="string">"team"</span>.into()),
-<a href=#117 id=117 data-nosnippet>117</a>            validity_period: std::time::Duration::from_secs(<span class="number">3600</span>),
-<a href=#118 id=118 data-nosnippet>118</a>        };
-<a href=#119 id=119 data-nosnippet>119</a>        <span class="kw">let </span>initialized = X509CredentialAcquisition::try_new(pki_env.clone(), config).unwrap();
-<a href=#120 id=120 data-nosnippet>120</a>        <span class="kw">let </span>acquisition = X509CredentialAcquisition::&lt;states::DpopChallengeCompleted&gt; {
-<a href=#121 id=121 data-nosnippet>121</a>            pki_env: initialized.pki_env,
-<a href=#122 id=122 data-nosnippet>122</a>            config: initialized.config,
-<a href=#123 id=123 data-nosnippet>123</a>            sign_kp: initialized.sign_kp,
-<a href=#124 id=124 data-nosnippet>124</a>            acme_kp: initialized.acme_kp,
-<a href=#125 id=125 data-nosnippet>125</a>            acme_jwk: initialized.acme_jwk,
-<a href=#126 id=126 data-nosnippet>126</a>            data: states::DpopChallengeCompleted {
-<a href=#127 id=127 data-nosnippet>127</a>                nonce: <span class="string">"acme-nonce"</span>.into(),
-<a href=#128 id=128 data-nosnippet>128</a>                acme_account: AcmeAccount::default(),
-<a href=#129 id=129 data-nosnippet>129</a>                order: AcmeOrder::default(),
-<a href=#130 id=130 data-nosnippet>130</a>                oidc_challenge: AcmeChallenge::new_user(),
-<a href=#131 id=131 data-nosnippet>131</a>            },
-<a href=#132 id=132 data-nosnippet>132</a>        };
-<a href=#133 id=133 data-nosnippet>133</a>
-<a href=#134 id=134 data-nosnippet>134</a>        <span class="kw">let </span>serialized = serde_json::to_vec(<span class="kw-2">&amp;</span>acquisition).unwrap();
-<a href=#135 id=135 data-nosnippet>135</a>        <span class="kw">let </span>deserialized =
-<a href=#136 id=136 data-nosnippet>136</a>            X509CredentialAcquisition::&lt;states::DpopChallengeCompleted&gt;::deserialize(pki_env, <span class="kw-2">&amp;</span>serialized).unwrap();
-<a href=#137 id=137 data-nosnippet>137</a>
-<a href=#138 id=138 data-nosnippet>138</a>        <span class="macro">assert_eq!</span>(
-<a href=#139 id=139 data-nosnippet>139</a>            serde_json::to_value(<span class="kw-2">&amp;</span>acquisition).unwrap(),
-<a href=#140 id=140 data-nosnippet>140</a>            serde_json::to_value(<span class="kw-2">&amp;</span>deserialized).unwrap()
-<a href=#141 id=141 data-nosnippet>141</a>        );
-<a href=#142 id=142 data-nosnippet>142</a>    }
-<a href=#143 id=143 data-nosnippet>143</a>}
+<a href=#109 id=109 data-nosnippet>109</a>            sign_alg: JwsAlgorithm::P256,
+<a href=#110 id=110 data-nosnippet>110</a>            hash_alg: HashAlgorithm::SHA256,
+<a href=#111 id=111 data-nosnippet>111</a>            display_name: <span class="string">"Alice"</span>.into(),
+<a href=#112 id=112 data-nosnippet>112</a>            client_id,
+<a href=#113 id=113 data-nosnippet>113</a>            handle: <span class="string">"alice"</span>.into(),
+<a href=#114 id=114 data-nosnippet>114</a>            domain: <span class="string">"wire.example"</span>.into(),
+<a href=#115 id=115 data-nosnippet>115</a>            team: <span class="prelude-val">Some</span>(<span class="string">"team"</span>.into()),
+<a href=#116 id=116 data-nosnippet>116</a>            validity_period: std::time::Duration::from_secs(<span class="number">3600</span>),
+<a href=#117 id=117 data-nosnippet>117</a>        };
+<a href=#118 id=118 data-nosnippet>118</a>        <span class="kw">let </span>initialized = X509CredentialAcquisition::try_new(pki_env.clone(), config).unwrap();
+<a href=#119 id=119 data-nosnippet>119</a>        <span class="kw">let </span>acquisition = X509CredentialAcquisition::&lt;states::DpopChallengeCompleted&gt; {
+<a href=#120 id=120 data-nosnippet>120</a>            pki_env: initialized.pki_env,
+<a href=#121 id=121 data-nosnippet>121</a>            config: initialized.config,
+<a href=#122 id=122 data-nosnippet>122</a>            sign_kp: initialized.sign_kp,
+<a href=#123 id=123 data-nosnippet>123</a>            acme_kp: initialized.acme_kp,
+<a href=#124 id=124 data-nosnippet>124</a>            acme_jwk: initialized.acme_jwk,
+<a href=#125 id=125 data-nosnippet>125</a>            data: states::DpopChallengeCompleted {
+<a href=#126 id=126 data-nosnippet>126</a>                nonce: <span class="string">"acme-nonce"</span>.into(),
+<a href=#127 id=127 data-nosnippet>127</a>                acme_account: AcmeAccount::default(),
+<a href=#128 id=128 data-nosnippet>128</a>                order: AcmeOrder::default(),
+<a href=#129 id=129 data-nosnippet>129</a>                oidc_challenge: AcmeChallenge::new_user(),
+<a href=#130 id=130 data-nosnippet>130</a>            },
+<a href=#131 id=131 data-nosnippet>131</a>        };
+<a href=#132 id=132 data-nosnippet>132</a>
+<a href=#133 id=133 data-nosnippet>133</a>        <span class="kw">let </span>serialized = serde_json::to_vec(<span class="kw-2">&amp;</span>acquisition).unwrap();
+<a href=#134 id=134 data-nosnippet>134</a>        <span class="kw">let </span>deserialized =
+<a href=#135 id=135 data-nosnippet>135</a>            X509CredentialAcquisition::&lt;states::DpopChallengeCompleted&gt;::deserialize(pki_env, <span class="kw-2">&amp;</span>serialized).unwrap();
+<a href=#136 id=136 data-nosnippet>136</a>
+<a href=#137 id=137 data-nosnippet>137</a>        <span class="macro">assert_eq!</span>(
+<a href=#138 id=138 data-nosnippet>138</a>            serde_json::to_value(<span class="kw-2">&amp;</span>acquisition).unwrap(),
+<a href=#139 id=139 data-nosnippet>139</a>            serde_json::to_value(<span class="kw-2">&amp;</span>deserialized).unwrap()
+<a href=#140 id=140 data-nosnippet>140</a>        );
+<a href=#141 id=141 data-nosnippet>141</a>    }
+<a href=#142 id=142 data-nosnippet>142</a>}
 </code></pre></div></section></main></body></html>
