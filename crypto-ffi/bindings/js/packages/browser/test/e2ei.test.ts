@@ -167,6 +167,52 @@ describe("end to end identity", () => {
         await expect(acquisitionCreated).toBe(true);
     });
 
+    it("should instantiate an x509 credential acquisition object from credential ref", async () => {
+        const acquisitionCreated = await browser.execute(async () => {
+            const database = await window.helpers.newDatabase();
+            const pkiEnvironment = await window.ccModule.PkiEnvironment.create(
+                window.pkiEnvironmentHooks,
+                database
+            );
+
+            const clientId = window.helpers.newClientId(
+                "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com"
+            );
+            const config =
+                window.ccModule.X509CredentialAcquisitionConfiguration.new({
+                    acmeUrl: "acme.example.com",
+                    ciphersuite: window.defaultCipherSuite,
+                    displayName: "Alice Smith",
+                    clientId,
+                    handle: "alice_wire",
+                    domain: "world.com",
+                    team: undefined,
+                    validityPeriodSecs: BigInt(3600),
+                });
+
+            const cc = await window.helpers.ccInit({
+                withBasicCredential: true,
+                clientId,
+                database,
+            });
+
+            const [credentialRef] = await cc.transaction(
+                async (ctx) => await ctx.findCredentials({ clientId })
+            );
+
+            const acquisition =
+                await window.ccModule.X509CredentialAcquisition.newFromCredentialRef(
+                    pkiEnvironment,
+                    config,
+                    credentialRef!
+                );
+
+            return acquisition !== undefined;
+        });
+
+        await expect(acquisitionCreated).toBe(true);
+    });
+
     it("should not be enabled on conversation with basic credential", async () => {
         const conversationState = await browser.execute(async () => {
             const cc = await window.helpers.ccInit();
