@@ -235,6 +235,10 @@ impl PkiEnvironment {
     pub(crate) fn clone_inner(&self) -> Arc<wire_e2e_identity::pki_env::PkiEnvironment> {
         self.0.clone()
     }
+
+    pub(crate) fn database(&self) -> Database {
+        self.0.database().clone().into()
+    }
 }
 
 #[cfg_attr(feature = "wasm", uniffi::export)]

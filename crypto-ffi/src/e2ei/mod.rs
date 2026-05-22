@@ -1,3 +1,5 @@
+pub(crate) mod x509_credential_acquisition_from_credential_ref;
+
 use std::sync::Arc;
 
 use async_lock::Mutex;
