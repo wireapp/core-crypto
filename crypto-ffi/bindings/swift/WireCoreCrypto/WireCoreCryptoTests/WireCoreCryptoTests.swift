@@ -1030,39 +1030,114 @@ final class WireCoreCryptoTests: XCTestCase {
         }
     }
 
-    private func createCoreCrypto() async throws -> CoreCrypto {
+    private func newDatabase() async throws -> Database {
         let root = FileManager.default.temporaryDirectory.appending(path: "mls")
         let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let database = try await Database.open(location: keystore.path, key: genDatabaseKey())
-        let coreCrypto = try CoreCrypto(
-            database: database
+        return try await Database.open(location: keystore.path, key: genDatabaseKey())
+    }
+
+    enum CcInitOptions {
+        case withoutBasicCredential(clientId: ClientId? = nil)
+
+        case withBasicCredential(
+            cipherSuite: CipherSuite = ciphersuiteDefault(),
+            clientId: ClientId? = nil
         )
+
+        var clientId: ClientId? {
+            switch self {
+            case .withoutBasicCredential(let clientId):
+                return clientId
+
+            case .withBasicCredential(_, let clientId):
+                return clientId
+            }
+        }
+    }
+
+    func ccInit(
+        options: CcInitOptions = .withBasicCredential()
+    ) async throws -> CoreCrypto {
+
+        let database = try await newDatabase()
+        let coreCrypto = try CoreCrypto(database: database)
+
+        let clientId = options.clientId ?? genClientId()
+
+        try await coreCrypto.transaction { ctx in
+            try await ctx.mlsInit(
+                clientId: clientId,
+                transport: self.mockMlsTransport
+            )
+
+            switch options {
+            case .withBasicCredential(let cipherSuite, _):
+                _ = try await ctx.addCredential(
+                    credential:
+                        Credential.basic(
+                            ciphersuite: cipherSuite,
+                            clientId: clientId
+                        )
+                )
+
+            case .withoutBasicCredential:
+                break
+            }
+        }
+
         return coreCrypto
     }
 
-    private func createClients(_ clientIds: String...) async throws -> [CoreCrypto] {
-        let ciphersuite = try ciphersuiteFromU16(discriminant: 2)
-        var clients: [CoreCrypto] = []
-        for clientId in clientIds {
-            let clientId = ClientId(bytes: clientId.data(using: .utf8)!)
-            let coreCrypto = try await createCoreCrypto()
-            try await coreCrypto.transaction({ ctx in
-                try await ctx.mlsInit(
-                    clientId: clientId,
-                    transport: self.mockMlsTransport
-                )
-                _ = try await ctx.addCredential(
-                    credential: Credential.basic(
-                        ciphersuite: ciphersuite,
-                        clientId: clientId
-                    )
-                )
-            }
+    func createConversation(
+        coreCrypto: CoreCrypto
+    ) async throws -> ConversationId {
+
+        let conversationId = genConversationId()
+
+        try await coreCrypto.transaction { ctx in
+            let credentialRef = try await ctx.getCredentials().last!
+
+            try await ctx.createConversation(
+                conversationId: conversationId,
+                credentialRef: credentialRef,
+                externalSender: nil
             )
-            clients.append(coreCrypto)
         }
-        return clients
+
+        return conversationId
+    }
+
+    func generateKeyPackage(
+        coreCrypto: CoreCrypto
+    ) async throws -> KeyPackage {
+
+        try await coreCrypto.transaction { ctx in
+            let credentialRef = try await ctx.getCredentials().last!
+            return try await ctx.generateKeyPackage(credentialRef: credentialRef, lifetime: nil)
+        }
+    }
+
+    func invite(
+        cc1: CoreCrypto,
+        cc2: CoreCrypto,
+        conversationId: ConversationId
+    ) async throws -> ConversationId {
+
+        let keyPackage = try await generateKeyPackage(coreCrypto: cc2)
+
+        try await cc1.transaction { ctx in
+            try await ctx.addClientsToConversation(
+                conversationId: conversationId,
+                keyPackages: [keyPackage]
+            )
+        }
+
+        let welcome = await self.mockMlsTransport.lastCommitBundle?.welcome
+
+        return try await cc2.transaction { ctx in
+            try await ctx.processWelcomeMessage(welcomeMessage: welcome!)
+        }
     }
 
     private func genDatabaseKey() -> DatabaseKey {
@@ -1075,6 +1150,10 @@ final class WireCoreCryptoTests: XCTestCase {
 
     func genClientId() -> ClientId {
         ClientId(bytes: withUnsafeBytes(of: UUID().uuid) { Data($0) })
+    }
+
+    func genConversationId() -> ConversationId {
+        ConversationId(bytes: withUnsafeBytes(of: UUID().uuid) { Data($0) })
     }
 
     private func generateEd25519Jwk() -> Data {
@@ -1148,25 +1227,6 @@ final class WireCoreCryptoTests: XCTestCase {
         } catch {
             errorHandler(error)
         }
-    }
-}
-
-extension CoreCryptoContextProtocol {
-    func createConversationShort(conversationId: ConversationId) async {
-        // swiftlint:disable:next force_try
-        let ciphersuite = try! ciphersuiteFromU16(discriminant: 2)
-        // swiftlint:disable:next force_try
-        let credential = try! await self.findCredentials(
-            clientId: nil,
-            publicKey: nil,
-            ciphersuite: ciphersuite,
-            credentialType: .basic,
-            earliestValidity: nil
-        ).first!
-
-        // swiftlint:disable:next force_try
-        try! await self.createConversation(
-            conversationId: conversationId, credentialRef: credential, externalSender: nil)
     }
 }
 
