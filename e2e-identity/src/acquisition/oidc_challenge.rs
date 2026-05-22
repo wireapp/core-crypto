@@ -23,9 +23,8 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
         let snapshot = serde_json::to_vec(&self)?;
 
         let url = &self.data.oidc_challenge.url;
-        let id_token = hooks
-            .authenticate(self.config.idp_url.clone(), key_auth, url.to_string(), snapshot)
-            .await?;
+        let target = self.data.oidc_challenge.target.to_string();
+        let id_token = hooks.authenticate(target, key_auth, url.to_string(), snapshot).await?;
 
         let oidc_challenge_request = RustyAcme::oidc_chall_request(
             id_token,
