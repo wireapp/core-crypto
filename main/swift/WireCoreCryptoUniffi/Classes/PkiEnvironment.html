@@ -290,7 +290,7 @@
                 <a href="../../WireCoreCryptoUniffi/Protocols/PkiEnvironmentHooks.html">PkiEnvironmentHooks</a>
               </li>
               <li class="nav-group-task">
-                <a href="../../Protocols.html#/s:20WireCoreCryptoUniffi22PkiEnvironmentProtocolP">PkiEnvironmentProtocol</a>
+                <a href="../../WireCoreCryptoUniffi/Protocols/PkiEnvironmentProtocol.html">PkiEnvironmentProtocol</a>
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Protocols/SecretKeyProtocol.html">SecretKeyProtocol</a>
@@ -364,7 +364,7 @@
               <div class="declaration">
                 <div class="language">
                   
-                  <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">PkiEnvironment</span> <span class="p">:</span> <span class="kt"><a href="../../Protocols.html#/s:20WireCoreCryptoUniffi22PkiEnvironmentProtocolP">PkiEnvironmentProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">PkiEnvironment</span> <span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Protocols/PkiEnvironmentProtocol.html">PkiEnvironmentProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
 
                 </div>
               </div>
@@ -374,6 +374,69 @@
           <section class="section task-group-section">
             <div class="task-group">
               <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi14PkiEnvironmentC19addIntermediateCert7certDery10Foundation4DataV_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/addIntermediateCert(certDer:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi14PkiEnvironmentC19addIntermediateCert7certDery10Foundation4DataV_tYaKF">addIntermediateCert(certDer:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Add a DER-encoded certificate as an intermediate certificate.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">addIntermediateCert</span><span class="p">(</span><span class="nv">certDer</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi14PkiEnvironmentC14addTrustAnchor7certDery10Foundation4DataV_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/addTrustAnchor(certDer:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi14PkiEnvironmentC14addTrustAnchor7certDery10Foundation4DataV_tYaKF">addTrustAnchor(certDer:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Add a DER-encoded certificate as a trust anchor.</p>
+
+<p>NOTE: currently we only support storing a single trust anchor, calling this method multiple
+ times will overwrite any previously added trust anchor.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">addTrustAnchor</span><span class="p">(</span><span class="nv">certDer</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
                 <li class="item">
                   <div>
                     <code>

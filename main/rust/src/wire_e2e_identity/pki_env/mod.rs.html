@@ -189,7 +189,7 @@
 <a href=#189 id=189 data-nosnippet>189</a>    ///
 <a href=#190 id=190 data-nosnippet>190</a>    /// Adding a trust anchor will replace any existing trust anchor. This limitation
 <a href=#191 id=191 data-nosnippet>191</a>    /// will be relaxed in the future.
-<a href=#192 id=192 data-nosnippet>192</a>    </span><span class="kw">pub async fn </span>add_trust_anchor(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, cert: Certificate) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#192 id=192 data-nosnippet>192</a>    </span><span class="kw">pub async fn </span>add_trust_anchor(<span class="kw-2">&amp;</span><span class="self">self</span>, cert: Certificate) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#193 id=193 data-nosnippet>193</a>        <span class="comment">// Validate it (expiration &amp; signature only)
 <a href=#194 id=194 data-nosnippet>194</a>        </span><span class="self">self</span>.rjt_pki_env.lock().<span class="kw">await</span>.validate_trust_anchor_cert(<span class="kw-2">&amp;</span>cert)<span class="question-mark">?</span>;
 <a href=#195 id=195 data-nosnippet>195</a>
@@ -204,7 +204,7 @@
 <a href=#204 id=204 data-nosnippet>204</a>
 <a href=#205 id=205 data-nosnippet>205</a>        <span class="kw">let </span><span class="kw-2">mut </span>trust_anchors = TaSource::new();
 <a href=#206 id=206 data-nosnippet>206</a>        trust_anchors.push(certval::CertFile {
-<a href=#207 id=207 data-nosnippet>207</a>            filename: name.to_owned(),
+<a href=#207 id=207 data-nosnippet>207</a>            filename: <span class="string">""</span>.to_string(),
 <a href=#208 id=208 data-nosnippet>208</a>            bytes: cert.to_der()<span class="question-mark">?</span>,
 <a href=#209 id=209 data-nosnippet>209</a>        });
 <a href=#210 id=210 data-nosnippet>210</a>        trust_anchors.initialize().map_err(Error::Certval)<span class="question-mark">?</span>;
@@ -222,7 +222,7 @@
 <a href=#222 id=222 data-nosnippet>222</a>    ///
 <a href=#223 id=223 data-nosnippet>223</a>    /// CRL (Certificate Revocation List) distribution points are extracted from the certificate and
 <a href=#224 id=224 data-nosnippet>224</a>    /// an attempt is made to fetch a CRL from each one.
-<a href=#225 id=225 data-nosnippet>225</a>    </span><span class="kw">pub async fn </span>add_intermediate_cert(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, cert: Certificate) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#225 id=225 data-nosnippet>225</a>    </span><span class="kw">pub async fn </span>add_intermediate_cert(<span class="kw-2">&amp;</span><span class="self">self</span>, cert: Certificate) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#226 id=226 data-nosnippet>226</a>        <span class="comment">// Save cert's DER representation to the database
 <a href=#227 id=227 data-nosnippet>227</a>        </span><span class="kw">let </span>(ski, aki) = RjtPkiEnvironment::extract_ski_aki_from_cert(<span class="kw-2">&amp;</span>cert)<span class="question-mark">?</span>;
 <a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">let </span>ski_aki_pair = <span class="macro">format!</span>(<span class="string">"{ski}:{}"</span>, aki.unwrap_or_default());
@@ -251,7 +251,7 @@
 <a href=#251 id=251 data-nosnippet>251</a>        <span class="kw">let </span>cps = CertificationPathSettings::new();
 <a href=#252 id=252 data-nosnippet>252</a>        <span class="kw">let </span><span class="kw-2">mut </span>cert_source = CertSource::new();
 <a href=#253 id=253 data-nosnippet>253</a>        cert_source.push(certval::CertFile {
-<a href=#254 id=254 data-nosnippet>254</a>            filename: name.to_owned(),
+<a href=#254 id=254 data-nosnippet>254</a>            filename: <span class="string">""</span>.to_string(),
 <a href=#255 id=255 data-nosnippet>255</a>            bytes: cert.to_der()<span class="question-mark">?</span>,
 <a href=#256 id=256 data-nosnippet>256</a>        });
 <a href=#257 id=257 data-nosnippet>257</a>
