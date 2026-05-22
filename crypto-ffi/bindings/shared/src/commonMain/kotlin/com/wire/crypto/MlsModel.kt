@@ -43,3 +43,18 @@ suspend fun PkiEnvironment.Companion.new(
     hooks: PkiEnvironmentHooks,
     database: Database
 ) = createPkiEnvironment(hooks, database)
+
+/**
+ * Create a new credential acquisition from an existing credential.
+ * This API is temporary until our system decouples client identities from a client's public signature key.
+ * See [https://wearezeta.atlassian.net/wiki/x/RABtrQ](https://wearezeta.atlassian.net/wiki/x/RABtrQ).
+ *
+ * Provide [coreCryptoDatabase] if you're using distinct DB instances for [PkiEnvironment] and [CoreCrypto].
+ * Otherwise, the [PkiEnvironment]'s DB will be used to load the full credential.
+ */
+suspend fun X509CredentialAcquisition.Companion.newFromCredentialRef(
+    pkiEnvironment: PkiEnvironment,
+    config: X509CredentialAcquisitionConfiguration,
+    credentialRef: CredentialRef,
+    coreCryptoDatabase: Database? = null,
+) = x509CredentialAcquisitionNewFromCredentialRef(pkiEnvironment, config, credentialRef, coreCryptoDatabase)
