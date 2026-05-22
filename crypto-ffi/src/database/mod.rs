@@ -12,11 +12,11 @@ use crate::{CoreCryptoError, CoreCryptoResult};
 #[derive(Debug, derive_more::From, derive_more::Into, Clone, derive_more::Deref, uniffi::Object)]
 pub struct Database(core_crypto_keystore::Database);
 
-#[cfg(any(feature = "wasm", feature = "napi"))]
+// Note: no uniffi::export when not using ubrn, because static functions are not supported yet by uniffi version 0.29.
 #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]
 impl Database {
     /// Open or create a database.
-    #[uniffi::constructor(name = "open")]
+    #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::constructor)]
     pub async fn open(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
         core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::Persistent(location), key.as_ref())
             .await
@@ -25,7 +25,7 @@ impl Database {
     }
 
     /// Create an in-memory database whose data will be lost when the instance is dropped.
-    #[uniffi::constructor(name = "inMemory")]
+    #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::constructor)]
     pub async fn in_memory(key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
         core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::InMemory, key.as_ref())
             .await
@@ -34,24 +34,19 @@ impl Database {
     }
 }
 
-// Note: no uniffi::export, because static functions are not supported yet by uniffi version 0.29.
-#[cfg(not(any(feature = "wasm", feature = "napi")))]
-impl Database {
-    /// Open or create a database.
-    pub async fn open(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
-        core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::Persistent(location), key.as_ref())
-            .await
-            .map(Database)
-            .map_err(CoreCryptoError::generic())
-    }
+// Note: free functions when not using ubrn.
+/// Open or create a database.
+#[cfg(not(any(feature = "wasm", feature = "napi", target_os = "unknown")))]
+#[uniffi::export]
+pub async fn open_database(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Database> {
+    Database::open(location, key).await
+}
 
-    /// Create an in-memory database whose data will be lost when the instance is dropped.
-    pub async fn in_memory(key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
-        core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::InMemory, key.as_ref())
-            .await
-            .map(Database)
-            .map_err(CoreCryptoError::generic())
-    }
+/// Create an in-memory database whose data will be lost when the instance is dropped.
+#[cfg(not(any(feature = "wasm", feature = "napi", target_os = "unknown")))]
+#[uniffi::export]
+pub async fn in_memory_database(key: Arc<DatabaseKey>) -> CoreCryptoResult<Database> {
+    Database::in_memory(key).await
 }
 
 #[uniffi::export]
@@ -82,20 +77,6 @@ impl Database {
     }
 }
 
-/// Open or create a database.
-#[cfg(not(any(feature = "wasm", target_os = "unknown")))]
-#[uniffi::export]
-pub async fn open_database(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Database> {
-    Database::open(location, key).await
-}
-
-/// Create an in-memory database whose data will be lost when the instance is dropped.
-#[cfg(not(any(feature = "wasm", target_os = "unknown")))]
-#[uniffi::export]
-pub async fn in_memory_database(key: Arc<DatabaseKey>) -> CoreCryptoResult<Database> {
-    Database::in_memory(key).await
-}
-
 /// Export a fully vacuumed and optimized copy of the database to the specified path.
 ///
 /// The copy is created using SQLite's VACUUM INTO command and is encrypted with the same key
@@ -105,7 +86,7 @@ pub async fn in_memory_database(key: Arc<DatabaseKey>) -> CoreCryptoResult<Datab
 // These feature flags are ugly, but here's how they work:
 //
 // - If the `wasm` feature is enabled or we're building for wasm, exlude this; we don't want it.
-#[cfg(not(any(feature = "wasm", target_os = "unknown")))]
+#[cfg(not(any(feature = "wasm", feature = "napi", target_os = "unknown")))]
 #[uniffi::export]
 pub async fn export_database_copy(database: &Database, destination_path: &str) -> CoreCryptoResult<()> {
     // we need a noop here for the case where we're compiling for wasm but without feature wasm

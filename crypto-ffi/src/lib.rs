@@ -54,7 +54,7 @@ pub use credential::Credential;
 pub use credential_ref::CredentialRef;
 pub use credential_type::CredentialType;
 pub use database::{Database, DatabaseKey, migrate_database_key_type_to_bytes};
-#[cfg(not(any(feature = "wasm", target_os = "unknown")))]
+#[cfg(not(any(feature = "wasm", feature = "napi", target_os = "unknown")))]
 pub use database::{export_database_copy, in_memory_database, open_database};
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 pub use e2ei::{E2eiConversationState, X509CredentialAcquisition, X509CredentialAcquisitionConfiguration};
