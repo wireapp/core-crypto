@@ -7,6 +7,7 @@ pub(crate) mod logger;
 pub(crate) mod mls_transport;
 mod proteus;
 
+mod credential;
 #[cfg(feature = "wasm")]
 mod randomness;
 

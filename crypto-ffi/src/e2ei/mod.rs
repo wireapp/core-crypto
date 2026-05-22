@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use async_lock::Mutex;
 use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair};
-use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, acquisition::states};
+use wire_e2e_identity::{E2eIdentityError, HashAlgorithm, JwsAlgorithm, acquisition::states};
 use x509_cert::der::Encode as _;
 
 use crate::{CipherSuite as FfiCiphersuite, ClientId, CoreCryptoError, CoreCryptoResult, Credential, PkiEnvironment};
@@ -88,7 +88,7 @@ impl X509CredentialAcquisitionConfiguration {
     fn try_into_core(self) -> CoreCryptoResult<wire_e2e_identity::acquisition::X509CredentialConfiguration> {
         let client_id = std::str::from_utf8(self.client_id.as_ref().0.as_ref()).map_err(CoreCryptoError::generic())?;
         let client_id =
-            wire_e2e_identity::E2eiClientId::try_from_qualified(client_id).map_err(CoreCryptoError::generic())?;
+            wire_e2e_identity::E2eiClientId::try_from_qualified(client_id).map_err(E2eIdentityError::from)?;
         let sign_alg: JwsAlgorithm = self.ciphersuite.try_into()?;
 
         Ok(wire_e2e_identity::acquisition::X509CredentialConfiguration {
