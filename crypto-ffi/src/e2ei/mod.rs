@@ -66,8 +66,6 @@ impl From<JwsAlgorithm> for FfiCiphersuite {
 pub struct X509CredentialAcquisitionConfiguration {
     /// ACME server hostname.
     pub acme_url: String,
-    /// OIDC identity provider URL.
-    pub idp_url: String,
     /// Ciphersuite of the acquired credential.
     pub ciphersuite: FfiCiphersuite,
     /// User-visible display name.
@@ -93,7 +91,6 @@ impl X509CredentialAcquisitionConfiguration {
 
         Ok(wire_e2e_identity::acquisition::X509CredentialConfiguration {
             acme_url: self.acme_url,
-            idp_url: self.idp_url,
             sign_alg,
             hash_alg: HashAlgorithm::SHA256,
             display_name: self.display_name,
