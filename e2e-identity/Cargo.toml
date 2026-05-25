@@ -68,7 +68,7 @@ itertools.workspace = true
 uuid.workspace = true
 wasm-bindgen-test.workspace = true
 hex.workspace = true
-shlex = "1"
+shlex = "2"
 
 openidconnect.workspace = true
 scraper.workspace = true
