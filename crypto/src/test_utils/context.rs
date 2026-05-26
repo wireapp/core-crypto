@@ -121,8 +121,7 @@ impl SessionContext {
             .ciphersuite(ciphersuite)
             .build();
         let credentials = self
-            .session()
-            .await
+            .core_crypto
             .find_credentials(find_filters)
             .await
             .expect("find credentials for ciphersuite and credential type");
@@ -130,6 +129,10 @@ impl SessionContext {
 
         let database = self.transaction.database().await.unwrap();
         credential_ref.load(&database).await.unwrap()
+    }
+
+    pub async fn find_credentials(&self, find_filters: CredentialFindFilters<'_>) -> Option<Vec<CredentialRef>> {
+        self.core_crypto.find_credentials(find_filters).await.ok()
     }
 
     pub async fn find_credential(&self, pk: &SignaturePublicKey) -> Option<Arc<Credential>> {

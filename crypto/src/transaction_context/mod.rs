@@ -10,8 +10,7 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::pki_env::PkiEnvironment;
 
 use crate::{
-    ClientId, ConversationId, CoreCrypto, CredentialFindFilters, CredentialRef, KeystoreError, MlsError, MlsTransport,
-    RecursiveError, Session,
+    ClientId, ConversationId, CoreCrypto, KeystoreError, MlsError, MlsTransport, RecursiveError, Session,
     mls::{self, HasSessionAndCrypto, conversation_cache::MlsConversationCache},
     mls_provider::{Database, MlsCryptoProvider},
 };
@@ -342,29 +341,5 @@ impl TransactionContext {
             Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
             Err(err) => Err(KeystoreError::wrap("finding unique consumer data")(err).into()),
         }
-    }
-
-    /// Find credentials matching the find filters among the identities of this session
-    ///
-    /// Note that finding credentials with no filters set is equivalent to [`Self::get_credentials`].
-    pub async fn find_credentials(&self, find_filters: CredentialFindFilters<'_>) -> Result<Vec<CredentialRef>> {
-        self.session()
-            .await?
-            .find_credentials(find_filters)
-            .await
-            .map_err(RecursiveError::mls_client("finding credentials by filter"))
-            .map_err(Into::into)
-    }
-
-    /// Get all credentials from the identities of this session.
-    ///
-    /// To get specific credentials, it can be more efficient to use [`Self::find_credentials`].
-    pub async fn get_credentials(&self) -> Result<Vec<CredentialRef>> {
-        self.session()
-            .await?
-            .get_credentials()
-            .await
-            .map_err(RecursiveError::mls_client("getting all credentials"))
-            .map_err(Into::into)
     }
 }

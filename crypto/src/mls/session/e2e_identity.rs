@@ -1,3 +1,4 @@
+use futures_util::TryFutureExt;
 use openmls::{
     prelude::{Credential, Node, group_info::VerifiableGroupInfo},
     treesync::RatchetTree,
@@ -7,7 +8,7 @@ use wire_e2e_identity::WireIdentityReader as _;
 
 use super::{Result, Session};
 use crate::{
-    CipherSuite, CredentialFindFilters, CredentialType, E2eiConversationState, MlsError,
+    CipherSuite, CredentialFindFilters, CredentialRef, CredentialType, E2eiConversationState, MlsError, RecursiveError,
     mls::{credential::ext::CredentialExt as _, session::Error},
     mls_provider::AuthenticationService,
 };
@@ -25,9 +26,12 @@ impl Session {
     /// If there are no x509 but basic credentials -> Ok(false)
     /// If there are no credentials for the given ciphersuite -> Err(CredentialNotFound)
     pub async fn e2ei_is_enabled(&self, ciphersuite: CipherSuite) -> Result<bool> {
-        let credentials = self
-            .find_credentials(CredentialFindFilters::builder().ciphersuite(ciphersuite).build())
-            .await?;
+        let credentials = CredentialRef::find(
+            &self.database,
+            CredentialFindFilters::builder().ciphersuite(ciphersuite).build(),
+        )
+        .map_err(RecursiveError::mls_credential_ref("finding credentials with filters"))
+        .await?;
 
         let x509_credential_exists = credentials
             .iter()

@@ -16,15 +16,27 @@
 
 import * as CoreCryptoFfiTypes from "#core-crypto-ffi";
 import {
+    CipherSuite,
+    ClientId,
     CoreCryptoError,
     CoreCryptoFfi,
+    CredentialRef,
     coreCryptoHistoryClient,
     coreCryptoNew,
     Database,
     HistorySecret,
+    CredentialType,
 } from "#core-crypto-ffi";
 
 import { CoreCryptoContext } from "./CoreCryptoContext";
+
+export interface CredentialFindFilters {
+    clientId?: ClientId;
+    publicKey?: Uint8Array;
+    ciphersuite?: CipherSuite;
+    credentialType?: CredentialType;
+    earliestValidity?: bigint;
+}
 
 /**
  * Wrapper for the WASM-compiled version of CoreCrypto
@@ -117,5 +129,43 @@ export class CoreCrypto extends CoreCryptoFfi {
         asyncOpts_?: { signal: AbortSignal }
     ): Promise<void> {
         return super.transactionFfi(command, asyncOpts_);
+    }
+
+    /**
+     * Get those credentials known to this instance which match the provided filters
+     *
+     * @param findFilters a set of filters defining which credentials are of interest.
+     */
+    async findCredentials(
+        findFilters: CredentialFindFilters
+    ): Promise<CredentialRef[]> {
+        return await super.findCredentialsFfi(
+            findFilters.clientId,
+            findFilters.publicKey,
+            findFilters.ciphersuite,
+            findFilters.credentialType,
+            findFilters.earliestValidity
+        );
+    }
+
+    /** @internal
+     *  We're overriding this just to hide it from the docs
+     */
+    async findCredentialsFfi(
+        clientId?: ClientId,
+        publicKey?: Uint8Array,
+        ciphersuite?: CipherSuite,
+        credentialType?: CredentialType,
+        earliestValidity?: bigint,
+        asyncOpts_?: { signal: AbortSignal }
+    ): Promise<Array<CredentialRef>> {
+        return await super.findCredentialsFfi(
+            clientId,
+            publicKey,
+            ciphersuite,
+            credentialType,
+            earliestValidity,
+            asyncOpts_
+        );
     }
 }
