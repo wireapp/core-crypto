@@ -38,7 +38,7 @@ express prior written consent of Wire Swiss GmbH.
     - [Bindings](#bindings)
   - [Testing](#testing)
     - [Rust Unit/Integration Tests](#rust-unitintegration-tests)
-      - [All Ciphersuites](#all-ciphersuites)
+      - [All Cipher Suites](#all-cipher-suites)
       - [Keystore Wasm tests](#keystore-wasm-tests)
     - [Platform-specific tests for WASM/Web](#platform-specific-tests-for-wasmweb)
     - [Platform-specific tests for Kotlin/JVM](#platform-specific-tests-for-kotlinjvm)
@@ -236,7 +236,7 @@ make ts
 cargo nextest run
 ```
 
-#### All Ciphersuites<a name="all-ciphersuites"></a>
+#### All Cipher Suites<a name="all-cipher-suites"></a>
 
 > [!WARNING]
 > This takes quite a while.

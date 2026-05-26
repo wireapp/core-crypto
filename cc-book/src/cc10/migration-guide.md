@@ -89,8 +89,8 @@ replaces every one of those calls.
 1. **Build an `X509CredentialAcquisitionConfiguration`** describing the certificate you want:
 
    - `acmeUrl` - the URL of the ACME server
-   - `ciphersuite` — must be one of the four with a JWS-compatible signature scheme: Ed25519, P256, P384, or P521. Other
-     ciphersuites will fail at construction.
+   - `cipher_suite` — must be one of the four with a JWS-compatible signature scheme: Ed25519, P256, P384, or P521.
+     Other cipher suites will fail at construction.
    - `displayName`, `clientId`, `handle`, `domain`, optional `team`
    - `validityPeriodSecs`
 

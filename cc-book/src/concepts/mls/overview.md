@@ -125,10 +125,10 @@ handle used to refer to the credential in subsequent operations.
 device's key package from the delivery service when adding it to a group. Generate them with
 `generateKeypackage(credentialRef)` inside a transaction.
 
-## Ciphersuites
+## Cipher Suites
 
-An MLS ciphersuite is a composite designation which specifies the KEM, AEAD, hash, and signature algorithms. CoreCrypto
-formally supports any of the ciphersuites specified in the RFC, but is primarily tested on ciphersuite 1
+An MLS cipher suite is a composite designation which specifies the KEM, AEAD, hash, and signature algorithms. CoreCrypto
+formally supports any of the cipher suites specified in the RFC, but is primarily tested on cipher suite 1
 (MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519).
 
-The ciphersuite is fixed per conversation at the conversation's creation.
+The cipher suite is fixed per conversation at the conversation's creation.
