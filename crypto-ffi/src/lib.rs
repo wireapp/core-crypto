@@ -13,7 +13,7 @@ uniffi::setup_scaffolding!("core_crypto_ffi");
 
 mod bundles;
 mod bytes_wrapper;
-mod ciphersuite;
+mod cipher_suite;
 mod client_id;
 mod core_crypto;
 mod core_crypto_context;
@@ -35,7 +35,7 @@ mod signature_scheme;
 mod timestamp;
 
 pub use bundles::{commit::CommitBundle, group_info::GroupInfoBundle, proteus_auto_prekey::ProteusAutoPrekeyBundle};
-pub use ciphersuite::{CipherSuite, cipher_suite_default, cipher_suite_from_u16};
+pub use cipher_suite::{CipherSuite, cipher_suite_default, cipher_suite_from_u16};
 pub use client_id::ClientId;
 #[cfg(not(target_os = "unknown"))]
 pub use core_crypto::command::transaction_helper::TransactionHelper;
