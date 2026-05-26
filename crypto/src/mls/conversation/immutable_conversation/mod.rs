@@ -1,12 +1,17 @@
-use super::{ConversationWithMls, MlsConversation, Result};
-use crate::Session;
+mod persistence;
 
-/// An ImmutableConversation wraps a `MlsConversation`.
-///
-/// It only exposes the read-only interface of the conversation.
+use openmls::group::MlsGroup;
+
+use super::{ConversationWithMls, MlsConversation, Result};
+use crate::{ConversationId, MlsConversationConfiguration, Session};
+
+/// An ImmutableConversation exposes the read-only interface of an MLS conversation.
+#[derive(Debug)]
 pub struct ImmutableConversation {
-    inner: MlsConversation,
-    client: Session,
+    pub(crate) id: ConversationId,
+    pub(crate) group: MlsGroup,
+    configuration: MlsConversationConfiguration,
+    session: Session,
 }
 
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
@@ -17,16 +22,10 @@ impl<'inner> ConversationWithMls<'inner> for ImmutableConversation {
     type Conversation = &'inner MlsConversation;
 
     async fn context(&self) -> Result<Session> {
-        Ok(self.client.clone())
+        Ok(self.session.clone())
     }
 
     async fn conversation(&'inner self) -> &'inner MlsConversation {
-        &self.inner
-    }
-}
-
-impl ImmutableConversation {
-    pub(crate) fn new(inner: MlsConversation, client: Session) -> Self {
-        Self { inner, client }
+        unimplemented!("we will remove this trait shortly")
     }
 }
