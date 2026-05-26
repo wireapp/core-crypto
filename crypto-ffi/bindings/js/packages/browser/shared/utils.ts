@@ -136,7 +136,8 @@ export async function sharedSetup() {
             ): Promise<CoreCrypto> {
                 const clientId =
                     options.clientId ?? window.helpers.newClientId();
-                const db = await window.helpers.newDatabase();
+                const db =
+                    options.database ?? (await window.helpers.newDatabase());
                 const cc = window.ccModule.CoreCrypto.new(db);
 
                 // this also sets the default if undefined
@@ -503,11 +504,13 @@ type CcInitOptions =
     | {
           withBasicCredential: false;
           clientId?: ClientId;
+          database?: Database;
       }
     | {
           withBasicCredential?: true;
           cipherSuite?: CipherSuite;
           clientId?: ClientId;
+          database?: Database;
       };
 
 export interface Helpers {
