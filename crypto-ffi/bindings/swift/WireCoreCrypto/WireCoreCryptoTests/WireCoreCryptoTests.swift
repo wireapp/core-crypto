@@ -97,9 +97,9 @@ final class WireCoreCryptoTests: XCTestCase {
         var coreCrypto = try CoreCrypto(database: database)
 
         let clientId = ClientId(bytes: UUID().uuidString.data(using: .utf8)!)
-        let ciphersuite = CipherSuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
+        let cipherSuite = CipherSuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
 
-        let credential = try Credential.basic(ciphersuite: ciphersuite, clientId: clientId)
+        let credential = try Credential.basic(cipherSuite: cipherSuite, clientId: clientId)
 
         let pubkey1 = try await coreCrypto.transaction { ctx in
             try await ctx.mlsInit(
@@ -370,7 +370,7 @@ final class WireCoreCryptoTests: XCTestCase {
 
     func testCanConstructBasicCredential() async throws {
         let credential = try Credential.basic(
-            ciphersuite: ciphersuiteDefault(), clientId: genClientId()
+            cipherSuite: cipherSuiteDefault(), clientId: genClientId()
         )
         XCTAssertEqual(credential.type(), CredentialType.basic)
         XCTAssertEqual(credential.earliestValidity(), 0)
@@ -401,23 +401,23 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertEqual(allCredentials.count, 0)
     }
 
-    func testCanSearchCredentialsByCiphersuite() async throws {
+    func testCanSearchCredentialsByCipherSuite() async throws {
         let clientId = genClientId()
 
-        let ciphersuite1 = CipherSuite.mls128Dhkemp256Aes128gcmSha256P256
+        let cipherSuite1 = CipherSuite.mls128Dhkemp256Aes128gcmSha256P256
         let alice = try await ccInit(
             options: CcInitOptions.withBasicCredential(
-                cipherSuite: ciphersuite1, clientId: clientId))
+                cipherSuite: cipherSuite1, clientId: clientId))
 
-        let ciphersuite2 = CipherSuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
-        let credential2 = try Credential.basic(ciphersuite: ciphersuite2, clientId: clientId)
+        let cipherSuite2 = CipherSuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
+        let credential2 = try Credential.basic(cipherSuite: cipherSuite2, clientId: clientId)
 
         try await alice.transaction { ctx in
             _ = try await ctx.addCredential(credential: credential2)
         }
 
-        let results1 = try await alice.findCredentials(ciphersuite: ciphersuite1)
-        let results2 = try await alice.findCredentials(ciphersuite: ciphersuite2)
+        let results1 = try await alice.findCredentials(cipherSuite: cipherSuite1)
+        let results2 = try await alice.findCredentials(cipherSuite: cipherSuite2)
 
         XCTAssertEqual(results1.count, 1)
         XCTAssertEqual(results2.count, 1)
@@ -618,11 +618,11 @@ final class WireCoreCryptoTests: XCTestCase {
     func testCanRemoveKeypackagesByCredentialRef() async throws {
         let clientId = genClientId()
         let credential1 = try Credential.basic(
-            ciphersuite: .mls128Dhkemx25519Aes128gcmSha256Ed25519,
+            cipherSuite: .mls128Dhkemx25519Aes128gcmSha256Ed25519,
             clientId: clientId
         )
         let credential2 = try Credential.basic(
-            ciphersuite: .mls128Dhkemp256Aes128gcmSha256P256,
+            cipherSuite: .mls128Dhkemp256Aes128gcmSha256P256,
             clientId: clientId
         )
 
@@ -702,7 +702,7 @@ final class WireCoreCryptoTests: XCTestCase {
             pkiEnvironment: pkiEnvironment,
             config: X509CredentialAcquisitionConfiguration(
                 acmeDirectoryUrl: "acme.example.com/directory",
-                ciphersuite: ciphersuiteDefault(),
+                cipherSuite: cipherSuiteDefault(),
                 displayName: "Alice Smith",
                 clientId: clientId,
                 handle: "alice_wire",
@@ -723,7 +723,7 @@ final class WireCoreCryptoTests: XCTestCase {
             bytes: Data("LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com".utf8))
         let config = X509CredentialAcquisitionConfiguration(
             acmeDirectoryUrl: "acme.example.com/directory",
-            ciphersuite: ciphersuiteDefault(),
+            cipherSuite: cipherSuiteDefault(),
             displayName: "Alice Smith",
             clientId: clientId,
             handle: "alice_wire",
@@ -846,7 +846,7 @@ final class WireCoreCryptoTests: XCTestCase {
         case withoutBasicCredential(clientId: ClientId? = nil, database: Database? = nil)
 
         case withBasicCredential(
-            cipherSuite: CipherSuite = ciphersuiteDefault(),
+            cipherSuite: CipherSuite = cipherSuiteDefault(),
             clientId: ClientId? = nil,
             database: Database? = nil
         )
@@ -897,7 +897,7 @@ final class WireCoreCryptoTests: XCTestCase {
                 _ = try await ctx.addCredential(
                     credential:
                         Credential.basic(
-                            ciphersuite: cipherSuite,
+                            cipherSuite: cipherSuite,
                             clientId: clientId
                         )
                 )
