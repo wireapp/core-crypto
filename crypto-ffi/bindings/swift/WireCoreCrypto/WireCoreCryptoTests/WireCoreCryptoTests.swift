@@ -839,20 +839,31 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     enum CcInitOptions {
-        case withoutBasicCredential(clientId: ClientId? = nil)
+        case withoutBasicCredential(clientId: ClientId? = nil, database: Database? = nil)
 
         case withBasicCredential(
             cipherSuite: CipherSuite = ciphersuiteDefault(),
-            clientId: ClientId? = nil
+            clientId: ClientId? = nil,
+            database: Database? = nil
         )
 
         var clientId: ClientId? {
             switch self {
-            case .withoutBasicCredential(let clientId):
+            case .withoutBasicCredential(let clientId, _):
                 return clientId
 
-            case .withBasicCredential(_, let clientId):
+            case .withBasicCredential(_, let clientId, _):
                 return clientId
+            }
+        }
+
+        var database: Database? {
+            switch self {
+            case .withoutBasicCredential(_, let database):
+                return database
+
+            case .withBasicCredential(_, _, let database):
+                return database
             }
         }
     }
@@ -861,7 +872,12 @@ final class WireCoreCryptoTests: XCTestCase {
         options: CcInitOptions = .withBasicCredential()
     ) async throws -> CoreCrypto {
 
-        let database = try await newDatabase()
+        let database: Database
+        if let existingDb = options.database {
+            database = existingDb
+        } else {
+            database = try await newDatabase()
+        }
         let coreCrypto = try CoreCrypto(database: database)
 
         let clientId = options.clientId ?? genClientId()
@@ -873,7 +889,7 @@ final class WireCoreCryptoTests: XCTestCase {
             )
 
             switch options {
-            case .withBasicCredential(let cipherSuite, _):
+            case .withBasicCredential(let cipherSuite, _, _):
                 _ = try await ctx.addCredential(
                     credential:
                         Credential.basic(
