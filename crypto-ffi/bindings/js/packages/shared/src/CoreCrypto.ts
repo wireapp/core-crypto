@@ -21,6 +21,8 @@ export {
 
 export { CoreCrypto } from "./CoreCryptoInstance";
 
+export { X509CredentialAcquisition } from "./X509CredentialAcquisition";
+
 export {
     BuildMetadata,
     Credential,
@@ -82,7 +84,6 @@ export {
     HttpHeader,
     HttpResponse,
     HttpMethod,
-    X509CredentialAcquisition,
     X509CredentialAcquisitionConfiguration,
     type Timestamp,
     type MlsTransport,
