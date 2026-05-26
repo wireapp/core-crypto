@@ -104,21 +104,24 @@ class MockPkiEnvironmentHooks : PkiEnvironmentHooks {
 
 sealed interface CcInitOptions {
     val clientId: ClientId?
+    val database: Database?
 
     data class WithoutBasicCredential(
-        override val clientId: ClientId? = null
+        override val clientId: ClientId? = null,
+        override val database: Database? = null,
     ) : CcInitOptions
 
     data class WithBasicCredential(
         val cipherSuite: CipherSuite = CIPHERSUITE_DEFAULT,
-        override val clientId: ClientId? = null
+        override val clientId: ClientId? = null,
+        override val database: Database? = null,
     ) : CcInitOptions
 }
 
 suspend fun ccInit(
     options: CcInitOptions = CcInitOptions.WithBasicCredential()
 ): CoreCrypto {
-    val db = newDatabase()
+    val db = options.database ?: newDatabase()
     val cc = CoreCrypto(db)
 
     val clientId = options.clientId ?: genClientId()
