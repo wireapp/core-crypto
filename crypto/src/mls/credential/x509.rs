@@ -114,7 +114,7 @@ impl CertificateBundle {
 
 impl Credential {
     /// Create a new x509 credential from a certificate bundle.
-    pub fn x509(ciphersuite: CipherSuite, cert: CertificateBundle) -> Result<Self> {
+    pub fn x509(cipher_suite: CipherSuite, cert: CertificateBundle) -> Result<Self> {
         let earliest_validity = cert.get_created_at().map_err(RecursiveError::mls_credential(
             "getting credential 'not before' claim from leaf cert in Credential::x509",
         ))?;
@@ -127,7 +127,7 @@ impl Credential {
         let credential = MlsCredential::new_x509(chain).map_err(OpenMlsError::wrap("creating x509 credential"))?;
 
         let cb = Credential {
-            ciphersuite,
+            cipher_suite,
             credential_type: CredentialType::X509,
             mls_credential: credential,
             signature_key_pair: kp.0,

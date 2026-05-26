@@ -43,8 +43,8 @@ impl Conversation {
     }
 
     /// Returns this conversation's cipher suite
-    pub fn ciphersuite(&self) -> CipherSuite {
-        self.configuration.ciphersuite
+    pub fn cipher_suite(&self) -> CipherSuite {
+        self.configuration.cipher_suite
     }
 
     /// Returns a reference to the credential used in this conversation

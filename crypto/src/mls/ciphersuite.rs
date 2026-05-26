@@ -35,8 +35,8 @@ impl From<MlsCiphersuite> for CipherSuite {
 }
 
 impl From<CipherSuite> for MlsCiphersuite {
-    fn from(ciphersuite: CipherSuite) -> Self {
-        ciphersuite.0
+    fn from(cipher_suite: CipherSuite) -> Self {
+        cipher_suite.0
     }
 }
 
@@ -51,7 +51,7 @@ impl TryFrom<u16> for CipherSuite {
 
     fn try_from(c: u16) -> Result<Self> {
         Ok(MlsCiphersuite::try_from(c)
-            .map_err(|_| Error::UnknownCiphersuite)?
+            .map_err(|_| Error::UnknownCipherSuite)?
             .into())
     }
 }

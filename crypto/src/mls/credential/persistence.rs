@@ -50,7 +50,7 @@ impl Credential {
                 session_id: self.client_id().to_owned().into_inner(),
                 credential: credential_data,
                 created_at: Default::default(), // updated by the `.save` impl
-                ciphersuite: u16::from(self.ciphersuite),
+                ciphersuite: u16::from(self.cipher_suite),
                 private_key: self.signature_key_pair.private().to_owned(),
                 public_key: self.signature_key().public().to_owned(),
             })

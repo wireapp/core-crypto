@@ -76,8 +76,8 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
-    fn supports(&self, ciphersuite: Ciphersuite) -> Result<(), CryptoError> {
-        match ciphersuite {
+    fn supports(&self, cipher_suite: Ciphersuite) -> Result<(), CryptoError> {
+        match cipher_suite {
             Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             | Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
             | Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256

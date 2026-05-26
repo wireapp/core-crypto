@@ -9,8 +9,8 @@ mod fixtures;
 
 #[cfg(test)]
 mod tests {
-    use hex_literal::hex;
     use crate::mls_provider::{EntropySeed, MlsCryptoProvider};
+    use hex_literal::hex;
     use openmls::prelude::Ciphersuite;
     use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, random::OpenMlsRand, types::HpkeKeyPair};
     use rand::Rng;
@@ -20,7 +20,7 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(use_provider)]
-    async fn ciphersuite_support_is_consistent(backend: MlsCryptoProvider) {
+    async fn cipher_suite_support_is_consistent(backend: MlsCryptoProvider) {
         let backend = backend.await;
         let crypto = backend.crypto();
         let supported = crypto.supported_ciphersuites();
@@ -34,7 +34,7 @@ mod tests {
     #[apply(all_storage_types_and_ciphersuites)]
     async fn hkdf_is_consistent(
         backend: MlsCryptoProvider,
-        ciphersuite: Ciphersuite,
+        cipher_suite: Ciphersuite,
         entropy_seed: Option<EntropySeed>,
     ) {
         let backend = backend.await;
@@ -45,15 +45,15 @@ mod tests {
         let salt = hex!("000102030405060708090a0b0c");
         let info = hex!("f0f1f2f3f4f5f6f7f8f9");
         let prk = crypto
-            .hkdf_extract(ciphersuite.hash_algorithm(), &salt, &ikm)
+            .hkdf_extract(cipher_suite.hash_algorithm(), &salt, &ikm)
             .unwrap()
             .as_slice()
             .to_vec();
-        let supposed_prk_len = ciphersuite.hash_length();
+        let supposed_prk_len = cipher_suite.hash_length();
         assert_eq!(prk.len(), supposed_prk_len);
 
         let okm = crypto
-            .hkdf_expand(ciphersuite.hash_algorithm(), &prk, &info, len)
+            .hkdf_expand(cipher_suite.hash_algorithm(), &prk, &info, len)
             .unwrap()
             .as_slice()
             .to_vec();
@@ -66,7 +66,7 @@ mod tests {
     #[apply(all_storage_types_and_ciphersuites)]
     async fn hash_is_consistent(
         backend: MlsCryptoProvider,
-        ciphersuite: Ciphersuite,
+        cipher_suite: Ciphersuite,
         entropy_seed: Option<EntropySeed>,
     ) {
         let backend = backend.await;
@@ -74,8 +74,8 @@ mod tests {
         let len = rand::thread_rng().gen_range(LEN_RANGE);
         let data = backend.rand().random_vec(len).unwrap();
         let crypto = backend.crypto();
-        let output = crypto.hash(ciphersuite.hash_algorithm(), &data).unwrap();
-        let supposed_output_len = ciphersuite.hash_length();
+        let output = crypto.hash(cipher_suite.hash_algorithm(), &data).unwrap();
+        let supposed_output_len = cipher_suite.hash_length();
         assert_eq!(output.len(), supposed_output_len);
 
         teardown(backend).await;
@@ -84,7 +84,7 @@ mod tests {
     #[apply(all_storage_types_and_ciphersuites)]
     async fn aead_is_consistent_and_can_roundtrip(
         backend: MlsCryptoProvider,
-        ciphersuite: Ciphersuite,
+        cipher_suite: Ciphersuite,
         entropy_seed: Option<EntropySeed>,
     ) {
         let backend = backend.await;
@@ -95,18 +95,18 @@ mod tests {
             .rand()
             .random_vec(rand::thread_rng().gen_range(LEN_RANGE))
             .unwrap();
-        let nonce = backend.rand().random_vec(ciphersuite.aead_nonce_length()).unwrap();
-        let key = backend.rand().random_vec(ciphersuite.aead_key_length()).unwrap();
+        let nonce = backend.rand().random_vec(cipher_suite.aead_nonce_length()).unwrap();
+        let key = backend.rand().random_vec(cipher_suite.aead_key_length()).unwrap();
 
         let crypto = backend.crypto();
         let encrypted = crypto
-            .aead_encrypt(ciphersuite.aead_algorithm(), &key, &data, &nonce, &aad)
+            .aead_encrypt(cipher_suite.aead_algorithm(), &key, &data, &nonce, &aad)
             .unwrap();
 
-        assert_eq!(encrypted.len(), len + ciphersuite.mac_length());
+        assert_eq!(encrypted.len(), len + cipher_suite.mac_length());
 
         let decrypted = crypto
-            .aead_decrypt(ciphersuite.aead_algorithm(), &key, &encrypted, &nonce, &aad)
+            .aead_decrypt(cipher_suite.aead_algorithm(), &key, &encrypted, &nonce, &aad)
             .unwrap();
 
         assert_eq!(data, decrypted);
@@ -117,7 +117,7 @@ mod tests {
     #[apply(all_storage_types_and_ciphersuites)]
     async fn signature_is_consistent(
         backend: MlsCryptoProvider,
-        ciphersuite: Ciphersuite,
+        cipher_suite: Ciphersuite,
         entropy_seed: Option<EntropySeed>,
     ) {
         let backend = backend.await;
@@ -127,11 +127,11 @@ mod tests {
         let data = backend.rand().random_vec(len).unwrap();
 
         let crypto = backend.crypto();
-        let (sk, pk) = crypto.signature_key_gen(ciphersuite.signature_algorithm()).unwrap();
+        let (sk, pk) = crypto.signature_key_gen(cipher_suite.signature_algorithm()).unwrap();
 
-        let signature = crypto.sign(ciphersuite.signature_algorithm(), &data, &sk).unwrap();
+        let signature = crypto.sign(cipher_suite.signature_algorithm(), &data, &sk).unwrap();
         crypto
-            .verify_signature(ciphersuite.signature_algorithm(), &data, &pk, &signature)
+            .verify_signature(cipher_suite.signature_algorithm(), &data, &pk, &signature)
             .unwrap();
 
         teardown(backend).await;
@@ -140,7 +140,7 @@ mod tests {
     #[apply(all_storage_types_and_ciphersuites)]
     async fn hpke_is_consistent(
         backend: MlsCryptoProvider,
-        ciphersuite: Ciphersuite,
+        cipher_suite: Ciphersuite,
         entropy_seed: Option<EntropySeed>,
     ) {
         let backend = backend.await;
@@ -165,7 +165,7 @@ mod tests {
 
         let alice = crypto
             .derive_hpke_keypair(
-                ciphersuite.hpke_config(),
+                cipher_suite.hpke_config(),
                 &backend
                     .rand()
                     .random_vec(rand::thread_rng().gen_range(LEN_RANGE))
@@ -174,10 +174,10 @@ mod tests {
             .unwrap();
 
         let secret_message = crypto
-            .hpke_seal(ciphersuite.hpke_config(), &alice.public, &info, &aad, &message)
+            .hpke_seal(cipher_suite.hpke_config(), &alice.public, &info, &aad, &message)
             .unwrap();
         let unsealed_secret_message = crypto
-            .hpke_open(ciphersuite.hpke_config(), &secret_message, &alice.private, &info, &aad)
+            .hpke_open(cipher_suite.hpke_config(), &secret_message, &alice.private, &info, &aad)
             .unwrap();
 
         assert_eq!(unsealed_secret_message, message);
@@ -186,22 +186,22 @@ mod tests {
 
         let (kem, secret_tx) = crypto
             .hpke_setup_sender_and_export(
-                ciphersuite.hpke_config(),
+                cipher_suite.hpke_config(),
                 &alice.public,
                 &info,
                 hpke_info,
-                ciphersuite.hash_length(),
+                cipher_suite.hash_length(),
             )
             .unwrap();
 
         let secret_rx = crypto
             .hpke_setup_receiver_and_export(
-                ciphersuite.hpke_config(),
+                cipher_suite.hpke_config(),
                 &kem,
                 &alice.private,
                 &info,
                 hpke_info,
-                ciphersuite.hash_length(),
+                cipher_suite.hash_length(),
             )
             .unwrap();
 

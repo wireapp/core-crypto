@@ -187,7 +187,7 @@ impl ConversationMut {
 
         let pki_env = provider.authentication_service().pki_env().await;
         let identity = credential
-            .extract_identity(self.ciphersuite(), pki_env.as_deref())
+            .extract_identity(self.cipher_suite(), pki_env.as_deref())
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
@@ -464,7 +464,7 @@ impl ConversationMut {
                 })
                 .collect();
             let state = Session::compute_conversation_state(
-                self.ciphersuite(),
+                self.cipher_suite(),
                 credentials.iter(),
                 crate::CredentialType::X509,
                 backend.authentication_service(),

@@ -29,7 +29,7 @@ pub struct CredentialRef {
     client_id: ClientId,
     public_key_hash: Sha256Hash,
     r#type: CredentialType,
-    ciphersuite: CipherSuite,
+    cipher_suite: CipherSuite,
     // first unix timestamp at which the credential is valid
     earliest_validity: u64,
 }
@@ -42,7 +42,7 @@ impl CredentialRef {
             client_id: credential.client_id().to_owned(),
             public_key_hash: Sha256Hash::hash_from(credential.signature_key_pair.public()),
             r#type: credential.credential_type(),
-            ciphersuite: credential.ciphersuite(),
+            cipher_suite: credential.cipher_suite(),
             earliest_validity: credential.earliest_validity,
         }
     }
@@ -64,12 +64,12 @@ impl CredentialRef {
 
     /// Get the signature scheme associated with this credential
     pub fn signature_scheme(&self) -> SignatureScheme {
-        self.ciphersuite.signature_algorithm()
+        self.cipher_suite.signature_algorithm()
     }
 
-    /// Get the ciphersuite associated with this credential
-    pub fn ciphersuite(&self) -> CipherSuite {
-        self.ciphersuite
+    /// Get the cipher_suite associated with this credential
+    pub fn cipher_suite(&self) -> CipherSuite {
+        self.cipher_suite
     }
 
     /// Get the unix timestamp of the earliest validity of this credential.

@@ -61,19 +61,19 @@ impl TestContext {
         Self {
             credential_type,
             cfg: ConversationConfiguration {
-                ciphersuite: cs.into(),
+                cipher_suite: cs.into(),
                 ..Default::default()
             },
             ..Default::default()
         }
     }
 
-    pub fn ciphersuite(&self) -> CipherSuite {
-        self.cfg.ciphersuite
+    pub fn cipher_suite(&self) -> CipherSuite {
+        self.cfg.cipher_suite
     }
 
     pub fn signature_scheme(&self) -> SignatureScheme {
-        self.cfg.ciphersuite.signature_algorithm()
+        self.cfg.cipher_suite.signature_algorithm()
     }
 
     pub fn custom_cfg(&self) -> CustomConfiguration {

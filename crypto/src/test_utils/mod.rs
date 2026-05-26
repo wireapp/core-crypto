@@ -143,7 +143,7 @@ impl SessionContext {
 
         let session = transaction.session().await.unwrap();
 
-        let credential = Credential::from_identifier(&identifier, context.ciphersuite())
+        let credential = Credential::from_identifier(&identifier, context.cipher_suite())
             .map_err(RecursiveError::mls_credential("creating credential from identifier"))?;
         let initial_credential = transaction.add_credential(credential).await.unwrap();
 
@@ -181,7 +181,7 @@ impl SessionContext {
         }
 
         let identifier = context.generate_identifier(chain).await;
-        let initial_credential = Credential::from_identifier(&identifier, context.ciphersuite())
+        let initial_credential = Credential::from_identifier(&identifier, context.cipher_suite())
             .expect("creating credential from identifier");
         let initial_credential = CredentialRef::from_credential(&initial_credential);
 
@@ -294,7 +294,7 @@ impl SessionContext {
         let (session_id, credential) = match case.credential_type {
             CredentialType::Basic => {
                 let credential =
-                    Credential::basic(case.ciphersuite(), session_id.clone()).expect("creating basic credential ");
+                    Credential::basic(case.cipher_suite(), session_id.clone()).expect("creating basic credential ");
 
                 (session_id, credential)
             }
@@ -314,7 +314,7 @@ impl SessionContext {
                     .get_client_id(&pki_env)
                     .await
                     .expect("Getting client id from certificate bundle");
-                let credential = Credential::x509(case.ciphersuite(), cert).expect("creating  x509 credential");
+                let credential = Credential::x509(case.cipher_suite(), cert).expect("creating  x509 credential");
 
                 (session_id, credential)
             }

@@ -8,7 +8,7 @@ pub enum LeafError {
     /// This error is emitted when the requested conversation couldn't be found in our store
     #[error("Couldn't find conversation")]
     ConversationNotFound(crate::ConversationId),
-    /// When looking for a X509 credential for a given ciphersuite and it has not been done
+    /// When looking for a X509 credential for a given cipher suite and it has not been done
     #[error("End-to-end identity enrollment has not been done")]
     E2eiEnrollmentNotDone,
     /// The MLS group is in an invalid state for an unknown reason

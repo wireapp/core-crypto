@@ -63,7 +63,7 @@ impl TransactionContext {
         group_info: VerifiableGroupInfo,
         credential_ref: &CredentialRef,
     ) -> Result<(CommitBundle, ConversationId, PendingConversation)> {
-        let ciphersuite = group_info.ciphersuite().into();
+        let cipher_suite = group_info.ciphersuite().into();
         let mls_provider = self.crypto_provider().await?;
         let database = &self.database().await?;
         let credential = credential_ref
@@ -72,7 +72,7 @@ impl TransactionContext {
             .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
 
         let configuration = ConversationConfiguration {
-            ciphersuite,
+            cipher_suite,
             ..Default::default()
         };
 
@@ -365,7 +365,7 @@ mod tests {
         // we need an invalid GroupInfo; let's manufacture one.
         let group_info = {
             let mut conversation = conversation.guard().await;
-            let (ciphersuite, credential_type) = {
+            let (cipher_suite, credential_type) = {
                 let credential_type = conversation
                     .group()
                     .await
@@ -374,10 +374,10 @@ mod tests {
                     .credential_type()
                     .try_into()
                     .expect("case conversation has a known credential type");
-                let ciphersuite = conversation.group().await.ciphersuite();
-                (ciphersuite, credential_type)
+                let cipher_suite = conversation.group().await.ciphersuite();
+                (cipher_suite, credential_type)
             };
-            let credential = alice.find_any_credential(ciphersuite.into(), credential_type).await;
+            let credential = alice.find_any_credential(cipher_suite.into(), credential_type).await;
             let mls_provider = alice.transaction.crypto_provider().await.unwrap();
             conversation
                 .mutate_group_test(async move |_, group, _| {

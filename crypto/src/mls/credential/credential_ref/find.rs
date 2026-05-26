@@ -42,7 +42,7 @@ pub struct FindFilters<'a> {
     pub public_key_hash: Option<Sha256Hash>,
     /// Ciphersuite to search for
     #[builder(default, setter(strip_option))]
-    pub ciphersuite: Option<CipherSuite>,
+    pub cipher_suite: Option<CipherSuite>,
     /// Credential type to search for
     #[builder(default, setter(strip_option))]
     pub credential_type: Option<CredentialType>,
@@ -60,7 +60,7 @@ impl CredentialRef {
     pub(crate) async fn find(database: &impl FetchFromDatabase, find_filters: FindFilters<'_>) -> Result<Vec<Self>> {
         let FindFilters {
             client_id,
-            ciphersuite,
+            cipher_suite,
             credential_type,
             public_key_hash,
             earliest_validity,
@@ -71,7 +71,7 @@ impl CredentialRef {
                 hash: public_key_hash,
                 earliest_validity,
                 session_id: client_id.map(AsRef::as_ref),
-                ciphersuite: ciphersuite.map(Into::into),
+                ciphersuite: cipher_suite.map(Into::into),
                 ..Default::default()
             })
             .await
@@ -93,12 +93,12 @@ impl CredentialRef {
             let (ref mls_credential, ref stored_credential) = partial?;
 
             if let Ok(r#type) = mls_credential.credential_type().try_into()
-                && let Ok(ciphersuite) = stored_credential.ciphersuite.try_into()
+                && let Ok(cipher_suite) = stored_credential.ciphersuite.try_into()
             {
                 out.push(Self {
                     client_id: ClientId(stored_credential.session_id.clone()),
                     r#type,
-                    ciphersuite,
+                    cipher_suite,
                     earliest_validity: stored_credential.created_at,
                     public_key_hash: Sha256Hash::hash_from(&stored_credential.public_key),
                 })

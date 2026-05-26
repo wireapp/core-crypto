@@ -100,12 +100,12 @@ mod tests {
                 let id = conversation.id.clone();
                 let bob_keypackage = bob.new_keypackage(&case).await;
                 let signature_key_pair = bob
-                    .find_any_credential(case.ciphersuite(), case.credential_type)
+                    .find_any_credential(case.cipher_suite(), case.credential_type)
                     .await
                     .signature_key_pair
                     .clone();
                 let credential = Credential {
-                    ciphersuite: case.ciphersuite(),
+                    cipher_suite: case.cipher_suite(),
                     credential_type: CredentialType::Basic,
                     mls_credential: openmls::credentials::Credential::new_basic(
                         carol.get_client_id().await.into_inner(),

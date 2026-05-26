@@ -121,7 +121,7 @@ mod tests {
                 .await
                 .unwrap();
 
-            let credential = Credential::from_identifier(&identifier, case.ciphersuite()).unwrap();
+            let credential = Credential::from_identifier(&identifier, case.cipher_suite()).unwrap();
             let credential_ref = context.add_credential(credential).await.unwrap();
 
             // expect mls_client to work

@@ -179,7 +179,7 @@ impl PendingConversation {
         let pki_env = self.context.pki_environment().await.ok();
 
         let identity = own_leaf_credential_with_key
-            .extract_identity(conversation.ciphersuite(), pki_env.as_deref())
+            .extract_identity(conversation.cipher_suite(), pki_env.as_deref())
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
@@ -218,7 +218,7 @@ impl PendingConversation {
         let custom_cfg =
             serde_json::from_slice(&cfg).map_err(OpenMlsError::wrap("deserializing mls custom configuration"))?;
         let configuration = ConversationConfiguration {
-            ciphersuite: mls_group.ciphersuite().into(),
+            cipher_suite: mls_group.ciphersuite().into(),
             custom: custom_cfg,
             ..Default::default()
         };

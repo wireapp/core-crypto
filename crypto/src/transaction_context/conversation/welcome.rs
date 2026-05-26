@@ -27,7 +27,7 @@ impl TransactionContext {
         };
 
         let configuration = ConversationConfiguration {
-            ciphersuite: welcome.ciphersuite().into(),
+            cipher_suite: welcome.ciphersuite().into(),
             ..Default::default()
         };
 

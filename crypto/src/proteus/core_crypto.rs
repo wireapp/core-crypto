@@ -125,7 +125,7 @@ mod tests {
             .expect("Getting session id from identifier")
             .into_owned();
         transaction.mls_init(session_id, transport).await.unwrap();
-        let credential = Credential::from_identifier(&identifier, case.ciphersuite()).unwrap();
+        let credential = Credential::from_identifier(&identifier, case.cipher_suite()).unwrap();
         let credential_ref = transaction.add_credential(credential).await.unwrap();
 
         // expect MLS to work

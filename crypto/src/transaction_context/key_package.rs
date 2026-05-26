@@ -36,7 +36,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
         let config = CryptoConfig {
-            ciphersuite: credential.ciphersuite.into(),
+            ciphersuite: credential.cipher_suite.into(),
             version: openmls::versions::ProtocolVersion::default(),
         };
 

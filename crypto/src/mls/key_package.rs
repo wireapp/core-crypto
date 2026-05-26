@@ -18,7 +18,7 @@ pub trait KeypackageExt {
     fn make_ref(&self) -> Result<KeypackageRef, OpenMlsError>;
 
     /// Returns the ciphersuite associated this this key package.
-    fn ciphersuite(&self) -> CipherSuite;
+    fn cipher_suite(&self) -> CipherSuite;
 
     /// Returns the credential type associated with this key package.
     fn credential_type(&self) -> CredentialType;
@@ -35,19 +35,19 @@ impl KeypackageExt for Keypackage {
             .hash_ref(CRYPTO.as_ref())
             .map_err(OpenMlsError::wrap("computing keypackage hash ref"))?;
 
-        let ciphersuite = <Self as KeypackageExt>::ciphersuite(self);
+        let cipher_suite = <Self as KeypackageExt>::cipher_suite(self);
         let credential_type = self.credential_type();
         let lifetime = self.leaf_node().life_time().cloned();
 
         Ok(KeypackageRef {
             hash_ref,
-            ciphersuite,
+            cipher_suite,
             credential_type,
             lifetime,
         })
     }
 
-    fn ciphersuite(&self) -> CipherSuite {
+    fn cipher_suite(&self) -> CipherSuite {
         <Keypackage>::ciphersuite(self).into()
     }
 
@@ -68,11 +68,11 @@ impl KeypackageExt for Keypackage {
 
 /// A "fat" reference to a [`Keypackage`].
 ///
-/// Contains the relevant hash, and also information about its ciphersuite, credential type, and lifetime.
+/// Contains the relevant hash, and also information about its cipher suite, credential type, and lifetime.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeypackageRef {
     hash_ref: KpHashRef,
-    ciphersuite: CipherSuite,
+    cipher_suite: CipherSuite,
     credential_type: CredentialType,
     lifetime: Option<Lifetime>,
 }
@@ -83,14 +83,14 @@ impl KeypackageRef {
         self.hash_ref.as_slice()
     }
 
-    /// Get the ciphersuite associated with this key package ref.
-    pub fn ciphersuite(&self) -> CipherSuite {
-        self.ciphersuite
+    /// Get the cipher suite associated with this key package ref.
+    pub fn cipher_suite(&self) -> CipherSuite {
+        self.cipher_suite
     }
 
     /// Get the signature scheme associated wtih this key package ref.
     pub fn signature_scheme(&self) -> SignatureScheme {
-        self.ciphersuite.signature_algorithm()
+        self.cipher_suite.signature_algorithm()
     }
 
     /// Get the credential type associated with this key package ref.
@@ -117,8 +117,8 @@ impl KeypackageExt for KeypackageRef {
         Ok(self.clone())
     }
 
-    fn ciphersuite(&self) -> CipherSuite {
-        self.ciphersuite
+    fn cipher_suite(&self) -> CipherSuite {
+        self.cipher_suite
     }
 
     fn credential_type(&self) -> CredentialType {

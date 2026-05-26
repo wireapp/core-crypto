@@ -8,7 +8,7 @@ impl super::Conversation {
     ///
     /// The generated secret is cryptographically unrelated to the current CoreCrypto client.
     pub async fn generate_history_secret(&self) -> Result<crate::HistorySecret> {
-        crate::ephemeral::generate_history_secret(self.configuration.ciphersuite)
+        crate::ephemeral::generate_history_secret(self.configuration.cipher_suite)
             .await
             .map_err(RecursiveError::root("generating history secret"))
             .map_err(Into::into)

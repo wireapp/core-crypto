@@ -64,7 +64,7 @@ impl Obfuscate for HistorySecret {
 /// Note that this is a crate-private function; the public interface for this feature is
 /// [`Conversation::generate_history_secret`][crate::mls::conversation::Conversation::generate_history_secret].
 /// This implementation lives here instead of there for organizational reasons.
-pub(crate) async fn generate_history_secret(ciphersuite: CipherSuite) -> Result<HistorySecret> {
+pub(crate) async fn generate_history_secret(cipher_suite: CipherSuite) -> Result<HistorySecret> {
     // generate a new completely arbitrary client id
     let session_id = uuid::Uuid::new_v4();
     let session_id = format!("{HISTORY_CLIENT_ID_PREFIX}-{session_id}");
@@ -88,7 +88,7 @@ pub(crate) async fn generate_history_secret(ciphersuite: CipherSuite) -> Result<
         .session()
         .await
         .map_err(RecursiveError::transaction("Getting mls session"))?;
-    let credential = Credential::basic(ciphersuite, session_id.clone()).map_err(RecursiveError::mls_credential(
+    let credential = Credential::basic(cipher_suite, session_id.clone()).map_err(RecursiveError::mls_credential(
         "generating basic credential for ephemeral client",
     ))?;
     let credential_ref = tx

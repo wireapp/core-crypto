@@ -27,7 +27,7 @@ pub(crate) const MAXIMUM_FORWARD_DISTANCE: u32 = 1000;
 #[derive(Debug, Clone, Default)]
 pub struct ConversationConfiguration {
     /// The `OpenMls` Ciphersuite used in the group
-    pub ciphersuite: CipherSuite,
+    pub cipher_suite: CipherSuite,
     /// Delivery service public signature key and credential
     pub external_senders: Vec<ExternalSender>,
     /// Implementation specific configuration
@@ -61,7 +61,7 @@ impl ConversationConfiguration {
     pub fn as_openmls_default_configuration(&self) -> Result<openmls::group::MlsGroupConfig> {
         let crypto_config = openmls::prelude::CryptoConfig {
             version: Self::DEFAULT_PROTOCOL_VERSION,
-            ciphersuite: self.ciphersuite.into(),
+            ciphersuite: self.cipher_suite.into(),
         };
         Ok(openmls::group::MlsGroupConfig::builder()
             .wire_format_policy(self.custom.wire_policy.into())

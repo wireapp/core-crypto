@@ -34,7 +34,7 @@ use crate::{CipherSuite, ClientId, ClientIdRef, ClientIdentifier, OpenMlsError, 
 #[derive(core_crypto_macros::Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Credential {
     /// Ciphersuite used by this credential
-    pub(crate) ciphersuite: CipherSuite,
+    pub(crate) cipher_suite: CipherSuite,
     /// Credential type
     pub(crate) credential_type: CredentialType,
     /// MLS internal credential. Stores the MLS credential
@@ -57,10 +57,10 @@ impl TryFrom<&StoredCredential> for Credential {
     fn try_from(stored_credential: &StoredCredential) -> Result<Credential> {
         let mls_credential = MlsCredential::tls_deserialize(&mut stored_credential.credential.as_slice())
             .map_err(Error::tls_deserialize("mls credential"))?;
-        let ciphersuite = CipherSuite::try_from(stored_credential.ciphersuite)
-            .map_err(RecursiveError::mls("loading ciphersuite from db"))?;
+        let cipher_suite = CipherSuite::try_from(stored_credential.ciphersuite)
+            .map_err(RecursiveError::mls("loading cipher suite from db"))?;
         let signature_key_pair = openmls_basic_credential::SignatureKeyPair::from_raw(
-            ciphersuite.signature_algorithm(),
+            cipher_suite.signature_algorithm(),
             stored_credential.private_key.to_owned(),
             stored_credential.public_key.to_owned(),
         );
@@ -70,7 +70,7 @@ impl TryFrom<&StoredCredential> for Credential {
             .map_err(RecursiveError::mls_credential("loading credential from db"))?;
         let earliest_validity = stored_credential.created_at;
         Ok(Credential {
-            ciphersuite,
+            cipher_suite,
             signature_key_pair,
             credential_type,
             mls_credential,
@@ -86,15 +86,15 @@ impl Credential {
     ///
     /// The earliest validity of this credential is always 0. It will be updated once the credential is added to a
     /// session.
-    pub fn basic(ciphersuite: CipherSuite, client_id: ClientId) -> Result<Self> {
-        let signature_scheme = ciphersuite.signature_algorithm();
+    pub fn basic(cipher_suite: CipherSuite, client_id: ClientId) -> Result<Self> {
+        let signature_scheme = cipher_suite.signature_algorithm();
         let (private_key, public_key) = CRYPTO
             .signature_key_gen(signature_scheme)
             .map_err(OpenMlsError::wrap("generating signature key"))?;
         let signature_key_pair = SignatureKeyPair::from_raw(signature_scheme, private_key, public_key);
 
         Ok(Self {
-            ciphersuite,
+            cipher_suite,
             credential_type: CredentialType::Basic,
             mls_credential: MlsCredential::new_basic(client_id.into_inner()),
             signature_key_pair,
@@ -130,9 +130,9 @@ impl Credential {
         self.signature_key_pair.signature_scheme()
     }
 
-    /// Get the ciphersuite
-    pub fn ciphersuite(&self) -> CipherSuite {
-        self.ciphersuite
+    /// Get the cipher suite
+    pub fn cipher_suite(&self) -> CipherSuite {
+        self.cipher_suite
     }
 
     /// Generate a `CredentialWithKey`, which combines the credential type with the public portion of the keypair.
@@ -164,15 +164,15 @@ impl Credential {
     /// Create a credential from an identifier
     // currently only used in test code, but generally applicable
     #[cfg_attr(not(test), expect(dead_code))]
-    pub(crate) fn from_identifier(identifier: &ClientIdentifier, ciphersuite: CipherSuite) -> Result<Self> {
+    pub(crate) fn from_identifier(identifier: &ClientIdentifier, cipher_suite: CipherSuite) -> Result<Self> {
         match identifier {
-            ClientIdentifier::Basic(client_id) => Self::basic(ciphersuite, client_id.clone()),
+            ClientIdentifier::Basic(client_id) => Self::basic(cipher_suite, client_id.clone()),
             ClientIdentifier::X509(certs) => {
-                let signature_scheme = ciphersuite.signature_algorithm();
+                let signature_scheme = cipher_suite.signature_algorithm();
                 let cert = certs
                     .get(&signature_scheme)
                     .ok_or(Error::SignatureSchemeNotPresentInX509Identity(signature_scheme))?;
-                Self::x509(ciphersuite, cert.clone())
+                Self::x509(cipher_suite, cert.clone())
             }
         }
     }
@@ -286,7 +286,7 @@ mod tests {
         let cb = CertificateBundle {
             certificate_chain: certs.certificate_chain,
             private_key: eve_key,
-            signature_scheme: case.ciphersuite().signature_algorithm(),
+            signature_scheme: case.cipher_suite().signature_algorithm(),
         };
         let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
 

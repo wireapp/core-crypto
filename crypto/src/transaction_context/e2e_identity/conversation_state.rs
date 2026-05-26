@@ -167,9 +167,9 @@ mod tests {
             let intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
             // this completely invents a new client id for alice, which gets propagated into the credential
             let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
-            let cb = Credential::x509(case.ciphersuite(), cert.clone()).unwrap();
+            let cb = Credential::x509(case.cipher_suite(), cert.clone()).unwrap();
 
-            let credential = Credential::x509(case.ciphersuite(), cert).unwrap();
+            let credential = Credential::x509(case.cipher_suite(), cert).unwrap();
             alice
                 .transaction
                 .add_credential_without_clientid_check(credential)

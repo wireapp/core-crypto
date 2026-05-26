@@ -17,7 +17,7 @@ proteus = [
   "dep:proteus-traits",
   "core-crypto-keystore/proteus-keystore",
 ]
-# for test/bench all ciphersuites
+# for test/bench all cipher suites
 test-all-cipher = []
 
 [dependencies]

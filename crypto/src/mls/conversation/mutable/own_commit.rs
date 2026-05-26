@@ -91,7 +91,7 @@ impl ConversationMut {
         };
         let pki_env = self.crypto_provider().await?.authentication_service().pki_env().await;
         let identity = own_leaf_credential_with_key
-            .extract_identity(self.ciphersuite(), pki_env.as_deref())
+            .extract_identity(self.cipher_suite(), pki_env.as_deref())
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 

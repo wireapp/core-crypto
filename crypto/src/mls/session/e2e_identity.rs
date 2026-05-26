@@ -20,16 +20,16 @@ impl Session {
         self.crypto_provider.is_pki_env_setup().await
     }
 
-    /// Returns true if end-to-end-identity is enabled for the given ciphersuite.
+    /// Returns true if end-to-end-identity is enabled for the given cipher suite.
     ///
-    /// This is determined by checking for existence of credentials for the given ciphersuite:
+    /// This is determined by checking for existence of credentials for the given cipher suite:
     /// If there are x509 (and optionally basic) credentials -> Ok(true)
     /// If there are no x509 but basic credentials -> Ok(false)
-    /// If there are no credentials for the given ciphersuite -> Err(CredentialNotFound)
-    pub async fn e2ei_is_enabled(&self, ciphersuite: CipherSuite) -> Result<bool> {
+    /// If there are no credentials for the given cipher suite -> Err(CredentialNotFound)
+    pub async fn e2ei_is_enabled(&self, cipher_suite: CipherSuite) -> Result<bool> {
         let credentials = CredentialRef::find(
             &self.database,
-            CredentialFindFilters::builder().ciphersuite(ciphersuite).build(),
+            CredentialFindFilters::builder().cipher_suite(cipher_suite).build(),
         )
         .map_err(RecursiveError::mls_credential_ref("finding credentials with filters"))
         .await?;
@@ -96,7 +96,7 @@ impl Session {
         .await
     }
     pub(crate) async fn get_credential_in_use_in_ratchet_tree(
-        ciphersuite: CipherSuite,
+        cipher_suite: CipherSuite,
         ratchet_tree: RatchetTree,
         credential_type: CredentialType,
         auth_service: &AuthenticationService,
@@ -105,13 +105,13 @@ impl Session {
             Some(Node::LeafNode(ln)) => Some(ln.credential()),
             _ => None,
         });
-        Ok(Self::compute_conversation_state(ciphersuite, credentials, credential_type, auth_service).await)
+        Ok(Self::compute_conversation_state(cipher_suite, credentials, credential_type, auth_service).await)
     }
 
     /// _credential_type will be used in the future to get the usage of VC Credentials, even Basics one.
     /// Right now though, we do not need anything other than X509 so let's keep things simple.
     pub(crate) async fn compute_conversation_state<'a>(
-        ciphersuite: CipherSuite,
+        cipher_suite: CipherSuite,
         credentials: impl Iterator<Item = &'a Credential>,
         _credential_type: CredentialType,
         auth_service: &AuthenticationService,
@@ -135,7 +135,7 @@ impl Session {
 
             is_e2ei = true;
 
-            let invalid_identity = cert.extract_identity(&env, ciphersuite.e2ei_hash_alg()).await.is_err();
+            let invalid_identity = cert.extract_identity(&env, cipher_suite.e2ei_hash_alg()).await.is_err();
 
             use openmls_x509_credential::X509Ext as _;
             let is_time_valid = cert.is_time_valid().unwrap_or(false);

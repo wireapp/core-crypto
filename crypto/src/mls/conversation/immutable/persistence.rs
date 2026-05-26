@@ -13,7 +13,7 @@ impl Conversation {
             core_crypto_keystore::deser(&buf).map_err(KeystoreError::wrap("deserializing group state"))?;
         let id = ConversationId::from(group.group_id().as_slice());
         let configuration = ConversationConfiguration {
-            ciphersuite: group.ciphersuite().into(),
+            cipher_suite: group.ciphersuite().into(),
             ..Default::default()
         };
         let group = group.into();

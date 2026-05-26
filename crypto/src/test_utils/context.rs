@@ -36,7 +36,9 @@ impl SessionContext {
         case: &TestContext,
         lifetime: Option<std::time::Duration>,
     ) -> KeyPackage {
-        let credential = self.find_any_credential(case.ciphersuite(), case.credential_type).await;
+        let credential = self
+            .find_any_credential(case.cipher_suite(), case.credential_type)
+            .await;
         let credential_ref = CredentialRef::from_credential(&credential);
         self.transaction
             .generate_key_package(&credential_ref, lifetime)
@@ -99,10 +101,10 @@ impl SessionContext {
         let client_id = session.id();
 
         let credential = match case.credential_type {
-            CredentialType::Basic => Credential::basic(case.ciphersuite(), client_id).unwrap(),
+            CredentialType::Basic => Credential::basic(case.cipher_suite(), client_id).unwrap(),
             CredentialType::X509 => {
                 let cert_bundle = CertificateBundle::rand(&client_id, signer.unwrap());
-                Credential::x509(case.ciphersuite(), cert_bundle).unwrap()
+                Credential::x509(case.cipher_suite(), cert_bundle).unwrap()
             }
         };
 
@@ -115,16 +117,16 @@ impl SessionContext {
             .unwrap()
     }
 
-    pub async fn find_any_credential(&self, ciphersuite: CipherSuite, credential_type: CredentialType) -> Credential {
+    pub async fn find_any_credential(&self, cipher_suite: CipherSuite, credential_type: CredentialType) -> Credential {
         let find_filters = CredentialFindFilters::builder()
             .credential_type(credential_type)
-            .ciphersuite(ciphersuite)
+            .cipher_suite(cipher_suite)
             .build();
         let credentials = self
             .core_crypto
             .find_credentials(find_filters)
             .await
-            .expect("find credentials for ciphersuite and credential type");
+            .expect("find credentials for cipher_suite and credential type");
         let credential_ref = credentials.first().expect("at least one credential found");
 
         let database = self.transaction.database().await.unwrap();
@@ -205,7 +207,7 @@ impl SessionContext {
     ) -> Arc<Credential> {
         let cid = QualifiedE2eiClientId::try_from(self.get_client_id().await.as_slice()).unwrap();
         let new_cert = CertificateBundle::new(handle, display_name, Some(&cid), None, signer);
-        let credential = Credential::x509(case.ciphersuite(), new_cert).unwrap();
+        let credential = Credential::x509(case.cipher_suite(), new_cert).unwrap();
         self.transaction.add_credential_producing_arc(credential).await.unwrap()
     }
 
@@ -238,7 +240,7 @@ impl SessionContext {
             assert!(pki_env.is_some());
 
             let mls_identity = certificate
-                .extract_identity(case.ciphersuite(), pki_env.as_deref())
+                .extract_identity(case.cipher_suite(), pki_env.as_deref())
                 .await
                 .unwrap();
             let mls_client_id = mls_identity.client_id.as_bytes();
@@ -248,7 +250,7 @@ impl SessionContext {
             let leaf: Vec<u8> = certificate.certificates.first().unwrap().clone().into();
             let identity = leaf
                 .as_slice()
-                .extract_identity(pki_env.as_deref().unwrap(), case.ciphersuite().e2ei_hash_alg())
+                .extract_identity(pki_env.as_deref().unwrap(), case.cipher_suite().e2ei_hash_alg())
                 .await
                 .unwrap();
             let identity = WireIdentity::try_from((identity, leaf.as_slice())).unwrap();
@@ -275,7 +277,7 @@ impl SessionContext {
             let chain = x509_cert::Certificate::load_pem_chain(decrypted_x509_identity.certificate.as_bytes()).unwrap();
             let leaf = chain.first().unwrap();
             let cert_identity = leaf
-                .extract_identity(pki_env.as_deref().unwrap(), case.ciphersuite().e2ei_hash_alg())
+                .extract_identity(pki_env.as_deref().unwrap(), case.cipher_suite().e2ei_hash_alg())
                 .await
                 .unwrap();
 

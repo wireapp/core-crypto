@@ -15,7 +15,7 @@ impl super::Conversation {
         let backend = &self.session.crypto_provider;
 
         let state = Session::compute_conversation_state(
-            self.ciphersuite(),
+            self.cipher_suite(),
             self.group().await.members_credentials(),
             CredentialType::X509,
             backend.authentication_service(),
@@ -46,7 +46,7 @@ impl super::Conversation {
             if device_ids.iter().any(|client_id| client_id.borrow() == id) {
                 identities.push(
                     credential
-                        .extract_identity(self.ciphersuite(), pki_env.as_deref())
+                        .extract_identity(self.cipher_suite(), pki_env.as_deref())
                         .await
                         .map_err(RecursiveError::mls_credential("extracting identity"))?,
                 );
@@ -86,7 +86,7 @@ impl super::Conversation {
 
             let uid = String::try_from(uid).map_err(RecursiveError::mls_client("getting user identities"))?;
             let identity = credential
-                .extract_identity(self.ciphersuite(), pki_env.as_deref())
+                .extract_identity(self.cipher_suite(), pki_env.as_deref())
                 .await
                 .map_err(RecursiveError::mls_credential("extracting identity"))?;
             let value = identities.entry(uid).or_insert_with(Vec::new);

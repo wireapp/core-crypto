@@ -1,7 +1,7 @@
 #![allow(non_snake_case, dead_code, unused_macros, unused_imports)]
 
-use getrandom::getrandom;
 use crate::mls_provider::{EntropySeed, MlsCryptoProvider};
+use getrandom::getrandom;
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
 
@@ -170,7 +170,7 @@ pub fn all_storage_types_and_ciphersuites(
     #[case]
     #[future]
     backend: MlsCryptoProvider,
-    #[case] ciphersuite: openmls::prelude::Ciphersuite,
+    #[case] cipher_suite: openmls::prelude::Ciphersuite,
     #[case] entropy_seed: Option<EntropySeed>,
 ) {
 }

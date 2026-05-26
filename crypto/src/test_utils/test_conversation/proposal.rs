@@ -96,7 +96,7 @@ impl<'a> TestConversation<'a> {
             .index;
         let sender_index = openmls::prelude::SenderExtensionIndex::new(sender_index);
 
-        let (cs, ct) = (self.case.ciphersuite(), self.case.credential_type);
+        let (cs, ct) = (self.case.cipher_suite(), self.case.credential_type);
         let cb = external_actor.find_any_credential(cs, ct).await;
 
         let group_id = openmls::group::GroupId::from_slice(self.id().as_ref());
