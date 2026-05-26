@@ -22,7 +22,7 @@ class ExternalSenderTest {
         val externalSender = ExternalSender.parseJwk(FIXTURE_JWK)
         val alice = ccInit()
         val credentials = alice.findCredentials(
-            ciphersuite = CIPHERSUITE_DEFAULT,
+            cipherSuite = CIPHERSUITE_DEFAULT,
             credentialType = CREDENTIAL_TYPE_DEFAULT,
         )
 

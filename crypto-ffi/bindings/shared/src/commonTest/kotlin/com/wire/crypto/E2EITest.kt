@@ -76,7 +76,7 @@ internal class E2EITest {
             pkiEnv,
             X509CredentialAcquisitionConfiguration(
                 acmeDirectoryUrl = "acme.example.com/directory",
-                ciphersuite = CIPHERSUITE_DEFAULT,
+                cipherSuite = CIPHERSUITE_DEFAULT,
                 displayName = "Alice Smith",
                 clientId = clientId,
                 handle = "alice_wire",
@@ -96,7 +96,7 @@ internal class E2EITest {
         val clientId = ClientId("LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com".encodeToByteArray())
         val config = X509CredentialAcquisitionConfiguration(
             acmeDirectoryUrl = "acme.example.com/directory",
-            ciphersuite = CIPHERSUITE_DEFAULT,
+            cipherSuite = CIPHERSUITE_DEFAULT,
             displayName = "Alice Smith",
             clientId = clientId,
             handle = "alice_wire",

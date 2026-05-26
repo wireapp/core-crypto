@@ -563,16 +563,16 @@ class MLSTest {
     }
 
     @Test
-    fun can_search_credentials_by_ciphersuite(): TestResult {
+    fun can_search_credentials_by_cipher_suite(): TestResult {
         val scope = TestScope()
         return scope.runTest {
             val clientId = genClientId()
-            val ciphersuite1 = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
-            val credential1 = Credential.basic(ciphersuite1, clientId)
+            val cipherSuite1 = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+            val credential1 = Credential.basic(cipherSuite1, clientId)
 
-            val ciphersuite2 =
+            val cipherSuite2 =
                 CipherSuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519
-            val credential2 = Credential.basic(ciphersuite2, clientId)
+            val credential2 = Credential.basic(cipherSuite2, clientId)
 
             val cc = ccInit(CcInitOptions.WithoutBasicCredential(clientId))
             cc.transaction { ctx ->
@@ -580,8 +580,8 @@ class MLSTest {
                 ctx.addCredential(credential2)
             }
 
-            val results1 = cc.findCredentials(ciphersuite = ciphersuite1)
-            val results2 = cc.findCredentials(ciphersuite = ciphersuite2)
+            val results1 = cc.findCredentials(cipherSuite = cipherSuite1)
+            val results2 = cc.findCredentials(cipherSuite = cipherSuite2)
 
             assertThat(results1).hasSize(1)
             assertThat(results2).hasSize(1)
