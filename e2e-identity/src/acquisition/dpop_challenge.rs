@@ -1,3 +1,4 @@
+use obfuscate::Obfuscated;
 use rusty_jwt_tools::prelude::{Dpop, Handle, Htm, RustyJwtTools};
 
 use super::{Result, X509CredentialAcquisition, get_header, states};
@@ -18,6 +19,11 @@ impl X509CredentialAcquisition<states::Initialized> {
         let (nonce, response) = self.acme_request(url, &authz_request).await?;
         let authorization = RustyAcme::new_authz_response(response)?;
         let [challenge] = authorization.challenges;
+        log::debug!(
+            "acquisition({:?}): got ACME challenge {:?}",
+            Obfuscated::from(&self.sign_kp),
+            challenge.typ
+        );
         Ok((nonce, challenge))
     }
 
@@ -63,12 +69,21 @@ impl X509CredentialAcquisition<states::Initialized> {
         let resp = hooks
             .http_request(HttpMethod::Get, url.to_string(), vec![], vec![])
             .await?;
+        log::debug!(
+            "acquisition({:?}): got ACME server directory: {:?}",
+            Obfuscated::from(&self.sign_kp),
+            str::from_utf8(&resp.body),
+        );
         let body = resp.json()?;
         let directory = RustyAcme::acme_directory_response(body)?;
 
         let url = directory.new_nonce.to_string();
         let resp = hooks.http_request(HttpMethod::Get, url, vec![], vec![]).await?;
         let nonce = get_header(&resp, "replay-nonce")?;
+        log::debug!(
+            "acquisition({:?}): got the initial nonce",
+            Obfuscated::from(&self.sign_kp),
+        );
 
         // Create a new ACME account.
         //
@@ -78,6 +93,10 @@ impl X509CredentialAcquisition<states::Initialized> {
             .acme_request(&self.acme_url("new-account"), &account_request)
             .await?;
         let acme_account = RustyAcme::new_account_response(response)?;
+        log::debug!(
+            "acquisition({:?}): created a new ACME account",
+            Obfuscated::from(&self.sign_kp),
+        );
 
         // Create a new ACME order.
         //
@@ -95,6 +114,10 @@ impl X509CredentialAcquisition<states::Initialized> {
         )?;
         let (nonce, response) = self.acme_request(&self.acme_url("new-order"), &order_request).await?;
         let order = RustyAcme::new_order_response(response)?;
+        log::debug!(
+            "acquisition({:?}): created a new ACME order",
+            Obfuscated::from(&self.sign_kp),
+        );
 
         let (nonce, dpop_challenge, oidc_challenge) = self.get_challenges(&acme_account, &order, nonce).await?;
 
@@ -102,6 +125,10 @@ impl X509CredentialAcquisition<states::Initialized> {
         // the Wire server and the ACME server), and will be verified by the ACME server when
         // verifying the challenge.
         let backend_nonce = hooks.get_backend_nonce().await?;
+        log::debug!(
+            "acquisition({:?}): got the Wire server nonce",
+            Obfuscated::from(&self.sign_kp),
+        );
 
         let audience = dpop_challenge.url.clone();
         let client_id = &self.config.client_id;
@@ -127,6 +154,10 @@ impl X509CredentialAcquisition<states::Initialized> {
 
         // Send the DPoP token to Wire server and get back an access token.
         let access_token = hooks.fetch_backend_access_token(token).await?;
+        log::debug!(
+            "acquisition({:?}): got the Wire server access token",
+            Obfuscated::from(&self.sign_kp),
+        );
 
         // Complete the DPoP challenge.
         //
@@ -141,6 +172,10 @@ impl X509CredentialAcquisition<states::Initialized> {
         )?;
         let (nonce, response) = self.acme_request(&dpop_challenge.url, &dpop_challenge_request).await?;
         let _ = RustyAcme::new_chall_response(response)?;
+        log::info!(
+            "acquisition({:?}): DPoP challenge completed",
+            Obfuscated::from(&self.sign_kp),
+        );
 
         Ok(X509CredentialAcquisition::<states::DpopChallengeCompleted> {
             pki_env: self.pki_env,

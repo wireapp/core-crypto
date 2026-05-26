@@ -1,3 +1,4 @@
+use obfuscate::Obfuscated;
 use rusty_jwt_tools::{jwk_thumbprint::JwkThumbprint, prelude::Pem};
 use x509_cert::Certificate;
 
@@ -25,6 +26,10 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
         let url = &self.data.oidc_challenge.url;
         let target = self.data.oidc_challenge.target.to_string();
         let id_token = hooks.authenticate(target, key_auth, url.to_string(), snapshot).await?;
+        log::debug!(
+            "acquisition({:?}): got the ID token from the OIDC server",
+            Obfuscated::from(&self.sign_kp),
+        );
 
         let oidc_challenge_request = RustyAcme::oidc_chall_request(
             id_token,
@@ -36,6 +41,10 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
         )?;
         let (nonce, response) = self.acme_request(url, &oidc_challenge_request).await?;
         let _ = RustyAcme::new_chall_response(response)?;
+        log::info!(
+            "acquisition({:?}): OIDC challenge completed",
+            Obfuscated::from(&self.sign_kp),
+        );
 
         // Finalize the order. This generates a CSR (Certificate Signing Request) and
         // sends it to the ACME server.
@@ -49,6 +58,10 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
         )?;
         let (nonce, response) = self.acme_request(&self.data.order.finalize, &finalize_request).await?;
         let finalize = RustyAcme::finalize_response(response)?;
+        log::debug!(
+            "acquisition({:?}): ACME order finalized",
+            Obfuscated::from(&self.sign_kp),
+        );
 
         // Get the certificate chain.
         //
@@ -70,8 +83,16 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
             .await?;
         let response = String::from_utf8(response.body).map_err(|e| RustyAcmeError::from(e.utf8_error()))?;
         let certificates = RustyAcme::certificate_response(response, self.data.order)?;
+        log::debug!(
+            "acquisition({:?}): got the certificate",
+            Obfuscated::from(&self.sign_kp),
+        );
 
         super::checks::verify_cert_chain(&self.config, &self.pki_env, &self.sign_kp, &certificates).await?;
+        log::info!(
+            "acquisition({:?}): certificate verified successfully",
+            Obfuscated::from(&self.sign_kp),
+        );
 
         Ok((self.sign_kp, certificates))
     }

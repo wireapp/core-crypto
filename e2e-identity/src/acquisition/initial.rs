@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use obfuscate::Obfuscated;
+
 use super::{X509CredentialAcquisition, X509CredentialConfiguration, states};
 use crate::{
     error::E2eIdentityResult,
@@ -17,6 +19,12 @@ impl X509CredentialAcquisition<states::Initialized> {
         let acme_kp = generate_key(config.sign_alg)?;
         let acme_jwk = public_jwk_from_pem_keypair(config.sign_alg, &acme_kp)?;
 
+        log::info!(
+            "created acquisition({:?}), sign_alg = {}, acme_url = {}",
+            Obfuscated::from(&sign_kp),
+            config.sign_alg,
+            config.acme_url
+        );
         Ok(Self {
             pki_env,
             config,
