@@ -233,3 +233,25 @@ extension Database {
         return try await inMemoryDatabase(key: key)
     }
 }
+
+extension X509CredentialAcquisition {
+    /// Create a new credential acquisition from an existing credential.
+    /// This API is temporary until our system decouples client identities from a client's public signature key.
+    /// See <https://wearezeta.atlassian.net/wiki/x/RABtrQ>.
+    ///
+    /// Provide `coreCryptoDatabase` if you're using distinct DB instances for `PkiEnvironment` and `CoreCrypto`.
+    /// Otherwise, the `PkiEnvironment`'s DB will be used to load the full credential.
+    public static func newFromCredentialRef(
+        pkiEnvironment: PkiEnvironment,
+        config: X509CredentialAcquisitionConfiguration,
+        credentialRef: CredentialRef,
+        coreCryptoDatabase: Database? = nil
+    ) async throws -> X509CredentialAcquisition {
+        return try await x509CredentialAcquisitionNewFromCredentialRef(
+            pkiEnvironment: pkiEnvironment,
+            config: config,
+            credentialRef: credentialRef,
+            coreCryptoDatabase: coreCryptoDatabase
+        )
+    }
+}
