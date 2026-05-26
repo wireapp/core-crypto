@@ -223,6 +223,7 @@ dist
 
 crypto-ffi/bindings/build
 interop/src/clients/build
+interop/src/clients/InteropClient/Products/Applications/InteropClient.app
 
 # CC-Book - preprocessor files
 cc-book/mermaid.min.js
