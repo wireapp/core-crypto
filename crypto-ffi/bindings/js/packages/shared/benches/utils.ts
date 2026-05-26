@@ -53,7 +53,7 @@ function parseCipherSuiteList(
     return values.map((value) => {
         const cipherSuite = CipherSuite[value as keyof typeof CipherSuite];
         if (typeof cipherSuite !== "number") {
-            throw new Error(`Invalid ciphersuite override: ${value}`);
+            throw new Error(`Invalid cipher suite override: ${value}`);
         }
         return cipherSuite;
     });

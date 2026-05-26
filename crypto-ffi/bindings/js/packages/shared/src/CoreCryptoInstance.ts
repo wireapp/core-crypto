@@ -33,7 +33,7 @@ import { CoreCryptoContext } from "./CoreCryptoContext";
 export interface CredentialFindFilters {
     clientId?: ClientId;
     publicKey?: Uint8Array;
-    ciphersuite?: CipherSuite;
+    cipherSuite?: CipherSuite;
     credentialType?: CredentialType;
     earliestValidity?: bigint;
 }
@@ -142,7 +142,7 @@ export class CoreCrypto extends CoreCryptoFfi {
         return await super.findCredentialsFfi(
             findFilters.clientId,
             findFilters.publicKey,
-            findFilters.ciphersuite,
+            findFilters.cipherSuite,
             findFilters.credentialType,
             findFilters.earliestValidity
         );
@@ -154,7 +154,7 @@ export class CoreCrypto extends CoreCryptoFfi {
     async findCredentialsFfi(
         clientId?: ClientId,
         publicKey?: Uint8Array,
-        ciphersuite?: CipherSuite,
+        cipherSuite?: CipherSuite,
         credentialType?: CredentialType,
         earliestValidity?: bigint,
         asyncOpts_?: { signal: AbortSignal }
@@ -162,7 +162,7 @@ export class CoreCrypto extends CoreCryptoFfi {
         return await super.findCredentialsFfi(
             clientId,
             publicKey,
-            ciphersuite,
+            cipherSuite,
             credentialType,
             earliestValidity,
             asyncOpts_
