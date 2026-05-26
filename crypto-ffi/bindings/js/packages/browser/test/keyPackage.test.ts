@@ -100,7 +100,7 @@ describe("key package", () => {
                 });
 
                 const credential = window.ccModule.Credential.basic(
-                    window.ccModule.ciphersuiteDefault(),
+                    window.ccModule.cipherSuiteDefault(),
                     clientId
                 );
 

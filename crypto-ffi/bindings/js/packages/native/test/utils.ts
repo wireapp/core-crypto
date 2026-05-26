@@ -153,7 +153,7 @@ export async function generateKeyPackage(
     }
     return await cc.transaction(async (ctx) => {
         const [credentialRef] = await cc.findCredentials({
-            ciphersuite: cipherSuite,
+            cipherSuite: cipherSuite,
             credentialType: CredentialType.Basic,
         });
         return await ctx.generateKeyPackage(credentialRef!);

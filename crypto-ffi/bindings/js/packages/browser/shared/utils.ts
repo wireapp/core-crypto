@@ -111,7 +111,7 @@ export async function sharedSetup() {
                     cipherSuite = window.defaultCipherSuite;
                 }
                 const [credentialRef] = await cc.findCredentials({
-                    ciphersuite: cipherSuite,
+                    cipherSuite: cipherSuite,
                     credentialType: window.ccModule.CredentialType.Basic,
                 });
                 return await cc.transaction(async (ctx) => {

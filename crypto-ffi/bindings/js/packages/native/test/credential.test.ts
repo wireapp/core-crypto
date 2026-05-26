@@ -2,7 +2,7 @@ import { ccInit, setup, teardown } from "./utils";
 import { test, beforeEach, describe, expect, afterAll } from "bun:test";
 import {
     CipherSuite,
-    ciphersuiteDefault,
+    cipherSuiteDefault,
     ClientId,
     Credential,
     CredentialType,
@@ -19,7 +19,7 @@ afterAll(async () => {
 describe("credentials", () => {
     test("basic credential can be created", async () => {
         const credential = Credential.basic(
-            ciphersuiteDefault(),
+            cipherSuiteDefault(),
             new ClientId(Buffer.from("any random client id here"))
         );
         expect(credential.type()).toEqual(CredentialType.Basic);
@@ -53,12 +53,12 @@ describe("credentials", () => {
 
     test("credentials can be searched", async () => {
         const clientId = new ClientId(Buffer.from("any random client id here"));
-        const ciphersuite1 = CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256;
-        const credential1 = Credential.basic(ciphersuite1, clientId);
+        const cipherSuite1 = CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256;
+        const credential1 = Credential.basic(cipherSuite1, clientId);
 
-        const ciphersuite2 =
+        const cipherSuite2 =
             CipherSuite.Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519;
-        const credential2 = Credential.basic(ciphersuite2, clientId);
+        const credential2 = Credential.basic(cipherSuite2, clientId);
 
         const cc = await ccInit({ withBasicCredential: false, clientId });
 
@@ -68,10 +68,10 @@ describe("credentials", () => {
         });
 
         const results1 = await cc.findCredentials({
-            ciphersuite: ciphersuite1,
+            cipherSuite: cipherSuite1,
         });
         const results2 = await cc.findCredentials({
-            ciphersuite: ciphersuite2,
+            cipherSuite: cipherSuite2,
         });
 
         expect(results1.length).toBe(1);
