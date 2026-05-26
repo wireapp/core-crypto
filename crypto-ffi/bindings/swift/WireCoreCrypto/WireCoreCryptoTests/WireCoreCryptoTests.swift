@@ -742,6 +742,45 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertNotNil(acquisition)
     }
 
+    func testCanInstantiateX509CredentialAcquisitionFromCredentialRef() async throws {
+        let database = try await newDatabase()
+        let pkiEnvironment = try await PkiEnvironment(
+            hooks: MockPkiEnvironmentHooks(), database: database)
+        let clientId = ClientId(
+            bytes: Data("LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com".utf8))
+        let config = X509CredentialAcquisitionConfiguration(
+            acmeUrl: "acme.example.com",
+            ciphersuite: ciphersuiteDefault(),
+            displayName: "Alice Smith",
+            clientId: clientId,
+            handle: "alice_wire",
+            domain: "world.com",
+            team: nil,
+            validityPeriodSecs: 3600
+        )
+
+        let coreCrypto = try await ccInit(
+            options: .withBasicCredential(clientId: clientId, database: database))
+
+        let credentialRef = try await coreCrypto.transaction { ctx in
+            try await ctx.findCredentials(
+                clientId: clientId,
+                publicKey: nil,
+                ciphersuite: nil,
+                credentialType: nil,
+                earliestValidity: nil
+            ).first!
+        }
+
+        let acquisition = try await X509CredentialAcquisition.newFromCredentialRef(
+            pkiEnvironment: pkiEnvironment,
+            config: config,
+            credentialRef: credentialRef
+        )
+
+        XCTAssertNotNil(acquisition)
+    }
+
     func testParseJwkProducesSenderUsableInCreateConversation() async throws {
         let jwk = generateEd25519Jwk()
         let externalSender = try ExternalSender.parseJwk(jwk: jwk)
