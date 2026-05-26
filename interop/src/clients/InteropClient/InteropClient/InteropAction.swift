@@ -6,9 +6,9 @@ enum InteropResponse: Codable {
 }
 
 enum InteropAction {
-    case initMLS(clientId: Data, ciphersuite: UInt16)
-    case getKeyPackage(ciphersuite: UInt16)
-    case addClient(conversationId: Data, ciphersuite: UInt16, keyPackage: Data)
+    case initMLS(clientId: Data, cipherSuite: UInt16)
+    case getKeyPackage(cipherSuite: UInt16)
+    case addClient(conversationId: Data, cipherSuite: UInt16, keyPackage: Data)
     case removeClient(conversationId: Data, clientId: Data)
     case processWelcome(welcomePath: URL)
     case encryptMessage(conversationId: Data, message: Data)
@@ -33,26 +33,26 @@ extension InteropAction {
             })?.value.flatMap { value in
                 Data(base64Encoded: value)
             }
-            let ciphersuite = components?.queryItems?.first(where: { item in
-                item.name == "ciphersuite"
+            let cipherSuite = components?.queryItems?.first(where: { item in
+                item.name == "cipherSuite"
             })?.value.flatMap { value in
                 UInt16(value)
             }
 
-            if let clientId, let ciphersuite {
-                self = .initMLS(clientId: clientId, ciphersuite: ciphersuite)
+            if let clientId, let cipherSuite {
+                self = .initMLS(clientId: clientId, cipherSuite: cipherSuite)
             } else {
                 return nil
             }
 
         case "get-key-package":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let ciphersuite = components?.queryItems?.first(where: { item in
-                item.name == "ciphersuite"
+            let cipherSuite = components?.queryItems?.first(where: { item in
+                item.name == "cipherSuite"
             })?.value.flatMap { UInt16($0) }
 
-            if let ciphersuite {
-                self = .getKeyPackage(ciphersuite: ciphersuite)
+            if let cipherSuite {
+                self = .getKeyPackage(cipherSuite: cipherSuite)
             } else {
                 return nil
             }
@@ -64,8 +64,8 @@ extension InteropAction {
             })?.value.flatMap { value in
                 Data(base64Encoded: value)
             }
-            let ciphersuite = components?.queryItems?.first(where: { item in
-                item.name == "ciphersuite"
+            let cipherSuite = components?.queryItems?.first(where: { item in
+                item.name == "cipherSuite"
             })?.value.flatMap { value in
                 UInt16(value)
             }
@@ -75,9 +75,9 @@ extension InteropAction {
                 Data(base64Encoded: value)
             }
 
-            if let converationId, let ciphersuite, let keyPackage {
+            if let converationId, let cipherSuite, let keyPackage {
                 self = .addClient(
-                    conversationId: converationId, ciphersuite: ciphersuite, keyPackage: keyPackage)
+                    conversationId: converationId, cipherSuite: cipherSuite, keyPackage: keyPackage)
             } else {
                 return nil
             }

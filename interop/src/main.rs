@@ -136,7 +136,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     use core_crypto::*;
     use rand::distributions::DistString;
 
-    log::info!("Using ciphersuite {CIPHERSUITE_IN_USE}");
+    log::info!("Using cipher suite {CIPHERSUITE_IN_USE}");
 
     let mut spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
     let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
@@ -147,7 +147,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
 
     let conversation_id: ConversationId = MLS_CONVERSATION_ID.into();
     let config = ConversationConfiguration {
-        ciphersuite: CIPHERSUITE_IN_USE.into(),
+        cipher_suite: CIPHERSUITE_IN_USE.into(),
         ..Default::default()
     };
     let cc = CoreCrypto::new(db);

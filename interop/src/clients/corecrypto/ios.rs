@@ -164,15 +164,15 @@ impl CoreCryptoIosClient {
         let client_id = uuid::Uuid::new_v4();
         let client_id_str = client_id.as_hyphenated().to_string();
         let client_id_base64 = general_purpose::STANDARD.encode(client_id_str.as_str());
-        let ciphersuite = CIPHERSUITE_IN_USE as u16;
+        let cipher_suite = CIPHERSUITE_IN_USE as u16;
         let device = std::env::var("INTEROP_SIMULATOR_DEVICE").unwrap_or("booted".into());
 
         let driver = SimulatorDriver::new(device, "com.wire.InteropClient".into());
-        log::info!("initialising core crypto with ciphersuite {}", ciphersuite);
+        log::info!("initialising core crypto with cipher suite {}", cipher_suite);
         driver
             .execute(format!(
-                "init-mls?client={}&ciphersuite={}",
-                client_id_base64, ciphersuite
+                "init-mls?client={}&cipherSuite={}",
+                client_id_base64, cipher_suite
             ))
             .await?;
 
@@ -211,11 +211,11 @@ impl EmulatedClient for CoreCryptoIosClient {
 #[async_trait::async_trait(?Send)]
 impl EmulatedMlsClient for CoreCryptoIosClient {
     async fn get_keypackage(&self) -> Result<Vec<u8>> {
-        let ciphersuite = CIPHERSUITE_IN_USE as u16;
+        let cipher_suite = CIPHERSUITE_IN_USE as u16;
         let start = std::time::Instant::now();
         let kp_base64 = self
             .driver
-            .execute(format!("get-key-package?ciphersuite={}", ciphersuite))
+            .execute(format!("get-key-package?cipherSuite={}", cipher_suite))
             .await?;
         let kp_raw = general_purpose::STANDARD.decode(kp_base64)?;
         let kp: Keypackage = KeyPackageIn::tls_deserialize(&mut kp_raw.as_slice())?.into();

@@ -103,7 +103,7 @@ struct InteropClientApp: App {
     // swiftlint:disable:next function_body_length cyclomatic_complexity
     private func executeAction(_ action: InteropAction) async throws -> String {
         switch action {
-        case .initMLS(let clientId, let ciphersuite):
+        case .initMLS(let clientId, let cipherSuite):
             let key = try generateDatabaseKey()
             let keystorePath = try generateKeystorePath()
             let database = try await Database.open(location: keystorePath.path, key: key)
@@ -111,7 +111,7 @@ struct InteropClientApp: App {
                 database: database
             )
 
-            let ciphersuite = try ciphersuiteFromU16(discriminant: ciphersuite)
+            let cipherSuite = try cipherSuiteFromU16(discriminant: cipherSuite)
             let clientId = ClientId(bytes: clientId)
             try await self.coreCrypto?.transaction({ context in
                 try await context.mlsInit(
@@ -119,15 +119,15 @@ struct InteropClientApp: App {
                     transport: TransportProvider()
                 )
                 _ = try await context.addCredential(
-                    credential: Credential.basic(ciphersuite: ciphersuite, clientId: clientId))
+                    credential: Credential.basic(cipherSuite: cipherSuite, clientId: clientId))
             })
 
-            return "Initialised MLS with ciphersuite: \(ciphersuite)"
+            return "Initialised MLS with cipherSuite: \(cipherSuite)"
 
-        case .getKeyPackage(let ciphersuite):
+        case .getKeyPackage(let cipherSuite):
             guard let coreCrypto else { throw InteropError.notInitialised }
             let credential = try await coreCrypto.findCredentials(
-                ciphersuite: ciphersuiteFromU16(discriminant: ciphersuite),
+                cipherSuite: cipherSuiteFromU16(discriminant: cipherSuite),
                 credentialType: .basic
             ).first!
             let keyPackage = try await coreCrypto.transaction { ctx in
@@ -139,15 +139,15 @@ struct InteropClientApp: App {
 
             return try keyPackage.serialize().base64EncodedString()
 
-        case .addClient(let conversationId, let ciphersuite, let keyPackage):
+        case .addClient(let conversationId, let cipherSuite, let keyPackage):
             guard let coreCrypto else { throw InteropError.notInitialised }
             let conversationId = ConversationId(bytes: conversationId)
-            let ciphersuite = try ciphersuiteFromU16(discriminant: ciphersuite)
+            let cipherSuite = try cipherSuiteFromU16(discriminant: cipherSuite)
             let keyPackage = try KeyPackage(bytes: keyPackage)
 
             try await coreCrypto.transaction { context in
                 let credentialRef = try await coreCrypto.findCredentials(
-                    ciphersuite: ciphersuite,
+                    cipherSuite: cipherSuite,
                     credentialType: .basic
                 ).first!
                 if try await context.conversationExists(

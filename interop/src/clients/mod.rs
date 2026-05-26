@@ -71,5 +71,5 @@ pub(crate) trait EmulatedProteusClient: EmulatedClient {
 #[async_trait::async_trait(?Send)]
 #[allow(dead_code)]
 pub(crate) trait EmulatedE2eIdentityClient: EmulatedClient {
-    async fn e2ei_new_enrollment(&mut self, ciphersuite: CipherSuite) -> Result<()>;
+    async fn e2ei_new_enrollment(&mut self, cipher_suite: CipherSuite) -> Result<()>;
 }

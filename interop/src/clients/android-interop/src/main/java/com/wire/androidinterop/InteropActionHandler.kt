@@ -11,7 +11,7 @@ import com.wire.crypto.KeyPackage
 import com.wire.crypto.MlsTransport
 import com.wire.crypto.MlsTransportData
 import com.wire.crypto.Welcome
-import com.wire.crypto.ciphersuiteFromU16
+import com.wire.crypto.cipherSuiteFromU16
 import com.wire.crypto.openDatabase
 import java.nio.file.Files
 import java.security.SecureRandom
@@ -42,7 +42,7 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
                     context.addCredential(
                         Credential.basic(
                             clientId = ClientId(action.clientId),
-                            ciphersuite = ciphersuiteFromU16(action.ciphersuite.toUShort())
+                            cipherSuite = cipherSuiteFromU16(action.cipherSuite.toUShort())
                         )
                     )
                 })
@@ -90,7 +90,7 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
 
             is InteropAction.MLS.GetKeyPackage -> {
                 val credential = coreCrypto.findCredentials(
-                    ciphersuite = ciphersuiteFromU16(action.ciphersuite.toUShort())
+                    cipherSuite = cipherSuiteFromU16(action.cipherSuite.toUShort())
                 ).first()
                 coreCrypto.transaction { context ->
                     context.generateKeyPackage(credential, null)

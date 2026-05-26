@@ -8,9 +8,9 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 @Serializable
 sealed class InteropAction {
     sealed class MLS : InteropAction() {
-        class InitMLS(val clientId: ByteArray, val ciphersuite: Int) : MLS()
+        class InitMLS(val clientId: ByteArray, val cipherSuite: Int) : MLS()
 
-        class GetKeyPackage(val ciphersuite: Int) : MLS()
+        class GetKeyPackage(val cipherSuite: Int) : MLS()
 
         class AddClient(val conversationId: ByteArray, val keyPackage: ByteArray) : MLS()
 
@@ -45,14 +45,14 @@ sealed class InteropAction {
             return when (intent.getStringExtra("action")) {
                 "init-mls" -> {
                     val clientId = intent.getStringExtra("client_id") ?: throw IllegalArgumentException("client_id is missing")
-                    val ciphersuite = intent.getIntExtra("ciphersuite", 0)
+                    val cipherSuite = intent.getIntExtra("cipherSuite", 0)
 
-                    MLS.InitMLS(clientId = Base64.Default.decode(clientId), ciphersuite = ciphersuite)
+                    MLS.InitMLS(clientId = Base64.Default.decode(clientId), cipherSuite = cipherSuite)
                 }
 
                 "get-key-package" -> {
-                    val ciphersuite = intent.getIntExtra("ciphersuite", 0)
-                    MLS.GetKeyPackage(ciphersuite = ciphersuite)
+                    val cipherSuite = intent.getIntExtra("cipherSuite", 0)
+                    MLS.GetKeyPackage(cipherSuite = cipherSuite)
                 }
 
                 "add-client" -> {

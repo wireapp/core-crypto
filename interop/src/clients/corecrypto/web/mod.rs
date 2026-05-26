@@ -85,10 +85,10 @@ impl CoreCryptoWebClient {
     pub(crate) async fn new(driver_addr: &SocketAddr, server: &SocketAddr) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
         let client_id_str = client_id.as_hyphenated().to_string();
-        let ciphersuite = CIPHERSUITE_IN_USE as u16;
+        let cipher_suite = CIPHERSUITE_IN_USE as u16;
         let client_config = serde_json::json!({
             "databaseName": format!("db-{client_id_str}"),
-            "ciphersuites": [ciphersuite],
+            "cipherSuites": [cipher_suite],
             "clientId": client_id_str
         });
 
