@@ -154,8 +154,6 @@ mod tests {
             );
         }
 
-        // TODO: ignore this test for now, until we fix the test suite (WPB-25356)
-        #[ignore]
         #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_read_device_identities() {
             let case = TestContext::default_x509();
@@ -216,7 +214,7 @@ mod tests {
             .await
         }
 
-        // TODO: ignore this test for now, until we fix the test suite (WPB-25356)
+        // TODO: ignore this test for now, until we rework the test suite & CRL handling (WPB-19580).
         #[ignore]
         #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_read_revoked_device() {
@@ -304,8 +302,6 @@ mod tests {
             .await
         }
 
-        // TODO: ignore this test for now, until we fix the test suite (WPB-25356)
-        #[ignore]
         #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_read_users() {
             let case = TestContext::default_x509();
