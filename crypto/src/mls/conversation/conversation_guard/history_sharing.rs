@@ -98,8 +98,8 @@ impl ConversationGuard {
             return Ok(HistoryClientUpdateOutcome::NoUpdateNeeded);
         }
 
-        let conversation = self.conversation().await;
-        let Some(pending_commit) = conversation.group().pending_commit() else {
+        let group = &self.inner().await.group;
+        let Some(pending_commit) = group.pending_commit() else {
             return Err(Error::PendingCommitNotFound);
         };
 
@@ -114,7 +114,7 @@ impl ConversationGuard {
 
         // Distinguish between history clients and other clients for the following operations
         let (existing_history_clients, other_clients): (HashSet<_>, HashSet<_>) =
-            conversation.group().members().partition_map(|member| {
+            self.inner().await.group.members().partition_map(|member| {
                 let is_history_client =
                     crate::ephemeral::is_history_client(ClientIdRef::new(member.credential.identity()));
                 let member_index = member.index;
@@ -141,47 +141,34 @@ impl ConversationGuard {
         // If we're still here, all conditions are met to update the history client.
 
         // First, restore the proposals from the pending commit before clearing it.
-        let pending_proposals = pending_commit
+        let mut proposals = pending_commit
             .queued_proposals()
             .map(|proposal| proposal.proposal())
             .cloned()
             .collect::<Vec<_>>();
-        drop(conversation);
 
         self.clear_pending_commit().await?;
 
-        let session = self.session().await?;
         let history_secret = self.generate_history_secret().await?;
         let key_package = history_secret.key_package.clone().into();
 
-        let remove_and_add = self
-            .conversation_mut(async move |conversation| {
-                // Propose to remove the old history client
-                for history_client in existing_history_clients {
-                    conversation.propose_remove_member(&session, history_client).await?;
-                }
+        // propose to remove the old history client(s)
+        for history_client in existing_history_clients {
+            self.propose_remove_member(history_client).await?;
+        }
+        // propose to add a new history client
+        self.propose_add_member(key_package).await?;
 
-                // Propose to add a new history client
-                conversation.propose_add_member(&session, key_package).await?;
-
-                // We're getting the proposals we just created from the pending proposals queue, as the previously
-                // called `propose_remove()` and `propose_add()` pushed them to that queue as a side effect.
-                let remove_and_add = conversation
-                    .group()
-                    .pending_proposals()
-                    .filter(|&p| matches!(p.sender(), Sender::Member(i) if i == &conversation.group().own_leaf_index()))
-                    .map(|proposal| proposal.proposal())
-                    .cloned()
-                    .collect::<Vec<_>>();
-
-                Ok(remove_and_add)
-            })
-            .await?;
-
-        let inline_proposals = [pending_proposals, remove_and_add].concat();
+        proposals.extend(
+            group
+                .pending_proposals()
+                .filter(|&p| matches!(p.sender(), Sender::Member(i) if i == &group.own_leaf_index()))
+                .map(|proposal| proposal.proposal())
+                .cloned(),
+        );
 
         let commit = self
-            .commit_inline_proposals(inline_proposals)
+            .commit_inline_proposals(proposals)
             .await?
             .expect("we just added a proposal, so this will create a commit");
 

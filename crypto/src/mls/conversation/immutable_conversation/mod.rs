@@ -15,7 +15,7 @@ use crate::{CipherSuite, ConversationId, CredentialRef, MlsConversationConfigura
 pub struct ImmutableConversation {
     pub(crate) id: ConversationId,
     pub(crate) group: MlsGroup,
-    configuration: MlsConversationConfiguration,
+    pub(crate) configuration: MlsConversationConfiguration,
     session: Session,
 }
 

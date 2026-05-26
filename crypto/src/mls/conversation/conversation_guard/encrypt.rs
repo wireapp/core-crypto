@@ -3,10 +3,11 @@
 use openmls::prelude::MlsMessageOutBody;
 
 use super::{ConversationGuard, Result};
-use crate::{MlsError, mls::conversation::ConversationWithMls as _};
+use crate::MlsError;
 
 impl ConversationGuard {
-    /// Encrypts a raw payload then serializes it to the TLS wire format
+    /// Encrypts a raw payload then serializes it to the TLS wire format.
+    ///
     /// Can only be called when there is no pending commit and no pending proposal.
     ///
     /// # Arguments
@@ -19,19 +20,29 @@ impl ConversationGuard {
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     pub async fn encrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<Vec<u8>> {
+        #[cfg(debug_assertions)]
+        {
+            let group = &self.inner().await.group;
+            debug_assert!(
+                group.pending_commit().is_none(),
+                "precondition failed; a pending commit exists"
+            );
+            debug_assert!(
+                group.pending_proposals().next().is_none(),
+                "precondition failed; a pending proposal exists"
+            );
+        }
+
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
+        let signer = credential.signature_key();
 
-        self.conversation_mut(async move |conversation| {
-            let signer = credential.signature_key();
-            let encrypted = conversation
-                .group
+        self.mutate_group(async |_, group, _, _| {
+            let encrypted = group
                 .create_message(&backend, signer, message.as_ref())
-                .map_err(MlsError::wrap("creating message"))?;
-
-            // make sure all application messages are encrypted
+                .map_err(MlsError::wrap("creating encrypted message"))?;
+            // all application messages must be encrypted
             debug_assert!(matches!(encrypted.body, MlsMessageOutBody::PrivateMessage(_)));
-
             encrypted
                 .to_bytes()
                 .map_err(MlsError::wrap("constructing byte vector of encrypted message"))

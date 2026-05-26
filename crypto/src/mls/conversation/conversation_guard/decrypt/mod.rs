@@ -156,12 +156,9 @@ impl ConversationGuard {
             ..
         })) = message_result
         {
-            let mut decrypted_message = self
-                .conversation_mut(async |conversation| {
-                    let ct = conversation.extract_confirmation_tag_from_own_commit(&message)?;
-                    conversation.handle_own_commit(provider, ct).await
-                })
-                .await?;
+            let ct = self.extract_confirmation_tag_from_own_commit(&message).await?;
+            let mut decrypted_message = self.handle_own_commit(ct).await?;
+
             debug_assert!(
                 decrypted_message.buffered_messages.is_none(),
                 "decrypted message should be constructed with empty buffer"
@@ -218,14 +215,14 @@ impl ConversationGuard {
                 }
             }
             ProcessedMessageContent::ProposalMessage(proposal) => {
-                self.conversation_mut(async move |conversation| {
+                self.mutate_group(async |_, group, id, _| {
                     info!(
-                        group_id = conversation.id,
+                        group_id = id.to_owned(),
                         sender = Obfuscated::from(proposal.sender()),
                         proposals = Obfuscated::from(&proposal.proposal);
                         "Received proposal"
                     );
-                    conversation.group.store_pending_proposal(*proposal);
+                    group.store_pending_proposal(*proposal);
                     Ok(())
                 })
                 .await?;
@@ -275,8 +272,8 @@ impl ConversationGuard {
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
                 self.validate_commit(&staged_commit).await?;
 
-                let (is_active, delay, removed_members, added_members, group_id) = self
-                    .conversation_mut(async |conversation| {
+                let (is_active, removed_members, added_members, group_id) = self
+                    .mutate_group(async |_, group, id, _| {
                         let removed_indices = staged_commit
                             .remove_proposals()
                             .map(|p| p.remove_proposal().removed())
@@ -287,27 +284,26 @@ impl ConversationGuard {
                             .map(|p| p.add_proposal().key_package.leaf_node().credential().to_owned())
                             .collect::<Vec<_>>();
 
-                        let removed_members = Self::members_at_indices(removed_indices, conversation.group());
+                        let removed_members = Self::members_at_indices(removed_indices, group);
 
-                        conversation
-                            .group
+                        group
                             .merge_staged_commit(provider, *staged_commit.clone())
                             .await
                             .map_err(MlsError::wrap("merge staged commit"))?;
 
-                        let added_members = conversation
-                            .group
+                        let added_members = group
                             .members()
                             .filter_map(|member| added_credentials.contains(&member.credential).then(|| member.clone()))
                             .collect::<Vec<_>>();
 
-                        let is_active = conversation.group.is_active();
-                        let delay = conversation.compute_next_commit_delay();
-                        let group_id = conversation.id.clone();
+                        let is_active = group.is_active();
+                        let group_id = id.to_owned();
 
-                        Ok((is_active, delay, removed_members, added_members, group_id))
+                        Ok((is_active, removed_members, added_members, group_id))
                     })
                     .await?;
+
+                let delay = self.compute_next_commit_delay().await;
 
                 // can't use `.then` because async
                 let mut buffered_messages = None;
@@ -324,7 +320,7 @@ impl ConversationGuard {
                     proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
                     "Epoch advanced"
                 );
-                self.central_context
+                self.tx_context
                     .queue_epoch_changed(group_id, epoch)
                     .await
                     .map_err(RecursiveError::transaction("queueing epoch changed notification"))?;
@@ -339,17 +335,18 @@ impl ConversationGuard {
                 }
             }
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
-                let delay = self
-                    .conversation_mut(async move |conversation| {
-                        info!(
-                            group_id = conversation.id,
-                            sender = Obfuscated::from(proposal.sender());
-                            "Received external join proposal"
-                        );
-                        conversation.group.store_pending_proposal(*proposal);
-                        Ok(conversation.compute_next_commit_delay())
-                    })
-                    .await?;
+                self.mutate_group(async |_, group, id, _| {
+                    info!(
+                        group_id = id.to_owned(),
+                        sender = Obfuscated::from(proposal.sender());
+                        "Received external join proposal"
+                    );
+                    group.store_pending_proposal(*proposal);
+                    Ok(())
+                })
+                .await?;
+
+                let delay = self.compute_next_commit_delay().await;
 
                 MlsDecryptMessage {
                     app_msg: None,
@@ -409,10 +406,9 @@ impl ConversationGuard {
     ) -> Result<ProcessedMessage> {
         let msg_epoch = protocol_message.epoch().as_u64();
         let backend = self.crypto_provider().await?;
-        self.conversation_mut(async move |conversation| {
-            let group_epoch = conversation.group.epoch().as_u64();
-            let processed_msg = conversation
-                .group
+        self.mutate_group(async move |_, group, _, _| {
+            let group_epoch = group.epoch().as_u64();
+            let processed_msg = group
                 .process_message(&backend, protocol_message)
                 .await
                 .map_err(|e| match e {
@@ -819,8 +815,8 @@ mod tests {
                 conversation
                     .guard()
                     .await
-                    .conversation_mut(async |conv| {
-                        conv.group.clear_pending_proposals();
+                    .mutate_group(async |_, group, _, _| {
+                        group.clear_pending_proposals();
                         Ok(())
                     })
                     .await

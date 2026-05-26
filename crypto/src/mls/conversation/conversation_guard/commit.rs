@@ -8,7 +8,7 @@ use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
     ClientId, ClientIdRef, CredentialRef, LeafError, MlsError, MlsGroupInfoBundle, RecursiveError,
     mls::{
-        conversation::{ConversationGuard, ConversationWithMls as _, Error, Result, commit::MlsCommitBundle},
+        conversation::{ConversationGuard, Error, Result, commit::MlsCommitBundle},
         credential::Credential,
     },
 };
@@ -30,17 +30,16 @@ impl ConversationGuard {
     }
 
     pub(super) async fn merge_commit(&mut self) -> Result<()> {
-        let provider = self.crypto_provider().await?;
-        let (conversation_id, epoch) = self
-            .conversation_mut(async |conversation| {
-                conversation.commit_accepted(&provider).await?;
-                Ok((conversation.id().to_owned(), conversation.group.epoch().as_u64()))
-            })
-            .await?;
-        self.central_context
+        self.commit_accepted().await?;
+        let inner = self.inner().await;
+        let conversation_id = inner.id().to_owned();
+        let epoch = inner.epoch();
+
+        self.tx_context
             .queue_epoch_changed(conversation_id, epoch)
             .await
             .map_err(RecursiveError::transaction("queueing epoch changed notification"))?;
+
         Ok(())
     }
 
@@ -69,10 +68,9 @@ impl ConversationGuard {
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
 
-        self.conversation_mut(async move |conversation| {
+        self.mutate_group(async |_, group, _, _| {
             let signer = credential.signature_key();
-            let (commit, welcome, group_info) = conversation
-                .group
+            let (commit, welcome, group_info) = group
                 .add_members(&backend, signer, key_packages.clone())
                 .await
                 .map_err(|err| {
@@ -136,9 +134,8 @@ impl ConversationGuard {
         let signer = credential.signature_key();
 
         let (commit, welcome, group_info) = self
-            .conversation_mut(async |conversation| {
-                let members = conversation
-                    .group
+            .mutate_group(async |_, group, _, _| {
+                let members = group
                     .members()
                     .filter_map(|kp| {
                         clients
@@ -148,8 +145,7 @@ impl ConversationGuard {
                     })
                     .collect::<Vec<_>>();
 
-                conversation
-                    .group
+                group
                     .remove_members(&backend, signer, &members)
                     .await
                     .map_err(MlsError::wrap("group remove members"))
@@ -194,12 +190,12 @@ impl ConversationGuard {
         let backend = self.crypto_provider().await?;
         let credential = credential.clone();
 
-        self.conversation_mut(async move |conversation| {
+        self.mutate_group(async |_, group, _, _| {
             // If the credential remains the same and we still want to update, we explicitly need to pass `None` to
             // openmls, if we just passed an unchanged leaf node, no update commit would be created.
             // Also, we can avoid cloning in the case we don't need to create a new leaf node.
             let updated_leaf_node = {
-                let leaf_node = conversation.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
+                let leaf_node = group.own_leaf().ok_or(LeafError::InternalMlsError)?;
                 if leaf_node.credential() == &credential.mls_credential {
                     None
                 } else {
@@ -209,8 +205,7 @@ impl ConversationGuard {
                 }
             };
 
-            let (commit, welcome, group_info) = conversation
-                .group
+            let (commit, welcome, group_info) = group
                 .explicit_self_update(&backend, &credential.signature_key_pair, updated_leaf_node)
                 .await
                 .map_err(MlsError::wrap("group self update"))?;
@@ -240,18 +235,18 @@ impl ConversationGuard {
     }
 
     pub(crate) async fn commit_pending_proposals_inner(&mut self) -> Result<Option<MlsCommitBundle>> {
-        let session = &self.session().await?;
-        let provider = &self.crypto_provider().await?;
-        if self.conversation().await.group().pending_proposals().next().is_none() {
+        if self.inner().await.group.pending_proposals().next().is_none() {
             return Ok(None);
         }
 
+        let crypto_provider = self.crypto_provider().await?;
+        let credential = self.credential().await?;
+
         let (commit, welcome, openmls_group_info) = self
-            .conversation_mut(async |inner| {
-                let signer = &inner.find_current_credential(session).await?.signature_key_pair;
-                inner
-                    .group
-                    .commit_to_pending_proposals(provider, signer)
+            .mutate_group(async |_, group, _, _| {
+                let signer = &credential.signature_key_pair;
+                group
+                    .commit_to_pending_proposals(&crypto_provider, signer)
                     .await
                     .map_err(MlsError::wrap("group commit to pending proposals"))
                     .map_err(Into::into)
@@ -273,17 +268,17 @@ impl ConversationGuard {
         &mut self,
         proposals: Vec<openmls::prelude::Proposal>,
     ) -> Result<Option<MlsCommitBundle>> {
-        let session = &self.session().await?;
-        let provider = &self.crypto_provider().await?;
         if proposals.is_empty() {
             return Ok(None);
         }
 
+        let provider = &self.crypto_provider().await?;
+        let credential = self.credential().await?;
+
         let (commit, welcome, openmls_group_info) = self
-            .conversation_mut(async |inner| {
-                let signer = &inner.find_current_credential(session).await?.signature_key_pair;
-                inner
-                    .group
+            .mutate_group(async |_, group, _, _| {
+                let signer = &credential.signature_key_pair;
+                group
                     .commit_to_inline_proposals(provider, signer, proposals)
                     .await
                     .map_err(MlsError::wrap("group commit to pending proposals"))
