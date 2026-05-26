@@ -32,9 +32,15 @@ the sub-pages:
    - renamed `removeKeypackage` → `removeKeyPackage`
    - renamed `removeKeypackagesFor` → `removeKeyPackagesFor`
 
+## Cipher Suites
+
 1. We aligned cipher suite spelling to `CipherSuite`:
 
-   - renamed `Ciphersuite` -> `CipherSuite`
+   - renamed `Ciphersuite` → `CipherSuite`
+   - renamed `ciphersuiteFromU16` → `cipherSuiteFromU16`
+   - renamed `ciphersuiteDefault` → `cipherSuiteDefault`
+   - renamed `conversationCiphersuite` → `conversationCipherSuite`
+   - renamed any parameters and fields `ciphersuite` → `cipherSuite`
 
 ## Higher-Level Newtypes
 
