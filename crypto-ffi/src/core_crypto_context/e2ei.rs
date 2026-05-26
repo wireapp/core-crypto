@@ -22,10 +22,10 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// Returns true if end-to-end identity is enabled for the given ciphersuite.
-    pub async fn e2ei_is_enabled(&self, ciphersuite: CipherSuite) -> CoreCryptoResult<bool> {
+    /// Returns true if end-to-end identity is enabled for the given cipher_suite.
+    pub async fn e2ei_is_enabled(&self, cipher_suite: CipherSuite) -> CoreCryptoResult<bool> {
         self.inner
-            .e2ei_is_enabled(ciphersuite.into())
+            .e2ei_is_enabled(cipher_suite.into())
             .await
             .map_err(Into::<TransactionError>::into)
             .map_err(Into::into)

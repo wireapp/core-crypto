@@ -48,8 +48,8 @@ impl CoreCryptoFfi {
         Ok(conversation.epoch().await)
     }
 
-    /// Returns the ciphersuite in use for the given conversation.
-    pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<CipherSuite> {
+    /// Returns the cipher_suite in use for the given conversation.
+    pub async fn conversation_cipher_suite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<CipherSuite> {
         let cs = self
             .inner
             .mls_session()
@@ -57,9 +57,9 @@ impl CoreCryptoFfi {
             .get_raw_conversation(conversation_id.as_ref())
             .await
             .map_err(RecursiveError::mls_client(
-                "conversation_ciphersuite: getting raw conversation by id",
+                "conversation_cipher_suite: getting raw conversation by id",
             ))?
-            .ciphersuite();
+            .cipher_suite();
         Ok(CipherSuite::from(core_crypto::MlsCiphersuite::from(cs)))
     }
 

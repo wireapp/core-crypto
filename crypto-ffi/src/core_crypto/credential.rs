@@ -31,7 +31,7 @@ impl CoreCryptoFfi {
     #[uniffi::method(default(
         client_id = None,
         public_key = None,
-        ciphersuite = None,
+        cipher_suite = None,
         credential_type = None,
         earliest_validity = None,
     ))]
@@ -39,11 +39,11 @@ impl CoreCryptoFfi {
         &self,
         client_id: Option<Arc<ClientId>>,
         public_key: Option<Vec<u8>>,
-        ciphersuite: Option<CipherSuite>,
+        cipher_suite: Option<CipherSuite>,
         credential_type: Option<CredentialType>,
         earliest_validity: Option<u64>,
     ) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
-        self.find_credentials_inner(client_id, public_key, ciphersuite, credential_type, earliest_validity)
+        self.find_credentials_inner(client_id, public_key, cipher_suite, credential_type, earliest_validity)
             .await
     }
 }
@@ -57,7 +57,7 @@ impl CoreCryptoFfi {
     #[uniffi::method(default(
         client_id = None,
         public_key = None,
-        ciphersuite = None,
+        cipher_suite = None,
         credential_type = None,
         earliest_validity = None,
     ))]
@@ -65,11 +65,11 @@ impl CoreCryptoFfi {
         &self,
         client_id: Option<Arc<ClientId>>,
         public_key: Option<Vec<u8>>,
-        ciphersuite: Option<CipherSuite>,
+        cipher_suite: Option<CipherSuite>,
         credential_type: Option<CredentialType>,
         earliest_validity: Option<u64>,
     ) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
-        self.find_credentials_inner(client_id, public_key, ciphersuite, credential_type, earliest_validity)
+        self.find_credentials_inner(client_id, public_key, cipher_suite, credential_type, earliest_validity)
             .await
     }
 }
@@ -83,20 +83,20 @@ impl CoreCryptoFfi {
         &self,
         client_id: Option<Arc<ClientId>>,
         public_key: Option<Vec<u8>>,
-        ciphersuite: Option<CipherSuite>,
+        cipher_suite: Option<CipherSuite>,
         credential_type: Option<CredentialType>,
         earliest_validity: Option<u64>,
     ) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
         let client_id = client_id.as_ref().map(|c| c.as_ref().as_ref());
 
-        let ciphersuite = ciphersuite.map(CryptoCipherSuite::from);
+        let cipher_suite = cipher_suite.map(CryptoCipherSuite::from);
 
         let credential_type = credential_type.map(core_crypto::CredentialType::from);
 
         let find_filters = CredentialFindFilters {
             client_id,
             public_key_hash: public_key.map(Sha256Hash::hash_from),
-            ciphersuite,
+            cipher_suite,
             credential_type,
             earliest_validity,
         };

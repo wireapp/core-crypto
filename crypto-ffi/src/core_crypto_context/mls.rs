@@ -104,9 +104,9 @@ impl CoreCryptoContext {
         Ok(conversation.epoch().await)
     }
 
-    /// Returns the ciphersuite in use for the given conversation.
-    pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<CipherSuite> {
-        let cs = self.inner.conversation(conversation_id.as_ref()).await?.ciphersuite();
+    /// Returns the cipher suite in use for the given conversation.
+    pub async fn conversation_cipher_suite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<CipherSuite> {
+        let cs = self.inner.conversation(conversation_id.as_ref()).await?.cipher_suite();
         Ok(CipherSuite::from(cs))
     }
 
@@ -193,7 +193,7 @@ impl CoreCryptoContext {
         external_sender: Option<Arc<ExternalSender>>,
     ) -> CoreCryptoResult<()> {
         let lower_cfg = ConversationConfiguration {
-            ciphersuite: credential_ref.ciphersuite().into(),
+            cipher_suite: credential_ref.cipher_suite().into(),
             external_senders: external_sender
                 .into_iter()
                 .map(|arc_external_sender| Arc::unwrap_or_clone(arc_external_sender).into())

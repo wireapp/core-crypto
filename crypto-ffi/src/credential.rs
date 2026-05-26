@@ -19,9 +19,9 @@ impl Credential {
     ///
     /// The result is independent of any client instance and the database; it lives in memory only.
     #[uniffi::constructor(name = "basic")]
-    fn basic(ciphersuite: CipherSuite, client_id: &Arc<ClientId>) -> CoreCryptoResult<Self> {
+    fn basic(cipher_suite: CipherSuite, client_id: &Arc<ClientId>) -> CoreCryptoResult<Self> {
         let client_id_ref = client_id.as_ref().as_ref();
-        CryptoCredential::basic(CryptoCiphersuite::from(ciphersuite), client_id_ref.to_owned())
+        CryptoCredential::basic(CryptoCiphersuite::from(cipher_suite), client_id_ref.to_owned())
             .map(Into::into)
             .map_err(Into::into)
     }

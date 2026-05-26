@@ -26,8 +26,8 @@ impl X509CredentialAcquisition {
         credential_ref: &CredentialRef,
         core_crypto_database: Option<Arc<Database>>,
     ) -> CoreCryptoResult<Self> {
-        let ciphersuite = config.ciphersuite;
-        if ciphersuite != credential_ref.ciphersuite() {
+        let cipher_suite = config.cipher_suite;
+        if cipher_suite != credential_ref.cipher_suite() {
             return Err(CoreCryptoError::ad_hoc(
                 "config cipher suite doesn't match credential cipher suite",
             ));
@@ -44,7 +44,7 @@ impl X509CredentialAcquisition {
             .map_err(RecursiveError::mls_credential_ref("loading credential from ref"))?;
 
         let key_bytes = credential.signature_key_bytes();
-        let algorithm = ciphersuite.try_into()?;
+        let algorithm = cipher_suite.try_into()?;
         let pem = wire_e2e_identity::utils::pem_from_bytes(key_bytes, algorithm)?;
 
         let inner = wire_e2e_identity::X509CredentialAcquisition::try_new_from_pem(
@@ -55,7 +55,7 @@ impl X509CredentialAcquisition {
 
         Ok(Self {
             state: Mutex::new(AcquisitionState::Initialized(inner.into())),
-            ciphersuite,
+            cipher_suite,
         })
     }
 }

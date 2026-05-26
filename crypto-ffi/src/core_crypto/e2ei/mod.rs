@@ -12,12 +12,12 @@ impl CoreCryptoFfi {
         self.inner.get_pki_environment().await.is_some()
     }
 
-    /// Returns true if end-to-end identity is enabled for the given ciphersuite.
-    pub async fn e2ei_is_enabled(&self, ciphersuite: CipherSuite) -> CoreCryptoResult<bool> {
+    /// Returns true if end-to-end identity is enabled for the given cipher_suite.
+    pub async fn e2ei_is_enabled(&self, cipher_suite: CipherSuite) -> CoreCryptoResult<bool> {
         self.inner
             .mls_session()
             .await?
-            .e2ei_is_enabled(ciphersuite.into())
+            .e2ei_is_enabled(cipher_suite.into())
             .await
             .map_err(RecursiveError::mls_client("checking if e2ei is enabled"))
             .map_err(Into::into)

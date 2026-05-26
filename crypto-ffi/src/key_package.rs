@@ -19,9 +19,9 @@ impl KeyPackageRef {
         self.0.hash_ref().into()
     }
 
-    /// Get the ciphersuite associated with this key package ref.
-    pub fn ciphersuite(&self) -> CipherSuite {
-        self.0.ciphersuite().into()
+    /// Get the cipher_suite associated with this key package ref.
+    pub fn cipher_suite(&self) -> CipherSuite {
+        self.0.cipher_suite().into()
     }
 
     /// Get the signature scheme associated with this key package ref.

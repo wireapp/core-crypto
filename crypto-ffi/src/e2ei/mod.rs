@@ -46,7 +46,7 @@ impl TryFrom<FfiCiphersuite> for JwsAlgorithm {
             FfiCiphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => Ok(Self::P384),
             FfiCiphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 => Ok(Self::P521),
             _ => Err(CoreCryptoError::ad_hoc(
-                "ciphersuite is not supported for certificate acquisition",
+                "cipher_suite is not supported for certificate acquisition",
             )),
         }
     }
@@ -69,7 +69,7 @@ pub struct X509CredentialAcquisitionConfiguration {
     /// ACME directory URL.
     pub acme_directory_url: String,
     /// Ciphersuite of the acquired credential.
-    pub ciphersuite: FfiCiphersuite,
+    pub cipher_suite: FfiCiphersuite,
     /// User-visible display name.
     pub display_name: String,
     /// Wire client id for the device acquiring the credential.
@@ -89,7 +89,7 @@ impl X509CredentialAcquisitionConfiguration {
         let client_id = std::str::from_utf8(self.client_id.as_ref().0.as_ref()).map_err(CoreCryptoError::generic())?;
         let client_id =
             wire_e2e_identity::E2eiClientId::try_from_qualified(client_id).map_err(E2eIdentityError::from)?;
-        let sign_alg: JwsAlgorithm = self.ciphersuite.try_into()?;
+        let sign_alg: JwsAlgorithm = self.cipher_suite.try_into()?;
 
         Ok(wire_e2e_identity::acquisition::X509CredentialConfiguration {
             acme_directory_url: self.acme_directory_url,
@@ -111,7 +111,7 @@ impl X509CredentialAcquisitionConfiguration {
 #[derive(uniffi::Object)]
 pub struct X509CredentialAcquisition {
     state: Mutex<AcquisitionState>,
-    ciphersuite: FfiCiphersuite,
+    cipher_suite: FfiCiphersuite,
 }
 
 enum AcquisitionState {
@@ -132,11 +132,11 @@ fn signing_key_bytes(sign_alg: wire_e2e_identity::JwsAlgorithm, signing_key_pem:
 }
 
 fn credential_from_acquisition_result(
-    ciphersuite: FfiCiphersuite,
+    cipher_suite: FfiCiphersuite,
     signing_key_pem: &str,
     certificate_chain: Vec<x509_cert::Certificate>,
 ) -> CoreCryptoResult<Credential> {
-    let sign_alg = ciphersuite.try_into()?;
+    let sign_alg = cipher_suite.try_into()?;
     let signing_key = signing_key_bytes(sign_alg, signing_key_pem)?;
     let certificate_chain = certificate_chain
         .into_iter()
@@ -150,10 +150,10 @@ fn credential_from_acquisition_result(
     let certificate_bundle = core_crypto::CertificateBundle::from_raw(
         certificate_chain,
         signing_key,
-        core_crypto::CipherSuite::from(ciphersuite).signature_algorithm(),
+        core_crypto::CipherSuite::from(cipher_suite).signature_algorithm(),
     );
 
-    core_crypto::Credential::x509(ciphersuite.into(), certificate_bundle)
+    core_crypto::Credential::x509(cipher_suite.into(), certificate_bundle)
         .map(Credential)
         .map_err(Into::into)
 }
@@ -166,7 +166,7 @@ impl X509CredentialAcquisition {
         pki_environment: Arc<PkiEnvironment>,
         config: X509CredentialAcquisitionConfiguration,
     ) -> CoreCryptoResult<Self> {
-        let ciphersuite = config.ciphersuite;
+        let cipher_suite = config.cipher_suite;
         let inner = wire_e2e_identity::X509CredentialAcquisition::try_new(
             pki_environment.clone_inner(),
             config.try_into_core()?,
@@ -174,7 +174,7 @@ impl X509CredentialAcquisition {
 
         Ok(Self {
             state: Mutex::new(AcquisitionState::Initialized(inner.into())),
-            ciphersuite,
+            cipher_suite,
         })
     }
 
@@ -187,11 +187,11 @@ impl X509CredentialAcquisition {
         )
         .map_err(CoreCryptoError::generic())?;
 
-        let ciphersuite: FfiCiphersuite = snapshot.sign_alg().into();
+        let cipher_suite: FfiCiphersuite = snapshot.sign_alg().into();
 
         Ok(Self {
             state: Mutex::new(AcquisitionState::DpopChallengeCompleted(snapshot.into())),
-            ciphersuite,
+            cipher_suite,
         })
     }
 
@@ -236,6 +236,6 @@ impl X509CredentialAcquisition {
 
         *self.state.lock().await = AcquisitionState::Finalized;
         let (signing_key_pem, certificate_chain) = result?;
-        credential_from_acquisition_result(self.ciphersuite, signing_key_pem.as_str(), certificate_chain)
+        credential_from_acquisition_result(self.cipher_suite, signing_key_pem.as_str(), certificate_chain)
     }
 }

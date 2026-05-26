@@ -38,9 +38,9 @@ impl CredentialRef {
         self.0.signature_scheme().into()
     }
 
-    /// Get the ciphersuite of this credential ref.
-    pub fn ciphersuite(&self) -> CipherSuite {
-        self.0.ciphersuite().into()
+    /// Get the cipher suite of this credential ref.
+    pub fn cipher_suite(&self) -> CipherSuite {
+        self.0.cipher_suite().into()
     }
 
     /// Get the earliest possible validity of this credential, expressed as seconds after the unix epoch.

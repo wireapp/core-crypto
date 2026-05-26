@@ -1,14 +1,14 @@
-//! Ciphersuites in bindings
+//! Cipher Suites in bindings
 //!
 //! Both wasm-bindgen and uniffi support emitting enums, as long as they directly implement the enum;
-//! it doesn't work on newtypes around external enums. We therefore redefine the ciphersuites enum
+//! it doesn't work on newtypes around external enums. We therefore redefine the cipher suites enum
 //! here with appropriate annotations such that it gets exported to all relevant bindings.
 
 use core_crypto::{CipherSuite as CryptoCipherSuite, MlsCiphersuite as MlsCipherSuite};
 
 use crate::{CoreCryptoError, CoreCryptoResult};
 
-/// MLS ciphersuites.
+/// MLS cipher suites
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::TryFrom)]
@@ -44,7 +44,7 @@ impl From<CipherSuite> for MlsCipherSuite {
     fn from(value: CipherSuite) -> Self {
         (value as u16)
             .try_into()
-            .expect("ffi Ciphersuite is a subset of mls Ciphersuite")
+            .expect("ffi CipherSuite is a subset of mls CipherSuite")
     }
 }
 
@@ -53,7 +53,7 @@ impl From<MlsCipherSuite> for CipherSuite {
     fn from(value: MlsCipherSuite) -> Self {
         (value as u16)
             .try_into()
-            .expect("mls Ciphersuite is a subset of ffi Ciphersuite")
+            .expect("mls CipherSuite is a subset of ffi CipherSuite")
     }
 }
 
@@ -71,14 +71,14 @@ impl From<CryptoCipherSuite> for CipherSuite {
     }
 }
 
-/// Construct a ciphersuite enum instance from its discriminant.
+/// Construct a cipher suite enum instance from its discriminant.
 #[uniffi::export]
-pub fn ciphersuite_from_u16(discriminant: u16) -> CoreCryptoResult<CipherSuite> {
+pub fn cipher_suite_from_u16(discriminant: u16) -> CoreCryptoResult<CipherSuite> {
     CipherSuite::try_from(discriminant).map_err(CoreCryptoError::generic())
 }
 
-/// Get an instance of the default ciphersuite.
+/// Get an instance of the default cipher suite.
 #[uniffi::export]
-pub fn ciphersuite_default() -> CipherSuite {
+pub fn cipher_suite_default() -> CipherSuite {
     CipherSuite::default()
 }
