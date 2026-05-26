@@ -31,7 +31,8 @@ exports.load = function (app) {
                 message.includes("ClientIdLike") ||
                 message.includes("WelcomeLike") ||
                 message.includes("ConversationIdLike") ||
-                message.includes("GroupInfoLike"))
+                message.includes("GroupInfoLike") ||
+                message.includes("X509CredentialAcquisition, "))
         ) {
             // Ignore these specific ubrn warnings
             return;
